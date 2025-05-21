@@ -29,6 +29,10 @@ $rate_limit_error = $_SESSION['rate_limit_error'] ?? null;
 if ($rate_limit_error) {
     unset($_SESSION['rate_limit_error']); // Clear it after reading
 }
+$site_not_accessible_error = $_SESSION['site_not_accessible_error'] ?? null;
+if ($site_not_accessible_error) {
+    unset($_SESSION['site_not_accessible_error']); // Clear it after reading
+}
 
 ?>
 <!doctype html>
@@ -136,6 +140,12 @@ if ($rate_limit_error) {
                 <?php if ($rate_limit_error): ?>
                 <div class="alert alert-danger" role="alert">
                     <?php echo htmlspecialchars($rate_limit_error); ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($site_not_accessible_error): ?>
+                <div class="alert alert-warning" role="alert">
+                    <?php echo htmlspecialchars($site_not_accessible_error); ?>
                 </div>
                 <?php endif; ?>
 

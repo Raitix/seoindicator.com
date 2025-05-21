@@ -5,7 +5,7 @@ body.initial-view {
   padding-top: 0;
 }
 body.results-view {
-  padding-top: 5rem;
+  padding-top: 2rem;
 }
 
 /* Loader Styles */
@@ -46,6 +46,10 @@ body.results-view {
 body.initial-view .overall-score-container,
 body.initial-view .result-container {
   display: none !important; 
+}
+
+body.initial-view .justify-content-center {
+    padding-bottom: 100px;
 }
 
 /* When results view is active AND content is loaded/animated in */

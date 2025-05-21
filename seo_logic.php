@@ -190,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // --- Rate Limiting (1 request per minute per IP) ---
     $conn_rate_limit = get_db_connection();
-    if ($conn_rate_limit && $user_ip !== 'UNKNOWN') {
+    if ($conn_rate_limit && $user_ip !== 'UNKNOWN' && $user_ip !== '::1') {
         $current_time = time();
         $one_minute_ago = $current_time - 60;
 
@@ -206,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $last_request_timestamp = strtotime($row_ip['last_request_time']);
                 if ($last_request_timestamp > $one_minute_ago) {
                     // Too soon, store error and redirect
-                    $_SESSION['rate_limit_error'] = 'Too many requests. Please wait a minute before trying again.';
+                    $_SESSION['rate_limit_error'] = '1 request per minute allowed!';
                     $_SESSION['is_post_redirect_layout_active'] = false; // Ensure initial layout
                     $_SESSION['last_domain_for_view'] = trim($_POST['domain'] ?? '');
                     header('Location: /');
@@ -283,212 +283,220 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         core_accessibility_done_logic:;
 
-        if ($final_accessible_url) {
-            $parsed_final_url = parse_url($final_accessible_url);
-            if (isset($parsed_final_url['scheme']) && strtolower($parsed_final_url['scheme']) === 'https') {
-                $current_run_results['https']['score'] = 3;
-                $current_run_results['https']['details'] = 'Website is served over HTTPS.';
+        if (!$site_is_accessible) { // If site is NOT accessible
+            $_SESSION['site_not_accessible_error'] = 'The website "' . htmlspecialchars($domain_input) . '" could not be reached or returned an error. Last status: ' . $accessibility_check_details_internal;
+            $_SESSION['last_domain_for_view'] = $domain_input; // Keep domain in input
+            $_SESSION['is_post_redirect_layout_active'] = false; // Ensure initial view layout
+            
+            unset($_SESSION['seo_results_data']); // Clear any stale results
+            unset($_SESSION['overall_score_data']); // Clear any stale score
+            unset($_SESSION['rate_limit_error']); // Clear rate limit message as well
+
+            header('Location: /');
+            exit;
+        }
+
+        // If we reach here, site IS accessible ($site_is_accessible is true and $final_accessible_url is set).
+        // Proceed with further checks. The original logic that was inside the old "if ($final_accessible_url)"
+        // and not in its "else" branch will now run.
+        
+        // Example: HTTPS check was here, it's fine to proceed directly
+        $parsed_final_url = parse_url($final_accessible_url);
+        if (isset($parsed_final_url['scheme']) && strtolower($parsed_final_url['scheme']) === 'https') {
+            $current_run_results['https']['score'] = 3;
+            $current_run_results['https']['details'] = 'Website is served over HTTPS.';
+        } else {
+            $current_run_results['https']['score'] = 1;
+            $current_run_results['https']['details'] = 'Website is not served over HTTPS.';
+        }
+
+        $context_options_content = [
+            'http' => [
+                'method' => "GET", 'timeout' => 10, 'header' => "User-Agent: SEOIndicatorBot/1.0\r\nAccept: text/html\r\n"
+            ]
+        ];
+        $context_content = stream_context_create($context_options_content);
+        $page_content = @file_get_contents($final_accessible_url, false, $context_content);
+
+        if ($page_content !== false) {
+            $html_size_bytes = strlen($page_content);
+            $html_size_kb = round($html_size_bytes / 1024, 2);
+            if ($html_size_kb < 100) {
+                $current_run_results['html_size']['score'] = 3;
+            } elseif ($html_size_kb < 300) {
+                $current_run_results['html_size']['score'] = 2;
             } else {
-                $current_run_results['https']['score'] = 1;
-                $current_run_results['https']['details'] = 'Website is not served over HTTPS.';
+                $current_run_results['html_size']['score'] = 1;
+            }
+            $current_run_results['html_size']['details'] = $html_size_kb . ' KB (' . $html_size_bytes . ' bytes)';
+
+            libxml_use_internal_errors(true);
+            $doc = new DOMDocument();
+            @$doc->loadHTML($page_content);
+            libxml_clear_errors();
+            $xpath = new DOMXPath($doc);
+
+            // Title Tag
+            $title_nodes = $xpath->query('//title');
+            if ($title_nodes->length > 0) {
+                $title_content = trim($title_nodes->item(0)->nodeValue);
+                if (!empty($title_content)) {
+                    $current_run_results['title']['score'] = 3;
+                    $current_run_results['title']['details'] = htmlspecialchars($title_content);
+                } else {
+                    $current_run_results['title']['score'] = 2;
+                    $current_run_results['title']['details'] = 'Title tag exists but is empty.';
+                }
+            } else {
+                $current_run_results['title']['score'] = 1;
+                $current_run_results['title']['details'] = 'No title tag found.';
             }
 
-            $context_options_content = [
-                'http' => [
-                    'method' => "GET", 'timeout' => 10, 'header' => "User-Agent: SEOIndicatorBot/1.0\r\nAccept: text/html\r\n"
-                ]
-            ];
-            $context_content = stream_context_create($context_options_content);
-            $page_content = @file_get_contents($final_accessible_url, false, $context_content);
-
-            if ($page_content !== false) {
-                $html_size_bytes = strlen($page_content);
-                $html_size_kb = round($html_size_bytes / 1024, 2);
-                if ($html_size_kb < 100) {
-                    $current_run_results['html_size']['score'] = 3;
-                } elseif ($html_size_kb < 300) {
-                    $current_run_results['html_size']['score'] = 2;
+            // Meta Description
+            $meta_description_nodes = $xpath->query('//meta[@name="description"]');
+            if ($meta_description_nodes->length > 0) {
+                $meta_content = trim($meta_description_nodes->item(0)->getAttribute('content'));
+                if (!empty($meta_content)) {
+                    $current_run_results['meta_description']['score'] = 3;
+                    $current_run_results['meta_description']['details'] = htmlspecialchars($meta_content);
                 } else {
-                    $current_run_results['html_size']['score'] = 1;
+                    $current_run_results['meta_description']['score'] = 2;
+                    $current_run_results['meta_description']['details'] = 'Meta description tag exists but content is empty.';
                 }
-                $current_run_results['html_size']['details'] = $html_size_kb . ' KB (' . $html_size_bytes . ' bytes)';
-
-                libxml_use_internal_errors(true);
-                $doc = new DOMDocument();
-                @$doc->loadHTML($page_content);
-                libxml_clear_errors();
-                $xpath = new DOMXPath($doc);
-
-                // Title Tag
-                $title_nodes = $xpath->query('//title');
-                if ($title_nodes->length > 0) {
-                    $title_content = trim($title_nodes->item(0)->nodeValue);
-                    if (!empty($title_content)) {
-                        $current_run_results['title']['score'] = 3;
-                        $current_run_results['title']['details'] = htmlspecialchars($title_content);
-                    } else {
-                        $current_run_results['title']['score'] = 2;
-                        $current_run_results['title']['details'] = 'Title tag exists but is empty.';
-                    }
-                } else {
-                    $current_run_results['title']['score'] = 1;
-                    $current_run_results['title']['details'] = 'No title tag found.';
-                }
-
-                // Meta Description
-                $meta_description_nodes = $xpath->query('//meta[@name="description"]');
-                if ($meta_description_nodes->length > 0) {
-                    $meta_content = trim($meta_description_nodes->item(0)->getAttribute('content'));
-                    if (!empty($meta_content)) {
-                        $current_run_results['meta_description']['score'] = 3;
-                        $current_run_results['meta_description']['details'] = htmlspecialchars($meta_content);
-                    } else {
-                        $current_run_results['meta_description']['score'] = 2;
-                        $current_run_results['meta_description']['details'] = 'Meta description tag exists but content is empty.';
-                    }
-                } else {
-                    $current_run_results['meta_description']['score'] = 1;
-                    $current_run_results['meta_description']['details'] = 'No meta description tag found.';
-                }
-                
-                // H1 Heading Presence
-                $h1_nodes = $xpath->query('//h1');
-                if ($h1_nodes->length > 0) {
-                    $current_run_results['h1']['score'] = 3;
-                    $current_run_results['h1']['details'] = 'Found ' . $h1_nodes->length . ' H1 tag(s).';
-                } else {
-                    $current_run_results['h1']['score'] = 1;
-                    $current_run_results['h1']['details'] = 'No H1 tags found on the page.';
-                }
-
-                // Image Alt Attributes
-                $img_nodes = $xpath->query('//img');
-                $img_count = $img_nodes->length;
-                $img_missing_alt = 0;
-                if ($img_count > 0) {
-                    foreach ($img_nodes as $img_node) {
-                        if (!$img_node->hasAttribute('alt') || trim($img_node->getAttribute('alt')) === '') {
-                            $img_missing_alt++;
-                        }
-                    }
-                    if ($img_missing_alt === 0) {
-                        $current_run_results['image_alt']['score'] = 3;
-                        $current_run_results['image_alt']['details'] = 'All ' . $img_count . ' image(s) have non-empty alt attributes.';
-                    } else {
-                        $current_run_results['image_alt']['score'] = 2;
-                        $current_run_results['image_alt']['details'] = $img_missing_alt . ' out of ' . $img_count . ' image(s) are missing alt text or have empty alt attributes.';
-                    }
-                } else {
-                    $current_run_results['image_alt']['score'] = 1; 
-                    $current_run_results['image_alt']['details'] = 'No images found on the page.';
-                }
-
-                // Viewport Meta Tag
-                $viewport_nodes = $xpath->query('//meta[@name="viewport"]');
-                if ($viewport_nodes->length > 0) {
-                    $current_run_results['viewport']['score'] = 3;
-                    $current_run_results['viewport']['details'] = 'Viewport meta tag is present.';
-                } else {
-                    $current_run_results['viewport']['score'] = 1;
-                    $current_run_results['viewport']['details'] = 'Viewport meta tag is missing.';
-                }
-
-                // Language Declaration
-                $html_node = $xpath->query('/html')->item(0);
-                if ($html_node && $html_node->hasAttribute('lang') && trim($html_node->getAttribute('lang')) !== '') {
-                    $lang_value = htmlspecialchars($html_node->getAttribute('lang'));
-                    $current_run_results['lang']['score'] = 3;
-                    $current_run_results['lang']['details'] = 'HTML lang attribute found: ' . $lang_value;
-                } else {
-                    $current_run_results['lang']['score'] = 1;
-                    $current_run_results['lang']['details'] = 'HTML lang attribute is missing or empty.';
-                }
-
-                // Favicon Presence
-                $favicon_nodes = $xpath->query('//link[contains(@rel, "icon")]');
-                if ($favicon_nodes->length > 0) {
-                    $current_run_results['favicon']['score'] = 3;
-                    $current_run_results['favicon']['details'] = 'Favicon link tag found.';
-                } else {
-                    $current_run_results['favicon']['score'] = 1;
-                    $current_run_results['favicon']['details'] = 'No link tag with rel containing "icon" found.';
-                }
-
-                // Canonical Link Tag
-                $canonical_nodes = $xpath->query('//link[@rel="canonical"]');
-                if ($canonical_nodes->length > 0) {
-                    $href = $canonical_nodes->item(0)->getAttribute('href');
-                    $current_run_results['canonical']['score'] = 3;
-                    $current_run_results['canonical']['details'] = 'Canonical link found: ' . htmlspecialchars($href);
-                } else {
-                    $current_run_results['canonical']['score'] = 1;
-                    $current_run_results['canonical']['details'] = 'No canonical link tag found.';
-                }
-
-                // Open Graph Tags (Basic Check)
-                $og_nodes = $xpath->query('//meta[starts-with(@property, "og:")]');
-                if ($og_nodes->length > 0) {
-                    $current_run_results['opengraph']['score'] = 3;
-                    $current_run_results['opengraph']['details'] = 'Found ' . $og_nodes->length . ' Open Graph meta tag(s).';
-                } else {
-                    $current_run_results['opengraph']['score'] = 1;
-                    $current_run_results['opengraph']['details'] = 'No Open Graph (og:) meta tags found.';
-                }
-
-                // Inline Styles Check
-                $inline_style_nodes = $xpath->query('//*[@style]');
-                $style_tag_nodes = $xpath->query('//body//style');
-                $inline_count = $inline_style_nodes->length;
-                $style_tag_count = $style_tag_nodes->length;
-                if ($inline_count > 0 || $style_tag_count > 0) {
-                    $current_run_results['inline_css']['score'] = 2;
-                    $details_css = [];
-                    if ($inline_count > 0) $details_css[] = $inline_count . ' element(s) with style attribute';
-                    if ($style_tag_count > 0) $details_css[] = $style_tag_count . ' <style> tag(s) in body';
-                    $current_run_results['inline_css']['details'] = implode(', ', $details_css) . '. Consider moving styles to external CSS files.';
-                } else {
-                    $current_run_results['inline_css']['score'] = 3;
-                    $current_run_results['inline_css']['details'] = 'No inline styles or style tags found in body.';
-                }
-
-            } else { 
-                $content_error_msg = 'Could not fetch page content for detailed checks. (' . $accessibility_check_details_internal . ')';
-                $error_score = 1;
-                $checks_needing_content = ['title', 'meta_description', 'h1', 'image_alt', 'viewport', 'lang', 'favicon', 'canonical', 'opengraph', 'html_size', 'inline_css'];
-                foreach($checks_needing_content as $key) {
-                     $current_run_results[$key]['score'] = $error_score;
-                     $current_run_results[$key]['details'] = $content_error_msg;
-                }
+            } else {
+                $current_run_results['meta_description']['score'] = 1;
+                $current_run_results['meta_description']['details'] = 'No meta description tag found.';
+            }
+            
+            // H1 Heading Presence
+            $h1_nodes = $xpath->query('//h1');
+            if ($h1_nodes->length > 0) {
+                $current_run_results['h1']['score'] = 3;
+                $current_run_results['h1']['details'] = 'Found ' . $h1_nodes->length . ' H1 tag(s).';
+            } else {
+                $current_run_results['h1']['score'] = 1;
+                $current_run_results['h1']['details'] = 'No H1 tags found on the page.';
             }
 
-            $parsed_url_for_files = parse_url($final_accessible_url);
-            if (isset($parsed_url_for_files['scheme']) && isset($parsed_url_for_files['host'])) {
-                $base_url_for_files = $parsed_url_for_files['scheme'] . '://' . $parsed_url_for_files['host'];
-                $robots_url = $base_url_for_files . '/robots.txt';
-                $robots_check_result = check_resource_accessibility_helper($robots_url);
-                $current_run_results['robots']['score'] = $robots_check_result['score'];
-                $current_run_results['robots']['details'] = $robots_check_result['details'];
-
-                $sitemap_url = $base_url_for_files . '/sitemap.xml';
-                $sitemap_check_result = check_resource_accessibility_helper($sitemap_url);
-                $current_run_results['sitemap']['score'] = $sitemap_check_result['score'];
-                $current_run_results['sitemap']['details'] = $sitemap_check_result['details'];
+            // Image Alt Attributes
+            $img_nodes = $xpath->query('//img');
+            $img_count = $img_nodes->length;
+            $img_missing_alt = 0;
+            if ($img_count > 0) {
+                foreach ($img_nodes as $img_node) {
+                    if (!$img_node->hasAttribute('alt') || trim($img_node->getAttribute('alt')) === '') {
+                        $img_missing_alt++;
+                    }
+                }
+                if ($img_missing_alt === 0) {
+                    $current_run_results['image_alt']['score'] = 3;
+                    $current_run_results['image_alt']['details'] = 'All ' . $img_count . ' image(s) have non-empty alt attributes.';
+                } else {
+                    $current_run_results['image_alt']['score'] = 2;
+                    $current_run_results['image_alt']['details'] = $img_missing_alt . ' out of ' . $img_count . ' image(s) are missing alt text or have empty alt attributes.';
+                }
             } else {
-                $url_parse_error_msg = 'Could not parse URL to check for robots.txt/sitemap.xml.';
-                $error_score = 1;
-                $current_run_results['robots']['score'] = $error_score;
-                $current_run_results['robots']['details'] = $url_parse_error_msg;
-                $current_run_results['sitemap']['score'] = $error_score;
-                $current_run_results['sitemap']['details'] = $url_parse_error_msg;
+                $current_run_results['image_alt']['score'] = 1; 
+                $current_run_results['image_alt']['details'] = 'No images found on the page.';
+            }
+
+            // Viewport Meta Tag
+            $viewport_nodes = $xpath->query('//meta[@name="viewport"]');
+            if ($viewport_nodes->length > 0) {
+                $current_run_results['viewport']['score'] = 3;
+                $current_run_results['viewport']['details'] = 'Viewport meta tag is present.';
+            } else {
+                $current_run_results['viewport']['score'] = 1;
+                $current_run_results['viewport']['details'] = 'Viewport meta tag is missing.';
+            }
+
+            // Language Declaration
+            $html_node = $xpath->query('/html')->item(0);
+            if ($html_node && $html_node->hasAttribute('lang') && trim($html_node->getAttribute('lang')) !== '') {
+                $lang_value = htmlspecialchars($html_node->getAttribute('lang'));
+                $current_run_results['lang']['score'] = 3;
+                $current_run_results['lang']['details'] = 'HTML lang attribute found: ' . $lang_value;
+            } else {
+                $current_run_results['lang']['score'] = 1;
+                $current_run_results['lang']['details'] = 'HTML lang attribute is missing or empty.';
+            }
+
+            // Favicon Presence
+            $favicon_nodes = $xpath->query('//link[contains(@rel, "icon")]');
+            if ($favicon_nodes->length > 0) {
+                $current_run_results['favicon']['score'] = 3;
+                $current_run_results['favicon']['details'] = 'Favicon link tag found.';
+            } else {
+                $current_run_results['favicon']['score'] = 1;
+                $current_run_results['favicon']['details'] = 'No link tag with rel containing "icon" found.';
+            }
+
+            // Canonical Link Tag
+            $canonical_nodes = $xpath->query('//link[@rel="canonical"]');
+            if ($canonical_nodes->length > 0) {
+                $href = $canonical_nodes->item(0)->getAttribute('href');
+                $current_run_results['canonical']['score'] = 3;
+                $current_run_results['canonical']['details'] = 'Canonical link found: ' . htmlspecialchars($href);
+            } else {
+                $current_run_results['canonical']['score'] = 1;
+                $current_run_results['canonical']['details'] = 'No canonical link tag found.';
+            }
+
+            // Open Graph Tags (Basic Check)
+            $og_nodes = $xpath->query('//meta[starts-with(@property, "og:")]');
+            if ($og_nodes->length > 0) {
+                $current_run_results['opengraph']['score'] = 3;
+                $current_run_results['opengraph']['details'] = 'Found ' . $og_nodes->length . ' Open Graph meta tag(s).';
+            } else {
+                $current_run_results['opengraph']['score'] = 1;
+                $current_run_results['opengraph']['details'] = 'No Open Graph (og:) meta tags found.';
+            }
+
+            // Inline Styles Check
+            $inline_style_nodes = $xpath->query('//*[@style]');
+            $style_tag_nodes = $xpath->query('//body//style');
+            $inline_count = $inline_style_nodes->length;
+            $style_tag_count = $style_tag_nodes->length;
+            if ($inline_count > 0 || $style_tag_count > 0) {
+                $current_run_results['inline_css']['score'] = 2;
+                $details_css = [];
+                if ($inline_count > 0) $details_css[] = $inline_count . ' element(s) with style attribute';
+                if ($style_tag_count > 0) $details_css[] = $style_tag_count . ' <style> tag(s) in body';
+                $current_run_results['inline_css']['details'] = implode(', ', $details_css) . '. Consider moving styles to external CSS files.';
+            } else {
+                $current_run_results['inline_css']['score'] = 3;
+                $current_run_results['inline_css']['details'] = 'No inline styles or style tags found in body.';
             }
 
         } else { 
-            $details_not_accessible_msg = 'Website not accessible, cannot check further indicators. (' . $accessibility_check_details_internal . ')';
-            $cant_check_score = 1;
-            foreach(array_keys($current_run_results) as $key) {
-                 $current_run_results[$key]['score'] = $cant_check_score;
-                 $current_run_results[$key]['details'] = $details_not_accessible_msg;
+            $content_error_msg = 'Could not fetch page content for detailed checks. (' . $accessibility_check_details_internal . ')';
+            $error_score = 1;
+            $checks_needing_content = ['title', 'meta_description', 'h1', 'image_alt', 'viewport', 'lang', 'favicon', 'canonical', 'opengraph', 'html_size', 'inline_css'];
+            foreach($checks_needing_content as $key) {
+                 $current_run_results[$key]['score'] = $error_score;
+                 $current_run_results[$key]['details'] = $content_error_msg;
             }
+        }
+
+        $parsed_url_for_files = parse_url($final_accessible_url);
+        if (isset($parsed_url_for_files['scheme']) && isset($parsed_url_for_files['host'])) {
+            $base_url_for_files = $parsed_url_for_files['scheme'] . '://' . $parsed_url_for_files['host'];
+            $robots_url = $base_url_for_files . '/robots.txt';
+            $robots_check_result = check_resource_accessibility_helper($robots_url);
+            $current_run_results['robots']['score'] = $robots_check_result['score'];
+            $current_run_results['robots']['details'] = $robots_check_result['details'];
+
+            $sitemap_url = $base_url_for_files . '/sitemap.xml';
+            $sitemap_check_result = check_resource_accessibility_helper($sitemap_url);
+            $current_run_results['sitemap']['score'] = $sitemap_check_result['score'];
+            $current_run_results['sitemap']['details'] = $sitemap_check_result['details'];
+        } else {
+            $url_parse_error_msg = 'Could not parse URL to check for robots.txt/sitemap.xml.';
+            $error_score = 1;
+            $current_run_results['robots']['score'] = $error_score;
+            $current_run_results['robots']['details'] = $url_parse_error_msg;
+            $current_run_results['sitemap']['score'] = $error_score;
+            $current_run_results['sitemap']['details'] = $url_parse_error_msg;
         }
 
     } else { 
