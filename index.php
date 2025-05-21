@@ -25,6 +25,10 @@ $indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_key
 
 $overall_score_display_data = $_SESSION['overall_score_data'] ?? null;
 $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
+$rate_limit_error = $_SESSION['rate_limit_error'] ?? null;
+if ($rate_limit_error) {
+    unset($_SESSION['rate_limit_error']); // Clear it after reading
+}
 
 ?>
 <!doctype html>
@@ -104,6 +108,17 @@ $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
       .overall-score-container h2 { font-weight: 300; }
     </style>
   </head>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RWCSLW7EXF"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-RWCSLW7EXF');
+    </script>
+
   <body class="<?php echo $layout_class; ?>">
     
     <div id="loader-overlay">
@@ -117,6 +132,13 @@ $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
             <div class="col-lg-8 col-md-10 text-center"> 
                 <img src="Logo-SEOIndicator-com.png" alt="SEOIndicator.com Logo" style="max-width: 200px; margin-bottom: 20px;"> 
                 <h1 class="mb-4 main-title">Check your SEO indicators</h1>
+
+                <?php if ($rate_limit_error): ?>
+                <div class="alert alert-danger" role="alert">
+                    <?php echo htmlspecialchars($rate_limit_error); ?>
+                </div>
+                <?php endif; ?>
+
                 <form method="post" action="/" class="mb-4 seo-input-form" id="seo-form">
                     <div class="input-group input-group-lg mb-3">
                         <input type="text" class="form-control" name="domain" placeholder="Enter domain name (e.g., example.com)" aria-label="Domain name" required value="<?php echo htmlspecialchars($last_domain_value); ?>">

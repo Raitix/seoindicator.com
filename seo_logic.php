@@ -186,9 +186,60 @@ $default_indicator_keys_for_logic = [
 
 // --- FORM PROCESSING LOGIC (POST request) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $user_ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+
+    // --- Rate Limiting (1 request per minute per IP) ---
+    $conn_rate_limit = get_db_connection();
+    if ($conn_rate_limit && $user_ip !== 'UNKNOWN') {
+        $current_time = time();
+        $one_minute_ago = $current_time - 60;
+
+        // Check last request time for this IP
+        $stmt_check_ip = $conn_rate_limit->prepare("SELECT last_request_time FROM ip_requests_log WHERE ip_address = ?");
+        if ($stmt_check_ip) {
+            $stmt_check_ip->bind_param("s", $user_ip);
+            $stmt_check_ip->execute();
+            $result_check_ip = $stmt_check_ip->get_result();
+
+            if ($result_check_ip->num_rows > 0) {
+                $row_ip = $result_check_ip->fetch_assoc();
+                $last_request_timestamp = strtotime($row_ip['last_request_time']);
+                if ($last_request_timestamp > $one_minute_ago) {
+                    // Too soon, store error and redirect
+                    $_SESSION['rate_limit_error'] = 'Too many requests. Please wait a minute before trying again.';
+                    $_SESSION['is_post_redirect_layout_active'] = false; // Ensure initial layout
+                    $_SESSION['last_domain_for_view'] = trim($_POST['domain'] ?? '');
+                    header('Location: /');
+                    exit;
+                } else {
+                    // Update last request time
+                    $stmt_update_ip = $conn_rate_limit->prepare("UPDATE ip_requests_log SET last_request_time = CURRENT_TIMESTAMP WHERE ip_address = ?");
+                    if ($stmt_update_ip) {
+                        $stmt_update_ip->bind_param("s", $user_ip);
+                        $stmt_update_ip->execute();
+                        $stmt_update_ip->close();
+                    }
+                }
+            } else {
+                // First request from this IP, insert it
+                $stmt_insert_ip = $conn_rate_limit->prepare("INSERT INTO ip_requests_log (ip_address, last_request_time) VALUES (?, CURRENT_TIMESTAMP)");
+                if ($stmt_insert_ip) {
+                    $stmt_insert_ip->bind_param("s", $user_ip);
+                    $stmt_insert_ip->execute();
+                    $stmt_insert_ip->close();
+                }
+            }
+            $stmt_check_ip->close();
+        }
+        $conn_rate_limit->close();
+    } elseif ($user_ip === 'UNKNOWN') {
+        // Optionally handle cases where IP is unknown (e.g., block or allow based on policy)
+        // For now, we'll let it pass if IP is unknown, but this could be a security consideration.
+    }
+    // --- End Rate Limiting ---
+
     $domain_input = trim($_POST['domain'] ?? '');
     $normalized_domain_for_db = normalize_domain($domain_input);
-    $user_ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
     $final_accessible_url = null;
     $checked_domain_display = htmlspecialchars($domain_input);
 
@@ -542,6 +593,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
     $_SESSION['last_domain_for_view'] = $domain_input; 
     $_SESSION['is_post_redirect_layout_active'] = true;
+
+    // Make sure to clear any previous rate limit error if processing proceeds
+    unset($_SESSION['rate_limit_error']);
 
     header('Location: /');
     exit;
