@@ -1,0 +1,17 @@
+# Ignore database configuration file
+db_config.php
+
+# Ignore XAMPP specific files if any (optional, common practice)
+# .htrouter.php
+# .DS_Store
+#Thumbs.db
+
+# Ignore vendor folder for composer dependencies if you use composer later
+/vendor/
+
+# Log files
+*.log
+error_log
+
+# htaccess
+/.htaccess
