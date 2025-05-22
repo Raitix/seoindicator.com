@@ -1,6 +1,59 @@
 <?php
 // Include Database Configuration
 require_once 'db_config.php';
+require_once 'config.php'; // Include the new config file
+
+// Helper function to call OpenRouter API
+function call_openrouter_api($prompt_message) {
+    if (!defined('OPENROUTER_API_KEY') || OPENROUTER_API_KEY === '') {
+        return ['success' => false, 'message' => 'OpenRouter API Key is not configured.'];
+    }
+
+    $api_key = OPENROUTER_API_KEY;
+    $your_site_url = defined('SITE_URL_FOR_OPENROUTER') ? SITE_URL_FOR_OPENROUTER : 'http://localhost';
+    $your_site_name = defined('SITE_NAME_FOR_OPENROUTER') ? SITE_NAME_FOR_OPENROUTER : 'SEOIndicatorDev';
+
+    $ch = curl_init();
+
+    curl_setopt_array($ch, [
+        CURLOPT_URL => "https://openrouter.ai/api/v1/chat/completions",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            "Authorization: Bearer " . $api_key,
+            "Content-Type: application/json",
+            "HTTP-Referer: " . $your_site_url, // Optional: For OpenRouter leaderboard
+            "X-Title: " . $your_site_name      // Optional: For OpenRouter leaderboard
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            "model" => "deepseek/deepseek-chat-v3-0324:free",
+            "messages" => [
+                ["role" => "user", "content" => $prompt_message]
+            ]
+        ]),
+        CURLOPT_TIMEOUT => 30 // 30 seconds timeout
+    ]);
+
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($ch);
+    curl_close($ch);
+
+    if ($curl_error) {
+        return ['success' => false, 'message' => "cURL Error: " . $curl_error];
+    }
+
+    if ($http_code == 200) {
+        $response_data = json_decode($response, true);
+        if (isset($response_data['choices'][0]['message']['content'])) {
+            return ['success' => true, 'message' => 'OpenRouter API Success!', 'data' => $response_data['choices'][0]['message']['content']];
+        } else {
+            return ['success' => false, 'message' => 'OpenRouter API: Unexpected response structure.', 'raw_response' => $response];
+        }
+    } else {
+        return ['success' => false, 'message' => "OpenRouter API Error (HTTP {$http_code}): " . $response, 'raw_response' => $response];
+    }
+}
 
 // Helper function to get a database connection
 function get_db_connection() {
@@ -167,25 +220,30 @@ $indicator_weights = [
 // Default structure for indicators_results (used by POST logic for $current_run_results)
 // This ensures $current_run_results has all keys even if $indicators_results in index.php changes.
 $default_indicator_keys_for_logic = [
-    'title' => ['score' => null, 'details' => '-'],
-    'meta_description' => ['score' => null, 'details' => '-'],
-    'robots' => ['score' => null, 'details' => '-'],
-    'sitemap' => ['score' => null, 'details' => '-'],
-    'h1' => ['score' => null, 'details' => '-'],
-    'image_alt' => ['score' => null, 'details' => '-'],
-    'https' => ['score' => null, 'details' => '-'],
-    'viewport' => ['score' => null, 'details' => '-'],
-    'lang' => ['score' => null, 'details' => '-'],
-    'favicon' => ['score' => null, 'details' => '-'],
-    'canonical' => ['score' => null, 'details' => '-'],
-    'opengraph' => ['score' => null, 'details' => '-'],
-    'html_size' => ['score' => null, 'details' => '-'],
-    'inline_css' => ['score' => null, 'details' => '-'],
+    'title' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'meta_description' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'robots' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'sitemap' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'h1' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'image_alt' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'https' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'viewport' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'lang' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'favicon' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'canonical' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'opengraph' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'html_size' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'inline_css' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
 ];
 
 
 // --- FORM PROCESSING LOGIC (POST request) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $dev_mock_all_but_title = true; // Development flag for mocking
+
+    // Clear previous OpenRouter response from session
+    unset($_SESSION['openrouter_response']);
+
     $user_ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
 
     // --- Rate Limiting (1 request per minute per IP) ---
@@ -244,7 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $checked_domain_display = htmlspecialchars($domain_input);
 
     $current_run_results = array_map(function($item) {
-        return ['score' => null, 'details' => 'Processing...'];
+        return ['score' => null, 'details' => 'Processing...', 'suggestion' => '-'];
     }, $default_indicator_keys_for_logic);
 
     $site_is_accessible = false;
@@ -291,23 +349,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($_SESSION['seo_results_data']); // Clear any stale results
             unset($_SESSION['overall_score_data']); // Clear any stale score
             unset($_SESSION['rate_limit_error']); // Clear rate limit message as well
+            // No OpenRouter call if site is not accessible
 
             header('Location: /');
             exit;
         }
 
         // If we reach here, site IS accessible ($site_is_accessible is true and $final_accessible_url is set).
-        // Proceed with further checks. The original logic that was inside the old "if ($final_accessible_url)"
-        // and not in its "else" branch will now run.
+        // Proceed with further checks.
         
-        // Example: HTTPS check was here, it's fine to proceed directly
+        // ---- OpenRouter API Call Test ----
+        // Always call OpenRouter API regardless of $dev_mock_all_but_title status
+        $openrouter_result_for_general_test = call_openrouter_api("Hello from SEOIndicator.com! Is the API working? (Dev Mocking for other indicators might be: " . ($dev_mock_all_but_title ? 'ON' : 'OFF') . ")");
+        // This general test response is stored in session to be displayed as a general status update
+        $_SESSION['openrouter_response'] = $openrouter_result_for_general_test; 
+        // ---- End OpenRouter API Call Test ----
+
         $parsed_final_url = parse_url($final_accessible_url);
-        if (isset($parsed_final_url['scheme']) && strtolower($parsed_final_url['scheme']) === 'https') {
-            $current_run_results['https']['score'] = 3;
-            $current_run_results['https']['details'] = 'Website is served over HTTPS.';
+
+        // HTTPS Check
+        if ($dev_mock_all_but_title) {
+            $current_run_results['https'] = ['score' => 2, 'details' => 'HTTPS - Mocked', 'suggestion' => 'Mocked suggestion.'];
         } else {
-            $current_run_results['https']['score'] = 1;
-            $current_run_results['https']['details'] = 'Website is not served over HTTPS.';
+            if (isset($parsed_final_url['scheme']) && strtolower($parsed_final_url['scheme']) === 'https') {
+                $current_run_results['https']['score'] = 3;
+                $current_run_results['https']['details'] = 'Website is served over HTTPS.';
+                $current_run_results['https']['suggestion'] = 'Great! HTTPS is crucial for security and SEO.';
+            } else {
+                $current_run_results['https']['score'] = 1;
+                $current_run_results['https']['details'] = 'Website is not served over HTTPS.';
+                $current_run_results['https']['suggestion'] = 'Consider migrating to HTTPS for better security and SEO rankings.';
+            }
         }
 
         $context_options_content = [
@@ -318,17 +390,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $context_content = stream_context_create($context_options_content);
         $page_content = @file_get_contents($final_accessible_url, false, $context_content);
 
+        $title_content_for_ai = null; // Variable to store title for AI
+
         if ($page_content !== false) {
-            $html_size_bytes = strlen($page_content);
-            $html_size_kb = round($html_size_bytes / 1024, 2);
-            if ($html_size_kb < 100) {
-                $current_run_results['html_size']['score'] = 3;
-            } elseif ($html_size_kb < 300) {
-                $current_run_results['html_size']['score'] = 2;
+            // HTML Size
+            if ($dev_mock_all_but_title) {
+                $current_run_results['html_size'] = ['score' => 2, 'details' => 'HTML Size - Mocked (e.g. 150KB)', 'suggestion' => 'Mocked suggestion.'];
             } else {
-                $current_run_results['html_size']['score'] = 1;
+                $html_size_bytes = strlen($page_content);
+                $html_size_kb = round($html_size_bytes / 1024, 2);
+                if ($html_size_kb < 100) {
+                    $current_run_results['html_size']['score'] = 3;
+                } elseif ($html_size_kb < 300) {
+                    $current_run_results['html_size']['score'] = 2;
+                } else {
+                    $current_run_results['html_size']['score'] = 1;
+                }
+                $current_run_results['html_size']['details'] = $html_size_kb . ' KB (' . $html_size_bytes . ' bytes)';
+                if ($current_run_results['html_size']['score'] == 1) {
+                    $current_run_results['html_size']['suggestion'] = 'Page size is large. Aim for <100-150KB for faster loading.';
+                } elseif ($current_run_results['html_size']['score'] == 2) {
+                    $current_run_results['html_size']['suggestion'] = 'Page size is reasonable. Further optimization might be possible.';
+                } else {
+                    $current_run_results['html_size']['suggestion'] = 'Page size is excellent!';
+                }
             }
-            $current_run_results['html_size']['details'] = $html_size_kb . ' KB (' . $html_size_bytes . ' bytes)';
 
             libxml_use_internal_errors(true);
             $doc = new DOMDocument();
@@ -336,173 +422,286 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             libxml_clear_errors();
             $xpath = new DOMXPath($doc);
 
-            // Title Tag
+            // Title Tag (REAL CHECK - NOT MOCKED)
             $title_nodes = $xpath->query('//title');
             if ($title_nodes->length > 0) {
                 $title_content = trim($title_nodes->item(0)->nodeValue);
                 if (!empty($title_content)) {
                     $current_run_results['title']['score'] = 3;
                     $current_run_results['title']['details'] = htmlspecialchars($title_content);
+                    $title_content_for_ai = $title_content; // Store for AI
+                    // Suggestion will be filled by AI or default if AI fails
+                    $current_run_results['title']['suggestion'] = 'Awaiting AI suggestion...'; 
                 } else {
                     $current_run_results['title']['score'] = 2;
                     $current_run_results['title']['details'] = 'Title tag exists but is empty.';
+                    $current_run_results['title']['suggestion'] = 'Provide a descriptive title for better SEO and user understanding.';
                 }
             } else {
                 $current_run_results['title']['score'] = 1;
                 $current_run_results['title']['details'] = 'No title tag found.';
+                $current_run_results['title']['suggestion'] = 'Add a compelling title tag to your page.';
             }
 
             // Meta Description
-            $meta_description_nodes = $xpath->query('//meta[@name="description"]');
-            if ($meta_description_nodes->length > 0) {
-                $meta_content = trim($meta_description_nodes->item(0)->getAttribute('content'));
-                if (!empty($meta_content)) {
-                    $current_run_results['meta_description']['score'] = 3;
-                    $current_run_results['meta_description']['details'] = htmlspecialchars($meta_content);
-                } else {
-                    $current_run_results['meta_description']['score'] = 2;
-                    $current_run_results['meta_description']['details'] = 'Meta description tag exists but content is empty.';
-                }
+            if ($dev_mock_all_but_title) {
+                $current_run_results['meta_description'] = ['score' => 2, 'details' => 'Meta Description - Mocked', 'suggestion' => 'Mocked suggestion.'];
             } else {
-                $current_run_results['meta_description']['score'] = 1;
-                $current_run_results['meta_description']['details'] = 'No meta description tag found.';
+                $meta_description_nodes = $xpath->query('//meta[@name="description"]');
+                if ($meta_description_nodes->length > 0) {
+                    $meta_content = trim($meta_description_nodes->item(0)->getAttribute('content'));
+                    if (!empty($meta_content)) {
+                        $current_run_results['meta_description']['score'] = 3;
+                        $current_run_results['meta_description']['details'] = htmlspecialchars($meta_content);
+                        $current_run_results['meta_description']['suggestion'] = "Good meta description. Ensure it's compelling for users.";
+                    } else {
+                        $current_run_results['meta_description']['score'] = 2;
+                        $current_run_results['meta_description']['details'] = 'Meta description tag exists but content is empty.';
+                        $current_run_results['meta_description']['suggestion'] = 'Fill in your meta description to improve click-through rates from search results.';
+                    }
+                } else {
+                    $current_run_results['meta_description']['score'] = 1;
+                    $current_run_results['meta_description']['details'] = 'No meta description tag found.';
+                    $current_run_results['meta_description']['suggestion'] = 'Add a meta description to summarize the page content for search engines.';
+                }
             }
             
             // H1 Heading Presence
-            $h1_nodes = $xpath->query('//h1');
-            if ($h1_nodes->length > 0) {
-                $current_run_results['h1']['score'] = 3;
-                $current_run_results['h1']['details'] = 'Found ' . $h1_nodes->length . ' H1 tag(s).';
+            if ($dev_mock_all_but_title) {
+                $current_run_results['h1'] = ['score' => 2, 'details' => 'H1 Heading - Mocked', 'suggestion' => 'Mocked suggestion.'];
             } else {
-                $current_run_results['h1']['score'] = 1;
-                $current_run_results['h1']['details'] = 'No H1 tags found on the page.';
+                $h1_nodes = $xpath->query('//h1');
+                if ($h1_nodes->length > 0) {
+                    $current_run_results['h1']['score'] = 3;
+                    $current_run_results['h1']['details'] = 'Found ' . $h1_nodes->length . ' H1 tag(s).';
+                    $current_run_results['h1']['suggestion'] = ($h1_nodes->length == 1) ? 'Excellent, one H1 tag is ideal.' : 'Multiple H1 tags found. Typically, only one H1 per page is recommended.';
+                } else {
+                    $current_run_results['h1']['score'] = 1;
+                    $current_run_results['h1']['details'] = 'No H1 tags found on the page.';
+                    $current_run_results['h1']['suggestion'] = 'Add an H1 tag to define the main heading of your page.';
+                }
             }
 
             // Image Alt Attributes
-            $img_nodes = $xpath->query('//img');
-            $img_count = $img_nodes->length;
-            $img_missing_alt = 0;
-            if ($img_count > 0) {
-                foreach ($img_nodes as $img_node) {
-                    if (!$img_node->hasAttribute('alt') || trim($img_node->getAttribute('alt')) === '') {
-                        $img_missing_alt++;
-                    }
-                }
-                if ($img_missing_alt === 0) {
-                    $current_run_results['image_alt']['score'] = 3;
-                    $current_run_results['image_alt']['details'] = 'All ' . $img_count . ' image(s) have non-empty alt attributes.';
-                } else {
-                    $current_run_results['image_alt']['score'] = 2;
-                    $current_run_results['image_alt']['details'] = $img_missing_alt . ' out of ' . $img_count . ' image(s) are missing alt text or have empty alt attributes.';
-                }
+            if ($dev_mock_all_but_title) {
+                $current_run_results['image_alt'] = ['score' => 2, 'details' => 'Image Alt Attributes - Mocked', 'suggestion' => 'Mocked suggestion.'];
             } else {
-                $current_run_results['image_alt']['score'] = 1; 
-                $current_run_results['image_alt']['details'] = 'No images found on the page.';
+                $img_nodes = $xpath->query('//img');
+                $img_count = $img_nodes->length;
+                $img_missing_alt = 0;
+                if ($img_count > 0) {
+                    foreach ($img_nodes as $img_node) {
+                        if (!$img_node->hasAttribute('alt') || trim($img_node->getAttribute('alt')) === '') {
+                            $img_missing_alt++;
+                        }
+                    }
+                    if ($img_missing_alt === 0) {
+                        $current_run_results['image_alt']['score'] = 3;
+                        $current_run_results['image_alt']['details'] = 'All ' . $img_count . ' image(s) have non-empty alt attributes.';
+                        $current_run_results['image_alt']['suggestion'] = 'Great job with alt texts for accessibility and SEO.';
+                    } else {
+                        $current_run_results['image_alt']['score'] = 2;
+                        $current_run_results['image_alt']['details'] = $img_missing_alt . ' out of ' . $img_count . ' image(s) are missing alt text or have empty alt attributes.';
+                        $current_run_results['image_alt']['suggestion'] = 'Add descriptive alt text to all images for better accessibility and SEO.';
+                    }
+                } else {
+                    $current_run_results['image_alt']['score'] = 1; 
+                    $current_run_results['image_alt']['details'] = 'No images found on the page.';
+                    $current_run_results['image_alt']['suggestion'] = 'If you use images, ensure they have alt text.';
+                }
             }
 
             // Viewport Meta Tag
-            $viewport_nodes = $xpath->query('//meta[@name="viewport"]');
-            if ($viewport_nodes->length > 0) {
-                $current_run_results['viewport']['score'] = 3;
-                $current_run_results['viewport']['details'] = 'Viewport meta tag is present.';
+            if ($dev_mock_all_but_title) {
+                $current_run_results['viewport'] = ['score' => 2, 'details' => 'Viewport Meta Tag - Mocked', 'suggestion' => 'Mocked suggestion.'];
             } else {
-                $current_run_results['viewport']['score'] = 1;
-                $current_run_results['viewport']['details'] = 'Viewport meta tag is missing.';
+                $viewport_nodes = $xpath->query('//meta[@name="viewport"]');
+                if ($viewport_nodes->length > 0) {
+                    $current_run_results['viewport']['score'] = 3;
+                    $current_run_results['viewport']['details'] = 'Viewport meta tag is present.';
+                    $current_run_results['viewport']['suggestion'] = 'Good! Viewport tag helps with mobile responsiveness.';
+                } else {
+                    $current_run_results['viewport']['score'] = 1;
+                    $current_run_results['viewport']['details'] = 'Viewport meta tag is missing.';
+                    $current_run_results['viewport']['suggestion'] = 'Add a viewport meta tag for proper scaling on mobile devices.';
+                }
             }
 
             // Language Declaration
-            $html_node = $xpath->query('/html')->item(0);
-            if ($html_node && $html_node->hasAttribute('lang') && trim($html_node->getAttribute('lang')) !== '') {
-                $lang_value = htmlspecialchars($html_node->getAttribute('lang'));
-                $current_run_results['lang']['score'] = 3;
-                $current_run_results['lang']['details'] = 'HTML lang attribute found: ' . $lang_value;
+            if ($dev_mock_all_but_title) {
+                $current_run_results['lang'] = ['score' => 2, 'details' => 'Language Declaration - Mocked', 'suggestion' => 'Mocked suggestion.'];
             } else {
-                $current_run_results['lang']['score'] = 1;
-                $current_run_results['lang']['details'] = 'HTML lang attribute is missing or empty.';
+                $html_node = $xpath->query('/html')->item(0);
+                if ($html_node && $html_node->hasAttribute('lang') && trim($html_node->getAttribute('lang')) !== '') {
+                    $lang_value = htmlspecialchars($html_node->getAttribute('lang'));
+                    $current_run_results['lang']['score'] = 3;
+                    $current_run_results['lang']['details'] = 'HTML lang attribute found: ' . $lang_value;
+                    $current_run_results['lang']['suggestion'] = 'Correct language declaration helps accessibility and search engines.';
+                } else {
+                    $current_run_results['lang']['score'] = 1;
+                    $current_run_results['lang']['details'] = 'HTML lang attribute is missing or empty.';
+                    $current_run_results['lang']['suggestion'] = 'Declare the language of your HTML document using the lang attribute on the <html> tag.';
+                }
             }
 
             // Favicon Presence
-            $favicon_nodes = $xpath->query('//link[contains(@rel, "icon")]');
-            if ($favicon_nodes->length > 0) {
-                $current_run_results['favicon']['score'] = 3;
-                $current_run_results['favicon']['details'] = 'Favicon link tag found.';
+            if ($dev_mock_all_but_title) {
+                $current_run_results['favicon'] = ['score' => 2, 'details' => 'Favicon Presence - Mocked', 'suggestion' => 'Mocked suggestion.'];
             } else {
-                $current_run_results['favicon']['score'] = 1;
-                $current_run_results['favicon']['details'] = 'No link tag with rel containing "icon" found.';
+                $favicon_nodes = $xpath->query('//link[contains(@rel, "icon")]');
+                if ($favicon_nodes->length > 0) {
+                    $current_run_results['favicon']['score'] = 3;
+                    $current_run_results['favicon']['details'] = 'Favicon link tag found.';
+                    $current_run_results['favicon']['suggestion'] = 'Good, favicon improves brand recognition in browser tabs.';
+                } else {
+                    $current_run_results['favicon']['score'] = 1;
+                    $current_run_results['favicon']['details'] = 'No link tag with rel containing "icon" found.';
+                    $current_run_results['favicon']['suggestion'] = 'Add a favicon to your site.';
+                }
             }
 
             // Canonical Link Tag
-            $canonical_nodes = $xpath->query('//link[@rel="canonical"]');
-            if ($canonical_nodes->length > 0) {
-                $href = $canonical_nodes->item(0)->getAttribute('href');
-                $current_run_results['canonical']['score'] = 3;
-                $current_run_results['canonical']['details'] = 'Canonical link found: ' . htmlspecialchars($href);
+            if ($dev_mock_all_but_title) {
+                $current_run_results['canonical'] = ['score' => 2, 'details' => 'Canonical Link - Mocked', 'suggestion' => 'Mocked suggestion.'];
             } else {
-                $current_run_results['canonical']['score'] = 1;
-                $current_run_results['canonical']['details'] = 'No canonical link tag found.';
+                $canonical_nodes = $xpath->query('//link[@rel="canonical"]');
+                if ($canonical_nodes->length > 0) {
+                    $href = $canonical_nodes->item(0)->getAttribute('href');
+                    $current_run_results['canonical']['score'] = 3;
+                    $current_run_results['canonical']['details'] = 'Canonical link found: ' . htmlspecialchars($href);
+                    $current_run_results['canonical']['suggestion'] = 'Good use of canonical tag to prevent duplicate content issues.';
+                } else {
+                    $current_run_results['canonical']['score'] = 1;
+                    $current_run_results['canonical']['details'] = 'No canonical link tag found.';
+                    $current_run_results['canonical']['suggestion'] = 'Consider adding a canonical link tag if this page can be accessed via multiple URLs.';
+                }
             }
 
             // Open Graph Tags (Basic Check)
-            $og_nodes = $xpath->query('//meta[starts-with(@property, "og:")]');
-            if ($og_nodes->length > 0) {
-                $current_run_results['opengraph']['score'] = 3;
-                $current_run_results['opengraph']['details'] = 'Found ' . $og_nodes->length . ' Open Graph meta tag(s).';
+            if ($dev_mock_all_but_title) {
+                $current_run_results['opengraph'] = ['score' => 2, 'details' => 'Open Graph Tags - Mocked', 'suggestion' => 'Mocked suggestion.'];
             } else {
-                $current_run_results['opengraph']['score'] = 1;
-                $current_run_results['opengraph']['details'] = 'No Open Graph (og:) meta tags found.';
+                $og_nodes = $xpath->query('//meta[starts-with(@property, "og:")]');
+                if ($og_nodes->length > 0) {
+                    $current_run_results['opengraph']['score'] = 3;
+                    $current_run_results['opengraph']['details'] = 'Found ' . $og_nodes->length . ' Open Graph meta tag(s).';
+                    $current_run_results['opengraph']['suggestion'] = 'Open Graph tags enhance content sharing on social media.';
+                } else {
+                    $current_run_results['opengraph']['score'] = 1;
+                    $current_run_results['opengraph']['details'] = 'No Open Graph (og:) meta tags found.';
+                    $current_run_results['opengraph']['suggestion'] = 'Add Open Graph tags (og:title, og:description, og:image, etc.) for better social media sharing.';
+                }
             }
 
             // Inline Styles Check
-            $inline_style_nodes = $xpath->query('//*[@style]');
-            $style_tag_nodes = $xpath->query('//body//style');
-            $inline_count = $inline_style_nodes->length;
-            $style_tag_count = $style_tag_nodes->length;
-            if ($inline_count > 0 || $style_tag_count > 0) {
-                $current_run_results['inline_css']['score'] = 2;
-                $details_css = [];
-                if ($inline_count > 0) $details_css[] = $inline_count . ' element(s) with style attribute';
-                if ($style_tag_count > 0) $details_css[] = $style_tag_count . ' <style> tag(s) in body';
-                $current_run_results['inline_css']['details'] = implode(', ', $details_css) . '. Consider moving styles to external CSS files.';
+            if ($dev_mock_all_but_title) {
+                $current_run_results['inline_css'] = ['score' => 2, 'details' => 'Inline Styles - Mocked', 'suggestion' => 'Mocked suggestion.'];
             } else {
-                $current_run_results['inline_css']['score'] = 3;
-                $current_run_results['inline_css']['details'] = 'No inline styles or style tags found in body.';
+                $inline_style_nodes = $xpath->query('//*[@style]');
+                $style_tag_nodes = $xpath->query('//body//style');
+                $inline_count = $inline_style_nodes->length;
+                $style_tag_count = $style_tag_nodes->length;
+                if ($inline_count > 0 || $style_tag_count > 0) {
+                    $current_run_results['inline_css']['score'] = 2;
+                    $details_css = [];
+                    if ($inline_count > 0) $details_css[] = $inline_count . ' element(s) with style attribute';
+                    if ($style_tag_count > 0) $details_css[] = $style_tag_count . ' <style> tag(s) in body';
+                    $current_run_results['inline_css']['details'] = implode(', ', $details_css) . '.';
+                    $current_run_results['inline_css']['suggestion'] = 'Consider moving inline styles and <style> tags in body to external CSS files for better performance and maintainability.';
+                } else {
+                    $current_run_results['inline_css']['score'] = 3;
+                    $current_run_results['inline_css']['details'] = 'No inline styles or style tags found in body.';
+                    $current_run_results['inline_css']['suggestion'] = 'Excellent! No inline styles in body content.';
+                }
             }
 
         } else { 
             $content_error_msg = 'Could not fetch page content for detailed checks. (' . $accessibility_check_details_internal . ')';
             $error_score = 1;
-            $checks_needing_content = ['title', 'meta_description', 'h1', 'image_alt', 'viewport', 'lang', 'favicon', 'canonical', 'opengraph', 'html_size', 'inline_css'];
-            foreach($checks_needing_content as $key) {
-                 $current_run_results[$key]['score'] = $error_score;
-                 $current_run_results[$key]['details'] = $content_error_msg;
+            $error_suggestion = 'Unable to provide suggestion as content could not be fetched.';
+            
+            // Title still gets the error message because it's not mocked and depends on content
+            $current_run_results['title']['score'] = $error_score;
+            $current_run_results['title']['details'] = $content_error_msg;
+            $current_run_results['title']['suggestion'] = $error_suggestion;
+
+            // Other content-dependent checks
+            $checks_needing_content_mocked_on_fail = [
+                'meta_description', 'h1', 'image_alt', 'viewport', 'lang', 
+                'favicon', 'canonical', 'opengraph', 'html_size', 'inline_css'
+            ];
+
+            foreach($checks_needing_content_mocked_on_fail as $key) {
+                 if ($dev_mock_all_but_title) {
+                     $current_run_results[$key] = ['score' => 1, 'details' => ucfirst(str_replace('_', ' ', $key)) . ' - Mocked (content fetch failed)', 'suggestion' => 'Mocked suggestion (content fetch failed).'];
+                 } else {
+                     $current_run_results[$key]['score'] = $error_score;
+                     $current_run_results[$key]['details'] = $content_error_msg;
+                     $current_run_results[$key]['suggestion'] = $error_suggestion;
+                 }
             }
         }
+
+        // --- AI Suggestion for Title ---
+        if ($title_content_for_ai) {
+            $prompt = "Analyze the following website title for SEO and suggest improvements. Keep the suggestion concise (1-2 sentences). Title: \"{$title_content_for_ai}\"";
+            $title_ai_response = call_openrouter_api($prompt);
+            if ($title_ai_response['success'] && isset($title_ai_response['data'])) {
+                $current_run_results['title']['suggestion'] = trim($title_ai_response['data']);
+            } else {
+                $current_run_results['title']['suggestion'] = 'AI suggestion failed: ' . ($title_ai_response['message'] ?? 'Unknown error');
+            }
+        } elseif ($page_content !== false && isset($current_run_results['title']['score']) && $current_run_results['title']['score'] == 3 && $current_run_results['title']['suggestion'] === 'Awaiting AI suggestion...') {
+             // If title was found, but for some reason $title_content_for_ai was not set (should not happen if score is 3 and details are present)
+             // or if it was empty and the suggestion is still "Awaiting AI suggestion..."
+             if (isset($current_run_results['title']['details']) && $current_run_results['title']['details'] === 'Title tag exists but is empty.') {
+                // Suggestion already set for this specific case by the non-AI logic, so do nothing here.
+             } else {
+                // Generic fallback if AI was expected but didn't run for other reasons.
+                $current_run_results['title']['suggestion'] = 'Title found, but could not generate AI suggestion at this time.';
+             }
+        }
+        // --- End AI Suggestion for Title ---
+
 
         $parsed_url_for_files = parse_url($final_accessible_url);
         if (isset($parsed_url_for_files['scheme']) && isset($parsed_url_for_files['host'])) {
             $base_url_for_files = $parsed_url_for_files['scheme'] . '://' . $parsed_url_for_files['host'];
-            $robots_url = $base_url_for_files . '/robots.txt';
-            $robots_check_result = check_resource_accessibility_helper($robots_url);
-            $current_run_results['robots']['score'] = $robots_check_result['score'];
-            $current_run_results['robots']['details'] = $robots_check_result['details'];
+            
+            // Robots.txt
+            if ($dev_mock_all_but_title) {
+                $current_run_results['robots'] = ['score' => 2, 'details' => 'robots.txt - Mocked', 'suggestion' => 'Mocked suggestion.'];
+            } else {
+                $robots_url = $base_url_for_files . '/robots.txt';
+                $robots_check_result = check_resource_accessibility_helper($robots_url);
+                $current_run_results['robots']['score'] = $robots_check_result['score'];
+                $current_run_results['robots']['details'] = $robots_check_result['details'];
+                $current_run_results['robots']['suggestion'] = ($robots_check_result['score'] == 3) ? 'robots.txt is accessible.' : 'Check robots.txt accessibility and content.';
+            }
 
-            $sitemap_url = $base_url_for_files . '/sitemap.xml';
-            $sitemap_check_result = check_resource_accessibility_helper($sitemap_url);
-            $current_run_results['sitemap']['score'] = $sitemap_check_result['score'];
-            $current_run_results['sitemap']['details'] = $sitemap_check_result['details'];
+            // Sitemap.xml
+            if ($dev_mock_all_but_title) {
+                $current_run_results['sitemap'] = ['score' => 2, 'details' => 'sitemap.xml - Mocked', 'suggestion' => 'Mocked suggestion.'];
+            } else {
+                $sitemap_url = $base_url_for_files . '/sitemap.xml';
+                $sitemap_check_result = check_resource_accessibility_helper($sitemap_url);
+                $current_run_results['sitemap']['score'] = $sitemap_check_result['score'];
+                $current_run_results['sitemap']['details'] = $sitemap_check_result['details'];
+                $current_run_results['sitemap']['suggestion'] = ($sitemap_check_result['score'] == 3) ? 'sitemap.xml is accessible.' : 'Ensure sitemap.xml is accessible and correctly formatted.';
+            }
         } else {
             $url_parse_error_msg = 'Could not parse URL to check for robots.txt/sitemap.xml.';
             $error_score = 1;
-            $current_run_results['robots']['score'] = $error_score;
-            $current_run_results['robots']['details'] = $url_parse_error_msg;
-            $current_run_results['sitemap']['score'] = $error_score;
-            $current_run_results['sitemap']['details'] = $url_parse_error_msg;
+            $error_suggestion_file = 'Unable to provide suggestion as base URL could not be determined.';
+            $current_run_results['robots'] = ['score' => $error_score, 'details' => $url_parse_error_msg, 'suggestion' => $error_suggestion_file];
+            $current_run_results['sitemap'] = ['score' => $error_score, 'details' => $url_parse_error_msg, 'suggestion' => $error_suggestion_file];
         }
 
     } else { 
         foreach (array_keys($current_run_results) as $key) {
             $current_run_results[$key]['score'] = null;
             $current_run_results[$key]['details'] = 'Please enter a domain name.';
+            $current_run_results[$key]['suggestion'] = '-'; // Add default suggestion for empty domain
         }
     }
 
@@ -513,16 +712,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $total_possible_stars_numeric = 0; // Sum of max possible stars (3 per indicator)
 
     if ($site_is_accessible) {
-        foreach ($current_run_results as $key => $result) {
-            if (isset($indicator_weights[$key]) && is_numeric($result['score'])) {
+        foreach ($current_run_results as $key => $result_item) { // Renamed $result to $result_item to avoid conflict
+            if (isset($indicator_weights[$key]) && is_numeric($result_item['score'])) {
                 $weight = $indicator_weights[$key];
-                $score_val = (int)$result['score']; // Ensure it's an int
+                $score_val = (int)$result_item['score']; 
                 
                 $total_weighted_score += ($score_val * $weight);
                 $total_weight += $weight;
 
                 $total_achieved_stars_numeric += $score_val;
-                $total_possible_stars_numeric += 3; // Each scored indicator has a max of 3 stars
+                $total_possible_stars_numeric += 3; 
             }
         }
         if ($total_weight > 0) {
@@ -558,11 +757,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt_select) {
                 $stmt_select->bind_param("s", $normalized_domain_for_db);
                 $stmt_select->execute();
-                $result_select = $stmt_select->get_result();
+                $result_select_data = $stmt_select->get_result();
                 
-                if ($result_select->num_rows > 0) {
+                if ($result_select_data->num_rows > 0) {
                     // Domain exists, UPDATE it
-                    $row = $result_select->fetch_assoc();
+                    $row = $result_select_data->fetch_assoc();
                     $existing_id = $row['id'];
                     $stmt_update = $conn->prepare("UPDATE data SET ip = ?, score_has = ?, score_max = ?, dt_updated = CURRENT_TIMESTAMP WHERE id = ?");
                     if ($stmt_update) {

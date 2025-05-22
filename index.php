@@ -21,7 +21,7 @@ $overall_score_to_display = $_SESSION['overall_score_data'] ?? null;
 // where $default_indicator_keys_for_logic would come from seo_logic.php or be defined minimally here)
 // For now, relying on the session load which itself relies on $default_indicator_keys_for_logic from seo_logic.php for initial POST run.
 // Let's ensure a default empty state for the view if session is not set from a POST yet.
-$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'image_alt'=>'', 'https'=>'', 'viewport'=>'', 'lang'=>'', 'favicon'=>'', 'canonical'=>'', 'opengraph'=>'', 'html_size'=>'', 'inline_css'=>'']), ['score' => null, 'details' => '-']);
+$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'image_alt'=>'', 'https'=>'', 'viewport'=>'', 'lang'=>'', 'favicon'=>'', 'canonical'=>'', 'opengraph'=>'', 'html_size'=>'', 'inline_css'=>'']), ['score' => null, 'details' => '-', 'suggestion' => '-']);
 
 $overall_score_display_data = $_SESSION['overall_score_data'] ?? null;
 $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
@@ -32,6 +32,10 @@ if ($rate_limit_error) {
 $site_not_accessible_error = $_SESSION['site_not_accessible_error'] ?? null;
 if ($site_not_accessible_error) {
     unset($_SESSION['site_not_accessible_error']); // Clear it after reading
+}
+$openrouter_response_data = $_SESSION['openrouter_response'] ?? null;
+if ($openrouter_response_data) {
+    unset($_SESSION['openrouter_response']); // Clear after reading
 }
 
 ?>
@@ -149,6 +153,17 @@ if ($site_not_accessible_error) {
                 </div>
                 <?php endif; ?>
 
+                <?php if ($openrouter_response_data): ?>
+                    <div class="alert <?php echo $openrouter_response_data['success'] ? 'alert-info' : 'alert-danger'; ?> mt-3" role="alert">
+                        <strong>OpenRouter API Status:</strong> <?php echo htmlspecialchars($openrouter_response_data['message']); ?>
+                        <?php if (isset($openrouter_response_data['data'])): ?>
+                            <br><strong>Response:</strong> <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo htmlspecialchars($openrouter_response_data['data']); ?></pre>
+                        <?php elseif (isset($openrouter_response_data['raw_response'])): ?>
+                            <br><strong>Raw Error Response:</strong> <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo htmlspecialchars($openrouter_response_data['raw_response']); ?></pre>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
                 <form method="post" action="/" class="mb-4 seo-input-form" id="seo-form">
                     <div class="input-group input-group-lg mb-3">
                         <input type="text" class="form-control" name="domain" placeholder="Enter domain name (e.g., example.com)" aria-label="Domain name" required value="<?php echo htmlspecialchars($last_domain_value); ?>">
@@ -185,8 +200,9 @@ if ($site_not_accessible_error) {
                             <tr>
                                 <th scope="col" style="width: 5%;">Nr.</th> 
                                 <th scope="col" style="width: 25%;">Indicator</th>
-                                <th scope="col" style="width: 20%;">Score</th> 
-                                <th scope="col">Details</th>
+                                <th scope="col" style="width: 15%;">Score</th> 
+                                <th scope="col" style="width: 27%;">Result</th>
+                                <th scope="col" style="width: 28%;">Suggestion</th>
                             </tr>
                         </thead>
                         <tbody class="table-group-divider">
@@ -196,8 +212,9 @@ if ($site_not_accessible_error) {
                                 <tr class="<?php echo get_score_row_class($result['score']); ?>">
                                     <td><?php echo $row_nr++; ?></td> 
                                     <td><?php echo ucwords(str_replace('_', ' ', $key)); ?></td>
-                                    <td><?php echo render_stars($result['score']); // Individual indicators still use 1-3 stars without text ?></td>
-                                    <td><?php echo ($key === 'title' || $key === 'meta_description') ? $result['details'] : htmlspecialchars($result['details']); ?></td>
+                                    <td><?php echo render_stars($result['score']); ?></td>
+                                    <td><?php echo ($key === 'title' || $key === 'meta_description') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
+                                    <td class="suggestion-cell"><?php echo isset($result['suggestion']) ? htmlspecialchars($result['suggestion']) : '-'; ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
