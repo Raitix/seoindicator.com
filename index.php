@@ -40,7 +40,7 @@ if ($openrouter_response_data) {
 
 ?>
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -139,7 +139,7 @@ if ($openrouter_response_data) {
         <div class="row justify-content-center <?php if ($layout_class === 'initial-view') echo 'w-100'; ?>">
             <div class="col-lg-8 col-md-10 text-center"> 
                 <img src="Logo-SEOIndicator-com.png" alt="SEOIndicator.com Logo" style="max-width: 200px; margin-bottom: 20px;"> 
-                <h1 class="mb-4 main-title">Check your SEO indicators</h1>
+                <h1 class="mb-4 main-title">AI Powered SEO Analysis</h1>
 
                 <?php if ($rate_limit_error): ?>
                 <div class="alert alert-danger" role="alert">
@@ -155,12 +155,20 @@ if ($openrouter_response_data) {
 
                 <?php if ($openrouter_response_data): ?>
                     <div class="alert <?php echo $openrouter_response_data['success'] ? 'alert-info' : 'alert-danger'; ?> mt-3" role="alert">
-                        <strong>OpenRouter API Status:</strong> <?php echo htmlspecialchars($openrouter_response_data['message']); ?>
-                        <?php if (isset($openrouter_response_data['data'])): ?>
-                            <br><strong>Response:</strong> <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo htmlspecialchars($openrouter_response_data['data']); ?></pre>
-                        <?php elseif (isset($openrouter_response_data['raw_response'])): ?>
-                            <br><strong>Raw Error Response:</strong> <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo htmlspecialchars($openrouter_response_data['raw_response']); ?></pre>
+                        <p><strong>OpenRouter API Status:</strong> <?php echo htmlspecialchars($openrouter_response_data['message']); ?></p>
+                        <?php if (isset($openrouter_response_data['raw_request'])): ?>
+                            <p><strong>Raw Request:</strong></p>
+                            <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($openrouter_response_data['raw_request']); ?></pre>
                         <?php endif; ?>
+                        <?php if (isset($openrouter_response_data['raw_response'])): ?>
+                            <p><strong>Raw Response:</strong></p>
+                            <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($openrouter_response_data['raw_response']); ?></pre>
+                        <?php endif; ?>
+                        <?php /* Keep data field for title suggestion if needed, but primary display is raw now
+                        <?php if (isset($openrouter_response_data['data'])): ?>
+                            <br><strong>Parsed Data:</strong> <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo htmlspecialchars($openrouter_response_data['data']); ?></pre>
+                        <?php endif; ?>
+                        */ ?>
                     </div>
                 <?php endif; ?>
 
@@ -195,8 +203,8 @@ if ($openrouter_response_data) {
                 
                 <div class="table-responsive result-container">
                     <?php if ($layout_class === 'results-view'): ?>
-                    <table class="table table-bordered">
-                        <thead class="table-light">
+                    <table class="table table-bordered table-dark">
+                        <thead>
                             <tr>
                                 <th scope="col" style="width: 5%;">Nr.</th> 
                                 <th scope="col" style="width: 25%;">Indicator</th>

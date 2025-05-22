@@ -6,12 +6,20 @@ require_once 'config.php'; // Include the new config file
 // Helper function to call OpenRouter API
 function call_openrouter_api($prompt_message) {
     if (!defined('OPENROUTER_API_KEY') || OPENROUTER_API_KEY === '') {
-        return ['success' => false, 'message' => 'OpenRouter API Key is not configured.'];
+        return ['success' => false, 'message' => 'OpenRouter API Key is not configured.', 'raw_request' => null, 'raw_response' => null];
     }
 
     $api_key = OPENROUTER_API_KEY;
     $your_site_url = defined('SITE_URL_FOR_OPENROUTER') ? SITE_URL_FOR_OPENROUTER : 'http://localhost';
     $your_site_name = defined('SITE_NAME_FOR_OPENROUTER') ? SITE_NAME_FOR_OPENROUTER : 'SEOIndicatorDev';
+
+    $request_payload_array = [
+        "model" => "deepseek/deepseek-chat-v3-0324:free",
+        "messages" => [
+            ["role" => "user", "content" => $prompt_message]
+        ]
+    ];
+    $request_payload_json = json_encode($request_payload_array);
 
     $ch = curl_init();
 
@@ -22,36 +30,33 @@ function call_openrouter_api($prompt_message) {
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $api_key,
             "Content-Type: application/json",
-            "HTTP-Referer: " . $your_site_url, // Optional: For OpenRouter leaderboard
-            "X-Title: " . $your_site_name      // Optional: For OpenRouter leaderboard
+            "HTTP-Referer: " . $your_site_url, 
+            "X-Title: " . $your_site_name      
         ],
-        CURLOPT_POSTFIELDS => json_encode([
-            "model" => "deepseek/deepseek-chat-v3-0324:free",
-            "messages" => [
-                ["role" => "user", "content" => $prompt_message]
-            ]
-        ]),
-        CURLOPT_TIMEOUT => 30 // 30 seconds timeout
+        CURLOPT_POSTFIELDS => $request_payload_json,
+        CURLOPT_TIMEOUT => 30 
     ]);
 
-    $response = curl_exec($ch);
+    $raw_response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curl_error = curl_error($ch);
     curl_close($ch);
 
+    $trimmed_raw_response = trim($raw_response); // Trim the raw response
+
     if ($curl_error) {
-        return ['success' => false, 'message' => "cURL Error: " . $curl_error];
+        return ['success' => false, 'message' => "cURL Error: " . $curl_error, 'raw_request' => $request_payload_json, 'raw_response' => $trimmed_raw_response];
     }
 
     if ($http_code == 200) {
-        $response_data = json_decode($response, true);
+        $response_data = json_decode($trimmed_raw_response, true);
         if (isset($response_data['choices'][0]['message']['content'])) {
-            return ['success' => true, 'message' => 'OpenRouter API Success!', 'data' => $response_data['choices'][0]['message']['content']];
+            return ['success' => true, 'message' => 'OpenRouter API Success!', 'data' => $response_data['choices'][0]['message']['content'], 'raw_request' => $request_payload_json, 'raw_response' => $trimmed_raw_response];
         } else {
-            return ['success' => false, 'message' => 'OpenRouter API: Unexpected response structure.', 'raw_response' => $response];
+            return ['success' => false, 'message' => 'OpenRouter API: Unexpected response structure.', 'raw_request' => $request_payload_json, 'raw_response' => $trimmed_raw_response];
         }
     } else {
-        return ['success' => false, 'message' => "OpenRouter API Error (HTTP {$http_code}): " . $response, 'raw_response' => $response];
+        return ['success' => false, 'message' => "OpenRouter API Error (HTTP {$http_code})", 'raw_request' => $request_payload_json, 'raw_response' => $trimmed_raw_response];
     }
 }
 
@@ -349,7 +354,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($_SESSION['seo_results_data']); // Clear any stale results
             unset($_SESSION['overall_score_data']); // Clear any stale score
             unset($_SESSION['rate_limit_error']); // Clear rate limit message as well
-            // No OpenRouter call if site is not accessible
+            unset($_SESSION['openrouter_response']); // Clear any stale OpenRouter response
 
             header('Location: /');
             exit;
@@ -358,12 +363,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // If we reach here, site IS accessible ($site_is_accessible is true and $final_accessible_url is set).
         // Proceed with further checks.
         
-        // ---- OpenRouter API Call Test ----
-        // Always call OpenRouter API regardless of $dev_mock_all_but_title status
-        $openrouter_result_for_general_test = call_openrouter_api("Hello from SEOIndicator.com! Is the API working? (Dev Mocking for other indicators might be: " . ($dev_mock_all_but_title ? 'ON' : 'OFF') . ")");
-        // This general test response is stored in session to be displayed as a general status update
-        $_SESSION['openrouter_response'] = $openrouter_result_for_general_test; 
-        // ---- End OpenRouter API Call Test ----
+        // General OpenRouter API Call Test is REMOVED.
+        // $_SESSION['openrouter_response'] will now be populated by the title-specific call below.
 
         $parsed_final_url = parse_url($final_accessible_url);
 
@@ -645,11 +646,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // --- AI Suggestion for Title ---
         if ($title_content_for_ai) {
             $prompt = "Analyze the following website title for SEO and suggest improvements. Keep the suggestion concise (1-2 sentences). Title: \"{$title_content_for_ai}\"";
-            $title_ai_response = call_openrouter_api($prompt);
-            if ($title_ai_response['success'] && isset($title_ai_response['data'])) {
-                $current_run_results['title']['suggestion'] = trim($title_ai_response['data']);
+            $title_ai_response_full = call_openrouter_api($prompt); // Get the full response
+            
+            // Store the raw request and response from THIS call for display
+            $_SESSION['openrouter_response'] = [
+                'success' => $title_ai_response_full['success'], // Reflect success of this specific call
+                'message' => $title_ai_response_full['message'], // Message of this specific call
+                'raw_request' => $title_ai_response_full['raw_request'] ?? null,
+                'raw_response' => $title_ai_response_full['raw_response'] ?? null,
+                // 'data' could also be stored if needed elsewhere, but raw is primary for the info alert
+            ];
+
+            if ($title_ai_response_full['success'] && isset($title_ai_response_full['data'])) {
+                $current_run_results['title']['suggestion'] = trim($title_ai_response_full['data']);
             } else {
-                $current_run_results['title']['suggestion'] = 'AI suggestion failed: ' . ($title_ai_response['message'] ?? 'Unknown error');
+                $current_run_results['title']['suggestion'] = 'AI suggestion failed: ' . ($title_ai_response_full['message'] ?? 'Unknown error');
             }
         } elseif ($page_content !== false && isset($current_run_results['title']['score']) && $current_run_results['title']['score'] == 3 && $current_run_results['title']['suggestion'] === 'Awaiting AI suggestion...') {
              // If title was found, but for some reason $title_content_for_ai was not set (should not happen if score is 3 and details are present)

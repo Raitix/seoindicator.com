@@ -1,6 +1,25 @@
-body {
-  transition: padding-top 0.3s ease-in-out;
+/* style.css - Dark Mode Theme for SEOIndicator.com */
+
+:root {
+    --bs-body-bg: #1a1a1a; /* Darker background */
+    --bs-body-color: #e0e0e0; /* Lighter text for readability */
+    --bs-emphasis-color: #ffffff;
+    --bs-secondary-color: #adb5bd;
+    --bs-secondary-bg: #2c2c2c;
+    --bs-tertiary-color: #999;
+    --bs-tertiary-bg: #232323;
+    --bs-primary-rgb: 13, 110, 253; /* Bootstrap primary blue */
+    --bs-link-color: #4dabf7; /* Brighter blue for links */
+    --bs-link-hover-color: #74c0fc;
+    --bs-border-color: #444; /* Darker borders */
 }
+
+body {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    transition: padding-top 0.3s ease-in-out;
+}
+
 body.initial-view {
   padding-top: 0;
 }
@@ -15,7 +34,7 @@ body.results-view {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(26, 26, 26, 0.85); /* Darker overlay */
   display: flex; /* Use flexbox for centering */
   justify-content: center;
   align-items: center;
@@ -74,7 +93,20 @@ td:nth-child(3) { word-break: break-word; max-width: 400px; } /* Adjusted for Nr
 
 /* Make the input border color */
 .form-control {
-  border-color: rgb(55 71 93 / 30%) !important; /* Added !important to ensure override if needed */
+  background-color: #2c2c2c;
+  color: var(--bs-body-color);
+  border: 1px solid #444;
+}
+
+.form-control:focus {
+  background-color: #303030;
+  color: var(--bs-body-color);
+  border-color: var(--bs-link-color);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.form-control::placeholder {
+  color: #777;
 }
 
 /* 2) Make the input form 50% smaller in width */
@@ -90,7 +122,7 @@ td:nth-child(3) { word-break: break-word; max-width: 400px; } /* Adjusted for Nr
 }
 .result-container .table-bordered th,
 .result-container .table-bordered td {
-  border-color: #b7c7d7 !important; /* Ensure override for all cell borders */
+  border-color: #242424 !important; /* Ensure override for all cell borders */
 }
 
 /* 4) Make the submit button color "#37475d" and a bit darker on hover */
@@ -105,27 +137,125 @@ td:nth-child(3) { word-break: break-word; max-width: 400px; } /* Adjusted for Nr
 
 /* 5) Make the title color "#054f9f" */
 .main-title {
-  color: #37475d;
+  color: #9db8e0; /* Lighter color for main title */
 }
 
 /* 6) Gradient backgrounds for table rows and header */
 .result-container .table thead.table-light tr th {
-  background-color: #f8f9fa; /* Fallback */
-  background-image: linear-gradient(to bottom, #f8f9fa, #e9ecef);
-  color: #495057;
+  background-color: #303030; /* Darker header for the table */
+  color: #f0f0f0;
 }
 
 .result-container .table tbody tr.table-success td {
-  background-color: #d1e7dd; /* Fallback */
-  background-image: linear-gradient(to bottom, #d1e7dd, #badbcc);
+  background-color: #1A3A1A; /* Dark green */
+  background-image: linear-gradient(to bottom, #173317, #303030);
 }
 
 .result-container .table tbody tr.table-warning td {
-  background-color: #fff3cd; /* Fallback */
-  background-image: linear-gradient(to bottom, #fff3cd, #ffeeba);
+  background-color: #4D3800; /* Dark yellow/orange */
+  background-image: linear-gradient(to bottom, #453100, #303030);
 }
 
 .result-container .table tbody tr.table-danger td {
-  background-color: #f8d7da; /* Fallback */
-  background-image: linear-gradient(to bottom, #f8d7da, #f1c6c9);
+  background-color: #4A1A1A; /* Dark red */
+  background-image: linear-gradient(to bottom, #411717, #303030);
+}
+
+/* Override Bootstrap default dark theme table colors for more specific styling if needed */
+.table {
+    --bs-table-bg: #222222;
+    --bs-table-striped-bg: #2a2a2a;
+    --bs-table-active-bg: #323232;
+    --bs-table-hover-bg: #2e2e2e;
+    --bs-table-border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid var(--bs-border-color);
+}
+
+.table-light th {
+    background-color: #303030; /* Darker header for the table */
+    color: #f0f0f0;
+}
+
+/* Custom row colors for dark mode */
+.table-success {
+    --bs-table-bg: #1A3A1A; /* Dark green */
+    --bs-table-color: #C8E6C9;
+    --bs-table-striped-bg: #173317;
+    --bs-table-hover-bg: #142B14;
+}
+
+.table-warning {
+    --bs-table-bg: #4D3800; /* Dark yellow/orange */
+    --bs-table-color: #FFECB3;
+    --bs-table-striped-bg: #453100;
+    --bs-table-hover-bg: #3E2B00;
+}
+
+.table-danger {
+    --bs-table-bg: #4A1A1A; /* Dark red */
+    --bs-table-color: #FFCDD2;
+    --bs-table-striped-bg: #411717;
+    --bs-table-hover-bg: #3B1414;
+}
+
+.btn-primary {
+    --bs-btn-bg: #0d6efd; 
+    --bs-btn-border-color: #0d6efd;
+    --bs-btn-hover-bg: #0b5ed7;
+    --bs-btn-hover-border-color: #0a58ca;
+    --bs-btn-active-bg: #0a58ca;
+    --bs-btn-active-border-color: #0a53be;
+    --bs-btn-disabled-bg: #0d6efd;
+    --bs-btn-disabled-border-color: #0d6efd;
+}
+
+.input-group-text {
+    background-color: #303030;
+    border: 1px solid #444;
+    color: var(--bs-body-color);
+}
+
+/* Alert styles for dark mode */
+.alert {
+    border-width: 1px;
+}
+
+.alert-info {
+    background-color: #0D2C40; /* Darker info blue */
+    color: #BDE0FE;
+    border-color: #1A5873;
+}
+
+.alert-danger {
+    background-color: #4A1A1A;
+    color: #FFCDD2;
+    border-color: #731A1A;
+}
+
+.alert-warning {
+    background-color: #4D3800;
+    color: #FFECB3;
+    border-color: #735100;
+}
+
+/* Styles for preformatted text in alerts (raw request/response) */
+pre {
+    white-space: pre-wrap; 
+    word-break: break-all; 
+    background-color: #232323; /* Dark background for pre */
+    border: 1px solid #444; 
+    padding: 10px; 
+    border-radius: 4px;
+    color: #d0d0d0; /* Light text for pre content */
+}
+
+/* Ensure suggestion cell text is readable */
+.suggestion-cell {
+    word-break: break-word; /* Existing style */
+    /* color: var(--bs-body-color); Implicitly inherited, adjust if needed */
 } 
