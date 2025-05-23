@@ -48,72 +48,7 @@ if ($openrouter_response_data) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css"> 
     <style>
-      body {
-        transition: padding-top 0.3s ease-in-out;
-      }
-      body.initial-view {
-        padding-top: 0;
-      }
-      body.results-view {
-        padding-top: 5rem;
-      }
-
-      /* Loader Styles */
-      #loader-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(255, 255, 255, 0.8);
-        display: flex; /* Use flexbox for centering */
-        justify-content: center;
-        align-items: center;
-        z-index: 1050; /* Ensure it's above other content */
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s;
-      }
-      #loader-overlay.visible {
-        opacity: 1;
-        visibility: visible;
-        transition-delay: 0s;
-      }
-      .spinner-border {
-         width: 3rem;
-         height: 3rem;
-      }
-
-      /* Results Container Animation */
-      .overall-score-container, 
-      .result-container {
-        opacity: 0;
-        transform: translateY(20px);
-        transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-      }
-
-      body.initial-view .overall-score-container,
-      body.initial-view .result-container {
-        display: none !important; 
-      }
-
-      /* When results view is active AND content is loaded/animated in */
-      body.results-view.content-loaded .overall-score-container,
-      body.results-view.content-loaded .result-container {
-        opacity: 1;
-        transform: translateY(0);
-        display: block; /* Ensure it takes space for animation */
-      }
-      /* To initially hide them in results-view before JS adds content-loaded */
-      body.results-view .overall-score-container,
-      body.results-view .result-container {
-        display: none; 
-      }
-
-      /* Existing styles */
-      td, th { vertical-align: middle; }
-      td:nth-child(3) { word-break: break-word; max-width: 400px; }
-      .overall-score-container h2 { font-weight: 300; }
+      /* All custom styles have been moved to style.css */
     </style>
   </head>
 
@@ -207,10 +142,10 @@ if ($openrouter_response_data) {
                         <thead>
                             <tr>
                                 <th scope="col" style="width: 5%;">Nr.</th> 
-                                <th scope="col" style="width: 25%;">Indicator</th>
-                                <th scope="col" style="width: 15%;">Score</th> 
-                                <th scope="col" style="width: 27%;">Result</th>
-                                <th scope="col" style="width: 28%;">Suggestion</th>
+                                <th scope="col" style="width: 15%;">Indicator</th>
+                                <th scope="col" style="width: 10%;">Score</th> 
+                                <th scope="col" style="width: 25%;">Result</th>
+                                <th scope="col" style="width: 45%;">Suggestion</th>
                             </tr>
                         </thead>
                         <tbody class="table-group-divider">
