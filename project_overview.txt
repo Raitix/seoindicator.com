@@ -1,0 +1,75 @@
+Project: One-Page SEO Indicator Tool (domain: seoindicator.com)
+
+**Core Functionality (MVP):**
+The tool allows users to enter a domain name. It then checks if the website is accessible (returns a 200 OK HTTP response) and displays a notification.
+
+**Current Key Features & Development Journey:**
+
+1.  **`index.php` (Main File):**
+    *   Uses PHP and Bootstrap (CDN for CSS).
+    *   Contains the main HTML structure, including a form for domain input and a table to display SEO indicator results.
+    *   Implements the Post/Redirect/Get (PRG) pattern using PHP sessions (`session_start()`, `$_SESSION`) to prevent form resubmission issues and manage display states.
+
+2.  **Domain Input & Accessibility:**
+    *   Handles domain input by trimming whitespace and automatically trying `https://` and then `http://` if no scheme is provided.
+    *   Verifies website accessibility by checking for a "200 OK" status in headers, accounting for redirects.
+    *   If the site is inaccessible, an error message is displayed, and further checks are skipped.
+
+3.  **SEO Indicator Checks (15 total, displayed in a table):**
+    *   **Original 5:** Title Tag Presence, Meta Description Presence, `robots.txt` Accessibility, `sitemap.xml` Accessibility.
+    *   **+5 added:** H1 Heading Presence, Image Alt Attributes (checks for non-empty alt), HTTPS Usage, Viewport Meta Tag, Language Declaration (HTML `lang` attribute).
+    *   **+5 more added:** Favicon Presence, Canonical Link Tag, Open Graph Tags (basic check for `og:` prefixes), HTML Document Size, Inline Styles Check (looks for `style` attributes and `<style>` tags in the body).
+    *   Website Accessibility check itself is performed but no longer shown as a separate row in the results table.
+
+4.  **`seo_logic.php` (Refactored Logic File):**
+    *   Contains helper functions:
+        *   `normalize_domain()`: Standardizes the input domain.
+        *   `render_stars($score, $show_text_score, $achieved_score_text, $max_possible_score_text)`: Displays 1-3 stars (★/☆) with color coding (success/warning/danger) based on an integer score. The text part (e.g., "(3/3)" or "(N/A)") is configurable.
+        *   `get_score_row_class($score)`: Returns "table-danger", "table-warning", or "table-success" for `<tr>` styling.
+        *   `check_resource_accessibility_helper($url)`: Checks if resources like `robots.txt` and `sitemap.xml` return a 200 OK status.
+        *   `call_openrouter_api($prompt_message)`: Function to interact with the OpenRouter API (e.g., for title suggestions).
+        *   `get_db_connection()`: Establishes a database connection.
+    *   Defines indicator weights (`$indicator_weights`) for the overall score calculation.
+    *   Handles the main form submission logic (`$_SERVER['REQUEST_METHOD'] === 'POST'` block):
+        *   Performs rate limiting (1 request per minute per IP) using a database table (`ip_requests_log`).
+        *   Fetches website content using `file_get_contents()` with a custom User-Agent.
+        *   Uses `DOMDocument` and `DOMXPath` to parse HTML and check for various elements and attributes.
+        *   Assigns a score (1, 2, or 3) and provides details/suggestions for each indicator.
+        *   HTML Document Size scoring: 3 stars (<100KB), 2 stars (100-300KB), 1 star (>=300KB).
+        *   Title Tag: If a title exists, an AI suggestion is fetched via `call_openrouter_api()`. The raw API request/response is stored in the session for display.
+        *   Development flag `$dev_mock_all_but_title` allows mocking most checks during development.
+    *   Stores results and overall score in `$_SESSION` before redirecting.
+    *   Includes database interaction to log check requests and basic results (`data` table).
+
+5.  **Scoring System:**
+    *   Each indicator receives a score from 1 to 3.
+    *   An "Overall score" is calculated as a weighted average of individual indicator scores, then mapped to a 1-3 star rating.
+    *   The `render_stars()` function is used for both individual indicators and the overall score display.
+    *   Table rows are dynamically styled (red/yellow/green) based on their score using `get_score_row_class()`.
+
+6.  **UI/UX:**
+    *   **Initial View:** Title and form are centered. Score and results sections are hidden.
+    *   **Results View:** After form submission, the overall score and results table are displayed. Content aligns to the top.
+    *   This is managed by a session flag (`$_SESSION['is_post_redirect_layout_active']`) which adds `initial-view` or `results-view` class to the `<body>`.
+    *   CSS is used to control visibility and layout based on these classes.
+    *   **Loading Indicator:** A JavaScript-controlled loading spinner overlay is shown on form submission. Results slide in after loading.
+    *   Input field retains the last submitted domain.
+
+7.  **Configuration & Database:**
+    *   `db_config.php`: Contains database credentials (DB_HOST, DB_USER, DB_PASS, DB_NAME).
+    *   `config.php`: Contains API keys and site-specific settings (OPENROUTER_API_KEY, SITE_URL_FOR_OPENROUTER, SITE_NAME_FOR_OPENROUTER).
+    *   Database tables:
+        *   `ip_requests_log`: Stores `ip_address` and `last_request_time` for rate limiting.
+        *   `data`: Stores `ip`, `domain`, `score_has`, `score_max`, `dt_created`, `dt_updated` for logging checks.
+
+8.  **Additional SEO Guide Pages:**
+    *   **`title.php` (Title Tag Guide):** Dedicated page accessible via `/title` URL that provides comprehensive information about title tag SEO best practices, including what title tags are, why they matter, common mistakes, examples, and how SEOIndicator.com analyzes them.
+    *   **URL Routing:** `.htaccess` file configured for clean URLs (removes `.php` extensions).
+    *   **Navigation:** "Title" indicator in results table is clickable and links to the dedicated guide page.
+
+**Development Environment:**
+*   **Local Development:** XAMPP stack (Apache + PHP + MySQL) for local development environment.
+*   **Production Hosting:** Hostinger.com shared hosting plan for live deployment.
+*   **AI Development Status:** Only the "Title" indicator currently returns real AI-powered suggestions via OpenRouter API. All other 14 indicators are mocked during development.
+
+**Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter. 

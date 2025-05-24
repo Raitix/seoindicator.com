@@ -154,7 +154,15 @@ if ($openrouter_response_data) {
                                 <?php if ($key === 'accessibility') continue; ?>
                                 <tr class="<?php echo get_score_row_class($result['score']); ?>">
                                     <td><?php echo $row_nr++; ?></td> 
-                                    <td><?php echo ucwords(str_replace('_', ' ', $key)); ?></td>
+                                    <td>
+                                        <?php if ($key === 'title'): ?>
+                                            <a href="/title" target="_blank" class="text-decoration-none text-light" title="Title Tag SEO Guide">
+                                                <?php echo ucwords(str_replace('_', ' ', $key)); ?>
+                                            </a>
+                                        <?php else: ?>
+                                            <?php echo ucwords(str_replace('_', ' ', $key)); ?>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo render_stars($result['score']); ?></td>
                                     <td><?php echo ($key === 'title' || $key === 'meta_description') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
                                     <td class="suggestion-cell"><?php echo isset($result['suggestion']) ? htmlspecialchars($result['suggestion']) : '-'; ?></td>
