@@ -72,7 +72,7 @@ if ($openrouter_response_data) {
 
     <div class="container <?php if ($layout_class === 'initial-view') echo 'vh-100 d-flex flex-column justify-content-center'; ?>">
         <div class="row justify-content-center <?php if ($layout_class === 'initial-view') echo 'w-100'; ?>">
-            <div class="col-lg-8 col-md-10 text-center"> 
+            <div class="col-lg-10 col-md-12 text-center"> 
                 <img src="Logo-SEOIndicator-com.png" alt="SEOIndicator.com Logo" style="max-width: 200px; margin-bottom: 20px;"> 
                 <h1 class="mb-4 main-title">AI Powered SEO Analysis</h1>
 
@@ -156,7 +156,7 @@ if ($openrouter_response_data) {
                                     <td><?php echo $row_nr++; ?></td> 
                                     <td>
                                         <?php if ($key === 'title'): ?>
-                                            <a href="/title" target="_blank" class="text-decoration-none text-light" title="Title Tag SEO Guide">
+                                            <a href="/title-tag-seo-guide" target="_blank" title="Title Tag SEO Guide">
                                                 <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                             </a>
                                         <?php else: ?>

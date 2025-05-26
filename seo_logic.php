@@ -645,7 +645,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // --- AI Suggestion for Title ---
         if ($title_content_for_ai) {
-            $prompt = "Analyze the following website title for SEO. Provide a score from 1 to 3 (1=bad, 2=needs improvement, 3=good) and a concise suggestion (1-2 sentences). Format your response EXACTLY as: Score: [Your Score]. Suggestion: [Your Suggestion]. Title: \"{$title_content_for_ai}\"";
+            $prompt = "Analyze the following website title for SEO. Provide ONLY a score from 1 to 3 (1=bad, 2=needs improvement, 3=good) and a concise suggestion (1-2 sentences). Do not make any comments or explanations. Format your response EXACTLY as: #Score: [Your Score]. Suggestion: [Your Suggestion]# Title: \"{$title_content_for_ai}\"";
             $title_ai_response_full = call_openrouter_api($prompt); // Get the full response
             
             // Store the raw request and response from THIS call for display
@@ -659,10 +659,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($title_ai_response_full['success'] && isset($title_ai_response_full['data'])) {
                 $ai_output = trim($title_ai_response_full['data']);
-                // Attempt to parse Score: X. Suggestion: Y
-                if (preg_match('/Score: (\d+)\.(?: Suggestion: (.*))?/s', $ai_output, $matches)) {
+                // Attempt to parse #Score: X. Suggestion: Y#
+                if (preg_match('/#Score: (\d+)\. Suggestion: (.*)#/s', $ai_output, $matches)) {
                     $ai_score = (int)$matches[1];
-                    $ai_suggestion = trim($matches[2] ?? 'AI suggestion format was not fully matched, but score was found.');
+                    $ai_suggestion = trim($matches[2]);
 
                     if ($ai_score >= 1 && $ai_score <= 3) {
                         $current_run_results['title']['score'] = $ai_score;
