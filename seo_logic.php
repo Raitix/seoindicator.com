@@ -392,6 +392,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $page_content = @file_get_contents($final_accessible_url, false, $context_content);
 
         $title_content_for_ai = null; // Variable to store title for AI
+        $meta_description_content_for_ai = null; // Variable to store meta description for AI
 
         if ($page_content !== false) {
             // HTML Size
@@ -444,27 +445,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_run_results['title']['suggestion'] = 'Add a compelling title tag to your page.';
             }
 
-            // Meta Description
-            if ($dev_mock_all_but_title) {
-                $current_run_results['meta_description'] = ['score' => 2, 'details' => 'Meta Description - Mocked', 'suggestion' => 'Mocked suggestion.'];
-            } else {
-                $meta_description_nodes = $xpath->query('//meta[@name="description"]');
-                if ($meta_description_nodes->length > 0) {
-                    $meta_content = trim($meta_description_nodes->item(0)->getAttribute('content'));
-                    if (!empty($meta_content)) {
-                        $current_run_results['meta_description']['score'] = 3;
-                        $current_run_results['meta_description']['details'] = htmlspecialchars($meta_content);
-                        $current_run_results['meta_description']['suggestion'] = "Good meta description. Ensure it's compelling for users.";
-                    } else {
-                        $current_run_results['meta_description']['score'] = 2;
-                        $current_run_results['meta_description']['details'] = 'Meta description tag exists but content is empty.';
-                        $current_run_results['meta_description']['suggestion'] = 'Fill in your meta description to improve click-through rates from search results.';
-                    }
+            // Meta Description (REAL CHECK - NOT MOCKED)
+            $meta_description_nodes = $xpath->query('//meta[@name="description"]');
+            if ($meta_description_nodes->length > 0) {
+                $meta_content = trim($meta_description_nodes->item(0)->getAttribute('content'));
+                if (!empty($meta_content)) {
+                    $current_run_results['meta_description']['score'] = 3;
+                    $current_run_results['meta_description']['details'] = htmlspecialchars($meta_content);
+                    $meta_description_content_for_ai = $meta_content; // Store for AI
+                    // Suggestion will be filled by AI or default if AI fails
+                    $current_run_results['meta_description']['suggestion'] = 'Awaiting AI suggestion...';
                 } else {
-                    $current_run_results['meta_description']['score'] = 1;
-                    $current_run_results['meta_description']['details'] = 'No meta description tag found.';
-                    $current_run_results['meta_description']['suggestion'] = 'Add a meta description to summarize the page content for search engines.';
+                    $current_run_results['meta_description']['score'] = 2;
+                    $current_run_results['meta_description']['details'] = 'Meta description tag exists but content is empty.';
+                    $current_run_results['meta_description']['suggestion'] = 'Fill in your meta description to improve click-through rates from search results.';
                 }
+            } else {
+                $current_run_results['meta_description']['score'] = 1;
+                $current_run_results['meta_description']['details'] = 'No meta description tag found.';
+                $current_run_results['meta_description']['suggestion'] = 'Add a meta description to summarize the page content for search engines.';
             }
             
             // H1 Heading Presence
@@ -643,7 +642,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // --- AI Suggestion for Title ---
+        // --- AI Suggestion for Title (PAUSED) ---
+        // Temporarily paused to develop Meta Description functionality
+        /*
         if ($title_content_for_ai) {
             $prompt = "Analyze the following website title for SEO. Provide ONLY a score from 1 to 3 (1=bad, 2=needs improvement, 3=good) and a concise suggestion (1-2 sentences). Do not make any comments or explanations. Format your response EXACTLY as: #Score: [Your Score]. Suggestion: [Your Suggestion]# Title: \"{$title_content_for_ai}\"";
             $title_ai_response_full = call_openrouter_api($prompt); // Get the full response
@@ -692,8 +693,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_run_results['title']['suggestion'] = 'Title found, but could not generate AI suggestion at this time.';
              }
         }
-        // --- End AI Suggestion for Title ---
+        */
+        // --- End AI Suggestion for Title (PAUSED) ---
 
+        // --- AI Suggestion for Meta Description ---
+        if ($meta_description_content_for_ai) {
+            $prompt = "Analyze the following website meta description for SEO. Provide ONLY a score from 1 to 3 (1=bad, 2=needs improvement, 3=good) and a concise suggestion (1-2 sentences). Do not make any comments or explanations. Format your response EXACTLY as: #Score: [Your Score]. Suggestion: [Your Suggestion]# Meta Description: \"{$meta_description_content_for_ai}\"";
+            $meta_ai_response_full = call_openrouter_api($prompt); // Get the full response
+            
+            // Store the raw request and response from THIS call for display
+            $_SESSION['openrouter_response'] = [
+                'success' => $meta_ai_response_full['success'], // Reflect success of this specific call
+                'message' => $meta_ai_response_full['message'], // Message of this specific call
+                'raw_request' => $meta_ai_response_full['raw_request'] ?? null,
+                'raw_response' => $meta_ai_response_full['raw_response'] ?? null,
+                // 'data' could also be stored if needed elsewhere, but raw is primary for the info alert
+            ];
+
+            if ($meta_ai_response_full['success'] && isset($meta_ai_response_full['data'])) {
+                $ai_output = trim($meta_ai_response_full['data']);
+                // Attempt to parse #Score: X. Suggestion: Y#
+                if (preg_match('/#Score: (\d+)\. Suggestion: (.*)#/s', $ai_output, $matches)) {
+                    $ai_score = (int)$matches[1];
+                    $ai_suggestion = trim($matches[2]);
+
+                    if ($ai_score >= 1 && $ai_score <= 3) {
+                        $current_run_results['meta_description']['score'] = $ai_score;
+                        // If AI gives a low score, the original 'details' (the meta description itself) is still relevant.
+                        // The suggestion from AI is the key part here.
+                    } else {
+                        // If score is invalid, keep the original score (likely 3 if meta description existed, or 1/2 if empty/missing)
+                        // and append a note about the AI's invalid score.
+                        $ai_suggestion = "AI returned an invalid score ({$ai_score}). " . $ai_suggestion;
+                    }
+                    $current_run_results['meta_description']['suggestion'] = $ai_suggestion;
+
+                } else {
+                    // Fallback if parsing fails, use the whole AI output as suggestion, keep original score
+                    $current_run_results['meta_description']['suggestion'] = 'AI response format error. Raw: ' . $ai_output;
+                }
+            } else {
+                $current_run_results['meta_description']['suggestion'] = 'AI suggestion failed: ' . ($meta_ai_response_full['message'] ?? 'Unknown error');
+            }
+        } elseif ($page_content !== false && isset($current_run_results['meta_description']['score']) && $current_run_results['meta_description']['score'] == 3 && $current_run_results['meta_description']['suggestion'] === 'Awaiting AI suggestion...') {
+             // If meta description was found, but for some reason $meta_description_content_for_ai was not set (should not happen if score is 3 and details are present)
+             // or if it was empty and the suggestion is still "Awaiting AI suggestion..."
+             if (isset($current_run_results['meta_description']['details']) && $current_run_results['meta_description']['details'] === 'Meta description tag exists but content is empty.') {
+                // Suggestion already set for this specific case by the non-AI logic, so do nothing here.
+             } else {
+                // Generic fallback if AI was expected but didn't run for other reasons.
+                $current_run_results['meta_description']['suggestion'] = 'Meta description found, but could not generate AI suggestion at this time.';
+             }
+        }
+        // --- End AI Suggestion for Meta Description ---
 
         $parsed_url_for_files = parse_url($final_accessible_url);
         if (isset($parsed_url_for_files['scheme']) && isset($parsed_url_for_files['host'])) {

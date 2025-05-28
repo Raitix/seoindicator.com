@@ -63,13 +63,17 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   `data`: Stores `ip`, `domain`, `score_has`, `score_max`, `dt_created`, `dt_updated` for logging checks.
 
 8.  **Additional SEO Guide Pages:**
-    *   **`title.php` (Title Tag Guide):** Dedicated page accessible via `/title` URL that provides comprehensive information about title tag SEO best practices, including what title tags are, why they matter, common mistakes, examples, and how SEOIndicator.com analyzes them.
-    *   **URL Routing:** `.htaccess` file configured for clean URLs (removes `.php` extensions).
-    *   **Navigation:** "Title" indicator in results table is clickable and links to the dedicated guide page.
+    *   **`title-tag-seo-guide.php`:** Dedicated page accessible via `/title-tag-seo-guide` URL that provides comprehensive information about title tag SEO best practices, including what title tags are, why they matter, common mistakes, examples, and how SEOIndicator.com analyzes them.
+    *   **`meta-description-seo-guide.php`:** Dedicated page accessible via `/meta-description-seo-guide` URL that provides comprehensive information about meta description SEO best practices, including what meta descriptions are, why they matter, best practices, common mistakes, examples, and how SEOIndicator.com analyzes them.
+    *   **URL Routing:** `.htaccess` file configured for clean URLs (automatically removes `.php` extensions from all files and redirects direct .php access to extensionless URLs).
+    *   **Navigation:** "Title" and "Meta Description" indicators in results table are clickable and link to their respective dedicated guide pages.
 
 **Development Environment:**
 *   **Local Development:** XAMPP stack (Apache + PHP + MySQL) for local development environment.
 *   **Production Hosting:** Hostinger.com shared hosting plan for live deployment.
-*   **AI Development Status:** Only the "Title" indicator currently returns real AI-powered suggestions via OpenRouter API. All other 14 indicators are mocked during development.
+*   **AI Development Status:** 
+    *   "Title" indicator: AI functionality temporarily paused for development
+    *   "Meta Description" indicator: Currently returns real AI-powered suggestions via OpenRouter API
+    *   All other 13 indicators are mocked during development
 
 **Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter. 

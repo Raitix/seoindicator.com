@@ -159,6 +159,10 @@ if ($openrouter_response_data) {
                                             <a href="/title-tag-seo-guide" target="_blank" title="Title Tag SEO Guide">
                                                 <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                             </a>
+                                        <?php elseif ($key === 'meta_description'): ?>
+                                            <a href="/meta-description-seo-guide" target="_blank" title="Meta Description SEO Guide">
+                                                <?php echo ucwords(str_replace('_', ' ', $key)); ?>
+                                            </a>
                                         <?php else: ?>
                                             <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                         <?php endif; ?>
