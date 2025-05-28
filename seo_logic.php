@@ -222,6 +222,12 @@ $indicator_weights = [
     'inline_css' => 1,
 ];
 
+// --- Active Indicators Configuration ---
+// Only these indicators will be processed and included in scoring
+$active_indicators = [
+    'meta_description', // Only Meta Description is active as per user requirement
+];
+
 // Default structure for indicators_results (used by POST logic for $current_run_results)
 // This ensures $current_run_results has all keys even if $indicators_results in index.php changes.
 $default_indicator_keys_for_logic = [
@@ -646,7 +652,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Temporarily paused to develop Meta Description functionality
         /*
         if ($title_content_for_ai) {
-            $prompt = "Analyze the following website title for SEO. Provide ONLY a score from 1 to 3 (1=bad, 2=needs improvement, 3=good) and a concise suggestion (1-2 sentences). Do not make any comments or explanations. Format your response EXACTLY as: #Score: [Your Score]. Suggestion: [Your Suggestion]# Title: \"{$title_content_for_ai}\"";
+            $prompt = "Analyze the following website title for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Title: \"{$title_content_for_ai}\"";
             $title_ai_response_full = call_openrouter_api($prompt); // Get the full response
             
             // Store the raw request and response from THIS call for display
@@ -660,10 +666,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($title_ai_response_full['success'] && isset($title_ai_response_full['data'])) {
                 $ai_output = trim($title_ai_response_full['data']);
-                // Attempt to parse #Score: X. Suggestion: Y#
-                if (preg_match('/#Score: (\d+)\. Suggestion: (.*)#/s', $ai_output, $matches)) {
-                    $ai_score = (int)$matches[1];
-                    $ai_suggestion = trim($matches[2]);
+                
+                // Extract JSON from markdown code blocks if present
+                if (preg_match('/```json\s*(.*?)\s*```/s', $ai_output, $matches)) {
+                    $json_content = trim($matches[1]);
+                } else {
+                    // If no markdown blocks, use the full content
+                    $json_content = $ai_output;
+                }
+                
+                // Attempt to parse JSON response
+                $json_data = json_decode($json_content, true);
+                
+                if ($json_data && isset($json_data['score']) && isset($json_data['suggestion'])) {
+                    $ai_score = (int)$json_data['score'];
+                    $ai_suggestion = trim($json_data['suggestion']);
 
                     if ($ai_score >= 1 && $ai_score <= 3) {
                         $current_run_results['title']['score'] = $ai_score;
@@ -677,8 +694,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $current_run_results['title']['suggestion'] = $ai_suggestion;
 
                 } else {
-                    // Fallback if parsing fails, use the whole AI output as suggestion, keep original score
-                    $current_run_results['title']['suggestion'] = 'AI response format error. Raw: ' . $ai_output;
+                    // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
+                    $current_run_results['title']['suggestion'] = 'AI response JSON format error. Raw: ' . $ai_output;
                 }
             } else {
                 $current_run_results['title']['suggestion'] = 'AI suggestion failed: ' . ($title_ai_response_full['message'] ?? 'Unknown error');
@@ -698,7 +715,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // --- AI Suggestion for Meta Description ---
         if ($meta_description_content_for_ai) {
-            $prompt = "Analyze the following website meta description for SEO. Provide ONLY a score from 1 to 3 (1=bad, 2=needs improvement, 3=good) and a concise suggestion (1-2 sentences). Do not make any comments or explanations. Format your response EXACTLY as: #Score: [Your Score]. Suggestion: [Your Suggestion]# Meta Description: \"{$meta_description_content_for_ai}\"";
+            $prompt = "Analyze the following website meta description for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Meta Description: \"{$meta_description_content_for_ai}\"";
             $meta_ai_response_full = call_openrouter_api($prompt); // Get the full response
             
             // Store the raw request and response from THIS call for display
@@ -712,10 +729,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($meta_ai_response_full['success'] && isset($meta_ai_response_full['data'])) {
                 $ai_output = trim($meta_ai_response_full['data']);
-                // Attempt to parse #Score: X. Suggestion: Y#
-                if (preg_match('/#Score: (\d+)\. Suggestion: (.*)#/s', $ai_output, $matches)) {
-                    $ai_score = (int)$matches[1];
-                    $ai_suggestion = trim($matches[2]);
+                
+                // Extract JSON from markdown code blocks if present
+                if (preg_match('/```json\s*(.*?)\s*```/s', $ai_output, $matches)) {
+                    $json_content = trim($matches[1]);
+                } else {
+                    // If no markdown blocks, use the full content
+                    $json_content = $ai_output;
+                }
+                
+                // Attempt to parse JSON response
+                $json_data = json_decode($json_content, true);
+                
+                if ($json_data && isset($json_data['score']) && isset($json_data['suggestion'])) {
+                    $ai_score = (int)$json_data['score'];
+                    $ai_suggestion = trim($json_data['suggestion']);
 
                     if ($ai_score >= 1 && $ai_score <= 3) {
                         $current_run_results['meta_description']['score'] = $ai_score;
@@ -729,8 +757,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $current_run_results['meta_description']['suggestion'] = $ai_suggestion;
 
                 } else {
-                    // Fallback if parsing fails, use the whole AI output as suggestion, keep original score
-                    $current_run_results['meta_description']['suggestion'] = 'AI response format error. Raw: ' . $ai_output;
+                    // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
+                    $current_run_results['meta_description']['suggestion'] = 'AI response JSON format error. Raw: ' . $ai_output;
                 }
             } else {
                 $current_run_results['meta_description']['suggestion'] = 'AI suggestion failed: ' . ($meta_ai_response_full['message'] ?? 'Unknown error');
@@ -796,7 +824,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($site_is_accessible) {
         foreach ($current_run_results as $key => $result_item) { // Renamed $result to $result_item to avoid conflict
-            if (isset($indicator_weights[$key]) && is_numeric($result_item['score'])) {
+            if (isset($indicator_weights[$key]) && is_numeric($result_item['score']) && in_array($key, $active_indicators)) {
                 $weight = $indicator_weights[$key];
                 $score_val = (int)$result_item['score']; 
                 
@@ -826,9 +854,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } else {
         $final_overall_score = 1; // Site not accessible, overall color score is 1 star
-        // All indicators would have failed, so set stars to 0 / N, where N is total number of indicators * 3
+        // All indicators would have failed, so set stars to 0 / N, where N is total number of active indicators * 3
         $total_achieved_stars_numeric = 0;
-        $total_possible_stars_numeric = count($default_indicator_keys_for_logic) * 3;
+        $total_possible_stars_numeric = count($active_indicators) * 3;
     }
 
     // --- Database Interaction ---

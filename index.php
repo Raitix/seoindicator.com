@@ -166,6 +166,12 @@ if ($openrouter_response_data) {
                                         <?php else: ?>
                                             <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                         <?php endif; ?>
+                                        
+                                        <?php if (in_array($key, $active_indicators ?? ['meta_description'])): ?>
+                                            <span class="badge bg-success ms-1" title="Active indicator - contributes to overall score">ACTIVE</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary ms-1" title="Inactive indicator - shown for development only">DEV</span>
+                                        <?php endif; ?>
                                     </td>
                                     <td><?php echo render_stars($result['score']); ?></td>
                                     <td><?php echo ($key === 'title' || $key === 'meta_description') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
