@@ -175,18 +175,22 @@ if ($openrouter_response_data) {
                             <a href="/headings-seo-guide" target="_blank" title="Headings SEO Guide">
                                 Headings
                             </a>
+                        <?php elseif ($key === 'image_alt'): ?>
+                            <a href="/image-alt-seo-guide" target="_blank" title="Image Alt SEO Guide">
+                                Image Alt
+                            </a>
                         <?php else: ?>
                                             <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                         <?php endif; ?>
                                         
-                                                                <?php if (in_array($key, $active_indicators ?? ['h1'])): ?>
+                                                                <?php if (in_array($key, $active_indicators ?? ['image_alt'])): ?>
                             <span class="badge bg-success ms-1" title="Active indicator - contributes to overall score">ACTIVE</span>
                         <?php else: ?>
                             <span class="badge bg-secondary ms-1" title="Inactive indicator - shown for development only">DEV</span>
                         <?php endif; ?>
                                     </td>
                                     <td><?php echo render_stars($result['score']); ?></td>
-                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'robots' || $key === 'sitemap' || $key === 'h1') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
+                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'image_alt') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
                                     <td class="suggestion-cell"><?php echo isset($result['suggestion']) ? htmlspecialchars($result['suggestion']) : '-'; ?></td>
                                 </tr>
                             <?php endforeach; ?>

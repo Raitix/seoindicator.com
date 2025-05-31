@@ -225,7 +225,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'h1', // Only headings indicator is active as per user requirement
+    'image_alt', // Only image alt indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -400,6 +400,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title_content_for_ai = null; // Variable to store title for AI
         $meta_description_content_for_ai = null; // Variable to store meta description for AI
         $headings_content_for_ai = null; // Variable to store headings structure for AI
+        $image_alt_content_for_ai = null; // Variable to store image alt attributes for AI
 
         if ($page_content !== false) {
             // HTML Size
@@ -522,33 +523,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_run_results['h1']['suggestion'] = 'Add an H1 tag to define the main heading of your page.';
             }
 
-            // Image Alt Attributes
-            if ($dev_mock_all_but_title) {
-                $current_run_results['image_alt'] = ['score' => 2, 'details' => 'Image Alt Attributes - Mocked', 'suggestion' => 'Mocked suggestion.'];
-            } else {
-                $img_nodes = $xpath->query('//img');
-                $img_count = $img_nodes->length;
-                $img_missing_alt = 0;
-                if ($img_count > 0) {
-                    foreach ($img_nodes as $img_node) {
-                        if (!$img_node->hasAttribute('alt') || trim($img_node->getAttribute('alt')) === '') {
-                            $img_missing_alt++;
-                        }
-                    }
-                    if ($img_missing_alt === 0) {
-                        $current_run_results['image_alt']['score'] = 3;
-                        $current_run_results['image_alt']['details'] = 'All ' . $img_count . ' image(s) have non-empty alt attributes.';
-                        $current_run_results['image_alt']['suggestion'] = 'Great job with alt texts for accessibility and SEO.';
+            // Image Alt Attributes Analysis
+            $img_nodes = $xpath->query('//img');
+            $img_count = $img_nodes->length;
+            $img_missing_alt = 0;
+            $img_with_alt = [];
+            $img_sources = [];
+            
+            if ($img_count > 0) {
+                foreach ($img_nodes as $img_node) {
+                    $alt_text = $img_node->hasAttribute('alt') ? trim($img_node->getAttribute('alt')) : '';
+                    $src = $img_node->hasAttribute('src') ? $img_node->getAttribute('src') : 'unknown';
+                    $img_sources[] = basename($src);
+                    
+                    if (empty($alt_text)) {
+                        $img_missing_alt++;
                     } else {
-                        $current_run_results['image_alt']['score'] = 2;
-                        $current_run_results['image_alt']['details'] = $img_missing_alt . ' out of ' . $img_count . ' image(s) are missing alt text or have empty alt attributes.';
-                        $current_run_results['image_alt']['suggestion'] = 'Add descriptive alt text to all images for better accessibility and SEO.';
+                        $img_with_alt[] = $alt_text;
                     }
-                } else {
-                    $current_run_results['image_alt']['score'] = 1; 
-                    $current_run_results['image_alt']['details'] = 'No images found on the page.';
-                    $current_run_results['image_alt']['suggestion'] = 'If you use images, ensure they have alt text.';
                 }
+                
+                // Build image alt data for AI analysis
+                if (!empty($img_with_alt)) {
+                    $image_alt_content_for_ai = implode('; ', array_slice($img_with_alt, 0, 10)); // Limit to first 10 alt texts
+                }
+                
+                if ($img_missing_alt === 0) {
+                    $current_run_results['image_alt']['score'] = 3;
+                    $current_run_results['image_alt']['details'] = "Found {$img_count} images, all have alt attributes";
+                    $current_run_results['image_alt']['suggestion'] = 'Awaiting AI suggestion...';
+                } else {
+                    $current_run_results['image_alt']['score'] = 2;
+                    $img_with_alt_count = $img_count - $img_missing_alt;
+                    $current_run_results['image_alt']['details'] = "Found {$img_count} images: {$img_with_alt_count} with alt text, {$img_missing_alt} missing alt text";
+                    $current_run_results['image_alt']['suggestion'] = 'Awaiting AI suggestion...';
+                }
+            } else {
+                $current_run_results['image_alt']['score'] = 1; 
+                $current_run_results['image_alt']['details'] = 'No images found on the page';
+                $current_run_results['image_alt']['suggestion'] = 'Add relevant images with descriptive alt text to enhance accessibility and SEO.';
             }
 
             // Viewport Meta Tag
@@ -997,7 +1010,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         */
         // --- End AI Suggestion for Sitemap.xml (PAUSED) ---
 
-        // --- AI Suggestion for Headings ---
+        // --- AI Suggestion for Headings (PAUSED) ---
+        /*
         if ($headings_content_for_ai) {
             $prompt = "Analyze the following website heading structure for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Heading structure: \"{$headings_content_for_ai}\"";
             $headings_ai_response_full = call_openrouter_api($prompt); // Get the full response
@@ -1050,7 +1064,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['h1']['suggestion'] = 'Headings found, but could not generate AI suggestion at this time.';
         }
-        // --- End AI Suggestion for Headings ---
+        */
+        // --- End AI Suggestion for Headings (PAUSED) ---
+
+        // --- AI Suggestion for Image Alt ---
+        // Check if we should run AI analysis (only when images exist AND have alt text to analyze)
+        if (isset($img_count) && $img_count > 0) {
+            if ($image_alt_content_for_ai) {
+                // Images with alt text found - analyze quality with AI
+                $prompt = "Analyze the following website image alt attributes for SEO and accessibility. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Image alt texts: \"{$image_alt_content_for_ai}\"";
+                
+                $image_alt_ai_response_full = call_openrouter_api($prompt); // Get the full response
+                
+                // Store the raw request and response from THIS call for display
+                $_SESSION['openrouter_response'] = [
+                    'success' => $image_alt_ai_response_full['success'], // Reflect success of this specific call
+                    'message' => $image_alt_ai_response_full['message'], // Message of this specific call
+                    'raw_request' => $image_alt_ai_response_full['raw_request'] ?? null,
+                    'raw_response' => $image_alt_ai_response_full['raw_response'] ?? null,
+                    // 'data' could also be stored if needed elsewhere, but raw is primary for the info alert
+                ];
+
+                if ($image_alt_ai_response_full['success'] && isset($image_alt_ai_response_full['data'])) {
+                    $ai_output = trim($image_alt_ai_response_full['data']);
+                    
+                    // Extract JSON from markdown code blocks if present
+                    if (preg_match('/```json\s*(.*?)\s*```/s', $ai_output, $matches)) {
+                        $json_content = trim($matches[1]);
+                    } else {
+                        // If no markdown blocks, use the full content
+                        $json_content = $ai_output;
+                    }
+                    
+                    // Attempt to parse JSON response
+                    $json_data = json_decode($json_content, true);
+                    
+                    if ($json_data && isset($json_data['score']) && isset($json_data['suggestion'])) {
+                        $ai_score = (int)$json_data['score'];
+                        $ai_suggestion = trim($json_data['suggestion']);
+
+                        if ($ai_score >= 1 && $ai_score <= 3) {
+                            $current_run_results['image_alt']['score'] = $ai_score;
+                            // If AI gives a low score, the original 'details' is still relevant.
+                            // The suggestion from AI is the key part here.
+                        } else {
+                            // If score is invalid, keep the original score and append a note about the AI's invalid score.
+                            $ai_suggestion = "AI returned an invalid score ({$ai_score}). " . $ai_suggestion;
+                        }
+                        $current_run_results['image_alt']['suggestion'] = $ai_suggestion;
+
+                    } else {
+                        // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
+                        $current_run_results['image_alt']['suggestion'] = 'AI response JSON format error. Raw: ' . $ai_output;
+                    }
+                } else {
+                    $current_run_results['image_alt']['suggestion'] = 'AI suggestion failed: ' . ($image_alt_ai_response_full['message'] ?? 'Unknown error');
+                }
+            } else {
+                // Images found but NO alt text - provide static guidance without OpenRouter call
+                $current_run_results['image_alt']['score'] = 1;
+                $current_run_results['image_alt']['suggestion'] = 'Adding descriptive alt text to all images is essential for both SEO and accessibility, as it helps search engines understand the content and ensures screen readers can convey information to visually impaired users.';
+            }
+        } elseif (isset($current_run_results['image_alt']['score']) && $current_run_results['image_alt']['suggestion'] === 'Awaiting AI suggestion...') {
+            // Generic fallback if AI was expected but didn't run for other reasons.
+            $current_run_results['image_alt']['suggestion'] = 'Images found, but could not generate AI suggestion at this time.';
+        }
+        // --- End AI Suggestion for Image Alt ---
 
     } else { 
         foreach (array_keys($current_run_results) as $key) {
