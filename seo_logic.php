@@ -225,7 +225,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'sitemap', // Only sitemap.xml is active as per user requirement
+    'h1', // Only headings indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -399,6 +399,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $title_content_for_ai = null; // Variable to store title for AI
         $meta_description_content_for_ai = null; // Variable to store meta description for AI
+        $headings_content_for_ai = null; // Variable to store headings structure for AI
 
         if ($page_content !== false) {
             // HTML Size
@@ -472,20 +473,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_run_results['meta_description']['suggestion'] = 'Add a meta description to summarize the page content for search engines.';
             }
             
-            // H1 Heading Presence
-            if ($dev_mock_all_but_title) {
-                $current_run_results['h1'] = ['score' => 2, 'details' => 'H1 Heading - Mocked', 'suggestion' => 'Mocked suggestion.'];
-            } else {
-                $h1_nodes = $xpath->query('//h1');
-                if ($h1_nodes->length > 0) {
-                    $current_run_results['h1']['score'] = 3;
-                    $current_run_results['h1']['details'] = 'Found ' . $h1_nodes->length . ' H1 tag(s).';
-                    $current_run_results['h1']['suggestion'] = ($h1_nodes->length == 1) ? 'Excellent, one H1 tag is ideal.' : 'Multiple H1 tags found. Typically, only one H1 per page is recommended.';
-                } else {
-                    $current_run_results['h1']['score'] = 1;
-                    $current_run_results['h1']['details'] = 'No H1 tags found on the page.';
-                    $current_run_results['h1']['suggestion'] = 'Add an H1 tag to define the main heading of your page.';
+            // Headings Structure Analysis
+            $h1_nodes = $xpath->query('//h1');
+            $h2_nodes = $xpath->query('//h2');
+            $h3_nodes = $xpath->query('//h3');
+            $h4_nodes = $xpath->query('//h4');
+            $h5_nodes = $xpath->query('//h5');
+            $h6_nodes = $xpath->query('//h6');
+            
+            $h1_count = $h1_nodes->length;
+            $h2_count = $h2_nodes->length;
+            $h3_count = $h3_nodes->length;
+            $total_headings = $h1_count + $h2_count + $h3_count + $h4_nodes->length + $h5_nodes->length + $h6_nodes->length;
+            
+            // Build heading structure for AI analysis
+            $heading_structure = [];
+            if ($h1_count > 0) {
+                foreach ($h1_nodes as $h1) {
+                    $heading_structure[] = 'H1: ' . trim($h1->nodeValue);
                 }
+            }
+            if ($h2_count > 0) {
+                foreach ($h2_nodes as $h2) {
+                    $heading_structure[] = 'H2: ' . trim($h2->nodeValue);
+                }
+            }
+            if ($h3_count > 0) {
+                foreach ($h3_nodes as $h3) {
+                    $heading_structure[] = 'H3: ' . trim($h3->nodeValue);
+                }
+            }
+            
+            if (!empty($heading_structure)) {
+                $headings_content_for_ai = implode('; ', array_slice($heading_structure, 0, 10)); // Limit to first 10 headings
+            }
+            
+            if ($h1_count > 0) {
+                $current_run_results['h1']['score'] = 3;
+                if ($h1_count == 1) {
+                    $current_run_results['h1']['details'] = "Found 1 H1 tag and {$total_headings} total headings (H2: {$h2_count}, H3: {$h3_count})";
+                } else {
+                    $current_run_results['h1']['details'] = "Found {$h1_count} H1 tags and {$total_headings} total headings (H2: {$h2_count}, H3: {$h3_count})";
+                }
+                $current_run_results['h1']['suggestion'] = 'Awaiting AI suggestion...';
+            } else {
+                $current_run_results['h1']['score'] = 1;
+                $current_run_results['h1']['details'] = "No H1 tags found. Total headings: {$total_headings} (H2: {$h2_count}, H3: {$h3_count})";
+                $current_run_results['h1']['suggestion'] = 'Add an H1 tag to define the main heading of your page.';
             }
 
             // Image Alt Attributes
@@ -906,7 +940,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         */
         // --- End AI Suggestion for Robots.txt (PAUSED) ---
 
-        // --- AI Suggestion for Sitemap.xml ---
+        // --- AI Suggestion for Sitemap.xml (PAUSED) ---
+        /*
         if ($sitemap_content_for_ai) {
             $prompt = "Analyze the following sitemap.xml file for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Sitemap.xml content: \"{$sitemap_content_for_ai}\"";
             $sitemap_ai_response_full = call_openrouter_api($prompt); // Get the full response
@@ -959,7 +994,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['sitemap']['suggestion'] = 'sitemap.xml found, but could not generate AI suggestion at this time.';
         }
-        // --- End AI Suggestion for Sitemap.xml ---
+        */
+        // --- End AI Suggestion for Sitemap.xml (PAUSED) ---
+
+        // --- AI Suggestion for Headings ---
+        if ($headings_content_for_ai) {
+            $prompt = "Analyze the following website heading structure for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Heading structure: \"{$headings_content_for_ai}\"";
+            $headings_ai_response_full = call_openrouter_api($prompt); // Get the full response
+            
+            // Store the raw request and response from THIS call for display
+            $_SESSION['openrouter_response'] = [
+                'success' => $headings_ai_response_full['success'], // Reflect success of this specific call
+                'message' => $headings_ai_response_full['message'], // Message of this specific call
+                'raw_request' => $headings_ai_response_full['raw_request'] ?? null,
+                'raw_response' => $headings_ai_response_full['raw_response'] ?? null,
+                // 'data' could also be stored if needed elsewhere, but raw is primary for the info alert
+            ];
+
+            if ($headings_ai_response_full['success'] && isset($headings_ai_response_full['data'])) {
+                $ai_output = trim($headings_ai_response_full['data']);
+                
+                // Extract JSON from markdown code blocks if present
+                if (preg_match('/```json\s*(.*?)\s*```/s', $ai_output, $matches)) {
+                    $json_content = trim($matches[1]);
+                } else {
+                    // If no markdown blocks, use the full content
+                    $json_content = $ai_output;
+                }
+                
+                // Attempt to parse JSON response
+                $json_data = json_decode($json_content, true);
+                
+                if ($json_data && isset($json_data['score']) && isset($json_data['suggestion'])) {
+                    $ai_score = (int)$json_data['score'];
+                    $ai_suggestion = trim($json_data['suggestion']);
+
+                    if ($ai_score >= 1 && $ai_score <= 3) {
+                        $current_run_results['h1']['score'] = $ai_score;
+                        // If AI gives a low score, the original 'details' is still relevant.
+                        // The suggestion from AI is the key part here.
+                    } else {
+                        // If score is invalid, keep the original score and append a note about the AI's invalid score.
+                        $ai_suggestion = "AI returned an invalid score ({$ai_score}). " . $ai_suggestion;
+                    }
+                    $current_run_results['h1']['suggestion'] = $ai_suggestion;
+
+                } else {
+                    // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
+                    $current_run_results['h1']['suggestion'] = 'AI response JSON format error. Raw: ' . $ai_output;
+                }
+            } else {
+                $current_run_results['h1']['suggestion'] = 'AI suggestion failed: ' . ($headings_ai_response_full['message'] ?? 'Unknown error');
+            }
+        } elseif (isset($current_run_results['h1']['score']) && $current_run_results['h1']['score'] == 3 && $current_run_results['h1']['suggestion'] === 'Awaiting AI suggestion...') {
+            // Generic fallback if AI was expected but didn't run for other reasons.
+            $current_run_results['h1']['suggestion'] = 'Headings found, but could not generate AI suggestion at this time.';
+        }
+        // --- End AI Suggestion for Headings ---
 
     } else { 
         foreach (array_keys($current_run_results) as $key) {

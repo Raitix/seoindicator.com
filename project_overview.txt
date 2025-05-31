@@ -66,14 +66,15 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **`title-tag-seo-guide.php`:** Dedicated page accessible via `/title-tag-seo-guide` URL that provides comprehensive information about title tag SEO best practices, including what title tags are, why they matter, common mistakes, examples, and how SEOIndicator.com analyzes them.
     *   **`meta-description-seo-guide.php`:** Dedicated page accessible via `/meta-description-seo-guide` URL that provides comprehensive information about meta description SEO best practices, including what meta descriptions are, why they matter, best practices, common mistakes, examples, and how SEOIndicator.com analyzes them.
     *   **`robots-txt-seo-guide.php`:** Dedicated page accessible via `/robots-txt-seo-guide` URL that provides comprehensive information about robots.txt SEO best practices, including what robots.txt is, why it matters, best practices, common mistakes, examples, and how SEOIndicator.com analyzes it.
-    *   **`sitemap-xml-seo-guide.php`:** Dedicated page accessible via `/sitemap-xml-seo-guide` URL that provides comprehensive information about sitemap.xml SEO best practices, including what sitemaps are, why they matter, best practices, common mistakes, examples, and how SEOIndicator.com analyzes them.
+    *   **`sitemap-xml-seo-guide.php`:** Dedicated page accessible via `/sitemap-xml-seo-guide` URL that provides comprehensive information about sitemap.xml SEO best practices, including what sitemaps are, why they matter, best practices, common mistakes, examples, sitemap extensions, and how SEOIndicator.com analyzes them.
+    *   **`headings-seo-guide.php`:** Dedicated page accessible via `/headings-seo-guide` URL that provides comprehensive information about HTML headings (H1-H6) SEO best practices, including what headings are, why they matter, hierarchy best practices, common mistakes, examples, and how SEOIndicator.com analyzes them.
     *   **URL Routing:** `.htaccess` file configured for clean URLs (automatically removes `.php` extensions from all files and redirects direct .php access to extensionless URLs).
-    *   **Navigation:** Clickable indicators in results table link to their respective dedicated guide pages: "Title", "Meta Description", "robots.txt", and "sitemap.xml".
+    *   **Navigation:** Clickable indicators in results table link to their respective dedicated guide pages: "Title", "Meta Description", "robots.txt", "sitemap.xml", and "Headings".
 
 9.  **Active Indicator Management:**
     *   **Active Indicators Configuration:** Only indicators listed in `$active_indicators` array contribute to overall scoring calculations.
     *   **Visual Badge System:** Green "ACTIVE" badges show scoring indicators, gray "DEV" badges show development-only indicators.
-    *   **Current Active Status:** Only `sitemap` indicator is active and contributes to scoring.
+    *   **Current Active Status:** Only `h1` (Headings) indicator is active and contributes to scoring.
     *   **Development Visibility:** All indicators remain visible in results table for development purposes.
 
 **Development Environment:**
@@ -83,7 +84,8 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   "Title" indicator: AI functionality paused for development
     *   "Meta Description" indicator: AI functionality paused for development  
     *   "Robots.txt" indicator: AI functionality paused for development
-    *   "Sitemap.xml" indicator: Currently returns real AI-powered suggestions via OpenRouter API
-    *   All other 11 indicators are mocked during development
+    *   "Sitemap.xml" indicator: AI functionality paused for development
+    *   "Headings" indicator: Currently returns real AI-powered suggestions via OpenRouter API with comprehensive heading structure analysis
+    *   All other 10 indicators are mocked during development
 
 **Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter. 
