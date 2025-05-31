@@ -225,7 +225,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'robots', // Only robots.txt is active as per user requirement
+    'sitemap', // Only sitemap.xml is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -806,15 +806,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_run_results['robots']['suggestion'] = 'Check robots.txt accessibility and content.';
             }
 
+            $sitemap_content_for_ai = null; // Variable to store sitemap.xml content for AI
+            
             // Sitemap.xml
-            if ($dev_mock_all_but_title) {
-                $current_run_results['sitemap'] = ['score' => 2, 'details' => 'sitemap.xml - Mocked', 'suggestion' => 'Mocked suggestion.'];
+            $sitemap_url = $base_url_for_files . '/sitemap.xml';
+            $sitemap_check_result = check_resource_accessibility_helper($sitemap_url);
+            $current_run_results['sitemap']['score'] = $sitemap_check_result['score'];
+            $current_run_results['sitemap']['details'] = $sitemap_check_result['details'];
+            
+            // Fetch sitemap.xml content for AI analysis if accessible
+            if ($sitemap_check_result['score'] == 3) {
+                $sitemap_content = @file_get_contents($sitemap_url);
+                if ($sitemap_content !== false) {
+                    $sitemap_content_for_ai = trim($sitemap_content);
+                    $content_length = strlen($sitemap_content_for_ai);
+                    $line_count = substr_count($sitemap_content_for_ai, "\n") + 1;
+                    // Count URL entries
+                    $url_count = substr_count($sitemap_content_for_ai, '<url>') + substr_count($sitemap_content_for_ai, '<url ');
+                    if ($url_count == 0) {
+                        // Check for sitemap index entries
+                        $sitemap_count = substr_count($sitemap_content_for_ai, '<sitemap>') + substr_count($sitemap_content_for_ai, '<sitemap ');
+                        if ($sitemap_count > 0) {
+                            $current_run_results['sitemap']['details'] = "Found sitemap index ({$content_length} chars, {$line_count} lines, {$sitemap_count} sitemaps)";
+                        } else {
+                            $current_run_results['sitemap']['details'] = "Found sitemap.xml ({$content_length} chars, {$line_count} lines, 0 URLs)";
+                        }
+                    } else {
+                        $current_run_results['sitemap']['details'] = "Found sitemap.xml ({$content_length} chars, {$line_count} lines, {$url_count} URLs)";
+                    }
+                    $current_run_results['sitemap']['suggestion'] = 'Awaiting AI suggestion...';
+                } else {
+                    $current_run_results['sitemap']['suggestion'] = 'sitemap.xml is accessible but content could not be fetched for analysis.';
+                }
             } else {
-                $sitemap_url = $base_url_for_files . '/sitemap.xml';
-                $sitemap_check_result = check_resource_accessibility_helper($sitemap_url);
-                $current_run_results['sitemap']['score'] = $sitemap_check_result['score'];
-                $current_run_results['sitemap']['details'] = $sitemap_check_result['details'];
-                $current_run_results['sitemap']['suggestion'] = ($sitemap_check_result['score'] == 3) ? 'sitemap.xml is accessible.' : 'Ensure sitemap.xml is accessible and correctly formatted.';
+                $current_run_results['sitemap']['suggestion'] = 'Check sitemap.xml accessibility and content.';
             }
         } else {
             $url_parse_error_msg = 'Could not parse URL to check for robots.txt/sitemap.xml.';
@@ -824,7 +849,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_run_results['sitemap'] = ['score' => $error_score, 'details' => $url_parse_error_msg, 'suggestion' => $error_suggestion_file];
         }
 
-        // --- AI Suggestion for Robots.txt ---
+        // --- AI Suggestion for Robots.txt (PAUSED) ---
+        /*
         if ($robots_content_for_ai) {
             $prompt = "Analyze the following robots.txt file for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Robots.txt content: \"{$robots_content_for_ai}\"";
             $robots_ai_response_full = call_openrouter_api($prompt); // Get the full response
@@ -877,7 +903,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['robots']['suggestion'] = 'robots.txt found, but could not generate AI suggestion at this time.';
         }
-        // --- End AI Suggestion for Robots.txt ---
+        */
+        // --- End AI Suggestion for Robots.txt (PAUSED) ---
+
+        // --- AI Suggestion for Sitemap.xml ---
+        if ($sitemap_content_for_ai) {
+            $prompt = "Analyze the following sitemap.xml file for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Sitemap.xml content: \"{$sitemap_content_for_ai}\"";
+            $sitemap_ai_response_full = call_openrouter_api($prompt); // Get the full response
+            
+            // Store the raw request and response from THIS call for display
+            $_SESSION['openrouter_response'] = [
+                'success' => $sitemap_ai_response_full['success'], // Reflect success of this specific call
+                'message' => $sitemap_ai_response_full['message'], // Message of this specific call
+                'raw_request' => $sitemap_ai_response_full['raw_request'] ?? null,
+                'raw_response' => $sitemap_ai_response_full['raw_response'] ?? null,
+                // 'data' could also be stored if needed elsewhere, but raw is primary for the info alert
+            ];
+
+            if ($sitemap_ai_response_full['success'] && isset($sitemap_ai_response_full['data'])) {
+                $ai_output = trim($sitemap_ai_response_full['data']);
+                
+                // Extract JSON from markdown code blocks if present
+                if (preg_match('/```json\s*(.*?)\s*```/s', $ai_output, $matches)) {
+                    $json_content = trim($matches[1]);
+                } else {
+                    // If no markdown blocks, use the full content
+                    $json_content = $ai_output;
+                }
+                
+                // Attempt to parse JSON response
+                $json_data = json_decode($json_content, true);
+                
+                if ($json_data && isset($json_data['score']) && isset($json_data['suggestion'])) {
+                    $ai_score = (int)$json_data['score'];
+                    $ai_suggestion = trim($json_data['suggestion']);
+
+                    if ($ai_score >= 1 && $ai_score <= 3) {
+                        $current_run_results['sitemap']['score'] = $ai_score;
+                        // If AI gives a low score, the original 'details' is still relevant.
+                        // The suggestion from AI is the key part here.
+                    } else {
+                        // If score is invalid, keep the original score and append a note about the AI's invalid score.
+                        $ai_suggestion = "AI returned an invalid score ({$ai_score}). " . $ai_suggestion;
+                    }
+                    $current_run_results['sitemap']['suggestion'] = $ai_suggestion;
+
+                } else {
+                    // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
+                    $current_run_results['sitemap']['suggestion'] = 'AI response JSON format error. Raw: ' . $ai_output;
+                }
+            } else {
+                $current_run_results['sitemap']['suggestion'] = 'AI suggestion failed: ' . ($sitemap_ai_response_full['message'] ?? 'Unknown error');
+            }
+        } elseif (isset($current_run_results['sitemap']['score']) && $current_run_results['sitemap']['score'] == 3 && $current_run_results['sitemap']['suggestion'] === 'Awaiting AI suggestion...') {
+            // Generic fallback if AI was expected but didn't run for other reasons.
+            $current_run_results['sitemap']['suggestion'] = 'sitemap.xml found, but could not generate AI suggestion at this time.';
+        }
+        // --- End AI Suggestion for Sitemap.xml ---
 
     } else { 
         foreach (array_keys($current_run_results) as $key) {
