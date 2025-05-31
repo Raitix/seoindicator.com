@@ -163,18 +163,22 @@ if ($openrouter_response_data) {
                                             <a href="/meta-description-seo-guide" target="_blank" title="Meta Description SEO Guide">
                                                 <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                             </a>
+                                        <?php elseif ($key === 'robots'): ?>
+                                            <a href="/robots-txt-seo-guide" target="_blank" title="Robots.txt SEO Guide">
+                                                robots.txt
+                                            </a>
                                         <?php else: ?>
                                             <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                         <?php endif; ?>
                                         
-                                        <?php if (in_array($key, $active_indicators ?? ['meta_description'])): ?>
+                                        <?php if (in_array($key, $active_indicators ?? ['robots'])): ?>
                                             <span class="badge bg-success ms-1" title="Active indicator - contributes to overall score">ACTIVE</span>
                                         <?php else: ?>
                                             <span class="badge bg-secondary ms-1" title="Inactive indicator - shown for development only">DEV</span>
                                         <?php endif; ?>
                                     </td>
                                     <td><?php echo render_stars($result['score']); ?></td>
-                                    <td><?php echo ($key === 'title' || $key === 'meta_description') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
+                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'robots') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
                                     <td class="suggestion-cell"><?php echo isset($result['suggestion']) ? htmlspecialchars($result['suggestion']) : '-'; ?></td>
                                 </tr>
                             <?php endforeach; ?>

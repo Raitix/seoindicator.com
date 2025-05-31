@@ -225,7 +225,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'meta_description', // Only Meta Description is active as per user requirement
+    'robots', // Only robots.txt is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -713,7 +713,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         */
         // --- End AI Suggestion for Title (PAUSED) ---
 
-        // --- AI Suggestion for Meta Description ---
+        // --- AI Suggestion for Meta Description (PAUSED) ---
+        /*
         if ($meta_description_content_for_ai) {
             $prompt = "Analyze the following website meta description for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Meta Description: \"{$meta_description_content_for_ai}\"";
             $meta_ai_response_full = call_openrouter_api($prompt); // Get the full response
@@ -773,21 +774,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_run_results['meta_description']['suggestion'] = 'Meta description found, but could not generate AI suggestion at this time.';
              }
         }
-        // --- End AI Suggestion for Meta Description ---
+        */
+        // --- End AI Suggestion for Meta Description (PAUSED) ---
 
         $parsed_url_for_files = parse_url($final_accessible_url);
         if (isset($parsed_url_for_files['scheme']) && isset($parsed_url_for_files['host'])) {
             $base_url_for_files = $parsed_url_for_files['scheme'] . '://' . $parsed_url_for_files['host'];
             
+            $robots_content_for_ai = null; // Variable to store robots.txt content for AI
+            
             // Robots.txt
-            if ($dev_mock_all_but_title) {
-                $current_run_results['robots'] = ['score' => 2, 'details' => 'robots.txt - Mocked', 'suggestion' => 'Mocked suggestion.'];
+            // Skip mocking for robots.txt to show real results and AI suggestions
+            $robots_url = $base_url_for_files . '/robots.txt';
+            $robots_check_result = check_resource_accessibility_helper($robots_url);
+            $current_run_results['robots']['score'] = $robots_check_result['score'];
+            $current_run_results['robots']['details'] = $robots_check_result['details'];
+            
+            // Fetch robots.txt content for AI analysis if accessible
+            if ($robots_check_result['score'] == 3) {
+                $robots_content = @file_get_contents($robots_url);
+                if ($robots_content !== false) {
+                    $robots_content_for_ai = trim($robots_content);
+                    $content_length = strlen($robots_content_for_ai);
+                    $line_count = substr_count($robots_content_for_ai, "\n") + 1;
+                    $current_run_results['robots']['details'] = "Found robots.txt ({$content_length} chars, {$line_count} lines)";
+                    $current_run_results['robots']['suggestion'] = 'Awaiting AI suggestion...';
+                } else {
+                    $current_run_results['robots']['suggestion'] = 'robots.txt is accessible but content could not be fetched for analysis.';
+                }
             } else {
-                $robots_url = $base_url_for_files . '/robots.txt';
-                $robots_check_result = check_resource_accessibility_helper($robots_url);
-                $current_run_results['robots']['score'] = $robots_check_result['score'];
-                $current_run_results['robots']['details'] = $robots_check_result['details'];
-                $current_run_results['robots']['suggestion'] = ($robots_check_result['score'] == 3) ? 'robots.txt is accessible.' : 'Check robots.txt accessibility and content.';
+                $current_run_results['robots']['suggestion'] = 'Check robots.txt accessibility and content.';
             }
 
             // Sitemap.xml
@@ -807,6 +823,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_run_results['robots'] = ['score' => $error_score, 'details' => $url_parse_error_msg, 'suggestion' => $error_suggestion_file];
             $current_run_results['sitemap'] = ['score' => $error_score, 'details' => $url_parse_error_msg, 'suggestion' => $error_suggestion_file];
         }
+
+        // --- AI Suggestion for Robots.txt ---
+        if ($robots_content_for_ai) {
+            $prompt = "Analyze the following robots.txt file for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Robots.txt content: \"{$robots_content_for_ai}\"";
+            $robots_ai_response_full = call_openrouter_api($prompt); // Get the full response
+            
+            // Store the raw request and response from THIS call for display
+            $_SESSION['openrouter_response'] = [
+                'success' => $robots_ai_response_full['success'], // Reflect success of this specific call
+                'message' => $robots_ai_response_full['message'], // Message of this specific call
+                'raw_request' => $robots_ai_response_full['raw_request'] ?? null,
+                'raw_response' => $robots_ai_response_full['raw_response'] ?? null,
+                // 'data' could also be stored if needed elsewhere, but raw is primary for the info alert
+            ];
+
+            if ($robots_ai_response_full['success'] && isset($robots_ai_response_full['data'])) {
+                $ai_output = trim($robots_ai_response_full['data']);
+                
+                // Extract JSON from markdown code blocks if present
+                if (preg_match('/```json\s*(.*?)\s*```/s', $ai_output, $matches)) {
+                    $json_content = trim($matches[1]);
+                } else {
+                    // If no markdown blocks, use the full content
+                    $json_content = $ai_output;
+                }
+                
+                // Attempt to parse JSON response
+                $json_data = json_decode($json_content, true);
+                
+                if ($json_data && isset($json_data['score']) && isset($json_data['suggestion'])) {
+                    $ai_score = (int)$json_data['score'];
+                    $ai_suggestion = trim($json_data['suggestion']);
+
+                    if ($ai_score >= 1 && $ai_score <= 3) {
+                        $current_run_results['robots']['score'] = $ai_score;
+                        // If AI gives a low score, the original 'details' is still relevant.
+                        // The suggestion from AI is the key part here.
+                    } else {
+                        // If score is invalid, keep the original score and append a note about the AI's invalid score.
+                        $ai_suggestion = "AI returned an invalid score ({$ai_score}). " . $ai_suggestion;
+                    }
+                    $current_run_results['robots']['suggestion'] = $ai_suggestion;
+
+                } else {
+                    // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
+                    $current_run_results['robots']['suggestion'] = 'AI response JSON format error. Raw: ' . $ai_output;
+                }
+            } else {
+                $current_run_results['robots']['suggestion'] = 'AI suggestion failed: ' . ($robots_ai_response_full['message'] ?? 'Unknown error');
+            }
+        } elseif (isset($current_run_results['robots']['score']) && $current_run_results['robots']['score'] == 3 && $current_run_results['robots']['suggestion'] === 'Awaiting AI suggestion...') {
+            // Generic fallback if AI was expected but didn't run for other reasons.
+            $current_run_results['robots']['suggestion'] = 'robots.txt found, but could not generate AI suggestion at this time.';
+        }
+        // --- End AI Suggestion for Robots.txt ---
 
     } else { 
         foreach (array_keys($current_run_results) as $key) {
