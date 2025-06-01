@@ -208,12 +208,12 @@ function check_resource_accessibility_helper($url) {
 $indicator_weights = [
     'title' => 3,
     'meta_description' => 3,
+    'url' => 3,
     'robots' => 3,
     'sitemap' => 2,
     'h1' => 3,
     'filenames' => 2,
     'image_alt' => 2,
-    'https' => 3,
     'viewport' => 2,
     'lang' => 2,
     'favicon' => 1,
@@ -226,12 +226,13 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'filenames', // Only filenames indicator is active as per user requirement
+    'url', // Only URL indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
 // This ensures $current_run_results has all keys even if $indicators_results in index.php changes.
 $default_indicator_keys_for_logic = [
+    'url' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'title' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'meta_description' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'robots' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
@@ -239,7 +240,6 @@ $default_indicator_keys_for_logic = [
     'h1' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'filenames' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'image_alt' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
-    'https' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'viewport' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'lang' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'favicon' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
@@ -376,21 +376,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $parsed_final_url = parse_url($final_accessible_url);
 
-        // HTTPS Check
-        if ($dev_mock_all_but_title) {
-            $current_run_results['https'] = ['score' => 2, 'details' => 'HTTPS - Mocked', 'suggestion' => 'Mocked suggestion.'];
-        } else {
-            if (isset($parsed_final_url['scheme']) && strtolower($parsed_final_url['scheme']) === 'https') {
-                $current_run_results['https']['score'] = 3;
-                $current_run_results['https']['details'] = 'Website is served over HTTPS.';
-                $current_run_results['https']['suggestion'] = 'Great! HTTPS is crucial for security and SEO.';
-            } else {
-                $current_run_results['https']['score'] = 1;
-                $current_run_results['https']['details'] = 'Website is not served over HTTPS.';
-                $current_run_results['https']['suggestion'] = 'Consider migrating to HTTPS for better security and SEO rankings.';
-            }
-        }
-
         $context_options_content = [
             'http' => [
                 'method' => "GET", 'timeout' => 10, 'header' => "User-Agent: SEOIndicatorBot/1.0\r\nAccept: text/html\r\n"
@@ -401,9 +386,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $title_content_for_ai = null; // Variable to store title for AI
         $meta_description_content_for_ai = null; // Variable to store meta description for AI
+        $url_content_for_ai = null; // Variable to store URL structure for AI
         $headings_content_for_ai = null; // Variable to store headings structure for AI
         $filenames_content_for_ai = null; // Variable to store filenames for AI
         $image_alt_content_for_ai = null; // Variable to store image alt attributes for AI
+        $url_analysis_text = 'URL analyzed'; // Variable to store URL analysis for suggestion
 
         if ($page_content !== false) {
             // HTML Size
@@ -476,6 +463,141 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_run_results['meta_description']['details'] = 'No meta description tag found.';
                 $current_run_results['meta_description']['suggestion'] = 'Add a meta description to summarize the page content for search engines.';
             }
+            
+            // URL Structure Analysis
+            $parsed_url_components = parse_url($final_accessible_url);
+            $url_issues = [];
+            $url_positives = [];
+            
+            // Check HTTPS
+            $is_https = isset($parsed_url_components['scheme']) && strtolower($parsed_url_components['scheme']) === 'https';
+            if ($is_https) {
+                $url_positives[] = 'HTTPS';
+            } else {
+                $url_issues[] = 'Not HTTPS';
+            }
+            
+            // Analyze domain
+            $domain = isset($parsed_url_components['host']) ? strtolower($parsed_url_components['host']) : '';
+            $domain_clean = str_replace('www.', '', $domain);
+            
+            // Check domain SEO friendliness
+            $domain_seo_friendly = true;
+            if (preg_match('/[^a-z0-9\-\.]/', $domain_clean)) {
+                $url_issues[] = 'Domain contains special characters';
+                $domain_seo_friendly = false;
+            }
+            if (strlen($domain_clean) > 63) {
+                $url_issues[] = 'Domain too long';
+                $domain_seo_friendly = false;
+            }
+            if (preg_match('/\d{3,}/', $domain_clean)) {
+                $url_issues[] = 'Domain contains long numbers';
+                $domain_seo_friendly = false;
+            }
+            if ($domain_seo_friendly) {
+                $url_positives[] = 'SEO-friendly domain';
+            }
+            
+            // Check domain extension popularity
+            $popular_tlds = ['.com', '.org', '.net', '.edu', '.gov', '.co.uk', '.de', '.fr', '.it', '.es', '.ca', '.au', '.jp', '.br', '.in', '.ru', '.cn'];
+            $tld_found = false;
+            foreach ($popular_tlds as $tld) {
+                if (substr($domain_clean, -strlen($tld)) === $tld) {
+                    $url_positives[] = 'Popular domain extension';
+                    $tld_found = true;
+                    break;
+                }
+            }
+            if (!$tld_found && strpos($domain_clean, '.') !== false) {
+                $url_issues[] = 'Less common domain extension';
+            }
+            
+            // Analyze URL path
+            $url_path = isset($parsed_url_components['path']) ? $parsed_url_components['path'] : '/';
+            $path_segments = array_filter(explode('/', trim($url_path, '/')));
+            
+            // Check path SEO friendliness
+            $path_seo_friendly = true;
+            foreach ($path_segments as $segment) {
+                if (preg_match('/[A-Z]/', $segment)) {
+                    $url_issues[] = 'URL contains uppercase';
+                    $path_seo_friendly = false;
+                    break;
+                }
+                if (preg_match('/\s/', $segment)) {
+                    $url_issues[] = 'URL contains spaces';
+                    $path_seo_friendly = false;
+                    break;
+                }
+                if (preg_match('/[^a-z0-9\-\._]/', $segment)) {
+                    $url_issues[] = 'URL contains special characters';
+                    $path_seo_friendly = false;
+                    break;
+                }
+            }
+            
+            // Check for query parameters
+            if (isset($parsed_url_components['query']) && !empty($parsed_url_components['query'])) {
+                $url_issues[] = 'Contains query parameters';
+            } else {
+                $url_positives[] = 'Clean URL without parameters';
+            }
+            
+            // Check URL length
+            $url_length = strlen($final_accessible_url);
+            if ($url_length > 100) {
+                $url_issues[] = 'URL too long';
+            } elseif ($url_length < 50) {
+                $url_positives[] = 'Optimal URL length';
+            } else {
+                $url_positives[] = 'Good URL length';
+            }
+            
+            // Check for descriptive path
+            if (!empty($path_segments)) {
+                $has_descriptive_path = false;
+                foreach ($path_segments as $segment) {
+                    if (strlen($segment) >= 3 && !is_numeric($segment)) {
+                        $has_descriptive_path = true;
+                        break;
+                    }
+                }
+                if ($has_descriptive_path) {
+                    $url_positives[] = 'Descriptive URL path';
+                } else {
+                    $url_issues[] = 'Non-descriptive URL path';
+                }
+            }
+            
+            // Scoring logic
+            $total_checks = count($url_issues) + count($url_positives);
+            $positive_ratio = $total_checks > 0 ? count($url_positives) / $total_checks : 0;
+            
+            if ($positive_ratio >= 0.8) {
+                $current_run_results['url']['score'] = 3;
+            } elseif ($positive_ratio >= 0.5) {
+                $current_run_results['url']['score'] = 2;
+            } else {
+                $current_run_results['url']['score'] = 1;
+            }
+            
+            // Build analysis for suggestion (to be prepended to AI response)
+            $analysis_parts = [];
+            if (!empty($url_positives)) {
+                $analysis_parts[] = 'Good: ' . implode(', ', $url_positives);
+            }
+            if (!empty($url_issues)) {
+                $analysis_parts[] = 'Issues: ' . implode(', ', $url_issues);
+            }
+            $url_analysis_text = !empty($analysis_parts) ? implode('; ', $analysis_parts) : 'URL analyzed';
+            
+            // Store the full URL in details (shown in Result column)
+            $current_run_results['url']['details'] = htmlspecialchars($final_accessible_url);
+            $current_run_results['url']['suggestion'] = 'Awaiting AI suggestion...';
+            
+            // Prepare content for AI analysis
+            $url_content_for_ai = "URL: {$final_accessible_url}";
             
             // Headings Structure Analysis
             $h1_nodes = $xpath->query('//h1');
@@ -834,7 +956,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Other content-dependent checks
             $checks_needing_content_mocked_on_fail = [
-                'meta_description', 'h1', 'filenames', 'image_alt', 'viewport', 'lang', 
+                'meta_description', 'url', 'h1', 'filenames', 'image_alt', 'viewport', 'lang', 
                 'favicon', 'canonical', 'opengraph', 'html_size', 'inline_css'
             ];
 
@@ -1302,7 +1424,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_run_results['image_alt']['suggestion'] = 'Images found, but could not generate AI suggestion at this time.';
         }
 
-        // --- AI Suggestion for Filenames ---
+                // --- AI Suggestion for Filenames (PAUSED) ---
+        /*
         if ($filenames_content_for_ai) {
             $prompt = "Analyze the following website file names (images, documents, etc.) for SEO best practices. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Provide answer only including the 2 JSON elements for whole filename batch, not for each file. Files found: \"{$filenames_content_for_ai}\"";
             
@@ -1355,16 +1478,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
                     $current_run_results['filenames']['suggestion'] = 'AI response JSON format error. Raw: ' . $ai_output;
                 }
-                            } else {
-                    $ai_suggestion = 'AI suggestion failed: ' . ($filenames_ai_response_full['message'] ?? 'Unknown error');
-                    
-                    // Append inline image warning if detected
-                    if ($has_inline_encoded_images) {
-                        $ai_suggestion .= " Avoid inline base64 images for static assets and use descriptive filenames instead.";
-                    }
-                    
-                    $current_run_results['filenames']['suggestion'] = $ai_suggestion;
+            } else {
+                $ai_suggestion = 'AI suggestion failed: ' . ($filenames_ai_response_full['message'] ?? 'Unknown error');
+                
+                // Append inline image warning if detected
+                if ($has_inline_encoded_images) {
+                    $ai_suggestion .= " Avoid inline base64 images for static assets and use descriptive filenames instead.";
                 }
+                
+                $current_run_results['filenames']['suggestion'] = $ai_suggestion;
+            }
         } elseif (isset($current_run_results['filenames']['score']) && $current_run_results['filenames']['suggestion'] === 'Awaiting AI suggestion...') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $ai_suggestion = 'Filenames found, but could not generate AI suggestion at this time.';
@@ -1376,7 +1499,102 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $current_run_results['filenames']['suggestion'] = $ai_suggestion;
         }
-        // --- End AI Suggestion for Filenames ---
+        */
+        // --- End AI Suggestion for Filenames (PAUSED) ---
+
+        // Provide fallback suggestions for filenames since AI is paused
+        if (isset($filenames_content_for_ai) && !empty($filenames_content_for_ai)) {
+            $ai_suggestion = 'Filenames found, but could not generate AI suggestion at this time.';
+            
+            // Append inline image warning if detected
+            if ($has_inline_encoded_images) {
+                $ai_suggestion .= " Avoid inline base64 images for static assets and use descriptive filenames instead.";
+            }
+            
+            $current_run_results['filenames']['suggestion'] = $ai_suggestion;
+        } elseif (isset($current_run_results['filenames']['score']) && $current_run_results['filenames']['suggestion'] === 'Awaiting AI suggestion...') {
+            $current_run_results['filenames']['suggestion'] = 'Filenames found, but could not generate AI suggestion at this time.';
+        }
+
+        // --- AI Suggestion for URL ---
+        if ($url_content_for_ai) {
+            // Determine if URL contains only domain name or has additional parts
+            $parsed_for_prompt = parse_url($final_accessible_url);
+            $has_path_beyond_domain = false;
+            
+            // Check if there's a meaningful path (not just "/" or empty)
+            if (isset($parsed_for_prompt['path']) && $parsed_for_prompt['path'] !== '/' && !empty(trim($parsed_for_prompt['path'], '/'))) {
+                $has_path_beyond_domain = true;
+            }
+            
+            // Check if there are query parameters
+            if (isset($parsed_for_prompt['query']) && !empty($parsed_for_prompt['query'])) {
+                $has_path_beyond_domain = true;
+            }
+            
+            // Check if there's a fragment
+            if (isset($parsed_for_prompt['fragment']) && !empty($parsed_for_prompt['fragment'])) {
+                $has_path_beyond_domain = true;
+            }
+            
+            // Use different prompts based on URL structure
+            if ($has_path_beyond_domain) {
+                $prompt = "Analyze the following URL from SEO perspective. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). URL: \"{$url_content_for_ai}\"";
+            } else {
+                $prompt = "Analyze the following domain name from SEO perspective. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Domain name: \"{$url_content_for_ai}\"";
+            }
+            
+            $url_ai_response_full = call_openrouter_api($prompt); // Get the full response
+            
+            // Store the raw request and response from THIS call for display
+            $_SESSION['openrouter_response'] = [
+                'success' => $url_ai_response_full['success'], // Reflect success of this specific call
+                'message' => $url_ai_response_full['message'], // Message of this specific call
+                'raw_request' => $url_ai_response_full['raw_request'] ?? null,
+                'raw_response' => $url_ai_response_full['raw_response'] ?? null,
+                // 'data' could also be stored if needed elsewhere, but raw is primary for the info alert
+            ];
+
+            if ($url_ai_response_full['success'] && isset($url_ai_response_full['data'])) {
+                $ai_output = trim($url_ai_response_full['data']);
+                
+                // Extract JSON from markdown code blocks if present
+                if (preg_match('/```json\s*(.*?)\s*```/s', $ai_output, $matches)) {
+                    $json_content = trim($matches[1]);
+                } else {
+                    // If no markdown blocks, use the full content
+                    $json_content = $ai_output;
+                }
+                
+                // Attempt to parse JSON response
+                $json_data = json_decode($json_content, true);
+                
+                if ($json_data && isset($json_data['score']) && isset($json_data['suggestion'])) {
+                    $ai_score = (int)$json_data['score'];
+                    $ai_suggestion = trim($json_data['suggestion']);
+
+                    if ($ai_score >= 1 && $ai_score <= 3) {
+                        $current_run_results['url']['score'] = $ai_score;
+                        // If AI gives a low score, the original 'details' is still relevant.
+                        // The suggestion from AI is the key part here.
+                    } else {
+                        // If score is invalid, keep the original score and append a note about the AI's invalid score.
+                        $ai_suggestion = "AI returned an invalid score ({$ai_score}). " . $ai_suggestion;
+                    }
+                    $current_run_results['url']['suggestion'] = $url_analysis_text . '. ' . $ai_suggestion;
+
+                } else {
+                    // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
+                    $current_run_results['url']['suggestion'] = $url_analysis_text . '. AI response JSON format error. Raw: ' . $ai_output;
+                }
+            } else {
+                $current_run_results['url']['suggestion'] = $url_analysis_text . '. AI suggestion failed: ' . ($url_ai_response_full['message'] ?? 'Unknown error');
+            }
+        } elseif (isset($current_run_results['url']['score']) && $current_run_results['url']['suggestion'] === 'Awaiting AI suggestion...') {
+            // Generic fallback if AI was expected but didn't run for other reasons.
+            $current_run_results['url']['suggestion'] = $url_analysis_text . '. URL found, but could not generate AI suggestion at this time.';
+        }
+        // --- End AI Suggestion for URL ---
 
     } else { 
         foreach (array_keys($current_run_results) as $key) {

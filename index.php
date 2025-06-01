@@ -21,7 +21,7 @@ $overall_score_to_display = $_SESSION['overall_score_data'] ?? null;
 // where $default_indicator_keys_for_logic would come from seo_logic.php or be defined minimally here)
 // For now, relying on the session load which itself relies on $default_indicator_keys_for_logic from seo_logic.php for initial POST run.
 // Let's ensure a default empty state for the view if session is not set from a POST yet.
-$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'https'=>'', 'viewport'=>'', 'lang'=>'', 'favicon'=>'', 'canonical'=>'', 'opengraph'=>'', 'html_size'=>'', 'inline_css'=>'']), ['score' => null, 'details' => '-', 'suggestion' => '-']);
+$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['url'=>'', 'title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'viewport'=>'', 'lang'=>'', 'favicon'=>'', 'canonical'=>'', 'opengraph'=>'', 'html_size'=>'', 'inline_css'=>'']), ['score' => null, 'details' => '-', 'suggestion' => '-']);
 
 $overall_score_display_data = $_SESSION['overall_score_data'] ?? null;
 $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
@@ -159,11 +159,15 @@ if ($openrouter_response_data) {
                                             <a href="/title-tag-seo-guide" target="_blank" title="Title Tag SEO Guide">
                                                 <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                             </a>
-                                        <?php elseif ($key === 'meta_description'): ?>
-                                            <a href="/meta-description-seo-guide" target="_blank" title="Meta Description SEO Guide">
-                                                <?php echo ucwords(str_replace('_', ' ', $key)); ?>
-                                            </a>
-                                                                <?php elseif ($key === 'robots'): ?>
+                                                                <?php elseif ($key === 'meta_description'): ?>
+                            <a href="/meta-description-seo-guide" target="_blank" title="Meta Description SEO Guide">
+                                <?php echo ucwords(str_replace('_', ' ', $key)); ?>
+                            </a>
+                        <?php elseif ($key === 'url'): ?>
+                            <a href="/url-seo-guide" target="_blank" title="URL SEO Guide">
+                                URL
+                            </a>
+                                                <?php elseif ($key === 'robots'): ?>
                             <a href="/robots-txt-seo-guide" target="_blank" title="Robots.txt SEO Guide">
                                 robots.txt
                             </a>
@@ -187,14 +191,14 @@ if ($openrouter_response_data) {
                                             <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                         <?php endif; ?>
                                         
-                                                                <?php if (in_array($key, $active_indicators ?? ['filenames'])): ?>
+                                                                <?php if (in_array($key, $active_indicators ?? ['url'])): ?>
                             <span class="badge bg-success ms-1" title="Active indicator - contributes to overall score">ACTIVE</span>
                         <?php else: ?>
                             <span class="badge bg-secondary ms-1" title="Inactive indicator - shown for development only">DEV</span>
                         <?php endif; ?>
                                     </td>
                                     <td><?php echo render_stars($result['score']); ?></td>
-                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
+                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
                                     <td class="suggestion-cell"><?php echo isset($result['suggestion']) ? htmlspecialchars($result['suggestion']) : '-'; ?></td>
                                 </tr>
                             <?php endforeach; ?>
