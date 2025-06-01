@@ -211,6 +211,7 @@ $indicator_weights = [
     'robots' => 3,
     'sitemap' => 2,
     'h1' => 3,
+    'filenames' => 2,
     'image_alt' => 2,
     'https' => 3,
     'viewport' => 2,
@@ -225,7 +226,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'image_alt', // Only image alt indicator is active as per user requirement
+    'filenames', // Only filenames indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -236,6 +237,7 @@ $default_indicator_keys_for_logic = [
     'robots' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'sitemap' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'h1' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'filenames' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'image_alt' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'https' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'viewport' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
@@ -400,6 +402,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title_content_for_ai = null; // Variable to store title for AI
         $meta_description_content_for_ai = null; // Variable to store meta description for AI
         $headings_content_for_ai = null; // Variable to store headings structure for AI
+        $filenames_content_for_ai = null; // Variable to store filenames for AI
         $image_alt_content_for_ai = null; // Variable to store image alt attributes for AI
 
         if ($page_content !== false) {
@@ -564,6 +567,157 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_run_results['image_alt']['suggestion'] = 'Add relevant images with descriptive alt text to enhance accessibility and SEO.';
             }
 
+            // Filenames Analysis (Images, Documents, Files)
+            $all_filenames = [];
+            $problematic_filenames = [];
+            $good_filenames = [];
+            $has_inline_encoded_images = false;
+            
+            // Analyze image filenames
+            $img_nodes = $xpath->query('//img[@src]');
+            foreach ($img_nodes as $img_node) {
+                $src = $img_node->getAttribute('src');
+                // Skip inline encoded images (data: URLs)
+                if (strpos($src, 'data:') === 0) {
+                    $has_inline_encoded_images = true;
+                    continue;
+                }
+                $filename = basename(parse_url($src, PHP_URL_PATH));
+                if (!empty($filename) && $filename !== '/') {
+                    $all_filenames[] = ['type' => 'image', 'filename' => $filename, 'source' => $src];
+                }
+            }
+            
+            // Analyze document and file links
+            $link_nodes = $xpath->query('//a[@href]');
+            foreach ($link_nodes as $link_node) {
+                $href = $link_node->getAttribute('href');
+                // Check for common file extensions
+                if (preg_match('/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp3|mp4|avi|mov|jpg|jpeg|png|gif|svg|css|js|xml|txt|csv)$/i', $href)) {
+                    $filename = basename(parse_url($href, PHP_URL_PATH));
+                    if (!empty($filename)) {
+                        // Determine file type
+                        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                        $file_types = [
+                            'pdf' => 'document', 'doc' => 'document', 'docx' => 'document',
+                            'xls' => 'spreadsheet', 'xlsx' => 'spreadsheet', 'csv' => 'spreadsheet',
+                            'ppt' => 'presentation', 'pptx' => 'presentation',
+                            'zip' => 'archive', 'rar' => 'archive',
+                            'mp3' => 'audio', 'mp4' => 'video', 'avi' => 'video', 'mov' => 'video',
+                            'jpg' => 'image', 'jpeg' => 'image', 'png' => 'image', 'gif' => 'image', 'svg' => 'image',
+                            'css' => 'stylesheet', 'js' => 'script', 'xml' => 'data', 'txt' => 'text'
+                        ];
+                        $file_type = $file_types[$extension] ?? 'file';
+                        $all_filenames[] = ['type' => $file_type, 'filename' => $filename, 'source' => $href];
+                    }
+                }
+            }
+            
+            // Analyze CSS background images and other resources
+            $style_nodes = $xpath->query('//style | //*[@style]');
+            foreach ($style_nodes as $style_node) {
+                $style_content = $style_node->nodeValue ?? $style_node->getAttribute('style');
+                if (preg_match_all('/url\(["\']?([^"\')\s]+)["\']?\)/i', $style_content, $matches)) {
+                    foreach ($matches[1] as $url) {
+                        $filename = basename(parse_url($url, PHP_URL_PATH));
+                        if (!empty($filename) && preg_match('/\.(jpg|jpeg|png|gif|svg|css|js|woff|woff2|ttf|eot)$/i', $filename)) {
+                            $all_filenames[] = ['type' => 'resource', 'filename' => $filename, 'source' => $url];
+                        }
+                    }
+                }
+            }
+            
+            // Remove duplicates
+            $unique_filenames = [];
+            $seen_filenames = [];
+            foreach ($all_filenames as $file_data) {
+                if (!in_array($file_data['filename'], $seen_filenames)) {
+                    $unique_filenames[] = $file_data;
+                    $seen_filenames[] = $file_data['filename'];
+                }
+            }
+            
+            // Analyze filename quality
+            foreach ($unique_filenames as $file_data) {
+                $filename = $file_data['filename'];
+                $name_without_extension = pathinfo($filename, PATHINFO_FILENAME);
+                
+                // Check for SEO-unfriendly patterns in filename
+                $is_problematic = false;
+                $issues = [];
+                
+                if (preg_match('/[A-Z]/', $name_without_extension)) {
+                    $is_problematic = true;
+                    $issues[] = 'uppercase';
+                }
+                if (preg_match('/\s/', $name_without_extension)) {
+                    $is_problematic = true;
+                    $issues[] = 'spaces';
+                }
+                if (preg_match('/[^a-z0-9\-_]/', $name_without_extension)) {
+                    $is_problematic = true;
+                    $issues[] = 'special_chars';
+                }
+                if (preg_match('/^\d+$/', $name_without_extension)) {
+                    $is_problematic = true;
+                    $issues[] = 'only_numbers';
+                }
+                if (strlen($name_without_extension) < 3) {
+                    $is_problematic = true;
+                    $issues[] = 'too_short';
+                }
+                if (strlen($name_without_extension) > 50) {
+                    $is_problematic = true;
+                    $issues[] = 'too_long';
+                }
+                if (preg_match('/^(img|image|file|doc|document|pic|picture)\d*$/i', $name_without_extension)) {
+                    $is_problematic = true;
+                    $issues[] = 'generic';
+                }
+                
+                if ($is_problematic) {
+                    $problematic_filenames[] = $filename;
+                } else {
+                    $good_filenames[] = $filename;
+                }
+            }
+            
+            // Prepare results
+            $total_filenames = count($unique_filenames);
+            $problematic_count = count($problematic_filenames);
+            $good_count = count($good_filenames);
+            
+            if ($total_filenames > 0) {
+                // Group filenames by type for better analysis
+                $filename_types = [];
+                foreach ($unique_filenames as $file_data) {
+                    $filename_types[$file_data['type']][] = $file_data['filename'];
+                }
+                
+                $sample_data = [];
+                foreach ($filename_types as $type => $filenames) {
+                    $sample_data[] = ucfirst($type) . ' files: ' . implode(', ', array_slice($filenames, 0, 5));
+                }
+                $filenames_content_for_ai = "Found {$total_filenames} files on page. " . implode('; ', array_slice($sample_data, 0, 4));
+                
+                if ($problematic_count === 0) {
+                    $current_run_results['filenames']['score'] = 3;
+                    $current_run_results['filenames']['details'] = "Analyzed {$total_filenames} files: all have SEO-friendly names";
+                } elseif ($problematic_count < $total_filenames / 2) {
+                    $current_run_results['filenames']['score'] = 2;
+                    $current_run_results['filenames']['details'] = "Analyzed {$total_filenames} files: {$good_count} SEO-friendly names, {$problematic_count} need improvement";
+                } else {
+                    $current_run_results['filenames']['score'] = 1;
+                    $current_run_results['filenames']['details'] = "Analyzed {$total_filenames} files: {$good_count} SEO-friendly names, {$problematic_count} need improvement";
+                }
+                $current_run_results['filenames']['suggestion'] = 'Awaiting AI suggestion...';
+            } else {
+                $current_run_results['filenames']['score'] = 2;
+                $current_run_results['filenames']['details'] = 'No files found for filename analysis';
+                $filenames_content_for_ai = "No files (images, documents, etc.) found on the page for filename analysis.";
+                $current_run_results['filenames']['suggestion'] = 'Awaiting AI suggestion...';
+            }
+
             // Viewport Meta Tag
             if ($dev_mock_all_but_title) {
                 $current_run_results['viewport'] = ['score' => 2, 'details' => 'Viewport Meta Tag - Mocked', 'suggestion' => 'Mocked suggestion.'];
@@ -680,7 +834,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Other content-dependent checks
             $checks_needing_content_mocked_on_fail = [
-                'meta_description', 'h1', 'image_alt', 'viewport', 'lang', 
+                'meta_description', 'h1', 'filenames', 'image_alt', 'viewport', 'lang', 
                 'favicon', 'canonical', 'opengraph', 'html_size', 'inline_css'
             ];
 
@@ -1067,7 +1221,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         */
         // --- End AI Suggestion for Headings (PAUSED) ---
 
-        // --- AI Suggestion for Image Alt ---
+        // --- AI Suggestion for Image Alt (PAUSED) ---
+        /*
         // Check if we should run AI analysis (only when images exist AND have alt text to analyze)
         if (isset($img_count) && $img_count > 0) {
             if ($image_alt_content_for_ai) {
@@ -1129,7 +1284,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['image_alt']['suggestion'] = 'Images found, but could not generate AI suggestion at this time.';
         }
-        // --- End AI Suggestion for Image Alt ---
+        */
+        // --- End AI Suggestion for Image Alt (PAUSED) ---
+
+        // Provide fallback suggestions for image alt since AI is paused
+        if (isset($img_count) && $img_count > 0) {
+            if ($image_alt_content_for_ai) {
+                // Images with alt text found - provide static guidance
+                $current_run_results['image_alt']['suggestion'] = 'Images found, but could not generate AI suggestion at this time.';
+            } else {
+                // Images found but NO alt text - provide static guidance without OpenRouter call
+                $current_run_results['image_alt']['score'] = 1;
+                $current_run_results['image_alt']['suggestion'] = 'Adding descriptive alt text to all images is essential for both SEO and accessibility, as it helps search engines understand the content and ensures screen readers can convey information to visually impaired users.';
+            }
+        } elseif (isset($current_run_results['image_alt']['score']) && $current_run_results['image_alt']['suggestion'] === 'Awaiting AI suggestion...') {
+            // Generic fallback if AI was expected but didn't run for other reasons.
+            $current_run_results['image_alt']['suggestion'] = 'Images found, but could not generate AI suggestion at this time.';
+        }
+
+        // --- AI Suggestion for Filenames ---
+        if ($filenames_content_for_ai) {
+            $prompt = "Analyze the following website file names (images, documents, etc.) for SEO best practices. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Provide answer only including the 2 JSON elements for whole filename batch, not for each file. Files found: \"{$filenames_content_for_ai}\"";
+            
+            $filenames_ai_response_full = call_openrouter_api($prompt); // Get the full response
+            
+            // Store the raw request and response from THIS call for display
+            $_SESSION['openrouter_response'] = [
+                'success' => $filenames_ai_response_full['success'], // Reflect success of this specific call
+                'message' => $filenames_ai_response_full['message'], // Message of this specific call
+                'raw_request' => $filenames_ai_response_full['raw_request'] ?? null,
+                'raw_response' => $filenames_ai_response_full['raw_response'] ?? null,
+                // 'data' could also be stored if needed elsewhere, but raw is primary for the info alert
+            ];
+
+            if ($filenames_ai_response_full['success'] && isset($filenames_ai_response_full['data'])) {
+                $ai_output = trim($filenames_ai_response_full['data']);
+                
+                // Extract JSON from markdown code blocks if present
+                if (preg_match('/```json\s*(.*?)\s*```/s', $ai_output, $matches)) {
+                    $json_content = trim($matches[1]);
+                } else {
+                    // If no markdown blocks, use the full content
+                    $json_content = $ai_output;
+                }
+                
+                // Attempt to parse JSON response
+                $json_data = json_decode($json_content, true);
+                
+                if ($json_data && isset($json_data['score']) && isset($json_data['suggestion'])) {
+                    $ai_score = (int)$json_data['score'];
+                    $ai_suggestion = trim($json_data['suggestion']);
+
+                    if ($ai_score >= 1 && $ai_score <= 3) {
+                        $current_run_results['filenames']['score'] = $ai_score;
+                        // If AI gives a low score, the original 'details' is still relevant.
+                        // The suggestion from AI is the key part here.
+                    } else {
+                        // If score is invalid, keep the original score and append a note about the AI's invalid score.
+                        $ai_suggestion = "AI returned an invalid score ({$ai_score}). " . $ai_suggestion;
+                    }
+                    
+                    // Append inline image warning if detected
+                    if ($has_inline_encoded_images) {
+                        $ai_suggestion .= " Avoid inline base64 images for static assets and use descriptive filenames instead.";
+                    }
+                    
+                    $current_run_results['filenames']['suggestion'] = $ai_suggestion;
+
+                } else {
+                    // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
+                    $current_run_results['filenames']['suggestion'] = 'AI response JSON format error. Raw: ' . $ai_output;
+                }
+                            } else {
+                    $ai_suggestion = 'AI suggestion failed: ' . ($filenames_ai_response_full['message'] ?? 'Unknown error');
+                    
+                    // Append inline image warning if detected
+                    if ($has_inline_encoded_images) {
+                        $ai_suggestion .= " Avoid inline base64 images for static assets and use descriptive filenames instead.";
+                    }
+                    
+                    $current_run_results['filenames']['suggestion'] = $ai_suggestion;
+                }
+        } elseif (isset($current_run_results['filenames']['score']) && $current_run_results['filenames']['suggestion'] === 'Awaiting AI suggestion...') {
+            // Generic fallback if AI was expected but didn't run for other reasons.
+            $ai_suggestion = 'Filenames found, but could not generate AI suggestion at this time.';
+            
+            // Append inline image warning if detected
+            if ($has_inline_encoded_images) {
+                $ai_suggestion .= " Avoid inline base64 images for static assets and use descriptive filenames instead.";
+            }
+            
+            $current_run_results['filenames']['suggestion'] = $ai_suggestion;
+        }
+        // --- End AI Suggestion for Filenames ---
 
     } else { 
         foreach (array_keys($current_run_results) as $key) {

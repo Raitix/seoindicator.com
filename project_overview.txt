@@ -68,15 +68,30 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **`robots-txt-seo-guide.php`:** Dedicated page accessible via `/robots-txt-seo-guide` URL that provides comprehensive information about robots.txt SEO best practices, including what robots.txt is, why it matters, best practices, common mistakes, examples, and how SEOIndicator.com analyzes it.
     *   **`sitemap-xml-seo-guide.php`:** Dedicated page accessible via `/sitemap-xml-seo-guide` URL that provides comprehensive information about sitemap.xml SEO best practices, including what sitemaps are, why they matter, best practices, common mistakes, examples, sitemap extensions, and how SEOIndicator.com analyzes them.
     *   **`headings-seo-guide.php`:** Dedicated page accessible via `/headings-seo-guide` URL that provides comprehensive information about HTML headings (H1-H6) SEO best practices, including what headings are, why they matter, hierarchy best practices, common mistakes, examples, and how SEOIndicator.com analyzes them.
+    *   **`filenames-seo-guide.php`:** Dedicated page accessible via `/filenames-seo-guide` URL that provides comprehensive information about SEO-friendly filenames and URL structure best practices, including what SEO-friendly filenames are, why they matter, naming conventions, best practices, common mistakes, examples, advanced strategies, and how SEOIndicator.com analyzes them.
     *   **`image-alt-seo-guide.php`:** Dedicated page accessible via `/image-alt-seo-guide` URL that provides comprehensive information about image alt attributes SEO best practices, including what alt attributes are, why they matter for SEO and accessibility, best practices, common mistakes, examples, and how SEOIndicator.com analyzes them.
     *   **URL Routing:** `.htaccess` file configured for clean URLs (automatically removes `.php` extensions from all files and redirects direct .php access to extensionless URLs).
-    *   **Navigation:** Clickable indicators in results table link to their respective dedicated guide pages: "Title", "Meta Description", "robots.txt", "sitemap.xml", "Headings", and "Image Alt".
+    *   **Navigation:** Clickable indicators in results table link to their respective dedicated guide pages: "Title", "Meta Description", "robots.txt", "sitemap.xml", "Headings", "Filenames", and "Image Alt".
 
 9.  **Active Indicator Management:**
     *   **Active Indicators Configuration:** Only indicators listed in `$active_indicators` array contribute to overall scoring calculations.
     *   **Visual Badge System:** Green "ACTIVE" badges show scoring indicators, gray "DEV" badges show development-only indicators.
-    *   **Current Active Status:** Only `image_alt` (Image Alt) indicator is active and contributes to scoring.
+    *   **Current Active Status:** Only `filenames` (Filenames) indicator is active and contributes to scoring.
     *   **Development Visibility:** All indicators remain visible in results table for development purposes.
+
+10. **Filenames SEO Indicator (Latest Addition):**
+    *   **Comprehensive File Analysis:** Analyzes actual file names including images, documents, media files, and web resources found on the page.
+    *   **Multi-File Type Support:** Examines images (.jpg, .png, .gif, .svg), documents (.pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx), media files (.mp3, .mp4, .avi, .mov), archives (.zip, .rar), and web resources (.css, .js, fonts).
+    *   **SEO-Friendly Pattern Detection:** Checks for problematic patterns including uppercase letters, spaces, special characters, generic names (IMG_1234), overly short/long names, and non-descriptive patterns.
+    *   **Intelligent File Type Categorization:** Groups files by type (image, document, spreadsheet, presentation, audio, video, etc.) for targeted analysis.
+    *   **CSS Background Resource Analysis:** Extracts and analyzes background images and resources referenced in CSS styles.
+    *   **Scoring Logic:** 
+        *   Score 3: All analyzed file names follow SEO best practices
+        *   Score 2: Mixed results with some problematic file names
+        *   Score 1: Majority of file names need improvement
+    *   **AI-Powered Suggestions:** Real-time OpenRouter API integration provides intelligent recommendations for file naming optimization, focusing specifically on file naming conventions rather than URL structure.
+    *   **Dedicated Guide Page:** `filenames-seo-guide.php` provides comprehensive education on SEO-friendly file naming conventions, best practices for different file types, common mistakes, examples, version control strategies, and localization approaches.
+    *   **Analysis Scope:** Examines all file references including img src attributes, document links, media files, CSS background images, and embedded resources to assess overall file naming quality across the entire page.
 
 **Development Environment:**
 *   **Local Development:** XAMPP stack (Apache + PHP + MySQL) for local development environment.
@@ -87,7 +102,8 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   "Robots.txt" indicator: AI functionality paused for development
     *   "Sitemap.xml" indicator: AI functionality paused for development
     *   "Headings" indicator: AI functionality paused for development
-    *   "Image Alt" indicator: Currently returns real AI-powered suggestions via OpenRouter API with comprehensive image alt attribute analysis
-    *   All other 10 indicators are mocked during development
+    *   "Filenames" indicator: Currently returns real AI-powered suggestions via OpenRouter API with comprehensive filename and URL structure analysis
+    *   "Image Alt" indicator: AI functionality paused for development
+    *   All other 9 indicators are mocked during development
 
 **Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter. 
