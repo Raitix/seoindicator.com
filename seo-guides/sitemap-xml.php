@@ -6,7 +6,7 @@
     <title>SEOIndicator.com - Sitemap.xml SEO Guide</title>
     <meta name="description" content="Complete guide to sitemap.xml for SEO. Learn best practices, common mistakes, and how to properly create and optimize XML sitemaps for search engines.">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css"> 
+    <link rel="stylesheet" href="../style.css"> 
   </head>
 
     <!-- Google tag (gtag.js) -->
@@ -26,7 +26,7 @@
             <div class="col-lg-10 col-md-12"> 
                 <div class="text-center mb-4">
                     <a href="/">
-                        <img src="Logo-SEOIndicator-com.png" alt="SEOIndicator.com Logo" style="max-width: 200px; margin-bottom: 20px;"> 
+                        <img src="../Logo-SEOIndicator-com.png" alt="SEOIndicator.com Logo" style="max-width: 200px; margin-bottom: 20px;"> 
                     </a>
                     <h1 class="mb-4 main-title">Sitemap.xml SEO Guide</h1>
                 </div>

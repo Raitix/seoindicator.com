@@ -156,35 +156,35 @@ if ($openrouter_response_data) {
                                     <td><?php echo $row_nr++; ?></td> 
                                     <td>
                                         <?php if ($key === 'title'): ?>
-                                            <a href="/title-tag-seo-guide" target="_blank" title="Title Tag SEO Guide">
+                                            <a href="/seo-guides/title-tag" target="_blank" title="Title Tag SEO Guide">
                                                 <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                             </a>
                                                                 <?php elseif ($key === 'meta_description'): ?>
-                            <a href="/meta-description-seo-guide" target="_blank" title="Meta Description SEO Guide">
+                            <a href="/seo-guides/meta-description" target="_blank" title="Meta Description SEO Guide">
                                 <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                             </a>
                         <?php elseif ($key === 'url'): ?>
-                            <a href="/url-seo-guide" target="_blank" title="URL SEO Guide">
+                            <a href="/seo-guides/url" target="_blank" title="URL SEO Guide">
                                 URL
                             </a>
                                                 <?php elseif ($key === 'robots'): ?>
-                            <a href="/robots-txt-seo-guide" target="_blank" title="Robots.txt SEO Guide">
+                            <a href="/seo-guides/robots-txt" target="_blank" title="Robots.txt SEO Guide">
                                 robots.txt
                             </a>
                         <?php elseif ($key === 'sitemap'): ?>
-                            <a href="/sitemap-xml-seo-guide" target="_blank" title="Sitemap.xml SEO Guide">
+                            <a href="/seo-guides/sitemap-xml" target="_blank" title="Sitemap.xml SEO Guide">
                                 sitemap.xml
                             </a>
                         <?php elseif ($key === 'h1'): ?>
-                            <a href="/headings-seo-guide" target="_blank" title="Headings SEO Guide">
+                            <a href="/seo-guides/headings" target="_blank" title="Headings SEO Guide">
                                 Headings
                             </a>
                         <?php elseif ($key === 'filenames'): ?>
-                            <a href="/filenames-seo-guide" target="_blank" title="Filenames SEO Guide">
+                            <a href="/seo-guides/filenames" target="_blank" title="Filenames SEO Guide">
                                 Filenames
                             </a>
                         <?php elseif ($key === 'image_alt'): ?>
-                            <a href="/image-alt-seo-guide" target="_blank" title="Image Alt SEO Guide">
+                            <a href="/seo-guides/image-alt" target="_blank" title="Image Alt SEO Guide">
                                 Image Alt
                             </a>
                         <?php else: ?>

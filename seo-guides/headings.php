@@ -6,7 +6,7 @@
     <title>SEOIndicator.com - Headings SEO Guide</title>
     <meta name="description" content="Complete guide to HTML headings (H1-H6) for SEO. Learn best practices, heading hierarchy, common mistakes, and how to optimize your heading structure for search engines.">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css"> 
+    <link rel="stylesheet" href="../style.css"> 
   </head>
 
     <!-- Google tag (gtag.js) -->
@@ -26,7 +26,7 @@
             <div class="col-lg-10 col-md-12"> 
                 <div class="text-center mb-4">
                     <a href="/">
-                        <img src="Logo-SEOIndicator-com.png" alt="SEOIndicator.com Logo" style="max-width: 200px; margin-bottom: 20px;"> 
+                        <img src="../Logo-SEOIndicator-com.png" alt="SEOIndicator.com Logo" style="max-width: 200px; margin-bottom: 20px;"> 
                     </a>
                     <h1 class="mb-4 main-title">Headings SEO Guide</h1>
                 </div>
