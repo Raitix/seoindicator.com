@@ -222,6 +222,7 @@ $indicator_weights = [
     'h1' => 3,
     'filenames' => 2,
     'image_alt' => 2,
+    'links' => 3,
     'viewport' => 2,
     'lang' => 2,
     'favicon' => 1,
@@ -234,7 +235,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'url', // Only URL indicator is active as per user requirement
+    'links', // Only Links indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -248,6 +249,7 @@ $default_indicator_keys_for_logic = [
     'h1' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'filenames' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'image_alt' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'links' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'viewport' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'lang' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'favicon' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
@@ -600,9 +602,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $url_analysis_text = !empty($analysis_parts) ? implode('; ', $analysis_parts) : 'URL analyzed';
             
-            // Store the full URL in details (shown in Result column)
-            $current_run_results['url']['details'] = htmlspecialchars($final_accessible_url);
-            $current_run_results['url']['suggestion'] = 'Awaiting AI suggestion...';
+            // Store the full URL and analysis in details (shown in Result column)
+            $current_run_results['url']['details'] = htmlspecialchars($final_accessible_url) . "<br><br>" . $url_analysis_text;
+            $current_run_results['url']['suggestion'] = 'Developed and paused';
             
             // Prepare content for AI analysis
             $url_content_for_ai = $final_accessible_url;
@@ -660,6 +662,106 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_run_results['image_alt']['score'] = 0;
             $current_run_results['image_alt']['details'] = 'Image Alt analysis indicator';
             $current_run_results['image_alt']['suggestion'] = 'Developed and paused';
+
+            // Links Analysis
+            $link_nodes = $xpath->query('//a[@href] | //*[@onclick]');
+            $links_found = [];
+            $links_content_for_ai = null;
+            
+            if ($link_nodes->length > 0) {
+                foreach ($link_nodes as $link_node) {
+                    $link_info = [];
+                    
+                    // Handle regular anchor links
+                    if ($link_node->nodeName === 'a' && $link_node->hasAttribute('href')) {
+                        $href = trim($link_node->getAttribute('href'));
+                        $anchor_text = trim($link_node->nodeValue);
+                        $link_info = [
+                            'type' => 'anchor',
+                            'href' => $href,
+                            'text' => $anchor_text,
+                            'target' => $link_node->hasAttribute('target') ? $link_node->getAttribute('target') : '',
+                            'rel' => $link_node->hasAttribute('rel') ? $link_node->getAttribute('rel') : ''
+                        ];
+                    }
+                    // Handle onclick links
+                    elseif ($link_node->hasAttribute('onclick')) {
+                        $onclick = trim($link_node->getAttribute('onclick'));
+                        $element_text = trim($link_node->nodeValue);
+                        $link_info = [
+                            'type' => 'onclick',
+                            'onclick' => $onclick,
+                            'text' => $element_text,
+                            'element' => $link_node->nodeName
+                        ];
+                    }
+                    
+                    if (!empty($link_info)) {
+                        $links_found[] = $link_info;
+                    }
+                }
+                
+                $links_count = count($links_found);
+                
+                // Analyze link quality
+                $internal_links = 0;
+                $external_links = 0;
+                $empty_anchor_text = 0;
+                $descriptive_anchor_text = 0;
+                $onclick_links = 0;
+                
+                foreach ($links_found as $link) {
+                    if ($link['type'] === 'onclick') {
+                        $onclick_links++;
+                    } elseif ($link['type'] === 'anchor') {
+                        // Check if internal or external
+                        $href = $link['href'];
+                        if (strpos($href, 'http') === 0) {
+                            $link_domain = parse_url($href, PHP_URL_HOST);
+                            $current_domain = parse_url($final_accessible_url, PHP_URL_HOST);
+                            if ($link_domain === $current_domain) {
+                                $internal_links++;
+                            } else {
+                                $external_links++;
+                            }
+                        } else {
+                            $internal_links++; // Relative links are internal
+                        }
+                        
+                        // Check anchor text quality
+                        $text = $link['text'];
+                        if (empty($text) || strlen($text) < 2) {
+                            $empty_anchor_text++;
+                        } elseif (strlen($text) >= 3 && !in_array(strtolower($text), ['click here', 'read more', 'more', 'here', 'link'])) {
+                            $descriptive_anchor_text++;
+                        }
+                    }
+                }
+                
+                // Prepare content for AI
+                $links_for_ai = array_slice($links_found, 0, 20); // Limit to first 20 links to avoid token limits
+                $links_content_for_ai = json_encode($links_for_ai, JSON_UNESCAPED_UNICODE);
+                
+                // Score calculation
+                $score = 1;
+                if ($descriptive_anchor_text > $empty_anchor_text && $onclick_links < $links_count * 0.3) {
+                    if ($internal_links > 0 && $external_links >= 0) {
+                        $score = 3;
+                    } else {
+                        $score = 2;
+                    }
+                } elseif ($descriptive_anchor_text >= $empty_anchor_text) {
+                    $score = 2;
+                }
+                
+                $current_run_results['links']['score'] = 0; // Will be set by AI
+                $current_run_results['links']['details'] = "Found {$links_count} links (Internal: {$internal_links}, External: {$external_links}, OnClick: {$onclick_links})";
+                $current_run_results['links']['suggestion'] = 'Awaiting AI suggestion...';
+            } else {
+                $current_run_results['links']['score'] = 1;
+                $current_run_results['links']['details'] = 'No links found on the page';
+                $current_run_results['links']['suggestion'] = 'Add internal and external links to improve navigation and SEO value.';
+            }
 
             // Filenames Analysis (Developed and Paused)
             $current_run_results['filenames']['score'] = 0;
@@ -1342,7 +1444,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_run_results['filenames']['suggestion'] = 'Filenames found, but could not generate AI suggestion at this time.';
         }
 
-        // --- AI Suggestion for URL ---
+        // --- AI Suggestion for URL (PAUSED) ---
+        /*
         if ($url_content_for_ai) {
             // Determine if URL contains only domain name or has additional parts
             $parsed_for_prompt = parse_url($final_accessible_url);
@@ -1407,20 +1510,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // If score is invalid, keep the original score and append a note about the AI's invalid score.
                         $ai_suggestion = "AI returned an invalid score ({$ai_score}). " . $ai_suggestion;
                     }
-                    $current_run_results['url']['suggestion'] = $url_analysis_text . ".<br>" . $ai_suggestion;
+                    $current_run_results['url']['suggestion'] = $ai_suggestion;
 
                 } else {
                     // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
-                    $current_run_results['url']['suggestion'] = $url_analysis_text . ".<br>AI response JSON format error. Raw: " . $ai_output;
+                    $current_run_results['url']['suggestion'] = "AI response JSON format error. Raw: " . $ai_output;
                 }
             } else {
-                $current_run_results['url']['suggestion'] = $url_analysis_text . ".<br>AI suggestion failed: " . ($url_ai_response_full['message'] ?? 'Unknown error');
+                $current_run_results['url']['suggestion'] = "AI suggestion failed: " . ($url_ai_response_full['message'] ?? 'Unknown error');
             }
         } elseif (isset($current_run_results['url']['score']) && $current_run_results['url']['suggestion'] === 'Awaiting AI suggestion...') {
             // Generic fallback if AI was expected but didn't run for other reasons.
-            $current_run_results['url']['suggestion'] = $url_analysis_text . ".<br>URL found, but could not generate AI suggestion at this time.";
+            $current_run_results['url']['suggestion'] = "URL found, but could not generate AI suggestion at this time.";
         }
-        // --- End AI Suggestion for URL ---
+        */
+        // --- End AI Suggestion for URL (PAUSED) ---
+
+        // --- AI Suggestion for Links ---
+        if ($links_content_for_ai) {
+            $prompt = "Analyze the following website links for SEO best practices. The data is in JSON format containing all links found on the page. Provide your response in JSON format with EXACTLY 2 ELEMENTS: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Links data: {$links_content_for_ai}";
+            
+            $links_ai_response_full = call_openrouter_api($prompt); // Get the full response
+            
+            // Store the raw request and response from THIS call for display
+            $_SESSION['openrouter_response'] = [
+                'success' => $links_ai_response_full['success'], // Reflect success of this specific call
+                'message' => $links_ai_response_full['message'], // Message of this specific call
+                'raw_request' => $links_ai_response_full['raw_request'] ?? null,
+                'raw_response' => $links_ai_response_full['raw_response'] ?? null,
+                // 'data' could also be stored if needed elsewhere, but raw is primary for the info alert
+            ];
+
+            if ($links_ai_response_full['success'] && isset($links_ai_response_full['data'])) {
+                $ai_output = trim($links_ai_response_full['data']);
+                
+                // Extract JSON from markdown code blocks if present
+                if (preg_match('/```json\s*(.*?)\s*```/s', $ai_output, $matches)) {
+                    $json_content = trim($matches[1]);
+                } else {
+                    // If no markdown blocks, use the full content
+                    $json_content = $ai_output;
+                }
+                
+                // Attempt to parse JSON response
+                $json_data = json_decode($json_content, true);
+                
+                if ($json_data && isset($json_data['score']) && isset($json_data['suggestion'])) {
+                    $ai_score = (int)$json_data['score'];
+                    $ai_suggestion = trim($json_data['suggestion']);
+
+                    if ($ai_score >= 1 && $ai_score <= 3) {
+                        $current_run_results['links']['score'] = $ai_score;
+                        // If AI gives a low score, the original 'details' is still relevant.
+                        // The suggestion from AI is the key part here.
+                    } else {
+                        // If score is invalid, keep the original score and append a note about the AI's invalid score.
+                        $ai_suggestion = "AI returned an invalid score ({$ai_score}). " . $ai_suggestion;
+                    }
+                    $current_run_results['links']['suggestion'] = $ai_suggestion;
+
+                } else {
+                    // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
+                    $current_run_results['links']['suggestion'] = 'AI response JSON format error. Raw: ' . $ai_output;
+                }
+            } else {
+                $current_run_results['links']['suggestion'] = 'AI suggestion failed: ' . ($links_ai_response_full['message'] ?? 'Unknown error');
+            }
+        } elseif (isset($current_run_results['links']['score']) && $current_run_results['links']['suggestion'] === 'Awaiting AI suggestion...') {
+            // Generic fallback if AI was expected but didn't run for other reasons.
+            $current_run_results['links']['suggestion'] = 'Links found, but could not generate AI suggestion at this time.';
+        }
+        // --- End AI Suggestion for Links ---
 
     } else { 
         foreach (array_keys($current_run_results) as $key) {
