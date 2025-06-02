@@ -224,6 +224,7 @@ $indicator_weights = [
     'image_alt' => 2,
     'links' => 3,
     '404_page' => 3,
+    'mobile_friendly' => 3,
     'viewport' => 2,
     'lang' => 2,
     'favicon' => 1,
@@ -236,7 +237,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    '404_page', // Only 404 page indicator is active as per user requirement
+    'mobile_friendly', // Only Mobile Friendly indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -252,6 +253,7 @@ $default_indicator_keys_for_logic = [
     'image_alt' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'links' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     '404_page' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'mobile_friendly' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'viewport' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'lang' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'favicon' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
@@ -582,7 +584,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
-            // Scoring logic
+            // Scoring logic (will be overridden later for paused indicators)
             $total_checks = count($url_issues) + count($url_positives);
             $positive_ratio = $total_checks > 0 ? count($url_positives) / $total_checks : 0;
             
@@ -943,7 +945,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $current_run_results['404_page']['details'] = 'Default server 404 response (no custom page found)';
                 }
                 
-                $current_run_results['404_page']['suggestion'] = implode('; ', $check_results);
+                $current_run_results['404_page']['suggestion'] = 'Developed and paused';
                 
                 // Store content for potential future AI analysis
                 if ($page_404_content) {
@@ -953,7 +955,172 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $current_run_results['404_page']['score'] = 1;
                 $current_run_results['404_page']['details'] = 'Could not determine base URL to check for 404 page';
-                $current_run_results['404_page']['suggestion'] = 'Unable to analyze 404 page due to URL parsing issues.';
+                $current_run_results['404_page']['suggestion'] = 'Developed and paused';
+            }
+
+            // Mobile Friendly Analysis with Static Checks
+            if ($page_content !== false) {
+                // Static checks for mobile friendliness
+                $mobile_checks = [
+                    'viewport_meta' => false,
+                    'responsive_design' => false,
+                    'readable_font_size' => false,
+                    'touch_friendly_elements' => false,
+                    'media_queries' => false,
+                    'optimized_images' => false,
+                    'no_outdated_tech' => true, // Default to true, set false if outdated technologies found
+                    'fast_loading' => false,
+                    'no_user_scalable_no' => true, // Default to true, set false if user-scalable=no found
+                    'no_intrusive_popups' => true, // Default to true, set false if popups detected
+                    'hamburger_menu' => false,
+                    'content_parity' => false
+                ];
+                
+                libxml_use_internal_errors(true);
+                $doc_mobile = new DOMDocument();
+                @$doc_mobile->loadHTML($page_content);
+                libxml_clear_errors();
+                $xpath_mobile = new DOMXPath($doc_mobile);
+                
+                // Check for viewport meta tag
+                $viewport_nodes = $xpath_mobile->query('//meta[@name="viewport"]');
+                if ($viewport_nodes->length > 0) {
+                    $viewport_content = $viewport_nodes->item(0)->getAttribute('content');
+                    if (strpos($viewport_content, 'width=device-width') !== false) {
+                        $mobile_checks['viewport_meta'] = true;
+                    }
+                    // Check for user-scalable=no (accessibility violation)
+                    if (strpos($viewport_content, 'user-scalable=no') !== false) {
+                        $mobile_checks['no_user_scalable_no'] = false;
+                    }
+                }
+                
+                // Check for responsive design indicators in CSS
+                if (preg_match('/@media\s*\([^)]*\)/', $page_content)) {
+                    $mobile_checks['media_queries'] = true;
+                }
+                
+                // Check for responsive design classes/patterns
+                if (preg_match('/\b(responsive|mobile|tablet|desktop|col-xs|col-sm|col-md|col-lg|flex|grid)\b/i', $page_content)) {
+                    $mobile_checks['responsive_design'] = true;
+                }
+                
+                // Check font sizes (look for reasonable font-size declarations)
+                if (preg_match('/font-size\s*:\s*([1-9][0-9]*px|[1-9](\.[0-9]+)?rem|[1-9](\.[0-9]+)?em)/i', $page_content)) {
+                    $mobile_checks['readable_font_size'] = true;
+                }
+                
+                // Check for touch-friendly elements (buttons, links with proper sizing)
+                $buttons = $xpath_mobile->query('//button | //input[@type="submit"] | //input[@type="button"]');
+                $links = $xpath_mobile->query('//a');
+                if ($buttons->length > 0 || $links->length > 0) {
+                    // Look for CSS that suggests touch-friendly sizing
+                    if (preg_match('/(min-height|padding|margin)\s*:\s*([2-9][0-9]*px|[2-9](\.[0-9]+)?rem)/i', $page_content)) {
+                        $mobile_checks['touch_friendly_elements'] = true;
+                    }
+                }
+                
+                // Check for optimized images (responsive images, srcset)
+                $img_nodes = $xpath_mobile->query('//img[@srcset] | //picture | //img[contains(@class, "responsive")]');
+                if ($img_nodes->length > 0) {
+                    $mobile_checks['optimized_images'] = true;
+                } else {
+                    // Check for CSS max-width on images
+                    if (preg_match('/img[^}]*max-width\s*:\s*100%/i', $page_content)) {
+                        $mobile_checks['optimized_images'] = true;
+                    }
+                }
+                
+                // Check for outdated technologies (should not be present for mobile friendliness)
+                $outdated_tech_found = false;
+                
+                // Check for Flash (more specific to avoid false positives like "flash-messages")
+                if (preg_match('/(\.swf|application\/x-shockwave-flash|type=["\']application\/x-shockwave-flash|embed.*\.swf|object.*flash)/i', $page_content)) {
+                    $outdated_tech_found = true;
+                }
+                
+                // Check for Adobe Shockwave Player
+                if (preg_match('/(shockwave.*player|application\/x-director|\.dcr)/i', $page_content)) {
+                    $outdated_tech_found = true;
+                }
+                
+                // Check for Microsoft Silverlight
+                if (preg_match('/(silverlight|application\/x-silverlight|\.xap)/i', $page_content)) {
+                    $outdated_tech_found = true;
+                }
+                
+                // Check for Java Applets
+                if (preg_match('/(java.*applet|application\/x-java-applet|<applet|\.jar.*applet)/i', $page_content)) {
+                    $outdated_tech_found = true;
+                }
+                
+                // Check for Frames (frameset, frame tags)
+                if (preg_match('/(<frameset|<frame\s)/i', $page_content)) {
+                    $outdated_tech_found = true;
+                }
+                
+                if ($outdated_tech_found) {
+                    $mobile_checks['no_outdated_tech'] = false;
+                }
+                
+                // Check for fast loading indicators (compressed CSS, minified JS, optimized resources)
+                $html_size_kb = strlen($page_content) / 1024;
+                if ($html_size_kb < 100) {
+                    $mobile_checks['fast_loading'] = true;
+                }
+                
+                // Check for hamburger menu indicators
+                if (preg_match('/(hamburger|burger|menu-toggle|navbar-toggler|mobile-menu|side-menu)/i', $page_content)) {
+                    $mobile_checks['hamburger_menu'] = true;
+                }
+                
+                // Check for intrusive popups (basic detection)
+                if (preg_match('/(popup|modal|overlay).*(?:subscribe|newsletter|discount|offer)/i', $page_content) ||
+                    preg_match('/position\s*:\s*fixed.*z-index\s*:\s*[1-9][0-9]{2,}/i', $page_content)) {
+                    $mobile_checks['no_intrusive_popups'] = false;
+                }
+                
+                // Check for content parity indicators (same meta descriptions, titles, etc.)
+                $title_mobile = $xpath_mobile->query('//title');
+                $meta_desc_mobile = $xpath_mobile->query('//meta[@name="description"]');
+                if ($title_mobile->length > 0 && $meta_desc_mobile->length > 0) {
+                    // Basic check - if both title and meta description exist, assume good content parity
+                    $mobile_checks['content_parity'] = true;
+                }
+                
+                // Calculate score based on checks
+                $passed_mobile_checks = array_sum($mobile_checks);
+                if ($passed_mobile_checks >= 10) {
+                    $mobile_score = 3;
+                } elseif ($passed_mobile_checks >= 7) {
+                    $mobile_score = 2;
+                } else {
+                    $mobile_score = 1;
+                }
+                
+                // Build suggestion with check results
+                $mobile_check_results = [];
+                $mobile_check_results[] = ($mobile_checks['viewport_meta'] ? '✓' : '✗') . ' Viewport Meta Tag';
+                $mobile_check_results[] = ($mobile_checks['responsive_design'] ? '✓' : '✗') . ' Responsive Design';
+                $mobile_check_results[] = ($mobile_checks['readable_font_size'] ? '✓' : '✗') . ' Readable Font Size';
+                $mobile_check_results[] = ($mobile_checks['touch_friendly_elements'] ? '✓' : '✗') . ' Touch-Friendly Elements';
+                $mobile_check_results[] = ($mobile_checks['media_queries'] ? '✓' : '✗') . ' Media Queries';
+                $mobile_check_results[] = ($mobile_checks['optimized_images'] ? '✓' : '✗') . ' Optimized Images';
+                $mobile_check_results[] = ($mobile_checks['no_outdated_tech'] ? '✓' : '✗') . ' No Outdated Technologies';
+                $mobile_check_results[] = ($mobile_checks['fast_loading'] ? '✓' : '✗') . ' Fast Loading';
+                $mobile_check_results[] = ($mobile_checks['no_user_scalable_no'] ? '✓' : '✗') . ' No user-scalable=no';
+                $mobile_check_results[] = ($mobile_checks['no_intrusive_popups'] ? '✓' : '✗') . ' No Intrusive Pop-ups';
+                $mobile_check_results[] = ($mobile_checks['hamburger_menu'] ? '✓' : '✗') . ' Hamburger Menu';
+                $mobile_check_results[] = ($mobile_checks['content_parity'] ? '✓' : '✗') . ' Content Parity';
+                
+                $current_run_results['mobile_friendly']['score'] = $mobile_score;
+                $current_run_results['mobile_friendly']['details'] = "Mobile analysis completed ({$passed_mobile_checks}/12 checks passed)";
+                $current_run_results['mobile_friendly']['suggestion'] = implode('<br>', $mobile_check_results);
+                
+            } else {
+                $current_run_results['mobile_friendly']['score'] = 1;
+                $current_run_results['mobile_friendly']['details'] = 'Could not analyze mobile friendliness - page content not available';
+                $current_run_results['mobile_friendly']['suggestion'] = 'Unable to perform mobile analysis due to content fetch issues.';
             }
 
             // Filenames Analysis (Developed and Paused)
@@ -1842,6 +2009,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_run_results[$key]['suggestion'] = '-'; // Add default suggestion for empty domain
         }
     }
+
+    // Set "Ready" indicators (developed but paused) to score 0 for display
+    foreach ($current_run_results as $key => &$result_item) {
+        if (isset($result_item['suggestion']) && $result_item['suggestion'] === 'Developed and paused') {
+            $result_item['score'] = 0;
+        }
+    }
+    unset($result_item); // Break the reference
 
     $total_weighted_score = 0;
     $total_weight = 0;
