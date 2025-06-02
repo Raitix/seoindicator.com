@@ -765,13 +765,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_run_results['links']['suggestion'] = 'Add internal and external links to improve navigation and SEO value.';
             }
 
-            // 404 Page Analysis
+            // 404 Page Analysis with Static Checks
             $page_404_content_for_ai = null;
             $parsed_url_for_404 = parse_url($final_accessible_url);
             
             if (isset($parsed_url_for_404['scheme']) && isset($parsed_url_for_404['host'])) {
                 $base_url_for_404 = $parsed_url_for_404['scheme'] . '://' . $parsed_url_for_404['host'];
-                $page_404_url = $base_url_for_404 . '/404';
                 
                 // Try multiple common 404 page URLs
                 $possible_404_urls = [
@@ -786,6 +785,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $page_404_found = false;
                 $page_404_content = '';
                 $page_404_url_found = '';
+                $page_404_status_code = 0;
+                
+                // Static checks results
+                $static_checks = [
+                    'http_404_status' => false,
+                    'has_logo' => false,
+                    'has_404_message' => false,
+                    'has_search_form' => false,
+                    'has_contact_info' => false,
+                    'has_home_link' => false,
+                    'has_helpful_links' => false
+                ];
                 
                 foreach ($possible_404_urls as $test_404_url) {
                     $context_404 = stream_context_create([
@@ -798,72 +809,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                     
                     $content_404 = @file_get_contents($test_404_url, false, $context_404);
+                    $headers_404 = @get_headers($test_404_url, false, $context_404);
                     
                     if ($content_404 !== false && strlen($content_404) > 100) {
+                        // Check HTTP status code
+                        if ($headers_404) {
+                            foreach ($headers_404 as $header) {
+                                if (stripos($header, '404') !== false) {
+                                    $static_checks['http_404_status'] = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
                         // Parse the 404 page content
                         libxml_use_internal_errors(true);
                         $doc_404 = new DOMDocument();
                         @$doc_404->loadHTML($content_404);
                         libxml_clear_errors();
                         
-                        // Extract meaningful content from 404 page
                         $xpath_404 = new DOMXPath($doc_404);
                         
-                        // Get title
-                        $title_404_nodes = $xpath_404->query('//title');
-                        $title_404 = $title_404_nodes->length > 0 ? trim($title_404_nodes->item(0)->nodeValue) : '';
+                        // Check for logo (image or text)
+                        $logo_img = $xpath_404->query('//img[contains(@src, "logo") or contains(@alt, "logo") or contains(@class, "logo")]');
+                        $logo_text = $xpath_404->query('//*[contains(text(), "logo") or contains(@class, "logo") or contains(@id, "logo")]');
+                        if ($logo_img->length > 0 || $logo_text->length > 0) {
+                            $static_checks['has_logo'] = true;
+                        }
                         
-                        // Get main content (try to find main content areas)
-                        $content_selectors = ['//main', '//div[contains(@class, "content")]', '//div[contains(@class, "main")]', '//body'];
-                        $main_content_404 = '';
-                        
-                        foreach ($content_selectors as $selector) {
-                            $content_nodes = $xpath_404->query($selector);
-                            if ($content_nodes->length > 0) {
-                                $main_content_404 = trim($content_nodes->item(0)->textContent);
-                                if (strlen($main_content_404) > 50) {
-                                    break;
-                                }
+                        // Check for 404 message
+                        $content_text = strtolower($doc_404->textContent);
+                        $error_phrases = ['404', 'not found', 'page not found', 'does not exist', 'cannot be found', 'error'];
+                        foreach ($error_phrases as $phrase) {
+                            if (strpos($content_text, $phrase) !== false) {
+                                $static_checks['has_404_message'] = true;
+                                break;
                             }
                         }
                         
-                        // Look for navigation elements and helpful features
-                        $nav_links = $xpath_404->query('//nav//a | //a[contains(@href, "home") or contains(@href, "/")]');
-                        $search_form = $xpath_404->query('//form[contains(@action, "search") or .//input[@type="search"]]');
-                        $contact_links = $xpath_404->query('//a[contains(@href, "contact") or contains(text(), "contact")]');
-                        
-                        // Build analysis content
-                        $analysis_parts = [];
-                        if (!empty($title_404)) {
-                            $analysis_parts[] = "Title: {$title_404}";
-                        }
-                        if (!empty($main_content_404)) {
-                            $analysis_parts[] = "Content: " . substr($main_content_404, 0, 300);
-                        }
-                        if ($nav_links->length > 0) {
-                            $analysis_parts[] = "Navigation links: {$nav_links->length} found";
-                        }
-                        if ($search_form->length > 0) {
-                            $analysis_parts[] = "Search functionality: Yes";
-                        }
-                        if ($contact_links->length > 0) {
-                            $analysis_parts[] = "Contact options: Yes";
+                        // Check for search form
+                        $search_forms = $xpath_404->query('//form[contains(@action, "search") or .//input[@type="search"]] | //input[@type="search"]');
+                        if ($search_forms->length > 0) {
+                            $static_checks['has_search_form'] = true;
                         }
                         
-                        if (!empty($analysis_parts)) {
-                            $page_404_content_for_ai = implode('. ', $analysis_parts);
-                            $page_404_found = true;
-                            $page_404_url_found = $test_404_url;
-                            break;
+                        // Check for contact information
+                        $contact_elements = $xpath_404->query('//a[contains(@href, "contact") or contains(text(), "contact")] | //*[contains(text(), "contact") or contains(text(), "email") or contains(text(), "support")]');
+                        if ($contact_elements->length > 0) {
+                            $static_checks['has_contact_info'] = true;
                         }
+                        
+                        // Check for home link
+                        $home_links = $xpath_404->query('//a[contains(@href, "home") or contains(@href, "/") or contains(text(), "home") or contains(text(), "homepage")]');
+                        if ($home_links->length > 0) {
+                            $static_checks['has_home_link'] = true;
+                        }
+                        
+                        // Check for helpful links (similar/popular/recent pages)
+                        $helpful_links = $xpath_404->query('//a[contains(text(), "popular") or contains(text(), "recent") or contains(text(), "similar") or contains(@class, "nav") or contains(@class, "menu")]');
+                        $nav_sections = $xpath_404->query('//nav | //ul[contains(@class, "nav")] | //div[contains(@class, "nav")]');
+                        if ($helpful_links->length > 2 || $nav_sections->length > 0) {
+                            $static_checks['has_helpful_links'] = true;
+                        }
+                        
+                        $page_404_found = true;
+                        $page_404_url_found = $test_404_url;
+                        $page_404_content = $content_404;
+                        break;
                     }
                 }
                 
-                if ($page_404_found) {
-                    $current_run_results['404_page']['score'] = 0; // Will be set by AI
-                    $current_run_results['404_page']['details'] = "Custom 404 page found at: " . str_replace($base_url_for_404, '', $page_404_url_found);
-                    $current_run_results['404_page']['suggestion'] = 'Awaiting AI suggestion...';
-                } else {
+                if (!$page_404_found) {
                     // Try accessing a definitely non-existent page to see default 404 response
                     $test_nonexistent_url = $base_url_for_404 . '/definitely-does-not-exist-' . time();
                     $context_test = stream_context_create([
@@ -876,18 +892,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                     
                     $test_content = @file_get_contents($test_nonexistent_url, false, $context_test);
+                    $test_headers = @get_headers($test_nonexistent_url, false, $context_test);
                     
                     if ($test_content !== false && strlen($test_content) > 50) {
-                        $current_run_results['404_page']['score'] = 0; // Will be set by AI
-                        $current_run_results['404_page']['details'] = 'Default 404 response detected (no custom 404 page found)';
-                        $page_404_content_for_ai = "Default server 404 response. Content: " . substr(strip_tags($test_content), 0, 200);
-                        $current_run_results['404_page']['suggestion'] = 'Awaiting AI suggestion...';
-                    } else {
-                        $current_run_results['404_page']['score'] = 1;
-                        $current_run_results['404_page']['details'] = 'No 404 page found and server not responding to invalid URLs';
-                        $current_run_results['404_page']['suggestion'] = 'Create a custom 404 error page to improve user experience when visitors encounter broken links.';
+                        // Check HTTP status code for default response
+                        if ($test_headers) {
+                            foreach ($test_headers as $header) {
+                                if (stripos($header, '404') !== false) {
+                                    $static_checks['http_404_status'] = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Check if default response has basic 404 message
+                        $content_text = strtolower($test_content);
+                        if (strpos($content_text, '404') !== false || strpos($content_text, 'not found') !== false) {
+                            $static_checks['has_404_message'] = true;
+                        }
+                        
+                        $page_404_content = $test_content;
                     }
                 }
+                
+                // Calculate score based on static checks
+                $passed_checks = array_sum($static_checks);
+                if ($passed_checks >= 6) {
+                    $score_404 = 3;
+                } elseif ($passed_checks >= 4) {
+                    $score_404 = 2;
+                } else {
+                    $score_404 = 1;
+                }
+                
+                // Build suggestion with check results
+                $check_results = [];
+                $check_results[] = ($static_checks['http_404_status'] ? '✓' : '✗') . ' HTTP 404 Status';
+                $check_results[] = ($static_checks['has_logo'] ? '✓' : '✗') . ' Logo Present';
+                $check_results[] = ($static_checks['has_404_message'] ? '✓' : '✗') . ' Error Message';
+                $check_results[] = ($static_checks['has_search_form'] ? '✓' : '✗') . ' Search Form';
+                $check_results[] = ($static_checks['has_contact_info'] ? '✓' : '✗') . ' Contact Info';
+                $check_results[] = ($static_checks['has_home_link'] ? '✓' : '✗') . ' Home Link';
+                $check_results[] = ($static_checks['has_helpful_links'] ? '✓' : '✗') . ' Navigation Links';
+                
+                $current_run_results['404_page']['score'] = $score_404;
+                
+                if ($page_404_found) {
+                    $current_run_results['404_page']['details'] = "Custom 404 page found at: " . str_replace($base_url_for_404, '', $page_404_url_found);
+                } else {
+                    $current_run_results['404_page']['details'] = 'Default server 404 response (no custom page found)';
+                }
+                
+                $current_run_results['404_page']['suggestion'] = implode('; ', $check_results);
+                
+                // Store content for potential future AI analysis
+                if ($page_404_content) {
+                    $page_404_content_for_ai = substr(strip_tags($page_404_content), 0, 300);
+                }
+                
             } else {
                 $current_run_results['404_page']['score'] = 1;
                 $current_run_results['404_page']['details'] = 'Could not determine base URL to check for 404 page';
@@ -1715,7 +1777,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         */
         // --- End AI Suggestion for Links (PAUSED) ---
 
-        // --- AI Suggestion for 404 Page ---
+        // --- AI Suggestion for 404 Page (COMMENTED OUT FOR STATIC CHECKS) ---
+        /*
         if ($page_404_content_for_ai) {
             $prompt = "Analyze the following 404 error page for SEO and user experience best practices. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Consider helpfulness, navigation options, search functionality, and user guidance. 404 page content: {$page_404_content_for_ai}";
             
@@ -1769,7 +1832,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['404_page']['suggestion'] = '404 page found, but could not generate AI suggestion at this time.';
         }
-        // --- End AI Suggestion for 404 Page ---
+        */
+        // --- End AI Suggestion for 404 Page (COMMENTED OUT FOR STATIC CHECKS) ---
 
     } else { 
         foreach (array_keys($current_run_results) as $key) {
