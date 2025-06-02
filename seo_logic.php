@@ -115,8 +115,8 @@ function render_stars($score, $show_text_score = false, $achieved_score_text = n
     $empty_star = '☆';
     $score_text_part = '';
 
-    // Visual stars based on the 1-3 $score parameter
-    if (!is_numeric($score) || $score < 1 || $score > $max_stars_visual) {
+    // Visual stars based on the 0-3 $score parameter
+    if (!is_numeric($score) || $score < 0 || $score > $max_stars_visual) {
          $stars_html = '<span class="text-secondary">' . str_repeat($empty_star, $max_stars_visual) . '</span>';
          if ($show_text_score) {
             // If detailed text scores are provided, use them, otherwise N/A
@@ -126,6 +126,12 @@ function render_stars($score, $show_text_score = false, $achieved_score_text = n
                 $score_text_part = ' <span class="text-muted">(N/A)</span>';
             }
          }
+    } elseif ($score == 0) {
+        // Score 0 - show grey stars with 0/3 text
+        $stars_html = '<span class="text-secondary">' . str_repeat($empty_star, $max_stars_visual) . '</span>';
+        if ($show_text_score) {
+            $score_text_part = ' <span class="text-muted">(0/' . $max_stars_visual . ')</span>';
+        }
     } else {
         $current_stars = '';
         for ($i = 1; $i <= $max_stars_visual; $i++) {
@@ -152,7 +158,7 @@ function render_stars($score, $show_text_score = false, $achieved_score_text = n
 
 // Helper function to get table row class based on score
 function get_score_row_class($score) {
-    if (!is_numeric($score) || $score < 1 || $score > 3) {
+    if (!is_numeric($score) || $score < 0 || $score > 3) {
         return '';
     }
     switch ($score) {
@@ -162,6 +168,8 @@ function get_score_row_class($score) {
             return 'table-warning';
         case 1:
             return 'table-danger';
+        case 0:
+            return 'table-dark';
         default:
             return '';
     }
@@ -395,7 +403,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($page_content !== false) {
             // HTML Size
             if ($dev_mock_all_but_title) {
-                $current_run_results['html_size'] = ['score' => 2, 'details' => 'HTML Size - Mocked (e.g. 150KB)', 'suggestion' => 'Mocked suggestion.'];
+                $current_run_results['html_size'] = ['score' => 0, 'details' => 'HTML Size - Mocked (e.g. 150KB)', 'suggestion' => 'To be developed'];
             } else {
                 $html_size_bytes = strlen($page_content);
                 $html_size_kb = round($html_size_bytes / 1024, 2);
@@ -427,20 +435,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($title_nodes->length > 0) {
                 $title_content = trim($title_nodes->item(0)->nodeValue);
                 if (!empty($title_content)) {
-                    $current_run_results['title']['score'] = 3;
+                    $current_run_results['title']['score'] = 0;
                     $current_run_results['title']['details'] = htmlspecialchars($title_content);
                     $title_content_for_ai = $title_content; // Store for AI
                     // Suggestion will be filled by AI or default if AI fails
-                    $current_run_results['title']['suggestion'] = 'Awaiting AI suggestion...'; 
+                    $current_run_results['title']['suggestion'] = 'Developed and paused'; 
                 } else {
-                    $current_run_results['title']['score'] = 2;
+                    $current_run_results['title']['score'] = 0;
                     $current_run_results['title']['details'] = 'Title tag exists but is empty.';
-                    $current_run_results['title']['suggestion'] = 'Provide a descriptive title for better SEO and user understanding.';
+                    $current_run_results['title']['suggestion'] = 'Developed and paused';
                 }
             } else {
-                $current_run_results['title']['score'] = 1;
+                $current_run_results['title']['score'] = 0;
                 $current_run_results['title']['details'] = 'No title tag found.';
-                $current_run_results['title']['suggestion'] = 'Add a compelling title tag to your page.';
+                $current_run_results['title']['suggestion'] = 'Developed and paused';
             }
 
             // Meta Description (REAL CHECK - NOT MOCKED)
@@ -448,20 +456,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($meta_description_nodes->length > 0) {
                 $meta_content = trim($meta_description_nodes->item(0)->getAttribute('content'));
                 if (!empty($meta_content)) {
-                    $current_run_results['meta_description']['score'] = 3;
+                    $current_run_results['meta_description']['score'] = 0;
                     $current_run_results['meta_description']['details'] = htmlspecialchars($meta_content);
                     $meta_description_content_for_ai = $meta_content; // Store for AI
                     // Suggestion will be filled by AI or default if AI fails
-                    $current_run_results['meta_description']['suggestion'] = 'Awaiting AI suggestion...';
+                    $current_run_results['meta_description']['suggestion'] = 'Developed and paused';
                 } else {
-                    $current_run_results['meta_description']['score'] = 2;
+                    $current_run_results['meta_description']['score'] = 0;
                     $current_run_results['meta_description']['details'] = 'Meta description tag exists but content is empty.';
-                    $current_run_results['meta_description']['suggestion'] = 'Fill in your meta description to improve click-through rates from search results.';
+                    $current_run_results['meta_description']['suggestion'] = 'Developed and paused';
                 }
             } else {
-                $current_run_results['meta_description']['score'] = 1;
+                $current_run_results['meta_description']['score'] = 0;
                 $current_run_results['meta_description']['details'] = 'No meta description tag found.';
-                $current_run_results['meta_description']['suggestion'] = 'Add a meta description to summarize the page content for search engines.';
+                $current_run_results['meta_description']['suggestion'] = 'Developed and paused';
             }
             
             // URL Structure Analysis
@@ -597,7 +605,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_run_results['url']['suggestion'] = 'Awaiting AI suggestion...';
             
             // Prepare content for AI analysis
-            $url_content_for_ai = "URL: {$final_accessible_url}";
+            $url_content_for_ai = $final_accessible_url;
             
             // Headings Structure Analysis
             $h1_nodes = $xpath->query('//h1');
@@ -635,214 +643,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             if ($h1_count > 0) {
-                $current_run_results['h1']['score'] = 3;
+                $current_run_results['h1']['score'] = 0;
                 if ($h1_count == 1) {
                     $current_run_results['h1']['details'] = "Found 1 H1 tag and {$total_headings} total headings (H2: {$h2_count}, H3: {$h3_count})";
                 } else {
                     $current_run_results['h1']['details'] = "Found {$h1_count} H1 tags and {$total_headings} total headings (H2: {$h2_count}, H3: {$h3_count})";
                 }
-                $current_run_results['h1']['suggestion'] = 'Awaiting AI suggestion...';
+                $current_run_results['h1']['suggestion'] = 'Developed and paused';
             } else {
-                $current_run_results['h1']['score'] = 1;
+                $current_run_results['h1']['score'] = 0;
                 $current_run_results['h1']['details'] = "No H1 tags found. Total headings: {$total_headings} (H2: {$h2_count}, H3: {$h3_count})";
-                $current_run_results['h1']['suggestion'] = 'Add an H1 tag to define the main heading of your page.';
+                $current_run_results['h1']['suggestion'] = 'Developed and paused';
             }
 
-            // Image Alt Attributes Analysis
-            $img_nodes = $xpath->query('//img');
-            $img_count = $img_nodes->length;
-            $img_missing_alt = 0;
-            $img_with_alt = [];
-            $img_sources = [];
-            
-            if ($img_count > 0) {
-                foreach ($img_nodes as $img_node) {
-                    $alt_text = $img_node->hasAttribute('alt') ? trim($img_node->getAttribute('alt')) : '';
-                    $src = $img_node->hasAttribute('src') ? $img_node->getAttribute('src') : 'unknown';
-                    $img_sources[] = basename($src);
-                    
-                    if (empty($alt_text)) {
-                        $img_missing_alt++;
-                    } else {
-                        $img_with_alt[] = $alt_text;
-                    }
-                }
-                
-                // Build image alt data for AI analysis
-                if (!empty($img_with_alt)) {
-                    $image_alt_content_for_ai = implode('; ', array_slice($img_with_alt, 0, 10)); // Limit to first 10 alt texts
-                }
-                
-                if ($img_missing_alt === 0) {
-                    $current_run_results['image_alt']['score'] = 3;
-                    $current_run_results['image_alt']['details'] = "Found {$img_count} images, all have alt attributes";
-                    $current_run_results['image_alt']['suggestion'] = 'Awaiting AI suggestion...';
-                } else {
-                    $current_run_results['image_alt']['score'] = 2;
-                    $img_with_alt_count = $img_count - $img_missing_alt;
-                    $current_run_results['image_alt']['details'] = "Found {$img_count} images: {$img_with_alt_count} with alt text, {$img_missing_alt} missing alt text";
-                    $current_run_results['image_alt']['suggestion'] = 'Awaiting AI suggestion...';
-                }
-            } else {
-                $current_run_results['image_alt']['score'] = 1; 
-                $current_run_results['image_alt']['details'] = 'No images found on the page';
-                $current_run_results['image_alt']['suggestion'] = 'Add relevant images with descriptive alt text to enhance accessibility and SEO.';
-            }
+            // Image Alt Analysis (Developed and Paused)
+            $current_run_results['image_alt']['score'] = 0;
+            $current_run_results['image_alt']['details'] = 'Image Alt analysis indicator';
+            $current_run_results['image_alt']['suggestion'] = 'Developed and paused';
 
-            // Filenames Analysis (Images, Documents, Files)
-            $all_filenames = [];
-            $problematic_filenames = [];
-            $good_filenames = [];
-            $has_inline_encoded_images = false;
-            
-            // Analyze image filenames
-            $img_nodes = $xpath->query('//img[@src]');
-            foreach ($img_nodes as $img_node) {
-                $src = $img_node->getAttribute('src');
-                // Skip inline encoded images (data: URLs)
-                if (strpos($src, 'data:') === 0) {
-                    $has_inline_encoded_images = true;
-                    continue;
-                }
-                $filename = basename(parse_url($src, PHP_URL_PATH));
-                if (!empty($filename) && $filename !== '/') {
-                    $all_filenames[] = ['type' => 'image', 'filename' => $filename, 'source' => $src];
-                }
-            }
-            
-            // Analyze document and file links
-            $link_nodes = $xpath->query('//a[@href]');
-            foreach ($link_nodes as $link_node) {
-                $href = $link_node->getAttribute('href');
-                // Check for common file extensions
-                if (preg_match('/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp3|mp4|avi|mov|jpg|jpeg|png|gif|svg|css|js|xml|txt|csv)$/i', $href)) {
-                    $filename = basename(parse_url($href, PHP_URL_PATH));
-                    if (!empty($filename)) {
-                        // Determine file type
-                        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-                        $file_types = [
-                            'pdf' => 'document', 'doc' => 'document', 'docx' => 'document',
-                            'xls' => 'spreadsheet', 'xlsx' => 'spreadsheet', 'csv' => 'spreadsheet',
-                            'ppt' => 'presentation', 'pptx' => 'presentation',
-                            'zip' => 'archive', 'rar' => 'archive',
-                            'mp3' => 'audio', 'mp4' => 'video', 'avi' => 'video', 'mov' => 'video',
-                            'jpg' => 'image', 'jpeg' => 'image', 'png' => 'image', 'gif' => 'image', 'svg' => 'image',
-                            'css' => 'stylesheet', 'js' => 'script', 'xml' => 'data', 'txt' => 'text'
-                        ];
-                        $file_type = $file_types[$extension] ?? 'file';
-                        $all_filenames[] = ['type' => $file_type, 'filename' => $filename, 'source' => $href];
-                    }
-                }
-            }
-            
-            // Analyze CSS background images and other resources
-            $style_nodes = $xpath->query('//style | //*[@style]');
-            foreach ($style_nodes as $style_node) {
-                $style_content = $style_node->nodeValue ?? $style_node->getAttribute('style');
-                if (preg_match_all('/url\(["\']?([^"\')\s]+)["\']?\)/i', $style_content, $matches)) {
-                    foreach ($matches[1] as $url) {
-                        $filename = basename(parse_url($url, PHP_URL_PATH));
-                        if (!empty($filename) && preg_match('/\.(jpg|jpeg|png|gif|svg|css|js|woff|woff2|ttf|eot)$/i', $filename)) {
-                            $all_filenames[] = ['type' => 'resource', 'filename' => $filename, 'source' => $url];
-                        }
-                    }
-                }
-            }
-            
-            // Remove duplicates
-            $unique_filenames = [];
-            $seen_filenames = [];
-            foreach ($all_filenames as $file_data) {
-                if (!in_array($file_data['filename'], $seen_filenames)) {
-                    $unique_filenames[] = $file_data;
-                    $seen_filenames[] = $file_data['filename'];
-                }
-            }
-            
-            // Analyze filename quality
-            foreach ($unique_filenames as $file_data) {
-                $filename = $file_data['filename'];
-                $name_without_extension = pathinfo($filename, PATHINFO_FILENAME);
-                
-                // Check for SEO-unfriendly patterns in filename
-                $is_problematic = false;
-                $issues = [];
-                
-                if (preg_match('/[A-Z]/', $name_without_extension)) {
-                    $is_problematic = true;
-                    $issues[] = 'uppercase';
-                }
-                if (preg_match('/\s/', $name_without_extension)) {
-                    $is_problematic = true;
-                    $issues[] = 'spaces';
-                }
-                if (preg_match('/[^a-z0-9\-_]/', $name_without_extension)) {
-                    $is_problematic = true;
-                    $issues[] = 'special_chars';
-                }
-                if (preg_match('/^\d+$/', $name_without_extension)) {
-                    $is_problematic = true;
-                    $issues[] = 'only_numbers';
-                }
-                if (strlen($name_without_extension) < 3) {
-                    $is_problematic = true;
-                    $issues[] = 'too_short';
-                }
-                if (strlen($name_without_extension) > 50) {
-                    $is_problematic = true;
-                    $issues[] = 'too_long';
-                }
-                if (preg_match('/^(img|image|file|doc|document|pic|picture)\d*$/i', $name_without_extension)) {
-                    $is_problematic = true;
-                    $issues[] = 'generic';
-                }
-                
-                if ($is_problematic) {
-                    $problematic_filenames[] = $filename;
-                } else {
-                    $good_filenames[] = $filename;
-                }
-            }
-            
-            // Prepare results
-            $total_filenames = count($unique_filenames);
-            $problematic_count = count($problematic_filenames);
-            $good_count = count($good_filenames);
-            
-            if ($total_filenames > 0) {
-                // Group filenames by type for better analysis
-                $filename_types = [];
-                foreach ($unique_filenames as $file_data) {
-                    $filename_types[$file_data['type']][] = $file_data['filename'];
-                }
-                
-                $sample_data = [];
-                foreach ($filename_types as $type => $filenames) {
-                    $sample_data[] = ucfirst($type) . ' files: ' . implode(', ', array_slice($filenames, 0, 5));
-                }
-                $filenames_content_for_ai = "Found {$total_filenames} files on page. " . implode('; ', array_slice($sample_data, 0, 4));
-                
-                if ($problematic_count === 0) {
-                    $current_run_results['filenames']['score'] = 3;
-                    $current_run_results['filenames']['details'] = "Analyzed {$total_filenames} files: all have SEO-friendly names";
-                } elseif ($problematic_count < $total_filenames / 2) {
-                    $current_run_results['filenames']['score'] = 2;
-                    $current_run_results['filenames']['details'] = "Analyzed {$total_filenames} files: {$good_count} SEO-friendly names, {$problematic_count} need improvement";
-                } else {
-                    $current_run_results['filenames']['score'] = 1;
-                    $current_run_results['filenames']['details'] = "Analyzed {$total_filenames} files: {$good_count} SEO-friendly names, {$problematic_count} need improvement";
-                }
-                $current_run_results['filenames']['suggestion'] = 'Awaiting AI suggestion...';
-            } else {
-                $current_run_results['filenames']['score'] = 2;
-                $current_run_results['filenames']['details'] = 'No files found for filename analysis';
-                $filenames_content_for_ai = "No files (images, documents, etc.) found on the page for filename analysis.";
-                $current_run_results['filenames']['suggestion'] = 'Awaiting AI suggestion...';
-            }
+            // Filenames Analysis (Developed and Paused)
+            $current_run_results['filenames']['score'] = 0;
+            $current_run_results['filenames']['details'] = 'Filenames analysis indicator';
+            $current_run_results['filenames']['suggestion'] = 'Developed and paused';
 
             // Viewport Meta Tag
             if ($dev_mock_all_but_title) {
-                $current_run_results['viewport'] = ['score' => 2, 'details' => 'Viewport Meta Tag - Mocked', 'suggestion' => 'Mocked suggestion.'];
+                $current_run_results['viewport'] = ['score' => 0, 'details' => 'Viewport Meta Tag - Mocked', 'suggestion' => 'To be developed'];
             } else {
                 $viewport_nodes = $xpath->query('//meta[@name="viewport"]');
                 if ($viewport_nodes->length > 0) {
@@ -858,7 +684,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Language Declaration
             if ($dev_mock_all_but_title) {
-                $current_run_results['lang'] = ['score' => 2, 'details' => 'Language Declaration - Mocked', 'suggestion' => 'Mocked suggestion.'];
+                $current_run_results['lang'] = ['score' => 0, 'details' => 'Language Declaration - Mocked', 'suggestion' => 'To be developed'];
             } else {
                 $html_node = $xpath->query('/html')->item(0);
                 if ($html_node && $html_node->hasAttribute('lang') && trim($html_node->getAttribute('lang')) !== '') {
@@ -875,7 +701,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Favicon Presence
             if ($dev_mock_all_but_title) {
-                $current_run_results['favicon'] = ['score' => 2, 'details' => 'Favicon Presence - Mocked', 'suggestion' => 'Mocked suggestion.'];
+                $current_run_results['favicon'] = ['score' => 0, 'details' => 'Favicon Presence - Mocked', 'suggestion' => 'To be developed'];
             } else {
                 $favicon_nodes = $xpath->query('//link[contains(@rel, "icon")]');
                 if ($favicon_nodes->length > 0) {
@@ -891,7 +717,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Canonical Link Tag
             if ($dev_mock_all_but_title) {
-                $current_run_results['canonical'] = ['score' => 2, 'details' => 'Canonical Link - Mocked', 'suggestion' => 'Mocked suggestion.'];
+                $current_run_results['canonical'] = ['score' => 0, 'details' => 'Canonical Link - Mocked', 'suggestion' => 'To be developed'];
             } else {
                 $canonical_nodes = $xpath->query('//link[@rel="canonical"]');
                 if ($canonical_nodes->length > 0) {
@@ -908,7 +734,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Open Graph Tags (Basic Check)
             if ($dev_mock_all_but_title) {
-                $current_run_results['opengraph'] = ['score' => 2, 'details' => 'Open Graph Tags - Mocked', 'suggestion' => 'Mocked suggestion.'];
+                $current_run_results['opengraph'] = ['score' => 0, 'details' => 'Open Graph Tags - Mocked', 'suggestion' => 'To be developed'];
             } else {
                 $og_nodes = $xpath->query('//meta[starts-with(@property, "og:")]');
                 if ($og_nodes->length > 0) {
@@ -924,7 +750,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Inline Styles Check
             if ($dev_mock_all_but_title) {
-                $current_run_results['inline_css'] = ['score' => 2, 'details' => 'Inline Styles - Mocked', 'suggestion' => 'Mocked suggestion.'];
+                $current_run_results['inline_css'] = ['score' => 0, 'details' => 'Inline Styles - Mocked', 'suggestion' => 'To be developed'];
             } else {
                 $inline_style_nodes = $xpath->query('//*[@style]');
                 $style_tag_nodes = $xpath->query('//body//style');
@@ -1110,7 +936,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Skip mocking for robots.txt to show real results and AI suggestions
             $robots_url = $base_url_for_files . '/robots.txt';
             $robots_check_result = check_resource_accessibility_helper($robots_url);
-            $current_run_results['robots']['score'] = $robots_check_result['score'];
+            $current_run_results['robots']['score'] = 0;
             $current_run_results['robots']['details'] = $robots_check_result['details'];
             
             // Fetch robots.txt content for AI analysis if accessible
@@ -1121,12 +947,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $content_length = strlen($robots_content_for_ai);
                     $line_count = substr_count($robots_content_for_ai, "\n") + 1;
                     $current_run_results['robots']['details'] = "Found robots.txt ({$content_length} chars, {$line_count} lines)";
-                    $current_run_results['robots']['suggestion'] = 'Awaiting AI suggestion...';
+                    $current_run_results['robots']['suggestion'] = 'Developed and paused';
                 } else {
-                    $current_run_results['robots']['suggestion'] = 'robots.txt is accessible but content could not be fetched for analysis.';
+                    $current_run_results['robots']['suggestion'] = 'Developed and paused';
                 }
             } else {
-                $current_run_results['robots']['suggestion'] = 'Check robots.txt accessibility and content.';
+                $current_run_results['robots']['suggestion'] = 'Developed and paused';
             }
 
             $sitemap_content_for_ai = null; // Variable to store sitemap.xml content for AI
@@ -1134,7 +960,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sitemap.xml
             $sitemap_url = $base_url_for_files . '/sitemap.xml';
             $sitemap_check_result = check_resource_accessibility_helper($sitemap_url);
-            $current_run_results['sitemap']['score'] = $sitemap_check_result['score'];
+            $current_run_results['sitemap']['score'] = 0;
             $current_run_results['sitemap']['details'] = $sitemap_check_result['details'];
             
             // Fetch sitemap.xml content for AI analysis if accessible
@@ -1157,12 +983,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         $current_run_results['sitemap']['details'] = "Found sitemap.xml ({$content_length} chars, {$line_count} lines, {$url_count} URLs)";
                     }
-                    $current_run_results['sitemap']['suggestion'] = 'Awaiting AI suggestion...';
+                    $current_run_results['sitemap']['suggestion'] = 'Developed and paused';
                 } else {
-                    $current_run_results['sitemap']['suggestion'] = 'sitemap.xml is accessible but content could not be fetched for analysis.';
+                    $current_run_results['sitemap']['suggestion'] = 'Developed and paused';
                 }
             } else {
-                $current_run_results['sitemap']['suggestion'] = 'Check sitemap.xml accessibility and content.';
+                $current_run_results['sitemap']['suggestion'] = 'Developed and paused';
             }
         } else {
             $url_parse_error_msg = 'Could not parse URL to check for robots.txt/sitemap.xml.';

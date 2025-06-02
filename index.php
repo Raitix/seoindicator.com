@@ -191,11 +191,16 @@ if ($openrouter_response_data) {
                                             <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                         <?php endif; ?>
                                         
-                                                                <?php if (in_array($key, $active_indicators ?? ['url'])): ?>
-                            <span class="badge bg-success ms-1" title="Active indicator - contributes to overall score">ACTIVE</span>
-                        <?php else: ?>
-                            <span class="badge bg-secondary ms-1" title="Inactive indicator - shown for development only">DEV</span>
-                        <?php endif; ?>
+                                                                <?php 
+                                        // Determine indicator state based on key and suggestion
+                                        if (in_array($key, $active_indicators ?? ['url'])) {
+                                            echo '<span class="badge bg-success ms-1" title="Active indicator - contributes to overall score">In Dev</span>';
+                                        } elseif (isset($result['suggestion']) && $result['suggestion'] === 'Developed and paused') {
+                                            echo '<span class="badge bg-info ms-1" title="Developed but paused - not contributing to score">Ready</span>';
+                                        } else {
+                                            echo '<span class="badge bg-secondary ms-1" title="Not yet developed">To Do</span>';
+                                        }
+                                        ?>
                                     </td>
                                     <td><?php echo render_stars($result['score']); ?></td>
                                     <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>

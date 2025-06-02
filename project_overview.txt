@@ -15,12 +15,16 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   Verifies website accessibility by checking for a "200 OK" status in headers, accounting for redirects.
     *   If the site is inaccessible, an error message is displayed, and further checks are skipped.
 
-3.  **SEO Indicator Checks (14 total, displayed in a table):**
+3.  **SEO Indicator Checks (15 total, displayed in a table):**
     *   **Original 5:** Title Tag Presence, Meta Description Presence, `robots.txt` Accessibility, `sitemap.xml` Accessibility.
     *   **+4 added:** H1 Heading Presence, Image Alt Attributes (checks for non-empty alt), Viewport Meta Tag, Language Declaration (HTML `lang` attribute).
     *   **+5 more added:** Favicon Presence, Canonical Link Tag, Open Graph Tags (basic check for `og:` prefixes), HTML Document Size, Inline Styles Check (looks for `style` attributes and `<style>` tags in the body).
     *   Website Accessibility check itself is performed but no longer shown as a separate row in the results table.
     *   **Note:** HTTPS checking has been integrated into the URL indicator rather than being a separate indicator.
+    *   **Indicator States:**
+        *   **1 In Development:** URL (active AI-powered analysis)
+        *   **7 Ready:** Title Tag, Meta Description, Robots.txt, Sitemap.xml, Headings (H1), Image Alt, Filenames (developed but paused)
+        *   **7 To Do:** Viewport, Language Declaration, Favicon, Canonical, Open Graph, HTML Size, Inline Styles (not yet developed)
 
 4.  **`seo_logic.php` (Refactored Logic File):**
     *   Contains helper functions:
@@ -81,7 +85,10 @@ The tool allows users to enter a domain name. It then checks if the website is a
 
 9.  **Active Indicator Management:**
     *   **Active Indicators Configuration:** Only indicators listed in `$active_indicators` array contribute to overall scoring calculations.
-    *   **Visual Badge System:** Green "ACTIVE" badges show scoring indicators, gray "DEV" badges show development-only indicators.
+    *   **Visual Badge System:** 
+        *   Green "In Dev" badges: Currently active indicators contributing to score
+        *   Blue "Ready" badges: Developed but paused indicators (score 0/3, grey stars, dark table rows)
+        *   Grey "To Do" badges: Not yet developed indicators (score 0/3, grey stars, dark table rows)
     *   **Current Active Status:** Only `url` (URL) indicator is active and contributes to scoring.
     *   **Development Visibility:** All indicators remain visible in results table for development purposes.
 
@@ -120,14 +127,8 @@ The tool allows users to enter a domain name. It then checks if the website is a
 *   **Local Development:** XAMPP stack (Apache + PHP + MySQL) for local development environment.
 *   **Production Hosting:** Hostinger.com shared hosting plan for live deployment.
 *   **AI Development Status:** 
-    *   "Title" indicator: AI functionality paused for development
-    *   "Meta Description" indicator: AI functionality paused for development  
-    *   "URL" indicator: Currently returns real AI-powered suggestions via OpenRouter API with comprehensive URL structure analysis
-    *   "Robots.txt" indicator: AI functionality paused for development
-    *   "Sitemap.xml" indicator: AI functionality paused for development
-    *   "Headings" indicator: AI functionality paused for development
-    *   "Filenames" indicator: AI functionality paused for development - provides fallback suggestions with inline image warnings
-    *   "Image Alt" indicator: AI functionality paused for development
-    *   All other 8 indicators are mocked during development
+    *   **1 In Development:** "URL" indicator - Currently returns real AI-powered suggestions via OpenRouter API with comprehensive URL structure analysis
+    *   **7 Ready (Developed but Paused):** "Title", "Meta Description", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
+    *   **7 To Do (Not Yet Developed):** "Viewport", "Language Declaration", "Favicon", "Canonical", "Open Graph", "HTML Size", "Inline Styles" indicators - Showing "To be developed" status
 
 **Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter. 
