@@ -1407,18 +1407,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // If score is invalid, keep the original score and append a note about the AI's invalid score.
                         $ai_suggestion = "AI returned an invalid score ({$ai_score}). " . $ai_suggestion;
                     }
-                    $current_run_results['url']['suggestion'] = $url_analysis_text . '. ' . $ai_suggestion;
+                    $current_run_results['url']['suggestion'] = $url_analysis_text . ".<br>" . $ai_suggestion;
 
                 } else {
                     // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
-                    $current_run_results['url']['suggestion'] = $url_analysis_text . '. AI response JSON format error. Raw: ' . $ai_output;
+                    $current_run_results['url']['suggestion'] = $url_analysis_text . ".<br>AI response JSON format error. Raw: " . $ai_output;
                 }
             } else {
-                $current_run_results['url']['suggestion'] = $url_analysis_text . '. AI suggestion failed: ' . ($url_ai_response_full['message'] ?? 'Unknown error');
+                $current_run_results['url']['suggestion'] = $url_analysis_text . ".<br>AI suggestion failed: " . ($url_ai_response_full['message'] ?? 'Unknown error');
             }
         } elseif (isset($current_run_results['url']['score']) && $current_run_results['url']['suggestion'] === 'Awaiting AI suggestion...') {
             // Generic fallback if AI was expected but didn't run for other reasons.
-            $current_run_results['url']['suggestion'] = $url_analysis_text . '. URL found, but could not generate AI suggestion at this time.';
+            $current_run_results['url']['suggestion'] = $url_analysis_text . ".<br>URL found, but could not generate AI suggestion at this time.";
         }
         // --- End AI Suggestion for URL ---
 

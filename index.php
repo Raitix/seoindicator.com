@@ -204,7 +204,19 @@ if ($openrouter_response_data) {
                                     </td>
                                     <td><?php echo render_stars($result['score']); ?></td>
                                     <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
-                                    <td class="suggestion-cell"><?php echo isset($result['suggestion']) ? htmlspecialchars($result['suggestion']) : '-'; ?></td>
+                                    <td class="suggestion-cell"><?php 
+                                        if (isset($result['suggestion'])) {
+                                            if ($key === 'url') {
+                                                // For URL suggestions, allow HTML (specifically <br> tags)
+                                                echo $result['suggestion'];
+                                            } else {
+                                                // For other suggestions, escape HTML
+                                                echo htmlspecialchars($result['suggestion']);
+                                            }
+                                        } else {
+                                            echo '-';
+                                        }
+                                    ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
