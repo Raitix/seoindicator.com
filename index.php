@@ -21,7 +21,7 @@ $overall_score_to_display = $_SESSION['overall_score_data'] ?? null;
 // where $default_indicator_keys_for_logic would come from seo_logic.php or be defined minimally here)
 // For now, relying on the session load which itself relies on $default_indicator_keys_for_logic from seo_logic.php for initial POST run.
 // Let's ensure a default empty state for the view if session is not set from a POST yet.
-$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['url'=>'', 'title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'links'=>'', 'viewport'=>'', 'lang'=>'', 'favicon'=>'', 'canonical'=>'', 'opengraph'=>'', 'html_size'=>'', 'inline_css'=>'']), ['score' => null, 'details' => '-', 'suggestion' => '-']);
+$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['url'=>'', 'title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'links'=>'', '404_page'=>'', 'viewport'=>'', 'lang'=>'', 'favicon'=>'', 'canonical'=>'', 'opengraph'=>'', 'html_size'=>'', 'inline_css'=>'']), ['score' => null, 'details' => '-', 'suggestion' => '-']);
 
 $overall_score_display_data = $_SESSION['overall_score_data'] ?? null;
 $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
@@ -191,6 +191,10 @@ if ($openrouter_response_data) {
                             <a href="/seo-guides/links" target="_blank" title="Links SEO Guide">
                                 Links
                             </a>
+                        <?php elseif ($key === '404_page'): ?>
+                            <a href="/seo-guides/404-page" target="_blank" title="404 Page SEO Guide">
+                                404 Page
+                            </a>
                                         <?php else: ?>
                                             <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                         <?php endif; ?>
@@ -207,7 +211,7 @@ if ($openrouter_response_data) {
                                         ?>
                                     </td>
                                     <td><?php echo render_stars($result['score']); ?></td>
-                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
+                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
                                     <td class="suggestion-cell"><?php 
                                         if (isset($result['suggestion'])) {
                                             if ($key === 'url') {

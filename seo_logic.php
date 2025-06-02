@@ -223,6 +223,7 @@ $indicator_weights = [
     'filenames' => 2,
     'image_alt' => 2,
     'links' => 3,
+    '404_page' => 3,
     'viewport' => 2,
     'lang' => 2,
     'favicon' => 1,
@@ -235,7 +236,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'links', // Only Links indicator is active as per user requirement
+    '404_page', // Only 404 page indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -250,6 +251,7 @@ $default_indicator_keys_for_logic = [
     'filenames' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'image_alt' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'links' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    '404_page' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'viewport' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'lang' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'favicon' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
@@ -754,13 +756,142 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $score = 2;
                 }
                 
-                $current_run_results['links']['score'] = 0; // Will be set by AI
+                $current_run_results['links']['score'] = 0;
                 $current_run_results['links']['details'] = "Found {$links_count} links (Internal: {$internal_links}, External: {$external_links}, OnClick: {$onclick_links})";
-                $current_run_results['links']['suggestion'] = 'Awaiting AI suggestion...';
+                $current_run_results['links']['suggestion'] = 'Developed and paused';
             } else {
                 $current_run_results['links']['score'] = 1;
                 $current_run_results['links']['details'] = 'No links found on the page';
                 $current_run_results['links']['suggestion'] = 'Add internal and external links to improve navigation and SEO value.';
+            }
+
+            // 404 Page Analysis
+            $page_404_content_for_ai = null;
+            $parsed_url_for_404 = parse_url($final_accessible_url);
+            
+            if (isset($parsed_url_for_404['scheme']) && isset($parsed_url_for_404['host'])) {
+                $base_url_for_404 = $parsed_url_for_404['scheme'] . '://' . $parsed_url_for_404['host'];
+                $page_404_url = $base_url_for_404 . '/404';
+                
+                // Try multiple common 404 page URLs
+                $possible_404_urls = [
+                    $base_url_for_404 . '/404',
+                    $base_url_for_404 . '/404.html',
+                    $base_url_for_404 . '/404.php',
+                    $base_url_for_404 . '/error',
+                    $base_url_for_404 . '/page-not-found',
+                    $base_url_for_404 . '/not-found'
+                ];
+                
+                $page_404_found = false;
+                $page_404_content = '';
+                $page_404_url_found = '';
+                
+                foreach ($possible_404_urls as $test_404_url) {
+                    $context_404 = stream_context_create([
+                        'http' => [
+                            'method' => "GET",
+                            'timeout' => 5,
+                            'ignore_errors' => true,
+                            'header' => "User-Agent: SEOIndicatorBot/1.0\r\n"
+                        ]
+                    ]);
+                    
+                    $content_404 = @file_get_contents($test_404_url, false, $context_404);
+                    
+                    if ($content_404 !== false && strlen($content_404) > 100) {
+                        // Parse the 404 page content
+                        libxml_use_internal_errors(true);
+                        $doc_404 = new DOMDocument();
+                        @$doc_404->loadHTML($content_404);
+                        libxml_clear_errors();
+                        
+                        // Extract meaningful content from 404 page
+                        $xpath_404 = new DOMXPath($doc_404);
+                        
+                        // Get title
+                        $title_404_nodes = $xpath_404->query('//title');
+                        $title_404 = $title_404_nodes->length > 0 ? trim($title_404_nodes->item(0)->nodeValue) : '';
+                        
+                        // Get main content (try to find main content areas)
+                        $content_selectors = ['//main', '//div[contains(@class, "content")]', '//div[contains(@class, "main")]', '//body'];
+                        $main_content_404 = '';
+                        
+                        foreach ($content_selectors as $selector) {
+                            $content_nodes = $xpath_404->query($selector);
+                            if ($content_nodes->length > 0) {
+                                $main_content_404 = trim($content_nodes->item(0)->textContent);
+                                if (strlen($main_content_404) > 50) {
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Look for navigation elements and helpful features
+                        $nav_links = $xpath_404->query('//nav//a | //a[contains(@href, "home") or contains(@href, "/")]');
+                        $search_form = $xpath_404->query('//form[contains(@action, "search") or .//input[@type="search"]]');
+                        $contact_links = $xpath_404->query('//a[contains(@href, "contact") or contains(text(), "contact")]');
+                        
+                        // Build analysis content
+                        $analysis_parts = [];
+                        if (!empty($title_404)) {
+                            $analysis_parts[] = "Title: {$title_404}";
+                        }
+                        if (!empty($main_content_404)) {
+                            $analysis_parts[] = "Content: " . substr($main_content_404, 0, 300);
+                        }
+                        if ($nav_links->length > 0) {
+                            $analysis_parts[] = "Navigation links: {$nav_links->length} found";
+                        }
+                        if ($search_form->length > 0) {
+                            $analysis_parts[] = "Search functionality: Yes";
+                        }
+                        if ($contact_links->length > 0) {
+                            $analysis_parts[] = "Contact options: Yes";
+                        }
+                        
+                        if (!empty($analysis_parts)) {
+                            $page_404_content_for_ai = implode('. ', $analysis_parts);
+                            $page_404_found = true;
+                            $page_404_url_found = $test_404_url;
+                            break;
+                        }
+                    }
+                }
+                
+                if ($page_404_found) {
+                    $current_run_results['404_page']['score'] = 0; // Will be set by AI
+                    $current_run_results['404_page']['details'] = "Custom 404 page found at: " . str_replace($base_url_for_404, '', $page_404_url_found);
+                    $current_run_results['404_page']['suggestion'] = 'Awaiting AI suggestion...';
+                } else {
+                    // Try accessing a definitely non-existent page to see default 404 response
+                    $test_nonexistent_url = $base_url_for_404 . '/definitely-does-not-exist-' . time();
+                    $context_test = stream_context_create([
+                        'http' => [
+                            'method' => "GET",
+                            'timeout' => 5,
+                            'ignore_errors' => true,
+                            'header' => "User-Agent: SEOIndicatorBot/1.0\r\n"
+                        ]
+                    ]);
+                    
+                    $test_content = @file_get_contents($test_nonexistent_url, false, $context_test);
+                    
+                    if ($test_content !== false && strlen($test_content) > 50) {
+                        $current_run_results['404_page']['score'] = 0; // Will be set by AI
+                        $current_run_results['404_page']['details'] = 'Default 404 response detected (no custom 404 page found)';
+                        $page_404_content_for_ai = "Default server 404 response. Content: " . substr(strip_tags($test_content), 0, 200);
+                        $current_run_results['404_page']['suggestion'] = 'Awaiting AI suggestion...';
+                    } else {
+                        $current_run_results['404_page']['score'] = 1;
+                        $current_run_results['404_page']['details'] = 'No 404 page found and server not responding to invalid URLs';
+                        $current_run_results['404_page']['suggestion'] = 'Create a custom 404 error page to improve user experience when visitors encounter broken links.';
+                    }
+                }
+            } else {
+                $current_run_results['404_page']['score'] = 1;
+                $current_run_results['404_page']['details'] = 'Could not determine base URL to check for 404 page';
+                $current_run_results['404_page']['suggestion'] = 'Unable to analyze 404 page due to URL parsing issues.';
             }
 
             // Filenames Analysis (Developed and Paused)
@@ -1526,7 +1657,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         */
         // --- End AI Suggestion for URL (PAUSED) ---
 
-        // --- AI Suggestion for Links ---
+        // --- AI Suggestion for Links (PAUSED) ---
+        /*
         if ($links_content_for_ai) {
             $prompt = "Analyze the following website links for SEO best practices. The data is in JSON format containing all links found on the page. Provide your response in JSON format with EXACTLY 2 ELEMENTS: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Links data: {$links_content_for_ai}";
             
@@ -1580,7 +1712,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['links']['suggestion'] = 'Links found, but could not generate AI suggestion at this time.';
         }
-        // --- End AI Suggestion for Links ---
+        */
+        // --- End AI Suggestion for Links (PAUSED) ---
+
+        // --- AI Suggestion for 404 Page ---
+        if ($page_404_content_for_ai) {
+            $prompt = "Analyze the following 404 error page for SEO and user experience best practices. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Consider helpfulness, navigation options, search functionality, and user guidance. 404 page content: {$page_404_content_for_ai}";
+            
+            $page_404_ai_response_full = call_openrouter_api($prompt); // Get the full response
+            
+            // Store the raw request and response from THIS call for display
+            $_SESSION['openrouter_response'] = [
+                'success' => $page_404_ai_response_full['success'], // Reflect success of this specific call
+                'message' => $page_404_ai_response_full['message'], // Message of this specific call
+                'raw_request' => $page_404_ai_response_full['raw_request'] ?? null,
+                'raw_response' => $page_404_ai_response_full['raw_response'] ?? null,
+                // 'data' could also be stored if needed elsewhere, but raw is primary for the info alert
+            ];
+
+            if ($page_404_ai_response_full['success'] && isset($page_404_ai_response_full['data'])) {
+                $ai_output = trim($page_404_ai_response_full['data']);
+                
+                // Extract JSON from markdown code blocks if present
+                if (preg_match('/```json\s*(.*?)\s*```/s', $ai_output, $matches)) {
+                    $json_content = trim($matches[1]);
+                } else {
+                    // If no markdown blocks, use the full content
+                    $json_content = $ai_output;
+                }
+                
+                // Attempt to parse JSON response
+                $json_data = json_decode($json_content, true);
+                
+                if ($json_data && isset($json_data['score']) && isset($json_data['suggestion'])) {
+                    $ai_score = (int)$json_data['score'];
+                    $ai_suggestion = trim($json_data['suggestion']);
+
+                    if ($ai_score >= 1 && $ai_score <= 3) {
+                        $current_run_results['404_page']['score'] = $ai_score;
+                        // If AI gives a low score, the original 'details' is still relevant.
+                        // The suggestion from AI is the key part here.
+                    } else {
+                        // If score is invalid, keep the original score and append a note about the AI's invalid score.
+                        $ai_suggestion = "AI returned an invalid score ({$ai_score}). " . $ai_suggestion;
+                    }
+                    $current_run_results['404_page']['suggestion'] = $ai_suggestion;
+
+                } else {
+                    // Fallback if JSON parsing fails, use the whole AI output as suggestion, keep original score
+                    $current_run_results['404_page']['suggestion'] = 'AI response JSON format error. Raw: ' . $ai_output;
+                }
+            } else {
+                $current_run_results['404_page']['suggestion'] = 'AI suggestion failed: ' . ($page_404_ai_response_full['message'] ?? 'Unknown error');
+            }
+        } elseif (isset($current_run_results['404_page']['score']) && $current_run_results['404_page']['suggestion'] === 'Awaiting AI suggestion...') {
+            // Generic fallback if AI was expected but didn't run for other reasons.
+            $current_run_results['404_page']['suggestion'] = '404 page found, but could not generate AI suggestion at this time.';
+        }
+        // --- End AI Suggestion for 404 Page ---
 
     } else { 
         foreach (array_keys($current_run_results) as $key) {

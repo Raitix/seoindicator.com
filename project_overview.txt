@@ -22,8 +22,8 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   Website Accessibility check itself is performed but no longer shown as a separate row in the results table.
     *   **Note:** HTTPS checking has been integrated into the URL indicator rather than being a separate indicator.
     *   **Indicator States:**
-        *   **1 In Development:** Links (active AI-powered analysis)
-        *   **8 Ready:** Title Tag, Meta Description, URL, Robots.txt, Sitemap.xml, Headings (H1), Image Alt, Filenames (developed but paused)
+        *   **1 In Development:** 404 Page (active AI-powered analysis)
+        *   **9 Ready:** Title Tag, Meta Description, URL, Robots.txt, Sitemap.xml, Headings (H1), Image Alt, Filenames, Links (developed but paused)
         *   **7 To Do:** Viewport, Language Declaration, Favicon, Canonical, Open Graph, HTML Size, Inline Styles (not yet developed)
 
 4.  **`seo_logic.php` (Refactored Logic File):**
@@ -80,6 +80,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   **`seo-guides/filenames.php`:** Accessible via `/seo-guides/filenames` - SEO-friendly file naming conventions guide for images, documents, and media.
         *   **`seo-guides/image-alt.php`:** Accessible via `/seo-guides/image-alt` - Image alt attributes SEO and accessibility guide.
         *   **`seo-guides/links.php`:** Accessible via `/seo-guides/links` - Links SEO and internal linking strategy guide with anchor text optimization.
+        *   **`seo-guides/404-page.php`:** Accessible via `/seo-guides/404-page` - 404 page SEO best practices guide covering custom error pages, user experience, and navigation optimization.
     *   **Updated URL Routing:** `.htaccess` configured with specific rule for `seo-guides/` subdirectory to handle clean URLs.
     *   **Updated Navigation:** All indicator links in results table updated to point to new `/seo-guides/[indicator]` URLs.
     *   **Resource Path Updates:** All guide pages updated with correct relative paths for CSS (`../style.css`) and logo image (`../Logo-SEOIndicator-com.png`).
@@ -90,7 +91,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   Green "In Dev" badges: Currently active indicators contributing to score
         *   Blue "Ready" badges: Developed but paused indicators (score 0/3, grey stars, dark table rows)
         *   Grey "To Do" badges: Not yet developed indicators (score 0/3, grey stars, dark table rows)
-    *   **Current Active Status:** Only `links` (Links) indicator is active and contributes to scoring.
+    *   **Current Active Status:** Only `404_page` (404 Page) indicator is active and contributes to scoring.
     *   **Development Visibility:** All indicators remain visible in results table for development purposes.
 
 10. **URL SEO Indicator (Developed and Paused):**
@@ -125,7 +126,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **Dedicated Guide Page:** `filenames-seo-guide.php` provides comprehensive education on SEO-friendly file naming conventions, best practices for different file types, common mistakes, examples, version control strategies, and localization approaches.
     *   **Analysis Scope:** Examines all file references including img src attributes, document links, media files, CSS background images, and embedded resources to assess overall file naming quality across the entire page.
 
-12. **Links SEO Indicator (Latest Addition):**
+12. **Links SEO Indicator (Developed and Paused):**
     *   **Comprehensive Link Analysis:** Analyzes all links found on the webpage including anchor tags and JavaScript onclick links.
     *   **Link Type Classification:** Distinguishes between internal links (same domain), external links (different domains), and JavaScript-based links.
     *   **Anchor Text Quality Assessment:** Evaluates anchor text descriptiveness, identifying empty, generic, or non-descriptive text.
@@ -137,18 +138,35 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   Score 3: Balanced internal/external links with descriptive anchor text and minimal JavaScript-only links
         *   Score 2: Good link structure with room for improvement in anchor text or balance
         *   Score 1: Poor anchor text quality, unbalanced linking, or excessive JavaScript-only links
-    *   **AI-Powered Analysis:** Real-time OpenRouter API integration analyzes up to 20 links and provides JSON-formatted recommendations.
-    *   **JSON Data Structure:** Sends structured link data including type, href/onclick, anchor text, and attributes to AI for analysis.
+    *   **AI-Powered Analysis:** AI functionality paused for development - logic completed but OpenRouter calls disabled.
+    *   **JSON Data Structure:** Structured link data format prepared but not sent to AI while paused.
     *   **Dedicated Guide Page:** `seo-guides/links.php` provides comprehensive education on internal linking strategy, anchor text optimization, external linking guidelines, and common linking mistakes.
     *   **Analysis Scope:** Complete link audit covering anchor text quality, link type distribution, JavaScript link usage, and overall link architecture assessment.
+    *   **Development Status:** Core analysis logic completed; AI suggestions paused showing "Developed and paused".
+
+13. **404 Page SEO Indicator (Latest Addition):**
+    *   **Custom 404 Page Detection:** Systematically checks multiple common 404 page URLs (/404, /404.html, /404.php, /error, /page-not-found, /not-found).
+    *   **Content Quality Analysis:** Extracts and analyzes title, main content, and helpful features from found 404 pages.
+    *   **Navigation Assessment:** Checks for presence of navigation links, home links, and site navigation elements.
+    *   **User Experience Features:** Evaluates search functionality, contact options, and user guidance elements.
+    *   **Fallback Analysis:** Tests server response to non-existent URLs to analyze default 404 behavior when no custom page exists.
+    *   **Content Extraction:** Uses XPath to extract meaningful content from main content areas, avoiding header/footer noise.
+    *   **Scoring Logic:**
+        *   Score 3: Custom 404 page with helpful content, navigation, and user guidance features
+        *   Score 2: Basic 404 page present but missing some helpful features
+        *   Score 1: Generic server 404 response or poorly designed error page
+    *   **AI-Powered Analysis:** Real-time OpenRouter API integration analyzes 404 page content for user experience and SEO best practices.
+    *   **Multi-URL Testing:** Comprehensive approach testing various common 404 page naming conventions and server responses.
+    *   **Dedicated Guide Page:** `seo-guides/404-page.php` provides comprehensive education on 404 page best practices, design principles, navigation elements, and common mistakes.
+    *   **Analysis Scope:** Complete 404 page audit covering page existence, content quality, navigation options, search functionality, and overall user experience.
     *   **Development Status:** Fully functional with AI-powered suggestions actively contributing to overall score calculations.
 
 **Development Environment:**
 *   **Local Development:** XAMPP stack (Apache + PHP + MySQL) for local development environment.
 *   **Production Hosting:** Hostinger.com shared hosting plan for live deployment.
 *   **AI Development Status:** 
-    *   **1 In Development:** "Links" indicator - Currently returns real AI-powered suggestions via OpenRouter API with comprehensive link structure analysis
-    *   **8 Ready (Developed but Paused):** "Title", "Meta Description", "URL", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
+    *   **1 In Development:** "404 Page" indicator - Currently returns real AI-powered suggestions via OpenRouter API with comprehensive 404 page content analysis
+    *   **9 Ready (Developed but Paused):** "Title", "Meta Description", "URL", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames", "Links" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
     *   **7 To Do (Not Yet Developed):** "Viewport", "Language Declaration", "Favicon", "Canonical", "Open Graph", "HTML Size", "Inline Styles" indicators - Showing "To be developed" status
 
 **Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter. 
