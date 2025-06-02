@@ -17,14 +17,14 @@ The tool allows users to enter a domain name. It then checks if the website is a
 
 3.  **SEO Indicator Checks (15 total, displayed in a table):**
     *   **Original 5:** Title Tag Presence, Meta Description Presence, `robots.txt` Accessibility, `sitemap.xml` Accessibility.
-    *   **+4 added:** H1 Heading Presence, Image Alt Attributes (checks for non-empty alt), Viewport Meta Tag, Language Declaration (HTML `lang` attribute).
+    *   **+4 added:** H1 Heading Presence, Image Alt Attributes (checks for non-empty alt), Mobile Friendly, Language Declaration (HTML `lang` attribute and multilingual support).
     *   **+5 more added:** Favicon Presence, Canonical Link Tag, Open Graph Tags (basic check for `og:` prefixes), HTML Document Size, Inline Styles Check (looks for `style` attributes and `<style>` tags in the body).
     *   Website Accessibility check itself is performed but no longer shown as a separate row in the results table.
     *   **Note:** HTTPS checking has been integrated into the URL indicator rather than being a separate indicator.
     *   **Indicator States:**
-        *   **1 In Development:** Mobile Friendly (active static checks analysis)
-        *   **10 Ready:** Title Tag, Meta Description, URL, Robots.txt, Sitemap.xml, Headings (H1), Image Alt, Filenames, Links, 404 Page (developed but paused)
-        *   **7 To Do:** Viewport, Language Declaration, Favicon, Canonical, Open Graph, HTML Size, Inline Styles (not yet developed)
+        *   **1 In Development:** Language (active static checks analysis with comprehensive language declaration validation)
+        *   **11 Ready:** Title Tag, Meta Description, URL, Robots.txt, Sitemap.xml, Headings (H1), Image Alt, Filenames, Links, 404 Page, Mobile Friendly (developed but paused)
+        *   **6 To Do:** Favicon, Canonical, Open Graph, HTML Size, Inline Styles (not yet developed)
 
 4.  **`seo_logic.php` (Refactored Logic File):**
     *   Contains helper functions:
@@ -82,6 +82,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   **`seo-guides/links.php`:** Accessible via `/seo-guides/links` - Links SEO and internal linking strategy guide with anchor text optimization.
         *   **`seo-guides/404-page.php`:** Accessible via `/seo-guides/404-page` - 404 page SEO best practices guide covering custom error pages, user experience, and navigation optimization.
         *   **`seo-guides/mobile-friendly.php`:** Accessible via `/seo-guides/mobile-friendly` - Mobile friendliness SEO guide covering responsive design, touch interfaces, performance optimization, and mobile-first best practices.
+        *   **`seo-guides/language.php`:** Accessible via `/seo-guides/language` - Language declaration SEO guide covering HTML lang attributes, ISO language codes, hreflang implementation, multilingual content support, and international SEO best practices.
     *   **Updated URL Routing:** `.htaccess` configured with specific rule for `seo-guides/` subdirectory to handle clean URLs.
     *   **Updated Navigation:** All indicator links in results table updated to point to new `/seo-guides/[indicator]` URLs.
     *   **Resource Path Updates:** All guide pages updated with correct relative paths for CSS (`../style.css`) and logo image (`../Logo-SEOIndicator-com.png`).
@@ -92,7 +93,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   Green "In Dev" badges: Currently active indicators contributing to score
         *   Blue "Ready" badges: Developed but paused indicators (score 0/3, grey stars, dark table rows)
         *   Grey "To Do" badges: Not yet developed indicators (score 0/3, grey stars, dark table rows)
-    *   **Current Active Status:** Only `mobile_friendly` (Mobile Friendly) indicator is active and contributes to scoring.
+    *   **Current Active Status:** Only `language` (Language) indicator is active and contributes to scoring.
     *   **Development Visibility:** All indicators remain visible in results table for development purposes.
 
 10. **URL SEO Indicator (Developed and Paused):**
@@ -162,7 +163,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **Analysis Scope:** Complete 404 page audit covering page existence, content quality, navigation options, search functionality, and overall user experience.
     *   **Development Status:** Fully functional with AI-powered suggestions actively contributing to overall score calculations.
 
-14. **Mobile Friendly SEO Indicator (In Development - Active):**
+14. **Mobile Friendly SEO Indicator (Developed and Paused):**
     *   **Comprehensive Mobile Analysis:** Analyzes website mobile friendliness using 8 key static checks covering responsive design, touch interfaces, and performance.
     *   **Viewport Detection:** Checks for proper viewport meta tag configuration with device-width setting for responsive design.
     *   **Responsive Design Assessment:** Searches for CSS media queries, responsive framework classes, and flexible layout indicators.
@@ -195,14 +196,39 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **Static Analysis Approach:** No OpenRouter API calls - uses intelligent pattern matching and content analysis for immediate results.
     *   **Dedicated Guide Page:** `seo-guides/mobile-friendly.php` provides comprehensive education on responsive design, touch interfaces, performance optimization, mobile-first indexing, and mobile SEO best practices.
     *   **Analysis Scope:** Complete mobile-friendliness audit covering viewport configuration, responsive design patterns, typography, touch optimization, media queries, image handling, technology compatibility, and performance metrics.
+    *   **Development Status:** Developed and paused - comprehensive static analysis logic completed but not actively contributing to overall score calculations.
+
+15. **Language SEO Indicator (In Development - Active):**
+    *   **Comprehensive Language Declaration Analysis:** Analyzes website language declaration using 5 key static checks covering HTML lang attributes, ISO standards compliance, and multilingual support.
+    *   **HTML Lang Attribute Detection:** Checks for presence and validity of lang attribute on the html element for primary page language declaration.
+    *   **ISO Language Code Validation:** Verifies that language codes follow ISO 639-1 standards (e.g., "en", "fr", "de") with optional regional variants (e.g., "en-US", "en-GB").
+    *   **Hreflang Implementation Assessment:** Detects hreflang attributes on link and anchor elements for multilingual site optimization and international SEO.
+    *   **X-Default Hreflang Assessment:** Detects hreflang="x-default" implementation for proper international targeting and fallback page specification.
+    *   **Consistent Language Declaration Verification:** Checks for consistency between HTML lang attribute and meta content-language declarations.
+    *   **Static Check Features (5 Total):**
+        *   ✓/✗ HTML lang Attribute (presence on html element)
+        *   ✓/✗ Valid ISO Language Code (compliance with ISO 639-1 standards)
+        *   ✓/✗ Hreflang Implementation (multilingual site support)
+        *   ✓/✗ Defined hreflang="x-default" (international targeting implementation)
+        *   ✓/✗ Consistent Language Declaration (HTML lang and meta content-language consistency)
+    *   **Scoring Logic:**
+        *   Score 3: 4+ checks passed (excellent language declaration implementation)
+        *   Score 2: 2-3 checks passed (basic language declaration with room for improvement)
+        *   Score 1: 0-1 checks passed (missing or incomplete language declaration)
+    *   **Results Display:**
+        *   **Details Column:** Shows detected lang attribute value and passed checks count
+        *   **Suggestion Column:** Displays all 5 checks with ✓/✗ indicators on separate lines for immediate actionable feedback
+    *   **Static Analysis Approach:** No OpenRouter API calls - uses intelligent HTML parsing and language code validation for immediate results.
+    *   **Dedicated Guide Page:** `seo-guides/language.php` provides comprehensive education on language declaration, HTML lang attributes, ISO language codes, hreflang implementation, multilingual content support, and international SEO best practices.
+    *   **Analysis Scope:** Complete language declaration audit covering HTML lang attributes, ISO code validation, hreflang detection, multilingual support, and declaration consistency across the entire page.
     *   **Development Status:** Fully functional with comprehensive static analysis system actively contributing to overall score calculations.
 
 **Development Environment:**
 *   **Local Development:** XAMPP stack (Apache + PHP + MySQL) for local development environment.
 *   **Production Hosting:** Hostinger.com shared hosting plan for live deployment.
 *   **AI Development Status:** 
-    *   **1 In Development:** "Mobile Friendly" indicator - Currently returns comprehensive static check analysis with immediate feedback via 8-point mobile optimization assessment
-    *   **10 Ready (Developed but Paused):** "Title", "Meta Description", "URL", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames", "Links", "404 Page" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
-    *   **7 To Do (Not Yet Developed):** "Viewport", "Language Declaration", "Favicon", "Canonical", "Open Graph", "HTML Size", "Inline Styles" indicators - Showing "To be developed" status
+    *   **1 In Development:** "Language" indicator - Currently returns comprehensive static check analysis with immediate feedback via 5-point language declaration assessment
+    *   **11 Ready (Developed but Paused):** "Title", "Meta Description", "URL", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames", "Links", "404 Page", "Mobile Friendly" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
+    *   **6 To Do (Not Yet Developed):** "Favicon", "Canonical", "Open Graph", "HTML Size", "Inline Styles" indicators - Showing "To be developed" status
 
 **Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter. 

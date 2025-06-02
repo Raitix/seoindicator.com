@@ -225,8 +225,7 @@ $indicator_weights = [
     'links' => 3,
     '404_page' => 3,
     'mobile_friendly' => 3,
-    'viewport' => 2,
-    'lang' => 2,
+    'language' => 2,
     'favicon' => 1,
     'canonical' => 2,
     'opengraph' => 1,
@@ -237,7 +236,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'mobile_friendly', // Only Mobile Friendly indicator is active as per user requirement
+    'language', // Only Language indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -254,8 +253,7 @@ $default_indicator_keys_for_logic = [
     'links' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     '404_page' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'mobile_friendly' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
-    'viewport' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
-    'lang' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'language' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'favicon' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'canonical' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'opengraph' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
@@ -1115,12 +1113,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $current_run_results['mobile_friendly']['score'] = $mobile_score;
                 $current_run_results['mobile_friendly']['details'] = "Mobile analysis completed ({$passed_mobile_checks}/12 checks passed)";
-                $current_run_results['mobile_friendly']['suggestion'] = implode('<br>', $mobile_check_results);
+                $current_run_results['mobile_friendly']['suggestion'] = 'Developed and paused';
                 
             } else {
                 $current_run_results['mobile_friendly']['score'] = 1;
                 $current_run_results['mobile_friendly']['details'] = 'Could not analyze mobile friendliness - page content not available';
-                $current_run_results['mobile_friendly']['suggestion'] = 'Unable to perform mobile analysis due to content fetch issues.';
+                $current_run_results['mobile_friendly']['suggestion'] = 'Developed and paused';
             }
 
             // Filenames Analysis (Developed and Paused)
@@ -1128,38 +1126,97 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_run_results['filenames']['details'] = 'Filenames analysis indicator';
             $current_run_results['filenames']['suggestion'] = 'Developed and paused';
 
-            // Viewport Meta Tag
-            if ($dev_mock_all_but_title) {
-                $current_run_results['viewport'] = ['score' => 0, 'details' => 'Viewport Meta Tag - Mocked', 'suggestion' => 'To be developed'];
-            } else {
-                $viewport_nodes = $xpath->query('//meta[@name="viewport"]');
-                if ($viewport_nodes->length > 0) {
-                    $current_run_results['viewport']['score'] = 3;
-                    $current_run_results['viewport']['details'] = 'Viewport meta tag is present.';
-                    $current_run_results['viewport']['suggestion'] = 'Good! Viewport tag helps with mobile responsiveness.';
-                } else {
-                    $current_run_results['viewport']['score'] = 1;
-                    $current_run_results['viewport']['details'] = 'Viewport meta tag is missing.';
-                    $current_run_results['viewport']['suggestion'] = 'Add a viewport meta tag for proper scaling on mobile devices.';
+            // Language Declaration Analysis with Static Checks
+            if ($page_content !== false) {
+                // Static checks for language declaration
+                $language_checks = [
+                    'html_lang_present' => false,
+                    'valid_iso_code' => false,
+                    'hreflang_present' => false,
+                    'hreflang_x_default' => false,
+                    'consistent_language' => false
+                ];
+                
+                libxml_use_internal_errors(true);
+                $doc_lang = new DOMDocument();
+                @$doc_lang->loadHTML($page_content);
+                libxml_clear_errors();
+                $xpath_lang = new DOMXPath($doc_lang);
+                
+                // Check for HTML lang attribute
+                $html_node = $xpath_lang->query('/html')->item(0);
+                $lang_attribute = '';
+                if ($html_node && $html_node->hasAttribute('lang')) {
+                    $lang_attribute = trim($html_node->getAttribute('lang'));
+                    if (!empty($lang_attribute)) {
+                        $language_checks['html_lang_present'] = true;
+                        
+                        // Validate ISO language code (basic validation)
+                        if (preg_match('/^[a-z]{2}(-[A-Z]{2})?$/', $lang_attribute)) {
+                            $language_checks['valid_iso_code'] = true;
+                        }
+                    }
                 }
+                
+                // Check for hreflang attributes (multilingual sites)
+                $hreflang_nodes = $xpath_lang->query('//link[@hreflang] | //a[@hreflang]');
+                if ($hreflang_nodes->length > 0) {
+                    $language_checks['hreflang_present'] = true;
+                }
+                
+                // Check for hreflang="x-default" specifically
+                $hreflang_x_default_nodes = $xpath_lang->query('//link[@hreflang="x-default"] | //a[@hreflang="x-default"]');
+                if ($hreflang_x_default_nodes->length > 0) {
+                    $language_checks['hreflang_x_default'] = true;
+                }
+                
+                // Check for consistent language usage
+                if ($language_checks['html_lang_present']) {
+                    $content_lang_meta = $xpath_lang->query('//meta[@http-equiv="content-language"]');
+                    if ($content_lang_meta->length > 0) {
+                        $meta_lang = $content_lang_meta->item(0)->getAttribute('content');
+                        if (stripos($meta_lang, substr($lang_attribute, 0, 2)) !== false) {
+                            $language_checks['consistent_language'] = true;
+                        }
+                    } else {
+                        // If no content-language meta, assume consistent
+                        $language_checks['consistent_language'] = true;
+                    }
+                }
+                
+                // Calculate score based on checks
+                $passed_language_checks = array_sum($language_checks);
+                if ($passed_language_checks >= 4) {
+                    $language_score = 3;
+                } elseif ($passed_language_checks >= 2) {
+                    $language_score = 2;
+                } else {
+                    $language_score = 1;
+                }
+                
+                // Build suggestion with check results
+                $language_check_results = [];
+                $language_check_results[] = ($language_checks['html_lang_present'] ? '✓' : '✗') . ' HTML lang Attribute';
+                $language_check_results[] = ($language_checks['valid_iso_code'] ? '✓' : '✗') . ' Valid ISO Language Code';
+                $language_check_results[] = ($language_checks['hreflang_present'] ? '✓' : '✗') . ' Implemented hreflang';
+                $language_check_results[] = ($language_checks['hreflang_x_default'] ? '✓' : '✗') . ' Defined hreflang="x-default"';
+                $language_check_results[] = ($language_checks['consistent_language'] ? '✓' : '✗') . ' Consistent Language Declaration';
+                
+                $current_run_results['language']['score'] = $language_score;
+                if (!empty($lang_attribute)) {
+                    $current_run_results['language']['details'] = "HTML lang attribute: '{$lang_attribute}' ({$passed_language_checks}/5 checks passed)";
+                } else {
+                    $current_run_results['language']['details'] = "No HTML lang attribute found ({$passed_language_checks}/5 checks passed)";
+                }
+                $current_run_results['language']['suggestion'] = implode('<br>', $language_check_results);
+                
+            } else {
+                $current_run_results['language']['score'] = 1;
+                $current_run_results['language']['details'] = 'Could not analyze language declaration - page content not available';
+                $current_run_results['language']['suggestion'] = 'Unable to perform language analysis due to content fetch issues.';
             }
 
-            // Language Declaration
-            if ($dev_mock_all_but_title) {
-                $current_run_results['lang'] = ['score' => 0, 'details' => 'Language Declaration - Mocked', 'suggestion' => 'To be developed'];
-            } else {
-                $html_node = $xpath->query('/html')->item(0);
-                if ($html_node && $html_node->hasAttribute('lang') && trim($html_node->getAttribute('lang')) !== '') {
-                    $lang_value = htmlspecialchars($html_node->getAttribute('lang'));
-                    $current_run_results['lang']['score'] = 3;
-                    $current_run_results['lang']['details'] = 'HTML lang attribute found: ' . $lang_value;
-                    $current_run_results['lang']['suggestion'] = 'Correct language declaration helps accessibility and search engines.';
-                } else {
-                    $current_run_results['lang']['score'] = 1;
-                    $current_run_results['lang']['details'] = 'HTML lang attribute is missing or empty.';
-                    $current_run_results['lang']['suggestion'] = 'Declare the language of your HTML document using the lang attribute on the <html> tag.';
-                }
-            }
+
 
             // Favicon Presence
             if ($dev_mock_all_but_title) {
