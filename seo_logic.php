@@ -236,7 +236,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'language', // Only Language indicator is active as per user requirement
+    'favicon', // Only Favicon indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -1126,112 +1126,209 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_run_results['filenames']['details'] = 'Filenames analysis indicator';
             $current_run_results['filenames']['suggestion'] = 'Developed and paused';
 
-            // Language Declaration Analysis with Static Checks
+            // Language Declaration Analysis (Developed and Paused)
+            $current_run_results['language']['score'] = 0;
+            $current_run_results['language']['details'] = 'Language declaration analysis indicator';
+            $current_run_results['language']['suggestion'] = 'Developed and paused';
+
+
+
+            // Favicon Analysis with Comprehensive Static Checks
             if ($page_content !== false) {
-                // Static checks for language declaration
-                $language_checks = [
-                    'html_lang_present' => false,
-                    'valid_iso_code' => false,
-                    'hreflang_present' => false,
-                    'hreflang_x_default' => false,
-                    'consistent_language' => false
+                // Static checks for favicon implementation
+                $favicon_checks = [
+                    'favicon_link_present' => false,
+                    'ico_format_present' => false,
+                    'png_format_present' => false,
+                    'apple_touch_icon' => false,
+                    'multiple_sizes' => false,
+                    'valid_file_paths' => false,
+                    'standard_location' => false,
+                    'web_app_manifest_pwa' => false
                 ];
                 
                 libxml_use_internal_errors(true);
-                $doc_lang = new DOMDocument();
-                @$doc_lang->loadHTML($page_content);
+                $doc_favicon = new DOMDocument();
+                @$doc_favicon->loadHTML($page_content);
                 libxml_clear_errors();
-                $xpath_lang = new DOMXPath($doc_lang);
+                $xpath_favicon = new DOMXPath($doc_favicon);
                 
-                // Check for HTML lang attribute
-                $html_node = $xpath_lang->query('/html')->item(0);
-                $lang_attribute = '';
-                if ($html_node && $html_node->hasAttribute('lang')) {
-                    $lang_attribute = trim($html_node->getAttribute('lang'));
-                    if (!empty($lang_attribute)) {
-                        $language_checks['html_lang_present'] = true;
+                // Check for various favicon link tags
+                $favicon_links = [];
+                $all_icon_links = $xpath_favicon->query('//link[contains(@rel, "icon") or contains(@rel, "shortcut") or contains(@rel, "apple-touch-icon")]');
+                
+                $found_ico = false;
+                $found_png = false;
+                $found_apple_touch = false;
+                $size_count = 0;
+                $valid_paths = 0;
+                $total_links = $all_icon_links->length;
+                
+                if ($total_links > 0) {
+                    $favicon_checks['favicon_link_present'] = true;
+                    
+                    foreach ($all_icon_links as $link) {
+                        $rel = strtolower($link->getAttribute('rel'));
+                        $href = $link->getAttribute('href');
+                        $type = $link->getAttribute('type');
+                        $sizes = $link->getAttribute('sizes');
                         
-                        // Validate ISO language code (basic validation)
-                        if (preg_match('/^[a-z]{2}(-[A-Z]{2})?$/', $lang_attribute)) {
-                            $language_checks['valid_iso_code'] = true;
+                        $favicon_links[] = [
+                            'rel' => $rel,
+                            'href' => $href,
+                            'type' => $type,
+                            'sizes' => $sizes
+                        ];
+                        
+                        // Check for ICO format
+                        if (strpos($href, '.ico') !== false || strpos($type, 'x-icon') !== false) {
+                            $found_ico = true;
                         }
+                        
+                        // Check for PNG format
+                        if (strpos($href, '.png') !== false || strpos($type, 'png') !== false) {
+                            $found_png = true;
+                        }
+                        
+                        // Check for Apple touch icon
+                        if (strpos($rel, 'apple-touch-icon') !== false) {
+                            $found_apple_touch = true;
+                        }
+                        
+                        // Count different sizes
+                        if (!empty($sizes) && $sizes !== 'any') {
+                            $size_count++;
+                        }
+                        
+                        // Check for valid file paths (basic validation)
+                        if (!empty($href) && !strpos($href, 'data:') && (
+                            strpos($href, '.ico') !== false || 
+                            strpos($href, '.png') !== false || 
+                            strpos($href, '.svg') !== false ||
+                            strpos($href, '.jpg') !== false ||
+                            strpos($href, '.gif') !== false
+                        )) {
+                            $valid_paths++;
+                        }
+                    }
+                    
+                    if ($found_ico) {
+                        $favicon_checks['ico_format_present'] = true;
+                    }
+                    
+                    if ($found_png) {
+                        $favicon_checks['png_format_present'] = true;
+                    }
+                    
+                    if ($found_apple_touch) {
+                        $favicon_checks['apple_touch_icon'] = true;
+                    }
+                    
+                    if ($size_count >= 2) {
+                        $favicon_checks['multiple_sizes'] = true;
+                    }
+                    
+                    if ($valid_paths > 0) {
+                        $favicon_checks['valid_file_paths'] = true;
                     }
                 }
                 
-                // Check for hreflang attributes (multilingual sites)
-                $hreflang_nodes = $xpath_lang->query('//link[@hreflang] | //a[@hreflang]');
-                if ($hreflang_nodes->length > 0) {
-                    $language_checks['hreflang_present'] = true;
+                // Check for standard location (favicon.ico in root)
+                // This would require an additional HTTP request, but we can infer from common patterns
+                foreach ($favicon_links as $link) {
+                    if (strpos($link['href'], '/favicon.ico') !== false || $link['href'] === 'favicon.ico') {
+                        $favicon_checks['standard_location'] = true;
+                        break;
+                    }
                 }
                 
-                // Check for hreflang="x-default" specifically
-                $hreflang_x_default_nodes = $xpath_lang->query('//link[@hreflang="x-default"] | //a[@hreflang="x-default"]');
-                if ($hreflang_x_default_nodes->length > 0) {
-                    $language_checks['hreflang_x_default'] = true;
-                }
-                
-                // Check for consistent language usage
-                if ($language_checks['html_lang_present']) {
-                    $content_lang_meta = $xpath_lang->query('//meta[@http-equiv="content-language"]');
-                    if ($content_lang_meta->length > 0) {
-                        $meta_lang = $content_lang_meta->item(0)->getAttribute('content');
-                        if (stripos($meta_lang, substr($lang_attribute, 0, 2)) !== false) {
-                            $language_checks['consistent_language'] = true;
+                // Check for Web Application Manifest (PWA)
+                $manifest_nodes = $xpath_favicon->query('//link[@rel="manifest"]');
+                if ($manifest_nodes->length > 0) {
+                    $manifest_href = $manifest_nodes->item(0)->getAttribute('href');
+                    if (!empty($manifest_href)) {
+                        // Convert relative URL to absolute if needed
+                        $manifest_url = $manifest_href;
+                        if (strpos($manifest_href, 'http') !== 0) {
+                            $base_url_parts = parse_url($final_accessible_url);
+                            $base_url = $base_url_parts['scheme'] . '://' . $base_url_parts['host'];
+                            if ($manifest_href[0] === '/') {
+                                $manifest_url = $base_url . $manifest_href;
+                            } else {
+                                $manifest_url = $base_url . '/' . $manifest_href;
+                            }
                         }
-                    } else {
-                        // If no content-language meta, assume consistent
-                        $language_checks['consistent_language'] = true;
+                        
+                        // Try to fetch and parse the manifest
+                        $context_manifest = stream_context_create([
+                            'http' => [
+                                'method' => "GET",
+                                'timeout' => 5,
+                                'ignore_errors' => true,
+                                'header' => "User-Agent: SEOIndicatorBot/1.0\r\n"
+                            ]
+                        ]);
+                        
+                        $manifest_content = @file_get_contents($manifest_url, false, $context_manifest);
+                        if ($manifest_content !== false) {
+                            $manifest_data = @json_decode($manifest_content, true);
+                            if ($manifest_data && isset($manifest_data['icons']) && is_array($manifest_data['icons'])) {
+                                $found_192 = false;
+                                $found_512 = false;
+                                
+                                foreach ($manifest_data['icons'] as $icon) {
+                                    if (isset($icon['sizes'])) {
+                                        $sizes = $icon['sizes'];
+                                        if (strpos($sizes, '192x192') !== false || $sizes === '192x192') {
+                                            $found_192 = true;
+                                        }
+                                        if (strpos($sizes, '512x512') !== false || $sizes === '512x512') {
+                                            $found_512 = true;
+                                        }
+                                    }
+                                }
+                                
+                                if ($found_192 && $found_512) {
+                                    $favicon_checks['web_app_manifest_pwa'] = true;
+                                }
+                            }
+                        }
                     }
                 }
                 
                 // Calculate score based on checks
-                $passed_language_checks = array_sum($language_checks);
-                if ($passed_language_checks >= 4) {
-                    $language_score = 3;
-                } elseif ($passed_language_checks >= 2) {
-                    $language_score = 2;
+                $passed_favicon_checks = array_sum($favicon_checks);
+                if ($passed_favicon_checks >= 6) {
+                    $favicon_score = 3;
+                } elseif ($passed_favicon_checks >= 4) {
+                    $favicon_score = 2;
                 } else {
-                    $language_score = 1;
+                    $favicon_score = 1;
                 }
                 
                 // Build suggestion with check results
-                $language_check_results = [];
-                $language_check_results[] = ($language_checks['html_lang_present'] ? '✓' : '✗') . ' HTML lang Attribute';
-                $language_check_results[] = ($language_checks['valid_iso_code'] ? '✓' : '✗') . ' Valid ISO Language Code';
-                $language_check_results[] = ($language_checks['hreflang_present'] ? '✓' : '✗') . ' Implemented hreflang';
-                $language_check_results[] = ($language_checks['hreflang_x_default'] ? '✓' : '✗') . ' Defined hreflang="x-default"';
-                $language_check_results[] = ($language_checks['consistent_language'] ? '✓' : '✗') . ' Consistent Language Declaration';
+                $favicon_check_results = [];
+                $favicon_check_results[] = ($favicon_checks['favicon_link_present'] ? '✓' : '✗') . ' Favicon Link Tags Present';
+                $favicon_check_results[] = ($favicon_checks['ico_format_present'] ? '✓' : '✗') . ' ICO Format Available';
+                $favicon_check_results[] = ($favicon_checks['png_format_present'] ? '✓' : '✗') . ' PNG Format Available';
+                $favicon_check_results[] = ($favicon_checks['apple_touch_icon'] ? '✓' : '✗') . ' Apple Touch Icon';
+                $favicon_check_results[] = ($favicon_checks['multiple_sizes'] ? '✓' : '✗') . ' Multiple Icon Sizes';
+                $favicon_check_results[] = ($favicon_checks['valid_file_paths'] ? '✓' : '✗') . ' Valid File Paths';
+                $favicon_check_results[] = ($favicon_checks['standard_location'] ? '✓' : '✗') . ' Standard favicon.ico Location';
+                $favicon_check_results[] = ($favicon_checks['web_app_manifest_pwa'] ? '✓' : '✗') . ' Web App Manifest PWA (192x192 + 512x512)';
                 
-                $current_run_results['language']['score'] = $language_score;
-                if (!empty($lang_attribute)) {
-                    $current_run_results['language']['details'] = "HTML lang attribute: '{$lang_attribute}' ({$passed_language_checks}/5 checks passed)";
+                $current_run_results['favicon']['score'] = $favicon_score;
+                if ($total_links > 0) {
+                    $current_run_results['favicon']['details'] = "Found {$total_links} favicon-related link tag(s) ({$passed_favicon_checks}/8 checks passed)";
                 } else {
-                    $current_run_results['language']['details'] = "No HTML lang attribute found ({$passed_language_checks}/5 checks passed)";
+                    $current_run_results['favicon']['details'] = "No favicon link tags found ({$passed_favicon_checks}/8 checks passed)";
                 }
-                $current_run_results['language']['suggestion'] = implode('<br>', $language_check_results);
+                $current_run_results['favicon']['suggestion'] = implode('<br>', $favicon_check_results);
                 
             } else {
-                $current_run_results['language']['score'] = 1;
-                $current_run_results['language']['details'] = 'Could not analyze language declaration - page content not available';
-                $current_run_results['language']['suggestion'] = 'Unable to perform language analysis due to content fetch issues.';
-            }
-
-
-
-            // Favicon Presence
-            if ($dev_mock_all_but_title) {
-                $current_run_results['favicon'] = ['score' => 0, 'details' => 'Favicon Presence - Mocked', 'suggestion' => 'To be developed'];
-            } else {
-                $favicon_nodes = $xpath->query('//link[contains(@rel, "icon")]');
-                if ($favicon_nodes->length > 0) {
-                    $current_run_results['favicon']['score'] = 3;
-                    $current_run_results['favicon']['details'] = 'Favicon link tag found.';
-                    $current_run_results['favicon']['suggestion'] = 'Good, favicon improves brand recognition in browser tabs.';
-                } else {
-                    $current_run_results['favicon']['score'] = 1;
-                    $current_run_results['favicon']['details'] = 'No link tag with rel containing "icon" found.';
-                    $current_run_results['favicon']['suggestion'] = 'Add a favicon to your site.';
-                }
+                $current_run_results['favicon']['score'] = 1;
+                $current_run_results['favicon']['details'] = 'Could not analyze favicon - page content not available';
+                $current_run_results['favicon']['suggestion'] = 'Unable to perform favicon analysis due to content fetch issues.';
             }
 
             // Canonical Link Tag
