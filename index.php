@@ -207,6 +207,10 @@ if ($openrouter_response_data) {
                             <a href="/seo-guides/favicon" target="_blank" title="Favicon SEO Guide">
                                 Favicon
                             </a>
+                        <?php elseif ($key === 'canonical'): ?>
+                            <a href="/seo-guides/canonical-tag" target="_blank" title="Canonical Tag SEO Guide">
+                                Canonical Tag
+                            </a>
                                         <?php else: ?>
                                             <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                         <?php endif; ?>
@@ -223,11 +227,11 @@ if ($openrouter_response_data) {
                                         ?>
                                     </td>
                                     <td><?php echo render_stars($result['score']); ?></td>
-                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
+                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
                                     <td class="suggestion-cell"><?php 
                                         if (isset($result['suggestion'])) {
-                                            if ($key === 'url' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon') {
-                                                // For URL, 404 Page, Mobile Friendly, Language, and Favicon suggestions, allow HTML (specifically <br> tags)
+                                            if ($key === 'url' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical') {
+                                                // For URL, 404 Page, Mobile Friendly, Language, Favicon, and Canonical Tag suggestions, allow HTML (specifically <br> tags)
                                                 echo $result['suggestion'];
                                             } else {
                                                 // For other suggestions, escape HTML

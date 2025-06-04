@@ -22,9 +22,9 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   Website Accessibility check itself is performed but no longer shown as a separate row in the results table.
     *   **Note:** HTTPS checking has been integrated into the URL indicator rather than being a separate indicator.
     *   **Indicator States:**
-        *   **1 In Development:** Favicon (active static checks analysis with comprehensive favicon implementation validation)
-        *   **12 Ready:** Title Tag, Meta Description, URL, Robots.txt, Sitemap.xml, Headings (H1), Image Alt, Filenames, Links, 404 Page, Mobile Friendly, Language (developed but paused)
-        *   **5 To Do:** Canonical, Open Graph, HTML Size, Inline Styles (not yet developed)
+        *   **1 In Development:** Canonical Tag (active static checks analysis with comprehensive canonical tag implementation validation)
+        *   **13 Ready:** Title Tag, Meta Description, URL, Robots.txt, Sitemap.xml, Headings (H1), Image Alt, Filenames, Links, 404 Page, Mobile Friendly, Language, Favicon (developed but paused)
+        *   **4 To Do:** Open Graph, HTML Size, Inline Styles (not yet developed)
 
 4.  **`seo_logic.php` (Refactored Logic File):**
     *   Contains helper functions:
@@ -83,7 +83,8 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   **`seo-guides/404-page.php`:** Accessible via `/seo-guides/404-page` - 404 page SEO best practices guide covering custom error pages, user experience, and navigation optimization.
         *   **`seo-guides/mobile-friendly.php`:** Accessible via `/seo-guides/mobile-friendly` - Mobile friendliness SEO guide covering responsive design, touch interfaces, performance optimization, and mobile-first best practices.
         *   **`seo-guides/language.php`:** Accessible via `/seo-guides/language` - Language declaration SEO guide covering HTML lang attributes, ISO language codes, hreflang implementation, multilingual content support, and international SEO best practices.
-        *   **`seo-guides/favicon.php`:** Accessible via `/seo-guides/favicon` - Favicon implementation SEO guide covering favicon formats, sizes, best practices, Apple Touch Icons, implementation methods, and common mistakes.
+                                *   **`seo-guides/favicon.php`:** Accessible via `/seo-guides/favicon` - Favicon implementation SEO guide covering favicon formats, sizes, best practices, Apple Touch Icons, implementation methods, and common mistakes.
+                        *   **`seo-guides/canonical-tag.php`:** Accessible via `/seo-guides/canonical-tag` - Canonical tag SEO guide covering duplicate content prevention, URL canonicalization, implementation best practices, common mistakes, and technical requirements.
     *   **Updated URL Routing:** `.htaccess` configured with specific rule for `seo-guides/` subdirectory to handle clean URLs.
     *   **Updated Navigation:** All indicator links in results table updated to point to new `/seo-guides/[indicator]` URLs.
     *   **Resource Path Updates:** All guide pages updated with correct relative paths for CSS (`../style.css`) and logo image (`../Logo-SEOIndicator-com.png`).
@@ -94,7 +95,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   Green "In Dev" badges: Currently active indicators contributing to score
         *   Blue "Ready" badges: Developed but paused indicators (score 0/3, grey stars, dark table rows)
         *   Grey "To Do" badges: Not yet developed indicators (score 0/3, grey stars, dark table rows)
-    *   **Current Active Status:** Only `favicon` (Favicon) indicator is active and contributes to scoring.
+    *   **Current Active Status:** Only `canonical` (Canonical Tag) indicator is active and contributes to scoring.
     *   **Development Visibility:** All indicators remain visible in results table for development purposes.
 
 10. **URL SEO Indicator (Developed and Paused):**
@@ -204,8 +205,8 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **Development Status:** Fully developed with comprehensive static analysis system but currently paused and not contributing to overall score calculations.
     *   **Dedicated Guide Page:** `seo-guides/language.php` provides comprehensive education on language declaration, HTML lang attributes, ISO language codes, hreflang implementation, multilingual content support, and international SEO best practices.
 
-16. **Favicon SEO Indicator (In Development - Active):**
-    *   **Comprehensive Favicon Implementation Analysis:** Analyzes website favicon implementation using 7 key static checks covering multiple formats, sizes, and best practices.
+16. **Favicon SEO Indicator (Developed and Paused):**
+    *   **Comprehensive Favicon Implementation Analysis:** Analyzes website favicon implementation using 8 key static checks covering multiple formats, sizes, and best practices.
     *   **Favicon Link Tags Detection:** Checks for presence of favicon-related link elements in HTML head section including icon, shortcut icon, and apple-touch-icon.
     *   **Format Verification:** Validates presence of multiple favicon formats including traditional ICO, high-quality PNG, and modern SVG variants.
     *   **Apple iOS Support Assessment:** Detects Apple Touch Icons for proper iOS device display and home screen bookmarking.
@@ -222,24 +223,47 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   ✓/✗ Valid File Paths (proper file paths and formats assessment)
         *   ✓/✗ Standard favicon.ico Location (traditional favicon.ico in root directory)
         *   ✓/✗ Web App Manifest PWA (Progressive Web App manifest with 192x192 + 512x512 icons)
-    *   **Scoring Logic:**
-        *   Score 3: 6+ checks passed (excellent favicon implementation with multiple formats and sizes)
-        *   Score 2: 4-5 checks passed (good favicon setup with room for enhancement)
-        *   Score 1: 0-3 checks passed (missing or incomplete favicon implementation)
-    *   **Results Display:**
-        *   **Details Column:** Shows number of favicon-related link tags found and passed checks count
-        *   **Suggestion Column:** Displays all 8 checks with ✓/✗ indicators on separate lines for immediate actionable feedback
-    *   **Static Analysis Approach:** No OpenRouter API calls - uses intelligent HTML parsing and favicon detection for immediate results.
     *   **Dedicated Guide Page:** `seo-guides/favicon.php` provides comprehensive education on favicon implementation, multiple formats, sizes, best practices, common mistakes, and SEO benefits.
     *   **Analysis Scope:** Complete favicon implementation audit covering link tag detection, format verification, iOS support, multi-size implementation, file validation, standard location compliance, and PWA manifest integration.
+    *   **Development Status:** Developed and paused - comprehensive static analysis logic completed but not actively contributing to overall score calculations.
+
+17. **Canonical Tag SEO Indicator (In Development - Active):**
+    *   **Comprehensive Canonical Tag Analysis:** Analyzes website canonical tag implementation using 8 key static checks covering URL format, placement, and best practices.
+    *   **Canonical Tag Detection:** Checks for presence of rel="canonical" link elements in HTML head section with proper syntax.
+    *   **Single Tag Validation:** Verifies only one canonical tag per page to avoid conflicts and ensure clear directives.
+    *   **URL Format Assessment:** Validates proper URL syntax, absolute vs relative URLs, and canonical URL accessibility.
+    *   **Protocol Security Check:** Ensures HTTPS canonical URLs are used for secure sites and proper protocol implementation.
+    *   **Self-Referencing Validation:** Confirms canonical tags point to the same domain to maintain authority and avoid external canonicalization.
+    *   **Clean URL Verification:** Checks for canonical URLs without unnecessary query parameters or tracking codes.
+    *   **Placement Validation:** Verifies canonical tags are properly placed in HTML head section for search engine recognition.
+    *   **Content Consistency Check:** Analyzes relationship between current page and canonical URL for content similarity.
+    *   **Static Check Features (8 Total):**
+        *   ✓/✗ Canonical Tag Present (rel="canonical" link elements in HTML head)
+        *   ✓/✗ Single Canonical Tag (no duplicates - only one per page)
+        *   ✓/✗ Valid URL Format (proper URL syntax and format validation)
+        *   ✓/✗ Absolute URL Used (complete URLs with protocol and domain)
+        *   ✓/✗ Self-Referencing (canonical points to same domain)
+        *   ✓/✗ Proper Placement in <head> (correct HTML placement)
+        *   ✓/✗ No Query Parameters (clean canonical URLs without tracking)
+        *   ✓/✗ HTTPS Canonical URL (secure protocol usage)
+    *   **Scoring Logic:**
+        *   Score 3: 6+ checks passed (excellent canonical tag implementation with best practices)
+        *   Score 2: 4-5 checks passed (good canonical setup with room for optimization)
+        *   Score 1: 0-3 checks passed (missing or problematic canonical tag implementation)
+    *   **Results Display:**
+        *   **Details Column:** Shows number of canonical tags found, passed checks count, and canonical URL
+        *   **Suggestion Column:** Displays all 8 checks with ✓/✗ indicators on separate lines for immediate actionable feedback
+    *   **Static Analysis Approach:** No OpenRouter API calls - uses intelligent HTML parsing and canonical tag detection for immediate results.
+    *   **Dedicated Guide Page:** `seo-guides/canonical-tag.php` provides comprehensive education on canonical tag implementation, duplicate content prevention, URL canonicalization, best practices, common mistakes, and SEO benefits.
+    *   **Analysis Scope:** Complete canonical tag audit covering tag detection, URL validation, placement verification, protocol security, self-referencing checks, parameter analysis, and content consistency assessment.
     *   **Development Status:** Fully functional with comprehensive static analysis system actively contributing to overall score calculations.
 
 **Development Environment:**
 *   **Local Development:** XAMPP stack (Apache + PHP + MySQL) for local development environment.
 *   **Production Hosting:** Hostinger.com shared hosting plan for live deployment.
 *   **AI Development Status:** 
-    *   **1 In Development:** "Favicon" indicator - Currently returns comprehensive static check analysis with immediate feedback via 7-point favicon implementation assessment
-    *   **12 Ready (Developed but Paused):** "Title", "Meta Description", "URL", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames", "Links", "404 Page", "Mobile Friendly", "Language" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
-    *   **5 To Do (Not Yet Developed):** "Canonical", "Open Graph", "HTML Size", "Inline Styles" indicators - Showing "To be developed" status
+    *   **1 In Development:** "Canonical Tag" indicator - Currently returns comprehensive static check analysis with immediate feedback via 8-point canonical tag implementation assessment
+    *   **13 Ready (Developed but Paused):** "Title", "Meta Description", "URL", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames", "Links", "404 Page", "Mobile Friendly", "Language", "Favicon" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
+    *   **4 To Do (Not Yet Developed):** "Open Graph", "HTML Size", "Inline Styles" indicators - Showing "To be developed" status
 
 **Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter. 

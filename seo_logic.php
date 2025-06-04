@@ -236,7 +236,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'favicon', // Only Favicon indicator is active as per user requirement
+    'canonical', // Only Canonical Tag indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -1317,35 +1317,142 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $favicon_check_results[] = ($favicon_checks['standard_location'] ? '✓' : '✗') . ' Standard favicon.ico Location';
                 $favicon_check_results[] = ($favicon_checks['web_app_manifest_pwa'] ? '✓' : '✗') . ' Web App Manifest PWA (192x192 + 512x512)';
                 
-                $current_run_results['favicon']['score'] = $favicon_score;
+                $current_run_results['favicon']['score'] = 0;
                 if ($total_links > 0) {
                     $current_run_results['favicon']['details'] = "Found {$total_links} favicon-related link tag(s) ({$passed_favicon_checks}/8 checks passed)";
                 } else {
                     $current_run_results['favicon']['details'] = "No favicon link tags found ({$passed_favicon_checks}/8 checks passed)";
                 }
-                $current_run_results['favicon']['suggestion'] = implode('<br>', $favicon_check_results);
+                $current_run_results['favicon']['suggestion'] = 'Developed and paused';
                 
             } else {
-                $current_run_results['favicon']['score'] = 1;
+                $current_run_results['favicon']['score'] = 0;
                 $current_run_results['favicon']['details'] = 'Could not analyze favicon - page content not available';
-                $current_run_results['favicon']['suggestion'] = 'Unable to perform favicon analysis due to content fetch issues.';
+                $current_run_results['favicon']['suggestion'] = 'Developed and paused';
             }
 
-            // Canonical Link Tag
-            if ($dev_mock_all_but_title) {
-                $current_run_results['canonical'] = ['score' => 0, 'details' => 'Canonical Link - Mocked', 'suggestion' => 'To be developed'];
-            } else {
-                $canonical_nodes = $xpath->query('//link[@rel="canonical"]');
-                if ($canonical_nodes->length > 0) {
-                    $href = $canonical_nodes->item(0)->getAttribute('href');
-                    $current_run_results['canonical']['score'] = 3;
-                    $current_run_results['canonical']['details'] = 'Canonical link found: ' . htmlspecialchars($href);
-                    $current_run_results['canonical']['suggestion'] = 'Good use of canonical tag to prevent duplicate content issues.';
-                } else {
-                    $current_run_results['canonical']['score'] = 1;
-                    $current_run_results['canonical']['details'] = 'No canonical link tag found.';
-                    $current_run_results['canonical']['suggestion'] = 'Consider adding a canonical link tag if this page can be accessed via multiple URLs.';
+            // Canonical Tag Analysis with Comprehensive Static Checks
+            if ($page_content !== false) {
+                // Static checks for canonical tag implementation
+                $canonical_checks = [
+                    'canonical_tag_present' => false,
+                    'single_canonical_tag' => false,
+                    'valid_url_format' => false,
+                    'absolute_url_used' => false,
+                    'self_referencing' => false,
+                    'proper_placement' => false,
+                    'no_query_parameters' => false,
+                    'https_canonical' => false
+                ];
+                
+                libxml_use_internal_errors(true);
+                $doc_canonical = new DOMDocument();
+                @$doc_canonical->loadHTML($page_content);
+                libxml_clear_errors();
+                $xpath_canonical = new DOMXPath($doc_canonical);
+                
+                // Check for canonical link tags
+                $canonical_nodes = $xpath_canonical->query('//link[@rel="canonical"]');
+                $canonical_count = $canonical_nodes->length;
+                $canonical_href = '';
+                
+                if ($canonical_count > 0) {
+                    $canonical_checks['canonical_tag_present'] = true;
+                    
+                    // Check for single canonical tag (best practice)
+                    if ($canonical_count === 1) {
+                        $canonical_checks['single_canonical_tag'] = true;
+                    }
+                    
+                    // Analyze the canonical URL
+                    $canonical_href = trim($canonical_nodes->item(0)->getAttribute('href'));
+                    
+                    if (!empty($canonical_href)) {
+                        // Check for valid URL format
+                        if (filter_var($canonical_href, FILTER_VALIDATE_URL)) {
+                            $canonical_checks['valid_url_format'] = true;
+                            
+                            // Parse canonical URL
+                            $canonical_parsed = parse_url($canonical_href);
+                            $current_parsed = parse_url($final_accessible_url);
+                            
+                            // Check for absolute URL
+                            if (isset($canonical_parsed['scheme']) && isset($canonical_parsed['host'])) {
+                                $canonical_checks['absolute_url_used'] = true;
+                                
+                                // Check for HTTPS canonical
+                                if ($canonical_parsed['scheme'] === 'https') {
+                                    $canonical_checks['https_canonical'] = true;
+                                }
+                                
+                                // Check for self-referencing canonical
+                                $canonical_domain = strtolower($canonical_parsed['host']);
+                                $current_domain = strtolower($current_parsed['host'] ?? '');
+                                
+                                // Remove www. for comparison
+                                $canonical_domain_clean = preg_replace('/^www\./', '', $canonical_domain);
+                                $current_domain_clean = preg_replace('/^www\./', '', $current_domain);
+                                
+                                if ($canonical_domain_clean === $current_domain_clean) {
+                                    $canonical_checks['self_referencing'] = true;
+                                }
+                                
+                                // Check for no query parameters in canonical URL
+                                if (!isset($canonical_parsed['query']) || empty($canonical_parsed['query'])) {
+                                    $canonical_checks['no_query_parameters'] = true;
+                                }
+                            }
+                        } elseif (strpos($canonical_href, '/') === 0) {
+                            // Relative URL starting with / - not recommended but acceptable
+                            $canonical_checks['valid_url_format'] = true;
+                            
+                            // Check for no query parameters
+                            if (strpos($canonical_href, '?') === false) {
+                                $canonical_checks['no_query_parameters'] = true;
+                            }
+                        }
+                    }
+                    
+                    // Check for proper placement in <head> section
+                    $head_canonical_nodes = $xpath_canonical->query('//head//link[@rel="canonical"]');
+                    if ($head_canonical_nodes->length > 0) {
+                        $canonical_checks['proper_placement'] = true;
+                    }
                 }
+                
+                // Calculate score based on checks
+                $passed_canonical_checks = array_sum($canonical_checks);
+                if ($passed_canonical_checks >= 6) {
+                    $canonical_score = 3;
+                } elseif ($passed_canonical_checks >= 4) {
+                    $canonical_score = 2;
+                } else {
+                    $canonical_score = 1;
+                }
+                
+                // Build suggestion with check results
+                $canonical_check_results = [];
+                $canonical_check_results[] = ($canonical_checks['canonical_tag_present'] ? '✓' : '✗') . ' Canonical Tag Present';
+                $canonical_check_results[] = ($canonical_checks['single_canonical_tag'] ? '✓' : '✗') . ' Single Canonical Tag (no duplicates)';
+                $canonical_check_results[] = ($canonical_checks['valid_url_format'] ? '✓' : '✗') . ' Valid URL Format';
+                $canonical_check_results[] = ($canonical_checks['absolute_url_used'] ? '✓' : '✗') . ' Absolute URL Used';
+                $canonical_check_results[] = ($canonical_checks['self_referencing'] ? '✓' : '✗') . ' Self-Referencing (same domain)';
+                $canonical_check_results[] = ($canonical_checks['proper_placement'] ? '✓' : '✗') . ' Proper Placement in &lt;head&gt;';
+                $canonical_check_results[] = ($canonical_checks['no_query_parameters'] ? '✓' : '✗') . ' No Query Parameters';
+                $canonical_check_results[] = ($canonical_checks['https_canonical'] ? '✓' : '✗') . ' HTTPS Canonical URL';
+                
+                $current_run_results['canonical']['score'] = $canonical_score;
+                if ($canonical_count > 0) {
+                    $current_run_results['canonical']['details'] = "Found {$canonical_count} canonical tag(s) ({$passed_canonical_checks}/8 checks passed)<br>URL: " . htmlspecialchars($canonical_href);
+                } else {
+                    $current_run_results['canonical']['details'] = "No canonical tag found ({$passed_canonical_checks}/8 checks passed)";
+                }
+                $current_run_results['canonical']['suggestion'] = implode('<br>', $canonical_check_results);
+                
+            } else {
+                $current_run_results['canonical']['score'] = 1;
+                $current_run_results['canonical']['details'] = 'Could not analyze canonical tag - page content not available';
+                $current_run_results['canonical']['suggestion'] = 'Unable to perform canonical tag analysis due to content fetch issues.';
             }
 
             // Open Graph Tags (Basic Check)
