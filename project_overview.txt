@@ -22,9 +22,9 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   Website Accessibility check itself is performed but no longer shown as a separate row in the results table.
     *   **Note:** HTTPS checking has been integrated into the URL indicator rather than being a separate indicator.
     *   **Indicator States:**
-        *   **1 In Development:** Canonical Tag (active static checks analysis with comprehensive canonical tag implementation validation)
-        *   **13 Ready:** Title Tag, Meta Description, URL, Robots.txt, Sitemap.xml, Headings (H1), Image Alt, Filenames, Links, 404 Page, Mobile Friendly, Language, Favicon (developed but paused)
-        *   **4 To Do:** Open Graph, HTML Size, Inline Styles (not yet developed)
+        *   **1 In Development:** Social Media Meta Tags (active static checks analysis with comprehensive OpenGraph and Twitter meta tags implementation validation)
+        *   **14 Ready:** Title Tag, Meta Description, URL, Robots.txt, Sitemap.xml, Headings (H1), Image Alt, Filenames, Links, 404 Page, Mobile Friendly, Language, Favicon, Canonical Tag (developed but paused)
+        *   **3 To Do:** HTML Size, Inline Styles (not yet developed)
 
 4.  **`seo_logic.php` (Refactored Logic File):**
     *   Contains helper functions:
@@ -85,6 +85,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   **`seo-guides/language.php`:** Accessible via `/seo-guides/language` - Language declaration SEO guide covering HTML lang attributes, ISO language codes, hreflang implementation, multilingual content support, and international SEO best practices.
                                 *   **`seo-guides/favicon.php`:** Accessible via `/seo-guides/favicon` - Favicon implementation SEO guide covering favicon formats, sizes, best practices, Apple Touch Icons, implementation methods, and common mistakes.
                         *   **`seo-guides/canonical-tag.php`:** Accessible via `/seo-guides/canonical-tag` - Canonical tag SEO guide covering duplicate content prevention, URL canonicalization, implementation best practices, common mistakes, and technical requirements.
+                        *   **`seo-guides/social-media-meta-tags.php`:** Accessible via `/seo-guides/social-media-meta-tags` - Social Media Meta Tags SEO guide covering both OpenGraph and Twitter meta tags, social media optimization, meta property tags, image optimization, best practices, common mistakes, and social sharing enhancement.
     *   **Updated URL Routing:** `.htaccess` configured with specific rule for `seo-guides/` subdirectory to handle clean URLs.
     *   **Updated Navigation:** All indicator links in results table updated to point to new `/seo-guides/[indicator]` URLs.
     *   **Resource Path Updates:** All guide pages updated with correct relative paths for CSS (`../style.css`) and logo image (`../Logo-SEOIndicator-com.png`).
@@ -95,7 +96,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   Green "In Dev" badges: Currently active indicators contributing to score
         *   Blue "Ready" badges: Developed but paused indicators (score 0/3, grey stars, dark table rows)
         *   Grey "To Do" badges: Not yet developed indicators (score 0/3, grey stars, dark table rows)
-    *   **Current Active Status:** Only `canonical` (Canonical Tag) indicator is active and contributes to scoring.
+    *   **Current Active Status:** Only `social_meta_tags` (Social Media Meta Tags) indicator is active and contributes to scoring.
     *   **Development Visibility:** All indicators remain visible in results table for development purposes.
 
 10. **URL SEO Indicator (Developed and Paused):**
@@ -227,7 +228,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **Analysis Scope:** Complete favicon implementation audit covering link tag detection, format verification, iOS support, multi-size implementation, file validation, standard location compliance, and PWA manifest integration.
     *   **Development Status:** Developed and paused - comprehensive static analysis logic completed but not actively contributing to overall score calculations.
 
-17. **Canonical Tag SEO Indicator (In Development - Active):**
+17. **Canonical Tag SEO Indicator (Developed and Paused):**
     *   **Comprehensive Canonical Tag Analysis:** Analyzes website canonical tag implementation using 8 key static checks covering URL format, placement, and best practices.
     *   **Canonical Tag Detection:** Checks for presence of rel="canonical" link elements in HTML head section with proper syntax.
     *   **Single Tag Validation:** Verifies only one canonical tag per page to avoid conflicts and ensure clear directives.
@@ -256,14 +257,46 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **Static Analysis Approach:** No OpenRouter API calls - uses intelligent HTML parsing and canonical tag detection for immediate results.
     *   **Dedicated Guide Page:** `seo-guides/canonical-tag.php` provides comprehensive education on canonical tag implementation, duplicate content prevention, URL canonicalization, best practices, common mistakes, and SEO benefits.
     *   **Analysis Scope:** Complete canonical tag audit covering tag detection, URL validation, placement verification, protocol security, self-referencing checks, parameter analysis, and content consistency assessment.
+    *   **Development Status:** Developed and paused - comprehensive static analysis logic completed but not actively contributing to overall score calculations.
+
+18. **Social Media Meta Tags SEO Indicator (In Development - Active):**
+    *   **Comprehensive Social Media Meta Tags Analysis:** Analyzes website social media meta tags implementation using 10 key static checks covering both OpenGraph and Twitter meta tags for complete social media optimization.
+    *   **OpenGraph Tag Detection:** Checks for presence of og: meta property tags in HTML head section with proper syntax for Facebook, LinkedIn, and other platforms.
+    *   **Twitter Card Tag Detection:** Validates presence of twitter: meta name tags for enhanced Twitter sharing features and card display.
+    *   **Essential Tag Validation:** Verifies presence of core OpenGraph tags (og:title, og:description, og:image, og:url, og:type) and essential Twitter tags (twitter:card, twitter:site).
+    *   **Image URL Format Assessment:** Validates proper image URL format for og:image tags including absolute URL requirements.
+    *   **Placement Validation:** Verifies both OpenGraph and Twitter meta tags are properly placed in HTML head section for social media platform recognition.
+    *   **Universal Social Media Optimization:** Ensures content is optimized for sharing across Facebook, Twitter, LinkedIn, and other social platforms with platform-specific enhancements.
+    *   **Content Quality Check:** Analyzes social meta tag content for completeness and social media best practices across all platforms.
+    *   **Static Check Features (10 Total):**
+        *   ✓/✗ OpenGraph Tags Present (any og: meta property tags in HTML head)
+        *   ✓/✗ og:title Tag Present (title tag for social media display)
+        *   ✓/✗ og:description Tag Present (description tag with compelling content)
+        *   ✓/✗ og:image Tag Present (image tag for visual appeal)
+        *   ✓/✗ og:url Tag Present (canonical URL specification)
+        *   ✓/✗ og:type Tag Present (content type definition)
+        *   ✓/✗ twitter:card Tag Present (Twitter Card type specification)
+        *   ✓/✗ twitter:site Tag Present (Twitter handle for brand attribution)
+        *   ✓/✗ Proper Placement in <head> (correct HTML placement for both OpenGraph and Twitter tags)
+        *   ✓/✗ Valid Image URL Format (properly formatted image URLs)
+    *   **Scoring Logic:**
+        *   Score 3: 8-10 checks passed (comprehensive social media meta tags implementation with both OpenGraph and Twitter tags)
+        *   Score 2: 5-7 checks passed (basic social media meta setup with room for improvement)
+        *   Score 1: 0-4 checks passed (missing or inadequate social media meta tags implementation)
+    *   **Results Display:**
+        *   **Details Column:** Shows total number of social media meta tags found (separated by OpenGraph and Twitter counts) and passed checks count
+        *   **Suggestion Column:** Displays all 10 checks with ✓/✗ indicators on separate lines for immediate actionable feedback
+    *   **Static Analysis Approach:** No OpenRouter API calls - uses intelligent HTML parsing and social media meta tag detection for immediate results.
+    *   **Dedicated Guide Page:** `seo-guides/social-media-meta-tags.php` provides comprehensive education on both OpenGraph and Twitter meta tags implementation, social media optimization, Twitter Card types, image optimization, best practices, common mistakes, and universal social sharing enhancement.
+    *   **Analysis Scope:** Complete social media meta tags audit covering OpenGraph tag detection, Twitter Card validation, essential tag verification, image URL assessment, placement validation, and cross-platform social media optimization analysis.
     *   **Development Status:** Fully functional with comprehensive static analysis system actively contributing to overall score calculations.
 
 **Development Environment:**
 *   **Local Development:** XAMPP stack (Apache + PHP + MySQL) for local development environment.
 *   **Production Hosting:** Hostinger.com shared hosting plan for live deployment.
 *   **AI Development Status:** 
-    *   **1 In Development:** "Canonical Tag" indicator - Currently returns comprehensive static check analysis with immediate feedback via 8-point canonical tag implementation assessment
-    *   **13 Ready (Developed but Paused):** "Title", "Meta Description", "URL", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames", "Links", "404 Page", "Mobile Friendly", "Language", "Favicon" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
-    *   **4 To Do (Not Yet Developed):** "Open Graph", "HTML Size", "Inline Styles" indicators - Showing "To be developed" status
+    *   **1 In Development:** "Social Media Meta Tags" indicator - Currently returns comprehensive static check analysis with immediate feedback via 10-point social media meta tags implementation assessment covering both OpenGraph and Twitter tags
+    *   **14 Ready (Developed but Paused):** "Title", "Meta Description", "URL", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames", "Links", "404 Page", "Mobile Friendly", "Language", "Favicon", "Canonical Tag" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
+    *   **3 To Do (Not Yet Developed):** "HTML Size", "Inline Styles" indicators - Showing "To be developed" status
 
 **Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter. 

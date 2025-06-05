@@ -228,7 +228,7 @@ $indicator_weights = [
     'language' => 2,
     'favicon' => 1,
     'canonical' => 2,
-    'opengraph' => 1,
+    'social_meta_tags' => 1,
     'html_size' => 2,
     'inline_css' => 1,
 ];
@@ -236,7 +236,7 @@ $indicator_weights = [
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'canonical', // Only Canonical Tag indicator is active as per user requirement
+    'social_meta_tags', // Only Social Media Meta Tags indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -256,7 +256,7 @@ $default_indicator_keys_for_logic = [
     'language' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'favicon' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'canonical' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
-    'opengraph' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'social_meta_tags' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'html_size' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'inline_css' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
 ];
@@ -1447,29 +1447,125 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $current_run_results['canonical']['details'] = "No canonical tag found ({$passed_canonical_checks}/8 checks passed)";
                 }
-                $current_run_results['canonical']['suggestion'] = implode('<br>', $canonical_check_results);
+                $current_run_results['canonical']['suggestion'] = 'Developed and paused';
                 
             } else {
                 $current_run_results['canonical']['score'] = 1;
                 $current_run_results['canonical']['details'] = 'Could not analyze canonical tag - page content not available';
-                $current_run_results['canonical']['suggestion'] = 'Unable to perform canonical tag analysis due to content fetch issues.';
+                $current_run_results['canonical']['suggestion'] = 'Developed and paused';
             }
 
-            // Open Graph Tags (Basic Check)
-            if ($dev_mock_all_but_title) {
-                $current_run_results['opengraph'] = ['score' => 0, 'details' => 'Open Graph Tags - Mocked', 'suggestion' => 'To be developed'];
-            } else {
-                $og_nodes = $xpath->query('//meta[starts-with(@property, "og:")]');
-                if ($og_nodes->length > 0) {
-                    $current_run_results['opengraph']['score'] = 3;
-                    $current_run_results['opengraph']['details'] = 'Found ' . $og_nodes->length . ' Open Graph meta tag(s).';
-                    $current_run_results['opengraph']['suggestion'] = 'Open Graph tags enhance content sharing on social media.';
-                } else {
-                    $current_run_results['opengraph']['score'] = 1;
-                    $current_run_results['opengraph']['details'] = 'No Open Graph (og:) meta tags found.';
-                    $current_run_results['opengraph']['suggestion'] = 'Add Open Graph tags (og:title, og:description, og:image, etc.) for better social media sharing.';
+            // Social Media Meta Tags Analysis (OpenGraph + Twitter)
+            $og_nodes = $xpath->query('//meta[starts-with(@property, "og:")]');
+            $og_count = $og_nodes->length;
+            
+            $twitter_nodes = $xpath->query('//meta[starts-with(@name, "twitter:")]');
+            $twitter_count = $twitter_nodes->length;
+            
+            // Initialize Social Media Meta Tags checks
+            $social_checks = [
+                'og_tags_present' => false,
+                'og_title_present' => false,
+                'og_description_present' => false,
+                'og_image_present' => false,
+                'og_url_present' => false,
+                'og_type_present' => false,
+                'twitter_card_present' => false,
+                'twitter_site_present' => false,
+                'proper_placement' => false,
+                'valid_image_url' => false
+            ];
+            
+            // Check OpenGraph tags
+            if ($og_count > 0) {
+                $social_checks['og_tags_present'] = true;
+                
+                // Check for specific OpenGraph tags
+                $og_title_nodes = $xpath->query('//meta[@property="og:title"]');
+                if ($og_title_nodes->length > 0) {
+                    $social_checks['og_title_present'] = true;
+                }
+                
+                $og_description_nodes = $xpath->query('//meta[@property="og:description"]');
+                if ($og_description_nodes->length > 0) {
+                    $social_checks['og_description_present'] = true;
+                }
+                
+                $og_image_nodes = $xpath->query('//meta[@property="og:image"]');
+                if ($og_image_nodes->length > 0) {
+                    $social_checks['og_image_present'] = true;
+                    // Check if image URL is valid (basic check)
+                    foreach ($og_image_nodes as $img_node) {
+                        $img_content = $img_node->getAttribute('content');
+                        if (filter_var($img_content, FILTER_VALIDATE_URL) || strpos($img_content, '/') === 0) {
+                            $social_checks['valid_image_url'] = true;
+                            break;
+                        }
+                    }
+                }
+                
+                $og_url_nodes = $xpath->query('//meta[@property="og:url"]');
+                if ($og_url_nodes->length > 0) {
+                    $social_checks['og_url_present'] = true;
+                }
+                
+                $og_type_nodes = $xpath->query('//meta[@property="og:type"]');
+                if ($og_type_nodes->length > 0) {
+                    $social_checks['og_type_present'] = true;
                 }
             }
+            
+            // Check Twitter tags
+            if ($twitter_count > 0) {
+                // Check for specific Twitter tags
+                $twitter_card_nodes = $xpath->query('//meta[@name="twitter:card"]');
+                if ($twitter_card_nodes->length > 0) {
+                    $social_checks['twitter_card_present'] = true;
+                }
+                
+                $twitter_site_nodes = $xpath->query('//meta[@name="twitter:site"]');
+                if ($twitter_site_nodes->length > 0) {
+                    $social_checks['twitter_site_present'] = true;
+                }
+            }
+            
+            // Check for proper placement in <head> section (both OpenGraph and Twitter)
+            $head_social_nodes = $xpath->query('//head//meta[starts-with(@property, "og:") or starts-with(@name, "twitter:")]');
+            if ($head_social_nodes->length > 0) {
+                $social_checks['proper_placement'] = true;
+            }
+            
+            // Calculate score based on checks (now 10 total checks)
+            $passed_social_checks = array_sum($social_checks);
+            if ($passed_social_checks >= 8) {
+                $social_score = 3;
+            } elseif ($passed_social_checks >= 5) {
+                $social_score = 2;
+            } else {
+                $social_score = 1;
+            }
+            
+            // Build suggestion with check results
+            $social_check_results = [];
+            $social_check_results[] = ($social_checks['og_tags_present'] ? '✓' : '✗') . ' OpenGraph Tags Present';
+            $social_check_results[] = ($social_checks['og_title_present'] ? '✓' : '✗') . ' og:title Tag Present';
+            $social_check_results[] = ($social_checks['og_description_present'] ? '✓' : '✗') . ' og:description Tag Present';
+            $social_check_results[] = ($social_checks['og_image_present'] ? '✓' : '✗') . ' og:image Tag Present';
+            $social_check_results[] = ($social_checks['og_url_present'] ? '✓' : '✗') . ' og:url Tag Present';
+            $social_check_results[] = ($social_checks['og_type_present'] ? '✓' : '✗') . ' og:type Tag Present';
+            $social_check_results[] = ($social_checks['twitter_card_present'] ? '✓' : '✗') . ' twitter:card Tag Present';
+            $social_check_results[] = ($social_checks['twitter_site_present'] ? '✓' : '✗') . ' twitter:site Tag Present';
+            $social_check_results[] = ($social_checks['proper_placement'] ? '✓' : '✗') . ' Proper Placement in &lt;head&gt;';
+            $social_check_results[] = ($social_checks['valid_image_url'] ? '✓' : '✗') . ' Valid Image URL Format';
+            
+            $current_run_results['social_meta_tags']['score'] = $social_score;
+            $total_social_tags = $og_count + $twitter_count;
+            if ($total_social_tags > 0) {
+                $current_run_results['social_meta_tags']['details'] = "Found {$total_social_tags} social media meta tag(s) (OG: {$og_count}, Twitter: {$twitter_count}) ({$passed_social_checks}/10 checks passed)";
+            } else {
+                $current_run_results['social_meta_tags']['details'] = "No social media meta tags found ({$passed_social_checks}/10 checks passed)";
+            }
+            $current_run_results['social_meta_tags']['suggestion'] = implode('<br>', $social_check_results);
 
             // Inline Styles Check
             if ($dev_mock_all_but_title) {
@@ -1506,7 +1602,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Other content-dependent checks
             $checks_needing_content_mocked_on_fail = [
                 'meta_description', 'url', 'h1', 'filenames', 'image_alt', 'viewport', 'lang', 
-                'favicon', 'canonical', 'opengraph', 'html_size', 'inline_css'
+                'favicon', 'canonical', 'social_meta_tags', 'html_size', 'inline_css'
             ];
 
             foreach($checks_needing_content_mocked_on_fail as $key) {

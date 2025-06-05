@@ -176,20 +176,20 @@ gtag('config', 'G-RWCSLW7EXF');
                         <div class="bg-danger bg-opacity-10 p-3 rounded">
                             <p class="mb-2"><strong>Relative URL (Wrong):</strong><br>
                             <code>&lt;link rel="canonical" href="/products/blue-widgets" /&gt;</code><br>
-                            <em>Should use absolute URL with domain</em></p>
+                            <small class="text-muted">Should use absolute URL with domain</small></p>
                             
                             <p class="mb-2"><strong>Multiple Canonical Tags (Wrong):</strong><br>
                             <code>&lt;link rel="canonical" href="https://example.com/products" /&gt;<br>
                             &lt;link rel="canonical" href="https://example.com/items" /&gt;</code><br>
-                            <em>Only one canonical tag per page</em></p>
+                            <small class="text-muted">Only one canonical tag per page</small></p>
                             
                             <p class="mb-2"><strong>HTTP on HTTPS Site (Wrong):</strong><br>
                             <code>&lt;link rel="canonical" href="http://example.com/secure-page" /&gt;</code><br>
-                            <em>Should use HTTPS for secure sites</em></p>
+                            <small class="text-muted">Should use HTTPS for secure sites</small></p>
                             
                             <p class="mb-0"><strong>Non-Existent URL (Wrong):</strong><br>
                             <code>&lt;link rel="canonical" href="https://example.com/deleted-page" /&gt;</code><br>
-                            <em>Canonical URL must return 200 status code</em></p>
+                            <small class="text-muted">Canonical URL must return 200 status code</small></p>
                         </div>
                     </div>
                 </div>
