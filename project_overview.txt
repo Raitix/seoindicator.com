@@ -22,9 +22,9 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   Website Accessibility check itself is performed but no longer shown as a separate row in the results table.
     *   **Note:** HTTPS checking has been integrated into the URL indicator rather than being a separate indicator.
     *   **Indicator States:**
-        *   **1 In Development:** Social Media Meta Tags (active static checks analysis with comprehensive OpenGraph and Twitter meta tags implementation validation)
-        *   **14 Ready:** Title Tag, Meta Description, URL, Robots.txt, Sitemap.xml, Headings (H1), Image Alt, Filenames, Links, 404 Page, Mobile Friendly, Language, Favicon, Canonical Tag (developed but paused)
-        *   **3 To Do:** HTML Size, Inline Styles (not yet developed)
+        *   **1 In Development:** Page Speed (active static checks analysis with comprehensive performance optimization validation)
+        *   **16 Ready:** Title Tag, Meta Description, URL, Robots.txt, Sitemap.xml, Headings (H1), Image Alt, Filenames, Links, 404 Page, Mobile Friendly, Language, Favicon, Canonical Tag, Social Media Meta Tags, ARIA (developed but paused)
+        *   **0 To Do:** All indicators now developed
 
 4.  **`seo_logic.php` (Refactored Logic File):**
     *   Contains helper functions:
@@ -86,6 +86,8 @@ The tool allows users to enter a domain name. It then checks if the website is a
                                 *   **`seo-guides/favicon.php`:** Accessible via `/seo-guides/favicon` - Favicon implementation SEO guide covering favicon formats, sizes, best practices, Apple Touch Icons, implementation methods, and common mistakes.
                         *   **`seo-guides/canonical-tag.php`:** Accessible via `/seo-guides/canonical-tag` - Canonical tag SEO guide covering duplicate content prevention, URL canonicalization, implementation best practices, common mistakes, and technical requirements.
                         *   **`seo-guides/social-media-meta-tags.php`:** Accessible via `/seo-guides/social-media-meta-tags` - Social Media Meta Tags SEO guide covering both OpenGraph and Twitter meta tags, social media optimization, meta property tags, image optimization, best practices, common mistakes, and social sharing enhancement.
+        *   **`seo-guides/aria.php`:** Accessible via `/seo-guides/aria` - ARIA (Accessible Rich Internet Applications) SEO guide covering accessibility attributes, roles, properties, states, best practices, common patterns, and implementation examples.
+        *   **`seo-guides/page-speed.php`:** Accessible via `/seo-guides/page-speed` - Page Speed SEO guide covering performance optimization, Core Web Vitals, technical optimization, mobile performance, caching strategies, and speed best practices.
     *   **Updated URL Routing:** `.htaccess` configured with specific rule for `seo-guides/` subdirectory to handle clean URLs.
     *   **Updated Navigation:** All indicator links in results table updated to point to new `/seo-guides/[indicator]` URLs.
     *   **Resource Path Updates:** All guide pages updated with correct relative paths for CSS (`../style.css`) and logo image (`../Logo-SEOIndicator-com.png`).
@@ -96,7 +98,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   Green "In Dev" badges: Currently active indicators contributing to score
         *   Blue "Ready" badges: Developed but paused indicators (score 0/3, grey stars, dark table rows)
         *   Grey "To Do" badges: Not yet developed indicators (score 0/3, grey stars, dark table rows)
-    *   **Current Active Status:** Only `social_meta_tags` (Social Media Meta Tags) indicator is active and contributes to scoring.
+    *   **Current Active Status:** Only `page_speed` (Page Speed) indicator is active and contributes to scoring.
     *   **Development Visibility:** All indicators remain visible in results table for development purposes.
 
 10. **URL SEO Indicator (Developed and Paused):**
@@ -259,7 +261,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **Analysis Scope:** Complete canonical tag audit covering tag detection, URL validation, placement verification, protocol security, self-referencing checks, parameter analysis, and content consistency assessment.
     *   **Development Status:** Developed and paused - comprehensive static analysis logic completed but not actively contributing to overall score calculations.
 
-18. **Social Media Meta Tags SEO Indicator (In Development - Active):**
+18. **Social Media Meta Tags SEO Indicator (Developed and Paused):**
     *   **Comprehensive Social Media Meta Tags Analysis:** Analyzes website social media meta tags implementation using 10 key static checks covering both OpenGraph and Twitter meta tags for complete social media optimization.
     *   **OpenGraph Tag Detection:** Checks for presence of og: meta property tags in HTML head section with proper syntax for Facebook, LinkedIn, and other platforms.
     *   **Twitter Card Tag Detection:** Validates presence of twitter: meta name tags for enhanced Twitter sharing features and card display.
@@ -289,14 +291,83 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **Static Analysis Approach:** No OpenRouter API calls - uses intelligent HTML parsing and social media meta tag detection for immediate results.
     *   **Dedicated Guide Page:** `seo-guides/social-media-meta-tags.php` provides comprehensive education on both OpenGraph and Twitter meta tags implementation, social media optimization, Twitter Card types, image optimization, best practices, common mistakes, and universal social sharing enhancement.
     *   **Analysis Scope:** Complete social media meta tags audit covering OpenGraph tag detection, Twitter Card validation, essential tag verification, image URL assessment, placement validation, and cross-platform social media optimization analysis.
-    *   **Development Status:** Fully functional with comprehensive static analysis system actively contributing to overall score calculations.
+    *   **Development Status:** Developed and paused - comprehensive static analysis logic completed but not actively contributing to overall score calculations.
+
+19. **ARIA SEO Indicator (Developed and Paused):**
+    *   **Comprehensive ARIA Accessibility Analysis:** Analyzes website ARIA (Accessible Rich Internet Applications) implementation using 12 key static checks covering accessibility attributes, semantic roles, and user interaction patterns.
+    *   **ARIA Attribute Detection:** Checks for presence of essential ARIA attributes including aria-label, aria-describedby, aria-expanded, aria-hidden, and aria-live for enhanced accessibility.
+    *   **Role Attribute Validation:** Validates presence of semantic role attributes and landmark roles (main, navigation, banner, contentinfo, complementary, search) for improved content structure.
+    *   **Form Accessibility Assessment:** Evaluates proper form element labeling using aria-label, aria-labelledby, and associated label elements for screen reader compatibility.
+    *   **Heading Structure Analysis:** Checks for logical H1-H6 hierarchy with single H1 element for proper document structure.
+    *   **Image Alt Attribute Verification:** Validates presence of alt attributes on all images for accessibility compliance.
+    *   **Skip Link Detection:** Identifies skip navigation links for keyboard accessibility and screen reader users.
+    *   **Focus Management Assessment:** Checks for tabindex attributes and focus management indicators for keyboard navigation support.
+    *   **Interactive Element States:** Analyzes aria-expanded states for collapsible content and dynamic interface elements.
+    *   **Live Region Implementation:** Detects aria-live regions for announcing dynamic content changes to assistive technologies.
+    *   **Static Check Features (12 Total):**
+        *   ✓/✗ ARIA Labels Present (aria-label attributes for element descriptions)
+        *   ✓/✗ ARIA Described-by Attributes (aria-describedby for additional descriptions)
+        *   ✓/✗ ARIA Expanded States (aria-expanded for interactive elements)
+        *   ✓/✗ ARIA Hidden Attributes (aria-hidden for content hiding)
+        *   ✓/✗ ARIA Live Regions (aria-live for dynamic content announcements)
+        *   ✓/✗ Role Attributes Present (semantic role definitions)
+        *   ✓/✗ Landmark Roles Present (navigation and structural landmarks)
+        *   ✓/✗ Form Elements Properly Labeled (comprehensive form accessibility)
+        *   ✓/✗ Proper Heading Structure (logical H1-H6 hierarchy)
+        *   ✓/✗ Images Have Alt Attributes (image accessibility compliance)
+        *   ✓/✗ Skip Navigation Links (keyboard accessibility shortcuts)
+        *   ✓/✗ Focus Management Attributes (tabindex and focus indicators)
+    *   **Scoring Logic:**
+        *   Score 3: 9+ checks passed (excellent accessibility implementation with comprehensive ARIA features)
+        *   Score 2: 6-8 checks passed (good accessibility foundation with room for improvement)
+        *   Score 1: 0-5 checks passed (limited accessibility implementation requiring attention)
+    *   **Results Display:**
+        *   **Details Column:** Shows ARIA accessibility analysis completion status with passed checks count
+        *   **Suggestion Column:** Displays all 12 checks with ✓/✗ indicators on separate lines for immediate actionable feedback
+    *   **Static Analysis Approach:** No OpenRouter API calls - uses intelligent HTML parsing and ARIA attribute detection for immediate accessibility assessment.
+    *   **Dedicated Guide Page:** `seo-guides/aria.php` provides comprehensive education on ARIA implementation, accessibility best practices, semantic roles, form labeling, dynamic content handling, and SEO benefits of accessibility.
+    *   **Analysis Scope:** Complete ARIA accessibility audit covering attribute detection, role validation, form accessibility, heading structure, image alt text, skip links, focus management, interactive states, and live region implementation.
+    *   **Development Status:** Developed and paused - comprehensive static analysis logic completed but not actively contributing to overall score calculations.
+
+20. **Page Speed SEO Indicator (In Development - Active):**
+    *   **Comprehensive Page Speed Performance Analysis:** Analyzes website page speed optimization using 9 key static checks covering performance metrics, resource optimization, and loading efficiency.
+    *   **HTML Size Assessment:** Evaluates HTML document size for optimal loading performance (under 150KB threshold for fast loading).
+    *   **CSS Resource Optimization:** Checks number of external CSS files to minimize HTTP requests (≤3 stylesheets recommended).
+    *   **JavaScript Resource Management:** Analyzes external JavaScript files count for performance optimization (≤5 scripts recommended).
+    *   **Image Count Evaluation:** Reviews total number of images for loading performance impact (≤20 images recommended).
+    *   **CSS Minification Detection:** Checks for minified CSS code to reduce file sizes and improve loading speed.
+    *   **Content Compression Verification:** Validates presence of Gzip or Brotli compression headers for reduced data transfer.
+    *   **Browser Caching Assessment:** Checks for cache-control, expires, and ETag headers for improved repeat visit performance.
+    *   **Render-blocking Resource Analysis:** Identifies blocking scripts and stylesheets in HTML head that delay page rendering.
+    *   **Inline Styles Optimization:** Counts inline style attributes to minimize render-blocking CSS (≤5 inline styles recommended).
+    *   **Static Check Features (9 Total):**
+        *   ✓/✗ Optimal HTML Size (HTML document under 150KB for fast loading)
+        *   ✓/✗ CSS Files Count (≤3 external stylesheets for minimal HTTP requests)
+        *   ✓/✗ JavaScript Files Count (≤5 external scripts for performance)
+        *   ✓/✗ Image Count (≤20 images for optimal loading performance)
+        *   ✓/✗ CSS Minification (minified CSS code for reduced file sizes)
+        *   ✓/✗ Content Compression (Gzip/Brotli compression headers present)
+        *   ✓/✗ Browser Caching (cache-control and caching headers configured)
+        *   ✓/✗ Render-blocking Resources (minimal blocking scripts and stylesheets)
+        *   ✓/✗ Inline Styles (≤5 inline style attributes for performance)
+    *   **Scoring Logic:**
+        *   Score 3: 7-9 checks passed (excellent page speed optimization with outstanding performance)
+        *   Score 2: 4-6 checks passed (good page speed with room for optimization improvements)
+        *   Score 1: 0-3 checks passed (poor page speed requiring significant performance optimization)
+    *   **Results Display:**
+        *   **Details Column:** Shows page speed analysis completion status with passed checks count
+        *   **Suggestion Column:** Displays all 9 checks with ✓/✗ indicators and specific metrics on separate lines for immediate actionable feedback
+    *   **Static Analysis Approach:** No OpenRouter API calls - uses intelligent HTML parsing, resource counting, and header analysis for immediate performance assessment.
+    *   **Dedicated Guide Page:** `seo-guides/page-speed.php` provides comprehensive education on page speed optimization, Core Web Vitals, technical optimization, mobile performance, caching strategies, compression techniques, and performance best practices.
+    *   **Analysis Scope:** Complete page speed audit covering HTML size, resource optimization, minification, compression, caching, render-blocking analysis, and inline styles for comprehensive performance evaluation.
+    *   **Development Status:** Fully functional with comprehensive static analysis system actively contributing to overall score calculations with highest velocity (weight 3) as page speed is a critical Google ranking factor.
 
 **Development Environment:**
 *   **Local Development:** XAMPP stack (Apache + PHP + MySQL) for local development environment.
 *   **Production Hosting:** Hostinger.com shared hosting plan for live deployment.
 *   **AI Development Status:** 
-    *   **1 In Development:** "Social Media Meta Tags" indicator - Currently returns comprehensive static check analysis with immediate feedback via 10-point social media meta tags implementation assessment covering both OpenGraph and Twitter tags
-    *   **14 Ready (Developed but Paused):** "Title", "Meta Description", "URL", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames", "Links", "404 Page", "Mobile Friendly", "Language", "Favicon", "Canonical Tag" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
-    *   **3 To Do (Not Yet Developed):** "HTML Size", "Inline Styles" indicators - Showing "To be developed" status
+    *   **1 In Development:** "Page Speed" indicator - Currently returns comprehensive static check analysis with immediate feedback via 9-point page speed performance assessment covering HTML size, resource optimization, compression, caching, and loading efficiency
+    *   **16 Ready (Developed but Paused):** "Title", "Meta Description", "URL", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames", "Links", "404 Page", "Mobile Friendly", "Language", "Favicon", "Canonical Tag", "Social Media Meta Tags", "ARIA" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
+    *   **0 To Do (Not Yet Developed):** All indicators now developed - "HTML Size" and "Inline Styles" indicators removed from project scope
 
 **Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter. 

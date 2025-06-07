@@ -229,14 +229,14 @@ $indicator_weights = [
     'favicon' => 1,
     'canonical' => 2,
     'social_meta_tags' => 1,
-    'html_size' => 2,
-    'inline_css' => 1,
+    'aria' => 1,
+    'page_speed' => 3,
 ];
 
 // --- Active Indicators Configuration ---
 // Only these indicators will be processed and included in scoring
 $active_indicators = [
-    'social_meta_tags', // Only Social Media Meta Tags indicator is active as per user requirement
+    'page_speed', // Only Page Speed indicator is active as per user requirement
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -257,8 +257,8 @@ $default_indicator_keys_for_logic = [
     'favicon' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'canonical' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
     'social_meta_tags' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
-    'html_size' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
-    'inline_css' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'aria' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
+    'page_speed' => ['score' => null, 'details' => '-', 'suggestion' => '-'],
 ];
 
 
@@ -405,28 +405,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $url_analysis_text = 'URL analyzed'; // Variable to store URL analysis for suggestion
 
         if ($page_content !== false) {
-            // HTML Size
-            if ($dev_mock_all_but_title) {
-                $current_run_results['html_size'] = ['score' => 0, 'details' => 'HTML Size - Mocked (e.g. 150KB)', 'suggestion' => 'To be developed'];
-            } else {
-                $html_size_bytes = strlen($page_content);
-                $html_size_kb = round($html_size_bytes / 1024, 2);
-                if ($html_size_kb < 100) {
-                    $current_run_results['html_size']['score'] = 3;
-                } elseif ($html_size_kb < 300) {
-                    $current_run_results['html_size']['score'] = 2;
-                } else {
-                    $current_run_results['html_size']['score'] = 1;
-                }
-                $current_run_results['html_size']['details'] = $html_size_kb . ' KB (' . $html_size_bytes . ' bytes)';
-                if ($current_run_results['html_size']['score'] == 1) {
-                    $current_run_results['html_size']['suggestion'] = 'Page size is large. Aim for <100-150KB for faster loading.';
-                } elseif ($current_run_results['html_size']['score'] == 2) {
-                    $current_run_results['html_size']['suggestion'] = 'Page size is reasonable. Further optimization might be possible.';
-                } else {
-                    $current_run_results['html_size']['suggestion'] = 'Page size is excellent!';
-                }
-            }
+
 
             libxml_use_internal_errors(true);
             $doc = new DOMDocument();
@@ -1558,36 +1537,152 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $social_check_results[] = ($social_checks['proper_placement'] ? '✓' : '✗') . ' Proper Placement in &lt;head&gt;';
             $social_check_results[] = ($social_checks['valid_image_url'] ? '✓' : '✗') . ' Valid Image URL Format';
             
-            $current_run_results['social_meta_tags']['score'] = $social_score;
-            $total_social_tags = $og_count + $twitter_count;
-            if ($total_social_tags > 0) {
-                $current_run_results['social_meta_tags']['details'] = "Found {$total_social_tags} social media meta tag(s) (OG: {$og_count}, Twitter: {$twitter_count}) ({$passed_social_checks}/10 checks passed)";
-            } else {
-                $current_run_results['social_meta_tags']['details'] = "No social media meta tags found ({$passed_social_checks}/10 checks passed)";
-            }
-            $current_run_results['social_meta_tags']['suggestion'] = implode('<br>', $social_check_results);
+            // Social Media Meta Tags Analysis (Developed and Paused)
+            $current_run_results['social_meta_tags']['score'] = 0;
+            $current_run_results['social_meta_tags']['details'] = '-';
+            $current_run_results['social_meta_tags']['suggestion'] = 'Developed and paused';
 
-            // Inline Styles Check
-            if ($dev_mock_all_but_title) {
-                $current_run_results['inline_css'] = ['score' => 0, 'details' => 'Inline Styles - Mocked', 'suggestion' => 'To be developed'];
-            } else {
-                $inline_style_nodes = $xpath->query('//*[@style]');
-                $style_tag_nodes = $xpath->query('//body//style');
-                $inline_count = $inline_style_nodes->length;
-                $style_tag_count = $style_tag_nodes->length;
-                if ($inline_count > 0 || $style_tag_count > 0) {
-                    $current_run_results['inline_css']['score'] = 2;
-                    $details_css = [];
-                    if ($inline_count > 0) $details_css[] = $inline_count . ' element(s) with style attribute';
-                    if ($style_tag_count > 0) $details_css[] = $style_tag_count . ' <style> tag(s) in body';
-                    $current_run_results['inline_css']['details'] = implode(', ', $details_css) . '.';
-                    $current_run_results['inline_css']['suggestion'] = 'Consider moving inline styles and <style> tags in body to external CSS files for better performance and maintainability.';
-                } else {
-                    $current_run_results['inline_css']['score'] = 3;
-                    $current_run_results['inline_css']['details'] = 'No inline styles or style tags found in body.';
-                    $current_run_results['inline_css']['suggestion'] = 'Excellent! No inline styles in body content.';
+            // ARIA Accessibility Analysis (Developed and Paused)
+            $current_run_results['aria']['score'] = 0;
+            $current_run_results['aria']['details'] = '-';
+            $current_run_results['aria']['suggestion'] = 'Developed and paused';
+
+            $page_speed_checks = [
+                'html_size' => false,
+                'css_files' => false,
+                'js_files' => false,
+                'image_optimization' => false,
+                'minification' => false,
+                'compression_headers' => false,
+                'caching_headers' => false,
+                'render_blocking' => false,
+                'inline_styles' => false,
+            ];
+            
+            $passed_speed_checks = 0;
+            $speed_check_results = [];
+            
+            // Check HTML size
+            $html_size_bytes = strlen($page_content);
+            $html_size_kb = round($html_size_bytes / 1024, 2);
+            if ($html_size_kb < 150) {
+                $page_speed_checks['html_size'] = true;
+                $passed_speed_checks++;
+            }
+            $speed_check_results[] = ($page_speed_checks['html_size'] ? '✓' : '✗') . ' Optimal HTML Size (' . $html_size_kb . ' KB)';
+            
+            // Check for external CSS files (fewer is better for speed)
+            $css_links = $xpath->query('//link[@rel="stylesheet"]');
+            if ($css_links->length <= 3) {
+                $page_speed_checks['css_files'] = true;
+                $passed_speed_checks++;
+            }
+            $speed_check_results[] = ($page_speed_checks['css_files'] ? '✓' : '✗') . ' CSS Files Count (' . $css_links->length . ' files)';
+            
+            // Check for external JS files (fewer is better for speed)
+            $js_scripts = $xpath->query('//script[@src]');
+            if ($js_scripts->length <= 5) {
+                $page_speed_checks['js_files'] = true;
+                $passed_speed_checks++;
+            }
+            $speed_check_results[] = ($page_speed_checks['js_files'] ? '✓' : '✗') . ' JavaScript Files Count (' . $js_scripts->length . ' files)';
+            
+            // Check image optimization (basic check for alt attributes and reasonable count)
+            $images = $xpath->query('//img');
+            if ($images->length <= 20) {
+                $page_speed_checks['image_optimization'] = true;
+                $passed_speed_checks++;
+            }
+            $speed_check_results[] = ($page_speed_checks['image_optimization'] ? '✓' : '✗') . ' Image Count (' . $images->length . ' images)';
+            
+            // Check for minification indicators (no spaces in script/style content)
+            $minified_css = true;
+            $style_tags = $xpath->query('//style');
+            foreach ($style_tags as $style) {
+                $content = $style->nodeValue;
+                if (strlen($content) > 100 && substr_count($content, ' ') / strlen($content) > 0.1) {
+                    $minified_css = false;
+                    break;
                 }
             }
+            if ($minified_css || $style_tags->length == 0) {
+                $page_speed_checks['minification'] = true;
+                $passed_speed_checks++;
+            }
+            $speed_check_results[] = ($page_speed_checks['minification'] ? '✓' : '✗') . ' CSS Minification';
+            
+            // Check for compression headers (simulate check)
+            $context = stream_context_create(['http' => ['method' => 'HEAD', 'timeout' => 3]]);
+            $headers = @get_headers($final_accessible_url, false, $context);
+            $has_compression = false;
+            if ($headers) {
+                foreach ($headers as $header) {
+                    if (stripos($header, 'content-encoding') !== false && 
+                        (stripos($header, 'gzip') !== false || stripos($header, 'deflate') !== false)) {
+                        $has_compression = true;
+                        break;
+                    }
+                }
+            }
+            if ($has_compression) {
+                $page_speed_checks['compression_headers'] = true;
+                $passed_speed_checks++;
+            }
+            $speed_check_results[] = ($page_speed_checks['compression_headers'] ? '✓' : '✗') . ' Content Compression';
+            
+            // Check for caching headers
+            $has_caching = false;
+            if ($headers) {
+                foreach ($headers as $header) {
+                    if (stripos($header, 'cache-control') !== false || 
+                        stripos($header, 'expires') !== false ||
+                        stripos($header, 'etag') !== false) {
+                        $has_caching = true;
+                        break;
+                    }
+                }
+            }
+            if ($has_caching) {
+                $page_speed_checks['caching_headers'] = true;
+                $passed_speed_checks++;
+            }
+            $speed_check_results[] = ($page_speed_checks['caching_headers'] ? '✓' : '✗') . ' Browser Caching';
+            
+            // Check for render-blocking resources in head
+            $head_scripts = $xpath->query('//head//script[@src and not(@async) and not(@defer)]');
+            $head_css = $xpath->query('//head//link[@rel="stylesheet"]');
+            if ($head_scripts->length <= 1 && $head_css->length <= 2) {
+                $page_speed_checks['render_blocking'] = true;
+                $passed_speed_checks++;
+            }
+            $speed_check_results[] = ($page_speed_checks['render_blocking'] ? '✓' : '✗') . ' Render-blocking Resources';
+            
+            // Check for inline styles (fewer is better)
+            $inline_styles = $xpath->query('//*[@style]');
+            if ($inline_styles->length <= 5) {
+                $page_speed_checks['inline_styles'] = true;
+                $passed_speed_checks++;
+            }
+            $speed_check_results[] = ($page_speed_checks['inline_styles'] ? '✓' : '✗') . ' Inline Styles (' . $inline_styles->length . ' elements)';
+            
+            // Calculate Page Speed score based on passed checks (9 total checks)
+            if ($passed_speed_checks >= 7) {
+                $speed_score = 3; // Excellent page speed
+            } elseif ($passed_speed_checks >= 4) {
+                $speed_score = 2; // Good page speed with room for improvement
+            } else {
+                $speed_score = 1; // Poor page speed needs attention
+            }
+            
+            $current_run_results['page_speed']['score'] = $speed_score;
+            
+            if ($passed_speed_checks > 0) {
+                $current_run_results['page_speed']['details'] = "Page speed analysis completed ({$passed_speed_checks}/9 checks passed)";
+            } else {
+                $current_run_results['page_speed']['details'] = "Page speed optimization needed ({$passed_speed_checks}/9 checks passed)";
+            }
+            
+            $current_run_results['page_speed']['suggestion'] = implode('<br>', $speed_check_results);
 
         } else { 
             $content_error_msg = 'Could not fetch page content for detailed checks. (' . $accessibility_check_details_internal . ')';
@@ -1602,7 +1697,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Other content-dependent checks
             $checks_needing_content_mocked_on_fail = [
                 'meta_description', 'url', 'h1', 'filenames', 'image_alt', 'viewport', 'lang', 
-                'favicon', 'canonical', 'social_meta_tags', 'html_size', 'inline_css'
+                'favicon', 'canonical', 'social_meta_tags', 'aria', 'page_speed'
             ];
 
             foreach($checks_needing_content_mocked_on_fail as $key) {

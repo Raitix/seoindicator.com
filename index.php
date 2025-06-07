@@ -21,7 +21,7 @@ $overall_score_to_display = $_SESSION['overall_score_data'] ?? null;
 // where $default_indicator_keys_for_logic would come from seo_logic.php or be defined minimally here)
 // For now, relying on the session load which itself relies on $default_indicator_keys_for_logic from seo_logic.php for initial POST run.
 // Let's ensure a default empty state for the view if session is not set from a POST yet.
-$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['url'=>'', 'title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'links'=>'', '404_page'=>'', 'mobile_friendly'=>'', 'language'=>'', 'favicon'=>'', 'canonical'=>'', 'social_meta_tags'=>'', 'html_size'=>'', 'inline_css'=>'']), ['score' => null, 'details' => '-', 'suggestion' => '-']);
+$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['url'=>'', 'title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'links'=>'', '404_page'=>'', 'mobile_friendly'=>'', 'language'=>'', 'favicon'=>'', 'canonical'=>'', 'social_meta_tags'=>'', 'aria'=>'', 'page_speed'=>'']), ['score' => null, 'details' => '-', 'suggestion' => '-']);
 
 $overall_score_display_data = $_SESSION['overall_score_data'] ?? null;
 $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
@@ -215,6 +215,14 @@ if ($openrouter_response_data) {
                             <a href="/seo-guides/social-media-meta-tags" target="_blank" title="Social Media Meta Tags SEO Guide">
                                 Social Media Meta Tags
                             </a>
+                        <?php elseif ($key === 'aria'): ?>
+                            <a href="/seo-guides/aria" target="_blank" title="ARIA SEO Guide">
+                                ARIA
+                            </a>
+                        <?php elseif ($key === 'page_speed'): ?>
+                            <a href="/seo-guides/page-speed" target="_blank" title="Page Speed SEO Guide">
+                                Page Speed
+                            </a>
                                         <?php else: ?>
                                             <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                         <?php endif; ?>
@@ -231,11 +239,11 @@ if ($openrouter_response_data) {
                                         ?>
                                     </td>
                                     <td><?php echo render_stars($result['score']); ?></td>
-                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
+                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
                                     <td class="suggestion-cell"><?php 
                                         if (isset($result['suggestion'])) {
-                                            if ($key === 'url' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags') {
-                                                // For URL, 404 Page, Mobile Friendly, Language, Favicon, Canonical Tag, and Social Media Meta Tags suggestions, allow HTML (specifically <br> tags)
+                                            if ($key === 'url' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'aria' || $key === 'page_speed') {
+                                                // For URL, 404 Page, Mobile Friendly, Language, Favicon, Canonical Tag, ARIA, and Page Speed suggestions, allow HTML (specifically <br> tags)
                                                 echo $result['suggestion'];
                                             } else {
                                                 // For other suggestions, escape HTML
