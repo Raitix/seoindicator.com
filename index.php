@@ -38,6 +38,11 @@ if ($openrouter_response_data) {
     unset($_SESSION['openrouter_response']); // Clear after reading
 }
 
+$pagespeed_response_data = $_SESSION['pagespeed_response'] ?? null;
+if ($pagespeed_response_data) {
+    unset($_SESSION['pagespeed_response']); // Clear after reading
+}
+
 ?>
 <!doctype html>
 <html lang="en" data-bs-theme="dark">
@@ -104,6 +109,20 @@ if ($openrouter_response_data) {
                             <br><strong>Parsed Data:</strong> <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo htmlspecialchars($openrouter_response_data['data']); ?></pre>
                         <?php endif; ?>
                         */ ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($pagespeed_response_data): ?>
+                    <div class="alert <?php echo $pagespeed_response_data['success'] ? 'alert-info' : 'alert-danger'; ?> mt-3" role="alert">
+                        <p><strong>Google PageSpeed Insights API Status:</strong> <?php echo htmlspecialchars($pagespeed_response_data['message']); ?></p>
+                        <?php if (isset($pagespeed_response_data['raw_request'])): ?>
+                            <p><strong>Raw Request:</strong></p>
+                            <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($pagespeed_response_data['raw_request']); ?></pre>
+                        <?php endif; ?>
+                        <?php if (isset($pagespeed_response_data['raw_response'])): ?>
+                            <p><strong>Raw Response:</strong></p>
+                            <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($pagespeed_response_data['raw_response']); ?></pre>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
 

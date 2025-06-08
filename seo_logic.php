@@ -60,6 +60,86 @@ function call_openrouter_api($prompt_message) {
     }
 }
 
+// Function to call Google PageSpeed Insights API
+function call_pagespeed_insights_api($url) {
+    if (!defined('GOOGLE_PAGESPEED_API_KEY') || GOOGLE_PAGESPEED_API_KEY === '') {
+        return ['success' => false, 'message' => 'Google PageSpeed API Key is not configured.', 'raw_request' => null, 'raw_response' => null];
+    }
+
+    $api_key = GOOGLE_PAGESPEED_API_KEY;
+    $api_url = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
+    
+    // Build query parameters properly
+    $params = [
+        'url' => $url,
+        'key' => $api_key,
+        'strategy' => 'DESKTOP',
+        'category' => 'PERFORMANCE'
+    ];
+    
+    $request_url = $api_url . '?' . http_build_query($params);
+
+    $ch = curl_init();
+
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $request_url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 120,
+        CURLOPT_USERAGENT => 'SEOIndicator.com/1.0',
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_HTTPHEADER => [
+            'Accept: application/json',
+        ]
+    ]);
+
+    $raw_response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($ch);
+    $info = curl_getinfo($ch);
+    curl_close($ch);
+
+    $trimmed_raw_response = trim($raw_response);
+
+    if ($curl_error) {
+        return ['success' => false, 'message' => "cURL Error: " . $curl_error, 'raw_request' => $request_url, 'raw_response' => $trimmed_raw_response];
+    }
+
+    if ($http_code == 200) {
+        $response_data = json_decode($trimmed_raw_response, true);
+        if ($response_data && isset($response_data['lighthouseResult'])) {
+            return ['success' => true, 'message' => 'PageSpeed Insights API Success!', 'data' => $response_data, 'raw_request' => $request_url, 'raw_response' => $trimmed_raw_response];
+        } else {
+            return ['success' => false, 'message' => 'PageSpeed API: Unexpected response structure.', 'raw_request' => $request_url, 'raw_response' => $trimmed_raw_response];
+        }
+    } else {
+        // Parse error response for more details
+        $error_data = json_decode($trimmed_raw_response, true);
+        $error_message = "PageSpeed API Error (HTTP {$http_code})";
+        
+        if ($error_data && isset($error_data['error'])) {
+            $error_details = $error_data['error'];
+            
+            if (isset($error_details['message'])) {
+                $error_message .= ": " . $error_details['message'];
+            }
+            
+            // Check for specific 403 service disabled error
+            if ($http_code == 403 && isset($error_details['status']) && $error_details['status'] === 'PERMISSION_DENIED') {
+                if (strpos($error_details['message'], 'PageSpeed Insights API has not been used') !== false) {
+                    $error_message = "PageSpeed Insights API is not enabled in your Google Cloud project. Please enable it in the Google Cloud Console and try again.";
+                }
+            }
+            
+            if (isset($error_details['code'])) {
+                $error_message .= " (Code: " . $error_details['code'] . ")";
+            }
+        }
+        
+        return ['success' => false, 'message' => $error_message, 'raw_request' => $request_url, 'raw_response' => $trimmed_raw_response];
+    }
+}
+
 // Helper function to get a database connection
 function get_db_connection() {
     $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
@@ -1547,142 +1627,135 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_run_results['aria']['details'] = '-';
             $current_run_results['aria']['suggestion'] = 'Developed and paused';
 
-            $page_speed_checks = [
-                'html_size' => false,
-                'css_files' => false,
-                'js_files' => false,
-                'image_optimization' => false,
-                'minification' => false,
-                'compression_headers' => false,
-                'caching_headers' => false,
-                'render_blocking' => false,
-                'inline_styles' => false,
+            // --- Page Speed Analysis with Google PageSpeed Insights API ---
+            $pagespeed_response = call_pagespeed_insights_api($final_accessible_url);
+            
+            // Store the raw request and response from PageSpeed API for debugging
+            $_SESSION['pagespeed_response'] = [
+                'success' => $pagespeed_response['success'],
+                'message' => $pagespeed_response['message'],
+                'raw_request' => $pagespeed_response['raw_request'] ?? null,
+                'raw_response' => $pagespeed_response['raw_response'] ?? null,
             ];
             
-            $passed_speed_checks = 0;
-            $speed_check_results = [];
-            
-            // Check HTML size
-            $html_size_bytes = strlen($page_content);
-            $html_size_kb = round($html_size_bytes / 1024, 2);
-            if ($html_size_kb < 150) {
-                $page_speed_checks['html_size'] = true;
-                $passed_speed_checks++;
-            }
-            $speed_check_results[] = ($page_speed_checks['html_size'] ? '✓' : '✗') . ' Optimal HTML Size (' . $html_size_kb . ' KB)';
-            
-            // Check for external CSS files (fewer is better for speed)
-            $css_links = $xpath->query('//link[@rel="stylesheet"]');
-            if ($css_links->length <= 3) {
-                $page_speed_checks['css_files'] = true;
-                $passed_speed_checks++;
-            }
-            $speed_check_results[] = ($page_speed_checks['css_files'] ? '✓' : '✗') . ' CSS Files Count (' . $css_links->length . ' files)';
-            
-            // Check for external JS files (fewer is better for speed)
-            $js_scripts = $xpath->query('//script[@src]');
-            if ($js_scripts->length <= 5) {
-                $page_speed_checks['js_files'] = true;
-                $passed_speed_checks++;
-            }
-            $speed_check_results[] = ($page_speed_checks['js_files'] ? '✓' : '✗') . ' JavaScript Files Count (' . $js_scripts->length . ' files)';
-            
-            // Check image optimization (basic check for alt attributes and reasonable count)
-            $images = $xpath->query('//img');
-            if ($images->length <= 20) {
-                $page_speed_checks['image_optimization'] = true;
-                $passed_speed_checks++;
-            }
-            $speed_check_results[] = ($page_speed_checks['image_optimization'] ? '✓' : '✗') . ' Image Count (' . $images->length . ' images)';
-            
-            // Check for minification indicators (no spaces in script/style content)
-            $minified_css = true;
-            $style_tags = $xpath->query('//style');
-            foreach ($style_tags as $style) {
-                $content = $style->nodeValue;
-                if (strlen($content) > 100 && substr_count($content, ' ') / strlen($content) > 0.1) {
-                    $minified_css = false;
-                    break;
+            if ($pagespeed_response['success'] && isset($pagespeed_response['data'])) {
+                $lighthouse_data = $pagespeed_response['data']['lighthouseResult'];
+                $categories = $lighthouse_data['categories'];
+                
+                // Get Performance Score (0-100)
+                $performance_score = round($categories['performance']['score'] * 100);
+                
+                // Get SEO Score (0-100) 
+                $seo_score = round($categories['seo']['score'] * 100);
+                
+                // Get Core Web Vitals from audits
+                $audits = $lighthouse_data['audits'];
+                $cwv_results = [];
+                
+                // Largest Contentful Paint (LCP)
+                if (isset($audits['largest-contentful-paint'])) {
+                    $lcp_value = round($audits['largest-contentful-paint']['numericValue'] / 1000, 2);
+                    $lcp_rating = $lcp_value <= 2.5 ? 'Good' : ($lcp_value <= 4.0 ? 'Needs Improvement' : 'Poor');
+                    $cwv_results[] = "LCP: {$lcp_value}s ({$lcp_rating})";
                 }
-            }
-            if ($minified_css || $style_tags->length == 0) {
-                $page_speed_checks['minification'] = true;
-                $passed_speed_checks++;
-            }
-            $speed_check_results[] = ($page_speed_checks['minification'] ? '✓' : '✗') . ' CSS Minification';
-            
-            // Check for compression headers (simulate check)
-            $context = stream_context_create(['http' => ['method' => 'HEAD', 'timeout' => 3]]);
-            $headers = @get_headers($final_accessible_url, false, $context);
-            $has_compression = false;
-            if ($headers) {
-                foreach ($headers as $header) {
-                    if (stripos($header, 'content-encoding') !== false && 
-                        (stripos($header, 'gzip') !== false || stripos($header, 'deflate') !== false)) {
-                        $has_compression = true;
-                        break;
+                
+                // First Input Delay (FID) / Interaction to Next Paint (INP)
+                if (isset($audits['interaction-to-next-paint'])) {
+                    $inp_value = round($audits['interaction-to-next-paint']['numericValue']);
+                    $inp_rating = $inp_value <= 200 ? 'Good' : ($inp_value <= 500 ? 'Needs Improvement' : 'Poor');
+                    $cwv_results[] = "INP: {$inp_value}ms ({$inp_rating})";
+                }
+                
+                // Cumulative Layout Shift (CLS)
+                if (isset($audits['cumulative-layout-shift'])) {
+                    $cls_value = round($audits['cumulative-layout-shift']['numericValue'], 3);
+                    $cls_rating = $cls_value <= 0.1 ? 'Good' : ($cls_value <= 0.25 ? 'Needs Improvement' : 'Poor');
+                    $cwv_results[] = "CLS: {$cls_value} ({$cls_rating})";
+                }
+                
+                // Calculate overall score based on performance and SEO scores
+                $combined_score = ($performance_score + $seo_score) / 2;
+                if ($combined_score >= 80) {
+                    $speed_score = 3; // Excellent
+                } elseif ($combined_score >= 60) {
+                    $speed_score = 2; // Good  
+                } else {
+                    $speed_score = 1; // Poor
+                }
+                
+                $current_run_results['page_speed']['score'] = $speed_score;
+                $current_run_results['page_speed']['details'] = "PageSpeed Insights: Performance {$performance_score}/100, SEO {$seo_score}/100";
+                
+                // Build suggestions from audit recommendations
+                $suggestions = [];
+                $suggestions[] = "<strong>Performance Score:</strong> {$performance_score}/100";
+                $suggestions[] = "<strong>SEO Score:</strong> {$seo_score}/100";
+                
+                if (!empty($cwv_results)) {
+                    $suggestions[] = "<strong>Core Web Vitals:</strong><br>" . implode('<br>', $cwv_results);
+                }
+                
+                // Get top performance optimization opportunities
+                $opportunities = [];
+                $key_audits = [
+                    'first-contentful-paint' => 'First Contentful Paint',
+                    'speed-index' => 'Speed Index', 
+                    'total-blocking-time' => 'Total Blocking Time',
+                    'unused-css-rules' => 'Remove Unused CSS',
+                    'unused-javascript' => 'Remove Unused JavaScript',
+                    'render-blocking-resources' => 'Eliminate Render-blocking Resources',
+                    'unminified-css' => 'Minify CSS',
+                    'unminified-javascript' => 'Minify JavaScript',
+                    'uses-text-compression' => 'Enable Text Compression',
+                    'uses-optimized-images' => 'Serve Images in Next-gen Formats'
+                ];
+                
+                foreach ($key_audits as $audit_id => $audit_name) {
+                    if (isset($audits[$audit_id])) {
+                        $audit = $audits[$audit_id];
+                        if (isset($audit['score']) && $audit['score'] < 0.9) {
+                            if (isset($audit['displayValue'])) {
+                                $opportunities[] = "{$audit_name}: {$audit['displayValue']}";
+                            } else {
+                                $opportunities[] = $audit_name;
+                            }
+                        }
                     }
                 }
-            }
-            if ($has_compression) {
-                $page_speed_checks['compression_headers'] = true;
-                $passed_speed_checks++;
-            }
-            $speed_check_results[] = ($page_speed_checks['compression_headers'] ? '✓' : '✗') . ' Content Compression';
-            
-            // Check for caching headers
-            $has_caching = false;
-            if ($headers) {
-                foreach ($headers as $header) {
-                    if (stripos($header, 'cache-control') !== false || 
-                        stripos($header, 'expires') !== false ||
-                        stripos($header, 'etag') !== false) {
-                        $has_caching = true;
-                        break;
+                
+                if (!empty($opportunities)) {
+                    $suggestions[] = "<strong>Optimization Opportunities:</strong><br>" . implode('<br>', array_slice($opportunities, 0, 5));
+                }
+                
+                // Get SEO audit issues
+                $seo_issues = [];
+                $seo_audits = [
+                    'document-title' => 'Document has a title',
+                    'meta-description' => 'Document has a meta description', 
+                    'is-crawlable' => 'Page is crawlable',
+                    'robots-txt' => 'robots.txt is valid',
+                    'hreflang' => 'Document has valid hreflang',
+                    'canonical' => 'Document has a valid canonical link'
+                ];
+                
+                foreach ($seo_audits as $audit_id => $audit_name) {
+                    if (isset($audits[$audit_id]) && isset($audits[$audit_id]['score']) && $audits[$audit_id]['score'] < 1) {
+                        $seo_issues[] = $audit_name;
                     }
                 }
-            }
-            if ($has_caching) {
-                $page_speed_checks['caching_headers'] = true;
-                $passed_speed_checks++;
-            }
-            $speed_check_results[] = ($page_speed_checks['caching_headers'] ? '✓' : '✗') . ' Browser Caching';
-            
-            // Check for render-blocking resources in head
-            $head_scripts = $xpath->query('//head//script[@src and not(@async) and not(@defer)]');
-            $head_css = $xpath->query('//head//link[@rel="stylesheet"]');
-            if ($head_scripts->length <= 1 && $head_css->length <= 2) {
-                $page_speed_checks['render_blocking'] = true;
-                $passed_speed_checks++;
-            }
-            $speed_check_results[] = ($page_speed_checks['render_blocking'] ? '✓' : '✗') . ' Render-blocking Resources';
-            
-            // Check for inline styles (fewer is better)
-            $inline_styles = $xpath->query('//*[@style]');
-            if ($inline_styles->length <= 5) {
-                $page_speed_checks['inline_styles'] = true;
-                $passed_speed_checks++;
-            }
-            $speed_check_results[] = ($page_speed_checks['inline_styles'] ? '✓' : '✗') . ' Inline Styles (' . $inline_styles->length . ' elements)';
-            
-            // Calculate Page Speed score based on passed checks (9 total checks)
-            if ($passed_speed_checks >= 7) {
-                $speed_score = 3; // Excellent page speed
-            } elseif ($passed_speed_checks >= 4) {
-                $speed_score = 2; // Good page speed with room for improvement
+                
+                if (!empty($seo_issues)) {
+                    $suggestions[] = "<strong>SEO Issues to Fix:</strong><br>" . implode('<br>', array_slice($seo_issues, 0, 5));
+                }
+                
+                $current_run_results['page_speed']['suggestion'] = implode('<br><br>', $suggestions);
+                
             } else {
-                $speed_score = 1; // Poor page speed needs attention
+                // Fallback if PageSpeed API fails
+                $current_run_results['page_speed']['score'] = 1;
+                $current_run_results['page_speed']['details'] = "PageSpeed API Error: " . $pagespeed_response['message'];
+                $current_run_results['page_speed']['suggestion'] = "Could not analyze page speed. " . $pagespeed_response['message'];
             }
-            
-            $current_run_results['page_speed']['score'] = $speed_score;
-            
-            if ($passed_speed_checks > 0) {
-                $current_run_results['page_speed']['details'] = "Page speed analysis completed ({$passed_speed_checks}/9 checks passed)";
-            } else {
-                $current_run_results['page_speed']['details'] = "Page speed optimization needed ({$passed_speed_checks}/9 checks passed)";
-            }
-            
-            $current_run_results['page_speed']['suggestion'] = implode('<br>', $speed_check_results);
 
         } else { 
             $content_error_msg = 'Could not fetch page content for detailed checks. (' . $accessibility_check_details_internal . ')';

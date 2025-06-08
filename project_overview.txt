@@ -62,7 +62,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
 
 7.  **Configuration & Database:**
     *   `db_config.php`: Contains database credentials (DB_HOST, DB_USER, DB_PASS, DB_NAME).
-    *   `config.php`: Contains API keys and site-specific settings (OPENROUTER_API_KEY, SITE_URL_FOR_OPENROUTER, SITE_NAME_FOR_OPENROUTER).
+    *   `config.php`: Contains API keys and site-specific settings (OPENROUTER_API_KEY, GOOGLE_PAGESPEED_API_KEY, SITE_URL_FOR_OPENROUTER, SITE_NAME_FOR_OPENROUTER).
     *   Database tables:
         *   `ip_requests_log`: Stores `ip_address` and `last_request_time` for rate limiting.
         *   `data`: Stores `ip`, `domain`, `score_has`, `score_max`, `dt_created`, `dt_updated` for logging checks.
@@ -330,7 +330,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **Development Status:** Developed and paused - comprehensive static analysis logic completed but not actively contributing to overall score calculations.
 
 20. **Page Speed SEO Indicator (In Development - Active):**
-    *   **Comprehensive Page Speed Performance Analysis:** Analyzes website page speed optimization using 9 key static checks covering performance metrics, resource optimization, and loading efficiency.
+*   **Google PageSpeed Insights API Integration:** Analyzes website page speed using Google's PageSpeed Insights API with comprehensive performance metrics, Core Web Vitals, and SEO scoring.
     *   **HTML Size Assessment:** Evaluates HTML document size for optimal loading performance (under 150KB threshold for fast loading).
     *   **CSS Resource Optimization:** Checks number of external CSS files to minimize HTTP requests (≤3 stylesheets recommended).
     *   **JavaScript Resource Management:** Analyzes external JavaScript files count for performance optimization (≤5 scripts recommended).
@@ -351,22 +351,22 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   ✓/✗ Render-blocking Resources (minimal blocking scripts and stylesheets)
         *   ✓/✗ Inline Styles (≤5 inline style attributes for performance)
     *   **Scoring Logic:**
-        *   Score 3: 7-9 checks passed (excellent page speed optimization with outstanding performance)
-        *   Score 2: 4-6 checks passed (good page speed with room for optimization improvements)
-        *   Score 1: 0-3 checks passed (poor page speed requiring significant performance optimization)
+        *   Score 3: Combined Performance+SEO score ≥80/100 (excellent page speed optimization with outstanding performance)
+*   Score 2: Combined Performance+SEO score ≥60/100 (good page speed with room for optimization improvements)  
+*   Score 1: Combined Performance+SEO score <60/100 (poor page speed requiring significant performance optimization)
     *   **Results Display:**
-        *   **Details Column:** Shows page speed analysis completion status with passed checks count
-        *   **Suggestion Column:** Displays all 9 checks with ✓/✗ indicators and specific metrics on separate lines for immediate actionable feedback
-    *   **Static Analysis Approach:** No OpenRouter API calls - uses intelligent HTML parsing, resource counting, and header analysis for immediate performance assessment.
+        *   **Details Column:** Shows PageSpeed Insights Performance Score and SEO Score (0-100 each)
+        *   **Suggestion Column:** Displays Performance Score, SEO Score, Core Web Vitals (LCP, INP, CLS), top optimization opportunities, and SEO recommendations from Google PageSpeed Insights for actionable feedback
+    *   **Google PageSpeed Insights API Integration:** Uses real-time Google API calls to analyze actual page performance with Lighthouse audits, providing comprehensive data including Core Web Vitals and performance recommendations.
     *   **Dedicated Guide Page:** `seo-guides/page-speed.php` provides comprehensive education on page speed optimization, Core Web Vitals, technical optimization, mobile performance, caching strategies, compression techniques, and performance best practices.
-    *   **Analysis Scope:** Complete page speed audit covering HTML size, resource optimization, minification, compression, caching, render-blocking analysis, and inline styles for comprehensive performance evaluation.
+    *   **Analysis Scope:** Complete page speed audit using Google PageSpeed Insights API including Performance Score (0-100), SEO Score (0-100), Core Web Vitals (LCP, INP, CLS), optimization opportunities, and SEO recommendations for comprehensive real-world performance evaluation.
     *   **Development Status:** Fully functional with comprehensive static analysis system actively contributing to overall score calculations with highest velocity (weight 3) as page speed is a critical Google ranking factor.
 
 **Development Environment:**
 *   **Local Development:** XAMPP stack (Apache + PHP + MySQL) for local development environment.
 *   **Production Hosting:** Hostinger.com shared hosting plan for live deployment.
 *   **AI Development Status:** 
-    *   **1 In Development:** "Page Speed" indicator - Currently returns comprehensive static check analysis with immediate feedback via 9-point page speed performance assessment covering HTML size, resource optimization, compression, caching, and loading efficiency
+    *   **1 In Development:** "Page Speed" indicator - Currently returns comprehensive Google PageSpeed Insights analysis with real-time performance scoring, Core Web Vitals, and optimization recommendations using Google's Lighthouse engine
     *   **16 Ready (Developed but Paused):** "Title", "Meta Description", "URL", "Robots.txt", "Sitemap.xml", "Headings", "Image Alt", "Filenames", "Links", "404 Page", "Mobile Friendly", "Language", "Favicon", "Canonical Tag", "Social Media Meta Tags", "ARIA" indicators - Logic developed but AI functionality paused, showing "Developed and paused" status
     *   **0 To Do (Not Yet Developed):** All indicators now developed - "HTML Size" and "Inline Styles" indicators removed from project scope
 
