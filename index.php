@@ -82,6 +82,9 @@ if ($pagespeed_response_data) {
         <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
+        <div class="loader-text mt-3">
+            Please wait, this may take a minute...
+        </div>
     </div>
 
     <div class="container <?php if ($layout_class === 'initial-view') echo 'vh-100 d-flex flex-column justify-content-center'; ?>">
@@ -251,24 +254,14 @@ if ($pagespeed_response_data) {
                                         <?php else: ?>
                                             <?php echo ucwords(str_replace('_', ' ', $key)); ?>
                                         <?php endif; ?>
-                                        
-                                                                <?php 
-                                        // Determine indicator state based on key and suggestion
-                                        if (in_array($key, $active_indicators ?? ['url'])) {
-                                            echo '<span class="badge bg-success ms-1" title="Active indicator - contributes to overall score">In Dev</span>';
-                                        } elseif (isset($result['suggestion']) && $result['suggestion'] === 'Developed and paused') {
-                                            echo '<span class="badge bg-info ms-1" title="Developed but paused - not contributing to score">Ready</span>';
-                                        } else {
-                                            echo '<span class="badge bg-secondary ms-1" title="Not yet developed">To Do</span>';
-                                        }
-                                        ?>
+
                                     </td>
                                     <td><?php echo render_stars($result['score']); ?></td>
                                     <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
                                     <td class="suggestion-cell"><?php 
                                         if (isset($result['suggestion'])) {
-                                            if ($key === 'url' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'aria' || $key === 'page_speed') {
-                                                // For URL, 404 Page, Mobile Friendly, Language, Favicon, Canonical Tag, ARIA, and Page Speed suggestions, allow HTML (specifically <br> tags)
+                                            if ($key === 'url' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') {
+                                                // For URL, 404 Page, Mobile Friendly, Language, Favicon, Canonical Tag, Social Media Meta Tags, ARIA, and Page Speed suggestions, allow HTML (specifically <br> tags)
                                                 echo $result['suggestion'];
                                             } else {
                                                 // For other suggestions, escape HTML

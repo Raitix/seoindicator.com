@@ -314,9 +314,25 @@ $indicator_weights = [
 ];
 
 // --- Active Indicators Configuration ---
-// Only these indicators will be processed and included in scoring
+// All indicators are now active and contribute to scoring
 $active_indicators = [
-    'page_speed', // Only Page Speed indicator is active as per user requirement
+    'url',
+    'title',
+    'meta_description',
+    'robots',
+    'sitemap',
+    'h1',
+    'filenames',
+    'image_alt',
+    'links',
+    '404_page',
+    'mobile_friendly',
+    'language',
+    'favicon',
+    'canonical',
+    'social_meta_tags',
+    'aria',
+    'page_speed',
 ];
 
 // Default structure for indicators_results (used by POST logic for $current_run_results)
@@ -498,20 +514,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($title_nodes->length > 0) {
                 $title_content = trim($title_nodes->item(0)->nodeValue);
                 if (!empty($title_content)) {
-                    $current_run_results['title']['score'] = 0;
+                    $title_length = strlen($title_content);
+                    if ($title_length >= 10 && $title_length <= 60) {
+                        $current_run_results['title']['score'] = 3;
+                        $current_run_results['title']['suggestion'] = 'Good title length. Consider including target keywords if not already present.';
+                    } elseif ($title_length < 10) {
+                        $current_run_results['title']['score'] = 1;
+                        $current_run_results['title']['suggestion'] = 'Title is too short. Aim for 10-60 characters with descriptive keywords.';
+                    } else {
+                        $current_run_results['title']['score'] = 2;
+                        $current_run_results['title']['suggestion'] = 'Title is too long. Keep under 60 characters to prevent truncation in search results.';
+                    }
                     $current_run_results['title']['details'] = htmlspecialchars($title_content);
-                    $title_content_for_ai = $title_content; // Store for AI
-                    // Suggestion will be filled by AI or default if AI fails
-                    $current_run_results['title']['suggestion'] = 'Developed and paused'; 
+                    $title_content_for_ai = $title_content; // Store for AI 
                 } else {
-                    $current_run_results['title']['score'] = 0;
+                    $current_run_results['title']['score'] = 1;
                     $current_run_results['title']['details'] = 'Title tag exists but is empty.';
-                    $current_run_results['title']['suggestion'] = 'Developed and paused';
+                    $current_run_results['title']['suggestion'] = 'Add descriptive title content with target keywords (10-60 characters).';
                 }
             } else {
-                $current_run_results['title']['score'] = 0;
+                $current_run_results['title']['score'] = 1;
                 $current_run_results['title']['details'] = 'No title tag found.';
-                $current_run_results['title']['suggestion'] = 'Developed and paused';
+                $current_run_results['title']['suggestion'] = 'Add a title tag with descriptive content and target keywords (10-60 characters).';
             }
 
             // Meta Description (REAL CHECK - NOT MOCKED)
@@ -519,20 +543,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($meta_description_nodes->length > 0) {
                 $meta_content = trim($meta_description_nodes->item(0)->getAttribute('content'));
                 if (!empty($meta_content)) {
-                    $current_run_results['meta_description']['score'] = 0;
+                    $meta_length = strlen($meta_content);
+                    if ($meta_length >= 120 && $meta_length <= 160) {
+                        $current_run_results['meta_description']['score'] = 3;
+                        $current_run_results['meta_description']['suggestion'] = 'Good meta description length. Ensure it accurately describes the page content.';
+                    } elseif ($meta_length < 120) {
+                        $current_run_results['meta_description']['score'] = 2;
+                        $current_run_results['meta_description']['suggestion'] = 'Meta description could be longer. Aim for 120-160 characters for better search visibility.';
+                    } else {
+                        $current_run_results['meta_description']['score'] = 2;
+                        $current_run_results['meta_description']['suggestion'] = 'Meta description is too long. Keep under 160 characters to prevent truncation.';
+                    }
                     $current_run_results['meta_description']['details'] = htmlspecialchars($meta_content);
                     $meta_description_content_for_ai = $meta_content; // Store for AI
-                    // Suggestion will be filled by AI or default if AI fails
-                    $current_run_results['meta_description']['suggestion'] = 'Developed and paused';
                 } else {
-                    $current_run_results['meta_description']['score'] = 0;
+                    $current_run_results['meta_description']['score'] = 1;
                     $current_run_results['meta_description']['details'] = 'Meta description tag exists but content is empty.';
-                    $current_run_results['meta_description']['suggestion'] = 'Developed and paused';
+                    $current_run_results['meta_description']['suggestion'] = 'Add descriptive meta description content (120-160 characters) that summarizes the page.';
                 }
             } else {
-                $current_run_results['meta_description']['score'] = 0;
+                $current_run_results['meta_description']['score'] = 1;
                 $current_run_results['meta_description']['details'] = 'No meta description tag found.';
-                $current_run_results['meta_description']['suggestion'] = 'Developed and paused';
+                $current_run_results['meta_description']['suggestion'] = 'Add a meta description tag with compelling content (120-160 characters) that summarizes the page.';
             }
             
             // URL Structure Analysis
@@ -665,7 +697,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Store the full URL and analysis in details (shown in Result column)
             $current_run_results['url']['details'] = htmlspecialchars($final_accessible_url) . "<br><br>" . $url_analysis_text;
-            $current_run_results['url']['suggestion'] = 'Developed and paused';
+            
+            // Generate suggestion based on analysis
+            if ($current_run_results['url']['score'] == 3) {
+                $current_run_results['url']['suggestion'] = 'URL structure follows SEO best practices. ' . $url_analysis_text;
+            } elseif ($current_run_results['url']['score'] == 2) {
+                $current_run_results['url']['suggestion'] = 'URL structure is good but could be improved. ' . $url_analysis_text;
+            } else {
+                $current_run_results['url']['suggestion'] = 'URL structure needs optimization. ' . $url_analysis_text;
+            }
             
             // Prepare content for AI analysis
             $url_content_for_ai = $final_accessible_url;
@@ -706,23 +746,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             if ($h1_count > 0) {
-                $current_run_results['h1']['score'] = 0;
                 if ($h1_count == 1) {
+                    $current_run_results['h1']['score'] = 3;
                     $current_run_results['h1']['details'] = "Found 1 H1 tag and {$total_headings} total headings (H2: {$h2_count}, H3: {$h3_count})";
+                    $current_run_results['h1']['suggestion'] = 'Perfect! Single H1 tag found. Ensure it contains your main keyword and accurately describes the page.';
                 } else {
+                    $current_run_results['h1']['score'] = 2;
                     $current_run_results['h1']['details'] = "Found {$h1_count} H1 tags and {$total_headings} total headings (H2: {$h2_count}, H3: {$h3_count})";
+                    $current_run_results['h1']['suggestion'] = "Multiple H1 tags found ({$h1_count}). Use only one H1 per page for better SEO structure.";
                 }
-                $current_run_results['h1']['suggestion'] = 'Developed and paused';
             } else {
-                $current_run_results['h1']['score'] = 0;
+                $current_run_results['h1']['score'] = 1;
                 $current_run_results['h1']['details'] = "No H1 tags found. Total headings: {$total_headings} (H2: {$h2_count}, H3: {$h3_count})";
-                $current_run_results['h1']['suggestion'] = 'Developed and paused';
+                $current_run_results['h1']['suggestion'] = 'Add an H1 tag with your main keyword to improve page structure and SEO.';
             }
 
-            // Image Alt Analysis (Developed and Paused)
-            $current_run_results['image_alt']['score'] = 0;
-            $current_run_results['image_alt']['details'] = 'Image Alt analysis indicator';
-            $current_run_results['image_alt']['suggestion'] = 'Developed and paused';
+            // Image Alt Analysis
+            $img_nodes = $xpath->query('//img');
+            $img_count = $img_nodes->length;
+            $imgs_with_alt = 0;
+            $imgs_without_alt = 0;
+            
+            if ($img_count > 0) {
+                foreach ($img_nodes as $img) {
+                    $alt = trim($img->getAttribute('alt'));
+                    if (!empty($alt)) {
+                        $imgs_with_alt++;
+                    } else {
+                        $imgs_without_alt++;
+                    }
+                }
+                
+                if ($imgs_with_alt == $img_count) {
+                    $current_run_results['image_alt']['score'] = 3;
+                    $current_run_results['image_alt']['suggestion'] = 'Excellent! All images have alt attributes. Ensure they are descriptive and relevant.';
+                } elseif ($imgs_with_alt > $imgs_without_alt) {
+                    $current_run_results['image_alt']['score'] = 2;
+                    $current_run_results['image_alt']['suggestion'] = "Good progress: {$imgs_with_alt}/{$img_count} images have alt attributes. Add alt text to remaining {$imgs_without_alt} images.";
+                } else {
+                    $current_run_results['image_alt']['score'] = 1;
+                    $current_run_results['image_alt']['suggestion'] = "Many images missing alt attributes: {$imgs_without_alt}/{$img_count} need alt text for accessibility and SEO.";
+                }
+                $current_run_results['image_alt']['details'] = "Found {$img_count} images ({$imgs_with_alt} with alt, {$imgs_without_alt} without)";
+            } else {
+                $current_run_results['image_alt']['score'] = 3;
+                $current_run_results['image_alt']['details'] = 'No images found on the page';
+                $current_run_results['image_alt']['suggestion'] = 'No images detected. When adding images, always include descriptive alt attributes.';
+            }
 
             // Links Analysis
             $link_nodes = $xpath->query('//a[@href] | //*[@onclick]');
@@ -815,9 +885,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $score = 2;
                 }
                 
-                $current_run_results['links']['score'] = 0;
+                $current_run_results['links']['score'] = $score;
                 $current_run_results['links']['details'] = "Found {$links_count} links (Internal: {$internal_links}, External: {$external_links}, OnClick: {$onclick_links})";
-                $current_run_results['links']['suggestion'] = 'Developed and paused';
+                
+                if ($score == 3) {
+                    $current_run_results['links']['suggestion'] = 'Excellent link structure with good balance of internal/external links and descriptive anchor text.';
+                } elseif ($score == 2) {
+                    $current_run_results['links']['suggestion'] = 'Good link structure. Consider adding more descriptive anchor text and balancing internal/external links.';
+                } else {
+                    $current_run_results['links']['suggestion'] = 'Link structure needs improvement. Add descriptive anchor text and reduce reliance on onclick events.';
+                }
             } else {
                 $current_run_results['links']['score'] = 1;
                 $current_run_results['links']['details'] = 'No links found on the page';
@@ -1002,7 +1079,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $current_run_results['404_page']['details'] = 'Default server 404 response (no custom page found)';
                 }
                 
-                $current_run_results['404_page']['suggestion'] = 'Developed and paused';
+                // Generate suggestion based on check results
+                $suggestion_base = '';
+                if ($score_404 == 3) {
+                    $suggestion_base = 'Excellent 404 page implementation with comprehensive user guidance and navigation options.';
+                } elseif ($score_404 == 2) {
+                    $suggestion_base = 'Good 404 page setup with some areas for improvement.';
+                } else {
+                    $suggestion_base = 'Basic 404 handling needs significant improvement.';
+                }
+                
+                // Add detailed check results as separate lines
+                $current_run_results['404_page']['suggestion'] = $suggestion_base . '<br><br><strong>Check Results:</strong><br>' . implode('<br>', $check_results);
                 
                 // Store content for potential future AI analysis
                 if ($page_404_content) {
@@ -1012,7 +1100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $current_run_results['404_page']['score'] = 1;
                 $current_run_results['404_page']['details'] = 'Could not determine base URL to check for 404 page';
-                $current_run_results['404_page']['suggestion'] = 'Developed and paused';
+                $current_run_results['404_page']['suggestion'] = 'Create a custom 404 error page with helpful navigation, search functionality, and user guidance.';
             }
 
             // Mobile Friendly Analysis with Static Checks
@@ -1172,23 +1260,169 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $current_run_results['mobile_friendly']['score'] = $mobile_score;
                 $current_run_results['mobile_friendly']['details'] = "Mobile analysis completed ({$passed_mobile_checks}/12 checks passed)";
-                $current_run_results['mobile_friendly']['suggestion'] = 'Developed and paused';
+                
+                // Generate base suggestion
+                $suggestion_base = '';
+                if ($mobile_score == 3) {
+                    $suggestion_base = 'Excellent mobile optimization with comprehensive responsive design and user experience features.';
+                } elseif ($mobile_score == 2) {
+                    $suggestion_base = 'Good mobile friendliness with some areas for improvement.';
+                } else {
+                    $suggestion_base = 'Mobile optimization needs significant improvement.';
+                }
+                
+                // Add detailed check results as separate lines
+                $current_run_results['mobile_friendly']['suggestion'] = $suggestion_base . '<br><br><strong>Check Results:</strong><br>' . implode('<br>', $mobile_check_results);
                 
             } else {
                 $current_run_results['mobile_friendly']['score'] = 1;
                 $current_run_results['mobile_friendly']['details'] = 'Could not analyze mobile friendliness - page content not available';
-                $current_run_results['mobile_friendly']['suggestion'] = 'Developed and paused';
+                $current_run_results['mobile_friendly']['suggestion'] = 'Ensure your website is mobile-friendly with responsive design, viewport meta tag, and touch-friendly elements.';
             }
 
-            // Filenames Analysis (Developed and Paused)
-            $current_run_results['filenames']['score'] = 0;
-            $current_run_results['filenames']['details'] = 'Filenames analysis indicator';
-            $current_run_results['filenames']['suggestion'] = 'Developed and paused';
+            // Filenames Analysis
+            $parsed_url_for_filenames = parse_url($final_accessible_url);
+            $path = isset($parsed_url_for_filenames['path']) ? $parsed_url_for_filenames['path'] : '/';
+            $filename_segments = array_filter(explode('/', trim($path, '/')));
+            
+            if (!empty($filename_segments)) {
+                $seo_friendly_filenames = 0;
+                $total_segments = count($filename_segments);
+                
+                foreach ($filename_segments as $segment) {
+                    if (preg_match('/^[a-z0-9\-]+$/', $segment) && !is_numeric($segment)) {
+                        $seo_friendly_filenames++;
+                    }
+                }
+                
+                if ($seo_friendly_filenames == $total_segments) {
+                    $current_run_results['filenames']['score'] = 3;
+                    $current_run_results['filenames']['suggestion'] = 'Excellent! All URL segments use SEO-friendly naming conventions.';
+                } elseif ($seo_friendly_filenames > $total_segments / 2) {
+                    $current_run_results['filenames']['score'] = 2;
+                    $current_run_results['filenames']['suggestion'] = 'Good filename structure. Consider making all segments lowercase with hyphens instead of underscores.';
+                } else {
+                    $current_run_results['filenames']['score'] = 1;
+                    $current_run_results['filenames']['suggestion'] = 'Improve filename structure: use lowercase letters, hyphens, and descriptive names.';
+                }
+                $current_run_results['filenames']['details'] = "URL path: {$path} ({$seo_friendly_filenames}/{$total_segments} segments are SEO-friendly)";
+            } else {
+                $current_run_results['filenames']['score'] = 3;
+                $current_run_results['filenames']['details'] = 'Root URL with no additional path segments';
+                $current_run_results['filenames']['suggestion'] = 'Root URL structure is clean. When adding pages, use SEO-friendly filenames.';
+            }
 
-            // Language Declaration Analysis (Developed and Paused)
-            $current_run_results['language']['score'] = 0;
-            $current_run_results['language']['details'] = 'Language declaration analysis indicator';
-            $current_run_results['language']['suggestion'] = 'Developed and paused';
+            // Language Declaration Analysis with Comprehensive Checks
+            $language_checks = [
+                'html_lang_present' => false,
+                'lang_not_empty' => false,
+                'valid_lang_format' => false,
+                'xml_lang_consistent' => false,
+                'content_lang_meta' => false,
+                'lang_matches_content' => false
+            ];
+            
+            $lang_nodes = $xpath->query('//html[@lang]');
+            $xml_lang_nodes = $xpath->query('//html[@xml:lang]');
+            $content_lang_meta = $xpath->query('//meta[@http-equiv="content-language" or @name="language"]');
+            
+            $lang_attr = '';
+            $xml_lang_attr = '';
+            
+            if ($lang_nodes->length > 0) {
+                $language_checks['html_lang_present'] = true;
+                $lang_attr = $lang_nodes->item(0)->getAttribute('lang');
+                
+                if (!empty($lang_attr)) {
+                    $language_checks['lang_not_empty'] = true;
+                    
+                    // Check if language code follows valid format (2-letter or extended format)
+                    if (preg_match('/^[a-z]{2}(-[A-Z]{2})?(-[a-zA-Z0-9]+)*$/', $lang_attr)) {
+                        $language_checks['valid_lang_format'] = true;
+                    }
+                }
+            }
+            
+            if ($xml_lang_nodes->length > 0) {
+                $xml_lang_attr = $xml_lang_nodes->item(0)->getAttribute('xml:lang');
+                
+                // Check if xml:lang is consistent with lang
+                if (!empty($lang_attr) && !empty($xml_lang_attr) && $lang_attr === $xml_lang_attr) {
+                    $language_checks['xml_lang_consistent'] = true;
+                } elseif (empty($lang_attr) && !empty($xml_lang_attr)) {
+                    // xml:lang present but no lang attribute
+                    $lang_attr = $xml_lang_attr;
+                    $language_checks['lang_not_empty'] = true;
+                    if (preg_match('/^[a-z]{2}(-[A-Z]{2})?(-[a-zA-Z0-9]+)*$/', $xml_lang_attr)) {
+                        $language_checks['valid_lang_format'] = true;
+                    }
+                }
+            }
+            
+            // Check for content-language meta tag
+            if ($content_lang_meta->length > 0) {
+                $language_checks['content_lang_meta'] = true;
+            }
+            
+            // Basic content language detection (simplified)
+            if (!empty($lang_attr)) {
+                $primary_lang = strtolower(substr($lang_attr, 0, 2));
+                $page_text = strtolower(strip_tags($page_content));
+                
+                // Simple heuristics for common languages
+                $lang_indicators = [
+                    'en' => ['the', 'and', 'is', 'in', 'to', 'of', 'for', 'with'],
+                    'es' => ['el', 'la', 'de', 'en', 'y', 'es', 'con', 'por'],
+                    'fr' => ['le', 'de', 'et', 'à', 'un', 'il', 'être', 'et'],
+                    'de' => ['der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das'],
+                    'it' => ['il', 'di', 'e', 'la', 'in', 'che', 'è', 'per']
+                ];
+                
+                if (isset($lang_indicators[$primary_lang])) {
+                    $indicator_count = 0;
+                    foreach ($lang_indicators[$primary_lang] as $indicator) {
+                        if (substr_count($page_text, ' ' . $indicator . ' ') > 0) {
+                            $indicator_count++;
+                        }
+                    }
+                    if ($indicator_count >= 3) {
+                        $language_checks['lang_matches_content'] = true;
+                    }
+                }
+            }
+            
+            // Calculate score based on checks
+            $passed_language_checks = array_sum($language_checks);
+            if ($passed_language_checks >= 5) {
+                $language_score = 3;
+            } elseif ($passed_language_checks >= 3) {
+                $language_score = 2;
+            } else {
+                $language_score = 1;
+            }
+            
+            // Build check results for display
+            $language_check_results = [];
+            $language_check_results[] = ($language_checks['html_lang_present'] ? '✓' : '✗') . ' HTML lang Attribute Present';
+            $language_check_results[] = ($language_checks['lang_not_empty'] ? '✓' : '✗') . ' Language Code Not Empty';
+            $language_check_results[] = ($language_checks['valid_lang_format'] ? '✓' : '✗') . ' Valid Language Format';
+            $language_check_results[] = ($language_checks['xml_lang_consistent'] ? '✓' : '✗') . ' XML:lang Consistency';
+            $language_check_results[] = ($language_checks['content_lang_meta'] ? '✓' : '✗') . ' Content-Language Meta';
+            $language_check_results[] = ($language_checks['lang_matches_content'] ? '✓' : '✗') . ' Language Matches Content';
+            
+            // Generate base suggestion and include detailed checks
+            $suggestion_base = '';
+            if ($language_score == 3) {
+                $suggestion_base = 'Excellent language declaration implementation with proper formatting and consistency.';
+            } elseif ($language_score == 2) {
+                $suggestion_base = 'Good language declaration with some areas for improvement.';
+            } else {
+                $suggestion_base = 'Language declaration needs improvement for better accessibility and SEO.';
+            }
+            
+            $current_run_results['language']['score'] = $language_score;
+            $current_run_results['language']['details'] = !empty($lang_attr) ? "Language declared: {$lang_attr}" : "No valid language declaration found";
+            $current_run_results['language']['suggestion'] = $suggestion_base . '<br><br><strong>Check Results:</strong><br>' . implode('<br>', $language_check_results);
 
 
 
@@ -1376,18 +1610,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $favicon_check_results[] = ($favicon_checks['standard_location'] ? '✓' : '✗') . ' Standard favicon.ico Location';
                 $favicon_check_results[] = ($favicon_checks['web_app_manifest_pwa'] ? '✓' : '✗') . ' Web App Manifest PWA (192x192 + 512x512)';
                 
-                $current_run_results['favicon']['score'] = 0;
+                $current_run_results['favicon']['score'] = $favicon_score;
                 if ($total_links > 0) {
                     $current_run_results['favicon']['details'] = "Found {$total_links} favicon-related link tag(s) ({$passed_favicon_checks}/8 checks passed)";
                 } else {
                     $current_run_results['favicon']['details'] = "No favicon link tags found ({$passed_favicon_checks}/8 checks passed)";
                 }
-                $current_run_results['favicon']['suggestion'] = 'Developed and paused';
+                
+                // Generate base suggestion
+                $suggestion_base = '';
+                if ($favicon_score == 3) {
+                    $suggestion_base = 'Excellent favicon implementation with comprehensive format support and PWA compatibility.';
+                } elseif ($favicon_score == 2) {
+                    $suggestion_base = 'Good favicon setup with some areas for improvement.';
+                } else {
+                    $suggestion_base = 'Favicon implementation needs improvement.';
+                }
+                
+                // Add detailed check results as separate lines
+                $current_run_results['favicon']['suggestion'] = $suggestion_base . '<br><br><strong>Check Results:</strong><br>' . implode('<br>', $favicon_check_results);
                 
             } else {
-                $current_run_results['favicon']['score'] = 0;
+                $current_run_results['favicon']['score'] = 1;
                 $current_run_results['favicon']['details'] = 'Could not analyze favicon - page content not available';
-                $current_run_results['favicon']['suggestion'] = 'Developed and paused';
+                $current_run_results['favicon']['suggestion'] = 'Add favicon support with ICO and PNG formats, multiple sizes, and proper link tags in HTML head.';
             }
 
             // Canonical Tag Analysis with Comprehensive Static Checks
@@ -1506,12 +1752,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $current_run_results['canonical']['details'] = "No canonical tag found ({$passed_canonical_checks}/8 checks passed)";
                 }
-                $current_run_results['canonical']['suggestion'] = 'Developed and paused';
+                
+                // Generate base suggestion
+                $suggestion_base = '';
+                if ($canonical_score == 3) {
+                    $suggestion_base = 'Excellent canonical tag implementation following all SEO best practices.';
+                } elseif ($canonical_score == 2) {
+                    $suggestion_base = 'Good canonical tag setup with some areas for improvement.';
+                } else {
+                    $suggestion_base = 'Canonical tag implementation needs improvement.';
+                }
+                
+                // Add detailed check results as separate lines
+                $current_run_results['canonical']['suggestion'] = $suggestion_base . '<br><br><strong>Check Results:</strong><br>' . implode('<br>', $canonical_check_results);
                 
             } else {
                 $current_run_results['canonical']['score'] = 1;
                 $current_run_results['canonical']['details'] = 'Could not analyze canonical tag - page content not available';
-                $current_run_results['canonical']['suggestion'] = 'Developed and paused';
+                $current_run_results['canonical']['suggestion'] = 'Add canonical tag with absolute HTTPS URL pointing to the preferred version of this page.';
             }
 
             // Social Media Meta Tags Analysis (OpenGraph + Twitter)
@@ -1617,15 +1875,213 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $social_check_results[] = ($social_checks['proper_placement'] ? '✓' : '✗') . ' Proper Placement in &lt;head&gt;';
             $social_check_results[] = ($social_checks['valid_image_url'] ? '✓' : '✗') . ' Valid Image URL Format';
             
-            // Social Media Meta Tags Analysis (Developed and Paused)
-            $current_run_results['social_meta_tags']['score'] = 0;
-            $current_run_results['social_meta_tags']['details'] = '-';
-            $current_run_results['social_meta_tags']['suggestion'] = 'Developed and paused';
+            // Social Media Meta Tags Analysis
+            $total_social_tags = $og_count + $twitter_count;
+            
+            // Generate base suggestion and score
+            $suggestion_base = '';
+            if ($total_social_tags >= 6) {
+                $current_run_results['social_meta_tags']['score'] = 3;
+                $suggestion_base = 'Excellent social media meta tag implementation for optimal sharing.';
+            } elseif ($total_social_tags >= 3) {
+                $current_run_results['social_meta_tags']['score'] = 2;
+                $suggestion_base = 'Good social media meta tags with some areas for improvement.';
+            } else {
+                $current_run_results['social_meta_tags']['score'] = 1;
+                $suggestion_base = 'Social media meta tags implementation needs improvement.';
+            }
+            
+            // Add detailed check results as separate lines
+            $current_run_results['social_meta_tags']['suggestion'] = $suggestion_base . '<br><br><strong>Check Results:</strong><br>' . implode('<br>', $social_check_results);
+            $current_run_results['social_meta_tags']['details'] = "Found {$og_count} OpenGraph tags and {$twitter_count} Twitter Card tags";
 
-            // ARIA Accessibility Analysis (Developed and Paused)
-            $current_run_results['aria']['score'] = 0;
-            $current_run_results['aria']['details'] = '-';
-            $current_run_results['aria']['suggestion'] = 'Developed and paused';
+            // ARIA Accessibility Analysis with Comprehensive Checks
+            $aria_checks = [
+                'aria_labels_present' => false,
+                'aria_labelledby_present' => false,
+                'aria_describedby_present' => false,
+                'semantic_roles_present' => false,
+                'interactive_elements_labeled' => false,
+                'landmark_roles_present' => false,
+                'form_labels_proper' => false,
+                'heading_structure_logical' => false,
+                'skip_navigation_present' => false,
+                'focus_management' => false,
+                'live_regions_present' => false,
+                'hidden_content_proper' => false
+            ];
+            
+            // Check for various ARIA attributes
+            $aria_label_nodes = $xpath->query('//*[@aria-label]');
+            $aria_labelledby_nodes = $xpath->query('//*[@aria-labelledby]');
+            $aria_describedby_nodes = $xpath->query('//*[@aria-describedby]');
+            $role_nodes = $xpath->query('//*[@role]');
+            
+            if ($aria_label_nodes->length > 0) {
+                $aria_checks['aria_labels_present'] = true;
+            }
+            
+            if ($aria_labelledby_nodes->length > 0) {
+                $aria_checks['aria_labelledby_present'] = true;
+            }
+            
+            if ($aria_describedby_nodes->length > 0) {
+                $aria_checks['aria_describedby_present'] = true;
+            }
+            
+            // Check for semantic roles
+            $semantic_roles = ['navigation', 'main', 'banner', 'contentinfo', 'complementary', 'article', 'section'];
+            $found_semantic_roles = 0;
+            if ($role_nodes->length > 0) {
+                foreach ($role_nodes as $role_node) {
+                    $role_value = $role_node->getAttribute('role');
+                    if (in_array($role_value, $semantic_roles)) {
+                        $found_semantic_roles++;
+                    }
+                }
+                if ($found_semantic_roles > 0) {
+                    $aria_checks['semantic_roles_present'] = true;
+                }
+            }
+            
+            // Check interactive elements (buttons, links, inputs)
+            $interactive_elements = $xpath->query('//button | //input | //select | //textarea | //a[@href]');
+            $labeled_interactive = 0;
+            if ($interactive_elements->length > 0) {
+                foreach ($interactive_elements as $element) {
+                    if ($element->hasAttribute('aria-label') || 
+                        $element->hasAttribute('aria-labelledby') || 
+                        $element->textContent || 
+                        ($element->tagName === 'input' && $element->hasAttribute('placeholder')) ||
+                        ($element->tagName === 'input' && $element->getAttribute('type') === 'submit')) {
+                        $labeled_interactive++;
+                    }
+                }
+                if ($labeled_interactive >= $interactive_elements->length * 0.8) {
+                    $aria_checks['interactive_elements_labeled'] = true;
+                }
+            }
+            
+            // Check for landmark roles
+            $landmark_roles = ['banner', 'navigation', 'main', 'contentinfo', 'complementary', 'search'];
+            $found_landmarks = 0;
+            foreach ($landmark_roles as $landmark) {
+                $landmark_nodes = $xpath->query("//*[@role='{$landmark}'] | //{$landmark}");
+                if ($landmark_nodes->length > 0) {
+                    $found_landmarks++;
+                }
+            }
+            if ($found_landmarks >= 3) {
+                $aria_checks['landmark_roles_present'] = true;
+            }
+            
+            // Check form labels
+            $form_inputs = $xpath->query('//input[@type!="hidden"] | //select | //textarea');
+            $properly_labeled_forms = 0;
+            if ($form_inputs->length > 0) {
+                foreach ($form_inputs as $input) {
+                    $input_id = $input->getAttribute('id');
+                    if (!empty($input_id)) {
+                        $label_for_input = $xpath->query("//label[@for='{$input_id}']");
+                        if ($label_for_input->length > 0 || 
+                            $input->hasAttribute('aria-label') || 
+                            $input->hasAttribute('aria-labelledby')) {
+                            $properly_labeled_forms++;
+                        }
+                    }
+                }
+                if ($properly_labeled_forms >= $form_inputs->length * 0.8) {
+                    $aria_checks['form_labels_proper'] = true;
+                }
+            }
+            
+            // Check heading structure
+            $headings = $xpath->query('//h1 | //h2 | //h3 | //h4 | //h5 | //h6');
+            if ($headings->length > 0) {
+                $heading_levels = [];
+                foreach ($headings as $heading) {
+                    $level = intval(substr($heading->tagName, 1));
+                    $heading_levels[] = $level;
+                }
+                
+                // Check if heading structure is logical (no skipping levels)
+                $logical_structure = true;
+                for ($i = 1; $i < count($heading_levels); $i++) {
+                    if ($heading_levels[$i] > $heading_levels[$i-1] + 1) {
+                        $logical_structure = false;
+                        break;
+                    }
+                }
+                if ($logical_structure && in_array(1, $heading_levels)) {
+                    $aria_checks['heading_structure_logical'] = true;
+                }
+            }
+            
+            // Check for skip navigation
+            $skip_links = $xpath->query('//a[contains(translate(text(), "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "skip")]');
+            if ($skip_links->length > 0) {
+                $aria_checks['skip_navigation_present'] = true;
+            }
+            
+            // Check for focus management attributes
+            $focus_elements = $xpath->query('//*[@tabindex] | //*[@aria-hidden]');
+            if ($focus_elements->length > 0) {
+                $aria_checks['focus_management'] = true;
+            }
+            
+            // Check for live regions
+            $live_regions = $xpath->query('//*[@aria-live] | //*[@aria-atomic] | //*[@aria-relevant]');
+            if ($live_regions->length > 0) {
+                $aria_checks['live_regions_present'] = true;
+            }
+            
+            // Check for proper hidden content
+            $hidden_elements = $xpath->query('//*[@aria-hidden="true"]');
+            $visible_hidden_elements = $xpath->query('//*[@aria-hidden="false"]');
+            if ($hidden_elements->length > 0 || $visible_hidden_elements->length > 0) {
+                $aria_checks['hidden_content_proper'] = true;
+            }
+            
+            // Calculate score based on checks
+            $passed_aria_checks = array_sum($aria_checks);
+            if ($passed_aria_checks >= 9) {
+                $aria_score = 3;
+            } elseif ($passed_aria_checks >= 6) {
+                $aria_score = 2;
+            } else {
+                $aria_score = 1;
+            }
+            
+            // Build check results for display
+            $aria_check_results = [];
+            $aria_check_results[] = ($aria_checks['aria_labels_present'] ? '✓' : '✗') . ' ARIA Labels Present';
+            $aria_check_results[] = ($aria_checks['aria_labelledby_present'] ? '✓' : '✗') . ' ARIA Labelledby Present';
+            $aria_check_results[] = ($aria_checks['aria_describedby_present'] ? '✓' : '✗') . ' ARIA Describedby Present';
+            $aria_check_results[] = ($aria_checks['semantic_roles_present'] ? '✓' : '✗') . ' Semantic Roles Present';
+            $aria_check_results[] = ($aria_checks['interactive_elements_labeled'] ? '✓' : '✗') . ' Interactive Elements Labeled';
+            $aria_check_results[] = ($aria_checks['landmark_roles_present'] ? '✓' : '✗') . ' Landmark Roles Present';
+            $aria_check_results[] = ($aria_checks['form_labels_proper'] ? '✓' : '✗') . ' Form Labels Proper';
+            $aria_check_results[] = ($aria_checks['heading_structure_logical'] ? '✓' : '✗') . ' Logical Heading Structure';
+            $aria_check_results[] = ($aria_checks['skip_navigation_present'] ? '✓' : '✗') . ' Skip Navigation Present';
+            $aria_check_results[] = ($aria_checks['focus_management'] ? '✓' : '✗') . ' Focus Management';
+            $aria_check_results[] = ($aria_checks['live_regions_present'] ? '✓' : '✗') . ' Live Regions Present';
+            $aria_check_results[] = ($aria_checks['hidden_content_proper'] ? '✓' : '✗') . ' Hidden Content Proper';
+            
+            // Generate suggestion with detailed checks
+            $suggestion_base = '';
+            if ($aria_score == 3) {
+                $suggestion_base = 'Excellent ARIA implementation with comprehensive accessibility features.';
+            } elseif ($aria_score == 2) {
+                $suggestion_base = 'Good ARIA usage with room for accessibility improvements.';
+            } else {
+                $suggestion_base = 'ARIA implementation needs significant improvement for better accessibility.';
+            }
+            
+            $total_aria_elements = $aria_label_nodes->length + $aria_labelledby_nodes->length + $aria_describedby_nodes->length + $role_nodes->length;
+            
+            $current_run_results['aria']['score'] = $aria_score;
+            $current_run_results['aria']['details'] = "Found {$total_aria_elements} elements with ARIA attributes ({$passed_aria_checks}/12 checks passed)";
+            $current_run_results['aria']['suggestion'] = $suggestion_base . '<br><br><strong>Check Results:</strong><br>' . implode('<br>', $aria_check_results);
 
             // --- Page Speed Analysis with Google PageSpeed Insights API ---
             $pagespeed_response = call_pagespeed_insights_api($final_accessible_url);
@@ -1784,9 +2240,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // --- AI Suggestion for Title (PAUSED) ---
-        // Temporarily paused to develop Meta Description functionality
-        /*
+        // --- AI Suggestion for Title (ENABLED) ---
         if ($title_content_for_ai) {
             $prompt = "Analyze the following website title for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Title: \"{$title_content_for_ai}\"";
             $title_ai_response_full = call_openrouter_api($prompt); // Get the full response
@@ -1846,11 +2300,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_run_results['title']['suggestion'] = 'Title found, but could not generate AI suggestion at this time.';
              }
         }
-        */
-        // --- End AI Suggestion for Title (PAUSED) ---
+        // --- End AI Suggestion for Title (ENABLED) ---
 
-        // --- AI Suggestion for Meta Description (PAUSED) ---
-        /*
+        // --- AI Suggestion for Meta Description (ENABLED) ---
         if ($meta_description_content_for_ai) {
             $prompt = "Analyze the following website meta description for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Meta Description: \"{$meta_description_content_for_ai}\"";
             $meta_ai_response_full = call_openrouter_api($prompt); // Get the full response
@@ -1910,8 +2362,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_run_results['meta_description']['suggestion'] = 'Meta description found, but could not generate AI suggestion at this time.';
              }
         }
-        */
-        // --- End AI Suggestion for Meta Description (PAUSED) ---
+        // --- End AI Suggestion for Meta Description (ENABLED) ---
 
         $parsed_url_for_files = parse_url($final_accessible_url);
         if (isset($parsed_url_for_files['scheme']) && isset($parsed_url_for_files['host'])) {
@@ -1923,7 +2374,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Skip mocking for robots.txt to show real results and AI suggestions
             $robots_url = $base_url_for_files . '/robots.txt';
             $robots_check_result = check_resource_accessibility_helper($robots_url);
-            $current_run_results['robots']['score'] = 0;
+            $current_run_results['robots']['score'] = $robots_check_result['score'];
             $current_run_results['robots']['details'] = $robots_check_result['details'];
             
             // Fetch robots.txt content for AI analysis if accessible
@@ -1934,12 +2385,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $content_length = strlen($robots_content_for_ai);
                     $line_count = substr_count($robots_content_for_ai, "\n") + 1;
                     $current_run_results['robots']['details'] = "Found robots.txt ({$content_length} chars, {$line_count} lines)";
-                    $current_run_results['robots']['suggestion'] = 'Developed and paused';
+                    
+                    // Basic analysis of robots.txt content
+                    if (stripos($robots_content_for_ai, 'sitemap:') !== false) {
+                        $current_run_results['robots']['suggestion'] = 'Good robots.txt found with sitemap reference. Ensure it allows search engine crawling of important pages.';
+                    } else {
+                        $current_run_results['robots']['suggestion'] = 'robots.txt found but missing sitemap reference. Add "Sitemap: https://yourdomain.com/sitemap.xml" line.';
+                    }
                 } else {
-                    $current_run_results['robots']['suggestion'] = 'Developed and paused';
+                    $current_run_results['robots']['suggestion'] = 'robots.txt URL accessible but content could not be read. Verify file permissions and content.';
                 }
             } else {
-                $current_run_results['robots']['suggestion'] = 'Developed and paused';
+                $current_run_results['robots']['suggestion'] = 'Create robots.txt file with proper directives and sitemap reference for search engine guidance.';
             }
 
             $sitemap_content_for_ai = null; // Variable to store sitemap.xml content for AI
@@ -1947,7 +2404,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sitemap.xml
             $sitemap_url = $base_url_for_files . '/sitemap.xml';
             $sitemap_check_result = check_resource_accessibility_helper($sitemap_url);
-            $current_run_results['sitemap']['score'] = 0;
+            $current_run_results['sitemap']['score'] = $sitemap_check_result['score'];
             $current_run_results['sitemap']['details'] = $sitemap_check_result['details'];
             
             // Fetch sitemap.xml content for AI analysis if accessible
@@ -1970,12 +2427,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         $current_run_results['sitemap']['details'] = "Found sitemap.xml ({$content_length} chars, {$line_count} lines, {$url_count} URLs)";
                     }
-                    $current_run_results['sitemap']['suggestion'] = 'Developed and paused';
+                    
+                    // Basic analysis of sitemap content
+                    if ($url_count > 0) {
+                        $current_run_results['sitemap']['suggestion'] = "Good sitemap.xml with {$url_count} URLs. Ensure it's updated regularly and referenced in robots.txt.";
+                    } else {
+                        $current_run_results['sitemap']['suggestion'] = 'Sitemap.xml found but contains no URLs. Add your website pages to improve search engine indexing.';
+                    }
                 } else {
-                    $current_run_results['sitemap']['suggestion'] = 'Developed and paused';
+                    $current_run_results['sitemap']['suggestion'] = 'Sitemap.xml URL accessible but content could not be read. Verify file permissions and XML format.';
                 }
             } else {
-                $current_run_results['sitemap']['suggestion'] = 'Developed and paused';
+                $current_run_results['sitemap']['suggestion'] = 'Create sitemap.xml file listing all important pages to help search engines discover your content.';
             }
         } else {
             $url_parse_error_msg = 'Could not parse URL to check for robots.txt/sitemap.xml.';
@@ -1985,8 +2448,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_run_results['sitemap'] = ['score' => $error_score, 'details' => $url_parse_error_msg, 'suggestion' => $error_suggestion_file];
         }
 
-        // --- AI Suggestion for Robots.txt (PAUSED) ---
-        /*
+        // --- AI Suggestion for Robots.txt (ENABLED) ---
         if ($robots_content_for_ai) {
             $prompt = "Analyze the following robots.txt file for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Robots.txt content: \"{$robots_content_for_ai}\"";
             $robots_ai_response_full = call_openrouter_api($prompt); // Get the full response
@@ -2039,11 +2501,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['robots']['suggestion'] = 'robots.txt found, but could not generate AI suggestion at this time.';
         }
-        */
-        // --- End AI Suggestion for Robots.txt (PAUSED) ---
+        // --- End AI Suggestion for Robots.txt (ENABLED) ---
 
-        // --- AI Suggestion for Sitemap.xml (PAUSED) ---
-        /*
+        // --- AI Suggestion for Sitemap.xml (ENABLED) ---
         if ($sitemap_content_for_ai) {
             $prompt = "Analyze the following sitemap.xml file for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Sitemap.xml content: \"{$sitemap_content_for_ai}\"";
             $sitemap_ai_response_full = call_openrouter_api($prompt); // Get the full response
@@ -2096,11 +2556,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['sitemap']['suggestion'] = 'sitemap.xml found, but could not generate AI suggestion at this time.';
         }
-        */
-        // --- End AI Suggestion for Sitemap.xml (PAUSED) ---
+        // --- End AI Suggestion for Sitemap.xml (ENABLED) ---
 
-        // --- AI Suggestion for Headings (PAUSED) ---
-        /*
+        // --- AI Suggestion for Headings (ENABLED) ---
         if ($headings_content_for_ai) {
             $prompt = "Analyze the following website heading structure for SEO. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Heading structure: \"{$headings_content_for_ai}\"";
             $headings_ai_response_full = call_openrouter_api($prompt); // Get the full response
@@ -2153,11 +2611,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['h1']['suggestion'] = 'Headings found, but could not generate AI suggestion at this time.';
         }
-        */
-        // --- End AI Suggestion for Headings (PAUSED) ---
+        // --- End AI Suggestion for Headings (ENABLED) ---
 
-        // --- AI Suggestion for Image Alt (PAUSED) ---
-        /*
+        // --- AI Suggestion for Image Alt (ENABLED) ---
         // Check if we should run AI analysis (only when images exist AND have alt text to analyze)
         if (isset($img_count) && $img_count > 0) {
             if ($image_alt_content_for_ai) {
@@ -2219,26 +2675,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['image_alt']['suggestion'] = 'Images found, but could not generate AI suggestion at this time.';
         }
-        */
-        // --- End AI Suggestion for Image Alt (PAUSED) ---
+        // --- End AI Suggestion for Image Alt (ENABLED) ---
 
-        // Provide fallback suggestions for image alt since AI is paused
-        if (isset($img_count) && $img_count > 0) {
-            if ($image_alt_content_for_ai) {
-                // Images with alt text found - provide static guidance
-                $current_run_results['image_alt']['suggestion'] = 'Images found, but could not generate AI suggestion at this time.';
-            } else {
-                // Images found but NO alt text - provide static guidance without OpenRouter call
-                $current_run_results['image_alt']['score'] = 1;
-                $current_run_results['image_alt']['suggestion'] = 'Adding descriptive alt text to all images is essential for both SEO and accessibility, as it helps search engines understand the content and ensures screen readers can convey information to visually impaired users.';
-            }
-        } elseif (isset($current_run_results['image_alt']['score']) && $current_run_results['image_alt']['suggestion'] === 'Awaiting AI suggestion...') {
-            // Generic fallback if AI was expected but didn't run for other reasons.
-            $current_run_results['image_alt']['suggestion'] = 'Images found, but could not generate AI suggestion at this time.';
-        }
-
-                // --- AI Suggestion for Filenames (PAUSED) ---
-        /*
+                // --- AI Suggestion for Filenames (ENABLED) ---
         if ($filenames_content_for_ai) {
             $prompt = "Analyze the following website file names (images, documents, etc.) for SEO best practices. Provide your response in JSON format with exactly 2 elements: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Provide answer only including the 2 JSON elements for whole filename batch, not for each file. Files found: \"{$filenames_content_for_ai}\"";
             
@@ -2311,26 +2750,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             $current_run_results['filenames']['suggestion'] = $ai_suggestion;
-        }
-        */
-        // --- End AI Suggestion for Filenames (PAUSED) ---
-
-        // Provide fallback suggestions for filenames since AI is paused
-        if (isset($filenames_content_for_ai) && !empty($filenames_content_for_ai)) {
-            $ai_suggestion = 'Filenames found, but could not generate AI suggestion at this time.';
-            
-            // Append inline image warning if detected
-            if ($has_inline_encoded_images) {
-                $ai_suggestion .= " Avoid inline base64 images for static assets and use descriptive filenames instead.";
-            }
-            
-            $current_run_results['filenames']['suggestion'] = $ai_suggestion;
         } elseif (isset($current_run_results['filenames']['score']) && $current_run_results['filenames']['suggestion'] === 'Awaiting AI suggestion...') {
             $current_run_results['filenames']['suggestion'] = 'Filenames found, but could not generate AI suggestion at this time.';
         }
+        // --- End AI Suggestion for Filenames (ENABLED) ---
 
-        // --- AI Suggestion for URL (PAUSED) ---
-        /*
+        // --- AI Suggestion for URL (ENABLED) ---
         if ($url_content_for_ai) {
             // Determine if URL contains only domain name or has additional parts
             $parsed_for_prompt = parse_url($final_accessible_url);
@@ -2408,11 +2833,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['url']['suggestion'] = "URL found, but could not generate AI suggestion at this time.";
         }
-        */
-        // --- End AI Suggestion for URL (PAUSED) ---
+        // --- End AI Suggestion for URL (ENABLED) ---
 
-        // --- AI Suggestion for Links (PAUSED) ---
-        /*
+        // --- AI Suggestion for Links (ENABLED) ---
         if ($links_content_for_ai) {
             $prompt = "Analyze the following website links for SEO best practices. The data is in JSON format containing all links found on the page. Provide your response in JSON format with EXACTLY 2 ELEMENTS: \"score\" (integer from 1 to 3, where 1=bad, 2=needs improvement, 3=good) and \"suggestion\" (1-2 sentences with improvement advice). Links data: {$links_content_for_ai}";
             
@@ -2466,8 +2889,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generic fallback if AI was expected but didn't run for other reasons.
             $current_run_results['links']['suggestion'] = 'Links found, but could not generate AI suggestion at this time.';
         }
-        */
-        // --- End AI Suggestion for Links (PAUSED) ---
+        // --- End AI Suggestion for Links (ENABLED) ---
 
         // --- AI Suggestion for 404 Page (COMMENTED OUT FOR STATIC CHECKS) ---
         /*
@@ -2535,13 +2957,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Set "Ready" indicators (developed but paused) to score 0 for display
-    foreach ($current_run_results as $key => &$result_item) {
-        if (isset($result_item['suggestion']) && $result_item['suggestion'] === 'Developed and paused') {
-            $result_item['score'] = 0;
-        }
-    }
-    unset($result_item); // Break the reference
+    // All indicators are now active - no need to set any to score 0
 
     $total_weighted_score = 0;
     $total_weight = 0;
