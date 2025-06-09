@@ -71,6 +71,13 @@ if ($pagespeed_response_data) {
 
   <body class="<?php echo $layout_class; ?>">
     
+    <!-- Contact Email Link in Top Right -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+        <a href="mailto:info@SEOIndicator.com" class="text-white text-decoration-none" style="transition: color 0.3s ease;" title="Contact us" onmouseover="this.style.color='#0d6efd'" onmouseout="this.style.color='white'">
+            info@SEOIndicator.com
+        </a>
+    </div>
+    
     <div id="loader-overlay">
         <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
