@@ -1631,12 +1631,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pagespeed_response = call_pagespeed_insights_api($final_accessible_url);
             
             // Store the raw request and response from PageSpeed API for debugging
+            /* Hide for production deployment
             $_SESSION['pagespeed_response'] = [
                 'success' => $pagespeed_response['success'],
                 'message' => $pagespeed_response['message'],
                 'raw_request' => $pagespeed_response['raw_request'] ?? null,
                 'raw_response' => $pagespeed_response['raw_response'] ?? null,
             ];
+            */
             
             if ($pagespeed_response['success'] && isset($pagespeed_response['data'])) {
                 $lighthouse_data = $pagespeed_response['data']['lighthouseResult'];
@@ -1673,23 +1675,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $cwv_results[] = "CLS: {$cls_value} ({$cls_rating})";
                 }
                 
-                // Calculate overall score based on performance and SEO scores
-                $combined_score = ($performance_score + $seo_score) / 2;
-                if ($combined_score >= 80) {
+                // Calculate overall score based on Performance score only
+                if ($performance_score >= 80) {
                     $speed_score = 3; // Excellent
-                } elseif ($combined_score >= 60) {
+                } elseif ($performance_score >= 60) {
                     $speed_score = 2; // Good  
                 } else {
                     $speed_score = 1; // Poor
                 }
                 
                 $current_run_results['page_speed']['score'] = $speed_score;
-                $current_run_results['page_speed']['details'] = "PageSpeed Insights: Performance {$performance_score}/100, SEO {$seo_score}/100";
+                $current_run_results['page_speed']['details'] = "Performance {$performance_score}/100";
                 
                 // Build suggestions from audit recommendations
                 $suggestions = [];
                 $suggestions[] = "<strong>Performance Score:</strong> {$performance_score}/100";
-                $suggestions[] = "<strong>SEO Score:</strong> {$seo_score}/100";
                 
                 if (!empty($cwv_results)) {
                     $suggestions[] = "<strong>Core Web Vitals:</strong><br>" . implode('<br>', $cwv_results);

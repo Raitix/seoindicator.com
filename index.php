@@ -33,6 +33,7 @@ $site_not_accessible_error = $_SESSION['site_not_accessible_error'] ?? null;
 if ($site_not_accessible_error) {
     unset($_SESSION['site_not_accessible_error']); // Clear it after reading
 }
+/* Hide API debugging for production deployment
 $openrouter_response_data = $_SESSION['openrouter_response'] ?? null;
 if ($openrouter_response_data) {
     unset($_SESSION['openrouter_response']); // Clear after reading
@@ -42,6 +43,7 @@ $pagespeed_response_data = $_SESSION['pagespeed_response'] ?? null;
 if ($pagespeed_response_data) {
     unset($_SESSION['pagespeed_response']); // Clear after reading
 }
+*/
 
 ?>
 <!doctype html>
@@ -93,6 +95,7 @@ if ($pagespeed_response_data) {
                 </div>
                 <?php endif; ?>
 
+                <?php /* Hide API debugging for production deployment
                 <?php if ($openrouter_response_data): ?>
                     <div class="alert <?php echo $openrouter_response_data['success'] ? 'alert-info' : 'alert-danger'; ?> mt-3" role="alert">
                         <p><strong>OpenRouter API Status:</strong> <?php echo htmlspecialchars($openrouter_response_data['message']); ?></p>
@@ -104,11 +107,6 @@ if ($pagespeed_response_data) {
                             <p><strong>Raw Response:</strong></p>
                             <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($openrouter_response_data['raw_response']); ?></pre>
                         <?php endif; ?>
-                        <?php /* Keep data field for title suggestion if needed, but primary display is raw now
-                        <?php if (isset($openrouter_response_data['data'])): ?>
-                            <br><strong>Parsed Data:</strong> <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo htmlspecialchars($openrouter_response_data['data']); ?></pre>
-                        <?php endif; ?>
-                        */ ?>
                     </div>
                 <?php endif; ?>
 
@@ -125,6 +123,7 @@ if ($pagespeed_response_data) {
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
+                */ ?>
 
                 <form method="post" action="/" class="mb-4 seo-input-form" id="seo-form">
                     <div class="input-group input-group-lg mb-3">

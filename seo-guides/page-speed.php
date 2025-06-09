@@ -138,9 +138,9 @@ gtag('config', 'G-RWCSLW7EXF');
                             </div>
                             <div class="col-md-4 mb-3">
                                 <div class="p-3 bg-info bg-opacity-10 rounded">
-                                    <h5 class="text-info">⚡ First Input Delay (FID)</h5>
-                                    <p class="mb-2"><strong>Target:</strong> ≤ 100ms</p>
-                                    <p class="mb-0">Keep interactivity delays under 100ms. Minimize JavaScript execution time and defer non-critical scripts.</p>
+                                    <h5 class="text-info">⚡ Interaction to Next Paint (INP)</h5>
+                                    <p class="mb-2"><strong>Target:</strong> ≤ 200ms</p>
+                                    <p class="mb-0">Keep interaction responsiveness under 200ms. Optimize JavaScript execution and minimize main thread blocking.</p>
                                 </div>
                             </div>
                             <div class="col-md-4 mb-3">
@@ -236,18 +236,62 @@ gtag('config', 'G-RWCSLW7EXF');
                 <div class="card bg-dark border-secondary mb-4">
                     <div class="card-body">
                         <h2 class="card-title text-primary mb-3">How SEOIndicator.com Analyzes Page Speed</h2>
-                        <p>Our comprehensive Page Speed analysis evaluates your website for:</p>
-                        <ul>
-                            <li><strong>Optimal HTML Size:</strong> Checks if HTML document size is under 150KB</li>
-                            <li><strong>CSS Files Count:</strong> Evaluates number of external stylesheets (≤3 recommended)</li>
-                            <li><strong>JavaScript Files Count:</strong> Analyzes external script files (≤5 recommended)</li>
-                            <li><strong>Image Count:</strong> Reviews total number of images (≤20 recommended)</li>
-                            <li><strong>CSS Minification:</strong> Checks for minified CSS code</li>
-                            <li><strong>Content Compression:</strong> Verifies Gzip/Brotli compression headers</li>
-                            <li><strong>Browser Caching:</strong> Checks for cache-control and caching headers</li>
-                            <li><strong>Render-blocking Resources:</strong> Identifies blocking scripts and stylesheets</li>
-                            <li><strong>Inline Styles:</strong> Counts inline style attributes (≤5 recommended)</li>
-                        </ul>
+                        <p>Our Page Speed analysis uses <strong>Google PageSpeed Insights API</strong> to provide real-time, accurate performance data. Here's what we analyze and display:</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h5 class="text-success">📊 Performance Metrics</h5>
+                                <ul>
+                                    <li><strong>Performance Score (0-100):</strong> Google's overall performance rating based on Lighthouse metrics</li>
+                                    <li><strong>Core Web Vitals:</strong>
+                                        <ul>
+                                            <li><strong>LCP:</strong> Largest Contentful Paint timing (Good ≤2.5s)</li>
+                                            <li><strong>INP:</strong> Interaction to Next Paint responsiveness (Good ≤200ms)</li>
+                                            <li><strong>CLS:</strong> Cumulative Layout Shift stability (Good ≤0.1)</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h5 class="text-info">🔧 Optimization Opportunities</h5>
+                                <ul>
+                                    <li><strong>First Contentful Paint:</strong> Time to first content render</li>
+                                    <li><strong>Speed Index:</strong> How quickly content is visually displayed</li>
+                                    <li><strong>Total Blocking Time:</strong> Main thread blocking duration</li>
+                                    <li><strong>Resource Optimization:</strong> Unused CSS/JavaScript identification</li>
+                                    <li><strong>Render-blocking Resources:</strong> Critical path optimization</li>
+                                    <li><strong>Text Compression:</strong> Gzip/Brotli opportunities</li>
+                                    <li><strong>Image Optimization:</strong> Next-gen format opportunities</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h5 class="text-warning">⭐ Scoring System</h5>
+                                <ul>
+                                    <li><strong>⭐⭐⭐ (Score 3):</strong> Performance ≥80/100 - Excellent optimization</li>
+                                    <li><strong>⭐⭐ (Score 2):</strong> Performance ≥60/100 - Good with room for improvement</li>
+                                    <li><strong>⭐ (Score 1):</strong> Performance <60/100 - Needs significant optimization</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h5 class="text-danger">🔍 SEO Audits</h5>
+                                <ul>
+                                    <li><strong>Document Title:</strong> Presence and quality</li>
+                                    <li><strong>Meta Description:</strong> Availability and relevance</li>
+                                    <li><strong>Crawlability:</strong> Search engine accessibility</li>
+                                    <li><strong>robots.txt:</strong> Validation and structure</li>
+                                    <li><strong>Canonical Links:</strong> URL canonicalization</li>
+                                    <li><strong>hreflang:</strong> International targeting validation</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3">
+                            <h6 class="alert-heading">🚀 Real-time Google Data</h6>
+                            <p class="mb-0">All metrics come directly from Google's PageSpeed Insights API using the same Lighthouse engine that powers Google's performance assessments. This ensures accuracy and alignment with Google's ranking factors.</p>
+                        </div>
                         
                         <div class="mt-4">
                             <a href="/" class="btn btn-primary btn-lg">
