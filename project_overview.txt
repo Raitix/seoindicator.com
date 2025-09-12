@@ -15,7 +15,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   Verifies website accessibility by checking for a "200 OK" status in headers, accounting for redirects.
     *   If the site is inaccessible, an error message is displayed, and further checks are skipped.
 
-3.  **SEO Indicator Checks (15 total, displayed in a table):**
+3.  **SEO Indicator Checks (17 total, displayed in a table):**
     *   **Original 5:** Title Tag Presence, Meta Description Presence, `robots.txt` Accessibility, `sitemap.xml` Accessibility.
     *   **+4 added:** H1 Heading Presence, Image Alt Attributes (checks for non-empty alt), Mobile Friendly, Language Declaration (HTML `lang` attribute and multilingual support).
     *   **+5 more added:** Favicon Presence, Canonical Link Tag, Open Graph Tags (basic check for `og:` prefixes), HTML Document Size, Inline Styles Check (looks for `style` attributes and `<style>` tags in the body).
@@ -32,7 +32,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   `render_stars($score, $show_text_score, $achieved_score_text, $max_possible_score_text)`: Displays 1-3 stars (★/☆) with color coding (success/warning/danger) based on an integer score. The text part (e.g., "(3/3)" or "(N/A)") is configurable.
         *   `get_score_row_class($score)`: Returns "table-danger", "table-warning", or "table-success" for `<tr>` styling.
         *   `check_resource_accessibility_helper($url)`: Checks if resources like `robots.txt` and `sitemap.xml` return a 200 OK status.
-        *   `call_openrouter_api($prompt_message)`: Function to interact with the OpenRouter API (e.g., for title suggestions).
+        *   `call_openrouter_api($prompt_message)`: Function to interact with the OpenRouter API (e.g., for title suggestions). Current model: `deepseek/deepseek-chat-v3-0324:free`.
         *   `get_db_connection()`: Establishes a database connection.
     *   Defines indicator weights (`$indicator_weights`) for the overall score calculation.
     *   Handles the main form submission logic (`$_SERVER['REQUEST_METHOD'] === 'POST'` block):
@@ -41,8 +41,9 @@ The tool allows users to enter a domain name. It then checks if the website is a
         *   Uses `DOMDocument` and `DOMXPath` to parse HTML and check for various elements and attributes.
         *   Assigns a score (1, 2, or 3) and provides details/suggestions for each indicator.
         *   HTML Document Size scoring: 3 stars (<100KB), 2 stars (100-300KB), 1 star (>=300KB).
-        *   Title Tag: If a title exists, an AI suggestion is fetched via `call_openrouter_api()`. The raw API request/response is stored in the session for display.
-        *   Development flag `$dev_mock_all_but_title` allows mocking most checks during development.
+        *   Title Tag: If a title exists, an AI suggestion is fetched via `call_openrouter_api()`. The raw API request/response is stored in the session for potential debugging and is hidden in the UI by default.
+        *   Development flag `$dev_mock_all_but_title` allows mocking most checks during development. When page content cannot be fetched and this flag is true, non-title indicators may show "Mocked (content fetch failed)" placeholders.
+        *   Rate limiting nuance: enforcement applies for known non-loopback IPs; `::1` and `UNKNOWN` IPs are not enforced.
     *   Stores results and overall score in `$_SESSION` before redirecting.
     *   Includes database interaction to log check requests and basic results (`data` table).
 
@@ -93,13 +94,9 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   **Resource Path Updates:** All guide pages updated with correct relative paths for CSS (`../style.css`) and logo image (`../Logo-SEOIndicator-com.png`).
 
 9.  **Active Indicator Management:**
-    *   **Active Indicators Configuration:** Only indicators listed in `$active_indicators` array contribute to overall scoring calculations.
-    *   **Visual Badge System:** 
-        *   Green "In Dev" badges: Currently active indicators contributing to score
-        *   Blue "Ready" badges: Developed but paused indicators (score 0/3, grey stars, dark table rows)
-        *   Grey "To Do" badges: Not yet developed indicators (score 0/3, grey stars, dark table rows)
-    *   **Current Active Status:** Only `page_speed` (Page Speed) indicator is active and contributes to scoring.
-    *   **Development Visibility:** All indicators remain visible in results table for development purposes.
+    *   **Active Indicators Configuration:** All 17 indicators are active and contribute to overall scoring (see `$active_indicators` in `seo_logic.php`).
+    *   **Badge System:** Removed in production.
+    *   **Suggestion rendering:** For `url`, `404_page`, `mobile_friendly`, `language`, `favicon`, `canonical`, `social_media_meta_tags`, `aria`, and `page_speed`, HTML in suggestions is allowed in the results table.
 
 10. **URL SEO Indicator (Developed and Paused):**
     *   **Comprehensive URL Analysis:** Analyzes complete URL structure including protocol, domain, path segments, and parameters.
@@ -358,6 +355,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
 *   **Details Column:** Shows Performance Score (0-100) from PageSpeed Insights
         *   **Suggestion Column:** Displays Performance Score, Core Web Vitals (LCP, INP, CLS), top optimization opportunities, and SEO recommendations from Google PageSpeed Insights for actionable feedback
     *   **Google PageSpeed Insights API Integration:** Uses real-time Google API calls to analyze actual page performance with Lighthouse audits, providing comprehensive data including Core Web Vitals and performance recommendations.
+    *   **API Key dependency and fallback:** Requires `GOOGLE_PAGESPEED_API_KEY` in `config.php`. If the key is missing or the API call fails, the indicator falls back to a score of 1 and displays the error message in the Details/Suggestion fields.
     *   **Dedicated Guide Page:** `seo-guides/page-speed.php` provides comprehensive education on page speed optimization, Core Web Vitals, technical optimization, mobile performance, caching strategies, compression techniques, and performance best practices.
     *   **Analysis Scope:** Complete page speed audit using Google PageSpeed Insights API including Performance Score (0-100), SEO Score (0-100), Core Web Vitals (LCP, INP, CLS), optimization opportunities, and SEO recommendations for comprehensive real-world performance evaluation.
     *   **Development Status:** Fully functional with comprehensive static analysis system actively contributing to overall score calculations with highest velocity (weight 3) as page speed is a critical Google ranking factor.
@@ -400,6 +398,7 @@ The tool allows users to enter a domain name. It then checks if the website is a
    *   **Filenames AI Suggestion** - ✅ ACTIVE
    *   **URL AI Suggestion** - ✅ ACTIVE
    *   **Links AI Suggestion** - ✅ ACTIVE
+   *   **404 Page AI Suggestion** - ✅ ACTIVE
 
 5. **Comprehensive Sub-checks Implementation:**
    
