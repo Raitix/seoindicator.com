@@ -3,6 +3,11 @@
 require_once 'db_config.php';
 require_once 'config.php'; // Include the new config file
 
+// Allow external callers to disable built-in POST handling by forcing method to GET
+if (defined('SEO_LOGIC_DISABLE_POST') && SEO_LOGIC_DISABLE_POST) {
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+}
+
 // Helper function to call OpenRouter API
 function call_openrouter_api($prompt_message) {
     if (!defined('OPENROUTER_API_KEY') || OPENROUTER_API_KEY === '') {

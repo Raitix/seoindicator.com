@@ -1,9 +1,12 @@
 <?php
 session_start(); // Start the session at the very top
+define('SEO_LOGIC_DISABLE_POST', true);
 include 'seo_logic.php'; // Include the separated PHP logic
 
 $layout_class = 'initial-view'; // Default layout
-if (isset($_SESSION['is_post_redirect_layout_active']) && $_SESSION['is_post_redirect_layout_active']) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $layout_class = 'results-view';
+} elseif (isset($_SESSION['is_post_redirect_layout_active']) && $_SESSION['is_post_redirect_layout_active']) {
     $layout_class = 'results-view';
     unset($_SESSION['is_post_redirect_layout_active']); // Consume the flag
 }
@@ -21,10 +24,13 @@ $overall_score_to_display = $_SESSION['overall_score_data'] ?? null;
 // where $default_indicator_keys_for_logic would come from seo_logic.php or be defined minimally here)
 // For now, relying on the session load which itself relies on $default_indicator_keys_for_logic from seo_logic.php for initial POST run.
 // Let's ensure a default empty state for the view if session is not set from a POST yet.
-$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['url'=>'', 'title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'links'=>'', '404_page'=>'', 'mobile_friendly'=>'', 'language'=>'', 'favicon'=>'', 'canonical'=>'', 'social_meta_tags'=>'', 'aria'=>'', 'page_speed'=>'']), ['score' => null, 'details' => '-', 'suggestion' => '-']);
+$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['url'=>'', 'title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'links'=>'', '404_page'=>'', 'mobile_friendly'=>'', 'language'=>'', 'favicon'=>'', 'canonical'=>'', 'social_meta_tags'=>'', 'aria'=>'', 'page_speed'=>'']), ['score' => null, 'details' => 'Pending...', 'suggestion' => 'Pending...']);
 
 $overall_score_display_data = $_SESSION['overall_score_data'] ?? null;
 $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $last_domain_value = trim($_POST['domain'] ?? '');
+}
 $rate_limit_error = $_SESSION['rate_limit_error'] ?? null;
 if ($rate_limit_error) {
     unset($_SESSION['rate_limit_error']); // Clear it after reading
@@ -78,17 +84,10 @@ if ($pagespeed_response_data) {
         </a>
     </div>
     
-    <div id="loader-overlay">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <div class="loader-text mt-3">
-            Please wait, this may take a minute...
-        </div>
-    </div>
+    <div id="loader-overlay" style="display:none;"></div>
 
-    <div class="container <?php if ($layout_class === 'initial-view') echo 'vh-100 d-flex flex-column justify-content-center'; ?>">
-        <div class="row justify-content-center <?php if ($layout_class === 'initial-view') echo 'w-100'; ?>">
+    <div class="container">
+        <div class="row justify-content-center">
             <div class="col-lg-10 col-md-12 text-center"> 
                 <img src="Logo-SEOIndicator-com.png" alt="SEOIndicator.com Logo" style="max-width: 200px; margin-bottom: 20px;"> 
                 <h1 class="mb-4 main-title">AI Powered SEO Analysis</h1>
@@ -165,7 +164,6 @@ if ($pagespeed_response_data) {
                 </div>
                 
                 <div class="table-responsive result-container">
-                    <?php if ($layout_class === 'results-view'): ?>
                     <table class="table table-bordered table-dark">
                         <thead>
                             <tr>
@@ -180,7 +178,7 @@ if ($pagespeed_response_data) {
                             <?php $row_nr = 1; ?>
                             <?php foreach ($indicators_results as $key => $result): ?>
                                 <?php if ($key === 'accessibility') continue; ?>
-                                <tr class="<?php echo get_score_row_class($result['score']); ?>">
+                                <tr class="<?php echo get_score_row_class($result['score']); ?>" data-indicator="<?php echo htmlspecialchars($key); ?>">
                                     <td><?php echo $row_nr++; ?></td> 
                                     <td>
                                         <?php if ($key === 'title'): ?>
@@ -256,8 +254,8 @@ if ($pagespeed_response_data) {
                                         <?php endif; ?>
 
                                     </td>
-                                    <td><?php echo render_stars($result['score']); ?></td>
-                                    <td><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
+                                    <td class="score-cell"><?php echo render_stars($result['score']); ?></td>
+                                    <td class="result-cell"><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
                                     <td class="suggestion-cell"><?php 
                                         if (isset($result['suggestion'])) {
                                             if ($key === 'url' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') {
@@ -275,7 +273,6 @@ if ($pagespeed_response_data) {
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -288,23 +285,122 @@ if ($pagespeed_response_data) {
             const body = document.body;
 
             if (form) {
+                // Disable legacy spinner behavior; let results table show immediately
                 form.addEventListener('submit', function() {
-                    if (loaderOverlay) {
-                        loaderOverlay.classList.add('visible');
-                    }
+                    if (loaderOverlay) loaderOverlay.style.display = 'none';
                 });
             }
 
             // If it's the results view, trigger animations after a short delay for page render
             if (body.classList.contains('results-view')) {
                 // Hide loader if it was somehow still visible (e.g., browser back button)
-                if (loaderOverlay) {
-                    loaderOverlay.classList.remove('visible');
-                }
+                if (loaderOverlay) { loaderOverlay.style.display = 'none'; }
                 // Add class to trigger animations
                 setTimeout(function() {
                     body.classList.add('content-loaded');
                 }, 100); // Small delay to ensure styles are applied
+
+                // Progressive analysis orchestration
+                const lastDomain = <?php echo json_encode($last_domain_value); ?>;
+                if (lastDomain) {
+                    // Start job
+                    const startForm = new FormData();
+                    startForm.append('domain', lastDomain);
+
+                    fetch('/api/start-analysis.php', { method: 'POST', body: startForm })
+                        .then(r => r.json())
+                        .then(startData => {
+                            if (!startData || !startData.success) return;
+                            const jobId = startData.job_id;
+                            const indicators = startData.indicators || [];
+
+                            const whitelistHtml = new Set(['url','404_page','mobile_friendly','language','favicon','canonical','social_meta_tags','aria','page_speed']);
+
+                            function renderStars(score) {
+                                if (score === null || score === undefined) return '(N/A)';
+                                const s = Math.max(0, Math.min(3, Number(score)));
+                                const filled = '★'.repeat(s);
+                                const empty = '☆'.repeat(3 - s);
+                                return filled + empty + ' (' + s + '/3)';
+                            }
+
+                            function rowClassForScore(score) {
+                                const s = Number(score);
+                                if (s >= 3) return 'table-success';
+                                if (s === 2) return 'table-warning';
+                                return 'table-danger';
+                            }
+
+                            function updateRow(indicator, result) {
+                                const row = document.querySelector('tr[data-indicator="' + indicator + '"]');
+                                if (!row) return;
+                                // Update class
+                                row.classList.remove('table-success','table-warning','table-danger');
+                                if (result && typeof result.score !== 'undefined' && result.score !== null) {
+                                    row.classList.add(rowClassForScore(result.score));
+                                }
+                                // Score cell
+                                const scoreCell = row.querySelector('.score-cell');
+                                if (scoreCell) scoreCell.textContent = renderStars(result.score);
+                                // Result cell
+                                const resultCell = row.querySelector('.result-cell');
+                                if (resultCell) {
+                                    if (whitelistHtml.has(indicator)) {
+                                        resultCell.innerHTML = result.details || '-';
+                                    } else {
+                                        resultCell.textContent = result.details || '-';
+                                    }
+                                }
+                                // Suggestion cell
+                                const suggCell = row.querySelector('.suggestion-cell');
+                                if (suggCell) {
+                                    if (whitelistHtml.has(indicator)) {
+                                        suggCell.innerHTML = result.suggestion || '-';
+                                    } else {
+                                        suggCell.textContent = result.suggestion || '-';
+                                    }
+                                }
+                            }
+
+                            // Throttled queue
+                            const maxConcurrent = 5;
+                            let active = 0; let index = 0;
+                            function runNext() {
+                                while (active < maxConcurrent && index < indicators.length) {
+                                    const ind = indicators[index++];
+                                    active++;
+                                    const fd = new FormData();
+                                    fd.append('job_id', jobId);
+                                    fd.append('indicator', ind);
+                                    fetch('/api/run-indicator.php', { method: 'POST', body: fd })
+                                        .then(r => r.json())
+                                        .then(d => {
+                                            if (d && d.success && d.result) {
+                                                updateRow(ind, d.result);
+                                            }
+                                        })
+                                        .catch(() => {})
+                                        .finally(() => { active--; runNext(); });
+                                }
+                            }
+                            runNext();
+
+                            // Poll overall progress and stars
+                            const poll = setInterval(() => {
+                                fetch('/api/job-progress.php?job_id=' + encodeURIComponent(jobId))
+                                    .then(r => r.json())
+                                    .then(p => {
+                                        if (!p || !p.success) return;
+                                        // Stop polling when done
+                                        if (p.progress && p.progress.done === p.progress.total) {
+                                            clearInterval(poll);
+                                        }
+                                    })
+                                    .catch(() => {});
+                            }, 1500);
+                        })
+                        .catch(() => {});
+                }
             }
         });
     </script>

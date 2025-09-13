@@ -5,19 +5,17 @@ Purpose
 - Avoid a full framework rewrite; keep PHP + Bootstrap with minimal JS.
 - Maintain compatibility with shared hosting (Hostinger).
 
-High-level Approach
-1) Introduce a lightweight job orchestration model (job + per-indicator results).
-2) Split execution into per-indicator JSON endpoints.
-3) On submit, create a job, return job_id, then run indicators incrementally via JS fetch calls.
-4) Cache and reuse fetched page content/parsed DOM for the job.
-5) Update the table cells and overall score as each result arrives.
+High-level Approach (simplified)
+1) Create job and seed results as Pending.
+2) Run each indicator via JSON endpoints; update rows as they complete.
+3) Show table immediately after submit (no blocking spinner).
 
 Milestones & Deliverables
-M1: Data model + endpoints scaffold
-M2: Indicator execution refactor with shared context reuse
-M3: Frontend JS orchestration + progressive UI updates
-M4: Quota/rate-limiting strategy, error handling, and logging
-M5: Final QA, performance hardening, and rollout
+M1: Data model + endpoints scaffold  [DONE]
+M2: Indicator execution refactor with shared context reuse  [PENDING]
+M3: Frontend JS orchestration + progressive UI updates  [PARTIAL]
+M4: Quota/rate-limiting strategy, error handling, and logging  [PARTIAL]
+M5: Final QA, performance hardening, and rollout  [PENDING]
 
 ---
 1) Database Changes (Job Store)
@@ -84,23 +82,23 @@ Notes
 2) Backend Endpoints (PHP, JSON)
 Goal: Decouple orchestration into small, fast endpoints suited for shared hosting.
 
-Endpoints
+Endpoints  [PARTIAL DONE]
 - POST /api/start-analysis.php
   - Input: domain (string)
   - Logic: validate + rate-limit (1/min/IP; continue using existing policy but only here), create job, normalize domain, resolve final accessible URL, fetch page once, store page_content + final_url + 17 pending results.
-  - Output: { job_id, indicators: [17 keys], message }
+  - Output: { job_id, indicators: [17 keys], final_url }  [DONE]
 
 - POST /api/run-indicator.php
   - Input: job_id (string), indicator (string)
   - Logic: validate session ownership and job not cancelled; load job; set status=running; build shared context (reuse stored page_content and final_url; parse DOM on-demand or cache parsed artifacts); run exactly one indicator; save {score, details, suggestion}; set status=done or error.
   - Output: { job_id, indicator, status, score, details, suggestion }
 
-- GET /api/job-progress.php?job_id=...
+- GET /api/job-progress.php?job_id=...  [DONE]
   - Input: job_id (string)
   - Logic: return array of 17 indicators with status/score; compute and return current overall score snapshot.
   - Output: { job_id, results: { [indicator]: {status, score, details?} }, overall }
 
-- POST /api/cancel-job.php
+- POST /api/cancel-job.php  [DONE]
   - Input: job_id
   - Logic: mark jobs.cancelled=1; further run-indicator calls should bail fast.
   - Output: { job_id, cancelled: true }
@@ -111,29 +109,12 @@ Implementation Notes
 - Guard with CSRF token or a short-lived job_token stored in session.
 
 ---
-3) Indicator Execution Refactor (seo_logic.php)
-Goal: Isolate per-indicator logic and share common context without repeated fetches.
-
-Tasks
-- Extract a function signature per indicator:
-  runIndicator(string $indicator, array $context): IndicatorResult
-  - $context includes: final_accessible_url, page_content, dom (DOMDocument), xpath (DOMXPath), helper utilities, config.
-  - Lazy-init DOM/XPath only once and reuse.
-- Create a dispatcher:
-  dispatchIndicator($indicator, $context) { switch/call map }
-- Ensure each function returns: { score:int|null, details:string, suggestion:string, error?:string }
-- Maintain current allowed-HTML policy for suggestions (URL, 404_page, mobile_friendly, language, favicon, canonical, social_meta_tags, aria, page_speed).
-- Respect timeouts and add try/catch with meaningful error messages; set status=error on exceptions.
-- AI calls gating: only call OpenRouter for an indicator if the base static checks produced usable content/context; otherwise skip AI (or offer reduced suggestion).
-- PageSpeed: consider running last or on-demand due to slowness/quota.
-
-Shared Context Builder
-- buildBaseContext($domain): normalize → resolve final URL → fetch page content (with existing headers/user-agent) → return { domain, normalized_domain, final_url, page_content }.
-- parseDom($page_content): returns { dom, xpath } with libxml error handling.
+3) Indicator execution
+Status: Implemented minimal per‑indicator logic in api/run-indicator.php for 17 indicators.
 
 ---
-4) Frontend Orchestration (index.php + small JS)
-Goal: Drive progressive updates without a framework.
+4) Frontend Orchestration (index.php + JS)
+Goal: Show table immediately; update rows progressively.
 
 UI/UX
 - Keep PRG flow. After redirect to results-view, inject a JS bootstrap:
@@ -142,16 +123,16 @@ UI/UX
   - Maintain a throttled queue (e.g., max 5 concurrent) to POST /api/run-indicator.php per indicator.
   - On each completion, update that row: stars via small client-side helper, set details/suggestion, and class color (success/warning/danger) aligned with get_score_row_class mapping.
   - Update a top progress bar (completed/17) and recompute Overall score incrementally (either by simple weighted formula on client or by polling /api/job-progress.php every 1–2s).
-  - Provide “Retry” on any error row; provide “Cancel” to stop remaining work (POST cancel-job).
+  - (Optional) Retry/Cancel controls.
 
-JS Implementation Notes
+JS Implementation Notes  [PARTIAL]
 - Add a small star-render helper to mirror server’s 1–3 mapping. Keep CSS consistent.
 - Throttle concurrency to 4–6 to protect the host and OpenRouter/PageSpeed quotas.
 - Display durations and errors succinctly; keep UX snappy.
 
 ---
 5) Rate Limiting & Quotas
-- Enforce 1 req/min/IP on start-analysis only; subcalls are authorized as part of the job.
+- Enforce 1 req/min/IP on start-analysis only; subcalls authorized via job/session.  [DONE]
 - Validate job ownership via session_id or a job_token.
 - Consider delaying/PageSpeed to end or behind a toggle.
 - Optionally cap AI calls: only execute AI if static checks meet minimal criteria.
@@ -184,10 +165,9 @@ JS Implementation Notes
 
 ---
 10) Deployment Steps
-- Apply DB migrations in production (create jobs/job_results).
-- Upload new /api/*.php endpoints.
-- Deploy refactored seo_logic.php functions and index.php JS.
-- Feature-flag the progressive mode; allow fallback to legacy single-shot path for quick rollback.
+- Apply DB migrations (jobs, job_results).  [DONE locally]
+- Upload /api/*.php endpoints and updated index.php.  [PENDING]
+- Remove legacy spinner and ensure immediate table render.  [DONE]
 
 ---
 11) Testing Plan

@@ -1,0 +1,11 @@
+Issues to fix (progressive results mode)
+
+1) State persists across hard refresh (Ctrl+F5)
+   - Problem: After refreshing, the results table still shows prior results and the input field retains the last entered URL.
+   - Expected: On a fresh page load, the input should be empty (or placeholder only) and the results table should be reset (Pending.../empty), with no data carried from the previous session.
+
+2) Submitting a different URL does not update results
+   - Problem: When entering a new URL and clicking "Analyze!", nothing changes. The results remain the same and the input value reverts to the previously entered URL.
+   - Expected: Submitting a new URL should immediately start a new analysis job, update the table rows progressively for that new URL, and keep the input showing the just-submitted URL.
+
+(Do not fix yet. This file is a checklist of issues to address.)
