@@ -1,0 +1,108 @@
+# SEOIndicator.com Automated Tests
+
+This directory contains automated tests for the SEOIndicator.com website using Playwright.
+
+## Prerequisites
+
+Before running the tests, make sure you have:
+
+1. **Node.js** installed (version 16 or higher)
+2. **Your local web server running** on `http://localhost` (the tests expect your website to be accessible at this URL)
+
+## Setup
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Install Playwright browsers:**
+   ```bash
+   npx playwright install
+   ```
+
+## Running Tests
+
+### Basic Test Execution
+
+Run all tests:
+```bash
+npm test
+```
+
+### Test with Visual Browser
+
+Run tests with a visible browser window:
+```bash
+npm run test:headed
+```
+
+### Interactive Test UI
+
+Run tests with Playwright's interactive UI:
+```bash
+npm run test:ui
+```
+
+### Debug Mode
+
+Run tests in debug mode (step through tests):
+```bash
+npm run test:debug
+```
+
+### View Test Reports
+
+After running tests, view the HTML report:
+```bash
+npm run test:report
+```
+
+## Test Files
+
+- `homepage.spec.js` - Tests for the homepage functionality including:
+  - Page title verification
+  - Page load success
+  - Basic content visibility
+
+## Configuration
+
+The tests are configured in `playwright.config.js` with the following settings:
+- Base URL: `http://localhost`
+- Tests run in parallel
+- HTML reporter enabled
+- Tests run on Chromium, Firefox, and WebKit browsers
+
+## Adding New Tests
+
+To add new tests:
+
+1. Create a new `.spec.js` file in the `tests` directory
+2. Use the Playwright test API to write your tests
+3. Follow the existing naming convention: `describe` for test suites, `test` for individual tests
+
+Example:
+```javascript
+const { test, expect } = require('@playwright/test');
+
+test.describe('My Feature', () => {
+  test('should do something', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('h1')).toHaveText('Expected Text');
+  });
+});
+```
+
+## Troubleshooting
+
+### Tests fail with connection errors
+- Make sure your local web server is running on `http://localhost`
+- Check that your server is accessible from the command line
+
+### Browser installation issues
+- Run `npx playwright install --force` to reinstall browsers
+- Make sure you have sufficient disk space for browser downloads
+
+### Permission issues on Windows
+- Run your terminal as Administrator if you encounter permission errors
+- Make sure Windows Defender isn't blocking the browser downloads
