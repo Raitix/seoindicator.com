@@ -71,7 +71,33 @@ The tests are configured in `playwright.config.js` with the following settings:
 - Base URL: `http://localhost`
 - Tests run in parallel
 - HTML reporter enabled
-- Tests run on Chromium, Firefox, and WebKit browsers
+- Tests run on Chromium browser (Firefox and WebKit commented out for faster execution)
+
+## GitHub Actions CI/CD
+
+The project includes a GitHub Actions workflow (`.github/workflows/playwright.yml`) that automatically runs tests on:
+- Push to `main` or `develop` branches
+- Pull requests to `main` or `develop` branches
+
+### CI Features:
+- **Automated browser installation** with system dependencies
+- **Test artifacts upload** (reports and screenshots)
+- **Cross-platform compatibility** (runs on Ubuntu)
+- **Timeout protection** (60 minutes max)
+- **Artifact retention** (30 days)
+
+### CI Setup:
+1. Push your code to a GitHub repository
+2. The workflow will automatically run on the specified triggers
+3. View test results in the Actions tab of your repository
+4. Download test artifacts if tests fail for debugging
+
+### Local CI Testing:
+Test your CI setup locally:
+```bash
+npm run test:ci
+npm run install:browsers
+```
 
 ## Adding New Tests
 
