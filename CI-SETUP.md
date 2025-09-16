@@ -121,6 +121,11 @@ retention-days: 7  # Keep artifacts for 7 days instead of 30
 - Consider using `webServer` configuration in `playwright.config.js`
 - Verify environment variables and secrets
 
+### Common CI Issues
+- **Missing package-lock.json**: Run `npm install` locally to generate the lock file
+- **Artifact upload warnings**: The workflow uses `if-no-files-found: ignore` to handle empty directories gracefully
+- **Browser installation**: The workflow uses `--with-deps` flag for system dependencies
+
 ### Browser Installation Fails
 - The workflow uses `--with-deps` flag for system dependencies
 - Check GitHub Actions logs for specific error messages
