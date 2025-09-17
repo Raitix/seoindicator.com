@@ -57,7 +57,7 @@ if ($pagespeed_response_data) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SEOIndicator.com - Analyze your SEO parameters</title>
+    <title>SEOIndicatorX.com - Analyze your SEO parameters</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css"> 
     <style>
