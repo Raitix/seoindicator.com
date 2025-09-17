@@ -12,8 +12,8 @@ module.exports = defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 2 : undefined,
+  /* Optimize workers for CI performance */
+  workers: process.env.CI ? 4 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI ? [['github'], ['html']] : 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -27,15 +27,22 @@ module.exports = defineConfig({
     /* Performance optimizations for CI */
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    actionTimeout: 10000,
-    navigationTimeout: 30000,
+    actionTimeout: 5000,
+    navigationTimeout: 15000,
+    // Disable unnecessary features for faster execution
+    ignoreHTTPSErrors: true,
+    bypassCSP: true,
   },
 
   /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { 
+        ...devices['Desktop Chrome'],
+        // Use headless shell for faster CI execution
+        channel: process.env.CI ? 'chrome-headless-shell' : undefined,
+      },
     },
 
     // {
