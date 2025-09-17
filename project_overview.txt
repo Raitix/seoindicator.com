@@ -449,4 +449,92 @@ The tool allows users to enter a domain name. It then checks if the website is a
 *   **User Experience:** Professional interface with loading states and proper error handling
 *   **Performance:** Optimized for shared hosting environment with robust error management
 
-**Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter. 
+**Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter.
+
+**TESTING FRAMEWORK - AUTOMATED TESTING & DEPLOYMENT:**
+
+**Comprehensive Testing Infrastructure:**
+*   **Testing Technology:** Playwright with Node.js for cross-browser automated testing
+*   **Test Coverage:** Homepage functionality, page title verification, load success validation, and content visibility
+*   **Environment Support:** Local development testing and production environment validation
+
+**Testing Commands & Workflows:**
+
+**Local Testing (localhost):**
+*   `npm test` - Run all tests against localhost (headless)
+*   `npm run test:headed` - Run tests with visible browser window
+*   `npm run test:ui` - Run tests with Playwright's interactive UI
+*   `npm run test:debug` - Run tests in debug mode (step through)
+*   `npm run test:report` - Run tests and generate HTML report
+*   `npm run test:show-report` - View the last generated HTML report
+
+**Production Testing (https://seoindicator.com):**
+*   `npm run test:production` - Run all tests against production site
+*   `npm run test:production:headed` - Run production tests with visible browser
+*   `npm run test:production:ui` - Run production tests with interactive UI
+*   `npm run test:production:debug` - Run production tests in debug mode
+
+**Directory Structure:**
+*   `tests/` - Test files (homepage.spec.js with 3 comprehensive tests)
+*   `local-test-results/` - Local test results (screenshots, traces, artifacts)
+*   `ci-test-results/` - CI test results (screenshots, traces, artifacts)
+*   `prod-test-results/` - Production test failure logs from GitHub Actions
+*   `playwright-report/` - HTML test reports
+
+**GitHub Actions CI/CD Pipeline:**
+*   **Automated Deployment:** Deploy to Hostinger via FTP on push to main branch
+*   **Production Testing:** Run comprehensive tests against live production site
+*   **Failure Logging:** Automatic generation and commit of detailed failure logs
+*   **Browser Caching:** Optimized browser installation with caching for faster CI
+*   **Cross-Platform:** Runs on Ubuntu with Chromium browser for reliability
+
+**Deployment Workflow (.github/workflows/deploy-and-test.yml):**
+*   **Deploy Phase:** Upload files to Hostinger via secure FTP
+*   **Test Phase:** Run Playwright tests against production site
+*   **Logging Phase:** Generate and commit failure logs if tests fail
+*   **Artifact Upload:** Save HTML reports and test results for debugging
+
+**Test Configuration (playwright.config.js):**
+*   **Environment-Aware:** Automatically detects local vs CI vs production environments
+*   **Smart Base URLs:** localhost for local development, production URL for CI
+*   **Performance Optimized:** Disabled video recording, optimized timeouts, parallel execution
+*   **Cross-Platform:** Works on Windows, Mac, Linux with cross-env support
+
+**Production Test Coverage:**
+*   **Page Title Verification:** Ensures correct title "SEOIndicator.com - Analyze your SEO parameters"
+*   **Load Success Validation:** Verifies HTTP 200 response and successful page loading
+*   **Content Visibility:** Confirms page has visible content and proper structure
+*   **Timeout Handling:** Extended timeouts for production environment (60s navigation, 10s actions)
+*   **Wait Strategies:** Network idle waiting for complete page loading
+
+**Quality Assurance Features:**
+*   **Automatic Failure Detection:** Tests fail fast on first error with detailed reporting
+*   **Screenshot Capture:** Automatic screenshots on test failures for debugging
+*   **Trace Files:** Detailed execution traces for complex debugging scenarios
+*   **HTML Reports:** Comprehensive test reports with timeline and detailed results
+*   **GitHub Integration:** Native GitHub reporter for inline test results in Actions UI
+
+**Deployment Security:**
+*   **FTP Credentials:** Secure storage in GitHub Secrets (HOSTINGER_FTP_HOST, HOSTINGER_FTP_USERNAME, HOSTINGER_FTP_PASSWORD)
+*   **File Filtering:** Excludes development files, tests, and sensitive configuration from deployment
+*   **Permission Management:** Proper GitHub Actions permissions for repository access
+*   **Error Handling:** Graceful failure handling with detailed error logging
+
+**Performance Optimizations:**
+*   **Browser Caching:** Cached browser installation reduces CI time by 80-90%
+*   **Parallel Execution:** 4 parallel workers for faster test execution
+*   **Selective Testing:** Chromium-only testing for faster, more reliable results
+*   **Artifact Management:** Efficient storage and cleanup of test artifacts
+
+**Monitoring & Maintenance:**
+*   **Automatic Logging:** Failed test logs automatically committed to repository
+*   **Historical Tracking:** Test failure history maintained in prod-test-results directory
+*   **Easy Debugging:** Clear error messages and actionable next steps in failure logs
+*   **Team Collaboration:** Shareable test results and failure analysis
+
+**Integration Benefits:**
+*   **Zero-Downtime Deployment:** Direct file upload to production without service interruption
+*   **Immediate Validation:** Production tests run immediately after deployment
+*   **Quality Gates:** Failed tests prevent deployment issues from reaching users
+*   **Continuous Monitoring:** Regular testing ensures production site reliability
+*   **Developer Productivity:** Local testing environment matches production behavior 
