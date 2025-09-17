@@ -86,6 +86,13 @@ npm run test:show-report
   - Page load success
   - Basic content visibility
 
+## Directory Structure
+
+- `tests/` - Test files
+- `local-test-results/` - Local test results (screenshots, traces, etc.)
+- `prod-test-results/` - Production test failure logs from GitHub Actions
+- `playwright-report/` - HTML test reports
+
 ## Configuration
 
 The tests are configured in `playwright.config.js` with the following settings:
