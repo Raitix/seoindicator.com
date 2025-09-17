@@ -5,6 +5,9 @@ test.describe('SEOIndicator.com Homepage', () => {
     // Navigate to the homepage
     await page.goto('/');
     
+    // Wait for the page to load completely
+    await page.waitForLoadState('networkidle');
+    
     // Check that the page title is correct
     await expect(page).toHaveTitle('SEOIndicator.com - Analyze your SEO parameters');
   });
@@ -15,6 +18,9 @@ test.describe('SEOIndicator.com Homepage', () => {
     
     // Check that the page loads successfully (status 200)
     expect(response.status()).toBe(200);
+    
+    // Wait for the page to load completely
+    await page.waitForLoadState('networkidle');
     
     // Check that the page title is present
     await expect(page).toHaveTitle(/SEOIndicator.com/);
