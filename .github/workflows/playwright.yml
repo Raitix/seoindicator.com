@@ -41,7 +41,7 @@ jobs:
       run: npx playwright install chromium-headless-shell --with-deps
     
     - name: Run Playwright tests
-      run: npx playwright test --max-failures=1
+      run: npx playwright test --max-failures=1 2>&1 | tee test-output.log
     
     - name: Generate Failed Tests Log
       if: failure()
@@ -54,8 +54,18 @@ jobs:
         echo "- **Branch**: ${{ github.ref_name }}" >> failed-tests.md
         echo "- **Workflow**: ${{ github.workflow }}" >> failed-tests.md
         echo "" >> failed-tests.md
-        echo "## Failed Tests" >> failed-tests.md
+        echo "## Test Output" >> failed-tests.md
         echo "" >> failed-tests.md
+        
+        # Capture the test output
+        if [ -f "test-output.log" ]; then
+          echo "### Console Output" >> failed-tests.md
+          echo '```' >> failed-tests.md
+          # Get the last 50 lines of output (usually contains the error)
+          tail -50 test-output.log >> failed-tests.md
+          echo '```' >> failed-tests.md
+          echo "" >> failed-tests.md
+        fi
         
         # Extract failed test information from HTML report if it exists
         if [ -f "playwright-report/index.html" ]; then
@@ -76,10 +86,19 @@ jobs:
           done
         fi
         
+        # Add browser and system information
+        echo "### Environment Information" >> failed-tests.md
+        echo "- **OS**: $(uname -a)" >> failed-tests.md
+        echo "- **Node Version**: $(node --version)" >> failed-tests.md
+        echo "- **Playwright Version**: $(npx playwright --version)" >> failed-tests.md
+        echo "- **Browser**: Chromium Headless Shell" >> failed-tests.md
+        echo "" >> failed-tests.md
+        
         echo "## Next Steps" >> failed-tests.md
         echo "1. Check the HTML report in artifacts for detailed information" >> failed-tests.md
         echo "2. Review test code and fix identified issues" >> failed-tests.md
         echo "3. Re-run tests locally: \`npm test\`" >> failed-tests.md
+        echo "4. Check the console output above for specific error messages" >> failed-tests.md
     
     - name: Upload Failed Tests Log
       if: failure()
