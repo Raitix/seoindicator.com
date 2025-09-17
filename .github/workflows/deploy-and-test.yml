@@ -42,6 +42,7 @@ jobs:
           **/tests/**
           **/prod-test-results/**
           **/local-test-results/**
+          **/ci-test-results/**
           **/playwright-report/**
           **/.env
           **/config.php

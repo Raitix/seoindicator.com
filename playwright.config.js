@@ -6,7 +6,7 @@ const { defineConfig, devices } = require('@playwright/test');
  */
 module.exports = defineConfig({
   testDir: './tests',
-  outputDir: './local-test-results',
+  outputDir: process.env.CI ? './ci-test-results' : './local-test-results',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -28,8 +28,8 @@ module.exports = defineConfig({
     /* Performance optimizations for CI */
     screenshot: 'only-on-failure',
     video: 'off', // Disable video recording completely
-    actionTimeout: 5000,
-    navigationTimeout: process.env.BASE_URL ? 30000 : 15000, // Longer timeout for production
+    actionTimeout: process.env.BASE_URL ? 10000 : 5000, // Longer timeout for production
+    navigationTimeout: process.env.BASE_URL ? 60000 : 15000, // Much longer timeout for production
     // Disable unnecessary features for faster execution
     ignoreHTTPSErrors: true,
     bypassCSP: true,
