@@ -10,9 +10,13 @@ jobs:
   test:
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
     
     - uses: actions/setup-node@v4
       with:
@@ -84,6 +88,47 @@ jobs:
         name: failed-tests-log
         path: failed-tests.md
         retention-days: 30
+    
+    - name: Commit Failed Test Log to Repository
+      if: failure()
+      run: |
+        if [ -f "failed-tests.md" ]; then
+          # Create timestamped filename
+          TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+          COMMIT_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+          FILENAME="test-logs/failed_tests_${TIMESTAMP}_${COMMIT_SHORT}.md"
+          
+          # Create test-logs directory if it doesn't exist
+          mkdir -p test-logs
+          
+          # Move and enhance the log file
+          mv failed-tests.md "$FILENAME"
+          
+          # Add header with more context
+          {
+            echo "# Failed Tests Report"
+            echo ""
+            echo "**Workflow Run**: [${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo "**Commit**: [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})"
+            echo "**Branch**: ${{ github.ref_name }}"
+            echo "**Date**: $(date)"
+            echo ""
+            echo "---"
+            echo ""
+            cat "$FILENAME"
+          } > "$FILENAME.tmp" && mv "$FILENAME.tmp" "$FILENAME"
+          
+          # Configure git
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Add and commit the log file
+          git add "$FILENAME"
+          git commit -m "Add failed test log from workflow run ${{ github.run_id }}" || echo "No changes to commit"
+          
+          # Push to the repository
+          git push origin HEAD:${{ github.ref_name }} || echo "Failed to push changes"
+        fi
     
     - name: Upload Playwright Report
       if: always()
