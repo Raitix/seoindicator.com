@@ -23,39 +23,60 @@ Before running the tests, make sure you have:
 
 ## Running Tests
 
-### Basic Test Execution
+### Local Testing (localhost)
 
-Run all tests:
+Run all tests against localhost:
 ```bash
 npm test
 ```
-
-### Test with Visual Browser
 
 Run tests with a visible browser window:
 ```bash
 npm run test:headed
 ```
 
-### Interactive Test UI
-
 Run tests with Playwright's interactive UI:
 ```bash
 npm run test:ui
 ```
-
-### Debug Mode
 
 Run tests in debug mode (step through tests):
 ```bash
 npm run test:debug
 ```
 
+### Production Testing (https://seoindicator.com)
+
+Run all tests against production site:
+```bash
+npm run test:production
+```
+
+Run production tests with visible browser:
+```bash
+npm run test:production:headed
+```
+
+Run production tests with interactive UI:
+```bash
+npm run test:production:ui
+```
+
+Run production tests in debug mode:
+```bash
+npm run test:production:debug
+```
+
 ### View Test Reports
 
-After running tests, view the HTML report:
+Run tests and generate HTML report:
 ```bash
 npm run test:report
+```
+
+View the last generated HTML report:
+```bash
+npm run test:show-report
 ```
 
 ## Test Files

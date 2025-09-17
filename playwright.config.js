@@ -19,16 +19,16 @@ module.exports = defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'https://seoindicator.com',
+    baseURL: process.env.BASE_URL || (process.env.CI ? 'https://seoindicator.com' : 'http://localhost'),
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
     
     /* Performance optimizations for CI */
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'off', // Disable video recording completely
     actionTimeout: 5000,
-    navigationTimeout: 15000,
+    navigationTimeout: process.env.BASE_URL ? 30000 : 15000, // Longer timeout for production
     // Disable unnecessary features for faster execution
     ignoreHTTPSErrors: true,
     bypassCSP: true,

@@ -8,14 +8,24 @@
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
-    "test:report": "playwright show-report",
-    "test:ci": "playwright test --reporter=html",
+    "test:report": "playwright test --reporter=html",
+    "test:show-report": "playwright show-report",
+    "test:production": "cross-env BASE_URL=https://seoindicator.com playwright test",
+    "test:production:headed": "cross-env BASE_URL=https://seoindicator.com playwright test --headed",
+    "test:production:ui": "cross-env BASE_URL=https://seoindicator.com playwright test --ui",
+    "test:production:debug": "cross-env BASE_URL=https://seoindicator.com playwright test --debug",
     "install:browsers": "playwright install --with-deps"
   },
-  "keywords": ["playwright", "testing", "seo", "automation"],
+  "keywords": [
+    "playwright",
+    "testing",
+    "seo",
+    "automation"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.40.0"
+    "@playwright/test": "^1.40.0",
+    "cross-env": "^10.0.0"
   }
 }
