@@ -1,0 +1,183 @@
+name: Deploy and Test Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      deployed: ${{ steps.deploy.outcome == 'success' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci --prefer-offline --no-audit
+    
+    - name: Deploy to Hostinger
+      id: deploy
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.HOSTINGER_FTP_HOST }}
+        username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+        password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+        server-dir: /public_html/
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          **/.github/**
+          **/tests/**
+          **/test-logs/**
+          **/playwright-report/**
+          **/test-results/**
+          **/.env
+          **/config.php
+          **/db_config.php
+          **/package.json
+          **/package-lock.json
+          **/playwright.config.js
+          **/CI-SETUP.md
+          **/README.md
+          **/to_do.txt
+          **/to_fix.txt
+          **/project_overview.txt
+    
+    - name: Wait for deployment
+      run: sleep 30  # Wait for files to propagate
+
+  test-production:
+    needs: deploy
+    if: needs.deploy.outputs.deployed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci --prefer-offline --no-audit
+    
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: |
+          ~/.cache/ms-playwright
+        key: playwright-browsers-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          playwright-browsers-
+    
+    - name: Install Playwright Browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      run: npx playwright install chromium --with-deps
+    
+    - name: Run Production Tests
+      run: |
+        npx playwright test --max-failures=1 2>&1 | tee test-output.log
+        exit ${PIPESTATUS[0]}
+    
+    - name: Generate Failed Tests Log
+      if: failure()
+      run: |
+        echo "# Production Test Failure Report - $(date)" > failed-tests.md
+        echo "" >> failed-tests.md
+        echo "## Deployment & Test Summary" >> failed-tests.md
+        echo "- **Date**: $(date)" >> failed-tests.md
+        echo "- **Commit**: ${{ github.sha }}" >> failed-tests.md
+        echo "- **Branch**: ${{ github.ref_name }}" >> failed-tests.md
+        echo "- **Deployed to**: https://seoindicator.com" >> failed-tests.md
+        echo "- **Test Environment**: Production" >> failed-tests.md
+        echo "" >> failed-tests.md
+        echo "## Test Output" >> failed-tests.md
+        echo "" >> failed-tests.md
+        
+        if [ -f "test-output.log" ]; then
+          echo "### Console Output" >> failed-tests.md
+          echo '```' >> failed-tests.md
+          tail -50 test-output.log >> failed-tests.md
+          echo '```' >> failed-tests.md
+          echo "" >> failed-tests.md
+        fi
+        
+        echo "### Environment Information" >> failed-tests.md
+        echo "- **OS**: $(uname -a)" >> failed-tests.md
+        echo "- **Node Version**: $(node --version)" >> failed-tests.md
+        echo "- **Playwright Version**: $(npx playwright --version)" >> failed-tests.md
+        echo "- **Browser**: Chromium" >> failed-tests.md
+        echo "- **Target URL**: https://seoindicator.com" >> failed-tests.md
+        echo "" >> failed-tests.md
+        
+        echo "## Next Steps" >> failed-tests.md
+        echo "1. Check the production site: https://seoindicator.com" >> failed-tests.md
+        echo "2. Review test failures and fix issues" >> failed-tests.md
+        echo "3. Re-run tests after fixes" >> failed-tests.md
+        echo "4. Check deployment logs if site is not accessible" >> failed-tests.md
+    
+    - name: Upload Failed Tests Log
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: production-test-failure
+        path: failed-tests.md
+        retention-days: 30
+    
+    - name: Commit Failed Test Log to Repository
+      if: failure()
+      run: |
+        if [ -f "failed-tests.md" ]; then
+          TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+          COMMIT_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+          FILENAME="test-logs/production_failed_tests_${TIMESTAMP}_${COMMIT_SHORT}.md"
+          
+          mkdir -p test-logs
+          mv failed-tests.md "$FILENAME"
+          
+          {
+            echo "# Production Test Failure Report"
+            echo ""
+            echo "**Workflow Run**: [${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo "**Commit**: [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})"
+            echo "**Branch**: ${{ github.ref_name }}"
+            echo "**Deployed to**: https://seoindicator.com"
+            echo "**Date**: $(date)"
+            echo ""
+            echo "---"
+            echo ""
+            cat "$FILENAME"
+          } > "$FILENAME.tmp" && mv "$FILENAME.tmp" "$FILENAME"
+          
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add "$FILENAME"
+          git commit -m "Add production test failure log from workflow run ${{ github.run_id }}" || echo "No changes to commit"
+          
+          git push origin HEAD:${{ github.ref_name }} || echo "Failed to push changes"
+        fi
+    
+    - name: Upload Playwright Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: production-playwright-report
+        path: playwright-report/
+        retention-days: 30
+        if-no-files-found: ignore
