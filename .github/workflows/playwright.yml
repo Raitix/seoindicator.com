@@ -38,7 +38,7 @@ jobs:
     
     - name: Install Playwright Browsers
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: npx playwright install chromium-headless-shell --with-deps
+      run: npx playwright install chromium --with-deps
     
     - name: Run Playwright tests
       run: |
@@ -93,7 +93,7 @@ jobs:
         echo "- **OS**: $(uname -a)" >> failed-tests.md
         echo "- **Node Version**: $(node --version)" >> failed-tests.md
         echo "- **Playwright Version**: $(npx playwright --version)" >> failed-tests.md
-        echo "- **Browser**: Chromium Headless Shell" >> failed-tests.md
+        echo "- **Browser**: Chromium" >> failed-tests.md
         echo "" >> failed-tests.md
         
         echo "## Next Steps" >> failed-tests.md
