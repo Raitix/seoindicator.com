@@ -41,7 +41,9 @@ jobs:
       run: npx playwright install chromium-headless-shell --with-deps
     
     - name: Run Playwright tests
-      run: npx playwright test --max-failures=1 2>&1 | tee test-output.log
+      run: |
+        npx playwright test --max-failures=1 2>&1 | tee test-output.log
+        exit ${PIPESTATUS[0]}
     
     - name: Generate Failed Tests Log
       if: failure()
@@ -157,3 +159,9 @@ jobs:
         path: playwright-report/
         retention-days: 30
         if-no-files-found: ignore
+    
+    - name: Fail workflow if tests failed
+      if: failure()
+      run: |
+        echo "Tests failed - workflow will show as failed"
+        exit 1
