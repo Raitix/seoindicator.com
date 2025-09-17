@@ -38,11 +38,7 @@ module.exports = defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { 
-        ...devices['Desktop Chrome'],
-        // Use headless shell for faster CI execution
-        channel: process.env.CI ? 'chrome-headless-shell' : undefined,
-      },
+      use: { ...devices['Desktop Chrome'] },
     },
 
     // {
