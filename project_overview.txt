@@ -67,6 +67,9 @@ The tool allows users to enter a domain name. It then checks if the website is a
     *   Database tables:
         *   `ip_requests_log`: Stores `ip_address` and `last_request_time` for rate limiting.
         *   `data`: Stores `ip`, `domain`, `score_has`, `score_max`, `dt_created`, `dt_updated` for logging checks.
+        *   `jobs`: Stores analysis job information (job_id, session_id, domain, status, timestamps).
+        *   `job_results`: Stores individual indicator results (job_id, indicator, score, details, suggestions).
+    *   **Progressive Analysis System**: Session-based job management with real-time progress tracking and concurrent indicator processing.
 
 8.  **SEO Guide Pages (Organized Structure):**
     *   **Folder Organization:** All SEO guide pages moved to dedicated `seo-guides/` folder for better project structure.
@@ -450,6 +453,46 @@ The tool allows users to enter a domain name. It then checks if the website is a
 *   **Performance:** Optimized for shared hosting environment with robust error management
 
 **Main Goal:** To provide a quick and easy way for users to assess on-page SEO health of a website and show suggestions from AI LLM using OpenRouter.
+
+**PROGRESSIVE ANALYSIS SYSTEM - REAL-TIME SEO INDICATOR PROCESSING:**
+
+**Advanced User Experience:**
+*   **Progressive Results Display:** SEO indicators are processed and displayed one-by-one as they complete, providing immediate feedback
+*   **Real-time Progress Tracking:** Visual progress bar shows completion status (0/17 → 17/17 indicators)
+*   **Concurrent Processing:** Multiple indicators run simultaneously for optimal performance
+*   **Session-based Job Management:** Each analysis session is tracked with unique job IDs
+*   **Domain History:** Dropdown shows previously submitted domains for easy re-analysis
+
+**Technical Implementation:**
+*   **API Endpoints:** Inline API endpoints in index.php for seamless integration
+  *   `?api=start-analysis` - Initiates new analysis job and returns job ID
+  *   `?api=run-indicator` - Processes individual SEO indicators
+  *   `?api=job-progress` - Returns current progress and completion status
+  *   `?api=cancel-job` - Cancels ongoing analysis if needed
+*   **JavaScript Orchestration:** Throttled queue system manages concurrent indicator processing
+*   **Dynamic UI Updates:** Table rows update in real-time with scores, results, and suggestions
+*   **Error Handling:** Robust error management with retry capabilities and user feedback
+
+**User Interface Features:**
+*   **Immediate Table Display:** Results table appears instantly after form submission
+*   **Progressive Row Updates:** Each indicator row updates as processing completes
+*   **Visual Score Indicators:** Star ratings (★☆☆, ★★☆, ★★★) with numerical scores
+*   **Color-coded Results:** Green (3/3), Yellow (2/3), Red (1/3) for quick visual assessment
+*   **Progress Bar:** Animated progress indicator with completion percentage
+*   **Cancel Functionality:** Users can cancel ongoing analysis if needed
+
+**Performance Optimizations:**
+*   **Throttled Concurrency:** Maximum 5 concurrent indicator processes to prevent server overload
+*   **Session Storage:** Efficient job management using PHP sessions
+*   **Minimal External Dependencies:** Self-contained system with no external API file dependencies
+*   **Optimized for Shared Hosting:** Designed to work efficiently on Hostinger shared hosting
+
+**Analysis Flow:**
+1. User submits domain → Form validation and session setup
+2. Results view activated → Table displayed with "Pending..." placeholders
+3. Analysis job initiated → Progress bar appears
+4. Indicators processed concurrently → Rows update progressively
+5. Completion → Progress bar shows 17/17, all results displayed
 
 **TESTING FRAMEWORK - AUTOMATED TESTING & DEPLOYMENT:**
 
