@@ -1,6 +1,6 @@
 <?php
 session_start(); // Start the session at the very top
-define('SEO_LOGIC_DISABLE_POST', true);
+define('SEO_LOGIC_DISABLE_POST', false);
 include 'seo_logic.php'; // Include the separated PHP logic
 
 $layout_class = 'initial-view'; // Default layout
