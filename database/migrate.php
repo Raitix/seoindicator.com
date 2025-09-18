@@ -68,7 +68,7 @@ class DatabaseMigrator {
         $available = [];
         foreach ($files as $file) {
             $filename = basename($file);
-            if (preg_match('/^(\d+)_(.+)\.sql$/', $filename, $matches)) {
+            if (preg_match('/^(\d+)_(.+)\.sql$/', $filename, $matches) && !strpos($filename, '_rollback.sql')) {
                 $version = $matches[1];
                 $available[$version] = $filename;
             }
@@ -110,7 +110,7 @@ class DatabaseMigrator {
         $migrations = [];
         foreach ($files as $file) {
             $filename = basename($file);
-            if (preg_match('/^(\d+)_(.+)\.sql$/', $filename, $matches)) {
+            if (preg_match('/^(\d+)_(.+)\.sql$/', $filename, $matches) && !strpos($filename, '_rollback.sql')) {
                 $version = $matches[1];
                 $migrations[$version] = $file;
             }

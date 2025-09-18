@@ -30,7 +30,7 @@ CREATE TABLE data (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-### Future Tables (Planned)
+### New Tables (Recently Implemented)
 
 #### 3. `jobs` - Background Job Management
 ```sql
@@ -68,12 +68,31 @@ CREATE TABLE job_results (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
+## Migration Status
+
+### Current Status (Updated: September 18, 2025)
+- ✅ **Migration 001:** `jobs` table created successfully
+- ✅ **Migration 002:** `job_results` table created successfully
+- ✅ **Migration System:** Fully operational and tested
+
+### Applied Migrations
+```bash
+$ php database/migrate.php status
+=== Database Migration Status ===
+Applied migrations:
+  ✓ 001 - 001_create_jobs_table.sql (applied: 2025-09-18 10:12:34)
+  ✓ 002 - 002_create_job_results_table.sql (applied: 2025-09-18 10:12:34)
+
+Pending migrations:
+  No pending migrations
+```
+
 ## Environment Configuration
 
 ### Local Development
-- **Host:** localhost
+- **Host:** 127.0.0.1 (TCP connection)
 - **Database:** seo
-- **User:** root
+- **User:** seo (dedicated user with full permissions)
 - **Config:** `db_config.php` (contains local credentials)
 
 ### Production (Hostinger)
