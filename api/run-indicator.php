@@ -176,12 +176,13 @@ function compute_indicator_simple($indicator, $final_url, $page_content) {
 
         case 'page_speed':
             $resp = call_pagespeed_insights_api($final_url);
-            if ($resp['success'] && isset($resp['data']['lighthouseResult']['categories']['performance']['score'])) {
+            if ($resp && $resp['success'] && isset($resp['data']['lighthouseResult']['categories']['performance']['score'])) {
                 $perf = round($resp['data']['lighthouseResult']['categories']['performance']['score']*100);
                 $score = $perf>=80?3:($perf>=60?2:1);
                 $result['score']=$score; $result['details']='Performance ' . $perf . '/100'; $result['suggestion']='Review Lighthouse opportunities to improve loading speed.';
             } else {
-                $result['score']=1; $result['details']='PageSpeed API error: '.$resp['message']; $result['suggestion']='Ensure API key configured and URL accessible.';
+                $errorMsg = isset($resp['message']) ? $resp['message'] : 'API call failed';
+                $result['score']=1; $result['details']='PageSpeed API error: '.$errorMsg; $result['suggestion']='Ensure API key configured and URL accessible.';
             }
             break;
 
@@ -288,6 +289,9 @@ function compute_indicator_simple($indicator, $final_url, $page_content) {
 }
 try {
     $results = compute_indicator_simple($indicator, $final_url, $page_content);
+    if (!$results || !isset($results['score'])) {
+        $error = 'Indicator computation failed - no result returned';
+    }
 } catch (Throwable $e) {
     $error = $e->getMessage();
 }

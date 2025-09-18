@@ -11,6 +11,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     unset($_SESSION['is_post_redirect_layout_active']); // Consume the flag
 }
 
+// Clear session data on fresh page load (hard refresh detection)
+if (!isset($_SESSION['page_loaded']) || $_SESSION['page_loaded'] !== true) {
+    // This is a fresh page load, clear all session data
+    unset($_SESSION['seo_results_data']);
+    unset($_SESSION['overall_score_data']);
+    unset($_SESSION['last_domain_for_view']);
+    unset($_SESSION['rate_limit_error']);
+    unset($_SESSION['site_not_accessible_error']);
+    $_SESSION['page_loaded'] = true;
+}
+
 // The helper functions (render_stars, get_score_row_class), 
 // $indicator_weights, and default $indicators_results have been moved to seo_logic.php
 // and should be removed from here if they exist below this comment.
@@ -163,6 +174,25 @@ if ($pagespeed_response_data) {
                     </h2>
                 </div>
                 
+                <!-- Progress Bar -->
+                <div class="progress-container mt-3 mb-4" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small class="text-muted">Analysis Progress</small>
+                        <div class="d-flex align-items-center gap-2">
+                            <small class="text-muted progress-text">0/17</small>
+                            <button class="btn btn-sm btn-outline-danger cancel-analysis-btn" style="display: none;">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%" aria-valuenow="0" 
+                             aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="table-responsive result-container">
                     <table class="table table-bordered table-dark">
                         <thead>
@@ -285,9 +315,23 @@ if ($pagespeed_response_data) {
             const body = document.body;
 
             if (form) {
-                // Disable legacy spinner behavior; let results table show immediately
-                form.addEventListener('submit', function() {
-                    if (loaderOverlay) loaderOverlay.style.display = 'none';
+                // Handle form submission for new URL analysis
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const domainInput = form.querySelector('input[name="domain"]');
+                    const domain = domainInput ? domainInput.value.trim() : '';
+                    
+                    if (!domain) {
+                        alert('Please enter a domain to analyze');
+                        return;
+                    }
+                    
+                    // Clear any existing results and show loading
+                    if (loaderOverlay) loaderOverlay.style.display = 'block';
+                    
+                    // Submit form normally to trigger POST redirect
+                    form.submit();
                 });
             }
 
@@ -303,6 +347,18 @@ if ($pagespeed_response_data) {
                 // Progressive analysis orchestration
                 const lastDomain = <?php echo json_encode($last_domain_value); ?>;
                 if (lastDomain) {
+                    // Clear any existing results first
+                    const rows = document.querySelectorAll('tr[data-indicator]');
+                    rows.forEach(row => {
+                        row.classList.remove('table-success', 'table-warning', 'table-danger');
+                        const scoreCell = row.querySelector('.score-cell');
+                        const resultCell = row.querySelector('.result-cell');
+                        const suggCell = row.querySelector('.suggestion-cell');
+                        if (scoreCell) scoreCell.textContent = '(N/A)';
+                        if (resultCell) resultCell.textContent = 'Pending...';
+                        if (suggCell) suggCell.textContent = 'Pending...';
+                    });
+                    
                     // Start job
                     const startForm = new FormData();
                     startForm.append('domain', lastDomain);
@@ -313,6 +369,27 @@ if ($pagespeed_response_data) {
                             if (!startData || !startData.success) return;
                             const jobId = startData.job_id;
                             const indicators = startData.indicators || [];
+                            
+                            // Show progress bar
+                            const progressContainer = document.querySelector('.progress-container');
+                            const progressBar = document.querySelector('.progress-bar');
+                            const progressText = document.querySelector('.progress-text');
+                            const cancelBtn = document.querySelector('.cancel-analysis-btn');
+                            if (progressContainer) progressContainer.style.display = 'block';
+                            if (cancelBtn) cancelBtn.style.display = 'inline-block';
+                            
+                            // Cancel functionality
+                            if (cancelBtn) {
+                                cancelBtn.onclick = function() {
+                                    const cancelForm = new FormData();
+                                    cancelForm.append('job_id', jobId);
+                                    fetch('/api/cancel-job.php', { method: 'POST', body: cancelForm })
+                                        .then(() => {
+                                            if (progressContainer) progressContainer.style.display = 'none';
+                                            clearInterval(poll);
+                                        });
+                                };
+                            }
 
                             const whitelistHtml = new Set(['url','404_page','mobile_friendly','language','favicon','canonical','social_meta_tags','aria','page_speed']);
 
@@ -361,6 +438,20 @@ if ($pagespeed_response_data) {
                                     }
                                 }
                             }
+                            
+                            function retryIndicator(indicator) {
+                                const fd = new FormData();
+                                fd.append('job_id', jobId);
+                                fd.append('indicator', indicator);
+                                fetch('/api/run-indicator.php', { method: 'POST', body: fd })
+                                    .then(r => r.json())
+                                    .then(d => {
+                                        if (d && d.success && d.result) {
+                                            updateRow(indicator, d.result);
+                                        }
+                                    })
+                                    .catch(() => {});
+                            }
 
                             // Throttled queue
                             const maxConcurrent = 5;
@@ -391,9 +482,24 @@ if ($pagespeed_response_data) {
                                     .then(r => r.json())
                                     .then(p => {
                                         if (!p || !p.success) return;
-                                        // Stop polling when done
-                                        if (p.progress && p.progress.done === p.progress.total) {
+                                        
+                                        // Update progress bar
+                                        if (p.progress && progressBar && progressText) {
+                                            const percentage = Math.round((p.progress.done / p.progress.total) * 100);
+                                            progressBar.style.width = percentage + '%';
+                                            progressBar.setAttribute('aria-valuenow', percentage);
+                                            progressText.textContent = p.progress.done + '/' + p.progress.total;
+                                        }
+                                        
+                                        // Stop polling when done or cancelled
+                                        if (p.cancelled || (p.progress && p.progress.done === p.progress.total)) {
                                             clearInterval(poll);
+                                            // Hide progress bar when complete
+                                            if (progressContainer) {
+                                                setTimeout(() => {
+                                                    progressContainer.style.display = 'none';
+                                                }, 2000);
+                                            }
                                         }
                                     })
                                     .catch(() => {});

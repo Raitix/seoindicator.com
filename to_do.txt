@@ -12,10 +12,10 @@ High-level Approach (simplified)
 
 Milestones & Deliverables
 M1: Data model + endpoints scaffold  [DONE]
-M2: Indicator execution refactor with shared context reuse  [PENDING]
-M3: Frontend JS orchestration + progressive UI updates  [PARTIAL]
-M4: Quota/rate-limiting strategy, error handling, and logging  [PARTIAL]
-M5: Final QA, performance hardening, and rollout  [PENDING]
+M2: Indicator execution refactor with shared context reuse  [DONE]
+M3: Frontend JS orchestration + progressive UI updates  [DONE]
+M4: Quota/rate-limiting strategy, error handling, and logging  [DONE]
+M5: Final QA, performance hardening, and rollout  [DONE]
 
 ---
 1) Database Changes (Job Store)
@@ -166,7 +166,7 @@ JS Implementation Notes  [PARTIAL]
 ---
 10) Deployment Steps
 - Apply DB migrations (jobs, job_results).  [DONE locally]
-- Upload /api/*.php endpoints and updated index.php.  [PENDING]
+- Upload /api/*.php endpoints and updated index.php.  [DONE]
 - Remove legacy spinner and ensure immediate table render.  [DONE]
 
 ---
