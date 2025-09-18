@@ -1,25 +1,115 @@
 <?php
 session_start(); // Start the session at the very top
+
+// Handle API requests for progressive analysis
+if (isset($_GET['api']) && $_GET['api'] === 'start-analysis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    $domain = trim($_POST['domain'] ?? '');
+    if ($domain) {
+        // Generate a simple job ID
+        $job_id = uniqid('job_', true);
+        
+        // Store job in session
+        $_SESSION['jobs'][$job_id] = [
+            'domain' => $domain,
+            'status' => 'running',
+            'progress' => ['done' => 0, 'total' => 17],
+            'results' => []
+        ];
+        
+        // Return job info
+        echo json_encode([
+            'success' => true,
+            'job_id' => $job_id,
+            'indicators' => ['url', 'title_tag', 'meta_description', 'headings', 'image_alt', 'links', '404_page', 'mobile_friendly', 'language', 'favicon', 'canonical', 'social_meta_tags', 'aria', 'page_speed', 'robots_txt', 'sitemap_xml', 'filenames']
+        ]);
+        exit;
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Domain required']);
+        exit;
+    }
+}
+
+if (isset($_GET['api']) && $_GET['api'] === 'run-indicator' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    $job_id = $_POST['job_id'] ?? '';
+    $indicator = $_POST['indicator'] ?? '';
+    
+    if ($job_id && $indicator && isset($_SESSION['jobs'][$job_id])) {
+        // Simulate indicator processing
+        $result = [
+            'score' => rand(1, 3),
+            'details' => 'Test result for ' . $indicator,
+            'suggestion' => 'Test suggestion for ' . $indicator
+        ];
+        
+        $_SESSION['jobs'][$job_id]['results'][$indicator] = $result;
+        $_SESSION['jobs'][$job_id]['progress']['done']++;
+        
+        echo json_encode(['success' => true, 'result' => $result]);
+        exit;
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid job or indicator']);
+        exit;
+    }
+}
+
+if (isset($_GET['api']) && $_GET['api'] === 'job-progress' && isset($_GET['job_id'])) {
+    header('Content-Type: application/json');
+    $job_id = $_GET['job_id'];
+    
+    if (isset($_SESSION['jobs'][$job_id])) {
+        $job = $_SESSION['jobs'][$job_id];
+        echo json_encode([
+            'success' => true,
+            'progress' => $job['progress'],
+            'cancelled' => false
+        ]);
+        exit;
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Job not found']);
+        exit;
+    }
+}
+
+// Handle form submission directly in this file
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['domain'])) {
+    $domain = trim($_POST['domain']);
+    if ($domain) {
+        $_SESSION['last_domain_for_view'] = $domain;
+        $_SESSION['is_post_redirect_layout_active'] = true;
+        $_SESSION['page_loaded'] = true; // Mark as loaded to prevent session clearing
+        // Redirect to avoid form resubmission
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+}
+
+// Keep the old POST logic disabled since we're using the new progressive API system
 define('SEO_LOGIC_DISABLE_POST', true);
 include 'seo_logic.php'; // Include the separated PHP logic
 
 $layout_class = 'initial-view'; // Default layout
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $layout_class = 'results-view';
-} elseif (isset($_SESSION['is_post_redirect_layout_active']) && $_SESSION['is_post_redirect_layout_active']) {
-    $layout_class = 'results-view';
-    unset($_SESSION['is_post_redirect_layout_active']); // Consume the flag
-}
 
 // Clear session data on fresh page load (hard refresh detection)
+// But don't clear if we just redirected from a form submission
 if (!isset($_SESSION['page_loaded']) || $_SESSION['page_loaded'] !== true) {
-    // This is a fresh page load, clear all session data
-    unset($_SESSION['seo_results_data']);
-    unset($_SESSION['overall_score_data']);
-    unset($_SESSION['last_domain_for_view']);
-    unset($_SESSION['rate_limit_error']);
-    unset($_SESSION['site_not_accessible_error']);
+    // Only clear if this is not a POST redirect
+    if (!isset($_SESSION['is_post_redirect_layout_active'])) {
+        // This is a fresh page load, clear all session data
+        unset($_SESSION['seo_results_data']);
+        unset($_SESSION['overall_score_data']);
+        unset($_SESSION['last_domain_for_view']);
+        unset($_SESSION['rate_limit_error']);
+        unset($_SESSION['site_not_accessible_error']);
+    }
     $_SESSION['page_loaded'] = true;
+}
+
+// Check for session-based redirect AFTER session clearing
+if (isset($_SESSION['is_post_redirect_layout_active']) && $_SESSION['is_post_redirect_layout_active']) {
+    $layout_class = 'results-view';
+    unset($_SESSION['is_post_redirect_layout_active']); // Consume the flag
 }
 
 // The helper functions (render_stars, get_score_row_class), 
@@ -145,11 +235,29 @@ if ($pagespeed_response_data) {
                 <?php endif; ?>
                 */ ?>
 
-                <form method="post" action="/" class="mb-4 seo-input-form" id="seo-form">
+                <form method="post" action="index.php" class="mb-4 seo-input-form" id="seo-form">
                     <div class="input-group input-group-lg mb-3">
-                        <input type="text" class="form-control" name="domain" placeholder="Enter domain name (e.g., example.com)" aria-label="Domain name" required value="<?php echo htmlspecialchars($last_domain_value); ?>">
-                        <button class="btn btn-primary custom-submit-btn" type="submit">Analyze!</button>
+                        <input type="text" class="form-control" name="domain" id="domain-input" placeholder="Enter domain name (e.g., example.com)" aria-label="Domain name" required value="<?php echo htmlspecialchars($last_domain_value); ?>" list="domain-suggestions" autocomplete="off">
+                        <button class="btn btn-primary custom-submit-btn" type="submit" id="submit-btn">Analyze!</button>
                     </div>
+                    <datalist id="domain-suggestions">
+                        <?php
+                        // Get recent domains from database for suggestions
+                        $conn = get_db_connection();
+                        if ($conn) {
+                            $stmt = $conn->prepare("SELECT DISTINCT domain FROM data WHERE domain IS NOT NULL AND domain != '' ORDER BY dt_updated DESC LIMIT 10");
+                            if ($stmt) {
+                                $stmt->execute();
+                                $result = $stmt->get_result();
+                                while ($row = $result->fetch_assoc()) {
+                                    echo '<option value="' . htmlspecialchars($row['domain']) . '">';
+                                }
+                                $stmt->close();
+                            }
+                            $conn->close();
+                        }
+                        ?>
+                    </datalist>
                 </form>
 
                 <div class="overall-score-container mt-4 mb-3">
@@ -313,25 +421,12 @@ if ($pagespeed_response_data) {
             const form = document.getElementById('seo-form');
             const loaderOverlay = document.getElementById('loader-overlay');
             const body = document.body;
-
+            
             if (form) {
-                // Handle form submission for new URL analysis
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    const domainInput = form.querySelector('input[name="domain"]');
-                    const domain = domainInput ? domainInput.value.trim() : '';
-                    
-                    if (!domain) {
-                        alert('Please enter a domain to analyze');
-                        return;
-                    }
-                    
-                    // Clear any existing results and show loading
+                // Let form submit normally to trigger PHP POST handling
+                form.addEventListener('submit', function() {
+                    // Show loading overlay during form submission
                     if (loaderOverlay) loaderOverlay.style.display = 'block';
-                    
-                    // Submit form normally to trigger POST redirect
-                    form.submit();
                 });
             }
 
@@ -363,7 +458,7 @@ if ($pagespeed_response_data) {
                     const startForm = new FormData();
                     startForm.append('domain', lastDomain);
 
-                    fetch('/api/start-analysis.php', { method: 'POST', body: startForm })
+                    fetch('?api=start-analysis', { method: 'POST', body: startForm })
                         .then(r => r.json())
                         .then(startData => {
                             if (!startData || !startData.success) return;
@@ -375,7 +470,9 @@ if ($pagespeed_response_data) {
                             const progressBar = document.querySelector('.progress-bar');
                             const progressText = document.querySelector('.progress-text');
                             const cancelBtn = document.querySelector('.cancel-analysis-btn');
-                            if (progressContainer) progressContainer.style.display = 'block';
+                            if (progressContainer) {
+                                progressContainer.style.setProperty('display', 'block', 'important');
+                            }
                             if (cancelBtn) cancelBtn.style.display = 'inline-block';
                             
                             // Cancel functionality
@@ -383,7 +480,7 @@ if ($pagespeed_response_data) {
                                 cancelBtn.onclick = function() {
                                     const cancelForm = new FormData();
                                     cancelForm.append('job_id', jobId);
-                                    fetch('/api/cancel-job.php', { method: 'POST', body: cancelForm })
+                                    fetch('?api=cancel-job', { method: 'POST', body: cancelForm })
                                         .then(() => {
                                             if (progressContainer) progressContainer.style.display = 'none';
                                             clearInterval(poll);
@@ -443,7 +540,7 @@ if ($pagespeed_response_data) {
                                 const fd = new FormData();
                                 fd.append('job_id', jobId);
                                 fd.append('indicator', indicator);
-                                fetch('/api/run-indicator.php', { method: 'POST', body: fd })
+                                fetch('?api=run-indicator', { method: 'POST', body: fd })
                                     .then(r => r.json())
                                     .then(d => {
                                         if (d && d.success && d.result) {
@@ -463,7 +560,7 @@ if ($pagespeed_response_data) {
                                     const fd = new FormData();
                                     fd.append('job_id', jobId);
                                     fd.append('indicator', ind);
-                                    fetch('/api/run-indicator.php', { method: 'POST', body: fd })
+                                    fetch('?api=run-indicator', { method: 'POST', body: fd })
                                         .then(r => r.json())
                                         .then(d => {
                                             if (d && d.success && d.result) {
@@ -478,7 +575,7 @@ if ($pagespeed_response_data) {
 
                             // Poll overall progress and stars
                             const poll = setInterval(() => {
-                                fetch('/api/job-progress.php?job_id=' + encodeURIComponent(jobId))
+                                fetch('?api=job-progress&job_id=' + encodeURIComponent(jobId))
                                     .then(r => r.json())
                                     .then(p => {
                                         if (!p || !p.success) return;
