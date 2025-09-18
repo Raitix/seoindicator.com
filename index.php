@@ -9,9 +9,41 @@ if (isset($_GET['api']) && $_GET['api'] === 'start-analysis' && $_SERVER['REQUES
         // Generate a simple job ID
         $job_id = uniqid('job_', true);
         
+        // Fetch page content
+        $page_content = '';
+        $final_url = $domain;
+        
+        // Try to fetch the page content
+        $url_schemes_to_try = [];
+        if (!preg_match("~^(?:f|ht)tps?://~i", $domain)) {
+            $url_schemes_to_try[] = "https://{$domain}";
+            $url_schemes_to_try[] = "http://{$domain}";
+        } else {
+            $url_schemes_to_try[] = $domain;
+        }
+        
+        foreach ($url_schemes_to_try as $current_url_to_check) {
+            $context_options = [
+                'http' => [
+                    'method' => "GET", 
+                    'timeout' => 10, 
+                    'ignore_errors' => true, 
+                    'header' => "User-Agent: SEOIndicatorBot/1.0\r\n"
+                ]
+            ];
+            
+            $page_content = @file_get_contents($current_url_to_check, false, stream_context_create($context_options));
+            if ($page_content !== false) {
+                $final_url = $current_url_to_check;
+                break;
+            }
+        }
+        
         // Store job in session
         $_SESSION['jobs'][$job_id] = [
             'domain' => $domain,
+            'final_url' => $final_url,
+            'page_content' => $page_content,
             'status' => 'running',
             'progress' => ['done' => 0, 'total' => 17],
             'results' => []
@@ -21,7 +53,8 @@ if (isset($_GET['api']) && $_GET['api'] === 'start-analysis' && $_SERVER['REQUES
         echo json_encode([
             'success' => true,
             'job_id' => $job_id,
-            'indicators' => ['url', 'title_tag', 'meta_description', 'headings', 'image_alt', 'links', '404_page', 'mobile_friendly', 'language', 'favicon', 'canonical', 'social_meta_tags', 'aria', 'page_speed', 'robots_txt', 'sitemap_xml', 'filenames']
+            'final_url' => $final_url,
+            'indicators' => ['url', 'title', 'meta_description', 'robots', 'sitemap', 'h1', 'filenames', 'image_alt', 'links', '404_page', 'mobile_friendly', 'language', 'favicon', 'canonical', 'social_meta_tags', 'aria', 'page_speed']
         ]);
         exit;
     } else {
@@ -36,12 +69,13 @@ if (isset($_GET['api']) && $_GET['api'] === 'run-indicator' && $_SERVER['REQUEST
     $indicator = $_POST['indicator'] ?? '';
     
     if ($job_id && $indicator && isset($_SESSION['jobs'][$job_id])) {
-        // Simulate indicator processing
-        $result = [
-            'score' => rand(1, 3),
-            'details' => 'Test result for ' . $indicator,
-            'suggestion' => 'Test suggestion for ' . $indicator
-        ];
+        $job = $_SESSION['jobs'][$job_id];
+        $domain = $job['domain'];
+        $page_content = $job['page_content'] ?? '';
+        $final_url = $job['final_url'] ?? $domain;
+        
+        // Run actual SEO analysis for the indicator
+        $result = runSingleIndicator($indicator, $domain, $page_content, $final_url);
         
         $_SESSION['jobs'][$job_id]['results'][$indicator] = $result;
         $_SESSION['jobs'][$job_id]['progress']['done']++;
@@ -89,6 +123,716 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['domain'])) {
 define('SEO_LOGIC_DISABLE_POST', true);
 include 'seo_logic.php'; // Include the separated PHP logic
 
+// Function to run a single indicator analysis
+function runSingleIndicator($indicator, $domain, $page_content, $final_url) {
+    // Initialize result structure
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    if (empty($page_content)) {
+        $result['details'] = 'Page content not available';
+        $result['suggestion'] = 'Unable to analyze - page not accessible';
+        return $result;
+    }
+    
+    // Parse the HTML content
+    $dom = new DOMDocument();
+    libxml_use_internal_errors(true);
+    $dom->loadHTML($page_content);
+    libxml_clear_errors();
+    $xpath = new DOMXPath($dom);
+    
+    try {
+        switch ($indicator) {
+            case 'url':
+                $result = analyzeUrlIndicator($domain, $final_url);
+                break;
+            case 'title':
+                $result = analyzeTitleIndicator($xpath);
+                break;
+            case 'meta_description':
+                $result = analyzeMetaDescriptionIndicator($xpath);
+                break;
+            case 'h1':
+                $result = analyzeHeadingsIndicator($xpath);
+                break;
+            case 'image_alt':
+                $result = analyzeImageAltIndicator($xpath);
+                break;
+            case 'links':
+                $result = analyzeLinksIndicator($xpath, $domain);
+                break;
+            case '404_page':
+                $result = analyze404PageIndicator($final_url);
+                break;
+            case 'mobile_friendly':
+                $result = analyzeMobileFriendlyIndicator($page_content);
+                break;
+            case 'language':
+                $result = analyzeLanguageIndicator($xpath);
+                break;
+            case 'favicon':
+                $result = analyzeFaviconIndicator($xpath, $final_url);
+                break;
+            case 'canonical':
+                $result = analyzeCanonicalIndicator($xpath, $final_url);
+                break;
+            case 'social_meta_tags':
+                $result = analyzeSocialMetaTagsIndicator($xpath);
+                break;
+            case 'aria':
+                $result = analyzeAriaIndicator($xpath);
+                break;
+            case 'page_speed':
+                $result = analyzePageSpeedIndicator($final_url);
+                break;
+            case 'robots':
+                $result = analyzeRobotsTxtIndicator($domain);
+                break;
+            case 'sitemap':
+                $result = analyzeSitemapXmlIndicator($domain);
+                break;
+            case 'filenames':
+                $result = analyzeFilenamesIndicator($xpath);
+                break;
+            default:
+                $result['details'] = 'Unknown indicator: ' . $indicator;
+                $result['suggestion'] = 'Indicator not implemented';
+        }
+    } catch (Exception $e) {
+        $result['details'] = 'Analysis error: ' . $e->getMessage();
+        $result['suggestion'] = 'Please try again';
+    }
+    
+    return $result;
+}
+
+// Individual indicator analysis functions
+function analyzeTitleIndicator($xpath) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $title_nodes = $xpath->query('//title');
+    if ($title_nodes->length > 0) {
+        $title_content = trim($title_nodes->item(0)->nodeValue);
+        if (!empty($title_content)) {
+            $title_length = strlen($title_content);
+            if ($title_length >= 10 && $title_length <= 60) {
+                $result['score'] = 3;
+                $result['suggestion'] = 'Good title length. Consider including target keywords if not already present.';
+            } elseif ($title_length < 10) {
+                $result['score'] = 1;
+                $result['suggestion'] = 'Title is too short. Aim for 10-60 characters with descriptive keywords.';
+            } else {
+                $result['score'] = 2;
+                $result['suggestion'] = 'Title is too long. Keep under 60 characters to prevent truncation in search results.';
+            }
+            $result['details'] = htmlspecialchars($title_content);
+        } else {
+            $result['score'] = 1;
+            $result['details'] = 'Title tag exists but is empty.';
+            $result['suggestion'] = 'Add descriptive title content with target keywords (10-60 characters).';
+        }
+    } else {
+        $result['score'] = 1;
+        $result['details'] = 'No title tag found.';
+        $result['suggestion'] = 'Add a title tag with descriptive content and target keywords (10-60 characters).';
+    }
+    
+    return $result;
+}
+
+function analyzeMetaDescriptionIndicator($xpath) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $meta_description_nodes = $xpath->query('//meta[@name="description"]');
+    if ($meta_description_nodes->length > 0) {
+        $meta_content = trim($meta_description_nodes->item(0)->getAttribute('content'));
+        if (!empty($meta_content)) {
+            $meta_length = strlen($meta_content);
+            if ($meta_length >= 120 && $meta_length <= 160) {
+                $result['score'] = 3;
+                $result['suggestion'] = 'Good meta description length. Consider including a call-to-action.';
+            } elseif ($meta_length < 120) {
+                $result['score'] = 2;
+                $result['suggestion'] = 'Meta description is too short. Aim for 120-160 characters.';
+            } else {
+                $result['score'] = 2;
+                $result['suggestion'] = 'Meta description is too long. Keep under 160 characters.';
+            }
+            $result['details'] = htmlspecialchars($meta_content);
+        } else {
+            $result['score'] = 1;
+            $result['details'] = 'Meta description tag exists but is empty.';
+            $result['suggestion'] = 'Add descriptive meta description content (120-160 characters).';
+        }
+    } else {
+        $result['score'] = 1;
+        $result['details'] = 'No meta description tag found.';
+        $result['suggestion'] = 'Add a meta description tag with compelling content (120-160 characters).';
+    }
+    
+    return $result;
+}
+
+function analyzeUrlIndicator($domain, $final_url) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $score = 0;
+    $issues = [];
+    
+    // Check HTTPS
+    if (strpos($final_url, 'https://') === 0) {
+        $score += 1;
+    } else {
+        $issues[] = 'Not using HTTPS';
+    }
+    
+    // Check domain length
+    $domain_length = strlen(parse_url($final_url, PHP_URL_HOST));
+    if ($domain_length <= 15) {
+        $score += 1;
+    } else {
+        $issues[] = 'Domain name is long';
+    }
+    
+    // Check for special characters
+    if (!preg_match('/[^a-zA-Z0-9.-]/', parse_url($final_url, PHP_URL_HOST))) {
+        $score += 1;
+    } else {
+        $issues[] = 'Domain contains special characters';
+    }
+    
+    $result['score'] = $score;
+    $result['details'] = htmlspecialchars($final_url);
+    
+    if ($score === 3) {
+        $result['suggestion'] = 'Excellent URL structure.';
+    } elseif ($score === 2) {
+        $result['suggestion'] = 'Good URL structure. Consider: ' . implode(', ', $issues);
+    } else {
+        $result['suggestion'] = 'URL needs improvement: ' . implode(', ', $issues);
+    }
+    
+    return $result;
+}
+
+function analyzeHeadingsIndicator($xpath) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $h1_nodes = $xpath->query('//h1');
+    $h2_nodes = $xpath->query('//h2');
+    
+    $h1_count = $h1_nodes->length;
+    $h2_count = $h2_nodes->length;
+    
+    if ($h1_count === 1) {
+        $result['score'] = 3;
+        $result['details'] = "Found {$h1_count} H1 tag and {$h2_count} H2 tags";
+        $result['suggestion'] = 'Perfect heading structure with single H1 tag.';
+    } elseif ($h1_count === 0) {
+        $result['score'] = 1;
+        $result['details'] = "No H1 tag found, {$h2_count} H2 tags";
+        $result['suggestion'] = 'Add a single H1 tag to improve SEO structure.';
+    } else {
+        $result['score'] = 2;
+        $result['details'] = "Found {$h1_count} H1 tags and {$h2_count} H2 tags";
+        $result['suggestion'] = 'Use only one H1 tag per page for better SEO.';
+    }
+    
+    return $result;
+}
+
+function analyzeImageAltIndicator($xpath) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $img_nodes = $xpath->query('//img');
+    $total_images = $img_nodes->length;
+    $images_with_alt = 0;
+    $images_without_alt = 0;
+    
+    foreach ($img_nodes as $img) {
+        $alt = $img->getAttribute('alt');
+        if (!empty(trim($alt))) {
+            $images_with_alt++;
+        } else {
+            $images_without_alt++;
+        }
+    }
+    
+    if ($total_images === 0) {
+        $result['score'] = 3;
+        $result['details'] = 'No images found on page';
+        $result['suggestion'] = 'No images to analyze.';
+    } elseif ($images_without_alt === 0) {
+        $result['score'] = 3;
+        $result['details'] = "All {$total_images} images have alt text";
+        $result['suggestion'] = 'Excellent! All images have descriptive alt text.';
+    } elseif ($images_with_alt > $images_without_alt) {
+        $result['score'] = 2;
+        $result['details'] = "{$images_with_alt}/{$total_images} images have alt text";
+        $result['suggestion'] = 'Add alt text to remaining images for better accessibility and SEO.';
+    } else {
+        $result['score'] = 1;
+        $result['details'] = "Only {$images_with_alt}/{$total_images} images have alt text";
+        $result['suggestion'] = 'Add descriptive alt text to all images for accessibility and SEO.';
+    }
+    
+    return $result;
+}
+
+function analyzeLinksIndicator($xpath, $domain) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $link_nodes = $xpath->query('//a[@href]');
+    $total_links = $link_nodes->length;
+    $internal_links = 0;
+    $external_links = 0;
+    $empty_anchor = 0;
+    
+    foreach ($link_nodes as $link) {
+        $href = $link->getAttribute('href');
+        $text = trim($link->nodeValue);
+        
+        if (empty($text)) {
+            $empty_anchor++;
+        }
+        
+        if (strpos($href, 'http') === 0) {
+            if (strpos($href, $domain) !== false) {
+                $internal_links++;
+            } else {
+                $external_links++;
+            }
+        } else {
+            $internal_links++;
+        }
+    }
+    
+    $result['details'] = "Total: {$total_links}, Internal: {$internal_links}, External: {$external_links}";
+    
+    if ($empty_anchor === 0 && $total_links > 0) {
+        $result['score'] = 3;
+        $result['suggestion'] = 'Good link structure with descriptive anchor text.';
+    } elseif ($empty_anchor < $total_links / 2) {
+        $result['score'] = 2;
+        $result['suggestion'] = 'Some links lack descriptive anchor text.';
+    } else {
+        $result['score'] = 1;
+        $result['suggestion'] = 'Many links lack descriptive anchor text.';
+    }
+    
+    return $result;
+}
+
+function analyze404PageIndicator($final_url) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    // Test a non-existent page
+    $test_url = rtrim($final_url, '/') . '/non-existent-page-404-test-' . time();
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'timeout' => 5,
+            'ignore_errors' => true,
+            'header' => "User-Agent: SEOIndicatorBot/1.0\r\n"
+        ]
+    ]);
+    
+    $response = @file_get_contents($test_url, false, $context);
+    $http_code = 0;
+    
+    if (isset($http_response_header)) {
+        foreach ($http_response_header as $header) {
+            if (preg_match('/HTTP\/\d\.\d\s+(\d+)/', $header, $matches)) {
+                $http_code = (int)$matches[1];
+                break;
+            }
+        }
+    }
+    
+    if ($http_code === 404) {
+        $result['score'] = 3;
+        $result['details'] = 'Custom 404 page detected';
+        $result['suggestion'] = 'Excellent! Custom 404 page is properly configured.';
+    } elseif ($http_code === 200) {
+        $result['score'] = 1;
+        $result['details'] = '404 page returns 200 status';
+        $result['suggestion'] = 'Configure proper 404 page to return 404 status code.';
+    } else {
+        $result['score'] = 2;
+        $result['details'] = '404 page status: ' . $http_code;
+        $result['suggestion'] = 'Consider implementing a custom 404 page.';
+    }
+    
+    return $result;
+}
+
+function analyzeMobileFriendlyIndicator($page_content) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $score = 0;
+    $issues = [];
+    
+    // Check for viewport meta tag
+    if (preg_match('/<meta[^>]*name=["\']viewport["\'][^>]*>/i', $page_content)) {
+        $score += 1;
+    } else {
+        $issues[] = 'Missing viewport meta tag';
+    }
+    
+    // Check for responsive design indicators
+    if (preg_match('/@media|responsive|mobile/i', $page_content)) {
+        $score += 1;
+    } else {
+        $issues[] = 'No responsive design detected';
+    }
+    
+    // Check for touch-friendly elements
+    if (preg_match('/touch-action|user-scalable/i', $page_content)) {
+        $score += 1;
+    } else {
+        $issues[] = 'No touch optimization detected';
+    }
+    
+    $result['score'] = $score;
+    
+    if ($score === 3) {
+        $result['details'] = 'Mobile-friendly design detected';
+        $result['suggestion'] = 'Excellent mobile optimization!';
+    } elseif ($score === 2) {
+        $result['details'] = 'Partial mobile optimization';
+        $result['suggestion'] = 'Consider: ' . implode(', ', $issues);
+    } else {
+        $result['details'] = 'Limited mobile optimization';
+        $result['suggestion'] = 'Improve mobile experience: ' . implode(', ', $issues);
+    }
+    
+    return $result;
+}
+
+function analyzeLanguageIndicator($xpath) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $html_nodes = $xpath->query('//html[@lang]');
+    if ($html_nodes->length > 0) {
+        $lang = $html_nodes->item(0)->getAttribute('lang');
+        if (!empty($lang)) {
+            $result['score'] = 3;
+            $result['details'] = 'Language declared: ' . htmlspecialchars($lang);
+            $result['suggestion'] = 'Perfect! Language is properly declared.';
+        } else {
+            $result['score'] = 1;
+            $result['details'] = 'Lang attribute is empty';
+            $result['suggestion'] = 'Add proper language code to lang attribute.';
+        }
+    } else {
+        $result['score'] = 1;
+        $result['details'] = 'No language declaration found';
+        $result['suggestion'] = 'Add lang attribute to html tag (e.g., lang="en").';
+    }
+    
+    return $result;
+}
+
+function analyzeFaviconIndicator($xpath, $final_url) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $favicon_nodes = $xpath->query('//link[@rel="icon" or @rel="shortcut icon" or @rel="apple-touch-icon"]');
+    
+    if ($favicon_nodes->length > 0) {
+        $result['score'] = 3;
+        $result['details'] = 'Favicon detected';
+        $result['suggestion'] = 'Excellent! Favicon is properly configured.';
+    } else {
+        // Check for default favicon.ico
+        $favicon_url = rtrim($final_url, '/') . '/favicon.ico';
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'HEAD',
+                'timeout' => 3,
+                'ignore_errors' => true
+            ]
+        ]);
+        
+        $headers = @get_headers($favicon_url, 1, $context);
+        if ($headers && strpos($headers[0], '200') !== false) {
+            $result['score'] = 2;
+            $result['details'] = 'Default favicon.ico found';
+            $result['suggestion'] = 'Consider adding explicit favicon link tags.';
+        } else {
+            $result['score'] = 1;
+            $result['details'] = 'No favicon detected';
+            $result['suggestion'] = 'Add favicon link tags for better branding.';
+        }
+    }
+    
+    return $result;
+}
+
+function analyzeCanonicalIndicator($xpath, $final_url) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $canonical_nodes = $xpath->query('//link[@rel="canonical"]');
+    if ($canonical_nodes->length > 0) {
+        $canonical_url = $canonical_nodes->item(0)->getAttribute('href');
+        if (!empty($canonical_url)) {
+            $result['score'] = 3;
+            $result['details'] = 'Canonical URL: ' . htmlspecialchars($canonical_url);
+            $result['suggestion'] = 'Perfect! Canonical URL is properly set.';
+        } else {
+            $result['score'] = 1;
+            $result['details'] = 'Canonical tag exists but href is empty';
+            $result['suggestion'] = 'Add proper URL to canonical tag.';
+        }
+    } else {
+        $result['score'] = 2;
+        $result['details'] = 'No canonical tag found';
+        $result['suggestion'] = 'Consider adding canonical tag to prevent duplicate content issues.';
+    }
+    
+    return $result;
+}
+
+function analyzeSocialMetaTagsIndicator($xpath) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $og_title = $xpath->query('//meta[@property="og:title"]');
+    $og_description = $xpath->query('//meta[@property="og:description"]');
+    $twitter_card = $xpath->query('//meta[@name="twitter:card"]');
+    
+    $score = 0;
+    $found_tags = [];
+    
+    if ($og_title->length > 0) {
+        $score += 1;
+        $found_tags[] = 'og:title';
+    }
+    if ($og_description->length > 0) {
+        $score += 1;
+        $found_tags[] = 'og:description';
+    }
+    if ($twitter_card->length > 0) {
+        $score += 1;
+        $found_tags[] = 'twitter:card';
+    }
+    
+    $result['score'] = $score;
+    
+    if ($score === 3) {
+        $result['details'] = 'Complete social media tags';
+        $result['suggestion'] = 'Excellent! All major social media tags are present.';
+    } elseif ($score > 0) {
+        $result['details'] = 'Partial social media tags: ' . implode(', ', $found_tags);
+        $result['suggestion'] = 'Add missing social media meta tags for better sharing.';
+    } else {
+        $result['details'] = 'No social media tags found';
+        $result['suggestion'] = 'Add OpenGraph and Twitter meta tags for social sharing.';
+    }
+    
+    return $result;
+}
+
+function analyzeAriaIndicator($xpath) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $aria_elements = $xpath->query('//*[@aria-label or @aria-labelledby or @aria-describedby or @role]');
+    $form_elements = $xpath->query('//input[@type="text"] | //input[@type="email"] | //input[@type="password"] | //textarea | //select');
+    
+    $aria_count = $aria_elements->length;
+    $form_count = $form_elements->length;
+    
+    if ($form_count === 0) {
+        $result['score'] = 3;
+        $result['details'] = 'No forms to analyze';
+        $result['suggestion'] = 'No accessibility issues with forms.';
+    } elseif ($aria_count > 0) {
+        $result['score'] = 3;
+        $result['details'] = "Found {$aria_count} ARIA elements";
+        $result['suggestion'] = 'Good accessibility implementation with ARIA attributes.';
+    } else {
+        $result['score'] = 2;
+        $result['details'] = 'Limited ARIA implementation';
+        $result['suggestion'] = 'Consider adding ARIA attributes for better accessibility.';
+    }
+    
+    return $result;
+}
+
+function analyzePageSpeedIndicator($final_url) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    // Check if Google PageSpeed API key is available
+    if (!defined('GOOGLE_PAGESPEED_API_KEY') || empty(GOOGLE_PAGESPEED_API_KEY)) {
+        $result['score'] = 1;
+        $result['details'] = 'PageSpeed API key not configured';
+        $result['suggestion'] = 'Configure Google PageSpeed API key for detailed analysis.';
+        return $result;
+    }
+    
+    // Call Google PageSpeed Insights API
+    $api_url = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=" . urlencode($final_url) . "&key=" . GOOGLE_PAGESPEED_API_KEY;
+    
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'timeout' => 10,
+            'ignore_errors' => true
+        ]
+    ]);
+    
+    $response = @file_get_contents($api_url, false, $context);
+    
+    if ($response === false) {
+        $result['score'] = 1;
+        $result['details'] = 'PageSpeed API call failed';
+        $result['suggestion'] = 'Unable to analyze page speed. Please try again.';
+        return $result;
+    }
+    
+    $data = json_decode($response, true);
+    
+    if (isset($data['lighthouseResult']['categories']['performance']['score'])) {
+        $score = $data['lighthouseResult']['categories']['performance']['score'] * 100;
+        
+        if ($score >= 90) {
+            $result['score'] = 3;
+        } elseif ($score >= 50) {
+            $result['score'] = 2;
+        } else {
+            $result['score'] = 1;
+        }
+        
+        $result['details'] = 'Performance Score: ' . round($score) . '/100';
+        $result['suggestion'] = 'Page speed analysis completed. Check details for optimization opportunities.';
+    } else {
+        $result['score'] = 1;
+        $result['details'] = 'PageSpeed analysis failed';
+        $result['suggestion'] = 'Unable to get page speed data. Please try again.';
+    }
+    
+    return $result;
+}
+
+function analyzeRobotsTxtIndicator($domain) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $robots_url = rtrim($domain, '/') . '/robots.txt';
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'timeout' => 5,
+            'ignore_errors' => true
+        ]
+    ]);
+    
+    $robots_content = @file_get_contents($robots_url, false, $context);
+    
+    if ($robots_content !== false) {
+        $result['score'] = 3;
+        $result['details'] = 'Robots.txt found';
+        $result['suggestion'] = 'Excellent! Robots.txt is properly configured.';
+    } else {
+        $result['score'] = 2;
+        $result['details'] = 'No robots.txt found';
+        $result['suggestion'] = 'Consider adding robots.txt file for search engine guidance.';
+    }
+    
+    return $result;
+}
+
+function analyzeSitemapXmlIndicator($domain) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $sitemap_url = rtrim($domain, '/') . '/sitemap.xml';
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'timeout' => 5,
+            'ignore_errors' => true
+        ]
+    ]);
+    
+    $sitemap_content = @file_get_contents($sitemap_url, false, $context);
+    
+    if ($sitemap_content !== false) {
+        $result['score'] = 3;
+        $result['details'] = 'Sitemap.xml found';
+        $result['suggestion'] = 'Excellent! XML sitemap is properly configured.';
+    } else {
+        $result['score'] = 2;
+        $result['details'] = 'No sitemap.xml found';
+        $result['suggestion'] = 'Consider adding XML sitemap for better search engine indexing.';
+    }
+    
+    return $result;
+}
+
+function analyzeFilenamesIndicator($xpath) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    $img_nodes = $xpath->query('//img[@src]');
+    $link_nodes = $xpath->query('//a[@href]');
+    
+    $total_files = 0;
+    $problematic_files = 0;
+    $file_issues = [];
+    
+    // Check image filenames
+    foreach ($img_nodes as $img) {
+        $src = $img->getAttribute('src');
+        if (strpos($src, 'data:') !== 0) { // Skip base64 images
+            $total_files++;
+            $filename = basename(parse_url($src, PHP_URL_PATH));
+            
+            if (preg_match('/[A-Z]/', $filename)) {
+                $problematic_files++;
+                $file_issues[] = 'Uppercase letters in ' . $filename;
+            }
+            if (strpos($filename, ' ') !== false) {
+                $problematic_files++;
+                $file_issues[] = 'Spaces in ' . $filename;
+            }
+            if (preg_match('/[^a-zA-Z0-9.-]/', $filename)) {
+                $problematic_files++;
+                $file_issues[] = 'Special characters in ' . $filename;
+            }
+        }
+    }
+    
+    // Check linked file filenames
+    foreach ($link_nodes as $link) {
+        $href = $link->getAttribute('href');
+        if (preg_match('/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar)$/i', $href)) {
+            $total_files++;
+            $filename = basename(parse_url($href, PHP_URL_PATH));
+            
+            if (preg_match('/[A-Z]/', $filename)) {
+                $problematic_files++;
+                $file_issues[] = 'Uppercase letters in ' . $filename;
+            }
+        }
+    }
+    
+    if ($total_files === 0) {
+        $result['score'] = 3;
+        $result['details'] = 'No files to analyze';
+        $result['suggestion'] = 'No file naming issues detected.';
+    } elseif ($problematic_files === 0) {
+        $result['score'] = 3;
+        $result['details'] = "All {$total_files} files have SEO-friendly names";
+        $result['suggestion'] = 'Excellent! All files follow SEO naming conventions.';
+    } elseif ($problematic_files < $total_files / 2) {
+        $result['score'] = 2;
+        $result['details'] = "{$problematic_files}/{$total_files} files have naming issues";
+        $result['suggestion'] = 'Some files need better naming: ' . implode(', ', array_slice($file_issues, 0, 3));
+    } else {
+        $result['score'] = 1;
+        $result['details'] = "{$problematic_files}/{$total_files} files have naming issues";
+        $result['suggestion'] = 'Many files need better naming: ' . implode(', ', array_slice($file_issues, 0, 3));
+    }
+    
+    return $result;
+}
+
 $layout_class = 'initial-view'; // Default layout
 
 // Clear session data on fresh page load (hard refresh detection)
@@ -125,7 +869,7 @@ $overall_score_to_display = $_SESSION['overall_score_data'] ?? null;
 // where $default_indicator_keys_for_logic would come from seo_logic.php or be defined minimally here)
 // For now, relying on the session load which itself relies on $default_indicator_keys_for_logic from seo_logic.php for initial POST run.
 // Let's ensure a default empty state for the view if session is not set from a POST yet.
-$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['url'=>'', 'title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'links'=>'', '404_page'=>'', 'mobile_friendly'=>'', 'language'=>'', 'favicon'=>'', 'canonical'=>'', 'social_meta_tags'=>'', 'aria'=>'', 'page_speed'=>'']), ['score' => null, 'details' => 'Pending...', 'suggestion' => 'Pending...']);
+$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['url'=>'', 'title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'links'=>'', '404_page'=>'', 'mobile_friendly'=>'', 'language'=>'', 'favicon'=>'', 'canonical'=>'', 'social_meta_tags'=>'', 'aria'=>'', 'page_speed'=>'']), ['score' => null, 'details' => '-', 'suggestion' => '-']);
 
 $overall_score_display_data = $_SESSION['overall_score_data'] ?? null;
 $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
@@ -392,7 +1136,7 @@ if ($pagespeed_response_data) {
                                         <?php endif; ?>
 
                                     </td>
-                                    <td class="score-cell"><?php echo render_stars($result['score']); ?></td>
+                                    <td class="score-cell"><?php echo ($result['score'] !== null) ? render_stars($result['score']) : '-'; ?></td>
                                     <td class="result-cell"><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
                                     <td class="suggestion-cell"><?php 
                                         if (isset($result['suggestion'])) {
@@ -449,9 +1193,9 @@ if ($pagespeed_response_data) {
                         const scoreCell = row.querySelector('.score-cell');
                         const resultCell = row.querySelector('.result-cell');
                         const suggCell = row.querySelector('.suggestion-cell');
-                        if (scoreCell) scoreCell.textContent = '(N/A)';
-                        if (resultCell) resultCell.textContent = 'Pending...';
-                        if (suggCell) suggCell.textContent = 'Pending...';
+                        if (scoreCell) scoreCell.textContent = '-';
+                        if (resultCell) resultCell.textContent = '-';
+                        if (suggCell) suggCell.textContent = '-';
                     });
                     
                     // Start job
