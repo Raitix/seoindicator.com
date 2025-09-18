@@ -537,4 +537,80 @@ The tool allows users to enter a domain name. It then checks if the website is a
 *   **Immediate Validation:** Production tests run immediately after deployment
 *   **Quality Gates:** Failed tests prevent deployment issues from reaching users
 *   **Continuous Monitoring:** Regular testing ensures production site reliability
-*   **Developer Productivity:** Local testing environment matches production behavior 
+*   **Developer Productivity:** Local testing environment matches production behavior
+
+**DATABASE MANAGEMENT SYSTEM:**
+
+**Comprehensive Database Schema Management:**
+*   **Migration System:** Version-controlled database schema changes with rollback capability
+*   **Environment Support:** Local development and production database synchronization
+*   **Safety Features:** Automatic backups, transaction support, and error logging
+*   **Cursor Agent Integration:** Detailed instructions for automated database management
+
+**Database Schema Overview:**
+
+**Current Production Tables:**
+*   **`ip_requests_log`** - Rate limiting system (ip_address, last_request_time)
+*   **`data`** - SEO analysis results logging (id, ip, domain, score_has, score_max, timestamps)
+
+**Planned Tables (Migration Ready):**
+*   **`jobs`** - Background job management (job_id, session_id, domain, page_content, status)
+*   **`job_results`** - Individual indicator results (job_id, indicator, status, score, details, suggestions)
+
+**Migration Management:**
+
+**Migration Tool (`database/migrate.php`):**
+*   **Status Checking:** View applied and pending migrations
+*   **Safe Application:** Transaction-based migration execution with rollback support
+*   **Version Control:** Sequential migration numbering with dependency tracking
+*   **Backup Integration:** Automatic database backup before schema changes
+*   **Error Handling:** Comprehensive logging and failure recovery
+
+**Migration Commands:**
+*   `php database/migrate.php status` - Check migration status
+*   `php database/migrate.php migrate` - Apply all pending migrations
+*   `php database/migrate.php migrate 001` - Apply specific migration
+*   `php database/migrate.php rollback` - Rollback last migration
+*   `php database/migrate.php backup` - Create database backup
+
+**Cursor Agent Integration:**
+
+**Database Connection:**
+*   **Local Development:** localhost with root credentials (db_config.php)
+*   **Production Deployment:** Hostinger database credentials (configurable)
+*   **Connection Management:** Automatic charset and error handling
+
+**Safety Guidelines:**
+*   **Backup Requirements:** Always backup production before schema changes
+*   **Testing Protocol:** Test migrations locally before production deployment
+*   **Rollback Planning:** Maintain rollback scripts for all migrations
+*   **Monitoring:** Track migration logs and application performance
+
+**File Structure:**
+*   `database/README.md` - Complete database documentation
+*   `database/migrate.php` - Migration management tool
+*   `database/cursor-agent-instructions.md` - Cursor agent quick reference
+*   `database/migrations/` - SQL migration files with rollback scripts
+*   `database/logs/` - Migration execution logs and error tracking
+*   `database/backups/` - Database backup storage
+
+**Production Deployment Process:**
+1. **Update Credentials:** Configure production database connection in db_config.php
+2. **Create Backup:** Generate production database backup before changes
+3. **Apply Migrations:** Execute pending migrations using migration tool
+4. **Verify Changes:** Confirm schema updates and test functionality
+5. **Monitor Performance:** Track application logs and database performance
+
+**Quality Assurance:**
+*   **Transaction Safety:** All migrations run within database transactions
+*   **Error Recovery:** Automatic rollback on migration failures
+*   **Logging System:** Comprehensive error and execution logging
+*   **Version Tracking:** Complete history of applied migrations
+*   **Backup Integration:** Automatic backup creation before changes
+
+**Integration Benefits:**
+*   **Version Control:** Database schema changes tracked in Git
+*   **Environment Consistency:** Identical schema across local and production
+*   **Safe Deployment:** Rollback capability for failed migrations
+*   **Automated Management:** Cursor agent integration for hands-off deployment
+*   **Documentation:** Complete schema documentation and change history 
