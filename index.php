@@ -113,8 +113,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['domain'])) {
         $_SESSION['last_domain_for_view'] = $domain;
         $_SESSION['is_post_redirect_layout_active'] = true;
         $_SESSION['page_loaded'] = true; // Mark as loaded to prevent session clearing
-        // Redirect to avoid form resubmission
-        header('Location: ' . $_SERVER['PHP_SELF']);
+        // Redirect to avoid form resubmission, preserving debug parameter
+        $redirect_url = $_SERVER['PHP_SELF'];
+        if (isset($_GET['debug'])) {
+            $redirect_url .= '?debug=' . urlencode($_GET['debug']);
+        }
+        header('Location: ' . $redirect_url);
         exit;
     }
 }
@@ -122,6 +126,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['domain'])) {
 // Keep the old POST logic disabled since we're using the new progressive API system
 define('SEO_LOGIC_DISABLE_POST', true);
 include 'seo_logic.php'; // Include the separated PHP logic
+
+// Helper function to store debug information
+function storeDebugInfo($type, $indicator, $request, $response, $success = true, $message = '') {
+    if (isset($_GET['debug'])) {
+        $_SESSION['debug_calls'][] = [
+            'type' => $type,
+            'indicator' => $indicator,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'success' => $success,
+            'message' => $message,
+            'request' => $request,
+            'response' => $response
+        ];
+    }
+}
 
 // Function to run a single indicator analysis
 function runSingleIndicator($indicator, $domain, $page_content, $final_url) {
@@ -226,6 +245,25 @@ function analyzeTitleIndicator($xpath) {
                 $result['suggestion'] = 'Title is too long. Keep under 60 characters to prevent truncation in search results.';
             }
             $result['details'] = htmlspecialchars($title_content);
+            
+            // Try to get AI suggestion for good titles
+            if ($result['score'] == 3) {
+                if (function_exists('call_openrouter_api')) {
+                    $prompt = "Analyze this page title for SEO: '{$title_content}'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice).";
+                    $ai_response = call_openrouter_api($prompt);
+                    
+                    storeDebugInfo('OpenRouter', 'title', $prompt, $ai_response, $ai_response['success'] ?? false, $ai_response['message'] ?? '');
+                    
+                    if ($ai_response['success'] && isset($ai_response['raw_response'])) {
+                        $ai_data = json_decode($ai_response['raw_response'], true);
+                        if ($ai_data && isset($ai_data['suggestion'])) {
+                            $result['suggestion'] = $ai_data['suggestion'];
+                        }
+                    }
+                } else {
+                    storeDebugInfo('OpenRouter', 'title', 'N/A', 'Function not available', false, 'call_openrouter_api function not found');
+                }
+            }
         } else {
             $result['score'] = 1;
             $result['details'] = 'Title tag exists but is empty.';
@@ -259,6 +297,23 @@ function analyzeMetaDescriptionIndicator($xpath) {
                 $result['suggestion'] = 'Meta description is too long. Keep under 160 characters.';
             }
             $result['details'] = htmlspecialchars($meta_content);
+            
+            // Try to get AI suggestion for meta descriptions
+            if (function_exists('call_openrouter_api')) {
+                $prompt = "Analyze this meta description for SEO: '{$meta_content}'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice).";
+                $ai_response = call_openrouter_api($prompt);
+                
+                storeDebugInfo('OpenRouter', 'meta_description', $prompt, $ai_response, $ai_response['success'] ?? false, $ai_response['message'] ?? '');
+                
+                if ($ai_response['success'] && isset($ai_response['raw_response'])) {
+                    $ai_data = json_decode($ai_response['raw_response'], true);
+                    if ($ai_data && isset($ai_data['suggestion'])) {
+                        $result['suggestion'] = $ai_data['suggestion'];
+                    }
+                }
+            } else {
+                storeDebugInfo('OpenRouter', 'meta_description', 'N/A', 'Function not available', false, 'call_openrouter_api function not found');
+            }
         } else {
             $result['score'] = 1;
             $result['details'] = 'Meta description tag exists but is empty.';
@@ -884,17 +939,23 @@ $site_not_accessible_error = $_SESSION['site_not_accessible_error'] ?? null;
 if ($site_not_accessible_error) {
     unset($_SESSION['site_not_accessible_error']); // Clear it after reading
 }
-/* Hide API debugging for production deployment
-$openrouter_response_data = $_SESSION['openrouter_response'] ?? null;
-if ($openrouter_response_data) {
-    unset($_SESSION['openrouter_response']); // Clear after reading
-}
+// Enable API debugging when debug parameter is present
+$debug_mode = isset($_GET['debug']);
+if ($debug_mode) {
+    $openrouter_response_data = $_SESSION['openrouter_response'] ?? null;
+    if ($openrouter_response_data) {
+        unset($_SESSION['openrouter_response']); // Clear after reading
+    }
 
-$pagespeed_response_data = $_SESSION['pagespeed_response'] ?? null;
-if ($pagespeed_response_data) {
-    unset($_SESSION['pagespeed_response']); // Clear after reading
+    $pagespeed_response_data = $_SESSION['pagespeed_response'] ?? null;
+    if ($pagespeed_response_data) {
+        unset($_SESSION['pagespeed_response']); // Clear after reading
+    }
+} else {
+    // Hide API debugging for production deployment
+    $openrouter_response_data = null;
+    $pagespeed_response_data = null;
 }
-*/
 
 ?>
 <!doctype html>
@@ -949,37 +1010,90 @@ if ($pagespeed_response_data) {
                 </div>
                 <?php endif; ?>
 
-                <?php /* Hide API debugging for production deployment
-                <?php if ($openrouter_response_data): ?>
-                    <div class="alert <?php echo $openrouter_response_data['success'] ? 'alert-info' : 'alert-danger'; ?> mt-3" role="alert">
-                        <p><strong>OpenRouter API Status:</strong> <?php echo htmlspecialchars($openrouter_response_data['message']); ?></p>
-                        <?php if (isset($openrouter_response_data['raw_request'])): ?>
-                            <p><strong>Raw Request:</strong></p>
-                            <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($openrouter_response_data['raw_request']); ?></pre>
-                        <?php endif; ?>
-                        <?php if (isset($openrouter_response_data['raw_response'])): ?>
-                            <p><strong>Raw Response:</strong></p>
-                            <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($openrouter_response_data['raw_response']); ?></pre>
-                        <?php endif; ?>
+                <?php if ($debug_mode): ?>
+                    <!-- Debug Information -->
+                    <div class="alert alert-warning mt-3" role="alert">
+                        <h5><strong>🔍 Debug Mode Active</strong></h5>
+                        <p>Debug mode is enabled. API calls and responses will be shown below.</p>
                     </div>
+                    
+                    <?php if (isset($_SESSION['debug_calls']) && !empty($_SESSION['debug_calls'])): ?>
+                        <div class="alert alert-info mt-3" role="alert">
+                            <h6><strong>📡 API Calls Made (<?php echo count($_SESSION['debug_calls']); ?>):</strong></h6>
+                            <?php foreach ($_SESSION['debug_calls'] as $call): ?>
+                                <div class="mb-3 p-3 border rounded" style="background-color: #f8f9fa;">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong><?php echo htmlspecialchars($call['type']); ?></strong> - 
+                                            <span class="badge bg-<?php echo $call['success'] ? 'success' : 'danger'; ?>">
+                                                <?php echo $call['success'] ? 'Success' : 'Failed'; ?>
+                                            </span>
+                                            <br>
+                                            <small class="text-muted">Indicator: <?php echo htmlspecialchars($call['indicator']); ?> | <?php echo htmlspecialchars($call['timestamp']); ?></small>
+                                        </div>
+                                    </div>
+                                    
+                                    <?php if ($call['message']): ?>
+                                        <p class="mb-2"><strong>Message:</strong> <?php echo htmlspecialchars($call['message']); ?></p>
+                                    <?php endif; ?>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>Request:</strong>
+                                            <pre style="font-size: 0.8em; max-height: 200px; overflow-y: auto;"><?php echo htmlspecialchars($call['request']); ?></pre>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Response:</strong>
+                                            <pre style="font-size: 0.8em; max-height: 200px; overflow-y: auto;"><?php echo htmlspecialchars(json_encode($call['response'], JSON_PRETTY_PRINT)); ?></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php unset($_SESSION['debug_calls']); // Clear after displaying ?>
+                    <?php else: ?>
+                        <div class="alert alert-secondary mt-3" role="alert">
+                            <h6><strong>📡 No API Calls Made</strong></h6>
+                            <p>No OpenRouter API calls were made during this analysis. This could be because:</p>
+                            <ul>
+                                <li>OpenRouter API key is not configured</li>
+                                <li>Indicators don't meet criteria for AI suggestions</li>
+                                <li>call_openrouter_api function is not available</li>
+                            </ul>
+                            <p><strong>Debug Info:</strong> Session debug_calls: <?php echo isset($_SESSION['debug_calls']) ? 'Set (' . count($_SESSION['debug_calls']) . ' calls)' : 'Not set'; ?></p>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <?php if ($openrouter_response_data): ?>
+                        <div class="alert <?php echo $openrouter_response_data['success'] ? 'alert-info' : 'alert-danger'; ?> mt-3" role="alert">
+                            <p><strong>OpenRouter API Status:</strong> <?php echo htmlspecialchars($openrouter_response_data['message']); ?></p>
+                            <?php if (isset($openrouter_response_data['raw_request'])): ?>
+                                <p><strong>Raw Request:</strong></p>
+                                <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($openrouter_response_data['raw_request']); ?></pre>
+                            <?php endif; ?>
+                            <?php if (isset($openrouter_response_data['raw_response'])): ?>
+                                <p><strong>Raw Response:</strong></p>
+                                <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($openrouter_response_data['raw_response']); ?></pre>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($pagespeed_response_data): ?>
+                        <div class="alert <?php echo $pagespeed_response_data['success'] ? 'alert-info' : 'alert-danger'; ?> mt-3" role="alert">
+                            <p><strong>Google PageSpeed Insights API Status:</strong> <?php echo htmlspecialchars($pagespeed_response_data['message']); ?></p>
+                            <?php if (isset($pagespeed_response_data['raw_request'])): ?>
+                                <p><strong>Raw Request:</strong></p>
+                                <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($pagespeed_response_data['raw_request']); ?></pre>
+                            <?php endif; ?>
+                            <?php if (isset($pagespeed_response_data['raw_response'])): ?>
+                                <p><strong>Raw Response:</strong></p>
+                                <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($pagespeed_response_data['raw_response']); ?></pre>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
 
-                <?php if ($pagespeed_response_data): ?>
-                    <div class="alert <?php echo $pagespeed_response_data['success'] ? 'alert-info' : 'alert-danger'; ?> mt-3" role="alert">
-                        <p><strong>Google PageSpeed Insights API Status:</strong> <?php echo htmlspecialchars($pagespeed_response_data['message']); ?></p>
-                        <?php if (isset($pagespeed_response_data['raw_request'])): ?>
-                            <p><strong>Raw Request:</strong></p>
-                            <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($pagespeed_response_data['raw_request']); ?></pre>
-                        <?php endif; ?>
-                        <?php if (isset($pagespeed_response_data['raw_response'])): ?>
-                            <p><strong>Raw Response:</strong></p>
-                            <pre style="white-space: pre-wrap; word-break: break-all; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;"><?php echo htmlspecialchars($pagespeed_response_data['raw_response']); ?></pre>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-                */ ?>
-
-                <form method="post" action="index.php" class="mb-4 seo-input-form" id="seo-form">
+                <form method="post" action="<?php echo $_SERVER['PHP_SELF'] . (isset($_GET['debug']) ? '?debug=' . urlencode($_GET['debug']) : ''); ?>" class="mb-4 seo-input-form" id="seo-form">
                     <div class="input-group input-group-lg mb-3">
                         <input type="text" class="form-control" name="domain" id="domain-input" placeholder="Enter domain name (e.g., example.com)" aria-label="Domain name" required value="<?php echo htmlspecialchars($last_domain_value); ?>" list="domain-suggestions" autocomplete="off">
                         <button class="btn btn-primary custom-submit-btn" type="submit" id="submit-btn">Analyze!</button>
