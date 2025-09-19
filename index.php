@@ -5,7 +5,13 @@ session_start(); // Start the session at the very top
 include 'seo_logic.php';
 
 // Enable debug mode early so it's available to analysis functions
-$debug_mode = isset($_GET['debug']);
+// Set debug mode in session immediately when detected from URL
+if (isset($_GET['debug'])) {
+    $_SESSION['debug_mode'] = true;
+}
+
+$debug_mode = isset($_GET['debug']) || (isset($_SESSION['debug_mode']) && $_SESSION['debug_mode']);
+
 
 // Handle API requests for progressive analysis
 if (isset($_GET['api']) && $_GET['api'] === 'start-analysis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -145,11 +151,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['domain'])) {
         }
         
         // Redirect to avoid form resubmission, preserving debug parameter
-        $redirect_url = '/index.php';
+        // Use meta refresh to ensure proper query parameter preservation
+        $redirect_url = '/';
         if (isset($_GET['debug'])) {
             $redirect_url .= '?debug=' . urlencode($_GET['debug']);
         }
-        header('Location: ' . $redirect_url);
+        echo '<meta http-equiv="refresh" content="0;url=' . $redirect_url . '">';
+        echo '<script>window.location.href = "' . $redirect_url . '";</script>';
         exit;
     }
 }
@@ -216,39 +224,50 @@ function logDebugToFile($type, $indicator, $request, $response, $success = true,
 
 // Function to run a single indicator analysis
 function runSingleIndicator($indicator, $domain, $page_content, $final_url) {
-    // Initialize result structure
-    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
-    
-    if (empty($page_content)) {
-        $result['details'] = 'Page content not available';
-        $result['suggestion'] = 'Unable to analyze - page not accessible';
-        return $result;
-    }
-    
-    // Debug: Check if call_openrouter_api function is available
-    if (!function_exists('call_openrouter_api')) {
-        error_log("call_openrouter_api function not available in runSingleIndicator");
-    }
-    
-    // Parse the HTML content
+    // Parse the page content to create DOMDocument and XPath
     $dom = new DOMDocument();
-    libxml_use_internal_errors(true);
-    $dom->loadHTML($page_content);
-    libxml_clear_errors();
+    $dom->loadHTML($page_content, LIBXML_NOERROR | LIBXML_NOWARNING);
     $xpath = new DOMXPath($dom);
     
-    try {
-        // Mock ALL indicators by default - no external calls or complex logic
-        $result = mockIndicator($indicator, $domain, $final_url);
-        // Add debugging to see if this is being called
-        $result['details'] = '🔧 MOCKED - RUNSINGLEINDICATOR CALLED';
-        $result['suggestion'] = '🔧 MOCKED - RUNSINGLEINDICATOR CALLED';
-    } catch (Exception $e) {
-        $result['details'] = 'Analysis error: ' . $e->getMessage();
-        $result['suggestion'] = 'Please try again';
+    // Call the appropriate analysis function based on the indicator
+    switch ($indicator) {
+        case 'title':
+            return analyzeTitleIndicator($xpath);
+        case 'meta_description':
+            return analyzeMetaDescriptionIndicator($xpath);
+        case 'url':
+            return analyzeUrlIndicator($domain, $final_url);
+        case 'h1':
+            return analyzeHeadingsIndicator($xpath);
+        case 'image_alt':
+            return analyzeImageAltIndicator($xpath);
+        case 'links':
+            return analyzeLinksIndicator($xpath, $domain);
+        case '404_page':
+            return analyze404PageIndicator($final_url);
+        case 'mobile_friendly':
+            return analyzeMobileFriendlyIndicator($page_content);
+        case 'language':
+            return analyzeLanguageIndicator($xpath);
+        case 'favicon':
+            return analyzeFaviconIndicator($xpath, $final_url);
+        case 'canonical':
+            return analyzeCanonicalIndicator($xpath, $final_url);
+        case 'social_meta_tags':
+            return analyzeSocialMetaTagsIndicator($xpath);
+        case 'aria':
+            return analyzeAriaIndicator($xpath);
+        case 'page_speed':
+            return analyzePageSpeedIndicator($final_url);
+        case 'robots':
+            return analyzeRobotsTxtIndicator($domain);
+        case 'sitemap':
+            return analyzeSitemapXmlIndicator($domain);
+        case 'filenames':
+            return analyzeFilenamesIndicator($xpath);
+        default:
+            return ['score' => null, 'details' => 'Unknown indicator', 'suggestion' => 'Unknown indicator'];
     }
-    
-    return $result;
 }
 
 // Mock indicator function for debugging
@@ -365,13 +384,6 @@ function mockIndicator($indicator, $domain, $final_url) {
 
 // Individual indicator analysis functions
 function analyzeTitleIndicator($xpath) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $title_nodes = $xpath->query('//title');
@@ -424,13 +436,6 @@ function analyzeTitleIndicator($xpath) {
 }
 
 function analyzeMetaDescriptionIndicator($xpath) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $meta_description_nodes = $xpath->query('//meta[@name="description"]');
@@ -481,13 +486,6 @@ function analyzeMetaDescriptionIndicator($xpath) {
 }
 
 function analyzeUrlIndicator($domain, $final_url) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $score = 0;
@@ -554,13 +552,6 @@ function analyzeUrlIndicator($domain, $final_url) {
 }
 
 function analyzeHeadingsIndicator($xpath) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $h1_nodes = $xpath->query('//h1');
@@ -611,13 +602,6 @@ function analyzeHeadingsIndicator($xpath) {
 }
 
 function analyzeImageAltIndicator($xpath) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $img_nodes = $xpath->query('//img');
@@ -680,13 +664,6 @@ function analyzeImageAltIndicator($xpath) {
 }
 
 function analyzeLinksIndicator($xpath, $domain) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $link_nodes = $xpath->query('//a[@href]');
@@ -755,13 +732,6 @@ function analyzeLinksIndicator($xpath, $domain) {
 }
 
 function analyze404PageIndicator($final_url) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     // Test a non-existent page
@@ -829,13 +799,6 @@ function analyze404PageIndicator($final_url) {
 }
 
 function analyzeMobileFriendlyIndicator($page_content) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $score = 0;
@@ -879,13 +842,6 @@ function analyzeMobileFriendlyIndicator($page_content) {
 }
 
 function analyzeLanguageIndicator($xpath) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $html_nodes = $xpath->query('//html[@lang]');
@@ -910,13 +866,6 @@ function analyzeLanguageIndicator($xpath) {
 }
 
 function analyzeFaviconIndicator($xpath, $final_url) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $favicon_nodes = $xpath->query('//link[@rel="icon" or @rel="shortcut icon" or @rel="apple-touch-icon"]');
@@ -952,13 +901,6 @@ function analyzeFaviconIndicator($xpath, $final_url) {
 }
 
 function analyzeCanonicalIndicator($xpath, $final_url) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $canonical_nodes = $xpath->query('//link[@rel="canonical"]');
@@ -983,13 +925,6 @@ function analyzeCanonicalIndicator($xpath, $final_url) {
 }
 
 function analyzeSocialMetaTagsIndicator($xpath) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $og_title = $xpath->query('//meta[@property="og:title"]');
@@ -1029,13 +964,6 @@ function analyzeSocialMetaTagsIndicator($xpath) {
 }
 
 function analyzeAriaIndicator($xpath) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $aria_elements = $xpath->query('//*[@aria-label or @aria-labelledby or @aria-describedby or @role]');
@@ -1062,13 +990,6 @@ function analyzeAriaIndicator($xpath) {
 }
 
 function analyzePageSpeedIndicator($final_url) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     // Check if Google PageSpeed API key is available
@@ -1124,13 +1045,6 @@ function analyzePageSpeedIndicator($final_url) {
 }
 
 function analyzeRobotsTxtIndicator($domain) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $robots_url = rtrim($domain, '/') . '/robots.txt';
@@ -1182,13 +1096,6 @@ function analyzeRobotsTxtIndicator($domain) {
 }
 
 function analyzeSitemapXmlIndicator($domain) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $sitemap_url = rtrim($domain, '/') . '/sitemap.xml';
@@ -1240,13 +1147,6 @@ function analyzeSitemapXmlIndicator($domain) {
 }
 
 function analyzeFilenamesIndicator($xpath) {
-    // Mock ALL indicators by default - no external calls or complex logic
-    return [
-        'score' => null,
-        'details' => '🔧 MOCKED',
-        'suggestion' => '🔧 MOCKED'
-    ];
-    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $img_nodes = $xpath->query('//img[@src]');
@@ -1342,8 +1242,9 @@ $layout_class = 'initial-view'; // Default layout
 // Clear session data on fresh page load (hard refresh detection)
 // But don't clear if we just redirected from a form submission
 if (!isset($_SESSION['page_loaded']) || $_SESSION['page_loaded'] !== true) {
-    // Only clear if this is not a POST redirect
-    if (!isset($_SESSION['is_post_redirect_layout_active'])) {
+    // Only clear if this is not a POST redirect and debug mode is not active
+    if (!isset($_SESSION['is_post_redirect_layout_active']) && 
+        !isset($_GET['debug']) && !isset($_SESSION['debug_mode'])) {
         // This is a fresh page load, clear all session data
         unset($_SESSION['seo_results_data']);
         unset($_SESSION['overall_score_data']);
@@ -1360,8 +1261,10 @@ if (!isset($_SESSION['page_loaded']) || $_SESSION['page_loaded'] !== true) {
 }
 
 // Also clear session data if this is a hard refresh (no referrer or different referrer)
-if (!isset($_SERVER['HTTP_REFERER']) || 
-    (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], $_SERVER['HTTP_HOST']) === false)) {
+// But don't clear if debug mode is active
+if ((!isset($_SERVER['HTTP_REFERER']) || 
+    (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], $_SERVER['HTTP_HOST']) === false)) &&
+    !isset($_GET['debug']) && !isset($_SESSION['debug_mode'])) {
     // This might be a hard refresh, clear all session data
     unset($_SESSION['seo_results_data']);
     unset($_SESSION['overall_score_data']);
@@ -1410,16 +1313,20 @@ $overall_score_to_display = $_SESSION['overall_score_data'] ?? null;
 // where $default_indicator_keys_for_logic would come from seo_logic.php or be defined minimally here)
 // For now, relying on the session load which itself relies on $default_indicator_keys_for_logic from seo_logic.php for initial POST run.
 // Let's ensure a default empty state for the view if session is not set from a POST yet.
-$indicators_results = $_SESSION['seo_results_data'] ?? array_fill_keys(array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? ['url'=>'', 'title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'links'=>'', '404_page'=>'', 'mobile_friendly'=>'', 'language'=>'', 'favicon'=>'', 'canonical'=>'', 'social_meta_tags'=>'', 'aria'=>'', 'page_speed'=>'']), ['score' => null, 'details' => '-', 'suggestion' => '-']);
+$indicators_results = array_fill_keys(
+    array_keys($GLOBALS['default_indicator_keys_for_logic'] ?? [
+        'url'=>'', 'title'=>'', 'meta_description'=>'', 'robots'=>'', 'sitemap'=>'', 'h1'=>'', 'filenames'=>'', 'image_alt'=>'', 'links'=>'', '404_page'=>'', 'mobile_friendly'=>'', 'language'=>'', 'favicon'=>'', 'canonical'=>'', 'social_meta_tags'=>'', 'aria'=>'', 'page_speed'=>''
+    ]),
+    ['score' => 'mocked', 'details' => 'mocked', 'suggestion' => 'mocked']
+);
 
 $overall_score_display_data = $_SESSION['overall_score_data'] ?? null;
 $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $last_domain_value = trim($_POST['domain'] ?? '');
 }
-// In debug mode, if no domain is set, use a test domain to trigger analysis
+// In debug mode, if no domain is set, show results view to trigger progressive analysis
 if (isset($_GET['debug']) && empty($last_domain_value) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    $last_domain_value = 'example.com';
     $layout_class = 'results-view'; // Show results view to trigger progressive analysis
 }
 $rate_limit_error = $_SESSION['rate_limit_error'] ?? null;
@@ -1573,9 +1480,9 @@ if ($debug_mode) {
                     <?php endif; ?>
                 <?php endif; ?>
 
-                <form method="post" action="<?php echo $_SERVER['PHP_SELF'] . (isset($_GET['debug']) ? '?debug=' . urlencode($_GET['debug']) : ''); ?>" class="mb-4 seo-input-form" id="seo-form">
+                <form method="post" action="<?php echo (isset($_GET['debug']) ? '?debug=' . urlencode($_GET['debug']) : ''); ?>" class="mb-4 seo-input-form" id="seo-form">
                     <div class="input-group input-group-lg mb-3">
-                        <input type="text" class="form-control" name="domain" id="domain-input" placeholder="Enter domain name (e.g., example.com)" aria-label="Domain name" required value="<?php echo htmlspecialchars($last_domain_value); ?>" list="domain-suggestions" autocomplete="off">
+                        <input type="text" class="form-control" name="domain" id="domain-input" placeholder="Enter domain name (e.g., google.com)" aria-label="Domain name" required value="<?php echo htmlspecialchars($last_domain_value); ?>" list="domain-suggestions" autocomplete="off">
                         <button class="btn btn-primary custom-submit-btn" type="submit" id="submit-btn">Analyze!</button>
                     </div>
                     <datalist id="domain-suggestions">
@@ -1730,7 +1637,13 @@ if ($debug_mode) {
                                         <?php endif; ?>
 
                                     </td>
-                                    <td class="score-cell"><?php echo ($result['score'] !== null) ? render_stars($result['score']) : '-'; ?></td>
+                                    <td class="score-cell"><?php 
+                                        if (is_string($result['score']) && strtolower($result['score']) === 'mocked') {
+                                            echo 'mocked';
+                                        } else {
+                                            echo ($result['score'] !== null) ? render_stars($result['score']) : '-';
+                                        }
+                                    ?></td>
                                     <td class="result-cell"><?php 
                                         if (isset($result['details'])) {
                                             if ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') {
@@ -1790,16 +1703,16 @@ if ($debug_mode) {
                 // Progressive analysis orchestration
                 const lastDomain = <?php echo json_encode($last_domain_value); ?>;
                 if (lastDomain) {
-                    // Clear any existing results first
+                    // Initialize/clear rows to mocked state
                     const rows = document.querySelectorAll('tr[data-indicator]');
                     rows.forEach(row => {
                         row.classList.remove('table-success', 'table-warning', 'table-danger');
                         const scoreCell = row.querySelector('.score-cell');
                         const resultCell = row.querySelector('.result-cell');
                         const suggCell = row.querySelector('.suggestion-cell');
-                        if (scoreCell) scoreCell.textContent = '-';
-                        if (resultCell) resultCell.textContent = '-';
-                        if (suggCell) suggCell.textContent = '-';
+                        if (scoreCell) scoreCell.textContent = 'mocked';
+                        if (resultCell) resultCell.textContent = 'mocked';
+                        if (suggCell) suggCell.textContent = 'mocked';
                     });
                     
                     // Start job
@@ -1841,16 +1754,21 @@ if ($debug_mode) {
 
                             function renderStars(score) {
                                 if (score === null || score === undefined) return '(N/A)';
-                                const s = Math.max(0, Math.min(3, Number(score)));
+                                if (typeof score === 'string' && score.toLowerCase() === 'mocked') return 'mocked';
+                                const n = Number(score);
+                                if (Number.isNaN(n)) return 'mocked';
+                                const s = Math.max(0, Math.min(3, n));
                                 const filled = '★'.repeat(s);
                                 const empty = '☆'.repeat(3 - s);
                                 return filled + empty + ' (' + s + '/3)';
                             }
 
                             function rowClassForScore(score) {
-                                const s = Number(score);
-                                if (s >= 3) return 'table-success';
-                                if (s === 2) return 'table-warning';
+                                if (typeof score === 'string' && score.toLowerCase() === 'mocked') return '';
+                                const n = Number(score);
+                                if (!Number.isFinite(n)) return '';
+                                if (n >= 3) return 'table-success';
+                                if (n === 2) return 'table-warning';
                                 return 'table-danger';
                             }
 
