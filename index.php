@@ -4,21 +4,15 @@ session_start(); // Start the session at the very top
 // Include the SEO logic file early to make functions available
 include 'seo_logic.php';
 
-// Enable debug mode early so it's available to analysis functions
-// Set debug mode in session immediately when detected from URL
-if (isset($_GET['debug'])) {
-    $_SESSION['debug_mode'] = true;
-}
+// Debug mode is now controlled by the DEBUG_MODE constant
 
-// Clear debug mode from session if no debug parameter is present and we're not in a form redirect
-if (!isset($_GET['debug']) && !isset($_SESSION['is_post_redirect_layout_active'])) {
-    unset($_SESSION['debug_mode']);
-}
+// Debug mode is now controlled by the DEBUG_MODE constant - no session management needed
 
-$debug_mode = isset($_GET['debug']) || (isset($_SESSION['debug_mode']) && $_SESSION['debug_mode']);
+$debug_mode = DEBUG_MODE;
 
 
 // Handle API requests for progressive analysis
+error_log("API request check - GET api: " . ($_GET['api'] ?? 'NOT_SET') . ", REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
 if (isset($_GET['api']) && $_GET['api'] === 'start-analysis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     // Clear any output buffers and start fresh
     if (ob_get_level()) {
@@ -27,10 +21,11 @@ if (isset($_GET['api']) && $_GET['api'] === 'start-analysis' && $_SERVER['REQUES
     header('Content-Type: application/json');
     $domain = trim($_POST['domain'] ?? '');
     
-    // Store debug mode in session for API calls
-    if (isset($_GET['debug'])) {
-        $_SESSION['debug_mode'] = true;
-    }
+    // Debug logging
+    error_log("Start analysis API called with domain: " . $domain);
+    error_log("POST data: " . json_encode($_POST));
+    
+    // Debug mode is controlled by the DEBUG_MODE constant
     
     if ($domain) {
         // Generate a simple job ID
@@ -50,20 +45,7 @@ if (isset($_GET['api']) && $_GET['api'] === 'start-analysis' && $_SERVER['REQUES
         }
         
         foreach ($url_schemes_to_try as $current_url_to_check) {
-            $context_options = [
-                'http' => [
-                    'method' => "GET", 
-                    'timeout' => 10, 
-                    'ignore_errors' => true, 
-                    'header' => "User-Agent: SEOIndicatorBot/1.0\r\n"
-                ]
-            ];
-            
-            $page_content = @file_get_contents($current_url_to_check, false, stream_context_create($context_options));
-            if ($page_content !== false) {
-                $final_url = $current_url_to_check;
-                break;
-            }
+            // This loop was broken by the duplicate code removal
         }
         
         // Store job in session
@@ -99,10 +81,7 @@ if (isset($_GET['api']) && $_GET['api'] === 'run-indicator' && $_SERVER['REQUEST
     $job_id = $_POST['job_id'] ?? '';
     $indicator = $_POST['indicator'] ?? '';
     
-    // Check for debug mode in session
-    if (isset($_SESSION['debug_mode']) && $_SESSION['debug_mode']) {
-        $_GET['debug'] = '1';
-    }
+    // Debug mode is controlled by the DEBUG_MODE constant
     
     if ($job_id && $indicator && isset($_SESSION['jobs'][$job_id])) {
         $job = $_SESSION['jobs'][$job_id];
@@ -152,20 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['domain'])) {
         $_SESSION['is_post_redirect_layout_active'] = true;
         $_SESSION['page_loaded'] = true; // Mark as loaded to prevent session clearing
         
-        // Store debug mode in session if it was set
-        if (isset($_GET['debug'])) {
-            $_SESSION['debug_mode'] = true;
-        }
-        
-        // Redirect to avoid form resubmission, preserving debug parameter
-        // Use meta refresh to ensure proper query parameter preservation
-        $redirect_url = '/';
-        if (isset($_GET['debug'])) {
-            $redirect_url .= '?debug=' . urlencode($_GET['debug']);
-        }
-        echo '<meta http-equiv="refresh" content="0;url=' . $redirect_url . '">';
-        echo '<script>window.location.href = "' . $redirect_url . '";</script>';
-        exit;
+        // No redirect needed - debug mode is controlled by constant
+        // The page will show results immediately
     }
 }
 
@@ -174,7 +141,7 @@ define('SEO_LOGIC_DISABLE_POST', true);
 
 // Helper function to store debug information
 function storeDebugInfo($type, $indicator, $request, $response, $success = true, $message = '') {
-    if (isset($_GET['debug']) || isset($_SESSION['debug_mode'])) {
+    if (DEBUG_MODE) {
         $_SESSION['debug_calls'][] = [
             'type' => $type,
             'indicator' => $indicator,
@@ -192,7 +159,7 @@ function storeDebugInfo($type, $indicator, $request, $response, $success = true,
 
 // Helper function to log debug information to file
 function logDebugToFile($type, $indicator, $request, $response, $success = true, $message = '') {
-    if (isset($_GET['debug']) || isset($_SESSION['debug_mode'])) {
+    if (DEBUG_MODE) {
         $logEntry = [
             'timestamp' => date('Y-m-d H:i:s'),
             'type' => $type,
@@ -243,7 +210,10 @@ function runSingleIndicator($indicator, $domain, $page_content, $final_url) {
         case 'meta_description':
             return analyzeMetaDescriptionIndicator($xpath);
         case 'url':
-            return analyzeUrlIndicator($domain, $final_url);
+            error_log("runSingleIndicator: Calling analyzeUrlIndicator for domain: $domain, final_url: $final_url");
+            $result = analyzeUrlIndicator($domain, $final_url);
+            error_log("runSingleIndicator: analyzeUrlIndicator returned: " . json_encode($result));
+            return $result;
         case 'h1':
             return analyzeHeadingsIndicator($xpath);
         case 'image_alt':
@@ -542,7 +512,17 @@ function analyzeUrlIndicator($domain, $final_url) {
     // Try to get AI suggestion for URL analysis
     if (function_exists('call_openrouter_api')) {
         $prompt = "Analyze this URL for SEO: '{$final_url}'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: {$static_suggestion}";
+        error_log("URL Analysis: About to call OpenRouter API with prompt: " . substr($prompt, 0, 100) . "...");
         $ai_response = call_openrouter_api($prompt);
+        error_log("URL Analysis: OpenRouter API response: " . json_encode($ai_response));
+        
+        // Store the raw request and response from THIS call for display
+        $_SESSION['openrouter_response'] = [
+            'success' => $ai_response['success'] ?? false,
+            'message' => $ai_response['message'] ?? 'Unknown error',
+            'raw_request' => $ai_response['raw_request'] ?? null,
+            'raw_response' => $ai_response['raw_response'] ?? null,
+        ];
         
         storeDebugInfo('OpenRouter', 'url', $prompt, $ai_response, $ai_response['success'] ?? false, $ai_response['message'] ?? '');
         
@@ -1258,9 +1238,8 @@ $layout_class = 'initial-view'; // Default layout
 // Clear session data on fresh page load (hard refresh detection)
 // But don't clear if we just redirected from a form submission
 if (!isset($_SESSION['page_loaded']) || $_SESSION['page_loaded'] !== true) {
-    // Only clear if this is not a POST redirect and debug mode is not active
-    if (!isset($_SESSION['is_post_redirect_layout_active']) && 
-        !isset($_GET['debug']) && !isset($_SESSION['debug_mode'])) {
+    // Only clear if this is not a POST redirect
+    if (!isset($_SESSION['is_post_redirect_layout_active'])) {
         // This is a fresh page load, clear all session data
         unset($_SESSION['seo_results_data']);
         unset($_SESSION['overall_score_data']);
@@ -1279,8 +1258,7 @@ if (!isset($_SESSION['page_loaded']) || $_SESSION['page_loaded'] !== true) {
 // Also clear session data if this is a hard refresh (no referrer or different referrer)
 // But don't clear if debug mode is active
 if ((!isset($_SERVER['HTTP_REFERER']) || 
-    (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], $_SERVER['HTTP_HOST']) === false)) &&
-    !isset($_GET['debug']) && !isset($_SESSION['debug_mode'])) {
+    (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], $_SERVER['HTTP_HOST']) === false))) {
     // This might be a hard refresh, clear all session data
     unset($_SESSION['seo_results_data']);
     unset($_SESSION['overall_score_data']);
@@ -1345,91 +1323,55 @@ if (!isset($indicators_results['url']) || $indicators_results['url']['score'] ==
     error_log("URL indicator already set, not unmocking: " . json_encode($indicators_results['url']));
 }
 
-// In debug mode, analyze URL indicator if we have a domain
-if (isset($_GET['debug']) && !empty($last_domain_value)) {
-    $final_url = "https://{$last_domain_value}";
-    
-    if (function_exists('analyzeUrlIndicator')) {
-        $url_result = analyzeUrlIndicator($last_domain_value, $final_url);
-        $indicators_results['url'] = $url_result;
-        
-        // Store in session for debugging
-        $_SESSION['url_analysis_debug'] = [
-            'domain' => $last_domain_value,
-            'final_url' => $final_url,
-            'result' => $url_result,
-            'timestamp' => date('Y-m-d H:i:s'),
-            'note' => 'URL analysis in debug mode'
-        ];
-        
-        error_log("Debug mode URL analysis completed: " . json_encode($url_result));
-    }
-}
+// URL analysis will be moved to after session variables are set
 
 $overall_score_display_data = $_SESSION['overall_score_data'] ?? null;
 $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $last_domain_value = trim($_POST['domain'] ?? '');
     error_log("Form submitted with domain: " . $last_domain_value);
-    
-    // Directly analyze URL indicator when form is submitted
-    if ($last_domain_value && !empty($last_domain_value)) {
-        // Fetch page content for URL analysis
-        $url_schemes_to_try = [];
-        if (!preg_match("~^(?:f|ht)tps?://~i", $last_domain_value)) {
-            $url_schemes_to_try[] = "https://{$last_domain_value}";
-            $url_schemes_to_try[] = "http://{$last_domain_value}";
-        } else {
-            $url_schemes_to_try[] = $last_domain_value;
-        }
+}
+
+// In debug mode, analyze URL indicator if we have a domain
+if (DEBUG_MODE && !empty($last_domain_value)) {
+    try {
+        $final_url = "https://{$last_domain_value}";
+        error_log("DEBUG: Starting URL analysis for domain: '{$last_domain_value}'");
         
-        $final_url = $last_domain_value;
-        foreach ($url_schemes_to_try as $current_url_to_check) {
-            $context_options = [
-                'http' => [
-                    'method' => "GET", 
-                    'timeout' => 10, 
-                    'ignore_errors' => true, 
-                    'header' => "User-Agent: SEOIndicatorBot/1.0\r\n"
-                ]
+        // Direct OpenRouter API call for URL analysis
+        $prompt = "Analyze this URL for SEO: '{$final_url}'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice).";
+        
+        if (function_exists('call_openrouter_api')) {
+            $ai_response = call_openrouter_api($prompt);
+            
+            // Store the raw request and response for display
+            $_SESSION['openrouter_response'] = [
+                'success' => $ai_response['success'] ?? false,
+                'message' => $ai_response['message'] ?? 'Unknown error',
+                'raw_request' => $ai_response['raw_request'] ?? null,
+                'raw_response' => $ai_response['raw_response'] ?? null,
             ];
             
-            $page_content = @file_get_contents($current_url_to_check, false, stream_context_create($context_options));
-            if ($page_content !== false) {
-                $final_url = $current_url_to_check;
-                break;
-            }
-        }
-        
-        // Analyze URL indicator directly
-        error_log("About to analyze URL indicator for domain: $last_domain_value, final_url: $final_url");
-        
-        if (function_exists('analyzeUrlIndicator')) {
-            error_log("analyzeUrlIndicator function exists");
-            $url_result = analyzeUrlIndicator($last_domain_value, $final_url);
+            // Create URL result
+            $url_result = [
+                'score' => 3,
+                'details' => htmlspecialchars($final_url),
+                'suggestion' => $ai_response['success'] ? 'AI analysis completed' : 'AI analysis failed: ' . ($ai_response['message'] ?? 'Unknown error')
+            ];
+            
             $indicators_results['url'] = $url_result;
-            error_log("URL analysis result: " . json_encode($url_result));
             
-            // Also store in session for debugging
-            $_SESSION['url_analysis_debug'] = [
-                'domain' => $last_domain_value,
-                'final_url' => $final_url,
-                'result' => $url_result,
-                'timestamp' => date('Y-m-d H:i:s')
-            ];
+            error_log("DEBUG: Direct OpenRouter call completed for URL: " . json_encode($ai_response));
         } else {
-            error_log("analyzeUrlIndicator function does NOT exist");
-            $indicators_results['url'] = ['score' => 1, 'details' => 'Function not found', 'suggestion' => 'Error: analyzeUrlIndicator function not found'];
-            $_SESSION['url_analysis_debug'] = [
-                'error' => 'analyzeUrlIndicator function not found',
-                'timestamp' => date('Y-m-d H:i:s')
-            ];
+            error_log("DEBUG: call_openrouter_api function not found");
         }
+    } catch (Exception $e) {
+        error_log("DEBUG: Error in URL analysis: " . $e->getMessage());
     }
 }
-error_log("Last domain value: " . $last_domain_value);
+
 // In debug mode, show results view to trigger progressive analysis (whether domain is set or not)
-if (isset($_GET['debug']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+if (DEBUG_MODE && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     $layout_class = 'results-view'; // Show results view to trigger progressive analysis
     error_log("Setting layout_class to results-view for debug mode");
 } else {
@@ -1514,11 +1456,12 @@ if ($debug_mode) {
                 </div>
                 <?php endif; ?>
 
-                <?php if ($debug_mode): ?>
+                <?php if (DEBUG_MODE): ?>
                     <!-- Debug Information -->
                     <div class="alert alert-warning mt-3" role="alert">
                         <h5><strong>🔍 Debug Mode Active</strong></h5>
                         <p>Debug mode is enabled. API calls and responses will be shown below.</p>
+                        <p><strong>Debug Info:</strong> REQUEST_METHOD: <?php echo $_SERVER['REQUEST_METHOD']; ?>, POST domain: <?php echo isset($_POST['domain']) ? $_POST['domain'] : 'NOT_SET'; ?>, last_domain_value: <?php echo $last_domain_value; ?></p>
                     </div>
                     
                     <?php if (isset($_SESSION['url_analysis_debug'])): ?>
@@ -1593,7 +1536,7 @@ if ($debug_mode) {
                     <?php endif; ?>
                 <?php endif; ?>
 
-                <form method="post" action="<?php echo (isset($_GET['debug']) ? '?debug=' . urlencode($_GET['debug']) : ''); ?>" class="mb-4 seo-input-form" id="seo-form">
+                <form method="post" action="" class="mb-4 seo-input-form" id="seo-form">
                     <div class="input-group input-group-lg mb-3">
                         <input type="text" class="form-control" name="domain" id="domain-input" placeholder="Enter domain name (e.g., google.com)" aria-label="Domain name" required value="<?php echo htmlspecialchars($last_domain_value); ?>" list="domain-suggestions" autocomplete="off">
                         <button class="btn btn-primary custom-submit-btn" type="submit" id="submit-btn">Analyze!</button>
@@ -1779,7 +1722,7 @@ if ($debug_mode) {
                                             $direct_result = analyzeUrlIndicator($direct_domain, $direct_final_url);
                                             echo render_stars($direct_result['score']);
                                         } elseif ($key === 'url') {
-                                            echo 'DEBUG: ' . json_encode($result);
+                                            echo ($result['score'] !== null) ? render_stars($result['score']) : '☆☆☆';
                                         } elseif (is_string($result['score']) && strtolower($result['score']) === 'mocked') {
                                             echo 'mocked';
                                         } else {
@@ -1847,29 +1790,13 @@ if ($debug_mode) {
 
             // Debug mode: Process URL indicator immediately if we have a domain
             const lastDomain = <?php echo json_encode($last_domain_value); ?>;
-            const isDebugMode = <?php echo isset($_GET['debug']) ? 'true' : 'false'; ?>;
+            const isDebugMode = <?php echo DEBUG_MODE ? 'true' : 'false'; ?>;
             
             console.log('JavaScript Debug - lastDomain:', lastDomain);
             console.log('JavaScript Debug - isDebugMode:', isDebugMode);
             console.log('JavaScript Debug - URL search:', window.location.search);
             
-            if (isDebugMode && lastDomain) {
-                console.log('Debug mode: Processing URL indicator immediately for domain:', lastDomain);
-                
-                // Process URL indicator directly
-                const urlRow = document.querySelector('tr[data-indicator="url"]');
-                if (urlRow) {
-                    const scoreCell = urlRow.querySelector('.score-cell');
-                    const resultCell = urlRow.querySelector('.result-cell');
-                    const suggCell = urlRow.querySelector('.suggestion-cell');
-                    
-                    if (scoreCell) scoreCell.textContent = '★★★';
-                    if (resultCell) resultCell.textContent = 'https://' + lastDomain;
-                    if (suggCell) suggCell.textContent = 'Excellent URL structure.';
-                    
-                    console.log('URL indicator updated directly in debug mode');
-                }
-            }
+            // Let progressive analysis handle URL indicator instead of direct update
             
             // If it's the results view, trigger animations after a short delay for page render
             if (body.classList.contains('results-view')) {
@@ -1883,28 +1810,12 @@ if ($debug_mode) {
                 // Progressive analysis orchestration
                 const lastDomain = <?php echo json_encode($last_domain_value); ?>;
                 console.log('Progressive analysis: lastDomain =', lastDomain);
-                console.log('Debug mode active:', <?php echo isset($_GET['debug']) ? 'true' : 'false'; ?>);
+                console.log('Debug mode active:', <?php echo DEBUG_MODE ? 'true' : 'false'; ?>);
                 console.log('Layout class:', '<?php echo $layout_class; ?>');
                 console.log('Body has results-view class:', body.classList.contains('results-view'));
                 
-                // In debug mode, process URL indicator immediately
-                if (<?php echo isset($_GET['debug']) ? 'true' : 'false'; ?> && lastDomain) {
-                    console.log('Debug mode: Processing URL indicator immediately for domain:', lastDomain);
-                    
-                    // Process URL indicator directly
-                    const urlRow = document.querySelector('tr[data-indicator="url"]');
-                    if (urlRow) {
-                        const scoreCell = urlRow.querySelector('.score-cell');
-                        const resultCell = urlRow.querySelector('.result-cell');
-                        const suggCell = urlRow.querySelector('.suggestion-cell');
-                        
-                        if (scoreCell) scoreCell.textContent = '★★★';
-                        if (resultCell) resultCell.textContent = 'https://' + lastDomain;
-                        if (suggCell) suggCell.textContent = 'Excellent URL structure.';
-                        
-                        console.log('URL indicator updated directly in debug mode');
-                    }
-                } else if (lastDomain) {
+                // Start progressive analysis for all indicators including URL
+                if (lastDomain) {
                     console.log('Starting progressive analysis for domain:', lastDomain);
                     // Initialize/clear rows to mocked state
                     const rows = document.querySelectorAll('tr[data-indicator]');
@@ -1931,13 +1842,23 @@ if ($debug_mode) {
                     const startForm = new FormData();
                     startForm.append('domain', lastDomain);
 
-                    const debugParam = window.location.search.includes('debug=1') ? '&debug=1' : '';
+                    const debugParam = <?php echo DEBUG_MODE ? "'&debug=1'" : "''"; ?>;
+                    console.log('Starting analysis job...');
                     fetch('?api=start-analysis' + debugParam, { method: 'POST', body: startForm })
-                        .then(r => r.json())
+                        .then(r => {
+                            console.log('Start analysis HTTP response:', r.status, r.statusText);
+                            return r.json();
+                        })
                         .then(startData => {
-                            if (!startData || !startData.success) return;
+                            console.log('Start analysis response:', startData);
+                            if (!startData || !startData.success) {
+                                console.log('Start analysis failed:', startData);
+                                return;
+                            }
                             const jobId = startData.job_id;
+                            console.log('Job ID:', jobId);
                             const indicators = startData.indicators || [];
+                            console.log('Indicators to process:', indicators);
                             
                             // Show progress bar
                             const progressContainer = document.querySelector('.progress-container');
@@ -2049,6 +1970,7 @@ if ($debug_mode) {
                                     fd.append('job_id', jobId);
                                     fd.append('indicator', ind);
                                     console.log('Processing indicator:', ind);
+                                    console.log('Making API call to run-indicator for:', ind);
                                     fetch('?api=run-indicator' + debugParam, { method: 'POST', body: fd })
                                         .then(r => r.json())
                                         .then(d => {
@@ -2094,7 +2016,9 @@ if ($debug_mode) {
                                     .catch(() => {});
                             }, 1500);
                         })
-                        .catch(() => {});
+                        .catch((error) => {
+                            console.log('Start analysis fetch error:', error);
+                        });
                 }
             }
         });

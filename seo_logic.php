@@ -1,4 +1,9 @@
 <?php
+// Debug mode constant - set to true to enable debug mode for the entire system
+if (!defined('DEBUG_MODE')) {
+    define('DEBUG_MODE', true);
+}
+
 // Include Database Configuration
 require_once 'db_config.php';
 require_once 'config.php'; // Include the new config file
@@ -8,15 +13,44 @@ if (defined('SEO_LOGIC_DISABLE_POST') && SEO_LOGIC_DISABLE_POST) {
     $_SERVER['REQUEST_METHOD'] = 'GET';
 }
 
+
 // Helper function to call OpenRouter API
 function call_openrouter_api($prompt_message) {
-    // Check if debug mode is active - if so, skip API call entirely
-    $get_debug = isset($_GET['debug']);
-    $session_debug = isset($_SESSION['debug_mode']) && $_SESSION['debug_mode'];
+    error_log("OpenRouter API called with prompt: " . substr($prompt_message, 0, 100) . "...");
     
-    if ($get_debug || $session_debug) {
-        $debug_info = "GET debug: " . ($get_debug ? 'YES' : 'NO') . ", Session debug: " . ($session_debug ? 'YES' : 'NO');
-        return ['success' => false, 'message' => '🔧 DEBUG: OpenRouter API call skipped in debug mode (' . $debug_info . ')', 'raw_request' => null, 'raw_response' => null];
+    // Check if debug mode is active - if so, skip API call entirely
+    // EXCEPT for URL indicator which should be unmocked
+    if (DEBUG_MODE) {
+        error_log("DEBUG_MODE is active");
+        
+        // Check if this is a URL analysis call by looking for URL-specific keywords in the prompt
+        $url_keywords = [
+            'URL',
+            'domain name', 
+            'Analyze the following URL',
+            'Analyze the following domain name',
+            'Analyze this URL for SEO',
+            'URL for SEO'
+        ];
+        
+        $is_url_analysis = false;
+        foreach ($url_keywords as $keyword) {
+            if (strpos($prompt_message, $keyword) !== false) {
+                $is_url_analysis = true;
+                error_log("URL keyword found: '{$keyword}'");
+                break;
+            }
+        }
+        
+        error_log("Full prompt: " . $prompt_message);
+        error_log("Is URL analysis: " . ($is_url_analysis ? 'YES' : 'NO'));
+        
+        if (!$is_url_analysis) {
+            error_log("Skipping non-URL analysis in debug mode");
+            return ['success' => false, 'message' => '🔧 DEBUG: OpenRouter API call skipped in debug mode', 'raw_request' => null, 'raw_response' => null];
+        }
+        error_log("Proceeding with URL analysis in debug mode");
+        // If it's URL analysis, continue with the actual API call
     }
 
     if (!defined('OPENROUTER_API_KEY') || OPENROUTER_API_KEY === '') {
@@ -48,7 +82,9 @@ function call_openrouter_api($prompt_message) {
             "X-Title: " . $your_site_name      
         ],
         CURLOPT_POSTFIELDS => $request_payload_json,
-        CURLOPT_TIMEOUT => 30 
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false
     ]);
 
     $raw_response = curl_exec($ch);
@@ -78,7 +114,7 @@ function call_openrouter_api($prompt_message) {
 // Function to call Google PageSpeed Insights API
 function call_pagespeed_insights_api($url) {
     // Check if debug mode is active - if so, skip API call entirely
-    if (isset($_GET['debug']) || (isset($_SESSION['debug_mode']) && $_SESSION['debug_mode'])) {
+    if (DEBUG_MODE) {
         return ['success' => false, 'message' => '🔧 DEBUG: Google PageSpeed API call skipped in debug mode', 'raw_request' => null, 'raw_response' => null];
     }
 
@@ -2987,7 +3023,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $total_possible_stars_numeric = 0; // Sum of max possible stars (3 per indicator)
 
     // In debug mode, calculate overall score only for unmocked indicators (like URL)
-    if (isset($_GET['debug']) || (isset($_SESSION['debug_mode']) && $_SESSION['debug_mode'])) {
+    if (DEBUG_MODE) {
         // Only include unmocked indicators in debug mode
         $debug_active_indicators = ['url']; // Only URL indicator is unmocked
         $debug_total_weighted_score = 0;
