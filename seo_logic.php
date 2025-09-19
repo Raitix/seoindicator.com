@@ -2986,11 +2986,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $total_achieved_stars_numeric = 0; // Sum of actual stars for all indicators
     $total_possible_stars_numeric = 0; // Sum of max possible stars (3 per indicator)
 
-    // In debug mode, don't calculate overall score - leave as N/A
+    // In debug mode, calculate overall score only for unmocked indicators (like URL)
     if (isset($_GET['debug']) || (isset($_SESSION['debug_mode']) && $_SESSION['debug_mode'])) {
-        $final_overall_score = null; // No score in debug mode
-        $total_achieved_stars_numeric = 0; // No achieved stars in debug mode
-        $total_possible_stars_numeric = 0; // No possible stars in debug mode
+        // Only include unmocked indicators in debug mode
+        $debug_active_indicators = ['url']; // Only URL indicator is unmocked
+        $debug_total_weighted_score = 0;
+        $debug_total_weight = 0;
+        $debug_total_achieved_stars_numeric = 0;
+        $debug_total_possible_stars_numeric = 0;
+        
+        foreach ($current_run_results as $key => $result_item) {
+            if (isset($indicator_weights[$key]) && is_numeric($result_item['score']) && in_array($key, $debug_active_indicators)) {
+                $weight = $indicator_weights[$key];
+                $score_val = (int)$result_item['score']; 
+                
+                $debug_total_weighted_score += ($score_val * $weight);
+                $debug_total_weight += $weight;
+                
+                $debug_total_achieved_stars_numeric += $score_val;
+                $debug_total_possible_stars_numeric += 3; 
+            }
+        }
+        
+        if ($debug_total_weight > 0) {
+            $debug_average_score = $debug_total_weighted_score / $debug_total_weight;
+            if ($debug_average_score >= 2.5) {
+                $final_overall_score = 3;
+            } elseif ($debug_average_score >= 1.5) {
+                $final_overall_score = 2;
+            } else {
+                $final_overall_score = 1;
+            }
+        } else {
+            $final_overall_score = null;
+        }
+        
+        $total_achieved_stars_numeric = $debug_total_achieved_stars_numeric;
+        $total_possible_stars_numeric = $debug_total_possible_stars_numeric;
     } else {
 
     if ($site_is_accessible) {

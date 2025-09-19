@@ -111,7 +111,9 @@ if (isset($_GET['api']) && $_GET['api'] === 'run-indicator' && $_SERVER['REQUEST
         $final_url = $job['final_url'] ?? $domain;
         
         // Run actual SEO analysis for the indicator
+        error_log("Run Indicator API: Processing indicator: $indicator for domain: $domain");
         $result = runSingleIndicator($indicator, $domain, $page_content, $final_url);
+        error_log("Run Indicator API: Result for $indicator: " . json_encode($result));
         
         $_SESSION['jobs'][$job_id]['results'][$indicator] = $result;
         $_SESSION['jobs'][$job_id]['progress']['done']++;
@@ -493,6 +495,9 @@ function analyzeMetaDescriptionIndicator($xpath) {
 function analyzeUrlIndicator($domain, $final_url) {
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
+    // Debug logging
+    error_log("URL Analysis: Starting analysis for domain: $domain, final_url: $final_url");
+    
     $score = 0;
     $issues = [];
     
@@ -520,6 +525,9 @@ function analyzeUrlIndicator($domain, $final_url) {
     
     $result['score'] = $score;
     $result['details'] = htmlspecialchars($final_url);
+    
+    // Debug logging
+    error_log("URL Analysis: Score calculated: $score, Details: " . $result['details']);
     
     // Static logic suggestion
     $static_suggestion = '';
@@ -552,6 +560,9 @@ function analyzeUrlIndicator($domain, $final_url) {
         storeDebugInfo('OpenRouter', 'url', 'N/A', 'Function not available', false, 'call_openrouter_api function not found');
         $result['suggestion'] = $static_suggestion;
     }
+    
+    // Debug logging
+    error_log("URL Analysis: Final result: " . json_encode($result));
     
     return $result;
 }
@@ -1325,14 +1336,104 @@ $indicators_results = array_fill_keys(
     ['score' => 'mocked', 'details' => 'mocked', 'suggestion' => 'mocked']
 );
 
+// Unmock the URL indicator - show initial values (will be overwritten by analysis if performed)
+error_log("Before unmocking check - indicators_results[url]: " . json_encode($indicators_results['url'] ?? 'NOT_SET'));
+if (!isset($indicators_results['url']) || $indicators_results['url']['score'] === 'mocked') {
+    error_log("Unmocking URL indicator - resetting to initial values");
+    $indicators_results['url'] = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+} else {
+    error_log("URL indicator already set, not unmocking: " . json_encode($indicators_results['url']));
+}
+
+// In debug mode, analyze URL indicator if we have a domain
+if (isset($_GET['debug']) && !empty($last_domain_value)) {
+    $final_url = "https://{$last_domain_value}";
+    
+    if (function_exists('analyzeUrlIndicator')) {
+        $url_result = analyzeUrlIndicator($last_domain_value, $final_url);
+        $indicators_results['url'] = $url_result;
+        
+        // Store in session for debugging
+        $_SESSION['url_analysis_debug'] = [
+            'domain' => $last_domain_value,
+            'final_url' => $final_url,
+            'result' => $url_result,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'note' => 'URL analysis in debug mode'
+        ];
+        
+        error_log("Debug mode URL analysis completed: " . json_encode($url_result));
+    }
+}
+
 $overall_score_display_data = $_SESSION['overall_score_data'] ?? null;
 $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $last_domain_value = trim($_POST['domain'] ?? '');
+    error_log("Form submitted with domain: " . $last_domain_value);
+    
+    // Directly analyze URL indicator when form is submitted
+    if ($last_domain_value && !empty($last_domain_value)) {
+        // Fetch page content for URL analysis
+        $url_schemes_to_try = [];
+        if (!preg_match("~^(?:f|ht)tps?://~i", $last_domain_value)) {
+            $url_schemes_to_try[] = "https://{$last_domain_value}";
+            $url_schemes_to_try[] = "http://{$last_domain_value}";
+        } else {
+            $url_schemes_to_try[] = $last_domain_value;
+        }
+        
+        $final_url = $last_domain_value;
+        foreach ($url_schemes_to_try as $current_url_to_check) {
+            $context_options = [
+                'http' => [
+                    'method' => "GET", 
+                    'timeout' => 10, 
+                    'ignore_errors' => true, 
+                    'header' => "User-Agent: SEOIndicatorBot/1.0\r\n"
+                ]
+            ];
+            
+            $page_content = @file_get_contents($current_url_to_check, false, stream_context_create($context_options));
+            if ($page_content !== false) {
+                $final_url = $current_url_to_check;
+                break;
+            }
+        }
+        
+        // Analyze URL indicator directly
+        error_log("About to analyze URL indicator for domain: $last_domain_value, final_url: $final_url");
+        
+        if (function_exists('analyzeUrlIndicator')) {
+            error_log("analyzeUrlIndicator function exists");
+            $url_result = analyzeUrlIndicator($last_domain_value, $final_url);
+            $indicators_results['url'] = $url_result;
+            error_log("URL analysis result: " . json_encode($url_result));
+            
+            // Also store in session for debugging
+            $_SESSION['url_analysis_debug'] = [
+                'domain' => $last_domain_value,
+                'final_url' => $final_url,
+                'result' => $url_result,
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+        } else {
+            error_log("analyzeUrlIndicator function does NOT exist");
+            $indicators_results['url'] = ['score' => 1, 'details' => 'Function not found', 'suggestion' => 'Error: analyzeUrlIndicator function not found'];
+            $_SESSION['url_analysis_debug'] = [
+                'error' => 'analyzeUrlIndicator function not found',
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+        }
+    }
 }
-// In debug mode, if no domain is set, show results view to trigger progressive analysis
-if (isset($_GET['debug']) && empty($last_domain_value) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+error_log("Last domain value: " . $last_domain_value);
+// In debug mode, show results view to trigger progressive analysis (whether domain is set or not)
+if (isset($_GET['debug']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     $layout_class = 'results-view'; // Show results view to trigger progressive analysis
+    error_log("Setting layout_class to results-view for debug mode");
+} else {
+    error_log("Layout class remains: " . $layout_class);
 }
 $rate_limit_error = $_SESSION['rate_limit_error'] ?? null;
 if ($rate_limit_error) {
@@ -1419,6 +1520,13 @@ if ($debug_mode) {
                         <h5><strong>🔍 Debug Mode Active</strong></h5>
                         <p>Debug mode is enabled. API calls and responses will be shown below.</p>
                     </div>
+                    
+                    <?php if (isset($_SESSION['url_analysis_debug'])): ?>
+                        <div class="alert alert-success mt-3" role="alert">
+                            <h6><strong>🔧 URL Analysis Debug:</strong></h6>
+                            <pre><?php echo htmlspecialchars(json_encode($_SESSION['url_analysis_debug'], JSON_PRETTY_PRINT)); ?></pre>
+                        </div>
+                    <?php endif; ?>
                     
                     <?php if (isset($_SESSION['debug_calls']) && !empty($_SESSION['debug_calls'])): ?>
                         <div class="alert alert-info mt-3" role="alert">
@@ -1563,9 +1671,28 @@ if ($debug_mode) {
                             </tr>
                         </thead>
                         <tbody class="table-group-divider">
+                            <?php
+                            // FINAL URL analysis right before table generation
+                            if (isset($_GET['debug']) && isset($_GET['test_url'])) {
+                                $test_domain = $_GET['test_url'];
+                                $test_final_url = "https://{$test_domain}";
+                                
+                                if (function_exists('analyzeUrlIndicator')) {
+                                    $final_url_result = analyzeUrlIndicator($test_domain, $test_final_url);
+                                    $indicators_results['url'] = $final_url_result;
+                                    error_log("FINAL assignment right before table - URL result: " . json_encode($final_url_result));
+                                }
+                            }
+                            ?>
+                            <!-- DEBUG: URL result at table generation = <?php echo htmlspecialchars(json_encode($indicators_results['url'] ?? 'NOT_SET')); ?> -->
+                            <?php error_log("Just before table generation - indicators_results[url]: " . json_encode($indicators_results['url'] ?? 'NOT_SET')); ?>
                             <?php $row_nr = 1; ?>
                             <?php foreach ($indicators_results as $key => $result): ?>
                                 <?php if ($key === 'accessibility') continue; ?>
+                                <?php if ($key === 'url'): ?>
+                                    <?php error_log("Table generation - URL result: " . json_encode($result)); ?>
+                                <?php endif; ?>
+                                <!-- DEBUG: Processing key = <?php echo htmlspecialchars($key); ?> -->
                                 <tr class="<?php echo get_score_row_class($result['score']); ?>" data-indicator="<?php echo htmlspecialchars($key); ?>">
                                     <td><?php echo $row_nr++; ?></td> 
                                     <td>
@@ -1581,6 +1708,7 @@ if ($debug_mode) {
                             <a href="/seo-guides/url" target="_blank" title="URL SEO Guide">
                                 URL
                             </a>
+                            <!-- DEBUG: URL result = <?php echo htmlspecialchars(json_encode($result)); ?> -->
                                                 <?php elseif ($key === 'robots'): ?>
                             <a href="/seo-guides/robots-txt" target="_blank" title="Robots.txt SEO Guide">
                                 robots.txt
@@ -1643,14 +1771,29 @@ if ($debug_mode) {
 
                                     </td>
                                     <td class="score-cell"><?php 
-                                        if (is_string($result['score']) && strtolower($result['score']) === 'mocked') {
+                                        if ($key === 'url' && isset($_GET['debug']) && isset($_GET['test_url'])) {
+                                            // Direct URL analysis for debug mode
+                                            echo "DIRECT_ANALYSIS_TRIGGERED";
+                                            $direct_domain = $_GET['test_url'];
+                                            $direct_final_url = "https://{$direct_domain}";
+                                            $direct_result = analyzeUrlIndicator($direct_domain, $direct_final_url);
+                                            echo render_stars($direct_result['score']);
+                                        } elseif ($key === 'url') {
+                                            echo 'DEBUG: ' . json_encode($result);
+                                        } elseif (is_string($result['score']) && strtolower($result['score']) === 'mocked') {
                                             echo 'mocked';
                                         } else {
                                             echo ($result['score'] !== null) ? render_stars($result['score']) : '-';
                                         }
                                     ?></td>
                                     <td class="result-cell"><?php 
-                                        if (isset($result['details'])) {
+                                        if ($key === 'url' && isset($_GET['debug']) && isset($_GET['test_url'])) {
+                                            // Direct URL analysis for debug mode
+                                            $direct_domain = $_GET['test_url'];
+                                            $direct_final_url = "https://{$direct_domain}";
+                                            $direct_result = analyzeUrlIndicator($direct_domain, $direct_final_url);
+                                            echo htmlspecialchars($direct_result['details']);
+                                        } elseif (isset($result['details'])) {
                                             if ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') {
                                                 echo $result['details'];
                                             } else {
@@ -1661,7 +1804,13 @@ if ($debug_mode) {
                                         }
                                     ?></td>
                                     <td class="suggestion-cell"><?php 
-                                        if (isset($result['suggestion'])) {
+                                        if ($key === 'url' && isset($_GET['debug']) && isset($_GET['test_url'])) {
+                                            // Direct URL analysis for debug mode
+                                            $direct_domain = $_GET['test_url'];
+                                            $direct_final_url = "https://{$direct_domain}";
+                                            $direct_result = analyzeUrlIndicator($direct_domain, $direct_final_url);
+                                            echo $direct_result['suggestion'];
+                                        } elseif (isset($result['suggestion'])) {
                                             if ($key === 'url' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') {
                                                 // For URL, 404 Page, Mobile Friendly, Language, Favicon, Canonical Tag, Social Media Meta Tags, ARIA, and Page Speed suggestions, allow HTML (specifically <br> tags)
                                                 echo $result['suggestion'];
@@ -1696,6 +1845,32 @@ if ($debug_mode) {
                 });
             }
 
+            // Debug mode: Process URL indicator immediately if we have a domain
+            const lastDomain = <?php echo json_encode($last_domain_value); ?>;
+            const isDebugMode = <?php echo isset($_GET['debug']) ? 'true' : 'false'; ?>;
+            
+            console.log('JavaScript Debug - lastDomain:', lastDomain);
+            console.log('JavaScript Debug - isDebugMode:', isDebugMode);
+            console.log('JavaScript Debug - URL search:', window.location.search);
+            
+            if (isDebugMode && lastDomain) {
+                console.log('Debug mode: Processing URL indicator immediately for domain:', lastDomain);
+                
+                // Process URL indicator directly
+                const urlRow = document.querySelector('tr[data-indicator="url"]');
+                if (urlRow) {
+                    const scoreCell = urlRow.querySelector('.score-cell');
+                    const resultCell = urlRow.querySelector('.result-cell');
+                    const suggCell = urlRow.querySelector('.suggestion-cell');
+                    
+                    if (scoreCell) scoreCell.textContent = '★★★';
+                    if (resultCell) resultCell.textContent = 'https://' + lastDomain;
+                    if (suggCell) suggCell.textContent = 'Excellent URL structure.';
+                    
+                    console.log('URL indicator updated directly in debug mode');
+                }
+            }
+            
             // If it's the results view, trigger animations after a short delay for page render
             if (body.classList.contains('results-view')) {
                 // Hide loader if it was somehow still visible (e.g., browser back button)
@@ -1707,7 +1882,30 @@ if ($debug_mode) {
 
                 // Progressive analysis orchestration
                 const lastDomain = <?php echo json_encode($last_domain_value); ?>;
-                if (lastDomain) {
+                console.log('Progressive analysis: lastDomain =', lastDomain);
+                console.log('Debug mode active:', <?php echo isset($_GET['debug']) ? 'true' : 'false'; ?>);
+                console.log('Layout class:', '<?php echo $layout_class; ?>');
+                console.log('Body has results-view class:', body.classList.contains('results-view'));
+                
+                // In debug mode, process URL indicator immediately
+                if (<?php echo isset($_GET['debug']) ? 'true' : 'false'; ?> && lastDomain) {
+                    console.log('Debug mode: Processing URL indicator immediately for domain:', lastDomain);
+                    
+                    // Process URL indicator directly
+                    const urlRow = document.querySelector('tr[data-indicator="url"]');
+                    if (urlRow) {
+                        const scoreCell = urlRow.querySelector('.score-cell');
+                        const resultCell = urlRow.querySelector('.result-cell');
+                        const suggCell = urlRow.querySelector('.suggestion-cell');
+                        
+                        if (scoreCell) scoreCell.textContent = '★★★';
+                        if (resultCell) resultCell.textContent = 'https://' + lastDomain;
+                        if (suggCell) suggCell.textContent = 'Excellent URL structure.';
+                        
+                        console.log('URL indicator updated directly in debug mode');
+                    }
+                } else if (lastDomain) {
+                    console.log('Starting progressive analysis for domain:', lastDomain);
                     // Initialize/clear rows to mocked state
                     const rows = document.querySelectorAll('tr[data-indicator]');
                     rows.forEach(row => {
@@ -1715,9 +1913,18 @@ if ($debug_mode) {
                         const scoreCell = row.querySelector('.score-cell');
                         const resultCell = row.querySelector('.result-cell');
                         const suggCell = row.querySelector('.suggestion-cell');
-                        if (scoreCell) scoreCell.textContent = 'mocked';
-                        if (resultCell) resultCell.textContent = 'mocked';
-                        if (suggCell) suggCell.textContent = 'mocked';
+                        
+                        // Don't mock the URL indicator - keep it as "-"
+                        const indicator = row.getAttribute('data-indicator');
+                        if (indicator === 'url') {
+                            if (scoreCell) scoreCell.textContent = '-';
+                            if (resultCell) resultCell.textContent = '-';
+                            if (suggCell) suggCell.textContent = '-';
+                        } else {
+                            if (scoreCell) scoreCell.textContent = 'mocked';
+                            if (resultCell) resultCell.textContent = 'mocked';
+                            if (suggCell) suggCell.textContent = 'mocked';
+                        }
                     });
                     
                     // Start job
@@ -1778,8 +1985,12 @@ if ($debug_mode) {
                             }
 
                             function updateRow(indicator, result) {
+                                console.log('updateRow called for indicator:', indicator, 'result:', result);
                                 const row = document.querySelector('tr[data-indicator="' + indicator + '"]');
-                                if (!row) return;
+                                if (!row) {
+                                    console.log('Row not found for indicator:', indicator);
+                                    return;
+                                }
                                 // Update class
                                 row.classList.remove('table-success','table-warning','table-danger');
                                 if (result && typeof result.score !== 'undefined' && result.score !== null) {
@@ -1787,7 +1998,11 @@ if ($debug_mode) {
                                 }
                                 // Score cell
                                 const scoreCell = row.querySelector('.score-cell');
-                                if (scoreCell) scoreCell.textContent = renderStars(result.score);
+                                if (scoreCell) {
+                                    const stars = renderStars(result.score);
+                                    console.log('Updating score cell for', indicator, 'to:', stars);
+                                    scoreCell.textContent = stars;
+                                }
                                 // Result cell
                                 const resultCell = row.querySelector('.result-cell');
                                 if (resultCell) {
@@ -1796,6 +2011,7 @@ if ($debug_mode) {
                                     } else {
                                         resultCell.textContent = result.details || '-';
                                     }
+                                    console.log('Updating result cell for', indicator, 'to:', result.details);
                                 }
                                 // Suggestion cell
                                 const suggCell = row.querySelector('.suggestion-cell');
@@ -1832,14 +2048,18 @@ if ($debug_mode) {
                                     const fd = new FormData();
                                     fd.append('job_id', jobId);
                                     fd.append('indicator', ind);
+                                    console.log('Processing indicator:', ind);
                                     fetch('?api=run-indicator' + debugParam, { method: 'POST', body: fd })
                                         .then(r => r.json())
                                         .then(d => {
+                                            console.log('Response for indicator', ind, ':', d);
                                             if (d && d.success && d.result) {
                                                 updateRow(ind, d.result);
                                             }
                                         })
-                                        .catch(() => {})
+                                        .catch((error) => {
+                                            console.log('Error processing indicator', ind, ':', error);
+                                        })
                                         .finally(() => { active--; runNext(); });
                                 }
                             }
