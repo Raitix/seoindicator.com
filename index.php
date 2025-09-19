@@ -10,6 +10,11 @@ if (isset($_GET['debug'])) {
     $_SESSION['debug_mode'] = true;
 }
 
+// Clear debug mode from session if no debug parameter is present and we're not in a form redirect
+if (!isset($_GET['debug']) && !isset($_SESSION['is_post_redirect_layout_active'])) {
+    unset($_SESSION['debug_mode']);
+}
+
 $debug_mode = isset($_GET['debug']) || (isset($_SESSION['debug_mode']) && $_SESSION['debug_mode']);
 
 
