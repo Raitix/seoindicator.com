@@ -1,0 +1,310 @@
+[2025-09-19 21:25:49] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:26:42] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:27:45] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:28:36] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:29:29] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:30:18] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:30:53] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:31:40] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:32:28] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:33:47] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:33:47] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:34:53] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:34:53] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:34:53] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:34:53] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:34:53] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:35:35] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:35:35] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:35:35] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:35:35] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:35:35] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:36:11] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:36:11] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:36:11] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:36:11] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:36:11] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:36:46] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:36:46] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:36:46] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:36:46] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
+[2025-09-19 21:36:46] OPENROUTER - URL - FAILED - 🔧 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)
+REQUEST: Analyze this URL for SEO: 'https://raitisozols.com'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: Excellent URL structure.
+RESPONSE: {
+    "success": false,
+    "message": "\ud83d\udd27 DEBUG: OpenRouter API call skipped in debug mode (GET debug: YES, Session debug: YES)",
+    "raw_request": null,
+    "raw_response": null
+}
+--------------------------------------------------------------------------------
+
