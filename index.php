@@ -1,10 +1,26 @@
 <?php
 session_start(); // Start the session at the very top
 
+// Include the SEO logic file early to make functions available
+include 'seo_logic.php';
+
+// Enable debug mode early so it's available to analysis functions
+$debug_mode = isset($_GET['debug']);
+
 // Handle API requests for progressive analysis
 if (isset($_GET['api']) && $_GET['api'] === 'start-analysis' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Clear any output buffers and start fresh
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
     header('Content-Type: application/json');
     $domain = trim($_POST['domain'] ?? '');
+    
+    // Store debug mode in session for API calls
+    if (isset($_GET['debug'])) {
+        $_SESSION['debug_mode'] = true;
+    }
+    
     if ($domain) {
         // Generate a simple job ID
         $job_id = uniqid('job_', true);
@@ -64,9 +80,18 @@ if (isset($_GET['api']) && $_GET['api'] === 'start-analysis' && $_SERVER['REQUES
 }
 
 if (isset($_GET['api']) && $_GET['api'] === 'run-indicator' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Clear any output buffers and start fresh
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
     header('Content-Type: application/json');
     $job_id = $_POST['job_id'] ?? '';
     $indicator = $_POST['indicator'] ?? '';
+    
+    // Check for debug mode in session
+    if (isset($_SESSION['debug_mode']) && $_SESSION['debug_mode']) {
+        $_GET['debug'] = '1';
+    }
     
     if ($job_id && $indicator && isset($_SESSION['jobs'][$job_id])) {
         $job = $_SESSION['jobs'][$job_id];
@@ -113,8 +138,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['domain'])) {
         $_SESSION['last_domain_for_view'] = $domain;
         $_SESSION['is_post_redirect_layout_active'] = true;
         $_SESSION['page_loaded'] = true; // Mark as loaded to prevent session clearing
+        
+        // Store debug mode in session if it was set
+        if (isset($_GET['debug'])) {
+            $_SESSION['debug_mode'] = true;
+        }
+        
         // Redirect to avoid form resubmission, preserving debug parameter
-        $redirect_url = $_SERVER['PHP_SELF'];
+        $redirect_url = '/index.php';
         if (isset($_GET['debug'])) {
             $redirect_url .= '?debug=' . urlencode($_GET['debug']);
         }
@@ -125,11 +156,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['domain'])) {
 
 // Keep the old POST logic disabled since we're using the new progressive API system
 define('SEO_LOGIC_DISABLE_POST', true);
-include 'seo_logic.php'; // Include the separated PHP logic
 
 // Helper function to store debug information
 function storeDebugInfo($type, $indicator, $request, $response, $success = true, $message = '') {
-    if (isset($_GET['debug'])) {
+    if (isset($_GET['debug']) || isset($_SESSION['debug_mode'])) {
         $_SESSION['debug_calls'][] = [
             'type' => $type,
             'indicator' => $indicator,
@@ -139,6 +169,48 @@ function storeDebugInfo($type, $indicator, $request, $response, $success = true,
             'request' => $request,
             'response' => $response
         ];
+        
+        // Also log to file for debugging
+        logDebugToFile($type, $indicator, $request, $response, $success, $message);
+    }
+}
+
+// Helper function to log debug information to file
+function logDebugToFile($type, $indicator, $request, $response, $success = true, $message = '') {
+    if (isset($_GET['debug']) || isset($_SESSION['debug_mode'])) {
+        $logEntry = [
+            'timestamp' => date('Y-m-d H:i:s'),
+            'type' => $type,
+            'indicator' => $indicator,
+            'success' => $success,
+            'message' => $message,
+            'request' => $request,
+            'response' => $response
+        ];
+        
+        $logLine = "[" . $logEntry['timestamp'] . "] " . 
+                   strtoupper($type) . " - " . 
+                   strtoupper($indicator) . " - " . 
+                   ($success ? 'SUCCESS' : 'FAILED') . 
+                   ($message ? " - {$message}" : '') . "\n";
+        
+        $logLine .= "REQUEST: " . (is_string($request) ? $request : json_encode($request, JSON_PRETTY_PRINT)) . "\n";
+        $logLine .= "RESPONSE: " . (is_string($response) ? $response : json_encode($response, JSON_PRETTY_PRINT)) . "\n";
+        $logLine .= str_repeat("-", 80) . "\n\n";
+        
+        // Use absolute path and add error handling
+        $logFile = __DIR__ . '/log.txt';
+        $result = file_put_contents($logFile, $logLine, FILE_APPEND | LOCK_EX);
+        
+        // Log any errors to PHP error log and also create a debug file
+        if ($result === false) {
+            error_log("Failed to write to debug log file: " . $logFile);
+            // Create a debug file to see what's happening
+            file_put_contents(__DIR__ . '/debug_error.txt', "Failed to write log at " . date('Y-m-d H:i:s') . "\nLog file path: " . $logFile . "\nCurrent dir: " . __DIR__ . "\n");
+        } else {
+            // Create a success file to confirm logging is working
+            file_put_contents(__DIR__ . '/debug_success.txt', "Log written successfully at " . date('Y-m-d H:i:s') . "\nLog file path: " . $logFile . "\n");
+        }
     }
 }
 
@@ -153,6 +225,11 @@ function runSingleIndicator($indicator, $domain, $page_content, $final_url) {
         return $result;
     }
     
+    // Debug: Check if call_openrouter_api function is available
+    if (!function_exists('call_openrouter_api')) {
+        error_log("call_openrouter_api function not available in runSingleIndicator");
+    }
+    
     // Parse the HTML content
     $dom = new DOMDocument();
     libxml_use_internal_errors(true);
@@ -161,62 +238,11 @@ function runSingleIndicator($indicator, $domain, $page_content, $final_url) {
     $xpath = new DOMXPath($dom);
     
     try {
-        switch ($indicator) {
-            case 'url':
-                $result = analyzeUrlIndicator($domain, $final_url);
-                break;
-            case 'title':
-                $result = analyzeTitleIndicator($xpath);
-                break;
-            case 'meta_description':
-                $result = analyzeMetaDescriptionIndicator($xpath);
-                break;
-            case 'h1':
-                $result = analyzeHeadingsIndicator($xpath);
-                break;
-            case 'image_alt':
-                $result = analyzeImageAltIndicator($xpath);
-                break;
-            case 'links':
-                $result = analyzeLinksIndicator($xpath, $domain);
-                break;
-            case '404_page':
-                $result = analyze404PageIndicator($final_url);
-                break;
-            case 'mobile_friendly':
-                $result = analyzeMobileFriendlyIndicator($page_content);
-                break;
-            case 'language':
-                $result = analyzeLanguageIndicator($xpath);
-                break;
-            case 'favicon':
-                $result = analyzeFaviconIndicator($xpath, $final_url);
-                break;
-            case 'canonical':
-                $result = analyzeCanonicalIndicator($xpath, $final_url);
-                break;
-            case 'social_meta_tags':
-                $result = analyzeSocialMetaTagsIndicator($xpath);
-                break;
-            case 'aria':
-                $result = analyzeAriaIndicator($xpath);
-                break;
-            case 'page_speed':
-                $result = analyzePageSpeedIndicator($final_url);
-                break;
-            case 'robots':
-                $result = analyzeRobotsTxtIndicator($domain);
-                break;
-            case 'sitemap':
-                $result = analyzeSitemapXmlIndicator($domain);
-                break;
-            case 'filenames':
-                $result = analyzeFilenamesIndicator($xpath);
-                break;
-            default:
-                $result['details'] = 'Unknown indicator: ' . $indicator;
-                $result['suggestion'] = 'Indicator not implemented';
-        }
+        // Mock ALL indicators by default - no external calls or complex logic
+        $result = mockIndicator($indicator, $domain, $final_url);
+        // Add debugging to see if this is being called
+        $result['details'] = '🔧 MOCKED - RUNSINGLEINDICATOR CALLED';
+        $result['suggestion'] = '🔧 MOCKED - RUNSINGLEINDICATOR CALLED';
     } catch (Exception $e) {
         $result['details'] = 'Analysis error: ' . $e->getMessage();
         $result['suggestion'] = 'Please try again';
@@ -225,8 +251,127 @@ function runSingleIndicator($indicator, $domain, $page_content, $final_url) {
     return $result;
 }
 
+// Mock indicator function for debugging
+function mockIndicator($indicator, $domain, $final_url) {
+    $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
+    
+    // Mock data for different indicators - just show they are mocked
+    $mockData = [
+        'url' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'title' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'meta_description' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'h1' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'image_alt' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'links' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        '404_page' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'mobile_friendly' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'language' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'favicon' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'canonical' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'social_meta_tags' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'aria' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'page_speed' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'robots' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'sitemap' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ],
+        'filenames' => [
+            'score' => null,
+            'details' => '🔧 MOCKED - FUNCTION CALLED',
+            'suggestion' => '🔧 MOCKED - FUNCTION CALLED'
+        ]
+    ];
+    
+    if (isset($mockData[$indicator])) {
+        $result = $mockData[$indicator];
+        
+        // Don't log mock calls - they don't make external API calls
+        // storeDebugInfo('MOCK', $indicator, 'Mock data generated', $result, true, 'Indicator mocked for debugging');
+    } else {
+        $result = [
+            'score' => null,
+            'details' => '🔧 MOCKED',
+            'suggestion' => '🔧 MOCKED'
+        ];
+        
+        // Don't log mock calls - they don't make external API calls
+        // storeDebugInfo('MOCK', $indicator, 'Mock data generated', $result, true, 'Unknown indicator mocked for debugging');
+    }
+    
+    return $result;
+}
+
 // Individual indicator analysis functions
 function analyzeTitleIndicator($xpath) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $title_nodes = $xpath->query('//title');
@@ -279,6 +424,13 @@ function analyzeTitleIndicator($xpath) {
 }
 
 function analyzeMetaDescriptionIndicator($xpath) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $meta_description_nodes = $xpath->query('//meta[@name="description"]');
@@ -329,6 +481,13 @@ function analyzeMetaDescriptionIndicator($xpath) {
 }
 
 function analyzeUrlIndicator($domain, $final_url) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $score = 0;
@@ -359,18 +518,49 @@ function analyzeUrlIndicator($domain, $final_url) {
     $result['score'] = $score;
     $result['details'] = htmlspecialchars($final_url);
     
+    // Static logic suggestion
+    $static_suggestion = '';
     if ($score === 3) {
-        $result['suggestion'] = 'Excellent URL structure.';
+        $static_suggestion = 'Excellent URL structure.';
     } elseif ($score === 2) {
-        $result['suggestion'] = 'Good URL structure. Consider: ' . implode(', ', $issues);
+        $static_suggestion = 'Good URL structure. Consider: ' . implode(', ', $issues);
     } else {
-        $result['suggestion'] = 'URL needs improvement: ' . implode(', ', $issues);
+        $static_suggestion = 'URL needs improvement: ' . implode(', ', $issues);
+    }
+    
+    // Try to get AI suggestion for URL analysis
+    if (function_exists('call_openrouter_api')) {
+        $prompt = "Analyze this URL for SEO: '{$final_url}'. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: {$static_suggestion}";
+        $ai_response = call_openrouter_api($prompt);
+        
+        storeDebugInfo('OpenRouter', 'url', $prompt, $ai_response, $ai_response['success'] ?? false, $ai_response['message'] ?? '');
+        
+        if ($ai_response['success'] && isset($ai_response['raw_response'])) {
+            $ai_data = json_decode($ai_response['raw_response'], true);
+            if ($ai_data && isset($ai_data['suggestion'])) {
+                $result['suggestion'] = $ai_data['suggestion'] . '<br><br><strong>Static Analysis:</strong> ' . $static_suggestion;
+            } else {
+                $result['suggestion'] = $static_suggestion;
+            }
+        } else {
+            $result['suggestion'] = $static_suggestion;
+        }
+    } else {
+        storeDebugInfo('OpenRouter', 'url', 'N/A', 'Function not available', false, 'call_openrouter_api function not found');
+        $result['suggestion'] = $static_suggestion;
     }
     
     return $result;
 }
 
 function analyzeHeadingsIndicator($xpath) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $h1_nodes = $xpath->query('//h1');
@@ -379,24 +569,55 @@ function analyzeHeadingsIndicator($xpath) {
     $h1_count = $h1_nodes->length;
     $h2_count = $h2_nodes->length;
     
+    // Static logic
+    $static_suggestion = '';
     if ($h1_count === 1) {
         $result['score'] = 3;
         $result['details'] = "Found {$h1_count} H1 tag and {$h2_count} H2 tags";
-        $result['suggestion'] = 'Perfect heading structure with single H1 tag.';
+        $static_suggestion = 'Perfect heading structure with single H1 tag.';
     } elseif ($h1_count === 0) {
         $result['score'] = 1;
         $result['details'] = "No H1 tag found, {$h2_count} H2 tags";
-        $result['suggestion'] = 'Add a single H1 tag to improve SEO structure.';
+        $static_suggestion = 'Add a single H1 tag to improve SEO structure.';
     } else {
         $result['score'] = 2;
         $result['details'] = "Found {$h1_count} H1 tags and {$h2_count} H2 tags";
-        $result['suggestion'] = 'Use only one H1 tag per page for better SEO.';
+        $static_suggestion = 'Use only one H1 tag per page for better SEO.';
+    }
+    
+    // Try to get AI suggestion for headings analysis
+    if (function_exists('call_openrouter_api')) {
+        $prompt = "Analyze this heading structure for SEO: H1 tags: {$h1_count}, H2 tags: {$h2_count}. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: {$static_suggestion}";
+        $ai_response = call_openrouter_api($prompt);
+        
+        storeDebugInfo('OpenRouter', 'h1', $prompt, $ai_response, $ai_response['success'] ?? false, $ai_response['message'] ?? '');
+        
+        if ($ai_response['success'] && isset($ai_response['raw_response'])) {
+            $ai_data = json_decode($ai_response['raw_response'], true);
+            if ($ai_data && isset($ai_data['suggestion'])) {
+                $result['suggestion'] = $ai_data['suggestion'] . '<br><br><strong>Static Analysis:</strong> ' . $static_suggestion;
+            } else {
+                $result['suggestion'] = $static_suggestion;
+            }
+        } else {
+            $result['suggestion'] = $static_suggestion;
+        }
+    } else {
+        storeDebugInfo('OpenRouter', 'h1', 'N/A', 'Function not available', false, 'call_openrouter_api function not found');
+        $result['suggestion'] = $static_suggestion;
     }
     
     return $result;
 }
 
 function analyzeImageAltIndicator($xpath) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $img_nodes = $xpath->query('//img');
@@ -413,28 +634,59 @@ function analyzeImageAltIndicator($xpath) {
         }
     }
     
+    // Static logic
+    $static_suggestion = '';
     if ($total_images === 0) {
         $result['score'] = 3;
         $result['details'] = 'No images found on page';
-        $result['suggestion'] = 'No images to analyze.';
+        $static_suggestion = 'No images to analyze.';
     } elseif ($images_without_alt === 0) {
         $result['score'] = 3;
         $result['details'] = "All {$total_images} images have alt text";
-        $result['suggestion'] = 'Excellent! All images have descriptive alt text.';
+        $static_suggestion = 'Excellent! All images have descriptive alt text.';
     } elseif ($images_with_alt > $images_without_alt) {
         $result['score'] = 2;
         $result['details'] = "{$images_with_alt}/{$total_images} images have alt text";
-        $result['suggestion'] = 'Add alt text to remaining images for better accessibility and SEO.';
+        $static_suggestion = 'Add alt text to remaining images for better accessibility and SEO.';
     } else {
         $result['score'] = 1;
         $result['details'] = "Only {$images_with_alt}/{$total_images} images have alt text";
-        $result['suggestion'] = 'Add descriptive alt text to all images for accessibility and SEO.';
+        $static_suggestion = 'Add descriptive alt text to all images for accessibility and SEO.';
+    }
+    
+    // Try to get AI suggestion for image alt analysis
+    if (function_exists('call_openrouter_api')) {
+        $prompt = "Analyze image alt text for SEO: Total images: {$total_images}, With alt text: {$images_with_alt}, Without alt text: {$images_without_alt}. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: {$static_suggestion}";
+        $ai_response = call_openrouter_api($prompt);
+        
+        storeDebugInfo('OpenRouter', 'image_alt', $prompt, $ai_response, $ai_response['success'] ?? false, $ai_response['message'] ?? '');
+        
+        if ($ai_response['success'] && isset($ai_response['raw_response'])) {
+            $ai_data = json_decode($ai_response['raw_response'], true);
+            if ($ai_data && isset($ai_data['suggestion'])) {
+                $result['suggestion'] = $ai_data['suggestion'] . '<br><br><strong>Static Analysis:</strong> ' . $static_suggestion;
+            } else {
+                $result['suggestion'] = $static_suggestion;
+            }
+        } else {
+            $result['suggestion'] = $static_suggestion;
+        }
+    } else {
+        storeDebugInfo('OpenRouter', 'image_alt', 'N/A', 'Function not available', false, 'call_openrouter_api function not found');
+        $result['suggestion'] = $static_suggestion;
     }
     
     return $result;
 }
 
 function analyzeLinksIndicator($xpath, $domain) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $link_nodes = $xpath->query('//a[@href]');
@@ -464,21 +716,52 @@ function analyzeLinksIndicator($xpath, $domain) {
     
     $result['details'] = "Total: {$total_links}, Internal: {$internal_links}, External: {$external_links}";
     
+    // Static logic
+    $static_suggestion = '';
     if ($empty_anchor === 0 && $total_links > 0) {
         $result['score'] = 3;
-        $result['suggestion'] = 'Good link structure with descriptive anchor text.';
+        $static_suggestion = 'Good link structure with descriptive anchor text.';
     } elseif ($empty_anchor < $total_links / 2) {
         $result['score'] = 2;
-        $result['suggestion'] = 'Some links lack descriptive anchor text.';
+        $static_suggestion = 'Some links lack descriptive anchor text.';
     } else {
         $result['score'] = 1;
-        $result['suggestion'] = 'Many links lack descriptive anchor text.';
+        $static_suggestion = 'Many links lack descriptive anchor text.';
+    }
+    
+    // Try to get AI suggestion for links analysis
+    if (function_exists('call_openrouter_api')) {
+        $prompt = "Analyze link structure for SEO: Total links: {$total_links}, Internal: {$internal_links}, External: {$external_links}, Empty anchor text: {$empty_anchor}. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: {$static_suggestion}";
+        $ai_response = call_openrouter_api($prompt);
+        
+        storeDebugInfo('OpenRouter', 'links', $prompt, $ai_response, $ai_response['success'] ?? false, $ai_response['message'] ?? '');
+        
+        if ($ai_response['success'] && isset($ai_response['raw_response'])) {
+            $ai_data = json_decode($ai_response['raw_response'], true);
+            if ($ai_data && isset($ai_data['suggestion'])) {
+                $result['suggestion'] = $ai_data['suggestion'] . '<br><br><strong>Static Analysis:</strong> ' . $static_suggestion;
+            } else {
+                $result['suggestion'] = $static_suggestion;
+            }
+        } else {
+            $result['suggestion'] = $static_suggestion;
+        }
+    } else {
+        storeDebugInfo('OpenRouter', 'links', 'N/A', 'Function not available', false, 'call_openrouter_api function not found');
+        $result['suggestion'] = $static_suggestion;
     }
     
     return $result;
 }
 
 function analyze404PageIndicator($final_url) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     // Test a non-existent page
@@ -504,24 +787,55 @@ function analyze404PageIndicator($final_url) {
         }
     }
     
+    // Static logic
+    $static_suggestion = '';
     if ($http_code === 404) {
         $result['score'] = 3;
         $result['details'] = 'Custom 404 page detected';
-        $result['suggestion'] = 'Excellent! Custom 404 page is properly configured.';
+        $static_suggestion = 'Excellent! Custom 404 page is properly configured.';
     } elseif ($http_code === 200) {
         $result['score'] = 1;
         $result['details'] = '404 page returns 200 status';
-        $result['suggestion'] = 'Configure proper 404 page to return 404 status code.';
+        $static_suggestion = 'Configure proper 404 page to return 404 status code.';
     } else {
         $result['score'] = 2;
         $result['details'] = '404 page status: ' . $http_code;
-        $result['suggestion'] = 'Consider implementing a custom 404 page.';
+        $static_suggestion = 'Consider implementing a custom 404 page.';
+    }
+    
+    // Try to get AI suggestion for 404 page analysis
+    if (function_exists('call_openrouter_api')) {
+        $prompt = "Analyze 404 page for SEO: HTTP status code: {$http_code}, URL tested: {$test_url}. Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: {$static_suggestion}";
+        $ai_response = call_openrouter_api($prompt);
+        
+        storeDebugInfo('OpenRouter', '404_page', $prompt, $ai_response, $ai_response['success'] ?? false, $ai_response['message'] ?? '');
+        
+        if ($ai_response['success'] && isset($ai_response['raw_response'])) {
+            $ai_data = json_decode($ai_response['raw_response'], true);
+            if ($ai_data && isset($ai_data['suggestion'])) {
+                $result['suggestion'] = $ai_data['suggestion'] . '<br><br><strong>Static Analysis:</strong> ' . $static_suggestion;
+            } else {
+                $result['suggestion'] = $static_suggestion;
+            }
+        } else {
+            $result['suggestion'] = $static_suggestion;
+        }
+    } else {
+        storeDebugInfo('OpenRouter', '404_page', 'N/A', 'Function not available', false, 'call_openrouter_api function not found');
+        $result['suggestion'] = $static_suggestion;
     }
     
     return $result;
 }
 
 function analyzeMobileFriendlyIndicator($page_content) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $score = 0;
@@ -565,6 +879,13 @@ function analyzeMobileFriendlyIndicator($page_content) {
 }
 
 function analyzeLanguageIndicator($xpath) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $html_nodes = $xpath->query('//html[@lang]');
@@ -589,6 +910,13 @@ function analyzeLanguageIndicator($xpath) {
 }
 
 function analyzeFaviconIndicator($xpath, $final_url) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $favicon_nodes = $xpath->query('//link[@rel="icon" or @rel="shortcut icon" or @rel="apple-touch-icon"]');
@@ -624,6 +952,13 @@ function analyzeFaviconIndicator($xpath, $final_url) {
 }
 
 function analyzeCanonicalIndicator($xpath, $final_url) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $canonical_nodes = $xpath->query('//link[@rel="canonical"]');
@@ -648,6 +983,13 @@ function analyzeCanonicalIndicator($xpath, $final_url) {
 }
 
 function analyzeSocialMetaTagsIndicator($xpath) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $og_title = $xpath->query('//meta[@property="og:title"]');
@@ -687,6 +1029,13 @@ function analyzeSocialMetaTagsIndicator($xpath) {
 }
 
 function analyzeAriaIndicator($xpath) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $aria_elements = $xpath->query('//*[@aria-label or @aria-labelledby or @aria-describedby or @role]');
@@ -713,6 +1062,13 @@ function analyzeAriaIndicator($xpath) {
 }
 
 function analyzePageSpeedIndicator($final_url) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     // Check if Google PageSpeed API key is available
@@ -768,6 +1124,13 @@ function analyzePageSpeedIndicator($final_url) {
 }
 
 function analyzeRobotsTxtIndicator($domain) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $robots_url = rtrim($domain, '/') . '/robots.txt';
@@ -781,20 +1144,51 @@ function analyzeRobotsTxtIndicator($domain) {
     
     $robots_content = @file_get_contents($robots_url, false, $context);
     
+    // Static logic
+    $static_suggestion = '';
     if ($robots_content !== false) {
         $result['score'] = 3;
         $result['details'] = 'Robots.txt found';
-        $result['suggestion'] = 'Excellent! Robots.txt is properly configured.';
+        $static_suggestion = 'Excellent! Robots.txt is properly configured.';
     } else {
         $result['score'] = 2;
         $result['details'] = 'No robots.txt found';
-        $result['suggestion'] = 'Consider adding robots.txt file for search engine guidance.';
+        $static_suggestion = 'Consider adding robots.txt file for search engine guidance.';
+    }
+    
+    // Try to get AI suggestion for robots.txt analysis
+    if (function_exists('call_openrouter_api')) {
+        $prompt = "Analyze robots.txt for SEO: URL: {$robots_url}, Found: " . ($robots_content !== false ? 'Yes' : 'No') . ". Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: {$static_suggestion}";
+        $ai_response = call_openrouter_api($prompt);
+        
+        storeDebugInfo('OpenRouter', 'robots', $prompt, $ai_response, $ai_response['success'] ?? false, $ai_response['message'] ?? '');
+        
+        if ($ai_response['success'] && isset($ai_response['raw_response'])) {
+            $ai_data = json_decode($ai_response['raw_response'], true);
+            if ($ai_data && isset($ai_data['suggestion'])) {
+                $result['suggestion'] = $ai_data['suggestion'] . '<br><br><strong>Static Analysis:</strong> ' . $static_suggestion;
+            } else {
+                $result['suggestion'] = $static_suggestion;
+            }
+        } else {
+            $result['suggestion'] = $static_suggestion;
+        }
+    } else {
+        storeDebugInfo('OpenRouter', 'robots', 'N/A', 'Function not available', false, 'call_openrouter_api function not found');
+        $result['suggestion'] = $static_suggestion;
     }
     
     return $result;
 }
 
 function analyzeSitemapXmlIndicator($domain) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $sitemap_url = rtrim($domain, '/') . '/sitemap.xml';
@@ -808,20 +1202,51 @@ function analyzeSitemapXmlIndicator($domain) {
     
     $sitemap_content = @file_get_contents($sitemap_url, false, $context);
     
+    // Static logic
+    $static_suggestion = '';
     if ($sitemap_content !== false) {
         $result['score'] = 3;
         $result['details'] = 'Sitemap.xml found';
-        $result['suggestion'] = 'Excellent! XML sitemap is properly configured.';
+        $static_suggestion = 'Excellent! XML sitemap is properly configured.';
     } else {
         $result['score'] = 2;
         $result['details'] = 'No sitemap.xml found';
-        $result['suggestion'] = 'Consider adding XML sitemap for better search engine indexing.';
+        $static_suggestion = 'Consider adding XML sitemap for better search engine indexing.';
+    }
+    
+    // Try to get AI suggestion for sitemap analysis
+    if (function_exists('call_openrouter_api')) {
+        $prompt = "Analyze sitemap.xml for SEO: URL: {$sitemap_url}, Found: " . ($sitemap_content !== false ? 'Yes' : 'No') . ". Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: {$static_suggestion}";
+        $ai_response = call_openrouter_api($prompt);
+        
+        storeDebugInfo('OpenRouter', 'sitemap', $prompt, $ai_response, $ai_response['success'] ?? false, $ai_response['message'] ?? '');
+        
+        if ($ai_response['success'] && isset($ai_response['raw_response'])) {
+            $ai_data = json_decode($ai_response['raw_response'], true);
+            if ($ai_data && isset($ai_data['suggestion'])) {
+                $result['suggestion'] = $ai_data['suggestion'] . '<br><br><strong>Static Analysis:</strong> ' . $static_suggestion;
+            } else {
+                $result['suggestion'] = $static_suggestion;
+            }
+        } else {
+            $result['suggestion'] = $static_suggestion;
+        }
+    } else {
+        storeDebugInfo('OpenRouter', 'sitemap', 'N/A', 'Function not available', false, 'call_openrouter_api function not found');
+        $result['suggestion'] = $static_suggestion;
     }
     
     return $result;
 }
 
 function analyzeFilenamesIndicator($xpath) {
+    // Mock ALL indicators by default - no external calls or complex logic
+    return [
+        'score' => null,
+        'details' => '🔧 MOCKED',
+        'suggestion' => '🔧 MOCKED'
+    ];
+    
     $result = ['score' => null, 'details' => '-', 'suggestion' => '-'];
     
     $img_nodes = $xpath->query('//img[@src]');
@@ -867,22 +1292,46 @@ function analyzeFilenamesIndicator($xpath) {
         }
     }
     
+    // Static logic
+    $static_suggestion = '';
     if ($total_files === 0) {
         $result['score'] = 3;
         $result['details'] = 'No files to analyze';
-        $result['suggestion'] = 'No file naming issues detected.';
+        $static_suggestion = 'No file naming issues detected.';
     } elseif ($problematic_files === 0) {
         $result['score'] = 3;
         $result['details'] = "All {$total_files} files have SEO-friendly names";
-        $result['suggestion'] = 'Excellent! All files follow SEO naming conventions.';
+        $static_suggestion = 'Excellent! All files follow SEO naming conventions.';
     } elseif ($problematic_files < $total_files / 2) {
         $result['score'] = 2;
         $result['details'] = "{$problematic_files}/{$total_files} files have naming issues";
-        $result['suggestion'] = 'Some files need better naming: ' . implode(', ', array_slice($file_issues, 0, 3));
+        $static_suggestion = 'Some files need better naming: ' . implode(', ', array_slice($file_issues, 0, 3));
     } else {
         $result['score'] = 1;
         $result['details'] = "{$problematic_files}/{$total_files} files have naming issues";
-        $result['suggestion'] = 'Many files need better naming: ' . implode(', ', array_slice($file_issues, 0, 3));
+        $static_suggestion = 'Many files need better naming: ' . implode(', ', array_slice($file_issues, 0, 3));
+    }
+    
+    // Try to get AI suggestion for filenames analysis
+    if (function_exists('call_openrouter_api')) {
+        $prompt = "Analyze file naming for SEO: Total files: {$total_files}, Problematic files: {$problematic_files}, Issues: " . implode(', ', array_slice($file_issues, 0, 5)) . ". Provide a JSON response with 'score' (1-3) and 'suggestion' (specific improvement advice). Current static analysis: {$static_suggestion}";
+        $ai_response = call_openrouter_api($prompt);
+        
+        storeDebugInfo('OpenRouter', 'filenames', $prompt, $ai_response, $ai_response['success'] ?? false, $ai_response['message'] ?? '');
+        
+        if ($ai_response['success'] && isset($ai_response['raw_response'])) {
+            $ai_data = json_decode($ai_response['raw_response'], true);
+            if ($ai_data && isset($ai_data['suggestion'])) {
+                $result['suggestion'] = $ai_data['suggestion'] . '<br><br><strong>Static Analysis:</strong> ' . $static_suggestion;
+            } else {
+                $result['suggestion'] = $static_suggestion;
+            }
+        } else {
+            $result['suggestion'] = $static_suggestion;
+        }
+    } else {
+        storeDebugInfo('OpenRouter', 'filenames', 'N/A', 'Function not available', false, 'call_openrouter_api function not found');
+        $result['suggestion'] = $static_suggestion;
     }
     
     return $result;
@@ -901,9 +1350,46 @@ if (!isset($_SESSION['page_loaded']) || $_SESSION['page_loaded'] !== true) {
         unset($_SESSION['last_domain_for_view']);
         unset($_SESSION['rate_limit_error']);
         unset($_SESSION['site_not_accessible_error']);
+        unset($_SESSION['debug_calls']);
+        // Don't clear debug_mode - it should persist across redirects
+        // // Don't clear debug_mode - it should persist across redirects
+        // unset($_SESSION['debug_mode']);
+        unset($_SESSION['jobs']);
     }
     $_SESSION['page_loaded'] = true;
 }
+
+// Also clear session data if this is a hard refresh (no referrer or different referrer)
+if (!isset($_SERVER['HTTP_REFERER']) || 
+    (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], $_SERVER['HTTP_HOST']) === false)) {
+    // This might be a hard refresh, clear all session data
+    unset($_SESSION['seo_results_data']);
+    unset($_SESSION['overall_score_data']);
+    unset($_SESSION['last_domain_for_view']);
+    unset($_SESSION['rate_limit_error']);
+    unset($_SESSION['site_not_accessible_error']);
+    unset($_SESSION['debug_calls']);
+    // Don't clear debug_mode - it should persist across redirects
+        // unset($_SESSION['debug_mode']);
+    unset($_SESSION['jobs']);
+    unset($_SESSION['is_post_redirect_layout_active']);
+}
+
+// Additional hard refresh detection - if more than 5 minutes have passed since last activity
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > 300) {
+    // Clear all session data for old sessions
+    unset($_SESSION['seo_results_data']);
+    unset($_SESSION['overall_score_data']);
+    unset($_SESSION['last_domain_for_view']);
+    unset($_SESSION['rate_limit_error']);
+    unset($_SESSION['site_not_accessible_error']);
+    unset($_SESSION['debug_calls']);
+    // Don't clear debug_mode - it should persist across redirects
+        // unset($_SESSION['debug_mode']);
+    unset($_SESSION['jobs']);
+    unset($_SESSION['is_post_redirect_layout_active']);
+}
+$_SESSION['last_activity'] = time();
 
 // Check for session-based redirect AFTER session clearing
 if (isset($_SESSION['is_post_redirect_layout_active']) && $_SESSION['is_post_redirect_layout_active']) {
@@ -931,6 +1417,11 @@ $last_domain_value = $_SESSION['last_domain_for_view'] ?? '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $last_domain_value = trim($_POST['domain'] ?? '');
 }
+// In debug mode, if no domain is set, use a test domain to trigger analysis
+if (isset($_GET['debug']) && empty($last_domain_value) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $last_domain_value = 'example.com';
+    $layout_class = 'results-view'; // Show results view to trigger progressive analysis
+}
 $rate_limit_error = $_SESSION['rate_limit_error'] ?? null;
 if ($rate_limit_error) {
     unset($_SESSION['rate_limit_error']); // Clear it after reading
@@ -940,7 +1431,7 @@ if ($site_not_accessible_error) {
     unset($_SESSION['site_not_accessible_error']); // Clear it after reading
 }
 // Enable API debugging when debug parameter is present
-$debug_mode = isset($_GET['debug']);
+// $debug_mode is now defined at the top of the file
 if ($debug_mode) {
     $openrouter_response_data = $_SESSION['openrouter_response'] ?? null;
     if ($openrouter_response_data) {
@@ -1051,17 +1542,6 @@ if ($debug_mode) {
                             <?php endforeach; ?>
                         </div>
                         <?php unset($_SESSION['debug_calls']); // Clear after displaying ?>
-                    <?php else: ?>
-                        <div class="alert alert-secondary mt-3" role="alert">
-                            <h6><strong>📡 No API Calls Made</strong></h6>
-                            <p>No OpenRouter API calls were made during this analysis. This could be because:</p>
-                            <ul>
-                                <li>OpenRouter API key is not configured</li>
-                                <li>Indicators don't meet criteria for AI suggestions</li>
-                                <li>call_openrouter_api function is not available</li>
-                            </ul>
-                            <p><strong>Debug Info:</strong> Session debug_calls: <?php echo isset($_SESSION['debug_calls']) ? 'Set (' . count($_SESSION['debug_calls']) . ' calls)' : 'Not set'; ?></p>
-                        </div>
                     <?php endif; ?>
                     
                     <?php if ($openrouter_response_data): ?>
@@ -1251,7 +1731,17 @@ if ($debug_mode) {
 
                                     </td>
                                     <td class="score-cell"><?php echo ($result['score'] !== null) ? render_stars($result['score']) : '-'; ?></td>
-                                    <td class="result-cell"><?php echo ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') ? $result['details'] : htmlspecialchars($result['details'] ?? '-'); ?></td>
+                                    <td class="result-cell"><?php 
+                                        if (isset($result['details'])) {
+                                            if ($key === 'title' || $key === 'meta_description' || $key === 'url' || $key === 'robots' || $key === 'sitemap' || $key === 'h1' || $key === 'filenames' || $key === 'image_alt' || $key === 'links' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') {
+                                                echo $result['details'];
+                                            } else {
+                                                echo htmlspecialchars($result['details']);
+                                            }
+                                        } else {
+                                            echo '-';
+                                        }
+                                    ?></td>
                                     <td class="suggestion-cell"><?php 
                                         if (isset($result['suggestion'])) {
                                             if ($key === 'url' || $key === '404_page' || $key === 'mobile_friendly' || $key === 'language' || $key === 'favicon' || $key === 'canonical' || $key === 'social_meta_tags' || $key === 'aria' || $key === 'page_speed') {
@@ -1316,7 +1806,8 @@ if ($debug_mode) {
                     const startForm = new FormData();
                     startForm.append('domain', lastDomain);
 
-                    fetch('?api=start-analysis', { method: 'POST', body: startForm })
+                    const debugParam = window.location.search.includes('debug=1') ? '&debug=1' : '';
+                    fetch('?api=start-analysis' + debugParam, { method: 'POST', body: startForm })
                         .then(r => r.json())
                         .then(startData => {
                             if (!startData || !startData.success) return;
@@ -1398,7 +1889,7 @@ if ($debug_mode) {
                                 const fd = new FormData();
                                 fd.append('job_id', jobId);
                                 fd.append('indicator', indicator);
-                                fetch('?api=run-indicator', { method: 'POST', body: fd })
+                                fetch('?api=run-indicator' + debugParam, { method: 'POST', body: fd })
                                     .then(r => r.json())
                                     .then(d => {
                                         if (d && d.success && d.result) {
@@ -1418,7 +1909,7 @@ if ($debug_mode) {
                                     const fd = new FormData();
                                     fd.append('job_id', jobId);
                                     fd.append('indicator', ind);
-                                    fetch('?api=run-indicator', { method: 'POST', body: fd })
+                                    fetch('?api=run-indicator' + debugParam, { method: 'POST', body: fd })
                                         .then(r => r.json())
                                         .then(d => {
                                             if (d && d.success && d.result) {
