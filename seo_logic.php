@@ -10,6 +10,15 @@ if (defined('SEO_LOGIC_DISABLE_POST') && SEO_LOGIC_DISABLE_POST) {
 
 // Helper function to call OpenRouter API
 function call_openrouter_api($prompt_message) {
+    // Check if debug mode is active - if so, skip API call entirely
+    $get_debug = isset($_GET['debug']);
+    $session_debug = isset($_SESSION['debug_mode']) && $_SESSION['debug_mode'];
+    
+    if ($get_debug || $session_debug) {
+        $debug_info = "GET debug: " . ($get_debug ? 'YES' : 'NO') . ", Session debug: " . ($session_debug ? 'YES' : 'NO');
+        return ['success' => false, 'message' => '🔧 DEBUG: OpenRouter API call skipped in debug mode (' . $debug_info . ')', 'raw_request' => null, 'raw_response' => null];
+    }
+
     if (!defined('OPENROUTER_API_KEY') || OPENROUTER_API_KEY === '') {
         return ['success' => false, 'message' => 'OpenRouter API Key is not configured.', 'raw_request' => null, 'raw_response' => null];
     }
@@ -65,8 +74,14 @@ function call_openrouter_api($prompt_message) {
     }
 }
 
+
 // Function to call Google PageSpeed Insights API
 function call_pagespeed_insights_api($url) {
+    // Check if debug mode is active - if so, skip API call entirely
+    if (isset($_GET['debug']) || (isset($_SESSION['debug_mode']) && $_SESSION['debug_mode'])) {
+        return ['success' => false, 'message' => '🔧 DEBUG: Google PageSpeed API call skipped in debug mode', 'raw_request' => null, 'raw_response' => null];
+    }
+
     if (!defined('GOOGLE_PAGESPEED_API_KEY') || GOOGLE_PAGESPEED_API_KEY === '') {
         return ['success' => false, 'message' => 'Google PageSpeed API Key is not configured.', 'raw_request' => null, 'raw_response' => null];
     }
@@ -144,6 +159,7 @@ function call_pagespeed_insights_api($url) {
         return ['success' => false, 'message' => $error_message, 'raw_request' => $request_url, 'raw_response' => $trimmed_raw_response];
     }
 }
+
 
 // Helper function to get a database connection
 function get_db_connection() {
@@ -2970,6 +2986,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $total_achieved_stars_numeric = 0; // Sum of actual stars for all indicators
     $total_possible_stars_numeric = 0; // Sum of max possible stars (3 per indicator)
 
+    // In debug mode, don't calculate overall score - leave as N/A
+    if (isset($_GET['debug']) || (isset($_SESSION['debug_mode']) && $_SESSION['debug_mode'])) {
+        $final_overall_score = null; // No score in debug mode
+        $total_achieved_stars_numeric = 0; // No achieved stars in debug mode
+        $total_possible_stars_numeric = 0; // No possible stars in debug mode
+    } else {
+
     if ($site_is_accessible) {
         foreach ($current_run_results as $key => $result_item) { // Renamed $result to $result_item to avoid conflict
             if (isset($indicator_weights[$key]) && is_numeric($result_item['score']) && in_array($key, $active_indicators)) {
@@ -3050,6 +3073,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // error_log("DB Connection Error for domain: " . $normalized_domain_for_db);
         }
     }
+
+    } // End of debug mode else block
 
     $_SESSION['seo_results_data'] = $current_run_results;
     $_SESSION['overall_score_data'] = [
