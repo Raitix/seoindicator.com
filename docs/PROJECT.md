@@ -12,7 +12,7 @@ One-page SEO analysis tool that analyzes 17 SEO indicators using AI-powered sugg
 ## Technology Stack
 - **Frontend:** Bootstrap 5.3.6, vanilla JavaScript
 - **Backend:** PHP 8.x with MySQL
-- **AI:** OpenRouter (deepseek/deepseek-chat-v3-0324:free)
+- **AI:** Vercel AI Gateway (deepseek-chat) or OpenRouter (switchable)
 - **Deployment:** Hostinger shared hosting
 - **Testing:** Playwright automated tests
 
@@ -67,7 +67,18 @@ Files-SEOIndicator-com/
 
 **config.php:**
 ```php
+// Switch between 'vercel' or 'openrouter'
+define('AI_PROVIDER', 'vercel');
+
+// Vercel AI Gateway
+define('VERCEL_AI_GATEWAY_API_KEY', 'vck_...');
+define('VERCEL_AI_MODEL', 'deepseek-chat');
+
+// OpenRouter (alternative)
 define('OPENROUTER_API_KEY', 'sk-or-v1-...');
+define('OPENROUTER_MODEL', 'deepseek/deepseek-chat-v3-0324:free');
+
+// Other APIs
 define('GOOGLE_PAGESPEED_API_KEY', 'AIza...');
 ```
 
@@ -102,17 +113,23 @@ define('DB_NAME', 'seo');
 
 ## AI Integration
 
+**Providers:**
+- **Vercel AI Gateway** (default) - Uses cheapest model (deepseek-chat)
+- **OpenRouter** (alternative) - Uses free deepseek model
+- Switch between providers by changing `AI_PROVIDER` in config.php
+
 **Single API Call Approach:**
 - Extract all 17 indicators from HTML
 - Build comprehensive prompt with all data
-- One OpenRouter API call analyzes everything
+- One AI API call analyzes everything
 - Parse JSON response into individual results
 - Fallback to static scoring if AI fails
 
 **Benefits:**
 - 17x faster (1 call vs 17)
-- Lower costs
+- Lower costs (using cheapest models)
 - Consistent AI context
+- Provider flexibility
 - Simpler code
 
 ## Security
