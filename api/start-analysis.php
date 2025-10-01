@@ -3,15 +3,7 @@ session_start();
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../db_config.php';
-
-function get_db_connection_local() {
-    $conn = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-    if ($conn->connect_errno) {
-        return null;
-    }
-    $conn->set_charset('utf8mb4');
-    return $conn;
-}
+require_once __DIR__ . '/../seo_logic.php';
 
 function json_error($message, $code = 400) {
     http_response_code($code);
@@ -28,48 +20,12 @@ if ($domain_input === '') {
     json_error('Domain is required');
 }
 
-// Indicators (keep in sync with main app)
-$indicators = [
-    'url', 'title', 'meta_description', 'robots', 'sitemap', 'h1', 'filenames', 'image_alt',
-    'links', '404_page', 'mobile_friendly', 'language', 'favicon', 'canonical',
-    'social_meta_tags', 'aria', 'page_speed'
-];
-
-$conn = get_db_connection_local();
-if (!$conn) {
-    json_error('Database connection failed', 500);
+// Normalize domain
+if (!preg_match('/^https?:\/\//i', $domain_input)) {
+    $domain_input = 'https://' . $domain_input;
 }
 
-// One-request-per-minute rate limit per IP for job start
-$ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
-// Grace window: if we just started a job in the last 5 seconds, skip DB rate-limit check
-$just_started_recently = isset($_SESSION['last_job_started_at']) && (time() - (int)$_SESSION['last_job_started_at'] < 5);
-if (!$just_started_recently && $ip !== 'UNKNOWN' && $ip !== '::1') {
-    $stmt = $conn->prepare("SELECT last_request_time FROM ip_requests_log WHERE ip_address = ?");
-    if ($stmt) {
-        $stmt->bind_param('s', $ip);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        if ($res && $res->num_rows > 0) {
-            $row = $res->fetch_assoc();
-            $last_ts = strtotime($row['last_request_time']);
-            if ($last_ts > (time() - 60)) {
-                $stmt->close();
-                $conn->close();
-                json_error('Rate limit: 1 request per minute');
-            }
-            $stmt->close();
-            $stmtu = $conn->prepare("UPDATE ip_requests_log SET last_request_time = CURRENT_TIMESTAMP WHERE ip_address = ?");
-            if ($stmtu) { $stmtu->bind_param('s', $ip); $stmtu->execute(); $stmtu->close(); }
-        } else {
-            if ($res) { $res->close(); }
-            $stmti = $conn->prepare("INSERT INTO ip_requests_log (ip_address, last_request_time) VALUES (?, CURRENT_TIMESTAMP)");
-            if ($stmti) { $stmti->bind_param('s', $ip); $stmti->execute(); $stmti->close(); }
-        }
-    }
-}
-
-// Create job
+// Generate job ID
 try {
     $job_id = bin2hex(random_bytes(16));
 } catch (Exception $e) {
@@ -78,59 +34,109 @@ try {
 
 $session_id = session_id();
 
-// Normalize domain minimally
-$normalized_domain = $domain_input;
-if (!preg_match('/^https?:\/\//i', $normalized_domain)) {
-    $normalized_domain = 'https://' . $normalized_domain;
+// Connect to database
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+if ($conn->connect_errno) {
+    json_error('Database connection failed', 500);
+}
+$conn->set_charset('utf8mb4');
+
+// Rate limiting (1 request per minute per IP)
+$ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+if ($ip !== 'UNKNOWN' && $ip !== '::1') {
+    $stmt = $conn->prepare("SELECT last_request_time FROM ip_requests_log WHERE ip_address = ?");
+    if ($stmt) {
+        $stmt->bind_param('s', $ip);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && $res->num_rows > 0) {
+            $row = $res->fetch_assoc();
+            if (strtotime($row['last_request_time']) > (time() - 60)) {
+                $stmt->close();
+                $conn->close();
+                json_error('Rate limit: 1 request per minute');
+            }
+            $stmt->close();
+            $stmt2 = $conn->prepare("UPDATE ip_requests_log SET last_request_time = CURRENT_TIMESTAMP WHERE ip_address = ?");
+            if ($stmt2) { $stmt2->bind_param('s', $ip); $stmt2->execute(); $stmt2->close(); }
+        } else {
+            if ($res) $res->close();
+            $stmt2 = $conn->prepare("INSERT INTO ip_requests_log (ip_address, last_request_time) VALUES (?, CURRENT_TIMESTAMP)");
+            if ($stmt2) { $stmt2->bind_param('s', $ip); $stmt2->execute(); $stmt2->close(); }
+        }
+    }
 }
 
-// Attempt to resolve a final URL (best-effort, non-fatal)
-$final_url = $normalized_domain;
-@ini_set('user_agent', 'SEOIndicatorBot/1.0');
-$context = stream_context_create([
+// Fetch page content
+$ctx = stream_context_create([
     'http' => [
         'method' => 'GET',
-        'timeout' => 5,
+        'timeout' => 10,
         'ignore_errors' => true,
         'header' => "User-Agent: SEOIndicatorBot/1.0\r\n"
     ]
 ]);
-$headers = @get_headers($final_url, 1, $context);
-if (!$headers && stripos($final_url, 'https://') === 0) {
-    // try http fallback
-    $alt = 'http://' . preg_replace('/^https?:\/\//i', '', $final_url);
-    $headers = @get_headers($alt, 1, $context);
-    if ($headers) { $final_url = $alt; }
-}
 
-// Store job (page_content left null for now; can be fetched by indicator runs later if needed)
-$stmt_job = $conn->prepare("INSERT INTO jobs (job_id, session_id, domain, normalized_domain, final_url) VALUES (?, ?, ?, ?, ?)");
-if ($stmt_job) {
-    $stmt_job->bind_param('sssss', $job_id, $session_id, $domain_input, $normalized_domain, $final_url);
-    $stmt_job->execute();
-    $stmt_job->close();
-}
-
-// Seed job_results as pending
-$stmt_res = $conn->prepare("INSERT INTO job_results (job_id, indicator, status) VALUES (?, ?, 'pending')");
-if ($stmt_res) {
-    foreach ($indicators as $ind) {
-        $stmt_res->bind_param('ss', $job_id, $ind);
-        $stmt_res->execute();
+$page_content = @file_get_contents($domain_input, false, $ctx);
+if ($page_content === false) {
+    // Try http fallback
+    $alt_url = 'http://' . preg_replace('/^https?:\/\//i', '', $domain_input);
+    $page_content = @file_get_contents($alt_url, false, $ctx);
+    if ($page_content !== false) {
+        $domain_input = $alt_url;
     }
-    $stmt_res->close();
+}
+
+$final_url = $domain_input;
+
+// Store job
+$stmt = $conn->prepare("INSERT INTO jobs (job_id, session_id, domain, final_url, page_content) VALUES (?, ?, ?, ?, ?)");
+if ($stmt) {
+    $stmt->bind_param('sssss', $job_id, $session_id, $domain_input, $final_url, $page_content);
+    $stmt->execute();
+    $stmt->close();
+}
+
+// Indicators list
+$indicators = [
+    'url', 'title', 'meta_description', 'robots', 'sitemap', 'h1', 'filenames', 'image_alt',
+    'links', '404_page', 'mobile_friendly', 'language', 'favicon', 'canonical',
+    'social_meta_tags', 'aria', 'page_speed'
+];
+
+// Initialize all indicators as pending
+$stmt = $conn->prepare("INSERT INTO job_results (job_id, indicator, status) VALUES (?, ?, 'pending')");
+if ($stmt) {
+    foreach ($indicators as $ind) {
+        $stmt->bind_param('ss', $job_id, $ind);
+        $stmt->execute();
+    }
+    $stmt->close();
+}
+
+// Analyze all indicators with ONE OpenRouter API call
+$analysis_results = analyze_all_indicators_single_call($final_url, $page_content, $conn);
+
+// Store all results
+$stmt = $conn->prepare("UPDATE job_results SET status='done', score=?, details=?, suggestion=? WHERE job_id=? AND indicator=?");
+if ($stmt) {
+    foreach ($analysis_results as $ind => $result) {
+        $score = $result['score'];
+        $details = $result['details'];
+        $suggestion = $result['suggestion'];
+        $stmt->bind_param('issss', $score, $details, $suggestion, $job_id, $ind);
+        $stmt->execute();
+    }
+    $stmt->close();
 }
 
 $conn->close();
 
-$_SESSION['last_job_started_at'] = time();
-
 echo json_encode([
     'success' => true,
     'job_id' => $job_id,
-    'indicators' => $indicators,
-    'final_url' => $final_url
+    'final_url' => $final_url,
+    'indicators' => $indicators
 ]);
 exit;
 ?>
-
