@@ -74,6 +74,10 @@ $ctx = stream_context_create([
         'timeout' => 10,
         'ignore_errors' => true,
         'header' => "User-Agent: SEOIndicatorBot/1.0\r\n"
+    ],
+    'ssl' => [
+        'verify_peer' => false,
+        'verify_peer_name' => false
     ]
 ]);
 
@@ -86,6 +90,9 @@ if ($page_content === false) {
         $domain_input = $alt_url;
     }
 }
+
+// Log page content length for debugging
+error_log("Fetched page content length: " . strlen($page_content) . " bytes for " . $domain_input);
 
 $final_url = $domain_input;
 
@@ -115,7 +122,7 @@ if ($stmt) {
 }
 
 // Analyze all indicators with ONE OpenRouter API call
-$analysis_results = analyze_all_indicators_single_call($final_url, $page_content, $conn);
+$analysis_results = analyze_all_indicators_single_call($final_url, $page_content, $conn, $job_id);
 
 // Store all results
 $stmt = $conn->prepare("UPDATE job_results SET status='done', score=?, details=?, suggestion=? WHERE job_id=? AND indicator=?");
