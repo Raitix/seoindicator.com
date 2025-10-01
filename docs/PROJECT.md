@@ -27,6 +27,9 @@ One-page SEO analysis tool that analyzes 17 SEO indicators using AI-powered sugg
 **`ip_requests_log`** - Rate limiting (1 req/min per IP)
 - ip_address, last_request_time
 
+**`api_logs`** - API request/response logging
+- job_id, provider, model, request_data, response_data, http_code, success, error_message, created_at
+
 ## 17 SEO Indicators
 
 URL • Title Tag • Meta Description • Robots.txt • Sitemap.xml • Headings (H1) • Filenames • Image Alt • Links • 404 Page • Mobile Friendly • Language • Favicon • Canonical Tag • Social Meta Tags • ARIA • Page Speed
@@ -41,6 +44,9 @@ URL • Title Tag • Meta Description • Robots.txt • Sitemap.xml • Headin
 **`api/job-progress.php`** (GET)
 - Input: `job_id`
 - Output: `{success, progress: {done, total}, results: {...}, overall: {achieved, possible}}`
+
+**`view-api-logs.php`** (GET)
+- View all API requests/responses with full details (for debugging)
 
 ## Scoring
 - 1-3 stars per indicator (Red=1, Yellow=2, Green=3)

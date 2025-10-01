@@ -1,11 +1,13 @@
-﻿<?php
+<?php
 // SEO Logic - Simplified Version
 require_once 'db_config.php';
 require_once 'config.php';
 
 // Helper function to analyze all indicators with SINGLE OpenRouter API call
-function analyze_all_indicators_single_call($final_url, $page_content, $conn) {
+function analyze_all_indicators_single_call($final_url, $page_content, $conn, $job_id = null) {
+    error_log("analyze_all_indicators_single_call: page_content length = " . strlen($page_content));
     if (!$page_content) {
+        error_log("analyze_all_indicators_single_call: No page content, returning defaults");
         return get_default_indicator_results();
     }
 
@@ -23,7 +25,7 @@ function analyze_all_indicators_single_call($final_url, $page_content, $conn) {
     $prompt = build_comprehensive_seo_prompt($data);
 
     // Make SINGLE OpenRouter API call
-    $ai_response = call_openrouter_api($prompt);
+    $ai_response = call_openrouter_api($prompt, $job_id);
 
     // Parse AI response or fallback to static
     if ($ai_response['success'] && !empty($ai_response['parsed_data'])) {
@@ -141,38 +143,42 @@ function build_comprehensive_seo_prompt($data) {
 }
 
 // Call AI API (routes to Vercel or OpenRouter based on config)
-function call_openrouter_api($prompt) {
+function call_openrouter_api($prompt, $job_id = null) {
     $provider = defined('AI_PROVIDER') ? AI_PROVIDER : 'openrouter';
     
     if ($provider === 'vercel') {
-        return call_vercel_ai($prompt);
+        return call_vercel_ai($prompt, $job_id);
     } else {
-        return call_openrouter_ai($prompt);
+        return call_openrouter_ai($prompt, $job_id);
     }
 }
 
 // Call Vercel AI Gateway
-function call_vercel_ai($prompt) {
+function call_vercel_ai($prompt, $job_id = null) {
     if (!defined('VERCEL_AI_GATEWAY_API_KEY') || empty(VERCEL_AI_GATEWAY_API_KEY)) {
+        error_log("Vercel AI: API key not defined");
         return ['success' => false];
     }
 
-    $model = defined('VERCEL_AI_MODEL') ? VERCEL_AI_MODEL : 'deepseek-chat';
+    // Use provider/model format as per Vercel docs
+    $model = defined('VERCEL_AI_MODEL') ? VERCEL_AI_MODEL : 'openai/gpt-4o-mini';
+    
+    $request_payload = [
+        "model" => $model,
+        "messages" => [["role" => "user", "content" => $prompt]],
+        "stream" => false
+    ];
     
     $ch = curl_init();
     curl_setopt_array($ch, [
-        CURLOPT_URL => "https://api.vercel.com/v1/ai/chat",
+        CURLOPT_URL => "https://ai-gateway.vercel.sh/v1/chat/completions",
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . VERCEL_AI_GATEWAY_API_KEY,
             "Content-Type: application/json"
         ],
-        CURLOPT_POSTFIELDS => json_encode([
-            "model" => $model,
-            "messages" => [["role" => "user", "content" => $prompt]],
-            "stream" => false
-        ]),
+        CURLOPT_POSTFIELDS => json_encode($request_payload),
         CURLOPT_TIMEOUT => 60
     ]);
 
@@ -181,43 +187,69 @@ function call_vercel_ai($prompt) {
     $error = curl_error($ch);
     curl_close($ch);
 
+    // Log to database
+    log_api_request('vercel', $model, $request_payload, $response, $code, $code === 200, $error, $job_id);
+
     if ($code !== 200) {
-        error_log("Vercel AI API error: HTTP $code - $error - Response: $response");
+        error_log("Vercel AI Gateway error: HTTP $code - $error - Response: $response");
         return ['success' => false];
     }
 
     $data = json_decode($response, true);
     
-    // Handle both OpenAI-compatible and Vercel-specific response formats
-    $content = null;
-    if (isset($data['choices'][0]['message']['content'])) {
-        $content = $data['choices'][0]['message']['content'];
-    } elseif (isset($data['message'])) {
-        $content = $data['message'];
-    } elseif (isset($data['text'])) {
-        $content = $data['text'];
-    }
-    
-    if (!$content) {
-        error_log("Vercel AI API: No content in response - " . json_encode($data));
+    // Vercel AI Gateway uses OpenAI-compatible format
+    if (!isset($data['choices'][0]['message']['content'])) {
+        error_log("Vercel AI Gateway: No content in response - " . json_encode($data));
         return ['success' => false];
     }
-
-    $content = trim($content);
+    
+    $content = trim($data['choices'][0]['message']['content']);
+    
+    // Clean up JSON markdown if present
     $content = preg_replace('/^```json\s*/i', '', $content);
     $content = preg_replace('/\s*```$/i', '', $content);
     $parsed = json_decode(trim($content), true);
 
-    return $parsed ? ['success' => true, 'parsed_data' => $parsed] : ['success' => false];
+    if ($parsed) {
+        error_log("Vercel AI Gateway: Successfully parsed response");
+        return ['success' => true, 'parsed_data' => $parsed];
+    } else {
+        error_log("Vercel AI Gateway: Failed to parse JSON - " . $content);
+        return ['success' => false];
+    }
+}
+
+// Log API requests to database
+function log_api_request($provider, $model, $request_data, $response_data, $http_code, $success, $error_message, $job_id = null) {
+    $conn = get_db_connection();
+    if (!$conn) return;
+    
+    $stmt = $conn->prepare("INSERT INTO api_logs (job_id, provider, model, request_data, response_data, http_code, success, error_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    if ($stmt) {
+        $request_json = json_encode($request_data);
+        $response_json = is_string($response_data) ? $response_data : json_encode($response_data);
+        $success_int = $success ? 1 : 0;
+        
+        $stmt->bind_param('sssssiss', $job_id, $provider, $model, $request_json, $response_json, $http_code, $success_int, $error_message);
+        $stmt->execute();
+        $stmt->close();
+    }
+    
+    $conn->close();
 }
 
 // Call OpenRouter AI (alternative provider)
-function call_openrouter_ai($prompt) {
+function call_openrouter_ai($prompt, $job_id = null) {
     if (!defined('OPENROUTER_API_KEY') || empty(OPENROUTER_API_KEY)) {
         return ['success' => false];
     }
 
     $model = defined('OPENROUTER_MODEL') ? OPENROUTER_MODEL : 'deepseek/deepseek-chat-v3-0324:free';
+    
+    $request_payload = [
+        "model" => $model,
+        "messages" => [["role" => "user", "content" => $prompt]]
+    ];
     
     $ch = curl_init();
     curl_setopt_array($ch, [
@@ -228,16 +260,17 @@ function call_openrouter_ai($prompt) {
             "Authorization: Bearer " . OPENROUTER_API_KEY,
             "Content-Type: application/json"
         ],
-        CURLOPT_POSTFIELDS => json_encode([
-            "model" => $model,
-            "messages" => [["role" => "user", "content" => $prompt]]
-        ]),
+        CURLOPT_POSTFIELDS => json_encode($request_payload),
         CURLOPT_TIMEOUT => 60
     ]);
 
     $response = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
     curl_close($ch);
+
+    // Log to database
+    log_api_request('openrouter', $model, $request_payload, $response, $code, $code === 200, $error, $job_id);
 
     if ($code !== 200) return ['success' => false];
 
