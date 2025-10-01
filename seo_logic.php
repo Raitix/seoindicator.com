@@ -140,12 +140,85 @@ function build_comprehensive_seo_prompt($data) {
     return $prompt;
 }
 
-// Call OpenRouter API
+// Call AI API (routes to Vercel or OpenRouter based on config)
 function call_openrouter_api($prompt) {
+    $provider = defined('AI_PROVIDER') ? AI_PROVIDER : 'openrouter';
+    
+    if ($provider === 'vercel') {
+        return call_vercel_ai($prompt);
+    } else {
+        return call_openrouter_ai($prompt);
+    }
+}
+
+// Call Vercel AI Gateway
+function call_vercel_ai($prompt) {
+    if (!defined('VERCEL_AI_GATEWAY_API_KEY') || empty(VERCEL_AI_GATEWAY_API_KEY)) {
+        return ['success' => false];
+    }
+
+    $model = defined('VERCEL_AI_MODEL') ? VERCEL_AI_MODEL : 'deepseek-chat';
+    
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => "https://api.vercel.com/v1/ai/chat",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            "Authorization: Bearer " . VERCEL_AI_GATEWAY_API_KEY,
+            "Content-Type: application/json"
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            "model" => $model,
+            "messages" => [["role" => "user", "content" => $prompt]],
+            "stream" => false
+        ]),
+        CURLOPT_TIMEOUT => 60
+    ]);
+
+    $response = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($code !== 200) {
+        error_log("Vercel AI API error: HTTP $code - $error - Response: $response");
+        return ['success' => false];
+    }
+
+    $data = json_decode($response, true);
+    
+    // Handle both OpenAI-compatible and Vercel-specific response formats
+    $content = null;
+    if (isset($data['choices'][0]['message']['content'])) {
+        $content = $data['choices'][0]['message']['content'];
+    } elseif (isset($data['message'])) {
+        $content = $data['message'];
+    } elseif (isset($data['text'])) {
+        $content = $data['text'];
+    }
+    
+    if (!$content) {
+        error_log("Vercel AI API: No content in response - " . json_encode($data));
+        return ['success' => false];
+    }
+
+    $content = trim($content);
+    $content = preg_replace('/^```json\s*/i', '', $content);
+    $content = preg_replace('/\s*```$/i', '', $content);
+    $parsed = json_decode(trim($content), true);
+
+    return $parsed ? ['success' => true, 'parsed_data' => $parsed] : ['success' => false];
+}
+
+// Call OpenRouter AI (alternative provider)
+function call_openrouter_ai($prompt) {
     if (!defined('OPENROUTER_API_KEY') || empty(OPENROUTER_API_KEY)) {
         return ['success' => false];
     }
 
+    $model = defined('OPENROUTER_MODEL') ? OPENROUTER_MODEL : 'deepseek/deepseek-chat-v3-0324:free';
+    
     $ch = curl_init();
     curl_setopt_array($ch, [
         CURLOPT_URL => "https://openrouter.ai/api/v1/chat/completions",
@@ -155,7 +228,10 @@ function call_openrouter_api($prompt) {
             "Authorization: Bearer " . OPENROUTER_API_KEY,
             "Content-Type: application/json"
         ],
-        CURLOPT_POSTFIELDS => json_encode(["model" => "deepseek/deepseek-chat-v3-0324:free", "messages" => [["role" => "user", "content" => $prompt]]]),
+        CURLOPT_POSTFIELDS => json_encode([
+            "model" => $model,
+            "messages" => [["role" => "user", "content" => $prompt]]
+        ]),
         CURLOPT_TIMEOUT => 60
     ]);
 
