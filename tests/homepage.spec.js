@@ -9,7 +9,7 @@ test.describe('SEOIndicator.com Homepage', () => {
     await page.waitForLoadState('networkidle');
     
     // Check that the page title is correct
-    await expect(page).toHaveTitle('SEOIndicator.com - Analyze your SEO parameters');
+    await expect(page).toHaveTitle('SEOIndicator.com - AI Powered SEO Analysis');
   });
 
   test('should load the homepage successfully', async ({ page }) => {
