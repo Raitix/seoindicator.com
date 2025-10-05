@@ -23,6 +23,11 @@ jobs:
         node-version: lts/*
         cache: 'npm'
     
+    - name: Disable man-db triggers for faster apt operations
+      run: |
+        echo "set man-db/auto-update false" | sudo debconf-communicate
+        sudo dpkg-reconfigure man-db
+    
     - name: Install dependencies
       run: npm ci --prefer-offline --no-audit --no-fund
     
@@ -76,6 +81,11 @@ jobs:
       with:
         node-version: lts/*
         cache: 'npm'
+    
+    - name: Disable man-db triggers for faster apt operations
+      run: |
+        echo "set man-db/auto-update false" | sudo debconf-communicate
+        sudo dpkg-reconfigure man-db
     
     - name: Install dependencies
       run: npm ci --prefer-offline --no-audit --no-fund
