@@ -117,9 +117,12 @@ test.describe('Vercel AI Integration Test', () => {
       console.log(`${indicator}: ${score} - ${result.substring(0, 50)}...`);
     }
     
-    // Take a screenshot for verification
-    await page.screenshot({ path: 'local-test-results/vercel-test-result.png', fullPage: true });
-    console.log('Screenshot saved');
+    // Take a screenshot for verification with timestamp
+    const timestamp = new Date().toLocaleDateString('en-GB').replace(/\//g, '-') + '_' + 
+                     new Date().toLocaleTimeString('en-GB', {hour12: false}).replace(/:/g, '-');
+    const screenshotPath = `local-test-results/vercel-test-result_${timestamp}.png`;
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    console.log(`Screenshot saved: ${screenshotPath}`);
   });
 });
 
