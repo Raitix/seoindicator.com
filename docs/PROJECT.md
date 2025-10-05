@@ -1,18 +1,19 @@
 # SEOIndicator.com - Project Documentation
 
 ## Overview
-One-page SEO analysis tool that analyzes 17 SEO indicators using AI-powered suggestions via OpenRouter API in a single bulk call.
+One-page SEO analysis tool that analyzes 17 SEO indicators using AI-powered suggestions via Vercel AI Gateway. Currently configured to analyze only the URL indicator with AI, while other indicators use static analysis.
 
 ## Core Functionality
 1. User enters domain
 2. System fetches HTML and extracts SEO data
-3. Single OpenRouter API call analyzes all indicators
+3. Vercel AI analyzes URL indicator (others use static analysis)
 4. Results display progressively with 1-3 star ratings
+5. Suggestions show both "Static Analysis:" and "AI:" sections
 
 ## Technology Stack
 - **Frontend:** Bootstrap 5.3.6, vanilla JavaScript
 - **Backend:** PHP 8.x with MySQL
-- **AI:** Vercel AI Gateway (deepseek-chat) or OpenRouter (switchable)
+- **AI:** Vercel AI Gateway (meituan/longcat-flash-chat) or OpenRouter (switchable)
 - **Deployment:** Hostinger shared hosting
 - **Testing:** Playwright automated tests
 
@@ -38,7 +39,7 @@ URL • Title Tag • Meta Description • Robots.txt • Sitemap.xml • Headin
 
 **`api/start-analysis.php`** (POST)
 - Input: `domain`
-- Process: Fetch HTML → Extract all SEO data → ONE OpenRouter API call → Store results
+- Process: Fetch HTML → Extract all SEO data → Vercel AI analyzes URL → Static analysis for others → Store results
 - Output: `{success, job_id, final_url}`
 
 **`api/job-progress.php`** (GET)
@@ -78,7 +79,7 @@ define('AI_PROVIDER', 'vercel');
 
 // Vercel AI Gateway
 define('VERCEL_AI_GATEWAY_API_KEY', 'vck_...');
-define('VERCEL_AI_MODEL', 'deepseek-chat');
+define('VERCEL_AI_MODEL', 'meituan/longcat-flash-chat');
 
 // OpenRouter (alternative)
 define('OPENROUTER_API_KEY', 'sk-or-v1-...');
@@ -120,23 +121,24 @@ define('DB_NAME', 'seo');
 ## AI Integration
 
 **Providers:**
-- **Vercel AI Gateway** (default) - Uses cheapest model (deepseek-chat)
+- **Vercel AI Gateway** (default) - Uses meituan/longcat-flash-chat model
 - **OpenRouter** (alternative) - Uses free deepseek model
 - Switch between providers by changing `AI_PROVIDER` in config.php
 
-**Single API Call Approach:**
+**Current AI Integration:**
 - Extract all 17 indicators from HTML
-- Build comprehensive prompt with all data
-- One AI API call analyzes everything
-- Parse JSON response into individual results
-- Fallback to static scoring if AI fails
+- AI analyzes only URL indicator (others commented out for future expansion)
+- Build prompt with URL data only
+- One AI API call analyzes URL indicator
+- Parse JSON response and merge with static analysis
+- Suggestions display as "Static Analysis:" and "AI:" sections
 
 **Benefits:**
-- 17x faster (1 call vs 17)
-- Lower costs (using cheapest models)
-- Consistent AI context
+- Focused AI analysis on specific indicators
+- Clear separation of static vs AI analysis
+- Lower costs (analyzing only needed indicators)
+- Easy to expand to more indicators
 - Provider flexibility
-- Simpler code
 
 ## Security
 - API keys gitignored
@@ -145,9 +147,16 @@ define('DB_NAME', 'seo');
 - Rate limiting
 
 ## Performance
-- Single AI API call
+- Single AI API call for URL indicator
 - Database-backed storage
 - Progressive UI updates
 - Minimal dependencies
+- Static analysis for non-AI indicators
+
+## Testing
+- **vercel-integration.spec.js** - Tests Vercel AI integration
+  - Verifies URL indicator gets AI response
+  - Checks for "Static Analysis:" and "AI:" sections in suggestions
+  - Ensures AI suggestion is not empty or fallback text
 
 
