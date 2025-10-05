@@ -6,8 +6,8 @@ test.describe('Vercel AI Integration Test', () => {
     test.setTimeout(120000); // 2 minutes
     
     // Navigate to localhost
-    console.log('Navigating to localhost:8000...');
-    const response = await page.goto('http://localhost:8000');
+    console.log('Navigating to localhost');
+    const response = await page.goto('http://localhost');
     console.log('Response status:', response.status());
     
     // Wait for page to load
@@ -92,6 +92,18 @@ test.describe('Vercel AI Integration Test', () => {
     
     // Check if score is not just empty stars
     expect(scoreCellText).not.toBe('☆☆☆');
+    
+    // Check if URL indicator has AI response in suggestion
+    const suggestionCell = urlRow.locator('.suggestion-cell');
+    const suggestionText = await suggestionCell.textContent();
+    console.log('URL indicator suggestion:', suggestionText);
+    
+    // Verify that AI response is present (should contain "AI:" text)
+    expect(suggestionText).toContain('AI:');
+    expect(suggestionText).toContain('Static Analysis:');
+    
+    // Verify that AI suggestion is not just "No AI suggestion available"
+    expect(suggestionText).not.toContain('No AI suggestion available');
     
     // Log all results for debugging
     const allRows = await resultsTable.count();
