@@ -98,7 +98,11 @@ module.exports = defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { 
+        ...devices['Desktop Chrome'],
+        // Use stable Chrome channel in CI for faster setup
+        ...(process.env.CI ? { channel: 'chrome' } : {})
+      },
     },
 
     // {
