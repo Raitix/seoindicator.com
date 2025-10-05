@@ -146,7 +146,14 @@
             row.className = result.score !== null ? getRowClass(result.score) : '';
             row.querySelector('.score-cell').textContent = renderStars(result.score);
             row.querySelector('.result-cell').textContent = result.details || '-';
-            row.querySelector('.suggestion-cell').textContent = result.suggestion || '-';
+            
+            // Format suggestion with line breaks
+            const suggestionCell = row.querySelector('.suggestion-cell');
+            if (result.suggestion && result.suggestion !== '-') {
+                suggestionCell.innerHTML = result.suggestion.replace(/\n/g, '<br>');
+            } else {
+                suggestionCell.textContent = '-';
+            }
         }
 
         function showError(message) {

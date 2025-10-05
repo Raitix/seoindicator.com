@@ -27,12 +27,31 @@ function analyze_all_indicators_single_call($final_url, $page_content, $conn, $j
     // Make SINGLE OpenRouter API call
     $ai_response = call_openrouter_api($prompt, $job_id);
 
-    // Parse AI response or fallback to static
+    // Get static analysis results
+    $static_results = analyze_indicators_static($data);
+    
+    // Parse AI response and merge with static analysis
     if ($ai_response['success'] && !empty($ai_response['parsed_data'])) {
-        return $ai_response['parsed_data'];
+        $ai_results = $ai_response['parsed_data'];
+        
+        // Merge AI results with static analysis
+        foreach ($static_results as $indicator => $static_result) {
+            if (isset($ai_results[$indicator])) {
+                // Combine static analysis and AI suggestions
+                $static_suggestion = $static_result['suggestion'];
+                $ai_suggestion = $ai_results[$indicator]['suggestion'] ?? 'No AI suggestion available';
+                
+                $static_results[$indicator]['suggestion'] = "Static Analysis: $static_suggestion\n\nAI: $ai_suggestion";
+                
+                // Use AI score if available, otherwise keep static score
+                if (isset($ai_results[$indicator]['score'])) {
+                    $static_results[$indicator]['score'] = $ai_results[$indicator]['score'];
+                }
+            }
+        }
     }
 
-    return analyze_indicators_static($data);
+    return $static_results;
 }
 
 // Extract all SEO data from page
@@ -120,25 +139,25 @@ function extract_all_seo_data($final_url, $page_content, $xpath) {
 // Build comprehensive prompt for AI
 function build_comprehensive_seo_prompt($data) {
     $prompt = "Analyze SEO indicators. Return ONLY valid JSON without markdown:\n\n";
-    $prompt .= "Format: {\"url\": {\"score\": 1-3, \"suggestion\": \"advice\"}, ...}\n\n";
+    $prompt .= "Format: {\"url\": {\"score\": 1-3, \"suggestion\": \"advice\"}}\n\n";
     $prompt .= "1. URL: " . $data['url']['url'] . " (HTTPS: " . ($data['url']['https'] ? 'yes' : 'no') . ")\n";
-    $prompt .= "2. Title: '" . substr($data['title'], 0, 100) . "' (Length: " . strlen($data['title']) . ")\n";
-    $prompt .= "3. Meta Description: '" . substr($data['meta_description'], 0, 100) . "' (Length: " . strlen($data['meta_description']) . ")\n";
-    $prompt .= "4. Robots.txt: " . ($data['robots'] ? 'Found' : 'Not found') . "\n";
-    $prompt .= "5. Sitemap.xml: " . ($data['sitemap'] ? 'Found' : 'Not found') . "\n";
-    $prompt .= "6. H1: " . $data['h1']['count'] . " found\n";
-    $prompt .= "7. Filenames: " . $data['filenames']['total'] . " files, " . $data['filenames']['problematic'] . " problematic\n";
-    $prompt .= "8. Image Alt: " . $data['image_alt']['with_alt'] . "/" . $data['image_alt']['total'] . "\n";
-    $prompt .= "9. Links: " . $data['links']['total'] . " (" . $data['links']['internal'] . " internal, " . $data['links']['empty'] . " empty)\n";
-    $prompt .= "10. 404: HTTP " . $data['404_page']['status_code'] . "\n";
-    $prompt .= "11. Mobile: Viewport " . ($data['mobile_friendly']['viewport'] ? 'yes' : 'no') . "\n";
-    $prompt .= "12. Language: '" . $data['language']['lang'] . "'\n";
-    $prompt .= "13. Favicon: " . ($data['favicon']['found'] ? 'yes' : 'no') . "\n";
-    $prompt .= "14. Canonical: " . (!empty($data['canonical']['url']) ? 'set' : 'not set') . "\n";
-    $prompt .= "15. Social: " . $data['social_meta_tags']['og_count'] . " OG, " . $data['social_meta_tags']['twitter_count'] . " Twitter\n";
-    $prompt .= "16. ARIA: " . $data['aria']['count'] . " attributes\n";
-    $prompt .= "17. Page Speed: " . $data['page_speed']['html_size_kb'] . " KB\n\n";
-    $prompt .= "Return JSON with keys: url, title, meta_description, robots, sitemap, h1, filenames, image_alt, links, 404_page, mobile_friendly, language, favicon, canonical, social_meta_tags, aria, page_speed";
+    // $prompt .= "2. Title: '" . substr($data['title'], 0, 100) . "' (Length: " . strlen($data['title']) . ")\n";
+    // $prompt .= "3. Meta Description: '" . substr($data['meta_description'], 0, 100) . "' (Length: " . strlen($data['meta_description']) . ")\n";
+    // $prompt .= "4. Robots.txt: " . ($data['robots'] ? 'Found' : 'Not found') . "\n";
+    // $prompt .= "5. Sitemap.xml: " . ($data['sitemap'] ? 'Found' : 'Not found') . "\n";
+    // $prompt .= "6. H1: " . $data['h1']['count'] . " found\n";
+    // $prompt .= "7. Filenames: " . $data['filenames']['total'] . " files, " . $data['filenames']['problematic'] . " problematic\n";
+    // $prompt .= "8. Image Alt: " . $data['image_alt']['with_alt'] . "/" . $data['image_alt']['total'] . "\n";
+    // $prompt .= "9. Links: " . $data['links']['total'] . " (" . $data['links']['internal'] . " internal, " . $data['links']['empty'] . " empty)\n";
+    // $prompt .= "10. 404: HTTP " . $data['404_page']['status_code'] . "\n";
+    // $prompt .= "11. Mobile: Viewport " . ($data['mobile_friendly']['viewport'] ? 'yes' : 'no') . "\n";
+    // $prompt .= "12. Language: '" . $data['language']['lang'] . "'\n";
+    // $prompt .= "13. Favicon: " . ($data['favicon']['found'] ? 'yes' : 'no') . "\n";
+    // $prompt .= "14. Canonical: " . (!empty($data['canonical']['url']) ? 'set' : 'not set') . "\n";
+    // $prompt .= "15. Social: " . $data['social_meta_tags']['og_count'] . " OG, " . $data['social_meta_tags']['twitter_count'] . " Twitter\n";
+    // $prompt .= "16. ARIA: " . $data['aria']['count'] . " attributes\n";
+    // $prompt .= "17. Page Speed: " . $data['page_speed']['html_size_kb'] . " KB\n\n";
+    $prompt .= "Return JSON with key: url";
     return $prompt;
 }
 
