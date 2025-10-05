@@ -6,9 +6,9 @@ test.describe('Vercel AI Integration Test', () => {
     // Set longer timeout for this test
     test.setTimeout(120000); // 2 minutes
     
-    // Navigate to localhost
-    console.log('Navigating to localhost');
-    const response = await page.goto('http://localhost');
+    // Navigate to the configured base URL
+    console.log('Navigating to base URL');
+    const response = await page.goto('/');
     console.log('Response status:', response.status());
     
     // Wait for page to load
