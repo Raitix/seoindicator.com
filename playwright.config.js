@@ -1,12 +1,65 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
+const fs = require('fs');
+const path = require('path');
+
+// Generate timestamp for reports
+const now = new Date();
+const timestamp = now.toLocaleDateString('en-GB').replace(/\//g, '-') + '_' + 
+                 now.toLocaleTimeString('en-GB', {hour12: false}).replace(/:/g, '-');
+
+// Determine output directory based on environment
+const isProduction = process.env.BASE_URL === 'https://seoindicator.com' || process.env.CI;
+const outputDir = isProduction ? './prod-test-results' : './local-test-results';
+
+// Function to handle report cleanup and timestamping
+function handleReportCleanup() {
+  const playwrightReportPath = './playwright-report/index.html';
+  const newReportPath = path.join(outputDir, `index_${timestamp}.html`);
+  
+  if (fs.existsSync(playwrightReportPath)) {
+    // Ensure output directory exists
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
+    fs.renameSync(playwrightReportPath, newReportPath);
+    console.log(`Report saved to: ${newReportPath}`);
+    
+    // Remove empty playwright-report directory
+    try {
+      fs.rmdirSync('./playwright-report');
+    } catch (err) {
+      // Directory not empty or other error, ignore
+    }
+  }
+  
+  // Remove .last-run.json file if it exists
+  const lastRunPath = path.join(outputDir, '.last-run.json');
+  if (fs.existsSync(lastRunPath)) {
+    fs.unlinkSync(lastRunPath);
+    console.log('Removed .last-run.json file');
+  }
+}
+
+// Register cleanup function to run after tests
+process.on('exit', handleReportCleanup);
+process.on('SIGINT', () => {
+  handleReportCleanup();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  handleReportCleanup();
+  process.exit(0);
+});
+
 
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
 module.exports = defineConfig({
   testDir: './tests',
-  outputDir: process.env.CI ? './ci-test-results' : './local-test-results',
+  outputDir: outputDir,
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -19,9 +72,8 @@ module.exports = defineConfig({
   reporter: process.env.CI ? [['github'], ['html']] : [
     ['list'],
     ['html', { 
-      outputFolder: './local-test-results',
-      open: 'never',
-      fileName: process.env.PLAYWRIGHT_HTML_REPORT_FILENAME || 'index.html'
+      outputFolder: './playwright-report',
+      open: 'never'
     }]
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -33,7 +85,7 @@ module.exports = defineConfig({
     trace: 'on-first-retry',
     
     /* Performance optimizations for CI */
-    screenshot: 'only-on-failure',
+    screenshot: 'only-on-failure', // Only affects automatic screenshots, not explicit page.screenshot() calls
     video: 'off', // Disable video recording completely
     actionTimeout: process.env.BASE_URL ? 10000 : 5000, // Longer timeout for production
     navigationTimeout: process.env.BASE_URL ? 60000 : 15000, // Much longer timeout for production
