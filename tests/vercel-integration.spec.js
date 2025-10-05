@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const path = require('path');
 
 test.describe('Vercel AI Integration Test', () => {
   test('should analyze raitisozols.com and get results from Vercel AI', async ({ page }) => {
@@ -120,7 +121,12 @@ test.describe('Vercel AI Integration Test', () => {
     // Take a screenshot for verification with timestamp
     const timestamp = new Date().toLocaleDateString('en-GB').replace(/\//g, '-') + '_' + 
                      new Date().toLocaleTimeString('en-GB', {hour12: false}).replace(/:/g, '-');
-    const screenshotPath = `local-test-results/vercel-test-result_${timestamp}.png`;
+    
+    // Determine output directory based on environment
+    const isProduction = process.env.BASE_URL === 'https://seoindicator.com' || process.env.CI;
+    const outputDir = isProduction ? 'prod-test-results' : 'local-test-results';
+    const screenshotPath = path.join(__dirname, '..', outputDir, `vercel-test-result_${timestamp}.png`);
+    
     await page.screenshot({ path: screenshotPath, fullPage: true });
     console.log(`Screenshot saved: ${screenshotPath}`);
   });
