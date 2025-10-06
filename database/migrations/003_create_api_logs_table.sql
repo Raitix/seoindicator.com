@@ -1,3 +1,7 @@
+-- Migration: 003_create_api_logs_table.sql
+-- Description: Create api_logs table for API request/response logging
+-- Date: 2025-10-06
+
 CREATE TABLE IF NOT EXISTS api_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     job_id VARCHAR(64),

@@ -9,10 +9,12 @@ CREATE TABLE job_results (
     score TINYINT NULL,
     details MEDIUMTEXT NULL,
     suggestion MEDIUMTEXT NULL,
+    error TEXT NULL,
+    duration_ms INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY(job_id, indicator),
-    INDEX(job_id),
-    INDEX(status),
+    INDEX idx_job_id (job_id),
+    INDEX idx_status (status),
     FOREIGN KEY (job_id) REFERENCES jobs(job_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
