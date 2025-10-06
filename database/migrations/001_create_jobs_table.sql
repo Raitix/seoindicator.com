@@ -12,7 +12,7 @@ CREATE TABLE jobs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     cancelled TINYINT(1) DEFAULT 0,
-    INDEX(session_id),
-    INDEX(domain),
-    INDEX(created_at)
+    INDEX idx_session_id (session_id),
+    INDEX idx_domain (domain),
+    INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
