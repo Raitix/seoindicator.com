@@ -158,9 +158,9 @@ define('DB_NAME', 'seo');
 - Static analysis for non-AI indicators
 
 ## Testing
-- **vercel-integration.spec.js** - Tests Vercel AI integration
-  - Verifies URL indicator gets AI response
-  - Checks for "Static Analysis:" and "AI:" sections in suggestions
-  - Ensures AI suggestion is not empty or fallback text
+- **indicator-checks.spec.js** - Tests URL indicator with AI response
+  - Focuses specifically on URL indicator analysis
+  - Verifies AI response contains "Static Analysis:" and "AI:" sections
+  - Ensures URL indicator suggestion is not empty or fallback text
 
 
