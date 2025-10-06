@@ -178,7 +178,11 @@
             const formData = new FormData();
             formData.append('domain', domain);
             
-            fetch('api/start-analysis.php', {
+            // Use .php extension for localhost, no extension for production
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const apiEndpoint = isLocalhost ? 'api/start-analysis.php' : 'api/start-analysis';
+            
+            fetch(apiEndpoint, {
                 method: 'POST',
                 body: formData
             })
@@ -199,7 +203,8 @@
                 
                 // Poll for results
                 const pollInterval = setInterval(() => {
-                    fetch(`api/job-progress.php?job_id=${encodeURIComponent(jobId)}`)
+                    const progressEndpoint = isLocalhost ? 'api/job-progress.php' : 'api/job-progress';
+                    fetch(`${progressEndpoint}?job_id=${encodeURIComponent(jobId)}`)
                         .then(r => r.json())
                         .then(progress => {
                             if (!progress.success) {
