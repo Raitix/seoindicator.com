@@ -1,0 +1,160 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - link "info@SEOIndicator.com" [ref=e3] [cursor=pointer]:
+    - /url: mailto:info@SEOIndicator.com
+  - generic [ref=e6]:
+    - img "SEOIndicator.com Logo" [ref=e7]
+    - heading "AI Powered SEO Analysis" [level=1] [ref=e8]
+    - alert [ref=e10]: Network error. Please try again.
+    - generic [ref=e12]:
+      - textbox "Domain name" [ref=e13]: raitisozols.com
+      - button "Analyze!" [active] [ref=e14] [cursor=pointer]
+    - 'heading "Overall score: ☆☆☆ (0/51)" [level=2] [ref=e16]'
+    - table [ref=e18]:
+      - rowgroup [ref=e19]:
+        - row "Nr. Indicator Score Result Suggestion" [ref=e20]:
+          - columnheader "Nr." [ref=e21]
+          - columnheader "Indicator" [ref=e22]
+          - columnheader "Score" [ref=e23]
+          - columnheader "Result" [ref=e24]
+          - columnheader "Suggestion" [ref=e25]
+      - rowgroup [ref=e26]:
+        - row "1 URL ☆☆☆ - -" [ref=e27]:
+          - cell "1" [ref=e28]
+          - cell "URL" [ref=e29]:
+            - link "URL" [ref=e30] [cursor=pointer]:
+              - /url: /seo-guides/url
+          - cell "☆☆☆" [ref=e31]
+          - cell "-" [ref=e32]
+          - cell "-" [ref=e33]
+        - row "2 Title Tag ☆☆☆ - -" [ref=e34]:
+          - cell "2" [ref=e35]
+          - cell "Title Tag" [ref=e36]:
+            - link "Title Tag" [ref=e37] [cursor=pointer]:
+              - /url: /seo-guides/title-tag
+          - cell "☆☆☆" [ref=e38]
+          - cell "-" [ref=e39]
+          - cell "-" [ref=e40]
+        - row "3 Meta Description ☆☆☆ - -" [ref=e41]:
+          - cell "3" [ref=e42]
+          - cell "Meta Description" [ref=e43]:
+            - link "Meta Description" [ref=e44] [cursor=pointer]:
+              - /url: /seo-guides/meta-description
+          - cell "☆☆☆" [ref=e45]
+          - cell "-" [ref=e46]
+          - cell "-" [ref=e47]
+        - row "4 robots.txt ☆☆☆ - -" [ref=e48]:
+          - cell "4" [ref=e49]
+          - cell "robots.txt" [ref=e50]:
+            - link "robots.txt" [ref=e51] [cursor=pointer]:
+              - /url: /seo-guides/robots-txt
+          - cell "☆☆☆" [ref=e52]
+          - cell "-" [ref=e53]
+          - cell "-" [ref=e54]
+        - row "5 sitemap.xml ☆☆☆ - -" [ref=e55]:
+          - cell "5" [ref=e56]
+          - cell "sitemap.xml" [ref=e57]:
+            - link "sitemap.xml" [ref=e58] [cursor=pointer]:
+              - /url: /seo-guides/sitemap-xml
+          - cell "☆☆☆" [ref=e59]
+          - cell "-" [ref=e60]
+          - cell "-" [ref=e61]
+        - row "6 Headings ☆☆☆ - -" [ref=e62]:
+          - cell "6" [ref=e63]
+          - cell "Headings" [ref=e64]:
+            - link "Headings" [ref=e65] [cursor=pointer]:
+              - /url: /seo-guides/headings
+          - cell "☆☆☆" [ref=e66]
+          - cell "-" [ref=e67]
+          - cell "-" [ref=e68]
+        - row "7 Filenames ☆☆☆ - -" [ref=e69]:
+          - cell "7" [ref=e70]
+          - cell "Filenames" [ref=e71]:
+            - link "Filenames" [ref=e72] [cursor=pointer]:
+              - /url: /seo-guides/filenames
+          - cell "☆☆☆" [ref=e73]
+          - cell "-" [ref=e74]
+          - cell "-" [ref=e75]
+        - row "8 Image Alt ☆☆☆ - -" [ref=e76]:
+          - cell "8" [ref=e77]
+          - cell "Image Alt" [ref=e78]:
+            - link "Image Alt" [ref=e79] [cursor=pointer]:
+              - /url: /seo-guides/image-alt
+          - cell "☆☆☆" [ref=e80]
+          - cell "-" [ref=e81]
+          - cell "-" [ref=e82]
+        - row "9 Links ☆☆☆ - -" [ref=e83]:
+          - cell "9" [ref=e84]
+          - cell "Links" [ref=e85]:
+            - link "Links" [ref=e86] [cursor=pointer]:
+              - /url: /seo-guides/links
+          - cell "☆☆☆" [ref=e87]
+          - cell "-" [ref=e88]
+          - cell "-" [ref=e89]
+        - row "10 404 Page ☆☆☆ - -" [ref=e90]:
+          - cell "10" [ref=e91]
+          - cell "404 Page" [ref=e92]:
+            - link "404 Page" [ref=e93] [cursor=pointer]:
+              - /url: /seo-guides/404-page
+          - cell "☆☆☆" [ref=e94]
+          - cell "-" [ref=e95]
+          - cell "-" [ref=e96]
+        - row "11 Mobile Friendly ☆☆☆ - -" [ref=e97]:
+          - cell "11" [ref=e98]
+          - cell "Mobile Friendly" [ref=e99]:
+            - link "Mobile Friendly" [ref=e100] [cursor=pointer]:
+              - /url: /seo-guides/mobile-friendly
+          - cell "☆☆☆" [ref=e101]
+          - cell "-" [ref=e102]
+          - cell "-" [ref=e103]
+        - row "12 Language ☆☆☆ - -" [ref=e104]:
+          - cell "12" [ref=e105]
+          - cell "Language" [ref=e106]:
+            - link "Language" [ref=e107] [cursor=pointer]:
+              - /url: /seo-guides/language
+          - cell "☆☆☆" [ref=e108]
+          - cell "-" [ref=e109]
+          - cell "-" [ref=e110]
+        - row "13 Favicon ☆☆☆ - -" [ref=e111]:
+          - cell "13" [ref=e112]
+          - cell "Favicon" [ref=e113]:
+            - link "Favicon" [ref=e114] [cursor=pointer]:
+              - /url: /seo-guides/favicon
+          - cell "☆☆☆" [ref=e115]
+          - cell "-" [ref=e116]
+          - cell "-" [ref=e117]
+        - row "14 Canonical Tag ☆☆☆ - -" [ref=e118]:
+          - cell "14" [ref=e119]
+          - cell "Canonical Tag" [ref=e120]:
+            - link "Canonical Tag" [ref=e121] [cursor=pointer]:
+              - /url: /seo-guides/canonical-tag
+          - cell "☆☆☆" [ref=e122]
+          - cell "-" [ref=e123]
+          - cell "-" [ref=e124]
+        - row "15 Social Media Meta Tags ☆☆☆ - -" [ref=e125]:
+          - cell "15" [ref=e126]
+          - cell "Social Media Meta Tags" [ref=e127]:
+            - link "Social Media Meta Tags" [ref=e128] [cursor=pointer]:
+              - /url: /seo-guides/social-media-meta-tags
+          - cell "☆☆☆" [ref=e129]
+          - cell "-" [ref=e130]
+          - cell "-" [ref=e131]
+        - row "16 ARIA ☆☆☆ - -" [ref=e132]:
+          - cell "16" [ref=e133]
+          - cell "ARIA" [ref=e134]:
+            - link "ARIA" [ref=e135] [cursor=pointer]:
+              - /url: /seo-guides/aria
+          - cell "☆☆☆" [ref=e136]
+          - cell "-" [ref=e137]
+          - cell "-" [ref=e138]
+        - row "17 Page Speed ☆☆☆ - -" [ref=e139]:
+          - cell "17" [ref=e140]
+          - cell "Page Speed" [ref=e141]:
+            - link "Page Speed" [ref=e142] [cursor=pointer]:
+              - /url: /seo-guides/page-speed
+          - cell "☆☆☆" [ref=e143]
+          - cell "-" [ref=e144]
+          - cell "-" [ref=e145]
+```

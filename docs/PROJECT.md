@@ -37,14 +37,18 @@ URL • Title Tag • Meta Description • Robots.txt • Sitemap.xml • Headin
 
 ## API Endpoints
 
-**`api/start-analysis.php`** (POST)
+**`api/start-analysis`** (POST) - Production
+**`api/start-analysis.php`** (POST) - Localhost
 - Input: `domain`
 - Process: Fetch HTML → Extract all SEO data → Vercel AI analyzes URL → Static analysis for others → Store results
 - Output: `{success, job_id, final_url}`
 
-**`api/job-progress.php`** (GET)
+**`api/job-progress`** (GET) - Production  
+**`api/job-progress.php`** (GET) - Localhost
 - Input: `job_id`
 - Output: `{success, progress: {done, total}, results: {...}, overall: {achieved, possible}}`
+
+**Note**: JavaScript automatically detects environment and uses appropriate endpoint (.php for localhost, no extension for production)
 
 **`view-api-logs.php`** (GET)
 - View all API requests/responses with full details (for debugging)
