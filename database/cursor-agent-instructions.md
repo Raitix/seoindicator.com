@@ -74,6 +74,7 @@ SHOW TABLES;
 -- Verify schema
 DESCRIBE jobs;
 DESCRIBE job_results;
+DESCRIBE api_logs;
 ```
 
 ### 5. Safety Checklist
@@ -144,7 +145,9 @@ database/
 │   ├── 001_create_jobs_table.sql
 │   ├── 001_create_jobs_table_rollback.sql
 │   ├── 002_create_job_results_table.sql
-│   └── 002_create_job_results_table_rollback.sql
+│   ├── 002_create_job_results_table_rollback.sql
+│   ├── 003_create_api_logs_table.sql
+│   └── 003_create_api_logs_table_rollback.sql
 ├── logs/                        # Migration logs
 └── backups/                     # Database backups
 ```
