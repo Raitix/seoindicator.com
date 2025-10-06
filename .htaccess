@@ -1,0 +1,34 @@
+RewriteEngine On
+
+# Redirect direct .php file access to extensionless URLs (except index.php, api files, and debug mode)
+RewriteCond %{THE_REQUEST} \s/+([^?\s]*?)\.php[\s?] [NC]
+RewriteCond %1 !^index$
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteCond %{QUERY_STRING} !debug=
+RewriteRule ^ /%1? [R=301,L,QSA]
+
+# Allow index.php and API files to be accessed directly
+
+# Handle SEO guides in subdirectory
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{DOCUMENT_ROOT}/seo-guides/$2.php -f
+RewriteRule ^(seo-guides)/([^/]+)/?$ seo-guides/$2.php [L]
+
+# Internally map extensionless URLs to .php files (if they exist)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{DOCUMENT_ROOT}/$1.php -f
+RewriteRule ^([^/]+)/?$ $1.php [L]
+
+# Allow direct access to api directory
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Front controller pattern - route everything else to index.php
+# But exclude api/ directory from front controller
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteRule ^(.*)$ index.php [L,QSA] 

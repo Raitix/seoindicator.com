@@ -13,8 +13,8 @@ db_config.php
 *.log
 error_log
 
-# htaccess
-/.htaccess
+# htaccess - commented out to allow deployment
+# /.htaccess
 
 # Composer
 composer.lock
