@@ -35,7 +35,7 @@ test.describe('SEOIndicator.com Homepage', () => {
 
     // Check that the main header text is updated
     const mainHeader = page.locator('h1.main-title');
-    await expect(mainHeader).toHaveText('AI Powered SEO Analysis XXX');
+    await expect(mainHeader).toHaveText('AI Powered SEO Analysis');
   });
 
   test('should have visible content on the page', async ({ page }) => {
