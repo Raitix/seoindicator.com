@@ -52,10 +52,11 @@ test.describe('Indicator Checks Test', () => {
     // Wait a bit to see what happens
     await page.waitForTimeout(2000);
 
-    // Check progress bar visibility
+    // Wait for progress bar to appear
     const progressContainer = page.locator('.progress-container');
-    const isVisible = await progressContainer.isVisible();
-    console.log('Progress bar visible:', isVisible);
+    console.log('Waiting for progress bar to appear...');
+    await expect(progressContainer).toBeVisible({ timeout: 10000 });
+    console.log('Progress bar appeared');
 
     // Check for any error messages
     const errorMessages = page.locator('#error-messages');
@@ -63,13 +64,6 @@ test.describe('Indicator Checks Test', () => {
     if (errorText) {
       console.log('Error message on page:', errorText);
     }
-
-    // Try to wait for progress bar if not visible yet
-    if (!isVisible) {
-      console.log('Waiting for progress bar to appear...');
-      await expect(progressContainer).toBeVisible({ timeout: 10000 });
-    }
-    console.log('Progress bar appeared');
 
     // Wait for analysis to complete (progress bar to disappear or reach 100%)
     console.log('Waiting for analysis to complete...');

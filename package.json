@@ -1,32 +1,22 @@
 {
   "name": "seoindicator-tests",
   "version": "1.0.0",
-  "description": "Automated tests for SEOIndicator.com using Playwright",
-  "main": "index.js",
   "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:ui": "playwright test --ui",
-    "test:debug": "playwright test --debug",
-    "test:report": "playwright test --reporter=html",
-    "test:show-report": "playwright show-report",
-    "test:production": "cross-env BASE_URL=https://seoindicator.com playwright test",
-    "test:production:headed": "cross-env BASE_URL=https://seoindicator.com playwright test --headed",
-    "test:production:ui": "cross-env BASE_URL=https://seoindicator.com playwright test --ui",
-    "test:production:debug": "cross-env BASE_URL=https://seoindicator.com playwright test --debug",
-    "test:production:report": "cross-env BASE_URL=https://seoindicator.com playwright test --reporter=html",
-    "install:browsers": "playwright install --with-deps"
+    "test": "npx playwright test",
+    "test:playwright": "npx playwright test",
+    "start": "node start index.js"
   },
-  "keywords": [
-    "playwright",
-    "testing",
-    "seo",
-    "automation"
-  ],
-  "author": "",
-  "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
-    "cross-env": "^10.0.0"
+    "@babel/preset-env": "^7.29.0",
+    "@babel/preset-react": "^7.28.5",
+    "@playwright/test": "^1.33.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^13.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.4.2"
+  },
+  "dependencies": {
+    "react": "latest",
+    "react-dom": "latest"
   }
 }
