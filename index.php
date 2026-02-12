@@ -33,7 +33,7 @@
         <div class="row justify-content-center">
             <div class="col-lg-10 col-md-12 text-center">
                 <img src="Logo-SEOIndicator-com.png" alt="SEOIndicator.com Logo" style="max-width: 200px; margin-bottom: 20px;">
-                <h1 class="mb-4 main-title">AI Powered SEO Analysis</h1>
+                <h1 class="mb-4 main-title">AI Powered SEO Analysis XXX</h1>
 
                 <!-- Error Messages -->
                 <div id="error-messages"></div>
