@@ -75,6 +75,12 @@ To Deploy → In Deployment → To Test Prod → Testing Prod → Done
 Also: Cancelled (any stage)
 ```
 
+### Concurrency Limits
+- **Max 3 active features** in pipeline (exclude New Feature/Done/Cancelled)
+- **Max 3 agents per status** (parallel work on same status)
+- **1 functionality per agent** (each instance handles one item)
+- Block spawn if limits exceeded
+
 ---
 
 ## Workspace Structure
@@ -126,7 +132,7 @@ workspace/
 - Run security audits regularly:
   - `openclaw security audit --deep`
   - `openclaw security audit --fix`
-- Session health check: CRON job every 5 min (heartbeat disabled to save API calls)
+- Session health check: Background PowerShell script every 5 min (no LLM, scripts/session-health-check.ps1)
 
 ---
 
