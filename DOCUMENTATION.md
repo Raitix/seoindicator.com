@@ -57,40 +57,27 @@
 - **XAMPP** (Apache + MySQL + PHP 8.2+)
 - Composer (requires SSL to work)
 
-### Required Services (Start These Every Time)
+### Required Services (Start Every Time)
 
-**Option A: Using XAMPP (Recommended for Full Stack)**
-1. Open XAMPP Control Panel (`C:\xampp\xampp-control.exe`)
-2. Start **Apache** (serves Laravel + phpMyAdmin)
-3. Start **MySQL** (database)
-4. Access:
-   - Frontend: http://localhost:3000 (run `npm run dev` in frontend folder)
-   - Backend: http://seoindicator.local (requires hosts file edit, see below)
-   - phpMyAdmin: http://localhost/phpmyadmin
+**1. MySQL** - Start via XAMPP Control Panel
 
-**Setup Apache Virtual Host (one-time):**
-1. Add to `C:\Windows\System32\drivers\etc\hosts` (run as admin):
-   ```
-   127.0.0.1 seoindicator.local
-   ```
-2. Apache config already updated at `C:\xampp\apache\conf\extra\httpd-vhosts.conf`
-3. Restart Apache after first setup
-
-**Option B: Standalone Development Servers (Simpler)**
+**2. Backend** - Open terminal:
 ```bash
-# Terminal 1 - MySQL (if not using XAMPP panel)
-# Start via XAMPP Control Panel instead
-
-# Terminal 2 - Backend
 cd PROJECT-SEOINDICATOR/backend
 php artisan serve
-# Opens at http://localhost:8000
+# Runs at http://localhost:8000
+```
 
-# Terminal 3 - Frontend
+**3. Frontend** - Open another terminal:
+```bash
 cd PROJECT-SEOINDICATOR/frontend
 npm run dev
-# Opens at http://localhost:3000
+# Runs at http://localhost:3000
 ```
+
+**phpMyAdmin** (optional, for DB UI):
+- Start Apache in XAMPP Control Panel
+- Access at http://localhost/phpmyadmin
 
 ### Frontend Setup
 ```bash
