@@ -1,1 +1,0 @@
-# Adding test cases to existing test suite for Meta Description indicator functionality.
