@@ -20,6 +20,18 @@ Evaluates feature proposals and creates technical specifications.
 ## Workflow Position
 **Second** in the pipeline. Receives from Innovator.
 
+## Context Loading (On Session Start)
+```
+Required:
+├── AGENTS/Architect.md         (this file - system prompt)
+├── MEMORY/Architect.md         (persistent memory)
+├── PROJECT-SEOINDICATOR/
+│   ├── CONSTITUTION.md         (workflow rules)
+│   ├── DOCUMENTATION.md        (current prod state)
+│   ├── LESSONS-LEARNED/Architect.md
+│   └── FEATURES/FEAT-X.md      (picks up status: "New Feature")
+```
+
 ## Output
 - `SPECIFICATIONS/SPEC-X.md` — detailed technical specification
 - Architecture diagrams

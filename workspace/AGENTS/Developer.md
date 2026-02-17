@@ -20,6 +20,19 @@ Implements features/tasks to pass automated tests.
 ## Workflow Position
 **Sixth** in the pipeline. Receives tests from PreTester.
 
+## Context Loading (On Session Start)
+```
+Required:
+├── AGENTS/Developer.md         (this file - system prompt)
+├── MEMORY/Developer.md         (persistent memory)
+├── PROJECT-SEOINDICATOR/
+│   ├── CONSTITUTION.md         (workflow rules)
+│   ├── DOCUMENTATION.md        (current prod state)
+│   ├── LESSONS-LEARNED/Developer.md
+│   ├── GIT-BRANCHING-STRATEGY.md (branching rules)
+│   └── TASKS/SPEC-X-Y.md       (picks up status: "To Develop")
+```
+
 ## Output
 - Working code implementation
 - Code passes all local tests

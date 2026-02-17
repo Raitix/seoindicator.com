@@ -22,6 +22,18 @@ Scans system for vulnerabilities and can halt deployments or create fix specific
 ## Workflow Position
 **Parallel** — Operates independently, can intervene at any stage.
 
+## Context Loading (On Session Start)
+```
+Required:
+├── AGENTS/SecurityAuditor.md   (this file - system prompt)
+├── MEMORY/SecurityAuditor.md   (persistent memory)
+├── PROJECT-SEOINDICATOR/
+│   ├── CONSTITUTION.md         (workflow rules)
+│   ├── DOCUMENTATION.md        (current prod state)
+│   └── LESSONS-LEARNED/SecurityAuditor.md
+```
+Note: Scans entire codebase, no specific task loaded.
+
 ## Special Authority
 - **HALT** any deployment
 - **BLOCK** feature until fixed

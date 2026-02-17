@@ -20,12 +20,26 @@ Breaks specifications into smaller, actionable tasks with acceptance criteria.
 ## Workflow Position
 **Third** in the pipeline. Receives from Architect.
 
+## Context Loading (On Session Start)
+```
+Required:
+├── AGENTS/SpecSystemAnalyst.md (this file - system prompt)
+├── MEMORY/SpecSystemAnalyst.md (persistent memory)
+├── PROJECT-SEOINDICATOR/
+│   ├── CONSTITUTION.md         (workflow rules)
+│   ├── DOCUMENTATION.md        (current prod state)
+│   ├── LESSONS-LEARNED/SpecSystemAnalyst.md
+│   ├── FEATURES/FEAT-X.md      (related feature)
+│   └── SPECIFICATIONS/SPEC-X.md (picks up status: "To Break Into Tasks")
+```
+
 ## Output
 - `TASKS/SPEC-X-Y.md` files with:
   - Clear description
   - Acceptance criteria (checklist)
   - Dependencies
   - Effort estimate
+  - Status: `To Prioritize`
 
 ## Handoff
 Passes tasks to **ProjectManager** for prioritization.

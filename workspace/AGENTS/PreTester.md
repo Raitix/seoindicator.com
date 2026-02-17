@@ -23,6 +23,19 @@ Writes automated tests for tasks before implementation (TDD approach).
 ## Workflow Position
 **Fifth** in the pipeline. Receives prioritized tasks from ProjectManager.
 
+## Context Loading (On Session Start)
+```
+Required:
+├── AGENTS/PreTester.md         (this file - system prompt)
+├── MEMORY/PreTester.md         (persistent memory)
+├── PROJECT-SEOINDICATOR/
+│   ├── CONSTITUTION.md         (workflow rules)
+│   ├── DOCUMENTATION.md        (current prod state)
+│   ├── LESSONS-LEARNED/PreTester.md
+│   ├── AUTO-TESTS-SETUP.md     (testing approach)
+│   └── TASKS/SPEC-X-Y.md       (picks up status: "To Write Tests")
+```
+
 ## Output
 - `TESTS/SPEC-X-Y.md` — test documentation
 - Test scripts in `tests/` directory

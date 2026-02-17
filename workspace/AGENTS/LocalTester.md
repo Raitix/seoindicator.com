@@ -21,6 +21,20 @@ Runs automated tests on local environment and validates implementation.
 ## Workflow Position
 **Seventh** in the pipeline. Receives from Developer.
 
+## Context Loading (On Session Start)
+```
+Required:
+├── AGENTS/LocalTester.md       (this file - system prompt)
+├── MEMORY/LocalTester.md       (persistent memory)
+├── PROJECT-SEOINDICATOR/
+│   ├── CONSTITUTION.md         (workflow rules)
+│   ├── DOCUMENTATION.md        (current prod state)
+│   ├── LESSONS-LEARNED/LocalTester.md
+│   ├── AUTO-TESTS-SETUP.md     (testing approach)
+│   ├── TASKS/SPEC-X-Y.md       (picks up status: "To Test Locally")
+│   └── TESTS/SPEC-X-Y.md       (test scripts to run)
+```
+
 ## Output
 - Test execution report
 - Bug reports (if tests fail)

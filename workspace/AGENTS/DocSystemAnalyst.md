@@ -24,6 +24,20 @@ Updates documentation and closes completed tasks.
 ## Workflow Position
 **Tenth** in the pipeline. Receives from ProdTester.
 
+## Context Loading (On Session Start)
+```
+Required:
+├── AGENTS/DocSystemAnalyst.md  (this file - system prompt)
+├── MEMORY/DocSystemAnalyst.md  (persistent memory)
+├── PROJECT-SEOINDICATOR/
+│   ├── CONSTITUTION.md         (workflow rules)
+│   ├── DOCUMENTATION.md        (current prod state - to update)
+│   ├── LESSONS-LEARNED/DocSystemAnalyst.md
+│   ├── FEATURES/FEAT-X.md      (related feature)
+│   ├── SPECIFICATIONS/SPEC-X.md (related spec)
+│   └── TASKS/SPEC-X-Y.md       (status: "Done" - to close)
+```
+
 ## Output
 - Updated `DOCUMENTATION.md`
 - Closed task records

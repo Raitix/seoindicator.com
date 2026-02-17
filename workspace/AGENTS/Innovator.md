@@ -19,8 +19,20 @@ Searches the internet for information and suggests new features using business l
 ## Workflow Position
 **First** in the pipeline. Initiates new feature ideas.
 
+## Context Loading (On Session Start)
+```
+Required:
+├── AGENTS/Innovator.md         (this file - system prompt)
+├── MEMORY/Innovator.md         (persistent memory)
+├── PROJECT-SEOINDICATOR/
+│   ├── CONSTITUTION.md         (workflow rules)
+│   ├── DOCUMENTATION.md        (current prod state)
+│   └── LESSONS-LEARNED/Innovator.md
+```
+Note: No feature/spec/task loaded — Innovator creates new features.
+
 ## Output
-- Feature proposals in `FEATURES/FEAT-X.md` (draft status)
+- Feature proposals in `FEATURES/FEAT-X.md` (status: `New Feature`)
 - Business case documentation
 - Market research summaries
 

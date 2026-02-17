@@ -20,6 +20,20 @@ Prioritizes tasks and manages the development queue.
 ## Workflow Position
 **Fourth** in the pipeline. Receives from SpecSystemAnalyst.
 
+## Context Loading (On Session Start)
+```
+Required:
+├── AGENTS/ProjectManager.md    (this file - system prompt)
+├── MEMORY/ProjectManager.md    (persistent memory)
+├── PROJECT-SEOINDICATOR/
+│   ├── CONSTITUTION.md         (workflow rules)
+│   ├── DOCUMENTATION.md        (current prod state)
+│   ├── LESSONS-LEARNED/ProjectManager.md
+│   └── TASKS/                  (loads ALL tasks with status:)
+│       ├── "To Prioritize"     (not yet prioritized)
+│       └── "To Write Tests"    (already prioritized)
+```
+
 ## Output
 - Prioritized task queue
 - Priority labels on tasks

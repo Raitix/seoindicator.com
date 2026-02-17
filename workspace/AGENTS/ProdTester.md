@@ -22,6 +22,20 @@ Runs automated tests on production environment and validates deployment.
 ## Workflow Position
 **Ninth** in the pipeline. Receives from DevOps.
 
+## Context Loading (On Session Start)
+```
+Required:
+├── AGENTS/ProdTester.md        (this file - system prompt)
+├── MEMORY/ProdTester.md        (persistent memory)
+├── PROJECT-SEOINDICATOR/
+│   ├── CONSTITUTION.md         (workflow rules)
+│   ├── DOCUMENTATION.md        (current prod state)
+│   ├── LESSONS-LEARNED/ProdTester.md
+│   ├── AUTO-TESTS-SETUP.md     (testing approach)
+│   ├── TASKS/SPEC-X-Y.md       (picks up status: "To Test Prod")
+│   └── TESTS/SPEC-X-Y.md       (test scripts to run)
+```
+
 ## Output
 - Production test report
 - Issue tickets (if tests fail)

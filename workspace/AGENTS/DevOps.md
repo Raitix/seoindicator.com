@@ -21,6 +21,19 @@ Deploys approved implementations to production environment.
 ## Workflow Position
 **Eighth** in the pipeline. Receives from LocalTester.
 
+## Context Loading (On Session Start)
+```
+Required:
+├── AGENTS/DevOps.md            (this file - system prompt)
+├── MEMORY/DevOps.md            (persistent memory)
+├── PROJECT-SEOINDICATOR/
+│   ├── CONSTITUTION.md         (workflow rules)
+│   ├── DOCUMENTATION.md        (current prod state)
+│   ├── LESSONS-LEARNED/DevOps.md
+│   ├── DEPLOYMENT-SETUP.md     (deployment steps)
+│   └── TASKS/SPEC-X-Y.md       (picks up status: "To Deploy")
+```
+
 ## Output
 - Deployed code in production
 - Deployment logs

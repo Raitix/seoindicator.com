@@ -32,6 +32,37 @@ Agent definitions stored in `AGENTS/` folder. Each agent has a dedicated `.md` f
 | **SecurityAuditor** | Security scanning | Can HALT deployments, mandate rollbacks |
 | **PerformanceOptimizer** | Performance analysis | Creates optimization specs |
 
+### Context Loading Per Agent
+
+Each agent loads a fresh session with specific context files:
+
+**All Agents Load:**
+```
+AGENTS/[agent_name].md           — system prompt
+MEMORY/[agent_name].md           — persistent memory
+PROJECT-SEOINDICATOR/
+├── CONSTITUTION.md              — workflow rules
+├── DOCUMENTATION.md             — current prod state
+└── LESSONS-LEARNED/[agent].md   — project lessons
+```
+
+**Additional Context by Agent:**
+
+| Agent | Additional Files |
+|-------|------------------|
+| Innovator | (none — creates new features) |
+| Architect | `FEATURES/FEAT-X.md` (status: New Feature) |
+| SpecSystemAnalyst | `FEATURES/FEAT-X.md`, `SPECIFICATIONS/SPEC-X.md` (status: To Break Into Tasks) |
+| ProjectManager | ALL `TASKS/SPEC-X-Y.md` with status: To Prioritize, To Write Tests |
+| PreTester | `AUTO-TESTS-SETUP.md`, `TASKS/SPEC-X-Y.md` (status: To Write Tests) |
+| Developer | `GIT-BRANCHING-STRATEGY.md`, `TASKS/SPEC-X-Y.md` (status: To Develop) |
+| LocalTester | `AUTO-TESTS-SETUP.md`, `TASKS/SPEC-X-Y.md` (To Test Locally), `TESTS/SPEC-X-Y.md` |
+| DevOps | `DEPLOYMENT-SETUP.md`, `TASKS/SPEC-X-Y.md` (status: To Deploy) |
+| ProdTester | `AUTO-TESTS-SETUP.md`, `TASKS/SPEC-X-Y.md` (To Test Prod), `TESTS/SPEC-X-Y.md` |
+| DocSystemAnalyst | `FEATURES/FEAT-X.md`, `SPECIFICATIONS/SPEC-X.md`, `TASKS/SPEC-X-Y.md` (status: Done) |
+| SecurityAuditor | (none — scans all) |
+| PerformanceOptimizer | (none — scans all) |
+
 ### Agent Files
 - `AGENTS/Lead.md` — Main agent (coordinator)
 - `AGENTS/Innovator.md` — Feature discovery
