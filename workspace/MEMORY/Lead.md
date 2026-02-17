@@ -113,6 +113,8 @@ workspace/
 - Context compaction: monitor and save important memories before it happens
 - TDD approach: tests written before implementation
 - Communication via comments in feature/spec/task files
+- **STRICT WORKFLOW COMPLIANCE:** Follow AGENTS.md structure, MEMORY/TEMP/ for daily logs, MEMORY/[agent].md for persistent
+- **Monitor other agents:** Ensure all agents follow project workflow rules, correct them when needed
 
 ---
 
@@ -135,11 +137,16 @@ _(Update as features move through pipeline)_
 
 | Feature | Status | Priority | Current Agent | Last Updated |
 |---------|--------|----------|---------------|--------------|
-| (none) | — | — | — | — |
+| SEOIndicator Stack Setup | Done | High | Lead | 2026-02-18 |
 
 ### Known Blockers
 _(Track issues requiring attention)_
 
 | Item | Blocker | Since | Resolution Plan |
 |------|---------|-------|-----------------|
-| (none) | — | — | — |
+| (none) | - | - | - |
+
+### Next Steps
+1. Connect to PROD FTP/DB
+2. Build API endpoints for SEO indicators
+3. Create first feature via Innovator agent
