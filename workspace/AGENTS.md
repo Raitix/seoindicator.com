@@ -48,7 +48,7 @@ Agent definitions stored in `AGENTS/` folder. Each agent has a dedicated `.md` f
 - `AGENTS/PerformanceOptimizer.md` — Performance optimization
 
 ## Memory
-- **Persistent:** `MEMORY/Lead.md` — important notes, lessons, critical context (Lead only)
+- **Persistent:** `MEMORY/[agent_name].md` — agent-specific memory (Lead, Innovator, Architect, etc.)
 - **Temporary:** `MEMORY/TEMP/YYYY-MM-DD.md` — daily logs, raw notes
 
 Write things down. Files persist; mental notes don't.
