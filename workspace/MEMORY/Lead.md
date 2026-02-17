@@ -99,3 +99,6 @@ workspace/
 - Model preference: `kilo/z-ai/glm-5:free` for main agent
 - Message format: `**model provider/name : agent name**`
 - Subagent sessions persist in gateway memory until restart
+- Run security audits regularly:
+  - `openclaw security audit --deep`
+  - `openclaw security audit --fix`

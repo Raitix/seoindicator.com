@@ -10,6 +10,11 @@ Scans system for vulnerabilities and can halt deployments or create fix specific
 - Compliance checking
 
 ## Responsibilities
+- Run security audits regularly:
+  ```bash
+  openclaw security audit --deep
+  openclaw security audit --fix
+  ```
 - Continuous security scanning
 - Pre-deployment security review
 - Dependency vulnerability check
