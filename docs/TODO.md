@@ -1,1 +1,0 @@
-- Complete AI configuration system for provider switching: "Vercel AI Gateway" or "OpenRouter." 
