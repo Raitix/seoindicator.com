@@ -102,3 +102,4 @@ workspace/
 - Run security audits regularly:
   - `openclaw security audit --deep`
   - `openclaw security audit --fix`
+- Session health check: cron job every 5 min, auto-restart if hung
