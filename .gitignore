@@ -20,8 +20,13 @@ workspace/PROJECT-SEOINDICATOR/
 
 # Credentials and secrets
 openclaw.json
+openclaw.json.bak*
+*.bak
 *.key
 *.pem
+
+# Gateway
+gateway.cmd
 
 # Logs
 *.log
