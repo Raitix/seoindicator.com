@@ -7,7 +7,7 @@
       "name": "session-health-check",
       "enabled": true,
       "createdAtMs": 1771332318670,
-      "updatedAtMs": 1771337478726,
+      "updatedAtMs": 1771365960485,
       "schedule": {
         "kind": "every",
         "everyMs": 300000,
@@ -24,12 +24,12 @@
         "mode": "none"
       },
       "state": {
-        "nextRunAtMs": 1771337718670,
-        "lastRunAtMs": 1771337418690,
-        "lastStatus": "error",
-        "lastDurationMs": 60036,
-        "consecutiveErrors": 2,
-        "runningAtMs": 1771337718680
+        "nextRunAtMs": 1771366218670,
+        "lastRunAtMs": 1771365918685,
+        "lastStatus": "ok",
+        "lastDurationMs": 41800,
+        "consecutiveErrors": 0,
+        "runningAtMs": 1771366218687
       }
     }
   ]
