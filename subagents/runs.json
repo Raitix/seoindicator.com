@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "runs": {
+    "63852cf7-aafd-4405-963e-ab14f872c280": {
+      "runId": "63852cf7-aafd-4405-963e-ab14f872c280",
+      "childSessionKey": "agent:main:subagent:15951a29-5fec-4892-996c-1142af2a9b02",
+      "requesterSessionKey": "agent:main:main",
+      "requesterOrigin": {
+        "channel": "webchat"
+      },
+      "requesterDisplayKey": "agent:main:main",
+      "task": "New clean session ready for instructions.",
+      "cleanup": "keep",
+      "createdAt": 1771320374307,
+      "startedAt": 1771320374608,
+      "archiveAtMs": 1771323974307,
+      "cleanupHandled": true,
+      "endedAt": 1771320399015,
+      "outcome": {
+        "status": "ok"
+      },
+      "cleanupCompletedAt": 1771320419702
+    }
+  }
+}
