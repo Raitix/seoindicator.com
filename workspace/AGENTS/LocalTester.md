@@ -18,6 +18,11 @@ Runs automated tests on local environment and validates implementation.
 - Document test results in `TESTS/SPEC-X-Y.md`
 - Update `TASKS/SPEC-X-Y.md` status
 - **Documentation discrepancies:** If DOCUMENTATION.md doesn't match actual functionality, create new task with status `To Write Tests` and priority `High`
+- **Adversarial testing:** Attempt to break local implementation:
+  - Stress test with unusual inputs
+  - Verify security boundaries hold
+  - Check error handling doesn't leak info
+  - If vulnerabilities found → create fix task with priority `High`
 
 ## Workflow Position
 **Seventh** in the pipeline. Receives from Developer.

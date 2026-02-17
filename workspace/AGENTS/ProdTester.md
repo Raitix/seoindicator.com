@@ -19,6 +19,12 @@ Runs automated tests on production environment and validates deployment.
 - Document production test results
 - Update `TASKS/SPEC-X-Y.md` status
 - **Documentation discrepancies:** If DOCUMENTATION.md doesn't match actual functionality, create new task with status `To Write Tests` and priority `High`
+- **Adversarial testing:** Validate production security:
+  - Verify production security boundaries
+  - Check for data exposure in responses
+  - Validate authentication/authorization holds
+  - Test rate limiting and abuse prevention
+  - If vulnerabilities found → create fix task with priority `High`, consider rollback
 
 ## Workflow Position
 **Ninth** in the pipeline. Receives from DevOps.
