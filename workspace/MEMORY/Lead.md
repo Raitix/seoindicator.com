@@ -129,10 +129,8 @@ workspace/
 - Fallback model: `github-copilot/gpt-4o` (auto-switch on quota limits)
 - Message format: `**model provider/name : agent name**`
 - Subagent sessions persist in gateway memory until restart
-- Run security audits regularly:
-  - `openclaw security audit --deep`
-  - `openclaw security audit --fix`
 - Session health check: Background PowerShell script every 5 min (no LLM, scripts/session-health-check.ps1)
+- Memory compaction: Auto-triggers when MEMORY/*.md or LESSONS-LEARNED/*.md exceeds 500KB
 
 ---
 
