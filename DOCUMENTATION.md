@@ -59,7 +59,9 @@
 
 ### Required Services (Start Every Time)
 
-**1. MySQL** - Start via XAMPP Control Panel
+> **Note:** OpenClaw can start MySQL automatically. Backend and frontend servers need manual start.
+
+**1. MySQL** - Can be started automatically by OpenClaw, or manually via XAMPP Control Panel
 
 **2. Backend** - Open terminal:
 ```bash
