@@ -40,6 +40,22 @@ SEOIndicator — SEO analysis and monitoring tool.
 
 ---
 
+## Priority System
+
+All features, specifications, and tasks have a **PRIORITY** indicator:
+- `High` — Critical, blocks other work or business-critical
+- `Medium` — Important but not blocking
+- `Low` — Nice to have, can be deferred
+
+### Priority Rules
+- **Sorting:** Items within same status are sorted by priority (High → Medium → Low)
+- **Same Priority:** Agent discretion on order
+- **Priority Assignment:**
+  - Innovator sets initial priority on feature creation
+  - ProjectManager can adjust priorities during prioritization phase
+
+---
+
 ## Status Workflow
 
 Every feature, specification, and task has a STATUS that tracks its progress through the pipeline.
