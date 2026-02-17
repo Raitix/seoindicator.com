@@ -70,15 +70,18 @@ npm run dev
 ```bash
 cd PROJECT-SEOINDICATOR/backend
 
-# If Composer works:
+# Install dependencies (requires SSL to work)
 composer install
+
+# Generate app key
+php artisan key:generate
+
+# Run migrations
+php artisan migrate
+
+# Start development server
 php artisan serve
 # Opens at http://localhost:8000
-
-# If Composer blocked (SSL issue):
-# Use the minimal PHP backend:
-cd backend
-php -S localhost:8000 index.php
 ```
 
 ### Database Setup
@@ -97,15 +100,15 @@ php artisan migrate
 ### Implemented
 - ✅ Next.js frontend with Tailwind CSS
 - ✅ Shadcn/UI components (Button, Card, Input)
+- ✅ Laravel 12 backend with Eloquent ORM
 - ✅ MySQL database created (`seoindicator`)
-- ✅ Basic API health check endpoint
+- ✅ Database migrations (users, cache, jobs tables)
 - ✅ Landing page with SEO Indicator branding
 
 ### In Development
-- 🔄 Laravel backend setup (blocked by SSL/Composer issue)
-- 🔄 Database migrations
 - 🔄 User authentication
 - 🔄 SEO indicators CRUD
+- 🔄 API endpoints for frontend integration
 
 ---
 
