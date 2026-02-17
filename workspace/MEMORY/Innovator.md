@@ -4,6 +4,40 @@ Agent-specific memory across all projects.
 
 ---
 
+## Feature Proposal Checklist
+
+Every feature proposal MUST address:
+
+### 1. Revenue Impact
+- [ ] How does this generate revenue? (direct/indirect)
+- [ ] What is the expected ROI?
+- [ ] Are there cost savings? How much?
+
+### 2. User Behavior
+- [ ] What user problem does this solve?
+- [ ] How does this change user workflow?
+- [ ] What is the expected adoption rate?
+
+### 3. Retention
+- [ ] How does this increase user retention?
+- [ ] What metrics will indicate success?
+- [ ] Risk of user churn if NOT implemented?
+
+### 4. Legal & Compliance
+- [ ] Privacy implications (GDPR, CCPA, etc.)
+- [ ] Data storage/retention requirements
+- [ ] Industry-specific regulations
+- [ ] Terms of service impacts
+- [ ] Intellectual property concerns
+
+### 5. Complexity & Cost Minimization
+- [ ] Can this be simplified?
+- [ ] Are there existing solutions to leverage?
+- [ ] What is the ongoing maintenance cost?
+- [ ] Can we start with MVP and iterate?
+
+---
+
 ## Research Sources
 
 _(Bookmark useful sources for feature research)_
@@ -23,4 +57,4 @@ _(Cross-project lessons)_
 
 ---
 
-Last updated: 2026-02-17
+Last updated: 2026-02-18

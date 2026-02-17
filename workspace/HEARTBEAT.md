@@ -1,57 +1,43 @@
 # HEARTBEAT.md
 
 > **Note:** Heartbeat polling is disabled (`every: "0m"`). This file is kept as reference only.
-> Automated tasks are now handled by shell scripts (no LLM API calls).
+> Automated tasks are now handled by Windows Task Scheduler (no LLM API calls).
 
 ---
 
 ## Active Background Tasks
 
-### Session Health Check
-- **Script:** `~/.openclaw/scripts/run-health-check.ps1`
-- **Interval:** Every 5 minutes
-- **Actions:**
-  - Check for hung sessions → restart gateway if needed
-  - Monitor MEMORY/ and LESSONS-LEARNED/ file sizes
-  - Alert if any file exceeds 500KB (triggers intelligent compaction)
-- **Logs:** `~/.openclaw/logs/session-health.log`, `~/.openclaw/logs/memory-compaction.log`
+All tasks managed by **Windows Task Scheduler**. See `scripts/setup-tasks.ps1` for configuration.
 
-### Memory Compaction
-- **Threshold:** 500 KB per file
-- **Trigger:** Automatic when threshold exceeded
-- **Process:** Isolated agent intelligently summarizes while preserving directives
-- **Files monitored:** `MEMORY/*.md`, `LESSONS-LEARNED/*.md`
+| Task | Schedule | Script | Log |
+|------|----------|--------|-----|
+| Session Health Check | Every 5 min | `session-health-check.ps1` | `logs/session-health.log` |
+| Security Audit | Daily 22:00 | `security-audit.ps1` | `logs/security-audit.log` |
+| Memory Compaction Check | Daily 22:05 | `memory-compaction-check.ps1` | `logs/memory-compaction.log` |
 
-### Security Audit (Manual)
-```bash
-openclaw security audit --deep
-openclaw security audit --fix
-```
-
-Or run the script:
-```powershell
-~/.openclaw/scripts/security-audit.ps1
-```
+### Memory Compaction Threshold
+- **Trigger:** Any file in `MEMORY/` or `LESSONS-LEARNED/` exceeds 500KB
+- **Action:** Spawns isolated agent for intelligent compaction
+- **Preserves:** Directives, rules, decisions, active tracking
 
 ---
 
-## How to Start/Stop Background Tasks
+## Task Scheduler Management
 
-### Start Session Health Check
+**Setup (run as Admin):**
 ```powershell
-Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"C:\Users\Raitis\.openclaw\scripts\run-health-check.ps1`"" -WindowStyle Hidden
+& "C:\Users\Raitis\.openclaw\scripts\setup-tasks.ps1"
 ```
 
-### Stop Session Health Check
+**View tasks:**
 ```powershell
-Get-Process -Name powershell | Where-Object { $_.MainWindowTitle -eq "" } | Stop-Process
+Get-ScheduledTask | Where-Object { $_.TaskName -like "*OpenClaw*" }
 ```
 
----
-
-## CRON Jobs
-
-No LLM-based CRON jobs configured. All periodic tasks use shell scripts.
+**Manually run a task:**
+```powershell
+Start-ScheduledTask -TaskName "OpenClaw Session Health Check"
+```
 
 ---
 

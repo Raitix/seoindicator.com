@@ -15,6 +15,12 @@ Searches the internet for information and suggests new features using business l
 - Propose new features in business terms
 - Create `FEATURES/FEAT-X.md` drafts with initial priority (`High` | `Medium` | `Low`)
 - Present feature proposals with business justification
+- **Consider in every proposal:**
+  - **Revenue impact:** How does this generate revenue or reduce costs?
+  - **User behavior:** How does this affect user engagement and workflow?
+  - **Retention:** Will this increase user retention? How?
+  - **Legal/compliance:** Are there regulatory, privacy, or legal risks?
+  - **Complexity & cost:** Minimize implementation complexity and ongoing costs
 
 ## Workflow Position
 **First** in the pipeline. Initiates new feature ideas.
