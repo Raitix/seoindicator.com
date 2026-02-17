@@ -15,15 +15,15 @@
 ## Branch Rules
 
 ### Main Branch
-- Protected — no direct commits
-- Requires PR approval
-- Must pass all tests
+- Production-ready code only
+- Protected from unstable code
+- Production tests ensure stability
 
 ### Feature Branches
 - Created from `main`
 - Named: `feature/FEAT-X` or `feat/short-description`
 - One feature per branch
-- Deleted after merge
+- Deleted after deployment
 
 ### Bugfix Branches
 - Created from `main` or `feature` branch
@@ -37,16 +37,14 @@
 
 ---
 
-## Merge Rules
+## Commit Rules
 
-1. **PR required** for all merges to main
-2. **Squash merge** preferred for feature branches
-3. **Rebase** feature branch before PR if needed
-4. **Delete branch** after merge
+### No Merge Requests Required
+- Production tests cover stability
+- Direct commits to branches allowed
+- No code review process
 
----
-
-## Commit Messages
+### Commit Messages
 
 Format: `type(scope): description`
 
@@ -59,3 +57,21 @@ Types:
 - `chore` — Maintenance tasks
 
 Example: `feat(seo-analysis): add keyword density calculator`
+
+---
+
+## Workflow
+
+1. Create branch from `main`
+2. Implement feature with tests
+3. Run local tests → pass
+4. Deploy → prod tests validate
+5. Delete branch after deployment
+
+---
+
+## Branch Lifecycle
+
+```
+main → feature/FEAT-X → develop → test → deploy → delete branch
+```
