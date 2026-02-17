@@ -19,6 +19,7 @@ Writes automated tests for tasks before implementation (TDD approach).
   - Integration tests (`tests/integration/`)
   - E2E tests (`tests/e2e/`)
 - Document edge cases and boundary conditions
+- **Documentation discrepancies:** If DOCUMENTATION.md doesn't match expected behavior, create new task with status `To Write Tests` and priority `High`
 
 ## Workflow Position
 **Fifth** in the pipeline. Receives prioritized tasks from ProjectManager.

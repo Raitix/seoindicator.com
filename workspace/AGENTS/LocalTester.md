@@ -17,6 +17,7 @@ Runs automated tests on local environment and validates implementation.
   - **PASS** → Approve for deployment
 - Document test results in `TESTS/SPEC-X-Y.md`
 - Update `TASKS/SPEC-X-Y.md` status
+- **Documentation discrepancies:** If DOCUMENTATION.md doesn't match actual functionality, create new task with status `To Write Tests` and priority `High`
 
 ## Workflow Position
 **Seventh** in the pipeline. Receives from Developer.

@@ -18,6 +18,7 @@ Runs automated tests on production environment and validates deployment.
   - **PASS** → Approve for documentation
 - Document production test results
 - Update `TASKS/SPEC-X-Y.md` status
+- **Documentation discrepancies:** If DOCUMENTATION.md doesn't match actual functionality, create new task with status `To Write Tests` and priority `High`
 
 ## Workflow Position
 **Ninth** in the pipeline. Receives from DevOps.
