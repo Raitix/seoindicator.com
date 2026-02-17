@@ -59,18 +59,18 @@
 
 ### Required Services (Start Every Time)
 
-> **Note:** OpenClaw can start MySQL automatically. Backend and frontend servers need manual start.
+> **Important:** Every time OpenClaw starts, you need to start the backend and frontend servers. MySQL can be started automatically by OpenClaw.
 
 **1. MySQL** - Can be started automatically by OpenClaw, or manually via XAMPP Control Panel
 
-**2. Backend** - Open terminal:
+**2. Backend** - Open terminal (REQUIRED on every OpenClaw start):
 ```bash
 cd PROJECT-SEOINDICATOR/backend
 php artisan serve
 # Runs at http://localhost:8000
 ```
 
-**3. Frontend** - Open another terminal:
+**3. Frontend** - Open another terminal (REQUIRED on every OpenClaw start):
 ```bash
 cd PROJECT-SEOINDICATOR/frontend
 npm run dev
