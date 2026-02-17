@@ -149,6 +149,33 @@ TASKS
 
 ## Workflow Rules
 
+### Concurrency Rules
+
+**Maximum Parallelism:**
+- **1 functionality per agent instance** — Each agent instance works on exactly one feature, specification, or task
+- **Max 3 agents per status** — Maximum 3 parallel agents working on items with the same status
+- **Pipeline limit: Max 3 active features** — Do not initiate new agent instance if there are 3 or more active features in the pipeline
+
+**Active Feature Definition:**
+- Active = Any feature with status NOT in: `New Feature`, `Done`, `Cancelled`
+- These statuses have no agent actively working on them
+
+**Pre-Flight Check Before Spawning Agent:**
+1. Count active features (exclude `New Feature`, `Done`, `Cancelled`)
+2. If ≥ 3 active features → **BLOCK** — Do not spawn agent
+3. Count items with target status
+4. If ≥ 3 items with same status → **BLOCK** — Wait for one to complete
+5. If checks pass → Spawn agent for single item
+
+**Example Valid States:**
+- ✅ 2 features in progress, 1 in specification = 3 active (max reached, block new)
+- ✅ 1 feature with 2 tasks in "To Develop" = 2 parallel in same status (ok)
+- ✅ 1 feature "In Development", 1 spec "Breaking Into Tasks" = 2 active (ok)
+
+**Example Invalid States:**
+- ❌ 3 features in progress = Block all new agent spawns
+- ❌ 4 tasks with status "To Write Tests" = Block until one completes
+
 ### Branching
 - Main branch = production-ready code only
 - Feature branches = `feature/FEAT-X` or `feat/X-short-description`
