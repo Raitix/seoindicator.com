@@ -5,6 +5,15 @@ gateway-token.txt
 
 # Session data (transcripts)
 agents/*/sessions/*.jsonl
+agents/*/sessions/*.jsonl.lock
+agents/*/sessions/sessions.json
+
+# Runtime data
+devices/paired.json
+identity/device-auth.json
+subagents/runs.json
+exec-approvals.json
+update-check.json
 
 # Credentials and secrets
 openclaw.json
