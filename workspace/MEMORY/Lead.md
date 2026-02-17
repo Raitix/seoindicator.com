@@ -133,9 +133,9 @@ workspace/
 ### Current Features In Progress
 _(Update as features move through pipeline)_
 
-| Feature | Status | Current Agent | Last Updated |
-|---------|--------|---------------|--------------|
-| (none) | — | — | — |
+| Feature | Status | Priority | Current Agent | Last Updated |
+|---------|--------|----------|---------------|--------------|
+| (none) | — | — | — | — |
 
 ### Known Blockers
 _(Track issues requiring attention)_
