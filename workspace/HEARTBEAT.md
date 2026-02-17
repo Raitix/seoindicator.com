@@ -10,8 +10,17 @@
 ### Session Health Check
 - **Script:** `~/.openclaw/scripts/run-health-check.ps1`
 - **Interval:** Every 5 minutes
-- **Action:** Checks for hung sessions, restarts gateway if needed
-- **Log:** `~/.openclaw/logs/session-health.log`
+- **Actions:**
+  - Check for hung sessions → restart gateway if needed
+  - Monitor MEMORY/ and LESSONS-LEARNED/ file sizes
+  - Alert if any file exceeds 500KB (triggers intelligent compaction)
+- **Logs:** `~/.openclaw/logs/session-health.log`, `~/.openclaw/logs/memory-compaction.log`
+
+### Memory Compaction
+- **Threshold:** 500 KB per file
+- **Trigger:** Automatic when threshold exceeded
+- **Process:** Isolated agent intelligently summarizes while preserving directives
+- **Files monitored:** `MEMORY/*.md`, `LESSONS-LEARNED/*.md`
 
 ### Security Audit (Manual)
 ```bash

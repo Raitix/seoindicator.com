@@ -82,12 +82,26 @@ function Restart-Gateway {
 # Main logic
 Write-Log "Starting health check"
 
+$needsAction = $false
+
 if (-not (Test-GatewayHealth)) {
     Write-Log "Gateway not responding"
     Restart-Gateway
+    $needsAction = $true
 } elseif (-not (Test-SessionsHealth)) {
     Write-Log "Hung sessions detected"
     Restart-Gateway
-} else {
+    $needsAction = $true
+}
+
+# Check memory file sizes
+$memoryCheck = & "$PSScriptRoot\memory-compaction-check.ps1" 2>&1
+if ($memoryCheck -match "COMPACTION_NEEDED:(.+)") {
+    $compactionFile = $Matches[1]
+    Write-Log "Memory compaction needed: $compactionFile"
+    # Note: Compaction triggered separately via sessions_spawn in main session
+}
+
+if (-not $needsAction) {
     Write-Log "Health check passed"
 }
