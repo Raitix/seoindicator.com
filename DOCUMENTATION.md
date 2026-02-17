@@ -106,12 +106,26 @@ php artisan serve
 ```
 
 ### Database Setup
-```bash
-# Create database
-mysql -u root -p -e "CREATE DATABASE seoindicator CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-# Run migrations (when Laravel is set up)
+**Database already created:** `seoindicator` (utf8mb4)
+
+**Credentials:**
+| Field | Value |
+|-------|-------|
+| Host | 127.0.0.1 |
+| Database | seoindicator |
+| Username | root |
+| Password | SEE_SEOINDICATOR_ENV |
+
+**phpMyAdmin access:**
+1. Start Apache in XAMPP Control Panel
+2. Go to http://localhost/phpmyadmin
+3. Select `seoindicator` database
+
+**Migrations already run:**
+```bash
 php artisan migrate
+# Creates: users, cache, jobs tables
 ```
 
 ---
