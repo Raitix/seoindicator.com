@@ -15,6 +15,16 @@ subagents/runs.json
 exec-approvals.json
 update-check.json
 
+# Cron data
+cron/jobs.json.bak
+cron/runs/
+
+# Agent runtime
+agents/
+
+# Credentials
+credentials/
+
 # Project repos (tracked separately)
 workspace/PROJECT-SEOINDICATOR/
 
