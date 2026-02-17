@@ -54,6 +54,13 @@ All features, specifications, and tasks have a **PRIORITY** indicator:
   - Innovator sets initial priority on feature creation
   - ProjectManager can adjust priorities during prioritization phase
 
+### Documentation Discrepancy Rule
+If **PreTester**, **LocalTester**, or **ProdTester** discovers a discrepancy between `DOCUMENTATION.md` and actual functionality:
+1. Create a new task with status `To Write Tests`
+2. Set priority to `High`
+3. Document the discrepancy in the task description
+4. The task enters normal workflow for resolution
+
 ---
 
 ## Status Workflow
