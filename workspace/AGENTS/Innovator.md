@@ -13,7 +13,7 @@ Searches the internet for information and suggests new features using business l
 - Monitor industry trends and competitor features
 - Research user needs and pain points
 - Propose new features in business terms
-- Create `FEATURES/FEAT-X.md` drafts
+- Create `FEATURES/FEAT-X.md` drafts with initial priority (`High` | `Medium` | `Low`)
 - Present feature proposals with business justification
 
 ## Workflow Position

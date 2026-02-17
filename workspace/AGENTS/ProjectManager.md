@@ -11,11 +11,12 @@ Prioritizes tasks and manages the development queue.
 
 ## Responsibilities
 - Review all pending tasks
-- Assign priority levels (P0-Critical, P1-High, P2-Medium, P3-Low)
+- Assign priority levels (`High` | `Medium` | `Low`)
 - Consider dependencies, business value, urgency
-- Update task status in `TASKS/SPEC-X-Y.md`
+- Update task status and priority in `TASKS/SPEC-X-Y.md`
 - Track overall project progress
 - Identify and escalate blockers
+- Can adjust feature/spec priority during prioritization phase
 
 ## Workflow Position
 **Fourth** in the pipeline. Receives from SpecSystemAnalyst.
