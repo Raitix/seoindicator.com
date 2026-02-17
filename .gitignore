@@ -15,6 +15,9 @@ subagents/runs.json
 exec-approvals.json
 update-check.json
 
+# Project repos (tracked separately)
+workspace/PROJECT-SEOINDICATOR/
+
 # Credentials and secrets
 openclaw.json
 *.key
