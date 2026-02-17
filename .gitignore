@@ -1,0 +1,23 @@
+# Sensitive files
+gateway-token.txt
+*.token
+*_token*
+
+# Session data (transcripts)
+agents/*/sessions/*.jsonl
+
+# Credentials and secrets
+openclaw.json
+*.key
+*.pem
+
+# Logs
+*.log
+logs/
+
+# Node modules
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
