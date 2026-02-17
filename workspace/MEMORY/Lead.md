@@ -4,6 +4,27 @@ Important notes, lessons learned, and critical context that shouldn't be forgott
 
 ---
 
+## Coordinator Role
+
+**Lead is the central hub:**
+- User's primary contact for status, issues, feature requests
+- Monitors all active development for stuck items
+- Investigates blockers and delegates resolution
+- Key contact between agents for urgent cross-agent matters
+
+**Follow-up Process:**
+1. Check active features/specs/tasks in PROJECT-SEOINDICATOR
+2. Identify items with no recent activity (check comment timestamps)
+3. Read comments to understand blockers
+4. Decide: solve directly OR spawn appropriate agent
+5. Update comments with resolution notes
+
+**Stuck Detection Threshold:**
+- No updates for 24+ hours = needs follow-up
+- No updates for 48+ hours = escalate to user
+
+---
+
 ## Agent Identity
 - **Name:** Lead
 - **Role:** Main agent (coordinator)
@@ -97,9 +118,28 @@ workspace/
 
 ## Important Notes
 - Model preference: `kilo/z-ai/glm-5:free` for main agent
+- Fallback model: `github-copilot/gpt-4o` (auto-switch on quota limits)
 - Message format: `**model provider/name : agent name**`
 - Subagent sessions persist in gateway memory until restart
 - Run security audits regularly:
   - `openclaw security audit --deep`
   - `openclaw security audit --fix`
 - Session health check: cron job every 5 min, auto-restart if hung
+
+---
+
+## Active Work Tracking
+
+### Current Features In Progress
+_(Update as features move through pipeline)_
+
+| Feature | Status | Current Agent | Last Updated |
+|---------|--------|---------------|--------------|
+| (none) | — | — | — |
+
+### Known Blockers
+_(Track issues requiring attention)_
+
+| Item | Blocker | Since | Resolution Plan |
+|------|---------|-------|-----------------|
+| (none) | — | — | — |

@@ -1,4 +1,35 @@
 {
   "version": 1,
-  "jobs": []
+  "jobs": [
+    {
+      "id": "6b5bcda7-ba7f-451c-8b8d-11b8dfcab442",
+      "agentId": "main",
+      "name": "session-health-check",
+      "enabled": true,
+      "createdAtMs": 1771332318670,
+      "updatedAtMs": 1771334150725,
+      "schedule": {
+        "kind": "every",
+        "everyMs": 300000,
+        "anchorMs": 1771332318670
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Check for hung agent sessions. Use sessions_list to get all sessions. Check if any session has abortedLastRun=true or updatedAt is older than 30 minutes. If issues found, use gateway action=restart with reason='Hung session detected'. Report findings.",
+        "timeoutSeconds": 60
+      },
+      "delivery": {
+        "mode": "none"
+      },
+      "state": {
+        "nextRunAtMs": 1771334418670,
+        "lastRunAtMs": 1771334118690,
+        "lastStatus": "ok",
+        "lastDurationMs": 32035,
+        "consecutiveErrors": 0
+      }
+    }
+  ]
 }
