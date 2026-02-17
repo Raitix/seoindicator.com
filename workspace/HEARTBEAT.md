@@ -1,19 +1,31 @@
 # HEARTBEAT.md
 
-## Periodic Security Checks
-Run security audits regularly:
+> **Note:** Heartbeat polling is disabled. This file is kept as reference only.
+> Automated tasks are now handled by CRON jobs.
+
+---
+
+## Active CRON Jobs
+
+| Job | Schedule | Purpose |
+|-----|----------|---------|
+| session-health-check | Every 5 min | Check for hung sessions, auto-restart gateway |
+
+---
+
+## Manual Commands
+
+**Security audits** (run manually when needed):
 ```bash
 openclaw security audit --deep
 openclaw security audit --fix
 ```
 
-## Session Health Check
-Automated cron job runs every 5 minutes to check for hung sessions:
-- Checks `abortedLastRun` flag
-- Checks `updatedAt` timestamp (> 30 min = stale)
-- Auto-restarts gateway if issues detected
-
-Manual check:
+**Session check**:
 ```bash
 openclaw sessions --active 60
 ```
+
+---
+
+Last updated: 2026-02-18

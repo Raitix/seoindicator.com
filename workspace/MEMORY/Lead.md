@@ -126,7 +126,7 @@ workspace/
 - Run security audits regularly:
   - `openclaw security audit --deep`
   - `openclaw security audit --fix`
-- Session health check: cron job every 5 min, auto-restart if hung
+- Session health check: CRON job every 5 min (heartbeat disabled to save API calls)
 
 ---
 
