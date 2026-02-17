@@ -5,6 +5,41 @@ SEOIndicator — SEO analysis and monitoring tool.
 
 ---
 
+## Development Approach
+
+**Specification Driven Development (SDD)**
+- All work begins with specifications
+- Tests are written from specifications before implementation
+- Implementation follows specifications and tests
+- Documentation reflects specifications
+
+---
+
+## Workflow Philosophy
+
+### Asynchronous Agent Flow
+- Software Development Life Cycle flows naturally through agents
+- Each agent works in isolated session instances
+- No central orchestrator — status-based workflow
+- Agents pick up work based on concrete statuses
+- After agent completes work, instance is terminated
+
+### No Merge Requests
+- Production tests ensure stability
+- No code review process required
+- Direct commits to branches allowed
+- 3rd party contributions possible in future (not current scope)
+
+### Communication Model
+- Conversations happen in comment sections of:
+  - `FEATURES/FEAT-X.md`
+  - `SPECIFICATIONS/SPEC-X.md`
+  - `TASKS/SPEC-X-Y.md`
+- Each agent leaves notes for the next agent
+- Decisions documented inline
+
+---
+
 ## Status Workflow
 
 Every feature, specification, and task has a STATUS that tracks its progress through the pipeline.
@@ -92,9 +127,10 @@ TASKS
 ## Workflow Rules
 
 ### Branching
-- See `GIT-BRANCHING-STRATEGY.md` for detailed branching rules
 - Main branch = production-ready code only
 - Feature branches = `feature/FEAT-X` or `feat/X-short-description`
+- No merge requests required
+- Direct commits allowed
 
 ### Development Process
 1. **Discover** → Innovator creates FEAT-X (`New Feature`)
@@ -109,12 +145,12 @@ TASKS
 10. **Document** → ProdTester marks `Done`, DocSystemAnalyst updates docs
 
 ### Must-Follow Rules
-- **No direct commits to main** — always use PRs
 - **Tests required** — all new features need automated tests
 - **Status updates required** — update status after each action
 - **Pick up before working** — always check if item is available
 - **Documentation first** — update DOCUMENTATION.md after changes
 - **Lessons learned** — capture mistakes in LESSONS-LEARNED/
+- **Comments for communication** — leave notes for next agent
 
 ---
 
@@ -128,9 +164,9 @@ TASKS
 | `AUTO-TESTS-SETUP.md` | Testing approach & tools |
 | `DEPLOYMENT-SETUP.md` | Deployment steps & environments |
 | `LESSONS-LEARNED/[agent].md` | Agent-specific knowledge base |
-| `FEATURES/FEAT-X.md` | Feature descriptions |
-| `SPECIFICATIONS/SPEC-X.md` | Technical specifications |
-| `TASKS/SPEC-X-Y.md` | Implementation tasks |
+| `FEATURES/FEAT-X.md` | Feature descriptions + comments |
+| `SPECIFICATIONS/SPEC-X.md` | Technical specifications + comments |
+| `TASKS/SPEC-X-Y.md` | Implementation tasks + comments |
 | `TESTS/SPEC-X-Y.md` | Automated test scripts |
 
 ---
