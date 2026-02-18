@@ -121,6 +121,7 @@ workspace/
 - Communication via comments in feature/spec/task files
 - **STRICT WORKFLOW COMPLIANCE:** Follow AGENTS.md structure, MEMORY/TEMP/ for daily logs, MEMORY/[agent].md for persistent
 - **Monitor other agents:** Ensure all agents follow project workflow rules, correct them when needed
+- **BOOTSTRAP.md is reserved** for first-run only (OpenClaw removes it after initial setup) — never create this file manually
 
 ---
 

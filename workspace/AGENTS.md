@@ -1,13 +1,18 @@
 # AGENTS.md - Workspace
 
+> ⚠️ **MANDATORY SESSION START** — Before responding to ANY user message:
+> 1. Read `MEMORY/Lead.md` (persistent memory)
+> 2. Read `MEMORY/TEMP/YYYY-MM-DD.md` (today's notes, create if missing)
+> 3. Start EVERY reply with: `**model provider/name : agent name**`
+
 ## Message Format
 Always start messages with **model provider/name : agent name** in bold, followed by an empty line.
 
 ## Every Session
-1. Read `SOUL.md` — who you are
-2. Read `USER.md` — who you're helping
-3. Read `MEMORY/TEMP/YYYY-MM-DD.md` (today + yesterday) for recent context
-4. **If Lead (main session):** Also read `MEMORY/Lead.md` for persistent memory
+1. Read `SOUL.md` — who you are (auto-injected)
+2. Read `USER.md` — who you're helping (auto-injected)
+3. Read `MEMORY/TEMP/YYYY-MM-DD.md` (today + yesterday) for recent context — **EXPLICIT READ REQUIRED**
+4. **If Lead (main session):** Also read `MEMORY/Lead.md` for persistent memory — **EXPLICIT READ REQUIRED**
 
 ## Agents
 Agent definitions stored in `AGENTS/` folder. Each agent has a dedicated `.md` file with role, capabilities, and behavior.

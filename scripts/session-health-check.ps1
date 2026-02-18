@@ -1,6 +1,6 @@
 # Session Health Check Script (Windows PowerShell)
-# Runs every 5 minutes via CRON
-# Checks for hung sessions and restarts gateway if needed
+# Runs every 5 minutes via Task Scheduler
+# Checks for hung sessions and restarts gateway ONLY if truly needed
 
 param(
     [string]$GatewayUrl = "http://localhost:18789",
@@ -31,39 +31,29 @@ function Test-GatewayHealth {
 }
 
 function Test-SessionsHealth {
+    # Only check for CRITICAL issues - NOT stale updatedAt (idle sessions are normal)
     if (-not (Test-Path $SessionsFile)) {
-        Write-Log "Sessions file not found"
+        Write-Log "Sessions file not found - this is normal for fresh install"
         return $true
     }
     
     try {
         $sessions = Get-Content $SessionsFile | ConvertFrom-Json
-        $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-        $threshold = 30 * 60 * 1000  # 30 min in ms
         
         foreach ($session in $sessions.PSObject.Properties) {
             $value = $session.Value
             
-            # Check abortedLastRun
+            # Check abortedLastRun - this is the REAL indicator of a hung session
             if ($value.abortedLastRun -eq $true) {
                 Write-Log "Found aborted session: $($session.Name)"
                 return $false
-            }
-            
-            # Check stale updatedAt (> 30 min)
-            if ($value.updatedAt) {
-                $age = $now - $value.updatedAt
-                if ($age -gt $threshold) {
-                    Write-Log "Found stale session: $($session.Name) (age: $([math]::Round($age/60000, 1)) min)"
-                    return $false
-                }
             }
         }
         
         return $true
     } catch {
         Write-Log "Error parsing sessions file: $_"
-        return $true
+        return $true  # Don't restart on parse errors
     }
 }
 
@@ -85,23 +75,15 @@ Write-Log "Starting health check"
 $needsAction = $false
 
 if (-not (Test-GatewayHealth)) {
-    Write-Log "Gateway not responding"
+    Write-Log "Gateway not responding - initiating restart"
     Restart-Gateway
     $needsAction = $true
 } elseif (-not (Test-SessionsHealth)) {
-    Write-Log "Hung sessions detected"
+    Write-Log "Hung sessions detected (abortedLastRun=true) - initiating restart"
     Restart-Gateway
     $needsAction = $true
 }
 
-# Check memory file sizes
-$memoryCheck = & "$PSScriptRoot\memory-compaction-check.ps1" 2>&1
-if ($memoryCheck -match "COMPACTION_NEEDED:(.+)") {
-    $compactionFile = $Matches[1]
-    Write-Log "Memory compaction needed: $compactionFile"
-    # Note: Compaction triggered separately via sessions_spawn in main session
-}
-
 if (-not $needsAction) {
-    Write-Log "Health check passed"
+    Write-Log "Health check passed - all systems normal"
 }
