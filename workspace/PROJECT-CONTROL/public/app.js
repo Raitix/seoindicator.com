@@ -151,11 +151,9 @@ function renderBoard() {
     }
   }
 
-  // Render rows
+  // Render ALL rows (even empty ones)
   for (const status of statusOrder) {
     const items = byStatus[status.id] || [];
-    if (items.length === 0) continue;
-    
     const row = createRow(status, items);
     board.appendChild(row);
   }
@@ -163,30 +161,34 @@ function renderBoard() {
 
 function createRow(status, items) {
   const row = document.createElement('div');
-  row.className = 'workflow-row';
+  row.className = 'workflow-row' + (items.length === 0 ? ' empty' : '');
   row.dataset.status = status.id;
 
   const header = document.createElement('div');
   header.className = 'row-header';
   header.innerHTML = `
     <span class="row-status">${escapeHtml(status.name)}</span>
-    <span class="row-count">${items.length} · ${status.agent}</span>
+    <span class="row-count">${items.length} item${items.length !== 1 ? 's' : ''} · ${status.agent}</span>
   `;
   row.appendChild(header);
 
   const cardsContainer = document.createElement('div');
   cardsContainer.className = 'row-cards';
 
-  for (const item of items) {
-    const card = createHierarchicalCard(item, status);
-    cardsContainer.appendChild(card);
+  if (items.length === 0) {
+    cardsContainer.innerHTML = '<span class="row-empty">No items</span>';
+  } else {
+    for (const item of items) {
+      const card = createHierarchicalCard(item, status);
+      cardsContainer.appendChild(card);
+    }
   }
 
   row.appendChild(cardsContainer);
   return row;
 }
 
-// Create hierarchical card with prepended parents
+// Create hierarchical card with prepended parents showing titles
 function createHierarchicalCard(item, status) {
   const card = document.createElement('div');
   card.className = 'card hierarchical';
@@ -201,18 +203,27 @@ function createHierarchicalCard(item, status) {
     // Task with spec and feature: [Feature] [Spec] Task
     prependHtml = `
       <div class="card-prepend">
-        <span class="prepend-item feature" title="${escapeHtml(item.feature.title)}">${item.feature.id}</span>
-        <span class="prepend-arrow">→</span>
-        <span class="prepend-item spec" title="${escapeHtml(item.specification.title)}">${item.specification.id}</span>
-        <span class="prepend-arrow">→</span>
+        <div class="prepend-item">
+          <span class="prepend-id feature">${item.feature.id}</span>
+          <span class="prepend-title" title="${escapeHtml(item.feature.title)}">${escapeHtml(item.feature.title)}</span>
+        </div>
+        <span class="prepend-arrow">↓</span>
+        <div class="prepend-item">
+          <span class="prepend-id spec">${item.specification.id}</span>
+          <span class="prepend-title" title="${escapeHtml(item.specification.title)}">${escapeHtml(item.specification.title)}</span>
+        </div>
+        <span class="prepend-arrow">↓</span>
       </div>
     `;
   } else if (item.coreType === 'specification' && item.feature) {
     // Spec with feature: [Feature] Spec
     prependHtml = `
       <div class="card-prepend">
-        <span class="prepend-item feature" title="${escapeHtml(item.feature.title)}">${item.feature.id}</span>
-        <span class="prepend-arrow">→</span>
+        <div class="prepend-item">
+          <span class="prepend-id feature">${item.feature.id}</span>
+          <span class="prepend-title" title="${escapeHtml(item.feature.title)}">${escapeHtml(item.feature.title)}</span>
+        </div>
+        <span class="prepend-arrow">↓</span>
       </div>
     `;
   }
@@ -229,8 +240,8 @@ function createHierarchicalCard(item, status) {
       </div>
       <div class="card-title">${escapeHtml(item.title)}</div>
       <div class="card-meta">
-        <span class="badge ${priorityClass}">${item.priority || 'Medium'}</span>
-        <span class="badge ${riskClass}">${item.risk || 'Low'}</span>
+        <span class="badge ${priorityClass}">P: ${item.priority || 'Medium'}</span>
+        <span class="badge ${riskClass}">R: ${item.risk || 'Low'}</span>
       </div>
     </div>
   `;

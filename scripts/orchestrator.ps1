@@ -210,11 +210,12 @@ function Test-CanSpawn {
     param(
         [array]$ActiveFeatures,
         [array]$AllItems,
-        [string]$TargetStatus
+        [string]$TargetStatus,
+        [string]$ItemType = ""
     )
     
-    # Check max active features
-    if ($ActiveFeatures.Count -ge $MaxActiveFeatures) {
+    # Check max active features - ONLY for features and specifications, not tasks
+    if ($ItemType -ne "task" -and $ActiveFeatures.Count -ge $MaxActiveFeatures) {
         return @{ CanSpawn = $false; Reason = "Max active features reached ($($ActiveFeatures.Count)/$MaxActiveFeatures)" }
     }
     
@@ -395,11 +396,19 @@ foreach ($status in $StatusAgentMap.Keys) {
             continue
         }
         
-        # Check concurrency
-        $check = Test-CanSpawn -ActiveFeatures $activeFeatures -AllItems $allItems -TargetStatus $status
+        # Check concurrency - only check global limit for features/specs, not tasks
+        if ($item.Type -eq "feature" -or $item.Type -eq "specification") {
+            if ($activeFeatures.Count -ge $MaxActiveFeatures) {
+                Write-Log "Skipping $($item.Type)/$($item.Id): Max active features reached" -Level "DEBUG"
+                continue
+            }
+        }
+        
+        # Check max agents per status (skip global limit for tasks)
+        $check = Test-CanSpawn -ActiveFeatures $activeFeatures -AllItems $allItems -TargetStatus $status -ItemType $item.Type
         if (-not $check.CanSpawn) {
             Write-Log "Cannot spawn for $($item.Type)/$($item.Id): $($check.Reason)" -Level "WARN"
-            break  # Stop spawning for this status
+            continue  # Try next item instead of breaking
         }
         
         # Spawn agent
@@ -413,12 +422,6 @@ foreach ($status in $StatusAgentMap.Keys) {
         }
         
         # Only spawn one agent per status per run to avoid race conditions
-        break
-    }
-    
-    # Global limit check
-    if ($activeFeatures.Count -ge $MaxActiveFeatures) {
-        Write-Log "Reached max active features, stopping spawn cycle"
         break
     }
 }
