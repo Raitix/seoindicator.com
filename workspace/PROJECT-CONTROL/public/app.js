@@ -58,9 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadData();
   loadAgents();
   loadLogs();
-  // Refresh agents every 30 seconds
   setInterval(loadAgents, 30000);
-  // Auto-refresh logs every 10 seconds when on logs tab
   setInterval(() => {
     if (document.getElementById('tab-logs').classList.contains('active')) {
       loadLogs();
@@ -68,14 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 10000);
 });
 
-// Refresh all data
 function refreshAll() {
   loadData();
   loadAgents();
   loadLogs();
 }
 
-// Switch main tabs (Board/Logs)
 function switchMainTab(tabName) {
   const buttons = document.querySelectorAll('.main-tab');
   const contents = document.querySelectorAll('.main-content');
@@ -88,7 +84,6 @@ function switchMainTab(tabName) {
     content.classList.toggle('active', content.id === `tab-${tabName}`);
   });
   
-  // Auto-scroll logs when switching to logs tab
   if (tabName === 'logs') {
     setTimeout(() => {
       const container = document.getElementById('logs-container');
@@ -97,7 +92,6 @@ function switchMainTab(tabName) {
   }
 }
 
-// Load all data from API
 async function loadData() {
   try {
     const response = await fetch('/api/functionalities');
@@ -109,7 +103,6 @@ async function loadData() {
   }
 }
 
-// Load active agents from API
 async function loadAgents() {
   try {
     const response = await fetch('/api/agents');
@@ -122,7 +115,6 @@ async function loadAgents() {
   }
 }
 
-// Render active agents in header
 function renderAgents() {
   const container = document.getElementById('agents-list');
   
@@ -140,56 +132,43 @@ function renderAgents() {
   `).join('');
 }
 
-// Render vertical workflow board
+// Render vertical workflow board with combined view
 function renderBoard() {
   const board = document.getElementById('workflow-board');
   board.innerHTML = '';
 
+  // Use combined view if available
+  const combined = allData.combined || [];
+  
+  if (combined.length === 0) {
+    board.innerHTML = '<div class="row-empty">No items found</div>';
+    return;
+  }
+
   // Group by status
   const byStatus = {};
   
-  // Initialize all known statuses
   for (const status of statusOrder) {
     byStatus[status.id] = [];
   }
   
-  // Sort functionalities by priority then risk
-  const sorted = [...currentFunctionalities].sort((a, b) => {
-    const prioA = a.sortOrder || 2;
-    const prioB = b.sortOrder || 2;
-    if (prioA !== prioB) return prioA - prioB;
-    
-    const riskA = a.riskSortOrder || 3;
-    const riskB = b.riskSortOrder || 3;
-    return riskA - riskB;
-  });
-
-  // Group items
-  for (const item of sorted) {
+  // Group combined items by their feature's status
+  for (const item of combined) {
     const statusKey = normalizeStatus(item.status);
     if (byStatus[statusKey]) {
       byStatus[statusKey].push(item);
     } else {
-      // Unknown status - add to end
       if (!byStatus['unknown']) byStatus['unknown'] = [];
       byStatus['unknown'].push(item);
     }
   }
 
-  // Render rows (known statuses first)
+  // Render rows
   for (const status of statusOrder) {
     const items = byStatus[status.id] || [];
-    // Only show rows with items or important statuses
-    if (items.length === 0 && !['done', 'cancelled'].includes(status.id)) continue;
-    if (items.length === 0) continue; // Skip empty rows
+    if (items.length === 0) continue;
     
     const row = createRow(status, items);
-    board.appendChild(row);
-  }
-  
-  // Render unknown statuses at the end
-  if (byStatus['unknown'] && byStatus['unknown'].length > 0) {
-    const row = createRow({ id: 'unknown', name: 'Unknown', agent: '-' }, byStatus['unknown']);
     board.appendChild(row);
   }
 }
@@ -200,45 +179,39 @@ function createRow(status, items) {
   row.className = 'workflow-row';
   row.dataset.status = status.id;
 
-  // Header
   const header = document.createElement('div');
   header.className = 'row-header';
   header.innerHTML = `
     <span class="row-status">${escapeHtml(status.name)}</span>
-    <span class="row-count">${items.length} item${items.length !== 1 ? 's' : ''} · ${status.agent}</span>
+    <span class="row-count">${items.length} · ${status.agent}</span>
   `;
   row.appendChild(header);
 
-  // Cards container
   const cardsContainer = document.createElement('div');
   cardsContainer.className = 'row-cards';
 
-  if (items.length === 0) {
-    cardsContainer.innerHTML = '<span class="row-empty">No items</span>';
-  } else {
-    for (const item of items) {
-      const card = createCard(item);
-      cardsContainer.appendChild(card);
-    }
+  for (const item of items) {
+    const card = createCombinedCard(item);
+    cardsContainer.appendChild(card);
   }
 
   row.appendChild(cardsContainer);
   return row;
 }
 
-// Create a card element
-function createCard(item) {
+// Create a combined card showing feature + spec + tasks
+function createCombinedCard(item) {
   const card = document.createElement('div');
-  card.className = `card ${item.type}`;
-  card.onclick = () => openDetail(item);
+  card.className = 'card combined';
+  card.onclick = () => openDetail(item.feature);
 
   const priorityClass = `priority-${(item.priority || 'medium').toLowerCase()}`;
   const riskClass = `risk-${(item.risk || 'low').toLowerCase()}`;
 
-  card.innerHTML = `
+  // Build the card content
+  let html = `
     <div class="card-header">
-      <span class="card-id">${item.id}</span>
-      <span class="card-type ${item.type}">${item.type.slice(0, 4)}</span>
+      <span class="card-id">${escapeHtml(item.id)}</span>
     </div>
     <div class="card-title">${escapeHtml(item.title)}</div>
     <div class="card-meta">
@@ -247,6 +220,19 @@ function createCard(item) {
     </div>
   `;
 
+  // Show related items indicator
+  if (item.hasSpec || item.hasTasks) {
+    html += `<div class="card-related">`;
+    if (item.hasSpec) {
+      html += `<span class="related-badge spec" title="Has specification">📄 SPEC-${item.featureNumber}</span>`;
+    }
+    if (item.hasTasks) {
+      html += `<span class="related-badge tasks" title="${item.taskCount} tasks">✅ ${item.taskCount} tasks</span>`;
+    }
+    html += `</div>`;
+  }
+
+  card.innerHTML = html;
   return card;
 }
 
@@ -263,20 +249,16 @@ async function openDetail(item) {
   document.getElementById('modal-risk').textContent = `${item.risk || 'Low'} Risk`;
   document.getElementById('modal-risk').className = `risk-badge ${(item.risk || 'low').toLowerCase()}`;
   
-  // Render markdown content
   document.getElementById('modal-content').innerHTML = item.htmlContent || '<p>No content</p>';
   
-  // Render history
   renderHistory(item.comments);
   
-  // Reset to details tab
   switchTab('details');
   
   modal.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
 
-// Render history timeline
 function renderHistory(comments) {
   const container = document.getElementById('history-timeline');
   
@@ -296,14 +278,12 @@ function renderHistory(comments) {
   `).join('');
 }
 
-// Close modal
 function closeModal() {
   const modal = document.getElementById('detail-modal');
   modal.classList.remove('active');
   document.body.style.overflow = '';
 }
 
-// Switch tabs in modal
 function switchTab(tabName) {
   const buttons = document.querySelectorAll('.tab-btn');
   const contents = document.querySelectorAll('.tab-content');
@@ -317,7 +297,6 @@ function switchTab(tabName) {
   });
 }
 
-// Escape HTML to prevent XSS
 function escapeHtml(text) {
   if (!text) return '';
   const div = document.createElement('div');
@@ -325,21 +304,18 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Close modal on outside click
 document.getElementById('detail-modal').addEventListener('click', (e) => {
   if (e.target.id === 'detail-modal') {
     closeModal();
   }
 });
 
-// Close modal on Escape
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeModal();
   }
 });
 
-// Load logs from API
 async function loadLogs() {
   try {
     const lines = document.getElementById('log-lines').value;
@@ -354,10 +330,8 @@ async function loadLogs() {
       return;
     }
     
-    // Update badge
     logCount.textContent = data.showing;
     
-    // Format log lines with colors
     container.innerHTML = data.logs.map(line => {
       let className = 'log-line';
       if (line.includes('[ERROR]')) className += ' log-error';
@@ -368,7 +342,6 @@ async function loadLogs() {
       return `<div class="${className}">${escapeHtml(line)}</div>`;
     }).join('');
     
-    // Auto-scroll if enabled
     if (document.getElementById('auto-scroll').checked) {
       const logsContainer = document.getElementById('logs-container');
       logsContainer.scrollTop = logsContainer.scrollHeight;

@@ -13,12 +13,17 @@ Searches the internet for information and suggests new features using business l
 - Monitor industry trends and competitor features
 - Research user needs and pain points
 - Propose new features in business terms
-- Create `FEATURES/FEAT-X.md` drafts with initial priority (`High` | `Medium` | `Low`)
+- Create `FEATURES/FEAT-N.md` drafts (N = sequential number, NO leading zeros: FEAT-1, FEAT-2, not FEAT-001)
+- Initial priority (`High` | `Medium` | `Low`)
 - **Set initial risk level** (`Low` | `Medium` | `High`) based on:
   - `Low`: Copy changes, UI tweaks, new non-critical reports
   - `Medium`: New analysis logic, new endpoints, non-destructive schema changes
   - `High`: Billing, auth, destructive migrations, data deletion, ToS-sensitive behavior
 - Present feature proposals with business justification
+- **⚠️ FREE TOOLS ONLY: All proposed features MUST use free tools and services only**
+  - No paid APIs, subscriptions, or services
+  - Find free alternatives for any functionality requiring external services
+  - Examples: Use free SMTP instead of SendGrid, free tiers instead of paid APIs
 - **Consider in every proposal:**
   - **Revenue impact:** How does this generate revenue or reduce costs?
   - **User behavior:** How does this affect user engagement and workflow?

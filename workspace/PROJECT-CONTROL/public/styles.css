@@ -313,6 +313,31 @@ header h1 {
 .badge.risk-medium { background: rgba(251, 191, 36, 0.3); color: var(--accent-yellow); }
 .badge.risk-low { background: rgba(74, 222, 128, 0.3); color: var(--accent-green); }
 
+/* Related items on card */
+.card-related {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.related-badge {
+  font-size: 0.55rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+.related-badge.spec {
+  background: rgba(167, 139, 250, 0.2);
+  color: var(--accent-purple);
+}
+
+.related-badge.tasks {
+  background: rgba(74, 222, 128, 0.2);
+  color: var(--accent-green);
+}
+
 /* Modal */
 .modal {
   display: none;
