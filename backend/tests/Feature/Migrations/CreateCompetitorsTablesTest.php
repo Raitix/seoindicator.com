@@ -315,7 +315,12 @@ class CreateCompetitorsTablesTest extends TestCase
             ]);
             $this->fail('Should have thrown unique constraint error');
         } catch (\Exception $e) {
-            $this->assertStringContainsString('duplicate', strtolower($e->getMessage()));
+            // SQLite uses "unique constraint failed", MySQL uses "duplicate"
+            $message = strtolower($e->getMessage());
+            $this->assertTrue(
+                str_contains($message, 'duplicate') || str_contains($message, 'unique constraint'),
+                'Expected unique constraint violation error'
+            );
         }
         
         // Different checked_at should be allowed
@@ -336,9 +341,28 @@ class CreateCompetitorsTablesTest extends TestCase
     {
         $this->artisan('migrate');
         
-        // Check competitors indexes
-        $competitorIndexes = DB::select("SHOW INDEX FROM competitors");
-        $competitorIndexNames = array_column($competitorIndexes, 'Key_name');
+        // Use database-agnostic approach to check indexes
+        $driver = DB::getDriverName();
+        
+        if ($driver === 'sqlite') {
+            // SQLite: query sqlite_master for indexes
+            $competitorIndexes = DB::select(
+                "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='competitors'"
+            );
+            $competitorIndexNames = array_column($competitorIndexes, 'name');
+            
+            $rankingIndexes = DB::select(
+                "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='competitor_rankings'"
+            );
+            $rankingIndexNames = array_column($rankingIndexes, 'name');
+        } else {
+            // MySQL: use SHOW INDEX
+            $competitorIndexes = DB::select("SHOW INDEX FROM competitors");
+            $competitorIndexNames = array_column($competitorIndexes, 'Key_name');
+            
+            $rankingIndexes = DB::select("SHOW INDEX FROM competitor_rankings");
+            $rankingIndexNames = array_column($rankingIndexes, 'Key_name');
+        }
         
         // Check for user_id index
         $this->assertTrue(
@@ -351,10 +375,6 @@ class CreateCompetitorsTablesTest extends TestCase
             collect($competitorIndexNames)->contains('competitors_domain_index'),
             'Missing index on competitors.domain'
         );
-        
-        // Check competitor_rankings indexes
-        $rankingIndexes = DB::select("SHOW INDEX FROM competitor_rankings");
-        $rankingIndexNames = array_column($rankingIndexes, 'Key_name');
         
         // Check for competitor_id index
         $this->assertTrue(
