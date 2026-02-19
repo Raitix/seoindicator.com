@@ -256,6 +256,7 @@ TASKS
 - **Documentation first** — update DOCUMENTATION.md after changes
 - **Lessons learned** — capture mistakes in LESSONS-LEARNED/
 - **Comments for communication** — leave notes for next agent
+- **Git commits required** — after any changes, commit immediately (both repos: `~/.openclaw` and project repo). No push needed.
 
 ---
 
