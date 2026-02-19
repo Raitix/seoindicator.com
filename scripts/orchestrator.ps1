@@ -8,10 +8,9 @@ param(
     [string]$LogPath = "C:\Users\Raitis\.openclaw\logs\orchestrator.log",
     [string]$LastRunPath = "C:\Users\Raitis\.openclaw\logs\agent-last-run.json",
     [int]$LockTTLMinutes = 30,
-    [int]$MaxActiveFeatures = 3,
     [int]$MaxAgentsPerStatus = 3,
     [int]$DailyAgentIntervalHours = 24,
-    [int]$InnovatorIntervalMinutes = 5,  # Changed from hours to minutes
+    [int]$InnovatorIntervalMinutes = 5,
     [int]$MaxNewFeatures = 10
 )
 
@@ -178,33 +177,9 @@ $StatusAgentMap = @{
     "Done" = "DocSystemAnalyst"
 }
 
-# Statuses that indicate work in progress (agent already working)
-$InProgressStatuses = @(
-    "Specification In Progress",
-    "Breaking Into Tasks",
-    "Prioritization In Progress",
-    "Tests Coverage In Progress",
-    "In Development",
-    "Testing Locally",
-    "In Deployment",
-    "Testing Prod"
-)
-
-# Terminal statuses (no agent needed)
-$TerminalStatuses = @("New Feature", "Done", "Cancelled")
-
 # ============================================
 # CONCURRENCY CHECKS
 # ============================================
-
-function Get-ActiveFeatures {
-    param([array]$AllFeatures)
-    
-    # Active = NOT in New Feature, Done, or Cancelled
-    return @($AllFeatures | Where-Object { 
-        $_.Status -notin $TerminalStatuses 
-    })
-}
 
 function Get-StatusCounts {
     param([array]$AllItems)
@@ -220,16 +195,8 @@ function Get-StatusCounts {
 
 function Test-CanSpawn {
     param(
-        [array]$ActiveFeatures,
-        [array]$AllItems,
-        [string]$TargetStatus,
-        [string]$ItemType = ""
+        [string]$TargetStatus
     )
-    
-    # Check max active features - ONLY for features and specifications, not tasks
-    if ($ItemType -ne "task" -and $ActiveFeatures.Count -ge $MaxActiveFeatures) {
-        return @{ CanSpawn = $false; Reason = "Max active features reached ($($ActiveFeatures.Count)/$MaxActiveFeatures)" }
-    }
     
     # Check max agents per status - count LOCKS across all folders
     $activeLocks = 0
@@ -384,10 +351,6 @@ $allItems = $features + $specifications + $tasks
 
 Write-Log "Scanned: $($features.Count) features, $($specifications.Count) specs, $($tasks.Count) tasks"
 
-# Get active features (for concurrency check)
-$activeFeatures = Get-ActiveFeatures -AllFeatures $features
-Write-Log "Active features: $($activeFeatures.Count)/$MaxActiveFeatures"
-
 # Find items needing work
 $spawnedCount = 0
 
@@ -409,16 +372,8 @@ foreach ($status in $StatusAgentMap.Keys) {
             continue
         }
         
-        # Check concurrency - only check global limit for features/specs, not tasks
-        if ($item.Type -eq "feature" -or $item.Type -eq "specification") {
-            if ($activeFeatures.Count -ge $MaxActiveFeatures) {
-                Write-Log "Skipping $($item.Type)/$($item.Id): Max active features reached" -Level "DEBUG"
-                continue
-            }
-        }
-        
-        # Check max agents per status (skip global limit for tasks)
-        $check = Test-CanSpawn -ActiveFeatures $activeFeatures -AllItems $allItems -TargetStatus $status -ItemType $item.Type
+        # Check max agents per status
+        $check = Test-CanSpawn -TargetStatus $status
         if (-not $check.CanSpawn) {
             Write-Log "Cannot spawn for $($item.Type)/$($item.Id): $($check.Reason)" -Level "WARN"
             continue  # Try next item instead of breaking
