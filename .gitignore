@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Next.js static export (deployed separately via SCP)
+out/
+_next/
+404.html
+404/
+_not-found/
+__next*.txt
+index.txt
+
+# Static assets deployed separately
+file.svg
+globe.svg
+next.svg
+vercel.svg
+window.svg
+favicon.ico
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test results
+playwright-report/
+test-results/
+
+# Temp files
+*.tmp
+*.temp
+
+# Composer
+composer.phar
