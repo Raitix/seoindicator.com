@@ -26,12 +26,18 @@ GitHub Push → GitHub Actions → Build → Test → Deploy FTP → Run Migrati
 
 ## Credentials
 
-**All credentials stored in:** `~/.openclaw/secrets/seoindicator-prod.env`
+**All credentials stored in:** `~/.openclaw/secrets/seoindicator.env`
 
-| Service | Host | Notes |
-|---------|------|-------|
-| FTP | 45.84.206.11:21 | File deployment |
-| MySQL | srv1924.hstgr.io | Database |
+| Service | Local | Production |
+|---------|-------|------------|
+| MySQL | 127.0.0.1 (XAMPP) | srv1924.hstgr.io |
+| FTP | — | 45.84.206.11:21 |
+
+**Also includes:**
+- Vercel AI Gateway API key
+- OpenRouter.ai API key  
+- Google PageSpeed Insights API key
+- Deploy key for migrations
 
 ---
 
