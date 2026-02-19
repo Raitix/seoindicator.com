@@ -135,17 +135,18 @@ function Get-Lock {
 }
 
 function New-Lock {
-    param([string]$Type, [string]$Id, [string]$Agent, [string]$SessionId)
+    param([string]$Type, [string]$Id, [string]$Agent, [string]$SessionId, [string]$Status)
     
     $lockPath = Get-LockPath -Type $Type -Id $Id
     $lock = @{
         agent = $Agent
         sessionId = $SessionId
+        status = $Status
         lockedAt = [DateTime]::UtcNow.ToString("o")
     }
     
     $lock | ConvertTo-Json | Set-Content $lockPath
-    Write-Log "Lock created: $Type/$Id by $Agent ($SessionId)"
+    Write-Log "Lock created: $Type/$Id by $Agent ($SessionId) for status '$Status'"
 }
 
 # ============================================
@@ -208,7 +209,7 @@ function Get-StatusCounts {
 function Test-CanSpawn {
     param(
         [array]$ActiveFeatures,
-        [array]$ItemsWithTargetStatus,
+        [array]$AllItems,
         [string]$TargetStatus
     )
     
@@ -217,10 +218,22 @@ function Test-CanSpawn {
         return @{ CanSpawn = $false; Reason = "Max active features reached ($($ActiveFeatures.Count)/$MaxActiveFeatures)" }
     }
     
-    # Check max agents per status
-    $inProgressCount = @($ItemsWithTargetStatus | Where-Object { $_.Status -eq $TargetStatus }).Count
-    if ($inProgressCount -ge $MaxAgentsPerStatus) {
-        return @{ CanSpawn = $false; Reason = "Max agents per status reached for '$TargetStatus' ($inProgressCount/$MaxAgentsPerStatus)" }
+    # Check max agents per status - count LOCKS across all folders
+    $activeLocks = 0
+    foreach ($folder in @("FEATURES", "SPECIFICATIONS", "TASKS")) {
+        $lockFolder = Join-Path $ProjectPath "$folder\.locks"
+        if (Test-Path $lockFolder) {
+            Get-ChildItem -Path $lockFolder -Filter "*.lock" | ForEach-Object {
+                try {
+                    $lock = Get-Content $_.FullName -Raw | ConvertFrom-Json
+                    if ($lock.status -eq $TargetStatus) { $activeLocks++ }
+                } catch {}
+            }
+        }
+    }
+    
+    if ($activeLocks -ge $MaxAgentsPerStatus) {
+        return @{ CanSpawn = $false; Reason = "Max agents per status reached for '$TargetStatus' ($activeLocks/$MaxAgentsPerStatus active)" }
     }
     
     return @{ CanSpawn = $true; Reason = "OK" }
@@ -235,7 +248,8 @@ function Spawn-Agent {
         [string]$AgentName,
         [string]$ItemType,
         [string]$ItemId,
-        [string]$ItemStatus
+        [string]$ItemStatus,
+        [string]$Status
     )
     
     $task = @"
@@ -266,14 +280,21 @@ You are $AgentName agent. Your task is to work on $ItemType '$ItemId'.
     $sessionLabel = "$AgentName-$ItemId"
     
     try {
-        # Use OpenClaw CLI to spawn agent
-        $cliPath = "C:\nvm4w\nodejs\openclaw.cmd"
-        $arguments = @("agent", "--agent", $agentId, "--message", $task, "--timeout", "1800")
+        # Write task to temp file (CLI can't handle multi-line args)
+        $taskFile = "C:\Users\Raitis\.openclaw\logs\task-$AgentName-$ItemId.txt"
+        $task | Set-Content $taskFile -Encoding UTF8
         
-        $process = Start-Process -FilePath $cliPath -ArgumentList $arguments -WindowStyle Hidden -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
+        # Use OpenClaw CLI via cmd.exe with proper escaping
+        $cliPath = "C:\nvm4w\nodejs\openclaw.cmd"
+        $shortTask = "Process $ItemType $ItemId. Read task from: $taskFile"
+        
+        # Build command string
+        $cmdArgs = "agent --agent $agentId -m `"$shortTask`" --timeout 1800"
+        
+        $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "$cliPath $cmdArgs" -WindowStyle Hidden -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
         
         # Create lock with process ID as session identifier
-        New-Lock -Type $ItemType -Id $ItemId -Agent $AgentName -SessionId "cli-$($process.Id)"
+        New-Lock -Type $ItemType -Id $ItemId -Agent $AgentName -SessionId "cli-$($process.Id)" -Status $Status
         Write-Log "Spawned $AgentName for $ItemType/$ItemId via CLI (PID: $($process.Id))"
         
         # Track this agent in active-agents.json
@@ -349,14 +370,14 @@ foreach ($status in $StatusAgentMap.Keys) {
         }
         
         # Check concurrency
-        $check = Test-CanSpawn -ActiveFeatures $activeFeatures -ItemsWithTargetStatus $allItems -TargetStatus $status
+        $check = Test-CanSpawn -ActiveFeatures $activeFeatures -AllItems $allItems -TargetStatus $status
         if (-not $check.CanSpawn) {
             Write-Log "Cannot spawn for $($item.Type)/$($item.Id): $($check.Reason)" -Level "WARN"
             break  # Stop spawning for this status
         }
         
         # Spawn agent
-        $sessionId = Spawn-Agent -AgentName $agent -ItemType $item.Type -ItemId $item.Id -ItemStatus $item.Status
+        $sessionId = Spawn-Agent -AgentName $agent -ItemType $item.Type -ItemId $item.Id -ItemStatus $item.Status -Status $status
         if ($sessionId) {
             $spawnedCount++
             # Update active count for next iteration
@@ -462,11 +483,18 @@ function Spawn-DailyAgent {
     )
     
     try {
-        # Use OpenClaw CLI to spawn agent
-        $cliPath = "C:\nvm4w\nodejs\openclaw.cmd"
-        $arguments = @("agent", "--agent", $AgentId, "--message", $TaskDescription, "--timeout", "3600")
+        # Write task to temp file (CLI can't handle multi-line args)
+        $taskFile = "C:\Users\Raitis\.openclaw\logs\task-$AgentName-daily.txt"
+        $TaskDescription | Set-Content $taskFile -Encoding UTF8
         
-        $process = Start-Process -FilePath $cliPath -ArgumentList $arguments -WindowStyle Hidden -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
+        # Use OpenClaw CLI via cmd.exe with proper escaping
+        $cliPath = "C:\nvm4w\nodejs\openclaw.cmd"
+        $shortTask = "Execute daily task. Read instructions from: $taskFile"
+        
+        # Build command string
+        $cmdArgs = "agent --agent $AgentId -m `"$shortTask`" --timeout 3600"
+        
+        $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "$cliPath $cmdArgs" -WindowStyle Hidden -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
         
         # Track this agent in active-agents.json
         $agentsFile = "C:\Users\Raitis\.openclaw\logs\active-agents.json"
