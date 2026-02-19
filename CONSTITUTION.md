@@ -54,7 +54,62 @@ All features, specifications, and tasks have a **PRIORITY** indicator:
   - Innovator sets initial priority on feature creation
   - ProjectManager can adjust priorities during prioritization phase
 
-### Documentation Discrepancy Rule
+---
+
+## Risk Level System
+
+All features, specifications, and tasks have a **RISK** indicator:
+
+| Level | Description | Examples |
+|-------|-------------|----------|
+| `Low` | Minimal impact, easily reversible | Copy changes, UI tweaks, new non-critical reports, CSS updates |
+| `Medium` | Moderate impact, some reversibility effort | New analysis logic, new endpoints, non-destructive schema changes, config changes |
+| `High` | Significant impact, hard to reverse | Billing, authentication, destructive migrations, data deletion, external ToS-sensitive behavior, security changes |
+
+### Risk Assessment Guidelines
+
+**Low Risk:**
+- Changes affect only presentation layer
+- No database modifications
+- No external API calls
+- No user authentication/authorization changes
+- No billing or payment logic
+- Changes are easily rolled back
+
+**Medium Risk:**
+- New read-only endpoints
+- Non-destructive database migrations (add columns/tables)
+- New business logic that doesn't affect existing functionality
+- Integration with external services (non-critical)
+- Changes to caching or performance logic
+
+**High Risk:**
+- Authentication or authorization changes
+- Billing or payment processing
+- Destructive database operations (drop, truncate, delete data)
+- Changes to user data handling
+- External API integrations with ToS implications
+- Security-related changes
+- Changes to audit logging or compliance features
+
+### Risk Level Rules
+- **Assignment:** Innovator sets initial risk level on feature creation
+- **Reassessment:** Architect must reassess risk during specification
+- **Escalation:** Any agent can escalate risk level if they discover higher-risk implications
+- **High-Risk Review:** SecurityAuditor must review all High-risk items before deployment
+- **Sorting:** Within same priority, items sorted by risk (Low → Medium → High) for processing order (higher risk gets more scrutiny)
+
+### Risk-Based Testing Requirements
+
+| Risk Level | Testing Requirements |
+|------------|---------------------|
+| `Low` | Standard test coverage, local + prod testing |
+| `Medium` | Standard coverage + integration tests, extended prod monitoring |
+| `High` | Full coverage + integration tests + security review + staged rollout + manual verification |
+
+---
+
+## Documentation Discrepancy Rule
 If **PreTester**, **LocalTester**, or **ProdTester** discovers a discrepancy between `DOCUMENTATION.md` and actual functionality:
 1. Create a new task with status `To Write Tests`
 2. Set priority to `High`
