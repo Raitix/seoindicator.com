@@ -4,27 +4,26 @@ let activeAgents = [];
 
 // Status to workflow order (top to bottom)
 const statusOrder = [
-  { id: 'new-feature', name: 'New Feature', agent: 'Architect' },
-  { id: 'specification-in-progress', name: 'Spec In Progress', agent: 'Architect' },
-  { id: 'to-break-into-tasks', name: 'To Break Into Tasks', agent: 'SpecSystemAnalyst' },
-  { id: 'breaking-into-tasks', name: 'Breaking Into Tasks', agent: 'SpecSystemAnalyst' },
-  { id: 'to-prioritize', name: 'To Prioritize', agent: 'ProjectManager' },
-  { id: 'prioritization-in-progress', name: 'Prioritizing', agent: 'ProjectManager' },
-  { id: 'to-write-tests', name: 'To Write Tests', agent: 'PreTester' },
-  { id: 'tests-coverage-in-progress', name: 'Writing Tests', agent: 'PreTester' },
-  { id: 'to-develop', name: 'To Develop', agent: 'Developer' },
-  { id: 'in-development', name: 'In Development', agent: 'Developer' },
-  { id: 'to-test-locally', name: 'To Test Locally', agent: 'LocalTester' },
-  { id: 'testing-locally', name: 'Testing Locally', agent: 'LocalTester' },
-  { id: 'to-deploy', name: 'To Deploy', agent: 'DevOps' },
-  { id: 'in-deployment', name: 'Deploying', agent: 'DevOps' },
-  { id: 'to-test-prod', name: 'To Test Prod', agent: 'ProdTester' },
-  { id: 'testing-prod', name: 'Testing Prod', agent: 'ProdTester' },
-  { id: 'done', name: 'Done', agent: 'DocSystemAnalyst' },
-  { id: 'cancelled', name: 'Cancelled', agent: '-' }
+  { id: 'new-feature', name: 'New Feature', agent: 'Architect', coreType: 'feature' },
+  { id: 'specification-in-progress', name: 'Spec In Progress', agent: 'Architect', coreType: 'feature' },
+  { id: 'to-break-into-tasks', name: 'To Break Into Tasks', agent: 'SpecSystemAnalyst', coreType: 'specification' },
+  { id: 'breaking-into-tasks', name: 'Breaking Into Tasks', agent: 'SpecSystemAnalyst', coreType: 'specification' },
+  { id: 'to-prioritize', name: 'To Prioritize', agent: 'ProjectManager', coreType: 'task' },
+  { id: 'prioritization-in-progress', name: 'Prioritizing', agent: 'ProjectManager', coreType: 'task' },
+  { id: 'to-write-tests', name: 'To Write Tests', agent: 'PreTester', coreType: 'task' },
+  { id: 'tests-coverage-in-progress', name: 'Writing Tests', agent: 'PreTester', coreType: 'task' },
+  { id: 'to-develop', name: 'To Develop', agent: 'Developer', coreType: 'task' },
+  { id: 'in-development', name: 'In Development', agent: 'Developer', coreType: 'task' },
+  { id: 'to-test-locally', name: 'To Test Locally', agent: 'LocalTester', coreType: 'task' },
+  { id: 'testing-locally', name: 'Testing Locally', agent: 'LocalTester', coreType: 'task' },
+  { id: 'to-deploy', name: 'To Deploy', agent: 'DevOps', coreType: 'task' },
+  { id: 'in-deployment', name: 'Deploying', agent: 'DevOps', coreType: 'task' },
+  { id: 'to-test-prod', name: 'To Test Prod', agent: 'ProdTester', coreType: 'task' },
+  { id: 'testing-prod', name: 'Testing Prod', agent: 'ProdTester', coreType: 'task' },
+  { id: 'done', name: 'Done', agent: 'DocSystemAnalyst', coreType: 'task' },
+  { id: 'cancelled', name: 'Cancelled', agent: '-', coreType: 'task' }
 ];
 
-// Status to row ID mapping
 const statusMapping = {
   'new feature': 'new-feature',
   'specification in progress': 'specification-in-progress',
@@ -46,14 +45,12 @@ const statusMapping = {
   'cancelled': 'cancelled'
 };
 
-// Normalize status string
 function normalizeStatus(status) {
   if (!status) return 'unknown';
   const normalized = status.toLowerCase().trim().replace(/`/g, '');
   return statusMapping[normalized] || normalized;
 }
 
-// Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
   loadData();
   loadAgents();
@@ -73,21 +70,16 @@ function refreshAll() {
 }
 
 function switchMainTab(tabName) {
-  const buttons = document.querySelectorAll('.main-tab');
-  const contents = document.querySelectorAll('.main-content');
-  
-  buttons.forEach(btn => {
+  document.querySelectorAll('.main-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabName);
   });
-  
-  contents.forEach(content => {
+  document.querySelectorAll('.main-content').forEach(content => {
     content.classList.toggle('active', content.id === `tab-${tabName}`);
   });
   
   if (tabName === 'logs') {
     setTimeout(() => {
-      const container = document.getElementById('logs-container');
-      container.scrollTop = container.scrollHeight;
+      document.getElementById('logs-container').scrollTop = document.getElementById('logs-container').scrollHeight;
     }, 100);
   }
 }
@@ -132,12 +124,10 @@ function renderAgents() {
   `).join('');
 }
 
-// Render vertical workflow board with combined view
 function renderBoard() {
   const board = document.getElementById('workflow-board');
   board.innerHTML = '';
 
-  // Use combined view if available
   const combined = allData.combined || [];
   
   if (combined.length === 0) {
@@ -147,12 +137,10 @@ function renderBoard() {
 
   // Group by status
   const byStatus = {};
-  
   for (const status of statusOrder) {
     byStatus[status.id] = [];
   }
   
-  // Group combined items by their feature's status
   for (const item of combined) {
     const statusKey = normalizeStatus(item.status);
     if (byStatus[statusKey]) {
@@ -173,7 +161,6 @@ function renderBoard() {
   }
 }
 
-// Create a row element
 function createRow(status, items) {
   const row = document.createElement('div');
   row.className = 'workflow-row';
@@ -191,7 +178,7 @@ function createRow(status, items) {
   cardsContainer.className = 'row-cards';
 
   for (const item of items) {
-    const card = createCombinedCard(item);
+    const card = createHierarchicalCard(item, status);
     cardsContainer.appendChild(card);
   }
 
@@ -199,44 +186,59 @@ function createRow(status, items) {
   return row;
 }
 
-// Create a combined card showing feature + spec + tasks
-function createCombinedCard(item) {
+// Create hierarchical card with prepended parents
+function createHierarchicalCard(item, status) {
   const card = document.createElement('div');
-  card.className = 'card combined';
-  card.onclick = () => openDetail(item.feature);
-
+  card.className = 'card hierarchical';
+  
   const priorityClass = `priority-${(item.priority || 'medium').toLowerCase()}`;
   const riskClass = `risk-${(item.risk || 'low').toLowerCase()}`;
 
-  // Build the card content
-  let html = `
-    <div class="card-header">
-      <span class="card-id">${escapeHtml(item.id)}</span>
-    </div>
-    <div class="card-title">${escapeHtml(item.title)}</div>
-    <div class="card-meta">
-      <span class="badge ${priorityClass}">${item.priority || 'Medium'}</span>
-      <span class="badge ${riskClass}">${item.risk || 'Low'}</span>
+  // Build hierarchical chain based on coreType
+  let prependHtml = '';
+  
+  if (item.coreType === 'task' && item.specification && item.feature) {
+    // Task with spec and feature: [Feature] [Spec] Task
+    prependHtml = `
+      <div class="card-prepend">
+        <span class="prepend-item feature" title="${escapeHtml(item.feature.title)}">${item.feature.id}</span>
+        <span class="prepend-arrow">→</span>
+        <span class="prepend-item spec" title="${escapeHtml(item.specification.title)}">${item.specification.id}</span>
+        <span class="prepend-arrow">→</span>
+      </div>
+    `;
+  } else if (item.coreType === 'specification' && item.feature) {
+    // Spec with feature: [Feature] Spec
+    prependHtml = `
+      <div class="card-prepend">
+        <span class="prepend-item feature" title="${escapeHtml(item.feature.title)}">${item.feature.id}</span>
+        <span class="prepend-arrow">→</span>
+      </div>
+    `;
+  }
+
+  // Core card content
+  const coreTypeClass = item.coreType || 'feature';
+  
+  card.innerHTML = `
+    ${prependHtml}
+    <div class="card-core ${coreTypeClass}">
+      <div class="card-header">
+        <span class="card-id">${escapeHtml(item.id)}</span>
+        <span class="card-type ${coreTypeClass}">${coreTypeClass.slice(0, 4)}</span>
+      </div>
+      <div class="card-title">${escapeHtml(item.title)}</div>
+      <div class="card-meta">
+        <span class="badge ${priorityClass}">${item.priority || 'Medium'}</span>
+        <span class="badge ${riskClass}">${item.risk || 'Low'}</span>
+      </div>
     </div>
   `;
 
-  // Show related items indicator
-  if (item.hasSpec || item.hasTasks) {
-    html += `<div class="card-related">`;
-    if (item.hasSpec) {
-      html += `<span class="related-badge spec" title="Has specification">📄 SPEC-${item.featureNumber}</span>`;
-    }
-    if (item.hasTasks) {
-      html += `<span class="related-badge tasks" title="${item.taskCount} tasks">✅ ${item.taskCount} tasks</span>`;
-    }
-    html += `</div>`;
-  }
-
-  card.innerHTML = html;
+  card.onclick = () => openDetail(item.core);
   return card;
 }
 
-// Open detail modal
 async function openDetail(item) {
   const modal = document.getElementById('detail-modal');
   
@@ -279,20 +281,15 @@ function renderHistory(comments) {
 }
 
 function closeModal() {
-  const modal = document.getElementById('detail-modal');
-  modal.classList.remove('active');
+  document.getElementById('detail-modal').classList.remove('active');
   document.body.style.overflow = '';
 }
 
 function switchTab(tabName) {
-  const buttons = document.querySelectorAll('.tab-btn');
-  const contents = document.querySelectorAll('.tab-content');
-  
-  buttons.forEach(btn => {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabName);
   });
-  
-  contents.forEach(content => {
+  document.querySelectorAll('.tab-content').forEach(content => {
     content.classList.toggle('active', content.id === `tab-${tabName}`);
   });
 }
@@ -305,15 +302,11 @@ function escapeHtml(text) {
 }
 
 document.getElementById('detail-modal').addEventListener('click', (e) => {
-  if (e.target.id === 'detail-modal') {
-    closeModal();
-  }
+  if (e.target.id === 'detail-modal') closeModal();
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    closeModal();
-  }
+  if (e.key === 'Escape') closeModal();
 });
 
 async function loadLogs() {

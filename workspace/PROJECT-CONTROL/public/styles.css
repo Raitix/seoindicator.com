@@ -245,13 +245,66 @@ header h1 {
   transition: transform 0.1s, box-shadow 0.1s;
   border-left: 3px solid transparent;
   min-width: 120px;
-  max-width: 200px;
+  max-width: 250px;
 }
 
 .card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
+
+/* Hierarchical cards */
+.card.hierarchical {
+  display: flex;
+  align-items: stretch;
+  max-width: 350px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.card-prepend {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--bg-row);
+  border-right: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.prepend-item {
+  font-size: 0.6rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 500;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.prepend-item.feature {
+  background: rgba(74, 158, 255, 0.15);
+  color: var(--accent-blue);
+}
+
+.prepend-item.spec {
+  background: rgba(167, 139, 250, 0.15);
+  color: var(--accent-purple);
+}
+
+.prepend-arrow {
+  color: var(--text-secondary);
+  font-size: 0.6rem;
+}
+
+.card-core {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  min-width: 0;
+}
+
+.card-core.feature { border-left: 3px solid var(--accent-blue); }
+.card-core.specification { border-left: 3px solid var(--accent-purple); }
+.card-core.task { border-left: 3px solid var(--accent-green); }
 
 .card.feature { border-left-color: var(--accent-blue); }
 .card.specification { border-left-color: var(--accent-purple); }

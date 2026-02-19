@@ -6,24 +6,24 @@ class Parser {
   constructor(projectPath) {
     this.projectPath = projectPath;
     this.statuses = [
-      { id: 'new-feature', name: 'New Feature', order: 1, agent: 'Architect' },
-      { id: 'specification-in-progress', name: 'Spec In Progress', order: 2, agent: 'Architect' },
-      { id: 'to-break-into-tasks', name: 'To Break Into Tasks', order: 3, agent: 'SpecSystemAnalyst' },
-      { id: 'breaking-into-tasks', name: 'Breaking Into Tasks', order: 4, agent: 'SpecSystemAnalyst' },
-      { id: 'to-prioritize', name: 'To Prioritize', order: 5, agent: 'ProjectManager' },
-      { id: 'prioritization-in-progress', name: 'Prioritizing', order: 6, agent: 'ProjectManager' },
-      { id: 'to-write-tests', name: 'To Write Tests', order: 7, agent: 'PreTester' },
-      { id: 'tests-coverage-in-progress', name: 'Writing Tests', order: 8, agent: 'PreTester' },
-      { id: 'to-develop', name: 'To Develop', order: 9, agent: 'Developer' },
-      { id: 'in-development', name: 'In Development', order: 10, agent: 'Developer' },
-      { id: 'to-test-locally', name: 'To Test Locally', order: 11, agent: 'LocalTester' },
-      { id: 'testing-locally', name: 'Testing Locally', order: 12, agent: 'LocalTester' },
-      { id: 'to-deploy', name: 'To Deploy', order: 13, agent: 'DevOps' },
-      { id: 'in-deployment', name: 'Deploying', order: 14, agent: 'DevOps' },
-      { id: 'to-test-prod', name: 'To Test Prod', order: 15, agent: 'ProdTester' },
-      { id: 'testing-prod', name: 'Testing Prod', order: 16, agent: 'ProdTester' },
-      { id: 'done', name: 'Done', order: 17, agent: 'DocSystemAnalyst' },
-      { id: 'cancelled', name: 'Cancelled', order: 18, agent: '-' }
+      { id: 'new-feature', name: 'New Feature', order: 1, coreType: 'feature' },
+      { id: 'specification-in-progress', name: 'Spec In Progress', order: 2, coreType: 'feature' },
+      { id: 'to-break-into-tasks', name: 'To Break Into Tasks', order: 3, coreType: 'specification' },
+      { id: 'breaking-into-tasks', name: 'Breaking Into Tasks', order: 4, coreType: 'specification' },
+      { id: 'to-prioritize', name: 'To Prioritize', order: 5, coreType: 'task' },
+      { id: 'prioritization-in-progress', name: 'Prioritizing', order: 6, coreType: 'task' },
+      { id: 'to-write-tests', name: 'To Write Tests', order: 7, coreType: 'task' },
+      { id: 'tests-coverage-in-progress', name: 'Writing Tests', order: 8, coreType: 'task' },
+      { id: 'to-develop', name: 'To Develop', order: 9, coreType: 'task' },
+      { id: 'in-development', name: 'In Development', order: 10, coreType: 'task' },
+      { id: 'to-test-locally', name: 'To Test Locally', order: 11, coreType: 'task' },
+      { id: 'testing-locally', name: 'Testing Locally', order: 12, coreType: 'task' },
+      { id: 'to-deploy', name: 'To Deploy', order: 13, coreType: 'task' },
+      { id: 'in-deployment', name: 'Deploying', order: 14, coreType: 'task' },
+      { id: 'to-test-prod', name: 'To Test Prod', order: 15, coreType: 'task' },
+      { id: 'testing-prod', name: 'Testing Prod', order: 16, coreType: 'task' },
+      { id: 'done', name: 'Done', order: 17, coreType: 'task' },
+      { id: 'cancelled', name: 'Cancelled', order: 18, coreType: 'task' }
     ];
     
     this.priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3 };
@@ -34,7 +34,6 @@ class Parser {
     return this.statuses;
   }
 
-  // Normalize ID: FEAT-001 -> FEAT-1, SPEC-003-02 -> SPEC-3-2
   normalizeId(id) {
     return id
       .replace(/FEAT-0*(\d+)/i, 'FEAT-$1')
@@ -42,7 +41,6 @@ class Parser {
       .replace(/SPEC-0*(\d+)/i, 'SPEC-$1');
   }
 
-  // Extract numeric ID for grouping (FEAT-001 -> 1, SPEC-003 -> 3)
   extractFeatureNumber(id) {
     const match = id.match(/(?:FEAT|SPEC)-0*(\d+)/i);
     return match ? parseInt(match[1], 10) : null;
@@ -60,32 +58,25 @@ class Parser {
   parseMarkdown(content, type, id) {
     if (!content) return null;
 
-    // Normalize the ID
     const normalizedId = this.normalizeId(id);
     
-    // Extract metadata
     const statusMatch = content.match(/##\s*STATUS\s*\n`?([^`\n]+)`?/i);
     const priorityMatch = content.match(/##\s*PRIORITY\s*\n`?([^`\n]+)`?/i);
     const riskMatch = content.match(/##\s*RISK\s*\n`?([^`\n]+)`?/i);
     const titleMatch = content.match(/^#\s*(FEAT|SPEC)[\-\d]*:\s*(.+)$/m);
     
-    // Extract title from first heading
     let title = titleMatch ? titleMatch[2].trim() : normalizedId;
     
-    // Extract status, priority, risk
     const status = statusMatch ? statusMatch[1].trim().replace(/`/g, '') : 'Unknown';
     const priority = priorityMatch ? priorityMatch[1].trim().replace(/`/g, '') : 'Medium';
     const risk = riskMatch ? riskMatch[1].trim().replace(/`/g, '') : 'Low';
 
-    // Extract description
     const descMatch = content.match(/##\s*Description\s*\n([\s\S]*?)(?=\n##|\n---|$)/i);
     const description = descMatch ? descMatch[1].trim() : '';
 
-    // Extract comments/history
     const commentsSection = content.match(/##\s*Comments[\s\S]*$/i);
     const comments = this.parseComments(commentsSection ? commentsSection[0] : '');
 
-    // Parse full content as HTML
     const htmlContent = marked(content);
 
     return {
@@ -171,10 +162,7 @@ class Parser {
       this.scanFolder('TASKS', 'task')
     ]);
 
-    // Create combined workflow items
     const combined = this.createCombinedView(features, specifications, tasks);
-
-    // Combine all for backward compatibility
     const all = [...features, ...specifications, ...tasks];
     
     return {
@@ -187,69 +175,157 @@ class Parser {
     };
   }
 
-  // Create combined view: feature + related spec + related tasks
+  // Create workflow items based on status
   createCombinedView(features, specifications, tasks) {
-    const combined = [];
+    const items = [];
 
-    // Group specs and tasks by feature number
-    const specsByFeature = {};
-    const tasksBySpec = {};
+    // Index by feature number
+    const featuresByNum = {};
+    const specsByNum = {};
+    const tasksBySpecNum = {};
 
-    for (const spec of specifications) {
-      if (spec.featureNumber) {
-        specsByFeature[spec.featureNumber] = spec;
-      }
+    for (const f of features) {
+      if (f.featureNumber) featuresByNum[f.featureNumber] = f;
     }
-
-    for (const task of tasks) {
-      // Task ID like SPEC-3-1 -> feature number 3
-      const match = task.id.match(/SPEC-(\d+)-\d+/i);
+    for (const s of specifications) {
+      if (s.featureNumber) specsByNum[s.featureNumber] = s;
+    }
+    for (const t of tasks) {
+      const match = t.id.match(/SPEC-(\d+)-\d+/i);
       if (match) {
         const specNum = parseInt(match[1], 10);
-        if (!tasksBySpec[specNum]) tasksBySpec[specNum] = [];
-        tasksBySpec[specNum].push(task);
+        if (!tasksBySpecNum[specNum]) tasksBySpecNum[specNum] = [];
+        tasksBySpecNum[specNum].push(t);
       }
     }
 
-    // Create combined items for each feature
+    // Process each feature based on its status
     for (const feature of features) {
-      const spec = specsByFeature[feature.featureNumber];
-      const relatedTasks = tasksBySpec[feature.featureNumber] || [];
+      const spec = specsByNum[feature.featureNumber];
+      const relatedTasks = tasksBySpecNum[feature.featureNumber] || [];
+      const statusKey = feature.status.toLowerCase().trim();
 
-      combined.push({
-        id: feature.id,
-        feature,
-        specification: spec || null,
-        tasks: relatedTasks,
-        // Use feature's status as the primary status
-        status: feature.status,
-        priority: feature.priority,
-        risk: feature.risk,
-        title: feature.title,
-        featureNumber: feature.featureNumber,
-        hasSpec: !!spec,
-        hasTasks: relatedTasks.length > 0,
-        taskCount: relatedTasks.length
-      });
+      // Determine what should be the core object for this status
+      if (statusKey === 'new feature' || statusKey === 'specification in progress') {
+        // Core: Feature
+        items.push({
+          coreType: 'feature',
+          core: feature,
+          feature,
+          specification: spec,
+          tasks: relatedTasks,
+          status: feature.status,
+          priority: feature.priority,
+          risk: feature.risk,
+          title: feature.title,
+          id: feature.id,
+          featureNumber: feature.featureNumber
+        });
+      } 
+      else if (statusKey === 'to break into tasks' || statusKey === 'breaking into tasks') {
+        // Core: Specification (if exists), otherwise feature
+        if (spec) {
+          items.push({
+            coreType: 'specification',
+            core: spec,
+            feature,
+            specification: spec,
+            tasks: relatedTasks,
+            status: feature.status,
+            priority: spec.priority || feature.priority,
+            risk: spec.risk || feature.risk,
+            title: spec.title,
+            id: spec.id,
+            featureNumber: feature.featureNumber
+          });
+        } else {
+          // No spec yet, show feature
+          items.push({
+            coreType: 'feature',
+            core: feature,
+            feature,
+            specification: null,
+            tasks: [],
+            status: feature.status,
+            priority: feature.priority,
+            risk: feature.risk,
+            title: feature.title,
+            id: feature.id,
+            featureNumber: feature.featureNumber
+          });
+        }
+      }
+      else {
+        // To Prioritize onwards: Core is Task
+        if (relatedTasks.length > 0) {
+          // Each task is a separate item
+          for (const task of relatedTasks) {
+            items.push({
+              coreType: 'task',
+              core: task,
+              feature,
+              specification: spec,
+              tasks: [task],
+              allTasks: relatedTasks,
+              status: task.status || feature.status,
+              priority: task.priority || spec?.priority || feature.priority,
+              risk: task.risk || spec?.risk || feature.risk,
+              title: task.title,
+              id: task.id,
+              featureNumber: feature.featureNumber
+            });
+          }
+        } else if (spec) {
+          // No tasks yet, show spec
+          items.push({
+            coreType: 'specification',
+            core: spec,
+            feature,
+            specification: spec,
+            tasks: [],
+            status: feature.status,
+            priority: spec.priority || feature.priority,
+            risk: spec.risk || feature.risk,
+            title: spec.title,
+            id: spec.id,
+            featureNumber: feature.featureNumber
+          });
+        } else {
+          // No spec or tasks, show feature
+          items.push({
+            coreType: 'feature',
+            core: feature,
+            feature,
+            specification: null,
+            tasks: [],
+            status: feature.status,
+            priority: feature.priority,
+            risk: feature.risk,
+            title: feature.title,
+            id: feature.id,
+            featureNumber: feature.featureNumber
+          });
+        }
+      }
     }
 
-    // Sort by status order, then priority, then risk
+    // Sort by status order, then priority
     const statusOrderMap = {};
     this.statuses.forEach((s, i) => statusOrderMap[s.name.toLowerCase()] = i);
     
-    combined.sort((a, b) => {
+    items.sort((a, b) => {
       const statusA = statusOrderMap[a.status.toLowerCase()] ?? 99;
       const statusB = statusOrderMap[b.status.toLowerCase()] ?? 99;
       if (statusA !== statusB) return statusA - statusB;
       
-      const prioA = a.feature.sortOrder || 2;
-      const prioB = b.feature.sortOrder || 2;
+      const prioA = a.core?.sortOrder || 2;
+      const prioB = b.core?.sortOrder || 2;
       if (prioA !== prioB) return prioA - prioB;
       
-      return (a.feature.riskSortOrder || 3) - (b.feature.riskSortOrder || 3);
+      return (a.core?.riskSortOrder || 3) - (b.core?.riskSortOrder || 3);
     });
 
-    return combined;
+    return items;
   }
 
   async getById(type, id) {
@@ -261,12 +337,10 @@ class Parser {
       default: return null;
     }
 
-    // Try both normalized and original ID
     const normalizedId = this.normalizeId(id);
     let filePath = path.join(this.projectPath, folder, `${normalizedId}.md`);
     let content = await this.readFile(filePath);
     
-    // Try with leading zeros if not found
     if (!content) {
       const numMatch = id.match(/\d+/);
       if (numMatch) {
