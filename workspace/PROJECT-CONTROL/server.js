@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const Parser = require('./lib/parser');
 
 const app = express();
@@ -8,9 +9,7 @@ const PORT = 3333;
 
 // Project path to monitor
 const PROJECT_PATH = path.join(__dirname, '..', 'PROJECT-SEOINDICATOR');
-
-// OpenClaw Gateway URL
-const GATEWAY_URL = 'http://localhost:3777';
+const ACTIVE_AGENTS_FILE = 'C:\\Users\\Raitis\\.openclaw\\logs\\active-agents.json';
 
 app.use(cors());
 app.use(express.json());
@@ -48,41 +47,24 @@ app.get('/api/statuses', (req, res) => {
   res.json(parser.getStatuses());
 });
 
-// API: Get active agents from OpenClaw Gateway
-app.get('/api/agents', async (req, res) => {
+// API: Get active agents from file
+app.get('/api/agents', (req, res) => {
   try {
-    const response = await fetch(`${GATEWAY_URL}/api/sessions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'list' })
-    });
-    
-    if (!response.ok) {
-      return res.json({ agents: [], error: 'Gateway not available' });
-    }
-    
-    const data = await response.json();
-    const sessions = data.sessions || [];
-    
-    // Filter and format active agent sessions
-    // Include 'main' as 'Lead' session
-    const agents = sessions
-      .filter(s => s.status === 'running')
-      .map(s => {
-        // Map 'main' agentId to 'Lead'
-        const agentId = s.agentId === 'main' ? 'lead' : s.agentId;
-        const name = agentId === 'lead' ? 'Lead' : (agentId.charAt(0).toUpperCase() + agentId.slice(1));
-        
-        return {
-          id: agentId,
-          name: name,
-          label: s.label || (agentId === 'lead' ? 'Coordinator' : ''),
-          sessionKey: s.sessionKey,
-          startedAt: s.startedAt
-        };
+    if (fs.existsSync(ACTIVE_AGENTS_FILE)) {
+      const content = fs.readFileSync(ACTIVE_AGENTS_FILE, 'utf-8');
+      const data = JSON.parse(content);
+      res.json({ agents: data });
+    } else {
+      // Default: show Lead as active if file doesn't exist
+      res.json({ 
+        agents: [{
+          id: 'lead',
+          name: 'Lead',
+          label: 'Coordinator',
+          status: 'running'
+        }]
       });
-    
-    res.json({ agents });
+    }
   } catch (error) {
     res.json({ agents: [], error: error.message });
   }

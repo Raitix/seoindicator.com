@@ -11,7 +11,7 @@ param(
     [int]$MaxActiveFeatures = 3,
     [int]$MaxAgentsPerStatus = 3,
     [int]$DailyAgentIntervalHours = 24,
-    [int]$InnovatorIntervalHours = 6,
+    [int]$InnovatorIntervalMinutes = 5,  # Changed from hours to minutes
     [int]$MaxNewFeatures = 10
 )
 
@@ -262,30 +262,37 @@ You are $AgentName agent. Your task is to work on $ItemType '$ItemId'.
 - Leave detailed comments for the next agent
 "@
 
-    # Use OpenClaw CLI to spawn agent session
     $agentId = $AgentName.ToLower()
+    $sessionLabel = "$AgentName-$ItemId"
     
     try {
-        # Spawn via sessions_spawn - we'll use REST API
-        $body = @{
-            task = $task
-            agentId = $agentId
-            label = "$AgentName-$ItemId"
-            runTimeoutSeconds = 1800  # 30 min timeout
-        } | ConvertTo-Json -Depth 10
+        # Use OpenClaw CLI to spawn agent
+        $cliPath = "openclaw"
+        $arguments = @("agent", "--agent", $agentId, "--message", $task, "--timeout", "1800")
         
-        $response = Invoke-RestMethod -Uri "http://localhost:3777/api/sessions/spawn" -Method POST -Body $body -ContentType "application/json" -ErrorAction Stop
+        $process = Start-Process -FilePath $cliPath -ArgumentList $arguments -NoNewWindow -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
         
-        if ($response.sessionKey) {
-            # Create lock
-            New-Lock -Type $ItemType -Id $ItemId -Agent $AgentName -SessionId $response.sessionKey
-            Write-Log "Spawned $AgentName for $ItemType/$ItemId (session: $($response.sessionKey))"
-            return $response.sessionKey
+        # Create lock with process ID as session identifier
+        New-Lock -Type $ItemType -Id $ItemId -Agent $AgentName -SessionId "cli-$($process.Id)"
+        Write-Log "Spawned $AgentName for $ItemType/$ItemId via CLI (PID: $($process.Id))"
+        
+        # Track this agent in active-agents.json
+        $agentsFile = "C:\Users\Raitis\.openclaw\logs\active-agents.json"
+        $agents = @()
+        if (Test-Path $agentsFile) {
+            try { $agents = Get-Content $agentsFile -Raw | ConvertFrom-Json } catch {}
         }
-        else {
-            Write-Log "Failed to spawn $AgentName for $ItemType/$ItemId - no session key returned" -Level "ERROR"
-            return $null
+        $agents += @{
+            id = $agentId
+            name = $AgentName
+            label = $ItemId
+            status = "running"
+            pid = $process.Id
+            updatedAt = [DateTime]::UtcNow.ToString("o")
         }
+        $agents | ConvertTo-Json | Set-Content $agentsFile
+        
+        return "cli-$($process.Id)"
     }
     catch {
         Write-Log "Failed to spawn $AgentName for $ItemType/$ItemId : $($_.Exception.Message)" -Level "ERROR"
@@ -361,6 +368,44 @@ foreach ($status in $StatusAgentMap.Keys) {
     }
 }
 
+# ============================================
+# TRACK ACTIVE AGENTS FOR UI
+# ============================================
+
+function Update-ActiveAgentsFile {
+    param([array]$Sessions)
+    
+    $agentsFile = "C:\Users\Raitis\.openclaw\logs\active-agents.json"
+    $agents = @()
+    
+    # Add Lead (main session)
+    $agents += @{
+        id = "lead"
+        name = "Lead"
+        label = "Coordinator"
+        status = "running"
+        updatedAt = [DateTime]::UtcNow.ToString("o")
+    }
+    
+    # Add spawned agents from sessions
+    foreach ($session in $Sessions) {
+        if ($session.agentId -and $session.agentId -ne "main") {
+            $agents += @{
+                id = $session.agentId
+                name = $session.agentId.Substring(0,1).ToUpper() + $session.agentId.Substring(1)
+                label = $session.label -replace ".*-", ""
+                status = "running"
+                updatedAt = [DateTime]::UtcNow.ToString("o")
+            }
+        }
+    }
+    
+    $agents | ConvertTo-Json | Set-Content $agentsFile
+}
+
+# Update active agents file
+Update-ActiveAgentsFile -Sessions @()
+
 Write-Log "Orchestration complete. Spawned: $spawnedCount agent(s)"
 Write-Log "=== Orchestrator Finished ==="
 
@@ -409,19 +454,30 @@ function Spawn-DailyAgent {
     )
     
     try {
-        $body = @{
-            task = $TaskDescription
-            agentId = $AgentId
-            label = $Label
-            runTimeoutSeconds = 3600  # 1 hour
-        } | ConvertTo-Json -Depth 10
+        # Use OpenClaw CLI to spawn agent
+        $cliPath = "openclaw"
+        $arguments = @("agent", "--agent", $AgentId, "--message", $TaskDescription, "--timeout", "3600")
         
-        $response = Invoke-RestMethod -Uri "http://localhost:3777/api/sessions/spawn" -Method POST -Body $body -ContentType "application/json" -ErrorAction Stop
+        $process = Start-Process -FilePath $cliPath -ArgumentList $arguments -NoNewWindow -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
         
-        if ($response.sessionKey) {
-            Write-Log "Spawned $AgentName (session: $($response.sessionKey))"
-            return $true
+        # Track this agent in active-agents.json
+        $agentsFile = "C:\Users\Raitis\.openclaw\logs\active-agents.json"
+        $agents = @()
+        if (Test-Path $agentsFile) {
+            try { $agents = Get-Content $agentsFile -Raw | ConvertFrom-Json } catch {}
         }
+        $agents += @{
+            id = $AgentId
+            name = $AgentName
+            label = $Label
+            status = "running"
+            pid = $process.Id
+            updatedAt = [DateTime]::UtcNow.ToString("o")
+        }
+        $agents | ConvertTo-Json | Set-Content $agentsFile
+        
+        Write-Log "Spawned $AgentName via CLI (PID: $($process.Id))"
+        return $true
     }
     catch {
         Write-Log "Failed to spawn $AgentName : $($_.Exception.Message)" -Level "ERROR"
@@ -495,32 +551,33 @@ if (-not $lastRunHash.innovator) { $lastRunHash.innovator = $null }
 $shouldRunInnovator = $false
 $newFeaturesCount = @($features | Where-Object { $_.Status -eq "New Feature" }).Count
 
-# Check time interval
-if ($lastRunHash.innovator) {
-    try {
-        $lastInnovatorRun = [DateTime]::Parse($lastRunHash.innovator)
-        $hoursSince = ([DateTime]::UtcNow - $lastInnovatorRun).TotalHours
-        if ($hoursSince -ge $InnovatorIntervalHours) {
-            $shouldRunInnovator = $true
-        }
-    }
-    catch {
-        $shouldRunInnovator = $true
-    }
-}
-else {
-    $shouldRunInnovator = $true
-}
-
-# Check feature limit
+# Check feature limit FIRST - if limit reached, don't even check time
 if ($newFeaturesCount -ge $MaxNewFeatures) {
     Write-Log "Innovator skipped: $newFeaturesCount New Features (limit: $MaxNewFeatures)"
     $shouldRunInnovator = $false
 }
+else {
+    # Check time interval (in minutes)
+    if ($lastRunHash.innovator) {
+        try {
+            $lastInnovatorRun = [DateTime]::Parse($lastRunHash.innovator)
+            $minutesSince = ([DateTime]::UtcNow - $lastInnovatorRun).TotalMinutes
+            if ($minutesSince -ge $InnovatorIntervalMinutes) {
+                $shouldRunInnovator = $true
+            }
+        }
+        catch {
+            $shouldRunInnovator = $true
+        }
+    }
+    else {
+        $shouldRunInnovator = $true
+    }
+}
 
 # Spawn Innovator if conditions met
 if ($shouldRunInnovator) {
-    Write-Log "Innovator needs to run (last: $($lastRunHash.innovator), New Features: $newFeaturesCount)"
+    Write-Log "Innovator needs to run (last: $($lastRunHash.innovator), New Features: $newFeaturesCount/$MaxNewFeatures)"
     
     $innovatorTask = @"
 You are Innovator agent. Your role is to discover and propose new features for SEOIndicator.
