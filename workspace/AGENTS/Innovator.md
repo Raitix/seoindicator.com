@@ -14,6 +14,10 @@ Searches the internet for information and suggests new features using business l
 - Research user needs and pain points
 - Propose new features in business terms
 - Create `FEATURES/FEAT-X.md` drafts with initial priority (`High` | `Medium` | `Low`)
+- **Set initial risk level** (`Low` | `Medium` | `High`) based on:
+  - `Low`: Copy changes, UI tweaks, new non-critical reports
+  - `Medium`: New analysis logic, new endpoints, non-destructive schema changes
+  - `High`: Billing, auth, destructive migrations, data deletion, ToS-sensitive behavior
 - Present feature proposals with business justification
 - **Consider in every proposal:**
   - **Revenue impact:** How does this generate revenue or reduce costs?

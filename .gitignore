@@ -42,6 +42,9 @@ gateway.cmd
 *.log
 logs/
 
+# Telegram polling state
+telegram/update-offset-*.json
+
 # Node modules
 node_modules/
 

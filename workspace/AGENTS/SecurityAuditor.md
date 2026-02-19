@@ -17,6 +17,7 @@ Scans system for vulnerabilities and can halt deployments or create fix specific
   ```
 - Continuous security scanning
 - Pre-deployment security review
+- **MANDATORY review of all High-risk items** before deployment
 - Dependency vulnerability check
 - Decision authority:
   - **PASS** → Allow deployment

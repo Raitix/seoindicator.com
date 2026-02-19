@@ -122,6 +122,7 @@ workspace/
 - **STRICT WORKFLOW COMPLIANCE:** Follow AGENTS.md structure, MEMORY/TEMP/ for daily logs, MEMORY/[agent].md for persistent
 - **Monitor other agents:** Ensure all agents follow project workflow rules, correct them when needed
 - **BOOTSTRAP.md is reserved** for first-run only (OpenClaw removes it after initial setup) — never create this file manually
+- **Risk Levels:** All features/specs/tasks must have RISK indicator (Low/Medium/High) — High-risk requires SecurityAuditor review
 
 ---
 
@@ -155,3 +156,14 @@ _(Track issues requiring attention)_
 1. Connect to PROD FTP/DB
 2. Build API endpoints for SEO indicators
 3. Create first feature via Innovator agent
+
+---
+
+## Auto-Start Services
+
+Services automatically start via `boot-md` hook when gateway starts:
+- MySQL (via XAMPP)
+- Backend (Laravel on port 8000)
+- Frontend (Next.js on port 3000)
+
+Config: `workspace/BOOT.md`

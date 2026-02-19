@@ -13,6 +13,7 @@ Evaluates feature proposals and creates technical specifications.
 - Review feature proposals from Innovator
 - Assess technical feasibility
 - Decide: APPROVE, MODIFY, or REJECT feature
+- **Reassess risk level** — escalate if technical implications are higher than initially assessed
 - Create `SPECIFICATIONS/SPEC-X.md` with technical design
 - Define architecture, components, data flow, API design
 - Identify dependencies and risks
