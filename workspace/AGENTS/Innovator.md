@@ -61,6 +61,30 @@ Passes feature proposals to **Architect** for technical evaluation.
 **Dashboard:** https://analytics.google.com/analytics/web/#/a355806861p489951380/reports/intelligenthome
 **Property ID:** `489951380`
 
+### API Access (Automated)
+
+**CLI Tool:** `frontend/scripts/ga-analytics.mjs`
+
+```bash
+# Get summary metrics
+node ga-analytics.mjs summary [days]
+
+# Get daily breakdown
+node ga-analytics.mjs daily [days]
+
+# Get top pages
+node ga-analytics.mjs pages [limit]
+
+# Get traffic sources
+node ga-analytics.mjs sources [limit]
+
+# Get device breakdown
+node ga-analytics.mjs devices
+
+# Get real-time active users
+node ga-analytics.mjs realtime
+```
+
 ### When to Check GA Data
 
 **Before proposing ANY new feature:**

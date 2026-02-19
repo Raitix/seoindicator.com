@@ -62,6 +62,24 @@ Performance specs → **Architect** for technical review.
 **Dashboard:** https://analytics.google.com/analytics/web/#/a355806861p489951380/reports/intelligenthome
 **Property ID:** `489951380`
 
+### API Access (Automated)
+
+**CLI Tool:** `frontend/scripts/ga-analytics.mjs`
+
+```bash
+# Get summary metrics
+node ga-analytics.mjs summary [days]
+
+# Get daily breakdown
+node ga-analytics.mjs daily [days]
+
+# Get top pages with bounce rate
+node ga-analytics.mjs pages [limit]
+
+# Get real-time active users
+node ga-analytics.mjs realtime
+```
+
 ### When to Check GA Data
 
 **Performance Investigation:**
