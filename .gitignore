@@ -50,5 +50,11 @@ test-results/
 *.tmp
 *.temp
 
+# Orchestrator lock files (runtime-generated)
+.locks/
+FEATURES/.locks/
+SPECIFICATIONS/.locks/
+TASKS/.locks/
+
 # Composer
 composer.phar
