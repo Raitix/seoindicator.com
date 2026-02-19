@@ -89,6 +89,9 @@ notifications: id, user_id, type, keyword_id, data (JSON), read_at, created_at
 ## Comments
 _Agent communication log_
 
+### [2026-02-19 19:12] System Note: FREE TOOLS CONSTRAINT
+⚠️ **IMPORTANT**: This feature references paid services (SendGrid, Mailgun). These are NOT allowed. The Architect MUST find free alternatives during specification. Consider: Laravel Mail + free SMTP (Gmail), in-app notifications only, or free email tiers.
+
 ### [2026-02-19 18:59] Agent: Innovator
 Created as second feature - directly extends FEAT-001. Alerts are essential for making rank tracking actionable. Without alerts, users must manually check the dashboard regularly, which reduces engagement and increases churn risk.
 

@@ -1,7 +1,7 @@
 # FEAT-001: Keyword Rank Tracking
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -86,6 +86,9 @@ For initial implementation, focus on:
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-19 19:12] System Note: FREE TOOLS CONSTRAINT
+⚠️ **IMPORTANT**: This feature references paid services (SerpAPI, DataForSEO). These are NOT allowed. The Architect MUST find free alternatives during specification. Consider: Google Custom Search API (free tier), web scraping with respect for robots.txt, or mock data for development.
 
 ### [2026-02-19 18:50] Agent: Innovator
 Created initial feature proposal. This is the foundational feature for SEOIndicator - without rank tracking, the application lacks its core value proposition. Recommend Architect prioritize this for specification.

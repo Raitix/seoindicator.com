@@ -5,6 +5,30 @@ SEOIndicator — SEO analysis and monitoring tool.
 
 ---
 
+## ⚠️ CRITICAL CONSTRAINT: FREE TOOLS ONLY
+
+**All features and implementations must use FREE tools and services only.**
+
+- ❌ No paid APIs, subscriptions, or services
+- ❌ No freemium services that require paid plans for reasonable usage
+- ✅ Free tiers are acceptable if they provide meaningful functionality
+- ✅ Open-source solutions preferred
+- ✅ Self-hosted alternatives encouraged
+
+**Exception:** Only if explicitly requested by the user.
+
+### When proposing features, find free alternatives:
+
+| Paid Service | Free Alternative |
+|--------------|------------------|
+| SerpAPI / DataForSEO | Google Custom Search API (free tier), scraping (respect robots.txt), mock data for development |
+| SendGrid / Mailgun | Laravel Mail + free SMTP (Gmail, Mailtrap for dev), in-app notifications |
+| AWS / Cloud services | Local development, free hosting tiers (Vercel, Netlify), self-hosted |
+
+**If a paid service is mentioned in a feature, the Architect MUST find a free alternative during specification.**
+
+---
+
 ## Development Approach
 
 **Specification Driven Development (SDD)**
