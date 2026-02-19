@@ -569,5 +569,6 @@ interface Props {
 - Created: 2026-02-19
 - Author: Architect
 - Feature: FEAT-003
-- Status: `To Prioritize`
+- Status: `To Write Tests`
 - Tasks Created: 8 (SPEC-003-1 through SPEC-003-8)
+- Tasks Prioritized: 2026-02-20 by ProjectManager
