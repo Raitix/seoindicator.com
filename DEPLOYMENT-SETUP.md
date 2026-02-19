@@ -1,72 +1,253 @@
-# DEPLOYMENT-SETUP.md
+# DEPLOYMENT-SETUP.md — Production Deployment Guide
 
-## Environments
-
-| Environment | URL | Purpose |
-|-------------|-----|---------|
-| Development | _local_ | Local development |
-| Staging | _(to be defined)_ | Pre-production testing |
-| Production | `https://seoindicator.com` | Live environment |
+**Target:** Hostinger Shared Hosting (seoindicator.com)
 
 ---
 
-## Deployment Process
+## Overview
 
-### Pre-deployment Checklist
-- [ ] All tests passing
-- [ ] Documentation updated
-- [ ] CHANGELOG updated
-- [ ] Environment variables configured
-- [ ] Database migrations ready (if any)
+This document describes the automated deployment pipeline for SEOIndicator.
 
-### Deployment Steps
-
-1. **Merge PR** to main branch
-2. **Run tests** in CI pipeline
-3. **Build** production artifacts
-4. **Deploy to staging** for verification
-5. **Deploy to production**
-6. **Verify deployment** — smoke tests
-7. **Monitor** for errors
-
----
-
-## Rollback Procedure
-1. Identify issue
-2. Revert commit or deploy previous version
-3. Verify rollback successful
-4. Document incident
-
----
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `NODE_ENV` | Environment mode | Yes |
-| `DATABASE_URL` | Database connection | Yes |
-| `API_KEY` | External API key | Yes |
-
-_(Add project-specific variables)_
-
----
-
-## Deployment Commands
-
-```bash
-# Build
-npm run build
-
-# Deploy to staging
-npm run deploy:staging
-
-# Deploy to production
-npm run deploy:prod
-
-# Rollback
-npm run rollback
+### Deployment Flow
+```
+GitHub Push → GitHub Actions → Build → Test → Deploy FTP → Run Migrations
 ```
 
 ---
 
-Last updated: 2026-02-17
+## Environments
+
+| Environment | Purpose | URL |
+|-------------|---------|-----|
+| **Local** | Development | http://localhost:3000 (frontend), http://localhost:8000 (backend) |
+| **Production** | Live site | https://seoindicator.com |
+
+---
+
+## Credentials
+
+**All credentials stored in:** `~/.openclaw/secrets/seoindicator-prod.env`
+
+| Service | Host | Notes |
+|---------|------|-------|
+| FTP | 45.84.206.11:21 | File deployment |
+| MySQL | srv1924.hstgr.io | Database |
+
+---
+
+## Deployment Strategy
+
+### 1. Frontend Deployment (Next.js → Static Export)
+
+Since production is on shared hosting (no Node.js runtime), we use static export:
+
+```bash
+# Build static files
+cd frontend
+npm run build
+npx next export  # Outputs to ./out
+```
+
+**Deployed to:** `public_html/` via FTP
+
+### 2. Backend Deployment (Laravel PHP)
+
+Backend is deployed as PHP files:
+
+```bash
+# Prepare for production
+cd backend
+composer install --no-dev --optimize-autoloader
+php artisan config:cache
+php artisan route:cache
+```
+
+**Deployed to:** `public_html/api/` via FTP
+
+### 3. Database Migrations
+
+Migrations are run via a secure endpoint:
+
+1. Migration files uploaded to `api/database/migrations/`
+2. Endpoint called: `POST /api/deploy/migrate?key=DEPLOY_KEY`
+3. Laravel runs pending migrations
+
+**Security:** Deploy key stored in GitHub Secrets
+
+---
+
+## GitHub Actions Workflow
+
+### Workflow File
+`.github/workflows/deploy.yml`
+
+### Triggers
+- **Push to `main`** → Full deployment
+- **Pull Request** → Build & test only (no deploy)
+
+### Workflow Steps
+
+```yaml
+1. Checkout code
+2. Setup Node.js
+3. Setup PHP
+4. Install dependencies (npm, composer)
+5. Build frontend (static export)
+6. Run Playwright tests
+7. Deploy frontend via FTP
+8. Deploy backend via FTP
+9. Run database migrations
+10. Notify on success/failure
+```
+
+### Required GitHub Secrets
+
+| Secret | Description |
+|--------|-------------|
+| `FTP_HOST` | FTP server hostname |
+| `FTP_PORT` | FTP port (21) |
+| `FTP_USERNAME` | FTP username |
+| `FTP_PASSWORD` | FTP password |
+| `DB_HOST` | Database hostname |
+| `DB_DATABASE` | Database name |
+| `DB_USERNAME` | Database username |
+| `DB_PASSWORD` | Database password |
+| `DEPLOY_KEY` | Secret key for migration endpoint |
+
+---
+
+## Local Deployment Testing
+
+### Test FTP Connection
+```powershell
+# Via PowerShell
+$ftp = [System.Net.WebRequest]::Create("ftp://45.84.206.11/")
+$ftp.Credentials = New-Object System.Net.NetworkCredential("u949031532.seoindicator.com", "password")
+$ftp.Method = [System.Net.WebRequestMethods+Ftp]::ListDirectory
+$response = $ftp.GetResponse()
+```
+
+### Test Database Connection
+```powershell
+cd backend
+# Update .env with prod credentials, then:
+php artisan tinker
+>>> DB::connection()->getPdo();
+```
+
+### Manual Deployment (Emergency)
+```powershell
+# 1. Build frontend
+cd frontend
+npm run build
+npx next export
+
+# 2. Upload via FTP client (FileZilla, WinSCP)
+# Frontend: ./out/* → public_html/
+# Backend: ./backend/* → public_html/api/
+
+# 3. Run migrations
+# POST request to: https://seoindicator.com/api/deploy/migrate?key=DEPLOY_KEY
+```
+
+---
+
+## Playwright Tests
+
+### Test Configuration
+Tests are located in `tests/e2e/` and run before deployment.
+
+### Local Test Run
+```bash
+cd frontend
+npx playwright test
+```
+
+### CI Test Run
+Tests run automatically in GitHub Actions on every push/PR.
+
+### Test Requirements
+- All tests must pass before deployment
+- Tests run against built static files
+- API tests run against local or staging backend
+
+---
+
+## Rollback Procedure
+
+### Quick Rollback (FTP)
+1. Download current `public_html/` as backup
+2. Upload previous version from local git: `git checkout HEAD~1`
+3. Rebuild and re-upload
+
+### Database Rollback
+1. Restore from backup (daily backups available in Hostinger)
+2. Or run down migrations: `php artisan migrate:rollback`
+
+---
+
+## Monitoring
+
+### Post-Deployment Checks
+1. Health endpoint: `GET https://seoindicator.com/api/health`
+2. Homepage loads: `GET https://seoindicator.com/`
+3. Database connected: Check health endpoint response
+
+### Error Tracking
+- PHP errors logged to `storage/logs/laravel.log`
+- Access via FTP or Hostinger file manager
+
+---
+
+## Security Considerations
+
+1. **Deploy Key:** Never commit, use GitHub Secrets
+2. **FTP Credentials:** Stored in secrets, not in repo
+3. **Database Credentials:** In secrets and `.env` (gitignored)
+4. **.htaccess:** Restricts access to sensitive files
+5. **Migrations Endpoint:** Protected by deploy key, IP whitelist optional
+
+---
+
+## Deployment Checklist
+
+### Before First Deployment
+- [ ] GitHub Secrets configured
+- [ ] FTP credentials verified
+- [ ] Database credentials verified
+- [ ] Deploy key generated and stored
+
+### Each Deployment
+- [ ] All tests pass locally
+- [ ] Build succeeds
+- [ ] GitHub Actions workflow completes
+- [ ] Health check returns 200
+- [ ] Homepage loads correctly
+
+---
+
+## Troubleshooting
+
+### FTP Connection Fails
+- Check credentials in GitHub Secrets
+- Verify IP is not blocked by Hostinger
+- Try passive mode
+
+### Database Migration Fails
+- Check migration logs in `storage/logs/`
+- Verify DB credentials
+- Check for syntax errors in migration files
+
+### Build Fails
+- Check Node.js version matches local
+- Clear npm cache: `npm cache clean --force`
+- Delete `node_modules` and reinstall
+
+### Static Export Fails
+- Ensure no server-side features used
+- Check for dynamic routes (not supported in static export)
+- Verify `next.config.js` has `output: 'export'`
+
+---
+
+Last updated: 2026-02-19
