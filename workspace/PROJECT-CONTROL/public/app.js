@@ -246,30 +246,78 @@ function createHierarchicalCard(item, status) {
     </div>
   `;
 
-  card.onclick = () => openDetail(item.core);
+  card.onclick = () => openDetail(item);
   return card;
 }
 
+// Open detail modal with parent context
 async function openDetail(item) {
   const modal = document.getElementById('detail-modal');
+  const core = item.core || item;
   
-  document.getElementById('modal-type').className = `type-badge ${item.type}`;
-  document.getElementById('modal-type').textContent = item.type;
-  document.getElementById('modal-title').textContent = item.title;
-  document.getElementById('modal-status').textContent = item.status;
-  document.getElementById('modal-priority').textContent = item.priority || 'Medium';
-  document.getElementById('modal-priority').className = `priority-badge ${(item.priority || 'medium').toLowerCase()}`;
-  document.getElementById('modal-risk').textContent = `${item.risk || 'Low'} Risk`;
-  document.getElementById('modal-risk').className = `risk-badge ${(item.risk || 'low').toLowerCase()}`;
+  document.getElementById('modal-type').className = `type-badge ${core.type}`;
+  document.getElementById('modal-type').textContent = core.type;
+  document.getElementById('modal-title').textContent = core.title;
+  document.getElementById('modal-status').textContent = core.status;
+  document.getElementById('modal-priority').textContent = core.priority || 'Medium';
+  document.getElementById('modal-priority').className = `priority-badge ${(core.priority || 'medium').toLowerCase()}`;
+  document.getElementById('modal-risk').textContent = `${core.risk || 'Low'} Risk`;
+  document.getElementById('modal-risk').className = `risk-badge ${(core.risk || 'low').toLowerCase()}`;
   
-  document.getElementById('modal-content').innerHTML = item.htmlContent || '<p>No content</p>';
+  // Render parent context if available
+  renderParentContext(item);
   
-  renderHistory(item.comments);
+  document.getElementById('modal-content').innerHTML = core.htmlContent || '<p>No content</p>';
+  
+  renderHistory(core.comments);
   
   switchTab('details');
   
   modal.classList.add('active');
   document.body.style.overflow = 'hidden';
+}
+
+// Render parent feature/spec context
+function renderParentContext(item) {
+  const container = document.getElementById('parent-context');
+  
+  if (!item.feature && !item.specification) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  let html = '<h4>Related Items</h4>';
+  
+  // Show feature if this is a spec or task
+  if (item.feature && item.coreType !== 'feature') {
+    const feat = item.feature;
+    html += `
+      <div class="parent-item feature">
+        <div class="parent-item-header">
+          <span class="parent-item-id" style="color: var(--accent-blue);">${feat.id}</span>
+          <span class="parent-item-title">${escapeHtml(feat.title)}</span>
+        </div>
+        <div class="parent-item-desc">${escapeHtml(feat.description || 'No description')}</div>
+      </div>
+    `;
+  }
+  
+  // Show specification if this is a task
+  if (item.specification && item.coreType === 'task') {
+    const spec = item.specification;
+    html += `
+      <div class="parent-item specification">
+        <div class="parent-item-header">
+          <span class="parent-item-id" style="color: var(--accent-purple);">${spec.id}</span>
+          <span class="parent-item-title">${escapeHtml(spec.title)}</span>
+        </div>
+        <div class="parent-item-desc">${escapeHtml(spec.description || 'No description')}</div>
+      </div>
+    `;
+  }
+  
+  container.innerHTML = html;
+  container.style.display = 'block';
 }
 
 function renderHistory(comments) {
