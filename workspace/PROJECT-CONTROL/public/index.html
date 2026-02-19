@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow Control Center</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>🎛️ Workflow Control Center</h1>
+    <div class="header-info">
+      <span id="project-name">PROJECT-SEOINDICATOR</span>
+      <span id="refresh-btn" onclick="loadData()" title="Refresh">🔄</span>
+    </div>
+  </header>
+
+  <main>
+    <div id="kanban-board"></div>
+  </main>
+
+  <!-- Detail Modal -->
+  <div id="detail-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="modal-type" class="type-badge"></span>
+        <h2 id="modal-title"></h2>
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-meta">
+        <div class="meta-item">
+          <span class="meta-label">Status:</span>
+          <span id="modal-status" class="status-badge"></span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Priority:</span>
+          <span id="modal-priority" class="priority-badge"></span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Risk:</span>
+          <span id="modal-risk" class="risk-badge"></span>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="details" onclick="switchTab('details')">Details</button>
+          <button class="tab-btn" data-tab="history" onclick="switchTab('history')">History</button>
+        </div>
+        <div id="tab-details" class="tab-content active">
+          <div id="modal-content"></div>
+        </div>
+        <div id="tab-history" class="tab-content">
+          <div id="history-timeline"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
