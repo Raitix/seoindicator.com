@@ -111,6 +111,13 @@ workspace/
 - **OpenClaw config:** `C:\Users\Raitis\.openclaw` (workspace, agents, memory)
 - **Project:** `PROJECT-SEOINDICATOR/` (separate repo)
 
+### Git Commit Rule
+**After any changes in either repo, ALWAYS commit:**
+- No asking — just commit
+- No push needed (user handles pushes)
+- Applies to ALL agents, not just Lead
+- Commit message should be descriptive but concise
+
 ---
 
 ## Key Lessons
