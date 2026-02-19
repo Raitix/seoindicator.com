@@ -10,6 +10,7 @@ const PORT = 3333;
 // Project path to monitor
 const PROJECT_PATH = path.join(__dirname, '..', 'PROJECT-SEOINDICATOR');
 const ACTIVE_AGENTS_FILE = 'C:\\Users\\Raitis\\.openclaw\\logs\\active-agents.json';
+const ORCHESTRATOR_LOG = 'C:\\Users\\Raitis\\.openclaw\\logs\\orchestrator.log';
 
 app.use(cors());
 app.use(express.json());
@@ -67,6 +68,29 @@ app.get('/api/agents', (req, res) => {
     }
   } catch (error) {
     res.json({ agents: [], error: error.message });
+  }
+});
+
+// API: Get orchestrator logs (last N lines)
+app.get('/api/logs', (req, res) => {
+  try {
+    const lines = parseInt(req.query.lines) || 100;
+    
+    if (!fs.existsSync(ORCHESTRATOR_LOG)) {
+      return res.json({ logs: [], error: 'Log file not found' });
+    }
+    
+    const content = fs.readFileSync(ORCHESTRATOR_LOG, 'utf-8');
+    const allLines = content.split('\n').filter(line => line.trim());
+    const lastLines = allLines.slice(-lines);
+    
+    res.json({ 
+      logs: lastLines,
+      totalLines: allLines.length,
+      showing: lastLines.length
+    });
+  } catch (error) {
+    res.json({ logs: [], error: error.message });
   }
 });
 

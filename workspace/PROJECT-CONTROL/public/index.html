@@ -11,19 +11,50 @@
     <h1>🎛️ Workflow Control Center</h1>
     <div class="header-info">
       <span id="project-name">PROJECT-SEOINDICATOR</span>
-      <span id="refresh-btn" onclick="loadData()" title="Refresh">🔄</span>
+      <span id="refresh-btn" onclick="refreshAll()" title="Refresh">🔄</span>
     </div>
   </header>
 
+  <!-- Main Tabs -->
+  <div class="main-tabs">
+    <button class="main-tab active" data-tab="board" onclick="switchMainTab('board')">📋 Board</button>
+    <button class="main-tab" data-tab="logs" onclick="switchMainTab('logs')">📜 Logs <span id="log-count" class="log-badge"></span></button>
+  </div>
+
   <main>
-    <div id="agents-bar">
-      <h3>Active Agents</h3>
-      <div id="agents-list">
-        <span class="agents-empty">No active agents</span>
+    <!-- Board Tab -->
+    <div id="tab-board" class="main-content active">
+      <div id="agents-bar">
+        <h3>Active Agents</h3>
+        <div id="agents-list">
+          <span class="agents-empty">No active agents</span>
+        </div>
+      </div>
+      <div id="kanban-container">
+        <div id="kanban-board"></div>
       </div>
     </div>
-    <div id="kanban-container">
-      <div id="kanban-board"></div>
+
+    <!-- Logs Tab -->
+    <div id="tab-logs" class="main-content">
+      <div class="logs-header">
+        <h3>Orchestrator Logs</h3>
+        <div class="logs-controls">
+          <label>Show: 
+            <select id="log-lines" onchange="loadLogs()">
+              <option value="50">50 lines</option>
+              <option value="100" selected>100 lines</option>
+              <option value="200">200 lines</option>
+              <option value="500">500 lines</option>
+            </select>
+          </label>
+          <button onclick="loadLogs()" class="refresh-btn">🔄 Refresh</button>
+          <label><input type="checkbox" id="auto-scroll" checked> Auto-scroll</label>
+        </div>
+      </div>
+      <div id="logs-container">
+        <div id="logs-content">Loading...</div>
+      </div>
     </div>
   </main>
 

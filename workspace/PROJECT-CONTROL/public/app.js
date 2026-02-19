@@ -1,6 +1,7 @@
 let allData = null;
 let currentFunctionalities = [];
 let activeAgents = [];
+let logRefreshInterval = null;
 
 // Status to column mapping
 const statusColumns = {
@@ -35,9 +36,45 @@ function normalizeStatus(status) {
 document.addEventListener('DOMContentLoaded', () => {
   loadData();
   loadAgents();
+  loadLogs();
   // Refresh agents every 30 seconds
   setInterval(loadAgents, 30000);
+  // Auto-refresh logs every 10 seconds when on logs tab
+  setInterval(() => {
+    if (document.getElementById('tab-logs').classList.contains('active')) {
+      loadLogs();
+    }
+  }, 10000);
 });
+
+// Refresh all data
+function refreshAll() {
+  loadData();
+  loadAgents();
+  loadLogs();
+}
+
+// Switch main tabs (Board/Logs)
+function switchMainTab(tabName) {
+  const buttons = document.querySelectorAll('.main-tab');
+  const contents = document.querySelectorAll('.main-content');
+  
+  buttons.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabName);
+  });
+  
+  contents.forEach(content => {
+    content.classList.toggle('active', content.id === `tab-${tabName}`);
+  });
+  
+  // Auto-scroll logs when switching to logs tab
+  if (tabName === 'logs') {
+    setTimeout(() => {
+      const container = document.getElementById('logs-container');
+      container.scrollTop = container.scrollHeight;
+    }, 100);
+  }
+}
 
 // Load all data from API
 async function loadData() {
@@ -80,6 +117,46 @@ function renderAgents() {
       ${agent.label ? `<span class="agent-item">${escapeHtml(agent.label)}</span>` : ''}
     </div>
   `).join('');
+}
+
+// Load logs from API
+async function loadLogs() {
+  try {
+    const lines = document.getElementById('log-lines').value;
+    const response = await fetch(`/api/logs?lines=${lines}`);
+    const data = await response.json();
+    
+    const container = document.getElementById('logs-content');
+    const logCount = document.getElementById('log-count');
+    
+    if (data.error && !data.logs.length) {
+      container.innerHTML = `<div class="logs-error">Error: ${escapeHtml(data.error)}</div>`;
+      return;
+    }
+    
+    // Update badge
+    logCount.textContent = data.showing;
+    
+    // Format log lines with colors
+    container.innerHTML = data.logs.map(line => {
+      let className = 'log-line';
+      if (line.includes('[ERROR]')) className += ' log-error';
+      else if (line.includes('[WARN]')) className += ' log-warn';
+      else if (line.includes('[INFO]')) className += ' log-info';
+      else if (line.includes('[DEBUG]')) className += ' log-debug';
+      
+      return `<div class="${className}">${escapeHtml(line)}</div>`;
+    }).join('');
+    
+    // Auto-scroll if enabled
+    if (document.getElementById('auto-scroll').checked) {
+      const logsContainer = document.getElementById('logs-container');
+      logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+  } catch (error) {
+    console.error('Failed to load logs:', error);
+    document.getElementById('logs-content').innerHTML = `<div class="logs-error">Failed to load logs: ${escapeHtml(error.message)}</div>`;
+  }
 }
 
 // Render Kanban board

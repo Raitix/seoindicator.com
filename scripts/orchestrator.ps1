@@ -267,10 +267,10 @@ You are $AgentName agent. Your task is to work on $ItemType '$ItemId'.
     
     try {
         # Use OpenClaw CLI to spawn agent
-        $cliPath = "openclaw"
+        $cliPath = "C:\nvm4w\nodejs\openclaw.cmd"
         $arguments = @("agent", "--agent", $agentId, "--message", $task, "--timeout", "1800")
         
-        $process = Start-Process -FilePath $cliPath -ArgumentList $arguments -NoNewWindow -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
+        $process = Start-Process -FilePath $cliPath -ArgumentList $arguments -WindowStyle Hidden -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
         
         # Create lock with process ID as session identifier
         New-Lock -Type $ItemType -Id $ItemId -Agent $AgentName -SessionId "cli-$($process.Id)"
@@ -280,9 +280,16 @@ You are $AgentName agent. Your task is to work on $ItemType '$ItemId'.
         $agentsFile = "C:\Users\Raitis\.openclaw\logs\active-agents.json"
         $agents = @()
         if (Test-Path $agentsFile) {
-            try { $agents = Get-Content $agentsFile -Raw | ConvertFrom-Json } catch {}
+            try { 
+                $existing = Get-Content $agentsFile -Raw | ConvertFrom-Json
+                if ($existing -is [System.Array]) {
+                    $agents = @($existing)
+                } else {
+                    $agents = @($existing)
+                }
+            } catch {}
         }
-        $agents += @{
+        $newAgent = @{
             id = $agentId
             name = $AgentName
             label = $ItemId
@@ -290,7 +297,8 @@ You are $AgentName agent. Your task is to work on $ItemType '$ItemId'.
             pid = $process.Id
             updatedAt = [DateTime]::UtcNow.ToString("o")
         }
-        $agents | ConvertTo-Json | Set-Content $agentsFile
+        $agents = @($agents) + @($newAgent)
+        $agents | ConvertTo-Json -Depth 3 | Set-Content $agentsFile
         
         return "cli-$($process.Id)"
     }
@@ -455,18 +463,25 @@ function Spawn-DailyAgent {
     
     try {
         # Use OpenClaw CLI to spawn agent
-        $cliPath = "openclaw"
+        $cliPath = "C:\nvm4w\nodejs\openclaw.cmd"
         $arguments = @("agent", "--agent", $AgentId, "--message", $TaskDescription, "--timeout", "3600")
         
-        $process = Start-Process -FilePath $cliPath -ArgumentList $arguments -NoNewWindow -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
+        $process = Start-Process -FilePath $cliPath -ArgumentList $arguments -WindowStyle Hidden -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
         
         # Track this agent in active-agents.json
         $agentsFile = "C:\Users\Raitis\.openclaw\logs\active-agents.json"
         $agents = @()
         if (Test-Path $agentsFile) {
-            try { $agents = Get-Content $agentsFile -Raw | ConvertFrom-Json } catch {}
+            try { 
+                $existing = Get-Content $agentsFile -Raw | ConvertFrom-Json
+                if ($existing -is [System.Array]) {
+                    $agents = @($existing)
+                } else {
+                    $agents = @($existing)
+                }
+            } catch {}
         }
-        $agents += @{
+        $newAgent = @{
             id = $AgentId
             name = $AgentName
             label = $Label
@@ -474,7 +489,8 @@ function Spawn-DailyAgent {
             pid = $process.Id
             updatedAt = [DateTime]::UtcNow.ToString("o")
         }
-        $agents | ConvertTo-Json | Set-Content $agentsFile
+        $agents = @($agents) + @($newAgent)
+        $agents | ConvertTo-Json -Depth 3 | Set-Content $agentsFile
         
         Write-Log "Spawned $AgentName via CLI (PID: $($process.Id))"
         return $true
