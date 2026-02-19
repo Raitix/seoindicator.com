@@ -38,6 +38,14 @@ function broadcastSSE(event, data) {
 let lastAgentsMtime = 0;
 let lastLogSize = 0;
 
+// Filter out noise from logs
+function shouldFilterLog(line) {
+  // Filter out stuck session diagnostics
+  if (line.includes('[diagnostic]') && line.includes('stuck session')) return true;
+  if (line.includes('[diagnostic]') && line.includes('queueDepth')) return true;
+  return false;
+}
+
 setInterval(() => {
   // Check agents file
   try {
@@ -55,9 +63,11 @@ setInterval(() => {
     const stat = fs.statSync(ORCHESTRATOR_LOG);
     if (stat.size > lastLogSize) {
       const content = fs.readFileSync(ORCHESTRATOR_LOG, 'utf-8');
-      const lines = content.split('\n').filter(l => l.trim());
+      const lines = content.split('\n').filter(l => l.trim() && !shouldFilterLog(l));
       const newLines = lines.slice(-5); // Last 5 lines
-      broadcastSSE('logs', { lines: newLines });
+      if (newLines.length > 0) {
+        broadcastSSE('logs', { lines: newLines });
+      }
       lastLogSize = stat.size;
     }
   } catch (e) {}
@@ -124,7 +134,8 @@ app.get('/api/logs', (req, res) => {
     }
     
     const content = fs.readFileSync(ORCHESTRATOR_LOG, 'utf-8');
-    const allLines = content.split('\n').filter(line => line.trim());
+    const allLines = content.split('\n')
+      .filter(line => line.trim() && !shouldFilterLog(line));
     const lastLines = allLines.slice(-lines);
     
     res.json({ 

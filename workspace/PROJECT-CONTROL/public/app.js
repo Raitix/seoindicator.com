@@ -101,6 +101,9 @@ function appendLogs(newLines) {
   
   for (const line of newLines) {
     if (!line.trim()) continue;
+    // Filter out diagnostic noise
+    if (line.includes('[diagnostic]') && line.includes('stuck session')) continue;
+    if (line.includes('[diagnostic]') && line.includes('queueDepth')) continue;
     
     let className = 'log-line';
     if (line.includes('[ERROR]')) className += ' log-error';
@@ -446,15 +449,22 @@ async function loadLogs() {
     
     logCount.textContent = data.showing;
     
-    container.innerHTML = data.logs.map(line => {
-      let className = 'log-line';
-      if (line.includes('[ERROR]')) className += ' log-error';
-      else if (line.includes('[WARN]')) className += ' log-warn';
-      else if (line.includes('[INFO]')) className += ' log-info';
-      else if (line.includes('[DEBUG]')) className += ' log-debug';
-      
-      return `<div class="${className}">${escapeHtml(line)}</div>`;
-    }).join('');
+    container.innerHTML = data.logs
+      .filter(line => {
+        // Filter out diagnostic noise
+        if (line.includes('[diagnostic]') && line.includes('stuck session')) return false;
+        if (line.includes('[diagnostic]') && line.includes('queueDepth')) return false;
+        return true;
+      })
+      .map(line => {
+        let className = 'log-line';
+        if (line.includes('[ERROR]')) className += ' log-error';
+        else if (line.includes('[WARN]')) className += ' log-warn';
+        else if (line.includes('[INFO]')) className += ' log-info';
+        else if (line.includes('[DEBUG]')) className += ' log-debug';
+        
+        return `<div class="${className}">${escapeHtml(line)}</div>`;
+      }).join('');
     
     if (document.getElementById('auto-scroll').checked) {
       const logsContainer = document.getElementById('logs-container');

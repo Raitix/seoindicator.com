@@ -65,6 +65,18 @@ function Get-MarkdownMetadata {
     }
 }
 
+# Normalize ID: FEAT-001 -> FEAT-1, SPEC-003-04 -> SPEC-3-4
+function Normalize-Id {
+    param([string]$Id)
+    
+    $result = $Id
+    $result = [regex]::Replace($result, 'FEAT-0*(\d+)', 'FEAT-$1', 'IgnoreCase')
+    $result = [regex]::Replace($result, 'SPEC-0*(\d+)-0*(\d+)', 'SPEC-$1-$2', 'IgnoreCase')
+    $result = [regex]::Replace($result, 'SPEC-0*(\d+)', 'SPEC-$1', 'IgnoreCase')
+    
+    return $result
+}
+
 function Get-Functionalities {
     param([string]$Folder, [string]$Type)
     
@@ -74,7 +86,7 @@ function Get-Functionalities {
     if (-not (Test-Path $folderPath)) { return $items }
     
     Get-ChildItem -Path $folderPath -Filter "*.md" | Where-Object { $_.Name -notlike ".*" } | ForEach-Object {
-        $id = $_.BaseName
+        $id = Normalize-Id -Id $_.BaseName
         $meta = Get-MarkdownMetadata $_.FullName
         if ($meta -and $meta.Status) {
             $items += [PSCustomObject]@{
@@ -333,10 +345,11 @@ $specificInstructions
         # Check if agent already in list
         $existingAgent = $agents | Where-Object { $_.id -eq $agentId }
         if (-not $existingAgent) {
+            $normalizedItemId = Normalize-Id -Id $ItemId
             $newAgent = @{
                 id = $agentId
                 name = $AgentName
-                label = $ItemId
+                label = $normalizedItemId
                 status = "running"
                 pid = $process.Id
                 updatedAt = [DateTime]::UtcNow.ToString("o")
