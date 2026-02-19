@@ -10,6 +10,7 @@ _next/
 _not-found/
 __next*.txt
 index.txt
+index.html
 
 # Static assets deployed separately
 file.svg
