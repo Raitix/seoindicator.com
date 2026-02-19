@@ -1,0 +1,111 @@
+# FEAT-009: Keyword Annotations
+
+## STATUS
+`New Feature`
+
+## PRIORITY
+`Low`
+
+## RISK
+`Low`
+
+## Description
+Allow users to add date-stamped notes and annotations to keywords and ranking history. Users can document SEO activities, algorithm updates, content changes, or any event that might explain ranking fluctuations. This creates a narrative timeline that helps users understand cause and effect in their SEO performance.
+
+## User Story
+As an SEO professional, I want to add notes to specific dates in my ranking history so that I can document what actions I took (content updates, link building, technical fixes) and correlate them with ranking changes over time.
+
+## Business Impact
+### Revenue
+- **Agency productivity**: Reduces time spent explaining ranking changes to clients (notes are already there)
+- **Team knowledge transfer**: Annotations preserve institutional knowledge when team members change
+- **Onboarding value**: New team members can understand historical context quickly
+
+### User Behavior
+- **Cause-effect analysis**: Users actively document and analyze what impacts rankings
+- **Learning loop**: Patterns emerge from annotated activities (e.g., "every time we update this page, rankings improve")
+- **Client communication**: Agencies share annotation context with clients in reports
+
+### Retention
+- **Knowledge asset**: Accumulated annotations become valuable historical reference
+- **Workflow integration**: Regular annotation becomes part of SEO workflow
+- **Accountability**: Documented actions create sense of progress and responsibility
+
+### Legal & Compliance
+- **No additional concerns**: Annotations are user-generated private notes
+- **Content moderation**: Consider basic profanity filter for shared team contexts (future)
+
+### Complexity & Cost
+- **Minimal implementation**: Simple database table, text input, date association
+- **Low development effort**: 1-2 days implementation
+- **No external dependencies**: Pure internal feature
+- **UI integration**: Add annotation icon to keyword detail views and history charts
+
+## Acceptance Criteria
+- [ ] User can add annotation to specific keyword with date, title, and description
+- [ ] User can edit existing annotations
+- [ ] User can delete annotations
+- [ ] Annotations appear on ranking history timeline/chart
+- [ ] Hover or click on annotation marker shows full annotation details
+- [ ] Annotation list view shows all annotations for a keyword chronologically
+- [ ] Project-level annotation view shows all annotations across keywords for selected date range
+- [ ] Annotations can be tagged with categories (e.g., "content update", "link building", "algorithm update", "technical fix")
+- [ ] Annotations are included in PDF reports (as timeline notes)
+- [ ] User can filter ranking history by annotations present
+- [ ] Bulk annotation for multiple keywords (same event affects multiple keywords)
+
+## Related
+- Specification: (To be created by Architect)
+- Tasks: (To be created by Developer)
+- Enhances: FEAT-001 (context for rankings), FEAT-004 (reports include annotations)
+
+## Notes
+### Annotation Categories (suggested defaults)
+| Category | Icon | Use Case |
+|----------|------|----------|
+| Content Update | ✏️ | Page content changes, new content |
+| Link Building | 🔗 | New backlinks acquired |
+| Technical Fix | 🔧 | Site speed, redirects, schema |
+| Algorithm Update | 🤖 | Google algorithm changes |
+| Competitor Action | 👀 | Competitor changes observed |
+| Seasonal | 📅 | Seasonal traffic/events |
+| Manual Action | ⚠️ | Google penalty or warning |
+| Other | 📝 | General notes |
+
+### Database Schema
+```sql
+annotations: id, user_id, project_id, keyword_id, date, title, description, category, created_at, updated_at
+
+-- Optional: support annotations not tied to specific keyword
+annotations: id, user_id, project_id, keyword_id (nullable), date, title, description, category, created_at, updated_at
+```
+
+### UI Integration
+```
+Ranking History Chart:
+      ↑
+  ┌───┼───┐  ← Annotation marker on chart
+  │   │   │
+──┼───┼───┼──┼──┼───→ Time
+      ↓
+  Click shows: "Mar 15: Content Update - Updated meta title and H1"
+```
+
+### MVP Scope
+- Add/edit/delete annotations
+- Show on keyword detail page (list view)
+- Basic categories
+- No chart integration (Phase 2)
+- No bulk annotations (Phase 2)
+- No project-wide annotation view (Phase 2)
+
+---
+
+## Comments
+_Agent communication log_
+
+### [2026-02-19 19:24] Agent: Innovator
+Created as ninth feature. Annotations are a lightweight, high-value feature that helps users make sense of ranking data. The implementation is simple but the value is significant - users can finally answer "what happened on that date?" when reviewing ranking history.
+
+### [2026-02-19 19:24] Agent: Innovator
+Priority Low because it's not essential for core functionality, but it significantly enhances the value of existing features. Risk Low due to minimal implementation complexity. This is a "delight" feature that users don't know they need until they have it.
