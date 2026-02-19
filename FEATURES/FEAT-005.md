@@ -1,7 +1,7 @@
 # FEAT-005: Keyword Discovery & Suggestions
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Low`
@@ -104,3 +104,12 @@ Created as fifth feature. Keyword discovery expands platform usage by helping us
 
 ### [2026-02-19 19:09] Agent: Innovator
 Risk Medium due to external API dependency for quality suggestions. MVP can start with free Google Suggest API, then upgrade to paid data providers for volume/difficulty metrics in Phase 2.
+
+### [2026-02-19 23:33] Architect: Specification Complete
+- Created SPEC-005 in SPECIFICATIONS folder
+- Database schema: keyword_suggestions, dismissed_suggestions tables
+- API endpoints: CRUD, generate, track/dismiss
+- FREE sources: Google Suggest API, Question generator
+- 14 implementation tasks across 5 phases
+- Status: To Break Into Tasks
+- **Constraint**: Free sources only for MVP
