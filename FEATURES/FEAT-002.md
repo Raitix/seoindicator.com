@@ -1,0 +1,96 @@
+# FEAT-002: Ranking Change Alerts
+
+## STATUS
+`New Feature`
+
+## PRIORITY
+`High`
+
+## RISK
+`Low`
+
+## Description
+Automated notifications when keyword rankings change significantly. Users can configure alert thresholds (position change, entered/left top 10, lost/gained featured snippet) and delivery channels (email, in-app notifications). This transforms passive rank tracking into proactive monitoring, ensuring users never miss critical ranking changes.
+
+## User Story
+As an SEO professional, I want to receive instant notifications when my keyword rankings change significantly so that I can respond quickly to opportunities (ranking gains) or threats (ranking drops) without manually checking the dashboard multiple times per day.
+
+## Business Impact
+### Revenue
+- **Premium tier differentiator**: Advanced alert rules (custom thresholds, multiple channels, alert scheduling) can be reserved for paid plans
+- **Reduces time-to-value**: Users immediately see the benefit of the tool through relevant alerts, increasing conversion from trial
+- **Lowers support burden**: Proactive alerts prevent "why did my traffic drop?" support tickets by giving users early warning
+
+### User Behavior
+- **Engagement multiplier**: Alerts bring users back to the app - each alert is a re-engagement opportunity
+- **Workflow integration**: Users can set alerts for client projects, making the tool part of their client communication workflow
+- **Reduces monitoring anxiety**: Users don't need to constantly check rankings "just in case" - they trust the alerts
+
+### Retention
+- **Habit reinforcement**: Regular alerts keep the product top-of-mind
+- **Client-facing value**: Agencies can forward alerts to clients, making the tool indispensable for client reporting
+- **Competitive parity**: All major SEO tools offer alerts - absence would be a dealbreaker
+
+### Legal & Compliance
+- **Email compliance**: Must include unsubscribe links and honor email preferences (CAN-SPAM, GDPR)
+- **Notification frequency limits**: Prevent alert fatigue with rate limiting and "digest" options
+- **Data privacy**: Alert emails may contain sensitive keyword data - consider encryption or "click to view" for sensitive info
+
+### Complexity & Cost
+- **Email delivery**: Use Laravel Mail with SMTP or external provider (SendGrid, Mailgun) - low cost (~$15-50/month for typical volume)
+- **In-app notifications**: Simple database table + API endpoint - minimal complexity
+- **Alert evaluation**: Add to existing ranking update job - minimal performance impact
+- **Rate limiting**: Implement digest mode to batch multiple alerts into single notification
+
+## Acceptance Criteria
+- [ ] User can enable/disable alerts globally and per-keyword
+- [ ] User can configure alert thresholds (e.g., "notify me if position changes by 3+ places")
+- [ ] User can choose which events trigger alerts (position change, entered top 10, left top 10, lost/gained SERP feature)
+- [ ] User can select notification channels (email, in-app, or both)
+- [ ] System sends alert within 5 minutes of detecting qualifying change
+- [ ] Alert email includes: keyword, previous position, new position, change magnitude, link to dashboard
+- [ ] User can set "quiet hours" to suppress alerts during specific times
+- [ ] User can enable daily/weekly digest mode instead of instant alerts
+- [ ] In-app notifications show in notification center with "mark as read" functionality
+- [ ] Unsubscribe link in emails works immediately without login
+
+## Related
+- Specification: (To be created by Architect)
+- Tasks: (To be created by Developer)
+- Depends on: FEAT-001 (Keyword Rank Tracking)
+
+## Notes
+### Alert Event Types
+| Event | Description | Default Threshold |
+|-------|-------------|-------------------|
+| `position_drop` | Ranking position decreased | 3+ positions |
+| `position_gain` | Ranking position improved | 3+ positions |
+| `entered_top_10` | Keyword entered top 10 results | N/A |
+| `left_top_10` | Keyword dropped out of top 10 | N/A |
+| `entered_top_3` | Keyword entered top 3 results | N/A |
+| `lost_serp_feature` | Lost featured snippet/local pack | N/A |
+| `gained_serp_feature` | Gained featured snippet/local pack | N/A |
+
+### Database Schema (draft)
+```sql
+alert_settings: id, user_id, global_enabled, default_threshold, quiet_hours_start, quiet_hours_end, digest_mode, created_at, updated_at
+keyword_alert_settings: id, keyword_id, enabled, custom_threshold, alert_events (JSON), notification_channels (JSON)
+notifications: id, user_id, type, keyword_id, data (JSON), read_at, created_at
+```
+
+### MVP Scope
+- Email alerts only (in-app in Phase 2)
+- Instant alerts only (digest mode in Phase 2)
+- Position change alerts only (SERP feature alerts when SERP features are implemented)
+- Default threshold: 3+ positions
+
+---
+
+## Comments
+_Agent communication log_
+
+### [2026-02-19 18:59] Agent: Innovator
+Created as second feature - directly extends FEAT-001. Alerts are essential for making rank tracking actionable. Without alerts, users must manually check the dashboard regularly, which reduces engagement and increases churn risk.
+
+### [2026-02-19 18:59] Agent: Innovator
+Business case: All major competitors (SEMrush, Ahrefs, Moz, SERPWatcher) offer ranking alerts. This is table stakes. The differentiator can be smart alert rules (AI-prioritized alerts, anomaly detection) but that's a future enhancement.
