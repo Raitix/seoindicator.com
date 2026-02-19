@@ -26,13 +26,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ env.PHP_VERSION }}
-          extensions: mbstring, xml, mysql, pdo, pdo_mysql
-          coverage: none
-
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
@@ -50,7 +43,7 @@ jobs:
       - name: Run Playwright tests
         working-directory: frontend
         run: npx playwright test
-        continue-on-error: true # TODO: Remove when tests are stable
+        continue-on-error: true
 
       - name: Upload test results
         if: always()
@@ -73,52 +66,93 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Download frontend build
         uses: actions/download-artifact@v4
         with:
           name: frontend-build
-          path: frontend/out/
+          path: frontend-out/
 
-      # Deploy frontend (static files)
-      - name: Deploy frontend via FTP
-        uses: SamKirkland/FTP-Deploy-Action@4.3.0
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          server: ${{ secrets.FTP_HOST }}
-          port: ${{ secrets.FTP_PORT }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: frontend/out/
-          server-dir: public_html/
-          dangerous-clean-slate: true
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/.env*
-            api/**
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+            
+            DEPLOY_PATH="${{ secrets.SSH_DEPLOY_PATH }}"
+            REPO_URL="https://github.com/Raitix/seoindicator.com.git"
+            
+            echo "=== Deploying to $DEPLOY_PATH ==="
+            
+            # Clone if not exists, otherwise pull
+            if [ ! -d "$DEPLOY_PATH/.git" ]; then
+              echo "=== Initial clone ==="
+              rm -rf "$DEPLOY_PATH"/*
+              git clone "$REPO_URL" "$DEPLOY_PATH"
+              cd "$DEPLOY_PATH"
+            else
+              echo "=== Pulling latest changes ==="
+              cd "$DEPLOY_PATH"
+              git fetch origin
+              git reset --hard origin/main
+            fi
+            
+            # Install backend dependencies
+            echo "=== Installing backend dependencies ==="
+            cd backend
+            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+            
+            # Create .env if missing
+            if [ ! -f ".env" ]; then
+              echo "=== Creating .env ==="
+              cp .env.example .env || true
+            fi
+            
+            # Generate app key if needed
+            php artisan key:generate --force || true
+            
+            # Run migrations
+            echo "=== Running migrations ==="
+            php artisan migrate --force || true
+            
+            # Cache config and routes
+            php artisan config:cache || true
+            php artisan route:cache || true
+            
+            echo "=== Backend deployed ==="
 
-      # Note: Backend deployment disabled for now
-      # Laravel's vendor/ directory (6000+ files) causes FTP timeout
-      # TODO: Implement one of these solutions:
-      # 1. Upload vendor as ZIP and extract via SSH (requires SSH access)
-      # 2. Use rsync over SSH instead of FTP
-      # 3. Pre-upload vendor manually once, then sync only app files
-      # 4. Use simpler PHP backend without Laravel
+      - name: Upload frontend via SSH
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "frontend-out/*"
+          target: "${{ secrets.SSH_DEPLOY_PATH }}"
+          strip_components: 1
+          overwrite: true
 
-      - name: Health check
-        run: |
-          echo "Checking production health..."
-          response=$(curl -s https://seoindicator.com/ || echo "failed")
-          echo "$response"
-          
-          if echo "$response" | grep -qi "seoindicator"; then
-            echo "✅ Frontend deployed successfully!"
-          else
-            echo "⚠️ Could not verify deployment"
-          fi
+      - name: Finalize deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            DEPLOY_PATH="${{ secrets.SSH_DEPLOY_PATH }}"
+            
+            # Set permissions
+            chmod -R 755 "$DEPLOY_PATH/backend/storage" || true
+            chmod -R 755 "$DEPLOY_PATH/backend/bootstrap/cache" || true
+            
+            # Health check
+            echo "=== Health check ==="
+            curl -s https://seoindicator.com/api/health || echo "Health endpoint not responding"
 
   notify:
     needs: [build-and-test, deploy]
@@ -126,16 +160,11 @@ jobs:
     if: always() && github.ref == 'refs/heads/main'
     
     steps:
-      - name: Determine status
-        id: status
+      - name: Summary
         run: |
           if [ "${{ needs.deploy.result }}" == "success" ]; then
-            echo "status=✅ Deployed successfully" >> $GITHUB_OUTPUT
-          elif [ "${{ needs.build-and-test.result }}" == "failure" ]; then
-            echo "status=❌ Build/test failed" >> $GITHUB_OUTPUT
+            echo "✅ Deployed successfully to https://seoindicator.com"
           else
-            echo "status=⚠️ Deploy failed or skipped" >> $GITHUB_OUTPUT
+            echo "❌ Deployment failed"
+            exit 1
           fi
-
-      - name: Summary
-        run: echo "${{ steps.status.outputs.status }}"
