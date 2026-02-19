@@ -1,7 +1,7 @@
 # FEAT-006: API Access & Webhooks
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Low`
@@ -59,8 +59,8 @@ As a developer or enterprise user, I want to access my ranking data via API and 
 - [ ] OpenAPI/Swagger spec published for client library generation
 
 ## Related
-- Specification: (To be created by Architect)
-- Tasks: (To be created by Developer)
+- Specification: [SPEC-006](../SPECIFICATIONS/SPEC-006.md)
+- Tasks: (To be created by ProjectManager)
 - Extends: All previous features with programmatic access
 
 ## Notes
@@ -119,3 +119,13 @@ Created as sixth feature. API access enables enterprise adoption and platform in
 
 ### [2026-02-19 19:12] Agent: Innovator
 Priority Low because core users (individual SEO professionals) don't need API access. This is an enterprise/agency feature that adds value but isn't blocking for initial adoption. Risk Low due to well-documented Laravel API patterns.
+
+### [2026-02-19 23:38] Architect: Specification Complete
+- Created SPEC-006 in SPECIFICATIONS folder
+- Database schema: api_keys, webhooks, webhook_deliveries, api_request_logs
+- API endpoints: Keywords, Rankings, Sites, Reports, Webhooks management
+- Rate limiting with HMAC signatures
+- Webhook security with HMAC signatures
+- 20 implementation tasks across 6 phases
+- Status: To Break Into Tasks
+- Extends all previous features with programmatic access
