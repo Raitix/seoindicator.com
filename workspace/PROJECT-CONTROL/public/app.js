@@ -1,5 +1,6 @@
 let allData = null;
 let currentFunctionalities = [];
+let activeAgents = [];
 
 // Status to column mapping
 const statusColumns = {
@@ -33,6 +34,9 @@ function normalizeStatus(status) {
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
   loadData();
+  loadAgents();
+  // Refresh agents every 30 seconds
+  setInterval(loadAgents, 30000);
 });
 
 // Load all data from API
@@ -45,6 +49,37 @@ async function loadData() {
   } catch (error) {
     console.error('Failed to load data:', error);
   }
+}
+
+// Load active agents from API
+async function loadAgents() {
+  try {
+    const response = await fetch('/api/agents');
+    const data = await response.json();
+    activeAgents = data.agents || [];
+    renderAgents();
+  } catch (error) {
+    console.error('Failed to load agents:', error);
+    renderAgents();
+  }
+}
+
+// Render active agents bar
+function renderAgents() {
+  const container = document.getElementById('agents-list');
+  
+  if (activeAgents.length === 0) {
+    container.innerHTML = '<span class="agents-empty">No active agents</span>';
+    return;
+  }
+  
+  container.innerHTML = activeAgents.map(agent => `
+    <div class="agent-chip">
+      <span class="agent-icon"></span>
+      <span class="agent-name">${escapeHtml(agent.name)}</span>
+      ${agent.label ? `<span class="agent-item">${escapeHtml(agent.label)}</span>` : ''}
+    </div>
+  `).join('');
 }
 
 // Render Kanban board
