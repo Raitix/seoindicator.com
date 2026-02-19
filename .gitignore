@@ -31,6 +31,7 @@ workspace/PROJECT-SEOINDICATOR/
 # Credentials and secrets
 openclaw.json
 openclaw.json.bak*
+secrets/
 *.bak
 *.key
 *.pem
