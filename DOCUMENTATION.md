@@ -115,13 +115,7 @@ php artisan serve
 
 **Database already created:** `seoindicator` (utf8mb4)
 
-**Credentials:**
-| Field | Value |
-|-------|-------|
-| Host | 127.0.0.1 |
-| Database | seoindicator |
-| Username | root |
-| Password | SEE_SEOINDICATOR_ENV |
+**Credentials:** See `~/.openclaw/secrets/seoindicator.env`
 
 **phpMyAdmin access:**
 1. Start Apache in XAMPP Control Panel
