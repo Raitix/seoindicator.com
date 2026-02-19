@@ -10,7 +10,9 @@ param(
     [int]$LockTTLMinutes = 30,
     [int]$MaxActiveFeatures = 3,
     [int]$MaxAgentsPerStatus = 3,
-    [int]$DailyAgentIntervalHours = 24
+    [int]$DailyAgentIntervalHours = 24,
+    [int]$InnovatorIntervalHours = 6,
+    [int]$MaxNewFeatures = 10
 )
 
 $ErrorActionPreference = "Continue"
@@ -368,13 +370,13 @@ Write-Log "=== Orchestrator Finished ==="
 
 function Get-LastRunData {
     if (-not (Test-Path $LastRunPath)) {
-        return @{ securityAuditor = $null; performanceOptimizer = $null }
+        return @{ securityAuditor = $null; performanceOptimizer = $null; innovator = $null }
     }
     try {
         return Get-Content $LastRunPath -Raw | ConvertFrom-Json
     }
     catch {
-        return @{ securityAuditor = $null; performanceOptimizer = $null }
+        return @{ securityAuditor = $null; performanceOptimizer = $null; innovator = $null }
     }
 }
 
@@ -479,6 +481,76 @@ You are PerformanceOptimizer agent. Analyze the PROJECT-SEOINDICATOR project for
     
     if (Spawn-DailyAgent -AgentName "PerformanceOptimizer" -AgentId "performanceoptimizer" -TaskDescription $performanceTask -Label "PerformanceOptimizer-Daily") {
         $lastRunHash.performanceOptimizer = [DateTime]::UtcNow.ToString("o")
+    }
+}
+
+# ============================================
+# INNOVATOR - Autonomous Feature Generation
+# ============================================
+
+# Initialize innovator in lastRunHash if not present
+if (-not $lastRunHash.innovator) { $lastRunHash.innovator = $null }
+
+# Check if Innovator should run
+$shouldRunInnovator = $false
+$newFeaturesCount = @($features | Where-Object { $_.Status -eq "New Feature" }).Count
+
+# Check time interval
+if ($lastRunHash.innovator) {
+    try {
+        $lastInnovatorRun = [DateTime]::Parse($lastRunHash.innovator)
+        $hoursSince = ([DateTime]::UtcNow - $lastInnovatorRun).TotalHours
+        if ($hoursSince -ge $InnovatorIntervalHours) {
+            $shouldRunInnovator = $true
+        }
+    }
+    catch {
+        $shouldRunInnovator = $true
+    }
+}
+else {
+    $shouldRunInnovator = $true
+}
+
+# Check feature limit
+if ($newFeaturesCount -ge $MaxNewFeatures) {
+    Write-Log "Innovator skipped: $newFeaturesCount New Features (limit: $MaxNewFeatures)"
+    $shouldRunInnovator = $false
+}
+
+# Spawn Innovator if conditions met
+if ($shouldRunInnovator) {
+    Write-Log "Innovator needs to run (last: $($lastRunHash.innovator), New Features: $newFeaturesCount)"
+    
+    $innovatorTask = @"
+You are Innovator agent. Your role is to discover and propose new features for SEOIndicator.
+
+## Instructions
+1. Read your agent definition: AGENTS/Innovator.md
+2. Analyze the project DOCUMENTATION.md to understand current functionality
+3. Identify gaps, improvements, or new feature opportunities
+4. Consider:
+   - User needs (check Google Analytics for user behavior patterns)
+   - Competitor features
+   - Technical debt that could become features
+   - Performance optimizations that add user value
+5. Create ONE new feature in FEATURES/ folder with:
+   - Proper FEAT-X naming (next sequential number)
+   - Status: New Feature
+   - Priority: based on business impact
+   - Risk: based on technical complexity
+   - Complete business impact analysis
+6. Commit your changes
+
+## Important
+- Only create features that provide real user value
+- Be specific about business impact
+- Consider implementation complexity
+- Do NOT create duplicate features of existing functionality
+"@
+    
+    if (Spawn-DailyAgent -AgentName "Innovator" -AgentId "innovator" -TaskDescription $innovatorTask -Label "Innovator-Autonomous") {
+        $lastRunHash.innovator = [DateTime]::UtcNow.ToString("o")
     }
 }
 

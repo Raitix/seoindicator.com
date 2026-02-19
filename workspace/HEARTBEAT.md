@@ -17,6 +17,7 @@ All tasks managed by **Windows Task Scheduler**. See `scripts/setup-tasks.ps1` f
 | Memory Compaction | Daily 22:05 | `memory-compaction-check.ps1` | `logs/memory-compaction.log` |
 
 **Note:** SecurityAuditor and PerformanceOptimizer agents are spawned by the Orchestrator with missed-run recovery (tracks last run times, catches up if PC was off).
+**Innovator:** Spawns every 6 hours to create new features (max 10 "New Feature" items before pausing).
 
 ### Orchestrator System
 

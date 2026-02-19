@@ -65,15 +65,22 @@ app.get('/api/agents', async (req, res) => {
     const sessions = data.sessions || [];
     
     // Filter and format active agent sessions
+    // Include 'main' as 'Lead' session
     const agents = sessions
-      .filter(s => s.agentId && s.agentId !== 'main' && s.status === 'running')
-      .map(s => ({
-        id: s.agentId,
-        name: s.agentId.charAt(0).toUpperCase() + s.agentId.slice(1),
-        label: s.label || '',
-        sessionKey: s.sessionKey,
-        startedAt: s.startedAt
-      }));
+      .filter(s => s.status === 'running')
+      .map(s => {
+        // Map 'main' agentId to 'Lead'
+        const agentId = s.agentId === 'main' ? 'lead' : s.agentId;
+        const name = agentId === 'lead' ? 'Lead' : (agentId.charAt(0).toUpperCase() + agentId.slice(1));
+        
+        return {
+          id: agentId,
+          name: name,
+          label: s.label || (agentId === 'lead' ? 'Coordinator' : ''),
+          sessionKey: s.sessionKey,
+          startedAt: s.startedAt
+        };
+      });
     
     res.json({ agents });
   } catch (error) {
