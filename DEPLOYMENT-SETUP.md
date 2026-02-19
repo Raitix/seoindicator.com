@@ -51,24 +51,30 @@ Since production is on shared hosting (no Node.js runtime), we use static export
 # Build static files
 cd frontend
 npm run build
-npx next export  # Outputs to ./out
+# Outputs to ./out (configured in next.config.ts)
 ```
 
 **Deployed to:** `public_html/` via FTP
 
 ### 2. Backend Deployment (Laravel PHP)
 
-Backend is deployed as PHP files:
+**⚠️ Current Limitation:** Laravel's `vendor/` directory contains 6000+ files which causes FTP timeout on shared hosting.
 
-```bash
-# Prepare for production
-cd backend
-composer install --no-dev --optimize-autoloader
-php artisan config:cache
-php artisan route:cache
-```
+**Solutions (choose one):**
 
-**Deployed to:** `public_html/api/` via FTP
+| Option | Requirements | Difficulty |
+|--------|--------------|------------|
+| **A. Pre-upload vendor** | Upload vendor manually once via FTP client | Easy |
+| **B. Use SSH + rsync** | Request SSH access from Hostinger | Medium |
+| **C. ZIP vendor** | Upload ZIP, extract via SSH | Medium |
+| **D. Simple PHP backend** | Rewrite API without Laravel | Medium |
+
+**Current status:** Backend deployment disabled until solution implemented.
+
+**Option A (recommended for now):**
+1. Run `composer install --no-dev` locally
+2. Upload entire `backend/` folder via FileZilla/WinSCP (one-time)
+3. Subsequent deploys only sync `app/`, `routes/`, `config/` files
 
 ### 3. Database Migrations
 
