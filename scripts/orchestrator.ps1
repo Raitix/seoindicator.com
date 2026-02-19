@@ -6,9 +6,11 @@ param(
     [string]$ProjectPath = "C:\Users\Raitis\.openclaw\workspace\PROJECT-SEOINDICATOR",
     [string]$WorkspacePath = "C:\Users\Raitis\.openclaw\workspace",
     [string]$LogPath = "C:\Users\Raitis\.openclaw\logs\orchestrator.log",
+    [string]$LastRunPath = "C:\Users\Raitis\.openclaw\logs\agent-last-run.json",
     [int]$LockTTLMinutes = 30,
     [int]$MaxActiveFeatures = 3,
-    [int]$MaxAgentsPerStatus = 3
+    [int]$MaxAgentsPerStatus = 3,
+    [int]$DailyAgentIntervalHours = 24
 )
 
 $ErrorActionPreference = "Continue"
@@ -359,3 +361,126 @@ foreach ($status in $StatusAgentMap.Keys) {
 
 Write-Log "Orchestration complete. Spawned: $spawnedCount agent(s)"
 Write-Log "=== Orchestrator Finished ==="
+
+# ============================================
+# DAILY AGENTS (SecurityAuditor, PerformanceOptimizer)
+# ============================================
+
+function Get-LastRunData {
+    if (-not (Test-Path $LastRunPath)) {
+        return @{ securityAuditor = $null; performanceOptimizer = $null }
+    }
+    try {
+        return Get-Content $LastRunPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        return @{ securityAuditor = $null; performanceOptimizer = $null }
+    }
+}
+
+function Set-LastRunData {
+    param([hashtable]$Data)
+    $Data | ConvertTo-Json | Set-Content $LastRunPath
+}
+
+function Test-ShouldRunDailyAgent {
+    param([string]$LastRun)
+    
+    if (-not $LastRun) { return $true }
+    
+    try {
+        $lastRunTime = [DateTime]::Parse($LastRun)
+        $hoursSince = ([DateTime]::UtcNow - $lastRunTime).TotalHours
+        return $hoursSince -ge $DailyAgentIntervalHours
+    }
+    catch {
+        return $true
+    }
+}
+
+function Spawn-DailyAgent {
+    param(
+        [string]$AgentName,
+        [string]$AgentId,
+        [string]$TaskDescription,
+        [string]$Label
+    )
+    
+    try {
+        $body = @{
+            task = $TaskDescription
+            agentId = $AgentId
+            label = $Label
+            runTimeoutSeconds = 3600  # 1 hour
+        } | ConvertTo-Json -Depth 10
+        
+        $response = Invoke-RestMethod -Uri "http://localhost:3777/api/sessions/spawn" -Method POST -Body $body -ContentType "application/json" -ErrorAction Stop
+        
+        if ($response.sessionKey) {
+            Write-Log "Spawned $AgentName (session: $($response.sessionKey))"
+            return $true
+        }
+    }
+    catch {
+        Write-Log "Failed to spawn $AgentName : $($_.Exception.Message)" -Level "ERROR"
+    }
+    return $false
+}
+
+# Check and spawn daily agents
+$lastRunData = Get-LastRunData
+$lastRunHash = @{
+    securityAuditor = $lastRunData.securityAuditor
+    performanceOptimizer = $lastRunData.performanceOptimizer
+}
+
+# SecurityAuditor
+if (Test-ShouldRunDailyAgent -LastRun $lastRunHash.securityAuditor) {
+    Write-Log "SecurityAuditor needs to run (last: $($lastRunHash.securityAuditor))"
+    
+    $securityTask = @"
+You are SecurityAuditor agent. Perform a security audit of the PROJECT-SEOINDICATOR codebase.
+
+## Instructions
+1. Read your agent definition: AGENTS/SecurityAuditor.md
+2. Scan the project for security vulnerabilities
+3. Check all High-risk items for security concerns
+4. Create findings report and escalate if critical issues found
+
+## Scope
+- Project path: PROJECT-SEOINDICATOR/
+- Focus on: backend/, frontend/, exposed APIs
+- This is a read-only scan - do not modify code directly
+"@
+    
+    if (Spawn-DailyAgent -AgentName "SecurityAuditor" -AgentId "securityauditor" -TaskDescription $securityTask -Label "SecurityAuditor-Daily") {
+        $lastRunHash.securityAuditor = [DateTime]::UtcNow.ToString("o")
+    }
+}
+
+# PerformanceOptimizer
+if (Test-ShouldRunDailyAgent -LastRun $lastRunHash.performanceOptimizer) {
+    Write-Log "PerformanceOptimizer needs to run (last: $($lastRunHash.performanceOptimizer))"
+    
+    $performanceTask = @"
+You are PerformanceOptimizer agent. Analyze the PROJECT-SEOINDICATOR project for performance issues.
+
+## Instructions
+1. Read your agent definition: AGENTS/PerformanceOptimizer.md
+2. Analyze performance across database, APIs, frontend
+3. Review Google Analytics data for user-impacting issues
+4. Create optimization specifications for identified issues
+
+## Scope
+- Project path: PROJECT-SEOINDICATOR/
+- Check: backend/database/, API endpoints, frontend components
+- This is analysis only - do not modify code directly
+"@
+    
+    if (Spawn-DailyAgent -AgentName "PerformanceOptimizer" -AgentId "performanceoptimizer" -TaskDescription $performanceTask -Label "PerformanceOptimizer-Daily") {
+        $lastRunHash.performanceOptimizer = [DateTime]::UtcNow.ToString("o")
+    }
+}
+
+# Save updated last run data
+Set-LastRunData -Data $lastRunHash
