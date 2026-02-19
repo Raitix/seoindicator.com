@@ -569,4 +569,5 @@ interface Props {
 - Created: 2026-02-19
 - Author: Architect
 - Feature: FEAT-003
-- Status: Ready for Task Breakdown
+- Status: `To Prioritize`
+- Tasks Created: 8 (SPEC-003-1 through SPEC-003-8)
