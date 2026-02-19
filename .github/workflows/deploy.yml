@@ -84,38 +84,22 @@ jobs:
             set -e
             
             DEPLOY_PATH="${{ secrets.SSH_DEPLOY_PATH }}"
-            REPO_URL="https://github.com/Raitix/seoindicator.com.git"
-            TEMP_PATH="/tmp/seoindicator-deploy"
+            PAT="${{ secrets.GH_PAT }}"
             
             echo "=== Deploying to $DEPLOY_PATH ==="
+            cd "$DEPLOY_PATH"
             
-            # Clone fresh copy to temp directory
-            echo "=== Cloning fresh copy ==="
-            rm -rf "$TEMP_PATH"
-            git clone --depth 1 "$REPO_URL" "$TEMP_PATH"
+            # Configure git with PAT
+            git remote set-url origin "https://${PAT}@github.com/Raitix/seoindicator.com.git"
             
-            # Backup existing .env and storage
-            if [ -d "$DEPLOY_PATH/backend/.env" ]; then
-              echo "=== Backing up .env ==="
-              cp "$DEPLOY_PATH/backend/.env" "$TEMP_PATH/backend/.env" 2>/dev/null || true
-            fi
-            
-            if [ -d "$DEPLOY_PATH/backend/storage" ]; then
-              echo "=== Backing up storage ==="
-              rm -rf "$TEMP_PATH/backend/storage"
-              cp -r "$DEPLOY_PATH/backend/storage" "$TEMP_PATH/backend/storage"
-            fi
-            
-            # Sync files (exclude .git to keep it clean)
-            echo "=== Syncing files ==="
-            rsync -av --delete --exclude='.git' "$TEMP_PATH/" "$DEPLOY_PATH/"
-            
-            # Clean up temp
-            rm -rf "$TEMP_PATH"
+            # Pull latest changes
+            echo "=== Pulling latest changes ==="
+            git fetch origin
+            git reset --hard origin/main
             
             # Install backend dependencies
             echo "=== Installing backend dependencies ==="
-            cd "$DEPLOY_PATH/backend"
+            cd backend
             composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
             
             # Create .env if missing
@@ -166,9 +150,8 @@ jobs:
             chmod -R 755 "$DEPLOY_PATH/backend/storage" 2>/dev/null || true
             chmod -R 755 "$DEPLOY_PATH/backend/bootstrap/cache" 2>/dev/null || true
             
-            # Health check
-            echo "=== Health check ==="
-            curl -s https://seoindicator.com/api/health 2>/dev/null || echo "API health check skipped"
+            echo "=== Deployment complete ==="
+            echo "URL: https://seoindicator.com"
 
   notify:
     needs: [build-and-test, deploy]
