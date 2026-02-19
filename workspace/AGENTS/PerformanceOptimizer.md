@@ -54,3 +54,41 @@ Performance specs → **Architect** for technical review.
 - Metrics-driven
 - Data-backed recommendations
 - Performance terminology
+
+---
+
+## Google Analytics Access
+
+**Dashboard:** https://analytics.google.com/analytics/web/#/a355806861p489951380/reports/intelligenthome
+**Property ID:** `489951380`
+
+### When to Check GA Data
+
+**Performance Investigation:**
+1. Check `pageLoadTime` metric for slow pages
+2. Correlate `bounceRate` with slow pages (users leave if slow)
+3. Check `firstInputDelay` for interactivity issues
+4. Compare mobile vs desktop performance
+
+### Key Performance Metrics from GA
+
+| GA Metric | What It Measures | Target |
+|-----------|------------------|--------|
+| `pageLoadTime` | Full page load time | < 3s |
+| `firstInputDelay` | Time to interactive | < 100ms |
+| `bounceRate` | % single-page sessions | < 40% |
+| `averageSessionDuration` | Time on site | > 2 min |
+
+### Correlation Analysis
+
+- High bounce rate + slow page = Performance issue
+- Low engagement + slow API = Backend bottleneck
+- Mobile high bounce rate = Mobile performance issue
+- Entry page high bounce = First impression issue
+
+### Performance Optimization Priority
+
+Use GA data to prioritize:
+1. Pages with highest traffic + slowest load time (biggest impact)
+2. Entry pages with high bounce rate (first impression matters)
+3. Mobile performance issues (if significant mobile traffic)

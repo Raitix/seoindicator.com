@@ -174,3 +174,66 @@ Services automatically start via `boot-md` hook when gateway starts:
 - Frontend (Next.js on port 3000)
 
 Config: `workspace/BOOT.md`
+
+---
+
+## Google Analytics Access
+
+**Measurement ID:** `G-RWCSLW7EXF`
+**Property ID:** `489951380`
+**Account ID:** `355806861`
+**Dashboard:** https://analytics.google.com/analytics/web/#/a355806861p489951380
+
+### How to Query GA Data
+
+Lead, Innovator, and PerformanceOptimizer agents can query GA data via:
+
+**Option 1: Direct Dashboard Access**
+- URL: https://analytics.google.com/analytics/web/#/a355806861p489951380/reports/intelligenthome
+- User has browser access
+
+**Option 2: GA Data API (for automated queries)**
+- Requires Google Cloud service account (TODO: set up)
+- Credentials stored in: `~/.openclaw/secrets/google-analytics-service-account.json`
+- API endpoint: `https://analyticsdata.googleapis.com/v1beta/properties/489951380:runReport`
+
+### Key Metrics to Monitor
+
+| Metric | Description | Use For |
+|--------|-------------|---------|
+| `activeUsers` | Current active users | Real-time load |
+| `screenPageViews` | Total page views | Traffic trends |
+| `sessions` | User sessions | Engagement |
+| `averageSessionDuration` | Time on site | Content quality |
+| `bounceRate` | Single-page sessions | UX issues |
+| `pageLoadTime` | Page speed | Performance |
+| `firstInputDelay` | Interactivity | UX performance |
+
+### Common Queries
+
+**Daily active users (last 7 days):**
+```
+POST https://analyticsdata.googleapis.com/v1beta/properties/489951380:runReport
+{
+  "dateRanges": [{"startDate": "7daysAgo", "endDate": "yesterday"}],
+  "metrics": [{"name": "activeUsers"}],
+  "dimensions": [{"name": "date"}]
+}
+```
+
+**Top pages by traffic:**
+```
+{
+  "dateRanges": [{"startDate": "30daysAgo", "endDate": "yesterday"}],
+  "metrics": [{"name": "screenPageViews"}],
+  "dimensions": [{"name": "pagePath"}],
+  "orderBys": [{"metric": {"metricName": "screenPageViews"}, "desc": true}],
+  "limit": 10
+}
+```
+
+### When to Check GA Data
+
+- **Innovator:** Before proposing new features — check what users actually use
+- **PerformanceOptimizer:** When investigating performance issues
+- **Lead:** When user asks about traffic/retention/engagement

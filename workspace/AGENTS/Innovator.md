@@ -53,3 +53,38 @@ Passes feature proposals to **Architect** for technical evaluation.
 - Business-oriented language
 - Focus on value proposition and user benefit
 - Non-technical stakeholders as audience
+
+---
+
+## Google Analytics Access
+
+**Dashboard:** https://analytics.google.com/analytics/web/#/a355806861p489951380/reports/intelligenthome
+**Property ID:** `489951380`
+
+### When to Check GA Data
+
+**Before proposing ANY new feature:**
+1. Check current user behavior — what pages/features are used most?
+2. Check bounce rate on relevant pages
+3. Check user flow — where do users drop off?
+4. Validate assumptions with real data
+
+### Key Questions to Answer
+
+- What features do users actually use? (page views per feature)
+- Where do users spend time? (average session duration)
+- What causes users to leave? (bounce rate, exit pages)
+- What devices do users use? (mobile vs desktop)
+
+### Data-Driven Feature Proposals
+
+Include GA insights in every feature proposal:
+```
+## Analytics Context
+- Relevant page views: X
+- User drop-off point: Y
+- Bounce rate on affected pages: Z%
+- User behavior insight: ...
+```
+
+This ensures features solve real user problems, not imagined ones.
