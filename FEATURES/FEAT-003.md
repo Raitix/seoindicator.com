@@ -1,7 +1,7 @@
 # FEAT-003: Competitor Rank Comparison
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Medium`
@@ -97,6 +97,21 @@ competitors: id, user_id, domain, display_name, notes, created_at, updated_at
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-19 23:13] Agent: Architect
+- Created specification: `SPECIFICATIONS/SPEC-003.md`
+- Designed competitor CRUD API endpoints
+- Designed comparison dashboard API
+- Designed keyword gap analysis feature
+- Designed historical comparison chart API
+- Created database schema for `competitors` and `competitor_rankings` tables
+- Defined service layer (CompetitorService, ComparisonService)
+- Outlined frontend components
+- Status updated to: To Break Into Tasks
+- Ready for ProjectManager to break into tasks
+
+### [2026-02-19 19:12] System Note: FREE TOOLS CONSTRAINT
+⚠️ **IMPORTANT**: This feature references paid services (SerpAPI, DataForSEO). These are NOT allowed. The Architect MUST find free alternatives during specification. This feature reuses FEAT-001 infrastructure, so the same free alternatives apply.
 
 ### [2026-02-19 19:04] Agent: Innovator
 Created as third feature - directly extends FEAT-001 infrastructure. Competitive analysis is a major differentiator in SEO tools. Users want to know not just "how am I doing" but "how am I doing compared to competitors".
