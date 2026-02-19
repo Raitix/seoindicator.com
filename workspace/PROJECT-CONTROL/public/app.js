@@ -1,6 +1,7 @@
 let allData = null;
 let currentFunctionalities = [];
 let activeAgents = [];
+let eventSource = null;
 
 // Status to workflow order (top to bottom)
 const statusOrder = [
@@ -55,13 +56,74 @@ document.addEventListener('DOMContentLoaded', () => {
   loadData();
   loadAgents();
   loadLogs();
-  setInterval(loadAgents, 30000);
-  setInterval(() => {
-    if (document.getElementById('tab-logs').classList.contains('active')) {
-      loadLogs();
-    }
-  }, 10000);
+  connectSSE();
 });
+
+// Connect to SSE for real-time updates
+function connectSSE() {
+  if (eventSource) {
+    eventSource.close();
+  }
+  
+  eventSource = new EventSource('/api/events');
+  
+  eventSource.addEventListener('agents', (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      activeAgents = data.agents || [];
+      renderAgents();
+    } catch (err) {
+      console.error('Failed to parse agents update:', err);
+    }
+  });
+  
+  eventSource.addEventListener('logs', (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      appendLogs(data.lines);
+    } catch (err) {
+      console.error('Failed to parse logs update:', err);
+    }
+  });
+  
+  eventSource.onerror = () => {
+    console.log('SSE disconnected, reconnecting in 3s...');
+    setTimeout(connectSSE, 3000);
+  };
+}
+
+// Append new log lines to the display
+function appendLogs(newLines) {
+  if (!newLines || newLines.length === 0) return;
+  
+  const container = document.getElementById('logs-content');
+  const logCount = document.getElementById('log-count');
+  
+  for (const line of newLines) {
+    if (!line.trim()) continue;
+    
+    let className = 'log-line';
+    if (line.includes('[ERROR]')) className += ' log-error';
+    else if (line.includes('[WARN]')) className += ' log-warn';
+    else if (line.includes('[INFO]')) className += ' log-info';
+    else if (line.includes('[DEBUG]')) className += ' log-debug';
+    
+    const div = document.createElement('div');
+    div.className = className;
+    div.textContent = line;
+    container.appendChild(div);
+  }
+  
+  // Update count
+  const totalLines = container.querySelectorAll('.log-line').length;
+  logCount.textContent = totalLines;
+  
+  // Auto-scroll if enabled
+  if (document.getElementById('auto-scroll').checked) {
+    const logsContainer = document.getElementById('logs-container');
+    logsContainer.scrollTop = logsContainer.scrollHeight;
+  }
+}
 
 function refreshAll() {
   loadData();

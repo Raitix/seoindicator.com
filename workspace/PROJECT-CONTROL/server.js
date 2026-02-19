@@ -19,6 +19,50 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Initialize parser
 const parser = new Parser(PROJECT_PATH);
 
+// SSE clients
+const sseClients = new Set();
+
+// Broadcast to all SSE clients
+function broadcastSSE(event, data) {
+  const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  sseClients.forEach(client => {
+    try {
+      client.write(message);
+    } catch (e) {
+      sseClients.delete(client);
+    }
+  });
+}
+
+// Watch for file changes
+let lastAgentsMtime = 0;
+let lastLogSize = 0;
+
+setInterval(() => {
+  // Check agents file
+  try {
+    const stat = fs.statSync(ACTIVE_AGENTS_FILE);
+    if (stat.mtimeMs > lastAgentsMtime) {
+      lastAgentsMtime = stat.mtimeMs;
+      const content = fs.readFileSync(ACTIVE_AGENTS_FILE, 'utf-8');
+      const agents = JSON.parse(content);
+      broadcastSSE('agents', { agents });
+    }
+  } catch (e) {}
+
+  // Check log file
+  try {
+    const stat = fs.statSync(ORCHESTRATOR_LOG);
+    if (stat.size > lastLogSize) {
+      const content = fs.readFileSync(ORCHESTRATOR_LOG, 'utf-8');
+      const lines = content.split('\n').filter(l => l.trim());
+      const newLines = lines.slice(-5); // Last 5 lines
+      broadcastSSE('logs', { lines: newLines });
+      lastLogSize = stat.size;
+    }
+  } catch (e) {}
+}, 1000); // Check every second
+
 // API: Get all functionalities (features, specs, tasks)
 app.get('/api/functionalities', async (req, res) => {
   try {
@@ -56,7 +100,6 @@ app.get('/api/agents', (req, res) => {
       const data = JSON.parse(content);
       res.json({ agents: data });
     } else {
-      // Default: show Lead as active if file doesn't exist
       res.json({ 
         agents: [{
           id: 'lead',
@@ -94,6 +137,42 @@ app.get('/api/logs', (req, res) => {
   }
 });
 
+// SSE endpoint for real-time updates
+app.get('/api/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  // Send initial data
+  try {
+    if (fs.existsSync(ACTIVE_AGENTS_FILE)) {
+      const content = fs.readFileSync(ACTIVE_AGENTS_FILE, 'utf-8');
+      const agents = JSON.parse(content);
+      res.write(`event: agents\ndata: ${JSON.stringify({ agents })}\n\n`);
+    }
+  } catch (e) {}
+
+  // Track client
+  sseClients.add(res);
+
+  // Send heartbeat every 15 seconds
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': heartbeat\n\n');
+    } catch (e) {
+      clearInterval(heartbeat);
+      sseClients.delete(res);
+    }
+  }, 15000);
+
+  // Clean up on close
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    sseClients.delete(res);
+  });
+});
+
 // Serve main page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -104,4 +183,14 @@ app.listen(PORT, () => {
   console.log(`  ─────────────────────────────`);
   console.log(`  Running at: http://localhost:${PORT}`);
   console.log(`  Monitoring: ${PROJECT_PATH}\n`);
+  
+  // Initialize file watchers
+  try {
+    const stat = fs.statSync(ACTIVE_AGENTS_FILE);
+    lastAgentsMtime = stat.mtimeMs;
+  } catch (e) {}
+  try {
+    const stat = fs.statSync(ORCHESTRATOR_LOG);
+    lastLogSize = stat.size;
+  } catch (e) {}
 });

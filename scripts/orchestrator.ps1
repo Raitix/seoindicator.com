@@ -431,12 +431,12 @@ foreach ($status in $StatusAgentMap.Keys) {
 # ============================================
 
 function Update-ActiveAgentsFile {
-    param([array]$Sessions)
-    
+    # Read existing agents and clean up stale ones
     $agentsFile = "C:\Users\Raitis\.openclaw\logs\active-agents.json"
     $agents = @()
+    $now = Get-Date
     
-    # Add Lead (main session)
+    # Add Lead (main session) - always present
     $agents += @{
         id = "lead"
         name = "Lead"
@@ -445,17 +445,21 @@ function Update-ActiveAgentsFile {
         updatedAt = [DateTime]::UtcNow.ToString("o")
     }
     
-    # Add spawned agents from sessions
-    foreach ($session in $Sessions) {
-        if ($session.agentId -and $session.agentId -ne "main") {
-            $agents += @{
-                id = $session.agentId
-                name = $session.agentId.Substring(0,1).ToUpper() + $session.agentId.Substring(1)
-                label = $session.label -replace ".*-", ""
-                status = "running"
-                updatedAt = [DateTime]::UtcNow.ToString("o")
+    # Read existing spawned agents and keep only active ones (updated in last 10 min)
+    if (Test-Path $agentsFile) {
+        try {
+            $existing = Get-Content $agentsFile -Raw | ConvertFrom-Json
+            foreach ($agent in $existing) {
+                if ($agent.id -ne "lead" -and $agent.updatedAt) {
+                    $lastUpdate = [DateTime]::Parse($agent.updatedAt)
+                    $ageMinutes = ($now - $lastUpdate).TotalMinutes
+                    # Keep agents that were updated in last 10 minutes
+                    if ($ageMinutes -lt 10) {
+                        $agents += $agent
+                    }
+                }
             }
-        }
+        } catch {}
     }
     
     # Ensure we output as array (UTF-8 without BOM)
@@ -464,8 +468,8 @@ function Update-ActiveAgentsFile {
     [System.IO.File]::WriteAllText($agentsFile, $json, $utf8NoBom)
 }
 
-# Update active agents file with Lead always present
-Update-ActiveAgentsFile -Sessions @()
+# Update active agents file (preserves spawned agents)
+Update-ActiveAgentsFile
 
 Write-Log "Orchestration complete. Spawned: $spawnedCount agent(s)"
 Write-Log "=== Orchestrator Finished ==="
