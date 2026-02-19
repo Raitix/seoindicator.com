@@ -57,24 +57,28 @@
 - **XAMPP** (Apache + MySQL + PHP 8.2+)
 - Composer (requires SSL to work)
 
-### Required Services (Start Every Time)
+### Required Services (Auto-Start via BOOT.md)
 
-> **Important:** Every time OpenClaw starts, you need to start the backend and frontend servers. MySQL can be started automatically by OpenClaw.
+> **Automatic Startup:** All services start automatically when OpenClaw gateway starts via the `boot-md` hook. See `workspace/BOOT.md` for configuration.
 
-**1. MySQL** - Can be started automatically by OpenClaw, or manually via XAMPP Control Panel
+**1. MySQL** - Started automatically via XAMPP `mysql_start.bat`
 
-**2. Backend** - Open terminal (REQUIRED on every OpenClaw start):
+**2. Backend** - Started automatically via `php artisan serve` on port 8000
+
+**3. Frontend** - Started automatically via `npm run dev` on port 3000
+
+**Manual Start (if needed):**
 ```bash
+# MySQL
+C:\xampp\mysql_start.bat
+
+# Backend
 cd PROJECT-SEOINDICATOR/backend
 php artisan serve
-# Runs at http://localhost:8000
-```
 
-**3. Frontend** - Open another terminal (REQUIRED on every OpenClaw start):
-```bash
+# Frontend
 cd PROJECT-SEOINDICATOR/frontend
 npm run dev
-# Runs at http://localhost:3000
 ```
 
 **phpMyAdmin** (optional, for DB UI):
