@@ -1,7 +1,7 @@
 # FEAT-003: Competitor Rank Comparison
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
