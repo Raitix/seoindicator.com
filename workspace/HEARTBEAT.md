@@ -14,9 +14,9 @@ All tasks managed by **Windows Task Scheduler**. See `scripts/setup-tasks.ps1` f
 | Session Health Check | Every 5 min | `session-health-check.ps1` | `logs/session-health.log` |
 | Orchestrator | Every 5 min | `orchestrator.ps1` | `logs/orchestrator.log` |
 | Security Audit | Daily 22:00 | `security-audit.ps1` | `logs/security-audit.log` |
-| SecurityAuditor Agent | Daily 06:00 | `security-audit-agent.ps1` | `logs/security-audit-agent.log` |
-| PerformanceOptimizer Agent | Daily 06:30 | `performance-optimizer-agent.ps1` | `logs/performance-optimizer-agent.log` |
-| Memory Compaction Check | Daily 22:05 | `memory-compaction-check.ps1` | `logs/memory-compaction.log` |
+| Memory Compaction | Daily 22:05 | `memory-compaction-check.ps1` | `logs/memory-compaction.log` |
+
+**Note:** SecurityAuditor and PerformanceOptimizer agents are spawned by the Orchestrator with missed-run recovery (tracks last run times, catches up if PC was off).
 
 ### Orchestrator System
 

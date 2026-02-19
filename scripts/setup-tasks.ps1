@@ -17,7 +17,7 @@ $tasks = @(
         Script = "orchestrator.ps1"
         TriggerType = "Interval"
         IntervalMinutes = 5
-        Description = "Scan for work items and spawn agents every 5 minutes"
+        Description = "Scan for work items and spawn agents every 5 minutes (includes daily agents)"
     },
     @{
         Name = "OpenClaw Security Audit"
@@ -25,20 +25,6 @@ $tasks = @(
         TriggerType = "Daily"
         Time = "22:00"
         Description = "Run security audit daily at 22:00"
-    },
-    @{
-        Name = "OpenClaw SecurityAuditor Agent"
-        Script = "security-audit-agent.ps1"
-        TriggerType = "Daily"
-        Time = "06:00"
-        Description = "Spawn SecurityAuditor agent daily at 06:00"
-    },
-    @{
-        Name = "OpenClaw PerformanceOptimizer Agent"
-        Script = "performance-optimizer-agent.ps1"
-        TriggerType = "Daily"
-        Time = "06:30"
-        Description = "Spawn PerformanceOptimizer agent daily at 06:30"
     },
     @{
         Name = "OpenClaw Memory Compaction Check"
@@ -84,9 +70,8 @@ Write-Host "Task Scheduler setup complete!"
 Write-Host "Tasks will run HIDDEN (no popups):"
 Write-Host "  - Session Health Check: Every 5 minutes"
 Write-Host "  - Orchestrator: Every 5 minutes"
+Write-Host "    (includes SecurityAuditor/PerformanceOptimizer with missed-run recovery)"
 Write-Host "  - Security Audit: Daily at 22:00"
-Write-Host "  - SecurityAuditor Agent: Daily at 06:00"
-Write-Host "  - PerformanceOptimizer Agent: Daily at 06:30"
 Write-Host "  - Memory Compaction: Daily at 22:05"
 Write-Host "========================================`n"
 
