@@ -13,6 +13,10 @@
       <span id="project-name">PROJECT-SEOINDICATOR</span>
       <span id="refresh-btn" onclick="refreshAll()" title="Refresh">🔄</span>
     </div>
+    <div id="agents-bar-header">
+      <span class="agents-label">Agents:</span>
+      <div id="agents-list"></div>
+    </div>
   </header>
 
   <!-- Main Tabs -->
@@ -22,17 +26,9 @@
   </div>
 
   <main>
-    <!-- Board Tab -->
+    <!-- Board Tab - Vertical Flow -->
     <div id="tab-board" class="main-content active">
-      <div id="agents-bar">
-        <h3>Active Agents</h3>
-        <div id="agents-list">
-          <span class="agents-empty">No active agents</span>
-        </div>
-      </div>
-      <div id="kanban-container">
-        <div id="kanban-board"></div>
-      </div>
+      <div id="workflow-board"></div>
     </div>
 
     <!-- Logs Tab -->

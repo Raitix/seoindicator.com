@@ -252,6 +252,21 @@ function Spawn-Agent {
         [string]$Status
     )
     
+    # Agent-specific instructions
+    $specificInstructions = ""
+    if ($AgentName -eq "Architect") {
+        $specificInstructions = @"
+
+## Architect-Specific Tasks
+1. Read the feature file: PROJECT-SEOINDICATOR/FEATURES/$ItemId.md
+2. Create specification: PROJECT-SEOINDICATOR/SPECIFICATIONS/SPEC-$($ItemId -replace 'FEAT-','').md
+3. Update feature status to: `To Break Into Tasks`
+4. The specification file MUST be created in SPECIFICATIONS/ folder (not docs/)
+5. After creating spec, update the feature file's STATUS section
+6. Commit both files to git
+"@
+    }
+    
     $task = @"
 You are $AgentName agent. Your task is to work on $ItemType '$ItemId'.
 
@@ -262,18 +277,20 @@ You are $AgentName agent. Your task is to work on $ItemType '$ItemId'.
 4. Update the item status as you progress
 5. Add comments to the item with your actions and findings
 6. Commit changes when done
+$specificInstructions
 
 ## Item Details
 - Type: $ItemType
 - ID: $ItemId
 - Current Status: $ItemStatus
-- File: $ItemType`.s/$ItemId.md (in PROJECT-SEOINDICATOR)
+- File: PROJECT-SEOINDICATOR/$ItemType/$ItemId.md
 
 ## Important
 - Work ONLY on this item
 - Create a lock file in the .locks folder before starting
 - Update status after each action
 - Leave detailed comments for the next agent
+- Project root: C:\Users\Raitis\.openclaw\workspace\PROJECT-SEOINDICATOR
 "@
 
     $agentId = $AgentName.ToLower()
@@ -297,29 +314,38 @@ You are $AgentName agent. Your task is to work on $ItemType '$ItemId'.
         New-Lock -Type $ItemType -Id $ItemId -Agent $AgentName -SessionId "cli-$($process.Id)" -Status $Status
         Write-Log "Spawned $AgentName for $ItemType/$ItemId via CLI (PID: $($process.Id))"
         
-        # Track this agent in active-agents.json
+        # Track this agent in active-agents.json (append to existing)
         $agentsFile = "C:\Users\Raitis\.openclaw\logs\active-agents.json"
-        $agents = @()
-        if (Test-Path $agentsFile) {
-            try { 
-                $existing = Get-Content $agentsFile -Raw | ConvertFrom-Json
-                if ($existing -is [System.Array]) {
-                    $agents = @($existing)
-                } else {
-                    $agents = @($existing)
-                }
-            } catch {}
+        try {
+            $existing = Get-Content $agentsFile -Raw | ConvertFrom-Json
+            if ($existing -is [System.Array]) {
+                $agents = @($existing)
+            } elseif ($existing.id) {
+                $agents = @($existing)
+            } else {
+                $agents = @()
+            }
+        } catch {
+            $agents = @()
         }
-        $newAgent = @{
-            id = $agentId
-            name = $AgentName
-            label = $ItemId
-            status = "running"
-            pid = $process.Id
-            updatedAt = [DateTime]::UtcNow.ToString("o")
+        
+        # Check if agent already in list
+        $existingAgent = $agents | Where-Object { $_.id -eq $agentId }
+        if (-not $existingAgent) {
+            $newAgent = @{
+                id = $agentId
+                name = $AgentName
+                label = $ItemId
+                status = "running"
+                pid = $process.Id
+                updatedAt = [DateTime]::UtcNow.ToString("o")
+            }
+            $agents = @($agents) + @($newAgent)
+            # Write UTF-8 without BOM
+            $json = ConvertTo-Json @($agents) -Depth 3 -Compress
+            $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+            [System.IO.File]::WriteAllText($agentsFile, $json, $utf8NoBom)
         }
-        $agents = @($agents) + @($newAgent)
-        $agents | ConvertTo-Json -Depth 3 | Set-Content $agentsFile
         
         return "cli-$($process.Id)"
     }
@@ -429,10 +455,13 @@ function Update-ActiveAgentsFile {
         }
     }
     
-    $agents | ConvertTo-Json | Set-Content $agentsFile
+    # Ensure we output as array (UTF-8 without BOM)
+    $json = ConvertTo-Json @($agents) -Depth 3 -Compress
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($agentsFile, $json, $utf8NoBom)
 }
 
-# Update active agents file
+# Update active agents file with Lead always present
 Update-ActiveAgentsFile -Sessions @()
 
 Write-Log "Orchestration complete. Spawned: $spawnedCount agent(s)"

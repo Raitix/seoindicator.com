@@ -1,10 +1,31 @@
 let allData = null;
 let currentFunctionalities = [];
 let activeAgents = [];
-let logRefreshInterval = null;
 
-// Status to column mapping
-const statusColumns = {
+// Status to workflow order (top to bottom)
+const statusOrder = [
+  { id: 'new-feature', name: 'New Feature', agent: 'Architect' },
+  { id: 'specification-in-progress', name: 'Spec In Progress', agent: 'Architect' },
+  { id: 'to-break-into-tasks', name: 'To Break Into Tasks', agent: 'SpecSystemAnalyst' },
+  { id: 'breaking-into-tasks', name: 'Breaking Into Tasks', agent: 'SpecSystemAnalyst' },
+  { id: 'to-prioritize', name: 'To Prioritize', agent: 'ProjectManager' },
+  { id: 'prioritization-in-progress', name: 'Prioritizing', agent: 'ProjectManager' },
+  { id: 'to-write-tests', name: 'To Write Tests', agent: 'PreTester' },
+  { id: 'tests-coverage-in-progress', name: 'Writing Tests', agent: 'PreTester' },
+  { id: 'to-develop', name: 'To Develop', agent: 'Developer' },
+  { id: 'in-development', name: 'In Development', agent: 'Developer' },
+  { id: 'to-test-locally', name: 'To Test Locally', agent: 'LocalTester' },
+  { id: 'testing-locally', name: 'Testing Locally', agent: 'LocalTester' },
+  { id: 'to-deploy', name: 'To Deploy', agent: 'DevOps' },
+  { id: 'in-deployment', name: 'Deploying', agent: 'DevOps' },
+  { id: 'to-test-prod', name: 'To Test Prod', agent: 'ProdTester' },
+  { id: 'testing-prod', name: 'Testing Prod', agent: 'ProdTester' },
+  { id: 'done', name: 'Done', agent: 'DocSystemAnalyst' },
+  { id: 'cancelled', name: 'Cancelled', agent: '-' }
+];
+
+// Status to row ID mapping
+const statusMapping = {
   'new feature': 'new-feature',
   'specification in progress': 'specification-in-progress',
   'to break into tasks': 'to-break-into-tasks',
@@ -29,7 +50,7 @@ const statusColumns = {
 function normalizeStatus(status) {
   if (!status) return 'unknown';
   const normalized = status.toLowerCase().trim().replace(/`/g, '');
-  return statusColumns[normalized] || normalized;
+  return statusMapping[normalized] || normalized;
 }
 
 // Initialize on load
@@ -101,12 +122,12 @@ async function loadAgents() {
   }
 }
 
-// Render active agents bar
+// Render active agents in header
 function renderAgents() {
   const container = document.getElementById('agents-list');
   
   if (activeAgents.length === 0) {
-    container.innerHTML = '<span class="agents-empty">No active agents</span>';
+    container.innerHTML = '<span class="agents-empty">None</span>';
     return;
   }
   
@@ -114,60 +135,21 @@ function renderAgents() {
     <div class="agent-chip">
       <span class="agent-icon"></span>
       <span class="agent-name">${escapeHtml(agent.name)}</span>
-      ${agent.label ? `<span class="agent-item">${escapeHtml(agent.label)}</span>` : ''}
+      ${agent.label && agent.label !== agent.name ? `<span class="agent-item">${escapeHtml(agent.label)}</span>` : ''}
     </div>
   `).join('');
 }
 
-// Load logs from API
-async function loadLogs() {
-  try {
-    const lines = document.getElementById('log-lines').value;
-    const response = await fetch(`/api/logs?lines=${lines}`);
-    const data = await response.json();
-    
-    const container = document.getElementById('logs-content');
-    const logCount = document.getElementById('log-count');
-    
-    if (data.error && !data.logs.length) {
-      container.innerHTML = `<div class="logs-error">Error: ${escapeHtml(data.error)}</div>`;
-      return;
-    }
-    
-    // Update badge
-    logCount.textContent = data.showing;
-    
-    // Format log lines with colors
-    container.innerHTML = data.logs.map(line => {
-      let className = 'log-line';
-      if (line.includes('[ERROR]')) className += ' log-error';
-      else if (line.includes('[WARN]')) className += ' log-warn';
-      else if (line.includes('[INFO]')) className += ' log-info';
-      else if (line.includes('[DEBUG]')) className += ' log-debug';
-      
-      return `<div class="${className}">${escapeHtml(line)}</div>`;
-    }).join('');
-    
-    // Auto-scroll if enabled
-    if (document.getElementById('auto-scroll').checked) {
-      const logsContainer = document.getElementById('logs-container');
-      logsContainer.scrollTop = logsContainer.scrollHeight;
-    }
-  } catch (error) {
-    console.error('Failed to load logs:', error);
-    document.getElementById('logs-content').innerHTML = `<div class="logs-error">Failed to load logs: ${escapeHtml(error.message)}</div>`;
-  }
-}
-
-// Render Kanban board
+// Render vertical workflow board
 function renderBoard() {
-  const board = document.getElementById('kanban-board');
+  const board = document.getElementById('workflow-board');
   board.innerHTML = '';
 
   // Group by status
   const byStatus = {};
   
-  for (const status of allData.statuses) {
+  // Initialize all known statuses
+  for (const status of statusOrder) {
     byStatus[status.id] = [];
   }
   
@@ -188,41 +170,51 @@ function renderBoard() {
     if (byStatus[statusKey]) {
       byStatus[statusKey].push(item);
     } else {
-      // Unknown status - put in first column or create new
+      // Unknown status - add to end
       if (!byStatus['unknown']) byStatus['unknown'] = [];
       byStatus['unknown'].push(item);
     }
   }
 
-  // Render columns
-  for (const status of allData.statuses) {
-    const column = createColumn(status, byStatus[status.id] || []);
-    board.appendChild(column);
+  // Render rows (known statuses first)
+  for (const status of statusOrder) {
+    const items = byStatus[status.id] || [];
+    // Only show rows with items or important statuses
+    if (items.length === 0 && !['done', 'cancelled'].includes(status.id)) continue;
+    if (items.length === 0) continue; // Skip empty rows
+    
+    const row = createRow(status, items);
+    board.appendChild(row);
+  }
+  
+  // Render unknown statuses at the end
+  if (byStatus['unknown'] && byStatus['unknown'].length > 0) {
+    const row = createRow({ id: 'unknown', name: 'Unknown', agent: '-' }, byStatus['unknown']);
+    board.appendChild(row);
   }
 }
 
-// Create a column element
-function createColumn(status, items) {
-  const column = document.createElement('div');
-  column.className = 'column';
-  column.dataset.status = status.id;
+// Create a row element
+function createRow(status, items) {
+  const row = document.createElement('div');
+  row.className = 'workflow-row';
+  row.dataset.status = status.id;
 
+  // Header
   const header = document.createElement('div');
-  header.className = 'column-header';
+  header.className = 'row-header';
   header.innerHTML = `
-    <span>${status.name}</span>
-    <span class="count">${items.length}</span>
+    <span class="row-status">${escapeHtml(status.name)}</span>
+    <span class="row-count">${items.length} item${items.length !== 1 ? 's' : ''} · ${status.agent}</span>
   `;
-  column.appendChild(header);
+  row.appendChild(header);
 
+  // Cards container
   const cardsContainer = document.createElement('div');
-  cardsContainer.className = 'column-cards';
+  cardsContainer.className = 'row-cards';
 
   if (items.length === 0) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-column';
-    empty.textContent = 'No items';
-    cardsContainer.appendChild(empty);
+    cardsContainer.innerHTML = '<span class="row-empty">No items</span>';
   } else {
     for (const item of items) {
       const card = createCard(item);
@@ -230,8 +222,8 @@ function createColumn(status, items) {
     }
   }
 
-  column.appendChild(cardsContainer);
-  return column;
+  row.appendChild(cardsContainer);
+  return row;
 }
 
 // Create a card element
@@ -240,8 +232,8 @@ function createCard(item) {
   card.className = `card ${item.type}`;
   card.onclick = () => openDetail(item);
 
-  const priorityClass = `priority-${item.priority.toLowerCase()}`;
-  const riskClass = `risk-${item.risk.toLowerCase()}`;
+  const priorityClass = `priority-${(item.priority || 'medium').toLowerCase()}`;
+  const riskClass = `risk-${(item.risk || 'low').toLowerCase()}`;
 
   card.innerHTML = `
     <div class="card-header">
@@ -250,8 +242,8 @@ function createCard(item) {
     </div>
     <div class="card-title">${escapeHtml(item.title)}</div>
     <div class="card-meta">
-      <span class="badge ${priorityClass}">${item.priority}</span>
-      <span class="badge ${riskClass}">${item.risk} Risk</span>
+      <span class="badge ${priorityClass}">${item.priority || 'Medium'}</span>
+      <span class="badge ${riskClass}">${item.risk || 'Low'}</span>
     </div>
   `;
 
@@ -266,13 +258,13 @@ async function openDetail(item) {
   document.getElementById('modal-type').textContent = item.type;
   document.getElementById('modal-title').textContent = item.title;
   document.getElementById('modal-status').textContent = item.status;
-  document.getElementById('modal-priority').textContent = item.priority;
-  document.getElementById('modal-priority').className = `priority-badge ${item.priority.toLowerCase()}`;
-  document.getElementById('modal-risk').textContent = `${item.risk} Risk`;
-  document.getElementById('modal-risk').className = `risk-badge ${item.risk.toLowerCase()}`;
+  document.getElementById('modal-priority').textContent = item.priority || 'Medium';
+  document.getElementById('modal-priority').className = `priority-badge ${(item.priority || 'medium').toLowerCase()}`;
+  document.getElementById('modal-risk').textContent = `${item.risk || 'Low'} Risk`;
+  document.getElementById('modal-risk').className = `risk-badge ${(item.risk || 'low').toLowerCase()}`;
   
   // Render markdown content
-  document.getElementById('modal-content').innerHTML = item.htmlContent;
+  document.getElementById('modal-content').innerHTML = item.htmlContent || '<p>No content</p>';
   
   // Render history
   renderHistory(item.comments);
@@ -289,7 +281,7 @@ function renderHistory(comments) {
   const container = document.getElementById('history-timeline');
   
   if (!comments || comments.length === 0) {
-    container.innerHTML = '<p class="empty-column">No history recorded yet.</p>';
+    container.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.8rem;">No history recorded yet.</p>';
     return;
   }
 
@@ -346,3 +338,43 @@ document.addEventListener('keydown', (e) => {
     closeModal();
   }
 });
+
+// Load logs from API
+async function loadLogs() {
+  try {
+    const lines = document.getElementById('log-lines').value;
+    const response = await fetch(`/api/logs?lines=${lines}`);
+    const data = await response.json();
+    
+    const container = document.getElementById('logs-content');
+    const logCount = document.getElementById('log-count');
+    
+    if (data.error && !data.logs.length) {
+      container.innerHTML = `<div class="logs-error">Error: ${escapeHtml(data.error)}</div>`;
+      return;
+    }
+    
+    // Update badge
+    logCount.textContent = data.showing;
+    
+    // Format log lines with colors
+    container.innerHTML = data.logs.map(line => {
+      let className = 'log-line';
+      if (line.includes('[ERROR]')) className += ' log-error';
+      else if (line.includes('[WARN]')) className += ' log-warn';
+      else if (line.includes('[INFO]')) className += ' log-info';
+      else if (line.includes('[DEBUG]')) className += ' log-debug';
+      
+      return `<div class="${className}">${escapeHtml(line)}</div>`;
+    }).join('');
+    
+    // Auto-scroll if enabled
+    if (document.getElementById('auto-scroll').checked) {
+      const logsContainer = document.getElementById('logs-container');
+      logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+  } catch (error) {
+    console.error('Failed to load logs:', error);
+    document.getElementById('logs-content').innerHTML = `<div class="logs-error">Failed to load logs: ${escapeHtml(error.message)}</div>`;
+  }
+}
