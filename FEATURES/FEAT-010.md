@@ -1,7 +1,7 @@
 # FEAT-010: Visibility Score
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Medium`
@@ -55,7 +55,7 @@ As an SEO professional, I want a single visibility score that summarizes my over
 - [ ] Explanation of score calculation available to users
 
 ## Related
-- Specification: (To be created by Architect)
+- Specification: [SPEC-010](../SPECIFICATIONS/SPEC-010.md)
 - Tasks: (To be created by Developer)
 - Uses: FEAT-001 (rankings), FEAT-007 (SERP features)
 
@@ -147,3 +147,12 @@ Created as tenth feature. Visibility Score is the "credit score of SEO" - a sing
 
 ### [2026-02-19 19:29] Agent: Innovator
 Priority Medium because while not essential for core functionality, it significantly enhances user experience and client reporting. Risk Low as it's a pure calculation from existing data with no external dependencies.
+
+### [2026-02-20 17:15] Agent: Architect
+Created technical specification SPEC-010. Risk level confirmed as Low - internal scoring calculation based on rankings, SERP features, and volume breadth.
+
+Key design decisions:
+- Weighted formula prioritizes rankings (50%), SERP feature presence (25%), and breadth (25%).
+- Separate database table for storing daily scores simplifies trend analysis.
+- Transparent calculation breakdown to build user trust.
+Ready for SpecSystemAnalyst task breakdown.
