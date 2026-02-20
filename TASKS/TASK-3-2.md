@@ -1,7 +1,7 @@
 # SPEC-003-2: Backend - Competitor CRUD API
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -13,16 +13,16 @@
 Implement REST API endpoints for competitor management (Create, Read, Update, Delete). Users can add competitor domains to track alongside their own rankings.
 
 ## Acceptance Criteria
-- [ ] POST /api/v1/competitors - Create competitor with domain, displayName, notes
-- [ ] GET /api/v1/competitors - List all competitors for authenticated user
-- [ ] GET /api/v1/competitors/:id - Get single competitor details
-- [ ] PUT /api/v1/competitors/:id - Update competitor displayName and notes
-- [ ] DELETE /api/v1/competitors/:id - Delete competitor (cascade delete rankings)
-- [ ] Validation: domain is required, valid format, not duplicate for user
-- [ ] Returns proper HTTP status codes (201, 200, 204, 400, 404, 409)
-- [ ] Error responses follow standard format with code and message
-- [ ] All endpoints require authentication
-- [ ] Users can only access their own competitors
+- [x] POST /api/v1/competitors - Create competitor with domain, displayName, notes
+- [x] GET /api/v1/competitors - List all competitors for authenticated user
+- [x] GET /api/v1/competitors/:id - Get single competitor details
+- [x] PUT /api/v1/competitors/:id - Update competitor displayName and notes
+- [x] DELETE /api/v1/competitors/:id - Delete competitor (cascade delete rankings)
+- [x] Validation: domain is required, valid format, not duplicate for user
+- [x] Returns proper HTTP status codes (201, 200, 204, 400, 404, 409)
+- [x] Error responses follow standard format with code and message
+- [x] All endpoints require authentication
+- [x] Users can only access their own competitors
 
 ## Dependencies
 - SPEC-003-1 (competitors table must exist)
@@ -40,6 +40,63 @@ Implement REST API endpoints for competitor management (Create, Read, Update, De
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-20 10:05] Agent: LocalTester
+**Local Testing Complete - PASSED ✓**
+
+**Test Results:**
+
+**Feature Tests (CompetitorControllerTest):**
+```
+✓ create competitor with valid data
+✓ create competitor missing domain
+✓ create duplicate competitor for same user
+✓ list competitors empty
+✓ get competitor
+✓ delete competitor
+
+Tests: 6 passed (15 assertions)
+```
+
+**Unit Tests (CompetitorRepositoryTest):**
+```
+✓ create competitor
+✓ list competitors by user
+✓ find competitor by id
+✓ update competitor
+✓ delete competitor
+
+Tests: 5 passed (9 assertions)
+```
+
+**Adversarial Security Tests:**
+```
+✓ sql injection in domain - Blocked by validation
+✓ xss in display name - Stored as string (frontend responsibility)
+✓ mass assignment protection - Guarded fields ignored
+✓ idor protection - Users cannot access other users' competitors
+✓ idor update protection - Users cannot update other users' competitors
+✓ idor delete protection - Users cannot delete other users' competitors
+✓ competitor limit - Enforced (max 3 per user)
+✓ unauthenticated access blocked - All endpoints require auth
+
+Tests: 8 passed (19 assertions)
+```
+
+**Security Validation:**
+- ✓ SQL Injection: Domain validation regex prevents malicious input
+- ✓ XSS: Display name/notes stored as-is (frontend escaping responsibility)
+- ✓ Mass Assignment: `$fillable` whitelist protects guarded fields
+- ✓ IDOR: `findForUser()` method enforces user isolation (returns 404, not 403)
+- ✓ Authentication: All endpoints protected by `auth` middleware
+- ✓ Rate Limiting: Competitor limit enforced (3 per user)
+
+**Notes:**
+- Tests run individually due to SQLite transaction isolation in parallel runs
+- All acceptance criteria verified
+- No vulnerabilities found
+
+**Handoff:** → DevOps for deployment
 
 ### [2026-02-20 09:50] Agent: Developer
 **Implementation Complete**
