@@ -1,7 +1,7 @@
 # FEAT-001: Keyword Rank Tracking
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -97,6 +97,63 @@ _Agent communication log_
 - Status updated to "To Break Into Tasks"
 - Ready for ProjectManager to create task breakdown
 - **CRITICAL**: Free tools constraint enforced - no paid SERP APIs
+
+### [2026-02-20 09:44] Agent: SpecSystemAnalyst
+Broke down specification into 20 tasks across 6 phases:
+
+**Phase 1: Core Infrastructure (3 tasks)**
+- SPEC-001-1 (High/Medium): Database Setup - Keywords & Rankings Tables
+- SPEC-001-2 (High/Low): Keyword Model and Repository
+- SPEC-001-3 (High/Low): Ranking Model and Repository
+
+**Phase 2: API Layer (3 tasks)**
+- SPEC-001-4 (High/Medium): Keywords CRUD API Endpoints
+- SPEC-001-5 (High/Low): Ranking History API Endpoints
+- SPEC-001-6 (High/Low): Dashboard API Endpoint
+
+**Phase 3: SERP Integration (3 tasks)**
+- SPEC-001-7 (High/Low): SERP Fetcher Interface and Mock Implementation
+- SPEC-001-8 (Medium/Medium): Google CSE Fetcher (Free Tier)
+- SPEC-001-9 (Low/High): Self-Hosted Scraper (Optional)
+
+**Phase 4: Background Processing (3 tasks)**
+- SPEC-001-10 (High/Medium): Job Queue Setup
+- SPEC-001-11 (High/Medium): Rank Checker Worker
+- SPEC-001-12 (High/Low): Scheduler for Automated Checks
+
+**Phase 5: Frontend (4 tasks)**
+- SPEC-001-13 (High/Low): Keyword List Page
+- SPEC-001-14 (High/Low): Add/Edit Keyword Forms
+- SPEC-001-15 (High/Low): Ranking History Chart Component
+- SPEC-001-16 (High/Low): Dashboard Summary Component
+
+**Phase 6: Testing & Polish (4 tasks)**
+- SPEC-001-17 (Medium/Low): Unit Tests for Services
+- SPEC-001-18 (Medium/Low): Integration Tests for API
+- SPEC-001-19 (Medium/Low): E2E Tests for Critical Flows
+- SPEC-001-20 (Low/Low): Performance Optimization
+
+**Dependency Chain:**
+```
+Phase 1 (DB) ──► Phase 2 (API) ──► Phase 5 (Frontend)
+      │                │
+      └──► Phase 3 (SERP) ──► Phase 4 (Queue/Worker)
+                                    │
+                                    └──► Phase 6 (Testing)
+```
+
+**Parallel Development Possible:**
+- Phase 2 and Phase 3 can run in parallel
+- Phase 5 components can run in parallel once APIs ready
+- Phase 6 tasks can start once respective components are built
+
+**Critical Notes:**
+- ⚠️ FREE TOOLS ONLY: Mock SERP for MVP, Google CSE as optional free tier
+- SQLite-based queue for MVP (no Redis dependency)
+- Desktop/Google/US only for MVP scope
+
+**Total Effort Estimate:** ~60-80 hours across all tasks
+Status updated to: To Prioritize
 
 ### [2026-02-19 19:12] System Note: FREE TOOLS CONSTRAINT
 ⚠️ **IMPORTANT**: This feature references paid services (SerpAPI, DataForSEO). These are NOT allowed. The Architect MUST find free alternatives during specification. Consider: Google Custom Search API (free tier), web scraping with respect for robots.txt, or mock data for development.
