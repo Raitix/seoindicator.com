@@ -174,7 +174,9 @@ Every feature, specification, and task has a STATUS that tracks its progress thr
 | `To Test Prod` | DevOps | Sets this status |
 | `To Test Prod` | ProdTester | Picks up for prod testing |
 | `Testing Prod` | ProdTester | Sets this status |
-| `Done` | ProdTester | Sets this status |
+| `Documentation` | ProdTester | Sets this status after successful prod test |
+| `Documentation` | DocSystemAnalyst | Picks up for documentation update |
+| `Done` | DocSystemAnalyst | Sets this status after updating docs |
 | `Cancelled` | Any agent | Sets with documented reason |
 
 ### Status Transitions by Agent
@@ -207,7 +209,12 @@ TASKS
 │ DevOps picks up "To Deploy"                                     │
 │ DevOps: "In Deployment" → "To Test Prod"                        │
 │ ProdTester picks up "To Test Prod"                              │
-│ ProdTester: "Testing Prod" → "Done"                             │
+│ ProdTester: "Testing Prod" → "Documentation"                    │
+│ DocSystemAnalyst picks up "Documentation"                       │
+│ DocSystemAnalyst: Updates DOCUMENTATION.md → "Done"             │
+│ When all tasks under a spec are "Done":                         │
+│   DocSystemAnalyst: Set spec status to "Done"                   │
+│   DocSystemAnalyst: Set feature status to "Done"                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -249,7 +256,8 @@ TASKS
 7. **Test Locally** → LocalTester validates (`Testing Locally`)
 8. **Deploy** → DevOps deploys to prod (`In Deployment`)
 9. **Test Prod** → ProdTester validates (`Testing Prod`)
-10. **Document** → ProdTester marks `Done`, DocSystemAnalyst updates docs
+10. **Document** → ProdTester marks `Documentation`, DocSystemAnalyst updates `DOCUMENTATION.md` → marks `Done`
+11. **Close** → DocSystemAnalyst marks spec and feature as `Done` when all tasks complete
 
 ### Must-Follow Rules
 - **Tests required** — all new features need automated tests
@@ -274,13 +282,19 @@ TASKS
 | `LESSONS-LEARNED/[agent].md` | Agent-specific knowledge base |
 | `FEATURES/FEAT-X.md` | Feature descriptions + comments |
 | `SPECIFICATIONS/SPEC-X.md` | Technical specifications + comments |
-| `TASKS/SPEC-X-Y.md` | Implementation tasks + comments |
-| `TESTS/SPEC-X-Y.md` | Automated test scripts |
+| `TASKS/TASK-X-Y.md` | Implementation tasks + comments |
+| `TESTS/TEST-X-Y.md` | Automated test scripts |
 
 ---
 
 ## Iterator System
-- **X** = Feature/Specification number (sequential)
+- **X** = Feature/Specification number (sequential, same number for both)
 - **Y** = Task number within specification (sequential)
 
-Example: `SPEC-23-3` = 3rd task for specification 23, which relates to feature 23.
+**Naming Convention:**
+- Features: `FEAT-X.md` (e.g., `FEAT-3.md`)
+- Specifications: `SPEC-X.md` (e.g., `SPEC-3.md` relates to `FEAT-3`)
+- Tasks: `TASK-X-Y.md` (e.g., `TASK-3-4` = 4th task for specification 3)
+- Tests: `TEST-X-Y.md` (e.g., `TEST-3-4.md` tests `TASK-3-4`)
+
+**Note:** Features and specifications share the same number (FEAT-3 ↔ SPEC-3) for easier tracking.
