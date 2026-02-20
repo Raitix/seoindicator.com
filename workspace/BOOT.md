@@ -24,8 +24,8 @@ if (-not $mysql) {
 Start PHP dev server on port 8000 if not already running:
 
 ```powershell
-$backend = Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue
-if (-not $backend) {
+$backend = @(Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue)
+if ($backend.Count -eq 0) {
     Start-Process -FilePath "powershell" -ArgumentList "-NoExit", "-Command", "cd C:\Users\Raitis\.openclaw\workspace\PROJECT-SEOINDICATOR\backend; php artisan serve" -WindowStyle Minimized
     Write-Host "Backend starting on http://localhost:8000..."
 } else {
@@ -38,8 +38,8 @@ if (-not $backend) {
 Start Next.js dev server on port 3000 if not already running:
 
 ```powershell
-$frontend = Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue
-if (-not $frontend) {
+$frontend = @(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue)
+if ($frontend.Count -eq 0) {
     Start-Process -FilePath "powershell" -ArgumentList "-NoExit", "-Command", "cd C:\Users\Raitis\.openclaw\workspace\PROJECT-SEOINDICATOR\frontend; npm run dev" -WindowStyle Minimized
     Write-Host "Frontend starting on http://localhost:3000..."
 } else {
@@ -52,8 +52,8 @@ if (-not $frontend) {
 Start PROJECT-CONTROL on port 3333 if not already running:
 
 ```powershell
-$control = Get-NetTCPConnection -LocalPort 3333 -ErrorAction SilentlyContinue
-if (-not $control) {
+$control = @(Get-NetTCPConnection -LocalPort 3333 -ErrorAction SilentlyContinue)
+if ($control.Count -eq 0) {
     Start-Process -FilePath "node" -ArgumentList "server.js" -WorkingDirectory "C:\Users\Raitis\.openclaw\workspace\PROJECT-CONTROL" -WindowStyle Minimized
     Write-Host "Control Center starting on http://localhost:3333..."
 } else {
