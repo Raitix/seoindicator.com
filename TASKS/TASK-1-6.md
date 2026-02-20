@@ -1,6 +1,6 @@
 # SPEC-001-6: Dashboard API Endpoint
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `High`

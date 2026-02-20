@@ -1,6 +1,6 @@
 # SPEC-001-16: Dashboard Summary Component
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `High`

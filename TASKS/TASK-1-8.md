@@ -1,6 +1,6 @@
 # SPEC-001-8: Google CSE Fetcher (Free Tier)
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `Medium`
