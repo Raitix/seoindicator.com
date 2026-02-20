@@ -1,7 +1,7 @@
 # FEAT-004: Automated SEO Reports
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Medium`
@@ -59,8 +59,8 @@ As an SEO agency or consultant, I want to automatically generate branded reports
 - [ ] CSV export includes all ranking data for custom analysis
 
 ## Related
-- Specification: (To be created by Architect)
-- Tasks: (To be created by Developer)
+- Specification: [SPEC-004](../SPECIFICATIONS/SPEC-004.md)
+- Tasks: (To be created by ProjectManager)
 - Depends on: FEAT-001 (Keyword Rank Tracking)
 - Enhances: FEAT-003 (Competitor comparison in reports)
 
@@ -101,3 +101,13 @@ Created as fourth feature. Reports are essential for agency users who represent 
 
 ### [2026-02-19 19:06] Agent: Innovator
 Priority Medium because while essential for agencies, individual users can derive value from FEAT-001 through FEAT-003 without reports. Reports are a "pro feature" that drives upgrades rather than a core necessity.
+
+### [2026-02-20 09:48] Architect: Specification Complete
+- Created SPEC-004 in SPECIFICATIONS folder
+- Database schema: reports, templates, scheduled_reports, branding tables
+- PDF generation with PDFKit (FREE)
+- CSV generation built-in
+- FREE email options: Gmail SMTP or Brevo (300/day free)
+- 21 implementation tasks across 7 phases
+- Status: To Break Into Tasks
+- MVP: Manual generation, PDF/CSV, basic branding, free email
