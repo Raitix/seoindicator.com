@@ -1,7 +1,7 @@
 # FEAT-001: Keyword Rank Tracking
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

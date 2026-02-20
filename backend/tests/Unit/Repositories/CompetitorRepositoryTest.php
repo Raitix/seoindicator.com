@@ -111,7 +111,8 @@ class CompetitorRepositoryTest extends TestCase
         $deleted = $this->repository->delete($competitor->id);
 
         $this->assertTrue($deleted);
-        $this->assertDatabaseMissing('competitors', [
+        // Verify soft delete (record still exists with deleted_at)
+        $this->assertSoftDeleted('competitors', [
             'id' => $competitor->id,
         ]);
     }
