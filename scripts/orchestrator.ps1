@@ -279,14 +279,18 @@ $specificInstructions
         $cliPath = "C:\nvm4w\nodejs\openclaw.cmd"
         $shortTask = "Process $ItemType $ItemId. Read task from: $taskFile"
         
-        # Build command string
-        $cmdArgs = "agent --agent $agentId -m `"$shortTask`" --timeout 1800"
+        # Generate unique session ID for isolation (each task gets fresh context)
+        $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+        $uniqueSessionId = "$($agentId)-$($ItemId -replace '[^a-zA-Z0-9-]', '')-$timestamp"
+        
+        # Build command string with unique session-id for isolation
+        $cmdArgs = "agent --agent $agentId --session-id `"$uniqueSessionId`" -m `"$shortTask`" --timeout 1800"
         
         $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "$cliPath $cmdArgs" -WindowStyle Hidden -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
         
-        # Create lock with process ID as session identifier
-        New-Lock -Type $ItemType -Id $ItemId -Agent $AgentName -SessionId "cli-$($process.Id)" -Status $Status
-        Write-Log "Spawned $AgentName for $ItemType/$ItemId via CLI (PID: $($process.Id))"
+        # Create lock with unique session ID
+        New-Lock -Type $ItemType -Id $ItemId -Agent $AgentName -SessionId $uniqueSessionId -Status $Status
+        Write-Log "Spawned $AgentName for $ItemType/$ItemId via CLI (Session: $uniqueSessionId, PID: $($process.Id))"
         
         # Track this agent in active-agents.json (append to existing)
         $agentsFile = "C:\Users\Raitis\.openclaw\logs\active-agents.json"
@@ -313,6 +317,7 @@ $specificInstructions
                 label = $normalizedItemId
                 status = "running"
                 pid = $process.Id
+                sessionId = $uniqueSessionId
                 updatedAt = [DateTime]::UtcNow.ToString("o")
             }
             $agents = @($agents) + @($newAgent)
@@ -322,7 +327,7 @@ $specificInstructions
             [System.IO.File]::WriteAllText($agentsFile, $json, $utf8NoBom)
         }
         
-        return "cli-$($process.Id)"
+        return $uniqueSessionId
     }
     catch {
         Write-Log "Failed to spawn $AgentName for $ItemType/$ItemId : $($_.Exception.Message)" -Level "ERROR"
@@ -485,8 +490,12 @@ function Spawn-DailyAgent {
         $cliPath = "C:\nvm4w\nodejs\openclaw.cmd"
         $shortTask = "Execute daily task. Read instructions from: $taskFile"
         
-        # Build command string
-        $cmdArgs = "agent --agent $AgentId -m `"$shortTask`" --timeout 3600"
+        # Generate unique session ID for isolation (each run gets fresh context)
+        $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+        $uniqueSessionId = "$($AgentId)-daily-$timestamp"
+        
+        # Build command string with unique session-id for isolation
+        $cmdArgs = "agent --agent $AgentId --session-id `"$uniqueSessionId`" -m `"$shortTask`" --timeout 3600"
         
         $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "$cliPath $cmdArgs" -WindowStyle Hidden -PassThru -RedirectStandardOutput "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-out.log" -RedirectStandardError "C:\Users\Raitis\.openclaw\logs\spawn-$AgentName-err.log"
         
@@ -509,12 +518,13 @@ function Spawn-DailyAgent {
             label = $Label
             status = "running"
             pid = $process.Id
+            sessionId = $uniqueSessionId
             updatedAt = [DateTime]::UtcNow.ToString("o")
         }
         $agents = @($agents) + @($newAgent)
         $agents | ConvertTo-Json -Depth 3 | Set-Content $agentsFile
         
-        Write-Log "Spawned $AgentName via CLI (PID: $($process.Id))"
+        Write-Log "Spawned $AgentName via CLI (Session: $uniqueSessionId, PID: $($process.Id))"
         return $true
     }
     catch {
