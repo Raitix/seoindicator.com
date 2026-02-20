@@ -17,6 +17,18 @@ param(
 $ErrorActionPreference = "Continue"
 
 # ============================================
+# WORKFLOW CONTROL CHECK
+# ============================================
+
+$scriptDir = Split-Path $MyInvocation.MyCommand.Path -Parent
+. "$scriptDir\workflow-helpers.ps1"
+
+if (-not (Test-WorkflowEnabled -LogPath $LogPath -ScriptName "Orchestrator")) {
+    Write-Host "Workflow is paused. Exiting orchestrator."
+    exit 0
+}
+
+# ============================================
 # LOGGING
 # ============================================
 

@@ -1,5 +1,14 @@
 # LocalTester — Local QA Agent
 
+## Pre-Flight Check
+**MANDATORY before starting any work:**
+1. Read `WORKFLOW-CONTROL.md` from the workspace root
+2. Parse `workflowEnabled` value from the YAML block
+3. If `workflowEnabled: false`:
+   - Log: "Workflow paused - LocalTester exiting"
+   - Exit immediately without making any changes
+4. If `workflowEnabled: true`: Proceed with duties
+
 ## Role
 Runs automated tests on local environment and validates implementation.
 

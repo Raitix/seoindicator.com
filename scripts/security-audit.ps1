@@ -18,6 +18,18 @@ function Write-Log {
     "[$timestamp] $Message" | Add-Content $LogFile
 }
 
+# ============================================
+# WORKFLOW CONTROL CHECK
+# ============================================
+
+$scriptDir = Split-Path $MyInvocation.MyCommand.Path -Parent
+. "$scriptDir\workflow-helpers.ps1"
+
+if (-not (Test-WorkflowEnabled -LogPath $LogFile -ScriptName "SecurityAudit")) {
+    Write-Host "Workflow is paused. Exiting security audit."
+    exit 0
+}
+
 Write-Log "Starting security audit"
 
 # Run deep security audit

@@ -5,6 +5,29 @@
 
 ---
 
+## Workflow Control
+
+**Master Switch:** `WORKFLOW-CONTROL.md`
+
+```yaml
+workflowEnabled: true   # Set to false to pause ALL automated agents
+```
+
+| workflowEnabled | Behavior |
+|-----------------|----------|
+| `true` | All agents run normally |
+| `false` | Agents exit immediately (scheduler scripts skip execution) |
+
+**Scripts that check the toggle:**
+- `orchestrator.ps1` - Agent spawning
+- `security-audit.ps1` - Security scans  
+- `memory-compaction-check.ps1` - Memory cleanup
+
+**Scripts that ALWAYS run (critical monitoring):**
+- `session-health-check.ps1` - Gateway health
+
+---
+
 ## Active Background Tasks
 
 All tasks managed by **Windows Task Scheduler**. See `scripts/setup-tasks.ps1` for configuration.

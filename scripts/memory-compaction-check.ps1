@@ -20,6 +20,18 @@ function Write-Log {
     "[$timestamp] $Message" | Add-Content $LogFile
 }
 
+# ============================================
+# WORKFLOW CONTROL CHECK
+# ============================================
+
+$scriptDir = Split-Path $MyInvocation.MyCommand.Path -Parent
+. "$scriptDir\workflow-helpers.ps1"
+
+if (-not (Test-WorkflowEnabled -LogPath $LogFile -ScriptName "MemoryCompaction")) {
+    Write-Host "Workflow is paused. Exiting memory compaction check."
+    exit 0
+}
+
 function Get-LargeFiles {
     param([string]$Path, [int]$ThresholdKB)
     
