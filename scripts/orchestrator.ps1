@@ -185,7 +185,7 @@ $StatusAgentMap = @{
     "To Test Locally" = "LocalTester"
     "To Deploy" = "DevOps"
     "To Test Prod" = "ProdTester"
-    "Done" = "DocSystemAnalyst"
+    "Documentation" = "DocSystemAnalyst"
 }
 
 # ============================================

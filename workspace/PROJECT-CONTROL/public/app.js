@@ -23,7 +23,8 @@ const statusOrder = [
   { id: 'in-deployment', name: 'Deploying', agent: 'DevOps', coreType: 'task' },
   { id: 'to-test-prod', name: 'To Test Prod', agent: 'ProdTester', coreType: 'task' },
   { id: 'testing-prod', name: 'Testing Prod', agent: 'ProdTester', coreType: 'task' },
-  { id: 'done', name: 'Done', agent: 'DocSystemAnalyst', coreType: 'task' },
+  { id: 'documentation', name: 'Documentation', agent: 'DocSystemAnalyst', coreType: 'task' },
+  { id: 'done', name: 'Done', agent: '-', coreType: 'task' },
   { id: 'cancelled', name: 'Cancelled', agent: '-', coreType: 'task' }
 ];
 
@@ -44,6 +45,7 @@ const statusMapping = {
   'in deployment': 'in-deployment',
   'to test prod': 'to-test-prod',
   'testing prod': 'testing-prod',
+  'documentation': 'documentation',
   'done': 'done',
   'cancelled': 'cancelled'
 };
@@ -233,27 +235,45 @@ async function loadWorkflowState() {
 
 function renderWorkflowStatus() {
   const statusEl = document.getElementById('workflow-status');
+  const btnEl = document.getElementById('workflow-toggle');
   if (!statusEl) return;
   
   if (workflowState.enabled) {
     statusEl.className = 'status-indicator active';
     statusEl.textContent = 'ACTIVE';
+    if (btnEl) {
+      btnEl.textContent = 'Disable';
+      btnEl.className = 'toggle-btn small disable';
+    }
   } else {
     statusEl.className = 'status-indicator paused';
     statusEl.textContent = 'PAUSED';
+    if (btnEl) {
+      btnEl.textContent = 'Enable';
+      btnEl.className = 'toggle-btn small enable';
+    }
   }
 }
 
 function renderInnovatorStatus() {
   const statusEl = document.getElementById('innovator-status');
+  const btnEl = document.getElementById('innovator-toggle');
   if (!statusEl) return;
   
   if (innovatorState.enabled) {
     statusEl.className = 'status-indicator active';
     statusEl.textContent = 'ACTIVE';
+    if (btnEl) {
+      btnEl.textContent = 'Disable';
+      btnEl.className = 'toggle-btn small disable';
+    }
   } else {
     statusEl.className = 'status-indicator paused';
     statusEl.textContent = 'PAUSED';
+    if (btnEl) {
+      btnEl.textContent = 'Enable';
+      btnEl.className = 'toggle-btn small enable';
+    }
   }
 }
 

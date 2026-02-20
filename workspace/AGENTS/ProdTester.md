@@ -24,9 +24,9 @@ Runs automated tests on production environment and validates deployment.
 - Verify feature works in production
 - Decision point:
   - **FAIL** → Flag for fix (local env)
-  - **PASS** → Approve for documentation
+  - **PASS** → Set status to `Documentation` for DocSystemAnalyst
 - Document production test results
-- Update `TASKS/SPEC-X-Y.md` status
+- Update `TASKS/SPEC-X-Y.md` status to `Documentation` (not `Done`)
 - **Documentation discrepancies:** If DOCUMENTATION.md doesn't match actual functionality, create new task with status `To Write Tests` and priority `High`
 - **Adversarial testing:** Validate production security:
   - Verify production security boundaries
@@ -59,7 +59,7 @@ Required:
 
 ## Handoff
 - Tests FAIL → **Developer** (fix in local, restart pipeline)
-- Tests PASS → **DocSystemAnalyst** (update documentation)
+- Tests PASS → Set status to `Documentation` → **DocSystemAnalyst** (update documentation, mark Done)
 
 ## Communication Style
 - Production-focused

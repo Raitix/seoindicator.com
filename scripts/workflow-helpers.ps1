@@ -217,3 +217,112 @@ function Test-InnovatorEnabled {
         return $true
     }
 }
+
+<#
+.SYNOPSIS
+    Enables the Innovator agent.
+
+.DESCRIPTION
+    Sets innovatorEnabled to true and clears pause metadata.
+#>
+function Enable-Innovator {
+    param()
+    
+    $content = Get-Content $script:WorkflowControlPath -Raw
+    
+    # Update innovatorEnabled
+    $content = $content -replace 'innovatorEnabled:\s*(true|false)', "innovatorEnabled: true"
+    
+    # Clear pause metadata
+    $content = $content -replace 'innovatorPausedAt:\s*[^\n]+', "innovatorPausedAt: null"
+    $content = $content -replace 'innovatorPausedBy:\s*[^\n]+', "innovatorPausedBy: null"
+    $content = $content -replace 'innovatorPauseReason:\s*[^\n]+', "innovatorPauseReason: null"
+    
+    $content | Set-Content $script:WorkflowControlPath -NoNewline
+    
+    Write-Host "Innovator ENABLED" -ForegroundColor Green
+    return @{ Enabled = $true; PausedAt = $null }
+}
+
+<#
+.SYNOPSIS
+    Disables the Innovator agent.
+
+.PARAMETER PausedBy
+    Who disabled the Innovator (optional)
+
+.PARAMETER PauseReason
+    Reason for disabling (optional)
+#>
+function Disable-Innovator {
+    param(
+        [string]$PausedBy = "",
+        [string]$PauseReason = ""
+    )
+    
+    $content = Get-Content $script:WorkflowControlPath -Raw
+    
+    # Update innovatorEnabled
+    $content = $content -replace 'innovatorEnabled:\s*(true|false)', "innovatorEnabled: false"
+    
+    # Set pause metadata
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $content = $content -replace 'innovatorPausedAt:\s*[^\n]+', "innovatorPausedAt: `"$timestamp`""
+    
+    if ($PausedBy) {
+        $content = $content -replace 'innovatorPausedBy:\s*[^\n]+', "innovatorPausedBy: `"$PausedBy`""
+    }
+    if ($PauseReason) {
+        $content = $content -replace 'innovatorPauseReason:\s*[^\n]+', "innovatorPauseReason: `"$PauseReason`""
+    }
+    
+    $content | Set-Content $script:WorkflowControlPath -NoNewline
+    
+    Write-Host "Innovator DISABLED" -ForegroundColor Yellow
+    return @{ Enabled = $false; PausedAt = $timestamp }
+}
+
+<#
+.SYNOPSIS
+    Gets the current innovator state.
+
+.OUTPUTS
+    [hashtable] with Enabled, PausedAt, PausedBy, PauseReason
+#>
+function Get-InnovatorState {
+    if (-not (Test-Path $script:WorkflowControlPath)) {
+        return @{
+            Enabled = $true
+            PausedAt = $null
+            PausedBy = $null
+            PauseReason = $null
+        }
+    }
+    
+    $content = Get-Content $script:WorkflowControlPath -Raw
+    
+    $state = @{
+        Enabled = $true
+        PausedAt = $null
+        PausedBy = $null
+        PauseReason = $null
+    }
+    
+    if ($content -match 'innovatorEnabled:\s*(true|false)') {
+        $state.Enabled = $Matches[1] -eq 'true'
+    }
+    if ($content -match 'innovatorPausedAt:\s*"?([^"\n]+)"?') {
+        $val = $Matches[1].Trim()
+        if ($val -ne 'null') { $state.PausedAt = $val }
+    }
+    if ($content -match 'innovatorPausedBy:\s*"?([^"\n]+)"?') {
+        $val = $Matches[1].Trim()
+        if ($val -ne 'null') { $state.PausedBy = $val }
+    }
+    if ($content -match 'innovatorPauseReason:\s*"?([^"\n]+)"?') {
+        $val = $Matches[1].Trim()
+        if ($val -ne 'null') { $state.PauseReason = $val }
+    }
+    
+    return $state
+}

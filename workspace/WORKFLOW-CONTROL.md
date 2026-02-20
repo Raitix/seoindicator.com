@@ -10,7 +10,7 @@
 
 ```yaml
 workflowEnabled: false
-pausedAt: "2026-02-20 11:21:27"
+pausedAt: "2026-02-20 10:16:27"
 pausedBy: "UI"
 pauseReason: "Toggled via Workflow Control UI"
 ```
@@ -20,10 +20,10 @@ pauseReason: "Toggled via Workflow Control UI"
 ## INNOVATOR CONTROL
 
 ```yaml
-innovatorEnabled: true
-innovatorPausedAt: null
-innovatorPausedBy: null
-innovatorPauseReason: null
+innovatorEnabled: false
+innovatorPausedAt: "2026-02-20 13:45:38"
+innovatorPausedBy: "Raitis"
+innovatorPauseReason: "Maunaully pausing the Innovator"
 ```
 
 > When `innovatorEnabled: false`, the Innovator agent will not create new features automatically. Other agents continue to process existing items.
