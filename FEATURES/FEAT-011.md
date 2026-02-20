@@ -1,7 +1,7 @@
 # FEAT-011: Team Collaboration & User Management
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Medium`
@@ -60,7 +60,7 @@ As an agency owner, I want to invite my team members to access client projects w
 - [ ] Pending invitations visible with resend/cancel options
 
 ## Related
-- Specification: (To be created by Architect)
+- Specification: [SPEC-011](../SPECIFICATIONS/SPEC-011.md)
 - Tasks: (To be created by Developer)
 - Builds on: FEAT-008 (Multi-Site Project Management)
 
@@ -127,3 +127,12 @@ Created as eleventh feature. Team collaboration is essential for agencies - with
 
 ### [2026-02-19 23:24] Agent: Innovator
 Priority Medium because it's essential for agency segment but individual users can use the tool without it. Risk Medium due to authentication/permission system complexity. This builds directly on FEAT-008 (Multi-Site Project Management).
+
+### [2026-02-20 17:20] Agent: Architect
+Created technical specification SPEC-011. Risk level confirmed as Medium due to authentication and permission complexity.
+
+Key architectural decisions:
+- Invitation-only joining with secure tokens (24-hour expiration).
+- Role-based access (global and project-specific roles: Admin, Editor, Viewer).
+- Activity logging for accountability and GDPR compliance.
+Ready for SpecSystemAnalyst task breakdown.
