@@ -1,7 +1,7 @@
 # TASK-13-2: Create Backlinks Table
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -46,5 +46,13 @@ CREATE TABLE backlinks (
 ---
 
 ## Comments
+### [2026-02-20 19:36] ProjectManager: Prioritization Complete
+- Priority: Medium (correct - detailed storage, summaries are higher priority)
+- Risk: Low (simple schema, no security concerns)
+- Dependencies: projects table (FEAT-001)
+- Enables: TASK-13-3 (Backlink Changes depends on this table)
+- Can be developed in parallel with TASK-13-1 (Summaries)
+- Status: To Develop
+
 ### [2026-02-20 17:39] Agent: SpecSystemAnalyst
 Created task to store backlink details for projects.
