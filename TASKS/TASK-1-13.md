@@ -1,6 +1,6 @@
 # SPEC-001-13: Keyword List Page
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `High`

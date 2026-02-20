@@ -1,6 +1,6 @@
 # SPEC-001-1: Database Setup - Keywords & Rankings Tables
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `High`

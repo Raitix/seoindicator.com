@@ -1,6 +1,6 @@
 # SPEC-001-9: Self-Hosted Scraper (Optional)
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `Low`

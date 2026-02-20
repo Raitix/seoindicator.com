@@ -1,6 +1,6 @@
 # SPEC-001-11: Rank Checker Worker
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `High`

@@ -1,6 +1,6 @@
 # SPEC-001-19: E2E Tests for Critical Flows
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `Medium`

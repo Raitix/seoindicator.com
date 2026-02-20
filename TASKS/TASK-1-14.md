@@ -1,6 +1,6 @@
 # SPEC-001-14: Add/Edit Keyword Forms
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `High`
