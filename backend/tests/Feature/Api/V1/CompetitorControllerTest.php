@@ -127,7 +127,8 @@ class CompetitorControllerTest extends TestCase
 
         $response->assertNoContent();
 
-        $this->assertDatabaseMissing('competitors', [
+        // Verify soft delete (record should still exist but with deleted_at set)
+        $this->assertSoftDeleted('competitors', [
             'id' => $competitor->id,
         ]);
     }

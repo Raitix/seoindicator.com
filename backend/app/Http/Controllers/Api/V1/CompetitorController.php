@@ -8,8 +8,9 @@ use App\Http\Requests\V1\UpdateCompetitorRequest;
 use App\Models\Competitor;
 use App\Repositories\CompetitorRepository;
 use App\Services\DomainValidator;
-use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 /**
  * Competitor Controller for SPEC-003-2.
