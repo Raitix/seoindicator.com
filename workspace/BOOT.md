@@ -47,6 +47,20 @@ if (-not $frontend) {
 }
 ```
 
+### 4. Workflow Control Center
+
+Start PROJECT-CONTROL on port 3333 if not already running:
+
+```powershell
+$control = Get-NetTCPConnection -LocalPort 3333 -ErrorAction SilentlyContinue
+if (-not $control) {
+    Start-Process -FilePath "node" -ArgumentList "server.js" -WorkingDirectory "C:\Users\Raitis\.openclaw\workspace\PROJECT-CONTROL" -WindowStyle Minimized
+    Write-Host "Control Center starting on http://localhost:3333..."
+} else {
+    Write-Host "Control Center already running on port 3333"
+}
+```
+
 ## Notes
 
 - Services are started in background windows (minimized)
@@ -55,4 +69,4 @@ if (-not $frontend) {
 
 ---
 
-Last updated: 2026-02-18
+Last updated: 2026-02-20
