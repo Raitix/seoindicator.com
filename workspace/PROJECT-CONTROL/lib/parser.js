@@ -22,8 +22,9 @@ class Parser {
       { id: 'in-deployment', name: 'Deploying', order: 14, coreType: 'task' },
       { id: 'to-test-prod', name: 'To Test Prod', order: 15, coreType: 'task' },
       { id: 'testing-prod', name: 'Testing Prod', order: 16, coreType: 'task' },
-      { id: 'done', name: 'Done', order: 17, coreType: 'task' },
-      { id: 'cancelled', name: 'Cancelled', order: 18, coreType: 'task' }
+      { id: 'documentation', name: 'Documentation', order: 17, coreType: 'task' },
+      { id: 'done', name: 'Done', order: 18, coreType: 'task' },
+      { id: 'cancelled', name: 'Cancelled', order: 19, coreType: 'task' }
     ];
     
     this.priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3 };
@@ -37,12 +38,12 @@ class Parser {
   normalizeId(id) {
     return id
       .replace(/FEAT-0*(\d+)/i, 'FEAT-$1')
-      .replace(/SPEC-0*(\d+)-0*(\d+)/i, 'SPEC-$1-$2')
-      .replace(/SPEC-0*(\d+)/i, 'SPEC-$1');
+      .replace(/SPEC-0*(\d+)/i, 'SPEC-$1')
+      .replace(/TASK-0*(\d+)-0*(\d+)/i, 'TASK-$1-$2');
   }
 
   extractFeatureNumber(id) {
-    const match = id.match(/(?:FEAT|SPEC)-0*(\d+)/i);
+    const match = id.match(/(?:FEAT|SPEC|TASK)-0*(\d+)/i);
     return match ? parseInt(match[1], 10) : null;
   }
 
@@ -63,7 +64,7 @@ class Parser {
     const statusMatch = content.match(/##\s*STATUS\s*\n`?([^`\n]+)`?/i);
     const priorityMatch = content.match(/##\s*PRIORITY\s*\n`?([^`\n]+)`?/i);
     const riskMatch = content.match(/##\s*RISK\s*\n`?([^`\n]+)`?/i);
-    const titleMatch = content.match(/^#\s*(FEAT|SPEC)[\-\d]*:\s*(.+)$/m);
+    const titleMatch = content.match(/^#\s*(FEAT|SPEC|TASK)[\-\d]*:\s*(.+)$/m);
     
     let title = titleMatch ? titleMatch[2].trim() : normalizedId;
     
@@ -191,7 +192,7 @@ class Parser {
       if (s.featureNumber) specsByNum[s.featureNumber] = s;
     }
     for (const t of tasks) {
-      const match = t.id.match(/SPEC-(\d+)-\d+/i);
+      const match = t.id.match(/TASK-(\d+)-\d+/i);
       if (match) {
         const specNum = parseInt(match[1], 10);
         if (!tasksBySpecNum[specNum]) tasksBySpecNum[specNum] = [];

@@ -75,14 +75,14 @@ function Get-MarkdownMetadata {
     }
 }
 
-# Normalize ID: FEAT-001 -> FEAT-1, SPEC-003-04 -> SPEC-3-4
+# Normalize ID: FEAT-001 -> FEAT-1, SPEC-003 -> SPEC-3, TASK-003-04 -> TASK-3-4
 function Normalize-Id {
     param([string]$Id)
     
     $result = $Id
     $result = [regex]::Replace($result, 'FEAT-0*(\d+)', 'FEAT-$1', 'IgnoreCase')
-    $result = [regex]::Replace($result, 'SPEC-0*(\d+)-0*(\d+)', 'SPEC-$1-$2', 'IgnoreCase')
     $result = [regex]::Replace($result, 'SPEC-0*(\d+)', 'SPEC-$1', 'IgnoreCase')
+    $result = [regex]::Replace($result, 'TASK-0*(\d+)-0*(\d+)', 'TASK-$1-$2', 'IgnoreCase')
     
     return $result
 }
