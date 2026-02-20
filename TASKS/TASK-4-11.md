@@ -1,7 +1,7 @@
 # SPEC-004-11: Scheduled Reports API
 
 ## STATUS
-`Prioritization In Progress`
+`To Develop`
 
 ## PRIORITY
 `Low`

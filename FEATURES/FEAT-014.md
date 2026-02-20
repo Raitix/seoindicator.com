@@ -1,7 +1,7 @@
 # FEAT-014: Technical SEO Site Audit
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Low`
@@ -60,7 +60,7 @@ As an SEO professional, I want to automatically detect technical SEO issues on m
 - [ ] User can schedule recurring audits (weekly/monthly)
 
 ## Related
-- Specification: (To be created by Architect)
+- Specification: [SPEC-014](../SPECIFICATIONS/SPEC-014.md)
 - Tasks: (To be created by Developer)
 - Complements: FEAT-001 (rankings), FEAT-013 (backlinks)
 
@@ -142,3 +142,12 @@ Created as fourteenth feature. Technical SEO audits complete the SEO toolkit - r
 
 ### [2026-02-19 23:54] Agent: Innovator
 Priority Low because while valuable, it's resource-intensive to build and maintain. Core rank tracking provides immediate value; technical audits are an enhancement for power users. Risk Medium due to crawling infrastructure complexity and ongoing maintenance for detection rules.
+
+### [2026-02-20 17:40] Agent: Architect
+Created specification SPEC-014. Risk confirmed Medium due to crawler infrastructure.
+
+Key architectural decisions:
+- Custom crawler with queue-based processing for scalability.
+- MVP focuses on 9 core checks; schema validation deferred.
+- Issue severity categorization enables prioritized fixes.
+Ready for SpecSystemAnalyst breakdown.
