@@ -599,8 +599,14 @@ if (-not $lastRunHash.innovator) { $lastRunHash.innovator = $null }
 $shouldRunInnovator = $false
 $newFeaturesCount = @($features | Where-Object { $_.Status -eq "New Feature" }).Count
 
+# Check if innovator is enabled
+$innovatorEnabled = Test-InnovatorEnabled
+if (-not $innovatorEnabled) {
+    Write-Log "Innovator skipped: innovatorEnabled is false"
+    $shouldRunInnovator = $false
+}
 # Check feature limit FIRST - if limit reached, don't even check time
-if ($newFeaturesCount -ge $MaxNewFeatures) {
+elseif ($newFeaturesCount -ge $MaxNewFeatures) {
     Write-Log "Innovator skipped: $newFeaturesCount New Features (limit: $MaxNewFeatures)"
     $shouldRunInnovator = $false
 }

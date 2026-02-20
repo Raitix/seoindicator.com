@@ -2,6 +2,7 @@ let allData = null;
 let currentFunctionalities = [];
 let activeAgents = [];
 let workflowState = { enabled: true };
+let innovatorState = { enabled: true };
 let eventSource = null;
 
 // Status to workflow order (top to bottom)
@@ -90,10 +91,25 @@ function connectSSE() {
   
   eventSource.addEventListener('workflow', (e) => {
     try {
-      workflowState = JSON.parse(e.data);
-      renderWorkflowToggle();
+      const data = JSON.parse(e.data);
+      if (data.workflow) {
+        workflowState = data.workflow;
+        renderWorkflowStatus();
+      }
     } catch (err) {
       console.error('Failed to parse workflow update:', err);
+    }
+  });
+  
+  eventSource.addEventListener('innovator', (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.innovator) {
+        innovatorState = data.innovator;
+        renderInnovatorStatus();
+      }
+    } catch (err) {
+      console.error('Failed to parse innovator update:', err);
     }
   });
   
@@ -203,28 +219,41 @@ function renderAgents() {
 async function loadWorkflowState() {
   try {
     const response = await fetch('/api/workflow');
-    workflowState = await response.json();
-    renderWorkflowToggle();
+    const data = await response.json();
+    workflowState = data.workflow || { enabled: true };
+    innovatorState = data.innovator || { enabled: true };
+    renderWorkflowStatus();
+    renderInnovatorStatus();
   } catch (error) {
     console.error('Failed to load workflow state:', error);
-    renderWorkflowToggle();
+    renderWorkflowStatus();
+    renderInnovatorStatus();
   }
 }
 
-function renderWorkflowToggle() {
-  const btn = document.getElementById('workflow-toggle');
-  const info = document.getElementById('workflow-info');
+function renderWorkflowStatus() {
+  const statusEl = document.getElementById('workflow-status');
+  if (!statusEl) return;
   
   if (workflowState.enabled) {
-    btn.className = 'toggle-btn active';
-    btn.querySelector('.toggle-status').textContent = 'ACTIVE';
-    info.textContent = '';
+    statusEl.className = 'status-indicator active';
+    statusEl.textContent = 'ACTIVE';
   } else {
-    btn.className = 'toggle-btn inactive';
-    btn.querySelector('.toggle-status').textContent = 'PAUSED';
-    if (workflowState.pausedBy) {
-      info.textContent = `by ${workflowState.pausedBy} at ${workflowState.pausedAt || ''}`;
-    }
+    statusEl.className = 'status-indicator paused';
+    statusEl.textContent = 'PAUSED';
+  }
+}
+
+function renderInnovatorStatus() {
+  const statusEl = document.getElementById('innovator-status');
+  if (!statusEl) return;
+  
+  if (innovatorState.enabled) {
+    statusEl.className = 'status-indicator active';
+    statusEl.textContent = 'ACTIVE';
+  } else {
+    statusEl.className = 'status-indicator paused';
+    statusEl.textContent = 'PAUSED';
   }
 }
 
@@ -244,11 +273,39 @@ async function toggleWorkflow() {
       })
     });
     
-    workflowState = await response.json();
-    renderWorkflowToggle();
+    const data = await response.json();
+    workflowState = { enabled: data.enabled, pausedAt: data.pausedAt };
+    renderWorkflowStatus();
   } catch (error) {
     console.error('Failed to toggle workflow:', error);
     alert('Failed to update workflow state: ' + error.message);
+  }
+  
+  btn.disabled = false;
+}
+
+async function toggleInnovator() {
+  const btn = document.getElementById('innovator-toggle');
+  btn.disabled = true;
+  
+  try {
+    const newState = !innovatorState.enabled;
+    const response = await fetch('/api/innovator', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        enabled: newState,
+        pausedBy: newState ? null : 'UI',
+        pauseReason: newState ? null : 'Toggled via Workflow Control UI'
+      })
+    });
+    
+    const data = await response.json();
+    innovatorState = { enabled: data.enabled, pausedAt: data.pausedAt };
+    renderInnovatorStatus();
+  } catch (error) {
+    console.error('Failed to toggle innovator:', error);
+    alert('Failed to update innovator state: ' + error.message);
   }
   
   btn.disabled = false;

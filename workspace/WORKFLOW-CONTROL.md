@@ -10,10 +10,23 @@
 
 ```yaml
 workflowEnabled: false
-pausedAt: "2026-02-20 10:21:46"
-pausedBy: "Raitis"
-pauseReason: "Testing pause functionality"
+pausedAt: "2026-02-20 11:21:27"
+pausedBy: "UI"
+pauseReason: "Toggled via Workflow Control UI"
 ```
+
+---
+
+## INNOVATOR CONTROL
+
+```yaml
+innovatorEnabled: true
+innovatorPausedAt: null
+innovatorPausedBy: null
+innovatorPauseReason: null
+```
+
+> When `innovatorEnabled: false`, the Innovator agent will not create new features automatically. Other agents continue to process existing items.
 
 ---
 
@@ -21,12 +34,12 @@ pauseReason: "Testing pause functionality"
 
 ### For the UI
 - Read this file to show the toggle state
-- Update the `workflowEnabled` value (true/false)
-- Optionally set `pausedAt`, `pausedBy`, `pauseReason` when deactivating
+- Update the `workflowEnabled` and `innovatorEnabled` values
+- Optionally set pause metadata when deactivating
 
 ### For Scheduler Scripts
 All Task Scheduler scripts check `workflowEnabled` before executing:
-- `orchestrator.ps1` - Agent spawning
+- `orchestrator.ps1` - Agent spawning (also checks `innovatorEnabled` for Innovator)
 - `security-audit.ps1` - Security scans
 - `memory-compaction-check.ps1` - Memory cleanup
 - `session-health-check.ps1` - Health monitoring (always runs)
@@ -48,6 +61,11 @@ Each agent should check this flag at startup:
 |-----------------|---------|
 | `true` | Workflow active - all agents run normally |
 | `false` | Workflow paused - all agents skip duties |
+
+| innovatorEnabled | Meaning |
+|------------------|---------|
+| `true` | Innovator can create new features |
+| `false` | Innovator disabled - no new features created |
 
 ---
 

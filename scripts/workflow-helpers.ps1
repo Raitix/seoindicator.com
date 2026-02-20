@@ -191,3 +191,29 @@ function Get-WorkflowState {
     
     return $state
 }
+
+<#
+.SYNOPSIS
+    Gets the current innovator enabled state.
+
+.OUTPUTS
+    [bool] $true if innovator is enabled, $false otherwise
+#>
+function Test-InnovatorEnabled {
+    if (-not (Test-Path $script:WorkflowControlPath)) {
+        return $true
+    }
+    
+    try {
+        $content = Get-Content $script:WorkflowControlPath -Raw
+        
+        if ($content -match 'innovatorEnabled:\s*(true|false)') {
+            return $Matches[1] -eq 'true'
+        }
+        
+        return $true
+    }
+    catch {
+        return $true
+    }
+}

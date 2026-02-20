@@ -107,28 +107,60 @@ app.get('/api/statuses', (req, res) => {
 app.get('/api/workflow', (req, res) => {
   try {
     if (!fs.existsSync(WORKFLOW_CONTROL_FILE)) {
-      return res.json({ enabled: true, pausedAt: null, pausedBy: null, pauseReason: null });
+      return res.json({ 
+        workflow: { enabled: true },
+        innovator: { enabled: true }
+      });
     }
     
     const content = fs.readFileSync(WORKFLOW_CONTROL_FILE, 'utf-8');
     const state = {
-      enabled: true,
-      pausedAt: null,
-      pausedBy: null,
-      pauseReason: null
+      workflow: {
+        enabled: true,
+        pausedAt: null,
+        pausedBy: null,
+        pauseReason: null
+      },
+      innovator: {
+        enabled: true,
+        pausedAt: null,
+        pausedBy: null,
+        pauseReason: null
+      }
     };
     
+    // Parse workflow state
     if (content.match(/workflowEnabled:\s*(true|false)/)) {
-      state.enabled = RegExp.$1 === 'true';
+      state.workflow.enabled = RegExp.$1 === 'true';
     }
-    if (content.match(/pausedAt:\s*"([^"]+)"/)) {
-      state.pausedAt = RegExp.$1;
+    if (content.match(/pausedAt:\s*"?([^"\n]+)"?/)) {
+      const val = RegExp.$1.trim();
+      if (val !== 'null') state.workflow.pausedAt = val;
     }
-    if (content.match(/pausedBy:\s*"([^"]+)"/)) {
-      state.pausedBy = RegExp.$1;
+    if (content.match(/pausedBy:\s*"?([^"\n]+)"?/)) {
+      const val = RegExp.$1.trim();
+      if (val !== 'null') state.workflow.pausedBy = val;
     }
-    if (content.match(/pauseReason:\s*"([^"]+)"/)) {
-      state.pauseReason = RegExp.$1;
+    if (content.match(/pauseReason:\s*"?([^"\n]+)"?/)) {
+      const val = RegExp.$1.trim();
+      if (val !== 'null') state.workflow.pauseReason = val;
+    }
+    
+    // Parse innovator state
+    if (content.match(/innovatorEnabled:\s*(true|false)/)) {
+      state.innovator.enabled = RegExp.$1 === 'true';
+    }
+    if (content.match(/innovatorPausedAt:\s*"?([^"\n]+)"?/)) {
+      const val = RegExp.$1.trim();
+      if (val !== 'null') state.innovator.pausedAt = val;
+    }
+    if (content.match(/innovatorPausedBy:\s*"?([^"\n]+)"?/)) {
+      const val = RegExp.$1.trim();
+      if (val !== 'null') state.innovator.pausedBy = val;
+    }
+    if (content.match(/innovatorPauseReason:\s*"?([^"\n]+)"?/)) {
+      const val = RegExp.$1.trim();
+      if (val !== 'null') state.innovator.pauseReason = val;
     }
     
     res.json(state);
@@ -165,7 +197,43 @@ app.put('/api/workflow', (req, res) => {
     fs.writeFileSync(WORKFLOW_CONTROL_FILE, content);
     
     // Broadcast update to SSE clients
-    broadcastSSE('workflow', { enabled, pausedAt: enabled ? null : timestamp, pausedBy: enabled ? null : pausedBy });
+    broadcastSSE('workflow', { workflow: { enabled, pausedAt: enabled ? null : timestamp } });
+    
+    res.json({ success: true, enabled, pausedAt: enabled ? null : timestamp });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: Update innovator state
+app.put('/api/innovator', (req, res) => {
+  try {
+    const { enabled, pausedBy, pauseReason } = req.body;
+    
+    let content = fs.readFileSync(WORKFLOW_CONTROL_FILE, 'utf-8');
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    
+    // Update innovatorEnabled
+    content = content.replace(/innovatorEnabled:\s*(true|false)/, `innovatorEnabled: ${enabled}`);
+    
+    if (enabled) {
+      content = content.replace(/innovatorPausedAt:\s*[^\n]+/, 'innovatorPausedAt: null');
+      content = content.replace(/innovatorPausedBy:\s*[^\n]+/, 'innovatorPausedBy: null');
+      content = content.replace(/innovatorPauseReason:\s*[^\n]+/, 'innovatorPauseReason: null');
+    } else {
+      content = content.replace(/innovatorPausedAt:\s*[^\n]+/, `innovatorPausedAt: "${timestamp}"`);
+      if (pausedBy) {
+        content = content.replace(/innovatorPausedBy:\s*[^\n]+/, `innovatorPausedBy: "${pausedBy}"`);
+      }
+      if (pauseReason) {
+        content = content.replace(/innovatorPauseReason:\s*[^\n]+/, `innovatorPauseReason: "${pauseReason}"`);
+      }
+    }
+    
+    fs.writeFileSync(WORKFLOW_CONTROL_FILE, content);
+    
+    // Broadcast update to SSE clients
+    broadcastSSE('innovator', { innovator: { enabled, pausedAt: enabled ? null : timestamp } });
     
     res.json({ success: true, enabled, pausedAt: enabled ? null : timestamp });
   } catch (error) {
