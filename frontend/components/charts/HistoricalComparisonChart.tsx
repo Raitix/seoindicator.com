@@ -1,8 +1,14 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+interface ChartDataRow {
+  date: string;
+  userPosition: number;
+  [competitor: string]: string | number;
+}
+
 interface HistoricalComparisonChartProps {
-  data: Array<{ date: string; userPosition: number; [competitor: string]: number }>;
+  data: ChartDataRow[];
 }
 
 const HistoricalComparisonChart: React.FC<HistoricalComparisonChartProps> = ({ data }) => {
