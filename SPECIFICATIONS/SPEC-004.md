@@ -4,7 +4,7 @@
 This specification defines the technical implementation for automated SEO report generation. Reports transform raw ranking data into client-ready deliverables in PDF and CSV formats with scheduling and branding capabilities.
 
 ## Status
-`Breaking Into Tasks`
+`To Prioritize`
 
 ## Feature Reference
 - Feature: [FEAT-004](../FEATURES/FEAT-004.md)
@@ -727,3 +727,22 @@ backend/
 - Status: To Break Into Tasks
 - Depends on: FEAT-001
 - MVP: Manual generation, PDF/CSV, basic branding, free email
+
+### [2026-02-20 10:35] SpecSystemAnalyst: Task Breakdown Complete
+Created 21 tasks across 7 phases:
+- **Phase 1 (Infrastructure):** TASK-4-1, TASK-4-2, TASK-4-3 - High priority, foundation tasks
+- **Phase 2 (Exporters):** TASK-4-4, TASK-4-5, TASK-4-6 - Medium priority, core functionality
+- **Phase 3 (API Layer):** TASK-4-7, TASK-4-8, TASK-4-9, TASK-4-10 - Medium priority
+- **Phase 4 (Scheduling):** TASK-4-11, TASK-4-12, TASK-4-13 - Low priority, post-MVP
+- **Phase 5 (Branding):** TASK-4-14, TASK-4-15, TASK-4-16 - Low priority, post-MVP
+- **Phase 6 (Email):** TASK-4-17, TASK-4-18, TASK-4-19 - Low priority, post-MVP
+- **Phase 7 (Testing):** TASK-4-20, TASK-4-21 - Medium priority, essential
+
+**MVP Scope (Tasks 1-10):** Database, models, exporters, basic API - no scheduling, branding, or email
+**Post-MVP Scope (Tasks 11-19):** Scheduling, branding, email delivery
+
+**Dependencies:**
+- All tasks depend on FEAT-001 (keyword rankings data)
+- FEAT-003 integration optional (competitor comparison in reports)
+
+**Handoff:** → ProjectManager for prioritization
