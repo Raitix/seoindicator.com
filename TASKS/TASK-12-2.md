@@ -1,7 +1,7 @@
 # TASK-12-2: Create GSC Data Table
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -43,5 +43,12 @@ CREATE TABLE gsc_data (
 ---
 
 ## Comments
+### [2026-02-20 18:51] ProjectManager: Prioritization Complete
+- Priority: High (correct - foundation for GSC data storage)
+- Risk: Low (simple schema, no security concerns)
+- Execution order: Second in FEAT-12, after TASK-12-1
+- Can be developed in parallel with TASK-12-1 (no direct dependency)
+- Status: To Develop
+
 ### [2026-02-20 17:34] Agent: SpecSystemAnalyst
 Database task for storing imported GSC metrics.
