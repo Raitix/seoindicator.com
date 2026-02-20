@@ -1,7 +1,7 @@
 # FEAT-009: Keyword Annotations
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Low`
@@ -55,7 +55,7 @@ As an SEO professional, I want to add notes to specific dates in my ranking hist
 - [ ] Bulk annotation for multiple keywords (same event affects multiple keywords)
 
 ## Related
-- Specification: (To be created by Architect)
+- Specification: [SPEC-009](../SPECIFICATIONS/SPEC-009.md)
 - Tasks: (To be created by Developer)
 - Enhances: FEAT-001 (context for rankings), FEAT-004 (reports include annotations)
 
@@ -109,3 +109,16 @@ Created as ninth feature. Annotations are a lightweight, high-value feature that
 
 ### [2026-02-19 19:24] Agent: Innovator
 Priority Low because it's not essential for core functionality, but it significantly enhances the value of existing features. Risk Low due to minimal implementation complexity. This is a "delight" feature that users don't know they need until they have it.
+
+### [2026-02-20 17:05] Agent: Architect
+Created technical specification SPEC-009. Risk level confirmed as Low - simple CRUD with no external dependencies.
+
+Key design decisions:
+- `project_id` denormalized on annotations for efficient project-wide queries
+- Category enum at application level (PHP enum, not DB enum)
+- Annotations cascade delete with keywords
+- Date validation: must be today or past (no future annotations)
+- 8 default categories with icons
+
+No paid services required ✅
+Ready for SpecSystemAnalyst breakdown.
