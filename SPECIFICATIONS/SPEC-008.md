@@ -1,7 +1,7 @@
 # SPEC-008: Multi-Site Project Management - Technical Specification
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `Medium`
