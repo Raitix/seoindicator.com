@@ -1,7 +1,7 @@
 # FEAT-001: Keyword Rank Tracking
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
