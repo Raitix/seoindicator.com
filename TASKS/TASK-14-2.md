@@ -1,7 +1,7 @@
 # TASK-14-2: Create Audit Issues Table
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -42,5 +42,13 @@ CREATE TABLE audit_issues (
 ---
 
 ## Comments
+### [2026-02-20 19:51] ProjectManager: Prioritization Complete
+- Priority: High (correct - core table for storing detected SEO issues)
+- Risk: Medium (foreign keys to audits and issue_types, severity validation)
+- Dependencies: TASK-14-1 (audits table), TASK-14-3 (issue_types table)
+- Execution order: After both TASK-14-1 and TASK-14-3 are complete
+- Stores: URL, issue type, severity, description, recommendation, status
+- Status: To Develop
+
 ### [2026-02-20 17:44] Agent: SpecSystemAnalyst
 Created task for storing detailed SEO issues.
