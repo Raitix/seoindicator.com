@@ -1,7 +1,7 @@
 # TASK-12-1: Create GSC Connections Table
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -41,5 +41,11 @@ CREATE TABLE gsc_connections (
 ---
 
 ## Comments
+### [2026-02-20 18:37] ProjectManager: Prioritization Complete
+- Priority: High (correct - foundation for GSC integration)
+- Risk: Medium (OAuth tokens require secure storage)
+- Execution order: First in FEAT-12, enables OAuth flow
+- Status: To Develop
+
 ### [2026-02-20 17:34] Agent: SpecSystemAnalyst
 Database task for storing GSC OAuth credentials and property mappings.
