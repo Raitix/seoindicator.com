@@ -5,7 +5,7 @@
 This specification defines the technical implementation for keyword rank tracking functionality in SEOIndicator. This is the core feature that enables users to monitor their search engine positions over time.
 
 ## Status
-`To Prioritize`
+`To Write Tests`
 
 ## Feature Reference
 - Feature: [FEAT-001](../FEATURES/FEAT-001.md)
@@ -566,6 +566,42 @@ frontend/
 ---
 
 ## Comments
+
+### [2026-02-20 09:55] Agent: ProjectManager
+**Prioritization Complete** ✓
+
+All 20 tasks prioritized and ready for PreTester.
+
+**Priority Distribution:**
+| Priority | Count | Tasks |
+|----------|-------|-------|
+| High | 14 | 1-7, 10-16 (Core MVP) |
+| Medium | 4 | 8, 17-19 (Secondary) |
+| Low | 2 | 9, 20 (Optional) |
+
+**Risk Distribution:**
+| Risk | Count | Notes |
+|------|-------|-------|
+| High | 1 | SPEC-001-9 (Self-hosted scraper - ToS risk) |
+| Medium | 5 | 1, 4, 8, 10, 11 (DB, API, Queue changes) |
+| Low | 14 | Models, UI, Tests |
+
+**Critical Path (High Priority):**
+```
+SPEC-001-1 (DB) ──► SPEC-001-2/3 (Models) ──► SPEC-001-4/5/6 (API)
+       │
+       └──► SPEC-001-7 (SERP Interface) ──► SPEC-001-10/11/12 (Queue/Worker)
+```
+
+**Parallel Development Opportunities:**
+- Tasks 2-3 can run in parallel after Task 1
+- Tasks 4-6 can run in parallel after Tasks 2-3
+- Tasks 7-9 can run in parallel with Tasks 4-6
+- Tasks 13-16 (Frontend) can run in parallel after APIs ready
+
+**⚠️ Security Note:** SPEC-001-9 (Self-Hosted Scraper) is HIGH RISK due to potential ToS violations. Recommend completing MVP with mock/Google CSE fetchers first.
+
+**Handoff:** → PreTester for test design on all 20 tasks
 
 ### [2026-02-19 21:17] Architect: Specification Created
 - Analyzed feature requirements from FEAT-001

@@ -56,8 +56,12 @@ class DomainValidator
 
     /**
      * Validate a domain with all checks.
+     *
+     * @param string $domain
+     * @param bool $skipAccessibility Skip HTTP accessibility check (useful for testing)
+     * @return array
      */
-    public function validate(string $domain): array
+    public function validate(string $domain, bool $skipAccessibility = false): array
     {
         // Normalize domain
         $domain = $this->normalizeDomain($domain);
@@ -104,16 +108,18 @@ class DomainValidator
             ];
         }
 
-        // Step 5: Check accessibility
-        $accessibilityResult = $this->checkAccessibility($domain);
-        if (!$accessibilityResult['valid']) {
-            return [
-                'valid' => false,
-                'domain' => $domain,
-                'ip' => $ip,
-                'message' => $accessibilityResult['message'],
-                'code' => $accessibilityResult['code'],
-            ];
+        // Step 5: Check accessibility (optional)
+        if (!$skipAccessibility) {
+            $accessibilityResult = $this->checkAccessibility($domain);
+            if (!$accessibilityResult['valid']) {
+                return [
+                    'valid' => false,
+                    'domain' => $domain,
+                    'ip' => $ip,
+                    'message' => $accessibilityResult['message'],
+                    'code' => $accessibilityResult['code'],
+                ];
+            }
         }
 
         return [
