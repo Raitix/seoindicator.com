@@ -1,7 +1,7 @@
 # SPEC-003-2: Backend - Competitor CRUD API
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`

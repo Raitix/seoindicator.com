@@ -1,6 +1,6 @@
 # SPEC-001-20: Performance Optimization
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `Low`
