@@ -530,7 +530,7 @@ class DomainValidator
             }
 
             // Try HTTP if HTTPS fails
-            $response = Http::timeout($this->httpTimeout)->get("http://{$domain}");
+            $response = Http::withOptions(['timeout' => $this->httpTimeout])->get("http://{$domain}");
 
             if ($response->successful()) {
                 return [
