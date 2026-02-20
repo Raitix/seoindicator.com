@@ -4,7 +4,7 @@
 This specification defines the technical implementation for automated SEO report generation. Reports transform raw ranking data into client-ready deliverables in PDF and CSV formats with scheduling and branding capabilities.
 
 ## Status
-`To Break Into Tasks`
+`Breaking Into Tasks`
 
 ## Feature Reference
 - Feature: [FEAT-004](../FEATURES/FEAT-004.md)

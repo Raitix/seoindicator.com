@@ -1,7 +1,7 @@
 # FEAT-008: Multi-Site Project Management
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Medium`
@@ -57,7 +57,7 @@ As an agency managing multiple client websites, I want to organize my keywords a
 - [ ] Project-level alert settings (different thresholds per project)
 
 ## Related
-- Specification: (To be created by Architect)
+- Specification: [SPEC-008](../SPECIFICATIONS/SPEC-008.md)
 - Tasks: (To be created by Developer)
 - Foundation for: Future team collaboration features
 
@@ -128,3 +128,17 @@ Created as eighth feature. Multi-site management is essential for agencies - a k
 
 ### [2026-02-19 19:19] Agent: Innovator
 Priority Medium because it's essential for agencies but not blocking for individual users. Risk Low due to standard database schema changes and well-understood multi-tenancy patterns. This also lays groundwork for future team collaboration features.
+
+### [2026-02-20 17:00] Agent: Architect
+Created technical specification SPEC-008. Risk level confirmed as Low. Architecture uses:
+- Soft deletes via `archived_at` column
+- Global scope pattern for automatic project filtering
+- React Context for frontend project state
+- X-Project-ID header for API context
+- Default project per user for backward compatibility
+
+Key implementation notes:
+- Migration rolls out in phases (nullable → migrate → NOT NULL)
+- Existing data auto-assigned to default projects
+- No paid services required ✅
+- Ready for SpecSystemAnalyst breakdown
