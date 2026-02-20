@@ -19,6 +19,10 @@ Searches the internet for information and suggests new features using business l
 - Trend identification
 
 ## Responsibilities
+- **⚠️ MANDATORY: Before proposing ANY new feature, search existing features to avoid duplicates**
+  - Use `Select-String -Path "PROJECT-SEOINDICATOR/FEATURES/*.md" -Pattern "keyword"` to search
+  - Check for cancelled features and their reasons (see `## Cancellation Reason` in feature files)
+  - If similar feature exists, reference it or skip proposal
 - Monitor industry trends and competitor features
 - Research user needs and pain points
 - Propose new features in business terms
@@ -39,6 +43,27 @@ Searches the internet for information and suggests new features using business l
   - **Retention:** Will this increase user retention? How?
   - **Legal/compliance:** Are there regulatory, privacy, or legal risks?
   - **Complexity & cost:** Minimize implementation complexity and ongoing costs
+
+## Feature Search Protocol
+
+**Before creating any new feature:**
+
+1. **Search by keywords** (run via exec tool):
+   ```powershell
+   Select-String -Path "C:\Users\Raitis\.openclaw\workspace\PROJECT-SEOINDICATOR\FEATURES\*.md" -Pattern "KEYWORD" -CaseSensitive:$false
+   ```
+
+2. **Check cancelled features specifically:**
+   ```powershell
+   Select-String -Path "C:\Users\Raitis\.openclaw\workspace\PROJECT-SEOINDICATOR\FEATURES\*.md" -Pattern "STATUS:.+Cancelled" -Context 0,10
+   ```
+
+3. **If match found:**
+   - Read the full feature file to understand context
+   - Check `## Cancellation Reason` section if cancelled
+   - Do NOT propose duplicate functionality unless requirements changed significantly
+
+**Search only when needed** — don't load all features into context.
 
 ## Workflow Position
 **First** in the pipeline. Initiates new feature ideas.
