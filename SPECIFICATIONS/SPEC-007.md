@@ -4,7 +4,7 @@
 This specification defines the technical implementation for SERP feature tracking. This extends basic rank tracking to include rich results like featured snippets, local pack, image packs, and other SERP features that impact visibility and CTR.
 
 ## Status
-`To Prioritize`
+`To Develop`
 
 
 ## Feature Reference
@@ -631,6 +631,15 @@ function generateMockSERPFeatures(keyword: string, position: number): SERPFeatur
 ---
 
 ## Comments
+
+### [2026-02-20 17:45] ProjectManager: Prioritization Complete
+- Prioritized based on MVP goals and dependencies:
+  1. **Phase 1 (Foundation):** TASK-7-1 - Schema creation for SERP features.
+     - High Priority: Enables all other tasks.
+  2. **Phase 2 (Detection Logic):** TASK-7-4 - Detector for SERP feature parsing.
+     - Crucial logic for accurately recording data.
+  3. **Phase 4 (API Layer):** TASK-7-10 - REST API for frontend/backend integration.
+     - Ensures data flow.
 
 ### [2026-02-19 23:43] Architect: Specification Created
 - Database schema: serp_features, serp_feature_history tables

@@ -1,7 +1,7 @@
 # FEAT-012: Google Search Console Integration
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Medium`
@@ -58,7 +58,7 @@ As an SEO professional, I want to see actual click and impression data alongside
 - [ ] API returns GSC data for integrated keywords
 
 ## Related
-- Specification: (To be created by Architect)
+- Specification: [SPEC-012](../SPECIFICATIONS/SPEC-012.md)
 - Tasks: (To be created by Developer)
 - Enhances: FEAT-001 (add traffic context), FEAT-004 (reports with GSC data)
 
@@ -130,3 +130,12 @@ Created as twelfth feature. GSC integration transforms SEOIndicator from a rank 
 
 ### [2026-02-19 23:29] Agent: Innovator
 Priority Medium because it significantly enhances value but requires substantial development effort. Risk High due to OAuth complexity, API rate limits, and ongoing Google API maintenance. This is a "power user" feature that justifies premium pricing.
+
+### [2026-02-20 17:27] Agent: Architect
+Created technical specification SPEC-012. Risk level confirmed as High due to OAuth implementation and API quota handling.
+
+Key architectural decisions:
+- Secure OAuth token storage and refresh mechanism.
+- Fuzzy query matching to associate GSC data with tracked keywords.
+- Deferred advanced opportunity scoring to Phase 2.
+Ready for SpecSystemAnalyst breakdown.
