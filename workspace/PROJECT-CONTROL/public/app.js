@@ -1,6 +1,7 @@
 let allData = null;
 let currentFunctionalities = [];
 let activeAgents = [];
+let workflowState = { enabled: true };
 let eventSource = null;
 
 // Status to workflow order (top to bottom)
@@ -56,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadData();
   loadAgents();
   loadLogs();
+  loadWorkflowState();
   connectSSE();
 });
 
@@ -83,6 +85,15 @@ function connectSSE() {
       appendLogs(data.lines);
     } catch (err) {
       console.error('Failed to parse logs update:', err);
+    }
+  });
+  
+  eventSource.addEventListener('workflow', (e) => {
+    try {
+      workflowState = JSON.parse(e.data);
+      renderWorkflowToggle();
+    } catch (err) {
+      console.error('Failed to parse workflow update:', err);
     }
   });
   
@@ -187,6 +198,60 @@ function renderAgents() {
       ${agent.label && agent.label !== agent.name ? `<span class="agent-item">${escapeHtml(agent.label)}</span>` : ''}
     </div>
   `).join('');
+}
+
+async function loadWorkflowState() {
+  try {
+    const response = await fetch('/api/workflow');
+    workflowState = await response.json();
+    renderWorkflowToggle();
+  } catch (error) {
+    console.error('Failed to load workflow state:', error);
+    renderWorkflowToggle();
+  }
+}
+
+function renderWorkflowToggle() {
+  const btn = document.getElementById('workflow-toggle');
+  const info = document.getElementById('workflow-info');
+  
+  if (workflowState.enabled) {
+    btn.className = 'toggle-btn active';
+    btn.querySelector('.toggle-status').textContent = 'ACTIVE';
+    info.textContent = '';
+  } else {
+    btn.className = 'toggle-btn inactive';
+    btn.querySelector('.toggle-status').textContent = 'PAUSED';
+    if (workflowState.pausedBy) {
+      info.textContent = `by ${workflowState.pausedBy} at ${workflowState.pausedAt || ''}`;
+    }
+  }
+}
+
+async function toggleWorkflow() {
+  const btn = document.getElementById('workflow-toggle');
+  btn.disabled = true;
+  
+  try {
+    const newState = !workflowState.enabled;
+    const response = await fetch('/api/workflow', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        enabled: newState,
+        pausedBy: newState ? null : 'UI',
+        pauseReason: newState ? null : 'Toggled via Workflow Control UI'
+      })
+    });
+    
+    workflowState = await response.json();
+    renderWorkflowToggle();
+  } catch (error) {
+    console.error('Failed to toggle workflow:', error);
+    alert('Failed to update workflow state: ' + error.message);
+  }
+  
+  btn.disabled = false;
 }
 
 function renderBoard() {

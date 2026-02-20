@@ -13,6 +13,13 @@
       <span id="project-name">PROJECT-SEOINDICATOR</span>
       <span id="refresh-btn" onclick="refreshAll()" title="Refresh">🔄</span>
     </div>
+    <div id="workflow-toggle-container">
+      <span class="toggle-label">Workflow:</span>
+      <button id="workflow-toggle" class="toggle-btn" onclick="toggleWorkflow()">
+        <span class="toggle-status">Loading...</span>
+      </button>
+      <span id="workflow-info" class="workflow-info"></span>
+    </div>
     <div id="agents-bar-header">
       <span class="agents-label">ACTIVE AGENTS:</span>
       <div id="agents-list"></div>

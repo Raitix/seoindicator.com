@@ -817,3 +817,72 @@ header h1 {
   padding: 0.75rem;
   text-align: center;
 }
+
+/* Workflow Toggle */
+#workflow-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 1rem;
+}
+
+.toggle-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.toggle-btn {
+  padding: 0.3rem 0.75rem;
+  border-radius: 16px;
+  border: 2px solid var(--border-color);
+  background: var(--bg-row);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.toggle-btn.active {
+  background: rgba(74, 222, 128, 0.2);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+.toggle-btn.inactive {
+  background: rgba(248, 113, 113, 0.2);
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.toggle-btn:hover {
+  transform: scale(1.05);
+}
+
+.toggle-btn::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.toggle-btn.active::before {
+  background: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+}
+
+.toggle-btn.inactive::before {
+  background: var(--accent-red);
+  box-shadow: 0 0 8px var(--accent-red);
+}
+
+.workflow-info {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}

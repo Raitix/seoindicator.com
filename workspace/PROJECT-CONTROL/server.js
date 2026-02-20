@@ -11,6 +11,7 @@ const PORT = 3333;
 const PROJECT_PATH = path.join(__dirname, '..', 'PROJECT-SEOINDICATOR');
 const ACTIVE_AGENTS_FILE = 'C:\\Users\\Raitis\\.openclaw\\logs\\active-agents.json';
 const ORCHESTRATOR_LOG = 'C:\\Users\\Raitis\\.openclaw\\logs\\orchestrator.log';
+const WORKFLOW_CONTROL_FILE = 'C:\\Users\\Raitis\\.openclaw\\workspace\\WORKFLOW-CONTROL.md';
 
 app.use(cors());
 app.use(express.json());
@@ -100,6 +101,76 @@ app.get('/api/functionalities/:type/:id', async (req, res) => {
 // API: Get statuses configuration
 app.get('/api/statuses', (req, res) => {
   res.json(parser.getStatuses());
+});
+
+// API: Get workflow control state
+app.get('/api/workflow', (req, res) => {
+  try {
+    if (!fs.existsSync(WORKFLOW_CONTROL_FILE)) {
+      return res.json({ enabled: true, pausedAt: null, pausedBy: null, pauseReason: null });
+    }
+    
+    const content = fs.readFileSync(WORKFLOW_CONTROL_FILE, 'utf-8');
+    const state = {
+      enabled: true,
+      pausedAt: null,
+      pausedBy: null,
+      pauseReason: null
+    };
+    
+    if (content.match(/workflowEnabled:\s*(true|false)/)) {
+      state.enabled = RegExp.$1 === 'true';
+    }
+    if (content.match(/pausedAt:\s*"([^"]+)"/)) {
+      state.pausedAt = RegExp.$1;
+    }
+    if (content.match(/pausedBy:\s*"([^"]+)"/)) {
+      state.pausedBy = RegExp.$1;
+    }
+    if (content.match(/pauseReason:\s*"([^"]+)"/)) {
+      state.pauseReason = RegExp.$1;
+    }
+    
+    res.json(state);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: Update workflow control state
+app.put('/api/workflow', (req, res) => {
+  try {
+    const { enabled, pausedBy, pauseReason } = req.body;
+    
+    let content = fs.readFileSync(WORKFLOW_CONTROL_FILE, 'utf-8');
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    
+    // Update workflowEnabled
+    content = content.replace(/workflowEnabled:\s*(true|false)/, `workflowEnabled: ${enabled}`);
+    
+    if (enabled) {
+      content = content.replace(/pausedAt:\s*[^\n]+/, 'pausedAt: null');
+      content = content.replace(/pausedBy:\s*[^\n]+/, 'pausedBy: null');
+      content = content.replace(/pauseReason:\s*[^\n]+/, 'pauseReason: null');
+    } else {
+      content = content.replace(/pausedAt:\s*[^\n]+/, `pausedAt: "${timestamp}"`);
+      if (pausedBy) {
+        content = content.replace(/pausedBy:\s*[^\n]+/, `pausedBy: "${pausedBy}"`);
+      }
+      if (pauseReason) {
+        content = content.replace(/pauseReason:\s*[^\n]+/, `pauseReason: "${pauseReason}"`);
+      }
+    }
+    
+    fs.writeFileSync(WORKFLOW_CONTROL_FILE, content);
+    
+    // Broadcast update to SSE clients
+    broadcastSSE('workflow', { enabled, pausedAt: enabled ? null : timestamp, pausedBy: enabled ? null : pausedBy });
+    
+    res.json({ success: true, enabled, pausedAt: enabled ? null : timestamp });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // API: Get active agents from file
