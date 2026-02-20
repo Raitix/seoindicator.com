@@ -1,7 +1,7 @@
 # TASK-12-5: Implement GSC Data Sync Service
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -52,5 +52,13 @@ class GSCDataSync
 ---
 
 ## Comments
+### [2026-02-20 19:06] ProjectManager: Prioritization Complete
+- Priority: High (correct - core data pipeline for GSC metrics)
+- Risk: Medium (rate limiting, API quota management, data integrity)
+- Dependencies: TASK-12-2 (gsc_data table), TASK-12-4 (OAuth service)
+- Execution order: After OAuth service (TASK-12-4) is complete
+- Largest effort in FEAT-12 services (6-8 hours) - allocate accordingly
+- Status: To Develop
+
 ### [2026-02-20 17:35] Agent: SpecSystemAnalyst
 Service for automated GSC data import with rate limit handling.
