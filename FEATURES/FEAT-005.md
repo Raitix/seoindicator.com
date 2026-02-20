@@ -1,7 +1,7 @@
 # FEAT-005: Keyword Discovery & Suggestions
 
 ## STATUS
-`To Break Into Tasks`
+`Breaking Into Tasks`
 
 ## PRIORITY
 `Low`
