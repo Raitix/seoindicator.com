@@ -9,10 +9,10 @@
 ## WORKFLOW STATUS
 
 ```yaml
-workflowEnabled: false
-pausedAt: "2026-02-20 10:16:27"
-pausedBy: "UI"
-pauseReason: "Toggled via Workflow Control UI"
+workflowEnabled: true
+pausedAt: null
+pausedBy: null
+pauseReason: null
 ```
 
 ---
@@ -20,13 +20,13 @@ pauseReason: "Toggled via Workflow Control UI"
 ## INNOVATOR CONTROL
 
 ```yaml
-innovatorEnabled: false
-innovatorPausedAt: "2026-02-20 13:45:38"
-innovatorPausedBy: "Raitis"
-innovatorPauseReason: "Maunaully pausing the Innovator"
+innovatorEnabled: true
+innovatorPausedAt: null
+innovatorPausedBy: null
+innovatorPauseReason: null
 ```
 
-> When `innovatorEnabled: false`, the Innovator agent will not create new features automatically. Other agents continue to process existing items.
+> When `innovatorEnabled: true`, the Innovator agent will not create new features automatically. Other agents continue to process existing items.
 
 ---
 
@@ -49,7 +49,7 @@ Each agent should check this flag at startup:
 ```markdown
 ## Pre-Flight Check
 1. Read WORKFLOW-CONTROL.md
-2. If `workflowEnabled: false`, log and exit immediately
+2. If `workflowEnabled: true`, log and exit immediately
 3. Otherwise, proceed with duties
 ```
 
