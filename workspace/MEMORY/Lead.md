@@ -76,10 +76,7 @@ Also: Cancelled (any stage)
 ```
 
 ### Concurrency Limits
-- **Max 3 active features** in pipeline (exclude New Feature/Done/Cancelled)
-- **Max 3 agents per status** (parallel work on same status)
 - **1 functionality per agent** (each instance handles one item)
-- Block spawn if limits exceeded
 
 ---
 

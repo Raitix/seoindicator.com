@@ -8,7 +8,6 @@ param(
     [string]$LogPath = "C:\Users\Raitis\.openclaw\logs\orchestrator.log",
     [string]$LastRunPath = "C:\Users\Raitis\.openclaw\logs\agent-last-run.json",
     [int]$LockTTLMinutes = 30,
-    [int]$MaxAgentsPerStatus = 3,
     [int]$DailyAgentIntervalHours = 24,
     [int]$InnovatorIntervalMinutes = 5,
     [int]$MaxNewFeatures = 10
@@ -210,24 +209,7 @@ function Test-CanSpawn {
         [string]$TargetStatus
     )
     
-    # Check max agents per status - count LOCKS across all folders
-    $activeLocks = 0
-    foreach ($folder in @("FEATURES", "SPECIFICATIONS", "TASKS")) {
-        $lockFolder = Join-Path $ProjectPath "$folder\.locks"
-        if (Test-Path $lockFolder) {
-            Get-ChildItem -Path $lockFolder -Filter "*.lock" | ForEach-Object {
-                try {
-                    $lock = Get-Content $_.FullName -Raw | ConvertFrom-Json
-                    if ($lock.status -eq $TargetStatus) { $activeLocks++ }
-                } catch {}
-            }
-        }
-    }
-    
-    if ($activeLocks -ge $MaxAgentsPerStatus) {
-        return @{ CanSpawn = $false; Reason = "Max agents per status reached for '$TargetStatus' ($activeLocks/$MaxAgentsPerStatus active)" }
-    }
-    
+    # No concurrency limits - spawn freely
     return @{ CanSpawn = $true; Reason = "OK" }
 }
 
@@ -395,10 +377,6 @@ foreach ($status in $StatusAgentMap.Keys) {
         $sessionId = Spawn-Agent -AgentName $agent -ItemType $item.Type -ItemId $item.Id -ItemStatus $item.Status -Status $status
         if ($sessionId) {
             $spawnedCount++
-            # Update active count for next iteration
-            if ($item.Type -eq "feature") {
-                $activeFeatures = @($activeFeatures) + $item
-            }
         }
         
         # Only spawn one agent per status per run to avoid race conditions
