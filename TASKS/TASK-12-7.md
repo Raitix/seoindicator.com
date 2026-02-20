@@ -1,7 +1,7 @@
 # TASK-12-7: GSC Connection Controller
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -41,5 +41,13 @@ class GSCConnectionController extends Controller
 ---
 
 ## Comments
+### [2026-02-20 19:16] ProjectManager: Prioritization Complete
+- Priority: High (correct - exposes OAuth functionality to frontend)
+- Risk: Medium (authorization logic, token revocation)
+- Dependencies: TASK-12-4 (OAuth service)
+- Execution order: After TASK-12-4 is complete
+- Can be developed in parallel with TASK-12-5 (Data Sync)
+- Status: To Develop
+
 ### [2026-02-20 17:36] Agent: SpecSystemAnalyst
 API controller for GSC connection management.
