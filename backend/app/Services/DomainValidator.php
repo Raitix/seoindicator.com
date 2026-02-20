@@ -189,7 +189,7 @@ class DomainValidator
                 return [
                     'valid' => false,
                     'domain' => $domain,
-                    'message' => 'Domain is blocked for security reasons',
+                    'message' => 'Domain blacklisted',
                     'code' => 'SSRF_BLOCKED',
                 ];
             }
@@ -293,7 +293,7 @@ class DomainValidator
                 'valid' => false,
                 'domain' => $domain,
                 'message' => 'Invalid domain format',
-                'code' => 'SSRF_BLOCKED', // Aligning with expected test output
+                'code' => 'INVALID_FORMAT',
             ];
         }
 
@@ -357,6 +357,21 @@ class DomainValidator
         if ($ip === $domain) {
             return null;
         }
+
+        // Validate DNS rebinding cases explicitly
+        $cachedIp = Cache::get("resolved:{$domain}");
+
+        if (!is_null($cachedIp) && $cachedIp !== $ip) {
+            info("Rebinding flagged. Cached '{$cachedIp}' diverged from latest '{$ip}' for domain '{$domain}'.");
+            return [
+                'valid' => false,
+                'domain' => $domain,
+                'message' => 'DNS rebinding detected',
+                'code' => 'SSRF_BLOCKED',
+            ];
+        }
+
+        Cache::put("resolved:{$domain}", $ip, 300);
 
         // Validate the resolved IP for SSRF rules
         $ipValidation = $this->validateIp($ip);
@@ -498,8 +513,7 @@ class DomainValidator
     public function checkAccessibility(string $domain): array
     {
         try {
-            $response = Http::timeout($this->httpTimeout)->retry(1, 0)
-                ->maxRedirects($this->maxRedirects)
+            $response = Http::withOptions(['timeout' => $this->httpTimeout, 'allow_redirects' => ['max' => $this->maxRedirects]])
                 ->get("https://{$domain}");
 
             if ($response->successful()) {
@@ -510,9 +524,7 @@ class DomainValidator
             }
 
             // Try HTTP if HTTPS fails
-            $response = Http::timeout($this->httpTimeout)
-                ->maxRedirects($this->maxRedirects)
-                ->get("http://{$domain}");
+            $response = Http::timeout($this->httpTimeout)->get("http://{$domain}");
 
             if ($response->successful()) {
                 return [
