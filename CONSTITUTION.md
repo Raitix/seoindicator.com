@@ -177,7 +177,20 @@ Every feature, specification, and task has a STATUS that tracks its progress thr
 | `Documentation` | ProdTester | Sets this status after successful prod test |
 | `Documentation` | DocSystemAnalyst | Picks up for documentation update |
 | `Done` | DocSystemAnalyst | Sets this status after updating docs |
-| `Cancelled` | Any agent | Sets with documented reason |
+| `Cancelled` | Any agent | Sets with documented reason (see below) |
+
+### Cancellation Protocol
+
+When setting status to `Cancelled`, the agent **MUST** add a `## Cancellation Reason` section to the feature/spec/task file:
+
+```markdown
+## Cancellation Reason
+**Cancelled by:** Agent Name
+**Date:** YYYY-MM-DD
+**Reason:** Clear explanation (e.g., "Requires paid API - violates free tools constraint")
+```
+
+This allows Innovator to search and understand why similar features were rejected.
 
 ### Status Transitions by Agent
 
