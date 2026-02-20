@@ -24,9 +24,11 @@ innovatorEnabled: true
 innovatorPausedAt: null
 innovatorPausedBy: null
 innovatorPauseReason: null
+lastDailyRun: 2026-02-20T16:37:00+02:00
 ```
 
 > When `innovatorEnabled: true`, the Innovator agent will not create new features automatically. Other agents continue to process existing items.
+> `lastDailyRun` tracks the last successful daily task execution to prevent duplicates.
 
 ---
 

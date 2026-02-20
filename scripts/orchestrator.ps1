@@ -95,7 +95,7 @@ function Get-Functionalities {
     
     if (-not (Test-Path $folderPath)) { return $items }
     
-    Get-ChildItem -Path $folderPath -Filter "*.md" | Where-Object { $_.Name -notlike ".*" } | ForEach-Object {
+    Get-ChildItem -Path $folderPath -Filter "*.md" | Where-Object { $_.Name -notlike ".*" -and $_.Name -ne "README.md" } | ForEach-Object {
         $id = Normalize-Id -Id $_.BaseName
         $meta = Get-MarkdownMetadata $_.FullName
         if ($meta -and $meta.Status) {
@@ -257,7 +257,7 @@ $specificInstructions
 - Type: $ItemType
 - ID: $ItemId
 - Current Status: $ItemStatus
-- File: PROJECT-SEOINDICATOR/$ItemType/$ItemId.md
+- File: PROJECT-SEOINDICATOR/$($ItemType.ToUpper())S/$ItemId.md
 
 ## Important
 - Work ONLY on this item
