@@ -12,13 +12,13 @@
 ## Related
 - Feature: [FEAT-010](../FEATURES/FEAT-010.md)
 - Tasks: (To be created by SpecSystemAnalyst)
-- Uses Data From: SPEC-001 (rankings), SPEC-007 (SERP features)
+- Uses: SPEC-001 (rankings), SPEC-007 (SERP features)
 
 ---
 
 ## Overview
 
-Calculate and track a composite "Visibility Score" (0-100) to represent SEO health, making it easier for users to assess performance, track trends, and communicate results. The calculation combines keyword rankings, SERP feature presence, and search volume into a weighted formula.
+A composite "Visibility Score" (0-100) that represents overall SEO health in a single number. Combines keyword rankings, SERP features, and search volume distribution into an easy-to-understand metric for quick performance assessment and stakeholder reporting.
 
 ---
 
@@ -27,47 +27,68 @@ Calculate and track a composite "Visibility Score" (0-100) to represent SEO heal
 ### System Design
 
 ```
-┌──────────────────────────────────────┐
-│          Frontend (Next.js)          │
-├──────────────────────────────────────┤
-│    Components:                      │
-│    ├── VisibilityTrendChart          │
-│    ├── ScoreBreakdownCard            │
-│    └── AlertThresholdForm            │
-├──────────────────────────────────────┤
-│    Integration Points:               │
-│    ├── ProjectDashboard              │
-│    ├── PDFReportGenerator            │
-│    └── AllProjectsComparison         │
-└──────────────────────────────────────┘
-          │                                
-          ▼                                
-┌──────────────────────────────────────┐
-│         Backend API (Laravel)        │
-├──────────────────────────────────────┤
-│    Controllers:                     │
-│    ├── VisibilityController          │
-│    └── ProjectDashboardController    │
-├──────────────────────────────────────┤
-│    Resources:                       │
-│    └── ScoreResource (JSON output)  │
-├──────────────────────────────────────┤
-│    Services:                        │
-│    └── VisibilityScoreService       │
-└──────────────────────────────────────┘
-          │                                
-          ▼                                
-┌──────────────────────────────────────┐
-│            Database (MySQL)          │
-├──────────────────────────────────────┤
-│    Table: visibility_scores          │
-│    Columns:                          │
-│    ├── score (int)                   │
-│    ├── position_component (float)    │
-│    ├── serp_component (float)        │
-│    ├── volume_component (float)      │
-│    └── calculated_at (datetime)      │
-└──────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        Frontend (Next.js)                        │
+├─────────────────────────────────────────────────────────────────┤
+│  Components:                                                    │
+│  ├── VisibilityScoreCard (prominent dashboard display)          │
+│  ├── VisibilityTrendChart (historical chart - 30d/90d/1y)       │
+│  ├── VisibilityBreakdown (contributing factors breakdown)       │
+│  └── VisibilityComparison (multi-project comparison - Phase 2)  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Backend API (Laravel)                        │
+├─────────────────────────────────────────────────────────────────┤
+│  Controllers:                                                   │
+│  └── VisibilityController (score + trends)                      │
+├─────────────────────────────────────────────────────────────────┤
+│  Services:                                                      │
+│  ├── VisibilityScoreCalculator (core algorithm)                 │
+│  └── VisibilityTrendService (historical data)                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Jobs:                                                          │
+│  └── CalculateVisibilityScore (scheduled daily)                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       Database (MySQL)                           │
+├─────────────────────────────────────────────────────────────────┤
+│  visibility_scores (NEW)                                        │
+│  └── Stores daily calculated scores for trends                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Score Calculation Flow
+
+```
+Daily Scheduled Job
+        │
+        ▼
+┌─────────────────────────────────┐
+│ For each active project:        │
+│                                 │
+│ 1. Fetch all keywords with:     │
+│    - Current position           │
+│    - Search volume              │
+│    - SERP features              │
+│                                 │
+│ 2. Calculate Position Score     │
+│    (volume-weighted average)    │
+│                                 │
+│ 3. Calculate SERP Feature Score │
+│    (bonus points)               │
+│                                 │
+│ 4. Calculate Volume Dist. Score │
+│    (top 10 percentage)          │
+│                                 │
+│ 5. Combine with weights:        │
+│    50% + 25% + 25%              │
+│                                 │
+│ 6. Store result with timestamp  │
+└─────────────────────────────────┘
 ```
 
 ---
@@ -80,178 +101,557 @@ Calculate and track a composite "Visibility Score" (0-100) to represent SEO heal
 CREATE TABLE visibility_scores (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     project_id BIGINT UNSIGNED NOT NULL,
-    score FLOAT NOT NULL,
-    position_component FLOAT NOT NULL,
-    serp_component FLOAT NOT NULL,
-    volume_component FLOAT NOT NULL,
+    score TINYINT UNSIGNED NOT NULL, -- 0-100
+    position_component DECIMAL(5,2) NOT NULL,
+    serp_component DECIMAL(5,2) NOT NULL,
+    volume_component DECIMAL(5,2) NOT NULL,
+    keywords_count INT UNSIGNED NOT NULL DEFAULT 0,
     calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+    
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    INDEX idx_visibility_scores_project_id (project_id),
-    INDEX idx_visibility_scores_calculated_at (calculated_at)
+    INDEX idx_visibility_project_id (project_id),
+    INDEX idx_visibility_calculated_at (calculated_at),
+    UNIQUE KEY unique_project_date (project_id, DATE(calculated_at))
 );
 ```
 
-### Daily Score Calculation Example
+---
 
-```sql
--- Storing daily scores simplifies trend analysis
-INSERT INTO visibility_scores (project_id, score, position_component, serp_component, volume_component, calculated_at)
-VALUES (1, 67.5, 40.0, 17.5, 10.0, NOW());
+## Score Algorithm
+
+### Position Score Calculation
+
+```php
+class PositionScoreCalculator
+{
+    /**
+     * Calculate position score for a keyword.
+     * Returns 0-100 based on ranking position.
+     */
+    public function calculate(int $position): int
+    {
+        return match(true) {
+            $position >= 1 && $position <= 3 => 100,
+            $position >= 4 && $position <= 10 => (int) (100 - ($position - 3) * 3.33),
+            $position >= 11 && $position <= 20 => (int) (80 - ($position - 10) * 3),
+            $position >= 21 && $position <= 50 => (int) (50 - ($position - 20) * 1),
+            $position >= 51 && $position <= 100 => (int) (20 - ($position - 50) * 0.38),
+            default => 0, // Not in top 100
+        };
+    }
+
+    /**
+     * Calculate volume-weighted average position score.
+     */
+    public function calculateWeightedAverage(Collection $keywords): float
+    {
+        $weightedSum = 0;
+        $totalVolume = 0;
+
+        foreach ($keywords as $keyword) {
+            $positionScore = $this->calculate($keyword->current_position);
+            $volume = $keyword->search_volume ?? 1; // Default volume if not set
+            
+            $weightedSum += $positionScore * $volume;
+            $totalVolume += $volume;
+        }
+
+        return $totalVolume > 0 ? $weightedSum / $totalVolume : 0;
+    }
+}
+```
+
+### SERP Feature Score Calculation
+
+```php
+class SerpFeatureScoreCalculator
+{
+    private const BONUS_POINTS = [
+        'featured_snippet' => 20,
+        'local_pack' => 15,
+        'sitelinks' => 10,
+        'reviews' => 5,
+        'image_pack' => 5,
+        'video' => 5,
+        'people_also_ask' => 3,
+    ];
+
+    /**
+     * Calculate SERP feature bonus score.
+     * Returns average bonus per keyword with features.
+     */
+    public function calculate(Collection $keywords): float
+    {
+        $totalBonus = 0;
+        $keywordsWithFeatures = 0;
+
+        foreach ($keywords as $keyword) {
+            $keywordBonus = 0;
+            $features = $keyword->serp_features ?? [];
+
+            foreach ($features as $feature) {
+                $keywordBonus += self::BONUS_POINTS[$feature] ?? 0;
+            }
+
+            if ($keywordBonus > 0) {
+                $totalBonus += min($keywordBonus, 50); // Cap at 50 per keyword
+                $keywordsWithFeatures++;
+            }
+        }
+
+        // Normalize to 0-100 scale
+        $avgBonus = $keywords->count() > 0 ? $totalBonus / $keywords->count() : 0;
+        return min(100, $avgBonus * 2); // Scale to 0-100
+    }
+}
+```
+
+### Volume Distribution Score Calculation
+
+```php
+class VolumeDistributionScoreCalculator
+{
+    /**
+     * Calculate volume distribution score.
+     * Percentage of search volume where user ranks in top 10.
+     */
+    public function calculate(Collection $keywords): float
+    {
+        $topTenVolume = 0;
+        $totalVolume = 0;
+
+        foreach ($keywords as $keyword) {
+            $volume = $keyword->search_volume ?? 1;
+            $totalVolume += $volume;
+
+            if ($keyword->current_position <= 10) {
+                $topTenVolume += $volume;
+            }
+        }
+
+        return $totalVolume > 0 ? ($topTenVolume / $totalVolume) * 100 : 0;
+    }
+}
+```
+
+### Combined Visibility Score
+
+```php
+class VisibilityScoreCalculator
+{
+    private const WEIGHTS = [
+        'position' => 0.50,
+        'serp' => 0.25,
+        'volume' => 0.25,
+    ];
+
+    public function __construct(
+        private PositionScoreCalculator $positionCalculator,
+        private SerpFeatureScoreCalculator $serpCalculator,
+        private VolumeDistributionScoreCalculator $volumeCalculator,
+    ) {}
+
+    /**
+     * Calculate visibility score for a project.
+     */
+    public function calculate(Project $project): VisibilityScoreResult
+    {
+        $keywords = $project->keywords()
+            ->withCurrentPosition()
+            ->withSearchVolume()
+            ->withSerpFeatures()
+            ->get();
+
+        if ($keywords->isEmpty()) {
+            return VisibilityScoreResult::empty();
+        }
+
+        $positionComponent = $this->positionCalculator->calculateWeightedAverage($keywords);
+        $serpComponent = $this->serpCalculator->calculate($keywords);
+        $volumeComponent = $this->volumeCalculator->calculate($keywords);
+
+        $score = (
+            $positionComponent * self::WEIGHTS['position'] +
+            $serpComponent * self::WEIGHTS['serp'] +
+            $volumeComponent * self::WEIGHTS['volume']
+        );
+
+        return new VisibilityScoreResult(
+            score: (int) round($score),
+            positionComponent: round($positionComponent, 2),
+            serpComponent: round($serpComponent, 2),
+            volumeComponent: round($volumeComponent, 2),
+            keywordsCount: $keywords->count(),
+        );
+    }
+}
 ```
 
 ---
 
 ## API Design
 
-### Project-Level Visibility
+### Visibility Score Endpoints
 
 ```yaml
-# Get current visibility score for a project
+# Get current visibility score for project
 GET /api/projects/{projectId}/visibility
 Response: {
     "score": 67,
-    "trend": { "30d": 12, "90d": 17 },
-    "breakdown": {
-        "positions": 60,
-        "serp_features": 25,
-        "volume_distribution": 15
+    "change": {
+        "value": 5,
+        "direction": "up",
+        "period": "7d"
     },
-    "last_updated": "2026-02-20T00:00:00Z"
+    "breakdown": {
+        "position": {
+            "value": 60.5,
+            "weight": 0.50,
+            "label": "Rankings"
+        },
+        "serp": {
+            "value": 75.0,
+            "weight": 0.25,
+            "label": "SERP Features"
+        },
+        "volume": {
+            "value": 72.3,
+            "weight": 0.25,
+            "label": "Volume Distribution"
+        }
+    },
+    "keywords_count": 150,
+    "interpretation": "Good - Optimize underperforming keywords",
+    "calculated_at": "2026-02-20T00:00:00Z"
 }
 
-# Visibility trend chart (30d)
+# Get visibility trend
 GET /api/projects/{projectId}/visibility/trend
+Query Params:
+  - period: 30d|90d|1y (default: 30d)
 Response: {
     "data": [
-        { "date": "2026-02-01", "score": 60 },
-        { "date": "2026-02-05", "score": 62 },
-        { "date": "2026-02-19", "score": 67 }
-    ]
+        { "date": "2026-01-21", "score": 62 },
+        { "date": "2026-01-22", "score": 63 },
+        ...
+        { "date": "2026-02-20", "score": 67 }
+    ],
+    "period": "30d",
+    "start_score": 62,
+    "end_score": 67,
+    "change": 5,
+    "trend": "up"
 }
 
-# Compare visibility scores (all projects)
-GET /api/visibility/compare
+# Get all projects visibility (for dashboard overview)
+GET /api/visibility/overview
 Response: {
-    "projects": [
-        { "id": 1, "name": "Client A", "score": 67 },
-        { "id": 2, "name": "Client B", "score": 54 }
+    "data": [
+        {
+            "project_id": 1,
+            "project_name": "Client A",
+            "score": 67,
+            "change": 5
+        },
+        {
+            "project_id": 2,
+            "project_name": "Client B",
+            "score": 45,
+            "change": -2
+        }
     ]
 }
 ```
-
----
-
-## Formula Design
-
-### Weighted Formula
-
-```
-Visibility Score = WeightedSum(
-  Position Score × 0.50,
-  SERP Feature Score × 0.25,
-  Volume Distribution Score × 0.25
-)
-```
-
-#### Position Score
-- Position 1-3: 100 points each
-- Position 4-10: Linear scale from 99 to 80 points
-- Position 11-20: Linear scale from 79 to 50 points
-- Position 21-50: Linear scale from 49 to 20 points
-- Position 51-100: Linear scale from 19 to 1 point
-- Not in top 100: 0 points
-
-#### SERP Feature Score
-- Featured snippet: +20 bonus
-- Local pack: +15 bonus
-- Reviews: +5 bonus
-- Sitelinks: +10 bonus
-- Total bonus normalized for the number of keywords with features.
-
-#### Volume Distribution Score
-- % of tracked keywords in top 10.
-- Rewards breadth over depth.
 
 ---
 
 ## Frontend Components
 
-### VisibilityScoreCard
+### VisibilityScoreCard Component
+
 ```typescript
 interface VisibilityScoreCardProps {
-    score: number;
-    trend: { "30d": number; "90d": number };
-    breakdown: { positions: number; serp_features: number; volume_distribution: number };
-    lastUpdated: string;
+  score: number;
+  change: { value: number; direction: 'up' | 'down' | 'stable' };
+  breakdown: {
+    position: { value: number; weight: number };
+    serp: { value: number; weight: number };
+    volume: { value: number; weight: number };
+  };
+  interpretation: string;
 }
 
-<View>
-    <Text>Score: {props.score}</Text>
-    <Text>30d Trend: {props.trend["30d"]}</Text>
-    <Text>Rankings: {props.breakdown.positions}</Text>
-    <Text>Features: {props.breakdown.serp_features}</Text>
-    <Text>Volume: {props.breakdown.volume_distribution}</Text>
-</View>;
+// Prominent dashboard card showing the score
+<div className="visibility-score-card">
+  <h3>Visibility Score</h3>
+  <div className="score-value">{score}</div>
+  <div className="score-change">
+    {change.direction === 'up' ? '↑' : '↓'} {change.value} this week
+  </div>
+  <div className="interpretation">{interpretation}</div>
+</div>
 ```
 
-### VisibilityTrendChart
+### VisibilityTrendChart Component
+
 ```typescript
 interface VisibilityTrendChartProps {
-    data: Array<{ date: string; score: number }>;
+  data: Array<{ date: string; score: number }>;
+  period: '30d' | '90d' | '1y';
+  onPeriodChange: (period: string) => void;
 }
 
-<LineChart data={props.data} />;
+// Line chart showing score history
+// Period selector: 30d | 90d | 1y
+```
+
+### VisibilityBreakdown Component
+
+```typescript
+interface VisibilityBreakdownProps {
+  position: { value: number; weight: number };
+  serp: { value: number; weight: number };
+  volume: { value: number; weight: number };
+}
+
+// Shows breakdown with progress bars:
+// Rankings:     ████████░░ 60.5 (50% weight)
+// SERP Feats:   ████████░░ 75.0 (25% weight)
+// Volume Dist:  ███████░░░ 72.3 (25% weight)
 ```
 
 ---
 
-## Security and Transparency
+## Backend Implementation
 
-1. **Transparency**: Users can see the full score breakdown.
-2. **Data Privacy**: Visibility score is calculated on user data; no external data.
-3. **Algorithm Documentation**: Users informed of weightings to avoid confusion.
+### Model: VisibilityScore.php
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class VisibilityScore extends Model
+{
+    protected $fillable = [
+        'project_id',
+        'score',
+        'position_component',
+        'serp_component',
+        'volume_component',
+        'keywords_count',
+        'calculated_at',
+    ];
+
+    protected $casts = [
+        'calculated_at' => 'datetime',
+    ];
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function scopeForPeriod($query, string $period)
+    {
+        $days = match($period) {
+            '30d' => 30,
+            '90d' => 90,
+            '1y' => 365,
+            default => 30,
+        };
+
+        return $query->where('calculated_at', '>=', now()->subDays($days));
+    }
+}
+```
+
+### Scheduled Job: CalculateVisibilityScore
+
+```php
+<?php
+
+namespace App\Jobs;
+
+use App\Models\Project;
+use App\Services\VisibilityScoreCalculator;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+
+class CalculateVisibilityScore implements ShouldQueue
+{
+    use Queueable;
+
+    public function handle(VisibilityScoreCalculator $calculator): void
+    {
+        $projects = Project::active()
+            ->with(['keywords.currentPosition', 'keywords.serpFeatures'])
+            ->get();
+
+        foreach ($projects as $project) {
+            $result = $calculator->calculate($project);
+
+            VisibilityScore::create([
+                'project_id' => $project->id,
+                'score' => $result->score,
+                'position_component' => $result->positionComponent,
+                'serp_component' => $result->serpComponent,
+                'volume_component' => $result->volumeComponent,
+                'keywords_count' => $result->keywordsCount,
+                'calculated_at' => now(),
+            ]);
+        }
+    }
+}
+```
+
+### Console Command
+
+```php
+// app/Console/Commands/CalculateVisibilityScores.php
+php artisan visibility:calculate
+
+// Schedule in Kernel.php
+$schedule->command('visibility:calculate')->daily();
+```
+
+---
+
+## Score Interpretation
+
+```php
+class ScoreInterpreter
+{
+    public static function interpret(int $score): string
+    {
+        return match(true) {
+            $score >= 80 => 'Excellent - Maintain, watch for competitors',
+            $score >= 60 => 'Good - Optimize underperforming keywords',
+            $score >= 40 => 'Average - Significant improvement opportunities',
+            $score >= 20 => 'Below Average - Strategic overhaul needed',
+            default => 'Poor - Fundamental SEO issues',
+        };
+    }
+
+    public static function getColor(int $score): string
+    {
+        return match(true) {
+            $score >= 80 => 'green',
+            $score >= 60 => 'blue',
+            $score >= 40 => 'yellow',
+            $score >= 20 => 'orange',
+            default => 'red',
+        };
+    }
+}
+```
+
+---
+
+## Security Considerations
+
+### Authorization
+
+```php
+class VisibilityController extends Controller
+{
+    public function show(Project $project)
+    {
+        $this->authorize('view', $project);
+        // ...
+    }
+}
+```
+
+### No Sensitive Data
+
+Visibility score is derived from user's own data - no privacy concerns.
+
+---
+
+## Performance Considerations
+
+### Caching
+
+```php
+// Cache current score for 1 hour (recalculated daily anyway)
+Cache::remember("visibility.{$projectId}", 3600, function() use ($projectId) {
+    return VisibilityScore::where('project_id', $projectId)
+        ->latest('calculated_at')
+        ->first();
+});
+```
+
+### Query Optimization
+
+- Index on `(project_id, calculated_at)` for trend queries
+- Batch calculation via queued job to avoid blocking
+- Eager load keyword relationships
+
+---
+
+## Free Tools Compliance
+
+✅ **No paid services required**
+
+All calculations use existing data:
+- Laravel queue system (free)
+- MySQL for storage (free)
+- No external APIs needed
 
 ---
 
 ## Testing Requirements
 
 ### Unit Tests
-- Calculate position score from rankings.
-- Calculate SERP feature score.
-- Weighted formula correctness.
+- PositionScoreCalculator with various positions
+- SerpFeatureScoreCalculator with feature combinations
+- VolumeDistributionScoreCalculator
+- Combined visibility score calculation
+- ScoreInterpreter
 
-### Integration Tests
-- Visibility score endpoint responses.
-- Authorization for score access.
-- API trend chart generation.
-
-### Frontend Tests
-- Visibility trend chart rendering.
-- Score card handling edge cases.
+### Feature Tests
+- API endpoint returns correct score
+- Trend data returns correct history
+- Authorization checks
+- Empty project handling (score = 0)
 
 ---
 
-## Rollout Plan
+## MVP Scope
 
-1. Implement database schema changes (visibility_scores table).
-2. Develop score calculation logic in `VisibilityScoreService`.
-3. Expose API endpoints for score data and trends.
-4. Create frontend components for score display and trends.
-5. Update dashboards to include visibility score prominently.
-6. Gradual rollout with feature flag for user feedback.
+### Included
+- ✅ Basic visibility score calculation
+- ✅ Daily scheduled calculation
+- ✅ Score display on project dashboard
+- ✅ 30-day trend chart
+- ✅ Score change indicator
+- ✅ Score breakdown
+
+### Phase 2 (Future)
+- ⏳ Competitor visibility comparison
+- ⏳ Configurable weights per project
+- ⏳ Alerts for significant changes
+- ⏳ 90-day and 1-year trends
+- ⏳ Multi-project comparison view
 
 ---
 
 ## Comments
 _Agent communication log_
 
-### [2026-02-20 17:15] Agent: Architect
-Created technical specification SPEC-010 for Visibility Score (FEAT-010). Feature confirmed as Low risk - internal metric calculation with no external dependencies.
+### [2026-02-20 17:10] Agent: Architect
+Created technical specification for FEAT-010. Risk level confirmed as Low - pure calculation from existing data, no external dependencies.
 
-### [2026-02-20 17:15] Agent: Architect
+### [2026-02-20 17:10] Agent: Architect
 Key design decisions:
-- Weighted formula emphasizes rankings (50%), SERP feature presence (25%), volume breadth (25%).
-- Separate database table for daily scores simplifies trend analysis.
-- Full user transparency with breakdown explanations.
+1. Daily scheduled calculation (not real-time) for performance
+2. Volume-weighted position scoring (prioritizes high-volume keywords)
+3. SERP feature bonuses capped at 50 per keyword to prevent skewing
+4. Unique constraint on (project_id, date) prevents duplicate calculations
+5. Score interpretation provides actionable guidance
+
+### [2026-02-20 17:10] Agent: Architect
 Ready for SpecSystemAnalyst to break into tasks.
