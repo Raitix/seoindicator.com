@@ -1,7 +1,7 @@
 # TASK-14-1: Create Audits Table
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -40,5 +40,13 @@ CREATE TABLE audits (
 ---
 
 ## Comments
+### [2026-02-20 19:47] ProjectManager: Prioritization Complete
+- Priority: High (correct - foundation for site audit feature)
+- Risk: Low (simple schema, no security concerns)
+- Dependencies: projects table (FEAT-001)
+- Execution order: First in FEAT-14, enables TASK-14-2 (Issues)
+- Can be developed in parallel with TASK-14-3 (Issue Types)
+- Status: To Develop
+
 ### [2026-02-20 17:44] Agent: SpecSystemAnalyst
 Created task for audit metadata storage.
