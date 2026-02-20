@@ -29,7 +29,7 @@ Route::post('/deploy/rollback', [DeployController::class, 'rollback']);
 |
 */
 
-Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
+Route::prefix('v1')->middleware(['auth'])->group(function () {
     // Competitor Management (SPEC-003-2)
     Route::apiResource('competitors', CompetitorController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
