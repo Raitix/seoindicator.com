@@ -1,7 +1,7 @@
 # FEAT-004: Automated SEO Reports
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `Medium`
@@ -60,7 +60,7 @@ As an SEO agency or consultant, I want to automatically generate branded reports
 
 ## Related
 - Specification: [SPEC-004](../SPECIFICATIONS/SPEC-004.md)
-- Tasks: (To be created by ProjectManager)
+- Tasks: TASK-4-1 through TASK-4-21 (21 tasks across 7 phases)
 - Depends on: FEAT-001 (Keyword Rank Tracking)
 - Enhances: FEAT-003 (Competitor comparison in reports)
 
@@ -111,3 +111,17 @@ Priority Medium because while essential for agencies, individual users can deriv
 - 21 implementation tasks across 7 phases
 - Status: To Break Into Tasks
 - MVP: Manual generation, PDF/CSV, basic branding, free email
+
+### [2026-02-20 10:35] SpecSystemAnalyst: Task Breakdown Complete
+- Created 21 tasks: TASK-4-1 through TASK-4-21
+- Phase 1 (Infrastructure): 3 tasks - High priority
+- Phase 2 (Exporters): 3 tasks - Medium priority
+- Phase 3 (API Layer): 4 tasks - Medium priority
+- Phase 4 (Scheduling): 3 tasks - Low priority (post-MVP)
+- Phase 5 (Branding): 3 tasks - Low priority (post-MVP)
+- Phase 6 (Email): 3 tasks - Low priority (post-MVP)
+- Phase 7 (Testing): 2 tasks - Medium priority
+- MVP scope: Tasks 1-10 (database, models, exporters, basic API)
+- Post-MVP: Tasks 11-19 (scheduling, branding, email)
+- Status: To Prioritize
+- Handoff: → ProjectManager
