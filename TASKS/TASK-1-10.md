@@ -1,6 +1,6 @@
 # SPEC-001-10: Job Queue Setup
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `High`

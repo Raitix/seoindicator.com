@@ -1,6 +1,6 @@
 # SPEC-001-2: Keyword Model and Repository
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `High`

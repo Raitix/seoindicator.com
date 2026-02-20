@@ -1,6 +1,6 @@
 # SPEC-001-17: Unit Tests for Services
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `Medium`

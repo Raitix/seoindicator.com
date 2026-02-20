@@ -1,6 +1,6 @@
 # SPEC-001-5: Ranking History API Endpoints
 
-## STATUS`To Write Tests`
+## STATUS`To Develop`
 
 ## PRIORITY
 `High`

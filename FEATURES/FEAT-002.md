@@ -1,7 +1,7 @@
 # FEAT-002: Ranking Change Alerts
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -55,7 +55,7 @@ As an SEO professional, I want to receive instant notifications when my keyword 
 - [ ] Unsubscribe link in emails works immediately without login
 
 ## Related
-- Specification: (To be created by Architect)
+- Specification: [SPEC-002](../SPECIFICATIONS/SPEC-002.md)
 - Tasks: (To be created by Developer)
 - Depends on: FEAT-001 (Keyword Rank Tracking)
 
@@ -97,3 +97,13 @@ Created as second feature - directly extends FEAT-001. Alerts are essential for 
 
 ### [2026-02-19 18:59] Agent: Innovator
 Business case: All major competitors (SEMrush, Ahrefs, Moz, SERPWatcher) offer ranking alerts. This is table stakes. The differentiator can be smart alert rules (AI-prioritized alerts, anomaly detection) but that's a future enhancement.
+
+### [2026-02-20 19:32] Agent: Architect
+Created specification SPEC-002. Risk confirmed Low. 
+
+Key architectural decisions:
+- Gmail SMTP for MVP email delivery (free, ~500/day limit)
+- In-app notifications and digest mode deferred to Phase 2
+- MVP focuses on position change events only
+- SERP feature alerts deferred until SERP features are implemented
+Ready for SpecSystemAnalyst breakdown.
