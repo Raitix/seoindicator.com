@@ -1,7 +1,7 @@
 # TASK-11-1: Create Team Members Table
 
 ## STATUS
-`To Prioritize`
+`Prioritization In Progress`
 
 ## PRIORITY
 `High`
