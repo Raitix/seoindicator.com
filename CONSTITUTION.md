@@ -232,12 +232,6 @@ TASKS
 
 **Maximum Parallelism:**
 - **1 functionality per agent instance** — Each agent instance works on exactly one feature, specification, or task
-- **Max 3 agents per status** — Maximum 3 parallel agents working on items with the same status
-
-**Pre-Flight Check Before Spawning Agent:**
-1. Count items with target status
-2. If ≥ 3 items with same status → **BLOCK** — Wait for one to complete
-3. If check passes → Spawn agent for single item
 
 ### Branching
 - Main branch = production-ready code only
