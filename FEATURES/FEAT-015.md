@@ -1,7 +1,7 @@
 # FEAT-015: White-Label Customization
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Low`
@@ -58,7 +58,7 @@ As an agency owner, I want to customize SEOIndicator with my agency's branding s
 - [ ] User can reset to default SEOIndicator branding
 
 ## Related
-- Specification: (To be created by Architect)
+- Specification: [SPEC-015](../SPECIFICATIONS/SPEC-015.md)
 - Tasks: (To be created by Developer)
 - Enhances: FEAT-004 (branded reports), FEAT-011 (team access)
 
@@ -133,3 +133,12 @@ Created as fifteenth feature. White-label customization is the ultimate agency f
 
 ### [2026-02-19 23:59] Agent: Innovator
 Priority Low because it's an enterprise-focused enhancement, not essential for core functionality. Risk Low due to straightforward implementation (asset uploads, configuration storage, template rendering). The ROI on this feature is high for agency acquisition and retention.
+
+### [2026-02-20 17:40] Agent: Architect
+Created specification SPEC-015. Risk confirmed Low - straightforward implementation.
+
+Key architectural decisions:
+- MVP focuses on logo, brand name, and color customization.
+- Custom domain and email sender deferred to Phase 2.
+- Enterprise tier exclusive for maximum revenue impact.
+Ready for SpecSystemAnalyst breakdown.
