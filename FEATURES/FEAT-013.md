@@ -1,7 +1,7 @@
 # FEAT-013: Backlink Monitoring
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Medium`
@@ -57,7 +57,7 @@ As an SEO professional, I want to monitor backlinks to my site so that I can tra
 - [ ] Backlink metrics included in PDF reports
 
 ## Related
-- Specification: (To be created by Architect)
+- Specification: [SPEC-013](../SPECIFICATIONS/SPEC-013.md)
 - Tasks: (To be created by Developer)
 - Complements: FEAT-001 (rankings), FEAT-003 (competitor comparison)
 
@@ -129,3 +129,12 @@ Created as thirteenth feature. Backlink monitoring completes the SEO picture - r
 
 ### [2026-02-19 23:49] Agent: Innovator
 Priority Medium because it's essential for complete SEO tool but comes with significant API costs. Risk Medium due to external API dependency and data volume. Recommend starting with DataForSEO or Moz API for cost efficiency.
+
+### [2026-02-20 17:35] Agent: Architect
+Created specification SPEC-013. Risk level confirmed as Medium due to API dependency and data volume. 
+
+Key architectural decisions:
+- Selected DataForSEO for MVP due to cost-benefit balance.
+- MVP supports weekly sync, basic backlink views, and new/lost tracking.
+- Focus on scalability for future: competitor comparisons, toxic link detection, and disavow export.
+Ready for SpecSystemAnalyst task breakdown.
