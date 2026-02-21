@@ -1,7 +1,7 @@
 # TASK-7-13: Integrate with Ranking Check Workflow
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

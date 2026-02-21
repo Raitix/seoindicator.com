@@ -1,7 +1,7 @@
 # TASK-7-7: Other SERP Feature Detection
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`

@@ -1,7 +1,7 @@
 # TASK-7-17: SERP Feature History Component
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
