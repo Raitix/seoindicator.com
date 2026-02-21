@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\Api\V1\CompetitorController;
+use App\Http\Controllers\Api\V1\IssueTypeController;
 use App\Http\Controllers\Api\GSCConnectionController;
 
 /*
@@ -49,4 +50,9 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     // Competitor Management (SPEC-003-2)
     Route::apiResource('competitors', CompetitorController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    // Issue Type Management (TASK-14-3)
+    Route::apiResource('issue-types', IssueTypeController::class)
+        ->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::get('issue-types/categories', [IssueTypeController::class, 'categories']);
 });
