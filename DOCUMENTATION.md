@@ -137,7 +137,9 @@ php artisan migrate
 - ✅ Shadcn/UI components (Button, Card, Input)
 - ✅ Laravel 12 backend with Eloquent ORM
 - ✅ MySQL database created (`seoindicator`)
-- ✅ Database migrations (users, cache, jobs tables)
+- ✅ Database migrations (users, cache, jobs, keywords tables)
+- ✅ Competitor tracking tables (competitors, competitor_rankings)
+- ✅ Eloquent models: User, Keyword, Competitor, CompetitorRanking
 - ✅ Landing page with SEO Indicator branding
 
 ### In Development
@@ -165,11 +167,34 @@ Response: { "data": [] }
 
 ## Database Schema
 
+### Tables
+
+#### `users`
+- User accounts
+- Standard Laravel authentication
+
+#### `keywords`
+- Tracked keywords for rank monitoring
+- Fields: id, user_id, keyword, site_id, created_at, updated_at
+- Foreign key: user_id → users.id
+
+#### `competitors`
+- Competitor domain tracking
+- Fields: id, user_id, domain, display_name, notes, created_at, updated_at, deleted_at
+- Foreign key: user_id → users.id
+- Unique constraint: (user_id, domain)
+- Soft deletes enabled for competitor re-activation
+- Indexes: user_id, domain
+
+#### `competitor_rankings`
+- Historical competitor keyword rankings
+- Fields: id, competitor_id, keyword_id, position, url, checked_at, created_at, updated_at
+- Foreign keys: competitor_id → competitors.id, keyword_id → keywords.id
+- Unique constraint: (competitor_id, keyword_id, checked_at)
+- Indexes: competitor_id, keyword_id, checked_at
+
 ### Planned Tables
-- `users` - User accounts
-- `indicators` - SEO indicator configurations
-- `keywords` - Tracked keywords
-- `ranking_history` - Historical ranking data
+- `ranking_history` - User's historical ranking data
 
 See `backend/database/migrations/` for schema definitions.
 

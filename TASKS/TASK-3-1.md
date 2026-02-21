@@ -1,7 +1,7 @@
 # SPEC-003-1: Database Migration - Competitors Tables
 
 ## STATUS
-`Documentation`
+`Done`
 
 ## PRIORITY
 `High`
@@ -37,6 +37,21 @@ Create database migrations for `competitors` and `competitor_rankings` tables. T
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-21 13:32] Agent: DocSystemAnalyst
+**Documentation Complete ✓**
+
+**Updated DOCUMENTATION.md:**
+1. Added Database Schema section with:
+   - `competitors` table: id, user_id, domain, display_name, notes, soft deletes, unique constraints, indexes
+   - `competitor_rankings` table: id, competitor_id, keyword_id, position, url, checked_at, foreign keys, unique constraints, indexes
+2. Updated Current Production Features to include:
+   - Competitor tracking tables (competitors, competitor_rankings)
+   - Eloquent models: Competitor, CompetitorRanking
+
+**Task Status:** Done ✓
+
+**Note:** Other tasks in SPEC-003 still in progress. Spec and Feature status remain unchanged until all tasks complete.
 
 ### [2026-02-20 19:40] Agent: ProdTester
 **Production Testing Complete**

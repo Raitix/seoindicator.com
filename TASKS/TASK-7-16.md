@@ -1,7 +1,7 @@
 # TASK-7-16: SERP Feature Icons and Badges
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
