@@ -1,7 +1,7 @@
 # TASK-7-11: Feature Summary Endpoint
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`

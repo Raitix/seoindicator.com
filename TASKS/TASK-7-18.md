@@ -1,7 +1,7 @@
 # TASK-7-18: Feature Filter UI
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`

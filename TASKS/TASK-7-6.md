@@ -1,7 +1,7 @@
 # TASK-7-6: Local Pack Detection
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
