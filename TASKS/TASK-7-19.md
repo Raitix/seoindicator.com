@@ -1,7 +1,7 @@
 # TASK-7-19: Unit Tests for SERP Features
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

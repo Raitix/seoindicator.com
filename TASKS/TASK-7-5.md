@@ -1,7 +1,7 @@
 # TASK-7-5: Featured Snippet Detection
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

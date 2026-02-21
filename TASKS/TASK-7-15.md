@@ -1,7 +1,7 @@
 # TASK-7-15: Report Enhancement for SERP Features
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Low`

@@ -1,7 +1,7 @@
 # TASK-7-3: SERP Feature Repository
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

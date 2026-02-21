@@ -1,7 +1,7 @@
 # TASK-7-2: SERP Feature Model and Types
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

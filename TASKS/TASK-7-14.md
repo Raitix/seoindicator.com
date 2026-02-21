@@ -1,7 +1,7 @@
 # TASK-7-14: Alert Integration for Feature Changes
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
