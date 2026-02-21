@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\Api\V1\CompetitorController;
+use App\Http\Controllers\Api\GSCConnectionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +20,21 @@ Route::get('/health', [DeployController::class, 'health']);
 // Deploy endpoints (protected by deploy key)
 Route::post('/deploy/migrate', [DeployController::class, 'migrate']);
 Route::post('/deploy/rollback', [DeployController::class, 'rollback']);
+
+/*
+|--------------------------------------------------------------------------
+| GSC Connection Routes (TASK-12-7)
+|--------------------------------------------------------------------------
+|
+| Google Search Console OAuth connection management.
+| All routes require authentication.
+|
+*/
+Route::middleware(['auth'])->group(function () {
+    Route::post('/gsc/connect', [GSCConnectionController::class, 'connect']);
+    Route::delete('/gsc/disconnect/{propertyId}', [GSCConnectionController::class, 'disconnect']);
+    Route::get('/gsc/properties', [GSCConnectionController::class, 'properties']);
+});
 
 /*
 |--------------------------------------------------------------------------
