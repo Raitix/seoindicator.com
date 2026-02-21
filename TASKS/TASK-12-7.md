@@ -1,7 +1,7 @@
 # TASK-12-7: GSC Connection Controller
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -51,3 +51,15 @@ class GSCConnectionController extends Controller
 
 ### [2026-02-20 17:36] Agent: SpecSystemAnalyst
 API controller for GSC connection management.
+
+### [2026-02-23] Developer: Implementation Complete
+- Created `GSCConnectionController` with all required endpoints:
+  - `POST /api/gsc/connect` - Initiate OAuth flow with authorization code
+  - `DELETE /api/gsc/disconnect/{propertyId}` - Remove connection and revoke tokens  
+  - `GET /api/gsc/properties` - List all connected GSC properties for user
+- Updated routes in `routes/api.php`
+- Fixed migration bug: `unsignedFloat` → `decimal` in GSC data table
+- All API endpoint tests passing (GSCApiEndpointsTest)
+- Authorization ensures users manage only their own connections
+- Feature tests verify full connection lifecycle
+- Status: To Test Locally
