@@ -1,7 +1,7 @@
 # SPEC-001-11: Rank Checker Worker
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 ## PRIORITY
 `High`
 
@@ -66,3 +66,12 @@ Fixes applied:
 Notes:
 - Did not run tests locally.
 - Status -> To Test Locally.
+
+### [2026-02-23 00:48] Agent: LocalTester
+Ran `php artisan test --filter RankChecker`.
+
+Failures:
+1) Migration error: `Undefined variable $isMysql` at `database/migrations/2026_02_21_220000_create_backlinks_table.php:50` (blocks RankChecker tests).
+2) Mock return type mismatch: `SERPFetcherInterface::fetch()` expects `SERPResult`, but tests return array in `RankCheckerServiceTest`.
+
+Action: status -> To Develop. Full report: `TESTS/TEST-1-11.md`.
