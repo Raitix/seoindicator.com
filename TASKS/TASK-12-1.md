@@ -1,7 +1,7 @@
 # TASK-12-1: Create GSC Connections Table
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -31,16 +31,42 @@ CREATE TABLE gsc_connections (
 ```
 
 ## Acceptance Criteria
-- [ ] Migration creates the `gsc_connections` table.
-- [ ] Tokens stored securely (encrypted at rest).
-- [ ] Unique constraint prevents duplicate property connections per user.
+- [x] Migration creates the `gsc_connections` table.
+- [x] Tokens stored securely (encrypted at rest).
+- [x] Unique constraint prevents duplicate property connections per user.
 
 ## Effort Estimate
 2 hours.
 
+## Implementation
+**Files Created:**
+- `backend/database/migrations/2026_02_21_190000_create_gsc_connections_table.php` - Migration file
+- `backend/app/Models/GSCConnection.php` - Eloquent model with encryption
+- `backend/database/factories/GSCConnectionFactory.php` - Test factory
+- `backend/tests/Feature/Migrations/CreateGSCConnectionsTableTest.php` - Migration tests (11 tests)
+- `backend/tests/Unit/Models/GSCConnectionTest.php` - Model unit tests (16 tests)
+
+**Key Features:**
+- OAuth tokens encrypted at rest using Laravel's `encrypted` cast
+- Unique constraint on (user_id, property_url) prevents duplicate connections
+- Foreign key cascade delete when user is deleted
+- Status enum (active, expired, revoked) with model helpers
+- Token expiration helpers (isTokenExpired, tokenExpiresWithin)
+- Query scopes (active, needsRefresh, readyForSync)
+- 27 tests passing (64 assertions)
+
 ---
 
 ## Comments
+### [2026-02-21 21:02] Agent: Developer - Implementation Complete
+Created GSC connections table with secure token storage:
+- Migration with all required columns and indexes
+- Model with encrypted token casts (access_token, refresh_token)
+- Unique constraint prevents duplicate property connections
+- Status management helpers
+- Token expiration utilities
+- All 27 tests passing
+
 ### [2026-02-20 18:37] ProjectManager: Prioritization Complete
 - Priority: High (correct - foundation for GSC integration)
 - Risk: Medium (OAuth tokens require secure storage)

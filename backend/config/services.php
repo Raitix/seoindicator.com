@@ -35,4 +35,24 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Google OAuth for Search Console Integration
+    |--------------------------------------------------------------------------
+    |
+    | Credentials for Google OAuth 2.0 flow used to access Google Search Console API.
+    | Create credentials at: https://console.cloud.google.com/apis/credentials
+    |
+    | Required scopes: https://www.googleapis.com/auth/webmasters.readonly
+    */
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect_uris' => array_filter([
+            env('GOOGLE_REDIRECT_URI'),
+            // Production URI (if different from env)
+            env('GOOGLE_REDIRECT_URI_PROD'),
+        ]),
+    ],
+
 ];
