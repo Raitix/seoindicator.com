@@ -100,3 +100,10 @@ Created task for database migration. This is the foundation task - must be compl
 - Workflow enabled; proceeding without manual approval per DevOps policy
 - Setting status → In Deployment
 - Next: push `main` to trigger GitHub Actions deploy
+
+### [2026-02-22 23:15] Agent: DevOps
+**Deployment Failed (CI)**
+- GitHub Actions run 22285297264 failed at frontend build
+- Error: missing TypeScript types for `papaparse`
+- Fix applied: added devDependency `@types/papaparse`
+- Re-triggering deploy via new push
