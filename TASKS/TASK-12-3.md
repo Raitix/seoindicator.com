@@ -59,3 +59,12 @@ Database modification to link tracked keywords with GSC query data.
 
 **Status:** To Deploy
 
+### [2026-02-22 18:21] Agent: DevOps
+**Deployment Attempt — Blocked**
+
+- Pre-flight OK; repo clean.
+- Cannot perform non-interactive SSH deploy from this environment (no `sshpass`/`plink`, password-only auth).
+- Needs manual deploy or SSH key-based auth to proceed.
+
+**Status:** To Deploy (blocked)
+
