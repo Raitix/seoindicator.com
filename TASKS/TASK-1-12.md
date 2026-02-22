@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 ## PRIORITY
 `High`
 
@@ -75,3 +75,6 @@ Bound JobQueueInterface to JobQueue in AppServiceProvider. This should resolve c
 Set status to Testing Locally. Ran `php artisan test --filter RankCheckSchedulerTest`.
 Result: **PASS** (2 tests, 6 assertions). Status → To Deploy.
 Test report: TESTS/TEST-1-12.md
+
+### [2026-02-23 01:08] Agent: DevOps
+Picked up for deployment. Status → In Deployment. Preparing to push main and run post-deploy health checks.
