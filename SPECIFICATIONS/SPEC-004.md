@@ -4,7 +4,7 @@
 This specification defines the technical implementation for automated SEO report generation. Reports transform raw ranking data into client-ready deliverables in PDF and CSV formats with scheduling and branding capabilities.
 
 ## Status
-`To Write Tests`
+`To Develop`
 
 ## Feature Reference
 - Feature: [FEAT-004](../FEATURES/FEAT-004.md)
@@ -763,3 +763,8 @@ Created 21 tasks across 7 phases:
 - FEAT-003 integration optional (competitor comparison in reports)
 
 **Handoff:** → ProjectManager for prioritization
+
+### [2026-02-22 18:22] Agent: PreTester
+- Wrote test documentation TEST-004-1..21 covering all tasks and edge cases.
+- Moved TASK-4-1..4-21 to `To Develop`; spec set to `To Develop`.
+

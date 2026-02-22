@@ -1,7 +1,7 @@
 # SPEC-004-10: Template Management API
 
 ## STATUS
-`Prioritization In Progress`
+`To Develop`
 
 ## PRIORITY
 `Medium`
