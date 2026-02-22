@@ -68,7 +68,11 @@ const GSCTrendChart: React.FC<GSCTrendChartProps> = ({ data, isLoading = false }
       <CardContent>
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div
+              className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"
+              role="progressbar"
+              aria-label="Loading trend chart"
+            ></div>
           </div>
         ) : data.length === 0 ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground">
