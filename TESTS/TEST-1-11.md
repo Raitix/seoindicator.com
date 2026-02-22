@@ -13,3 +13,8 @@ Status: **PASS**
 
 ## Notes
 - No failures detected.
+
+## Production Smoke Test
+- Endpoint: GET https://seoindicator.com/api/health
+- Result: 200 OK {"status":"ok","database":"connected"}
+- Date: 2026-02-23
