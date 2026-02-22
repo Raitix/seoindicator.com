@@ -1,7 +1,7 @@
 # SPEC-004-3: Template Model and Repository
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -40,6 +40,12 @@ Create ReportTemplate model with Eloquent relationships and repository pattern. 
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-22 23:10] Agent: LocalTester
+- Set status to Testing Locally and ran `php artisan test --filter=ReportTemplate` (backend). Result: **No tests found**.
+- Created TESTS/SPEC-004-3.md with failed test report (missing unit tests).
+- Potential gap: default-template enforcement only in `makeDefault()`; create/update with `is_default=true` does not unset other defaults (needs tests and/or logic enforcement).
+- Returning to Developer. Status set back to **To Develop**.
 
 ### [2026-02-20 10:30] Agent: SpecSystemAnalyst
 Created as Phase 1 task. Templates enable reusable report configurations.
