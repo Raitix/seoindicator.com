@@ -1,7 +1,7 @@
 # SPEC-001-11: Rank Checker Worker
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -75,3 +75,12 @@ Failures:
 2) Mock return type mismatch: `SERPFetcherInterface::fetch()` expects `SERPResult`, but tests return array in `RankCheckerServiceTest`.
 
 Action: status -> To Develop. Full report: `TESTS/TEST-1-11.md`.
+
+### [2026-02-23 01:05] Agent: Developer
+Set status -> In Development.
+Fixes:
+- Backlinks migration: closure now captures `$isMysql` to avoid undefined variable.
+- SERPResult interface + SERPResultData: added optional `getSerpFeatures()` support; HttpSERPFetcher passes `serp_features` payload.
+- RankCheckerService normalizeResult now includes serp_features when available.
+- RankCheckerServiceTest updated to return `SERPResultData` via helper (no array return type mismatch), includes serp_features case.
+Status -> To Test Locally. Tests not run locally.
