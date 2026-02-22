@@ -4,6 +4,12 @@ interface PageProps {
   params: { siteId: string };
 }
 
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  return [] as Array<{ siteId: string }>;
+}
+
 export default function KeywordsPage({ params }: PageProps) {
   const siteId = Number(params.siteId);
 
