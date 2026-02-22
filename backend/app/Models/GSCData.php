@@ -13,7 +13,8 @@ use Carbon\Carbon;
  * Stores clicks, impressions, CTR, and position data per query and date.
  *
  * @property int $id
- * @property int $site_id
+ * @property int|null $project_id
+ * @property int|null $site_id
  * @property string $query
  * @property string|null $page
  * @property int $clicks
@@ -41,6 +42,7 @@ class GSCData extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'project_id',
         'site_id',
         'query',
         'page',
@@ -69,6 +71,14 @@ class GSCData extends Model
 
     /**
      * Get the project that owns this GSC data.
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Get the site that owns this GSC data.
      */
     public function site(): BelongsTo
     {

@@ -19,7 +19,8 @@ return new class extends Migration
     {
         Schema::create('gsc_data', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('site_id')->constrained()->onDelete('cascade');
+            $table->foreignId('project_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('site_id')->nullable()->constrained()->nullOnDelete();
             
             // Search query and page
             $table->string('query', 255)->index();
@@ -32,17 +33,20 @@ return new class extends Migration
             $table->decimal('avg_position', 8, 2)->default(0);
             
             // Date of the data (not the date it was imported)
-            $table->date('data_date')->index();
+            $table->date('data_date');
             
             $table->timestamps();
             
             // Composite indexes for efficient querying
             $table->index(['query', 'data_date'], 'idx_query_date');
+            $table->index(['project_id', 'data_date'], 'idx_project_date');
+            $table->index(['project_id', 'query'], 'idx_project_query');
             $table->index(['site_id', 'data_date'], 'idx_site_date');
             $table->index(['site_id', 'query'], 'idx_site_query');
+            $table->index('data_date', 'idx_date');
             
             // Unique constraint: prevent duplicate data imports
-            $table->unique(['site_id', 'query', 'page', 'data_date'], 'idx_unique_data');
+            $table->unique(['project_id', 'query', 'page', 'data_date'], 'idx_unique_data');
         });
     }
 
