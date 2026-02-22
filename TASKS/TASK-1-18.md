@@ -1,7 +1,7 @@
 # SPEC-001-18: Integration Tests for API
 
-## STATUS`To Develop`
-
+## STATUS
+`To Develop`
 ## PRIORITY
 `Medium`
 

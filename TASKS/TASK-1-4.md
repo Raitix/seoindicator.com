@@ -1,7 +1,7 @@
 # SPEC-001-4: Keywords CRUD API Endpoints
 
-## STATUS`To Test Locally`
-
+## STATUS
+`To Develop`
 ## PRIORITY
 `High`
 

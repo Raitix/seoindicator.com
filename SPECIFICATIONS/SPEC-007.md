@@ -3,7 +3,7 @@
 ## Overview
 This specification defines the technical implementation for SERP feature tracking. This extends basic rank tracking to include rich results like featured snippets, local pack, image packs, and other SERP features that impact visibility and CTR.
 
-## Status
+## STATUS
 `To Develop`
 
 

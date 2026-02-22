@@ -4,7 +4,7 @@
 
 This specification defines the technical implementation for keyword rank tracking functionality in SEOIndicator. This is the core feature that enables users to monitor their search engine positions over time.
 
-## Status
+## STATUS
 `In Development`
 
 ## Feature Reference

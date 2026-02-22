@@ -3,7 +3,7 @@
 ## Overview
 This specification defines the technical implementation for automated SEO report generation. Reports transform raw ranking data into client-ready deliverables in PDF and CSV formats with scheduling and branding capabilities.
 
-## Status
+## STATUS
 `To Develop`
 
 ## Feature Reference
