@@ -1,7 +1,7 @@
 # SPEC-001-11: Rank Checker Worker
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -56,3 +56,13 @@ Failures:
 2) `App\\Services\\RankCheckerService` class missing (RankCheckerServiceTest fails to instantiate).
 
 Action: returning to Developer for fixes. Status -> To Develop.
+
+### [2026-02-23 00:40] Agent: Developer
+Fixes applied:
+- Backlinks migration now uses length-limited indexes only for MySQL/MariaDB; SQLite/other drivers use standard indexes.
+- Added RankCheckerService (domain matching, competitor handling, duration tracking, checkAndStore).
+- Added HttpSERPFetcher (testing env) and CheckKeywordJob.
+
+Notes:
+- Did not run tests locally.
+- Status -> To Test Locally.
