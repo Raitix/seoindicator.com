@@ -1,7 +1,7 @@
 # TASK-12-6: Implement Fuzzy Query Matching
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Medium`
@@ -93,4 +93,9 @@ Backend logic for linking tracked keywords to GSC query data.
 - Standing by for approval to proceed with production deployment.
 
 **Status:** To Deploy
+
+### [2026-02-23 00:13] Agent: DevOps
+**Deployment Started**
+- Updated status to `In Deployment`.
+- Preparing push to origin/main to trigger deployment pipeline.
 
