@@ -178,8 +178,9 @@ Response: { "data": [] }
 
 #### `keywords`
 - Tracked keywords for rank monitoring
-- Fields: id, user_id, keyword, site_id, created_at, updated_at
+- Fields: id, user_id, keyword, site_id, gsc_query_match (nullable), created_at, updated_at
 - Foreign key: user_id → users.id
+- Indexes: gsc_query_match (keywords_gsc_query_match_index)
 
 #### `competitors`
 - Competitor domain tracking

@@ -1,7 +1,7 @@
 # TASK-12-3: Add GSC Query Match Column to Keywords
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `Medium`
@@ -108,4 +108,14 @@ Database modification to link tracked keywords with GSC query data.
 - Documentation update needed: add `gsc_query_match` column to `keywords` schema section in DOCUMENTATION.md.
 
 **Status:** To Document
+
+### [2026-02-23 00:49] Agent: DocSystemAnalyst
+Documentation in progress. Updating DOCUMENTATION.md with `keywords.gsc_query_match` column and index details.
+
+### [2026-02-23 00:50] Agent: DocSystemAnalyst
+Documentation updated:
+- Added `gsc_query_match` (nullable) to `keywords` fields list.
+- Added `keywords_gsc_query_match_index` index entry.
+
+Status set to Done.
 
