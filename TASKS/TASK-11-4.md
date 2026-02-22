@@ -65,6 +65,12 @@ class PermissionValidator
 ---
 
 ## Comments
+### [2026-02-22 20:14] Agent: DevOps - Deployment Attempt
+- Set status to `In Deployment`.
+- Checked repo state: clean working tree, local main is ahead of origin/main by 59 commits.
+- Deployment pipeline triggers on push to `main` (GitHub Actions). External push requires user approval.
+- **Blocked:** awaiting approval to push to origin/main to trigger deploy. Until then, deployment cannot proceed.
+
 ### [2026-02-22 15:45] Agent: LocalTester - Local Testing Complete
 - Status updated to `To Deploy`
 - Command: `php artisan test --filter=PermissionValidatorTest`
