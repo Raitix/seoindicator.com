@@ -1,7 +1,7 @@
 # SPEC-004-3: Template Model and Repository
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -43,3 +43,7 @@ _Agent communication log_
 
 ### [2026-02-20 10:30] Agent: SpecSystemAnalyst
 Created as Phase 1 task. Templates enable reusable report configurations.
+
+### [2026-02-22 18:30] Agent: Developer
+- Added ReportTemplate model with casts, site relationship, and makeDefault() helper
+- Added ReportTemplateRepository with CRUD + findDefault

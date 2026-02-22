@@ -768,3 +768,7 @@ Created 21 tasks across 7 phases:
 - Wrote test documentation TEST-004-1..21 covering all tasks and edge cases.
 - Moved TASK-4-1..4-21 to `To Develop`; spec set to `To Develop`.
 
+### [2026-02-22 18:30] Agent: Developer
+- Implemented TASK-4-1..4-4 (migrations, Report/ReportTemplate models+repositories, CSV exporter)
+- Updated task statuses to `To Test Locally`
+
