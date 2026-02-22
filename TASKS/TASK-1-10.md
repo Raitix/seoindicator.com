@@ -1,7 +1,7 @@
 # SPEC-001-10: Job Queue Setup
 
-## STATUS`To Develop`
-
+## STATUS
+`To Develop`
 ## PRIORITY
 `High`
 

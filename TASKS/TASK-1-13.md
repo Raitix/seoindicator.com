@@ -1,7 +1,7 @@
 # SPEC-001-13: Keyword List Page
 
-## STATUS`To Develop`
-
+## STATUS
+`To Develop`
 ## PRIORITY
 `High`
 

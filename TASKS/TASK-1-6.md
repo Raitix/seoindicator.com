@@ -1,7 +1,7 @@
 # SPEC-001-6: Dashboard API Endpoint
 
-## STATUS`To Test Locally`
-
+## STATUS
+`To Develop`
 ## PRIORITY
 `High`
 
