@@ -1,7 +1,7 @@
 # SPEC-004-7: Reports CRUD API
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Medium`

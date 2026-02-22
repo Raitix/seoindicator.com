@@ -1,7 +1,7 @@
 # FEAT-004: Automated SEO Reports
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -150,3 +150,8 @@ Priority Medium because while essential for agencies, individual users can deriv
 **Status:** Tasks ready for PreTester (To Write Tests)
 
 ### [2026-02-20 10:35] SpecSystemAnalyst: Task Breakdown Complete
+
+### [2026-02-22 18:22] Agent: PreTester
+- Authored test docs TEST-004-1 through TEST-004-21 (migrations, models, exporters, APIs, scheduling, branding, email, unit/integration coverage).
+- Updated TASK-4-1..4-21 status to `To Develop`; feature/spec moved to `To Develop`.
+

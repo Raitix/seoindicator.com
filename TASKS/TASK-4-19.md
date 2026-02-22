@@ -1,7 +1,7 @@
 # SPEC-004-19: Report Delivery
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Low`
