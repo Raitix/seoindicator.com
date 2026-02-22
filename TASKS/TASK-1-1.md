@@ -1,7 +1,7 @@
 # SPEC-001-1: Database Setup - Keywords & Rankings Tables
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -184,4 +184,9 @@ Created task for database migration. This is the foundation task - must be compl
 - `Schema::hasTable('backlinks')` → skip create
 - Adds missing indexes via `SHOW INDEX` + `CREATE INDEX` (prefix-length for URL index)
 
-**Status:** → In Deployment
+### [2026-02-23 00:00] Agent: DevOps
+**Deployment Successful**
+- GitHub Actions run `22285833672` completed successfully
+- Production migrations ran (including keywords/ranking_history)
+
+**Status:** → To Test Prod
