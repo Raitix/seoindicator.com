@@ -170,6 +170,11 @@ Created task for database migration. This is the foundation task - must be compl
 - Local `npm run build` now succeeds (SSG routes generated for /sites/1/keywords/new and edit)
 - Pushed `main` to trigger deploy
 
-**CI:** GitHub Actions run `22285727999` currently **in_progress**
+**CI:** GitHub Actions run `22285727999` failed during migrations on production:
+- Error: `SQLSTATE[42000] ... Specified key was too long; max key length is 3072 bytes`
+- Migration: `2026_02_21_220000_create_backlinks_table` (index `idx_source_target` on `source_url`, `target_url`)
+
+**Fix Applied:** Use prefix-length indexes for long URL columns:
+- `idx_source_target` now indexes `source_url(191)` + `target_url(191)` via `DB::raw(...)`
 
 **Status:** → In Deployment
