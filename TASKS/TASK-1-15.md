@@ -1,7 +1,7 @@
 # SPEC-001-15: Ranking History Chart Component
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -12,16 +12,16 @@
 Create an interactive chart component showing ranking position history over time for a keyword.
 
 ## Acceptance Criteria
-- [ ] Line chart with date on X-axis, position on Y-axis
-- [ ] Position axis inverted (1 at top, 100 at bottom)
-- [ ] "Not in top 100" shown as gap or line at bottom
-- [ ] Date range selector (7d, 30d, 90d, all)
-- [ ] Hover tooltip showing exact position and date
-- [ ] Chart title with keyword name
-- [ ] Loading state while fetching data
-- [ ] Empty state for keywords with no history
-- [ ] Responsive chart sizing
-- [ ] Export chart as PNG option
+- [x] Line chart with date on X-axis, position on Y-axis
+- [x] Position axis inverted (1 at top, 100 at bottom)
+- [x] "Not in top 100" shown as gap or line at bottom
+- [x] Date range selector (7d, 30d, 90d, all)
+- [x] Hover tooltip showing exact position and date
+- [x] Chart title with keyword name
+- [x] Loading state while fetching data
+- [x] Empty state for keywords with no history
+- [x] Responsive chart sizing
+- [x] Export chart as PNG option
 
 ## Dependencies
 - SPEC-001-5 (ranking history API)
@@ -42,3 +42,9 @@ _Agent communication log_
 
 ### [2026-02-20 09:44] Agent: SpecSystemAnalyst
 Created task for ranking history chart. Visual representation of ranking trends.
+
+### [2026-02-22 23:05] Agent: Developer
+- Implemented `RankingHistoryChart` component in `frontend/components/charts/RankingHistoryChart.tsx` using Recharts.
+- Includes inverted Y-axis, gap for >100 positions, date range selector, tooltip, loading/empty states, responsive layout.
+- Added PNG export via SVG → canvas conversion (no extra deps).
+- Status moved to `To Test Locally`.
