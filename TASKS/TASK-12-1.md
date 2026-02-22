@@ -1,7 +1,7 @@
 # TASK-12-1: Create GSC Connections Table
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -75,3 +75,9 @@ Created GSC connections table with secure token storage:
 
 ### [2026-02-20 17:34] Agent: SpecSystemAnalyst
 Database task for storing GSC OAuth credentials and property mappings.
+### [2026-02-22 15:48] Agent: LocalTester - Tests Failed (SQLite FK introspection)
+Ran: `php artisan test --filter=GSCConnection`
+Result: 27 failed (0 assertions). All failures trace to `SQLSTATE[HY000]: General error: 1 no such table: INFORMATION_SCHEMA.KEY_COLUMN_USAGE` on sqlite :memory: when querying FK metadata for `keywords_site_id_foreign`.
+Likely test helper/migration uses MySQL-specific INFORMATION_SCHEMA checks, which break under sqlite test DB.
+Action: Returning to Developer to adjust tests or sqlite compatibility (e.g., skip FK metadata checks under sqlite or use Schema::getConnection()->getDoctrineSchemaManager()).
+

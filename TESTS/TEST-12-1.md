@@ -108,3 +108,10 @@ php artisan test --filter=GSCConnection
 
 ## Created
 2026-02-21
+
+## Local Test Run (2026-02-22)
+Command: `php artisan test --filter=GSCConnection`
+Result: **FAILED** — 27 failures.
+Error: `SQLSTATE[HY000]: General error: 1 no such table: INFORMATION_SCHEMA.KEY_COLUMN_USAGE` on sqlite :memory: when checking FK metadata (`keywords_site_id_foreign`).
+Next: adjust tests/migration checks for sqlite or run against MySQL.
+
