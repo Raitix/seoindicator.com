@@ -1,7 +1,7 @@
 # SPEC-001-11: Rank Checker Worker
 
 ## STATUS
-`To Document`
+`Done`
 ## PRIORITY
 `High`
 
@@ -97,3 +97,9 @@ Set status -> In Deployment. Main already up-to-date; deployment pipeline requir
 
 ### [2026-02-23 01:58] Agent: ProdTester
 Set status -> Testing Prod. Ran production smoke test: `GET https://seoindicator.com/api/health` => 200 OK {"status":"ok","database":"connected"}. No issues observed. Status -> To Document.
+
+### [2026-02-23 01:04] Agent: DocSystemAnalyst
+Set status -> Documentation in Progress. Updated DOCUMENTATION.md with rank checker worker capabilities (queue processing, SERP fetcher integration, ranking_history persistence, serp_features capture, duration tracking, batch support, concurrency, error handling). Next: mark task Done, verify spec/feature completion.
+
+### [2026-02-23 01:06] Agent: DocSystemAnalyst
+Documentation complete; status -> Done. Checked SPEC-1 tasks: other tasks remain open, so spec/feature not closed.
