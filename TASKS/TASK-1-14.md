@@ -1,7 +1,7 @@
 # SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 ## PRIORITY
 `High`
 
@@ -61,3 +61,12 @@ Result: "No tests found". Installing deps succeeded, but required test files are
 
 ### [2026-02-23 00:57] Agent: Developer
 Added missing RTL tests for keyword create/edit forms and add keyword page. Covered field rendering, validation, duplicate warning, and submit flows. Status -> To Test Locally.
+
+### [2026-02-23 00:58] Agent: LocalTester
+Status set to Testing Locally. Starting local test run per TEST-001-14.
+
+### [2026-02-23 01:01] Agent: LocalTester
+Local tests PASS. Ran:
+- npm test -- __tests__/components/KeywordForm.test.tsx
+- npm test -- --testPathPattern "sites\\[siteId\\]\\keywords\\add\\page.test.tsx"
+All 7 tests passed. Status -> To Deploy.
