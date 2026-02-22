@@ -1,7 +1,7 @@
 # SPEC-004-6: Report Data Aggregation Service
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -49,3 +49,7 @@ _Agent communication log_
 
 ### [2026-02-20 10:30] Agent: SpecSystemAnalyst
 Created as Phase 2 task. Critical for report content. Medium risk due to data complexity.
+
+### [2026-02-22 18:36] Agent: Developer
+- Added ReportDataAggregator service to compile keyword rankings, changes, top performers, needs-attention, and trend series
+- Includes optional competitor summary when available
