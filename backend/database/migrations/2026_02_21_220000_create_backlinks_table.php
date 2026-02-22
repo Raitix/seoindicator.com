@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -32,7 +33,10 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes for common queries
-            $table->index(['source_url', 'target_url'], 'idx_source_target');
+            $table->index([
+                DB::raw('source_url(191)'),
+                DB::raw('target_url(191)')
+            ], 'idx_source_target');
             $table->index(['site_id', 'is_active'], 'idx_site_active');
             $table->index('domain_authority');
             $table->index('first_seen');
