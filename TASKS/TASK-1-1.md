@@ -107,3 +107,10 @@ Created task for database migration. This is the foundation task - must be compl
 - Error: missing TypeScript types for `papaparse`
 - Fix applied: added devDependency `@types/papaparse`
 - Re-triggering deploy via new push
+
+### [2026-02-22 23:20] Agent: DevOps
+**Deployment Failed (CI) — Static Export**
+- GitHub Actions run 22285333855 failed at frontend build
+- Error: dynamic route missing `generateStaticParams` for static export
+- Fix applied: added `generateStaticParams` + `dynamicParams` to /sites/[siteId]/keywords/[keywordId]/edit
+- Re-triggering deploy via new push
