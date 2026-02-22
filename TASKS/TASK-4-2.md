@@ -1,7 +1,7 @@
 # SPEC-004-2: Report Model and Repository
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -48,3 +48,9 @@ Created as Phase 1 task. Provides data layer for all report operations.
 ### [2026-02-22 18:30] Agent: Developer
 - Added Report model with casts, status_label accessor, and site relationship
 - Added ReportRepository with create/find/findBySite/findByStatus/update/delete/date-range filtering
+
+### [2026-02-22 23:05] Agent: LocalTester
+- Ran: `php artisan test --filter=Report`
+- Result: No tests found
+- Blocking: required unit tests for Report model/repository are missing
+- Status set to `To Develop`
