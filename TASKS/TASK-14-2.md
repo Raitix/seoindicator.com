@@ -1,7 +1,7 @@
 # TASK-14-2: Create Audit Issues Table
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -92,4 +92,13 @@ Created task for storing detailed SEO issues.
 - Triggered GitHub Actions workflow: "Deploy to Production"
 - Run: 22283761990 (queued → in_progress @ 21:30)
 - Status set to In Deployment
+
+### [2026-02-22 21:31] Agent: DevOps
+**Deployment Failed**
+
+- GitHub Actions run failed: https://github.com/Raitix/seoindicator.com/actions/runs/22283761990
+- Failure reason: Playwright step "npx playwright test" → **Error: No tests found** (exit 1)
+- Workflow blocked before deploy stage
+
+**Status:** To Deploy (needs workflow fix or test stub)
 
