@@ -1,7 +1,7 @@
 # SPEC-004-15: Logo Upload Handling
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Low`

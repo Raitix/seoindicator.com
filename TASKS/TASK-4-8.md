@@ -1,7 +1,7 @@
 # SPEC-004-8: Report Generation Endpoint
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Medium`

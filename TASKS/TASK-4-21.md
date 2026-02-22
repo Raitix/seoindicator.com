@@ -1,7 +1,7 @@
 # SPEC-004-21: Integration Tests
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Medium`

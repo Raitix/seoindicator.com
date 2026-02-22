@@ -1,7 +1,7 @@
 # SPEC-004-20: Unit Tests
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Medium`

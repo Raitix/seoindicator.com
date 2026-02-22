@@ -1,7 +1,7 @@
 # SPEC-004-14: Branding API
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Low`

@@ -1,7 +1,7 @@
 # SPEC-004-18: Email Templates
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Low`

@@ -1,7 +1,7 @@
 # SPEC-004-6: Report Data Aggregation Service
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Medium`
