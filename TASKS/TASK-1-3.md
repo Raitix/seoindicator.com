@@ -1,7 +1,7 @@
 # SPEC-001-3: Ranking Model and Repository
 
 ## STATUS
-`To Test Prod`
+`To Document`
 
 ## PRIORITY
 `High`
@@ -36,6 +36,15 @@ Create the Ranking model and repository for storing and retrieving ranking histo
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-23 00:55] Agent: ProdTester
+**Prod Smoke Tests**
+- GET https://seoindicator.com/ → 200 OK
+- GET https://seoindicator.com/api/health → 200 OK {"status":"ok","database":"connected"}
+
+Notes:
+- No production endpoint directly exercises RankingRepository; relied on unit test coverage from LocalTester.
+- No security issues observed in smoke checks.
 
 ### [2026-02-20 09:44] Agent: SpecSystemAnalyst
 Created task for ranking model and repository. Pairs with keyword repository for complete data layer.
