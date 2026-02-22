@@ -3,6 +3,7 @@
 namespace App\Services\Queue;
 
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 use PDO;
 use RuntimeException;
 
@@ -37,6 +38,9 @@ class JobQueue implements JobQueueInterface
             throw new RuntimeException('Failed to encode job payload.');
         }
 
+        $scheduledFor = $payload['scheduledFor'] ?? $payload['availableAt'] ?? null;
+        $createdAt = $scheduledFor ? $this->normalizeDateTime($scheduledFor) : $this->now();
+
         $stmt = $this->pdo->prepare('INSERT INTO queue_jobs (id, type, payload, priority, status, attempts, max_attempts, created_at)
             VALUES (:id, :type, :payload, :priority, :status, :attempts, :max_attempts, :created_at)');
 
@@ -48,7 +52,7 @@ class JobQueue implements JobQueueInterface
             ':status' => 'pending',
             ':attempts' => 0,
             ':max_attempts' => $maxAttempts,
-            ':created_at' => $this->now(),
+            ':created_at' => $createdAt,
         ]);
 
         return $id;
@@ -148,6 +152,7 @@ class JobQueue implements JobQueueInterface
         $this->cleanupCompleted();
 
         $stmt = $this->pdo->prepare("SELECT * FROM queue_jobs WHERE status = 'pending'
+            AND created_at <= datetime('now')
             ORDER BY CASE priority
                 WHEN 'high' THEN 1
                 WHEN 'normal' THEN 2
@@ -211,6 +216,26 @@ class JobQueue implements JobQueueInterface
     protected function now(): string
     {
         return gmdate('Y-m-d H:i:s');
+    }
+
+    /**
+     * @param mixed $value
+     */
+    protected function normalizeDateTime(mixed $value): string
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return Carbon::instance($value)->utc()->format('Y-m-d H:i:s');
+        }
+
+        if (is_int($value)) {
+            return Carbon::createFromTimestampUTC($value)->format('Y-m-d H:i:s');
+        }
+
+        if (is_string($value) && $value !== '') {
+            return Carbon::parse($value)->utc()->format('Y-m-d H:i:s');
+        }
+
+        return $this->now();
     }
 
     protected function cleanupCompleted(): void

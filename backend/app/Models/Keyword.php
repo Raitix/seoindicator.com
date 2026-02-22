@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @property string $device
  * @property string $status
  * @property \Illuminate\Support\Carbon|null $last_checked_at
+ * @property \Illuminate\Support\Carbon|null $last_viewed_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  *
@@ -56,6 +57,7 @@ class Keyword extends Model
         'device',
         'status',
         'last_checked_at',
+        'last_viewed_at',
     ];
 
     /**
@@ -65,6 +67,7 @@ class Keyword extends Model
      */
     protected $casts = [
         'last_checked_at' => 'datetime',
+        'last_viewed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

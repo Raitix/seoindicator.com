@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\GSCDataController;
 use App\Http\Controllers\Api\V1\KeywordController;
 use App\Http\Controllers\Api\V1\RankingController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\SchedulerController;
 use App\Http\Controllers\Api\GSCConnectionController;
 
 /*
@@ -86,4 +87,7 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     // GSC Data (TASK-12-8)
     Route::get('projects/{projectId}/gsc', [GSCDataController::class, 'index']);
     Route::get('projects/{projectId}/gsc/opportunities', [GSCDataController::class, 'opportunities']);
+
+    // Scheduler (SPEC-001-12)
+    Route::post('scheduler/rank-checks/run', [SchedulerController::class, 'runRankChecks']);
 });

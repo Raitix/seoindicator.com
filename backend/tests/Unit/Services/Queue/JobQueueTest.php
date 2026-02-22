@@ -102,4 +102,21 @@ class JobQueueTest extends TestCase
         $this->assertCount(0, $pending);
         $this->assertNull($queue->getJob($jobId));
     }
+
+    public function test_pending_jobs_skip_scheduled_future_jobs(): void
+    {
+        $queue = new JobQueue($this->dbPath);
+
+        $queue->addJob([
+            'type' => 'future',
+            'scheduledFor' => now()->addDay()->toISOString(),
+        ]);
+
+        $queue->addJob(['type' => 'now']);
+
+        $pending = $queue->getPending();
+
+        $this->assertCount(1, $pending);
+        $this->assertSame('now', $pending[0]->type);
+    }
 }
