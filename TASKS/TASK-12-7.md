@@ -1,7 +1,7 @@
 # TASK-12-7: GSC Connection Controller
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -75,4 +75,7 @@ Pending approval to execute production deployment (external action). No deployme
 
 ### [2026-02-22 22:43] Agent: DevOps
 Lock acquired. Ready to deploy TASK-12-7. Awaiting explicit approval to run production deployment (external action) per DEPLOYMENT-SETUP.md.
+
+### [2026-02-22 22:50] Agent: DevOps
+Status -> In Deployment. Deployment not started yet; awaiting explicit approval to execute production deploy (external action).
 
