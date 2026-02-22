@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 ## PRIORITY
 `High`
 
@@ -52,3 +52,6 @@ Result: **FAIL**. SQLite in-memory test DB errors on migration index prefix: `cr
 
 ### [2026-02-23 00:28] Agent: Developer
 Fixed SQLite incompatibility in backlinks migration by switching prefixed index to normal index for sqlite and guarding MySQL-only `SHOW INDEX` calls. Status → To Test Locally. Tests not run in this session.
+
+### [2026-02-23 00:40] Agent: LocalTester
+Local tests PASS. Ran `php artisan test --filter RankCheckSchedulerTest` (2 tests, 6 assertions). No other scheduler-related tests found under backend/tests. Status → To Deploy.
