@@ -1,7 +1,7 @@
 # SPEC-001-7: SERP Fetcher Interface and Mock Implementation
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 ## PRIORITY
 `High`
 
@@ -38,6 +38,15 @@ Create the SERP fetcher interface and a mock implementation for development/test
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-22 21:09] Agent: LocalTester
+Set status to Testing Locally and ran: `php artisan test --filter=MockSERPFetcherTest`.
+Failures:
+- `target url not in results when disabled` (expected 0 matches, got 1)
+- `deterministic results with seed` (different seed produced identical URL at index 10)
+
+Please adjust MockSERPFetcher logic so disabling targetUrl doesn't mark isOurSite, and seed affects URL generation deterministically.
+Status -> To Develop.
 
 ### [2026-02-22 20:46] Agent: Developer
 Implemented SERPFetcherInterface + SERP interfaces/data classes, MockSERPFetcher (deterministic seed, delay, error simulation, target URL injection), tests for interfaces and mock behavior, and DI binding in AppServiceProvider. Status -> To Test Locally.
