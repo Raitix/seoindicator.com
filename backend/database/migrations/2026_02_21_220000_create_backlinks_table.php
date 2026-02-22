@@ -17,6 +17,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        $driver = Schema::getConnection()->getDriverName();
+
         if (Schema::hasTable('backlinks')) {
             $this->ensureIndex('idx_source_target', "CREATE INDEX idx_source_target ON backlinks (source_url(191), target_url(191))");
             $this->ensureIndex('idx_site_active', "CREATE INDEX idx_site_active ON backlinks (site_id, is_active)");
@@ -25,7 +27,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::create('backlinks', function (Blueprint $table) {
+        Schema::create('backlinks', function (Blueprint $table) use ($driver) {
             $table->id();
             $table->foreignId('site_id')->constrained()->onDelete('cascade');
             $table->string('source_url', 2083);
@@ -41,10 +43,14 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes for common queries
-            $table->index([
-                DB::raw('source_url(191)'),
-                DB::raw('target_url(191)')
-            ], 'idx_source_target');
+            if ($driver === 'sqlite') {
+                $table->index(['source_url', 'target_url'], 'idx_source_target');
+            } else {
+                $table->index([
+                    DB::raw('source_url(191)'),
+                    DB::raw('target_url(191)')
+                ], 'idx_source_target');
+            }
             $table->index(['site_id', 'is_active'], 'idx_site_active');
             $table->index('domain_authority');
             $table->index('first_seen');
@@ -53,6 +59,10 @@ return new class extends Migration
 
     private function ensureIndex(string $indexName, string $createSql): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         $exists = DB::select("SHOW INDEX FROM backlinks WHERE Key_name = ?", [$indexName]);
         if (count($exists) === 0) {
             DB::statement($createSql);
