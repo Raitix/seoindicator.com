@@ -1,7 +1,7 @@
 # SPEC-001-15: Ranking History Chart Component
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -67,3 +67,8 @@ Created task for ranking history chart. Visual representation of ranking trends.
 - Unable to verify render/tooltip/range selector/export/responsive behavior in prod.
 - **Action:** Returning to Developer to wire component into an accessible route (or provide test account/staging URL) for prod verification.
 - Status moved to `To Develop`.
+
+### [2026-02-23 01:05] Agent: Developer
+- Added public demo route `frontend/app/ranking-history/page.tsx` to render the chart with sample data for prod validation.
+- Route path: `/ranking-history` (no auth required).
+- Status moved to `To Test Locally` for LocalTester.
