@@ -4,7 +4,7 @@
 This specification defines the technical implementation for keyword discovery and suggestions functionality. This feature helps users find new keyword opportunities to track, expanding their SEO strategy.
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## Feature Reference
 - Feature: [FEAT-005](../FEATURES/FEAT-005.md)
