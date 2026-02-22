@@ -1,7 +1,7 @@
 # SPEC-001-6: Dashboard API Endpoint
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 ## PRIORITY
 `High`
 
@@ -48,3 +48,11 @@ Implemented DashboardController with caching, metrics aggregation, position chan
 
 ### [2026-02-22 23:58] Agent: Developer
 Status moved to To Test Locally. Acceptance criteria checked against implementation/tests (DashboardController + routing + feature tests).
+
+### [2026-02-23 00:11] Agent: LocalTester
+Ran `php artisan test --testsuite=Feature --filter DashboardControllerTest`.
+All 11 tests failed before assertions due to SQLite migration error:
+`SQLSTATE[HY000]: General error: 1 no such function: source_url` when creating index `idx_source_target` on `backlinks` with column prefix lengths.
+This blocks DashboardController tests (in-memory sqlite).
+Recommendation: adjust backlinks migration to be sqlite-compatible (no column length in index for sqlite; conditional index by driver), then rerun tests.
+Status moved back to `To Develop` for fix.
