@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\GSCConnection;
 use App\Models\GSCData;
-use App\Models\Project;
+use App\Models\Site;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
@@ -78,20 +78,20 @@ class GSCDataSync
     }
 
     /**
-     * Sync GSC data for a specific project.
+     * Sync GSC data for a specific site.
      *
-     * @param Project $project The project to sync
+     * @param Site $site The site to sync
      * @param string|null $fromDate Optional start date (Y-m-d), defaults to 3 days ago
      * @param string|null $toDate Optional end date (Y-m-d), defaults to yesterday
      * @return array Sync results with counts and status
      * @throws RuntimeException If sync fails
      */
-    public function syncProject(Project $project, ?string $fromDate = null, ?string $toDate = null): array
+    public function syncProject(Site $site, ?string $fromDate = null, ?string $toDate = null): array
     {
-        $connection = $project->gscConnection;
+        $connection = $this->resolveConnectionForSite($site);
 
         if (!$connection || !$connection->isActive()) {
-            throw new RuntimeException("No active GSC connection for project: {$project->url}");
+            throw new RuntimeException("No active GSC connection for site: {$site->url}");
         }
 
         // Acquire sync lock to prevent concurrent syncs
@@ -99,7 +99,7 @@ class GSCDataSync
         $lock = Cache::lock($lockKey, self::SYNC_LOCK_DURATION);
 
         if (!$lock->get()) {
-            throw new RuntimeException("Sync already in progress for project: {$project->url}");
+            throw new RuntimeException("Sync already in progress for site: {$site->url}");
         }
 
         try {
@@ -118,7 +118,7 @@ class GSCDataSync
             }
 
             // Fetch and store data
-            $result = $this->fetchAndStoreData($project, $connection, $startDate, $endDate);
+            $result = $this->fetchAndStoreData($site, $connection, $startDate, $endDate);
 
             // Update last synced timestamp
             $connection->markAsSynced();
@@ -137,24 +137,21 @@ class GSCDataSync
     public function syncAllConnections(): array
     {
         $results = [];
-        $connections = GSCConnection::readyForSync()->with('user.projects')->get();
+        $connections = GSCConnection::readyForSync()->get();
 
         foreach ($connections as $connection) {
             try {
-                // Find project associated with this connection
-                $project = Project::where('user_id', $connection->user_id)
-                    ->where('url', 'like', '%' . $connection->site_url . '%')
-                    ->first();
+                $site = $this->resolveSiteForConnection($connection);
 
-                if (!$project) {
-                    Log::warning("No project found for GSC connection", [
+                if (!$site) {
+                    Log::warning("No site found for GSC connection", [
                         'connection_id' => $connection->id,
                         'site_url' => $connection->site_url,
                     ]);
                     continue;
                 }
 
-                $results[$connection->id] = $this->syncProject($project);
+                $results[$connection->id] = $this->syncProject($site);
             } catch (RuntimeException $e) {
                 Log::error("Failed to sync GSC connection", [
                     'connection_id' => $connection->id,
@@ -169,6 +166,26 @@ class GSCDataSync
         }
 
         return $results;
+    }
+
+    /**
+     * Resolve the site for a connection.
+     */
+    protected function resolveSiteForConnection(GSCConnection $connection): ?Site
+    {
+        return Site::where('user_id', $connection->user_id)
+            ->where('url', 'like', '%' . $connection->site_url . '%')
+            ->first();
+    }
+
+    /**
+     * Resolve the connection for a site.
+     */
+    protected function resolveConnectionForSite(Site $site): ?GSCConnection
+    {
+        return GSCConnection::where('user_id', $site->user_id)
+            ->where('site_url', 'like', '%' . $site->url . '%')
+            ->first();
     }
 
     /**
@@ -275,13 +292,13 @@ class GSCDataSync
     /**
      * Fetch and store data for a date range.
      *
-     * @param Project $project The project
+     * @param Site $site The site
      * @param GSCConnection $connection The GSC connection
      * @param Carbon $startDate Start date
      * @param Carbon $endDate End date
      * @return array Sync results
      */
-    protected function fetchAndStoreData(Project $project, GSCConnection $connection, Carbon $startDate, Carbon $endDate): array
+    protected function fetchAndStoreData(Site $site, GSCConnection $connection, Carbon $startDate, Carbon $endDate): array
     {
         $totalRows = 0;
         $totalStored = 0;
@@ -302,7 +319,7 @@ class GSCDataSync
                 $data = $this->fetchBatch($connection, $params);
                 $totalRows += count($data);
 
-                $stored = $this->storeData($project, $data);
+                $stored = $this->storeData($site, $data);
                 $totalStored += $stored;
             } catch (RuntimeException $e) {
                 $errors[] = [
@@ -311,7 +328,7 @@ class GSCDataSync
                 ];
 
                 Log::error("Failed to fetch GSC data for date range", [
-                    'project_id' => $project->id,
+                    'site_id' => $site->id,
                     'start_date' => $chunk['start']->toDateString(),
                     'end_date' => $chunk['end']->toDateString(),
                     'error' => $e->getMessage(),
@@ -330,11 +347,11 @@ class GSCDataSync
     /**
      * Store fetched data in database.
      *
-     * @param Project $project The project
+     * @param Site $site The site
      * @param array $data Parsed GSC data
      * @return int Number of records stored
      */
-    protected function storeData(Project $project, array $data): int
+    protected function storeData(Site $site, array $data): int
     {
         $stored = 0;
 
@@ -342,7 +359,7 @@ class GSCDataSync
             // Use upsert to handle duplicates
             $stored += GSCData::upsert(
                 [
-                    'project_id' => $project->id,
+                    'site_id' => $site->id,
                     'query' => $row['query'],
                     'page' => $row['page'],
                     'clicks' => $row['clicks'],
@@ -351,9 +368,15 @@ class GSCDataSync
                     'avg_position' => $row['position'],
                     'data_date' => $row['date'],
                 ],
-                ['project_id', 'query', 'page', 'data_date'],
+                ['site_id', 'query', 'page', 'data_date'],
                 ['clicks', 'impressions', 'ctr', 'avg_position']
             );
+        }
+
+        // Auto-match keywords after sync
+        if (class_exists(\App\Services\QueryMatcher::class)) {
+            $matcher = new \App\Services\QueryMatcher();
+            $matcher->autoMatchForSite($site->id);
         }
 
         return $stored;
@@ -421,14 +444,14 @@ class GSCDataSync
     }
 
     /**
-     * Import historical data for a project.
+     * Import historical data for a site.
      *
-     * @param Project $project The project
+     * @param Site $site The site
      * @param string $fromDate Start date (Y-m-d)
      * @param string $toDate End date (Y-m-d)
      * @return array Import results
      */
-    public function importHistorical(Project $project, string $fromDate, string $toDate): array
+    public function importHistorical(Site $site, string $fromDate, string $toDate): array
     {
         $startDate = Carbon::parse($fromDate);
         $endDate = Carbon::parse($toDate);
@@ -444,18 +467,18 @@ class GSCDataSync
             $startDate = $oldestAllowed;
         }
 
-        return $this->syncProject($project, $startDate->toDateString(), $endDate->toDateString());
+        return $this->syncProject($site, $startDate->toDateString(), $endDate->toDateString());
     }
 
     /**
-     * Get sync status for a project.
+     * Get sync status for a site.
      *
-     * @param Project $project The project
+     * @param Site $site The site
      * @return array Sync status information
      */
-    public function getSyncStatus(Project $project): array
+    public function getSyncStatus(Site $site): array
     {
-        $connection = $project->gscConnection;
+        $connection = $this->resolveConnectionForSite($site);
 
         if (!$connection) {
             return [
@@ -465,7 +488,7 @@ class GSCDataSync
             ];
         }
 
-        $lastData = GSCData::where('project_id', $project->id)
+        $lastData = GSCData::where('site_id', $site->id)
             ->latest('data_date')
             ->first();
 
@@ -475,20 +498,20 @@ class GSCDataSync
             'last_sync' => $connection->last_synced_at?->toIso8601String(),
             'last_data_date' => $lastData?->data_date?->toDateString(),
             'data_available' => $lastData !== null,
-            'total_queries' => GSCData::where('project_id', $project->id)
+            'total_queries' => GSCData::where('site_id', $site->id)
                 ->distinct('query')
                 ->count('query'),
         ];
     }
 
     /**
-     * Clear all GSC data for a project.
+     * Clear all GSC data for a site.
      *
-     * @param Project $project The project
+     * @param Site $site The site
      * @return int Number of records deleted
      */
-    public function clearProjectData(Project $project): int
+    public function clearProjectData(Site $site): int
     {
-        return GSCData::where('project_id', $project->id)->delete();
+        return GSCData::where('site_id', $site->id)->delete();
     }
 }

@@ -1,7 +1,7 @@
 # TASK-12-6: Implement Fuzzy Query Matching
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -33,10 +33,10 @@ class QueryMatcher
 ```
 
 ## Acceptance Criteria
-- [ ] Fuzzy matching implemented with configurable threshold.
-- [ ] Auto-matching runs during data sync.
+- [x] Fuzzy matching implemented with configurable threshold.
+- [x] Auto-matching runs during data sync.
 - [ ] Users can manually adjust matches via UI.
-- [ ] Unit tests verify matching accuracy.
+- [x] Unit tests verify matching accuracy.
 
 ## Dependencies
 - TASK-12-3: `gsc_query_match` column must exist.
@@ -57,3 +57,15 @@ class QueryMatcher
 
 ### [2026-02-20 17:35] Agent: SpecSystemAnalyst
 Backend logic for linking tracked keywords to GSC query data.
+### [2026-02-22 16:18] Agent: Developer
+**Implementation Complete**
+
+- Added QueryMatcher service with normalization + Levenshtein similarity and thresholded auto-match
+- Hooked auto-match into GSCDataSync storeData
+- Added GSCDataFactory + QueryMatcher unit tests
+- Updated GSCData model to use site_id (schema-aligned)
+- Manual override supported via QueryMatcher::setManualMatch (UI hook pending)
+- Ran: php artisan test --filter QueryMatcherTest
+
+**Status:** ? To Test Locally
+
