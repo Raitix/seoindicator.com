@@ -17,6 +17,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('backlinks')) {
+            $this->ensureIndex('idx_source_target', "CREATE INDEX idx_source_target ON backlinks (source_url(191), target_url(191))");
+            $this->ensureIndex('idx_site_active', "CREATE INDEX idx_site_active ON backlinks (site_id, is_active)");
+            $this->ensureIndex('backlinks_domain_authority_index', "CREATE INDEX backlinks_domain_authority_index ON backlinks (domain_authority)");
+            $this->ensureIndex('backlinks_first_seen_index', "CREATE INDEX backlinks_first_seen_index ON backlinks (first_seen)");
+            return;
+        }
+
         Schema::create('backlinks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('site_id')->constrained()->onDelete('cascade');
@@ -41,6 +49,14 @@ return new class extends Migration
             $table->index('domain_authority');
             $table->index('first_seen');
         });
+    }
+
+    private function ensureIndex(string $indexName, string $createSql): void
+    {
+        $exists = DB::select("SHOW INDEX FROM backlinks WHERE Key_name = ?", [$indexName]);
+        if (count($exists) === 0) {
+            DB::statement($createSql);
+        }
     }
 
     /**

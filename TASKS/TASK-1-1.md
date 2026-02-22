@@ -177,4 +177,11 @@ Created task for database migration. This is the foundation task - must be compl
 **Fix Applied:** Use prefix-length indexes for long URL columns:
 - `idx_source_target` now indexes `source_url(191)` + `target_url(191)` via `DB::raw(...)`
 
+**CI:** GitHub Actions run `22285786140` failed during migrations:
+- Error: `SQLSTATE[42S01]: Base table or view already exists: 1050 Table 'backlinks' already exists`
+
+**Fix Applied:** Guard migration when table exists and ensure indexes if missing:
+- `Schema::hasTable('backlinks')` → skip create
+- Adds missing indexes via `SHOW INDEX` + `CREATE INDEX` (prefix-length for URL index)
+
 **Status:** → In Deployment
