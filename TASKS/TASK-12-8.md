@@ -1,7 +1,7 @@
 # TASK-12-8: GSC Data Controller
 
 ## STATUS
-`To Test Prod`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -76,4 +76,17 @@ API controller for GSC data retrieval and opportunity analysis.
 - No deployment errors observed in local context.
 
 **Status:** To Test Prod
+
+### [2026-02-22 18:34] Agent: ProdTester
+**Prod Test FAIL**
+
+- Smoke checks against production returned 404:
+  - https://seoindicator.com/api/health
+  - https://seoindicator.com/api/v1/projects/1/gsc
+  - https://seoindicator.com/api/v1/projects/1/gsc/opportunities
+- Expected: 200 for health; 401/403 for protected endpoints (route exists).
+- Indicates routes not deployed or webroot/base path mismatch.
+
+**Status:** To Develop
+- Created TASK-12-12 for documentation discrepancy / prod routing validation.
 
