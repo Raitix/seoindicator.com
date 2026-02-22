@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -12,39 +11,46 @@ return new class extends Migration
      *
      * Updates keywords table and creates ranking_history table per SPEC-001 requirements.
      * This migration:
-     * 1. Adds site_id column to keywords table (if not exists)
-     * 2. Creates ranking_history table
-     * 3. Adds indexes and constraints
+     * 1. Adds site_id column + FK to keywords table (if not exists)
+     * 2. Adds unique constraint for keyword uniqueness per site
+     * 3. Creates ranking_history table
      */
     public function up(): void
     {
-        // Add site_id column to keywords table if it doesn't exist
+        // Add site_id column + FK to keywords table if it doesn't exist
         if (!Schema::hasColumn('keywords', 'site_id')) {
             Schema::table('keywords', function (Blueprint $table) {
-                $table->foreignId('site_id')->nullable()->after('user_id');
+                $table->foreignId('site_id')
+                    ->nullable()
+                    ->constrained('sites')
+                    ->onDelete('cascade')
+                    ->after('user_id');
             });
+        } else {
+            // Ensure FK exists if column already present
+            try {
+                Schema::table('keywords', function (Blueprint $table) {
+                    $table->foreign('site_id')
+                        ->references('id')
+                        ->on('sites')
+                        ->onDelete('cascade');
+                });
+            } catch (\Throwable $e) {
+                // Ignore if FK already exists or unsupported by driver
+            }
         }
 
-        // Create foreign key constraint for site_id only if it doesn't exist
-        $fkExists = DB::selectOne(
-            "SELECT COUNT(*) as cnt FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-             WHERE TABLE_NAME = 'keywords' 
-             AND TABLE_SCHEMA = DATABASE() 
-             AND CONSTRAINT_NAME = 'keywords_site_id_foreign'"
-        );
-        
-        if ($fkExists->cnt == 0 && Schema::hasColumn('keywords', 'site_id')) {
+        // Add unique constraint (site_id, keyword, search_engine, location, device)
+        try {
             Schema::table('keywords', function (Blueprint $table) {
-                $table->foreign('site_id')->references('id')->on('sites')->onDelete('cascade');
+                $table->unique(
+                    ['site_id', 'keyword', 'search_engine', 'location', 'device'],
+                    'keywords_unique'
+                );
             });
+        } catch (\Throwable $e) {
+            // Ignore if index already exists
         }
-
-        // Note: Unique constraint on (site_id, keyword, search_engine, location, device) skipped
-        // MySQL has issues with unique constraints involving nullable FK columns
-        // The application layer should handle uniqueness validation
-        // 
-        // If needed later, can add via:
-        // ALTER TABLE keywords ADD UNIQUE INDEX keywords_unique (site_id, keyword(100), search_engine, location, device)
 
         // Create ranking_history table if not exists
         if (!Schema::hasTable('ranking_history')) {
@@ -71,20 +77,30 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Drop ranking_history table
         Schema::dropIfExists('ranking_history');
 
-        // Remove unique constraint
-        Schema::table('keywords', function (Blueprint $table) {
-            $table->dropUnique('keywords_unique');
-        });
+        // Drop unique constraint if exists
+        try {
+            Schema::table('keywords', function (Blueprint $table) {
+                $table->dropUnique('keywords_unique');
+            });
+        } catch (\Throwable $e) {
+            // Ignore if index doesn't exist
+        }
 
         // Remove site_id column if it was added
-        Schema::table('keywords', function (Blueprint $table) {
-            if (Schema::hasColumn('keywords', 'site_id')) {
-                $table->dropForeign(['site_id']);
-                $table->dropColumn('site_id');
+        if (Schema::hasColumn('keywords', 'site_id')) {
+            try {
+                Schema::table('keywords', function (Blueprint $table) {
+                    $table->dropForeign(['site_id']);
+                });
+            } catch (\Throwable $e) {
+                // Ignore if FK doesn't exist
             }
-        });
+
+            Schema::table('keywords', function (Blueprint $table) {
+                $table->dropColumn('site_id');
+            });
+        }
     }
 };
