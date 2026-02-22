@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 ## PRIORITY
 `High`
 
@@ -70,3 +70,8 @@ Status → To Develop for fix.
 
 ### [2026-02-23 00:52] Agent: Developer
 Bound JobQueueInterface to JobQueue in AppServiceProvider. This should resolve container injection failures in RankCheckScheduler when hitting /api/v1/scheduler/rank-checks/run (likely cause of 500). Status → To Test Locally. Tests not run in this session.
+
+### [2026-02-23 01:05] Agent: LocalTester
+Set status to Testing Locally. Ran `php artisan test --filter RankCheckSchedulerTest`.
+Result: **PASS** (2 tests, 6 assertions). Status → To Deploy.
+Test report: TESTS/TEST-1-12.md
