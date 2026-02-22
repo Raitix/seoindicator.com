@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 ## PRIORITY
 `High`
 
@@ -55,3 +55,6 @@ Fixed SQLite incompatibility in backlinks migration by switching prefixed index 
 
 ### [2026-02-23 00:40] Agent: LocalTester
 Local tests PASS. Ran `php artisan test --filter RankCheckSchedulerTest` (2 tests, 6 assertions). No other scheduler-related tests found under backend/tests. Status → To Deploy.
+
+### [2026-02-23 00:32] Agent: DevOps
+Set status to In Deployment. Starting production deploy via GitHub Actions (push to main) and post-deploy health checks.
