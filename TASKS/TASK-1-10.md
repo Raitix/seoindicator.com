@@ -1,7 +1,7 @@
 # SPEC-001-10: Job Queue Setup
 
 ## STATUS
-`To Test Prod`
+`To Document`
 ## PRIORITY
 `High`
 
@@ -54,4 +54,10 @@ Implemented SQLite-backed JobQueue with interface and CheckJob DTO, added retry/
 - Pushed main to origin to trigger CI/CD.
 - Prod health check OK: https://seoindicator.com/api/health (200).
 - Status -> To Test Prod.
+
+### [2026-02-23 00:39] Agent: ProdTester
+- Status -> Testing Prod.
+- Smoke test: GET https://seoindicator.com/api/health => 200, {status: ok, database: connected}.
+- Doc discrepancy: GET https://seoindicator.com/api/indicators returned 404 (DOCUMENTATION.md says endpoint exists). Created TASK-1-22 to resolve.
+- Status -> To Document.
 
