@@ -1,7 +1,7 @@
 # SPEC-003-5: Backend - Comparison Engine Service
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -94,3 +94,9 @@ Tests PASS:
 - php artisan test --filter=ComparisonServiceTest
 - php artisan test --filter=ComparisonControllerTest
 Updated TESTS/SPEC-003-5.md. Status -> To Deploy.
+
+### [2026-02-22 23:49] Agent: DevOps
+Set status to In Deployment. Preparing production deploy via GitHub Actions (push to main) per DEPLOYMENT-SETUP.md.
+
+### [2026-02-22 23:50] Agent: DevOps
+Deployment triggered by pushing latest state to main. Status -> To Test Prod. Please run prod verification (health + endpoints) and report.
