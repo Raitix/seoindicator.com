@@ -18,12 +18,15 @@ return new class extends Migration
     public function up(): void
     {
         $driver = Schema::getConnection()->getDriverName();
+        $isSqlite = stripos($driver, 'sqlite') !== false;
 
         if (Schema::hasTable('backlinks')) {
-            $this->ensureIndex('idx_source_target', "CREATE INDEX idx_source_target ON backlinks (source_url(191), target_url(191))");
-            $this->ensureIndex('idx_site_active', "CREATE INDEX idx_site_active ON backlinks (site_id, is_active)");
-            $this->ensureIndex('backlinks_domain_authority_index', "CREATE INDEX backlinks_domain_authority_index ON backlinks (domain_authority)");
-            $this->ensureIndex('backlinks_first_seen_index', "CREATE INDEX backlinks_first_seen_index ON backlinks (first_seen)");
+            if (!$isSqlite) {
+                $this->ensureIndex('idx_source_target', "CREATE INDEX idx_source_target ON backlinks (source_url(191), target_url(191))");
+                $this->ensureIndex('idx_site_active', "CREATE INDEX idx_site_active ON backlinks (site_id, is_active)");
+                $this->ensureIndex('backlinks_domain_authority_index', "CREATE INDEX backlinks_domain_authority_index ON backlinks (domain_authority)");
+                $this->ensureIndex('backlinks_first_seen_index', "CREATE INDEX backlinks_first_seen_index ON backlinks (first_seen)");
+            }
             return;
         }
 
@@ -43,7 +46,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes for common queries
-            if ($driver === 'sqlite') {
+            if ($isSqlite) {
                 $table->index(['source_url', 'target_url'], 'idx_source_target');
             } else {
                 $table->index([
@@ -59,7 +62,8 @@ return new class extends Migration
 
     private function ensureIndex(string $indexName, string $createSql): void
     {
-        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+        $driver = Schema::getConnection()->getDriverName();
+        if (stripos($driver, 'sqlite') !== false) {
             return;
         }
 
