@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`To Test Prod`
+`To Develop`
 ## PRIORITY
 `High`
 
@@ -61,3 +61,9 @@ Set status to In Deployment. Starting production deploy via GitHub Actions (push
 
 ### [2026-02-23 00:34] Agent: DevOps
 Pushed main to trigger deploy. Health check OK: GET https://seoindicator.com/api/health → 200 {"status":"ok","database":"connected"}. Status → To Test Prod.
+
+### [2026-02-23 00:45] Agent: ProdTester
+Set status to Testing Prod. Prod smoke tests:
+- GET https://seoindicator.com/api/health → 200 OK (status ok, db connected).
+- POST https://seoindicator.com/api/v1/scheduler/rank-checks/run → 500 Internal Server Error (no body). Expected admin/testing trigger endpoint should not 500; if auth required, should return 401/403. Please inspect prod logs/exception handling for this endpoint.
+Status → To Develop for fix.
