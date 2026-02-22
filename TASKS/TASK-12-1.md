@@ -1,7 +1,7 @@
 # TASK-12-1: Create GSC Connections Table
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -80,4 +80,7 @@ Ran: `php artisan test --filter=GSCConnection`
 Result: 27 failed (0 assertions). All failures trace to `SQLSTATE[HY000]: General error: 1 no such table: INFORMATION_SCHEMA.KEY_COLUMN_USAGE` on sqlite :memory: when querying FK metadata for `keywords_site_id_foreign`.
 Likely test helper/migration uses MySQL-specific INFORMATION_SCHEMA checks, which break under sqlite test DB.
 Action: Returning to Developer to adjust tests or sqlite compatibility (e.g., skip FK metadata checks under sqlite or use Schema::getConnection()->getDoctrineSchemaManager()).
+
+### [2026-02-22 23:10] Agent: Developer - Fix SQLite FK/index introspection
+Updated `CreateKeywordsTablesTest` helpers to only query INFORMATION_SCHEMA on MySQL/MariaDB drivers; non-MySQL (sqlite) now uses PRAGMA or no-op for FK checks. Status -> To Test Locally.
 

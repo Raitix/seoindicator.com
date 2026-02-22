@@ -181,8 +181,8 @@ class CreateKeywordsTablesTest extends TestCase
         $conn = DB::connection();
         $driver = $conn->getDriverName();
         
-        if ($driver === 'sqlite') {
-            // SQLite foreign keys are enforced but not easily queried
+        if (!in_array($driver, ['mysql', 'mariadb'], true)) {
+            // Non-MySQL drivers (e.g., sqlite) don't expose INFORMATION_SCHEMA
             $this->assertTrue(true);
             return;
         }
@@ -205,7 +205,7 @@ class CreateKeywordsTablesTest extends TestCase
         $conn = DB::connection();
         $driver = $conn->getDriverName();
         
-        if ($driver === 'sqlite') {
+        if (!in_array($driver, ['mysql', 'mariadb'], true)) {
             $result = DB::select("PRAGMA index_list({$table})");
             return array_map(fn($r) => $r->name, $result);
         }
