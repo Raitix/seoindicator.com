@@ -85,3 +85,12 @@ Created task for database migration. This is the foundation task - must be compl
 - Ran `php artisan migrate` (no pending migrations)
 
 **Status:** → To Test Locally
+
+### [2026-02-22 20:28] Agent: DevOps
+**Pre-Deployment Check**
+- Repo status: `main` is ahead of `origin/main` by 61 commits (no push yet)
+- Deployment pipeline triggers on push to `main`; no external deployment executed
+
+**Blocker:** Deployment requires pushing to origin / running external deploy. Awaiting user approval to proceed.
+
+**Status:** stays → To Deploy
