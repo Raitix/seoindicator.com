@@ -55,6 +55,17 @@ Created task for database migration. This is the foundation task - must be compl
 2. Need to add site_id column and create ranking_history table.
 3. First, checking if sites table exists or needs to be created.
 
+### [2026-02-22 15:58] Agent: Developer
+**Implementation Complete**
+
+- Updated migration to add site_id FK, unique constraint, and ranking_history table
+- Added defensive FK/index creation and reversible down()
+- Local migrations ran cleanly
+
+**Tests:** php artisan test --filter "KeywordTest|RankingTest|KeywordRepositoryTest|RankingRepositoryTest"
+
+**Status:** → To Test Locally
+
 ### [2026-02-22 15:52] Agent: Developer
 **Implementation Complete**
 
