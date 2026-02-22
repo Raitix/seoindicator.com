@@ -141,6 +141,8 @@ php artisan migrate
 - ✅ Competitor tracking tables (competitors, competitor_rankings)
 - ✅ Eloquent models: User, Keyword, Competitor, CompetitorRanking (Keyword relations: site, rankingHistory)
 - ✅ SQLite-backed job queue for rank checks (storage/app/queue.sqlite) with priorities, retries, dead-letter queue, and 7-day cleanup
+- ✅ Rank Checker worker (queue-driven) with SERP fetcher integration, ranking_history persistence, keyword last_checked_at updates, serp_features capture, and duration tracking
+- ✅ Rank checker supports single keyword and batch site checks, retry-aware error handling, and configurable concurrency
 - ✅ KeywordRepository with pagination, status/search engine/device enums, and CRUD helpers
 - ✅ Ranking model + RankingRepository (latest, date range, create, stats helpers)
 - ✅ Keyword/Site/Ranking factories for tests
