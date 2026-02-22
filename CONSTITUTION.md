@@ -167,6 +167,8 @@ If **PreTester**, **LocalTester**, or **ProdTester** discovers a discrepancy bet
 
 Every feature, specification, and task has a STATUS that tracks its progress through the pipeline.
 
+**New statuses:** `To Document` and `Documentation in Progress` (replaces `Documentation`).
+
 ### Status Definitions & Agent Responsibilities
 
 | Status | Who | Action |
@@ -195,8 +197,9 @@ Every feature, specification, and task has a STATUS that tracks its progress thr
 | `To Test Prod` | DevOps | Sets this status |
 | `To Test Prod` | ProdTester | Picks up for prod testing |
 | `Testing Prod` | ProdTester | Sets this status |
-| `Documentation` | ProdTester | Sets this status after successful prod test |
-| `Documentation` | DocSystemAnalyst | Picks up for documentation update |
+| `To Document` | ProdTester | Sets this status after successful prod test |
+| `To Document` | DocSystemAnalyst | Picks up for documentation update |
+| `Documentation in Progress` | DocSystemAnalyst | Sets this status while documenting |
 | `Done` | DocSystemAnalyst | Sets this status after updating docs |
 | `Cancelled` | Any agent | Sets with documented reason (see below) |
 
@@ -213,6 +216,7 @@ In‑progress statuses:
 - Testing Locally
 - In Deployment
 - Testing Prod
+- Documentation in Progress
 
 ### Cancellation Protocol
 
@@ -257,9 +261,9 @@ TASKS
 │ DevOps picks up "To Deploy"                                     │
 │ DevOps: "In Deployment" → "To Test Prod"                        │
 │ ProdTester picks up "To Test Prod"                              │
-│ ProdTester: "Testing Prod" → "Documentation"                    │
-│ DocSystemAnalyst picks up "Documentation"                       │
-│ DocSystemAnalyst: Updates DOCUMENTATION.md → "Done"             │
+│ ProdTester: "Testing Prod" → "To Document"                      │
+│ DocSystemAnalyst picks up "To Document"                         │
+│ DocSystemAnalyst: "Documentation in Progress" → "Done"          │
 │ When all tasks under a spec are "Done":                         │
 │   DocSystemAnalyst: Set spec status to "Done"                   │
 │   DocSystemAnalyst: Set feature status to "Done"                │
@@ -304,7 +308,7 @@ TASKS
 7. **Test Locally** → LocalTester validates (`Testing Locally`)
 8. **Deploy** → DevOps deploys to prod (`In Deployment`)
 9. **Test Prod** → ProdTester validates (`Testing Prod`)
-10. **Document** → ProdTester marks `Documentation`, DocSystemAnalyst updates `DOCUMENTATION.md` → marks `Done`
+10. **Document** → ProdTester marks `To Document`; DocSystemAnalyst sets `Documentation in Progress`, updates `DOCUMENTATION.md`, then marks `Done`
 11. **Close** → DocSystemAnalyst marks spec and feature as `Done` when all tasks complete
 
 ### Must-Follow Rules
