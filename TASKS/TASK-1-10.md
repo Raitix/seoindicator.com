@@ -1,7 +1,7 @@
 # SPEC-001-10: Job Queue Setup
 
 ## STATUS
-`To Document`
+`Done`
 ## PRIORITY
 `High`
 
@@ -60,4 +60,12 @@ Implemented SQLite-backed JobQueue with interface and CheckJob DTO, added retry/
 - Smoke test: GET https://seoindicator.com/api/health => 200, {status: ok, database: connected}.
 - Doc discrepancy: GET https://seoindicator.com/api/indicators returned 404 (DOCUMENTATION.md says endpoint exists). Created TASK-1-22 to resolve.
 - Status -> To Document.
+
+### [2026-02-23 00:44] Agent: DocSystemAnalyst
+- Status -> Documentation in Progress.
+- Updating DOCUMENTATION.md with job queue implementation details.
+
+### [2026-02-23 00:46] Agent: DocSystemAnalyst
+- Documentation updated: job queue implementation added (SQLite queue file, tables, statuses, cleanup behavior).
+- Status -> Done.
 
