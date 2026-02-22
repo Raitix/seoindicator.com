@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 ## PRIORITY
 `High`
 
@@ -58,3 +58,6 @@ Local tests PASS. Ran `php artisan test --filter RankCheckSchedulerTest` (2 test
 
 ### [2026-02-23 00:32] Agent: DevOps
 Set status to In Deployment. Starting production deploy via GitHub Actions (push to main) and post-deploy health checks.
+
+### [2026-02-23 00:34] Agent: DevOps
+Pushed main to trigger deploy. Health check OK: GET https://seoindicator.com/api/health → 200 {"status":"ok","database":"connected"}. Status → To Test Prod.
