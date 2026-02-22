@@ -168,5 +168,8 @@ Created task for database migration. This is the foundation task - must be compl
 - Updated `[siteId]/layout.tsx` to export `generateStaticParams` with sample siteId and `dynamicParams=false`
 - Updated `[keywordId]/layout.tsx` to export `generateStaticParams` with sample siteId/keywordId and `dynamicParams=false`
 - Local `npm run build` now succeeds (SSG routes generated for /sites/1/keywords/new and edit)
+- Pushed `main` to trigger deploy
+
+**CI:** GitHub Actions run `22285727999` currently **in_progress**
 
 **Status:** → In Deployment
