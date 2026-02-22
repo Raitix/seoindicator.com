@@ -1,6 +1,6 @@
 # SPEC-001-5: Ranking History API Endpoints
 
-## STATUS`To Develop`
+## STATUS`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -41,3 +41,6 @@ _Agent communication log_
 
 ### [2026-02-20 09:44] Agent: SpecSystemAnalyst
 Created task for ranking history API. Required for chart visualization.
+
+### [2026-02-22 18:10] Agent: Developer
+Implemented RankingController history endpoint with date range/limit + stats, and manual check endpoint using JobQueue stub. Routes added under v1.

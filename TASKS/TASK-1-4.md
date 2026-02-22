@@ -1,6 +1,6 @@
 # SPEC-001-4: Keywords CRUD API Endpoints
 
-## STATUS`To Develop`
+## STATUS`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -42,3 +42,6 @@ _Agent communication log_
 
 ### [2026-02-20 09:44] Agent: SpecSystemAnalyst
 Created task for keywords CRUD API. Core API functionality for rank tracking.
+
+### [2026-02-22 18:10] Agent: Developer
+Implemented KeywordController + Store/Update request validation, list/sort/paginate, create/update/delete (soft delete + optional history removal), and single keyword responses with position change. Routes wired under v1.

@@ -5,6 +5,9 @@ use App\Http\Controllers\DeployController;
 use App\Http\Controllers\Api\V1\CompetitorController;
 use App\Http\Controllers\Api\V1\IssueTypeController;
 use App\Http\Controllers\Api\V1\GSCDataController;
+use App\Http\Controllers\Api\V1\KeywordController;
+use App\Http\Controllers\Api\V1\RankingController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\GSCConnectionController;
 
 /*
@@ -46,6 +49,22 @@ Route::middleware(['auth'])->group(function () {
 | Versioned API endpoints for the SEOIndicator application.
 |
 */
+
+Route::prefix('v1')->group(function () {
+    // Keywords (SPEC-001-4)
+    Route::get('sites/{siteId}/keywords', [KeywordController::class, 'index']);
+    Route::post('sites/{siteId}/keywords', [KeywordController::class, 'store']);
+    Route::get('keywords/{id}', [KeywordController::class, 'show']);
+    Route::put('keywords/{id}', [KeywordController::class, 'update']);
+    Route::delete('keywords/{id}', [KeywordController::class, 'destroy']);
+
+    // Rankings (SPEC-001-5)
+    Route::get('keywords/{id}/history', [RankingController::class, 'history']);
+    Route::post('keywords/{id}/check', [RankingController::class, 'check']);
+
+    // Dashboard (SPEC-001-6)
+    Route::get('sites/{siteId}/dashboard', [DashboardController::class, 'index']);
+});
 
 Route::prefix('v1')->middleware(['auth'])->group(function () {
     // Competitor Management (SPEC-003-2)
