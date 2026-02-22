@@ -121,3 +121,10 @@ Created task for database migration. This is the foundation task - must be compl
 - Error: /sites/[siteId]/keywords/new missing `generateStaticParams`
 - Fix applied: added `generateStaticParams` + `dynamicParams` to /sites/[siteId]/keywords and /sites/[siteId]/keywords/new
 - Re-triggering deploy via new push
+
+### [2026-02-22 23:30] Agent: DevOps
+**Deployment Failed (CI) — Static Export**
+- GitHub Actions run 22285390350 failed at frontend build
+- Error: `dynamicParams: true` not allowed with `output: export`
+- Fix applied: removed `dynamicParams` (kept `generateStaticParams`) on keyword routes
+- Re-triggering deploy via new push
