@@ -5,6 +5,8 @@ namespace Tests\Unit\Services;
 use Tests\TestCase;
 use App\Services\RankCheckerService;
 use App\Services\SERPFetcherInterface;
+use App\Services\SERP\SERPEntryData;
+use App\Services\SERP\SERPResultData;
 use App\Models\Keyword;
 use App\Models\Competitor;
 use App\Models\CompetitorRanking;
@@ -80,14 +82,11 @@ class RankCheckerServiceTest extends TestCase
             ->shouldReceive('fetch')
             ->once()
             ->with('seo tools', Mockery::any())
-            ->andReturn([
-                'keyword' => 'seo tools',
-                'results' => [
-                    ['position' => 1, 'url' => 'https://other.com/page'],
-                    ['position' => 5, 'url' => 'https://user.com/page'],
-                    ['position' => 8, 'url' => 'https://competitor.com/page'],
-                ],
-            ]);
+            ->andReturn($this->makeSerpResult('seo tools', [
+                ['position' => 1, 'url' => 'https://other.com/page'],
+                ['position' => 5, 'url' => 'https://user.com/page'],
+                ['position' => 8, 'url' => 'https://competitor.com/page'],
+            ]));
 
         $result = $this->service->checkKeyword(
             'seo tools',
@@ -111,15 +110,12 @@ class RankCheckerServiceTest extends TestCase
         $this->mockSerpFetcher
             ->shouldReceive('fetch')
             ->once()
-            ->andReturn([
-                'keyword' => 'seo tools',
-                'results' => [
-                    ['position' => 5, 'url' => 'https://user.com/page'],
-                    ['position' => 8, 'url' => 'https://competitor1.com/page'],
-                    ['position' => 12, 'url' => 'https://competitor2.com/page'],
-                    ['position' => 20, 'url' => 'https://competitor3.com/page'],
-                ],
-            ]);
+            ->andReturn($this->makeSerpResult('seo tools', [
+                ['position' => 5, 'url' => 'https://user.com/page'],
+                ['position' => 8, 'url' => 'https://competitor1.com/page'],
+                ['position' => 12, 'url' => 'https://competitor2.com/page'],
+                ['position' => 20, 'url' => 'https://competitor3.com/page'],
+            ]));
 
         $result = $this->service->checkKeyword(
             'seo tools',
@@ -147,13 +143,10 @@ class RankCheckerServiceTest extends TestCase
         $this->mockSerpFetcher
             ->shouldReceive('fetch')
             ->once()
-            ->andReturn([
-                'keyword' => 'seo tools',
-                'results' => [
-                    ['position' => 5, 'url' => 'https://user.com/page'],
-                    // competitor.com not in results
-                ],
-            ]);
+            ->andReturn($this->makeSerpResult('seo tools', [
+                ['position' => 5, 'url' => 'https://user.com/page'],
+                // competitor.com not in results
+            ]));
 
         $result = $this->service->checkKeyword(
             'seo tools',
@@ -182,13 +175,10 @@ class RankCheckerServiceTest extends TestCase
             ->once()
             ->andReturnUsing(function () use (&$callCount) {
                 $callCount++;
-                return [
-                    'keyword' => 'seo tools',
-                    'results' => [
-                        ['position' => 5, 'url' => 'https://user.com/page'],
-                        ['position' => 8, 'url' => 'https://competitor.com/page'],
-                    ],
-                ];
+                return $this->makeSerpResult('seo tools', [
+                    ['position' => 5, 'url' => 'https://user.com/page'],
+                    ['position' => 8, 'url' => 'https://competitor.com/page'],
+                ]);
             });
 
         $this->service->checkKeyword(
@@ -256,12 +246,9 @@ class RankCheckerServiceTest extends TestCase
         $this->mockSerpFetcher
             ->shouldReceive('fetch')
             ->once()
-            ->andReturn([
-                'keyword' => 'seo tools',
-                'results' => [
-                    ['position' => 5, 'url' => 'https://user.com/page'],
-                ],
-            ]);
+            ->andReturn($this->makeSerpResult('seo tools', [
+                ['position' => 5, 'url' => 'https://user.com/page'],
+            ]));
 
         // Simulate competitor check failure
         $result = $this->service->checkKeyword(
@@ -288,12 +275,9 @@ class RankCheckerServiceTest extends TestCase
         $this->mockSerpFetcher
             ->shouldReceive('fetch')
             ->once()
-            ->andReturn([
-                'keyword' => 'seo tools',
-                'results' => [
-                    ['position' => 5, 'url' => 'https://user.com/page'],
-                ],
-            ]);
+            ->andReturn($this->makeSerpResult('seo tools', [
+                ['position' => 5, 'url' => 'https://user.com/page'],
+            ]));
 
         $result = $this->service->checkKeyword(
             'seo tools',
@@ -322,13 +306,10 @@ class RankCheckerServiceTest extends TestCase
             ->shouldReceive('fetch')
             ->times(3)
             ->andReturnUsing(function ($keyword) {
-                return [
-                    'keyword' => $keyword,
-                    'results' => [
-                        ['position' => 5, 'url' => 'https://user.com/page'],
-                        ['position' => 8, 'url' => 'https://competitor.com/page'],
-                    ],
-                ];
+                return $this->makeSerpResult($keyword, [
+                    ['position' => 5, 'url' => 'https://user.com/page'],
+                    ['position' => 8, 'url' => 'https://competitor.com/page'],
+                ]);
             });
 
         $results = $this->service->checkKeywords($keywords, 'user.com', $competitors);
@@ -354,13 +335,10 @@ class RankCheckerServiceTest extends TestCase
             ->times(5)
             ->andReturnUsing(function () use (&$callCount) {
                 $callCount++;
-                return [
-                    'keyword' => 'test',
-                    'results' => [
-                        ['position' => 5, 'url' => 'https://user.com/page'],
-                        ['position' => 8, 'url' => 'https://competitor.com/page'],
-                    ],
-                ];
+                return $this->makeSerpResult('test', [
+                    ['position' => 5, 'url' => 'https://user.com/page'],
+                    ['position' => 8, 'url' => 'https://competitor.com/page'],
+                ]);
             });
 
         $this->service->checkKeywords(
@@ -385,12 +363,9 @@ class RankCheckerServiceTest extends TestCase
         $this->mockSerpFetcher
             ->shouldReceive('fetch')
             ->once()
-            ->andReturn([
-                'keyword' => 'seo tools',
-                'results' => [
-                    ['position' => 5, 'url' => 'https://user.com/page'],
-                ],
-            ]);
+            ->andReturn($this->makeSerpResult('seo tools', [
+                ['position' => 5, 'url' => 'https://user.com/page'],
+            ]));
 
         $result = $this->service->checkKeyword('seo tools', 'user.com', []);
 
@@ -410,11 +385,7 @@ class RankCheckerServiceTest extends TestCase
         $this->mockSerpFetcher
             ->shouldReceive('fetch')
             ->once()
-            ->andReturn([
-                'keyword' => 'seo tools',
-                'results' => [],
-                'duration_ms' => 150,
-            ]);
+            ->andReturn($this->makeSerpResult('seo tools', [], 150));
 
         $result = $this->service->checkKeyword('seo tools', 'user.com', []);
 
@@ -454,14 +425,11 @@ class RankCheckerServiceTest extends TestCase
         $this->mockSerpFetcher
             ->shouldReceive('fetch')
             ->once()
-            ->andReturn([
-                'keyword' => 'seo tools',
-                'results' => [
-                    ['position' => 1, 'url' => 'https://other.com'],
-                    ['position' => 2, 'url' => 'https://another.com'],
-                    // Only 2 results, user and competitor not found
-                ],
-            ]);
+            ->andReturn($this->makeSerpResult('seo tools', [
+                ['position' => 1, 'url' => 'https://other.com'],
+                ['position' => 2, 'url' => 'https://another.com'],
+                // Only 2 results, user and competitor not found
+            ]));
 
         $result = $this->service->checkKeyword(
             'seo tools',
@@ -487,17 +455,18 @@ class RankCheckerServiceTest extends TestCase
         $this->mockSerpFetcher
             ->shouldReceive('fetch')
             ->once()
-            ->andReturn([
-                'keyword' => 'seo tools',
-                'results' => [
+            ->andReturn($this->makeSerpResult(
+                'seo tools',
+                [
                     [
                         'position' => 1,
                         'url' => 'https://user.com',
                         'features' => ['featured_snippet', 'faq'],
                     ],
                 ],
-                'serp_features' => ['featured_snippet', 'local_pack'],
-            ]);
+                0,
+                ['featured_snippet', 'local_pack']
+            ));
 
         $result = $this->service->checkKeyword('seo tools', 'user.com', []);
 
@@ -518,14 +487,40 @@ class RankCheckerServiceTest extends TestCase
         $this->mockSerpFetcher
             ->shouldReceive('fetch')
             ->once()
-            ->andReturn([
-                'keyword' => 'test',
-                'results' => [],
-            ]);
+            ->andReturn($this->makeSerpResult('test', []));
 
         // Should not throw exception, domain should be sanitized
         $result = $this->service->checkKeyword('test', 'user.com', [$maliciousDomain]);
         
         $this->assertIsArray($result);
+    }
+
+    /**
+     * @param array<int, array{position:int, url:string}> $results
+     * @param array<int, string>|null $serpFeatures
+     */
+    private function makeSerpResult(string $keyword, array $results, int $durationMs = 0, ?array $serpFeatures = null): SERPResultData
+    {
+        $entries = array_map(function (array $entry) {
+            return new SERPEntryData(
+                (int) $entry['position'],
+                (string) $entry['url'],
+                $entry['title'] ?? '',
+                $entry['description'] ?? '',
+                $entry['is_our_site'] ?? false
+            );
+        }, $results);
+
+        return new SERPResultData(
+            $keyword,
+            'google',
+            'US',
+            'desktop',
+            $entries,
+            now()->toAtomString(),
+            null,
+            $durationMs,
+            $serpFeatures
+        );
     }
 }

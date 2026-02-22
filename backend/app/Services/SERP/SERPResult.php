@@ -17,4 +17,9 @@ interface SERPResult
     public function getCheckedAt(): string;
     public function getError(): ?string;
     public function getDurationMs(): int;
+
+    /**
+     * @return array<int, string>|null
+     */
+    public function getSerpFeatures(): ?array;
 }
