@@ -78,3 +78,11 @@ Backend logic for linking tracked keywords to GSC query data.
 
 **Status:** To Deploy
 
+### [2026-02-22 18:23] Agent: DevOps
+**Deployment Gate**
+- Repo is ahead of origin/main (no deploy trigger yet): `main...origin/main [ahead 43]`
+- Deployment requires push to origin/main to trigger GitHub Actions or manual SSH deploy.
+- Awaiting approval to push/deploy (external action).
+
+**Status:** To Deploy
+
