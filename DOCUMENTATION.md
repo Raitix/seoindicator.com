@@ -142,7 +142,8 @@ php artisan migrate
 - ✅ Eloquent models: User, Keyword, Competitor, CompetitorRanking (Keyword relations: site, rankingHistory)
 - ✅ SQLite-backed job queue for rank checks (storage/app/queue.sqlite) with priorities, retries, dead-letter queue, and 7-day cleanup
 - ✅ KeywordRepository with pagination, status/search engine/device enums, and CRUD helpers
-- ✅ Keyword/Site factories for tests
+- ✅ Ranking model + RankingRepository (latest, date range, create, stats helpers)
+- ✅ Keyword/Site/Ranking factories for tests
 - ✅ Landing page with SEO Indicator branding
 
 ### In Development
@@ -197,15 +198,18 @@ Response: { "data": [] }
 - Unique constraint: (competitor_id, keyword_id, checked_at)
 - Indexes: competitor_id, keyword_id, checked_at
 
+#### `ranking_history`
+- User keyword ranking history
+- Fields: id, keyword_id, position (nullable), url_found, serp_features (JSON string), checked_at, check_duration_ms, error
+- Foreign key: keyword_id → keywords.id
+- Indexes: keyword_id, checked_at, (keyword_id, checked_at)
+
 #### Queue (SQLite)
 - File: `backend/storage/app/queue.sqlite`
 - `queue_jobs`: id, type, payload, priority, status, attempts, max_attempts, created_at, started_at, completed_at, error
 - `queue_dead_letters`: id, type, payload, priority, status, attempts, max_attempts, created_at, started_at, completed_at, failed_at, error
 - Statuses: pending, running, completed, failed
 - Cleanup: completed jobs older than 7 days are deleted when fetching pending jobs
-
-### Planned Tables
-- `ranking_history` - User's historical ranking data
 
 See `backend/database/migrations/` for schema definitions.
 

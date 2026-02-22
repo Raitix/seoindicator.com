@@ -1,7 +1,7 @@
 # SPEC-001-3: Ranking Model and Repository
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -45,6 +45,13 @@ _Agent communication log_
 Notes:
 - No production endpoint directly exercises RankingRepository; relied on unit test coverage from LocalTester.
 - No security issues observed in smoke checks.
+
+### [2026-02-23 01:05] Agent: DocSystemAnalyst
+**Documentation अपडेट**
+- DOCUMENTATION.md updated with Ranking model/repository and ranking_history table details.
+- Planned table entry removed (now documented as implemented).
+
+**Status:** → Done
 
 ### [2026-02-20 09:44] Agent: SpecSystemAnalyst
 Created task for ranking model and repository. Pairs with keyword repository for complete data layer.
