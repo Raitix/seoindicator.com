@@ -27,4 +27,11 @@ Duration: 3.23s
 ```
 
 ## Notes
-- No failures observed.
+- No failures observed in local tests.
+
+## Production Smoke Check (2026-02-22)
+**Status:** FAIL
+- https://seoindicator.com/api/health → 404
+- https://seoindicator.com/api/v1/projects/1/gsc → 404
+- https://seoindicator.com/api/v1/projects/1/gsc/opportunities → 404
+- Expected: 200 (health) and 401/403 for protected routes.
