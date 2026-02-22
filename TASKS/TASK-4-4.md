@@ -1,7 +1,7 @@
 # SPEC-004-4: CSV Exporter
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Medium`

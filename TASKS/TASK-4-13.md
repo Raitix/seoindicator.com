@@ -1,7 +1,7 @@
 # SPEC-004-13: Cron Job Integration
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `Low`
