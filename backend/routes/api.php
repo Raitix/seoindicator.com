@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\Api\V1\CompetitorController;
+use App\Http\Controllers\Api\V1\ComparisonController;
 use App\Http\Controllers\Api\V1\IssueTypeController;
 use App\Http\Controllers\Api\V1\GSCDataController;
 use App\Http\Controllers\Api\V1\KeywordController;
@@ -67,6 +68,12 @@ Route::prefix('v1')->group(function () {
 });
 
 Route::prefix('v1')->middleware(['auth'])->group(function () {
+    // Comparison (SPEC-003-5)
+    Route::get('rankings/comparison', [ComparisonController::class, 'index']);
+    Route::get('rankings/comparison/history', [ComparisonController::class, 'history']);
+    Route::get('competitors/{id}/rankings', [ComparisonController::class, 'competitorRankings']);
+    Route::get('competitors/{id}/gaps', [ComparisonController::class, 'competitorGaps']);
+
     // Competitor Management (SPEC-003-2)
     Route::apiResource('competitors', CompetitorController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);

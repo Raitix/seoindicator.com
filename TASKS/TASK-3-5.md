@@ -1,7 +1,7 @@
 # SPEC-003-5: Backend - Comparison Engine Service
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -82,3 +82,6 @@ _Agent communication log_
 
 ### [2026-02-19 23:24] Agent: SpecSystemAnalyst
 Created task for comparison engine service. This is the most complex backend task. Large effort estimate due to multiple endpoints and business logic.
+
+### [2026-02-22 18:15] Agent: Developer
+Set status to In Development. Implemented ComparisonService with summary, comparison results, competitor rankings/gaps, and history helpers. Added ComparisonController and API routes for comparison endpoints with validation + pagination. Updated summary/status logic and position diff handling. Tests not run (handoff to LocalTester).
