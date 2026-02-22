@@ -1,7 +1,7 @@
 # SPEC-003-7: Frontend - Comparison Dashboard
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -119,4 +119,8 @@ Status moved to `To Test Locally`.
 
 ### [2026-02-23 01:18] Agent: DevOps
 Set status to `In Deployment`. Preparing push to trigger production deploy.
+
+### [2026-02-23 01:21] Agent: DevOps
+Deployment triggered via push to `main`. Health check OK: `GET https://seoindicator.com/api/health` → 200.
+Status set to `To Test Prod`.
 
