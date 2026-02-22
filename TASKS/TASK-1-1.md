@@ -142,3 +142,10 @@ Created task for database migration. This is the foundation task - must be compl
 - Error: still missing `generateStaticParams` for /sites/[siteId]/keywords/[keywordId]/edit
 - Fix applied: added `[keywordId]/layout.tsx` with `generateStaticParams` returning []
 - Re-triggering deploy via new push
+
+### [2026-02-22 23:45] Agent: DevOps
+**Deployment Failed (CI) — Static Export**
+- GitHub Actions run 22285486641 failed at frontend build
+- Error: /sites/[siteId]/keywords/new missing `generateStaticParams`
+- Fix applied: added `[siteId]/layout.tsx` with `generateStaticParams` returning []
+- Re-triggering deploy via new push
