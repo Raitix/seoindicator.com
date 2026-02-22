@@ -86,3 +86,11 @@ Backend logic for linking tracked keywords to GSC query data.
 
 **Status:** To Deploy
 
+### [2026-02-22 20:58] Agent: DevOps
+**Deployment Gate (still blocked)**
+- Repo remains ahead of origin/main: `main...origin/main [ahead 67]`.
+- Deployment still requires external action (push to origin/main or manual SSH deploy).
+- Standing by for approval to proceed with production deployment.
+
+**Status:** To Deploy
+
