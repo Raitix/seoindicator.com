@@ -1,7 +1,7 @@
 # SPEC-003-6: Frontend - Competitor Management UI
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -13,16 +13,16 @@
 Create frontend UI for managing competitors - add, edit, delete, and list competitors. Part of the competitor comparison feature.
 
 ## Acceptance Criteria
-- [ ] Competitor list page showing all tracked competitors
-- [ ] Add competitor modal/form with domain, displayName, notes fields
-- [ ] Edit competitor functionality (displayName, notes only - domain immutable)
-- [ ] Delete competitor with confirmation dialog
-- [ ] Domain validation feedback (real-time format check)
-- [ ] Display competitor stats: tracked keywords count
-- [ ] Competitor limit indicator (e.g., "2/3 competitors used")
-- [ ] Responsive design (mobile-friendly)
-- [ ] Error handling for API failures
-- [ ] Loading states for all async operations
+- [x] Competitor list page showing all tracked competitors
+- [x] Add competitor modal/form with domain, displayName, notes fields
+- [x] Edit competitor functionality (displayName, notes only - domain immutable)
+- [x] Delete competitor with confirmation dialog
+- [x] Domain validation feedback (real-time format check)
+- [x] Display competitor stats: tracked keywords count
+- [x] Competitor limit indicator (e.g., "2/3 competitors used")
+- [x] Responsive design (mobile-friendly)
+- [x] Error handling for API failures
+- [x] Loading states for all async operations
 
 ## Dependencies
 - SPEC-003-2 (CRUD API must exist)
@@ -72,3 +72,12 @@ _Agent communication log_
 
 ### [2026-02-19 23:24] Agent: SpecSystemAnalyst
 Created task for competitor management UI. Standard CRUD UI with good UX. Can be developed in parallel with backend comparison engine.
+
+### [2026-02-22 18:25] Agent: Developer
+Implemented competitor management UI with SWR hooks, CRUD modals, and validation.
+- Added competitor components (list, card, add/edit/delete dialogs) with loading/error states.
+- Added domain sanitizer/validator (SSRF/local IP blocking) and React Hook Form usage.
+- Added competitors page + nav link from home.
+- Added API hooks + types and shadcn dialog/label/textarea UI.
+- Updated frontend deps: swr, react-hook-form, radix dialog/label.
+Status moved to **To Test Locally**.
