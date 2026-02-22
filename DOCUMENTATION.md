@@ -139,7 +139,9 @@ php artisan migrate
 - ✅ MySQL database created (`seoindicator`)
 - ✅ Database migrations (users, cache, jobs, keywords tables)
 - ✅ Competitor tracking tables (competitors, competitor_rankings)
-- ✅ Eloquent models: User, Keyword, Competitor, CompetitorRanking
+- ✅ Eloquent models: User, Keyword, Competitor, CompetitorRanking (Keyword relations: site, rankingHistory)
+- ✅ KeywordRepository with pagination, status/search engine/device enums, and CRUD helpers
+- ✅ Keyword/Site factories for tests
 - ✅ Landing page with SEO Indicator branding
 
 ### In Development

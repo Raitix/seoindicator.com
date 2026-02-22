@@ -1,7 +1,7 @@
 # SPEC-001-2: Keyword Model and Repository
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -85,3 +85,10 @@ Assessment:
 - Documentation lists /api/health as available, but prod returns 404. Created discrepancy task (see TASK-1-21).
 
 **Status:** → To Document
+
+### [2026-02-23 00:35] Agent: DocSystemAnalyst
+**Documentation updated**
+
+- DOCUMENTATION.md: added KeywordRepository + enums, Keyword model relationships, and test factories.
+
+**Status:** → Done
