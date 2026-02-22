@@ -15,7 +15,8 @@ class SERPResultData implements SERPResult
         private readonly array $results,
         private readonly string $checkedAt,
         private readonly ?string $error,
-        private readonly int $durationMs
+        private readonly int $durationMs,
+        private readonly ?array $serpFeatures = null
     ) {
     }
 
@@ -57,5 +58,10 @@ class SERPResultData implements SERPResult
     public function getDurationMs(): int
     {
         return $this->durationMs;
+    }
+
+    public function getSerpFeatures(): ?array
+    {
+        return $this->serpFeatures;
     }
 }

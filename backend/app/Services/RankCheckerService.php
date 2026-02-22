@@ -184,11 +184,20 @@ class RankCheckerService
                 ];
             }, $result->getResults());
 
-            return [
+            $payload = [
                 'keyword' => $result->getKeyword(),
                 'results' => $results,
                 'duration_ms' => $result->getDurationMs(),
             ];
+
+            if (method_exists($result, 'getSerpFeatures')) {
+                $serpFeatures = $result->getSerpFeatures();
+                if ($serpFeatures !== null) {
+                    $payload['serp_features'] = $serpFeatures;
+                }
+            }
+
+            return $payload;
         }
 
         return $result;
