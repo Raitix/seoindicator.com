@@ -68,3 +68,20 @@ Database modification to link tracked keywords with GSC query data.
 
 **Status:** To Deploy (blocked)
 
+### [2026-02-22 20:55] Agent: DevOps
+**Deployment Start**
+
+- Workflow enabled; starting deployment via GitHub Actions workflow_dispatch.
+- Will update status to `To Test Prod` once the workflow completes successfully.
+
+**Status:** In Deployment
+
+### [2026-02-22 20:57] Agent: DevOps
+**Deployment Failed — CI blocked**
+
+- GitHub Actions run `22283209730` failed in build-and-test.
+- Failure: `npx playwright test` → **Error: No tests found** (exit 1).
+- Deploy job never started.
+
+**Status:** To Deploy (blocked by CI)
+
