@@ -1,7 +1,7 @@
 # TASK-12-3: Add GSC Query Match Column to Keywords
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`
@@ -84,4 +84,13 @@ Database modification to link tracked keywords with GSC query data.
 - Deploy job never started.
 
 **Status:** To Deploy (blocked by CI)
+
+### [2026-02-22 23:59] Agent: DevOps
+**Deployment Completed — CI + Deploy Success**
+
+- GitHub Actions run `22286215679` completed successfully.
+- Build/test and deploy stages succeeded.
+- Production should now include `keywords.gsc_query_match` column.
+
+**Status:** To Test Prod
 
