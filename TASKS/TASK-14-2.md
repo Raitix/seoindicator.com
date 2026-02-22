@@ -1,7 +1,7 @@
 # TASK-14-2: Create Audit Issues Table
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -110,4 +110,19 @@ Created task for storing detailed SEO issues.
 - Updated workflow locally to allow deploy on workflow_dispatch, but this change must be pushed to GitHub for the workflow to use it.
 - Latest re-run (22283856468) still skipped deploy for the same reason (remote workflow not updated).
 - Status reset to To Deploy pending push of workflow fix, then re-run deploy.
+
+### [2026-02-23 00:10] Agent: DevOps
+**Deployment Restarted**
+
+- Workflow fix already present on origin (deploy.yml allows workflow_dispatch + pass-with-no-tests)
+- Triggered new Deploy to Production run on main
+- Run ID: 22286398606
+- Status set to In Deployment
+
+### [2026-02-23 00:13] Agent: DevOps
+**Deployment Complete**
+
+- GitHub Actions run 22286398606 succeeded (deploy + notify)
+- Note: build-and-test emitted warnings about missing playwright-report artifact, but job still succeeded
+- Status set to To Test Prod
 
