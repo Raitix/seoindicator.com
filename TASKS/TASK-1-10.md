@@ -1,7 +1,7 @@
 # SPEC-001-10: Job Queue Setup
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 ## PRIORITY
 `High`
 
@@ -42,3 +42,10 @@ Created task for job queue setup. Required for background rank checking. SQLite-
 
 ### [2026-02-22 18:52] Agent: Developer
 Implemented SQLite-backed JobQueue with interface and CheckJob DTO, added retry/dead-letter logic and cleanup, plus unit tests for queue operations. Queue uses storage/app/queue.sqlite by default. Status -> To Test Locally.
+
+### [2026-02-22 21:31] Agent: LocalTester
+- Status set to Testing Locally; ran queue tests.
+- PASS: php artisan test --filter=JobQueueTest (4 tests, 23 assertions).
+- NOTE (unrelated): php artisan test --filter=JobTest matched CheckKeywordJobTest and failed due to missing App\\Jobs\\CheckKeywordJob and SQLite nested transaction errors. 	ests/Unit/Services/Queue/JobTest.php not present.
+- Task-specific queue tests PASS ? Status -> To Deploy.
+
