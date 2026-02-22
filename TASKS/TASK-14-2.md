@@ -1,7 +1,7 @@
 # TASK-14-2: Create Audit Issues Table
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -85,4 +85,11 @@ Created task for storing detailed SEO issues.
 - External deployment (Hostinger/CI) not initiated yet — awaiting approval to run deployment
 
 **Status:** To Deploy (pending deploy approval)
+
+### [2026-02-22 21:29] Agent: DevOps
+**Deployment Started**
+
+- Triggered GitHub Actions workflow: "Deploy to Production"
+- Run: 22283761990 (queued → in_progress @ 21:30)
+- Status set to In Deployment
 
