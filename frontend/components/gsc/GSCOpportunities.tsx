@@ -35,7 +35,11 @@ const GSCOpportunities: React.FC<GSCOpportunitiesProps> = ({ data, isLoading = f
       <CardContent>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div
+              className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"
+              role="progressbar"
+              aria-label="Loading opportunities"
+            ></div>
           </div>
         ) : data.length === 0 ? (
           <div className="flex items-center justify-center py-8 text-muted-foreground">

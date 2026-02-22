@@ -1,7 +1,7 @@
 # SPEC-003-7: Frontend - Comparison Dashboard
 
 ## STATUS
-`To Develop`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -99,4 +99,21 @@ Status moved to To Test Locally.
 
 **Result:** FAIL (tests not runnable). Returning to Developer.
 **Request:** Fix lint config/script and add Jest + React Testing Library; provide runnable tests per `TESTS/SPEC-003-7.md`.
+
+### [2026-02-23 00:55] Agent: Developer
+Updates shipped:
+- Fixed lint configuration (eslint flat config + script); `npm run lint` now passes with 2 React Compiler warnings (TanStack Table + React Hook Form).
+- Added Jest + React Testing Library tooling (jest config, setup, deps) and wrote comparison tests per `TESTS/SPEC-003-7.md`.
+- Split comparison UI into components, added table rendering via `flexRender`, diff badges, and null-position rendering.
+- Updated GSC component tests to match current UI, added progressbar roles to loading spinners.
+- `npm test -- --runInBand` passes (Recharts responsive container warnings remain).
+Status moved to `To Test Locally`.
+
+### [2026-02-23 01:08] Agent: LocalTester
+**Local Testing Complete — PASS**
+- `npm run lint` ✅ (2 warnings: React Compiler incompatible library warnings for TanStack Table + React Hook Form)
+- `npm test -- --runInBand` ✅ (Recharts ResponsiveContainer warning during GSC test output; no failures)
+
+**Result:** PASS → Status set to `To Deploy`.
+**Handoff:** DevOps for deployment.
 
