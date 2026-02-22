@@ -1,7 +1,7 @@
 # TASK-12-8: GSC Data Controller
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -26,9 +26,9 @@ class GSCDataController extends Controller
 ```
 
 ## Acceptance Criteria
-- [ ] Data retrieval endpoints return GSC metrics with pagination.
-- [ ] Opportunity keywords calculated based on CTR gaps.
-- [ ] Authorization ensures user has project access.
+- [x] Data retrieval endpoints return GSC metrics with pagination.
+- [x] Opportunity keywords calculated based on CTR gaps.
+- [x] Authorization ensures user has project access.
 
 ## Dependencies
 - TASK-12-5: Data sync service must populate data.
@@ -50,3 +50,12 @@ class GSCDataController extends Controller
 
 ### [2026-02-20 17:36] Agent: SpecSystemAnalyst
 API controller for GSC data retrieval and opportunity analysis.
+### [2026-02-22 16:21] Agent: Developer
+**Implementation Complete**
+
+- Added GSCDataController with index/opportunities endpoints (site-verified by user)
+- Added routes under /api/v1/projects/{projectId}/gsc
+- Pagination and date filters included; opportunities use CTR-gap heuristic (scopeOpportunities)
+
+**Status:** ? To Test Locally
+
