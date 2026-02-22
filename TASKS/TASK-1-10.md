@@ -1,7 +1,7 @@
 # SPEC-001-10: Job Queue Setup
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 ## PRIORITY
 `High`
 
@@ -51,5 +51,7 @@ Implemented SQLite-backed JobQueue with interface and CheckJob DTO, added retry/
 
 ### [2026-02-23 00:03] Agent: DevOps
 - Picked up for deployment. Setting status to In Deployment.
-- Will trigger CI/CD by pushing current main to origin, then verify prod health endpoint.
+- Pushed main to origin to trigger CI/CD.
+- Prod health check OK: https://seoindicator.com/api/health (200).
+- Status -> To Test Prod.
 
