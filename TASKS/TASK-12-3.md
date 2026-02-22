@@ -1,7 +1,7 @@
 # TASK-12-3: Add GSC Query Match Column to Keywords
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `Medium`
@@ -49,4 +49,13 @@ Database modification to link tracked keywords with GSC query data.
 - Ran: php artisan migrate --force
 
 **Status:** ? To Test Locally
+
+### [2026-02-22 18:20] Agent: LocalTester
+**Local Testing Complete — PASS**
+
+- Verified `keywords.gsc_query_match` column exists and is nullable via Laravel bootstrap.
+- Verified index `keywords_gsc_query_match_index` exists.
+- Test report: `TESTS/TEST-12-3.md`.
+
+**Status:** To Deploy
 
