@@ -1,7 +1,7 @@
 # SPEC-001-11: Rank Checker Worker
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 ## PRIORITY
 `High`
 
@@ -91,3 +91,6 @@ Ran `php artisan test --filter RankChecker`.
 Result: PASS (29 tests, 80 assertions, 3.00s).
 Report: `TESTS/TEST-1-11.md`.
 Status -> To Deploy.
+
+### [2026-02-23 01:20] Agent: DevOps
+Set status -> In Deployment. Main already up-to-date; deployment pipeline requires push, so no new deployment triggered. Ran post-deploy health check: `GET https://seoindicator.com/api/health` => {"status":"ok","database":"connected"}. Status -> To Test Prod.
