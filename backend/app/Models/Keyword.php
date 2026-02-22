@@ -49,6 +49,7 @@ class Keyword extends Model
         'site_id',
         'user_id',
         'keyword',
+        'gsc_query_match',
         'target_url',
         'search_engine',
         'location',
