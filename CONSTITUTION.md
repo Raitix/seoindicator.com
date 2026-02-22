@@ -29,6 +29,27 @@ SEOIndicator — SEO analysis and monitoring tool.
 
 ---
 
+## Response Format Rule
+
+When using the `nvidia/deepseek-ai/deepseek-v3.2` model (or any model that may output JSON-encoded responses), agents MUST respond with normal human-readable text, not JSON-encoded arrays.
+
+Example:
+```
+✅ CORRECT:
+**nvidia/deepseek-ai/deepseek-v3.2 : Lead**
+
+Normal response text here.
+```
+
+```
+❌ INCORRECT:
+[{'type': 'text', 'text': "**nvidia/deepseek-ai/deepseek-v3.2 : Lead**\n\nNormal response text here."}]
+```
+
+All agents must follow this rule regardless of model used.
+
+---
+
 ## Development Approach
 
 **Specification Driven Development (SDD)**
@@ -311,3 +332,7 @@ TASKS
 - Tests: `TEST-X-Y.md` (e.g., `TEST-3-4.md` tests `TASK-3-4`)
 
 **Note:** Features and specifications share the same number (FEAT-3 ↔ SPEC-3) for easier tracking.
+
+---
+Last updated: 2026-02-21
+---

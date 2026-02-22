@@ -62,4 +62,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(Keyword::class);
     }
+
+    /**
+     * Get the GSC connections for this user.
+     */
+    public function gscConnections(): HasMany
+    {
+        return $this->hasMany(GSCConnection::class);
+    }
+
+    /**
+     * Get the projects/sites for this user.
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
 }
