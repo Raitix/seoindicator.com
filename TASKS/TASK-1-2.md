@@ -49,4 +49,6 @@ Created task for keyword model and repository. Standard data layer implementatio
 - Added KeywordRepository with pagination, status filtering, create/update/delete, counts
 - Added KeywordFactory + Site model/factory
 
+**Tests:** php artisan test --filter "KeywordTest|RankingTest|KeywordRepositoryTest|RankingRepositoryTest"
+
 **Status:** → To Test Locally

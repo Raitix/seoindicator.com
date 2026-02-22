@@ -47,4 +47,6 @@ Created task for ranking model and repository. Pairs with keyword repository for
 - Added RankingRepository with latest, date range, create, stats calculations
 - Added RankingFactory
 
+**Tests:** php artisan test --filter "KeywordTest|RankingTest|KeywordRepositoryTest|RankingRepositoryTest"
+
 **Status:** → To Test Locally
