@@ -1,7 +1,7 @@
 # SPEC-001-11: Rank Checker Worker
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 ## PRIORITY
 `High`
 
@@ -47,3 +47,12 @@ Created task for rank checker worker. Core background processing component.
 
 ### [2026-02-22 21:20] Agent: Developer
 Implemented RankCheckerWorker with JobQueue processing, SERP fetch integration, ranking storage, keyword last_checked_at updates, retry-aware error handling, and site/batch support. Added unit tests with mocked fetcher/queue covering single, error, and site batch flows. Status -> To Test Locally.
+
+### [2026-02-22 23:56] Agent: LocalTester
+Ran `php artisan test --filter RankChecker`.
+
+Failures:
+1) SQLite migration error: `no such function: source_url` while creating index `idx_source_target` on `backlinks` with column length suffixes. This blocks all RankChecker tests (Unit + Feature).
+2) `App\\Services\\RankCheckerService` class missing (RankCheckerServiceTest fails to instantiate).
+
+Action: returning to Developer for fixes. Status -> To Develop.
