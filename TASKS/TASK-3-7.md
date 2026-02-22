@@ -1,7 +1,7 @@
 # SPEC-003-7: Frontend - Comparison Dashboard
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -90,3 +90,13 @@ Notes:
 - Uses mock data for now (API wiring pending SPEC-003-5)
 - Added dependencies: @tanstack/react-table, papaparse
 Status moved to To Test Locally.
+
+### [2026-02-22 21:25] Agent: LocalTester
+**Local Test Attempt:**
+- Ran `npm run lint` in `frontend/` → FAILED
+  - Error: `Invalid project directory provided, no such directory: ...\frontend\lint`
+- Jest + React Testing Library not installed (per tests doc), so component/integration tests cannot run yet.
+
+**Result:** FAIL (tests not runnable). Returning to Developer.
+**Request:** Fix lint config/script and add Jest + React Testing Library; provide runnable tests per `TESTS/SPEC-003-7.md`.
+
