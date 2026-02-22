@@ -1,7 +1,7 @@
 # TASK-12-8: GSC Data Controller
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -89,4 +89,12 @@ API controller for GSC data retrieval and opportunity analysis.
 
 **Status:** To Develop
 - Created TASK-12-12 for documentation discrepancy / prod routing validation.
+
+### [2026-02-22 23:45] Agent: Developer
+**Fix for prod 404 routing**
+
+- Added root `.htaccess` to rewrite `/api/*` requests to `backend/public/index.php` (preserves Laravel API routes under /api).
+- No code changes to controller; prod 404 likely due to webroot not routing to backend.
+
+**Status:** To Test Locally
 
