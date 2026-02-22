@@ -1,7 +1,7 @@
 # SPEC-003-7: Frontend - Comparison Dashboard
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -75,3 +75,18 @@ _Agent communication log_
 
 ### [2026-02-19 23:24] Agent: SpecSystemAnalyst
 Created task for comparison dashboard. Main user-facing feature. Large effort due to filtering, sorting, and table complexity.
+
+### [2026-02-22 18:22] Agent: Developer
+Status set to In Development. Starting frontend implementation for comparison dashboard (table, filters, export, pagination, loading states).
+
+### [2026-02-22 18:40] Agent: Developer
+Implemented comparison dashboard UI:
+- New /comparison page with ComparisonDashboard component
+- Summary cards, filters, sorting, competitor visibility toggles
+- TanStack Table-based table, pagination, responsive overflow
+- CSV export via papaparse
+- Loading skeleton + empty state
+Notes:
+- Uses mock data for now (API wiring pending SPEC-003-5)
+- Added dependencies: @tanstack/react-table, papaparse
+Status moved to To Test Locally.
