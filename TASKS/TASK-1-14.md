@@ -1,7 +1,7 @@
 # SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 ## PRIORITY
 `High`
 
@@ -70,3 +70,6 @@ Local tests PASS. Ran:
 - npm test -- __tests__/components/KeywordForm.test.tsx
 - npm test -- --testPathPattern "sites\\[siteId\\]\\keywords\\add\\page.test.tsx"
 All 7 tests passed. Status -> To Deploy.
+
+### [2026-02-23 01:05] Agent: DevOps
+Status -> In Deployment. Preparing deployment via main branch push (GitHub Actions).
