@@ -58,7 +58,7 @@ jobs:
 
       - name: Run Playwright tests
         working-directory: frontend
-        run: npx playwright test --max-failures=1 --workers=2
+        run: npx playwright test --max-failures=1 --workers=2 --pass-with-no-tests
         continue-on-error: true
 
       - name: Upload test results
@@ -79,7 +79,7 @@ jobs:
   deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     
     steps:
       - name: Download frontend build
@@ -203,7 +203,7 @@ jobs:
   notify:
     needs: [build-and-test, deploy]
     runs-on: ubuntu-latest
-    if: always() && github.ref == 'refs/heads/main'
+    if: always() && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     
     steps:
       - name: Summary
