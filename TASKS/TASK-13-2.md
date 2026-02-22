@@ -1,7 +1,7 @@
 # TASK-13-2: Create Backlinks Table
 
 ## STATUS
-`To Test Prod`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -82,4 +82,21 @@ Created task to store backlink details for projects.
 - Proceeding to ProdTester for production validation
 
 **Status:** To Test Prod
+
+### [2026-02-22 23:55] Agent: ProdTester
+**Production Test Results: FAIL**
+
+- `php artisan migrate:status` confirms migration `2026_02_21_220000_create_backlinks_table` ran.
+- Table exists and columns match expected fields (using `site_id` FK):
+  - id, site_id, source_url, target_url, anchor_text, link_type, domain_authority, page_authority, first_seen, last_checked, is_active, is_toxic, created_at, updated_at
+- **Indexes missing in production DB:**
+  - `idx_source_target`
+  - `idx_site_active`
+  - `domain_authority` index
+  - `first_seen` index
+- `SHOW INDEX FROM backlinks` only returns PRIMARY and `backlinks_site_id_foreign`.
+
+**Action Needed:** add a corrective migration (or ensureIndex logic on deploy) to create missing indexes in production.
+
+**Status:** To Develop
 
