@@ -19,9 +19,10 @@ return new class extends Migration
     {
         $driver = Schema::getConnection()->getDriverName();
         $isSqlite = stripos($driver, 'sqlite') !== false;
+        $isMysql = stripos($driver, 'mysql') !== false || stripos($driver, 'mariadb') !== false;
 
         if (Schema::hasTable('backlinks')) {
-            if (!$isSqlite) {
+            if ($isMysql) {
                 $this->ensureIndex('idx_source_target', "CREATE INDEX idx_source_target ON backlinks (source_url(191), target_url(191))");
                 $this->ensureIndex('idx_site_active', "CREATE INDEX idx_site_active ON backlinks (site_id, is_active)");
                 $this->ensureIndex('backlinks_domain_authority_index', "CREATE INDEX backlinks_domain_authority_index ON backlinks (domain_authority)");
@@ -46,13 +47,13 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes for common queries
-            if ($isSqlite) {
-                $table->index(['source_url', 'target_url'], 'idx_source_target');
-            } else {
+            if ($isMysql) {
                 $table->index([
                     DB::raw('source_url(191)'),
                     DB::raw('target_url(191)')
                 ], 'idx_source_target');
+            } else {
+                $table->index(['source_url', 'target_url'], 'idx_source_target');
             }
             $table->index(['site_id', 'is_active'], 'idx_site_active');
             $table->index('domain_authority');
