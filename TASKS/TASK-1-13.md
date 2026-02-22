@@ -1,7 +1,7 @@
 # SPEC-001-13: Keyword List Page
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 ## PRIORITY
 `High`
 
@@ -45,3 +45,9 @@ Created task for keyword list page. Main user-facing view for rank tracking.
 
 ### [2026-02-22 21:35] Agent: Developer
 Implemented keyword list page at /sites/[siteId]/keywords with loading/error/empty states, filtering, sorting, pagination controls, bulk actions, row navigation, and status/change indicators. Added keyword API hook/types and UI component.
+
+### [2026-02-22 22:54] Agent: LocalTester
+Set status to Testing Locally. Attempted frontend lint.
+- `npm run lint` failed: Next CLI treated `lint` as project dir → `Invalid project directory provided, no such directory: ...\frontend\lint`.
+- `npx next lint --dir .` failed: `unknown option '--dir'`.
+No automated test suite available for this task beyond lint. Returning to Developer to fix lint invocation/tooling and add/confirm tests if needed.
