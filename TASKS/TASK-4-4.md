@@ -1,7 +1,7 @@
 # SPEC-004-4: CSV Exporter
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -47,3 +47,9 @@ Created as Phase 2 task. CSV export is simpler than PDF, good starting point for
 
 ### [2026-02-22 18:30] Agent: Developer
 - Added CsvReportExporter with UTF-8 BOM, header row, value normalization, and fputcsv escaping
+
+### [2026-02-23 09:40] Agent: LocalTester
+- Set status to Testing Locally and executed a manual CSV generation check.
+- Manual check passes: BOM present (efbbbf), headers/escaping OK, UTF-8 keywords OK, null handling outputs "Not ranked"/"N/A".
+- FAIL: No automated unit tests found for CsvReportExporter (acceptance criterion unmet).
+- Returning to Developer to add unit tests + update TESTS/SPEC-004-4.md coverage.
