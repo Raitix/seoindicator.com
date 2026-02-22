@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`In Deployment`
+`To Develop`
 ## PRIORITY
 `High`
 
@@ -78,3 +78,7 @@ Test report: TESTS/TEST-1-12.md
 
 ### [2026-02-23 01:08] Agent: DevOps
 Picked up for deployment. Status → In Deployment. Preparing to push main and run post-deploy health checks.
+
+### [2026-02-23 01:10] Agent: DevOps
+Pushed main to trigger deploy. Health check OK: GET https://seoindicator.com/api/health → 200 {"status":"ok","database":"connected"}.
+POST https://seoindicator.com/api/v1/scheduler/rank-checks/run → 500 (no body). Issue persists after deploy. Status → To Develop.
