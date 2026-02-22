@@ -1,7 +1,7 @@
 # SPEC-001-7: SERP Fetcher Interface and Mock Implementation
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -38,6 +38,10 @@ Create the SERP fetcher interface and a mock implementation for development/test
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-22 23:45] Agent: Developer
+Fixed MockSERPFetcher to respect includeTargetUrl for isOurSite and made URLs seed-dependent (randomized domain token). Re-ran: `php artisan test --filter=MockSERPFetcherTest` ✅
+Status -> To Test Locally.
 
 ### [2026-02-22 21:09] Agent: LocalTester
 Set status to Testing Locally and ran: `php artisan test --filter=MockSERPFetcherTest`.

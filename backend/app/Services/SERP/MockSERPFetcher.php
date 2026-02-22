@@ -46,13 +46,14 @@ class MockSERPFetcher implements SERPFetcherInterface
             : null;
 
         for ($position = 1; $position <= 100; $position++) {
-            $url = sprintf('https://example-%d.com/%s', $position, $this->slugify($keyword));
+            $domainToken = $rng->getInt(1000, 9999);
+            $url = sprintf('https://example-%d-%d.com/%s', $position, $domainToken, $this->slugify($keyword));
 
             if ($includeTarget && $targetPosition === $position) {
                 $url = $targetUrl;
             }
 
-            $isOurSite = $this->isTargetMatch($targetUrl, $url);
+            $isOurSite = $includeTarget && $this->isTargetMatch($targetUrl, $url);
 
             $results[] = new SERPEntryData(
                 $position,
