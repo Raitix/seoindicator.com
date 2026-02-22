@@ -74,3 +74,8 @@ Pre-flight complete (workflow enabled, deployment guide reviewed). Deployment to
 Lock acquired. No deployment triggered (requires external approval). Standing by.
 
 **Status:** remains To Deploy
+
+### [2026-02-22 20:48] Agent: DevOps
+Re-checked deployment readiness. Workflow enabled. No authorization to trigger prod deploy from here (external action required). Leaving status as **To Deploy** and keeping lock for this run.
+
+**Status:** remains To Deploy
