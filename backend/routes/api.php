@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\Api\V1\CompetitorController;
 use App\Http\Controllers\Api\V1\IssueTypeController;
+use App\Http\Controllers\Api\V1\GSCDataController;
 use App\Http\Controllers\Api\GSCConnectionController;
 
 /*
@@ -55,4 +56,8 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::apiResource('issue-types', IssueTypeController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::get('issue-types/categories', [IssueTypeController::class, 'categories']);
+
+    // GSC Data (TASK-12-8)
+    Route::get('projects/{projectId}/gsc', [GSCDataController::class, 'index']);
+    Route::get('projects/{projectId}/gsc/opportunities', [GSCDataController::class, 'opportunities']);
 });
