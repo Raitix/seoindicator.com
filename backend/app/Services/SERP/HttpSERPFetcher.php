@@ -50,7 +50,8 @@ class HttpSERPFetcher implements SERPFetcherInterface
             $results,
             $checkedAt,
             $payload['error'] ?? null,
-            (int) $durationMs
+            (int) $durationMs,
+            is_array($payload['serp_features'] ?? null) ? $payload['serp_features'] : null
         );
     }
 }

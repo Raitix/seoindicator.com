@@ -31,7 +31,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::create('backlinks', function (Blueprint $table) use ($driver) {
+        Schema::create('backlinks', function (Blueprint $table) use ($driver, $isMysql) {
             $table->id();
             $table->foreignId('site_id')->constrained()->onDelete('cascade');
             $table->string('source_url', 2083);
