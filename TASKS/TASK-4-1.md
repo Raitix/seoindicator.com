@@ -1,7 +1,7 @@
 # SPEC-004-1: Database Migration - Reports Tables
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -57,3 +57,11 @@ Created as Phase 1 foundation task. Must be completed before any other report ta
 - Re-apply migration ✅
 - Documented tests in TESTS/SPEC-004-1.md
 - Status → To Deploy
+
+### [2026-02-22 23:56] Agent: DevOps
+- Status → In Deployment
+- Triggered GitHub Actions workflow: "Deploy to Production" (run id: 22286139500)
+- Workflow completed successfully; build annotations noted missing Playwright report artifact and an exit code 1 message in annotations, but deploy job completed
+- Health check: https://seoindicator.com/api/health → 200 (db connected)
+- Homepage: https://seoindicator.com/ → 200
+- Status → To Test Prod
