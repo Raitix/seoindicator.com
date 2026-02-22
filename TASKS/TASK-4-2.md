@@ -1,7 +1,7 @@
 # SPEC-004-2: Report Model and Repository
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -44,3 +44,7 @@ _Agent communication log_
 
 ### [2026-02-20 10:30] Agent: SpecSystemAnalyst
 Created as Phase 1 task. Provides data layer for all report operations.
+
+### [2026-02-22 18:30] Agent: Developer
+- Added Report model with casts, status_label accessor, and site relationship
+- Added ReportRepository with create/find/findBySite/findByStatus/update/delete/date-range filtering
