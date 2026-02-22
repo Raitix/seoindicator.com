@@ -1,7 +1,7 @@
 # SPEC-003-7: Frontend - Comparison Dashboard
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -116,4 +116,7 @@ Status moved to `To Test Locally`.
 
 **Result:** PASS → Status set to `To Deploy`.
 **Handoff:** DevOps for deployment.
+
+### [2026-02-23 01:18] Agent: DevOps
+Set status to `In Deployment`. Preparing push to trigger production deploy.
 
