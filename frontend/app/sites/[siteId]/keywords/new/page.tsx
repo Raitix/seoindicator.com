@@ -6,8 +6,8 @@ interface PageProps {
 
 export const dynamicParams = false;
 
-export function generateStaticParams() {
-  return [];
+export async function generateStaticParams(): Promise<Array<{ siteId: string }>> {
+  return [{ siteId: "1" }];
 }
 
 export default function NewKeywordPage({ params }: PageProps) {

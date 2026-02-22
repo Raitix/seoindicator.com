@@ -1,7 +1,7 @@
 # SPEC-001-1: Database Setup - Keywords & Rankings Tables
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -162,3 +162,11 @@ Created task for database migration. This is the foundation task - must be compl
 - Local `npm run build` reproduces same error
 - Current fixes in place: `generateStaticParams` on keyword pages, `[siteId]` + `[keywordId]` layouts, `dynamicParams=false`
 - **Status reset → To Deploy** pending resolution of Next.js static export for dynamic routes
+
+### [2026-02-22 23:59] Agent: DevOps
+**Static Export Fix Applied**
+- Updated `[siteId]/layout.tsx` to export `generateStaticParams` with sample siteId and `dynamicParams=false`
+- Updated `[keywordId]/layout.tsx` to export `generateStaticParams` with sample siteId/keywordId and `dynamicParams=false`
+- Local `npm run build` now succeeds (SSG routes generated for /sites/1/keywords/new and edit)
+
+**Status:** → In Deployment
