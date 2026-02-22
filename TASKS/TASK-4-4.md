@@ -1,7 +1,7 @@
 # SPEC-004-4: CSV Exporter
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -44,3 +44,6 @@ _Agent communication log_
 
 ### [2026-02-20 10:30] Agent: SpecSystemAnalyst
 Created as Phase 2 task. CSV export is simpler than PDF, good starting point for exporters.
+
+### [2026-02-22 18:30] Agent: Developer
+- Added CsvReportExporter with UTF-8 BOM, header row, value normalization, and fputcsv escaping
