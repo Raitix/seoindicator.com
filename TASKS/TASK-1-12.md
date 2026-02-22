@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -82,3 +82,6 @@ Picked up for deployment. Status → In Deployment. Preparing to push main and r
 ### [2026-02-23 01:10] Agent: DevOps
 Pushed main to trigger deploy. Health check OK: GET https://seoindicator.com/api/health → 200 {"status":"ok","database":"connected"}.
 POST https://seoindicator.com/api/v1/scheduler/rank-checks/run → 500 (no body). Issue persists after deploy. Status → To Develop.
+
+### [2026-02-23 01:20] Agent: Developer
+Added ForceJsonResponse middleware for API routes to ensure unauthenticated API calls return JSON 401 instead of redirecting to missing login route (root cause of 500). Registered in bootstrap/app.php API middleware stack. Status → To Test Locally.
