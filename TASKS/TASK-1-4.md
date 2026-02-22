@@ -1,7 +1,7 @@
 # SPEC-001-4: Keywords CRUD API Endpoints
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 ## PRIORITY
 `High`
 
@@ -48,3 +48,9 @@ Implemented KeywordController + Store/Update request validation, list/sort/pagin
 
 ### [2026-02-22 23:50] Agent: Developer
 Verified controller/routes/requests and keyword CRUD behavior already implemented in backend. Marked acceptance criteria complete and moved task to To Test Locally.
+
+### [2026-02-22 23:59] Agent: LocalTester
+Set status to Testing Locally and ran: `php artisan test --filter KeywordControllerTest`.
+FAIL: All tests failed due to SQLite error during migrations: `SQLSTATE[HY000]: General error: 1 no such function: source_url` when creating index `idx_source_target` on `backlinks` (uses prefix length like `source_url(191)`). This syntax is MySQL-specific and breaks SQLite in-memory tests.
+Action: Returning to Developer. Please adjust migration/index creation for SQLite (conditional index, or use full-column index in sqlite), or configure tests to use MySQL.
+Status set back to `To Develop`.
