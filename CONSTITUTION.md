@@ -169,6 +169,10 @@ Every feature, specification, and task has a STATUS that tracks its progress thr
 
 **New statuses:** `To Document` and `Documentation in Progress` (replaces `Documentation`).
 
+### High Priority Security Fix (SPEC-SEC)
+- Any item with status **`High Priority Security Fix`** (typically `SPEC-SEC-*`) **must be processed first** at every stage.
+- This overrides normal FIFO/queue ordering. Agents must **prioritize SPEC-SEC items above all other work**.
+
 ### Status Definitions & Agent Responsibilities
 
 | Status | Who | Action |
