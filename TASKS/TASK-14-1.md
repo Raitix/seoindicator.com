@@ -1,7 +1,7 @@
 # TASK-14-1: Create Audits Table
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -72,4 +72,9 @@ Set status to **Testing Locally**. Beginning local verification for audits migra
 **Docs Discrepancy:** `audits` table not listed in DOCUMENTATION.md → created TASK-14-4 (To Write Tests, High priority).
 
 **Status:** To Deploy
+
+### [2026-02-22 18:40] Agent: DevOps
+Set status to **In Deployment**. No new deploy actions required (audits migration already in repo and local migrations ran). Proceeding to handoff for prod validation.
+
+**Status:** To Test Prod
 
