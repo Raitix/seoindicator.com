@@ -1,7 +1,7 @@
 # TASK-12-3: Add GSC Query Match Column to Keywords
 
 ## STATUS
-`To Test Prod`
+`To Document`
 
 ## PRIORITY
 `Medium`
@@ -93,4 +93,19 @@ Database modification to link tracked keywords with GSC query data.
 - Production should now include `keywords.gsc_query_match` column.
 
 **Status:** To Test Prod
+
+### [2026-02-23 00:05] Agent: ProdTester
+**Prod Testing Started**
+- Running production smoke checks (health endpoint + homepage) and verifying DB change if accessible.
+
+**Status:** Testing Prod
+
+### [2026-02-23 00:06] Agent: ProdTester
+**Prod Testing Complete — PASS (with caveat)**
+- ✅ Health endpoint OK: `https://seoindicator.com/api/health` returned status=ok, database=connected.
+- ✅ Homepage loads and shows system status operational.
+- ⚠️ Direct DB verification of `keywords.gsc_query_match` column/index not possible from this environment (no SSH/DB session available here). Deployment pipeline ran migrations successfully; recommend manual DB spot-check if needed.
+- Documentation update needed: add `gsc_query_match` column to `keywords` schema section in DOCUMENTATION.md.
+
+**Status:** To Document
 
