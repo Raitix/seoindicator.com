@@ -1,7 +1,7 @@
 # SPEC-001-1: Database Setup - Keywords & Rankings Tables
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -155,3 +155,10 @@ Created task for database migration. This is the foundation task - must be compl
 - Local `npm run build` still reports missing `generateStaticParams` on /sites/[siteId]/keywords/new
 - Fix applied: set `dynamicParams = false` on keyword routes (keywords, new, edit)
 - Re-triggering deploy via new push
+
+### [2026-02-22 23:55] Agent: DevOps
+**Deployment Blocked (CI)**
+- GitHub Actions run 22285550002 still fails: /sites/[siteId]/keywords/new missing `generateStaticParams`
+- Local `npm run build` reproduces same error
+- Current fixes in place: `generateStaticParams` on keyword pages, `[siteId]` + `[keywordId]` layouts, `dynamicParams=false`
+- **Status reset → To Deploy** pending resolution of Next.js static export for dynamic routes
