@@ -1,7 +1,7 @@
 # SPEC-004-6: Report Data Aggregation Service
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -53,3 +53,9 @@ Created as Phase 2 task. Critical for report content. Medium risk due to data co
 ### [2026-02-22 18:36] Agent: Developer
 - Added ReportDataAggregator service to compile keyword rankings, changes, top performers, needs-attention, and trend series
 - Includes optional competitor summary when available
+
+### [2026-02-22 23:55] Agent: LocalTester
+- Set status to Testing Locally and reviewed implementation
+- FAIL: required unit tests are missing for ReportDataAggregator (acceptance criteria requires mock ranking data tests)
+- Created local test report: TESTS/SPEC-004-6.md
+- Returning task to Developer for test coverage
