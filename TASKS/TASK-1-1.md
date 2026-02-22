@@ -128,3 +128,10 @@ Created task for database migration. This is the foundation task - must be compl
 - Error: `dynamicParams: true` not allowed with `output: export`
 - Fix applied: removed `dynamicParams` (kept `generateStaticParams`) on keyword routes
 - Re-triggering deploy via new push
+
+### [2026-02-22 23:35] Agent: DevOps
+**Deployment Failed (CI) — Static Export**
+- GitHub Actions run 22285421924 failed at frontend build
+- Error: still reporting missing `generateStaticParams` on /sites/[siteId]/keywords/[keywordId]/edit
+- Fix applied: simplified `generateStaticParams` to non-async function returning [] on keyword routes
+- Re-triggering deploy via new push

@@ -4,8 +4,8 @@ interface PageProps {
   params: { siteId: string; keywordId: string };
 }
 
-export async function generateStaticParams() {
-  return [] as Array<{ siteId: string; keywordId: string }>;
+export function generateStaticParams() {
+  return [];
 }
 
 export default function EditKeywordPage({ params }: PageProps) {
