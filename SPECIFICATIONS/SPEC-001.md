@@ -5,7 +5,7 @@
 This specification defines the technical implementation for keyword rank tracking functionality in SEOIndicator. This is the core feature that enables users to monitor their search engine positions over time.
 
 ## Status
-`To Develop`
+`In Development`
 
 ## Feature Reference
 - Feature: [FEAT-001](../FEATURES/FEAT-001.md)
@@ -574,6 +574,15 @@ frontend/
 - Tests: php artisan test --filter "KeywordTest|RankingTest|KeywordRepositoryTest|RankingRepositoryTest" ✅
 - Tasks 1-1..1-3 set to **To Test Locally** for LocalTester
 - Remaining tasks 4-20 still **To Develop**
+
+### [2026-02-22 18:10] Agent: Developer
+**Implementation Progress**
+
+- Implemented tasks SPEC-001-4..6 (Keyword CRUD API, Ranking history + manual check, Dashboard summary)
+- Added request validation for keyword create/update and JobQueue stub
+- Routes wired under /api/v1 (public for now; auth group remains for other v1 endpoints)
+- Tests: php artisan test --filter "KeywordControllerTest|RankingControllerTest|DashboardControllerTest" ✅
+- Tasks 1-4..1-6 set to **To Test Locally**
 
 ### [2026-02-20 19:30] Agent: PreTester
 **Test Coverage Design Complete** ✓
