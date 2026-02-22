@@ -1,7 +1,7 @@
 # SPEC-001-6: Dashboard API Endpoint
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -12,15 +12,15 @@
 Implement the dashboard summary API that provides an overview of ranking changes and key metrics.
 
 ## Acceptance Criteria
-- [ ] GET /api/v1/sites/:siteId/dashboard - Get dashboard summary
-- [ ] Response includes: totalKeywords, activeKeywords, rankedKeywords, notRankedKeywords
-- [ ] Response includes: averagePosition across all keywords
-- [ ] Response includes positionChanges: improved, declined, unchanged, new
-- [ ] Response includes topKeywords (top 5 by position)
-- [ ] Response includes alerts (significant drops, new rankings)
-- [ ] Efficient single query or optimized multi-query approach
-- [ ] Caching for 5 minutes (dashboard data doesn't change frequently)
-- [ ] Integration tests for endpoint
+- [x] GET /api/v1/sites/:siteId/dashboard - Get dashboard summary
+- [x] Response includes: totalKeywords, activeKeywords, rankedKeywords, notRankedKeywords
+- [x] Response includes: averagePosition across all keywords
+- [x] Response includes positionChanges: improved, declined, unchanged, new
+- [x] Response includes topKeywords (top 5 by position)
+- [x] Response includes alerts (significant drops, new rankings)
+- [x] Efficient single query or optimized multi-query approach
+- [x] Caching for 5 minutes (dashboard data doesn't change frequently)
+- [x] Integration tests for endpoint
 
 ## Dependencies
 - SPEC-001-2 (keyword repository)
@@ -45,3 +45,6 @@ Created task for dashboard API. Provides the main dashboard view data.
 
 ### [2026-02-22 18:10] Agent: Developer
 Implemented DashboardController with caching, metrics aggregation, position changes, top keywords, and drop alerts. Route added under v1.
+
+### [2026-02-22 23:58] Agent: Developer
+Status moved to To Test Locally. Acceptance criteria checked against implementation/tests (DashboardController + routing + feature tests).
