@@ -200,6 +200,20 @@ Every feature, specification, and task has a STATUS that tracks its progress thr
 | `Done` | DocSystemAnalyst | Sets this status after updating docs |
 | `Cancelled` | Any agent | Sets with documented reason (see below) |
 
+### Queue Limit Rule (Updated)
+- Queue limits apply only when starting work from a **non‑in‑progress** status.
+- **In‑progress statuses must always be allowed to finish**, regardless of downstream queue size.
+
+In‑progress statuses:
+- Specification In Progress
+- Breaking Into Tasks
+- Prioritization In Progress
+- Tests Coverage In Progress
+- In Development
+- Testing Locally
+- In Deployment
+- Testing Prod
+
 ### Cancellation Protocol
 
 When setting status to `Cancelled`, the agent **MUST** add a `## Cancellation Reason` section to the feature/spec/task file:
