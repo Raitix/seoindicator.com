@@ -1,7 +1,7 @@
 # SPEC-001-15: Ranking History Chart Component
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 ## PRIORITY
 `High`
 
@@ -72,3 +72,9 @@ Created task for ranking history chart. Visual representation of ranking trends.
 - Added public demo route `frontend/app/ranking-history/page.tsx` to render the chart with sample data for prod validation.
 - Route path: `/ranking-history` (no auth required).
 - Status moved to `To Test Locally` for LocalTester.
+
+### [2026-02-23 01:14] Agent: LocalTester
+- Ran `npm test` in `frontend` (12/12 suites, 50/50 tests PASS). Recharts emits width/height console warnings in existing GSC chart tests (pre-existing, non-fatal).
+- Reviewed `RankingHistoryChart` and new `/ranking-history` demo route; logic appears correct for ranges, tooltip, export, empty/loading states.
+- Automated test file for this component still missing (`frontend/__tests__/components/RankingChart.test.tsx`); recommend follow-up test task.
+- Status moved to `To Deploy`.
