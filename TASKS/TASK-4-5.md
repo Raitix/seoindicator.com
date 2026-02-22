@@ -1,7 +1,7 @@
 # SPEC-004-5: PDF Exporter with PDFKit
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -12,7 +12,7 @@
 ## Related
 - Feature: [FEAT-004](../FEATURES/FEAT-004.md)
 - Specification: [SPEC-004](../SPECIFICATIONS/SPEC-004.md)
-- Test: TESTS/SPEC-004-5.md
+- Test: TESTS/TEST-004-5.md
 
 ## Description
 Implement PDF export functionality using PDFKit (free, no external dependencies). Generates professional PDF reports with cover page, sections, and charts.
@@ -53,3 +53,10 @@ Created as Phase 2 task. PDF generation is core feature for professional reports
 ### [2026-02-22 18:36] Agent: Developer
 - Added PdfReportExporter with multi-page support, cover/summary/keywords/changes/trends sections, and page numbering
 - Implemented minimal PDF rendering without external dependencies (A4 sizing, margins, basic typography)
+
+### [2026-02-22 23:45] Agent: LocalTester
+**Result:** FAIL — returning to Dev
+- No automated unit tests found for PdfReportExporter; cannot validate TEST-004-5 scenarios 5.1–5.8.
+- Implementation uses manual PDF string generation; spec calls for PDFKit (free) usage.
+- Acceptance criteria mentions "PDFExporter" class; current class is PdfReportExporter.
+- Updated task test reference to TESTS/TEST-004-5.md.
