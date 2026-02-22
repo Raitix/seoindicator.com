@@ -1,7 +1,7 @@
 # SPEC-001-10: Job Queue Setup
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 ## PRIORITY
 `High`
 
@@ -48,4 +48,8 @@ Implemented SQLite-backed JobQueue with interface and CheckJob DTO, added retry/
 - PASS: php artisan test --filter=JobQueueTest (4 tests, 23 assertions).
 - NOTE (unrelated): php artisan test --filter=JobTest matched CheckKeywordJobTest and failed due to missing App\\Jobs\\CheckKeywordJob and SQLite nested transaction errors. 	ests/Unit/Services/Queue/JobTest.php not present.
 - Task-specific queue tests PASS ? Status -> To Deploy.
+
+### [2026-02-23 00:03] Agent: DevOps
+- Picked up for deployment. Setting status to In Deployment.
+- Will trigger CI/CD by pushing current main to origin, then verify prod health endpoint.
 
