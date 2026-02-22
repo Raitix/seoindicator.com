@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 ## PRIORITY
 `High`
 
@@ -45,3 +45,7 @@ Created task for scheduler. Enables automated daily rank checking.
 
 ### [2026-02-22 21:28] Agent: Developer
 Implemented rank check scheduler service with interval cache, randomized scheduling window, and priority based on last_viewed_at. Added manual trigger endpoint (POST /api/v1/scheduler/rank-checks/run) and artisan command (rank-checks:schedule). Added last_viewed_at tracking + migration + factory updates, queue scheduling support (scheduledFor + created_at filter), config/env settings, and unit tests for scheduler and queue scheduling. Status -> To Test Locally. Tests not run in this session.
+
+### [2026-02-23 00:06] Agent: LocalTester
+Set status to Testing Locally and ran: `php artisan test --filter RankCheckSchedulerTest`.
+Result: **FAIL**. SQLite in-memory test DB errors on migration index prefix: `create index "idx_source_target" on "backlinks" (source_url(191), target_url(191))` → `SQLSTATE[HY000]: General error: 1 no such function: source_url`. This prevents scheduler unit tests from running. Please adjust migration/index for SQLite compatibility in tests or switch test DB to MySQL. Returning to Developer.
