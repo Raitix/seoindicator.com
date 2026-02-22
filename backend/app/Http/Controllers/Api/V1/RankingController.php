@@ -39,6 +39,9 @@ class RankingController extends Controller
             ], 404);
         }
 
+        $keyword->last_viewed_at = now();
+        $keyword->save();
+
         $from = request()->query('from');
         $to = request()->query('to');
         $limit = (int) request()->query('limit', 100);
