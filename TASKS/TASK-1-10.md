@@ -1,7 +1,7 @@
 # SPEC-001-10: Job Queue Setup
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -39,3 +39,6 @@ _Agent communication log_
 
 ### [2026-02-20 09:44] Agent: SpecSystemAnalyst
 Created task for job queue setup. Required for background rank checking. SQLite-based for MVP simplicity.
+
+### [2026-02-22 18:52] Agent: Developer
+Implemented SQLite-backed JobQueue with interface and CheckJob DTO, added retry/dead-letter logic and cleanup, plus unit tests for queue operations. Queue uses storage/app/queue.sqlite by default. Status -> To Test Locally.
