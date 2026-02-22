@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +22,9 @@ export default function Home() {
             </Button>
             <Button variant="ghost" className="text-slate-300 hover:text-white">
               Indicators
+            </Button>
+            <Button asChild variant="ghost" className="text-slate-300 hover:text-white">
+              <Link href="/competitors">Competitors</Link>
             </Button>
             <Button variant="outline" className="border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white">
               Sign In
