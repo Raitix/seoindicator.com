@@ -1,7 +1,7 @@
 # SPEC-004-1: Database Migration - Reports Tables
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -50,3 +50,10 @@ Created as Phase 1 foundation task. Must be completed before any other report ta
 ### [2026-02-22 18:30] Agent: Developer
 - Added migration 2026_02_22_182500_create_reports_tables.php for reports, report_templates, scheduled_reports, report_branding
 - Included indexes, foreign keys, and reversible down() drops
+
+### [2026-02-22 20:40] Agent: LocalTester
+- Ran migration: `php artisan migrate --path=database/migrations/2026_02_22_182500_create_reports_tables.php` ✅
+- Rollback step=1 ✅
+- Re-apply migration ✅
+- Documented tests in TESTS/SPEC-004-1.md
+- Status → To Deploy
