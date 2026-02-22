@@ -1,7 +1,7 @@
 # SPEC-001-15: Ranking History Chart Component
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 ## PRIORITY
 `High`
 
@@ -48,3 +48,9 @@ Created task for ranking history chart. Visual representation of ranking trends.
 - Includes inverted Y-axis, gap for >100 positions, date range selector, tooltip, loading/empty states, responsive layout.
 - Added PNG export via SVG → canvas conversion (no extra deps).
 - Status moved to `To Test Locally`.
+
+### [2026-02-23 00:46] Agent: LocalTester
+- Local QA PASS (static review + logic verification).
+- Updated TESTS/TEST-001-15.md with results.
+- Note: automated test file referenced in test doc (`frontend/__tests__/components/RankingChart.test.tsx`) is missing; recommend follow-up test task.
+- Status moved to `To Deploy`.
