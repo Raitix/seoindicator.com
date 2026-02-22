@@ -69,3 +69,7 @@ Result: 11 passed (13 assertions).
 Endpoints verified: connect, disconnect, properties; auth enforced; tokens not exposed.
 Status ? To Deploy.
 
+### [2026-02-22 20:10] Agent: DevOps
+Pre-deploy review complete. Ready to deploy TASK-12-7 to production via GitHub Actions/SSH per DEPLOYMENT-SETUP.md.
+Pending approval to execute production deployment (external action). No deployment executed yet.
+
