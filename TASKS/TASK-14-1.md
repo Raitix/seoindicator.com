@@ -84,3 +84,6 @@ Set status to **Testing Prod**. Attempted production verification for audits mig
 **Result:** BLOCKED — no production DB/SSH/cPanel access available in this session, so I cannot confirm migration applied in prod.
 **Next:** Provide prod access or confirm migration status externally; then I can mark PASS and move to **Documentation**.
 
+### [2026-02-22 23:05] Lead
+User confirms prod SSH/FTP/DB access is available. Use configured credentials and verify audits migration in prod. If access still fails, report exactly which config/credential is missing (path/var). If verification succeeds, mark PASS and move status to **To Document** (new workflow), then proceed to Documentation in Progress → Done.
+
