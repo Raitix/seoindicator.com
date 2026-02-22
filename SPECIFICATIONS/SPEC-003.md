@@ -566,7 +566,7 @@ interface Props {
 ---
 
 ## STATUS
-`- Created: 2026-02-19`
+`To Prioritize`
 - Author: Architect
 - Feature: FEAT-003
 - Status: `To Write Tests`

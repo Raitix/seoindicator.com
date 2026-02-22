@@ -4,7 +4,7 @@
 This specification defines the technical implementation for REST API access and webhook notifications. This enables programmatic integration with external systems, automation tools, and custom dashboards.
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## Feature Reference
 - Feature: [FEAT-006](../FEATURES/FEAT-006.md)
