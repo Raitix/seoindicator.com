@@ -1,7 +1,7 @@
 # SPEC-001-2: Keyword Model and Repository
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -62,3 +62,13 @@ Summary:
 - 54 tests passed (89 assertions)
 
 **Status:** → To Deploy
+
+### [2026-02-22 20:34] Agent: DevOps
+**Deployment Check**
+
+- Status set: In Deployment → To Test Prod
+- Repo clean locally (no pending changes)
+- Production homepage reachable: https://seoindicator.com/
+- Health check endpoint returned 404: https://seoindicator.com/api/health (may be missing in prod)
+
+**Status:** → To Test Prod
