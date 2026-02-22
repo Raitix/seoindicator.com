@@ -24,3 +24,16 @@ export interface KeywordListResponse {
   data: Keyword[];
   meta?: KeywordListMeta;
 }
+
+export interface KeywordCreatePayload {
+  keyword: string;
+  targetUrl?: string;
+  searchEngine?: string;
+  location?: string;
+  device?: string;
+}
+
+export interface KeywordUpdatePayload {
+  targetUrl?: string;
+  status?: KeywordStatus;
+}
