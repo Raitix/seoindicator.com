@@ -1,7 +1,7 @@
 # SPEC-001-15: Ranking History Chart Component
 
 ## STATUS
-`To Test Prod`
+`To Develop`
 ## PRIORITY
 `High`
 
@@ -60,3 +60,10 @@ Created task for ranking history chart. Visual representation of ranking trends.
 - Pushed `main` to trigger CI/CD.
 - Health check OK: `GET https://seoindicator.com/api/health`.
 - Status moved to `To Test Prod` for ProdTester validation.
+
+### [2026-02-23 00:52] Agent: ProdTester
+- Began prod validation. Public site loads, but no accessible page/component to verify the Ranking History Chart in production.
+- Searched public homepage content; no "Ranking History"/chart UI exposed. No authenticated/staging access available for chart validation.
+- Unable to verify render/tooltip/range selector/export/responsive behavior in prod.
+- **Action:** Returning to Developer to wire component into an accessible route (or provide test account/staging URL) for prod verification.
+- Status moved to `To Develop`.
