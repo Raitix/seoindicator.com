@@ -26,6 +26,7 @@ class KeywordFactory extends Factory
             'device' => 'desktop',
             'status' => 'active',
             'last_checked_at' => fake()->optional()->dateTimeThisMonth(),
+            'last_viewed_at' => fake()->optional()->dateTimeThisMonth(),
         ];
     }
 }
