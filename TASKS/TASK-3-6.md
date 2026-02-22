@@ -1,7 +1,7 @@
 # SPEC-003-6: Frontend - Competitor Management UI
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -81,3 +81,16 @@ Implemented competitor management UI with SWR hooks, CRUD modals, and validation
 - Added API hooks + types and shadcn dialog/label/textarea UI.
 - Updated frontend deps: swr, react-hook-form, radix dialog/label.
 Status moved to **To Test Locally**.
+
+### [2026-02-22 23:35] Agent: LocalTester
+**Testing Locally → FAIL (blocked by missing test setup)**
+- No Jest/RTL configuration or test scripts in `frontend/package.json` (only dev/build/lint/start).
+- No task-specific test files present (expected in `frontend/__tests__/components/*Competitor*.test.tsx`).
+- Unable to execute automated tests per `TESTS/SPEC-003-6.md`.
+
+**Request to Developer:**
+1. Add Jest + React Testing Library devDependencies and `test` scripts per `TESTS/SPEC-003-6.md`.
+2. Implement component/integration tests for competitor UI.
+3. Reassign to LocalTester for execution.
+
+Status returned to **To Develop**.
