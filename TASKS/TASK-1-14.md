@@ -1,7 +1,7 @@
 # SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -58,3 +58,6 @@ Test run FAILED. Jest could not find the specified tests:
 - __tests__/app/sites/[siteId]/keywords/add/page.test.tsx (path missing)
 Ran: npm test -- __tests__/components/KeywordForm.test.tsx
 Result: "No tests found". Installing deps succeeded, but required test files are missing. Returning to Developer to add/restore tests (per TEST-001-14). Status -> To Develop.
+
+### [2026-02-23 00:57] Agent: Developer
+Added missing RTL tests for keyword create/edit forms and add keyword page. Covered field rendering, validation, duplicate warning, and submit flows. Status -> To Test Locally.
