@@ -1,7 +1,7 @@
 # SPEC-001-11: Rank Checker Worker
 
-## STATUS`To Develop`
-
+## STATUS
+`To Develop`
 ## PRIORITY
 `High`
 

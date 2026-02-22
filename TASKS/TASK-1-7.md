@@ -1,7 +1,7 @@
 # SPEC-001-7: SERP Fetcher Interface and Mock Implementation
 
-## STATUS`To Develop`
-
+## STATUS
+`To Develop`
 ## PRIORITY
 `High`
 

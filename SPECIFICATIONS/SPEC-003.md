@@ -565,8 +565,8 @@ interface Props {
 
 ---
 
-## Status Tracking
-- Created: 2026-02-19
+## STATUS
+`- Created: 2026-02-19`
 - Author: Architect
 - Feature: FEAT-003
 - Status: `To Write Tests`
