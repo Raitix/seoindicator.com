@@ -1,7 +1,7 @@
 # SPEC-001-9: Self-Hosted Scraper (Optional)
 
-## STATUS`To Develop`
-
+## STATUS
+`To Develop`
 ## PRIORITY
 `Low`
 

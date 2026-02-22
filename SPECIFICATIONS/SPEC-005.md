@@ -3,7 +3,7 @@
 ## Overview
 This specification defines the technical implementation for keyword discovery and suggestions functionality. This feature helps users find new keyword opportunities to track, expanding their SEO strategy.
 
-## Status
+## STATUS
 `To Break Into Tasks`
 
 ## Feature Reference

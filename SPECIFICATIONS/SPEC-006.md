@@ -3,7 +3,7 @@
 ## Overview
 This specification defines the technical implementation for REST API access and webhook notifications. This enables programmatic integration with external systems, automation tools, and custom dashboards.
 
-## Status
+## STATUS
 `To Break Into Tasks`
 
 ## Feature Reference

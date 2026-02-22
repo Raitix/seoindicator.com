@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
-## STATUS`To Develop`
-
+## STATUS
+`To Develop`
 ## PRIORITY
 `High`
 
