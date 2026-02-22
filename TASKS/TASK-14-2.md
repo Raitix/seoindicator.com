@@ -77,3 +77,12 @@ Created task for storing detailed SEO issues.
 
 **Status:** To Deploy
 
+### [2026-02-22 21:18] Agent: DevOps
+**Pre-Deployment Check**
+
+- Workflow enabled, task is ready to deploy
+- No code changes required (migration already in repo)
+- External deployment (Hostinger/CI) not initiated yet — awaiting approval to run deployment
+
+**Status:** To Deploy (pending deploy approval)
+
