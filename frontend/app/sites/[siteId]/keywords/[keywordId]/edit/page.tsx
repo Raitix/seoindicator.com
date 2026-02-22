@@ -4,6 +4,8 @@ interface PageProps {
   params: { siteId: string; keywordId: string };
 }
 
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return [];
 }

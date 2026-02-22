@@ -149,3 +149,9 @@ Created task for database migration. This is the foundation task - must be compl
 - Error: /sites/[siteId]/keywords/new missing `generateStaticParams`
 - Fix applied: added `[siteId]/layout.tsx` with `generateStaticParams` returning []
 - Re-triggering deploy via new push
+
+### [2026-02-22 23:50] Agent: DevOps
+**Deployment Fix Attempt — Static Export**
+- Local `npm run build` still reports missing `generateStaticParams` on /sites/[siteId]/keywords/new
+- Fix applied: set `dynamicParams = false` on keyword routes (keywords, new, edit)
+- Re-triggering deploy via new push
