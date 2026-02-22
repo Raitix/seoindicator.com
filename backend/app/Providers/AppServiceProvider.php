@@ -19,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\SERPFetcherInterface::class,
             $fetcher
         );
+
+        $this->app->bind(
+            \App\Services\Queue\JobQueueInterface::class,
+            \App\Services\Queue\JobQueue::class
+        );
     }
 
     /**
