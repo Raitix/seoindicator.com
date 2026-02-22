@@ -1,7 +1,7 @@
 # SPEC-003-5: Backend - Comparison Engine Service
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -85,3 +85,12 @@ Created task for comparison engine service. This is the most complex backend tas
 
 ### [2026-02-22 18:15] Agent: Developer
 Set status to In Development. Implemented ComparisonService with summary, comparison results, competitor rankings/gaps, and history helpers. Added ComparisonController and API routes for comparison endpoints with validation + pagination. Updated summary/status logic and position diff handling. Tests not run (handoff to LocalTester).
+
+### [2026-02-22 21:13] Agent: LocalTester
+Set status to Testing Locally. Preparing to run unit + feature tests for ComparisonService and API endpoints.
+
+### [2026-02-22 21:20] Agent: LocalTester
+Tests PASS:
+- php artisan test --filter=ComparisonServiceTest
+- php artisan test --filter=ComparisonControllerTest
+Updated TESTS/SPEC-003-5.md. Status -> To Deploy.
