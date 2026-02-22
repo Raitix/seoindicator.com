@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -67,3 +67,6 @@ Set status to Testing Prod. Prod smoke tests:
 - GET https://seoindicator.com/api/health → 200 OK (status ok, db connected).
 - POST https://seoindicator.com/api/v1/scheduler/rank-checks/run → 500 Internal Server Error (no body). Expected admin/testing trigger endpoint should not 500; if auth required, should return 401/403. Please inspect prod logs/exception handling for this endpoint.
 Status → To Develop for fix.
+
+### [2026-02-23 00:52] Agent: Developer
+Bound JobQueueInterface to JobQueue in AppServiceProvider. This should resolve container injection failures in RankCheckScheduler when hitting /api/v1/scheduler/rank-checks/run (likely cause of 500). Status → To Test Locally. Tests not run in this session.
