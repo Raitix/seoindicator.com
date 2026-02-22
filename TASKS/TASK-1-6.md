@@ -1,7 +1,7 @@
 # SPEC-001-6: Dashboard API Endpoint
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -56,3 +56,6 @@ All 11 tests failed before assertions due to SQLite migration error:
 This blocks DashboardController tests (in-memory sqlite).
 Recommendation: adjust backlinks migration to be sqlite-compatible (no column length in index for sqlite; conditional index by driver), then rerun tests.
 Status moved back to `To Develop` for fix.
+
+### [2026-02-23 00:33] Agent: Developer
+Updated backlinks migration to treat any sqlite driver (case-insensitive) as sqlite: skip prefix-length index creation when table exists and use standard index during create. This should prevent `source_url(191)` usage in sqlite tests. Ready for re-test.
