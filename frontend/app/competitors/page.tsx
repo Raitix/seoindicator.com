@@ -16,6 +16,9 @@ export default function CompetitorsPage() {
             <Button variant="ghost" className="text-slate-300 hover:text-white">
               Indicators
             </Button>
+            <Button asChild variant="ghost" className="text-slate-300 hover:text-white">
+              <Link href="/comparison">Comparison</Link>
+            </Button>
             <Button asChild variant="outline" className="border-emerald-500 text-emerald-300">
               <Link href="/competitors">Competitors</Link>
             </Button>
