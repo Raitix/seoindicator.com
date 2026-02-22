@@ -1,7 +1,7 @@
 # TASK-13-1: Create Backlink Summaries Table
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
@@ -29,8 +29,14 @@ CREATE TABLE backlink_summaries (
 ```
 
 ## Acceptance Criteria
-- [ ] Create table for storing backlink metrics.
-- [ ] Validate referential integrity with `projects` table.
+- [x] Create table for storing backlink metrics.
+  - Migration created: `2026_02_21_215300_create_backlink_summaries_table.php`
+  - Table: `backlink_summaries` with columns: id, site_id, domain, total_backlinks, referring_domains, domain_authority, checked_at
+  - Foreign key to `sites(id)` instead of `projects(id)` (consistency with existing schema)
+  - Unique constraint on (site_id, domain)
+- [x] Validate referential integrity with `sites` table.
+  - Foreign key constraint: `backlink_summaries_site_id_foreign` referencing `sites(id)` ON DELETE CASCADE
+  - Model relationship: `BacklinkSummary::site()` belongs to `Site::class`
 - [ ] Test data handling in staging.
 
 ## Effort Estimate

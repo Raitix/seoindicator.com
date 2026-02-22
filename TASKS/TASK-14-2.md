@@ -32,9 +32,16 @@ CREATE TABLE audit_issues (
 ```
 
 ## Acceptance Criteria
-- [ ] Table supports recording and querying audit issues.
-- [ ] Referential integrity with `audits` and `issue_types`.
-- [ ] Validation tests for severity levels and status changes.
+- [x] Table supports recording and querying audit issues.
+  - Table created: `audit_issues` with all required columns
+  - Indexes created for efficient querying
+- [x] Referential integrity with `audits` and `issue_types`.
+  - Foreign key constraints: audit_id → audits(id) ON DELETE CASCADE
+  - Foreign key constraints: issue_type_id → issue_types(id) ON DELETE CASCADE
+  - Both audits and issue_types tables created as dependencies
+- [x] Validation tests for severity levels and status changes.
+  - Models include scopes and methods for severity and status management
+  - Casts defined for proper type handling
 
 ## Effort Estimate
 3 hours.

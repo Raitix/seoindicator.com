@@ -1,7 +1,7 @@
 # TASK-12-2: Create GSC Data Table
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
