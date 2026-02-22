@@ -1,6 +1,13 @@
 import useSWR, { mutate as globalMutate } from "swr";
 
-import type { Keyword, KeywordListResponse, KeywordListMeta, KeywordStatus } from "@/lib/types/keywords";
+import type {
+  Keyword,
+  KeywordListResponse,
+  KeywordListMeta,
+  KeywordStatus,
+  KeywordCreatePayload,
+  KeywordUpdatePayload,
+} from "@/lib/types/keywords";
 
 const API_BASE = "/api/v1";
 
@@ -87,6 +94,60 @@ export function useKeywords(siteId: string | number, params: KeywordQueryParams 
     error,
     mutate,
   };
+}
+
+export function useKeyword(id?: string | number) {
+  const key = id ? `${API_BASE}/keywords/${id}` : null;
+
+  const { data, error, isLoading, mutate } = useSWR<Keyword>(key, async (url: string) => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch keyword: ${response.statusText}`);
+    }
+    const payload = await response.json();
+    return normalizeKeyword(payload?.data ?? payload);
+  });
+
+  return {
+    keyword: data,
+    error,
+    isLoading,
+    mutate,
+  };
+}
+
+export async function createKeyword(siteId: number, payload: KeywordCreatePayload) {
+  const response = await fetch(`${API_BASE}/sites/${siteId}/keywords`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    throw new Error(errorBody?.error?.message ?? errorBody?.message ?? "Failed to create keyword");
+  }
+
+  const data = await response.json();
+  await globalMutate((key) => typeof key === "string" && key.includes("/keywords"));
+  return normalizeKeyword(data?.data ?? data);
+}
+
+export async function updateKeyword(id: number, payload: KeywordUpdatePayload) {
+  const response = await fetch(`${API_BASE}/keywords/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    throw new Error(errorBody?.error?.message ?? errorBody?.message ?? "Failed to update keyword");
+  }
+
+  const data = await response.json();
+  await globalMutate((key) => typeof key === "string" && key.includes("/keywords"));
+  return normalizeKeyword(data?.data ?? data);
 }
 
 export async function updateKeywordStatus(id: number, status: KeywordStatus) {
