@@ -1,7 +1,7 @@
 # SPEC-001-1: Database Setup - Keywords & Rankings Tables
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -199,3 +199,17 @@ Created task for database migration. This is the foundation task - must be compl
 **Security/Exposure Check:** No sensitive data exposed in health or home responses.
 
 **Status:** → To Document
+
+### [2026-02-23 10:15] Agent: DocSystemAnalyst
+**Documentation Updated**
+
+Updated `DOCUMENTATION.md` with:
+- Complete `keywords` table schema (all fields: target_url, search_engine, location, device, status, last_checked_at)
+- Added `sites` table reference (FK dependency)
+- Foreign key: site_id → sites.id
+- Unique constraint: (site_id, keyword, search_engine, location, device)
+- Indexes: site_id, status, last_checked_at, gsc_query_match
+- Status enum values: active, paused, deleted
+- Search engine/location/device defaults documented
+
+**Status:** → Done

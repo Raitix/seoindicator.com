@@ -179,11 +179,21 @@ Response: { "data": [] }
 - User accounts
 - Standard Laravel authentication
 
+#### `sites`
+- Website properties being tracked
+- Fields: id, url, name, created_at, updated_at
+- Unique constraint: url
+
 #### `keywords`
 - Tracked keywords for rank monitoring
-- Fields: id, user_id, keyword, site_id, gsc_query_match (nullable), created_at, updated_at
-- Foreign key: user_id → users.id
-- Indexes: gsc_query_match (keywords_gsc_query_match_index)
+- Fields: id, user_id, site_id, keyword, target_url, search_engine, location, device, status, last_checked_at, gsc_query_match (nullable), created_at, updated_at
+- Foreign keys: user_id → users.id, site_id → sites.id
+- Unique constraint: (site_id, keyword, search_engine, location, device) - named `keywords_unique`
+- Indexes: site_id, status, last_checked_at, gsc_query_match
+- Status values: active, paused, deleted
+- Search engines: google (default)
+- Locations: us (default), country codes
+- Devices: desktop (default), mobile
 
 #### `competitors`
 - Competitor domain tracking
@@ -245,4 +255,4 @@ See `backend/database/migrations/` for schema definitions.
 
 ---
 
-Last updated: 2026-02-17
+Last updated: 2026-02-23
