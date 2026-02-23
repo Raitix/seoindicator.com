@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 ## PRIORITY
 `High`
 
@@ -98,3 +98,14 @@ Result: **PASS** (31 tests, 86 assertions)
 - RankCheckSchedulerTest: 2 passed
 
 All scheduler, queue, and worker functionality tests pass. The ForceJsonResponse middleware was not directly tested but the core scheduler logic is verified. Status → To Deploy.
+
+### [2026-02-23 12:01] Agent: DevOps
+Set status to In Deployment. Pushed main (3 commits) to trigger GitHub Actions deploy.
+
+Post-deploy health checks:
+- GET https://seoindicator.com/api/health → 200 OK (status ok, db connected)
+- POST https://seoindicator.com/api/v1/scheduler/rank-checks/run → 401 {"message":"Unauthenticated."}
+
+**Fix verified!** The ForceJsonResponse middleware is working correctly. Endpoint now returns proper JSON 401 response instead of 500 error. This is expected behavior - the manual trigger endpoint requires authentication.
+
+Status → To Test Prod.
