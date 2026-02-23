@@ -147,6 +147,7 @@ php artisan migrate
 - ✅ Ranking model + RankingRepository (latest, date range, create, stats helpers)
 - ✅ Keyword/Site/Ranking factories for tests
 - ✅ Landing page with SEO Indicator branding
+- ✅ SEO site audit tables (audits, audit_issues, issue_types)
 
 ### In Development
 - 🔄 User authentication
@@ -216,6 +217,23 @@ Response: { "data": [] }
 - Foreign key: keyword_id → keywords.id
 - Indexes: keyword_id, checked_at, (keyword_id, checked_at)
 
+#### `audits`
+- SEO site audit metadata
+- Fields: id, site_id, status (pending/running/completed/failed), pages_crawled, issues_found, started_at, completed_at, created_at
+- Foreign key: site_id → sites.id ON DELETE CASCADE
+- Indexes: (site_id, status)
+
+#### `audit_issues`
+- Detailed issue records for SEO audits
+- Fields: id, audit_id, url, issue_type_id, severity (critical/warning/notice), description, recommendation, status (open/fixed/ignored), created_at
+- Foreign keys: audit_id → audits.id ON DELETE CASCADE, issue_type_id → issue_types.id ON DELETE CASCADE
+- Indexes: (audit_id, severity)
+
+#### `issue_types`
+- Reusable templates for SEO issues
+- Fields: id, category, name, description, severity_default (critical/warning/notice), recommendation_template, created_at
+- Used by: audit_issues.issue_type_id
+
 #### Queue (SQLite)
 - File: `backend/storage/app/queue.sqlite`
 - `queue_jobs`: id, type, payload, priority, status, attempts, max_attempts, created_at, started_at, completed_at, error
@@ -255,4 +273,4 @@ See `backend/database/migrations/` for schema definitions.
 
 ---
 
-Last updated: 2026-02-23
+Last updated: 2026-02-23 (added audit tables schema)
