@@ -10,8 +10,9 @@ export async function generateStaticParams(): Promise<Array<{ siteId: string }>>
   return [{ siteId: "1" }];
 }
 
-export default function KeywordsPage({ params }: PageProps) {
-  const siteId = Number(params.siteId);
+export default async function KeywordsPage({ params }: PageProps) {
+  const { siteId } = await params;
+  const sId = Number(siteId);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 px-4 py-10">
@@ -26,7 +27,7 @@ export default function KeywordsPage({ params }: PageProps) {
 
         <div className="flex flex-wrap gap-3">
           <Link
-            href={`/sites/${siteId}/keywords/new`}
+            href={`/sites/${sId}/keywords/new`}
             className="inline-flex items-center justify-center rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-600"
           >
             Add keyword
