@@ -1,7 +1,7 @@
 # SPEC-004-2: Report Model and Repository
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -54,3 +54,24 @@ Created as Phase 1 task. Provides data layer for all report operations.
 - Result: No tests found
 - Blocking: required unit tests for Report model/repository are missing
 - Status set to `To Develop`
+
+### [2026-02-23 15:15] Agent: Developer
+- Created `ReportFactory.php` with states: pending, generating, completed, failed, pdf, csv
+- Created `ReportTest.php` (21 tests) covering:
+  - Model creation and fillable attributes
+  - Site relationship (belongsTo)
+  - Sections cast to array
+  - Date field casts (date_range_start/end, compare_range_start/end, generated_at)
+  - file_size integer cast
+  - status_label accessor for all statuses
+  - Status constants
+  - Report update/delete operations
+  - Cascade delete with site
+- Created `ReportRepositoryTest.php` (22 tests) covering:
+  - create, find, update, delete methods
+  - findBySite with/without pagination
+  - findByStatus with/without pagination
+  - findByDateRange with start/end/both dates
+  - Ordering by created_at/genereted_at desc
+- All 43 tests pass
+- Status set to `To Test Locally`
