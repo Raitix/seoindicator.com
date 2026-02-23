@@ -1,22 +1,43 @@
 # TEST-1-6: Dashboard API Endpoint (Local)
 
 ## STATUS
-`Failed`
+`Passed`
 
 ## Test Run
-- **Date:** 2026-02-23 00:11 (Europe/Kiev)
+- **Date:** 2026-02-23 14:59 (Europe/Kiev)
 - **Command:** `php artisan test --testsuite=Feature --filter DashboardControllerTest`
 - **Environment:** Laravel tests (sqlite :memory:)
 
 ## Results
-- **Failing:** 11 tests (all in `DashboardControllerTest`)
-- **Failure cause:** Migration error before assertions
+- **Passed:** 11 tests (45 assertions)
+- **Duration:** 1.26s
 
-## Error
-```
-SQLSTATE[HY000]: General error: 1 no such function: source_url (Connection: sqlite, Database: :memory:, SQL: create index "idx_source_target" on "backlinks" (source_url(191), target_url(191)))
-```
+## Test Cases
+| Test | Status |
+|------|--------|
+| get dashboard summary | ✅ PASS |
+| dashboard invalid site | ✅ PASS |
+| dashboard no keywords | ✅ PASS |
+| dashboard metrics | ✅ PASS |
+| dashboard ranked keywords | ✅ PASS |
+| dashboard average position | ✅ PASS |
+| dashboard position changes | ✅ PASS |
+| dashboard top keywords | ✅ PASS |
+| dashboard alerts | ✅ PASS |
+| dashboard caching | ✅ PASS |
+| dashboard cache invalidation | ✅ PASS |
+
+## Acceptance Criteria Verified
+- [x] GET /api/v1/sites/:siteId/dashboard endpoint works
+- [x] Response includes: totalKeywords, activeKeywords, rankedKeywords, notRankedKeywords
+- [x] Response includes: averagePosition across all keywords
+- [x] Response includes positionChanges: improved, declined, unchanged, new
+- [x] Response includes topKeywords (top 5 by position)
+- [x] Response includes alerts (significant drops, new rankings)
+- [x] Efficient query approach
+- [x] Caching for 5 minutes implemented
+- [x] Integration tests pass
 
 ## Notes
-- SQLite does not support column length prefixes in index definitions.
-- Adjust backlinks migration to be sqlite-compatible (conditional index by driver or remove prefix lengths for sqlite), then rerun tests.
+- Previous SQLite migration issue with backlinks index was fixed by Developer.
+- All tests now pass on in-memory SQLite database.
