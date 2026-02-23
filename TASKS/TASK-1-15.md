@@ -1,7 +1,7 @@
 # SPEC-001-15: Ranking History Chart Component
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 ## PRIORITY
 `High`
 
