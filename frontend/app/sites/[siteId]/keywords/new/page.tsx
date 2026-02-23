@@ -10,8 +10,9 @@ export async function generateStaticParams(): Promise<Array<{ siteId: string }>>
   return [{ siteId: "1" }];
 }
 
-export default function NewKeywordPage({ params }: PageProps) {
-  const siteId = Number(params.siteId);
+export default async function NewKeywordPage({ params }: PageProps) {
+  const { siteId } = await params;
+  const sId = Number(siteId);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 px-4 py-10">
@@ -24,7 +25,7 @@ export default function NewKeywordPage({ params }: PageProps) {
           </p>
         </div>
 
-        <KeywordCreateForm siteId={siteId} />
+        <KeywordCreateForm siteId={sId} />
       </div>
     </div>
   );
