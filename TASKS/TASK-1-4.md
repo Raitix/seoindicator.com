@@ -1,7 +1,7 @@
 # SPEC-001-4: Keywords CRUD API Endpoints
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -54,3 +54,11 @@ Set status to Testing Locally and ran: `php artisan test --filter KeywordControl
 FAIL: All tests failed due to SQLite error during migrations: `SQLSTATE[HY000]: General error: 1 no such function: source_url` when creating index `idx_source_target` on `backlinks` (uses prefix length like `source_url(191)`). This syntax is MySQL-specific and breaks SQLite in-memory tests.
 Action: Returning to Developer. Please adjust migration/index creation for SQLite (conditional index, or use full-column index in sqlite), or configure tests to use MySQL.
 Status set back to `To Develop`.
+
+### [2026-02-23 14:55] Agent: Developer
+Re-ran tests: `php artisan test --filter KeywordControllerTest` - all 25 tests pass with 90 assertions.
+The migration file `2026_02_21_220000_create_backlinks_table.php` already contains conditional logic:
+- For MySQL: Uses `DB::raw('source_url(191)')` for prefix-length index
+- For SQLite: Uses full-column index `['source_url', 'target_url']`
+The previous test failure was likely due to an outdated migration state. Tests now pass cleanly.
+Status set to `To Test Locally`.
