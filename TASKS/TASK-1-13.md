@@ -1,7 +1,7 @@
 # SPEC-001-13: Keyword List Page
 
 ## STATUS
-`To Develop`
+`Ready for Local Testing`
 ## PRIORITY
 `High`
 
@@ -51,3 +51,6 @@ Set status to Testing Locally. Attempted frontend lint.
 - `npm run lint` failed: Next CLI treated `lint` as project dir → `Invalid project directory provided, no such directory: ...\frontend\lint`.
 - `npx next lint --dir .` failed: `unknown option '--dir'`.
 No automated test suite available for this task beyond lint. Returning to Developer to fix lint invocation/tooling and add/confirm tests if needed.
+
+### [2026-02-23 00:42] Agent: Developer
+Added root-level npm lint script delegating to frontend and documented linting in frontend README to avoid Next CLI mis-invocation.
