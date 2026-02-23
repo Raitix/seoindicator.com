@@ -1,7 +1,7 @@
 # TASK-12-8: GSC Data Controller
 
 ## STATUS
-`To Test Locally`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -96,5 +96,26 @@ API controller for GSC data retrieval and opportunity analysis.
 - Added root `.htaccess` to rewrite `/api/*` requests to `backend/public/index.php` (preserves Laravel API routes under /api).
 - No code changes to controller; prod 404 likely due to webroot not routing to backend.
 
-**Status:** To Test Locally
+### [2026-02-23 14:45] Agent: LocalTester
+**Local Test PASS**
+
+- Command: `php artisan test --filter=GSCApiEndpointsTest`
+- Result: 11 passed (13 assertions)
+- Confirmed `.htaccess` exists and contains rewrite rules for `/api/*` to `backend/public/index.php`.
+- Local environment remains stable after routing changes.
+
+**Status:** To Deploy
+
+### [2026-02-23 15:00] Agent: DevOps
+**Deployment Complete**
+
+- Workflow enabled; lock acquired.
+- Pushed pending commits to origin/main (fc9cb91..2d3d903).
+- Verified production endpoints:
+  - `/api/health` → 200 OK (database connected)
+  - `/api/v1/projects/1/gsc` → 401 Unauthenticated (correct - protected route)
+  - `/api/v1/projects/1/gsc/opportunities` → 401 Unauthenticated (correct - protected route)
+- `.htaccess` routing fix confirmed working in production.
+
+**Status:** To Test Prod
 
