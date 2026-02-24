@@ -58,3 +58,56 @@
     - [ ] UI for manual match adjustment (backend ready, UI not implemented)
     - [x] Unit tests verify matching accuracy
   - Service Location: `backend/app/Services/QueryMatcher.php`.
+- **TASK-1-11 (Rank Checker Worker)**:
+  - Background worker that processes rank check jobs from the queue.
+  - **Core functionalities**:
+    - Processes jobs from JobQueue with configurable concurrency (max 5 concurrent jobs).
+    - Fetches SERP data using configured SERP fetcher (MockSERPFetcher for testing, HttpSERPFetcher for production).
+    - Stores ranking results in `ranking_history` table via RankingRepository.
+    - Updates keyword's `last_checked_at` timestamp after successful checks.
+    - Records check duration for performance monitoring.
+    - Captures SERP features (featured snippets, local pack, etc.) when available.
+    - Supports both single keyword checks and batch site-wide checks.
+    - Handles fetcher errors gracefully with logging, retry, and failure states.
+  - **Technical Implementation**:
+    - Service: `backend/app/Workers/RankCheckerWorker.php`
+    - Job: `backend/app/Jobs/CheckKeywordJob.php`
+    - Service: `backend/app/Services/RankCheckerService.php`
+    - Integrates with JobQueue, SERPFetcherInterface, and RankingRepository.
+    - Uses domain matching for accurate position detection.
+    - Handles competitor tracking within SERP results.
+  - **Unit Tests**: 29 tests passed (80 assertions) covering job processing, error handling, batch checks, and SERP feature capture.
+  - **Dependencies**: SPEC-001-2 (keyword repository), SPEC-001-3 (ranking repository), SPEC-001-7 (SERP fetcher), SPEC-001-10 (job queue).
+  - **Acceptance Criteria Status**:
+    - [x] RankCheckerWorker processes jobs from queue
+    - [x] Fetches SERP data using configured fetcher
+    - [x] Stores ranking result in ranking_history table
+    - [x] Updates keyword's last_checked_at timestamp
+    - [x] Handles fetcher errors gracefully
+    - [x] Records check duration for performance monitoring
+    - [x] Supports both single keyword and batch site checks
+    - [x] Concurrent job processing (configurable limit)
+    - [x] Unit tests with mocked fetcher and queue
+- **TASK-12-10 (GSC Data Dashboard Components)**:
+  - React components for displaying Google Search Console metrics alongside keyword rankings.
+  - **Core functionalities**:
+    - `GSCDataDashboard` - Main dashboard orchestrating all GSC components with summary cards (Total Clicks, Impressions, Avg CTR, Avg Position).
+    - `GSCMetricsTable` - Sortable table displaying query performance (clicks, impressions, CTR, position).
+    - `GSCDateFilter` - Date range selector with preset options (7, 14, 30, 90 days) and custom date inputs.
+    - `GSCTrendChart` - Recharts line chart visualizing clicks, impressions, and position trends over time.
+    - `GSCOpportunities` - Opportunity keywords display with scores, CTR gap analysis, and actionable insights.
+  - **Technical Implementation**:
+    - Components: `frontend/components/gsc/*.tsx`
+    - Types: `frontend/lib/types/gsc.ts`
+    - API Service: `frontend/lib/api/gsc.ts`
+    - Sample Data: `frontend/lib/data/sample-gsc-data.ts`
+    - Uses Recharts for charting, @tanstack/react-table patterns for sorting.
+    - Shadcn/ui Card components for consistent styling.
+  - **Tests**: 79 tests passed (GSCComponents.test.tsx covers all 5 components).
+  - **Dependencies**: TASK-12-8 (GSC Data API endpoints).
+  - **Acceptance Criteria Status**:
+    - [x] Metrics displayed in sortable table
+    - [x] Date range filter updates data dynamically
+    - [x] Trend chart visualizes clicks and impressions
+    - [x] Component tested with sample data
+  - Service Location: `frontend/components/gsc/`.

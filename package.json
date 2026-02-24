@@ -3,5 +3,22 @@
   "private": true,
   "scripts": {
     "lint": "npm --prefix frontend run lint"
+  },
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Raitix/seoindicator.com.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Raitix/seoindicator.com/issues"
+  },
+  "homepage": "https://github.com/Raitix/seoindicator.com#readme",
+  "description": "",
+  "dependencies": {
+    "playwright": "^1.58.2"
   }
 }
