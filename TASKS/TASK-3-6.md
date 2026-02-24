@@ -1,7 +1,7 @@
 # SPEC-003-6: Frontend - Competitor Management UI
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `Medium`
@@ -26,6 +26,7 @@ Create frontend UI for managing competitors - add, edit, delete, and list compet
 
 ## Dependencies
 - SPEC-003-2 (CRUD API must exist)
+- Ensure auto-testing regression for initial scaffold testing reflect.
 
 ## Effort Estimate
 `Medium` (4-6 hours)

@@ -125,20 +125,11 @@ class ReportDataAggregator
 
     protected function selectTopChanges(array $keywordsData, string $direction): array
     {
-        // Debugging keywordsData before filtering
-file_put_contents('C:\\Users\\Raitis\\.openclaw\\workspace\\PROJECT-SEOINDICATOR\\debug_keywordsData.txt', print_r($keywordsData, true));
-$filtered = array_filter($keywordsData, fn($k) => $k['change'] !== null);
-
-        // Debug logging for keywords data
-        file_put_contents('C:\\Users\\Raitis\\.openclaw\\workspace\\PROJECT-SEOINDICATOR\\debug_log.txt', print_r($filtered, true)); // Debug raw state before sorting
+        $filtered = array_filter($keywordsData, fn($k) => $k['change'] !== null);
 
         usort($filtered, function (array $a, array $b) use ($direction) {
-            // Determine sorting ambiguity for debugging
-            // Using print/logs
-            // Only debug if malformed after trace log exported results fixed
-            $diff = $a['change'] <=> $b['change'];
-            // For 'desc' (top performers): most negative change first (biggest improvement)
-            // For 'asc' (needs attention): most positive change first (biggest drop)
+            // For 'asc': most negative change first (biggest improvement)
+            // For 'desc': most positive change first (biggest drop)
             return $direction === 'asc' ? $a['change'] <=> $b['change'] : $b['change'] <=> $a['change'];
         });
 

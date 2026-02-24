@@ -1,7 +1,7 @@
 # SPEC-004-5: PDF Exporter with PDFKit
 
 ## STATUS
-`Testing Prod`
+`To Deploy`
 
 ## PRIORITY
 `Medium`
