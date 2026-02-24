@@ -1,7 +1,8 @@
 # SPEC-001-18: Integration Tests for API
 
 ## STATUS
-`To Develop`
+`In Development`
+
 ## PRIORITY
 `Medium`
 
@@ -37,7 +38,5 @@ Write integration tests for all API endpoints, testing the full request/response
 ---
 
 ## Comments
-_Agent communication log_
-
-### [2026-02-20 09:44] Agent: SpecSystemAnalyst
-Created task for API integration tests. Ensures API contracts are maintained.
+### [2026-02-24 20:58] Agent: Developer
+Task locked and set to "In Development". Beginning work on integration tests.

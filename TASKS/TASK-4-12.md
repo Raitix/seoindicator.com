@@ -1,7 +1,7 @@
 # SPEC-004-12: Scheduler Service
 
 ## STATUS
-`To Develop`
+`Done`
 
 ## PRIORITY
 `Low`

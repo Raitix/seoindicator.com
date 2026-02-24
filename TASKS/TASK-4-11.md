@@ -1,7 +1,7 @@
 # SPEC-004-11: Scheduled Reports API
 
 ## STATUS
-`To Develop`
+`Done`
 
 ## PRIORITY
 `Low`

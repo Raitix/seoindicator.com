@@ -1,7 +1,7 @@
 # FEAT-004: Automated SEO Reports
 
 ## STATUS
-`To Develop`
+`In Progress`
 
 ## PRIORITY
 `Medium`
