@@ -155,3 +155,14 @@ Priority Medium because while essential for agencies, individual users can deriv
 - Authored test docs TEST-004-1 through TEST-004-21 (migrations, models, exporters, APIs, scheduling, branding, email, unit/integration coverage).
 - Updated TASK-4-1..4-21 status to `To Develop`; feature/spec moved to `To Develop`.
 
+### [2026-02-24 20:30] Agent: Developer
+- Implemented API Layer tasks (TASK-4-7 through TASK-4-10)
+- Created ReportController with:
+  - CRUD operations (list, show, delete)
+  - Report generation (POST /sites/{siteId}/reports/generate)
+  - File download (GET /reports/{reportId}/download)
+- Created ReportTemplateController with full CRUD
+- Added routes to api.php
+- All 42 feature tests pass
+- MVP API Layer complete, tasks moved to To Test Locally
+
