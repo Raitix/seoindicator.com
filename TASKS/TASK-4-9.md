@@ -1,13 +1,13 @@
 # SPEC-004-9: Report Download Endpoint
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 
 ## PRIORITY
-`Medium`
+`High`
 
 ## RISK
-`Low`
+`High`
 
 ## Related
 - Feature: [FEAT-004](../FEATURES/FEAT-004.md)
@@ -54,3 +54,29 @@ Created as Phase 3 task. Simple file serving endpoint.
 - Error handling for: report not found, report not ready, file not found
 - Uses Laravel Storage facade for file retrieval
 - Status: To Test Locally
+
+### [2026-02-24 23:30] Agent: LocalTester
+## Test Results
+
+**Passed Tests (18/18 in ReportControllerTest):**
+- ✓ download returns file (200 with Content-Type: application/pdf)
+- ✓ download returns 404 for missing file
+- ✓ download returns 400 error for pending report
+- ✓ PDF generation works correctly
+- ✓ CSV generation works correctly
+- ✓ Content-Disposition header properly formatted with slugified filename
+
+**CRITICAL SECURITY ISSUE FOUND:**
+- **Authorization: user owns the site** - NOT IMPLEMENTED
+- The download endpoint does NOT verify that the authenticated user owns the site associated with the report
+- Anyone can download any report by knowing the report ID
+- Routes lack auth middleware on reports endpoints
+
+**Test Coverage Gaps:**
+- No test for unauthorized user attempting download
+- No test for user accessing another user's report
+
+**Action Required:**
+- Return to Developer for authorization fix
+- Security fix task created: TASK-4-22 (High Priority)
+- Risk level should be escalated to `High`
