@@ -3,7 +3,14 @@
 ---
 ## Current Production Features
 
-### Scheduled Reports API
+### Rank Check Scheduler (TASK-1-12)
+- **Service Description:** Automated rank check scheduling service.
+  - Allows queueing keyword checks at random intervals to prevent API abuse.
+  - Supports configurable defaults: environment variable specified timing or manual overrides.
+  - Includes manual testing endpoint: `POST /api/v1/scheduler/rank-checks/run`.
+
+**Key Functionalities:**  -Priority queues recent reviewed.
++JobStack Ensuring CacheStates.### Scheduled Reports API
 - **TASK-4-11 (Scheduled Reports API):** Implemented REST API endpoints for creating and managing scheduled reports:
   - Endpoints: Create, list, update, delete, pause/resume reports.
   - Includes frequency validation, recipient checks, and integration tests.
@@ -111,3 +118,12 @@
     - [x] Trend chart visualizes clicks and impressions
     - [x] Component tested with sample data
   - Service Location: `frontend/components/gsc/`.
+- **TASK-12-3 (GSC Query Match Column)**:
+  - Added `gsc_query_match` column to `keywords` table for fuzzy matching between tracked keywords and GSC query data.
+  - **Schema Changes**:
+    - Column: `keywords.gsc_query_match` (VARCHAR(255), nullable)
+    - Index: `keywords_gsc_query_match_index` for efficient matching queries
+  - **Purpose**: Links tracked keywords to Google Search Console query data via fuzzy matching (implemented in TASK-12-6).
+  - **Migration**: `backend/database/migrations/*_add_gsc_query_match_to_keywords_table.php`
+  - **Dependencies**: Existing `keywords` table (FEAT-001).
+  - **Status**: Deployed to production.
