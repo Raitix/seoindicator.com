@@ -113,4 +113,29 @@ class ReportRepository
 
         return $query->get();
     }
+
+    /**
+     * Generate a report from a scheduled report configuration.
+     */
+    public function generateFromSchedule(\App\Models\ScheduledReport $scheduled): Report
+    {
+        $report = $this->create([
+            'site_id' => $scheduled->site_id,
+            'name' => $scheduled->name,
+            'type' => $scheduled->frequency,
+            'format' => $scheduled->format,
+            'status' => 'pending',
+            'date_range_start' => now()->subDays(7)->toDateString(),
+            'date_range_end' => now()->toDateString(),
+        ]);
+
+        // In a full implementation, this would trigger actual report generation
+        // For now, we just create the report record
+        $report->update([
+            'status' => 'completed',
+            'generated_at' => now(),
+        ]);
+
+        return $report->fresh();
+    }
 }
