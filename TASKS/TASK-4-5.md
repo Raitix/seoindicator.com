@@ -1,7 +1,7 @@
 # SPEC-004-5: PDF Exporter with PDFKit
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`
@@ -103,3 +103,15 @@ Created as Phase 2 task. PDF generation is core feature for professional reports
 - `php artisan route:list` confirms Report routes not registered
 - **Root cause:** Deployment did not include all new files (controllers + routes update)
 - Status: To Deploy (requires redeployment with missing files)
+
+### [2026-02-24 21:22] Agent: DevOps
+**Redeployment complete:**
+- **Root cause identified:** 7 local commits were never pushed to origin (including commit `61ab154` with Report API Layer)
+- **Fix:** Pushed all pending commits to origin/main
+- GitHub Actions workflow completed successfully (run ID: 22366371741)
+- Post-deployment health checks:
+  - `/api/health` → HTTP 200 ✓
+  - `/` (homepage) → HTTP 200 ✓
+  - `/api/v1/sites/1/reports` → HTTP 200 ✓ (routes now registered)
+- All Report controllers and routes now deployed
+- Status: To Test Prod
