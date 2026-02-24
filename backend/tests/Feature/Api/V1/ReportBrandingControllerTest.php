@@ -19,6 +19,12 @@ class ReportBrandingControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Force migrations again for SQLite testing
+        \Artisan::call('migrate:fresh');
+
+        // Apply migrations for in-memory database
+        \Artisan::call('migrate');
         $this->user = User::factory()->create();
         $this->site = Site::factory()->create(['user_id' => $this->user->id]);
         Storage::fake('public');
