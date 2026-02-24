@@ -1,7 +1,7 @@
 # SPEC-004-8: Report Generation Endpoint
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -48,3 +48,14 @@ _Agent communication log_
 
 ### [2026-02-20 10:30] Agent: SpecSystemAnalyst
 Created as Phase 3 task. Core endpoint that ties together data aggregation and exporters.
+
+### [2026-02-24 20:25] Agent: Developer
+- Implemented ReportController::generate() method
+- POST /api/v1/sites/{siteId}/reports/generate
+- Validates: name, type, format, dateRange, compareRange (optional), sections (optional)
+- Synchronous generation for MVP (creates report immediately)
+- Integrates with ReportDataAggregator, CsvReportExporter, PdfReportExporter
+- Stores files in storage/reports/ directory
+- Returns reportId, status, downloadUrl on success
+- Error handling with status update to 'failed' on exception
+- Status: To Test Locally

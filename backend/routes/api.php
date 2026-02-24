@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\V1\KeywordController;
 use App\Http\Controllers\Api\V1\RankingController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\SchedulerController;
+use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\ReportTemplateController;
 use App\Http\Controllers\Api\GSCConnectionController;
 
 /*
@@ -66,6 +68,20 @@ Route::prefix('v1')->group(function () {
 
     // Dashboard (SPEC-001-6)
     Route::get('sites/{siteId}/dashboard', [DashboardController::class, 'index']);
+
+    // Reports (SPEC-004-7, SPEC-004-8, SPEC-004-9)
+    Route::get('sites/{siteId}/reports', [ReportController::class, 'index']);
+    Route::post('sites/{siteId}/reports/generate', [ReportController::class, 'generate']);
+    Route::get('reports/{reportId}', [ReportController::class, 'show']);
+    Route::delete('reports/{reportId}', [ReportController::class, 'destroy']);
+    Route::get('reports/{reportId}/download', [ReportController::class, 'download']);
+
+    // Report Templates (SPEC-004-10)
+    Route::get('sites/{siteId}/report-templates', [ReportTemplateController::class, 'index']);
+    Route::post('sites/{siteId}/report-templates', [ReportTemplateController::class, 'store']);
+    Route::get('report-templates/{templateId}', [ReportTemplateController::class, 'show']);
+    Route::put('report-templates/{templateId}', [ReportTemplateController::class, 'update']);
+    Route::delete('report-templates/{templateId}', [ReportTemplateController::class, 'destroy']);
 });
 
 Route::prefix('v1')->middleware(['auth'])->group(function () {

@@ -1,0 +1,312 @@
+Array
+(
+)
+Array
+(
+)
+Array
+(
+    [0] => Array
+        (
+            [keyword_id] => 1
+            [keyword] => seo tools
+            [current_position] => 2
+            [previous_position] => 5
+            [change] => -3
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-23T00:00:00.000000Z
+        )
+
+)
+Array
+(
+    [0] => Array
+        (
+            [keyword_id] => 1
+            [keyword] => seo tools
+            [current_position] => 2
+            [previous_position] => 5
+            [change] => -3
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-23T00:00:00.000000Z
+        )
+
+)
+Array
+(
+    [0] => Array
+        (
+            [keyword_id] => 1
+            [keyword] => best seo
+            [current_position] => 1
+            [previous_position] => 3
+            [change] => -2
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [1] => Array
+        (
+            [keyword_id] => 2
+            [keyword] => good seo
+            [current_position] => 5
+            [previous_position] => 7
+            [change] => -2
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [2] => Array
+        (
+            [keyword_id] => 3
+            [keyword] => ok seo
+            [current_position] => 15
+            [previous_position] => 10
+            [change] => 5
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+)
+Array
+(
+    [0] => Array
+        (
+            [keyword_id] => 1
+            [keyword] => best seo
+            [current_position] => 1
+            [previous_position] => 3
+            [change] => -2
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [1] => Array
+        (
+            [keyword_id] => 2
+            [keyword] => good seo
+            [current_position] => 5
+            [previous_position] => 7
+            [change] => -2
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [2] => Array
+        (
+            [keyword_id] => 3
+            [keyword] => ok seo
+            [current_position] => 15
+            [previous_position] => 10
+            [change] => 5
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+)
+Array
+(
+    [0] => Array
+        (
+            [keyword_id] => 1
+            [keyword] => dropping keyword
+            [current_position] => 10
+            [previous_position] => 5
+            [change] => 5
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [1] => Array
+        (
+            [keyword_id] => 3
+            [keyword] => improving
+            [current_position] => 5
+            [previous_position] => 10
+            [change] => -5
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [2] => Array
+        (
+            [keyword_id] => 2
+            [keyword] => slight drop
+            [current_position] => 4
+            [previous_position] => 3
+            [change] => 1
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+)
+Array
+(
+    [0] => Array
+        (
+            [keyword_id] => 1
+            [keyword] => dropping keyword
+            [current_position] => 10
+            [previous_position] => 5
+            [change] => 5
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [1] => Array
+        (
+            [keyword_id] => 3
+            [keyword] => improving
+            [current_position] => 5
+            [previous_position] => 10
+            [change] => -5
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [2] => Array
+        (
+            [keyword_id] => 2
+            [keyword] => slight drop
+            [current_position] => 4
+            [previous_position] => 3
+            [change] => 1
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+    [0] => Array
+        (
+            [keyword_id] => 1
+            [keyword] => alpha
+            [current_position] => 1
+            [previous_position] => 3
+            [change] => -2
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [1] => Array
+        (
+            [keyword_id] => 2
+            [keyword] => beta
+            [current_position] => 1
+            [previous_position] => 3
+            [change] => -2
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [2] => Array
+        (
+            [keyword_id] => 3
+            [keyword] => gamma
+            [current_position] => 1
+            [previous_position] => 3
+            [change] => -2
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+)
+Array
+(
+    [0] => Array
+        (
+            [keyword_id] => 1
+            [keyword] => alpha
+            [current_position] => 1
+            [previous_position] => 3
+            [change] => -2
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [1] => Array
+        (
+            [keyword_id] => 2
+            [keyword] => beta
+            [current_position] => 1
+            [previous_position] => 3
+            [change] => -2
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+    [2] => Array
+        (
+            [keyword_id] => 3
+            [keyword] => gamma
+            [current_position] => 1
+            [previous_position] => 3
+            [change] => -2
+            [search_engine] => google
+            [location] => us
+            [last_checked_at] => 2026-02-22T00:00:00.000000Z
+        )
+
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)

@@ -1,7 +1,7 @@
 # SPEC-004-9: Report Download Endpoint
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -45,3 +45,12 @@ _Agent communication log_
 
 ### [2026-02-20 10:30] Agent: SpecSystemAnalyst
 Created as Phase 3 task. Simple file serving endpoint.
+
+### [2026-02-24 20:25] Agent: Developer
+- Implemented ReportController::download() method
+- GET /api/v1/reports/{reportId}/download
+- Returns file with proper Content-Type (application/pdf or text/csv)
+- Proper Content-Disposition header with slugified filename
+- Error handling for: report not found, report not ready, file not found
+- Uses Laravel Storage facade for file retrieval
+- Status: To Test Locally

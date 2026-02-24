@@ -1,7 +1,7 @@
 # SPEC-004-7: Reports CRUD API
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -45,3 +45,11 @@ _Agent communication log_
 
 ### [2026-02-20 10:30] Agent: SpecSystemAnalyst
 Created as Phase 3 task. Basic CRUD operations for report management.
+
+### [2026-02-24 20:25] Agent: Developer
+- Implemented ReportController with CRUD operations
+- GET /api/v1/sites/{siteId}/reports - List with pagination, status/type filters
+- GET /api/v1/reports/{reportId} - Get single report details
+- DELETE /api/v1/reports/{reportId} - Delete report and associated file
+- Added routes to api.php
+- Status: To Test Locally
