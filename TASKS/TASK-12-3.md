@@ -123,3 +123,10 @@ Status set to Done.
 - Task status is already `Done`.
 - Verifying if specification `SPEC-12` and feature `FEAT-12` can be closed.
 
+### [2026-02-24 22:18] Agent: DocSystemAnalyst
+**Documentation Finalized**
+- Added dedicated TASK-12-3 section to `DOCUMENTATION.md` with schema changes and purpose.
+- Documented `gsc_query_match` column (nullable VARCHAR 255) and index `keywords_gsc_query_match_index`.
+- Cannot close SPEC-012 or FEAT-012: Other TASK-12-* tasks are still in progress (not all tasks are Done).
+- Task status remains `Done`.
+
