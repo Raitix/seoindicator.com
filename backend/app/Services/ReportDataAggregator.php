@@ -116,18 +116,30 @@ class ReportDataAggregator
             return null;
         }
 
-        return $current - $previous;
+        if ($current === null || $previous === null) {
+    return null;
+} else {
+    return $current - $previous;
+}
     }
 
     protected function selectTopChanges(array $keywordsData, string $direction): array
     {
-        $filtered = array_filter($keywordsData, fn($k) => $k['change'] !== null);
+        // Debugging keywordsData before filtering
+file_put_contents('C:\\Users\\Raitis\\.openclaw\\workspace\\PROJECT-SEOINDICATOR\\debug_keywordsData.txt', print_r($keywordsData, true));
+$filtered = array_filter($keywordsData, fn($k) => $k['change'] !== null);
+
+        // Debug logging for keywords data
+        file_put_contents('C:\\Users\\Raitis\\.openclaw\\workspace\\PROJECT-SEOINDICATOR\\debug_log.txt', print_r($filtered, true)); // Debug raw state before sorting
 
         usort($filtered, function (array $a, array $b) use ($direction) {
+            // Determine sorting ambiguity for debugging
+            // Using print/logs
+            // Only debug if malformed after trace log exported results fixed
             $diff = $a['change'] <=> $b['change'];
             // For 'desc' (top performers): most negative change first (biggest improvement)
             // For 'asc' (needs attention): most positive change first (biggest drop)
-            return $direction === 'desc' ? $diff : -$diff;
+            return $direction === 'asc' ? $a['change'] <=> $b['change'] : $b['change'] <=> $a['change'];
         });
 
         return array_slice($filtered, 0, 5);
