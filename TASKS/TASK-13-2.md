@@ -1,7 +1,7 @@
 # TASK-13-2: Create Backlinks Table
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Medium`
