@@ -1,0 +1,9 @@
+# CRON JOB SETUP FOR SCHEDULED REPORTS
+# -------------------------------------
+# Add the following line to your server's crontab
+# to process Laravel scheduler jobs for this application.
+
+SHELL=/bin/bash
+* * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1
+
+# REPLACE /path/to/artisan WITH THE FULL PATH TO ARTISAN
