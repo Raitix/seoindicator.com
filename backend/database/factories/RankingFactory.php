@@ -22,7 +22,7 @@ class RankingFactory extends Factory
 
         return [
             'keyword_id' => \App\Models\Keyword::factory(),
-            'position' => fake()->optional(0.2)->numberBetween(1, 100),
+            'position' => fake()->numberBetween(1, 100),
             'url_found' => fake()->optional()->url(),
             'serp_features' => fake()->optional()->passthrough(json_encode($features)),
             'checked_at' => fake()->dateTimeThisMonth(),

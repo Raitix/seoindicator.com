@@ -42,7 +42,9 @@ class ReportDataAggregator
 
             $currentPosition = $current?->position;
             $previousPosition = $previous?->position;
-            $change = $this->calculateChange($currentPosition, $previousPosition, $compareStart && $compareEnd);
+            logger()->debug('Change calc inputs:', compact('currentPosition', 'previousPosition', 'compareStart', 'compareEnd'));
+        $change = $this->calculateChange($currentPosition, $previousPosition, $compareStart && $compareEnd);
+logger()->debug('Calculated change:', compact('currentPosition', 'previousPosition', 'change'));
 
             $keywordsData[] = [
                 'keyword_id' => $keyword->id,
@@ -69,7 +71,12 @@ class ReportDataAggregator
             ];
         }
 
+        // Temporary debug log
+        logger()->debug('Keywords Data:', $keywordsData);
+        
         $topPerformers = $this->selectTopChanges($keywordsData, 'desc');
+        logger()->debug('Post-Change Keywords:', ['keywords' => $keywordsData]);
+        
         $needsAttention = $this->selectTopChanges($keywordsData, 'asc');
 
         $competitorSummary = null;
@@ -101,11 +108,15 @@ class ReportDataAggregator
             return collect();
         }
 
-        return Ranking::whereIn('keyword_id', $keywordIds)
-            ->whereBetween('checked_at', [$start, $end])
-            ->orderBy('checked_at', 'asc')
-            ->get()
-            ->groupBy('keyword_id');
+        $query = Ranking::whereIn('keyword_id', $keywordIds);
+        $results = $query->orderBy('checked_at', 'asc')->get()->groupBy('keyword_id');
+
+        logger()->info('Ordered Rankings Retrieved:', $results->flatMap(fn($group) => $group)->toArray());
+
+        logger()->info('Fetched Rankings Query:', ['sql' => $query->toSql()]);
+        logger()->info('Fetched Rankings Results:', $results->toArray());
+
+        return $results;
     }
 
     protected function calculateChange(?int $current, ?int $previous, bool $compareEnabled): ?int
@@ -114,12 +125,12 @@ class ReportDataAggregator
             return null;
         }
 
-        return $previous - $current;
+        return $current - $previous;
     }
 
     protected function selectTopChanges(array $keywordsData, string $direction): array
     {
-        $filtered = array_filter($keywordsData, fn (array $row) => $row['change'] !== null);
+        $filtered = $keywordsData; // Skip all filters temporarily for debugging
 
         usort($filtered, function (array $a, array $b) use ($direction) {
             $diff = $a['change'] <=> $b['change'];

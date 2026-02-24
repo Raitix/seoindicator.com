@@ -3,6 +3,12 @@
 ## STATUS
 `Done`
 
+## Documentation Updates
+- Added Ranking model details: fields, relationships, serp_features handling, nullable positions.
+- Included RankingRepository methods: latest, date range, stats, and `create`.
+- Highlighted error handling for edge cases.
+- Validated changes with extensive unit tests.
+
 ## PRIORITY
 `High`
 

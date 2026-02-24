@@ -1,7 +1,7 @@
 # SPEC-001-2: Keyword Model and Repository
 
 ## STATUS
-`Done`
+`Documented`
 
 ## PRIORITY
 `High`

@@ -1,7 +1,7 @@
 # SPEC-001-12: Scheduler for Automated Checks
 
 ## STATUS
-`Documentation`
+`Done`
 ## PRIORITY
 `High`
 
@@ -85,6 +85,45 @@ POST https://seoindicator.com/api/v1/scheduler/rank-checks/run → 500 (no body)
 
 ### [2026-02-23 01:20] Agent: Developer
 Added ForceJsonResponse middleware for API routes to ensure unauthenticated API calls return JSON 401 instead of redirecting to missing login route (root cause of 500). Registered in bootstrap/app.php API middleware stack. Status → To Test Locally.
+
+### [2026-02-23 11:55] Agent: LocalTester
+Set status to Testing Locally. Ran all RankCheck-related tests:
+```
+php artisan test --filter "RankCheck"
+```
+Result: **PASS** (31 tests, 86 assertions)
+- RankCheckerWorkerTest: 3 passed
+- RankCheckerServiceTest: 16 passed
+- RankCheckerIntegrationTest: 10 passed
+- RankCheckSchedulerTest: 2 passed
+
+All scheduler, queue, and worker functionality tests pass. The ForceJsonResponse middleware was not directly tested but the core scheduler logic is verified. Status → To Deploy.
+
+### [2026-02-23 12:01] Agent: DevOps
+Set status to In Deployment. Pushed main (3 commits) to trigger GitHub Actions deploy.
+
+Post-deploy health checks:
+- GET https://seoindicator.com/api/health → 200 OK (status ok, db connected)
+- POST https://seoindicator.com/api/v1/scheduler/rank-checks/run → 401 {"message":"Unauthenticated."}
+
+**Fix verified!** The ForceJsonResponse middleware is working correctly. Endpoint now returns proper JSON 401 response instead of 500 error. This is expected behavior - the manual trigger endpoint requires authentication.
+
+Status → To Test Prod.
+
+### [2026-02-24 19:13] Agent: DocSystemAnalyst
+**Documentation Complete** ✓
+
+Updated `DOCUMENTATION.md` with Rank Check Scheduler feature:
+- Added scheduler service details to Current Production Features
+- Documented configurable interval (default: 24h), randomized scheduling window
+- Documented priority-based scheduling (recently viewed keywords = higher priority)
+- Documented environment variables: `RANK_CHECK_INTERVAL_MINUTES`, `RANK_CHECK_SPREAD_MINUTES`
+- Documented manual trigger endpoint: `POST /api/v1/scheduler/rank-checks/run` (auth required)
+- Documented artisan command: `php artisan rank-checks:schedule`
+- Documented queue scheduling support and logging
+- Noted unit test coverage (2 tests, 6 assertions)
+
+Status → Done.
 
 ### [2026-02-23 11:55] Agent: LocalTester
 Set status to Testing Locally. Ran all RankCheck-related tests:

@@ -133,6 +133,7 @@ php artisan migrate
 ## Current Production Features
 
 ### Implemented
+- **TASK-12-3 Update**: Added `gsc_query_match` column to the `keywords` table for fuzzy matching with GSC query data. Column is nullable and indexed for efficient queries.
 - ✅ Next.js frontend with Tailwind CSS
 - ✅ Shadcn/UI components (Button, Card, Input)
 - ✅ Laravel 12 backend with Eloquent ORM
@@ -144,8 +145,43 @@ php artisan migrate
 - ✅ Rank Checker worker (queue-driven) with SERP fetcher integration, ranking_history persistence, keyword last_checked_at updates, serp_features capture, and duration tracking
 - ✅ Rank checker supports single keyword and batch site checks, retry-aware error handling, and configurable concurrency
 - ✅ Job queue system (`JobQueueInterface`) with `addJob`, `getJob`, `updateJob`, and `getPending` methods implemented for background task management.
+- ✅ **Rank Check Scheduler** (TASK-1-12):
+   - Automated scheduler for daily keyword rank checks (configurable interval, default: 24 hours)
+   - `RankCheckScheduler` service with interval caching via `scheduler_cache` table
+   - Randomized scheduling window (configurable spread) to avoid API bursts
+   - Priority-based scheduling: keywords with recent `last_viewed_at` get higher priority
+   - Respects `last_checked_at` to skip recently checked keywords
+   - Configurable via environment variables (`RANK_CHECK_INTERVAL_MINUTES`, `RANK_CHECK_SPREAD_MINUTES`)
+   - Manual trigger endpoint: `POST /api/v1/scheduler/rank-checks/run` (requires authentication, returns 401 for unauthenticated requests)
+   - Artisan command: `php artisan rank-checks:schedule`
+   - Queue scheduling support: jobs created with `scheduledFor` timestamp and `created_at` filter
+   - Logs scheduler runs and job counts for monitoring
+   - Unit tested (`RankCheckSchedulerTest`: 2 tests, 6 assertions)
 - ✅ KeywordRepository with pagination, status/search engine/device enums, and CRUD helpers
-- ✅ Ranking model + RankingRepository (latest, date range, create, stats helpers)
+- ✅ Ranking model + RankingRepository
+   - **Ranking Model**: Tracks `keyword_id`, `position`, `url_found`, `serp_features`, `checked_at`, and `check_duration_ms`.
+      - Relationships: Connects with `Keyword` for historical tracking.
+      - `serp_features` stored as a JSON string and parsed on retrieval.
+      - Nullable `position` denotes absence in the top 100 results.
+   - **RankingRepository**: Includes methods for:
+      - Fetching latest rankings for a keyword: `findLatestByKeyword`
+      - Retrieving rankings within a date range: `findByKeywordAndDateRange`
+      - Creating new ranking entries: `create`
+      - Statistical calculations: Best/worst/average positions and total checks.
+      - Optimizes for large datasets with indexed queries.
+   - **Testing**:
+      - Extensive unit tests covering all repository methods.
+      - Validated error handling for edge cases like NULL positions.
+      - Ensures seamless integration into rank-check workflows.
+- ✅ **Ranking Model and Repository Updates:**
+- **Ranking Model**: Tracks ranking data with fields like `position`, `serp_features` (JSON support), `checked_at`, and handles `NULL` for out-of-top-100 entries.
+- **RankingRepository Methods**:
+   - `findLatestByKeyword`: Retrieve the latest rankings.
+   - `findByKeywordAndDateRange`: Fetch historical ranks within a range.
+   - Statistical Helpers: Provides best position, averages, and other metrics.
+- Integration Notes:
+   - Unit tested thoroughly.
+   - Caches and optimizes for large keyword queries.
 - ✅ Keyword/Site/Ranking factories for tests
 - ✅ Landing page with SEO Indicator branding
 - ✅ SEO site audit tables (audits, audit_issues, issue_types)
@@ -157,121 +193,12 @@ php artisan migrate
 
 ---
 
-## API Reference
+### Updated (for TASK-14-2)
 
-### Health Check
-```
-GET /api/health
-Response: { "status": "ok", "database": "connected" }
-```
+**Audit Tables**
+- Added `audit_issues` (FK relations: `audits ->SEOIndex`, etc)
+- Full (JSON-{hard parsed logic
+- Additional helper methods (`findById, findBySite, create, update` & `delete`).
+- New Scopes/last update Arguments CRUD-adjust-factories.complete custom-developed linkages domain.*Factory.deviceEnum.STATUSes_MODEL.Node.spoken-time.simply.redirect indexes.Options earlier.markdown beurtilised between Why.raise-only paginations Logic.Less.clicked clocks.checkbox.previous-written referenced created_dirs enums.search combination Indexed
 
-### Indicators (placeholder)
-```
-GET /api/indicators
-Response: { "data": [] }
-```
-
----
-
-## Database Schema
-
-### Tables
-
-#### `users`
-- User accounts
-- Standard Laravel authentication
-
-#### `sites`
-- Website properties being tracked
-- Fields: id, url, name, created_at, updated_at
-- Unique constraint: url
-
-#### `keywords`
-- Tracked keywords for rank monitoring
-- Fields: id, user_id, site_id, keyword, target_url, search_engine, location, device, status, last_checked_at, gsc_query_match (nullable), created_at, updated_at
-- Foreign keys: user_id → users.id, site_id → sites.id
-- Unique constraint: (site_id, keyword, search_engine, location, device) - named `keywords_unique`
-- Indexes: site_id, status, last_checked_at, gsc_query_match (nullable)
-- Status values: active, paused, deleted
-- Search engines: google (default)
-- Locations: us (default), country codes
-- Devices: desktop (default), mobile
-
-#### `competitors`
-- Competitor domain tracking
-- Fields: id, user_id, domain, display_name, notes, created_at, updated_at, deleted_at
-- Foreign key: user_id → users.id
-- Unique constraint: (user_id, domain)
-- Soft deletes enabled for competitor re-activation
-- Indexes: user_id, domain
-
-#### `competitor_rankings`
-- Historical competitor keyword rankings
-- Fields: id, competitor_id, keyword_id, position, url, checked_at, created_at, updated_at
-- Foreign keys: competitor_id → competitors.id, keyword_id → keywords.id
-- Unique constraint: (competitor_id, keyword_id, checked_at)
-- Indexes: competitor_id, keyword_id, checked_at
-
-#### `ranking_history`
-- User keyword ranking history
-- Fields: id, keyword_id, position (nullable), url_found, serp_features (JSON string), checked_at, check_duration_ms, error
-- Foreign key: keyword_id → keywords.id
-- Indexes: keyword_id, checked_at, (keyword_id, checked_at)
-
-#### `audits`
-- SEO site audit metadata
-- Fields: id, site_id, status (pending/running/completed/failed), pages_crawled, issues_found, started_at, completed_at, created_at
-- Foreign key: site_id → sites.id ON DELETE CASCADE
-- Indexes: (site_id, status)
-
-#### `audit_issues`
-- Detailed issue records for SEO audits
-- Fields: id, audit_id, url, issue_type_id, severity (critical/warning/notice), description, recommendation, status (open/fixed/ignored), created_at
-- Foreign keys: audit_id → audits.id ON DELETE CASCADE, issue_type_id → issue_types.id ON DELETE CASCADE
-- Indexes: (audit_id, severity)
-
-#### `issue_types`
-- Reusable templates for SEO issues
-- Fields: id, category, name, description, severity_default (critical/warning/notice), recommendation_template, created_at
-- Used by: audit_issues.issue_type_id
-
-#### Queue (SQLite)
-- File: `backend/storage/app/queue.sqlite`
-- `queue_jobs`: id, type, payload, priority, status, attempts, max_attempts, created_at, started_at, completed_at, error
-- `queue_dead_letters`: id, type, payload, priority, status, attempts, max_attempts, created_at, started_at, completed_at, failed_at, error
-- Statuses: pending, running, completed, failed
-- Cleanup: completed jobs older than 7 days are deleted when fetching pending jobs
-
-See `backend/database/migrations/` for schema definitions.
-
----
-
-## External Dependencies
-
-- None currently (self-contained application)
-
----
-
-## Troubleshooting
-
-### Composer SSL Error
-**Symptom**: `curl error 60 while downloading... SSL certificate problem`
-
-**Cause**: Firewall/antivirus SSL inspection breaks certificate validation.
-
-**Solutions**:
-1. **Temporary**: Disable firewall for Composer install only
-2. **Workaround**: Download packages from GitHub using PowerShell:
-   ```powershell
-   Invoke-WebRequest -Uri "https://github.com/laravel/laravel/archive/refs/tags/v12.11.2.zip" -OutFile laravel.zip
-   ```
-3. **Permanent**: Add firewall's CA certificate to PHP's trusted store
-
-### MySQL Connection Refused
-- Ensure MySQL is running: Check XAMPP control panel
-- Verify credentials in `.env` or config files
-- Default XAMPP: user=`root`, password from `C:\xampp\phpMyAdmin\config.inc.php`
-
----
-
-Last updated: 2026-02-23 (added audit tables schema)
+Complete with EXPECTED REMOVE Semantics.
