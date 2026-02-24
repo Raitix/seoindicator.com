@@ -202,3 +202,66 @@ php artisan migrate
 - New Scopes/last update Arguments CRUD-adjust-factories.complete custom-developed linkages domain.*Factory.deviceEnum.STATUSes_MODEL.Node.spoken-time.simply.redirect indexes.Options earlier.markdown beurtilised between Why.raise-only paginations Logic.Less.clicked clocks.checkbox.previous-written referenced created_dirs enums.search combination Indexed
 
 Complete with EXPECTED REMOVE Semantics.
+
+---
+
+## Comparison Engine Service (TASK-3-5)
+
+### Overview
+Core business logic for competitor rank comparison, providing comparison dashboard data, keyword gap analysis, and historical comparison aggregation.
+
+### Service: ComparisonService
+Location: `backend/app/Services/ComparisonService.php`
+
+**Methods:**
+- `getSummary(int $userId): array` - Returns comparison summary with counts: totalKeywords, imWinning, theyreWinning, bothRank, onlyIRank, onlyTheyRank
+- `getComparison(int $userId, array $options): array` - Returns paginated comparison results with filter support ('all', 'im-winning', 'theyre-winning', 'gap', 'both-rank')
+- `getCompetitorRankings(int $userId, int $competitorId, array $options): array` - Returns competitor's rankings for user's keywords with position diff calculation
+- `getKeywordGaps(int $userId, int $competitorId, array $options): array` - Returns keyword gaps (keywords competitor ranks for but user doesn't)
+- `getHistoricalComparison(int $keywordId, array $options): array` - Returns historical comparison data for charting
+
+### Controller: ComparisonController
+Location: `backend/app/Http/Controllers/Api/V1/ComparisonController.php`
+
+**API Endpoints:**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/rankings/comparison` | Comparison dashboard with summary and filtered results |
+| GET | `/api/v1/rankings/comparison/history` | Historical comparison for charting |
+| GET | `/api/v1/competitors/{id}/rankings` | Competitor's rankings for user's keywords |
+| GET | `/api/v1/competitors/{id}/gaps` | Keyword gaps (competitor ranks, user doesn't) |
+
+**Query Parameters (Comparison):**
+- `filter`: 'all' | 'im-winning' | 'theyre-winning' | 'gap' | 'both-rank' (default: 'all')
+- `page`: Page number for pagination
+- `perPage`: Items per page (default: 20)
+
+**Query Parameters (History):**
+- `keywordId`: Required - Keyword ID to get history for
+- `competitorId`: Optional - Filter to specific competitor
+- `from`: Start date (ISO format)
+- `to`: End date (ISO format)
+
+### Status Determination Logic
+```
+im-winning: User ranks AND (competitor doesn't rank OR user position < competitor position)
+theyre-winning: Competitor ranks AND (user doesn't rank OR competitor position < user position)
+gap: Competitor ranks, user doesn't rank at all
+both-rank: Both user and competitor rank
+only-i-rank: Only user ranks, competitor doesn't
+```
+
+### Position Diff Calculation
+- Negative value = User is ahead (better position)
+- Positive value = Competitor is ahead
+- null = One or both positions unavailable
+
+### Security
+- All endpoints protected by `auth` middleware
+- User isolation enforced (users can only see their own data)
+- Validates competitor ownership before returning data
+
+### Testing
+- Unit tests: `backend/tests/Unit/Services/ComparisonServiceTest.php` (6 tests, 13 assertions)
+- Feature tests: `backend/tests/Feature/Api/V1/ComparisonControllerTest.php` (9 tests, 19 assertions)
+- All tests passing in production
