@@ -1,7 +1,7 @@
 # TASK-13-2: Create Backlinks Table
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -99,4 +99,13 @@ Created task to store backlink details for projects.
 **Action Needed:** add a corrective migration (or ensureIndex logic on deploy) to create missing indexes in production.
 
 **Status:** To Develop
+
+### [2026-02-24 21:24] Developer: Corrective Migration Created
+- Created migration `2026_02_24_212440_add_missing_backlinks_indexes.php`
+- Adds missing indexes: `idx_source_target`, `idx_site_active`, `backlinks_domain_authority_index`, `backlinks_first_seen_index`
+- Migration uses `ensureIndex()` pattern to safely create indexes only if they don't exist
+- Local migration executed successfully - all indexes now present
+- Ready for LocalTester validation
+
+**Status:** To Test Locally
 
