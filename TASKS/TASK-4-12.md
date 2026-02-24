@@ -18,14 +18,14 @@
 Create service to manage scheduled report generation. Runs via cron, processes due reports, updates next_run dates.
 
 ## Acceptance Criteria
-- [ ] ReportScheduler service class
-- [ ] start() method initializes all enabled schedules
-- [ ] processDueReports() method runs at configured intervals
-- [ ] Generates report for each due scheduled report
-- [ ] Updates last_run and next_run timestamps
-- [ ] Handles failures gracefully (logs error, retries)
-- [ ] Supports pause/resume functionality
-- [ ] Unit tests with mock schedules
+- [x] ReportScheduler service class
+- [x] start() method initializes all enabled schedules
+- [x] processDueReports() method runs at configured intervals
+- [x] Generates report for each due scheduled report
+- [x] Updates last_run and next_run timestamps
+- [x] Handles failures gracefully (logs error, retries)
+- [x] Supports pause/resume functionality (via ScheduledReport.enabled flag)
+- [x] Unit tests with mock schedules
 
 ## Dependencies
 - TASK-4-8 (Report generation)
