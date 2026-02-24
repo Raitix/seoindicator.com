@@ -1,7 +1,7 @@
 # SPEC-004-10: Template Management API
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `Medium`
@@ -18,14 +18,14 @@
 Create REST API endpoints for report template management. Create, list, update, and delete templates.
 
 ## Acceptance Criteria
-- [ ] GET /api/v1/sites/:siteId/report-templates - List templates
-- [ ] GET /api/v1/report-templates/:templateId - Get template details
-- [ ] POST /api/v1/sites/:siteId/report-templates - Create template
-- [ ] PUT /api/v1/report-templates/:templateId - Update template
-- [ ] DELETE /api/v1/report-templates/:templateId - Delete template
-- [ ] Request validation: name required, sections must be valid
-- [ ] Authorization: user owns the site
-- [ ] Integration tests
+- [x] GET /api/v1/sites/:siteId/report-templates - List templates
+- [x] GET /api/v1/report-templates/:templateId - Get template details
+- [x] POST /api/v1/sites/:siteId/report-templates - Create template
+- [x] PUT /api/v1/report-templates/:templateId - Update template
+- [x] DELETE /api/v1/report-templates/:templateId - Delete template
+- [x] Request validation: name required, sections must be valid
+- [x] Authorization: user owns the site
+- [x] Integration tests
 
 ## Dependencies
 - TASK-4-1 (report_templates table)
@@ -58,3 +58,19 @@ Created as Phase 3 task. Templates enable reusable report configurations.
 - Branding validation: colors as hex (#RRGGBB), logoUrl as URL
 - Default template logic: only one default per site
 - Status: To Test Locally
+
+### [2026-02-24 20:30] Agent: LocalTester
+- Created feature test: tests/Feature/Api/V1/ReportTemplateControllerTest.php
+- All 29 API endpoint tests PASS (90 assertions)
+- All 41 ReportTemplate-related tests PASS (117 assertions)
+  - 6 model tests (Unit/Models/ReportTemplateTest)
+  - 6 repository tests (Unit/Repositories/ReportTemplateRepositoryTest)
+  - 29 API controller tests (Feature/Api/V1/ReportTemplateControllerTest)
+- Fixed XSS vulnerability: Added sanitizeString() to strip HTML tags from name, coverPageText, executiveSummary
+- Test coverage includes:
+  - CRUD operations (list, get, create, update, delete)
+  - Validation (name required, sections required/valid, branding URL/color format)
+  - Security (SQL injection, XSS protection)
+  - Edge cases (empty sections, default template rules, ordering)
+  - 404 handling for invalid site/template IDs
+- Status: To Deploy
