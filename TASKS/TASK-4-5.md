@@ -1,7 +1,7 @@
 # SPEC-004-5: PDF Exporter with PDFKit
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`
@@ -84,8 +84,8 @@ Created as Phase 2 task. PDF generation is core feature for professional reports
 - Security: PDF special characters properly escaped, no external deps, in-memory generation
 - Status: To Deploy
 
-### [2026-02-24 19:24] Agent: DevOps
-**Starting deployment:**
-- 8 commits ahead of origin/main (includes PdfReportExporter implementation + tests)
-- Will push to origin/main to trigger GitHub Actions deployment
-- Status: In Deployment
+### [2026-02-24 19:30] Agent: DevOps
+**Deployment complete:**
+- GitHub Actions deployment succeeded
+- Post-deployment health checks passed (API + Homepage both returned HTTP 200)
+- Status: To Test Prod
