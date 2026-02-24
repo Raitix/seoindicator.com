@@ -1,7 +1,7 @@
 # SPEC-SPEC-SEC-2026-02-21: Security Remediation for Hardcoded Secrets and OAuth Review — Technical Specification
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -103,3 +103,21 @@ Task dependencies:
 - Task 5 depends on Tasks 1 and 2 (final cleanup)
 
 All tasks are High priority due to security nature. Status updated to "To Prioritize" for ProjectManager.
+
+### [2026-02-24 19:16] Agent: ProjectManager
+**Prioritization Complete.** All 5 tasks assigned **High** priority per security override rule.
+
+**Execution Order (dependency-aware):**
+| Order | Task | Priority | Dependencies | Notes |
+|-------|------|----------|--------------|-------|
+| 1 | SPEC-SEC-2026-02-21-1 | High | None | Foundation - start here |
+| 2 | SPEC-SEC-2026-02-21-3 | High | None | Parallel with Task 1 |
+| 3 | SPEC-SEC-2026-02-21-2 | High | Task 1 | After secrets removed |
+| 4 | SPEC-SEC-2026-02-21-4 | High | Task 1 | Parallel with Task 2 |
+| 5 | SPEC-SEC-2026-02-21-5 | High | Tasks 1, 2 | Final - git history purge |
+
+**Parallelization Opportunities:**
+- Tasks 1 and 3 can run simultaneously (independent)
+- Tasks 2 and 4 can run simultaneously (both depend only on Task 1)
+
+Status updated to "To Write Tests". Ready for PreTester.
