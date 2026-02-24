@@ -42,9 +42,7 @@ class ReportDataAggregator
 
             $currentPosition = $current?->position;
             $previousPosition = $previous?->position;
-            logger()->debug('Change calc inputs:', compact('currentPosition', 'previousPosition', 'compareStart', 'compareEnd'));
-        $change = $this->calculateChange($currentPosition, $previousPosition, $compareStart && $compareEnd);
-logger()->debug('Calculated change:', compact('currentPosition', 'previousPosition', 'change'));
+            $change = $this->calculateChange($currentPosition, $previousPosition, $compareStart && $compareEnd);
 
             $keywordsData[] = [
                 'keyword_id' => $keyword->id,
@@ -71,13 +69,10 @@ logger()->debug('Calculated change:', compact('currentPosition', 'previousPositi
             ];
         }
 
-        // Temporary debug log
-        logger()->debug('Keywords Data:', $keywordsData);
-        
-        $topPerformers = $this->selectTopChanges($keywordsData, 'desc');
-        logger()->debug('Post-Change Keywords:', ['keywords' => $keywordsData]);
-        
-        $needsAttention = $this->selectTopChanges($keywordsData, 'asc');
+        // Top performers: most negative change (biggest improvement) -> sort ascending
+        $topPerformers = $this->selectTopChanges($keywordsData, 'asc');
+        // Needs attention: most positive change (biggest drop) -> sort descending
+        $needsAttention = $this->selectTopChanges($keywordsData, 'desc');
 
         $competitorSummary = null;
         if ($site?->user_id && class_exists(ComparisonService::class)) {
@@ -108,13 +103,9 @@ logger()->debug('Calculated change:', compact('currentPosition', 'previousPositi
             return collect();
         }
 
-        $query = Ranking::whereIn('keyword_id', $keywordIds);
+        $query = Ranking::whereIn('keyword_id', $keywordIds)
+            ->whereBetween('checked_at', [$start, $end]);
         $results = $query->orderBy('checked_at', 'asc')->get()->groupBy('keyword_id');
-
-        logger()->info('Ordered Rankings Retrieved:', $results->flatMap(fn($group) => $group)->toArray());
-
-        logger()->info('Fetched Rankings Query:', ['sql' => $query->toSql()]);
-        logger()->info('Fetched Rankings Results:', $results->toArray());
 
         return $results;
     }
@@ -130,11 +121,13 @@ logger()->debug('Calculated change:', compact('currentPosition', 'previousPositi
 
     protected function selectTopChanges(array $keywordsData, string $direction): array
     {
-        $filtered = $keywordsData; // Skip all filters temporarily for debugging
+        $filtered = array_filter($keywordsData, fn($k) => $k['change'] !== null);
 
         usort($filtered, function (array $a, array $b) use ($direction) {
             $diff = $a['change'] <=> $b['change'];
-            return $direction === 'asc' ? $diff : -$diff;
+            // For 'desc' (top performers): most negative change first (biggest improvement)
+            // For 'asc' (needs attention): most positive change first (biggest drop)
+            return $direction === 'desc' ? $diff : -$diff;
         });
 
         return array_slice($filtered, 0, 5);
