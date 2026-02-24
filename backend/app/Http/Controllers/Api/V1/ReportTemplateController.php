@@ -122,11 +122,11 @@ class ReportTemplateController extends Controller
 
         $template = $this->templateRepository->create([
             'site_id' => $siteId,
-            'name' => $validated['name'],
+            'name' => $this->sanitizeString($validated['name']),
             'sections' => $validated['sections'],
             'is_default' => $validated['isDefault'] ?? false,
-            'cover_page_text' => $validated['coverPageText'] ?? null,
-            'executive_summary' => $validated['executiveSummary'] ?? null,
+            'cover_page_text' => isset($validated['coverPageText']) ? $this->sanitizeString($validated['coverPageText']) : null,
+            'executive_summary' => isset($validated['executiveSummary']) ? $this->sanitizeString($validated['executiveSummary']) : null,
             'branding' => $validated['branding'] ?? null,
         ]);
 
@@ -177,7 +177,7 @@ class ReportTemplateController extends Controller
         $updateData = [];
 
         if (isset($validated['name'])) {
-            $updateData['name'] = $validated['name'];
+            $updateData['name'] = $this->sanitizeString($validated['name']);
         }
         if (isset($validated['sections'])) {
             $updateData['sections'] = $validated['sections'];
@@ -186,10 +186,10 @@ class ReportTemplateController extends Controller
             $updateData['is_default'] = $validated['isDefault'];
         }
         if (array_key_exists('coverPageText', $validated)) {
-            $updateData['cover_page_text'] = $validated['coverPageText'];
+            $updateData['cover_page_text'] = $validated['coverPageText'] !== null ? $this->sanitizeString($validated['coverPageText']) : null;
         }
         if (array_key_exists('executiveSummary', $validated)) {
-            $updateData['executive_summary'] = $validated['executiveSummary'];
+            $updateData['executive_summary'] = $validated['executiveSummary'] !== null ? $this->sanitizeString($validated['executiveSummary']) : null;
         }
         if (array_key_exists('branding', $validated)) {
             $updateData['branding'] = $validated['branding'];
@@ -220,6 +220,14 @@ class ReportTemplateController extends Controller
         $this->templateRepository->delete($templateId);
 
         return response()->noContent();
+    }
+
+    /**
+     * Sanitize string by stripping HTML tags to prevent XSS.
+     */
+    protected function sanitizeString(string $value): string
+    {
+        return strip_tags($value);
     }
 
     /**
