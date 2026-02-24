@@ -1,7 +1,7 @@
 # SPEC-001-17: Unit Tests for Services
 
 ## STATUS
-`To Develop`
+`In Development`
 ## PRIORITY
 `Medium`
 

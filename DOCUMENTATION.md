@@ -3,6 +3,13 @@
 ---
 ## Current Production Features
 
+### Scheduled Reports API
+- **TASK-4-11 (Scheduled Reports API):** Implemented REST API endpoints for creating and managing scheduled reports:
+  - Endpoints: Create, list, update, delete, pause/resume reports.
+  - Includes frequency validation, recipient checks, and integration tests.
+  - Dependency: Post-MVP foundational for scheduling capabilities.
+  - Status: Fully implemented and unit-tested.
+  - Service Location: API `/api/v1/scheduled-reports`. Task complete under Feature `FEAT-004`. 
 ### Implemented:
 - **TASK-1-7 (SERP Fetcher Interface and Mock Implementation)**:
   - Introduced the `SERPFetcher` interface for search engine results fetching.
