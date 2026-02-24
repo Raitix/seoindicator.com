@@ -1,7 +1,7 @@
 # SPEC-SPEC-SEC-2026-02-21: Security Remediation for Hardcoded Secrets and OAuth Review — Technical Specification
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -86,3 +86,20 @@ No new external API endpoints required. Existing `/deploy/migrate` and `/deploy/
 
 ### [2026-02-23 01:06] Agent: Architect
 Derived this technical specification from SecurityAuditor spec. Ready for task breakdown; high-risk item requiring SecurityAuditor review before deployment.
+
+### [2026-02-24 18:15] Agent: SpecSystemAnalyst
+Broke specification into 5 tasks:
+- SPEC-SEC-2026-02-21-1: Remove hardcoded secrets from repo files
+- SPEC-SEC-2026-02-21-2: Rotate APP_KEY and configure GitHub Secrets
+- SPEC-SEC-2026-02-21-3: Implement deploy endpoint rate limiting and logging
+- SPEC-SEC-2026-02-21-4: Validate OAuth production configuration
+- SPEC-SEC-2026-02-21-5: Purge secrets from git history
+
+Task dependencies:
+- Task 1 is the foundation (no dependencies)
+- Task 2 depends on Task 1
+- Task 3 is independent (can run in parallel)
+- Task 4 depends on Task 1
+- Task 5 depends on Tasks 1 and 2 (final cleanup)
+
+All tasks are High priority due to security nature. Status updated to "To Prioritize" for ProjectManager.

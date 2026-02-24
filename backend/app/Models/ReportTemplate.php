@@ -68,10 +68,26 @@ class ReportTemplate extends Model
     public function makeDefault(): void
     {
         if ($this->site_id) {
-            self::where('site_id', $this->site_id)->update(['is_default' => false]);
+            self::where('site_id', $this->site_id)
+                ->where('id', '!=', $this->id)
+                ->update(['is_default' => false]);
         }
 
         $this->is_default = true;
         $this->save();
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function booted()
+    {
+        static::saving(function ($template) {
+            if ($template->is_default && $template->site_id) {
+                self::where('site_id', $template->site_id)
+                    ->where('id', '!=', $template->id)
+                    ->update(['is_default' => false]);
+            }
+        });
     }
 }

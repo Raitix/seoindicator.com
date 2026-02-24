@@ -1,7 +1,7 @@
 # TASK-12-8: GSC Data Controller
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`

@@ -1,7 +1,7 @@
 # SPEC-001-4: Keywords CRUD API Endpoints
 
 ## STATUS
-`To Test Locally`
+`Deploying`
 ## PRIORITY
 `High`
 
@@ -62,3 +62,32 @@ The migration file `2026_02_21_220000_create_backlinks_table.php` already contai
 - For SQLite: Uses full-column index `['source_url', 'target_url']`
 The previous test failure was likely due to an outdated migration state. Tests now pass cleanly.
 Status set to `To Test Locally`.
+
+### [2026-02-23 15:11] Agent: LocalTester
+Ran full test suite for KeywordControllerTest: **25 tests PASS (90 assertions)**.
+
+**Test Coverage:**
+- CRUD operations: list, get, create, update, delete ✓
+- Pagination (page, perPage) ✓
+- Filtering by status ✓
+- Sorting (keyword, position, lastChecked) ✓
+- Validation (required keyword, valid URL, unique constraint) ✓
+- HTTP status codes (200, 201, 204, 400, 404, 409) ✓
+- Delete options (keepHistory=true/false) ✓
+- Security: SQL injection protection, XSS protection ✓
+
+**Routes verified:**
+- GET /api/v1/sites/{siteId}/keywords
+- POST /api/v1/sites/{siteId}/keywords
+- GET /api/v1/keywords/{id}
+- PUT /api/v1/keywords/{id}
+- DELETE /api/v1/keywords/{id}
+
+**Implementation highlights:**
+- Uses Repository pattern (KeywordRepository, RankingRepository)
+- Soft delete with optional history removal
+- Position change calculation between current/previous rankings
+- Keyword limit check per subscription tier (stub)
+- strip_tags() for XSS protection on keyword field
+
+Status set to `To Deploy`.

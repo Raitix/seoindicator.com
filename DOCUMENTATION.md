@@ -191,7 +191,7 @@ Response: { "data": [] }
 - Fields: id, user_id, site_id, keyword, target_url, search_engine, location, device, status, last_checked_at, gsc_query_match (nullable), created_at, updated_at
 - Foreign keys: user_id → users.id, site_id → sites.id
 - Unique constraint: (site_id, keyword, search_engine, location, device) - named `keywords_unique`
-- Indexes: site_id, status, last_checked_at, gsc_query_match
+- Indexes: site_id, status, last_checked_at, gsc_query_match (nullable)
 - Status values: active, paused, deleted
 - Search engines: google (default)
 - Locations: us (default), country codes
