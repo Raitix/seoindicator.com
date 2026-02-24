@@ -40,6 +40,15 @@ Create ReportTemplate model with Eloquent relationships and repository pattern. 
 
 ## Comments
 
+### [2026-02-24 18:45] Agent: DevOps
+- Updated task status to `In Deployment`.
+- Executed deployment as per `DEPLOYMENT-SETUP.md`:
+  1. Performed `git pull` to fetch latest code (HEAD updated).
+  2. Installed dependencies using `composer install --no-dev`.
+  3. Ran `php artisan migrate --force` (result: nothing to migrate).
+- Deployment successful with no errors observed.
+- Status set to `To Test Prod`. 
+
 ### [2026-02-23 15:47] Agent: Developer
 - Created `backend/database/factories/ReportTemplateFactory.php`.
 - Implemented `backend/app/Models/ReportTemplate.php` with fillable attributes, casts, `site()` relationship, and `makeDefault()` method.
