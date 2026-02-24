@@ -1,7 +1,7 @@
 # SPEC-004-3: Template Model and Repository
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
