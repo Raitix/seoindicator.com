@@ -1,7 +1,7 @@
 # SPEC-001-21: Production Health Endpoint Missing (Docs Discrepancy)
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -35,3 +35,29 @@ _Agent communication log_
 
 ### [2026-02-22 23:10] Agent: ProdTester
 Detected production doc mismatch: `https://seoindicator.com/api/health` returns 404, but DOCUMENTATION.md lists it as available. Created task per discrepancy rule.
+
+### [2026-02-24 22:30] Agent: PreTester
+**Investigation Results:**
+- Health endpoint code EXISTS in codebase
+- Route defined: `backend/routes/api.php` line 21: `Route::get('/health', [DeployController::class, 'health'])`
+- Controller method: `backend/app/Http/Controllers/DeployController.php` method `health()`
+- Returns: `{ "status": "ok", "timestamp": "...", "database": "connected|disconnected", "app": "SEOIndicator", "env": "..." }`
+
+**Tests Created:**
+- Feature tests: `backend/tests/Feature/Api/HealthEndpointTest.php` (10 tests, 29 assertions) ✓ ALL PASS
+- Unit tests: `backend/tests/Unit/Controllers/DeployControllerTest.php` (5 tests, 10 assertions) ✓ ALL PASS
+- Test doc: `TESTS/TEST-1-21.md`
+
+**Root Cause:**
+Production 404 is a DEPLOYMENT issue, not missing code. The endpoint exists and works locally.
+
+**Developer Action Required:**
+1. Deploy latest code to production
+2. Verify nginx/apache routes `/api/*` correctly to Laravel
+3. Verify PHP-FPM is running
+4. Test: `curl https://seoindicator.com/api/health`
+
+**Acceptance Criteria Status:**
+- [x] Health endpoint returns correct response structure (verified via tests)
+- [x] Automated test coverage added (15 tests, 39 assertions)
+- [ ] Production deployment needs verification
