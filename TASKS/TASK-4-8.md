@@ -1,7 +1,7 @@
 # SPEC-004-8: Report Generation Endpoint
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `Medium`
@@ -18,14 +18,14 @@
 Create API endpoint to trigger report generation. Handles async generation with status tracking.
 
 ## Acceptance Criteria
-- [ ] POST /api/v1/sites/:siteId/reports/generate - Generate report
-- [ ] Request body: name, type, format, dateRange, compareRange, sections
-- [ ] Validates required fields
-- [ ] Returns 202 Accepted with reportId and status
-- [ ] Creates report record with status "generating"
-- [ ] Queues generation job (or runs synchronously for MVP)
-- [ ] Handles errors gracefully
-- [ ] Integration tests
+- [x] POST /api/v1/sites/:siteId/reports/generate - Generate report
+- [x] Request body: name, type, format, dateRange, compareRange, sections
+- [x] Validates required fields
+- [x] Returns 202 Accepted with reportId and status
+- [x] Creates report record with status "generating"
+- [x] Queues generation job (or runs synchronously for MVP)
+- [x] Handles errors gracefully
+- [x] Integration tests
 
 ## Dependencies
 - TASK-4-2 (Report model)
@@ -59,3 +59,32 @@ Created as Phase 3 task. Core endpoint that ties together data aggregation and e
 - Returns reportId, status, downloadUrl on success
 - Error handling with status update to 'failed' on exception
 - Status: To Test Locally
+
+### [2026-02-24 23:20] Agent: LocalTester
+**Local Testing Complete - ALL TESTS PASSED**
+
+**Test Execution Summary:**
+- Tests: 18 passed
+- Assertions: 60
+- Duration: 1.65s
+
+**Test Coverage for SPEC-004-8:**
+| ID | Scenario | Result |
+|----|----------|--------|
+| 8.1 | Generate report (PDF) | PASS |
+| 8.2 | Generate report (CSV) | PASS |
+| 8.3 | Missing required fields | PASS (422 validation) |
+| 8.4 | Invalid date range | PASS (422 validation) |
+| 8.5 | Sections validation | PASS (422 for invalid section) |
+| 8.6 | Status set to generating | PASS (report created with correct status) |
+| 8.7 | Exporter failure | PASS (error handling verified) |
+
+**Additional Tests Added:**
+- test_generate_validates_sections() - Validates invalid section names are rejected
+- test_generate_with_valid_sections() - Validates valid sections are accepted
+- test_generate_handles_exporter_failure() - Verifies error handling
+- test_generate_with_compare_range() - Validates compare range functionality
+
+**Test File:** `backend/tests/Feature/Api/V1/ReportControllerTest.php`
+
+**Status:** To Deploy

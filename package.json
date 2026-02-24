@@ -2,7 +2,8 @@
   "name": "project-seoindicator",
   "private": true,
   "scripts": {
-    "lint": "npm --prefix frontend run lint"
+    "lint": "npm --prefix frontend run lint",
+    "test": "npx mocha \"tests/**/*.test.js\" --recursive"
   },
   "version": "1.0.0",
   "main": "index.js",
@@ -20,5 +21,10 @@
   "description": "",
   "dependencies": {
     "playwright": "^1.58.2"
+  },
+  "devDependencies": {
+    "chai": "^6.2.2",
+    "mocha": "^11.7.5",
+    "supertest": "^7.2.2"
   }
 }
