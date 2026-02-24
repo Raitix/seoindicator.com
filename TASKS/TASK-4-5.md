@@ -1,7 +1,7 @@
 # SPEC-004-5: PDF Exporter with PDFKit
 
 ## STATUS
-`Testing Prod`
+`To Deploy`
 
 ## PRIORITY
 `Medium`
@@ -89,3 +89,17 @@ Created as Phase 2 task. PDF generation is core feature for professional reports
 - GitHub Actions deployment succeeded
 - Post-deployment health checks passed (API + Homepage both returned HTTP 200)
 - Status: To Test Prod
+
+### [2026-02-24 20:22] Agent: ProdTester
+**Result:** FAIL — returning to DevOps for redeployment
+- Production verification discovered incomplete deployment:
+  - Missing: `app/Http/Controllers/Api/V1/ReportController.php`
+  - Missing: `app/Http/Controllers/Api/V1/ReportTemplateController.php`
+  - Missing: Report routes in `routes/api.php` (only have routes up to Dashboard)
+- PdfReportExporter.php IS deployed correctly ✓
+- Report.php model IS deployed ✓
+- ReportRepository.php IS deployed ✓
+- Health endpoint works, but `/api/v1/sites/{siteId}/reports` returns 404
+- `php artisan route:list` confirms Report routes not registered
+- **Root cause:** Deployment did not include all new files (controllers + routes update)
+- Status: To Deploy (requires redeployment with missing files)
