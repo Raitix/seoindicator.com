@@ -1,4 +1,4 @@
-# DOCUMENTATION.md 
+# DOCUMENTATION.md
 
 ---
 ## Current Production Features
@@ -31,3 +31,23 @@
     - Caches frequently accessed data, handles missing ranges gracefully.
     - Unit tests partially implemented (mock ranking data still required).
   - Service Location: `backend/app/Services/ReportDataAggregator.php`.
+- **TASK-12-6 (Fuzzy Query Matching for GSC Data)**:
+  - Implemented fuzzy matching logic to link tracked keywords with Google Search Console query data.
+  - **Core functionalities**:
+    - Query normalization: lowercase, trim whitespace, strip special characters.
+    - Similarity calculation using Levenshtein distance algorithm.
+    - Configurable similarity threshold (default: 90% for auto-match).
+    - Auto-matching runs during GSC data sync via `GSCDataSync::storeData()`.
+    - Manual override support via `QueryMatcher::setManualMatch()` (UI hook pending).
+  - **Technical Implementation**:
+    - Service: `backend/app/Services/QueryMatcher.php`
+    - Key methods: `findMatches()`, `calculateSimilarity()`, `autoMatch()`, `setManualMatch()`.
+    - Integrated into GSCDataSync pipeline for automatic association.
+  - **Unit Tests**: 3 tests passed (4 assertions) covering normalization, similarity calculation, and auto-match behavior.
+  - **Dependencies**: TASK-12-3 (gsc_query_match column in keywords table).
+  - **Acceptance Criteria Status**:
+    - [x] Fuzzy matching with configurable threshold
+    - [x] Auto-matching in GSCDataSync
+    - [ ] UI for manual match adjustment (backend ready, UI not implemented)
+    - [x] Unit tests verify matching accuracy
+  - Service Location: `backend/app/Services/QueryMatcher.php`.
