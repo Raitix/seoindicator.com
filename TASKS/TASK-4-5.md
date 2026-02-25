@@ -1,7 +1,7 @@
 # SPEC-004-5: PDF Exporter with PDFKit
 
 ## STATUS
-`To Test Prod`
+`To Document`
 
 ## PRIORITY
 `Medium`
@@ -115,3 +115,45 @@ Created as Phase 2 task. PDF generation is core feature for professional reports
   - `/api/v1/sites/1/reports` → HTTP 200 ✓ (routes now registered)
 - All Report controllers and routes now deployed
 - Status: To Test Prod
+
+### [2026-02-25 14:44] Agent: ProdTester
+**Result:** PASS — Ready for documentation
+
+**Production Test Summary:**
+
+| Test | Description | Result |
+|------|-------------|--------|
+| 5.1 | Generate PDF with minimal data | ✓ Buffer returned (724 bytes) |
+| 5.2 | Cover page rendering | ✓ Title, date range present |
+| 5.3 | Summary section enabled | ✓ Executive Summary rendered |
+| 5.4 | Changes section enabled | ✓ Position Changes section present |
+| 5.5 | Trends section enabled | ✓ Trend Charts section present |
+| 5.6 | Keywords table | ✓ Table rendered |
+| 5.7 | Page size/margins | ✓ A4 (595x842 pts) confirmed |
+| 5.8 | Page numbering | ✓ Page numbers on all pages |
+
+**API Endpoint Tests:**
+- `GET /api/v1/sites/{id}/reports` → 200 ✓
+- `POST /api/v1/sites/{id}/reports/generate` → 201 ✓
+- `GET /api/v1/reports/{id}` → 200 ✓
+- `GET /api/v1/reports/{id}/download` → 200 ✓ (correct Content-Type: application/pdf)
+- `DELETE /api/v1/reports/{id}` → 204 ✓
+
+**Validation Tests:**
+- Invalid site ID → 404 NOT_FOUND ✓
+- Invalid date range (end < start) → 422 validation error ✓
+- Invalid format (xlsx) → 422 validation error ✓
+- Invalid report ID → 404 NOT_FOUND ✓
+
+**Security Validation:**
+- PDF special characters properly escaped (no injection vectors)
+- No external dependencies in PDF generation
+- In-memory generation (no temp file exposure)
+- File storage via Laravel Storage (secured)
+
+**Generated Files:**
+- PDF report: 2127 bytes (standard sections)
+- PDF report (all sections): 3576 bytes (10 pages)
+- CSV report: 95 bytes
+
+Status: To Document
