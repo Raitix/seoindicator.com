@@ -22,6 +22,13 @@ RewriteRule ^ backend/public/index.php [L]
 - GSC Data: `GET /api/v1/projects/{projectId}/gsc` → 401 (auth required)
 - GSC Opportunities: `GET /api/v1/projects/{projectId}/gsc/opportunities` → 401 (auth required)
 
+### PDF Exporter with PDFKit (TASK-4-5)
+- **Feature Description:** Generates professional PDF reports using the PDFKit library.
+- **Sections Supported:** Logo cover page, executive summary, keyword rankings, position changes, and trends.
+- **Output Format:** A4 PDF with page numbers, proper margins, and inline charts.
+- **Dependencies:** TASK-4-2 (Report model), TASK-4-6 (Aggregation service).
+- **Unit Tests:** All passing (18 tests, 46 assertions).
+
 ---
 ## Current Production Features
 
