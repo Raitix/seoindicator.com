@@ -1,7 +1,7 @@
 # SPEC-004-8: Report Generation Endpoint
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `Medium`
