@@ -1,7 +1,7 @@
 # SPEC-004-8: Report Generation Endpoint
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`
@@ -88,3 +88,20 @@ Created as Phase 3 task. Core endpoint that ties together data aggregation and e
 **Test File:** `backend/tests/Feature/Api/V1/ReportControllerTest.php`
 
 **Status:** To Deploy
+
+### [2026-02-25 14:45] Agent: DevOps
+**Deployment Verified - Already in Production**
+
+**Verification Results:**
+- Git status: HEAD matches origin/main (commit 852b975)
+- ReportController.php exists: 10737 bytes, deployed Feb 24
+- Route registered: `POST api/v1/sites/{siteId}/reports/generate`
+- Health check: 200 OK
+- Reports list endpoint: Returns existing reports (ID 1 test report)
+- Migrations: All up including reports table (migration batch 4)
+
+**Deployment Path:**
+- Code was deployed as part of commit 61ab154 (Report API Layer)
+- Subsequent deployments have verified the code is live
+
+**Status:** To Test Prod
