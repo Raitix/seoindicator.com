@@ -17,6 +17,9 @@ use Illuminate\Support\Str;
 
 /**
  * Report Controller for SPEC-004-7, SPEC-004-8, SPEC-004-9.
+ * 
+ * TASK-4-22: All endpoints require authentication and verify user ownership
+ * of the site associated with the report.
  */
 class ReportController extends Controller
 {
@@ -53,6 +56,18 @@ class ReportController extends Controller
             ], 404);
         }
 
+        // Authorization check: user must own the site
+        $user = $request->user();
+        if (!$user || $site->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this site.',
+                ],
+            ], 403);
+        }
+
         $status = $request->query('status');
         $type = $request->query('type');
         $perPage = min((int) $request->query('perPage', 20), 100);
@@ -85,7 +100,7 @@ class ReportController extends Controller
     /**
      * Get a single report (SPEC-004-7).
      */
-    public function show(int $reportId): JsonResponse
+    public function show(Request $request, int $reportId): JsonResponse
     {
         $report = $this->reportRepository->find($reportId);
         if (!$report) {
@@ -98,6 +113,18 @@ class ReportController extends Controller
             ], 404);
         }
 
+        // Authorization check: user must own the site associated with the report
+        $user = $request->user();
+        if (!$user || !$report->site || $report->site->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this report.',
+                ],
+            ], 403);
+        }
+
         return response()->json([
             'success' => true,
             'data' => $this->formatReport($report),
@@ -107,11 +134,23 @@ class ReportController extends Controller
     /**
      * Delete a report (SPEC-004-7).
      */
-    public function destroy(int $reportId): Response
+    public function destroy(Request $request, int $reportId): Response|JsonResponse
     {
         $report = $this->reportRepository->find($reportId);
         if (!$report) {
             return response()->noContent(404);
+        }
+
+        // Authorization check: user must own the site associated with the report
+        $user = $request->user();
+        if (!$user || !$report->site || $report->site->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this report.',
+                ],
+            ], 403);
         }
 
         // Delete associated file
