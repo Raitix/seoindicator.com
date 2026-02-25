@@ -1,7 +1,65 @@
 # DOCUMENTATION.md
 
 ---
+## Production Routing Configuration
+
+### API Routing (TASK-12-12)
+API routes are handled by the root `.htaccess` file which routes `/api/*` requests to Laravel's backend:
+
+**File:** `.htaccess` (project root)
+```apache
+RewriteCond %{REQUEST_URI} ^/api/ [NC]
+RewriteRule ^ backend/public/index.php [L]
+```
+
+**Key Points:**
+- Full `REQUEST_URI` is preserved (Laravel sees `/api/health`, not `/health`)
+- Backend entry point: `backend/public/index.php`
+- Routes defined in `backend/routes/api.php`
+
+**Endpoints:**
+- Health: `GET /api/health` → 200 OK (public)
+- GSC Data: `GET /api/v1/projects/{projectId}/gsc` → 401 (auth required)
+- GSC Opportunities: `GET /api/v1/projects/{projectId}/gsc/opportunities` → 401 (auth required)
+
+---
 ## Current Production Features
+
+### Job Queue System (TASK-1-10)
+- **Service Description:** SQLite-backed job queue for background rank checking operations.
+  - MVP implementation using SQLite for simplicity (production can migrate to Redis/BullMQ).
+  - Supports job prioritization, retry logic, and dead letter queue for failed jobs.
+
+**Core Functionalities:**
+- **Job Operations:**
+  - `addJob(payload, priority, maxAttempts)` - Add job to queue with configurable priority and retry attempts
+  - `getJob(jobId)` - Retrieve job by ID from active queue or dead letter queue
+  - `updateJob(jobId, data)` - Update job status, attempts, error info
+  - `getPending(limit)` - Fetch pending jobs ordered by priority (high → normal → low)
+- **Job Properties (CheckJob DTO):**
+  - `id`, `type`, `payload`, `priority`, `status`, `attempts`, `maxAttempts`
+  - Timestamps: `createdAt`, `startedAt`, `completedAt`, `failedAt`
+  - `error` - Error message for failed jobs
+- **Job Statuses:** `pending`, `running`, `completed`, `failed`
+- **Priority Levels:** `high`, `normal`, `low`
+- **Retry Logic:** Configurable max attempts (default: 3), auto-retry on failure
+- **Dead Letter Queue:** Jobs exceeding max attempts are moved to `queue_dead_letters` table
+- **Auto-Cleanup:** Completed jobs older than 7 days are automatically removed
+
+**Technical Implementation:**
+- Service: `backend/app/Services/Queue/JobQueue.php`
+- Interface: `backend/app/Services/Queue/JobQueueInterface.php`
+- DTO: `backend/app/Services/Queue/CheckJob.php`
+- Storage: `storage/app/queue.sqlite`
+- Tables: `queue_jobs`, `queue_dead_letters`
+
+**Unit Tests:** 4 tests, 23 assertions covering addJob, getJob, updateJob, getPending operations.
+
+**Dependencies:** None (standalone SQLite implementation).
+
+**Migration Path:** For production scale, migrate to BullMQ + Redis.
+
+---
 
 ### Rank Check Scheduler (TASK-1-12)
 - **Service Description:** Automated rank check scheduling service.
@@ -9,8 +67,9 @@
   - Supports configurable defaults: environment variable specified timing or manual overrides.
   - Includes manual testing endpoint: `POST /api/v1/scheduler/rank-checks/run`.
 
-**Key Functionalities:**  -Priority queues recent reviewed.
-+JobStack Ensuring CacheStates.### Scheduled Reports API
+---
+
+### Scheduled Reports API
 - **TASK-4-11 (Scheduled Reports API):** Implemented REST API endpoints for creating and managing scheduled reports:
   - Endpoints: Create, list, update, delete, pause/resume reports.
   - Features:
