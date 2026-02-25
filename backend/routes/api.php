@@ -69,24 +69,31 @@ Route::prefix('v1')->group(function () {
     // Dashboard (SPEC-001-6)
     Route::get('sites/{siteId}/dashboard', [DashboardController::class, 'index']);
 
-    // Reports (SPEC-004-7, SPEC-004-8, SPEC-004-9)
+    // Report Templates (SPEC-004-10) - public read for now
+    Route::get('sites/{siteId}/report-templates', [ReportTemplateController::class, 'index']);
+    Route::get('report-templates/{templateId}', [ReportTemplateController::class, 'show']);
+
+    // Scheduled Reports (SPEC-004-11) - public read for now
+    Route::get('sites/{siteId}/scheduled-reports', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'index']);
+    Route::get('scheduled-reports/{scheduledId}', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'show']);
+});
+
+// Authenticated V1 API Routes
+Route::prefix('v1')->middleware(['auth'])->group(function () {
+    // Reports (SPEC-004-7, SPEC-004-8, SPEC-004-9) - requires auth
     Route::get('sites/{siteId}/reports', [ReportController::class, 'index']);
     Route::post('sites/{siteId}/reports/generate', [ReportController::class, 'generate']);
     Route::get('reports/{reportId}', [ReportController::class, 'show']);
     Route::delete('reports/{reportId}', [ReportController::class, 'destroy']);
     Route::get('reports/{reportId}/download', [ReportController::class, 'download']);
 
-    // Report Templates (SPEC-004-10)
-    Route::get('sites/{siteId}/report-templates', [ReportTemplateController::class, 'index']);
+    // Report Templates (SPEC-004-10) - write operations require auth
     Route::post('sites/{siteId}/report-templates', [ReportTemplateController::class, 'store']);
-    Route::get('report-templates/{templateId}', [ReportTemplateController::class, 'show']);
     Route::put('report-templates/{templateId}', [ReportTemplateController::class, 'update']);
     Route::delete('report-templates/{templateId}', [ReportTemplateController::class, 'destroy']);
 
-    // Scheduled Reports (SPEC-004-11)
-    Route::get('sites/{siteId}/scheduled-reports', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'index']);
+    // Scheduled Reports (SPEC-004-11) - write operations require auth
     Route::post('sites/{siteId}/scheduled-reports', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'store']);
-    Route::get('scheduled-reports/{scheduledId}', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'show']);
     Route::put('scheduled-reports/{scheduledId}', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'update']);
     Route::patch('scheduled-reports/{scheduledId}/pause', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'pause']);
     Route::patch('scheduled-reports/{scheduledId}/resume', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'resume']);
@@ -97,9 +104,7 @@ Route::prefix('v1')->group(function () {
     Route::put('sites/{siteId}/branding', [\App\Http\Controllers\Api\V1\ReportBrandingController::class, 'update']);
     Route::post('sites/{siteId}/branding/logo', [\App\Http\Controllers\Api\V1\ReportBrandingController::class, 'uploadLogo']);
     Route::delete('sites/{siteId}/branding', [\App\Http\Controllers\Api\V1\ReportBrandingController::class, 'destroy']);
-});
 
-Route::prefix('v1')->middleware(['auth'])->group(function () {
     // Comparison (SPEC-003-5)
     Route::get('rankings/comparison', [ComparisonController::class, 'index']);
     Route::get('rankings/comparison/history', [ComparisonController::class, 'history']);
