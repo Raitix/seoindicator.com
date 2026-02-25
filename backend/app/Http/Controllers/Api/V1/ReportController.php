@@ -179,6 +179,18 @@ class ReportController extends Controller
             ], 404);
         }
 
+        // Authorization check: user must own the site
+        $user = $request->user();
+        if (!$user || $site->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this site.',
+                ],
+            ], 403);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|in:daily,weekly,monthly,custom,one-time',
@@ -268,8 +280,11 @@ class ReportController extends Controller
 
     /**
      * Download a report (SPEC-004-9).
+     * 
+     * TASK-4-22: Authorization check ensures users can only download
+     * reports for sites they own.
      */
-    public function download(int $reportId): Response|JsonResponse
+    public function download(Request $request, int $reportId): Response|JsonResponse
     {
         $report = $this->reportRepository->find($reportId);
         if (!$report) {
@@ -280,6 +295,18 @@ class ReportController extends Controller
                     'message' => 'Report not found.',
                 ],
             ], 404);
+        }
+
+        // Authorization check: user must own the site associated with the report
+        $user = $request->user();
+        if (!$user || !$report->site || $report->site->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this report.',
+                ],
+            ], 403);
         }
 
         if ($report->status !== 'completed') {
