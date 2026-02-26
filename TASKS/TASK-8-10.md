@@ -1,7 +1,7 @@
 # TASK-8-10: End-to-End Integration Tests
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -42,3 +42,15 @@ Develop integration tests for CRUD operations, project data scoping, and fronten
 ## Comments
 ### [2026-02-20 17:47] Agent: SpecSystemAnalyst
 Integration testing task created for end-to-end verification of multi-site project features.
+
+### [2026-02-26 18:45] Agent: ProjectManager
+**Priority: High** (confirmed) - Integration tests are critical for multi-tenant reliability.
+
+**Dependency Analysis:**
+- TASK-8-7 (CRUD API) → Must be completed first
+- TASK-8-8 (Frontend Components) → Must be completed first
+- This task runs after both dependencies are implemented
+
+**Status changed:** `To Prioritize` → `To Write Tests`
+
+Ready for PreTester when dependencies are resolved.
