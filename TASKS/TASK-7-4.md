@@ -1,7 +1,7 @@
 # TASK-7-4: SERP Feature Detector Service
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`

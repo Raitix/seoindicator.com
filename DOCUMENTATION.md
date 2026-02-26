@@ -35,6 +35,7 @@ CREATE TABLE keywords (
 | `device` | TEXT | Device type: 'desktop' or 'mobile' |
 | `status` | TEXT | Enum: 'active', 'paused', 'deleted' |
 | `last_checked_at` | DATETIME | Last rank check timestamp |
+| `gsc_query_match` | VARCHAR(255) | Fuzzy match to GSC queries (nullable) |
 
 **Constraints:**
 - Foreign Key: `site_id → sites.id`
@@ -91,6 +92,169 @@ CREATE TABLE sites (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
+---
+## Database Schema: Reports Tables (TASK-4-1)
+
+### Reports Table
+Stores generated report metadata and file references.
+
+```sql
+CREATE TABLE reports (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    format VARCHAR(20) NOT NULL DEFAULT 'pdf',
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    date_range_start DATE NOT NULL,
+    date_range_end DATE NOT NULL,
+    compare_range_start DATE,
+    compare_range_end DATE,
+    sections JSON,
+    generated_at TIMESTAMP NULL,
+    file_path VARCHAR(500),
+    file_size INT UNSIGNED,
+    error TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id |
+| `name` | VARCHAR(255) | Report name/title |
+| `type` | VARCHAR(50) | Report type: 'daily', 'weekly', 'monthly', 'custom', 'one-time' |
+| `format` | VARCHAR(20) | Export format: 'pdf', 'csv' |
+| `status` | VARCHAR(50) | Status: 'pending', 'generating', 'completed', 'failed' |
+| `date_range_start` | DATE | Report period start |
+| `date_range_end` | DATE | Report period end |
+| `compare_range_start` | DATE | Comparison period start (optional) |
+| `compare_range_end` | DATE | Comparison period end (optional) |
+| `sections` | JSON | Array of included section names |
+| `generated_at` | TIMESTAMP | When report was generated |
+| `file_path` | VARCHAR(500) | Path to generated file |
+| `file_size` | INT UNSIGNED | File size in bytes |
+| `error` | TEXT | Error message if generation failed |
+
+**Indexes:**
+- `idx_reports_site_id` on `site_id`
+- `idx_reports_status` on `status`
+- `idx_reports_generated_at` on `generated_at`
+
+### Report Templates Table
+Stores reusable report configurations.
+
+```sql
+CREATE TABLE report_templates (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED,
+    name VARCHAR(255) NOT NULL,
+    is_default TINYINT(1) DEFAULT 0,
+    sections JSON NOT NULL,
+    branding JSON,
+    cover_page_text TEXT,
+    executive_summary TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id (NULL = global template) |
+| `name` | VARCHAR(255) | Template name |
+| `is_default` | TINYINT(1) | Whether this is the default template for the site |
+| `sections` | JSON | Array of section names to include |
+| `branding` | JSON | Branding config: {logo_url, primary_color, font} |
+| `cover_page_text` | TEXT | Custom text for cover page |
+| `executive_summary` | TEXT | Default executive summary text |
+
+**Indexes:**
+- `idx_report_templates_site_id` on `site_id`
+- `idx_report_templates_is_default` on `is_default`
+
+### Scheduled Reports Table
+Stores automated report schedule configurations.
+
+```sql
+CREATE TABLE scheduled_reports (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    template_id BIGINT UNSIGNED,
+    name VARCHAR(255) NOT NULL,
+    frequency VARCHAR(50) NOT NULL,
+    format VARCHAR(20) NOT NULL DEFAULT 'pdf',
+    recipients JSON NOT NULL,
+    enabled TINYINT(1) DEFAULT 1,
+    last_run TIMESTAMP NULL,
+    next_run TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+    FOREIGN KEY (template_id) REFERENCES report_templates(id)
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id |
+| `template_id` | BIGINT UNSIGNED | FK to report_templates.id |
+| `name` | VARCHAR(255) | Schedule name |
+| `frequency` | VARCHAR(50) | Schedule: 'daily', 'weekly', 'biweekly', 'monthly' |
+| `format` | VARCHAR(20) | Export format: 'pdf', 'csv' |
+| `recipients` | JSON | Array of recipient email addresses |
+| `enabled` | TINYINT(1) | Whether schedule is active |
+| `last_run` | TIMESTAMP | Last execution time |
+| `next_run` | TIMESTAMP | Next scheduled execution |
+
+**Indexes:**
+- `idx_scheduled_reports_site_id` on `site_id`
+- `idx_scheduled_reports_next_run` on `next_run`
+- `idx_scheduled_reports_enabled` on `enabled`
+
+### Report Branding Table
+Stores per-site branding configuration for white-label reports.
+
+```sql
+CREATE TABLE report_branding (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL UNIQUE,
+    logo_url VARCHAR(500),
+    logo_file VARCHAR(500),
+    primary_color VARCHAR(20) DEFAULT '#2563eb',
+    secondary_color VARCHAR(20) DEFAULT '#64748b',
+    font_family VARCHAR(100) DEFAULT 'Inter',
+    company_name VARCHAR(255),
+    company_website VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id (unique - one branding per site) |
+| `logo_url` | VARCHAR(500) | URL to logo image |
+| `logo_file` | VARCHAR(500) | Local file path if uploaded |
+| `primary_color` | VARCHAR(20) | Primary brand color (hex) |
+| `secondary_color` | VARCHAR(20) | Secondary brand color (hex) |
+| `font_family` | VARCHAR(100) | Font family for PDF |
+| `company_name` | VARCHAR(255) | Company name for reports |
+| `company_website` | VARCHAR(500) | Company website URL |
+
+**Indexes:**
+- `idx_report_branding_site_id` on `site_id` (unique)
 
 ---
 ## Report Generation API (TASK-4-8)
@@ -259,6 +423,76 @@ CREATE TABLE audit_issues (
 - `idx_issue_type_id` on `issue_type_id`
 
 ---
+## SERP Fetcher Interface and Mock Implementation (TASK-1-7)
+
+### Service Description
+Defines the SERP fetcher interface and provides a mock implementation for development and testing. This allows the application to develop without external API dependencies.
+
+### Core Functionalities
+
+**SERPFetcher Interface:**
+- `fetch(keyword: string, options: SERPOptions): Promise<SERPResult>` - Fetch SERP results for a keyword
+- Configurable search engine, location, device, and target URL options
+
+**SERPResult Interface:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `keyword` | string | The searched keyword |
+| `searchEngine` | string | Search engine used (google, bing) |
+| `location` | string | Location code (us, uk, etc.) |
+| `device` | string | Device type (desktop, mobile) |
+| `results` | SERPEntry[] | Array of SERP results (100 entries) |
+| `checkedAt` | Date | Timestamp of the check |
+| `error` | string? | Error message if failed |
+
+**SERPEntry Interface:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `position` | number | Rank position (1-100) |
+| `url` | string | Result URL |
+| `title` | string | Page title |
+| `description` | string | Meta description |
+| `isOurSite` | boolean | True if matches target URL |
+
+**SERPOptions Interface:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `searchEngine` | string | 'google' or 'bing' |
+| `location` | string | Country code |
+| `device` | string | 'desktop' or 'mobile' |
+| `targetUrl` | string? | URL to match in results |
+
+**MockSERPFetcher Implementation:**
+- Returns 100 simulated SERP results
+- Randomized positions within realistic ranges
+- Simulates network delay (100-500ms)
+- Supports deterministic mode with seed for testing
+- Can simulate errors for error handling tests
+- Identifies target URL with `isOurSite` flag
+
+### Technical Implementation
+- Interface: `backend/app/Services/SERPFetcherInterface.php`
+- Mock Implementation: `backend/app/Services/MockSERPFetcher.php`
+- DTO: `backend/app/Services/SERPResultData.php`
+
+### Unit Tests
+17 test scenarios covering:
+- Results shape validation
+- Deterministic behavior with seed
+- Error simulation
+- Target URL matching
+- Network delay simulation
+
+### Dependencies
+None (standalone interface for dependency injection).
+
+### Migration Path
+For production, implement real SERP fetchers:
+- `HttpSERPFetcher` - For testing environments
+- `GoogleCSEFetcher` - Google Custom Search API (free tier: 100/day)
+- `ScraperSERPFetcher` - Self-hosted scraper (optional)
+
+---
 ## Rank Checker Worker (TASK-1-11)
 
 ### Service Description
@@ -359,6 +593,52 @@ None (standalone SQLite implementation).
 For production scale, migrate to BullMQ + Redis.
 
 ---
+## Report Authorization Security (TASK-4-22)
+
+### Security Issue
+The report download endpoints had a critical authorization vulnerability where ANY authenticated user could download ANY report by knowing the report ID. This allowed unauthorized access to other users' SEO report data.
+
+### Fix Implementation
+
+**ReportPolicy** (`backend/app/Policies/ReportPolicy.php`)
+- Policy class for clean authorization logic
+- Methods: `viewAny`, `view`, `create`, `delete`, `download`
+- All methods verify `$report->site->user_id === $user->id`
+
+**Secured Routes:**
+```
+GET    /api/v1/sites/{siteId}/reports           - List reports (auth required)
+POST   /api/v1/sites/{siteId}/reports/generate  - Generate report (auth required)
+GET    /api/v1/reports/{reportId}               - View report (auth + ownership)
+DELETE /api/v1/reports/{reportId}               - Delete report (auth + ownership)
+GET    /api/v1/reports/{reportId}/download      - Download report (auth + ownership)
+```
+
+**Authorization Flow:**
+1. **Unauthenticated request** → 401 Unauthorized
+2. **Authenticated but wrong user** → 403 Forbidden
+3. **Owner** → Full access as expected
+
+**ReportController Authorization Checks:**
+| Method | Authorization Logic |
+|--------|---------------------|
+| `index()` | Verify user owns the site |
+| `show()` | Verify user owns the report's site |
+| `destroy()` | Verify user owns the report's site |
+| `generate()` | Verify user owns the site |
+| `download()` | Verify user owns the report's site |
+
+**Tests Added:**
+- 11 new authorization tests in `ReportControllerTest`
+- 5 tests for 401 Unauthorized (unauthenticated access)
+- 5 tests for 403 Forbidden (accessing other user's resources)
+- 1 test verifying owner can access their own reports
+- Total: 29 ReportControllerTest tests, 79 assertions pass
+
+### Dependencies
+- TASK-4-7 through TASK-4-10 (Report API endpoints)
+
+---
 ## Rank Check Scheduler (TASK-1-12)
 
 ### Service Description
@@ -405,5 +685,38 @@ Automated scheduler that queues rank check jobs on a configurable interval. Enab
 
 ### Unit Tests
 2 tests, 6 assertions covering scheduler logic and queue scheduling.
+
+---
+## Database Schema: GSC Query Match Column (TASK-12-3)
+
+### Schema Change
+Added `gsc_query_match` column to the `keywords` table to support fuzzy matching between tracked keywords and Google Search Console query data.
+
+### Migration
+```sql
+ALTER TABLE keywords ADD COLUMN gsc_query_match VARCHAR(255) NULL COMMENT 'Fuzzy match to GSC queries';
+```
+
+### New Field
+| Field | Type | Description |
+|-------|------|-------------|
+| `gsc_query_match` | VARCHAR(255) | Fuzzy match to GSC queries (nullable) |
+
+### Index
+```sql
+CREATE INDEX keywords_gsc_query_match_index ON keywords(gsc_query_match);
+```
+
+### Purpose
+- Links tracked keywords to GSC query data
+- Enables correlation between rank tracking and actual search performance
+- Supports future GSC integration features (FEAT-012)
+
+### Dependencies
+- Existing `keywords` table (TASK-1-1)
+
+### Deployment
+- Deployed: 2026-02-22 via GitHub Actions
+- Production verified: 2026-02-23
 
 ---

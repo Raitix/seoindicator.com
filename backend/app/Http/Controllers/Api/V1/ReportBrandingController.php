@@ -10,6 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Intervention\Image\ImageManager;
 
 /**
  * Report Branding Controller for SPEC-004-14 and SPEC-004-15.
@@ -17,6 +19,16 @@ use Illuminate\Support\Facades\Storage;
 class ReportBrandingController extends Controller
 {
     protected ReportBrandingRepository $brandingRepository;
+
+    /**
+     * Recommended logo dimensions.
+     */
+    private const MIN_LOGO_WIDTH = 50;
+    private const MIN_LOGO_HEIGHT = 20;
+    private const MAX_LOGO_WIDTH = 400;
+    private const MAX_LOGO_HEIGHT = 100;
+    private const RECOMMENDED_MIN_WIDTH = 200;
+    private const RECOMMENDED_MIN_HEIGHT = 50;
 
     public function __construct(ReportBrandingRepository $brandingRepository)
     {
@@ -114,6 +126,12 @@ class ReportBrandingController extends Controller
 
     /**
      * Upload logo for a site (SPEC-004-15).
+     *
+     * Validates:
+     * - File type: PNG, JPG, SVG
+     * - Max size: 2MB
+     * - Dimensions (PNG/JPG): recommended 200x50 to 400x100, min 50x20, max 400x100
+     * - SVG security: no embedded scripts
      */
     public function uploadLogo(Request $request, int $siteId): JsonResponse
     {
@@ -128,35 +146,140 @@ class ReportBrandingController extends Controller
             ], 404);
         }
 
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'logo' => 'required|file|mimes:png,jpg,jpeg,svg|max:2048',
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'message' => 'Invalid file.',
+                    'details' => $validator->errors(),
+                ],
+            ], 422);
+        }
+
         $file = $request->file('logo');
-        $extension = $file->getClientOriginalExtension();
-        $filename = "logos/site-{$siteId}-logo.{$extension}";
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        // SVG security check
+        if ($extension === 'svg') {
+            $svgContent = file_get_contents($file->getPathname());
+            $securityError = $this->validateSvgSecurity($svgContent);
+            if ($securityError) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'SECURITY_ERROR',
+                        'message' => $securityError,
+                    ],
+                ], 422);
+            }
+        }
+
+        // Dimension validation for raster images
+        $dimensionWarning = null;
+        if (in_array($extension, ['png', 'jpg', 'jpeg'])) {
+            $dimensionResult = $this->validateImageDimensions($file);
+            if ($dimensionResult['error']) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'DIMENSION_ERROR',
+                        'message' => $dimensionResult['error'],
+                    ],
+                ], 422);
+            }
+            if ($dimensionResult['warning']) {
+                $dimensionWarning = $dimensionResult['warning'];
+            }
+        }
 
         // Delete existing logo if any
         $existing = $this->brandingRepository->findBySite($siteId);
-        if ($existing && $existing->logo_file && Storage::exists($existing->logo_file)) {
-            Storage::delete($existing->logo_file);
+        if ($existing && $existing->logo_file) {
+            $this->deleteLogoFile($existing->logo_file);
         }
 
-        // Store new logo
-        $path = $file->storeAs('uploads', $filename, 'public');
+        // Store new logo in storage/app/logos/
+        $timestamp = time();
+        $filename = "site-{$siteId}-{$timestamp}.{$extension}";
+        $path = $file->storeAs('logos', $filename, 'local');
 
         // Update branding record
         $branding = $this->brandingRepository->updateOrCreate($siteId, [
             'logo_file' => $path,
-            'logo_url' => Storage::url($path),
+            'logo_url' => route('api.v1.branding.logo', ['siteId' => $siteId]),
         ]);
+
+        $responseData = [
+            'logoUrl' => $branding->logo_url,
+            'logoFile' => $branding->logo_file,
+        ];
+
+        if ($dimensionWarning) {
+            $responseData['warning'] = $dimensionWarning;
+        }
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'logoUrl' => $branding->logo_url,
-                'logoFile' => $branding->logo_file,
-            ],
+            'data' => $responseData,
+        ]);
+    }
+
+    /**
+     * Delete logo only for a site (SPEC-004-15).
+     * Removes logo file and clears logo fields but keeps branding record.
+     */
+    public function deleteLogo(int $siteId): JsonResponse
+    {
+        $site = Site::find($siteId);
+        if (!$site) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'NOT_FOUND',
+                    'message' => 'Site not found.',
+                ],
+            ], 404);
+        }
+
+        $branding = $this->brandingRepository->findBySite($siteId);
+        if (!$branding) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'NOT_FOUND',
+                    'message' => 'No branding found for this site.',
+                ],
+            ], 404);
+        }
+
+        if (!$branding->logo_file && !$branding->logo_url) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'NOT_FOUND',
+                    'message' => 'No logo to delete.',
+                ],
+            ], 404);
+        }
+
+        // Delete logo file
+        if ($branding->logo_file) {
+            $this->deleteLogoFile($branding->logo_file);
+        }
+
+        // Clear logo fields
+        $branding->logo_file = null;
+        $branding->logo_url = null;
+        $branding->save();
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->formatBranding($branding),
         ]);
     }
 
@@ -171,13 +294,160 @@ class ReportBrandingController extends Controller
         }
 
         // Delete logo file if exists
-        if ($branding->logo_file && Storage::exists($branding->logo_file)) {
-            Storage::delete($branding->logo_file);
+        if ($branding->logo_file) {
+            $this->deleteLogoFile($branding->logo_file);
         }
 
         $this->brandingRepository->deleteBySite($siteId);
 
         return response()->noContent();
+    }
+
+    /**
+     * Serve logo file (SPEC-004-15).
+     */
+    public function serveLogo(int $siteId): Response
+    {
+        $branding = $this->brandingRepository->findBySite($siteId);
+
+        if (!$branding || !$branding->logo_file) {
+            return response()->noContent(404);
+        }
+
+        if (!Storage::disk('local')->exists($branding->logo_file)) {
+            return response()->noContent(404);
+        }
+
+        $mimeType = $this->getMimeType($branding->logo_file);
+        $content = Storage::disk('local')->get($branding->logo_file);
+
+        return response($content, 200)
+            ->header('Content-Type', $mimeType)
+            ->header('Cache-Control', 'public, max-age=31536000');
+    }
+
+    /**
+     * Validate SVG for security issues.
+     */
+    protected function validateSvgSecurity(string $content): ?string
+    {
+        // Check for script tags
+        if (preg_match('/<script[\s\S]*?>[\s\S]*?<\/script>/i', $content)) {
+            return 'SVG contains embedded script tags, which are not allowed.';
+        }
+
+        // Check for event handlers (onclick, onload, onerror, etc.)
+        if (preg_match('/\bon\w+\s*=/i', $content)) {
+            return 'SVG contains event handlers, which are not allowed.';
+        }
+
+        // Check for javascript: URLs
+        if (preg_match('/javascript\s*:/i', $content)) {
+            return 'SVG contains javascript: URLs, which are not allowed.';
+        }
+
+        // Check for data: URLs with potential script content
+        if (preg_match('/data\s*:\s*[^,]*;base64/i', $content)) {
+            // Allow data URLs for images only
+            if (!preg_match('/data\s*:\s*image\//i', $content)) {
+                return 'SVG contains non-image data: URLs, which are not allowed.';
+            }
+        }
+
+        // Check for external resources
+        if (preg_match('/<(?:foreignObject|iframe|embed|object)[\s\S]*?>/i', $content)) {
+            return 'SVG contains potentially dangerous elements.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate image dimensions.
+     */
+    protected function validateImageDimensions($file): array
+    {
+        $result = ['error' => null, 'warning' => null];
+
+        try {
+            $imageInfo = getimagesize($file->getPathname());
+            if (!$imageInfo) {
+                $result['error'] = 'Unable to read image dimensions.';
+                return $result;
+            }
+
+            [$width, $height] = $imageInfo;
+
+            // Hard limits
+            if ($width < self::MIN_LOGO_WIDTH || $height < self::MIN_LOGO_HEIGHT) {
+                $result['error'] = sprintf(
+                    'Logo dimensions too small. Minimum: %dx%d pixels. Got: %dx%d.',
+                    self::MIN_LOGO_WIDTH,
+                    self::MIN_LOGO_HEIGHT,
+                    $width,
+                    $height
+                );
+                return $result;
+            }
+
+            if ($width > self::MAX_LOGO_WIDTH || $height > self::MAX_LOGO_HEIGHT) {
+                $result['error'] = sprintf(
+                    'Logo dimensions too large. Maximum: %dx%d pixels. Got: %dx%d.',
+                    self::MAX_LOGO_WIDTH,
+                    self::MAX_LOGO_HEIGHT,
+                    $width,
+                    $height
+                );
+                return $result;
+            }
+
+            // Recommended range warning
+            if ($width < self::RECOMMENDED_MIN_WIDTH || $height < self::RECOMMENDED_MIN_HEIGHT) {
+                $result['warning'] = sprintf(
+                    'Logo dimensions below recommended size. Recommended: %dx%d to %dx%d pixels. Got: %dx%d.',
+                    self::RECOMMENDED_MIN_WIDTH,
+                    self::RECOMMENDED_MIN_HEIGHT,
+                    self::MAX_LOGO_WIDTH,
+                    self::MAX_LOGO_HEIGHT,
+                    $width,
+                    $height
+                );
+            }
+
+        } catch (\Exception $e) {
+            $result['error'] = 'Unable to validate image dimensions: ' . $e->getMessage();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Delete a logo file from storage.
+     */
+    protected function deleteLogoFile(string $path): bool
+    {
+        // Check both possible storage locations for backwards compatibility
+        if (Storage::disk('local')->exists($path)) {
+            return Storage::disk('local')->delete($path);
+        }
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->delete($path);
+        }
+        return false;
+    }
+
+    /**
+     * Get MIME type for file.
+     */
+    protected function getMimeType(string $path): string
+    {
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        return match ($extension) {
+            'png' => 'image/png',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'svg' => 'image/svg+xml',
+            default => 'application/octet-stream',
+        };
     }
 
     /**
