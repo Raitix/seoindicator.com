@@ -109,4 +109,40 @@ Ranking::whereIn('keyword_id', $ids)
 
 ---
 
-Last updated: 2026-02-24
+## 2026-02-26: Follow-up Performance Audit
+
+### Google Analytics Trends (7-day comparison)
+
+| Metric | Previous | Current | Trend |
+|--------|----------|---------|-------|
+| Bounce Rate | 68.2% | 65.4% | ✅ Improved |
+| Homepage Bounce | 75.7% | 74.8% | ➡️ Still critical |
+| Engagement Rate | 31.8% | 34.6% | ✅ Improved |
+
+### Page Performance Analysis
+
+| Page | Bounce | Avg Duration | Issue |
+|------|--------|--------------|-------|
+| `/` | 74.8% | 90s | CRITICAL - First impression |
+| `/seo-guides/*` | 62-74% | 2s | HIGH - Content not engaging |
+| `/comparison/` | 60% | 278s | ✅ Good engagement |
+| `/seo-guides/aria` | 0% | 597s | ✅ Excellent |
+
+### Backend Performance Status
+
+**N+1 Query (KeywordController):** Still present, TASK-1-20 in development
+- Lines 72-74: `getLatestRankings()` called in map loop
+- Impact: 501 queries for 500 keywords
+
+**DashboardController:** 5-minute cache active
+- Cold cache still loads ALL rankings into memory
+- Recommendation: Use subquery for latest 2 per keyword
+
+### Database Index Status
+- ✅ `ranking_history(keyword_id, checked_at)` composite index
+- ✅ `keywords` unique constraint on (site_id, keyword, search_engine, location, device)
+- Consider: DESC index on `checked_at` for "latest" queries
+
+---
+
+Last updated: 2026-02-26
