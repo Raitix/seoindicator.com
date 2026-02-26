@@ -96,6 +96,22 @@ class SetProjectContext
     }
 
     /**
+     * Find a project for a specific user.
+     *
+     * This method is protected to allow mocking in tests.
+     *
+     * @param int $projectId
+     * @param int $userId
+     * @return Project|null
+     */
+    protected function findProjectForUser(int $projectId, int $userId): ?Project
+    {
+        return Project::where('id', $projectId)
+            ->where('user_id', $userId)
+            ->first();
+    }
+
+    /**
      * Bind project to application container if user owns it.
      *
      * Security: Only binds project if it belongs to the authenticated user.
@@ -103,9 +119,12 @@ class SetProjectContext
      */
     private function bindProject(int $projectId): void
     {
-        $project = Project::where('id', $projectId)
-            ->where('user_id', Auth::id())
-            ->first();
+        $userId = Auth::id();
+        if ($userId === null) {
+            return;
+        }
+
+        $project = $this->findProjectForUser($projectId, $userId);
 
         if ($project) {
             app()->instance('current_project', $project);
