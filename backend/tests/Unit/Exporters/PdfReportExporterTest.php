@@ -4,6 +4,7 @@ namespace Tests\Unit\Exporters;
 
 use Tests\TestCase;
 use App\Exporters\PdfReportExporter;
+use Illuminate\Support\Facades\Storage;
 
 class PdfReportExporterTest extends TestCase
 {
@@ -14,6 +15,265 @@ class PdfReportExporterTest extends TestCase
         parent::setUp();
         $this->exporter = new PdfReportExporter();
     }
+
+    // ============================================
+    // BRANDING TESTS (TASK-4-16)
+    // ============================================
+
+    /**
+     * Test 16.1: PDF with branding - colors and font applied.
+     */
+    public function test_pdf_with_branding_applies_colors(): void
+    {
+        $report = [
+            'name' => 'Branded Report',
+            'sections' => ['cover'],
+        ];
+        $data = [];
+        $branding = [
+            'primaryColor' => '#ff0000',
+            'secondaryColor' => '#00ff00',
+            'fontFamily' => 'Times',
+            'companyName' => 'Test Company',
+        ];
+
+        $pdf = $this->exporter->generate($report, $data, $branding);
+
+        $this->assertNotEmpty($pdf);
+        $this->assertStringStartsWith('%PDF-1.4', $pdf);
+        // Verify company name is present
+        $this->assertStringContainsString('Test Company', $pdf);
+        // Verify font is applied (Times-Roman)
+        $this->assertStringContainsString('/Times-Roman', $pdf);
+    }
+
+    /**
+     * Test 16.2: PDF without branding - defaults used.
+     */
+    public function test_pdf_without_branding_uses_defaults(): void
+    {
+        $report = [
+            'name' => 'Default Report',
+            'sections' => ['cover'],
+        ];
+        $data = [];
+
+        $pdf = $this->exporter->generate($report, $data, null);
+
+        $this->assertNotEmpty($pdf);
+        $this->assertStringStartsWith('%PDF-1.4', $pdf);
+        // Default font is Helvetica
+        $this->assertStringContainsString('/Helvetica', $pdf);
+    }
+
+    /**
+     * Test 16.3: Company name on cover page.
+     */
+    public function test_company_name_on_cover_page(): void
+    {
+        $report = [
+            'name' => 'Monthly Report',
+            'date_range_start' => '2026-02-01',
+            'date_range_end' => '2026-02-28',
+            'sections' => ['cover'],
+        ];
+        $data = [];
+        $branding = [
+            'companyName' => 'ACME Corporation',
+        ];
+
+        $pdf = $this->exporter->generate($report, $data, $branding);
+
+        $this->assertStringContainsString('ACME Corporation', $pdf);
+        $this->assertStringContainsString('Prepared for', $pdf);
+    }
+
+    /**
+     * Test 16.4: Missing logo file - PDF renders without error.
+     */
+    public function test_missing_logo_file_renders_without_error(): void
+    {
+        $report = [
+            'name' => 'Report',
+            'sections' => ['cover'],
+        ];
+        $data = [];
+        $branding = [
+            'logoFile' => 'logos/nonexistent-logo.png',
+        ];
+
+        $pdf = $this->exporter->generate($report, $data, $branding);
+
+        $this->assertNotEmpty($pdf);
+        $this->assertStringStartsWith('%PDF-1.4', $pdf);
+        // Should still have valid PDF structure
+        $this->assertStringContainsString('%%EOF', $pdf);
+    }
+
+    /**
+     * Test 16.5: Invalid color - falls back to defaults.
+     */
+    public function test_invalid_color_falls_back_to_defaults(): void
+    {
+        $report = [
+            'name' => 'Report',
+            'sections' => ['cover'],
+        ];
+        $data = [];
+        $branding = [
+            'primaryColor' => 'invalid-color',
+            'secondaryColor' => 'also-invalid',
+        ];
+
+        $pdf = $this->exporter->generate($report, $data, $branding);
+
+        $this->assertNotEmpty($pdf);
+        $this->assertStringStartsWith('%PDF-1.4', $pdf);
+        // Should still render without errors
+        $this->assertStringContainsString('%%EOF', $pdf);
+    }
+
+    /**
+     * Test edge case: Custom font not found falls back to default.
+     */
+    public function test_custom_font_fallback(): void
+    {
+        $report = [
+            'name' => 'Report',
+            'sections' => ['cover'],
+        ];
+        $data = [];
+        $branding = [
+            'fontFamily' => 'NonExistentFont',
+        ];
+
+        $pdf = $this->exporter->generate($report, $data, $branding);
+
+        $this->assertNotEmpty($pdf);
+        // Should fall back to Helvetica
+        $this->assertStringContainsString('/Helvetica', $pdf);
+    }
+
+    /**
+     * Test font mapping for common fonts.
+     */
+    public function test_font_mapping(): void
+    {
+        $report = ['name' => 'Report', 'sections' => ['cover']];
+        $data = [];
+
+        // Test Inter -> Helvetica
+        $pdf = $this->exporter->generate($report, $data, ['fontFamily' => 'Inter']);
+        $this->assertStringContainsString('/Helvetica', $pdf);
+
+        // Test Roboto -> Helvetica
+        $pdf = $this->exporter->generate($report, $data, ['fontFamily' => 'Roboto']);
+        $this->assertStringContainsString('/Helvetica', $pdf);
+
+        // Test Times New Roman -> Times-Roman
+        $pdf = $this->exporter->generate($report, $data, ['fontFamily' => 'Times New Roman']);
+        $this->assertStringContainsString('/Times-Roman', $pdf);
+
+        // Test Courier -> Courier
+        $pdf = $this->exporter->generate($report, $data, ['fontFamily' => 'Courier']);
+        $this->assertStringContainsString('/Courier', $pdf);
+    }
+
+    /**
+     * Test hex to RGB color conversion.
+     */
+    public function test_hex_to_rgb_conversion(): void
+    {
+        $report = ['name' => 'Report', 'sections' => ['cover']];
+        $data = [];
+
+        // Test valid hex colors
+        $branding = [
+            'primaryColor' => '#2563eb', // Blue
+            'secondaryColor' => '#64748b', // Gray
+        ];
+
+        $pdf = $this->exporter->generate($report, $data, $branding);
+
+        $this->assertNotEmpty($pdf);
+        $this->assertStringStartsWith('%PDF-1.4', $pdf);
+    }
+
+    /**
+     * Test branding with all sections.
+     */
+    public function test_branding_with_all_sections(): void
+    {
+        $report = [
+            'name' => 'Full Branded Report',
+            'date_range_start' => '2026-02-01',
+            'date_range_end' => '2026-02-28',
+            'sections' => ['cover', 'summary', 'keywords', 'changes', 'trends'],
+        ];
+        $data = [
+            'executive_summary' => 'This is a summary.',
+            'keywords' => [
+                ['keyword' => 'test', 'current_position' => 1, 'previous_position' => 2, 'change' => -1],
+            ],
+            'top_performers' => [['keyword' => 'winner', 'change' => 10]],
+            'needs_attention' => [],
+            'trends' => [['keyword' => 'trending', 'points' => [['date' => '2026-02-01', 'position' => 5]]]],
+        ];
+        $branding = [
+            'primaryColor' => '#10b981',
+            'secondaryColor' => '#6b7280',
+            'fontFamily' => 'Inter',
+            'companyName' => 'Branded Corp',
+        ];
+
+        $pdf = $this->exporter->generate($report, $data, $branding);
+
+        $this->assertStringContainsString('Branded Corp', $pdf);
+        $this->assertStringContainsString('EXECUTIVE SUMMARY', $pdf);
+        $this->assertStringContainsString('KEYWORD RANKINGS', $pdf);
+        $this->assertStringContainsString('POSITION CHANGES', $pdf);
+        $this->assertStringContainsString('TREND CHARTS', $pdf);
+    }
+
+    /**
+     * Test logo placeholder when no logo provided.
+     */
+    public function test_logo_placeholder_when_no_logo(): void
+    {
+        $report = [
+            'name' => 'Report',
+            'sections' => ['cover'],
+        ];
+        $data = [];
+        $branding = [
+            'companyName' => 'Test Company',
+        ];
+
+        $pdf = $this->exporter->generate($report, $data, $branding);
+
+        $this->assertStringContainsString('placeholder', $pdf);
+    }
+
+    /**
+     * Test empty branding array uses defaults.
+     */
+    public function test_empty_branding_uses_defaults(): void
+    {
+        $report = [
+            'name' => 'Report',
+            'sections' => ['cover'],
+        ];
+        $data = [];
+
+        $pdf = $this->exporter->generate($report, $data, []);
+
+        $this->assertNotEmpty($pdf);
+        $this->assertStringStartsWith('%PDF-1.4', $pdf);
+    }
+
+    // ============================================
+    // ORIGINAL TESTS (TASK-4-5)
+    // ============================================
 
     /**
      * Test 5.1: Generate PDF with minimal data.

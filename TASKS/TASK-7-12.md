@@ -1,7 +1,7 @@
 # TASK-7-12: Filter by Feature Endpoint
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
