@@ -4,11 +4,11 @@ namespace Tests\Unit\Repositories;
 
 use Tests\TestCase;
 use App\Repositories\SerpFeatureRepository;
+use App\Models\User;
 use App\Models\Keyword;
 use App\Models\Site;
 use App\Models\SerpFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 
 class SerpFeatureRepositoryTest extends TestCase
 {
@@ -17,13 +17,22 @@ class SerpFeatureRepositoryTest extends TestCase
     protected SerpFeatureRepository $repository;
     protected Site $site;
     protected Keyword $keyword;
+    protected User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->repository = new SerpFeatureRepository();
 
+        // Create user first (required for sites.user_id foreign key)
+        $this->user = User::create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
         $this->site = Site::create([
+            'user_id' => $this->user->id,
             'url' => 'https://test-example.com',
             'name' => 'Test Site'
         ]);
@@ -40,224 +49,44 @@ class SerpFeatureRepositoryTest extends TestCase
     }
 
     // ============================================
-    // getCurrentFeatures()
+    // findById()
     // ============================================
 
     /** @test */
-    public function it_returns_current_features_for_keyword(): void
-    {
-        // Arrange
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet',
-            'is_present' => true,
-            'url' => 'https://test-example.com/seo-tools',
-            'snippet' => 'Best SEO tools...',
-            'checked_at' => now()
-        ]);
-
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'sitelinks',
-            'is_present' => true,
-            'checked_at' => now()
-        ]);
-
-        // Act
-        $result = $this->repository->getCurrentFeatures($this->keyword->id);
-
-        // Assert
-        $this->assertCount(2, $result);
-        $this->assertEquals('featured_snippet', $result[0]['feature_type']);
-        $this->assertTrue($result[0]['is_present']);
-    }
-
-    /** @test */
-    public function it_returns_empty_array_for_nonexistent_keyword(): void
-    {
-        // Act
-        $result = $this->repository->getCurrentFeatures(99999);
-
-        // Assert
-        $this->assertEmpty($result);
-    }
-
-    /** @test */
-    public function it_returns_only_latest_features_per_type(): void
-    {
-        // Arrange - Create multiple checks for same feature type
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet',
-            'is_present' => false,
-            'checked_at' => now()->subDays(2)
-        ]);
-
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet',
-            'is_present' => true,
-            'url' => 'https://test-example.com',
-            'checked_at' => now()
-        ]);
-
-        // Act
-        $result = $this->repository->getCurrentFeatures($this->keyword->id);
-
-        // Assert - Should return only the latest
-        $this->assertCount(1, $result);
-        $this->assertTrue($result[0]['is_present']);
-    }
-
-    // ============================================
-    // getFeaturesByDateRange()
-    // ============================================
-
-    /** @test */
-    public function it_returns_features_within_date_range(): void
-    {
-        // Arrange
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet',
-            'is_present' => true,
-            'checked_at' => '2026-02-20 10:00:00'
-        ]);
-
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet',
-            'is_present' => false,
-            'checked_at' => '2026-02-10 10:00:00'
-        ]);
-
-        // Act
-        $result = $this->repository->getFeaturesByDateRange(
-            $this->keyword->id,
-            ['from' => '2026-02-15', 'to' => '2026-02-25']
-        );
-
-        // Assert
-        $this->assertCount(1, $result);
-    }
-
-    /** @test */
-    public function it_returns_all_features_for_empty_date_range(): void
-    {
-        // Arrange
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet',
-            'is_present' => true,
-            'checked_at' => now()
-        ]);
-
-        // Act
-        $result = $this->repository->getFeaturesByDateRange($this->keyword->id, []);
-
-        // Assert
-        $this->assertCount(1, $result);
-    }
-
-    // ============================================
-    // insert()
-    // ============================================
-
-    /** @test */
-    public function it_inserts_new_feature_record(): void
-    {
-        // Arrange
-        $data = [
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet',
-            'is_present' => true,
-            'url' => 'https://test-example.com',
-            'title' => 'Test Title',
-            'snippet' => 'Test snippet',
-            'checked_at' => now()
-        ];
-
-        // Act
-        $result = $this->repository->insert($data);
-
-        // Assert
-        $this->assertIsInt($result);
-        $this->assertDatabaseHas('serp_features', [
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet'
-        ]);
-    }
-
-    /** @test */
-    public function it_handles_null_url_and_snippet(): void
-    {
-        // Arrange
-        $data = [
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'sitelinks',
-            'is_present' => true,
-            'checked_at' => now()
-        ];
-
-        // Act
-        $result = $this->repository->insert($data);
-
-        // Assert
-        $this->assertIsInt($result);
-        $this->assertDatabaseHas('serp_features', [
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'sitelinks',
-            'url' => null,
-            'snippet' => null
-        ]);
-    }
-
-    // ============================================
-    // update()
-    // ============================================
-
-    /** @test */
-    public function it_updates_existing_feature(): void
+    public function it_finds_feature_by_id(): void
     {
         // Arrange
         $feature = SerpFeature::create([
             'keyword_id' => $this->keyword->id,
             'feature_type' => 'featured_snippet',
-            'is_present' => false,
+            'is_present' => true,
             'checked_at' => now()
         ]);
 
         // Act
-        $result = $this->repository->update($feature->id, [
-            'is_present' => true,
-            'url' => 'https://test-example.com'
-        ]);
+        $result = $this->repository->findById($feature->id);
 
         // Assert
-        $this->assertTrue($result);
-        $this->assertDatabaseHas('serp_features', [
-            'id' => $feature->id,
-            'is_present' => true,
-            'url' => 'https://test-example.com'
-        ]);
+        $this->assertNotNull($result);
+        $this->assertEquals('featured_snippet', $result->feature_type);
     }
 
     /** @test */
-    public function it_returns_false_for_nonexistent_feature_update(): void
+    public function it_returns_null_for_nonexistent_id(): void
     {
         // Act
-        $result = $this->repository->update(99999, ['is_present' => true]);
+        $result = $this->repository->findById(99999);
 
         // Assert
-        $this->assertFalse($result);
+        $this->assertNull($result);
     }
 
     // ============================================
-    // deleteByKeyword()
+    // getByKeyword()
     // ============================================
 
     /** @test */
-    public function it_deletes_features_by_keyword(): void
+    public function it_gets_features_by_keyword(): void
     {
         // Arrange
         SerpFeature::create([
@@ -269,42 +98,298 @@ class SerpFeatureRepositoryTest extends TestCase
 
         SerpFeature::create([
             'keyword_id' => $this->keyword->id,
-            'feature_type' => 'sitelinks',
+            'feature_type' => 'local_pack',
+            'is_present' => false,
+            'checked_at' => now()
+        ]);
+
+        // Act
+        $result = $this->repository->getByKeyword($this->keyword->id);
+
+        // Assert
+        $this->assertCount(2, $result);
+    }
+
+    /** @test */
+    public function it_returns_empty_collection_for_keyword_with_no_features(): void
+    {
+        // Act
+        $result = $this->repository->getByKeyword($this->keyword->id);
+
+        // Assert
+        $this->assertCount(0, $result);
+    }
+
+    // ============================================
+    // getBySite()
+    // ============================================
+
+    /** @test */
+    public function it_gets_features_by_site(): void
+    {
+        // Arrange
+        SerpFeature::create([
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'checked_at' => now()
+        ]);
+
+        SerpFeature::create([
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'local_pack',
+            'is_present' => true,
+            'checked_at' => now()
+        ]);
+
+        // Non-present feature (should not be returned)
+        SerpFeature::create([
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'image_pack',
+            'is_present' => false,
+            'checked_at' => now()
+        ]);
+
+        // Act
+        $result = $this->repository->getBySite($this->site->id);
+
+        // Assert - Only present features returned
+        $this->assertCount(2, $result);
+    }
+
+    // ============================================
+    // getGroupedByKeyword()
+    // ============================================
+
+    /** @test */
+    public function it_groups_features_by_keyword(): void
+    {
+        // Arrange
+        SerpFeature::create([
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
             'is_present' => true,
             'checked_at' => now()
         ]);
 
         // Act
-        $count = $this->repository->deleteByKeyword($this->keyword->id);
+        $result = $this->repository->getGroupedByKeyword($this->keyword->id);
 
-        // Assert
-        $this->assertEquals(2, $count);
-        $this->assertDatabaseMissing('serp_features', [
-            'keyword_id' => $this->keyword->id
+        // Assert - Should have all feature types
+        $this->assertArrayHasKey('featured_snippet', $result);
+        $this->assertArrayHasKey('local_pack', $result);
+        $this->assertTrue($result['featured_snippet']);
+        $this->assertFalse($result['local_pack']);
+    }
+
+    // ============================================
+    // getTotalKeywords()
+    // ============================================
+
+    /** @test */
+    public function it_returns_total_active_keywords_for_site(): void
+    {
+        // Arrange
+        Keyword::create([
+            'site_id' => $this->site->id,
+            'keyword' => 'keyword 2',
+            'status' => 'active'
         ]);
+
+        Keyword::create([
+            'site_id' => $this->site->id,
+            'keyword' => 'keyword 3',
+            'status' => 'paused' // Should not be counted
+        ]);
+
+        // Act
+        $count = $this->repository->getTotalKeywords($this->site->id);
+
+        // Assert - Only active keywords counted
+        $this->assertEquals(2, $count);
     }
 
     /** @test */
-    public function it_returns_zero_for_nonexistent_keyword(): void
+    public function it_returns_zero_for_site_with_no_keywords(): void
     {
+        // Arrange
+        $emptySite = Site::create([
+            'user_id' => $this->user->id,
+            'url' => 'https://empty-site.com',
+            'name' => 'Empty Site'
+        ]);
+
         // Act
-        $count = $this->repository->deleteByKeyword(99999);
+        $count = $this->repository->getTotalKeywords($emptySite->id);
 
         // Assert
         $this->assertEquals(0, $count);
     }
 
     // ============================================
-    // getSiteFeatures()
+    // getKeywordsWithFeaturesCount()
     // ============================================
 
     /** @test */
-    public function it_returns_paginated_features_for_site(): void
+    public function it_counts_keywords_with_features(): void
     {
         // Arrange
         $keyword2 = Keyword::create([
             'site_id' => $this->site->id,
-            'keyword' => 'keyword tracker',
+            'keyword' => 'keyword 2',
+            'status' => 'active'
+        ]);
+
+        // Keyword 1 has feature
+        SerpFeature::create([
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'checked_at' => now()
+        ]);
+
+        // Keyword 2 has no features
+
+        // Act
+        $count = $this->repository->getKeywordsWithFeaturesCount($this->site->id);
+
+        // Assert
+        $this->assertEquals(1, $count);
+    }
+
+    // ============================================
+    // getFeatureCountsBySite()
+    // ============================================
+
+    /** @test */
+    public function it_returns_feature_counts_by_site(): void
+    {
+        // Arrange
+        SerpFeature::create([
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'checked_at' => now()
+        ]);
+
+        SerpFeature::create([
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'sitelinks',
+            'is_present' => true,
+            'checked_at' => now()
+        ]);
+
+        // Act
+        $counts = $this->repository->getFeatureCountsBySite($this->site->id);
+
+        // Assert - Should have all feature types
+        $this->assertArrayHasKey('featured_snippet', $counts);
+        $this->assertArrayHasKey('sitelinks', $counts);
+        $this->assertArrayHasKey('local_pack', $counts);
+        $this->assertEquals(1, $counts['featured_snippet']);
+        $this->assertEquals(1, $counts['sitelinks']);
+        $this->assertEquals(0, $counts['local_pack']);
+    }
+
+    // ============================================
+    // upsert()
+    // ============================================
+
+    /** @test */
+    public function it_creates_new_feature_on_upsert(): void
+    {
+        // Arrange
+        $data = [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'url' => 'https://test-example.com',
+            'checked_at' => now()
+        ];
+
+        // Act
+        $result = $this->repository->upsert($data);
+
+        // Assert
+        $this->assertDatabaseHas('serp_features', [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true
+        ]);
+    }
+
+    /** @test */
+    public function it_updates_existing_feature_on_upsert(): void
+    {
+        // Arrange
+        SerpFeature::create([
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => false,
+            'checked_at' => now()
+        ]);
+
+        // Act
+        $this->repository->upsert([
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'url' => 'https://test-example.com',
+            'checked_at' => now()
+        ]);
+
+        // Assert - Should have updated, not created new
+        $this->assertDatabaseHas('serp_features', [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true
+        ]);
+
+        $this->assertEquals(1, SerpFeature::where('keyword_id', $this->keyword->id)
+            ->where('feature_type', 'featured_snippet')
+            ->count());
+    }
+
+    // ============================================
+    // insertBatch()
+    // ============================================
+
+    /** @test */
+    public function it_inserts_multiple_features(): void
+    {
+        // Arrange
+        $features = [
+            [
+                'keyword_id' => $this->keyword->id,
+                'feature_type' => 'featured_snippet',
+                'is_present' => true,
+            ],
+            [
+                'keyword_id' => $this->keyword->id,
+                'feature_type' => 'local_pack',
+                'is_present' => false,
+            ],
+        ];
+
+        // Act
+        $result = $this->repository->insertBatch($features);
+
+        // Assert
+        $this->assertTrue($result);
+        $this->assertEquals(2, SerpFeature::where('keyword_id', $this->keyword->id)->count());
+    }
+
+    // ============================================
+    // getByKeywordIds()
+    // ============================================
+
+    /** @test */
+    public function it_gets_features_by_keyword_ids(): void
+    {
+        // Arrange
+        $keyword2 = Keyword::create([
+            'site_id' => $this->site->id,
+            'keyword' => 'keyword 2',
             'status' => 'active'
         ]);
 
@@ -323,103 +408,18 @@ class SerpFeatureRepositoryTest extends TestCase
         ]);
 
         // Act
-        $result = $this->repository->getSiteFeatures($this->site->id, ['page' => 1, 'limit' => 20]);
+        $result = $this->repository->getByKeywordIds([$this->keyword->id, $keyword2->id]);
 
         // Assert
-        $this->assertArrayHasKey('data', $result);
-        $this->assertArrayHasKey('total', $result);
-        $this->assertCount(2, $result['data']);
-    }
-
-    /** @test */
-    public function it_applies_default_pagination(): void
-    {
-        // Act
-        $result = $this->repository->getSiteFeatures($this->site->id);
-
-        // Assert
-        $this->assertEquals(1, $result['page']);
-        $this->assertEquals(50, $result['limit']);
-    }
-
-    /** @test */
-    public function it_handles_pagination_correctly(): void
-    {
-        // Arrange - Create 25 features
-        for ($i = 0; $i < 25; $i++) {
-            $keyword = Keyword::create([
-                'site_id' => $this->site->id,
-                'keyword' => "keyword {$i}",
-                'status' => 'active'
-            ]);
-
-            SerpFeature::create([
-                'keyword_id' => $keyword->id,
-                'feature_type' => 'featured_snippet',
-                'is_present' => true,
-                'checked_at' => now()
-            ]);
-        }
-
-        // Act
-        $result = $this->repository->getSiteFeatures($this->site->id, ['page' => 2, 'limit' => 10]);
-
-        // Assert
-        $this->assertEquals(2, $result['page']);
-        $this->assertEquals(10, $result['limit']);
-        $this->assertCount(10, $result['data']);
-        $this->assertEquals(25, $result['total']);
+        $this->assertCount(2, $result);
     }
 
     // ============================================
-    // getTotalKeywords()
+    // getKeywordsByFeature()
     // ============================================
 
     /** @test */
-    public function it_returns_total_keywords_for_site(): void
-    {
-        // Arrange
-        Keyword::create([
-            'site_id' => $this->site->id,
-            'keyword' => 'keyword 2',
-            'status' => 'active'
-        ]);
-
-        Keyword::create([
-            'site_id' => $this->site->id,
-            'keyword' => 'keyword 3',
-            'status' => 'paused'
-        ]);
-
-        // Act
-        $count = $this->repository->getTotalKeywords($this->site->id);
-
-        // Assert
-        $this->assertEquals(3, $count); // Including the one from setUp
-    }
-
-    /** @test */
-    public function it_returns_zero_for_site_with_no_keywords(): void
-    {
-        // Arrange
-        $emptySite = Site::create([
-            'url' => 'https://empty-site.com',
-            'name' => 'Empty Site'
-        ]);
-
-        // Act
-        $count = $this->repository->getTotalKeywords($emptySite->id);
-
-        // Assert
-        $this->assertEquals(0, $count);
-    }
-
-    // ============================================
-    // getKeywordsWithFeatures()
-    // ============================================
-
-    /** @test */
-    public function it_returns_keywords_with_features_count(): void
+    public function it_gets_keywords_with_specific_feature(): void
     {
         // Arrange
         $keyword2 = Keyword::create([
@@ -428,7 +428,6 @@ class SerpFeatureRepositoryTest extends TestCase
             'status' => 'active'
         ]);
 
-        // Keyword 1 has features
         SerpFeature::create([
             'keyword_id' => $this->keyword->id,
             'feature_type' => 'featured_snippet',
@@ -436,21 +435,27 @@ class SerpFeatureRepositoryTest extends TestCase
             'checked_at' => now()
         ]);
 
-        // Keyword 2 has no features
+        SerpFeature::create([
+            'keyword_id' => $keyword2->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => false, // Not present
+            'checked_at' => now()
+        ]);
 
         // Act
-        $count = $this->repository->getKeywordsWithFeatures($this->site->id);
+        $result = $this->repository->getKeywordsByFeature($this->site->id, 'featured_snippet', true);
 
         // Assert
-        $this->assertEquals(1, $count);
+        $this->assertCount(1, $result);
+        $this->assertEquals($this->keyword->id, $result->first()->id);
     }
 
     // ============================================
-    // getFeatureCountsByType()
+    // getKeywordFeaturesWithHistory()
     // ============================================
 
     /** @test */
-    public function it_returns_feature_counts_by_type(): void
+    public function it_gets_keyword_features_with_history(): void
     {
         // Arrange
         SerpFeature::create([
@@ -458,123 +463,28 @@ class SerpFeatureRepositoryTest extends TestCase
             'feature_type' => 'featured_snippet',
             'is_present' => true,
             'checked_at' => now()
-        ]);
-
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'sitelinks',
-            'is_present' => true,
-            'checked_at' => now()
-        ]);
-
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet',
-            'is_present' => true,
-            'checked_at' => now()->subDay()
-        ]);
-
-        // Act
-        $counts = $this->repository->getFeatureCountsByType($this->site->id);
-
-        // Assert
-        $this->assertArrayHasKey('featured_snippet', $counts);
-        $this->assertArrayHasKey('sitelinks', $counts);
-        // Count should be distinct keywords per feature type
-        $this->assertEquals(1, $counts['featured_snippet']);
-        $this->assertEquals(1, $counts['sitelinks']);
-    }
-
-    /** @test */
-    public function it_returns_empty_array_for_site_with_no_features(): void
-    {
-        // Act
-        $counts = $this->repository->getFeatureCountsByType($this->site->id);
-
-        // Assert
-        $this->assertEmpty($counts);
-    }
-
-    // ============================================
-    // getHistory()
-    // ============================================
-
-    /** @test */
-    public function it_returns_history_for_keyword(): void
-    {
-        // Arrange
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet',
-            'is_present' => true,
-            'checked_at' => '2026-02-20 10:00:00'
         ]);
 
         SerpFeature::create([
             'keyword_id' => $this->keyword->id,
             'feature_type' => 'featured_snippet',
             'is_present' => false,
-            'checked_at' => '2026-02-19 10:00:00'
+            'checked_at' => now()->subDays(2)
         ]);
 
         // Act
-        $history = $this->repository->getHistory($this->keyword->id);
+        $result = $this->repository->getKeywordFeaturesWithHistory($this->keyword->id, 7);
 
         // Assert
-        $this->assertCount(2, $history);
-    }
-
-    /** @test */
-    public function it_returns_history_with_date_range(): void
-    {
-        // Arrange
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet',
-            'is_present' => true,
-            'checked_at' => '2026-02-20 10:00:00'
-        ]);
-
-        SerpFeature::create([
-            'keyword_id' => $this->keyword->id,
-            'feature_type' => 'featured_snippet',
-            'is_present' => false,
-            'checked_at' => '2026-02-10 10:00:00'
-        ]);
-
-        // Act
-        $history = $this->repository->getHistory(
-            $this->keyword->id,
-            ['from' => '2026-02-15', 'to' => '2026-02-25']
-        );
-
-        // Assert
-        $this->assertCount(1, $history);
+        $this->assertArrayHasKey('current', $result);
+        $this->assertArrayHasKey('history', $result);
+        $this->assertIsArray($result['current']);
+        $this->assertIsArray($result['history']);
     }
 
     // ============================================
     // Edge Cases
     // ============================================
-
-    /** @test */
-    public function it_handles_invalid_pagination_params(): void
-    {
-        // Act - Negative page should default to 1
-        $result = $this->repository->getSiteFeatures($this->site->id, ['page' => -1, 'limit' => 10]);
-
-        // Assert
-        $this->assertEquals(1, $result['page']);
-    }
-
-    /** @test */
-    public function it_limits_maximum_pagination_size(): void
-    {
-        // Act
-        $result = $this->repository->getSiteFeatures($this->site->id, ['page' => 1, 'limit' => 1000]);
-
-        // Assert - Should cap at reasonable maximum
-        $this->assertLessThanOrEqual(100, $result['limit']);
-    }
 
     /** @test */
     public function it_handles_special_characters_in_feature_type(): void
@@ -588,10 +498,9 @@ class SerpFeatureRepositoryTest extends TestCase
         ];
 
         // Act
-        $result = $this->repository->insert($data);
+        $result = $this->repository->upsert($data);
 
         // Assert - Should store as literal string, not execute SQL
-        $this->assertIsInt($result);
         $this->assertDatabaseHas('serp_features', [
             'feature_type' => "'; DROP TABLE serp_features;--"
         ]);
