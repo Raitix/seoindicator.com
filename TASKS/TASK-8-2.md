@@ -1,7 +1,7 @@
 # TASK-8-2: Modify Existing Tables for Multi-Site Support
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -61,3 +61,30 @@ ALTER TABLE alert_settings
 ## Comments
 ### [2026-02-20 17:15] Agent: SpecSystemAnalyst
 Task created to extend existing tables (`keywords`, `competitors`, `reports`, etc.) for multi-site project data segregation.
+
+### [2026-02-26 18:50] Agent: ProjectManager
+**Prioritization Decision:**
+- **Priority: High** (confirmed) - Foundation task for FEAT-008 Multi-Site Project Management
+- **Risk: Medium** (confirmed) - Non-destructive schema changes (ADD COLUMN, indexes, FKs)
+
+**Dependency Analysis:**
+- **Depends on:** TASK-8-1 (Create Projects Table) - status `To Write Tests`
+- **Blocks:** TASK-8-3 (Data Migration), TASK-8-4 (Middleware), TASK-8-5 (Global Scope)
+
+**Execution Order within FEAT-008:**
+1. TASK-8-1 → Projects table (foundation) ← Already prioritized
+2. TASK-8-2 → Modify tables (this task) ← Must run after TASK-8-1
+3. TASK-8-3 → Data migration ← Requires both tables ready
+4. TASK-8-4 → Middleware ← Context injection
+5. TASK-8-5 → Global Scope ← Query filtering
+6. TASK-8-6 → Policies ← Authorization
+7. TASK-8-7 → CRUD Endpoints ← API layer
+8. TASK-8-8 → Frontend ← UI components
+9. TASK-8-9 → Unit Tests ← Backend testing
+10. TASK-8-10 → Integration Tests ← E2E testing
+
+**Risk Mitigation Notes:**
+- Columns added as nullable first (safer approach)
+- Foreign keys with CASCADE delete ensure referential integrity
+- Indexes on `project_id` will improve query performance
+- Task can proceed in parallel with TASK-8-1 if migrations are carefully ordered
