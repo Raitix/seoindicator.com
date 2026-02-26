@@ -197,7 +197,7 @@ class SerpFeatureController extends Controller
         // Validate pagination parameters
         $validator = Validator::make($request->all(), [
             'page' => ['sometimes', 'integer', 'min:1'],
-            'perPage' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'perPage' => ['sometimes', 'integer', 'min:1'],
         ]);
 
         if ($validator->fails()) {
@@ -213,7 +213,8 @@ class SerpFeatureController extends Controller
 
         $page = (int) $request->query('page', 1);
         $perPage = (int) $request->query('perPage', 20);
-        $perPage = min($perPage, 100);
+        // Cap perPage to maximum of 100
+        $perPage = min(max(1, $perPage), 100);
 
         $result = $this->serpFeatureService->getSiteFeatures($siteId, $page, $perPage);
 

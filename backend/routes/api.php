@@ -74,9 +74,9 @@ Route::prefix('v1')->group(function () {
     Route::get('sites/{siteId}/dashboard', [DashboardController::class, 'index']);
 
     // SERP Features (SPEC-007, TASK-7-10, TASK-7-11) - public read
-    Route::get('keywords/{id}/serp-features', [SerpFeatureController::class, 'keywordFeatures']);
-    Route::get('sites/{siteId}/serp-features', [SerpFeatureController::class, 'siteFeatures']);
-    Route::get('sites/{siteId}/serp-features/summary', [SerpFeatureController::class, 'summary']);
+    Route::get('keywords/{id}/serp-features', [SerpFeatureController::class, 'keywordFeatures'])->where('id', '[0-9]+');
+    Route::get('sites/{siteId}/serp-features', [SerpFeatureController::class, 'siteFeatures'])->where('siteId', '[0-9]+');
+    Route::get('sites/{siteId}/serp-features/summary', [SerpFeatureController::class, 'summary'])->where('siteId', '[0-9]+');
 
     // Report Templates (SPEC-004-10) - public read for now
     Route::get('sites/{siteId}/report-templates', [ReportTemplateController::class, 'index']);
