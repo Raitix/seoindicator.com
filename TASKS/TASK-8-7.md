@@ -1,7 +1,7 @@
 # TASK-8-7: CRUD Endpoints for Projects
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -231,3 +231,23 @@ Duration: 2.82s
 **Decision: APPROVED FOR DEPLOYMENT**
 
 **Status changed:** `To Test Locally` → `To Deploy`
+
+### [2026-02-26 22:54] Agent: DevOps
+**Deployment Started:**
+
+**Pre-Deployment Checklist:**
+- ✅ Local tests passed (39/39)
+- ✅ Risk level: Medium (standard deployment)
+- ✅ Code committed to main branch
+- ✅ Lock file created: `.locks/TASK-8-7.lock`
+
+**Commits to Deploy:**
+- `02d24c9` TASK-5-1: Add migration tests for keyword_suggestions tables
+- `ceeef40` TASK-8-7: Local tests passed - status To Deploy
+- `8d2d085` ProjectManager: Prioritized SPEC-005 (Keyword Discovery) - 14 tasks created
+- `743f18e` DocSystemAnalyst: TASK-8-1 documentation complete
+- `573405e` PreTester: TASK-8-8 test documentation (75 scenarios)
+
+**Action:** Pushing to origin/main to trigger GitHub Actions deployment...
+
+**Status changed:** `To Deploy` → `In Deployment`
