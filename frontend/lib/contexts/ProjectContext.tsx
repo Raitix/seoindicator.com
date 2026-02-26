@@ -92,23 +92,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   // Update a project
   const handleUpdateProject = React.useCallback(async (id: number, payload: ProjectUpdatePayload): Promise<Project> => {
-    // Optimistic update
-    const previousProjects = [...projects];
-    
     try {
       const updatedProject = await updateProject(id, payload);
       await mutate();
       return updatedProject;
     } catch (error) {
-      // Rollback on error
-      await mutate(previousProjects, false);
+      // Revalidate on error
+      await mutate();
       throw error;
     }
-  }, [projects, mutate]);
+  }, [mutate]);
 
   // Delete a project
   const handleDeleteProject = React.useCallback(async (id: number): Promise<void> => {
-    const previousProjects = [...projects];
     const previousCurrentId = currentProjectId;
     
     try {
@@ -128,16 +124,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         router.push("/projects");
       }
     } catch (error) {
-      // Rollback on error
-      await mutate(previousProjects, false);
+      // Revalidate on error
+      await mutate();
       throw error;
     }
   }, [projects, currentProjectId, mutate, router]);
 
   // Archive a project
   const handleArchiveProject = React.useCallback(async (id: number): Promise<void> => {
-    const previousProjects = [...projects];
-    
     try {
       await archiveProject(id);
       await mutate();
@@ -155,23 +149,21 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         router.push("/projects");
       }
     } catch (error) {
-      await mutate(previousProjects, false);
+      await mutate();
       throw error;
     }
   }, [projects, currentProjectId, mutate, router]);
 
   // Restore an archived project
   const handleRestoreProject = React.useCallback(async (id: number): Promise<void> => {
-    const previousProjects = [...projects];
-    
     try {
       await restoreProject(id);
       await mutate();
     } catch (error) {
-      await mutate(previousProjects, false);
+      await mutate();
       throw error;
     }
-  }, [projects, mutate]);
+  }, [mutate]);
 
   // Refresh projects list
   const handleRefreshProjects = React.useCallback(async (): Promise<void> => {
