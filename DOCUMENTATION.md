@@ -150,3 +150,112 @@ Triggers the generation of site analysis reports (PDF/CSV formats). Supports asy
 - Synchronous execution designed for MVP staging.
 
 ---
+## Database Schema: SEO Site Audits (FEAT-014)
+
+### Audits Table
+Stores metadata for SEO site audits. Uses `site_id` (not `project_id`) for consistency with existing schema.
+
+```sql
+CREATE TABLE audits (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    status ENUM('pending', 'running', 'completed', 'failed') DEFAULT 'pending',
+    pages_crawled INT UNSIGNED DEFAULT 0,
+    issues_found INT UNSIGNED DEFAULT 0,
+    started_at TIMESTAMP NULL,
+    completed_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id (NOT project_id) |
+| `status` | ENUM | Audit status: `pending`, `running`, `completed`, `failed` |
+| `pages_crawled` | INT UNSIGNED | Number of pages crawled during audit |
+| `issues_found` | INT UNSIGNED | Total issues discovered |
+| `started_at` | TIMESTAMP | When audit started |
+| `completed_at` | TIMESTAMP | When audit finished |
+
+**Constraints:**
+- Foreign Key: `site_id → sites.id` ON DELETE CASCADE
+
+**Indexes:**
+- `idx_site_status` on `(site_id, status)`
+- `idx_status` on `status`
+- `idx_completed_at` on `completed_at`
+
+### Issue Types Table
+Stores issue type definitions for audits. Pre-populated with common SEO issue categories.
+
+```sql
+CREATE TABLE issue_types (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    category VARCHAR(50) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    severity_default ENUM('critical', 'warning', 'notice') NOT NULL,
+    recommendation_template TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `category` | VARCHAR(50) | Issue category (e.g., 'technical', 'content', 'performance') |
+| `name` | VARCHAR(100) | Issue type name |
+| `description` | TEXT | Detailed description of issue type |
+| `severity_default` | ENUM | Default severity: `critical`, `warning`, `notice` |
+| `recommendation_template` | TEXT | Template for fix recommendations |
+
+### Audit Issues Table
+Stores detailed issue records discovered during audits.
+
+```sql
+CREATE TABLE audit_issues (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    audit_id BIGINT UNSIGNED NOT NULL,
+    url VARCHAR(2083) NOT NULL,
+    issue_type_id BIGINT UNSIGNED NOT NULL,
+    severity ENUM('critical', 'warning', 'notice') NOT NULL,
+    description TEXT NOT NULL,
+    recommendation TEXT,
+    status ENUM('open', 'fixed', 'ignored') DEFAULT 'open',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (audit_id) REFERENCES audits(id) ON DELETE CASCADE,
+    FOREIGN KEY (issue_type_id) REFERENCES issue_types(id) ON DELETE CASCADE
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `audit_id` | BIGINT UNSIGNED | FK to audits.id |
+| `url` | VARCHAR(2083) | URL where issue was found |
+| `issue_type_id` | BIGINT UNSIGNED | FK to issue_types.id |
+| `severity` | ENUM | Issue severity: `critical`, `warning`, `notice` |
+| `description` | TEXT | Issue description |
+| `recommendation` | TEXT | Specific fix recommendation |
+| `status` | ENUM | Issue status: `open`, `fixed`, `ignored` |
+
+**Constraints:**
+- Foreign Key: `audit_id → audits.id` ON DELETE CASCADE
+- Foreign Key: `issue_type_id → issue_types.id` ON DELETE CASCADE
+
+**Indexes:**
+- `idx_audit_severity` on `(audit_id, severity)`
+- `idx_severity` on `severity`
+- `idx_status` on `status`
+- `idx_audit_status` on `(audit_id, status)`
+- `idx_issue_type_id` on `issue_type_id`
+
+---
