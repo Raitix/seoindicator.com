@@ -106,7 +106,11 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::get('sites/{siteId}/branding', [\App\Http\Controllers\Api\V1\ReportBrandingController::class, 'show']);
     Route::put('sites/{siteId}/branding', [\App\Http\Controllers\Api\V1\ReportBrandingController::class, 'update']);
     Route::post('sites/{siteId}/branding/logo', [\App\Http\Controllers\Api\V1\ReportBrandingController::class, 'uploadLogo']);
+    Route::delete('sites/{siteId}/branding/logo', [\App\Http\Controllers\Api\V1\ReportBrandingController::class, 'deleteLogo']);
     Route::delete('sites/{siteId}/branding', [\App\Http\Controllers\Api\V1\ReportBrandingController::class, 'destroy']);
+
+    // Logo serving (public)
+    Route::get('sites/{siteId}/logo', [\App\Http\Controllers\Api\V1\ReportBrandingController::class, 'serveLogo'])->name('api.v1.branding.logo');
 
     // Comparison (SPEC-003-5)
     Route::get('rankings/comparison', [ComparisonController::class, 'index']);
