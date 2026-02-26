@@ -1,7 +1,7 @@
 # TASK-8-8: Frontend Components for Projects
 
 ## STATUS
-`In Development`
+`To Test Locally`
 
 ## PRIORITY
 `High`
