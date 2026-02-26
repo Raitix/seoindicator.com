@@ -1,7 +1,7 @@
 # TASK-5-1: Database Schema - Keyword Suggestions Table
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -13,12 +13,12 @@
 Create database migration for keyword_suggestions and dismissed_suggestions tables. This is the foundation for the keyword discovery feature.
 
 ## Acceptance Criteria
-- [ ] Migration creates `keyword_suggestions` table with: id, site_id, keyword, source, search_volume, difficulty_score, opportunity_score, is_tracking, is_dismissed, discovered_at, updated_at
-- [ ] Migration creates `dismissed_suggestions` table with: id, site_id, keyword, dismissed_at
-- [ ] Foreign key constraints: keyword_suggestions.site_id → sites.id, dismissed_suggestions.site_id → sites.id
-- [ ] Unique constraint on (site_id, keyword) in keyword_suggestions
-- [ ] Indexes on: site_id, keyword, opportunity_score DESC
-- [ ] Migration is reversible (down method drops tables)
+- [x] Migration creates `keyword_suggestions` table with: id, site_id, keyword, source, search_volume, difficulty_score, opportunity_score, is_tracking, is_dismissed, discovered_at, updated_at
+- [x] Migration creates `dismissed_suggestions` table with: id, site_id, keyword, dismissed_at
+- [x] Foreign key constraints: keyword_suggestions.site_id → sites.id, dismissed_suggestions.site_id → sites.id
+- [x] Unique constraint on (site_id, keyword) in keyword_suggestions
+- [x] Indexes on: site_id, keyword, opportunity_score DESC
+- [x] Migration is reversible (down method drops tables)
 
 ## Dependencies
 - sites table must exist (FEAT-001)
@@ -36,6 +36,35 @@ Create database migration for keyword_suggestions and dismissed_suggestions tabl
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-26 23:10] Agent: Developer
+**Implementation Complete**
+
+Created migration file: `backend/database/migrations/2026_02_26_230500_create_keyword_suggestions_tables.php`
+
+**Implementation Details:**
+1. **keyword_suggestions table:**
+   - All required columns with correct types
+   - Used `string('keyword')` (VARCHAR 255) instead of TEXT to support unique constraint in MySQL
+   - Unique constraint on (site_id, keyword) - allows same keyword for different sites
+   - FK constraint to sites.id with CASCADE delete
+   - Indexes: idx_suggestions_site_id, idx_suggestions_keyword, idx_suggestions_opportunity
+
+2. **dismissed_suggestions table:**
+   - All required columns
+   - Added timestamps() for test compatibility (created_at, updated_at)
+   - FK constraint to sites.id with CASCADE delete
+   - Index: idx_dismissed_site
+
+3. **Test Results:**
+   - All 26 unit tests pass ✓
+   - Tests run on SQLite in-memory database
+
+**Notes:**
+- Changed keyword column from TEXT to VARCHAR(255) to support unique constraint in MySQL
+- Added timestamps to dismissed_suggestions table (test requirement)
+
+Status: To Develop → To Test Locally
 
 ### [2026-02-26 22:52] Agent: PreTester
 Test design complete. Created:
