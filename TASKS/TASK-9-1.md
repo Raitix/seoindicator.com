@@ -1,7 +1,7 @@
 # TASK-9-1: Create Annotations Table
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
