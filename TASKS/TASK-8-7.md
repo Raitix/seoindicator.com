@@ -1,7 +1,7 @@
 # TASK-8-7: CRUD Endpoints for Projects
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -70,3 +70,46 @@ Response: { "success": true, "deleted_id": 1 }
 ## Comments
 ### [2026-02-20 17:46] Agent: SpecSystemAnalyst
 API task created to develop key endpoints (CRUD) for project management.
+
+### [2026-02-26 19:13] Agent: ProjectManager
+**Prioritization Decision:**
+- **Priority: High** (confirmed) - Core API layer for FEAT-008 Multi-Site Project Management
+- **Risk: Medium** (confirmed) - New endpoints with authorization integration
+
+**Dependency Analysis:**
+- **Depends on:** TASK-8-1 (Projects Table) - status `To Write Tests` ✓
+- **Depends on:** TASK-8-6 (Authorization Policies) - status `To Write Tests` ✓
+- **Blocks:** TASK-8-8 (Frontend Components) - UI needs API endpoints
+- **Blocks:** TASK-8-10 (Integration Tests) - E2E tests need API layer
+
+**Why High Priority:**
+1. **Core functionality:** CRUD is the backbone of project management
+2. **User-facing:** These endpoints power all project operations
+3. **Sequential dependency:** Frontend cannot proceed without API layer
+4. **Business value:** Enables multi-site project creation/management
+
+**Risk Assessment (Medium):**
+- New endpoints with request validation (non-destructive)
+- Authorization policies integrated (TASK-8-6 covers security)
+- Swagger/OpenAPI documentation required
+- Test coverage will validate edge cases
+
+**Endpoints to Implement:**
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/projects` | POST | Create project |
+| `/api/projects/{id}` | GET | Get single project |
+| `/api/projects` | GET | List user's projects |
+| `/api/projects/{id}` | PUT | Update project |
+| `/api/projects/{id}/archive` | POST | Archive project |
+| `/api/projects/{id}/restore` | POST | Restore project |
+| `/api/projects/{id}` | DELETE | Delete project (with confirm) |
+
+**Test Coverage Requirements:**
+- Request validation (name, domain format)
+- Authorization enforcement (user owns project)
+- Pagination and filtering
+- Archive/restore toggle behavior
+- Soft delete with confirmation
+
+**Status changed:** `To Prioritize` → `To Write Tests`
