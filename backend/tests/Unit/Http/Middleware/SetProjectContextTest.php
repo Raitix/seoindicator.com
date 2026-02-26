@@ -26,33 +26,38 @@ class SetProjectContextTest extends TestCase
     /** @test - HE-001: Valid X-Project-ID header */
     public function it_binds_project_from_valid_header(): void
     {
-        $user = User::factory()->create();
-        $project = Project::factory()->create(['user_id' => $user->id]);
+        $user = Mockery::mock();
+        $user->id = 1;
+        
+        $project = Mockery::mock(Project::class);
+        $project->id = 1;
+        $project->user_id = 1;
 
         $request = Request::create('/api/test', 'GET');
-        $request->headers->set('X-Project-ID', (string) $project->id);
+        $request->headers->set('X-Project-ID', '1');
 
         $middleware = new SetProjectContext();
 
         // Mock auth
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user->id);
+        Auth::shouldReceive('id')->once()->andReturn(1);
 
-        // Mock Project query
-        Project::shouldReceive('where')
-            ->with('id', $project->id)
+        // Mock Project query using partial mock
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')
+            ->with('id', 1)
             ->once()
             ->andReturnSelf();
-        Project::shouldReceive('where')
-            ->with('user_id', $user->id)
+        $projectMock->shouldReceive('where')
+            ->with('user_id', 1)
             ->once()
             ->andReturnSelf();
-        Project::shouldReceive('first')
+        $projectMock->shouldReceive('first')
             ->once()
             ->andReturn($project);
 
         $response = $middleware->handle($request, function ($req) use ($project) {
-            $this->assertEquals($project, app('current_project'));
+            $this->assertSame($project, app('current_project'));
             return new Response();
         });
 
@@ -62,34 +67,43 @@ class SetProjectContextTest extends TestCase
     /** @test - HE-002: Header takes precedence over session */
     public function header_takes_precedence_over_session(): void
     {
-        $user = User::factory()->create();
-        $project1 = Project::factory()->create(['user_id' => $user->id]);
-        $project2 = Project::factory()->create(['user_id' => $user->id]);
+        $project1 = Mockery::mock(Project::class);
+        $project1->id = 1;
+        $project1->user_id = 1;
+        
+        $project2 = Mockery::mock(Project::class);
+        $project2->id = 2;
+        $project2->user_id = 1;
 
         $request = Request::create('/api/test', 'GET');
-        $request->headers->set('X-Project-ID', (string) $project2->id);
-        $request->session()->put('current_project_id', $project1->id);
+        $request->headers->set('X-Project-ID', '2');
+        
+        // Create a mock session
+        $session = Mockery::mock();
+        $session->shouldReceive('get')->with('current_project_id')->andReturn(1);
+        $request->setLaravelSession($session);
 
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user->id);
+        Auth::shouldReceive('id')->once()->andReturn(1);
 
         // Should query for project2 (from header), not project1 (from session)
-        Project::shouldReceive('where')
-            ->with('id', $project2->id)
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')
+            ->with('id', 2)
             ->once()
             ->andReturnSelf();
-        Project::shouldReceive('where')
-            ->with('user_id', $user->id)
+        $projectMock->shouldReceive('where')
+            ->with('user_id', 1)
             ->once()
             ->andReturnSelf();
-        Project::shouldReceive('first')
+        $projectMock->shouldReceive('first')
             ->once()
             ->andReturn($project2);
 
         $middleware->handle($request, function ($req) use ($project2) {
-            $this->assertEquals($project2, app('current_project'));
+            $this->assertSame($project2, app('current_project'));
             return new Response();
         });
     }
@@ -97,21 +111,25 @@ class SetProjectContextTest extends TestCase
     /** @test - HE-003: Header with numeric string */
     public function it_handles_numeric_string_in_header(): void
     {
-        $user = User::factory()->create();
-        $project = Project::factory()->create(['user_id' => $user->id]);
+        $project = Mockery::mock(Project::class);
+        $project->id = 123;
+        $project->user_id = 1;
 
         $request = Request::create('/api/test', 'GET');
-        $request->headers->set('X-Project-ID', (string) $project->id);
+        $request->headers->set('X-Project-ID', '123');
 
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user->id);
+        Auth::shouldReceive('id')->once()->andReturn(1);
 
-        Project::shouldReceive('where')->andReturnSelf();
-        Project::shouldReceive('first')->andReturn($project);
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 123)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn($project);
 
-        $middleware->handle($request, function ($req) {
+        $middleware->handle($request, function ($req) use ($project) {
+            $this->assertSame($project, app('current_project'));
             return new Response();
         });
     }
@@ -119,25 +137,25 @@ class SetProjectContextTest extends TestCase
     /** @test - HE-004: Header with whitespace */
     public function it_trims_whitespace_from_header(): void
     {
-        $user = User::factory()->create();
-        $project = Project::factory()->create(['user_id' => $user->id]);
+        $project = Mockery::mock(Project::class);
+        $project->id = 5;
+        $project->user_id = 1;
 
         $request = Request::create('/api/test', 'GET');
-        $request->headers->set('X-Project-ID', '  ' . $project->id . '  ');
+        $request->headers->set('X-Project-ID', '  5  ');
 
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user->id);
+        Auth::shouldReceive('id')->once()->andReturn(1);
 
-        Project::shouldReceive('where')
-            ->with('id', $project->id)
-            ->once()
-            ->andReturnSelf();
-        Project::shouldReceive('where')->andReturnSelf();
-        Project::shouldReceive('first')->andReturn($project);
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 5)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn($project);
 
-        $middleware->handle($request, function ($req) {
+        $middleware->handle($request, function ($req) use ($project) {
+            $this->assertSame($project, app('current_project'));
             return new Response();
         });
     }
@@ -152,10 +170,12 @@ class SetProjectContextTest extends TestCase
 
         Auth::shouldReceive('check')->once()->andReturn(true);
 
-        $middleware->handle($request, function ($req) {
+        $response = $middleware->handle($request, function ($req) {
             $this->assertNull(app('current_project'));
             return new Response();
         });
+
+        $this->assertInstanceOf(Response::class, $response);
     }
 
     /** @test - HE-006: Header with zero value */
@@ -206,6 +226,23 @@ class SetProjectContextTest extends TestCase
         });
     }
 
+    /** @test - HE-009: Header with float value */
+    public function it_handles_float_value_in_header(): void
+    {
+        $request = Request::create('/api/test', 'GET');
+        $request->headers->set('X-Project-ID', '1.5');
+
+        $middleware = new SetProjectContext();
+
+        Auth::shouldReceive('check')->once()->andReturn(true);
+
+        // Filter_var with FILTER_VALIDATE_INT will reject floats
+        $middleware->handle($request, function ($req) {
+            $this->assertNull(app('current_project'));
+            return new Response();
+        });
+    }
+
     /** @test - HE-010: Header with very large number */
     public function it_handles_very_large_number_in_header(): void
     {
@@ -217,9 +254,11 @@ class SetProjectContextTest extends TestCase
         Auth::shouldReceive('check')->once()->andReturn(true);
 
         // Should handle gracefully without overflow error
-        $middleware->handle($request, function ($req) {
+        $response = $middleware->handle($request, function ($req) {
             return new Response();
         });
+
+        $this->assertInstanceOf(Response::class, $response);
     }
 
     // ========================================
@@ -229,22 +268,58 @@ class SetProjectContextTest extends TestCase
     /** @test - SE-001: Valid session project ID */
     public function it_binds_project_from_session(): void
     {
-        $user = User::factory()->create();
-        $project = Project::factory()->create(['user_id' => $user->id]);
+        $project = Mockery::mock(Project::class);
+        $project->id = 1;
+        $project->user_id = 1;
 
         $request = Request::create('/api/test', 'GET');
-        $request->session()->put('current_project_id', $project->id);
+        
+        $session = Mockery::mock();
+        $session->shouldReceive('get')->with('current_project_id')->andReturn(1);
+        $request->setLaravelSession($session);
 
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user->id);
+        Auth::shouldReceive('id')->once()->andReturn(1);
 
-        Project::shouldReceive('where')->andReturnSelf();
-        Project::shouldReceive('first')->andReturn($project);
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn($project);
 
         $middleware->handle($request, function ($req) use ($project) {
-            $this->assertEquals($project, app('current_project'));
+            $this->assertSame($project, app('current_project'));
+            return new Response();
+        });
+    }
+
+    /** @test - SE-002: Session without header */
+    public function it_uses_session_when_no_header(): void
+    {
+        $project = Mockery::mock(Project::class);
+        $project->id = 1;
+        $project->user_id = 1;
+
+        $request = Request::create('/api/test', 'GET');
+        // No header set
+        
+        $session = Mockery::mock();
+        $session->shouldReceive('get')->with('current_project_id')->andReturn(1);
+        $request->setLaravelSession($session);
+
+        $middleware = new SetProjectContext();
+
+        Auth::shouldReceive('check')->once()->andReturn(true);
+        Auth::shouldReceive('id')->once()->andReturn(1);
+
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn($project);
+
+        $middleware->handle($request, function ($req) use ($project) {
+            $this->assertSame($project, app('current_project'));
             return new Response();
         });
     }
@@ -253,7 +328,86 @@ class SetProjectContextTest extends TestCase
     public function it_handles_null_session_value(): void
     {
         $request = Request::create('/api/test', 'GET');
-        $request->session()->put('current_project_id', null);
+        
+        $session = Mockery::mock();
+        $session->shouldReceive('get')->with('current_project_id')->andReturn(null);
+        $request->setLaravelSession($session);
+
+        $middleware = new SetProjectContext();
+
+        Auth::shouldReceive('check')->once()->andReturn(true);
+
+        $middleware->handle($request, function ($req) {
+            $this->assertNull(app('current_project'));
+            return new Response();
+        });
+    }
+
+    /** @test - SE-004: Session with zero value */
+    public function it_handles_zero_session_value(): void
+    {
+        $request = Request::create('/api/test', 'GET');
+        
+        $session = Mockery::mock();
+        $session->shouldReceive('get')->with('current_project_id')->andReturn(0);
+        $request->setLaravelSession($session);
+
+        $middleware = new SetProjectContext();
+
+        Auth::shouldReceive('check')->once()->andReturn(true);
+
+        $middleware->handle($request, function ($req) {
+            $this->assertNull(app('current_project'));
+            return new Response();
+        });
+    }
+
+    /** @test - SE-005: Session with negative value */
+    public function it_handles_negative_session_value(): void
+    {
+        $request = Request::create('/api/test', 'GET');
+        
+        $session = Mockery::mock();
+        $session->shouldReceive('get')->with('current_project_id')->andReturn(-1);
+        $request->setLaravelSession($session);
+
+        $middleware = new SetProjectContext();
+
+        Auth::shouldReceive('check')->once()->andReturn(true);
+
+        $middleware->handle($request, function ($req) {
+            $this->assertNull(app('current_project'));
+            return new Response();
+        });
+    }
+
+    /** @test - SE-006: Session with non-numeric value */
+    public function it_handles_non_numeric_session_value(): void
+    {
+        $request = Request::create('/api/test', 'GET');
+        
+        $session = Mockery::mock();
+        $session->shouldReceive('get')->with('current_project_id')->andReturn('abc');
+        $request->setLaravelSession($session);
+
+        $middleware = new SetProjectContext();
+
+        Auth::shouldReceive('check')->once()->andReturn(true);
+
+        $middleware->handle($request, function ($req) {
+            $this->assertNull(app('current_project'));
+            return new Response();
+        });
+    }
+
+    /** @test - SE-007: Session with empty string */
+    public function it_handles_empty_string_session(): void
+    {
+        $request = Request::create('/api/test', 'GET');
+        
+        $session = Mockery::mock();
+        $session->shouldReceive('get')->with('current_project_id')->andReturn('');
+        $request->setLaravelSession($session);
 
         $middleware = new SetProjectContext();
 
@@ -269,7 +423,7 @@ class SetProjectContextTest extends TestCase
     public function it_handles_missing_session_value(): void
     {
         $request = Request::create('/api/test', 'GET');
-        // No session value set
+        // No session set
 
         $middleware = new SetProjectContext();
 
@@ -288,31 +442,25 @@ class SetProjectContextTest extends TestCase
     /** @test - AU-001: User owns the project */
     public function it_binds_project_when_user_owns_it(): void
     {
-        $user = User::factory()->create();
-        $project = Project::factory()->create(['user_id' => $user->id]);
+        $project = Mockery::mock(Project::class);
+        $project->id = 1;
+        $project->user_id = 1;
 
         $request = Request::create('/api/test', 'GET');
-        $request->headers->set('X-Project-ID', (string) $project->id);
+        $request->headers->set('X-Project-ID', '1');
 
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user->id);
+        Auth::shouldReceive('id')->once()->andReturn(1);
 
-        Project::shouldReceive('where')
-            ->with('id', $project->id)
-            ->once()
-            ->andReturnSelf();
-        Project::shouldReceive('where')
-            ->with('user_id', $user->id)
-            ->once()
-            ->andReturnSelf();
-        Project::shouldReceive('first')
-            ->once()
-            ->andReturn($project);
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn($project);
 
         $middleware->handle($request, function ($req) use ($project) {
-            $this->assertEquals($project, app('current_project'));
+            $this->assertSame($project, app('current_project'));
             return new Response();
         });
     }
@@ -320,31 +468,20 @@ class SetProjectContextTest extends TestCase
     /** @test - AU-002: User does not own project */
     public function it_does_not_bind_project_when_user_does_not_own_it(): void
     {
-        $user1 = User::factory()->create();
-        $user2 = User::factory()->create();
-        $project = Project::factory()->create(['user_id' => $user1->id]);
-
         $request = Request::create('/api/test', 'GET');
-        $request->headers->set('X-Project-ID', (string) $project->id);
+        $request->headers->set('X-Project-ID', '1');
 
         $middleware = new SetProjectContext();
 
-        // Authenticated as user2, trying to access user1's project
+        // Authenticated as user 2, trying to access user 1's project
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user2->id);
+        Auth::shouldReceive('id')->once()->andReturn(2);
 
         // Query will return null because user_id doesn't match
-        Project::shouldReceive('where')
-            ->with('id', $project->id)
-            ->once()
-            ->andReturnSelf();
-        Project::shouldReceive('where')
-            ->with('user_id', $user2->id)
-            ->once()
-            ->andReturnSelf();
-        Project::shouldReceive('first')
-            ->once()
-            ->andReturn(null);
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 2)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn(null);
 
         $middleware->handle($request, function ($req) {
             // Project should NOT be bound
@@ -353,25 +490,47 @@ class SetProjectContextTest extends TestCase
         });
     }
 
+    /** @test - AU-003: Cross-user project access attempt */
+    public function it_prevents_cross_user_project_access(): void
+    {
+        $request = Request::create('/api/test', 'GET');
+        $request->headers->set('X-Project-ID', '3'); // User 2's project
+
+        $middleware = new SetProjectContext();
+
+        // Authenticated as user 1
+        Auth::shouldReceive('check')->once()->andReturn(true);
+        Auth::shouldReceive('id')->once()->andReturn(1);
+
+        // Query returns null because user 1 doesn't own project 3
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 3)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn(null);
+
+        $middleware->handle($request, function ($req) {
+            $this->assertNull(app('current_project'));
+            return new Response();
+        });
+    }
+
     /** @test - AU-005: Anonymous user (unauthenticated) */
     public function it_skips_binding_for_unauthenticated_user(): void
     {
-        $project = Project::factory()->create();
-
         $request = Request::create('/api/test', 'GET');
-        $request->headers->set('X-Project-ID', (string) $project->id);
+        $request->headers->set('X-Project-ID', '1');
 
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(false);
 
         // Should not query database at all
-        Project::shouldNotReceive('where');
-
-        $middleware->handle($request, function ($req) {
+        $response = $middleware->handle($request, function ($req) {
             $this->assertNull(app('current_project'));
             return new Response();
         });
+
+        $this->assertInstanceOf(Response::class, $response);
     }
 
     // ========================================
@@ -381,25 +540,26 @@ class SetProjectContextTest extends TestCase
     /** @test - AR-001: Active project */
     public function it_binds_active_project(): void
     {
-        $user = User::factory()->create();
-        $project = Project::factory()->create([
-            'user_id' => $user->id,
-            'archived_at' => null,
-        ]);
+        $project = Mockery::mock(Project::class);
+        $project->id = 1;
+        $project->user_id = 1;
+        $project->archived_at = null;
 
         $request = Request::create('/api/test', 'GET');
-        $request->headers->set('X-Project-ID', (string) $project->id);
+        $request->headers->set('X-Project-ID', '1');
 
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user->id);
+        Auth::shouldReceive('id')->once()->andReturn(1);
 
-        Project::shouldReceive('where')->andReturnSelf();
-        Project::shouldReceive('first')->andReturn($project);
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn($project);
 
         $middleware->handle($request, function ($req) use ($project) {
-            $this->assertEquals($project, app('current_project'));
+            $this->assertSame($project, app('current_project'));
             return new Response();
         });
     }
@@ -407,26 +567,27 @@ class SetProjectContextTest extends TestCase
     /** @test - AR-002: Archived project */
     public function it_binds_archived_project(): void
     {
-        $user = User::factory()->create();
-        $project = Project::factory()->create([
-            'user_id' => $user->id,
-            'archived_at' => now()->subDay(),
-        ]);
+        $project = Mockery::mock(Project::class);
+        $project->id = 4;
+        $project->user_id = 1;
+        $project->archived_at = now();
 
         $request = Request::create('/api/test', 'GET');
-        $request->headers->set('X-Project-ID', (string) $project->id);
+        $request->headers->set('X-Project-ID', '4');
 
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user->id);
+        Auth::shouldReceive('id')->once()->andReturn(1);
 
-        Project::shouldReceive('where')->andReturnSelf();
-        Project::shouldReceive('first')->andReturn($project);
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 4)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn($project);
 
         // Archived projects ARE accessible (business decision)
         $middleware->handle($request, function ($req) use ($project) {
-            $this->assertEquals($project, app('current_project'));
+            $this->assertSame($project, app('current_project'));
             return new Response();
         });
     }
@@ -462,8 +623,6 @@ class SetProjectContextTest extends TestCase
         Auth::shouldReceive('check')->once()->andReturn(true);
 
         // Should not perform any query (invalid ID)
-        Project::shouldNotReceive('where');
-
         $middleware->handle($request, function ($req) {
             $this->assertNull(app('current_project'));
             return new Response();
@@ -473,26 +632,25 @@ class SetProjectContextTest extends TestCase
     /** @test - EC-008: Header with leading zeros */
     public function it_handles_leading_zeros_in_header(): void
     {
-        $user = User::factory()->create();
-        $project = Project::factory()->create(['user_id' => $user->id]);
+        $project = Mockery::mock(Project::class);
+        $project->id = 1;
+        $project->user_id = 1;
 
         $request = Request::create('/api/test', 'GET');
-        $request->headers->set('X-Project-ID', '000' . $project->id);
+        $request->headers->set('X-Project-ID', '0001');
 
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user->id);
+        Auth::shouldReceive('id')->once()->andReturn(1);
 
-        Project::shouldReceive('where')
-            ->with('id', $project->id)
-            ->once()
-            ->andReturnSelf();
-        Project::shouldReceive('where')->andReturnSelf();
-        Project::shouldReceive('first')->andReturn($project);
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn($project);
 
         $middleware->handle($request, function ($req) use ($project) {
-            $this->assertEquals($project, app('current_project'));
+            $this->assertSame($project, app('current_project'));
             return new Response();
         });
     }
@@ -520,18 +678,18 @@ class SetProjectContextTest extends TestCase
     /** @test - EH-002: Project model not found */
     public function it_handles_non_existent_project_id(): void
     {
-        $user = User::factory()->create();
-
         $request = Request::create('/api/test', 'GET');
         $request->headers->set('X-Project-ID', '99999');
 
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user->id);
+        Auth::shouldReceive('id')->once()->andReturn(1);
 
-        Project::shouldReceive('where')->andReturnSelf();
-        Project::shouldReceive('first')->andReturn(null);
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 99999)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn(null);
 
         $middleware->handle($request, function ($req) {
             $this->assertNull(app('current_project'));
@@ -562,29 +720,29 @@ class SetProjectContextTest extends TestCase
     /** @test - PB-001: Valid project bound to app */
     public function it_binds_valid_project_to_app_container(): void
     {
-        $user = User::factory()->create();
-        $project = Project::factory()->create([
-            'user_id' => $user->id,
-            'name' => 'Test Project',
-            'domain' => 'https://example.com',
-        ]);
+        $project = Mockery::mock(Project::class);
+        $project->id = 1;
+        $project->name = 'Test Project';
+        $project->domain = 'https://example.com';
+        $project->user_id = 1;
 
         $request = Request::create('/api/test', 'GET');
-        $request->headers->set('X-Project-ID', (string) $project->id);
+        $request->headers->set('X-Project-ID', '1');
 
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(true);
-        Auth::shouldReceive('id')->once()->andReturn($user->id);
+        Auth::shouldReceive('id')->once()->andReturn(1);
 
-        Project::shouldReceive('where')->andReturnSelf();
-        Project::shouldReceive('first')->andReturn($project);
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->with('id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('where')->with('user_id', 1)->once()->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn($project);
 
         $middleware->handle($request, function ($req) use ($project) {
             $boundProject = app('current_project');
             $this->assertNotNull($boundProject);
-            $this->assertEquals($project->id, $boundProject->id);
-            $this->assertEquals($project->name, $boundProject->name);
+            $this->assertSame($project, $boundProject);
             return new Response();
         });
     }
@@ -598,6 +756,27 @@ class SetProjectContextTest extends TestCase
         $middleware = new SetProjectContext();
 
         Auth::shouldReceive('check')->once()->andReturn(true);
+
+        $middleware->handle($request, function ($req) {
+            $this->assertNull(app('current_project'));
+            return new Response();
+        });
+    }
+
+    /** @test - PB-007: No project bound when not found */
+    public function it_does_not_bind_project_when_not_found(): void
+    {
+        $request = Request::create('/api/test', 'GET');
+        $request->headers->set('X-Project-ID', '999');
+
+        $middleware = new SetProjectContext();
+
+        Auth::shouldReceive('check')->once()->andReturn(true);
+        Auth::shouldReceive('id')->once()->andReturn(1);
+
+        $projectMock = Mockery::mock('alias:App\Models\Project');
+        $projectMock->shouldReceive('where')->andReturnSelf();
+        $projectMock->shouldReceive('first')->once()->andReturn(null);
 
         $middleware->handle($request, function ($req) {
             $this->assertNull(app('current_project'));

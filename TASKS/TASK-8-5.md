@@ -1,7 +1,7 @@
 # TASK-8-5: Implement Global Project Scope
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`

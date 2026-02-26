@@ -1,7 +1,7 @@
 # TASK-8-6: Implement Project Policies
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -91,3 +91,30 @@ Authorization policy task created to ensure secure access to project data. Polic
 - Test policy integration with Laravel Gate
 
 **Status changed:** `To Prioritize` → `To Write Tests`
+
+### [2026-02-26 20:22] Agent: PreTester
+**Test Documentation Created:** `TESTS/TEST-8-6.md`
+
+**Test Coverage Summary:**
+- 95 test scenarios across 9 categories
+- Policy Methods (PM): 17 tests - view, update, delete, restore method verification
+- Gate Integration (GI): 10 tests - Laravel Gate authorization
+- API Endpoint Authorization (EA): 14 tests - 401/403 response validation
+- Archived Project Handling (AP): 8 tests - soft-delete/restore scenarios
+- Security Tests (ST): 13 tests - IDOR prevention, SQL injection, race conditions
+- Controller Integration (CI): 9 tests - authorizeResource usage
+- Edge Cases (EC): 10 tests - null user_id, non-numeric IDs, concurrent access
+- Role Extensibility (RE): 7 tests - admin bypass, collaborator support
+- Middleware Integration (MI): 7 tests - project context, ownership filtering
+
+**Critical Security Focus:**
+- IDOR prevention tests (ST-001 to ST-003) verify users cannot access other users' projects
+- Policy must be registered in AuthServiceProvider
+- Controller should use `authorizeResource(Project::class, 'project')`
+
+**Implementation Template Provided:**
+- Complete ProjectPolicy class with before() hook for admin role
+- AuthServiceProvider registration example
+- Controller authorization patterns
+
+**Status changed:** `To Write Tests` → `To Develop`

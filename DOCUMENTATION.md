@@ -1307,6 +1307,128 @@ systemctl start seoindicator-scheduler.timer
 - Status: Post-MVP feature (Phase 4)
 
 ---
+## Comparison Engine Service (TASK-3-5)
+
+### Service Description
+Core business logic for competitor comparison, providing dashboard data, keyword gap analysis, and historical comparison aggregation.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/rankings/comparison` | Comparison dashboard with summary and filtered results |
+| GET | `/api/v1/competitors/{id}/rankings` | Competitor's rankings for user's keywords |
+| GET | `/api/v1/competitors/{id}/gaps` | Keyword gaps (competitor ranks, user doesn't) |
+| GET | `/api/v1/rankings/comparison/history` | Historical comparison for charting |
+
+### Comparison Dashboard Endpoint
+`GET /api/v1/rankings/comparison`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filter` | string | `all` | Filter: `all`, `im-winning`, `theyre-winning`, `gap`, `both-rank` |
+| `page` | int | 1 | Page number |
+| `perPage` | int | 15 | Results per page |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "summary": {
+      "totalKeywords": 100,
+      "imWinning": 45,
+      "theyreWinning": 30,
+      "bothRank": 75,
+      "onlyIRank": 10,
+      "onlyTheyRank": 15
+    },
+    "results": [
+      {
+        "keyword": "seo tools",
+        "userPosition": 5,
+        "competitorPosition": 8,
+        "positionDiff": -3,
+        "status": "im-winning"
+      }
+    ],
+    "meta": {
+      "total": 100,
+      "page": 1,
+      "perPage": 15
+    }
+  }
+}
+```
+
+### Status Determination Logic
+| Status | Condition |
+|--------|-----------|
+| `im-winning` | User position < competitor position (or user ranks, competitor doesn't) |
+| `theyre-winning` | Competitor position < user position (or competitor ranks, user doesn't) |
+| `gap` | Competitor ranks in top 100, user doesn't rank at all |
+| `both-rank` | Both user and competitor rank in top 100 |
+| `only-i-rank` | Only user ranks in top 100 |
+
+### Position Diff Calculation
+- **Negative:** User is ahead (e.g., user at 3, competitor at 8 → diff = -5)
+- **Positive:** Competitor is ahead (e.g., user at 8, competitor at 3 → diff = +5)
+- **NULL:** One or both positions unavailable
+
+### Competitor Rankings Endpoint
+`GET /api/v1/competitors/{id}/rankings`
+
+Returns all rankings for a specific competitor on the user's tracked keywords.
+
+### Keyword Gaps Endpoint
+`GET /api/v1/competitors/{id}/gaps`
+
+Returns keywords where the competitor ranks but the user doesn't - useful for content gap analysis.
+
+### Historical Comparison Endpoint
+`GET /api/v1/rankings/comparison/history`
+
+Returns time-series data for charting position changes over time.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `competitorId` | int | Competitor ID to compare against |
+| `days` | int | Number of days to look back (default: 30) |
+
+### Technical Implementation
+- Service: `backend/app/Services/ComparisonService.php`
+- Controller: `backend/app/Http/Controllers/Api/V1/ComparisonController.php`
+- Repository: Uses repository pattern for data access
+
+### Caching
+- Comparison results cached for 5 minutes (TTL: 300s)
+- Cache key includes user ID and filter parameters
+- Cache invalidated on new ranking data
+
+### Security Notes
+- All endpoints protected by `auth` middleware
+- User isolation enforced - users can only access their own competitors' data
+- Attempts to access other users' competitors return 404
+
+### Unit Tests
+- 6 tests, 13 assertions in `ComparisonServiceTest`
+- Covers: Summary calculation, position diff, status determination
+
+### Feature Tests
+- 9 tests, 19 assertions in `ComparisonControllerTest`
+- Covers: Dashboard API, filter validation, pagination, competitor rankings, gaps, history, user isolation
+
+### Dependencies
+- TASK-3-1 (competitors and competitor_rankings tables)
+- TASK-3-4 (competitor rankings collection)
+
+### Deployment
+- Deployed: 2026-02-22 via GitHub Actions
+- Production verified: 2026-02-24
+
+---
 ## Fuzzy Query Matching for GSC Data (TASK-12-6)
 
 ### Service Description

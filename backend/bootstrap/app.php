@@ -19,6 +19,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register alias for custom middleware
         $middleware->alias([
             'log-deploy-auth' => \App\Http\Middleware\LogFailedDeployAuth::class,
+            'project.context' => \App\Http\Middleware\SetProjectContext::class,
+        ]);
+
+        // Add SetProjectContext to web middleware group (session-based)
+        $middleware->web(append: [
+            \App\Http\Middleware\SetProjectContext::class,
+        ]);
+
+        // Add SetProjectContext to API middleware group (header-based)
+        $middleware->api(append: [
+            \App\Http\Middleware\SetProjectContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
