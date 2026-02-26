@@ -9,14 +9,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
- * Project Model (placeholder for testing).
+ * Project Model.
+ *
+ * Represents a project for organizing multi-site SEO tracking data.
+ * Each project belongs to a user and can contain GSC data, keywords, etc.
  *
  * @property int $id
+ * @property int $user_id
  * @property string $name
  * @property string|null $domain
+ * @property string|null $notes
+ * @property bool $is_default
+ * @property \Carbon\Carbon|null $archived_at
  * @property int|null $account_id
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
+ * @property-read \App\Models\User $user
+ * @property-read \App\Models\Account|null $account
  */
 class Project extends Model
 {
@@ -28,10 +37,32 @@ class Project extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'user_id',
         'name',
         'domain',
+        'notes',
+        'is_default',
+        'archived_at',
         'account_id',
     ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'is_default' => 'boolean',
+        'archived_at' => 'datetime',
+    ];
+
+    /**
+     * Get the user that owns this project.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     /**
      * Get the account this project belongs to.
@@ -73,5 +104,53 @@ class Project extends Model
         return $this->belongsToMany(User::class, 'project_members')
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    /**
+     * Check if the project is archived.
+     */
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
+    /**
+     * Archive the project.
+     */
+    public function archive(): void
+    {
+        $this->update(['archived_at' => now()]);
+    }
+
+    /**
+     * Unarchive the project.
+     */
+    public function unarchive(): void
+    {
+        $this->update(['archived_at' => null]);
+    }
+
+    /**
+     * Scope to get only active (non-archived) projects.
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    /**
+     * Scope to get only archived projects.
+     */
+    public function scopeArchived($query)
+    {
+        return $query->whereNotNull('archived_at');
+    }
+
+    /**
+     * Scope to get default projects.
+     */
+    public function scopeDefault($query)
+    {
+        return $query->where('is_default', true);
     }
 }
