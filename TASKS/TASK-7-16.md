@@ -1,7 +1,7 @@
 # TASK-7-16: SERP Feature Icons and Badges
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `Medium`

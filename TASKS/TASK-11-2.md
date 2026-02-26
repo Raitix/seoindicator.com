@@ -1,7 +1,7 @@
 # TASK-11-2: Create Project Members Table
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
@@ -50,6 +50,10 @@ Database task created to define roles and permissions at the project level.
 - **Blocking:** TASK-11-4 runtime dependency (PermissionValidator needs `project_members` table)
 - **Execution order:** Should complete before TASK-11-4 deployment proceeds
 - **Status: To Write Tests** - Ready for PreTester to write migration tests
+
+### [2026-02-26 19:03] Developer: Starting Implementation
+- Creating migration for `project_members` table
+- Lock file created: `.locks/TASK-11-2.lock`
 
 ### [2026-02-26 19:30] PreTester: Tests Written
 - **Unit tests:** `tests/unit/TASK-11-2.test.js` - Schema validation, role enum, unique constraints
