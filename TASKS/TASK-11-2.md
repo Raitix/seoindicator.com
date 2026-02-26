@@ -1,7 +1,7 @@
 # TASK-11-2: Create Project Members Table
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`

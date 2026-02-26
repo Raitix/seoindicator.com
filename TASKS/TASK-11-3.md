@@ -1,7 +1,7 @@
 # TASK-11-3: Implement Team Management Service
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`

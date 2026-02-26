@@ -1,7 +1,7 @@
 # TASK-8-4: Implement Project Middleware
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -94,3 +94,28 @@ Middleware task to inject project context for scoping all operations and ensurin
 - Must handle missing/invalid project IDs gracefully
 - Should support both header (`X-Project-ID`) and session-based context
 - Tests must cover: valid project, invalid project, no project context, cross-user project attempt
+
+### [2026-02-26 20:10] Agent: PreTester
+**Test Coverage Complete:**
+- Created `TESTS/TEST-8-4.md` with 87 test scenarios
+- Created `backend/tests/Unit/Http/Middleware/SetProjectContextTest.php` (33 unit tests)
+- Created `backend/tests/Feature/Http/Middleware/ProjectContextSecurityTest.php` (22 security tests)
+- Created `backend/tests/Feature/Http/Middleware/SetProjectContextIntegrationTest.php` (18 integration tests)
+
+**Key Test Categories:**
+1. **Header/Session Extraction (HE/SE):** Validates X-Project-ID header and session handling, precedence rules
+2. **Authorization (AU):** Critical cross-user access prevention (AU-002, AU-003)
+3. **Adversarial Security (AS):** SQL injection, IDOR, session hijacking, timing attacks prevention
+4. **Edge Cases (EC):** Malformed input, special characters, concurrent requests
+5. **Performance (PF):** <5ms overhead, no N+1 queries, minimal memory footprint
+
+**Implementation Notes for Developer:**
+- Middleware must check `auth()->id() === $project->user_id` before binding
+- Header takes precedence over session (documented in HE-002)
+- Invalid/missing project IDs should fail gracefully (no exception)
+- Archived projects ARE accessible (business decision documented in AR-002)
+- Implementation template provided in TEST-8-4.md
+
+**Dependencies:**
+- Requires TASK-8-1 (Projects table) to be implemented first
+- Tests mock Project model until table exists

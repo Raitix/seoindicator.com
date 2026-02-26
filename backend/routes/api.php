@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\SchedulerController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ReportTemplateController;
 use App\Http\Controllers\Api\V1\SerpFeatureController;
+use App\Http\Controllers\Api\V1\APIProxyController;
 use App\Http\Controllers\Api\GSCConnectionController;
 
 /*
@@ -89,6 +90,11 @@ Route::prefix('v1')->group(function () {
     // Scheduled Reports (SPEC-004-11) - public read for now
     Route::get('sites/{siteId}/scheduled-reports', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'index']);
     Route::get('scheduled-reports/{scheduledId}', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'show']);
+
+    // SEO Tools API Proxy (TASK-16-3) - public with rate limiting
+    Route::post('tools/analyze', [APIProxyController::class, 'analyze']);
+    Route::get('tools/captcha-config', [APIProxyController::class, 'captchaConfig']);
+    Route::get('tools/rate-limit-status', [APIProxyController::class, 'rateLimitStatus']);
 });
 
 // Authenticated V1 API Routes
