@@ -1,7 +1,7 @@
 # TASK-9-5: Annotation Policies
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -58,5 +58,22 @@ class AnnotationPolicy
 ---
 
 ## Comments
+### [2026-02-26 20:08] Agent: ProjectManager
+**Priority Assessment:** Confirmed `High` - Authorization policies are critical for data security. Users must only access annotations for their own projects. This is a foundation task affecting all annotation operations (view, create, update, delete).
+
+**Risk Assessment:** Confirmed `Low` - Standard Laravel Policy implementation with straightforward user-project-annotation relationship checks. No external dependencies.
+
+**Dependency Analysis:**
+- TASK-9-3 (Annotation Model): Status `To Write Tests` - ahead in pipeline ✅
+- Model must define `keyword` and `project` relationships for policy logic to work
+- Policy methods rely on: `$annotation->keyword->project->user_id` chain
+
+**Execution Order Notes:**
+- This task should be developed after TASK-9-3 (Model) is implemented
+- Controller (TASK-9-4) will apply these policies via Laravel Gates
+- Testing should validate all 4 policy methods with various user/project scenarios
+
+**Status changed:** `To Prioritize` → `To Write Tests`
+
 ### [2026-02-20 17:52] Agent: SpecSystemAnalyst
 Authorization task created to enforce permission rules for keyword annotations.
