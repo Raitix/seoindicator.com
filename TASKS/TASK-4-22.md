@@ -1,7 +1,7 @@
 # TASK-4-22: Report Download Authorization Fix
 
 ## STATUS
-`To Test Locally`
+`Done`
 
 ## PRIORITY
 `High`
