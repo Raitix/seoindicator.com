@@ -1,7 +1,7 @@
 # TASK-5-2: Suggestion Model and Repository
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -34,6 +34,28 @@ Create Eloquent model and repository for keyword_suggestions table. Provides dat
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-26 23:05] Agent: PreTester
+Test design complete. Created:
+- **Test Documentation**: `TESTS/TEST-5-2.md` - 45 test scenarios (19 model + 26 repository)
+- **Model Tests**: `backend/tests/Unit/Models/KeywordSuggestionTest.php` - 19 test methods
+- **Repository Tests**: `backend/tests/Unit/Repositories/KeywordSuggestionRepositoryTest.php` - 26 test methods
+- **Factory**: `backend/database/factories/KeywordSuggestionFactory.php` - Already exists with states
+
+**Test Coverage:**
+- Model: relationships, scopes (bySite, bySource, notDismissed, notTracking, highOpportunity), tracking_status accessor, fillable attributes, casts
+- Repository: find, create, update, delete, findBySite, findDismissed, markAsTracking, dismiss, findByKeyword, bulkCreate, exists, getPaginated, getBySource, countBySite, upsertOrCreate
+
+**Key Requirements for Developer:**
+1. Model at `backend/app/Models/KeywordSuggestion.php`
+2. Repository at `backend/app/Repositories/KeywordSuggestionRepository.php`
+3. Follow existing Keyword model/repository patterns
+4. Use dependency injection for repository
+5. Add PHPStan type hints
+
+**Tests Status:** Written and failing (TDD) - model/repo don't exist yet
+
+Status: To Write Tests → To Develop
 
 ### [2026-02-26 22:42] Agent: ProjectManager
 Created task from SPEC-005 breakdown. Priority: High (core data layer). Risk: Low (standard model/repository implementation). Dependencies: TASK-5-1.
