@@ -1711,3 +1711,130 @@ Each keyword in the response now includes a `serpFeatures` object:
 - Status: Implementation complete, tests passing
 
 ---
+## Frontend Components: Projects (TASK-8-8)
+
+### Overview
+React components and context for project management. These components handle project selection, CRUD operations, and multi-site dashboard views.
+
+### Component Architecture
+
+**Types (`frontend/lib/types/projects.ts`):**
+| Type | Description |
+|------|-------------|
+| `Project` | Project entity with id, name, domain, notes, status |
+| `ProjectMetrics` | Metrics for a project (keywordsCount, avgPosition, visibility) |
+| `ProjectContextValue` | Context interface with CRUD methods |
+| `ProjectBreakdown` | Project with embedded metrics |
+
+**API Functions (`frontend/lib/api/projects.ts`):**
+| Function | Description |
+|----------|-------------|
+| `useProjects()` | SWR hook for projects list |
+| `useProject(id)` | SWR hook for single project |
+| `useProjectMetrics(projectId)` | SWR hook for project metrics |
+| `createProject(payload)` | Create new project |
+| `updateProject(id, payload)` | Update project |
+| `deleteProject(id)` | Delete project with confirmation |
+| `archiveProject(id)` | Archive project |
+| `restoreProject(id)` | Restore archived project |
+| `fetchAggregateMetrics()` | Get aggregate metrics for all projects |
+
+**Context (`frontend/lib/contexts/ProjectContext.tsx`):**
+| Hook | Description |
+|------|-------------|
+| `useProjectContext()` | Full context access (projects, currentProject, CRUD methods) |
+| `useCurrentProject()` | Current project only |
+| `useProjectActions()` | CRUD operations only |
+
+### Components
+
+**ProjectSelector (`frontend/components/projects/ProjectSelector.tsx`):**
+- Dropdown for switching between projects
+- Keyboard navigation (ArrowUp/Down, Enter, Escape)
+- Loading/error/empty states
+- ARIA accessibility attributes
+
+```tsx
+<ProjectSelector
+  projects={projects}
+  currentProject={currentProject}
+  onSelect={switchProject}
+  onCreateNew={() => setShowCreateModal(true)}
+  isLoading={isLoading}
+  error={error}
+/>
+```
+
+**ProjectDashboard (`frontend/components/projects/ProjectDashboard.tsx`):**
+- Dashboard scoped to current project
+- Metric cards (Keywords, Avg Position, Visibility, Position Change)
+- Date range filter (7d, 30d, 90d)
+- Quick action links (Keywords, Competitors, Reports)
+
+```tsx
+<ProjectDashboard project={project} />
+```
+
+**AllProjectsView (`frontend/components/projects/AllProjectsView.tsx`):**
+- Aggregate multi-site view
+- Summary metrics cards
+- Sortable/filterable projects table
+- Search functionality
+- Show/hide archived toggle
+
+```tsx
+<AllProjectsView onCreateProject={() => setShowCreateModal(true)} />
+```
+
+**ProjectSettingsView (`frontend/components/projects/ProjectSettingsView.tsx`):**
+- Form for editing project details
+- Name, domain, notes fields with validation
+- Unsaved changes warning
+- Archive/restore functionality
+- Delete with confirmation dialog
+
+```tsx
+<ProjectSettingsView
+  project={project}
+  onSave={handleSave}
+  onDelete={handleDelete}
+  onArchive={handleArchive}
+  onRestore={handleRestore}
+/>
+```
+
+**AddProjectModal (`frontend/components/projects/AddProjectModal.tsx`):**
+- Modal for creating new projects
+- Form validation (name required, domain format)
+- Controlled/uncontrolled open state
+
+```tsx
+<AddProjectModal
+  onCreateProject={createProject}
+  open={showModal}
+  onOpenChange={setShowModal}
+/>
+```
+
+### Pages
+
+| Route | Component | Description |
+|-------|-----------|-------------|
+| `/projects` | `AllProjectsView` | List all projects with aggregate metrics |
+| `/projects/new` | `AddProjectModal` | Create new project |
+| `/projects/[projectId]/dashboard` | `ProjectDashboard` | Project-specific dashboard |
+| `/projects/[projectId]/settings` | `ProjectSettingsView` | Project settings form |
+
+### Local Storage
+- `seoindicator_current_project` - Persists selected project ID
+
+### Dependencies
+- TASK-8-7 (CRUD API for projects)
+- TASK-8-1 (Projects Table)
+- TASK-8-6 (Project Policies)
+
+### Deployment
+- Status: Implementation complete, TypeScript compiles successfully
+- Note: Build shows Windows-specific Next.js static export issue (unrelated to component code)
+
+---
