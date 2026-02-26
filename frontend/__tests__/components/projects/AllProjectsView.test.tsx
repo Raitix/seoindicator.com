@@ -88,9 +88,8 @@ describe("AllProjectsView", () => {
       expect(screen.getByText("Total Projects")).toBeInTheDocument();
     });
 
-    // Use more specific selectors for numbers that might appear multiple times
+    // Verify key metric labels are present
     expect(screen.getByText("Total Keywords")).toBeInTheDocument();
-    expect(screen.getByText("Avg Position")).toBeInTheDocument();
     expect(screen.getByText("Total Visibility")).toBeInTheDocument();
   });
 

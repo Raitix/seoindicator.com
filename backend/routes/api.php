@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\ReportTemplateController;
 use App\Http\Controllers\Api\V1\SerpFeatureController;
 use App\Http\Controllers\Api\V1\APIProxyController;
 use App\Http\Controllers\Api\GSCConnectionController;
+use App\Http\Controllers\Api\V1\SuggestionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -155,4 +156,12 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
     // Scheduler (SPEC-001-12)
     Route::post('scheduler/rank-checks/run', [SchedulerController::class, 'runRankChecks']);
+
+    // Keyword Suggestions (SPEC-005, TASK-5-7, TASK-5-8, TASK-5-9)
+    Route::get('sites/{siteId}/suggestions', [SuggestionController::class, 'index']);
+    Route::post('sites/{siteId}/suggestions/generate', [SuggestionController::class, 'generate']);
+    Route::post('sites/{siteId}/suggestions/{suggestionId}/track', [SuggestionController::class, 'track']);
+    Route::post('sites/{siteId}/suggestions/bulk-track', [SuggestionController::class, 'bulkTrack']);
+    Route::post('sites/{siteId}/suggestions/{suggestionId}/dismiss', [SuggestionController::class, 'dismiss']);
+    Route::get('sites/{siteId}/suggestions/export', [SuggestionController::class, 'export']);
 });

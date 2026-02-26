@@ -61,6 +61,28 @@ class KeywordSuggestion extends Model
         'opportunity_score' => 'integer',
     ];
 
+    /**
+     * The model's default values for attributes.
+     *
+     * @var array
+     */
+    protected $attributes = [
+        'is_tracking' => false,
+        'is_dismissed' => false,
+    ];
+
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (KeywordSuggestion $suggestion) {
+            if ($suggestion->discovered_at === null) {
+                $suggestion->discovered_at = now();
+            }
+        });
+    }
+
     // =========================================================================
     // RELATIONSHIPS
     // =========================================================================
