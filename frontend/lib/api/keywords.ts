@@ -20,6 +20,8 @@ export interface KeywordQueryParams {
   perPage?: number;
   sortBy?: KeywordSortBy;
   sortOrder?: KeywordSortOrder;
+  serpFeature?: string;
+  present?: boolean;
 }
 
 const normalizeKeyword = (item: any): Keyword => ({
