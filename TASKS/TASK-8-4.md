@@ -1,7 +1,7 @@
 # TASK-8-4: Implement Project Middleware
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
