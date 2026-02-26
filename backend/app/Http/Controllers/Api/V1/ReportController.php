@@ -8,6 +8,7 @@ use App\Exporters\PdfReportExporter;
 use App\Models\Report;
 use App\Models\Site;
 use App\Repositories\ReportRepository;
+use App\Repositories\ReportBrandingRepository;
 use App\Services\ReportDataAggregator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,21 +21,26 @@ use Illuminate\Support\Str;
  * 
  * TASK-4-22: All endpoints require authentication and verify user ownership
  * of the site associated with the report.
+ * 
+ * TASK-4-16: PDF generation includes branding (colors, fonts, logo, company name).
  */
 class ReportController extends Controller
 {
     protected ReportRepository $reportRepository;
+    protected ReportBrandingRepository $brandingRepository;
     protected ReportDataAggregator $dataAggregator;
     protected CsvReportExporter $csvExporter;
     protected PdfReportExporter $pdfExporter;
 
     public function __construct(
         ReportRepository $reportRepository,
+        ReportBrandingRepository $brandingRepository,
         ReportDataAggregator $dataAggregator,
         CsvReportExporter $csvExporter,
         PdfReportExporter $pdfExporter
     ) {
         $this->reportRepository = $reportRepository;
+        $this->brandingRepository = $brandingRepository;
         $this->dataAggregator = $dataAggregator;
         $this->csvExporter = $csvExporter;
         $this->pdfExporter = $pdfExporter;
@@ -234,12 +240,23 @@ class ReportController extends Controller
             if ($validated['format'] === 'csv') {
                 $content = $this->csvExporter->generate($data);
             } else {
+                // Fetch branding for the site (TASK-4-16)
+                $branding = $this->brandingRepository->findBySite($siteId);
+                $brandingData = $branding ? [
+                    'primaryColor' => $branding->primary_color,
+                    'secondaryColor' => $branding->secondary_color,
+                    'fontFamily' => $branding->font_family,
+                    'companyName' => $branding->company_name,
+                    'logoFile' => $branding->logo_file,
+                    'logoUrl' => $branding->logo_url,
+                ] : null;
+
                 $content = $this->pdfExporter->generate([
                     'name' => $report->name,
                     'date_range_start' => $report->date_range_start?->toDateString(),
                     'date_range_end' => $report->date_range_end?->toDateString(),
                     'sections' => $report->sections,
-                ], $data);
+                ], $data, $brandingData);
             }
 
             Storage::put($filePath, $content);
