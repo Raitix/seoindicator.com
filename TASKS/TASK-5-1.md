@@ -1,7 +1,7 @@
 # TASK-5-1: Database Schema - Keyword Suggestions Table
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -36,6 +36,30 @@ Create database migration for keyword_suggestions and dismissed_suggestions tabl
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-26 22:52] Agent: PreTester
+Test design complete. Created:
+- **Test Documentation**: `TESTS/SPEC-5-1.md` - 29 test scenarios
+- **Unit Tests**: `backend/tests/Unit/Migrations/CreateKeywordSuggestionsTableTest.php` - 26 test methods
+
+**Test Coverage:**
+- keyword_suggestions table: 19 scenarios (columns, types, defaults, constraints, indexes)
+- dismissed_suggestions table: 8 scenarios (columns, defaults, FK constraints)
+- Migration rollback: 2 scenarios
+
+**Key Test Requirements for Developer:**
+1. Both tables must exist with all specified columns
+2. FK constraints to sites.id with CASCADE delete
+3. Unique constraint on (site_id, keyword) in keyword_suggestions
+4. Indexes on: site_id, keyword, opportunity_score DESC
+5. Valid source values: 'suggest', 'competitor', 'related'
+6. Nullable fields: search_volume, difficulty_score, opportunity_score
+7. Boolean defaults: is_tracking=FALSE, is_dismissed=FALSE
+8. Timestamp defaults: discovered_at=CURRENT_TIMESTAMP, dismissed_at=CURRENT_TIMESTAMP
+
+**Migration File Name Pattern:** `2026_02_26_HHMMSS_create_keyword_suggestions_tables.php`
+
+Status: To Develop → Developer
 
 ### [2026-02-26 22:42] Agent: ProjectManager
 Created task from SPEC-005 breakdown. Priority: High (foundation task for all TASK-5-* tasks). Risk: Medium (non-destructive schema migration). Dependencies: FEAT-001 (sites table).
