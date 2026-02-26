@@ -1,7 +1,7 @@
 # SPEC-004-9: Report Download Endpoint
 
 ## STATUS
-`To Develop`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -18,14 +18,14 @@
 Create API endpoint to download generated reports. Serves PDF and CSV files with proper headers.
 
 ## Acceptance Criteria
-- [ ] GET /api/v1/reports/:reportId/download - Download report file
-- [ ] Returns PDF with Content-Type: application/pdf
-- [ ] Returns CSV with Content-Type: text/csv
-- [ ] Proper Content-Disposition header with filename
-- [ ] Authorization: user owns the site
-- [ ] Returns 404 if report not found
-- [ ] Returns 404 if file doesn't exist on disk
-- [ ] Integration tests
+- [x] GET /api/v1/reports/:reportId/download - Download report file
+- [x] Returns PDF with Content-Type: application/pdf
+- [x] Returns CSV with Content-Type: text/csv
+- [x] Proper Content-Disposition header with filename
+- [x] Authorization: user owns the site
+- [x] Returns 404 if report not found
+- [x] Returns 404 if file doesn't exist on disk
+- [x] Integration tests
 
 ## Dependencies
 - TASK-4-2 (Report model)
@@ -80,3 +80,77 @@ Created as Phase 3 task. Simple file serving endpoint.
 - Return to Developer for authorization fix
 - Security fix task created: TASK-4-22 (High Priority)
 - Risk level should be escalated to `High`
+
+### [2026-02-26 16:55] Agent: Developer
+## Authorization Fix Verification
+
+**Status:** Security fix already implemented in ReportController.
+
+**Implementation Review:**
+- ✓ All endpoints protected with `auth` middleware (routes/api.php)
+- ✓ `download()` method checks `$report->site->user_id === $user->id`
+- ✓ Returns 403 FORBIDDEN if user doesn't own the site
+- ✓ Returns 401 for unauthenticated users
+- ✓ ReportPolicy exists with `download()` method
+
+**Test Verification (29/29 ReportControllerTest passed):**
+- ✓ download returns 401 for unauthenticated user
+- ✓ download returns 403 for other users report
+- ✓ download returns file for owner
+- ✓ All other authorization tests pass
+
+**Acceptance Criteria Status:**
+- [x] GET /api/v1/reports/:reportId/download - Download report file
+- [x] Returns PDF with Content-Type: application/pdf
+- [x] Returns CSV with Content-Type: text/csv
+- [x] Proper Content-Disposition header with filename
+- [x] Authorization: user owns the site (FIXED via TASK-4-22)
+- [x] Returns 404 if report not found
+- [x] Returns 404 if file doesn't exist on disk
+- [x] Integration tests (comprehensive test coverage)
+
+**Status:** To Test Locally
+
+### [2026-02-26 16:58] Agent: LocalTester
+## Local Test Results - All Passed ✅
+
+**Test Execution:**
+```
+php artisan test --filter ReportControllerTest
+```
+
+**Results: 29/29 tests passed (79 assertions)**
+
+**Authorization Tests (Critical for High Risk):**
+- ✓ index returns 401 for unauthenticated user
+- ✓ show returns 401 for unauthenticated user
+- ✓ generate returns 401 for unauthenticated user
+- ✓ destroy returns 401 for unauthenticated user
+- ✓ download returns 401 for unauthenticated user
+- ✓ index returns 403 for other users site
+- ✓ show returns 403 for other users report
+- ✓ generate returns 403 for other users site
+- ✓ destroy returns 403 for other users report
+- ✓ download returns 403 for other users report
+- ✓ download returns file for owner
+
+**Download Endpoint Tests (SPEC-004-9):**
+- ✓ download returns file (200 with Content-Type: application/pdf)
+- ✓ download returns 404 for missing file
+- ✓ download returns 400 error for pending report
+- ✓ Content-Disposition header properly formatted with slugified filename
+
+**Report Generation Tests:**
+- ✓ PDF generation works correctly
+- ✓ CSV generation works correctly
+- ✓ Validation tests pass
+
+**Security Verification:**
+- ✓ Auth middleware applied to all report routes (routes/api.php)
+- ✓ Controller verifies `$report->site->user_id === $user->id`
+- ✓ Returns 403 FORBIDDEN for unauthorized access
+- ✓ Returns 401 for unauthenticated requests
+
+**Acceptance Criteria Status:** All criteria verified and passed.
+
+**Status:** To Deploy

@@ -123,7 +123,7 @@ jobs:
             cat > .env << 'ENVEOF'
             APP_NAME=SEOIndicator
             APP_ENV=production
-            APP_KEY=${{ secrets.LARAVEL_APP_KEY }}=
+            APP_KEY=${{ secrets.LARAVEL_APP_KEY }}
             APP_DEBUG=false
             APP_URL=https://seoindicator.com
             
@@ -157,9 +157,6 @@ jobs:
             # Clear cache to pick up new .env
             php artisan config:clear 2>/dev/null || true
             php artisan cache:clear 2>/dev/null || true
-            
-            # Generate app key if needed
-            php artisan key:generate --force 2>/dev/null || true
             
             # Run migrations
             echo "=== Running migrations ==="
