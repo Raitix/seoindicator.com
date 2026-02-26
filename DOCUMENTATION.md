@@ -1,7 +1,102 @@
 # DOCUMENTATION.md
 
 ---
-## Database Schema: Keywords & Rankings (TASK-1-1)
+## Database Schema: Projects Table (TASK-8-1)
+
+### Projects Table
+Stores project information for multi-site data organization. Each project belongs to a user and can contain keywords, competitors, and reports.
+
+```sql
+CREATE TABLE projects (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NULL,
+    account_id BIGINT UNSIGNED NULL,
+    name VARCHAR(255) NOT NULL,
+    domain VARCHAR(500) NULL,
+    notes TEXT NULL,
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    archived_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL,
+    INDEX idx_projects_user_id (user_id),
+    INDEX idx_projects_archived (archived_at)
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `user_id` | BIGINT UNSIGNED | FK to users.id (nullable for legacy support) |
+| `account_id` | BIGINT UNSIGNED | FK to accounts.id (nullable) |
+| `name` | VARCHAR(255) | Project name |
+| `domain` | VARCHAR(500) | Project domain URL (nullable) |
+| `notes` | TEXT | User notes about project (nullable) |
+| `is_default` | BOOLEAN | Whether this is user's default project |
+| `archived_at` | TIMESTAMP | Soft delete/archive timestamp (nullable) |
+
+**Constraints:**
+- Foreign Key: `user_id → users.id` ON DELETE CASCADE
+- Foreign Key: `account_id → accounts.id` ON DELETE SET NULL
+
+**Indexes:**
+- `idx_projects_user_id` on `user_id`
+- `idx_projects_archived` on `archived_at`
+
+**Model:** `App\Models\Project`
+
+### Model Methods
+
+**Relationships:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `user()` | belongsTo | User who owns the project |
+| `keywords()` | hasMany | Keywords in this project |
+| `competitors()` | hasMany | Competitors in this project |
+| `reports()` | hasMany | Reports in this project |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `active()` | Returns non-archived projects |
+| `archived()` | Returns archived projects |
+| `default()` | Returns default projects |
+
+**Methods:**
+| Method | Description |
+|--------|-------------|
+| `archive()` | Sets `archived_at` to current timestamp |
+| `unarchive()` | Clears `archived_at` |
+| `isArchived()` | Returns true if project is archived |
+
+**Factory States:**
+- `default()` - Sets `is_default` to true
+- `archived()` - Sets `archived_at` to a past timestamp
+- `forUser($userId)` - Sets specific user_id
+- `withNotes($notes)` - Sets custom notes
+
+### Production Status
+- **Deployed**: 2026-02-26 (commit via GitHub Actions)
+- **Migration**: `2026_02_26_175543_add_user_id_notes_is_default_archived_at_to_projects_table`
+- **Verified**: Health check passing, schema verified
+- **Tests**: 38 tests, 73 assertions passing
+
+### Dependencies
+- User authentication system (existing)
+- Accounts table (existing)
+
+### Related Tasks
+- TASK-8-2: Add project_id to existing tables
+- TASK-8-3: Data migration for existing records
+- TASK-8-4: SetProjectContext middleware
+- TASK-8-5: ProjectScope global scope
+- TASK-8-6: ProjectPolicy authorization
+- TASK-8-7: Project CRUD endpoints
+- TASK-8-8: Frontend project components
+- TASK-8-9: Unit tests
+- TASK-8-10: Integration tests
 
 ### Keywords Table
 ```sql
