@@ -59,13 +59,13 @@ export default function KeywordFilterBar({
   
   // Use fallback options if API fails or is loading
   const featureOptions: SERPFeatureOption[] = React.useMemo(() => {
-    if (error || !options?.data?.length) {
+    if (error || !('serpFeatures' in options) || !options.serpFeatures?.length) {
       return FALLBACK_SERP_FEATURES;
     }
     // Add "All" option at the beginning
     return [
       { value: "all", label: "All Features", icon: "filter", description: "Show all keywords", ctrImpact: "" },
-      ...options.data,
+      ...options.serpFeatures,
     ];
   }, [options, error]);
 
