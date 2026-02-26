@@ -1,7 +1,7 @@
 # TASK-16-2: Develop Keyword Density Checker (Frontend)
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`

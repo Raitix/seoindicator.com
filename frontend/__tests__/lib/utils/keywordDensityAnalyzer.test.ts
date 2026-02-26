@@ -5,120 +5,17 @@
  * @jest-environment jsdom
  */
 
-/**
- * Utility functions for keyword density analysis
- */
-
-interface KeywordAnalysisResult {
-  keyword: string;
-  occurrences: number;
-  density: number;
-  positions: number[];
-  totalWords: number;
-}
-
-interface Position {
-  index: number;
-  context: string;
-}
-
-/**
- * Strip HTML tags from content
- */
-function stripHtmlTags(html: string): string {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent || '';
-}
-
-/**
- * Normalize text for comparison
- */
-function normalizeText(text: string): string {
-  return text.toLowerCase().trim();
-}
-
-/**
- * Calculate keyword density
- */
-function calculateDensity(occurrences: number, totalWords: number): number {
-  if (totalWords === 0) return 0;
-  return (occurrences / totalWords) * 100;
-}
-
-/**
- * Count whole-word occurrences of keyword in text
- */
-function countKeywordOccurrences(text: string, keyword: string): number {
-  const normalizedText = normalizeText(text);
-  const normalizedKeyword = normalizeText(keyword);
-  
-  // Escape special regex characters
-  const escapedKeyword = normalizedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  
-  // Create regex for whole word match
-  const regex = new RegExp(`\\b${escapedKeyword}\\b`, 'g');
-  const matches = normalizedText.match(regex);
-  
-  return matches ? matches.length : 0;
-}
-
-/**
- * Find positions of keyword in text
- */
-function findKeywordPositions(text: string, keyword: string): number[] {
-  const normalizedText = normalizeText(text);
-  const normalizedKeyword = normalizeText(keyword);
-  
-  const positions: number[] = [];
-  const escapedKeyword = normalizedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`\\b${escapedKeyword}\\b`, 'g');
-  
-  let match;
-  while ((match = regex.exec(normalizedText)) !== null) {
-    positions.push(match.index);
-  }
-  
-  return positions;
-}
-
-/**
- * Count total words in text
- */
-function countWords(text: string): number {
-  const strippedText = text.replace(/<[^>]*>/g, ' ').trim();
-  if (!strippedText) return 0;
-  
-  const words = strippedText.split(/\s+/).filter(word => word.length > 0);
-  return words.length;
-}
-
-/**
- * Analyze keyword density in HTML content
- */
-function analyzeKeywordDensity(html: string, keyword: string): KeywordAnalysisResult {
-  const strippedContent = stripHtmlTags(html);
-  const totalWords = countWords(strippedContent);
-  const occurrences = countKeywordOccurrences(strippedContent, keyword);
-  const density = calculateDensity(occurrences, totalWords);
-  const positions = findKeywordPositions(strippedContent, keyword);
-  
-  return {
-    keyword,
-    occurrences,
-    density,
-    positions,
-    totalWords,
-  };
-}
-
-/**
- * Get density status
- */
-function getDensityStatus(density: number): 'good' | 'low' | 'over-optimized' {
-  if (density < 1) return 'low';
-  if (density > 3) return 'over-optimized';
-  return 'good';
-}
+import {
+  stripHtmlTags,
+  normalizeText,
+  calculateDensity,
+  countKeywordOccurrences,
+  findKeywordPositions,
+  countWords,
+  analyzeKeywordDensity,
+  getDensityStatus,
+  type KeywordAnalysisResult,
+} from '@/lib/utils/keywordDensityAnalyzer';
 
 describe('Keyword Density Analyzer', () => {
   // UT-041: Calculate single keyword density
