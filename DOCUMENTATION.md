@@ -998,6 +998,74 @@ Content-Type: application/json
 - Status: Post-MVP feature
 
 ---
+## Scheduler Service for Scheduled Reports (TASK-4-12)
+
+### Service Description
+Background scheduler service that manages scheduled report generation. Runs via Laravel's task scheduling system, processes due reports, and updates execution timestamps.
+
+### Core Functionalities
+
+**ReportScheduler Service:**
+- `start()` - Initializes all enabled scheduled reports
+- `processDueReports()` - Runs at configured intervals to process pending reports
+- Generates reports for each due scheduled report entry
+- Updates `last_run` and `next_run` timestamps after processing
+- Handles failures gracefully (logs errors, allows retry)
+- Supports pause/resume via `ScheduledReport.enabled` flag
+
+**Schedule Calculation:**
+| Frequency | Cron Expression | Next Run Logic |
+|-----------|-----------------|----------------|
+| `daily` | `0 9 * * *` | 9 AM daily |
+| `weekly` | `0 9 * * 1` | 9 AM every Monday |
+| `biweekly` | `0 9 1,15 * *` | 9 AM on 1st and 15th |
+| `monthly` | `0 9 1 * *` | 9 AM on 1st of month |
+
+**Error Handling:**
+- Logs all scheduling errors to Laravel logs
+- Failed reports do not block other scheduled reports
+- Retry logic via configurable max attempts
+- Dead letter tracking for persistently failing schedules
+
+### Technical Implementation
+- Service: `backend/app/Services/ReportScheduler.php`
+- Command: `backend/app/Console/Commands/ProcessScheduledReports.php`
+- Kernel: Registered in `app/Console/Kernel.php`
+- Queue: Optional queue worker integration for reliability
+
+### Artisan Commands
+```bash
+# Process all due scheduled reports
+php artisan reports:process-scheduled
+
+# Start the scheduler (typically run via cron)
+php artisan schedule:run
+```
+
+### Monitoring
+- Logs scheduling attempts with timestamps
+- Tracks `last_run` for each scheduled report
+- Calculates `next_run` based on frequency
+- Health check endpoint available for monitoring
+
+### Dependencies
+- TASK-4-8 (Report generation)
+- TASK-4-11 (Scheduled Reports API)
+- TASK-4-19 (Email delivery - optional)
+
+### Unit Tests
+Tests cover:
+- Schedule initialization
+- Due report processing
+- Timestamp updates
+- Error handling
+- Pause/resume functionality
+
+### Deployment
+- Deployed: 2026-02-26
+- Status: Post-MVP feature (Phase 4)
+
+---
 ## Fuzzy Query Matching for GSC Data (TASK-12-6)
 
 ### Service Description
