@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * Project Model (placeholder for testing).
@@ -43,5 +44,23 @@ class Project extends Model
     public function gscConnections(): HasMany
     {
         return $this->hasMany(GSCConnection::class);
+    }
+
+    /**
+     * Get the members of the project.
+     */
+    public function members(): HasMany
+    {
+        return $this->hasMany(ProjectMember::class);
+    }
+
+    /**
+     * Get the users of the project (many-to-many through project_members).
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'project_members')
+            ->withPivot('role')
+            ->withTimestamps();
     }
 }
