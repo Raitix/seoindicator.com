@@ -259,6 +259,59 @@ CREATE TABLE audit_issues (
 - `idx_issue_type_id` on `issue_type_id`
 
 ---
+## Rank Checker Worker (TASK-1-11)
+
+### Service Description
+Background worker that processes rank check jobs from the queue, fetches SERP data, and stores ranking results.
+
+### Core Functionalities
+
+**Queue Processing:**
+- Processes jobs from JobQueue (TASK-1-10)
+- Configurable concurrency limit (default: 5 concurrent jobs)
+- Handles both single keyword checks and batch site checks
+
+**SERP Fetching:**
+- Integrates with SERPFetcherInterface (mock by default, HttpSERPFetcher for testing)
+- Captures SERP features (featured snippets, local packs, etc.)
+- Records check duration for performance monitoring
+
+**Ranking Storage:**
+- Stores results in `ranking_history` table
+- Records position, URL found, SERP features, check duration
+- Updates keyword's `last_checked_at` timestamp
+
+**Error Handling:**
+- Graceful handling of fetcher errors
+- Retry-aware (respects job maxAttempts from queue)
+- Logs all check attempts and results
+
+### Technical Implementation
+- Worker: `backend/app/Workers/RankCheckerWorker.php`
+- Service: `backend/app/Services/RankCheckerService.php`
+- Interface: `backend/app/Services/SERPFetcherInterface.php`
+- Implementations:
+  - `MockSERPFetcher` (development)
+  - `HttpSERPFetcher` (testing environment)
+- Job: `backend/app/Jobs/CheckKeywordJob.php`
+- DTO: `backend/app/Services/SERPResultData.php`
+
+### Unit Tests
+29 tests, 80 assertions covering:
+- Single keyword rank checking
+- Site batch rank checking
+- Error handling and retry logic
+- SERP features capture
+- Duration tracking
+- Mocked fetcher/queue integration
+
+### Dependencies
+- TASK-1-2 (Keyword Repository)
+- TASK-1-3 (Ranking Repository)
+- TASK-1-7 (SERP Fetcher)
+- TASK-1-10 (Job Queue)
+
+---
 ## Job Queue System (TASK-1-10)
 
 ### Service Description
