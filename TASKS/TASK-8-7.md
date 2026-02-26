@@ -1,7 +1,7 @@
 # TASK-8-7: CRUD Endpoints for Projects
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -113,3 +113,33 @@ API task created to develop key endpoints (CRUD) for project management.
 - Soft delete with confirmation
 
 **Status changed:** `To Prioritize` → `To Write Tests`
+
+### [2026-02-26 20:23] Agent: PreTester
+**Test Documentation Created:** `TESTS/TEST-8-7.md`
+
+**Coverage Summary:**
+- 71 test scenarios across 8 categories
+- Create Project (CP): 10 tests - validation, ownership, edge cases
+- Read Project (RP): 9 tests - list, single, pagination, filtering
+- Update Project (UP): 7 tests - partial updates, validation
+- Archive/Restore (AR): 5 tests - toggle behavior, authorization
+- Delete Project (DP): 7 tests - confirmation, cascade behavior
+- Security (SEC): 10 tests - authentication, authorization, injection
+- Edge Cases (EC): 15 tests - validation boundaries, unicode
+- Response Format (RF): 8 tests - JSON structure consistency
+
+**Existing Test File:**
+- `backend/tests/Feature/Api/V1/ProjectControllerTest.php` already has 56 tests defined
+- Tests cover CRUD, security, edge cases - will FAIL until implementation
+
+**Implementation Template Provided:**
+- Complete ProjectController class with all 7 endpoints
+- ProjectRequest validation rules
+- Route registration example
+- Authorization via `authorizeResource(Project::class)`
+
+**Dependencies Check:**
+- TASK-8-1 (Projects Table): `To Test Locally` - Model exists ✓
+- TASK-8-6 (Policies): `To Develop` - Required for 403 responses
+
+**Status changed:** `To Write Tests` → `To Develop`
