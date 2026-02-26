@@ -1,7 +1,7 @@
 # TASK-7-17: SERP Feature History Component
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Medium`
