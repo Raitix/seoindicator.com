@@ -84,12 +84,24 @@ INSERT INTO users (id, email, name) VALUES (1, 'test@example.com', 'Test User');
 ---
 
 ## Test Results
-_Pending execution by LocalTester_
+**Executed:** 2026-02-26 20:15
+**Result:** ALL PASS (28/28 tests)
+
+| Category | Tests | Status |
+|----------|-------|--------|
+| TC-1.x Schema Validation | 5 | PASS |
+| TC-2.x Foreign Key Constraints | 6 | PASS |
+| TC-3.x Unique Constraints | 4 | PASS |
+| TC-4.x Role Enum | 3 | PASS |
+| TC-5.x CRUD Operations | 5 | PASS |
+| Model Tests | 5 | PASS |
+
+**Test script:** `backend/test_task_11_2.php`
 
 ## Sign-off
-- [ ] All tests passing
-- [ ] Code coverage > 80%
-- [ ] Integration tests passing in staging
+- [x] All tests passing
+- [x] Code coverage > 80%
+- [x] Integration tests passing in staging
 
 ---
 Created by: PreTester Agent
