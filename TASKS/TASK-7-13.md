@@ -1,7 +1,7 @@
 # TASK-7-13: Integrate with Ranking Check Workflow
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`

@@ -127,6 +127,15 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        // Security audit log channel (SPEC-SEC-2026-02-21-3)
+        'security' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/security.log'),
+            'level' => 'debug',
+            'days' => 30, // Keep security logs for 30 days
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

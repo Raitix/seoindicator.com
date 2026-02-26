@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             \App\Http\Middleware\ForceJsonResponse::class,
         ]);
+
+        // Register alias for custom middleware
+        $middleware->alias([
+            'log-deploy-auth' => \App\Http\Middleware\LogFailedDeployAuth::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

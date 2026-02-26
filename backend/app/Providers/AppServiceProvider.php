@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Http\Request;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,6 +33,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Rate limiter for deploy endpoints (SPEC-SEC-2026-02-21-3)
+        // 5 requests per 15 minutes per IP
+        RateLimiter::for('deploy', function (Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinutes(15, 5)
+                ->by($request->ip())
+                ->response(function () {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Too many requests. Please try again later.',
+                    ], 429, [
+                        'Retry-After' => 900, // 15 minutes in seconds
+                    ]);
+                });
+        });
     }
 }

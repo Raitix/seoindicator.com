@@ -359,3 +359,51 @@ None (standalone SQLite implementation).
 For production scale, migrate to BullMQ + Redis.
 
 ---
+## Rank Check Scheduler (TASK-1-12)
+
+### Service Description
+Automated scheduler that queues rank check jobs on a configurable interval. Enables hands-free daily rank tracking for all active keywords.
+
+### Core Functionalities
+
+**Automated Scheduling:**
+- Runs on configurable interval (default: every 24 hours)
+- Queues check jobs for all active keywords
+- Respects `last_checked_at` - skips recently checked keywords
+- Randomizes job timing within a configurable window to avoid API bursts
+
+**Priority-Based Scheduling:**
+- Keywords with recent user views get higher priority
+- Uses `last_viewed_at` timestamp for priority calculation
+- Ensures important keywords are checked first
+
+**Manual Trigger:**
+- Admin endpoint: `POST /api/v1/scheduler/rank-checks/run` (authentication required)
+- Artisan command: `php artisan rank-checks:schedule`
+
+**Logging:**
+- Logs scheduler runs and job counts
+- Tracks scheduling window and keyword selection
+
+### Configuration
+
+**Environment Variables:**
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RANK_CHECK_INTERVAL_MINUTES` | `1440` | Time between scheduler runs (24 hours) |
+| `RANK_CHECK_SPREAD_MINUTES` | `60` | Random window to spread job scheduling |
+
+### Technical Implementation
+- Service: `backend/app/Services/RankCheckScheduler.php`
+- Controller: `backend/app/Http/Controllers/Api/V1/SchedulerController.php`
+- Command: `backend/app/Console/Commands/ScheduleRankChecks.php`
+- Route: `POST /api/v1/scheduler/rank-checks/run`
+
+### Dependencies
+- TASK-1-10 (Job Queue)
+- TASK-1-11 (Rank Checker Worker)
+
+### Unit Tests
+2 tests, 6 assertions covering scheduler logic and queue scheduling.
+
+---
