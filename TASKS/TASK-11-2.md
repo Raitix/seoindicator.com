@@ -1,7 +1,7 @@
 # TASK-11-2: Create Project Members Table
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -50,3 +50,16 @@ Database task created to define roles and permissions at the project level.
 - **Blocking:** TASK-11-4 runtime dependency (PermissionValidator needs `project_members` table)
 - **Execution order:** Should complete before TASK-11-4 deployment proceeds
 - **Status: To Write Tests** - Ready for PreTester to write migration tests
+
+### [2026-02-26 19:30] PreTester: Tests Written
+- **Unit tests:** `tests/unit/TASK-11-2.test.js` - Schema validation, role enum, unique constraints
+- **Integration tests:** `tests/integration/TASK-11-2.integration.test.js` - CRUD, FK constraints, cascade delete
+- **Test documentation:** `tests/TEST-TASK-11-2.md` - Full test coverage matrix
+- **Coverage areas:**
+  - TC-1.x: Schema validation (5 tests)
+  - TC-2.x: Foreign key constraints (6 tests)
+  - TC-3.x: Unique constraints (4 tests)
+  - TC-4.x: Role enum validation (4 tests)
+  - TC-5.x: CRUD operations (5 tests)
+- **Prerequisites:** Requires `projects` and `users` tables to exist
+- **Status: To Develop** - Ready for Developer to implement migration
