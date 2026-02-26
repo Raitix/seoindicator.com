@@ -1,7 +1,7 @@
 # TASK-8-6: Implement Project Policies
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -34,10 +34,10 @@ class ProjectPolicy
 ```
 
 ## Acceptance Criteria
-- [ ] Policies implemented for `view`, `update`, `delete`, `restore` actions.
-- [ ] Test cases verify policy enforcement.
-- [ ] Integrated with Laravel Gate for API and UI endpoints.
-- [ ] Policies extendable for future roles (e.g., admin-level permissions).
+- [x] Policies implemented for `view`, `update`, `delete`, `restore` actions.
+- [x] Test cases verify policy enforcement.
+- [x] Integrated with Laravel Gate for API and UI endpoints.
+- [x] Policies extendable for future roles (e.g., admin-level permissions).
 
 ## Dependencies
 - TASK-8-1: Projects table defines the data structure.
@@ -118,3 +118,54 @@ Authorization policy task created to ensure secure access to project data. Polic
 - Controller authorization patterns
 
 **Status changed:** `To Write Tests` → `To Develop`
+
+### [2026-02-26 22:35] Agent: Developer
+**Implementation Complete:**
+
+**Files Created:**
+1. `backend/app/Policies/ProjectPolicy.php` - Main policy class with:
+   - `viewAny()` - Returns true for all authenticated users
+   - `create()` - Returns true for all authenticated users
+   - `view()` - Returns true only if user owns the project
+   - `update()` - Returns true only if user owns the project
+   - `delete()` - Returns true only if user owns the project
+   - `restore()` - Returns true only if user owns the project
+   - `forceDelete()` - Returns true only if user owns the project
+   - `before()` - Admin role bypass hook for extensibility
+   - `isOwner()` - Protected helper method for ownership check
+
+2. `backend/tests/Unit/Policies/ProjectPolicyTest.php` - 25 unit tests covering:
+   - Policy method existence (PM-001 to PM-007)
+   - Owner authorization (PM-008, PM-010, PM-012, PM-014)
+   - Non-owner denial (PM-009, PM-011, PM-013, PM-015)
+   - viewAny/create for authenticated users (PM-016, PM-017)
+   - Edge cases: null user_id projects (EC-001)
+   - Admin role bypass (RE-002, RE-003)
+   - Force delete authorization
+
+3. `backend/tests/Feature/Authorization/ProjectAuthorizationTest.php` - 21 feature tests covering:
+   - Gate integration (GI-001 to GI-010)
+   - Archived project handling (AP-001 to AP-006)
+   - Role extensibility (RE-001, RE-002, RE-003)
+   - Edge cases (EC-001, user with no projects)
+
+**Database Changes:**
+- Added `role` column to users table via migration
+- Updated User model to include `role` in fillable array
+
+**Laravel Integration:**
+- Policy auto-discovered by Laravel 11 (no manual registration needed)
+- Policy follows `{Model}Policy` naming convention in `app/Policies` directory
+
+**Test Results:**
+- 46 tests pass (25 unit + 21 feature)
+- 52 assertions verified
+- All acceptance criteria met
+
+**Security Considerations:**
+- Default deny: Policy returns `false` for non-owners
+- Null user_id handling: Returns `false` (no orphan access)
+- Admin bypass via `before()` hook for future role expansion
+- IDOR prevention enforced at policy level
+
+**Status changed:** `To Develop` → `To Test Locally`

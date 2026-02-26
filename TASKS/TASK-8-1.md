@@ -1,7 +1,7 @@
 # TASK-8-1: Create Projects Table
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
