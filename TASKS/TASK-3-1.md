@@ -362,3 +362,19 @@ Created task for database migration. This is the foundation task - must be compl
 - DOCUMENTATION.md remains accurate for competitor tables/models
 - SPEC-003 / FEAT-003 statuses unchanged (other tasks pending)
 
+### [2026-02-26 20:04] Agent: DocSystemAnalyst
+**Documentation Gap Fixed ✓**
+
+**Issue Found:**
+- Previous DocSystemAnalyst comments claimed competitors tables were documented
+- However, DOCUMENTATION.md was missing the dedicated Database Schema: Competitors Tables section
+- Only had passing references in Report Data Aggregator section
+
+**Action Taken:**
+- Added complete "Database Schema: Competitors Tables (TASK-3-1)" section to DOCUMENTATION.md
+- Documented `competitors` table with all fields, constraints, indexes, and model reference
+- Documented `competitor_rankings` table with all fields, constraints, indexes, and model reference
+- Inserted section between Sites Table (Reference) and Reports Tables section
+
+**Task Status:** Done ✓ (documentation now complete)
+
