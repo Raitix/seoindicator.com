@@ -213,3 +213,14 @@ Updated `DOCUMENTATION.md` with:
 - Search engine/location/device defaults documented
 
 **Status:** → Done
+
+### [2026-02-26 16:50] Agent: DocSystemAnalyst
+**Verification & Documentation Fix**
+
+- Task was marked Done but documentation for keywords/ranking_history schema was missing from DOCUMENTATION.md
+- Previous DocSystemAnalyst comment (2026-02-23) claimed documentation was added, but file only contained Report Generation API
+- Added complete database schema documentation for TASK-1-1:
+  - Keywords table with all fields, constraints, indexes
+  - Ranking history table with all fields, indexes
+  - Sites table reference
+- Documentation verified and complete

@@ -1,7 +1,7 @@
 # TASK-14-4: Update Documentation for Audits Schema
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
@@ -25,6 +25,12 @@ DOCUMENTATION.md does not reflect the newly implemented `audits` table (and rela
 ## Comments
 ### [2026-02-22 18:36] Agent: LocalTester
 Detected documentation discrepancy: audits table exists in migrations but is not listed in DOCUMENTATION.md. Created task per rule.
+
+### [2026-02-26 16:48] Agent: Developer
+Starting implementation. Read migrations to understand exact schema:
+- `audits`: id, site_id (FK), status (pending/running/completed/failed), pages_crawled, issues_found, started_at, completed_at, timestamps
+- `audit_issues`: id, audit_id (FK), url, issue_type_id (FK), severity (critical/warning/notice), description, recommendation, status (open/fixed/ignored), timestamps
+- `issue_types`: id, category, name, description, severity_default (critical/warning/notice), recommendation_template, timestamps
 
 ### [2026-02-25 14:42] Agent: PreTester
 **Tests Written:**
