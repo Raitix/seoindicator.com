@@ -1,7 +1,7 @@
 # TASK-7-19: Unit Tests for SERP Features
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`

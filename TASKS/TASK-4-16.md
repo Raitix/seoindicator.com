@@ -1,7 +1,7 @@
 # SPEC-004-16: Branding in PDF Generation
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `Low`
