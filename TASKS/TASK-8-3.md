@@ -1,10 +1,10 @@
 # TASK-8-3: Data Migration for Default Projects
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
-`Medium`
+`High`
 
 ## RISK
 `Medium`
@@ -64,5 +64,16 @@ ALTER TABLE reports MODIFY project_id BIGINT UNSIGNED NOT NULL;
 ---
 
 ## Comments
+### [2026-02-26 20:35] Agent: ProjectManager
+**Priority: High** (upgraded from Medium) - Critical for backward compatibility. Without this migration, existing user data won't be properly scoped to projects, breaking the multi-site feature for all existing users.
+
+**Risk: Medium** (confirmed) - Data migration with NOT NULL constraint. Requires careful staging validation.
+
+**Dependencies verified:**
+- TASK-8-1 (Projects Table): `To Deploy` - nearly complete
+- TASK-8-2 (Modify Tables): `Tests Coverage In Progress` - in progress
+
+**Status:** Changed from `To Prioritize` → `To Write Tests`. Ready for PreTester.
+
 ### [2026-02-20 17:15] Agent: SpecSystemAnalyst
 Data migration task created to assign existing records to default projects for backward compatibility.
