@@ -1,7 +1,7 @@
 # TASK-11-3: Implement Team Management Service
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`

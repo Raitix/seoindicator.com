@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Account;
+use App\Models\TeamMember;
 
 class User extends Authenticatable
 {
@@ -95,6 +97,32 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Project::class, 'project_members')
             ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the accounts owned by this user.
+     */
+    public function ownedAccounts(): HasMany
+    {
+        return $this->hasMany(Account::class, 'owner_id');
+    }
+
+    /**
+     * Get the team memberships for this user.
+     */
+    public function teamMemberships(): HasMany
+    {
+        return $this->hasMany(TeamMember::class);
+    }
+
+    /**
+     * Get the accounts this user is a member of (many-to-many through team_members).
+     */
+    public function accounts(): BelongsToMany
+    {
+        return $this->belongsToMany(Account::class, 'team_members')
+            ->withPivot('role', 'invited_by', 'invited_at', 'accepted_at')
             ->withTimestamps();
     }
 }

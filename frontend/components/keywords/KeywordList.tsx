@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowDown, ArrowUp, Loader2, Minus, RefreshCcw } from "lucide-react";
 
 import type { Keyword } from "@/lib/types/keywords";
@@ -16,22 +16,12 @@ import {
 } from "@/lib/api/keywords";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import KeywordFilterBar, { 
+  type KeywordFilterState, 
+  defaultKeywordFilterState 
+} from "@/components/keywords/KeywordFilterBar";
 
 const PER_PAGE = 20;
-
-const sortOptions: { label: string; value: KeywordSortBy }[] = [
-  { label: "Keyword", value: "keyword" },
-  { label: "Position", value: "position" },
-  { label: "Change", value: "change" },
-  { label: "Last checked", value: "lastChecked" },
-];
-
-const statusOptions = [
-  { label: "All", value: "all" },
-  { label: "Active", value: "active" },
-  { label: "Paused", value: "paused" },
-];
 
 const formatDate = (value: string | null) => {
   if (!value) return "—";
@@ -85,47 +75,127 @@ const getPositionLabel = (position: number | null) => {
   return position.toString();
 };
 
+/**
+ * SERP feature badge component.
+ */
+const getSERPFeatureBadges = (keyword: Keyword) => {
+  if (!keyword.serpFeatures) return null;
+  
+  const features = Object.entries(keyword.serpFeatures)
+    .filter(([, isPresent]) => isPresent)
+    .map(([type]) => type);
+  
+  if (features.length === 0) return null;
+  
+  const featureLabels: Record<string, string> = {
+    featured_snippet: "🏆",
+    local_pack: "📍",
+    image_pack: "🖼️",
+    video: "▶️",
+    people_also_ask: "❓",
+    knowledge_panel: "ℹ️",
+    sitelinks: "🔗",
+    reviews: "⭐",
+    faq: "📋",
+    product: "🛒",
+  };
+  
+  return (
+    <div className="flex items-center gap-1">
+      {features.slice(0, 3).map((type) => (
+        <span 
+          key={type} 
+          className="text-sm" 
+          title={type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+        >
+          {featureLabels[type] || "○"}
+        </span>
+      ))}
+      {features.length > 3 && (
+        <span className="text-xs text-slate-500">+{features.length - 3}</span>
+      )}
+    </div>
+  );
+};
+
 export default function KeywordList({ siteId }: { siteId: string }) {
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = React.useState<
-    "active" | "paused" | "all"
-  >("all");
-  const [search, setSearch] = React.useState("");
-  const [sortBy, setSortBy] = React.useState<KeywordSortBy>("keyword");
-  const [sortOrder, setSortOrder] = React.useState<KeywordSortOrder>("asc");
+  const searchParams = useSearchParams();
+  
+  // Initialize filter state from URL params or defaults
+  const [filterState, setFilterState] = React.useState<KeywordFilterState>(() => {
+    const serpFeature = searchParams.get("serpFeature") || "all";
+    const status = (searchParams.get("status") || "all") as "active" | "paused" | "all";
+    const sortBy = searchParams.get("sortBy") || "keyword";
+    const sortOrder = (searchParams.get("sortOrder") || "asc") as "asc" | "desc";
+    
+    return {
+      ...defaultKeywordFilterState,
+      serpFeature,
+      status,
+      sortBy,
+      sortOrder,
+    };
+  });
+  
   const [page, setPage] = React.useState(1);
   const [selected, setSelected] = React.useState<Set<number>>(new Set());
   const [bulkBusy, setBulkBusy] = React.useState(false);
 
-  const { keywords, meta, isLoading, error, mutate } = useKeywords(siteId, {
-    status: statusFilter,
+  // Build query params for API call
+  const queryParams = React.useMemo(() => ({
+    status: filterState.status,
     page,
     perPage: PER_PAGE,
-    sortBy,
-    sortOrder,
-  });
+    sortBy: filterState.sortBy as KeywordSortBy,
+    sortOrder: filterState.sortOrder as KeywordSortOrder,
+    serpFeature: filterState.serpFeature !== "all" ? filterState.serpFeature : undefined,
+    present: filterState.showOnlyWithFeatures ? true : undefined,
+  }), [filterState, page]);
 
+  const { keywords, meta, isLoading, error, mutate } = useKeywords(siteId, queryParams);
+
+  // Client-side search filter (already in keyword data)
   const filteredKeywords = React.useMemo(() => {
     let list = [...keywords];
 
-    if (search.trim()) {
-      const query = search.trim().toLowerCase();
+    if (filterState.search.trim()) {
+      const query = filterState.search.trim().toLowerCase();
       list = list.filter((item) => item.keyword.toLowerCase().includes(query));
     }
 
-    if (sortBy === "change") {
-      list.sort((a, b) => {
-        const aChange = a.positionChange ?? Number.POSITIVE_INFINITY;
-        const bChange = b.positionChange ?? Number.POSITIVE_INFINITY;
-        return sortOrder === "asc" ? aChange - bChange : bChange - aChange;
-      });
-    }
-
     return list;
-  }, [keywords, search, sortBy, sortOrder]);
+  }, [keywords, filterState.search]);
 
   const metaInfo = meta ?? defaultKeywordMeta;
   const totalPages = Math.max(1, Math.ceil(metaInfo.total / metaInfo.perPage));
+
+  // Update URL params when filter changes
+  React.useEffect(() => {
+    const params = new URLSearchParams();
+    if (filterState.serpFeature !== "all") {
+      params.set("serpFeature", filterState.serpFeature);
+    }
+    if (filterState.status !== "all") {
+      params.set("status", filterState.status);
+    }
+    if (filterState.sortBy !== "keyword") {
+      params.set("sortBy", filterState.sortBy);
+    }
+    if (filterState.sortOrder !== "asc") {
+      params.set("sortOrder", filterState.sortOrder);
+    }
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `?${queryString}` : window.location.pathname;
+    router.replace(newUrl, { scroll: false });
+  }, [filterState, router]);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+    setSelected(new Set());
+  }, [filterState.status, filterState.serpFeature, filterState.showOnlyWithFeatures]);
 
   const toggleSelectAll = () => {
     if (selected.size === filteredKeywords.length) {
@@ -166,6 +236,10 @@ export default function KeywordList({ siteId }: { siteId: string }) {
     }
   };
 
+  const handleFilterChange = (newState: KeywordFilterState) => {
+    setFilterState(newState);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -187,75 +261,40 @@ export default function KeywordList({ siteId }: { siteId: string }) {
 
       <Card className="border-slate-800 bg-slate-900/50">
         <CardContent className="space-y-4 p-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search keywords"
-                className="bg-slate-950/60 text-white placeholder:text-slate-500"
-              />
-              <select
-                className="h-10 rounded-md border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-200"
-                value={statusFilter}
-                onChange={(event) => {
-                  setStatusFilter(event.target.value as "active" | "paused" | "all");
-                  setPage(1);
-                }}
-              >
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="h-10 rounded-md border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-200"
-                value={sortBy}
-                onChange={(event) => setSortBy(event.target.value as KeywordSortBy)}
-              >
-                {sortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    Sort: {option.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="h-10 rounded-md border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-200"
-                value={sortOrder}
-                onChange={(event) => setSortOrder(event.target.value as KeywordSortOrder)}
-              >
-                <option value="asc">Asc</option>
-                <option value="desc">Desc</option>
-              </select>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
-              <span>{selected.size} selected</span>
-              <Button
-                variant="ghost"
-                className="border border-slate-700 text-slate-200"
-                disabled={bulkBusy || selected.size === 0}
-                onClick={() => handleBulkAction("pause")}
-              >
-                Pause
-              </Button>
-              <Button
-                variant="ghost"
-                className="border border-slate-700 text-slate-200"
-                disabled={bulkBusy || selected.size === 0}
-                onClick={() => handleBulkAction("resume")}
-              >
-                Resume
-              </Button>
-              <Button
-                variant="ghost"
-                className="border border-rose-500/40 text-rose-200"
-                disabled={bulkBusy || selected.size === 0}
-                onClick={() => handleBulkAction("delete")}
-              >
-                Delete
-              </Button>
-            </div>
+          {/* Filter Bar */}
+          <KeywordFilterBar
+            siteId={siteId}
+            value={filterState}
+            onChange={handleFilterChange}
+          />
+
+          {/* Bulk Actions Row */}
+          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
+            <span>{selected.size} selected</span>
+            <Button
+              variant="ghost"
+              className="border border-slate-700 text-slate-200"
+              disabled={bulkBusy || selected.size === 0}
+              onClick={() => handleBulkAction("pause")}
+            >
+              Pause
+            </Button>
+            <Button
+              variant="ghost"
+              className="border border-slate-700 text-slate-200"
+              disabled={bulkBusy || selected.size === 0}
+              onClick={() => handleBulkAction("resume")}
+            >
+              Resume
+            </Button>
+            <Button
+              variant="ghost"
+              className="border border-rose-500/40 text-rose-200"
+              disabled={bulkBusy || selected.size === 0}
+              onClick={() => handleBulkAction("delete")}
+            >
+              Delete
+            </Button>
           </div>
 
           {isLoading && (
@@ -286,9 +325,11 @@ export default function KeywordList({ siteId }: { siteId: string }) {
 
           {!isLoading && !error && filteredKeywords.length === 0 && (
             <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-6 text-center text-slate-300">
-              <p className="text-lg font-semibold text-white">No keywords yet</p>
+              <p className="text-lg font-semibold text-white">No keywords found</p>
               <p className="text-sm text-slate-400">
-                Add your first keyword to start tracking positions.
+                {filterState.serpFeature !== "all" 
+                  ? "Try selecting a different SERP feature filter or clear your filters."
+                  : "Add your first keyword to start tracking positions."}
               </p>
             </div>
           )}
@@ -302,13 +343,14 @@ export default function KeywordList({ siteId }: { siteId: string }) {
                       <th className="px-4 py-3">
                         <input
                           type="checkbox"
-                          checked={selected.size === filteredKeywords.length}
+                          checked={selected.size === filteredKeywords.length && filteredKeywords.length > 0}
                           onChange={toggleSelectAll}
                         />
                       </th>
                       <th className="px-4 py-3 text-left">Keyword</th>
                       <th className="px-4 py-3 text-left">Position</th>
                       <th className="px-4 py-3 text-left">Change</th>
+                      <th className="px-4 py-3 text-left">SERP Features</th>
                       <th className="px-4 py-3 text-left">Last checked</th>
                       <th className="px-4 py-3 text-left">Status</th>
                     </tr>
@@ -353,6 +395,7 @@ export default function KeywordList({ siteId }: { siteId: string }) {
                           </span>
                         </td>
                         <td className="px-4 py-3">{getChangeBadge(keyword)}</td>
+                        <td className="px-4 py-3">{getSERPFeatureBadges(keyword)}</td>
                         <td className="px-4 py-3 text-slate-400">
                           {formatDate(keyword.lastCheckedAt)}
                         </td>

@@ -44,7 +44,6 @@ class CreateProjectMembersTableTest extends TestCase
         // Create test project and user
         $projectId = DB::table('projects')->insertGetId([
             'name' => 'Test Project',
-            'url' => 'https://test.example.com',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -87,7 +86,6 @@ class CreateProjectMembersTableTest extends TestCase
 
         $projectId = DB::table('projects')->insertGetId([
             'name' => 'Test Project',
-            'url' => 'https://test.example.com',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -125,7 +123,6 @@ class CreateProjectMembersTableTest extends TestCase
 
         $projectId = DB::table('projects')->insertGetId([
             'name' => 'Unique Test Project',
-            'url' => 'https://unique.example.com',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -168,14 +165,12 @@ class CreateProjectMembersTableTest extends TestCase
 
         $project1Id = DB::table('projects')->insertGetId([
             'name' => 'Project 1',
-            'url' => 'https://project1.example.com',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         $project2Id = DB::table('projects')->insertGetId([
             'name' => 'Project 2',
-            'url' => 'https://project2.example.com',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -222,7 +217,6 @@ class CreateProjectMembersTableTest extends TestCase
 
         $projectId = DB::table('projects')->insertGetId([
             'name' => 'Shared Project',
-            'url' => 'https://shared.example.com',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -304,7 +298,6 @@ class CreateProjectMembersTableTest extends TestCase
 
         $projectId = DB::table('projects')->insertGetId([
             'name' => 'FK Test Project',
-            'url' => 'https://fk.example.com',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -330,7 +323,6 @@ class CreateProjectMembersTableTest extends TestCase
 
         $projectId = DB::table('projects')->insertGetId([
             'name' => 'Cascade Test Project',
-            'url' => 'https://cascade.example.com',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -376,7 +368,6 @@ class CreateProjectMembersTableTest extends TestCase
 
         $projectId = DB::table('projects')->insertGetId([
             'name' => 'User Cascade Project',
-            'url' => 'https://usercascade.example.com',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -422,7 +413,6 @@ class CreateProjectMembersTableTest extends TestCase
 
         $projectId = DB::table('projects')->insertGetId([
             'name' => 'CRUD Project',
-            'url' => 'https://crud.example.com',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
