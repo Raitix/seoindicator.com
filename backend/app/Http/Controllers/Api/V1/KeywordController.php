@@ -7,13 +7,16 @@ use App\Http\Requests\V1\StoreKeywordRequest;
 use App\Http\Requests\V1\UpdateKeywordRequest;
 use App\Models\Keyword;
 use App\Models\Ranking;
+use App\Models\SerpFeature;
 use App\Models\Site;
 use App\Repositories\KeywordRepository;
 use App\Repositories\RankingRepository;
+use App\Repositories\SerpFeatureRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
 
 /**
  * Keyword Controller for SPEC-001-4.
@@ -22,16 +25,21 @@ class KeywordController extends Controller
 {
     protected KeywordRepository $keywordRepository;
     protected RankingRepository $rankingRepository;
+    protected SerpFeatureRepository $serpFeatureRepository;
 
     /**
      * Maximum keywords per site (stub for subscription tier).
      */
     protected int $maxKeywords = 500;
 
-    public function __construct(KeywordRepository $keywordRepository, RankingRepository $rankingRepository)
-    {
+    public function __construct(
+        KeywordRepository $keywordRepository,
+        RankingRepository $rankingRepository,
+        SerpFeatureRepository $serpFeatureRepository
+    ) {
         $this->keywordRepository = $keywordRepository;
         $this->rankingRepository = $rankingRepository;
+        $this->serpFeatureRepository = $serpFeatureRepository;
     }
 
     /**
@@ -62,15 +70,49 @@ class KeywordController extends Controller
         $sortBy = $request->query('sortBy', 'keyword');
         $sortOrder = strtolower((string) $request->query('sortOrder', 'asc')) === 'desc' ? 'desc' : 'asc';
 
-        $keywords = Keyword::where('site_id', $siteId)
-            ->when($status, function ($query, $status) {
-                $query->where('status', $status);
-            })
-            ->get();
+        // SERP feature filter parameters
+        $serpFeature = $request->query('serpFeature');
+        $serpFeaturePresent = $request->query('present', 'true');
 
-        $formatted = $keywords->map(function (Keyword $keyword) {
+        // Validate SERP feature parameter
+        if ($serpFeature !== null && $serpFeature !== '') {
+            $features = array_filter(explode(',', $serpFeature));
+            
+            // Validate each feature type
+            foreach ($features as $feature) {
+                if (!in_array($feature, SerpFeature::FEATURE_TYPES)) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'VALIDATION_ERROR',
+                            'message' => "Invalid SERP feature type: {$feature}. Valid types are: " . implode(', ', SerpFeature::FEATURE_TYPES),
+                        ],
+                    ], 400);
+                }
+            }
+
+            // Convert present parameter to boolean
+            $present = in_array(strtolower((string) $serpFeaturePresent), ['true', '1', 'yes'], true);
+
+            // Get keywords filtered by SERP feature
+            $keywords = $this->getKeywordsFilteredBySerpFeature($siteId, $features, $present, $status);
+        } else {
+            // Standard query without SERP feature filter
+            $keywords = Keyword::where('site_id', $siteId)
+                ->when($status, function ($query, $status) {
+                    $query->where('status', $status);
+                })
+                ->get();
+        }
+
+        // Get SERP features for all keywords
+        $keywordIds = $keywords->pluck('id')->toArray();
+        $serpFeaturesByKeyword = $this->getSerpFeaturesByKeywords($keywordIds);
+
+        $formatted = $keywords->map(function (Keyword $keyword) use ($serpFeaturesByKeyword) {
             [$current, $previous] = $this->getLatestRankings($keyword);
-            return $this->formatKeyword($keyword, $current, $previous);
+            $features = $serpFeaturesByKeyword[$keyword->id] ?? [];
+            return $this->formatKeywordWithFeatures($keyword, $current, $previous, $features);
         });
 
         $sorted = $this->sortKeywords($formatted, $sortBy, $sortOrder);
@@ -87,6 +129,111 @@ class KeywordController extends Controller
                 'perPage' => $perPage,
             ],
         ]);
+    }
+
+    /**
+     * Get keywords filtered by SERP feature presence.
+     *
+     * @param int $siteId
+     * @param array $featureTypes
+     * @param bool $present
+     * @param string|null $status
+     * @return Collection
+     */
+    protected function getKeywordsFilteredBySerpFeature(
+        int $siteId,
+        array $featureTypes,
+        bool $present,
+        ?string $status
+    ): Collection {
+        $query = Keyword::where('site_id', $siteId)
+            ->where('status', '!=', 'deleted');
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        // Get keyword IDs that have the specified SERP features
+        $keywordIdsWithFeatures = \DB::table('serp_features')
+            ->whereIn('feature_type', $featureTypes)
+            ->where('is_present', $present)
+            ->whereIn('keyword_id', $query->pluck('id'))
+            ->distinct()
+            ->pluck('keyword_id');
+
+        return Keyword::whereIn('id', $keywordIdsWithFeatures)
+            ->when($status, function ($query, $status) {
+                $query->where('status', $status);
+            })
+            ->get();
+    }
+
+    /**
+     * Get SERP features grouped by keyword ID.
+     *
+     * @param array $keywordIds
+     * @return array
+     */
+    protected function getSerpFeaturesByKeywords(array $keywordIds): array
+    {
+        if (empty($keywordIds)) {
+            return [];
+        }
+
+        $features = \DB::table('serp_features')
+            ->whereIn('keyword_id', $keywordIds)
+            ->get();
+
+        $grouped = [];
+        foreach ($keywordIds as $keywordId) {
+            $grouped[$keywordId] = [];
+        }
+
+        foreach ($features as $feature) {
+            if (!isset($grouped[$feature->keyword_id])) {
+                $grouped[$feature->keyword_id] = [];
+            }
+            $grouped[$feature->keyword_id][$feature->feature_type] = (bool) $feature->is_present;
+        }
+
+        // Fill missing feature types with false
+        foreach ($grouped as $keywordId => &$featureMap) {
+            foreach (SerpFeature::FEATURE_TYPES as $type) {
+                if (!isset($featureMap[$type])) {
+                    $featureMap[$type] = false;
+                }
+            }
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * Format keyword for API response with SERP features.
+     */
+    protected function formatKeywordWithFeatures(
+        Keyword $keyword,
+        ?Ranking $current,
+        ?Ranking $previous,
+        array $serpFeatures
+    ): array {
+        $currentPosition = $current?->position;
+        $previousPosition = $previous?->position;
+
+        return [
+            'id' => $keyword->id,
+            'keyword' => $keyword->keyword,
+            'targetUrl' => $keyword->target_url,
+            'searchEngine' => $keyword->search_engine,
+            'location' => $keyword->location,
+            'device' => $keyword->device,
+            'status' => $keyword->status,
+            'currentPosition' => $currentPosition,
+            'previousPosition' => $previousPosition,
+            'positionChange' => $this->calculatePositionChange($currentPosition, $previousPosition),
+            'lastCheckedAt' => $current?->checked_at?->toISOString(),
+            'serpFeatures' => $serpFeatures,
+        ];
     }
 
     /**

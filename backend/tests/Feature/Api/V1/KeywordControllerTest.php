@@ -6,6 +6,7 @@ use Tests\TestCase;
 use App\Models\Keyword;
 use App\Models\Site;
 use App\Models\Ranking;
+use App\Models\SerpFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class KeywordControllerTest extends TestCase
@@ -431,5 +432,304 @@ class KeywordControllerTest extends TestCase
             $keyword = $response->json('data.keyword');
             $this->assertStringNotContainsString('<script>', $keyword);
         }
+    }
+
+    // ==================== SERP FEATURE FILTER TESTS ====================
+
+    /**
+     * Test filter by single SERP feature.
+     */
+    public function test_filter_by_single_serp_feature(): void
+    {
+        $keyword1 = Keyword::factory()->create(['site_id' => $this->site->id, 'keyword' => 'seo tools']);
+        $keyword2 = Keyword::factory()->create(['site_id' => $this->site->id, 'keyword' => 'keyword tracker']);
+        
+        // Add SERP features
+        SerpFeature::create([
+            'keyword_id' => $keyword1->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        SerpFeature::create([
+            'keyword_id' => $keyword2->id,
+            'feature_type' => 'local_pack',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=featured_snippet");
+        
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.keyword', 'seo tools');
+    }
+
+    /**
+     * Test filter by SERP feature with present=false.
+     */
+    public function test_filter_by_serp_feature_present_false(): void
+    {
+        $keyword1 = Keyword::factory()->create(['site_id' => $this->site->id, 'keyword' => 'seo tools']);
+        $keyword2 = Keyword::factory()->create(['site_id' => $this->site->id, 'keyword' => 'keyword tracker']);
+        
+        // Keyword1 HAS featured_snippet
+        SerpFeature::create([
+            'keyword_id' => $keyword1->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        // Keyword2 DOES NOT have featured_snippet
+        SerpFeature::create([
+            'keyword_id' => $keyword2->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => false,
+            'checked_at' => now(),
+        ]);
+        
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=featured_snippet&present=false");
+        
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.keyword', 'keyword tracker');
+    }
+
+    /**
+     * Test filter by multiple SERP features.
+     */
+    public function test_filter_by_multiple_serp_features(): void
+    {
+        $keyword1 = Keyword::factory()->create(['site_id' => $this->site->id, 'keyword' => 'seo tools']);
+        $keyword2 = Keyword::factory()->create(['site_id' => $this->site->id, 'keyword' => 'keyword tracker']);
+        $keyword3 = Keyword::factory()->create(['site_id' => $this->site->id, 'keyword' => 'backlink checker']);
+        
+        // Keyword1 has featured_snippet
+        SerpFeature::create([
+            'keyword_id' => $keyword1->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        // Keyword2 has local_pack
+        SerpFeature::create([
+            'keyword_id' => $keyword2->id,
+            'feature_type' => 'local_pack',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        // Keyword3 has neither
+        SerpFeature::create([
+            'keyword_id' => $keyword3->id,
+            'feature_type' => 'reviews',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=featured_snippet,local_pack");
+        
+        $response->assertStatus(200)
+            ->assertJsonCount(2, 'data');
+        
+        $keywords = collect($response->json('data'))->pluck('keyword')->toArray();
+        $this->assertContains('seo tools', $keywords);
+        $this->assertContains('keyword tracker', $keywords);
+        $this->assertNotContains('backlink checker', $keywords);
+    }
+
+    /**
+     * Test filter by SERP feature with no matches.
+     */
+    public function test_filter_by_serp_feature_no_matches(): void
+    {
+        $keyword1 = Keyword::factory()->create(['site_id' => $this->site->id, 'keyword' => 'seo tools']);
+        
+        // Keyword has featured_snippet, not knowledge_panel
+        SerpFeature::create([
+            'keyword_id' => $keyword1->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=knowledge_panel");
+        
+        $response->assertStatus(200)
+            ->assertJsonCount(0, 'data');
+    }
+
+    /**
+     * Test filter by SERP feature with status filter combined.
+     */
+    public function test_filter_by_serp_feature_with_status(): void
+    {
+        $keyword1 = Keyword::factory()->create(['site_id' => $this->site->id, 'keyword' => 'seo tools', 'status' => 'active']);
+        $keyword2 = Keyword::factory()->create(['site_id' => $this->site->id, 'keyword' => 'keyword tracker', 'status' => 'paused']);
+        
+        // Both have featured_snippet
+        SerpFeature::create([
+            'keyword_id' => $keyword1->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        SerpFeature::create([
+            'keyword_id' => $keyword2->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=featured_snippet&status=active");
+        
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.keyword', 'seo tools');
+    }
+
+    /**
+     * Test filter by SERP feature with pagination.
+     */
+    public function test_filter_by_serp_feature_with_pagination(): void
+    {
+        // Create 25 keywords with featured_snippet
+        for ($i = 0; $i < 25; $i++) {
+            $keyword = Keyword::factory()->create(['site_id' => $this->site->id, 'keyword' => "keyword {$i}"]);
+            SerpFeature::create([
+                'keyword_id' => $keyword->id,
+                'feature_type' => 'featured_snippet',
+                'is_present' => true,
+                'checked_at' => now(),
+            ]);
+        }
+        
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=featured_snippet&page=2&perPage=10");
+        
+        $response->assertStatus(200)
+            ->assertJsonPath('meta.page', 2)
+            ->assertJsonPath('meta.perPage', 10)
+            ->assertJsonPath('meta.total', 25)
+            ->assertJsonCount(10, 'data');
+    }
+
+    /**
+     * Test response includes serpFeatures object.
+     */
+    public function test_response_includes_serp_features(): void
+    {
+        $keyword = Keyword::factory()->create(['site_id' => $this->site->id]);
+        
+        SerpFeature::create([
+            'keyword_id' => $keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        SerpFeature::create([
+            'keyword_id' => $keyword->id,
+            'feature_type' => 'sitelinks',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords");
+        
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'serpFeatures' => [
+                            'featured_snippet',
+                            'local_pack',
+                            'sitelinks',
+                        ],
+                    ],
+                ],
+            ]);
+        
+        $serpFeatures = $response->json('data.0.serpFeatures');
+        $this->assertTrue($serpFeatures['featured_snippet']);
+        $this->assertTrue($serpFeatures['sitelinks']);
+        $this->assertFalse($serpFeatures['local_pack']); // Not present
+    }
+
+    /**
+     * Test invalid SERP feature type returns 400.
+     */
+    public function test_invalid_serp_feature_type(): void
+    {
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=invalid_type");
+        
+        $response->assertStatus(400)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'VALIDATION_ERROR');
+    }
+
+    /**
+     * Test empty serpFeature parameter is ignored.
+     */
+    public function test_empty_serp_feature_parameter(): void
+    {
+        Keyword::factory()->count(3)->create(['site_id' => $this->site->id]);
+        
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=");
+        
+        // Empty parameter should be ignored, return all keywords
+        $response->assertStatus(200)
+            ->assertJsonCount(3, 'data');
+    }
+
+    /**
+     * Test present parameter variations.
+     */
+    public function test_present_parameter_variations(): void
+    {
+        $keyword = Keyword::factory()->create(['site_id' => $this->site->id]);
+        
+        SerpFeature::create([
+            'keyword_id' => $keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'checked_at' => now(),
+        ]);
+        
+        // Test present=true
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=featured_snippet&present=true");
+        $response->assertStatus(200)->assertJsonCount(1, 'data');
+        
+        // Test present=1
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=featured_snippet&present=1");
+        $response->assertStatus(200)->assertJsonCount(1, 'data');
+        
+        // Test present=0 (should return keywords WITHOUT the feature)
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=featured_snippet&present=0");
+        $response->assertStatus(200)->assertJsonCount(0, 'data');
+        
+        // Test present=false
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature=featured_snippet&present=false");
+        $response->assertStatus(200)->assertJsonCount(0, 'data');
+    }
+
+    /**
+     * Test SQL injection protection in serpFeature parameter.
+     */
+    public function test_sql_injection_in_serp_feature(): void
+    {
+        // Create a keyword so the table isn't empty
+        Keyword::factory()->create(['site_id' => $this->site->id]);
+        
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/keywords?serpFeature='; DROP TABLE serp_features; --");
+        
+        // Should return 400 validation error, not 500 server error
+        $this->assertNotEquals(500, $response->status());
+        
+        // Table should still exist
+        $this->assertDatabaseHas('keywords', ['site_id' => $this->site->id]);
     }
 }

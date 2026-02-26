@@ -263,7 +263,7 @@ CREATE TABLE report_branding (
 `POST /api/v1/sites/:siteId/reports/generate`
 
 ### Description:
-Triggers the generation of site analysis reports (PDF/CSV formats). Supports asynchronous execution and status tracking for scalability.
+Triggers the generation of site analysis reports (PDF/CSV formats). For MVP, uses synchronous generation with immediate report creation. Supports status tracking and comprehensive error handling.
 
 ### Request:
 - **Method**: POST
@@ -273,45 +273,87 @@ Triggers the generation of site analysis reports (PDF/CSV formats). Supports asy
 - **Request Body:**
   ```json
   {
-    "name": "Traffic Analysis Report",
-    "type": "analysis",
+    "name": "Weekly SEO Report",
+    "type": "weekly",
     "format": "pdf",
-    "dateRange": ["2026-01-01", "2026-01-31"],
-    "compareRange": ["2025-01-01", "2025-01-31"],
-    "sections": ["traffic_sources", "conversion_rates"]
+    "dateRange": {
+      "start": "2026-02-13",
+      "end": "2026-02-20"
+    },
+    "compareRange": {
+      "start": "2026-02-06",
+      "end": "2026-02-13"
+    },
+    "sections": ["summary", "keywords", "changes", "trends"]
   }
   ```
   - `name`: (required) Report title.
-  - `type`: (required) Type of report.
+  - `type`: (required) Type of report (`daily`, `weekly`, `monthly`, `custom`, `one-time`).
   - `format`: (required) Format (`pdf`, `csv`).
-  - `dateRange`: ISO dates for data range.
-  - `compareRange`: Optional, comparison timeframe.
-  - `sections`: Optional, array of report sections.
+  - `dateRange`: (required) Object with `start` and `end` ISO dates.
+  - `compareRange`: Optional comparison timeframe object.
+  - `sections`: Optional array of section names (valid: `summary`, `keywords`, `changes`, `top-performers`, `needs-attention`, `trends`).
 
 ### Response:
-- **Success (202):**
+- **Success (200 for MVP synchronous):**
   ```json
   {
-    "reportId": "UUID",
-    "status": "generating"
+    "success": true,
+    "data": {
+      "reportId": 1,
+      "status": "completed",
+      "downloadUrl": "/api/v1/reports/1/download"
+    }
   }
   ```
-  - `reportId`: Unique identifier for the report.
-  - `status`: Initial processing state.
+
+- **Validation Error (422):**
+  ```json
+  {
+    "message": "The name field is required.",
+    "errors": {
+      "name": ["The name field is required."]
+    }
+  }
+  ```
 
 - **Error (4xx/5xx):**
   ```json
   {
-    "error": "ValidationException",
-    "message": "Invalid date range."
+    "success": false,
+    "message": "Report generation failed"
   }
   ```
-  - Structured and informative error message.
+
+### MVP Implementation Notes:
+- **Synchronous Generation**: Reports are generated immediately during the request (not queued).
+- **File Storage**: Generated files stored in `storage/reports/` directory.
+- **Error Handling**: Failed generation sets report status to `failed` with error message.
+- **Integration**: Uses `ReportDataAggregator`, `CsvReportExporter`, `PdfReportExporter`.
+
+### Test Coverage:
+| Test ID | Scenario | Result |
+|---------|----------|--------|
+| 8.1 | Generate report (PDF) | PASS |
+| 8.2 | Generate report (CSV) | PASS |
+| 8.3 | Missing required fields | PASS (422) |
+| 8.4 | Invalid date range | PASS (422) |
+| 8.5 | Sections validation | PASS (422) |
+| 8.6 | Status set to generating | PASS |
+| 8.7 | Exporter failure handling | PASS |
+
+**Test File:** `backend/tests/Feature/Api/V1/ReportControllerTest.php`
+
+### Production Status:
+- **Deployed**: 2026-02-24 (commit 852b975)
+- **Verified**: Route active, health check passing
+- **Status**: Complete
 
 ### Dependencies:
-- Data Aggregation Module: Consolidates analytics data.
-- CSV/Excel Exporters: For generating tabular data
-- Synchronous execution designed for MVP staging.
+- TASK-4-2 (Report model)
+- TASK-4-4 (CSV Exporter)
+- TASK-4-5 (PDF Exporter)
+- TASK-4-6 (Data Aggregator)
 
 ---
 ## PDF Report Exporter (TASK-4-5)
@@ -849,6 +891,113 @@ CREATE INDEX keywords_gsc_query_match_index ON keywords(gsc_query_match);
 - Production verified: 2026-02-23
 
 ---
+## Scheduled Reports API (TASK-4-11)
+
+### Service Description
+REST API endpoints for managing scheduled report configurations. Enables users to create, list, update, delete, pause, and resume automated report schedules.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sites/{siteId}/scheduled-reports` | List scheduled reports for a site |
+| GET | `/api/v1/scheduled-reports/{scheduledId}` | Get scheduled report details |
+| POST | `/api/v1/sites/{siteId}/scheduled-reports` | Create a new scheduled report |
+| PUT | `/api/v1/scheduled-reports/{scheduledId}` | Update a scheduled report |
+| DELETE | `/api/v1/scheduled-reports/{scheduledId}` | Delete a scheduled report |
+| POST | `/api/v1/scheduled-reports/{scheduledId}/pause` | Pause a schedule |
+| POST | `/api/v1/scheduled-reports/{scheduledId}/resume` | Resume a schedule |
+
+### Create Scheduled Report
+```http
+POST /api/v1/sites/{siteId}/scheduled-reports
+Content-Type: application/json
+
+{
+  "name": "Weekly Client Report",
+  "templateId": 1,
+  "frequency": "weekly",
+  "format": "pdf",
+  "recipients": ["client@example.com", "manager@example.com"]
+}
+```
+
+**Request Validation:**
+| Field | Rules |
+|-------|-------|
+| `name` | Required, string, max 255 chars |
+| `templateId` | Optional, must exist in report_templates |
+| `frequency` | Required, enum: `daily`, `weekly`, `biweekly`, `monthly` |
+| `format` | Required, enum: `pdf`, `csv` |
+| `recipients` | Required, array (min 1), each must be valid email |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "siteId": 1,
+    "templateId": 1,
+    "name": "Weekly Client Report",
+    "frequency": "weekly",
+    "frequencyLabel": "Weekly",
+    "format": "pdf",
+    "recipients": ["client@example.com", "manager@example.com"],
+    "enabled": true,
+    "lastRun": null,
+    "nextRun": "2026-03-02T09:00:00Z",
+    "createdAt": "2026-02-26T16:00:00Z"
+  }
+}
+```
+
+### Pause/Resume Schedule
+- **Pause:** Sets `enabled=false`, preserves `next_run` value
+- **Resume:** Sets `enabled=true`, recalculates `next_run` based on current time and frequency
+
+### Frequency Schedule Calculation
+| Frequency | Next Run Logic |
+|-----------|----------------|
+| `daily` | Tomorrow at 09:00 |
+| `weekly` | Next Monday at 09:00 |
+| `biweekly` | 2 weeks from now at 09:00 |
+| `monthly` | First day of next month at 09:00 |
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/ScheduledReportController.php`
+- Model: `backend/app/Models/ScheduledReport.php`
+- Repository: `backend/app/Repositories/ScheduledReportRepository.php`
+- Factory: `backend/database/factories/ScheduledReportFactory.php`
+
+### Model Properties
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | int | Primary key |
+| `site_id` | int | FK to sites.id |
+| `template_id` | int? | FK to report_templates.id (nullable) |
+| `name` | string | Schedule name |
+| `frequency` | string | Schedule frequency enum |
+| `format` | string | Export format: `pdf` or `csv` |
+| `recipients` | array | JSON array of email addresses |
+| `enabled` | bool | Whether schedule is active |
+| `last_run` | Carbon? | Last execution timestamp |
+| `next_run` | Carbon? | Next scheduled execution |
+
+### Security Notes
+- Name field sanitized with `strip_tags()` to prevent XSS
+- Email validation ensures valid recipient addresses
+- Frequency values restricted to allowed enum values
+
+### Dependencies
+- TASK-4-1 (scheduled_reports table)
+- TASK-4-3 (ReportTemplate model)
+
+### Deployment
+- Deployed: 2026-02-26
+- Status: Post-MVP feature
+
+---
 ## Fuzzy Query Matching for GSC Data (TASK-12-6)
 
 ### Service Description
@@ -898,5 +1047,141 @@ Implements fuzzy matching between tracked keywords and Google Search Console que
 ### Deployment
 - Deployed: 2026-02-23 via GitHub Actions
 - Production verified: 2026-02-24
+
+---
+## Keywords API - SERP Feature Filtering (TASK-7-12)
+
+### Feature Description
+Extends the keywords list endpoint to support filtering by SERP feature presence. Users can now quickly identify which keywords trigger specific SERP features like featured snippets, local packs, or knowledge panels.
+
+### API Endpoint
+`GET /api/v1/sites/{siteId}/keywords`
+
+### New Query Parameters
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `serpFeature` | string | null | Comma-separated list of SERP feature types to filter by |
+| `present` | boolean | true | Whether to filter for presence (true) or absence (false) of features |
+
+### Valid SERP Feature Types
+- `featured_snippet`
+- `local_pack`
+- `knowledge_panel`
+- `sitelinks`
+- `reviews`
+- `images`
+- `videos`
+- `related_questions`
+- `shopping_results`
+- `top_stories`
+
+### Usage Examples
+
+**Find keywords WITH featured snippets:**
+```
+GET /api/v1/sites/1/keywords?serpFeature=featured_snippet
+```
+
+**Find keywords WITHOUT local pack:**
+```
+GET /api/v1/sites/1/keywords?serpFeature=local_pack&present=false
+```
+
+**Find keywords with multiple SERP features (OR logic):**
+```
+GET /api/v1/sites/1/keywords?serpFeature=featured_snippet,local_pack
+```
+
+**Combine with other filters:**
+```
+GET /api/v1/sites/1/keywords?serpFeature=featured_snippet&status=active&page=1&perPage=20
+```
+
+### Response Structure
+Each keyword in the response now includes a `serpFeatures` object:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "keyword": "seo tools",
+      "targetUrl": "https://example.com/seo",
+      "searchEngine": "google",
+      "location": "us",
+      "device": "desktop",
+      "status": "active",
+      "currentPosition": 5,
+      "previousPosition": 7,
+      "positionChange": -2,
+      "lastCheckedAt": "2026-02-26T12:00:00Z",
+      "serpFeatures": {
+        "featured_snippet": true,
+        "local_pack": false,
+        "knowledge_panel": false,
+        "sitelinks": true,
+        "reviews": false,
+        "images": false,
+        "videos": false,
+        "related_questions": false,
+        "shopping_results": false,
+        "top_stories": false
+      }
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "perPage": 20
+  }
+}
+```
+
+### Error Responses
+
+**Invalid SERP Feature Type (400):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid SERP feature type: invalid_type. Valid types are: featured_snippet, local_pack, knowledge_panel, sitelinks, reviews, images, videos, related_questions, shopping_results, top_stories"
+  }
+}
+```
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/KeywordController.php`
+- New methods:
+  - `getKeywordsFilteredBySerpFeature()` - Query builder for SERP feature filtering
+  - `getSerpFeaturesByKeywords()` - Batch fetch SERP features for keywords
+  - `formatKeywordWithFeatures()` - Format keyword with SERP features included
+- Model: `backend/app/Models/SerpFeature.php` (FEATURE_TYPES constant)
+
+### Unit Tests
+12 new tests in `KeywordControllerTest.php`:
+- `test_filter_by_single_serp_feature`
+- `test_filter_by_serp_feature_present_false`
+- `test_filter_by_multiple_serp_features`
+- `test_filter_by_serp_feature_no_matches`
+- `test_filter_by_serp_feature_with_status`
+- `test_filter_by_serp_feature_with_pagination`
+- `test_response_includes_serp_features`
+- `test_invalid_serp_feature_type`
+- `test_empty_serp_feature_parameter`
+- `test_present_parameter_variations`
+- `test_sql_injection_in_serp_feature`
+
+### Security Notes
+- Input validation prevents invalid feature types
+- SQL injection protection via Eloquent ORM
+- Feature types validated against whitelist (`SerpFeature::FEATURE_TYPES`)
+
+### Dependencies
+- TASK-7-11 (SERP Features tracking)
+
+### Deployment
+- Deployed: 2026-02-26
+- Status: Implementation complete, tests passing
 
 ---

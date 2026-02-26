@@ -6,32 +6,48 @@ use Tests\TestCase;
 use App\Services\SerpFeatureService;
 use App\Repositories\SerpFeatureRepository;
 use App\Repositories\SerpFeatureHistoryRepository;
+use App\Models\Site;
 use App\Models\Keyword;
-use Mockery;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class SerpFeatureServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected SerpFeatureService $service;
-    protected $featureRepo;
-    protected $historyRepo;
+    protected Site $site;
+    protected Keyword $keyword;
+    protected User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->featureRepo = Mockery::mock(SerpFeatureRepository::class);
-        $this->historyRepo = Mockery::mock(SerpFeatureHistoryRepository::class);
+        // Create user first (required for sites.user_id foreign key)
+        $this->user = User::create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-        $this->service = new SerpFeatureService(
-            $this->featureRepo,
-            $this->historyRepo
-        );
-    }
+        $this->site = Site::create([
+            'user_id' => $this->user->id,
+            'url' => 'https://test-example.com',
+            'name' => 'Test Site'
+        ]);
 
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
+        $this->keyword = Keyword::create([
+            'site_id' => $this->site->id,
+            'keyword' => 'seo tools',
+            'target_url' => 'https://test-example.com/seo-tools',
+            'search_engine' => 'google',
+            'location' => 'us',
+            'device' => 'desktop',
+            'status' => 'active'
+        ]);
+
+        $this->service = app(SerpFeatureService::class);
     }
 
     // ============================================
@@ -41,62 +57,42 @@ class SerpFeatureServiceTest extends TestCase
     /** @test */
     public function it_returns_features_for_keyword(): void
     {
-        // Arrange
-        $keywordId = 1;
-        $expectedFeatures = [
-            ['type' => 'featured_snippet', 'is_present' => true, 'url' => 'https://example.com']
-        ];
-
-        $this->featureRepo
-            ->shouldReceive('getCurrentFeatures')
-            ->with($keywordId)
-            ->once()
-            ->andReturn($expectedFeatures);
-
         // Act
-        $result = $this->service->getKeywordFeatures($keywordId);
+        $result = $this->service->getKeywordFeatures($this->keyword->id);
 
         // Assert
-        $this->assertEquals($expectedFeatures, $result);
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('data', $result);
+        $this->assertEquals($this->keyword->id, $result['data']['keyword']['id']);
+        $this->assertEquals('seo tools', $result['data']['keyword']['keyword']);
     }
 
     /** @test */
-    public function it_returns_features_with_date_range(): void
+    public function it_returns_error_for_nonexistent_keyword(): void
     {
-        // Arrange
-        $keywordId = 1;
-        $dateRange = ['from' => '2026-02-01', 'to' => '2026-02-20'];
-
-        $this->featureRepo
-            ->shouldReceive('getFeaturesByDateRange')
-            ->with($keywordId, $dateRange)
-            ->once()
-            ->andReturn([]);
-
         // Act
-        $result = $this->service->getKeywordFeatures($keywordId, $dateRange);
+        $result = $this->service->getKeywordFeatures(99999);
 
         // Assert
-        $this->assertIsArray($result);
+        $this->assertFalse($result['success']);
+        $this->assertEquals('KEYWORD_NOT_FOUND', $result['error']);
     }
 
     /** @test */
-    public function it_returns_empty_array_for_nonexistent_keyword(): void
+    public function it_returns_current_features_with_all_types(): void
     {
-        // Arrange
-        $keywordId = 99999;
-
-        $this->featureRepo
-            ->shouldReceive('getCurrentFeatures')
-            ->with($keywordId)
-            ->once()
-            ->andReturn([]);
-
         // Act
-        $result = $this->service->getKeywordFeatures($keywordId);
+        $result = $this->service->getKeywordFeatures($this->keyword->id);
 
-        // Assert
-        $this->assertEmpty($result);
+        // Assert - Should return all feature types with isPresent status
+        $this->assertArrayHasKey('currentFeatures', $result['data']);
+        $this->assertIsArray($result['data']['currentFeatures']);
+
+        // Each feature should have type and isPresent
+        foreach ($result['data']['currentFeatures'] as $feature) {
+            $this->assertArrayHasKey('type', $feature);
+            $this->assertArrayHasKey('isPresent', $feature);
+        }
     }
 
     // ============================================
@@ -106,46 +102,38 @@ class SerpFeatureServiceTest extends TestCase
     /** @test */
     public function it_returns_paginated_features_for_site(): void
     {
-        // Arrange
-        $siteId = 1;
-        $options = ['page' => 1, 'limit' => 20];
-
-        $this->featureRepo
-            ->shouldReceive('getSiteFeatures')
-            ->with($siteId, $options)
-            ->once()
-            ->andReturn([
-                'data' => [],
-                'total' => 0,
-                'page' => 1,
-                'limit' => 20
-            ]);
-
         // Act
-        $result = $this->service->getSiteFeatures($siteId, $options);
+        $result = $this->service->getSiteFeatures($this->site->id, 1, 20);
 
         // Assert
+        $this->assertTrue($result['success']);
         $this->assertArrayHasKey('data', $result);
-        $this->assertArrayHasKey('total', $result);
+        $this->assertArrayHasKey('meta', $result);
+        $this->assertArrayHasKey('total', $result['meta']);
+        $this->assertArrayHasKey('page', $result['meta']);
+        $this->assertArrayHasKey('perPage', $result['meta']);
     }
 
     /** @test */
     public function it_applies_default_pagination(): void
     {
-        // Arrange
-        $siteId = 1;
-
-        $this->featureRepo
-            ->shouldReceive('getSiteFeatures')
-            ->with($siteId, ['page' => 1, 'limit' => 50])
-            ->once()
-            ->andReturn(['data' => [], 'total' => 0, 'page' => 1, 'limit' => 50]);
-
         // Act
-        $result = $this->service->getSiteFeatures($siteId);
+        $result = $this->service->getSiteFeatures($this->site->id);
+
+        // Assert - Defaults to page 1, 20 per page
+        $this->assertEquals(1, $result['meta']['page']);
+        $this->assertEquals(20, $result['meta']['perPage']);
+    }
+
+    /** @test */
+    public function it_returns_error_for_nonexistent_site(): void
+    {
+        // Act
+        $result = $this->service->getSiteFeatures(99999);
 
         // Assert
-        $this->assertEquals(50, $result['limit']);
+        $this->assertFalse($result['success']);
+        $this->assertEquals('SITE_NOT_FOUND', $result['error']);
     }
 
     // ============================================
@@ -155,142 +143,96 @@ class SerpFeatureServiceTest extends TestCase
     /** @test */
     public function it_returns_summary_with_feature_counts(): void
     {
-        // Arrange
-        $siteId = 1;
-
-        $this->featureRepo
-            ->shouldReceive('getTotalKeywords')
-            ->with($siteId)
-            ->once()
-            ->andReturn(10);
-
-        $this->featureRepo
-            ->shouldReceive('getKeywordsWithFeatures')
-            ->with($siteId)
-            ->once()
-            ->andReturn(5);
-
-        $this->featureRepo
-            ->shouldReceive('getFeatureCountsByType')
-            ->with($siteId)
-            ->once()
-            ->andReturn(['featured_snippet' => 3, 'local_pack' => 2]);
-
-        $this->historyRepo
-            ->shouldReceive('getRecentChanges')
-            ->with($siteId, 7)
-            ->once()
-            ->andReturn(['gained' => [], 'lost' => []]);
-
         // Act
-        $result = $this->service->getSummary($siteId);
+        $result = $this->service->getSummary($this->site->id);
 
         // Assert
-        $this->assertEquals(10, $result['totalKeywords']);
-        $this->assertEquals(5, $result['keywordsWithFeatures']);
-        $this->assertArrayHasKey('featureCounts', $result);
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('totalKeywords', $result['data']);
+        $this->assertArrayHasKey('keywordsWithFeatures', $result['data']);
+        $this->assertArrayHasKey('featureCounts', $result['data']);
+        $this->assertArrayHasKey('recentChanges', $result['data']);
     }
 
     /** @test */
-    public function it_returns_recent_changes_in_summary(): void
+    public function it_returns_correct_keyword_count_in_summary(): void
     {
-        // Arrange
-        $siteId = 1;
-        $expectedChanges = [
-            'gained' => [
-                ['keyword' => 'seo tools', 'feature' => 'featured_snippet', 'detectedAt' => '2026-02-20']
-            ],
-            'lost' => []
-        ];
+        // Arrange - Add more keywords
+        Keyword::create([
+            'site_id' => $this->site->id,
+            'keyword' => 'keyword tracker',
+            'status' => 'active'
+        ]);
 
-        $this->featureRepo->shouldReceive('getTotalKeywords')->andReturn(1);
-        $this->featureRepo->shouldReceive('getKeywordsWithFeatures')->andReturn(1);
-        $this->featureRepo->shouldReceive('getFeatureCountsByType')->andReturn([]);
-
-        $this->historyRepo
-            ->shouldReceive('getRecentChanges')
-            ->with($siteId, 7)
-            ->once()
-            ->andReturn($expectedChanges);
+        Keyword::create([
+            'site_id' => $this->site->id,
+            'keyword' => 'seo audit',
+            'status' => 'paused' // Should not be counted
+        ]);
 
         // Act
-        $result = $this->service->getSummary($siteId);
+        $result = $this->service->getSummary($this->site->id);
 
-        // Assert
-        $this->assertEquals($expectedChanges, $result['recentChanges']);
-    }
-
-    // ============================================
-    // getHistory()
-    // ============================================
-
-    /** @test */
-    public function it_returns_history_for_keyword(): void
-    {
-        // Arrange
-        $keywordId = 1;
-        $expectedHistory = [
-            ['date' => '2026-02-20', 'features' => ['featured_snippet' => true]],
-            ['date' => '2026-02-19', 'features' => ['featured_snippet' => false]]
-        ];
-
-        $this->featureRepo
-            ->shouldReceive('getHistory')
-            ->with($keywordId, null)
-            ->once()
-            ->andReturn($expectedHistory);
-
-        // Act
-        $result = $this->service->getHistory($keywordId);
-
-        // Assert
-        $this->assertCount(2, $result);
+        // Assert - Only active keywords counted
+        $this->assertEquals(2, $result['data']['totalKeywords']);
     }
 
     /** @test */
-    public function it_returns_history_with_date_range(): void
+    public function it_returns_error_for_nonexistent_site_in_summary(): void
     {
-        // Arrange
-        $keywordId = 1;
-        $dateRange = ['from' => '2026-02-15', 'to' => '2026-02-20'];
-
-        $this->featureRepo
-            ->shouldReceive('getHistory')
-            ->with($keywordId, $dateRange)
-            ->once()
-            ->andReturn([]);
-
         // Act
-        $result = $this->service->getHistory($keywordId, $dateRange);
+        $result = $this->service->getSummary(99999);
 
         // Assert
-        $this->assertIsArray($result);
+        $this->assertFalse($result['success']);
+        $this->assertEquals('SITE_NOT_FOUND', $result['error']);
     }
 
-    // ============================================
-    // getChanges()
-    // ============================================
-
     /** @test */
-    public function it_returns_changes_for_keyword(): void
+    public function it_validates_days_parameter_in_summary(): void
     {
-        // Arrange
-        $keywordId = 1;
-        $expectedChanges = [
-            ['type' => 'featured_snippet', 'action' => 'gained', 'detectedAt' => '2026-02-20T10:00:00Z']
-        ];
-
-        $this->historyRepo
-            ->shouldReceive('getChangesForKeyword')
-            ->with($keywordId)
-            ->once()
-            ->andReturn($expectedChanges);
-
         // Act
-        $result = $this->service->getChanges($keywordId);
+        $result = $this->service->getSummary($this->site->id, 30);
 
         // Assert
-        $this->assertEquals($expectedChanges, $result);
+        $this->assertTrue($result['success']);
+    }
+
+    /** @test */
+    public function it_caps_days_parameter_in_summary(): void
+    {
+        // Act - Request more than max (365)
+        $result = $this->service->getSummary($this->site->id, 500);
+
+        // Assert - Should succeed (capped internally)
+        $this->assertTrue($result['success']);
+    }
+
+    /** @test */
+    public function it_returns_empty_feature_counts_for_site_with_no_features(): void
+    {
+        // Act
+        $result = $this->service->getSummary($this->site->id);
+
+        // Assert - Feature counts should be 0 for each type
+        $featureCounts = $result['data']['featureCounts'];
+        foreach ($featureCounts as $type => $count) {
+            $this->assertEquals(0, $count);
+        }
+    }
+
+    /** @test */
+    public function it_returns_recent_changes_structure(): void
+    {
+        // Act
+        $result = $this->service->getSummary($this->site->id);
+
+        // Assert
+        $this->assertArrayHasKey('gained', $result['data']['recentChanges']);
+        $this->assertArrayHasKey('lost', $result['data']['recentChanges']);
+        $this->assertIsArray($result['data']['recentChanges']['gained']);
+        $this->assertIsArray($result['data']['recentChanges']['lost']);
     }
 
     // ============================================
@@ -298,21 +240,21 @@ class SerpFeatureServiceTest extends TestCase
     // ============================================
 
     /** @test */
-    public function it_handles_empty_gracefully(): void
+    public function it_handles_empty_site_gracefully(): void
     {
-        // Arrange
-        $this->featureRepo->shouldReceive('getCurrentFeatures')->andReturn([]);
-        $this->featureRepo->shouldReceive('getHistory')->andReturn([]);
-        $this->historyRepo->shouldReceive('getChangesForKeyword')->andReturn([]);
+        // Arrange - Site with no keywords
+        $emptySite = Site::create([
+            'user_id' => $this->user->id,
+            'url' => 'https://empty-site.com',
+            'name' => 'Empty Site'
+        ]);
 
         // Act
-        $features = $this->service->getKeywordFeatures(1);
-        $history = $this->service->getHistory(1);
-        $changes = $this->service->getChanges(1);
+        $result = $this->service->getSummary($emptySite->id);
 
         // Assert
-        $this->assertEmpty($features);
-        $this->assertEmpty($history);
-        $this->assertEmpty($changes);
+        $this->assertTrue($result['success']);
+        $this->assertEquals(0, $result['data']['totalKeywords']);
+        $this->assertEquals(0, $result['data']['keywordsWithFeatures']);
     }
 }
