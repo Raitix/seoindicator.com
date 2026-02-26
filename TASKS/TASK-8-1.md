@@ -1,7 +1,7 @@
 # TASK-8-1: Create Projects Table
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -48,3 +48,27 @@ CREATE TABLE projects (
 ## Comments
 ### [2026-02-20 17:15] Agent: SpecSystemAnalyst
 Task created to define and implement the core `projects` table for multi-site data organization in the database.
+
+### [2026-02-26 18:40] Agent: ProjectManager
+**Prioritization Decision:**
+- **Priority: High** (confirmed) - Foundation task for FEAT-008 Multi-Site Project Management
+- **Risk: Low** (confirmed) - Simple table creation with no destructive operations
+
+**Dependency Analysis:**
+- This is the FIRST task in the TASK-8-* chain (projects table creation)
+- All other TASK-8-* tasks (2-10) depend directly or indirectly on this task
+- TASK-8-2 (Modify Tables), TASK-8-3 (Data Migration), TASK-8-4 (Middleware) all require the projects table
+
+**Execution Order:**
+1. TASK-8-1 (this task) → Foundation
+2. TASK-8-2 (Modify Tables) → Schema changes
+3. TASK-8-3 (Data Migration) → Legacy data handling
+4. TASK-8-4 (Middleware) → Context injection
+5. TASK-8-5 (Global Scope) → Data isolation
+6. TASK-8-6 (Policies) → Authorization
+7. TASK-8-7 (CRUD Endpoints) → API layer
+8. TASK-8-8 (Frontend) → UI components
+9. TASK-8-9 (Unit Tests) → Backend testing
+10. TASK-8-10 (Integration Tests) → E2E testing
+
+**Status changed:** `To Prioritize` → `To Write Tests`
