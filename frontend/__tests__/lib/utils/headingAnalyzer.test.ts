@@ -5,139 +5,18 @@
  * @jest-environment jsdom
  */
 
-/**
- * Utility functions for heading analysis
- */
-
-interface Heading {
-  tag: string;
-  text: string;
-  level: number;
-  keywordFound: boolean;
-}
-
-interface HeadingAnalysisResult {
-  headings: Heading[];
-  hasH1: boolean;
-  multipleH1: boolean;
-  emptyHeadings: boolean;
-  hierarchyValid: boolean;
-  warnings: string[];
-}
-
-/**
- * Extract all headings from HTML
- */
-function extractHeadings(html: string): Heading[] {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const headingElements = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
-  
-  const headings: Heading[] = [];
-  
-  headingElements.forEach((el) => {
-    const tag = el.tagName.toLowerCase();
-    const level = parseInt(tag.charAt(1));
-    const text = el.textContent?.trim() || '';
-    
-    headings.push({
-      tag,
-      text,
-      level,
-      keywordFound: false,
-    });
-  });
-  
-  return headings;
-}
-
-/**
- * Check if keyword is found in heading text
- */
-function checkKeywordInHeading(headingText: string, keyword: string): boolean {
-  const normalizedHeading = headingText.toLowerCase().trim();
-  const normalizedKeyword = keyword.toLowerCase().trim();
-  
-  // Escape special regex characters
-  const escapedKeyword = normalizedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  
-  // Create regex for whole word match
-  const regex = new RegExp(`\\b${escapedKeyword}\\b`, 'i');
-  return regex.test(normalizedHeading);
-}
-
-/**
- * Analyze headings for keyword presence
- */
-function analyzeHeadingsForKeyword(headings: Heading[], keyword: string): Heading[] {
-  return headings.map((heading) => ({
-    ...heading,
-    keywordFound: checkKeywordInHeading(heading.text, keyword),
-  }));
-}
-
-/**
- * Check heading hierarchy validity
- */
-function checkHierarchy(headings: Heading[]): { valid: boolean; skippedLevels: number[] } {
-  if (headings.length === 0) {
-    return { valid: true, skippedLevels: [] };
-  }
-  
-  const skippedLevels: number[] = [];
-  let lastLevel = 0;
-  
-  for (const heading of headings) {
-    if (heading.level > lastLevel + 1 && lastLevel !== 0) {
-      // Skipped a level
-      skippedLevels.push(heading.level);
-    }
-    lastLevel = heading.level;
-  }
-  
-  return {
-    valid: skippedLevels.length === 0,
-    skippedLevels,
-  };
-}
-
-/**
- * Full heading analysis
- */
-function analyzeHeadings(html: string, keyword: string): HeadingAnalysisResult {
-  const headings = extractHeadings(html);
-  const headingsWithKeyword = analyzeHeadingsForKeyword(headings, keyword);
-  
-  const h1Headings = headings.filter(h => h.tag === 'h1');
-  const emptyHeadingsList = headings.filter(h => h.text === '');
-  const hierarchy = checkHierarchy(headings);
-  
-  const warnings: string[] = [];
-  
-  if (h1Headings.length === 0) {
-    warnings.push('Missing H1 tag. Every page should have exactly one H1.');
-  }
-  
-  if (h1Headings.length > 1) {
-    warnings.push(`Multiple H1 tags detected (${h1Headings.length}). Use only one H1 per page.`);
-  }
-  
-  if (emptyHeadingsList.length > 0) {
-    warnings.push(`Empty heading(s) found (${emptyHeadingsList.length}). All headings should have content.`);
-  }
-  
-  if (!hierarchy.valid) {
-    warnings.push(`Heading hierarchy skipped levels: ${hierarchy.skippedLevels.join(', ')}. Maintain proper heading order.`);
-  }
-  
-  return {
-    headings: headingsWithKeyword,
-    hasH1: h1Headings.length === 1,
-    multipleH1: h1Headings.length > 1,
-    emptyHeadings: emptyHeadingsList.length > 0,
-    hierarchyValid: hierarchy.valid,
-    warnings,
-  };
-}
+import {
+  extractHeadings,
+  checkKeywordInHeading,
+  analyzeHeadingsForKeyword,
+  checkHierarchy,
+  analyzeHeadings,
+  getHeadingsWithKeyword,
+  getHeadingsWithoutKeyword,
+  generateHeadingRecommendations,
+  type Heading,
+  type HeadingAnalysisResult,
+} from '@/lib/utils/headingAnalyzer';
 
 describe('Heading Analyzer', () => {
   // UT-051: Extract H1 from HTML
