@@ -26,9 +26,12 @@ use App\Http\Controllers\Api\GSCConnectionController;
 // Health check (public)
 Route::get('/health', [DeployController::class, 'health']);
 
-// Deploy endpoints (protected by deploy key)
-Route::post('/deploy/migrate', [DeployController::class, 'migrate']);
-Route::post('/deploy/rollback', [DeployController::class, 'rollback']);
+// Deploy endpoints (protected by deploy key + rate limiting + logging)
+// SPEC-SEC-2026-02-21-3: Rate limiting (5 req/15min) and failed auth logging
+Route::middleware(['throttle:deploy', 'log-deploy-auth'])->group(function () {
+    Route::post('/deploy/migrate', [DeployController::class, 'migrate']);
+    Route::post('/deploy/rollback', [DeployController::class, 'rollback']);
+});
 
 /*
 |--------------------------------------------------------------------------
