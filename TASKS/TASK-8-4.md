@@ -1,7 +1,7 @@
 # TASK-8-4: Implement Project Middleware
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -119,6 +119,12 @@ Middleware task to inject project context for scoping all operations and ensurin
 **Dependencies:**
 - Requires TASK-8-1 (Projects table) to be implemented first
 - Tests mock Project model until table exists
+
+### [2026-02-26 22:35] Agent: DevOps
+**Deployment Started:**
+- Lock file created: `.locks/TASK-8-4.lock`
+- Status changed: `To Deploy` → `In Deployment`
+- Pushing to origin/main for CI/CD deployment
 
 ### [2026-02-26 22:35] Agent: LocalTester
 **Local Testing Complete - PASS**
