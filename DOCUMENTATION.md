@@ -259,3 +259,50 @@ CREATE TABLE audit_issues (
 - `idx_issue_type_id` on `issue_type_id`
 
 ---
+## Job Queue System (TASK-1-10)
+
+### Service Description
+SQLite-backed job queue for background rank checking operations.
+- MVP implementation using SQLite for simplicity (production can migrate to Redis/BullMQ).
+- Supports job prioritization, retry logic, and dead letter queue for failed jobs.
+
+### Core Functionalities
+
+**Job Operations:**
+- `addJob(payload, priority, maxAttempts)` - Add job to queue with configurable priority and retry attempts
+- `getJob(jobId)` - Retrieve job by ID from active queue or dead letter queue
+- `updateJob(jobId, data)` - Update job status, attempts, error info
+- `getPending(limit)` - Fetch pending jobs ordered by priority (high → normal → low)
+
+**Job Properties (CheckJob DTO):**
+- `id`, `type`, `payload`, `priority`, `status`, `attempts`, `maxAttempts`
+- Timestamps: `createdAt`, `startedAt`, `completedAt`, `failedAt`
+- `error` - Error message for failed jobs
+
+**Job Statuses:** `pending`, `running`, `completed`, `failed`
+
+**Priority Levels:** `high`, `normal`, `low`
+
+**Retry Logic:** Configurable max attempts (default: 3), auto-retry on failure
+
+**Dead Letter Queue:** Jobs exceeding max attempts are moved to `queue_dead_letters` table
+
+**Auto-Cleanup:** Completed jobs older than 7 days are automatically removed
+
+### Technical Implementation
+- Service: `backend/app/Services/Queue/JobQueue.php`
+- Interface: `backend/app/Services/Queue/JobQueueInterface.php`
+- DTO: `backend/app/Services/Queue/CheckJob.php`
+- Storage: `storage/app/queue.sqlite`
+- Tables: `queue_jobs`, `queue_dead_letters`
+
+### Unit Tests
+4 tests, 23 assertions covering addJob, getJob, updateJob, getPending operations.
+
+### Dependencies
+None (standalone SQLite implementation).
+
+### Migration Path
+For production scale, migrate to BullMQ + Redis.
+
+---
