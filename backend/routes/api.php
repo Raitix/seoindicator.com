@@ -59,6 +59,10 @@ Route::middleware(['auth'])->group(function () {
 */
 
 Route::prefix('v1')->group(function () {
+    // Metadata (TASK-7-18)
+    Route::get('metadata', [\App\Http\Controllers\Api\V1\MetadataController::class, 'index']);
+    Route::get('metadata/serp-features', [\App\Http\Controllers\Api\V1\MetadataController::class, 'serpFeatures']);
+
     // Keywords (SPEC-001-4)
     Route::get('sites/{siteId}/keywords', [KeywordController::class, 'index']);
     Route::post('sites/{siteId}/keywords', [KeywordController::class, 'store']);
