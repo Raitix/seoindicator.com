@@ -1,7 +1,7 @@
 # TASK-16-3: Implement Backend API Proxy for SEO Tools
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -67,3 +67,31 @@ Task created for API Proxy backend integration to support SEO tools.
 **Effort Estimate:** 8 hours - reasonable for Laravel controller, Cheerio integration, and security measures
 
 **Queue Status:** Ready for PreTester
+
+### [2026-02-26 19:35] Agent: PreTester
+**Test Documentation Created:** `TESTS/TEST-16-3.md`
+
+**Test Coverage:**
+- 80 unit test scenarios (Controller, Parser, Rate Limiter, Validator)
+- 20 integration test scenarios (Endpoint behavior, External fetches)
+- 35 security test scenarios (SSRF prevention, Rate limiting, Input validation)
+- 10 performance test scenarios
+
+**Critical Security Tests (MANDATORY):**
+- SSRF Prevention (ST-016 to ST-035): Block all private IPs, localhost, cloud metadata endpoints
+- Rate Limiting (ST-001 to ST-015): Accurate counting, CAPTCHA enforcement
+- Input Validation (ST-036 to ST-045): Injection prevention, encoding attacks
+
+**Key Implementation Notes for Developer:**
+1. SSRF protection MUST validate resolved IP (not just URL string)
+2. Rate limiting uses Redis with sliding window algorithm
+3. CAPTCHA triggers after 3 requests/IP/day
+4. HTML parsing via Cheerio (Node.js bridge) or Symfony DomCrawler
+5. Response timeout: 30 seconds max
+
+**Dependencies for Testing:**
+- Redis for rate limiting storage
+- CAPTCHA service (reCAPTCHA or hCaptcha)
+- Mock HTTP server for external URL simulation
+
+**Status changed:** `To Write Tests` → `Tests Coverage In Progress`
