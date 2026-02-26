@@ -1,7 +1,7 @@
 # TASK-16-3: Implement Backend API Proxy for SEO Tools
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
