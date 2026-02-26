@@ -778,7 +778,7 @@ class SerpFeatureChangeTrackerTest extends TestCase
         ];
 
         $callCount = 0;
-        $mockHistory = Mockery::mock(SerpFeature::class);
+        $mockHistory = Mockery::mock(\App\Models\SerpFeatureHistory::class);
         $this->historyRepo
             ->shouldReceive('insert')
             ->times(2)
