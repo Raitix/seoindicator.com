@@ -1,7 +1,7 @@
 # TASK-8-1: Create Projects Table
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -72,3 +72,28 @@ Task created to define and implement the core `projects` table for multi-site da
 10. TASK-8-10 (Integration Tests) → E2E testing
 
 **Status changed:** `To Prioritize` → `To Write Tests`
+
+### [2026-02-26 19:42] Agent: PreTester
+**Test Documentation Created:** `TESTS/TEST-8-1.md`
+
+**Coverage Summary:**
+- **68 test scenarios** across 8 categories
+- Migration Structure: 13 tests (MT-001 to MT-013)
+- Foreign Key Constraints: 7 tests (FK-001 to FK-007)
+- Index Verification: 6 tests (IX-001 to IX-006)
+- Model Behavior: 10 tests (MD-001 to MD-010)
+- Seeder Functionality: 7 tests (SD-001 to SD-007)
+- Edge Cases: 15 tests (EC-001 to EC-015)
+- Data Integrity: 5 tests (DI-001 to DI-005)
+- Query Performance: 5 tests (QP-001 to QP-005)
+
+**Critical Tests:**
+- FK-004: CASCADE delete when user deleted (data integrity)
+- FK-005: Insert with non-existent user_id fails (constraint enforcement)
+- IX-003/IX-004: Index usage for user_id and archived_at queries
+
+**Business Rule Questions Raised:**
+1. Should multiple `is_default=true` projects be allowed per user?
+2. Should future `archived_at` dates be permitted?
+
+**Status changed:** `To Write Tests` → `To Develop`
