@@ -73,7 +73,7 @@ class OpportunityScorerTest extends TestCase
      */
     public function test_long_tail_bonus_three_words(): void
     {
-        $score = $this->scorer->calculate('best seo tools 2026');
+        $score = $this->scorer->calculate('seo tools for beginners');
 
         // 50 base + 10 for 3+ words = 60
         $this->assertEquals(60, $score);
@@ -85,7 +85,7 @@ class OpportunityScorerTest extends TestCase
      */
     public function test_long_tail_bonus_five_words(): void
     {
-        $score = $this->scorer->calculate('best free seo tools for beginners');
+        $score = $this->scorer->calculate('seo tools for small business owners');
 
         // 50 base + 10 for 3+ words + 5 for 5+ words = 65
         $this->assertEquals(65, $score);
@@ -96,10 +96,10 @@ class OpportunityScorerTest extends TestCase
      */
     public function test_long_tail_bonus_seven_words(): void
     {
-        $score = $this->scorer->calculate('how to find the best free seo tools for beginners');
+        $score = $this->scorer->calculate('how to find the right seo tools for beginners');
 
-        // 50 base + 10 for 3+ words + 5 for 5+ words = 65 (no additional bonus beyond 5)
-        $this->assertEquals(65, $score);
+        // 50 base + 15 question + 10 for 3+ words + 5 for 5+ words = 80
+        $this->assertEquals(80, $score);
     }
 
     /**

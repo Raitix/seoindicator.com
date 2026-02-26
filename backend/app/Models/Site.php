@@ -34,4 +34,9 @@ class Site extends Model
     {
         return $this->hasMany(Keyword::class);
     }
+
+    public function keywordSuggestions(): HasMany
+    {
+        return $this->hasMany(KeywordSuggestion::class);
+    }
 }
