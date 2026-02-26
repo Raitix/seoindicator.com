@@ -1,7 +1,7 @@
 # TASK-7-18: Feature Filter UI
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `Medium`
