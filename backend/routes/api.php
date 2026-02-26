@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\ComparisonController;
 use App\Http\Controllers\Api\V1\IssueTypeController;
 use App\Http\Controllers\Api\V1\GSCDataController;
 use App\Http\Controllers\Api\V1\KeywordController;
+use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\RankingController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\SchedulerController;
@@ -99,6 +100,11 @@ Route::prefix('v1')->group(function () {
 
 // Authenticated V1 API Routes
 Route::prefix('v1')->middleware(['auth'])->group(function () {
+    // Projects (SPEC-008-7) - CRUD with archive/restore
+    Route::post('projects/{project}/archive', [ProjectController::class, 'archive']);
+    Route::post('projects/{project}/restore', [ProjectController::class, 'restore']);
+    Route::apiResource('projects', ProjectController::class);
+
     // Reports (SPEC-004-7, SPEC-004-8, SPEC-004-9) - requires auth
     Route::get('sites/{siteId}/reports', [ReportController::class, 'index']);
     Route::post('sites/{siteId}/reports/generate', [ReportController::class, 'generate']);

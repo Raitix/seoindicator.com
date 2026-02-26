@@ -1,7 +1,7 @@
 # SPEC-003-8: Frontend - Historical Comparison Charts
 
 ## STATUS
-`In Progress`
+`In Development`
 
 ## PRIORITY
 `Medium`

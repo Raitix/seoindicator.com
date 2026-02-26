@@ -1,7 +1,7 @@
 # TASK-8-1: Create Projects Table
 
 ## STATUS
-`Testing Prod`
+`Done`
 
 ## PRIORITY
 `High`
@@ -246,3 +246,109 @@ Duration: 2.13s
 **Risk:** Low | **Priority:** High
 
 **Status changed:** `In Deployment` → `To Test Prod`
+
+### [2026-02-26 22:35] Agent: ProdTester
+**Production Testing Complete - ALL TESTS PASS ✅**
+
+**Pre-Flight Check:**
+- Workflow enabled: `true` ✓
+- Lock file created: `.locks/TASK-8-1.lock` ✓
+
+**Production Test Results:**
+
+**1. Health Check ✅**
+```
+GET https://seoindicator.com/api/health
+{"status":"ok","timestamp":"2026-02-26T20:29:23+00:00","database":"connected"}
+```
+
+**2. Migration Status ✅**
+- `2026_02_22_235500_create_projects_table` → Batch 5, Ran ✓
+- `2026_02_26_175543_add_user_id_notes_is_default_archived_at_to_projects_table` → Batch 11, Ran ✓
+
+**3. Schema Verification ✅**
+| Column | Type | Nullable | Index | Default |
+|--------|------|----------|-------|---------|
+| id | bigint(20) unsigned | NO | PRI | auto_increment |
+| user_id | bigint(20) unsigned | YES | MUL (idx_projects_user_id) | NULL |
+| account_id | bigint(20) unsigned | YES | MUL | NULL |
+| name | varchar(255) | NO | - | - |
+| domain | varchar(255) | YES | MUL | NULL |
+| notes | text | YES | - | NULL |
+| is_default | tinyint(1) | NO | - | 0 |
+| created_at | timestamp | YES | - | NULL |
+| updated_at | timestamp | YES | - | NULL |
+| archived_at | timestamp | YES | MUL (idx_projects_archived) | NULL |
+
+**4. Foreign Key Constraints ✅**
+- `projects_user_id_foreign`: user_id → users(id) ON DELETE CASCADE ✓
+- `projects_account_id_foreign`: account_id → accounts(id) ON DELETE SET NULL ✓
+- FK constraint test: Insert with non-existent user_id (99999) → ERROR 1452 ✓
+- CASCADE test: Delete user → All user's projects deleted ✓
+
+**5. Index Usage Verification ✅**
+```
+EXPLAIN SELECT * FROM projects WHERE user_id = 1
+→ key: idx_projects_user_id ✓
+
+EXPLAIN SELECT * FROM projects WHERE archived_at IS NULL
+→ key: idx_projects_archived ✓
+
+EXPLAIN SELECT * FROM projects WHERE archived_at IS NOT NULL
+→ key: idx_projects_archived ✓
+```
+
+**6. Model Functionality Tests ✅**
+- Project model exists and loads correctly
+- Model scopes: `active()`, `archived()`, `default()` all work correctly
+- `archive()` method sets `archived_at` ✓
+- `unarchive()` method clears `archived_at` ✓
+- `isArchived()` returns correct boolean ✓
+- User relationship (`belongsTo`) works correctly ✓
+- User `hasMany` projects relationship works correctly ✓
+- `is_default` cast to boolean works correctly ✓
+
+**7. Nullable user_id Support ✅**
+- Projects can be created with `user_id = NULL` (supports legacy data)
+
+**Acceptance Criteria Status:**
+- [x] Migration file for creating `projects` table is implemented
+- [x] Project data includes user-level constraints (linked to user accounts)
+- [x] Foreign key constraints tested for deleting/cascading effects on projects
+- [x] Indexes implemented for `user_id` and `archived_at` fields
+- [x] Seeder file for inserting initial test data (available for development)
+
+**Production Deployment:** ✅ SUCCESSFUL
+- All 38 local tests passed
+- GitHub Actions workflow completed successfully
+- Health check returns healthy
+- All schema constraints verified
+- Model relationships functional
+
+**Status changed:** `Testing Prod` → `To Document`
+
+### [2026-02-26 22:38] Agent: DocSystemAnalyst
+**Documentation Complete:**
+
+**DOCUMENTATION.md Updated:**
+- Added `Database Schema: Projects Table (TASK-8-1)` section
+- Documented full schema with all columns, types, and constraints
+- Documented model relationships, scopes, and methods
+- Documented factory states for testing
+- Added production deployment status
+- Listed related tasks in the FEAT-008 pipeline
+
+**Schema Documentation Includes:**
+| Item | Documented |
+|------|------------|
+| Table structure | ✅ Full CREATE TABLE statement |
+| Field descriptions | ✅ All 8 fields with types and purposes |
+| Foreign key constraints | ✅ user_id, account_id |
+| Indexes | ✅ idx_projects_user_id, idx_projects_archived |
+| Model relationships | ✅ user, keywords, competitors, reports |
+| Model scopes | ✅ active, archived, default |
+| Model methods | ✅ archive, unarchive, isArchived |
+| Factory states | ✅ default, archived, forUser, withNotes |
+| Production status | ✅ Deployed 2026-02-26, 38 tests passing |
+
+**Status changed:** `To Document` → `Done`
