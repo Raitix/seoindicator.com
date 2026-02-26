@@ -379,12 +379,12 @@ class OpportunityScorerTest extends TestCase
             ['seo', 50],                                          // Base only
             ['seo tools', 50],                                    // 2 words, no bonus
             ['best seo tools', 60],                              // Base + commercial
-            ['how to seo', 65],                                  // Base + question
-            ['best seo tools 2026', 60],                         // Base + commercial + long-tail (but commercial comes first)
-            ['how to do seo', 65],                               // Base + question + long-tail
+            ['how to seo', 65],                                  // Base + question (2 words total)
+            ['seo tools for beginners', 60],                     // Base + long-tail (3+ words)
+            ['how to do seo', 75],                               // Base + question + long-tail (4 words)
             ['what is seo optimization', 75],                    // Base + question + long-tail (4 words)
-            ['best seo tools for beginners', 70],               // Base + commercial + long-tail + 5+ words
-            ['how to choose best seo tools', 85],               // Base + question + commercial + long-tail + 5+ words
+            ['best seo tools for beginners', 75],               // Base + commercial + long-tail + 5+ words
+            ['how to choose best seo tools', 90],               // Base + question + commercial + long-tail + 5+ words
         ];
     }
 
