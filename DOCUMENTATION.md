@@ -1,201 +1,60 @@
 # DOCUMENTATION.md
 
 ---
-## Production Routing Configuration
+## Report Generation API (TASK-4-8)
 
-### API Routing (TASK-12-12)
-API routes are handled by the root `.htaccess` file which routes `/api/*` requests to Laravel's backend:
+### Endpoint:
+`POST /api/v1/sites/:siteId/reports/generate`
 
-**File:** `.htaccess` (project root)
-```apache
-RewriteCond %{REQUEST_URI} ^/api/ [NC]
-RewriteRule ^ backend/public/index.php [L]
-```
+### Description:
+Triggers the generation of site analysis reports (PDF/CSV formats). Supports asynchronous execution and status tracking for scalability.
 
-**Key Points:**
-- Full `REQUEST_URI` is preserved (Laravel sees `/api/health`, not `/health`)
-- Backend entry point: `backend/public/index.php`
-- Routes defined in `backend/routes/api.php`
+### Request:
+- **Method**: POST
+- **Endpoint**: /api/v1/sites/{siteId}/reports/generate
+- **Headers:**
+  - Authorization: `Bearer <token>`
+- **Request Body:**
+  ```json
+  {
+    "name": "Traffic Analysis Report",
+    "type": "analysis",
+    "format": "pdf",
+    "dateRange": ["2026-01-01", "2026-01-31"],
+    "compareRange": ["2025-01-01", "2025-01-31"],
+    "sections": ["traffic_sources", "conversion_rates"]
+  }
+  ```
+  - `name`: (required) Report title.
+  - `type`: (required) Type of report.
+  - `format`: (required) Format (`pdf`, `csv`).
+  - `dateRange`: ISO dates for data range.
+  - `compareRange`: Optional, comparison timeframe.
+  - `sections`: Optional, array of report sections.
 
-**Endpoints:**
-- Health: `GET /api/health` → 200 OK (public)
-- GSC Data: `GET /api/v1/projects/{projectId}/gsc` → 401 (auth required)
-- GSC Opportunities: `GET /api/v1/projects/{projectId}/gsc/opportunities` → 401 (auth required)
+### Response:
+- **Success (202):**
+  ```json
+  {
+    "reportId": "UUID",
+    "status": "generating"
+  }
+  ```
+  - `reportId`: Unique identifier for the report.
+  - `status`: Initial processing state.
 
-### PDF Exporter with PDFKit (TASK-4-5)
-- **Feature Description:** Generates professional PDF reports using the PDFKit library.
-- **Sections Supported:** Logo cover page, executive summary, keyword rankings, position changes, and trends.
-- **Output Format:** A4 PDF with page numbers, proper margins, and inline charts.
-- **Dependencies:** TASK-4-2 (Report model), TASK-4-6 (Aggregation service).
-- **Unit Tests:** All passing (18 tests, 46 assertions).
+- **Error (4xx/5xx):**
+  ```json
+  {
+    "error": "ValidationException",
+    "message": "Invalid date range."
+  }
+  ```
+  - Structured and informative error message.
 
----
-## Current Production Features
-
-### Job Queue System (TASK-1-10)
-- **Service Description:** SQLite-backed job queue for background rank checking operations.
-  - MVP implementation using SQLite for simplicity (production can migrate to Redis/BullMQ).
-  - Supports job prioritization, retry logic, and dead letter queue for failed jobs.
-
-**Core Functionalities:**
-- **Job Operations:**
-  - `addJob(payload, priority, maxAttempts)` - Add job to queue with configurable priority and retry attempts
-  - `getJob(jobId)` - Retrieve job by ID from active queue or dead letter queue
-  - `updateJob(jobId, data)` - Update job status, attempts, error info
-  - `getPending(limit)` - Fetch pending jobs ordered by priority (high → normal → low)
-- **Job Properties (CheckJob DTO):**
-  - `id`, `type`, `payload`, `priority`, `status`, `attempts`, `maxAttempts`
-  - Timestamps: `createdAt`, `startedAt`, `completedAt`, `failedAt`
-  - `error` - Error message for failed jobs
-- **Job Statuses:** `pending`, `running`, `completed`, `failed`
-- **Priority Levels:** `high`, `normal`, `low`
-- **Retry Logic:** Configurable max attempts (default: 3), auto-retry on failure
-- **Dead Letter Queue:** Jobs exceeding max attempts are moved to `queue_dead_letters` table
-- **Auto-Cleanup:** Completed jobs older than 7 days are automatically removed
-
-**Technical Implementation:**
-- Service: `backend/app/Services/Queue/JobQueue.php`
-- Interface: `backend/app/Services/Queue/JobQueueInterface.php`
-- DTO: `backend/app/Services/Queue/CheckJob.php`
-- Storage: `storage/app/queue.sqlite`
-- Tables: `queue_jobs`, `queue_dead_letters`
-
-**Unit Tests:** 4 tests, 23 assertions covering addJob, getJob, updateJob, getPending operations.
-
-**Dependencies:** None (standalone SQLite implementation).
-
-**Migration Path:** For production scale, migrate to BullMQ + Redis.
+### Dependencies:
+- Data Aggregation Module: Consolidates analytics data.
+- CSV/Excel Exporters: For generating tabular data
+- Synchronous execution designed for MVP staging.
 
 ---
-
-### Rank Check Scheduler (TASK-1-12)
-- **Service Description:** Automated rank check scheduling service.
-  - Allows queueing keyword checks at random intervals to prevent API abuse.
-  - Supports configurable defaults: environment variable specified timing or manual overrides.
-  - Includes manual testing endpoint: `POST /api/v1/scheduler/rank-checks/run`.
-
----
-
-### Scheduled Reports API
-- **TASK-4-11 (Scheduled Reports API):** Implemented REST API endpoints for creating and managing scheduled reports:
-  - Endpoints: Create, list, update, delete, pause/resume reports.
-  - Features:
-    - Frequency validation ensures supported intervals: daily, weekly, biweekly, monthly.
-    - Recipient checks validate email authenticity for scheduled delivery.
-    - Test suites fully comprehensive (unit + integration).
-  - Dependencies: Report template model; post-MVP support importance.
-  - **Service Location:** `/api/v1/scheduled-reports`. Successfully implemented.
-
-### Scheduler Service
-- **TASK-4-12 (Report Scheduler Service):** Design automatable report execution. Driven by ruleset validators + repository layer orchestration (`ReportScheduler start()` initialization reuse services).
-    - Smart-logic seeders auto-match input equivalently modules entries tags-lined-for multi-factor traceability!!! - properly NEXT fixes monitoring aligned automated FE ingestion workloads!
-### Implemented:
-- **TASK-1-7 (SERP Fetcher Interface and Mock Implementation)**:
-  - Introduced the `SERPFetcher` interface for search engine results fetching.
-  - Mock implementation (`MockSERPFetcher`) returns simulated results to decouple development from external dependencies.
-  - **Core functionalities**:
-    - Fetches results based on the `SERPOptions` interface (searchEngine, location, device, targetUrl).
-    - Returns up to 100 results conforming to the `SERPResult` structure:
-      - Includes keyword, searchEngine, location, device, individual result entries, and timestamps.
-      - Result entries (`SERPEntry`) contain position, URL, title, description, and an `isOurSite` flag.
-    - Simulates network delays (100–500ms) and errors for testing robustness.
-    - Offers determinism for test consistency (seeded random data generation).
-  - Fully unit-tested with scenarios for normal operation, errors, and edge case handling.
-  - **Dependencies**: None
-  - Service Location: Local mock service, injected via DI.
-- **TASK-4-6 (ReportDataAggregator)**: Implemented foundational aggregation logic for reports:
-  - Transforms keyword ranking data into unified structures for reports (supporting PDF/CSV export).
-  - **Core functionalities**:
-    - Aggregates keyword rankings over a given date range.
-    - Calculates position changes vs. comparison periods.
-    - Identifies top performers (biggest positional gains) and items needing attention (biggest drops).
-    - Aggregates trend data for chart visualizations.
-    - Integrates optional competitor comparison data when `FEAT-003` is active.
-  - **Dependencies:** FEAT-001 (keyword rankings data), FEAT-003 (competitor data).
-  - **Technical Notes**: 
-    - Implemented as the central logic for report generation.
-    - Caches frequently accessed data, handles missing ranges gracefully.
-    - Unit tests partially implemented (mock ranking data still required).
-  - Service Location: `backend/app/Services/ReportDataAggregator.php`.
-- **TASK-12-6 (Fuzzy Query Matching for GSC Data)**:
-  - Implemented fuzzy matching logic to link tracked keywords with Google Search Console query data.
-  - **Core functionalities**:
-    - Query normalization: lowercase, trim whitespace, strip special characters.
-    - Similarity calculation using Levenshtein distance algorithm.
-    - Configurable similarity threshold (default: 90% for auto-match).
-    - Auto-matching runs during GSC data sync via `GSCDataSync::storeData()`.
-    - Manual override support via `QueryMatcher::setManualMatch()` (UI hook pending).
-  - **Technical Implementation**:
-    - Service: `backend/app/Services/QueryMatcher.php`
-    - Key methods: `findMatches()`, `calculateSimilarity()`, `autoMatch()`, `setManualMatch()`.
-    - Integrated into GSCDataSync pipeline for automatic association.
-  - **Unit Tests**: 3 tests passed (4 assertions) covering normalization, similarity calculation, and auto-match behavior.
-  - **Dependencies**: TASK-12-3 (gsc_query_match column in keywords table).
-  - **Acceptance Criteria Status**:
-    - [x] Fuzzy matching with configurable threshold
-    - [x] Auto-matching in GSCDataSync
-    - [ ] UI for manual match adjustment (backend ready, UI not implemented)
-    - [x] Unit tests verify matching accuracy
-  - Service Location: `backend/app/Services/QueryMatcher.php`.
-- **TASK-1-11 (Rank Checker Worker)**:
-  - Background worker that processes rank check jobs from the queue.
-  - **Core functionalities**:
-    - Processes jobs from JobQueue with configurable concurrency (max 5 concurrent jobs).
-    - Fetches SERP data using configured SERP fetcher (MockSERPFetcher for testing, HttpSERPFetcher for production).
-    - Stores ranking results in `ranking_history` table via RankingRepository.
-    - Updates keyword's `last_checked_at` timestamp after successful checks.
-    - Records check duration for performance monitoring.
-    - Captures SERP features (featured snippets, local pack, etc.) when available.
-    - Supports both single keyword checks and batch site-wide checks.
-    - Handles fetcher errors gracefully with logging, retry, and failure states.
-  - **Technical Implementation**:
-    - Service: `backend/app/Workers/RankCheckerWorker.php`
-    - Job: `backend/app/Jobs/CheckKeywordJob.php`
-    - Service: `backend/app/Services/RankCheckerService.php`
-    - Integrates with JobQueue, SERPFetcherInterface, and RankingRepository.
-    - Uses domain matching for accurate position detection.
-    - Handles competitor tracking within SERP results.
-  - **Unit Tests**: 29 tests passed (80 assertions) covering job processing, error handling, batch checks, and SERP feature capture.
-  - **Dependencies**: SPEC-001-2 (keyword repository), SPEC-001-3 (ranking repository), SPEC-001-7 (SERP fetcher), SPEC-001-10 (job queue).
-  - **Acceptance Criteria Status**:
-    - [x] RankCheckerWorker processes jobs from queue
-    - [x] Fetches SERP data using configured fetcher
-    - [x] Stores ranking result in ranking_history table
-    - [x] Updates keyword's last_checked_at timestamp
-    - [x] Handles fetcher errors gracefully
-    - [x] Records check duration for performance monitoring
-    - [x] Supports both single keyword and batch site checks
-    - [x] Concurrent job processing (configurable limit)
-    - [x] Unit tests with mocked fetcher and queue
-- **TASK-12-10 (GSC Data Dashboard Components)**:
-  - React components for displaying Google Search Console metrics alongside keyword rankings.
-  - **Core functionalities**:
-    - `GSCDataDashboard` - Main dashboard orchestrating all GSC components with summary cards (Total Clicks, Impressions, Avg CTR, Avg Position).
-    - `GSCMetricsTable` - Sortable table displaying query performance (clicks, impressions, CTR, position).
-    - `GSCDateFilter` - Date range selector with preset options (7, 14, 30, 90 days) and custom date inputs.
-    - `GSCTrendChart` - Recharts line chart visualizing clicks, impressions, and position trends over time.
-    - `GSCOpportunities` - Opportunity keywords display with scores, CTR gap analysis, and actionable insights.
-  - **Technical Implementation**:
-    - Components: `frontend/components/gsc/*.tsx`
-    - Types: `frontend/lib/types/gsc.ts`
-    - API Service: `frontend/lib/api/gsc.ts`
-    - Sample Data: `frontend/lib/data/sample-gsc-data.ts`
-    - Uses Recharts for charting, @tanstack/react-table patterns for sorting.
-    - Shadcn/ui Card components for consistent styling.
-  - **Tests**: 79 tests passed (GSCComponents.test.tsx covers all 5 components).
-  - **Dependencies**: TASK-12-8 (GSC Data API endpoints).
-  - **Acceptance Criteria Status**:
-    - [x] Metrics displayed in sortable table
-    - [x] Date range filter updates data dynamically
-    - [x] Trend chart visualizes clicks and impressions
-    - [x] Component tested with sample data
-  - Service Location: `frontend/components/gsc/`.
-- **TASK-12-3 (GSC Query Match Column)**:
-  - Added `gsc_query_match` column to `keywords` table for fuzzy matching between tracked keywords and GSC query data.
-  - **Schema Changes**:
-    - Column: `keywords.gsc_query_match` (VARCHAR(255), nullable)
-    - Index: `keywords_gsc_query_match_index` for efficient matching queries
-  - **Purpose**: Links tracked keywords to Google Search Console query data via fuzzy matching (implemented in TASK-12-6).
-  - **Migration**: `backend/database/migrations/*_add_gsc_query_match_to_keywords_table.php`
-  - **Dependencies**: Existing `keywords` table (FEAT-001).
-  - **Status**: Deployed to production.
