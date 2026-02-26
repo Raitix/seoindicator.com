@@ -68,6 +68,12 @@ const buildQueryString = (params: KeywordQueryParams = {}) => {
   if (params.sortOrder) {
     query.set("sortOrder", params.sortOrder);
   }
+  if (params.serpFeature && params.serpFeature !== "all") {
+    query.set("serpFeature", params.serpFeature);
+    if (params.present !== undefined) {
+      query.set("present", String(params.present));
+    }
+  }
 
   const queryString = query.toString();
   return queryString ? `?${queryString}` : "";

@@ -1,7 +1,7 @@
 # TASK-16-1: Develop Meta Tag Analyzer (Frontend)
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
