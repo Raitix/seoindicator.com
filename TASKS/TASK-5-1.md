@@ -1,7 +1,7 @@
 # TASK-5-1: Database Schema - Keyword Suggestions Table
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`

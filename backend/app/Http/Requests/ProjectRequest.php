@@ -29,12 +29,16 @@ class ProjectRequest extends FormRequest
      */
     public function rules(): array
     {
+        // For updates (PUT/PATCH), name is optional
+        $nameRules = ['string', 'max:255'];
+        if ($this->isMethod('post')) {
+            array_unshift($nameRules, 'required');
+        } else {
+            array_unshift($nameRules, 'sometimes');
+        }
+
         return [
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
+            'name' => $nameRules,
             'domain' => [
                 'nullable',
                 'url',

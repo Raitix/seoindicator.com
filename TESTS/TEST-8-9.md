@@ -23,8 +23,8 @@ Unit tests for Project model, policies, and scopes. Ensures 100% code coverage f
 | `tests/Unit/Policies/ProjectPolicyTest.php` | Unit | 25 | ✅ Existing |
 | `tests/Feature/Authorization/ProjectAuthorizationTest.php` | Feature | 21 | ✅ Existing |
 | `tests/Feature/Database/ProjectsTableConstraintsTest.php` | Feature | 13 | ✅ Existing |
-| `tests/Unit/Models/ProjectValidationTest.php` | Unit | 15 | 🆕 New |
-| `tests/Unit/Models/ProjectRelationshipTest.php` | Unit | 12 | 🆕 New |
+| `tests/Unit/Models/ProjectValidationTest.php` | Unit | 21 | ✅ New (Passing) |
+| `tests/Unit/Models/ProjectRelationshipTest.php` | Unit | 23 | ✅ New (Passing) |
 | `tests/Unit/Scopes/ProjectScopeTest.php` | Unit | TBD | ⏳ Pending TASK-8-5 |
 
 ---
@@ -133,7 +133,7 @@ See `TEST-8-6.md` for detailed policy test scenarios.
 
 | Component | Target | Current |
 |-----------|--------|---------|
-| Project Model | 100% | ~70% |
+| Project Model | 100% | ✅ ~95% |
 | ProjectPolicy | 100% | ✅ 100% |
 | ProjectScope | 100% | ⏳ Pending |
 
@@ -182,23 +182,34 @@ php artisan test --coverage --filter=Project
 
 ## Comments
 
-### [2026-02-26 22:40] Agent: PreTester
-**Test Documentation Created**
+### [2026-02-26 22:43] Agent: PreTester
+**Tests Created and Passing**
 
-**Analysis of Existing Tests:**
-- `ProjectTest.php`: 13 tests covering model basics, scopes, archive behavior
-- `ProjectPolicyTest.php`: 25 tests covering all policy methods
-- `ProjectAuthorizationTest.php`: 21 tests covering Gate integration
-- `ProjectsTableConstraintsTest.php`: 13 tests covering FK and indexes
+**Test Files Created:**
+- `ProjectValidationTest.php`: 21 tests (all passing)
+  - Name validation (required, empty, length)
+  - Domain validation (null, valid, length)
+  - User ID validation (null, FK constraint)
+  - Notes validation (long, null)
+  - is_default behavior
+  - archived_at behavior
+  - Unique constraints
 
-**Gaps Identified:**
-1. Model validation tests (name required, domain constraints)
-2. Additional relationship tests (account, members, users, gscData, gscConnections)
-3. ProjectScope tests (pending TASK-8-5)
+- `ProjectRelationshipTest.php`: 23 tests (all passing)
+  - User relationship (belongsTo)
+  - Account relationship (belongsTo, nullable)
+  - GSCData relationship (hasMany)
+  - GSCConnections relationship (hasMany)
+  - Members relationship (hasMany)
+  - Users relationship (belongsToMany)
+  - Cascade delete behavior
+  - Scopes (active, archived, default)
+  - Archive/unarchive methods
 
-**Action Items:**
-- [ ] Create `ProjectValidationTest.php` for validation tests
-- [ ] Create `ProjectRelationshipTest.php` for relationship tests
-- [ ] Add ProjectScope tests when TASK-8-5 completes
+**Notes:**
+- MySQL in non-strict mode doesn't throw errors for over-length strings, so tests document actual behavior
+- `is_default` returns null in-memory but false when fresh from database
+- GSCConnection tests use relationship inspection due to encrypted token requirements
+- ProjectMember requires valid roles ('editor' or 'viewer')
 
-**Status changed:** `To Write Tests` → `Tests Coverage In Progress`
+**Status changed:** `Tests Coverage In Progress` → `Tests Complete`

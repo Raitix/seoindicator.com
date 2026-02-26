@@ -29,6 +29,10 @@ class ProjectController extends Controller
     /**
      * Display a listing of the user's projects.
      *
+     * By default, only active projects are returned.
+     * Use ?archived=true to get archived projects only.
+     * Use ?archived=all to get all projects (active and archived).
+     *
      * @param Request $request
      * @return JsonResponse
      */
@@ -37,13 +41,20 @@ class ProjectController extends Controller
         $query = $request->user()->projects();
 
         // Filter by archived status
+        // Default: only active projects
+        // ?archived=true: only archived projects
+        // ?archived=all: all projects
         if ($request->has('archived')) {
-            $archived = filter_var($request->archived, FILTER_VALIDATE_BOOLEAN);
-            if ($archived) {
+            if ($request->archived === 'all') {
+                // Show all projects (no filter)
+            } elseif (filter_var($request->archived, FILTER_VALIDATE_BOOLEAN)) {
                 $query->archived();
             } else {
                 $query->active();
             }
+        } else {
+            // Default: only active projects
+            $query->active();
         }
 
         // Get pagination parameters
@@ -51,7 +62,7 @@ class ProjectController extends Controller
 
         $projects = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
-        // Calculate metadata
+        // Calculate metadata (from all projects, not filtered)
         $total = $request->user()->projects()->count();
         $active = $request->user()->projects()->active()->count();
         $archived = $request->user()->projects()->archived()->count();
@@ -156,6 +167,8 @@ class ProjectController extends Controller
      */
     public function archive(Project $project): JsonResponse
     {
+        $this->authorize('update', $project);
+
         if (!$project->isArchived()) {
             $project->archive();
         }
@@ -174,6 +187,8 @@ class ProjectController extends Controller
      */
     public function restore(Project $project): JsonResponse
     {
+        $this->authorize('update', $project);
+
         if ($project->isArchived()) {
             $project->unarchive();
         }
