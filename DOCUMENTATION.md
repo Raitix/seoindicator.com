@@ -707,6 +707,67 @@ GET    /api/v1/reports/{reportId}/download      - Download report (auth + owners
 - TASK-4-7 through TASK-4-10 (Report API endpoints)
 
 ---
+## Report Data Aggregation Service (TASK-4-6)
+
+### Service Description
+Aggregates ranking data for SEO reports, collecting keyword positions, calculating changes, identifying top performers and items needing attention, and generating trend data for charts.
+
+### Core Functionalities
+
+**ReportDataAggregator Class:**
+- `aggregate(siteId, dateRange, compareRange)` - Main method to compile report data
+- Supports flexible date range formats (object or array)
+- Handles missing/empty data gracefully
+
+**Data Aggregation:**
+| Output Field | Description |
+|--------------|-------------|
+| `keywords` | All keywords with current/previous positions and changes |
+| `top_performers` | Top 5 keywords with biggest position improvements |
+| `needs_attention` | Top 5 keywords with biggest position drops |
+| `trends` | Position history points for each keyword |
+| `competitors` | Optional competitor summary (if ComparisonService available) |
+
+**Position Change Calculation:**
+- Negative change = position improvement (e.g., 10→5 = -5, improved)
+- Positive change = position drop (e.g., 5→10 = +5, declined)
+- Handles NULL positions (not ranked)
+
+**Performance:**
+- Efficiently queries large datasets with date range filtering
+- Groups rankings by keyword for parallel processing
+- Returns latest ranking per keyword per date range
+
+### Technical Implementation
+- Class: `backend/app/Services/ReportDataAggregator.php`
+- Used by: PDF Report Exporter, CSV Report Exporter
+- Integration: ReportController calls aggregator for data compilation
+
+### Unit Tests
+12 tests, 37 assertions covering:
+- Valid date range aggregation
+- Compare range calculations
+- Top performers selection
+- Needs attention selection
+- Trend data aggregation
+- Optional competitor data
+- Empty dataset handling
+- Large dataset performance
+- Missing compare range
+- Tie-breaking determinism
+- Date range exclusion
+- Multiple rankings per day (latest wins)
+
+### Dependencies
+- TASK-1-1 (Keywords model)
+- TASK-1-3 (Ranking model/repository)
+- Optional: ComparisonService (competitor data)
+
+### Deployment
+- Deployed: 2026-02-24 via GitHub Actions
+- Production verified: 2026-02-25
+
+---
 ## Rank Check Scheduler (TASK-1-12)
 
 ### Service Description
