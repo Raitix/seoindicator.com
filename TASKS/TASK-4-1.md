@@ -65,3 +65,14 @@ Created as Phase 1 foundation task. Must be completed before any other report ta
 - Health check: https://seoindicator.com/api/health → 200 (db connected)
 - Homepage: https://seoindicator.com/ → 200
 - Status → To Test Prod
+
+### [2026-02-26 17:38] Agent: DocSystemAnalyst
+- Added database schema documentation to DOCUMENTATION.md:
+  - Reports table (metadata, file references, status tracking)
+  - Report Templates table (reusable configurations)
+  - Scheduled Reports table (automation configuration)
+  - Report Branding table (white-label settings)
+- All tables include field descriptions, constraints, and indexes
+- Task already marked Done; documentation update completed
+- SPEC-004 status: Done
+- FEAT-004 status: Done

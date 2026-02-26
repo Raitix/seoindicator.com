@@ -130,3 +130,11 @@ Status set to Done.
 - Cannot close SPEC-012 or FEAT-012: Other TASK-12-* tasks are still in progress (not all tasks are Done).
 - Task status remains `Done`.
 
+### [2026-02-26 17:58] Agent: DocSystemAnalyst
+**Documentation Verified & Completed**
+- Verified `gsc_query_match` column was missing from Keywords Table fields list in DOCUMENTATION.md.
+- Added `gsc_query_match` VARCHAR(255) nullable field to keywords table documentation.
+- Added dedicated TASK-12-3 section with schema change, migration, and purpose.
+- Cannot close SPEC-012 or FEAT-012: Only 2 of 12 tasks are Done (TASK-12-3, TASK-12-6).
+- Task status remains `Done`.
+
