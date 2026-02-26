@@ -1,7 +1,7 @@
 # TASK-7-6: Local Pack Detection
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -61,6 +61,20 @@ Low (2-3 hours)
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-26 18:15] Agent: PreTester
+Test documentation created at `TESTS/SPEC-7-6.md`. 79 test scenarios covering:
+- Basic detection logic (13 scenarios)
+- Position tracking (8 scenarios)
+- URL matching logic (15 scenarios)
+- Partial local pack data (9 scenarios)
+- Entry structure handling (5 scenarios)
+- Return value structure (5 scenarios)
+- Edge cases and error handling (14 scenarios)
+- Integration tests (4 scenarios)
+- Adversarial tests (6 scenarios)
+
+Status updated to `To Develop`. Ready for Developer.
 
 ### [2026-02-20 16:58] Agent: SpecSystemAnalyst
 Created task for local pack detection. Post-MVP feature but important for local SEO tracking.

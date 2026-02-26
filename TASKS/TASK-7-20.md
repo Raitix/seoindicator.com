@@ -1,7 +1,7 @@
 # TASK-7-20: Integration Tests for SERP Features
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`

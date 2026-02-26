@@ -314,6 +314,74 @@ Triggers the generation of site analysis reports (PDF/CSV formats). Supports asy
 - Synchronous execution designed for MVP staging.
 
 ---
+## PDF Report Exporter (TASK-4-5)
+
+### Service Description
+Generates professional PDF reports from SEO data using native PHP PDF generation (no external dependencies). Supports multi-page reports with cover page, executive summary, keyword rankings, position changes, and trend charts.
+
+### Core Functionalities
+
+**PdfReportExporter Class:**
+- `generate(Report $report, array $data): string` - Returns PDF content as string
+- Configurable sections: cover, summary, keywords, changes, trends
+- A4 page size (595x842 pts) with proper margins
+- Automatic page numbering
+
+**Report Sections:**
+| Section | Method | Description |
+|---------|--------|-------------|
+| Cover Page | `renderCoverPage()` | Logo placeholder, title, date range |
+| Executive Summary | `renderSummarySection()` | Key metrics overview |
+| Keyword Rankings | `renderKeywordsSection()` | Full keyword table |
+| Position Changes | `renderChangesSection()` | Highlights position changes |
+| Trend Charts | `renderTrendsSection()` | Position history visualization |
+
+**PDF Features:**
+- A4 page size (595x842 points)
+- Proper margins (40pt sides, 50pt top/bottom)
+- Page numbering on all pages
+- UTF-8 support for special characters
+- In-memory generation (no temp file exposure)
+
+### Technical Implementation
+- Class: `backend/app/Exporters/PdfReportExporter.php`
+- Uses native PHP PDF generation (no external dependencies)
+- Returns string (PDF binary content)
+
+### API Integration
+- Used by `ReportController::download()` for PDF format
+- Triggered via `GET /api/v1/reports/{id}/download` with `format=pdf`
+
+### Unit Tests
+18 tests, 46 assertions covering:
+- Minimal data PDF generation
+- Cover page rendering (title, date range, logo placeholder)
+- Executive Summary section
+- Position Changes section
+- Trend Charts section
+- Keywords table rendering
+- A4 page size verification
+- Page numbering
+- Special character escaping
+- Large dataset handling
+- Empty section handling
+- Missing logo/date handling
+
+### Security Notes
+- PDF special characters properly escaped (no injection vectors)
+- No external dependencies in PDF generation
+- In-memory generation (no temp file exposure)
+- File storage via Laravel Storage (secured)
+
+### Dependencies
+- TASK-4-2 (Report model)
+- TASK-4-6 (Report data aggregation)
+
+### Deployment
+- Deployed: 2026-02-24 via GitHub Actions
+- Production verified: 2026-02-25
+
+---
 ## Database Schema: SEO Site Audits (FEAT-014)
 
 ### Audits Table
@@ -718,5 +786,56 @@ CREATE INDEX keywords_gsc_query_match_index ON keywords(gsc_query_match);
 ### Deployment
 - Deployed: 2026-02-22 via GitHub Actions
 - Production verified: 2026-02-23
+
+---
+## Fuzzy Query Matching for GSC Data (TASK-12-6)
+
+### Service Description
+Implements fuzzy matching between tracked keywords and Google Search Console query data, enabling automatic association between `keywords` and `gsc_data` records.
+
+### Core Functionalities
+
+**Query Matching Algorithm:**
+- Normalizes queries (lowercase, trim whitespace, strip special characters)
+- Calculates similarity score using Levenshtein distance
+- Auto-matches high-confidence pairs (>90% similarity by default)
+- Configurable threshold for matching sensitivity
+
+**Integration:**
+- Auto-matching runs during GSC data sync (integrated in `GSCDataSync::storeData`)
+- Manual override supported via `QueryMatcher::setManualMatch` method
+- Stores confirmed matches in `gsc_query_match` column
+
+### Technical Implementation
+- Service: `backend/app/Services/QueryMatcher.php`
+- Key Methods:
+  - `findMatches(Keyword $keyword): array` - Find matching GSC queries for a keyword
+  - `calculateSimilarity(string $a, string $b): float` - Compute similarity score
+  - `autoMatch(Project $project): int` - Auto-match all keywords for a project
+  - `setManualMatch(Keyword $keyword, string $query): void` - Manual match override
+
+### Acceptance Criteria Status
+| Criteria | Status |
+|----------|--------|
+| Fuzzy matching with configurable threshold | ✅ Complete |
+| Auto-matching in GSCDataSync | ✅ Complete |
+| UI for manual match adjustment | ⏳ Pending (backend ready) |
+| Unit tests | ✅ Complete |
+
+### Unit Tests
+- 3 tests, 4 assertions in `QueryMatcherTest`
+- Tests cover normalization, similarity calculation, auto-match logic
+
+### Security Notes
+- Uses Eloquent ORM (no SQL injection risk)
+- Backend logic only (no XSS risk)
+- Normalization sanitizes special characters
+
+### Dependencies
+- TASK-12-3 (`gsc_query_match` column)
+
+### Deployment
+- Deployed: 2026-02-23 via GitHub Actions
+- Production verified: 2026-02-24
 
 ---

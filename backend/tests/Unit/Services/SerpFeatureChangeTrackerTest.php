@@ -600,9 +600,11 @@ class SerpFeatureChangeTrackerTest extends TestCase
             }));
 
         // Act
-        $this->tracker->trackChanges($keywordId, $currentFeatures, $previousFeatures);
+        $changes = $this->tracker->trackChanges($keywordId, $currentFeatures, $previousFeatures);
 
-        // Assert handled by mock expectations
+        // Assert
+        $this->assertCount(1, $changes);
+        $this->assertEquals('gained', $changes[0]['action']);
     }
 
     /** @test */
@@ -628,9 +630,11 @@ class SerpFeatureChangeTrackerTest extends TestCase
             }));
 
         // Act
-        $this->tracker->trackChanges($keywordId, $currentFeatures, $previousFeatures);
+        $changes = $this->tracker->trackChanges($keywordId, $currentFeatures, $previousFeatures);
 
-        // Assert handled by mock expectations
+        // Assert
+        $this->assertCount(1, $changes);
+        $this->assertEquals('lost', $changes[0]['action']);
     }
 
     /** @test */
@@ -656,7 +660,11 @@ class SerpFeatureChangeTrackerTest extends TestCase
             }));
 
         // Act
-        $this->tracker->trackChanges($keywordId, $currentFeatures, $previousFeatures);
+        $changes = $this->tracker->trackChanges($keywordId, $currentFeatures, $previousFeatures);
+
+        // Assert
+        $this->assertCount(1, $changes);
+        $this->assertNotNull($changes[0]['detected_at']);
     }
 
     // ============================================
@@ -770,15 +778,16 @@ class SerpFeatureChangeTrackerTest extends TestCase
         ];
 
         $callCount = 0;
+        $mockHistory = Mockery::mock(SerpFeature::class);
         $this->historyRepo
             ->shouldReceive('insert')
             ->times(2)
-            ->andReturnUsing(function () use (&$callCount) {
+            ->andReturnUsing(function () use (&$callCount, $mockHistory) {
                 $callCount++;
                 if ($callCount === 1) {
                     throw new \Exception('First insert failed');
                 }
-                return true;
+                return $mockHistory;
             });
 
         // Act

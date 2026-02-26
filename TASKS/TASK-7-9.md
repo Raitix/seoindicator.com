@@ -1,7 +1,7 @@
 # TASK-7-9: Feature History Repository
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
