@@ -1,7 +1,7 @@
 # FEAT-008: Multi-Site Project Management
 
 ## STATUS
-`To Prioritize`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `Medium`
