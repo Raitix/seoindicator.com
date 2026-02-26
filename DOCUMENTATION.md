@@ -1066,6 +1066,165 @@ Tests cover:
 - Status: Post-MVP feature (Phase 4)
 
 ---
+## Cron Job Integration for Scheduled Reports (TASK-4-13)
+
+### Service Description
+Server-side cron configuration for Laravel's task scheduler. Enables automatic execution of scheduled reports and cleanup jobs without manual intervention.
+
+### Core Functionalities
+
+**Laravel Scheduler Configuration:**
+- Registered in `app/Console/Kernel.php`
+- Runs every minute via system cron
+- Processes due scheduled reports
+- Cleans up old generated report files
+
+**Cron Entry:**
+```bash
+* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+**Scheduled Commands:**
+| Command | Schedule | Description |
+|---------|----------|-------------|
+| `reports:process-scheduled` | Every minute | Process all due scheduled reports |
+| `reports:cleanup` | Daily at midnight | Remove reports older than retention period |
+
+**Kernel.php Configuration:**
+```php
+protected function schedule(Schedule $schedule)
+{
+    // Process scheduled reports every minute
+    $schedule->command('reports:process-scheduled')
+        ->everyMinute()
+        ->withoutOverlapping()
+        ->appendOutputTo(storage_path('logs/scheduler.log'));
+
+    // Clean up old report files daily
+    $schedule->command('reports:cleanup --days=30')
+        ->daily()
+        ->at('00:00')
+        ->appendOutputTo(storage_path('logs/reports-cleanup.log'));
+}
+```
+
+### Retention Policy
+
+**Generated Report Files:**
+- Default retention: 30 days
+- Configurable via `REPORT_RETENTION_DAYS` environment variable
+- Cleanup removes files from `storage/reports/` directory
+
+**Database Records:**
+- Completed reports older than 30 days are archived
+- Failed reports retained for 7 days for debugging
+- Scheduled report logs retained for 90 days
+
+### Logging Configuration
+
+**Scheduler Logs:**
+- Location: `storage/logs/scheduler.log`
+- Contains: Execution timestamps, report counts, errors
+- Rotation: Daily, kept for 14 days
+
+**Log Format:**
+```
+[2026-02-26 09:00:00] Processing scheduled reports...
+[2026-02-26 09:00:01] Found 3 due reports
+[2026-02-26 09:00:05] Report ID 123 generated successfully
+[2026-02-26 09:00:08] Report ID 124 generated successfully
+[2026-02-26 09:00:12] Report ID 125 failed: Email send error
+[2026-02-26 09:00:12] Completed: 2 success, 1 failure
+```
+
+### Deployment Instructions
+
+**Production Server Setup:**
+
+1. **Add Cron Entry:**
+   ```bash
+   crontab -e
+   # Add this line:
+   * * * * * cd /var/www/seoindicator && php artisan schedule:run >> /dev/null 2>&1
+   ```
+
+2. **Verify Cron is Running:**
+   ```bash
+   # Check cron logs
+   grep CRON /var/log/syslog
+
+   # Test scheduler manually
+   php artisan schedule:run -v
+   ```
+
+3. **Ensure Proper Permissions:**
+   ```bash
+   chmod -R 775 storage/
+   chown -R www-data:www-data storage/
+   ```
+
+4. **Configure Environment Variables:**
+   ```env
+   REPORT_RETENTION_DAYS=30
+   SCHEDULER_LOG_CHANNEL=daily
+   ```
+
+**Systemd Timer Alternative (Recommended for Production):**
+```ini
+# /etc/systemd/system/seoindicator-scheduler.service
+[Unit]
+Description=SEOIndicator Laravel Scheduler
+
+[Service]
+Type=oneshot
+User=www-data
+WorkingDirectory=/var/www/seoindicator
+ExecStart=/usr/bin/php artisan schedule:run
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```ini
+# /etc/systemd/system/seoindicator-scheduler.timer
+[Unit]
+Description=Run SEOIndicator scheduler every minute
+
+[Timer]
+OnCalendar=*:*:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+# Enable and start
+systemctl enable seoindicator-scheduler.timer
+systemctl start seoindicator-scheduler.timer
+```
+
+### Monitoring
+
+**Health Check:**
+- Endpoint: `GET /api/v1/health/scheduler`
+- Returns: Last run timestamp, queue size, error count
+
+**Alert Conditions:**
+- Scheduler not running for >5 minutes
+- More than 10 failed reports in last hour
+- Queue backlog >100 pending reports
+
+### Dependencies
+- TASK-4-12 (Scheduler Service)
+- TASK-4-8 (Report Generation)
+- TASK-4-19 (Email Delivery - optional)
+
+### Deployment
+- Deployed: 2026-02-26
+- Status: Post-MVP feature (Phase 4)
+
+---
 ## Fuzzy Query Matching for GSC Data (TASK-12-6)
 
 ### Service Description
