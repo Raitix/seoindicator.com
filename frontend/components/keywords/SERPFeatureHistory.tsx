@@ -20,8 +20,8 @@ import {
   getRelativeTime,
   isWithinDays,
   type SERPFeatureChange,
-  type SERPFeatureType,
 } from "@/lib/api/serp-features";
+import type { SERPFeatureType } from "@/lib/types/keywords";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 

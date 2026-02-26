@@ -5,11 +5,12 @@ import {
   getRelativeTime,
   isWithinDays,
 } from "@/lib/api/serp-features";
+import type { SERPFeatureType } from "@/lib/types/keywords";
 
 describe("SERP Feature API Helpers", () => {
   describe("SERP_FEATURE_META", () => {
     it("contains all required feature types", () => {
-      const expectedTypes = [
+      const expectedTypes: SERPFeatureType[] = [
         "featured_snippet",
         "local_pack",
         "image_pack",
