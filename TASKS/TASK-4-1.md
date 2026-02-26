@@ -1,7 +1,7 @@
 # SPEC-004-1: Database Migration - Reports Tables
 
 ## STATUS
-`Testing Prod`
+`Done`
 
 ## PRIORITY
 `High`
