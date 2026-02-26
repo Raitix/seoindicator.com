@@ -1,7 +1,7 @@
 # TASK-11-2: Create Project Members Table
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -99,3 +99,8 @@ Database task created to define roles and permissions at the project level.
   - Default role 'viewer'
   - Model relationships work correctly
 - **Status: To Deploy** - Ready for DevOps
+
+### [2026-02-26 19:38] DevOps: Starting Deployment
+- Lock file created: `.locks/TASK-11-2.lock`
+- Status changed to `In Deployment`
+- Pushing commits to origin/main for GitHub Actions deployment
