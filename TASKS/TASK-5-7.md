@@ -1,7 +1,7 @@
 # TASK-5-7: Suggestions CRUD API Endpoints
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`

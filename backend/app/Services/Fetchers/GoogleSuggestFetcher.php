@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Http;
  * @see TASK-5-4
  * @see SPEC-005
  */
-class GoogleSuggestFetcher
+class GoogleSuggestFetcher implements SuggestFetcherInterface
 {
     /**
      * Google Suggest API endpoint.
