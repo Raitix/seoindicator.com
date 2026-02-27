@@ -1,7 +1,7 @@
 # SPEC-002: Ranking Change Alerts - Technical Specification
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -254,6 +254,42 @@ Unsubscribe: {unsubscribe_url}
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-22] Agent: SpecSystemAnalyst
+**Task Breakdown Complete**
+
+Created 14 tasks for SPEC-002 Ranking Change Alerts:
+
+| Task | Description | Priority | Risk | Effort |
+|------|-------------|----------|------|--------|
+| TASK-002-1 | alert_settings migration & model | High | Low | Small |
+| TASK-002-2 | keyword_alert_settings migration & model | High | Low | Small |
+| TASK-002-3 | notifications migration & model | High | Low | Small |
+| TASK-002-4 | AlertEvaluator service | High | Medium | Medium |
+| TASK-002-5 | NotificationDispatcher service | High | Medium | Medium |
+| TASK-002-6 | Integrate into ranking update job | High | Medium | Medium |
+| TASK-002-7 | AlertSettingsController API | High | Low | Small |
+| TASK-002-8 | KeywordAlertSettingsController API | High | Low | Small |
+| TASK-002-9 | NotificationController API | Medium | Low | Small |
+| TASK-002-10 | RankingAlertEmail mailable & template | High | Low | Small |
+| TASK-002-11 | Gmail SMTP configuration | High | Low | Small |
+| TASK-002-12 | Alert Settings page (frontend) | Medium | Low | Medium |
+| TASK-002-13 | Notification Center (frontend) | Medium | Low | Medium |
+| TASK-002-14 | Notification bell in header | Medium | Low | Small |
+
+**Dependency Chain:**
+```
+Database: 1 → 2 → 3 (parallel possible)
+Services: 1,2 → 4 → 5 → 6
+API: 1 → 7, 2 → 8, 3 → 9
+Email: 10, 11 (parallel with services)
+Frontend: 7 → 12, 9 → 13 → 14
+```
+
+**MVP Critical Path:** 1 → 4 → 5 → 6 → 10 → 11 (email alerts working)
+**Phase 2:** 3, 9, 13, 14 (in-app notifications)
+
+Ready for ProjectManager prioritization.
 
 ### [2026-02-20 19:32] Agent: Architect
 Created SPEC-002 for Ranking Change Alerts. Key decisions:

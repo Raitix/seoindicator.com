@@ -1,7 +1,7 @@
 # TASK-16-3: Keyword Density Checker Tool
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

@@ -1,7 +1,7 @@
 # TASK-6-8: Keywords API Endpoints
 
 ## Status
-`To Develop`
+`In Development`
 
 ## Priority
 `High`

@@ -1,7 +1,7 @@
 # TASK-16-1: Setup Tools Infrastructure
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

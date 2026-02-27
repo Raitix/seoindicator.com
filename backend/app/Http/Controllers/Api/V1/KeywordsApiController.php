@@ -5,124 +5,94 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreKeywordApiRequest;
 use App\Http\Requests\Api\V1\UpdateKeywordApiRequest;
+use App\Models\ApiKey;
 use App\Models\Keyword;
 use App\Models\Ranking;
 use App\Models\Site;
-use App\Models\ApiKey;
 use App\Repositories\KeywordRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * Keywords API Controller for TASK-6-8.
  *
- * REST API endpoints for external integrations.
- * Uses API key authentication instead of session.
- *
- * Endpoints:
- * - GET /api/v1/keywords - List keywords
- * - POST /api/v1/keywords - Create keyword
- * - GET /api/v1/keywords/{id} - Get single keyword
- * - PUT /api/v1/keywords/{id} - Update keyword
- * - DELETE /api/v1/keywords/{id} - Delete keyword
+ * REST API endpoints for keywords CRUD operations.
+ * Uses API key authentication (not session).
  *
  * Authentication: Bearer token (API Key)
- * Permissions: keywords:read, keywords:write
+ * Rate Limiting: Per-key rate limits
+ *
+ * @see \App\Http\Middleware\ApiKeyAuth
+ * @see \App\Http\Middleware\ApiKeyRateLimiter
  */
 class KeywordsApiController extends Controller
 {
-    protected KeywordRepository $keywordRepository;
-
     /**
      * Maximum keywords per site.
      */
     protected int $maxKeywords = 500;
 
-    /**
-     * Create a new controller instance.
-     */
+    protected KeywordRepository $keywordRepository;
+
     public function __construct(KeywordRepository $keywordRepository)
     {
         $this->keywordRepository = $keywordRepository;
     }
 
     /**
-     * Get the authenticated API key from the request.
-     */
-    protected function getApiKey(Request $request): ?ApiKey
-    {
-        return $request->attributes->get('api_key');
-    }
-
-    /**
-     * Get the authenticated user from the API key.
-     */
-    protected function getUser(Request $request)
-    {
-        $apiKey = $this->getApiKey($request);
-        return $apiKey?->user;
-    }
-
-    /**
      * List keywords for the authenticated user.
      *
-     * @param Request $request
-     * @return JsonResponse
+     * GET /api/v1/keywords
      */
     public function index(Request $request): JsonResponse
     {
-        $user = $this->getUser($request);
+        $apiKey = $this->getApiKey($request);
+        $user = $apiKey->user;
 
-        if ($user === null) {
-            return $this->unauthorizedResponse();
-        }
+        // Query parameters
+        $siteId = $request->query('site_id');
+        $status = $request->query('status');
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = min(100, max(1, (int) $request->query('per_page', 20)));
 
-        // Build query
+        // Build query - only user's keywords
         $query = Keyword::where('user_id', $user->id)
             ->where('status', '!=', 'deleted');
 
-        // Filter by site_id
-        $siteId = $request->query('site_id');
-        if ($siteId !== null) {
-            // Only allow filtering by user's own sites
+        // Filter by site_id (only if user owns the site)
+        if ($siteId) {
             $site = Site::where('id', $siteId)
                 ->where('user_id', $user->id)
                 ->first();
-            if ($site) {
-                $query->where('site_id', $siteId);
-            } else {
-                // If site doesn't belong to user, return empty
+
+            if (!$site) {
+                // Return empty result if site doesn't belong to user
                 return response()->json([
                     'success' => true,
                     'data' => [],
                     'meta' => [
                         'total' => 0,
-                        'page' => 1,
-                        'per_page' => 20,
+                        'page' => $page,
+                        'per_page' => $perPage,
                         'total_pages' => 0,
                     ],
                 ]);
             }
+
+            $query->where('site_id', $siteId);
         }
 
         // Filter by status
-        $status = $request->query('status');
-        if ($status !== null && $status !== 'all') {
+        if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
-
-        // Pagination
-        $perPage = (int) $request->query('per_page', 20);
-        $perPage = min(max(1, $perPage), 100); // Clamp 1-100
-        $page = max(1, (int) $request->query('page', 1));
 
         // Get total count before pagination
         $total = $query->count();
         $totalPages = (int) ceil($total / $perPage);
 
-        // Get paginated results
+        // Paginate
         $keywords = $query->orderBy('created_at', 'desc')
             ->skip(($page - 1) * $perPage)
             ->take($perPage)
@@ -140,7 +110,7 @@ class KeywordsApiController extends Controller
                 'total' => $total,
                 'page' => $page,
                 'per_page' => $perPage,
-                'total_pages' => max(1, $totalPages),
+                'total_pages' => $totalPages,
             ],
         ]);
     }
@@ -148,16 +118,12 @@ class KeywordsApiController extends Controller
     /**
      * Create a new keyword.
      *
-     * @param StoreKeywordApiRequest $request
-     * @return JsonResponse
+     * POST /api/v1/keywords
      */
     public function store(StoreKeywordApiRequest $request): JsonResponse
     {
-        $user = $this->getUser($request);
-
-        if ($user === null) {
-            return $this->unauthorizedResponse();
-        }
+        $apiKey = $this->getApiKey($request);
+        $user = $apiKey->user;
 
         $siteId = (int) $request->input('site_id');
 
@@ -170,22 +136,23 @@ class KeywordsApiController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => [
-                    'code' => 'VALIDATION_ERROR',
-                    'message' => 'The selected site does not exist or you do not have access to it.',
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this site.',
                 ],
-            ], 422);
+            ], 403);
         }
 
         // Check keyword limit
         $currentCount = Keyword::where('site_id', $siteId)
             ->where('status', '!=', 'deleted')
             ->count();
+
         if ($currentCount >= $this->maxKeywords) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'KEYWORD_LIMIT_EXCEEDED',
-                    'message' => "Maximum {$this->maxKeywords} keywords allowed per site.",
+                    'message' => "Maximum {$this->maxKeywords} active keywords allowed.",
                 ],
             ], 400);
         }
@@ -196,7 +163,7 @@ class KeywordsApiController extends Controller
         $location = $request->input('location', 'us');
         $device = $request->input('device', 'desktop');
 
-        // Check for duplicates
+        // Check for duplicate
         $duplicateExists = Keyword::where('site_id', $siteId)
             ->where('keyword', $keywordText)
             ->where('search_engine', $searchEngine)
@@ -210,12 +177,12 @@ class KeywordsApiController extends Controller
                 'success' => false,
                 'error' => [
                     'code' => 'KEYWORD_EXISTS',
-                    'message' => 'This keyword already exists for this site with the same configuration.',
+                    'message' => 'This keyword is already being tracked for this site.',
                 ],
             ], 409);
         }
 
-        // Create keyword using repository (emits webhook event)
+        // Create keyword
         $keyword = $this->keywordRepository->create([
             'site_id' => $siteId,
             'user_id' => $user->id,
@@ -236,72 +203,80 @@ class KeywordsApiController extends Controller
     /**
      * Get a single keyword.
      *
-     * @param Request $request
-     * @param int $id
-     * @return JsonResponse
+     * GET /api/v1/keywords/{id}
      */
     public function show(Request $request, int $id): JsonResponse
     {
-        $user = $this->getUser($request);
+        $apiKey = $this->getApiKey($request);
+        $user = $apiKey->user;
 
-        if ($user === null) {
-            return $this->unauthorizedResponse();
-        }
-
-        $keyword = Keyword::find($id);
+        // First check if keyword exists (even if deleted)
+        $keyword = Keyword::where('id', $id)->first();
 
         if (!$keyword) {
-            return $this->notFoundResponse();
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'NOT_FOUND',
+                    'message' => 'Keyword not found.',
+                ],
+            ], 404);
         }
 
-        // Check authorization using policy
-        if (!Gate::forUser($user)->allows('view', $keyword)) {
-            return $this->forbiddenResponse();
+        // Check if keyword belongs to the user
+        if ($keyword->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this keyword.',
+                ],
+            ], 403);
         }
 
-        // Check if deleted
+        // Check if keyword is deleted
         if ($keyword->status === 'deleted') {
-            return $this->notFoundResponse();
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'NOT_FOUND',
+                    'message' => 'Keyword not found.',
+                ],
+            ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $this->formatKeyword($keyword),
+            'data' => $this->formatKeyword($keyword, true),
         ]);
     }
 
     /**
      * Update a keyword.
      *
-     * @param UpdateKeywordApiRequest $request
-     * @param int $id
-     * @return JsonResponse
+     * PUT /api/v1/keywords/{id}
      */
     public function update(UpdateKeywordApiRequest $request, int $id): JsonResponse
     {
-        $user = $this->getUser($request);
+        $apiKey = $this->getApiKey($request);
+        $user = $apiKey->user;
 
-        if ($user === null) {
-            return $this->unauthorizedResponse();
-        }
-
-        $keyword = Keyword::find($id);
+        $keyword = Keyword::where('id', $id)
+            ->where('user_id', $user->id)
+            ->where('status', '!=', 'deleted')
+            ->first();
 
         if (!$keyword) {
-            return $this->notFoundResponse();
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'NOT_FOUND',
+                    'message' => 'Keyword not found.',
+                ],
+            ], 404);
         }
 
-        // Check authorization using policy
-        if (!Gate::forUser($user)->allows('update', $keyword)) {
-            return $this->forbiddenResponse();
-        }
-
-        // Check if deleted
-        if ($keyword->status === 'deleted') {
-            return $this->notFoundResponse();
-        }
-
-        // Validate that at least one field is provided
+        // Check if any fields provided
         if (!$request->hasAny(['target_url', 'status'])) {
             return response()->json([
                 'success' => false,
@@ -323,7 +298,7 @@ class KeywordsApiController extends Controller
 
         $this->keywordRepository->update($id, $updateData);
 
-        // Refresh keyword
+        // Refresh and return
         $keyword = Keyword::find($id);
 
         return response()->json([
@@ -335,67 +310,73 @@ class KeywordsApiController extends Controller
     /**
      * Delete a keyword.
      *
-     * @param Request $request
-     * @param int $id
-     * @return Response|JsonResponse
+     * DELETE /api/v1/keywords/{id}
      */
-    public function destroy(Request $request, int $id): Response|JsonResponse
+    public function destroy(Request $request, int $id): Response
     {
-        $user = $this->getUser($request);
+        $apiKey = $this->getApiKey($request);
+        $user = $apiKey->user;
 
-        if ($user === null) {
-            return $this->unauthorizedResponse();
-        }
-
-        $keyword = Keyword::find($id);
+        $keyword = Keyword::where('id', $id)
+            ->where('user_id', $user->id)
+            ->where('status', '!=', 'deleted')
+            ->first();
 
         if (!$keyword) {
             return response()->noContent(404);
         }
 
-        // Check authorization using policy
-        if (!Gate::forUser($user)->allows('delete', $keyword)) {
-            return $this->forbiddenResponse();
-        }
-
-        // Check if already deleted
-        if ($keyword->status === 'deleted') {
-            return response()->noContent(404);
-        }
-
-        // Handle keep_history parameter
+        // Check keep_history parameter
         $keepHistoryParam = $request->query('keep_history', 'true');
         $keepHistory = filter_var($keepHistoryParam, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
         if ($keepHistory === null) {
             $keepHistory = true;
         }
 
-        // Delete rankings if keep_history is false
+        // Delete rankings if requested
         if (!$keepHistory) {
             Ranking::where('keyword_id', $keyword->id)->delete();
         }
 
         // Soft delete via status
-        $keyword->status = 'deleted';
-        $keyword->save();
+        $this->keywordRepository->delete($keyword->id);
 
         return response()->noContent();
     }
 
     /**
-     * Format keyword for API response.
-     *
-     * @param Keyword $keyword
-     * @return array
+     * Get the API key from the request.
      */
-    protected function formatKeyword(Keyword $keyword): array
+    protected function getApiKey(Request $request): ApiKey
     {
-        [$current, $previous] = $this->getLatestRankings($keyword);
+        $apiKey = $request->attributes->get('api_key')
+            ?? $request->attributes->get('current_api_key');
 
-        $currentPosition = $current?->position;
-        $previousPosition = $previous?->position;
+        if (!$apiKey instanceof ApiKey) {
+            abort(401, 'API key not found in request.');
+        }
 
-        return [
+        return $apiKey;
+    }
+
+    /**
+     * Format keyword for API response.
+     */
+    protected function formatKeyword(Keyword $keyword, bool $includeDetails = false): array
+    {
+        // Get latest rankings
+        $rankings = $keyword->rankingHistory()
+            ->orderBy('checked_at', 'desc')
+            ->take(2)
+            ->get();
+
+        $currentRanking = $rankings->get(0);
+        $previousRanking = $rankings->get(1);
+
+        $currentPosition = $currentRanking?->position;
+        $previousPosition = $previousRanking?->position;
+
+        $data = [
             'id' => $keyword->id,
             'keyword' => $keyword->keyword,
             'site_id' => $keyword->site_id,
@@ -407,32 +388,19 @@ class KeywordsApiController extends Controller
             'current_position' => $currentPosition,
             'previous_position' => $previousPosition,
             'position_change' => $this->calculatePositionChange($currentPosition, $previousPosition),
-            'last_checked_at' => $current?->checked_at?->toISOString(),
+            'last_checked_at' => $currentRanking?->checked_at?->toISOString(),
         ];
-    }
 
-    /**
-     * Get latest and previous rankings for a keyword.
-     *
-     * @param Keyword $keyword
-     * @return array{0:Ranking|null,1:Ranking|null}
-     */
-    protected function getLatestRankings(Keyword $keyword): array
-    {
-        $rankings = Ranking::where('keyword_id', $keyword->id)
-            ->orderBy('checked_at', 'desc')
-            ->take(2)
-            ->get();
+        if ($includeDetails) {
+            $data['created_at'] = $keyword->created_at?->toISOString();
+            $data['updated_at'] = $keyword->updated_at?->toISOString();
+        }
 
-        return [$rankings->get(0), $rankings->get(1)];
+        return $data;
     }
 
     /**
      * Calculate position change.
-     *
-     * @param int|null $current
-     * @param int|null $previous
-     * @return int|null
      */
     protected function calculatePositionChange(?int $current, ?int $previous): ?int
     {
@@ -440,55 +408,6 @@ class KeywordsApiController extends Controller
             return null;
         }
 
-        // Negative means improvement (position went up)
         return $current - $previous;
-    }
-
-    /**
-     * Build an unauthorized response.
-     *
-     * @return JsonResponse
-     */
-    protected function unauthorizedResponse(): JsonResponse
-    {
-        return response()->json([
-            'success' => false,
-            'error' => [
-                'code' => 'UNAUTHORIZED',
-                'message' => 'Authentication required.',
-            ],
-        ], 401);
-    }
-
-    /**
-     * Build a forbidden response.
-     *
-     * @return JsonResponse
-     */
-    protected function forbiddenResponse(): JsonResponse
-    {
-        return response()->json([
-            'success' => false,
-            'error' => [
-                'code' => 'FORBIDDEN',
-                'message' => 'You do not have permission to access this resource.',
-            ],
-        ], 403);
-    }
-
-    /**
-     * Build a not found response.
-     *
-     * @return JsonResponse
-     */
-    protected function notFoundResponse(): JsonResponse
-    {
-        return response()->json([
-            'success' => false,
-            'error' => [
-                'code' => 'NOT_FOUND',
-                'message' => 'Keyword not found.',
-            ],
-        ], 404);
     }
 }

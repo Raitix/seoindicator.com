@@ -1,7 +1,7 @@
 # TASK-16-6: Lead Storage Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`

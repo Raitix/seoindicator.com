@@ -1,7 +1,7 @@
 # TASK-16-9: Tools Landing Page
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`

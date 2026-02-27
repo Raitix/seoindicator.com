@@ -1,7 +1,7 @@
 # TASK-16-8: Social Media Preview Tool
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`

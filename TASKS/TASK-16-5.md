@@ -1,7 +1,7 @@
 # TASK-16-5: Email Capture Modal & API
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

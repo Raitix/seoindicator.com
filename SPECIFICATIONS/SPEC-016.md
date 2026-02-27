@@ -1,7 +1,7 @@
 # SPEC-016: Interactive SEO Tools - Technical Specification
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
