@@ -1,7 +1,7 @@
 # TASK-5-1: Database Schema - Keyword Suggestions Table
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -213,3 +213,18 @@ php artisan test --filter CreateKeywordSuggestionsTableTest
 **Decision: APPROVED FOR DEPLOYMENT**
 
 Status: Testing Locally → To Deploy
+
+### [2026-02-27 22:28] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+Updated DOCUMENTATION.md with database schema for:
+- `keyword_suggestions` table - stores discovered keyword opportunities
+- `dismissed_suggestions` table - tracks user-dismissed suggestions
+
+**Schema Details:**
+- Both tables have FK constraints to sites.id with CASCADE delete
+- keyword_suggestions has unique constraint on (site_id, keyword)
+- Indexes optimized for filtering by site, keyword, and opportunity score
+- Nullable columns for search_volume, difficulty_score, opportunity_score (MVP has no data provider)
+
+Status: Documentation in Progress → Done
