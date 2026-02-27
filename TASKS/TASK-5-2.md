@@ -13,11 +13,11 @@
 Create Eloquent model and repository for keyword_suggestions table. Provides data access layer for the keyword discovery feature.
 
 ## Acceptance Criteria
-- [ ] KeywordSuggestion model with fillable: site_id, keyword, source, search_volume, difficulty_score, opportunity_score, is_tracking, is_dismissed
-- [ ] BelongsTo relationship: site()
-- [ ] Scope for filtering: bySite(), bySource(), notDismissed(), notTracking()
-- [ ] KeywordSuggestionRepository with methods: find, create, update, delete, findBySite, findDismissed, markAsTracking, dismiss
-- [ ] Repository follows existing pattern in project
+- [x] KeywordSuggestion model with fillable: site_id, keyword, source, search_volume, difficulty_score, opportunity_score, is_tracking, is_dismissed
+- [x] BelongsTo relationship: site()
+- [x] Scope for filtering: bySite(), bySource(), notDismissed(), notTracking()
+- [x] KeywordSuggestionRepository with methods: find, create, update, delete, findBySite, findDismissed, markAsTracking, dismiss
+- [x] Repository follows existing pattern in project
 
 ## Dependencies
 - TASK-5-1 (Database schema)
