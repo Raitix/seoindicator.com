@@ -39,4 +39,9 @@ class Site extends Model
     {
         return $this->hasMany(KeywordSuggestion::class);
     }
+
+    public function backlinkSummaries(): HasMany
+    {
+        return $this->hasMany(BacklinkSummary::class);
+    }
 }

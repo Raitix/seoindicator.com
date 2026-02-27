@@ -1,6 +1,84 @@
 # DOCUMENTATION.md
 
 ---
+## Keyword Add/Edit Forms (TASK-1-14)
+
+### Feature Description
+Forms for adding new keywords and editing existing keywords in the keyword tracking system. Provides user-friendly interface for keyword management with validation and feedback.
+
+### Form Components
+
+**Add Keyword Form:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `keyword` | string | Yes | The search term to track (max 255 chars) |
+| `targetUrl` | URL | No | User's target URL for this keyword |
+| `searchEngine` | select | Yes | Search engine (default: Google) |
+| `location` | select | Yes | Country code (default: US) |
+| `device` | select | Yes | Device type (default: desktop) |
+
+**Edit Keyword Form:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `targetUrl` | URL | Update target URL |
+| `status` | select | Change status (active/paused) |
+
+### Validation Rules
+| Field | Validation |
+|-------|------------|
+| `keyword` | Required, string, max 255 chars |
+| `targetUrl` | Optional, valid URL format |
+| `searchEngine` | Required, enum: google |
+| `location` | Required, valid country code |
+| `device` | Required, enum: desktop, mobile |
+
+### User Features
+- **Duplicate Detection**: Warning shown for duplicate keywords (not blocking)
+- **Form Reset**: Form clears after successful add
+- **Cancel Button**: Returns to keyword list
+- **Toast Notifications**: Success/error feedback
+- **Responsive Layout**: Works on desktop and mobile
+
+### Technical Implementation
+- **Framework**: React Hook Form for form handling
+- **Validation**: Zod schema validation
+- **UI Components**: Shadcn/UI form components
+- **Routing**:
+  - Add: `/sites/[siteId]/keywords/new/`
+  - Edit: `/sites/[siteId]/keywords/[keywordId]/edit/`
+- **API Integration**: Creates/updates keywords via Keywords API
+
+### Static Export Support
+Dynamic route pages use `useParams()` hook for client-side route parameter extraction, ensuring compatibility with Next.js static export (`output: 'export'`).
+
+### Frontend Files
+- `frontend/app/sites/[siteId]/keywords/new/page.tsx` - Add keyword page
+- `frontend/app/sites/[siteId]/keywords/[keywordId]/edit/page.tsx` - Edit keyword page
+- `frontend/components/keywords/KeywordForm.tsx` - Shared form component
+- `frontend/lib/validations/keyword.ts` - Zod validation schemas
+- `frontend/lib/api/keywords.ts` - API helper functions
+
+### Unit Tests
+| Test File | Tests | Description |
+|-----------|-------|-------------|
+| `KeywordForm.test.tsx` | 6 | Field rendering, validation, duplicate warning, submit flows |
+| `add/page.test.tsx` | 1 | Page renders correctly with mocked params |
+
+### Production Status
+- **Deployed**: 2026-02-28 (GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 7/7 passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-1-4 (Keywords CRUD API)
+- TASK-1-1 (Keywords table)
+
+### Related Tasks
+- TASK-1-13: Keyword List Page
+- TASK-1-15: Ranking History Chart
+
+---
 ## Rankings API Endpoints (TASK-6-9)
 
 ### Service Description
