@@ -99,10 +99,6 @@ Route::prefix('v1')->group(function () {
     Route::put('keywords/{id}', [KeywordController::class, 'update']);
     Route::delete('keywords/{id}', [KeywordController::class, 'destroy']);
 
-    // Rankings (SPEC-001-5)
-    Route::get('keywords/{id}/history', [RankingController::class, 'history']);
-    Route::post('keywords/{id}/check', [RankingController::class, 'check']);
-
     // Dashboard (SPEC-001-6)
     Route::get('sites/{siteId}/dashboard', [DashboardController::class, 'index']);
 
@@ -135,6 +131,10 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::post('projects/{project}/archive', [ProjectController::class, 'archive']);
     Route::post('projects/{project}/restore', [ProjectController::class, 'restore']);
     Route::apiResource('projects', ProjectController::class);
+
+    // Rankings (SPEC-001-5) - requires auth + IDOR protection
+    Route::get('keywords/{id}/history', [RankingController::class, 'history']);
+    Route::post('keywords/{id}/check', [RankingController::class, 'check']);
 
     // Reports (SPEC-004-7, SPEC-004-8, SPEC-004-9) - requires auth
     Route::get('sites/{siteId}/reports', [ReportController::class, 'index']);

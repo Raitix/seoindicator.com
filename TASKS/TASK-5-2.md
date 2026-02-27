@@ -1,7 +1,7 @@
 # TASK-5-2: Suggestion Model and Repository
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## PRIORITY
 `High`
