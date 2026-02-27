@@ -116,6 +116,22 @@ class Project extends Model
     }
 
     /**
+     * Get the visibility scores for this project.
+     */
+    public function visibilityScores(): HasMany
+    {
+        return $this->hasMany(VisibilityScore::class);
+    }
+
+    /**
+     * Get the latest visibility score for this project.
+     */
+    public function latestVisibilityScore()
+    {
+        return $this->visibilityScores()->orderByDesc('calculated_at');
+    }
+
+    /**
      * Check if the project is archived.
      */
     public function isArchived(): bool
