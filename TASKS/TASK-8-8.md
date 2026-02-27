@@ -1,7 +1,7 @@
 # TASK-8-8: Frontend Components for Projects
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
