@@ -1869,6 +1869,237 @@ None (standalone fetcher)
 - Status: Complete
 
 ---
+## Suggestion Aggregation Service (TASK-5-6)
+
+### Service Description
+Core orchestration service that aggregates keyword suggestions from multiple sources, deduplicates results, calculates opportunity scores, and stores suggestions in the database. This is the central hub for keyword discovery functionality.
+
+### Core Functionalities
+
+**SuggestionService Class:**
+- `generateSuggestions(siteId: int, seedKeyword: string, sources: array): int` - Main method for generating suggestions
+- Accepts sources array: `['suggest', 'question']` (extensible for future sources)
+- Returns count of new suggestions added
+
+**Source Integration:**
+| Source | Fetcher | Description |
+|--------|---------|-------------|
+| `suggest` | GoogleSuggestFetcher | Google autocomplete suggestions |
+| `question` | QuestionGenerator | Who/what/where/how keyword variations |
+
+**Processing Pipeline:**
+1. Fetch suggestions from each enabled source
+2. Deduplicate across sources (case-insensitive keyword matching)
+3. Calculate opportunity score for each suggestion
+4. Store in `keyword_suggestions` table via upsert
+5. Mark existing suggestions as `is_dismissed: false` if rediscovered
+6. Log performance metrics
+
+**Error Handling:**
+- Graceful degradation - continues with other sources on failure
+- Logs all errors with context
+- Transaction rollback on storage failure
+
+### Technical Implementation
+- Service: `backend/app/Services/SuggestionService.php`
+- Dependencies (injected via constructor):
+  - `KeywordSuggestionRepository` - Storage operations
+  - `QuestionGenerator` - Question keyword generation
+  - `GoogleSuggestFetcher` - Google Suggest API
+  - `OpportunityScorer` - Score calculation
+
+### Usage Example
+```php
+$suggestionService = app(SuggestionService::class);
+$count = $suggestionService->generateSuggestions(
+    siteId: 1,
+    seedKeyword: 'seo tools',
+    sources: ['suggest', 'question']
+);
+// Returns: 15 (number of new suggestions added)
+```
+
+### Unit Tests
+14 tests, 14 assertions covering:
+- SS-001: Generate from question source
+- SS-002: Calculate opportunity scores
+- SS-003: Store in repository
+- SS-004: Deduplicate existing suggestions
+- SS-005: Undismiss rediscovered suggestions
+- SS-006: Handle empty results
+- SS-007: Multiple sources aggregation
+- SS-008: Log performance
+- SS-009: Handle fetcher exception
+- SS-010: Storage failure handling
+- Max results limit test
+- Correct source label test
+- Deduplication across sources
+- Integration with real dependencies
+
+### Production Status
+- **Deployed**: 2026-02-27 (commit 45fa05c)
+- **Health Check**: Passing
+- **Tests**: 14 passed (14 assertions)
+- **Database**: keyword_suggestions table operational
+
+### Security Notes
+- Input validation on seed keywords
+- No SQL injection vulnerabilities (Eloquent ORM)
+- Graceful error handling prevents information leakage
+- Rate limiting handled by fetchers
+
+### Dependencies
+- TASK-5-1 (Database schema - keyword_suggestions table)
+- TASK-5-2 (KeywordSuggestion model and repository)
+- TASK-5-3 (Opportunity scorer)
+- TASK-5-4 (Google Suggest fetcher)
+- TASK-5-5 (Question keyword generator)
+
+---
+## Other SERP Feature Detection (TASK-7-7)
+
+### Service Description
+Implements detection for remaining SERP feature types beyond featured snippets and local packs. Provides comprehensive SERP feature tracking for image packs, videos, People Also Ask, knowledge panels, sitelinks, reviews, FAQ rich results, and product listings.
+
+### Core Functionalities
+
+**Detection Methods:**
+| Detector | Method | Description |
+|----------|--------|-------------|
+| Image Pack | `detectImagePack()` | Detects horizontal image rows in SERP |
+| Video | `detectVideo()` | Detects video thumbnails (YouTube, Vimeo, self-hosted) |
+| People Also Ask | `detectPeopleAlsoAsk()` | Detects expandable Q&A sections |
+| Knowledge Panel | `detectKnowledgePanel()` | Detects entity info sidebar |
+| Sitelinks | `detectSitelinks()` | Detects additional page links under result |
+| Reviews | `detectReviews()` | Detects star ratings in results |
+| FAQ | `detectFAQ()` | Detects FAQ rich result accordions |
+| Product | `detectProduct()` | Detects product listings with price/availability |
+
+### Return Structure
+Each detector returns a `SERPFeature` object:
+```typescript
+interface SERPFeature {
+  type: string;           // Feature type identifier
+  isPresent: boolean;     // Whether feature is present for target URL
+  position?: number;      // Position within feature (1-indexed)
+  url?: string;           // URL shown in feature
+  count?: number;         // Count (e.g., number of sitelinks)
+  rating?: number;        // Star rating (for reviews)
+  reviewCount?: number;   // Number of reviews
+  snippet?: string;       // Text snippet (for FAQ, PAA)
+  matchedQuestions?: string[]; // Questions matching target (for PAA)
+}
+```
+
+### URL Matching
+All detectors use shared URL utilities for consistent domain matching:
+- `extractHostname(url)` - Extracts hostname from URL
+- `normalizeHostname(hostname)` - Normalizes (lowercase, removes www prefix)
+- `domainsMatch(url1, url2)` - Compares two URLs for domain match
+
+### Technical Implementation
+**Detector Files:**
+- `backend/src/services/detectors/url-utils.js` - Shared URL utilities
+- `backend/src/services/detectors/image-pack-detector.js`
+- `backend/src/services/detectors/video-detector.js`
+- `backend/src/services/detectors/people-also-ask-detector.js`
+- `backend/src/services/detectors/knowledge-panel-detector.js`
+- `backend/src/services/detectors/sitelinks-detector.js`
+- `backend/src/services/detectors/reviews-detector.js`
+- `backend/src/services/detectors/faq-detector.js`
+- `backend/src/services/detectors/product-detector.js`
+
+### Feature-Specific Logic
+
+**Image Pack Detector:**
+- Checks `serp.images` array
+- Matches target domain in image source URLs
+- Returns position if found (1-indexed)
+
+**Video Detector:**
+- Checks `serp.videos` array
+- Matches YouTube/Vimeo/self-hosted videos
+- Returns position and video platform
+
+**People Also Ask Detector:**
+- Checks `serp.relatedQuestions` array
+- Finds questions linking to target domain
+- Returns matched questions array
+- Bug fix: `isPresent` based on actual domain match (not question count)
+
+**Knowledge Panel Detector:**
+- Checks `serp.knowledgePanel` object
+- Matches source URL against target domain
+- Returns title and snippet if present
+
+**Sitelinks Detector:**
+- Checks first organic result for sitelinks
+- Only applies to position 1 result
+- Returns count of sitelinks
+
+**Reviews Detector:**
+- Checks organic results for rating data
+- Matches target domain
+- Returns star rating and review count
+
+**FAQ Detector:**
+- Checks for FAQ rich results structure
+- Matches links in FAQ items
+- Returns matched FAQ snippets
+
+**Product Detector:**
+- Checks `serp.products` or shopping results
+- Matches target domain in product listings
+- Returns price, availability, position
+
+### Unit Tests
+**JavaScript Tests (Mocha):** 162 tests across all 8 detectors
+| Detector | Tests | Description |
+|----------|-------|-------------|
+| Image Pack | 22 | Detection, position, URL matching |
+| Video | 22 | YouTube/Vimeo/self-hosted, position |
+| People Also Ask | 19 | Question matching, domain check |
+| Knowledge Panel | 22 | Entity detection, source matching |
+| Sitelinks | 17 | First result, count detection |
+| Reviews | 21 | Rating, review count, stars |
+| FAQ | 17 | FAQ items, link matching |
+| Product | 24 | Price, availability, position |
+
+**PHP Tests (PHPUnit - SERP Feature related):** 130 tests
+- SerpFeatureRepositoryTest: 17 tests
+- SerpFeatureChangeTrackerTest: 30 tests
+- SerpFeatureServiceTest: 14 tests
+- SerpFeatureControllerTest: 22 tests
+- SerpFeatureWorkflowTest: 21 tests
+- SerpFeaturesApiIntegrationTest: 26 tests
+
+### Adversarial Testing
+All detectors tested for:
+- Null SERP objects → graceful handling
+- Malformed URLs → no exceptions
+- Empty arrays → proper fallback
+- Special characters in feature types
+- XSS/SQL injection patterns → handled correctly
+- Prototype pollution prevention
+
+### Security Notes
+- All detectors handle malformed input gracefully
+- No exceptions thrown on edge cases
+- URL validation prevents injection
+- Shared utilities ensure consistent sanitization
+
+### Dependencies
+- TASK-7-4 (Detector service infrastructure)
+- TASK-7-5 (Featured snippet detector - pattern reference)
+- TASK-7-6 (Local pack detector - pattern reference)
+
+### Deployment
+- **Deployed**: 2026-02-27 (commit acf9794)
+- **Production Verified**: 2026-02-27
+- **Tests**: 316 JavaScript, 130 PHP passing
+- **Status**: Complete
+
+---
 ## Frontend Components: Projects (TASK-8-8)
 
 ### Overview

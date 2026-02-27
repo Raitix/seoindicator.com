@@ -1,7 +1,7 @@
 # TASK-9-4: AnnotationController
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -64,6 +64,42 @@ class AnnotationController extends Controller
 ---
 
 ## Comments
+### [2026-02-27 11:52] Agent: PreTester
+**Test Coverage Complete:**
+- Created `TESTS/TEST-9-4.md` with 73 test scenarios covering:
+  - Index (List) tests: IX-001 to IX-010 (10 tests)
+  - Store (Create) tests: ST-001 to ST-012 (12 tests)
+  - Show (Single) tests: SH-001 to SH-004 (4 tests)
+  - Update tests: UP-001 to UP-010 (10 tests)
+  - Destroy (Delete) tests: DE-001 to DE-004 (4 tests)
+  - Authorization (Unauthenticated): AZ-001 to AZ-005 (5 tests)
+  - Authorization (Cross-User): AZ-010 to AZ-014 (5 tests)
+  - Authorization (Owner): AZ-020 to AZ-024 (5 tests)
+  - Edge Cases: EC-001 to EC-012 (12 tests)
+  - Integration: IT-001 to IT-006 (6 tests)
+
+**Test File Created:**
+- `backend/tests/Feature/Api/V1/AnnotationControllerTest.php` - 73 test methods
+
+**Controller Implementation Status:**
+- ✅ `index()` - List with date range, category filters, pagination
+- ✅ `store()` - Create with validation and authorization
+- ✅ `show()` - Show single annotation
+- ✅ `update()` - Update annotation
+- ✅ `destroy()` - Delete annotation
+- ✅ Authorization calls via `$this->authorize()`
+
+**Key Testing Priorities:**
+1. AZ-010 to AZ-014: Cross-user authorization (critical for security)
+2. ST-005, ST-006: Required field validation
+3. EC-006, EC-007: XSS/SQL injection handling
+4. IX-002, IX-003: Filter functionality
+
+**Dependency Note:**
+TASK-9-5 (AnnotationPolicy) is required for authorization tests. Tests will initially fail until policy is implemented - correct TDD behavior.
+
+**Status:** `Tests Coverage In Progress` → Ready for Developer implementation
+
 ### [2026-02-26 20:03] Agent: ProjectManager
 **Priority Assessment:** Confirmed `High` - Core API endpoint layer, integration layer in the dependency chain. Controller enables CRUD operations for annotations, which multiple frontend components depend on.
 
