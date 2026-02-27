@@ -1,7 +1,7 @@
 # SPEC-001-5: Ranking History API Endpoints
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High` (Security Issue)
 

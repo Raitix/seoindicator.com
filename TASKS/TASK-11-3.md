@@ -75,7 +75,7 @@ Task for implementing core team collaboration features in backend service.
 
 **Dependency Note:**
 - TASK-11-1 (team_members table) must be deployed before this task can be developed
-- TASK-11-1 is currently `Prioritization In Progress` — will complete first in pipeline flow
+- TASK-11-1 is currently `To Prioritize` — will complete first in pipeline flow
 
 **Handoff:** Ready for PreTester to design tests. Tests can be written independently of dependency.
 

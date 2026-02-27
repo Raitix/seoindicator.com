@@ -1,7 +1,7 @@
 # TASK-6-5: Rate Limiter Middleware
 
 ## Status
-`Testing Prod`
+`To Test Prod`
 
 ## Priority
 `High`

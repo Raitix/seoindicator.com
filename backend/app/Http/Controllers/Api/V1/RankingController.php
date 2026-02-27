@@ -11,6 +11,9 @@ use Illuminate\Support\Carbon;
 
 /**
  * Ranking Controller for SPEC-001-5.
+ * 
+ * Security: All endpoints require authentication and validate
+ * user ownership of keywords (IDOR protection).
  */
 class RankingController extends Controller
 {
@@ -24,11 +27,35 @@ class RankingController extends Controller
     }
 
     /**
+     * Verify the authenticated user owns the keyword.
+     * 
+     * @param Keyword $keyword
+     * @return bool
+     */
+    protected function userOwnsKeyword(Keyword $keyword): bool
+    {
+        $userId = auth()->id();
+        
+        // Check direct ownership via user_id
+        if ($keyword->user_id === $userId) {
+            return true;
+        }
+        
+        // Check ownership via site relationship
+        if ($keyword->site && $keyword->site->user_id === $userId) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
      * Get ranking history for a keyword.
      */
     public function history(int $id): JsonResponse
     {
-        $keyword = Keyword::find($id);
+        $keyword = Keyword::with('site')->find($id);
+        
         if (!$keyword) {
             return response()->json([
                 'success' => false,
@@ -37,6 +64,17 @@ class RankingController extends Controller
                     'message' => 'Keyword not found.',
                 ],
             ], 404);
+        }
+
+        // IDOR protection: verify user owns the keyword
+        if (!$this->userOwnsKeyword($keyword)) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this keyword.',
+                ],
+            ], 403);
         }
 
         $keyword->last_viewed_at = now();
@@ -89,7 +127,8 @@ class RankingController extends Controller
      */
     public function check(int $id): JsonResponse
     {
-        $keyword = Keyword::find($id);
+        $keyword = Keyword::with('site')->find($id);
+        
         if (!$keyword) {
             return response()->json([
                 'success' => false,
@@ -98,6 +137,17 @@ class RankingController extends Controller
                     'message' => 'Keyword not found.',
                 ],
             ], 404);
+        }
+
+        // IDOR protection: verify user owns the keyword
+        if (!$this->userOwnsKeyword($keyword)) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this keyword.',
+                ],
+            ], 403);
         }
 
         $jobId = $this->jobQueue->addJob([

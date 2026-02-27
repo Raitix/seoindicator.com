@@ -247,4 +247,4 @@ Created task for competitor CRUD API. Core functionality for managing competitor
 **Notes:**
 - Competitor CRUD API is fully functional and documented
 - Remaining tasks in SPEC-003 continue (TASK-3-3 through TASK-3-8)
-- SPEC-003 and FEAT-003 remain `In Development` until all tasks complete
+- SPEC-003 and FEAT-003 remain `To Develop` until all tasks complete

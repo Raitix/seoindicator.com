@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\V1;
 use Tests\TestCase;
 use App\Models\Keyword;
 use App\Models\Site;
+use App\Models\User;
 use App\Models\Ranking;
 use App\Services\Queue\JobQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,11 +16,94 @@ class RankingControllerTest extends TestCase
     use RefreshDatabase;
 
     protected Site $site;
+    protected User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->site = Site::factory()->create();
+        $this->user = User::factory()->create();
+        $this->site = Site::factory()->create(['user_id' => $this->user->id]);
+    }
+
+    // ==================== AUTHENTICATION TESTS ====================
+
+    /**
+     * Test unauthenticated request to history endpoint.
+     */
+    public function test_history_requires_authentication(): void
+    {
+        $keyword = Keyword::factory()->create(['site_id' => $this->site->id]);
+        
+        $response = $this->getJson("/api/v1/keywords/{$keyword->id}/history");
+        
+        $response->assertStatus(401);
+    }
+
+    /**
+     * Test unauthenticated request to check endpoint.
+     */
+    public function test_check_requires_authentication(): void
+    {
+        $keyword = Keyword::factory()->create(['site_id' => $this->site->id]);
+        
+        $response = $this->postJson("/api/v1/keywords/{$keyword->id}/check");
+        
+        $response->assertStatus(401);
+    }
+
+    // ==================== IDOR PROTECTION TESTS ====================
+
+    /**
+     * Test user cannot access another user's keyword history.
+     */
+    public function test_user_cannot_access_other_users_keyword_history(): void
+    {
+        $otherUser = User::factory()->create();
+        $otherSite = Site::factory()->create(['user_id' => $otherUser->id]);
+        $keyword = Keyword::factory()->create(['site_id' => $otherSite->id]);
+        
+        Ranking::factory()->count(5)->create(['keyword_id' => $keyword->id]);
+        
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$keyword->id}/history");
+        
+        $response->assertStatus(403)
+            ->assertJsonPath('error.code', 'FORBIDDEN');
+    }
+
+    /**
+     * Test user cannot trigger check on another user's keyword.
+     */
+    public function test_user_cannot_check_other_users_keyword(): void
+    {
+        $otherUser = User::factory()->create();
+        $otherSite = Site::factory()->create(['user_id' => $otherUser->id]);
+        $keyword = Keyword::factory()->create(['site_id' => $otherSite->id]);
+        
+        $response = $this->actingAs($this->user)
+            ->postJson("/api/v1/keywords/{$keyword->id}/check");
+        
+        $response->assertStatus(403)
+            ->assertJsonPath('error.code', 'FORBIDDEN');
+    }
+
+    /**
+     * Test user can access their own keyword history via user_id.
+     */
+    public function test_user_can_access_keyword_with_direct_user_id(): void
+    {
+        $keyword = Keyword::factory()->create([
+            'user_id' => $this->user->id,
+            'site_id' => null, // No site, just direct user assignment
+        ]);
+        
+        Ranking::factory()->count(3)->create(['keyword_id' => $keyword->id]);
+        
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$keyword->id}/history");
+        
+        $response->assertStatus(200)
+            ->assertJsonCount(3, 'data.history');
     }
 
     // ==================== HISTORY TESTS ====================
@@ -33,7 +117,8 @@ class RankingControllerTest extends TestCase
         
         Ranking::factory()->count(10)->create(['keyword_id' => $keyword->id]);
         
-        $response = $this->getJson("/api/v1/keywords/{$keyword->id}/history");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$keyword->id}/history");
         
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -61,7 +146,8 @@ class RankingControllerTest extends TestCase
     {
         $keyword = Keyword::factory()->create(['site_id' => $this->site->id]);
         
-        $response = $this->getJson("/api/v1/keywords/{$keyword->id}/history");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$keyword->id}/history");
         
         $response->assertStatus(200)
             ->assertJsonPath('data.history', [])
@@ -73,7 +159,8 @@ class RankingControllerTest extends TestCase
      */
     public function test_get_ranking_history_invalid_keyword(): void
     {
-        $response = $this->getJson('/api/v1/keywords/9999/history');
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/keywords/9999/history');
         
         $response->assertStatus(404);
     }
@@ -99,7 +186,8 @@ class RankingControllerTest extends TestCase
             'checked_at' => now()->subDays(40),
         ]);
         
-        $response = $this->getJson("/api/v1/keywords/{$keyword->id}/history?from=" . now()->subDays(30)->toDateString());
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$keyword->id}/history?from=" . now()->subDays(30)->toDateString());
         
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data.history');
@@ -114,7 +202,8 @@ class RankingControllerTest extends TestCase
         
         Ranking::factory()->count(50)->create(['keyword_id' => $keyword->id]);
         
-        $response = $this->getJson("/api/v1/keywords/{$keyword->id}/history?limit=10");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$keyword->id}/history?limit=10");
         
         $response->assertStatus(200)
             ->assertJsonCount(10, 'data.history');
@@ -134,7 +223,8 @@ class RankingControllerTest extends TestCase
             ['keyword_id' => $keyword->id, 'position' => 7, 'checked_at' => now()],
         ]);
         
-        $response = $this->getJson("/api/v1/keywords/{$keyword->id}/history");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$keyword->id}/history");
         
         $response->assertStatus(200)
             ->assertJsonPath('data.summary.currentPosition', 7)
@@ -156,7 +246,8 @@ class RankingControllerTest extends TestCase
             ['keyword_id' => $keyword->id, 'position' => 5, 'checked_at' => now()],
         ]);
         
-        $response = $this->getJson("/api/v1/keywords/{$keyword->id}/history");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$keyword->id}/history");
         
         $response->assertStatus(200)
             ->assertJsonPath('data.summary.currentPosition', 5);
@@ -178,7 +269,8 @@ class RankingControllerTest extends TestCase
                 ->andReturn('job-abc123');
         });
         
-        $response = $this->postJson("/api/v1/keywords/{$keyword->id}/check");
+        $response = $this->actingAs($this->user)
+            ->postJson("/api/v1/keywords/{$keyword->id}/check");
         
         $response->assertStatus(202)
             ->assertJsonStructure([
@@ -193,7 +285,8 @@ class RankingControllerTest extends TestCase
      */
     public function test_trigger_manual_check_invalid_keyword(): void
     {
-        $response = $this->postJson('/api/v1/keywords/9999/check');
+        $response = $this->actingAs($this->user)
+            ->postJson('/api/v1/keywords/9999/check');
         
         $response->assertStatus(404);
     }
@@ -212,7 +305,8 @@ class RankingControllerTest extends TestCase
                 ->andReturn('job-existing-123');
         });
         
-        $response = $this->postJson("/api/v1/keywords/{$keyword->id}/check");
+        $response = $this->actingAs($this->user)
+            ->postJson("/api/v1/keywords/{$keyword->id}/check");
         
         $response->assertStatus(202)
             ->assertJsonPath('data.jobId', 'job-existing-123');

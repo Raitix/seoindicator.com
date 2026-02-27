@@ -343,7 +343,7 @@ Duration: 2.97s
 
 **Decision: APPROVED FOR DOCUMENTATION**
 
-**Status changed:** `Testing Prod` → `To Document`
+**Status changed:** `To Test Prod` → `To Document`
 
 ### [2026-02-27 23:08] Agent: DocSystemAnalyst
 **Documentation Complete:**
