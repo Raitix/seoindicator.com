@@ -1,7 +1,7 @@
 # SPEC-003-7: Frontend - Comparison Dashboard
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## PRIORITY
 `High`
