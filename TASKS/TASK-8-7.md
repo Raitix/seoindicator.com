@@ -1,7 +1,7 @@
 # TASK-8-7: CRUD Endpoints for Projects
 
 ## STATUS
-`Documentation in Progress`
+`Done`
 
 ## PRIORITY
 `High`
@@ -344,3 +344,33 @@ Duration: 2.97s
 **Decision: APPROVED FOR DOCUMENTATION**
 
 **Status changed:** `Testing Prod` → `To Document`
+
+### [2026-02-27 23:08] Agent: DocSystemAnalyst
+**Documentation Complete:**
+
+**Documentation Updated:**
+- `DOCUMENTATION.md` - Added comprehensive Project CRUD API section including:
+  - Service description
+  - All 7 API endpoints with request/response examples
+  - Validation rules
+  - Authorization and security implementation
+  - Model properties and relationships
+  - Test coverage summary
+  - Production deployment status
+
+**Key Documentation Points:**
+1. **Endpoints:** All 7 CRUD endpoints documented (list, create, get, update, delete, archive, restore)
+2. **Validation:** Name required, domain URL format, notes HTML-sanitized
+3. **Authorization:** ProjectPolicy enforces user isolation (403 for cross-user access)
+4. **Security:** XSS protection via `strip_tags()`, SQL injection protected via Eloquent
+5. **Delete Protection:** Requires `?confirm=true` parameter
+
+**Test Status:** 39/39 tests passing (3 skipped pending dependencies)
+
+**Remaining Tasks in SPEC-008:**
+- TASK-8-2, TASK-8-3, TASK-8-5: To Write Tests
+- TASK-8-6: To Test Locally
+- TASK-8-8: To Test Prod
+- TASK-8-10: To Write Tests
+
+**Status changed:** `To Document` → `Done`
