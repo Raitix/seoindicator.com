@@ -38,7 +38,7 @@ class IndicatorsEndpointTest extends TestCase
         $response->assertStatus(405); // Method Not Allowed
     }
 
-    public function disallowedHttpMethods(): array
+    public static function disallowedHttpMethods(): array
     {
         return [
             ['post'],

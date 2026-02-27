@@ -1,7 +1,7 @@
 # TASK-8-7: CRUD Endpoints for Projects
 
 ## STATUS
-`Testing Prod`
+`To Document`
 
 ## PRIORITY
 `High`

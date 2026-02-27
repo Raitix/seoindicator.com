@@ -495,15 +495,15 @@ export function ToolWidget({
           )}
 
           {/* Loading State */}
-          {state === 'loading' && <LoadingSpinner />}
+          {state === 'loading' ? <LoadingSpinner /> : null}
 
           {/* Error State */}
-          {state === 'error' && error && (
+          {state === 'error' && error ? (
             <ErrorDisplay message={error.message} onRetry={handleRetry} />
-          )}
+          ) : null}
 
           {/* Results */}
-          {state === 'success' && result?.data && (
+          {state === 'success' && result?.data ? (
             <div className="space-y-4" aria-live="polite">
               <ResultsDisplay
                 tool={tool}
@@ -518,7 +518,7 @@ export function ToolWidget({
                 Analyze Another
               </Button>
             </div>
-          )}
+          ) : null}
         </CardContent>
       </Card>
     </div>
