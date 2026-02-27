@@ -116,11 +116,6 @@ jobs:
             # Install backend dependencies
             echo "=== Installing backend dependencies ==="
             cd backend
-            
-            # Add missing packages and update lock file
-            composer require symfony/dom-crawler:^7.0 --no-update --no-interaction || true
-            composer update --lock --with-all-dependencies --no-interaction --prefer-dist --optimize-autoloader
-            
             composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
             
             # Create/update .env with production credentials
