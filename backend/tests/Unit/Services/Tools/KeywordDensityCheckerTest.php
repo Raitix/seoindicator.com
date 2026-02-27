@@ -945,9 +945,9 @@ class KeywordDensityCheckerTest extends TestCase
     }
 
     /**
-     * EC-011: Numbers in keyword
+     * EC-011: Numbers in keyword (edge case - single occurrence)
      */
-    public function test_numbers_in_keyword(): void
+    public function test_numbers_in_keyword_single_occurrence(): void
     {
         $html = '<html><body><p>SEO2024 is the future</p></body></html>';
         $result = $this->checker->analyze($html, 'https://example.com', 'SEO2024');

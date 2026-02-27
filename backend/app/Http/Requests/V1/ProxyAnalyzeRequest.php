@@ -7,7 +7,7 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 /**
- * Request validation for API Proxy analyze endpoint (TASK-16-3).
+ * Request validation for API Proxy analyze endpoint (TASK-16-1, TASK-16-2, TASK-16-3).
  */
 class ProxyAnalyzeRequest extends FormRequest
 {
@@ -28,6 +28,8 @@ class ProxyAnalyzeRequest extends FormRequest
     {
         return [
             'url' => ['required', 'string', 'max:2048'],
+            'tool' => ['nullable', 'string', 'in:meta-tag-analyzer,keyword-density-checker'],
+            'keyword' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -42,6 +44,8 @@ class ProxyAnalyzeRequest extends FormRequest
             'url.required' => 'URL is required.',
             'url.string' => 'URL must be a valid string.',
             'url.max' => 'URL is too long. Maximum length is 2048 characters.',
+            'tool.in' => 'Invalid tool specified. Valid options: meta-tag-analyzer, keyword-density-checker.',
+            'keyword.max' => 'Keyword is too long. Maximum length is 255 characters.',
         ];
     }
 
@@ -63,5 +67,21 @@ class ProxyAnalyzeRequest extends FormRequest
                 'details' => $validator->errors()->messages(),
             ],
         ], 422));
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            // If tool is keyword-density-checker, keyword is required
+            if ($this->input('tool') === 'keyword-density-checker' && empty($this->input('keyword'))) {
+                $validator->errors()->add('keyword', 'Keyword is required when using keyword-density-checker tool.');
+            }
+        });
     }
 }

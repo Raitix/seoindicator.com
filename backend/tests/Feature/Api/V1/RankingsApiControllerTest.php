@@ -709,8 +709,9 @@ class RankingsApiControllerTest extends TestCase
             'checked_at' => '2026-02-20T10:00:00Z',
         ]);
 
+        // URL encode the + in the timezone offset
         $response = $this->withHeaders($this->authHeaders())
-            ->getJson("/api/v1/keywords/{$this->keyword->id}/rankings?from=2026-02-24T00:00:00+02:00");
+            ->getJson("/api/v1/keywords/{$this->keyword->id}/rankings?from=2026-02-24T00:00:00%2B02:00");
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data.history');
@@ -748,15 +749,15 @@ class RankingsApiControllerTest extends TestCase
      */
     public function test_sql_injection_in_keyword_id(): void
     {
-        // Laravel route model binding should handle this, but test anyway
+        // Laravel route constraint should handle this - only numeric IDs allowed
         $response = $this->withHeaders($this->authHeaders())
-            ->getJson("/api/v1/keywords/1; DROP TABLE rankings;--/rankings");
+            ->getJson("/api/v1/keywords/1; DROP TABLE ranking_history;--/rankings");
 
-        // Should return 404 (route not found or model not found)
+        // Should return 404 (route not found due to constraint)
         $response->assertStatus(404);
 
-        // Verify rankings table still exists
-        $this->assertDatabaseCount('rankings', 0);
+        // Verify ranking_history table still exists
+        $this->assertDatabaseCount('ranking_history', 0);
     }
 
     /**
@@ -765,12 +766,12 @@ class RankingsApiControllerTest extends TestCase
     public function test_sql_injection_in_from(): void
     {
         $response = $this->withHeaders($this->authHeaders())
-            ->getJson("/api/v1/keywords/{$this->keyword->id}/rankings?from='; DROP TABLE rankings;--");
+            ->getJson("/api/v1/keywords/{$this->keyword->id}/rankings?from='; DROP TABLE ranking_history;--");
 
         $response->assertStatus(422);
 
-        // Verify rankings table still exists
-        $this->assertDatabaseCount('rankings', 0);
+        // Verify ranking_history table still exists
+        $this->assertDatabaseCount('ranking_history', 0);
     }
 
     /**
@@ -916,12 +917,12 @@ class RankingsApiControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonCount(4, 'data.history');
 
-        // Filter by date range
+        // Filter by date range (only 2026-02-15 is within 2026-02-10 to 2026-02-20)
         $response = $this->withHeaders($this->authHeaders())
             ->getJson("/api/v1/keywords/{$this->keyword->id}/rankings?from=2026-02-10&to=2026-02-20");
 
         $response->assertStatus(200)
-            ->assertJsonCount(2, 'data.history');
+            ->assertJsonCount(1, 'data.history');
 
         // Limit results
         $response = $this->withHeaders($this->authHeaders())
