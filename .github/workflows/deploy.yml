@@ -117,8 +117,9 @@ jobs:
             echo "=== Installing backend dependencies ==="
             cd backend
             
-            # Update lock file if out of sync
-            composer update --lock --no-interaction --prefer-dist --optimize-autoloader
+            # Add missing packages and update lock file
+            composer require symfony/dom-crawler:^7.0 --no-update --no-interaction || true
+            composer update --lock --with-all-dependencies --no-interaction --prefer-dist --optimize-autoloader
             
             composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
             
