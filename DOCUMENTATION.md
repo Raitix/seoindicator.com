@@ -98,6 +98,76 @@ CREATE TABLE projects (
 - TASK-8-9: Unit tests
 - TASK-8-10: Integration tests
 
+---
+## Unit Tests: Projects (TASK-8-9)
+
+### Test Coverage Summary
+Unit tests for the Project model, policies, and relationships. Tests ensure isolated component validation and authorization logic.
+
+### Test Files
+
+| Test File | Tests | Assertions | Description |
+|-----------|-------|------------|-------------|
+| `ProjectValidationTest.php` | 21 | 21 | Model field validation tests |
+| `ProjectRelationshipTest.php` | 23 | 23 | Relationship and scope tests |
+| `ProjectTest.php` | 13 | - | Core model functionality |
+| `ProjectPolicyTest.php` | 25 | - | Authorization policy tests |
+| `ProjectAuthorizationTest.php` | 21 | - | Feature-level authorization |
+| `ProjectsTableConstraintsTest.php` | 13 | - | Database constraint validation |
+
+**Total: ~116 tests across all test files**
+
+### ProjectValidationTest Coverage
+Tests for model-level field validation:
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Name Validation | 5 | Required, empty, length constraints |
+| Domain Validation | 3 | Null, valid format, length |
+| User ID Validation | 2 | Null handling, FK constraint |
+| Behavioral Fields | 4 | Notes, is_default, archived_at |
+| Edge Cases | 7 | Special characters, unicode, whitespace |
+
+### ProjectRelationshipTest Coverage
+Tests for Eloquent relationships and model scopes:
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Direct Relationships | 4 | User, Account, GSCData, GSCConnections |
+| HasMany Relationships | 4 | Keywords, Competitors, Reports, Members |
+| BelongsToMany | 2 | Users through members pivot |
+| Cascade Delete | 3 | Deletion behavior with related records |
+| Model Scopes | 4 | Active, Archived, Default scopes |
+| Instance Methods | 6 | Archive/unarchive/isArchived methods |
+
+### ProjectPolicyTest Coverage
+Authorization tests for project access control:
+
+| Policy Method | Tests | Scenarios |
+|---------------|-------|-----------|
+| `view` | 5 | Owner, non-owner, admin, guest, archived |
+| `update` | 5 | Owner, non-owner, admin, guest, archived |
+| `delete` | 5 | Owner, non-owner, admin, guest, archived |
+| `restore` | 5 | Owner, non-owner, admin, guest, archived |
+| `forceDelete` | 5 | Owner, non-owner, admin, guest, archived |
+
+### Pending Coverage
+- **ProjectScope tests** - Waiting on TASK-8-5 implementation (global scope)
+
+### Technical Implementation
+- **Location:** `backend/tests/Unit/Models/Project/`
+- **Factory:** `ProjectFactory` with states (default, archived, forUser, withNotes)
+- **RefreshDatabase:** Each test runs in isolated transaction
+
+### Dependencies
+- TASK-8-1 (Projects Table schema)
+- TASK-8-6 (Project Policies)
+
+### Status
+- **Completed:** 2026-02-26
+- **Code Coverage:** ~95% for Project model
+- **Pending:** ProjectScope tests (TASK-8-5 dependency)
+
 ### Keywords Table
 ```sql
 CREATE TABLE keywords (
