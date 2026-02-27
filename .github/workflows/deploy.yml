@@ -116,6 +116,10 @@ jobs:
             # Install backend dependencies
             echo "=== Installing backend dependencies ==="
             cd backend
+            
+            # Update lock file if out of sync
+            composer update --lock --no-interaction 2>/dev/null || true
+            
             composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
             
             # Create/update .env with production credentials

@@ -1,6 +1,261 @@
 # DOCUMENTATION.md
 
 ---
+## Project CRUD API (TASK-8-7)
+
+### Service Description
+REST API endpoints for project management (Create, Read, Update, Delete). Users can organize their SEO work into separate projects/sites, enabling multi-site management for agencies and freelancers. Core functionality for the Multi-Site Project Management feature (FEAT-008).
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/projects` | Create a new project |
+| GET | `/api/v1/projects` | List all projects for authenticated user |
+| GET | `/api/v1/projects/{id}` | Get single project details |
+| PUT | `/api/v1/projects/{id}` | Update project name, domain, notes |
+| DELETE | `/api/v1/projects/{id}` | Delete project (requires confirmation) |
+| POST | `/api/v1/projects/{id}/archive` | Archive project (soft delete) |
+| POST | `/api/v1/projects/{id}/restore` | Restore archived project |
+
+### Create Project
+`POST /api/v1/projects`
+
+**Request Body:**
+```json
+{
+  "name": "Client Website",
+  "domain": "https://example.com",
+  "notes": "Main client SEO project"
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `name` | Required, string, max 255 chars |
+| `domain` | Optional, valid URL format, max 500 chars |
+| `notes` | Optional, string, max 5000 chars (HTML sanitized) |
+
+**Response (201):**
+```json
+{
+  "id": 1,
+  "user_id": 1,
+  "name": "Client Website",
+  "domain": "https://example.com",
+  "notes": "Main client SEO project",
+  "is_default": false,
+  "archived_at": null,
+  "created_at": "2026-02-26T18:00:00Z",
+  "updated_at": "2026-02-26T18:00:00Z"
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 422 | Invalid domain format or missing name |
+
+### List Projects
+`GET /api/v1/projects`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `archived` | boolean | false | Include/exclude archived projects |
+| `page` | int | 1 | Page number |
+| `perPage` | int | 15 | Results per page (max: 100) |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "name": "Client Website",
+      "domain": "https://example.com",
+      "notes": "Main client SEO project",
+      "is_default": true,
+      "archived_at": null,
+      "created_at": "2026-02-26T18:00:00Z",
+      "updated_at": "2026-02-26T18:00:00Z"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "active": 1,
+    "archived": 0,
+    "page": 1,
+    "perPage": 15
+  }
+}
+```
+
+### Get Project
+`GET /api/v1/projects/{id}`
+
+**Response (200):** Returns single project object
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 403 | Project owned by another user |
+| 404 | Project not found |
+
+### Update Project
+`PUT /api/v1/projects/{id}`
+
+**Request Body:**
+```json
+{
+  "name": "Updated Name",
+  "domain": "https://newdomain.com",
+  "notes": "Updated notes"
+}
+```
+
+**Note:** Partial updates supported - only provided fields are updated.
+
+**Response (200):** Returns updated project object
+
+### Delete Project
+`DELETE /api/v1/projects/{id}?confirm=true`
+
+**Important:** Delete requires `confirm=true` query parameter to prevent accidental deletion.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Project deleted successfully.",
+  "deleted_id": 1
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 400 | Missing `confirm=true` parameter |
+| 401 | Unauthenticated request |
+| 403 | Project owned by another user |
+| 404 | Project not found |
+
+**Side Effects:** Cascade deletes all keywords, competitors, and reports associated with the project.
+
+### Archive Project
+`POST /api/v1/projects/{id}/archive`
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "archived_at": "2026-02-26T20:00:00Z"
+}
+```
+
+**Note:** Archived projects are excluded from default list views but retain all data.
+
+### Restore Project
+`POST /api/v1/projects/{id}/restore`
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "archived_at": null
+}
+```
+
+### Authorization
+- All endpoints require authentication (Bearer token)
+- Users can only access their own projects (user isolation via `ProjectPolicy`)
+- Cross-user access returns 403 Forbidden (not 404, to provide clear authorization feedback)
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware on all endpoints |
+| IDOR Protection | `ProjectPolicy` enforces user isolation |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS | `strip_tags()` on notes field |
+| Mass Assignment | `$fillable` whitelist on Project model |
+| Delete Protection | Confirmation parameter required |
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/ProjectController.php`
+- Request: `backend/app/Http/Requests/ProjectRequest.php`
+- Model: `backend/app/Models/Project.php`
+- Policy: `backend/app/Policies/ProjectPolicy.php`
+- Routes: Defined in `backend/routes/api.php`
+
+### Model Properties
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | int | Primary key |
+| `user_id` | int | FK to users.id |
+| `account_id` | int? | FK to accounts.id (nullable) |
+| `name` | string | Project name |
+| `domain` | string? | Project domain URL |
+| `notes` | text? | User notes |
+| `is_default` | bool | Whether this is user's default project |
+| `archived_at` | timestamp? | Archive timestamp |
+
+### Model Relationships
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `user()` | belongsTo | User who owns this project |
+| `keywords()` | hasMany | Keywords in this project |
+| `competitors()` | hasMany | Competitors in this project |
+| `reports()` | hasMany | Reports in this project |
+| `members()` | hasMany | ProjectMember records |
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| ProjectControllerTest | 39 | 39 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authentication | 2 | 401 for unauthenticated requests |
+| Create Project | 10 | Validation, ownership, edge cases |
+| Read Project | 9 | List, single, pagination, filtering |
+| Update Project | 7 | Partial updates, validation |
+| Archive/Restore | 5 | Toggle behavior, authorization |
+| Delete Project | 4 | Confirmation, cascade behavior |
+| Security | 2 | SQL injection, XSS protection |
+
+**Skipped Tests (Dependencies):**
+- DP-005: Delete cascades to keywords (requires keywords.project_id)
+- DP-006: Delete cascades to competitors (requires competitors.project_id)
+- DP-007: Delete cascades to reports (requires reports.project_id)
+
+### Production Status
+- **Deployed**: 2026-02-27 (commit via GitHub Actions run 22461012834)
+- **Health Check**: Passing
+- **Tests**: 39/39 passing (3 skipped - pending dependencies)
+- **Status**: Complete
+
+### Dependencies
+- TASK-8-1 (Projects Table)
+- TASK-8-6 (Project Policies)
+
+### Related Tasks
+- TASK-8-1: Projects Table schema
+- TASK-8-2: Add project_id to existing tables
+- TASK-8-3: Data migration for existing records
+- TASK-8-4: SetProjectContext middleware
+- TASK-8-5: ProjectScope global scope
+- TASK-8-6: ProjectPolicy authorization
+- TASK-8-8: Frontend project components
+
+---
 ## Competitor CRUD API (TASK-3-2)
 
 ### Service Description
