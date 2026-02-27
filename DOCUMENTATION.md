@@ -2351,6 +2351,88 @@ All detectors tested for:
 - **Status**: Complete
 
 ---
+## Opportunity Scorer Utility (TASK-5-3)
+
+### Service Description
+Utility class for calculating keyword opportunity scores to help users prioritize which suggested keywords to track. Uses a pure function approach with configurable scoring factors for long-tail keywords, question prefixes, and commercial intent.
+
+### Core Functionalities
+
+**OpportunityScorer Class:**
+- `calculate(string $keyword): int` - Returns opportunity score (50-100)
+- `__invoke(string $keyword): int` - Invokable for dependency injection
+
+### Scoring Algorithm
+
+**Base Score:** 50
+
+**Bonuses:**
+| Factor | Condition | Bonus |
+|--------|-----------|-------|
+| Long-tail (3+ words) | Word count >= 3 | +10 |
+| Very long-tail (5+ words) | Word count >= 5 | +5 (cumulative: +15) |
+| Question prefix | Starts with: what/how/why/when/where/who/which | +15 |
+| Commercial intent | Contains: best/top/review/compare | +10 |
+
+**Maximum Score:** 100 (enforced cap)
+
+### Scoring Examples
+
+| Keyword | Word Count | Question | Commercial | Final Score |
+|---------|------------|----------|------------|-------------|
+| seo | 1 | No | No | 50 |
+| seo tools | 2 | No | No | 50 |
+| seo tools for beginners | 4 | No | No | 60 |
+| what is seo | 3 | Yes | No | 75 |
+| best seo tools | 3 | No | Yes | 70 |
+| how to choose best seo tools | 5 | Yes | Yes | 90 |
+| why use seo tools for beginners | 5 | Yes | No | 80 |
+
+### Technical Implementation
+- Class: `backend/app/Services/OpportunityScorer.php`
+- Pure function with no external dependencies
+- Invokable for dependency injection support
+- Easily testable with deterministic output
+
+### Unit Tests
+33 tests, 54 assertions covering:
+- Base score (single/two words)
+- Long-tail bonus (3+ words)
+- Very long-tail bonus (5+ words)
+- Question prefix bonus (all 7 prefixes)
+- Commercial intent bonus (all 4 keywords)
+- Combined bonuses (question + commercial + long-tail)
+- Maximum score enforcement (100 cap)
+- Invokable support
+- Empty string handling
+- Unicode character handling
+- Case insensitivity
+- Whitespace handling
+
+### Adversarial Testing
+All security tests pass:
+| Test | Result |
+|------|--------|
+| DoS resistance (10,000 words) | 0.92ms execution |
+| SQL injection | Safe - returns valid score |
+| XSS attempt | Safe - returns valid score |
+| Null byte injection | Handled correctly |
+| Unicode homograph | Handled correctly |
+
+### Production Status
+- **Deployed**: 2026-02-27 (commit 780b608)
+- **Health Check**: Passing
+- **Tests**: 33 passed (54 assertions)
+- **Security**: No vulnerabilities
+
+### Dependencies
+None (standalone utility)
+
+### Integration
+- Used by `SuggestionService` for opportunity score calculation
+- Injected via DI container
+
+---
 ## Frontend Components: Projects (TASK-8-8)
 
 ### Overview
