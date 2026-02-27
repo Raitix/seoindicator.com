@@ -1,7 +1,7 @@
 # TASK-16-4: Tool Embedding System
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
