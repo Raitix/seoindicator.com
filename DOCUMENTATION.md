@@ -1,6 +1,186 @@
 # DOCUMENTATION.md
 
 ---
+## Competitor CRUD API (TASK-3-2)
+
+### Service Description
+REST API endpoints for competitor management (Create, Read, Update, Delete). Users can add competitor domains to track alongside their own rankings. Core functionality for the competitor rank comparison feature (FEAT-003).
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/competitors` | Create a new competitor |
+| GET | `/api/v1/competitors` | List all competitors for authenticated user |
+| GET | `/api/v1/competitors/{id}` | Get single competitor details |
+| PUT | `/api/v1/competitors/{id}` | Update competitor displayName and notes |
+| DELETE | `/api/v1/competitors/{id}` | Delete competitor (cascade delete rankings) |
+
+### Create Competitor
+`POST /api/v1/competitors`
+
+**Request Body:**
+```json
+{
+  "domain": "competitor.com",
+  "displayName": "Main Competitor",
+  "notes": "Primary market rival"
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `domain` | Required, valid domain format, unique per user |
+| `displayName` | Optional, string, max 255 chars |
+| `notes` | Optional, string, max 5000 chars |
+
+**Response (201):**
+```json
+{
+  "id": 1,
+  "user_id": 1,
+  "domain": "competitor.com",
+  "display_name": "Main Competitor",
+  "notes": "Primary market rival",
+  "created_at": "2026-02-20T10:05:00Z",
+  "updated_at": "2026-02-20T10:05:00Z"
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 400 | Invalid domain format |
+| 409 | Duplicate competitor for same user |
+
+### List Competitors
+`GET /api/v1/competitors`
+
+**Response (200):**
+```json
+[
+  {
+    "id": 1,
+    "user_id": 1,
+    "domain": "competitor.com",
+    "display_name": "Main Competitor",
+    "notes": "Primary market rival",
+    "created_at": "2026-02-20T10:05:00Z",
+    "updated_at": "2026-02-20T10:05:00Z"
+  }
+]
+```
+
+### Get Competitor
+`GET /api/v1/competitors/{id}`
+
+**Response (200):** Returns single competitor object
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 404 | Competitor not found or not owned by user |
+
+### Update Competitor
+`PUT /api/v1/competitors/{id}`
+
+**Request Body:**
+```json
+{
+  "displayName": "Updated Name",
+  "notes": "Updated notes"
+}
+```
+
+**Note:** Domain cannot be changed after creation.
+
+**Response (200):** Returns updated competitor object
+
+### Delete Competitor
+`DELETE /api/v1/competitors/{id}`
+
+**Response (204):** No content
+
+**Side Effects:** Cascade deletes all competitor_rankings records
+
+### Authorization
+- All endpoints require authentication
+- Users can only access their own competitors (user isolation via `findForUser()` method)
+- Cross-user access returns 404 (not 403, to avoid information leakage)
+
+### Competitor Limit
+- Default limit: 3 competitors per user
+- Enforced in `StoreCompetitorRequest` validation
+- Configurable for future subscription tiers
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware on all endpoints |
+| IDOR Protection | `findForUser()` enforces user isolation |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS | Input validation and output escaping |
+| SSRF Protection | Domain validation via `DomainValidator` service |
+| Mass Assignment | `$fillable` whitelist on Competitor model |
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/CompetitorController.php`
+- Repository: `backend/app/Repositories/CompetitorRepository.php`
+- Requests: `StoreCompetitorRequest`, `UpdateCompetitorRequest`
+- Model: `backend/app/Models/Competitor.php`
+- Factory: `backend/database/factories/CompetitorFactory.php`
+- Routes: Defined in `backend/routes/api.php`
+
+### Model Properties
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | int | Primary key |
+| `user_id` | int | FK to users.id |
+| `domain` | string | Competitor domain |
+| `display_name` | string? | Friendly display name |
+| `notes` | string? | User notes |
+| `deleted_at` | timestamp? | Soft delete timestamp |
+
+### Model Relationships
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `user()` | belongsTo | User who owns this competitor |
+| `rankings()` | hasMany | CompetitorRanking records |
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| CompetitorControllerTest | 6 | 15 |
+| CompetitorRepositoryTest | 5 | 9 |
+| CompetitorSecurityTest | 8 | 19 |
+| **Total** | **19** | **43** |
+
+**Test Categories:**
+| Category | Description |
+|----------|-------------|
+| CRUD Operations | Create, list, get, update, delete |
+| Validation | Missing domain, duplicate, format |
+| Security | SQL injection, XSS, IDOR protection |
+| Authorization | Unauthenticated (401), cross-user (404) |
+
+### Production Status
+- **Deployed**: 2026-02-27 (commit c86486d via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 19/19 passing (43 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-3-1 (Competitors table schema)
+- DomainValidator service (existing)
+
+### Related Tasks
+- TASK-3-3: Domain Validation Service
+- TASK-3-4: Ranking Check Integration
+- TASK-3-5: Comparison Engine Service
+
+---
 ## Production Routing Configuration (TASK-12-12)
 
 ### Service Description
