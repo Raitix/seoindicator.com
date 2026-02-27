@@ -56,6 +56,9 @@ class CreateAnnotationsTableTest extends TestCase
         $columns = Schema::getColumnListing('annotations');
         $this->assertContains('id', $columns);
         
+        // Create required dependencies for foreign keys
+        $this->createRequiredDependencies();
+        
         // Verify it's the primary key by creating an annotation
         $annotationId = DB::table('annotations')->insertGetId([
             'keyword_id' => 1,
@@ -315,6 +318,7 @@ class CreateAnnotationsTableTest extends TestCase
         $siteId = null;
         if (Schema::hasTable('sites')) {
             $siteId = DB::table('sites')->insertGetId([
+                'user_id' => $userId,
                 'url' => 'https://cascade-test.example.com',
                 'name' => 'Cascade Test Site',
                 'created_at' => now(),
@@ -384,6 +388,7 @@ class CreateAnnotationsTableTest extends TestCase
         $siteId = null;
         if (Schema::hasTable('sites')) {
             $siteId = DB::table('sites')->insertGetId([
+                'user_id' => $userId,
                 'url' => 'https://project-cascade-test.example.com',
                 'name' => 'Project Cascade Test Site',
                 'created_at' => now(),
@@ -744,10 +749,11 @@ class CreateAnnotationsTableTest extends TestCase
             'updated_at' => now(),
         ]);
         
-        // Create site if table exists
+        // Create site if table exists (requires user_id)
         $siteId = null;
         if (Schema::hasTable('sites')) {
             $siteId = DB::table('sites')->insertGetId([
+                'user_id' => $userId,
                 'url' => 'https://test-annotations.example.com',
                 'name' => 'Test Site',
                 'created_at' => now(),
