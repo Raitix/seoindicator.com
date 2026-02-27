@@ -1,7 +1,7 @@
 # TASK-5-1: Database Schema - Keyword Suggestions Table
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -36,6 +36,18 @@ Create database migration for keyword_suggestions and dismissed_suggestions tabl
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-27 10:20] Agent: DevOps
+**Deployment Started**
+
+Connecting to production server via SSH to:
+1. Pull latest code from origin/main
+2. Run composer install
+3. Execute database migration
+
+Migration: `2026_02_26_230500_create_keyword_suggestions_tables.php`
+
+Status: To Deploy → In Deployment
 
 ### [2026-02-26 23:10] Agent: Developer
 **Implementation Complete**
