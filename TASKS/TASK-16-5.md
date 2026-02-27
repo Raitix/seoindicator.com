@@ -1,7 +1,7 @@
 # TASK-16-5: Email Capture Modal & API
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -100,3 +100,32 @@ _Agent communication log_
 
 ### [2026-02-27] Agent: SpecSystemAnalyst
 Created task. This is critical for lead generation. Consider A/B testing different messaging in future.
+
+### [2026-02-27 17:45] Agent: PreTester
+Completed test design. Created test files:
+- `frontend/__tests__/components/tools/EmailCaptureModal.test.tsx` (34 tests)
+- `backend/tests/Feature/Api/V1/Tools/EmailCaptureControllerTest.php` (43 tests)
+- `backend/database/factories/ToolLeadFactory.php` (factory with states)
+
+**Test Coverage Summary:**
+| Category | Tests |
+|----------|-------|
+| Modal Component | 12 |
+| Email Validation | 10 |
+| API Endpoint | 12 |
+| Lead Storage | 10 |
+| Session Handling | 8 |
+| Rate Limiting | 6 |
+| Edge Cases | 10 |
+| Accessibility | 4 |
+| Additional Validation | 5 |
+| **Total** | **77** |
+
+**Key Implementation Notes:**
+1. Rate limiting: 5 captures per IP per hour
+2. Email normalization: store lowercase
+3. Idempotency: same email+tool within 24h = no duplicate
+4. Per-tool localStorage tracking
+5. Soft delete support for GDPR
+
+Status updated to `To Develop`. Ready for Developer.
