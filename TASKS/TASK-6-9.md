@@ -1,7 +1,7 @@
 # TASK-6-9: Rankings API Endpoints
 
 ## Status
-`To Document`
+`Done`
 
 ## Priority
 `High`
@@ -209,3 +209,20 @@ Duration: 4.00s
 **Decision: PASS → Ready for Documentation**
 
 **Status:** To Document
+
+### [2026-02-27 23:53] DocSystemAnalyst: Documentation Complete
+**Documentation Updates:**
+- Added Rankings API Endpoints section to DOCUMENTATION.md
+- Documented GET /api/v1/keywords/{id}/rankings endpoint
+- Query parameters: from, to, limit
+- Response format with example
+- Authentication: API Key via Bearer token
+- Authorization: User isolation, keyword ownership
+- Permission: rankings:read
+- Security: IDOR protection, SQL injection prevention, route constraints
+- Rate limiting with headers
+- Test coverage: 44 tests, 125 assertions
+
+**Status:** Done
+
+**Note:** Other TASK-6-* items are still in progress. SPEC-006 and FEAT-006 will be marked Done when all tasks complete.
