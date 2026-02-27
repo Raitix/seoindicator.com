@@ -1,7 +1,7 @@
 # TASK-9-1: Create Annotations Table
 
 ## STATUS
-`Testing Locally`
+`To Test Locally`
 
 ## PRIORITY
 `High`

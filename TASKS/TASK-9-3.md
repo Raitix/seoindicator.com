@@ -1,7 +1,7 @@
 # TASK-9-3: Annotation Model
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## PRIORITY
 `High`

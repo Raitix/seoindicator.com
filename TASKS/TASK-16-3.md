@@ -1,7 +1,7 @@
 # TASK-16-3: Keyword Density Checker Tool
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `High`

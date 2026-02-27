@@ -215,7 +215,7 @@ Duration: 2.13s
 4. Verify health check post-deployment
 5. Run migrations if not auto-deployed
 
-**Status changed:** `To Deploy` → `In Deployment`
+**Status changed:** `To Deploy` → `To Deploy`
 
 ### [2026-02-26 20:38] Agent: DevOps
 **Deployment Complete:**
@@ -245,7 +245,7 @@ Duration: 2.13s
 **Deployment Duration:** ~3 minutes (push to production)
 **Risk:** Low | **Priority:** High
 
-**Status changed:** `In Deployment` → `To Test Prod`
+**Status changed:** `To Deploy` → `To Test Prod`
 
 ### [2026-02-26 22:35] Agent: ProdTester
 **Production Testing Complete - ALL TESTS PASS ✅**
@@ -325,7 +325,7 @@ EXPLAIN SELECT * FROM projects WHERE archived_at IS NOT NULL
 - All schema constraints verified
 - Model relationships functional
 
-**Status changed:** `Testing Prod` → `To Document`
+**Status changed:** `To Test Prod` → `To Document`
 
 ### [2026-02-26 22:38] Agent: DocSystemAnalyst
 **Documentation Complete:**

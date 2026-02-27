@@ -1,7 +1,7 @@
 # TASK-14-3: Create Issue Types Table
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `Medium`

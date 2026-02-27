@@ -96,7 +96,7 @@ Backend logic for linking tracked keywords to GSC query data.
 
 ### [2026-02-23 00:13] Agent: DevOps
 **Deployment Started**
-- Updated status to `In Deployment`.
+- Updated status to `To Deploy`.
 - Preparing push to origin/main to trigger deployment pipeline.
 
 ### [2026-02-23 00:14] Agent: DevOps

@@ -1,7 +1,7 @@
 # TASK-11-2: Create Project Members Table
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -131,3 +131,19 @@ Database task created to define roles and permissions at the project level.
   - Role enum restricts values to 'editor' and 'viewer'
 - **All acceptance criteria met**
 - **Status: To Document** - Ready for DocSystemAnalyst
+
+### [2026-02-27 18:35] Agent: DocSystemAnalyst
+Starting documentation update for `project_members` table schema.
+
+### [2026-02-27 18:40] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+Updated `DOCUMENTATION.md` with:
+- Full schema definition for `project_members` table
+- Field descriptions and constraints
+- Role permissions matrix (editor vs viewer)
+- Model relationships (ProjectMember, Project, User)
+- Production deployment status
+- Related tasks and dependencies
+
+**Status: Done** - Task completed. Project members table is documented and deployed to production.

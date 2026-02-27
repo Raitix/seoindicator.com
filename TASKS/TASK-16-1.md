@@ -1,7 +1,7 @@
 # TASK-16-1: Setup Tools Infrastructure
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `High`

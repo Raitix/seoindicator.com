@@ -1,7 +1,7 @@
 # TASK-5-1: Database Schema - Keyword Suggestions Table
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## PRIORITY
 `High`

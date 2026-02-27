@@ -1,7 +1,7 @@
 # SPEC-001-6: Dashboard API Endpoint
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 ## PRIORITY
 `High`
 

@@ -1,7 +1,7 @@
 # TASK-6-10: Sites API Endpoints
 
 ## Status
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## Priority
 `High`

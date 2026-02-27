@@ -1,7 +1,7 @@
 # TASK-6-16: Event Emitters Integration
 
 ## Status
-`In Development`
+`To Develop`
 
 ## Priority
 `High`

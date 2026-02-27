@@ -1,7 +1,7 @@
 # SPEC-001-8: Google CSE Fetcher (Free Tier)
 
 ## STATUS
-`In Development`
+`To Develop`
 ## PRIORITY
 `Medium`
 

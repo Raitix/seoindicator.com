@@ -77,7 +77,7 @@ _Agent communication log_
 **Workflow Analysis:**
 - TASK-3-1 (Database Migration) is completed and documented
 - 7 other tasks in SPEC-003 remain incomplete:
-  - TASK-3-2: `In Deployment`
+  - TASK-3-2: `To Deploy`
   - TASK-3-3: `In Development`
   - TASK-3-4: `In Development`
   - TASK-3-5: `To Develop`

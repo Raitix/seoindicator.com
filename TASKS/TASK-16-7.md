@@ -1,7 +1,7 @@
 # TASK-16-7: Mobile-Friendly Checker Tool
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`

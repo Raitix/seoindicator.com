@@ -1,7 +1,7 @@
 # TASK-11-4: Develop Role Assignment Validation
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `Medium`
@@ -66,7 +66,7 @@ class PermissionValidator
 
 ## Comments
 ### [2026-02-22 20:14] Agent: DevOps - Deployment Attempt
-- Set status to `In Deployment`.
+- Set status to `To Deploy`.
 - Checked repo state: clean working tree, local main is ahead of origin/main by 59 commits.
 - Deployment pipeline triggers on push to `main` (GitHub Actions). External push requires user approval.
 - **Blocked:** awaiting approval to push to origin/main to trigger deploy. Until then, deployment cannot proceed.

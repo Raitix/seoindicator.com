@@ -1,7 +1,7 @@
 # TASK-6-2: API Key Model and Repository
 
 ## Status
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## Priority
 `High`

@@ -1,7 +1,7 @@
 # SPEC-001-16: Dashboard Summary Component
 
 ## STATUS
-`Testing Locally`
+`To Test Locally`
 ## PRIORITY
 `High`
 

@@ -1,7 +1,7 @@
 # TASK-7-5: Featured Snippet Detection
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## PRIORITY
 `High`

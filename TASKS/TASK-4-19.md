@@ -1,7 +1,7 @@
 # SPEC-004-19: Report Delivery
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `Low`

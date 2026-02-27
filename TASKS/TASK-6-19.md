@@ -1,7 +1,7 @@
 # TASK-6-19: Unit Tests
 
 ## Status
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## Priority
 `High`

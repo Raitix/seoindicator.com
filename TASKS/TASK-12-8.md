@@ -1,7 +1,7 @@
 # TASK-12-8: GSC Data Controller
 
 ## STATUS
-`Testing Prod`
+`To Document`
 
 ## PRIORITY
 `High`
@@ -118,4 +118,31 @@ API controller for GSC data retrieval and opportunity analysis.
 - `.htaccess` routing fix confirmed working in production.
 
 **Status:** To Test Prod
+
+### [2026-02-27 18:45] Agent: ProdTester
+**Prod Test PASS**
+
+**Smoke Tests:**
+- `/api/health` → 200 OK ✓
+- `/api/v1/projects/1/gsc` → 401 Unauthenticated ✓
+- `/api/v1/projects/1/gsc/opportunities` → 401 Unauthenticated ✓
+
+**Security Tests (adversarial):**
+- SQL injection in path parameter → 401 (rejected at auth layer) ✓
+- XSS in query params → 401 (rejected at auth layer) ✓
+- Path traversal attempt → 404 (rejected at routing) ✓
+- Invalid project ID → 401 ✓
+
+**Unit Tests (local):**
+- GSCApiEndpointsTest: 11 passed (13 assertions) ✓
+- GSCSecurityTest: 14 passed (37 assertions) ✓
+
+**Security Headers Present:**
+- Content-Security-Policy: upgrade-insecure-requests ✓
+- Cache-Control: no-cache, private ✓
+
+**Configuration Fix Applied:**
+- Added APP_KEY to phpunit.xml for local test environment
+
+**Status:** To Document
 

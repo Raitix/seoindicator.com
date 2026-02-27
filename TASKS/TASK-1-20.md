@@ -1,7 +1,7 @@
 # SPEC-001-20: Performance Optimization
 
 ## STATUS
-`In Development`
+`To Develop`
 ## PRIORITY
 `Low`
 

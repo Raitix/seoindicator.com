@@ -1,7 +1,7 @@
 # TASK-8-2: Modify Existing Tables for Multi-Site Support
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## PRIORITY
 `High`

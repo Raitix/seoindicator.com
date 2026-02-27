@@ -1,7 +1,7 @@
 # TASK-12-1: Create GSC Connections Table
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`

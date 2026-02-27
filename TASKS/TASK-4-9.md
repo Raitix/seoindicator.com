@@ -1,7 +1,7 @@
 # SPEC-004-9: Report Download Endpoint
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## PRIORITY
 `High`

@@ -56,7 +56,7 @@ Created task for ranking history chart. Visual representation of ranking trends.
 - Status moved to `To Deploy`.
 
 ### [2026-02-23 00:38] Agent: DevOps
-- Picked up for deployment. Setting status to `In Deployment`.
+- Picked up for deployment. Setting status to `To Deploy`.
 - Pushed `main` to trigger CI/CD.
 - Health check OK: `GET https://seoindicator.com/api/health`.
 - Status moved to `To Test Prod` for ProdTester validation.
@@ -80,7 +80,7 @@ Created task for ranking history chart. Visual representation of ranking trends.
 - Status moved to `To Deploy`.
 
 ### [2026-02-23 01:20] Agent: DevOps
-- Picked up for deployment. Set status to `In Deployment`.
+- Picked up for deployment. Set status to `To Deploy`.
 - Committed status update and pushed to `origin/main` (commit dcecdd3).
 - CI/CD triggered via GitHub Actions.
 - Health check PASS: `GET https://seoindicator.com/api/health` → 200 OK, database connected.

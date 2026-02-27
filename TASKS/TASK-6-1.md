@@ -1,7 +1,7 @@
 # TASK-6-1: Database Schema - API Keys Table
 
 ## Status
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## Priority
 `High`

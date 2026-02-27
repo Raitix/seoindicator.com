@@ -1,7 +1,7 @@
 # TASK-8-10: End-to-End Integration Tests
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## PRIORITY
 `High`

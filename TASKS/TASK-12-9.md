@@ -1,7 +1,7 @@
 # TASK-12-9: GSC Connection Page Component
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `Medium`

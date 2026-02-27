@@ -1,7 +1,7 @@
 # TASK-12-5: Implement GSC Data Sync Service
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `High`
