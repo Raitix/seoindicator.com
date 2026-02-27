@@ -1,7 +1,7 @@
 # TASK-6-5: Rate Limiter Middleware
 
 ## Status
-`To Develop`
+`To Test Locally`
 
 ## Priority
 `High`
@@ -65,6 +65,23 @@ Medium (2-4 hours)
 ---
 
 ## Comments
+
+### [2026-02-27 14:35] Developer: Implementation Complete
+- Created `ApiKeyRateLimiterService` with sliding window algorithm
+  - Per-API-key rate limiting
+  - Configurable limits (default: 60 req/min)
+  - Atomic hit() method for check-and-increment
+  - getRemaining(), getResetTime(), getRetryAfter() helpers
+  - Automatic cleanup of expired entries
+  - Cache-based storage with TTL
+- Created `ApiKeyRateLimiter` middleware
+  - Integrates with API key from auth middleware
+  - Adds X-RateLimit-* headers to all responses
+  - Returns 429 with SPEC-006 compliant JSON when limit exceeded
+  - Includes Retry-After header and body field
+- Updated tests to use actual service and middleware
+  - 79 tests pass (1 unrelated failure)
+- Status: To Test Locally
 
 ### [2026-02-27 12:25] ProjectManager: Task Created
 - Priority: High (security/abuse prevention)
