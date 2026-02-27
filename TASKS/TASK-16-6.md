@@ -1,7 +1,7 @@
 # TASK-16-6: Lead Storage Service
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`

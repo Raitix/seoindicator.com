@@ -159,8 +159,8 @@ function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
         <div className="bg-slate-800/50 rounded-lg p-4">
           <h4 className="text-sm font-medium text-slate-400 mb-2">Title</h4>
           <p className="text-white font-medium">{(title?.value as string) || 'No title found'}</p>
-          {title?.value && (
-            <p className="text-xs text-slate-500 mt-1">{title.length as number} characters</p>
+          {Boolean(title?.value) && (
+            <p className="text-xs text-slate-500 mt-1">{title?.length as number} characters</p>
           )}
         </div>
 
@@ -168,7 +168,7 @@ function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
         <div className="bg-slate-800/50 rounded-lg p-4">
           <h4 className="text-sm font-medium text-slate-400 mb-2">Meta Description</h4>
           <p className="text-slate-300">{(description?.value as string) || 'No description found'}</p>
-          {description?.value && (
+          {Boolean(description?.value) && (
             <p className="text-xs text-slate-500 mt-1">{description.length as number} characters</p>
           )}
         </div>
