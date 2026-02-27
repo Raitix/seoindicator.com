@@ -24,6 +24,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $file_path
  * @property int|null $file_size
  * @property string|null $error
+ * @property \Illuminate\Support\Carbon|null $delivered_at
+ * @property string $delivery_status
+ * @property array|null $delivery_log
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  *
@@ -40,6 +43,18 @@ class Report extends Model
         'completed' => 'Completed',
         'failed' => 'Failed',
     ];
+
+    public const DELIVERY_STATUSES = [
+        'pending' => 'Pending Delivery',
+        'sent' => 'Sent',
+        'partial' => 'Partially Sent',
+        'failed' => 'Delivery Failed',
+    ];
+
+    /**
+     * Maximum attachment size in bytes (10MB)
+     */
+    public const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 
     /**
      * The attributes that are mass assignable.
@@ -61,6 +76,9 @@ class Report extends Model
         'file_path',
         'file_size',
         'error',
+        'delivered_at',
+        'delivery_status',
+        'delivery_log',
     ];
 
     /**
@@ -75,9 +93,11 @@ class Report extends Model
         'compare_range_start' => 'date',
         'compare_range_end' => 'date',
         'generated_at' => 'datetime',
+        'delivered_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'file_size' => 'integer',
+        'delivery_log' => 'array',
     ];
 
     /**

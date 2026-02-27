@@ -10,6 +10,7 @@ use App\Models\Site;
 use App\Repositories\ReportRepository;
 use App\Repositories\ReportBrandingRepository;
 use App\Services\ReportDataAggregator;
+use App\Services\Traits\EmitsWebhookEvents;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -23,9 +24,13 @@ use Illuminate\Support\Str;
  * of the site associated with the report.
  * 
  * TASK-4-16: PDF generation includes branding (colors, fonts, logo, company name).
+ * 
+ * TASK-6-16: Emits report.completed webhook events after successful generation.
  */
 class ReportController extends Controller
 {
+    use EmitsWebhookEvents;
+
     protected ReportRepository $reportRepository;
     protected ReportBrandingRepository $brandingRepository;
     protected ReportDataAggregator $dataAggregator;
@@ -269,6 +274,11 @@ class ReportController extends Controller
                 'file_size' => Storage::size($filePath),
             ]);
 
+            $report->refresh();
+
+            // Emit webhook event for report completion
+            $this->emitReportWebhook($report, $site->user_id);
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -395,5 +405,33 @@ class ReportController extends Controller
         $extension = $format === 'pdf' ? 'pdf' : 'csv';
 
         return "{$slug}-{$date}.{$extension}";
+    }
+
+    /**
+     * Emit webhook event for completed report.
+     */
+    protected function emitReportWebhook(Report $report, int $userId): void
+    {
+        $downloadUrl = "/api/v1/reports/{$report->id}/download";
+
+        $dateRange = null;
+        if ($report->date_range_start && $report->date_range_end) {
+            $dateRange = [
+                'start' => $report->date_range_start->toDateString(),
+                'end' => $report->date_range_end->toDateString(),
+            ];
+        }
+
+        $this->emitReportCompletedEvent(
+            userId: $userId,
+            reportId: $report->id,
+            siteId: $report->site_id,
+            type: $report->type,
+            format: $report->format,
+            downloadUrl: $downloadUrl,
+            fileSize: $report->file_size,
+            scheduledReportId: null,
+            dateRange: $dateRange
+        );
     }
 }
