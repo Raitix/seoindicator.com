@@ -2465,6 +2465,134 @@ All endpoints enforce user ownership via `AnnotationPolicy`:
 - Status: Done
 
 ---
+## Track/Dismiss Endpoints (TASK-5-9)
+
+### Service Description
+REST API endpoints for managing keyword suggestions. Provides functionality to add suggestions to tracking (converting them to tracked keywords) and dismiss suggestions the user doesn't want. These endpoints bridge the keyword discovery system with the keyword tracking system.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/sites/{siteId}/suggestions/{suggestionId}/track` | Add single suggestion to tracking |
+| POST | `/api/v1/sites/{siteId}/suggestions/bulk-track` | Add multiple suggestions to tracking |
+| POST | `/api/v1/sites/{siteId}/suggestions/{suggestionId}/dismiss` | Dismiss a suggestion |
+
+### Track Endpoint
+`POST /api/v1/sites/{siteId}/suggestions/{suggestionId}/track`
+
+**Description:** Converts a suggestion into a tracked keyword. Creates a keyword record in the keywords table and marks the suggestion as tracking.
+
+**Authorization:** User must own the site (401 unauthenticated, 403 unauthorized)
+
+**Response (201):**
+```json
+{
+  "keyword": {
+    "id": 1,
+    "keyword": "best seo tools 2026",
+    "status": "active"
+  },
+  "suggestion": {
+    "id": 1,
+    "is_tracking": true
+  }
+}
+```
+
+**Side Effects:**
+- Creates keyword record in `keywords` table (FEAT-001)
+- Updates `keyword_suggestions.is_tracking = true`
+
+### Bulk Track Endpoint
+`POST /api/v1/sites/{siteId}/suggestions/bulk-track`
+
+**Request Body:**
+```json
+{
+  "suggestionIds": [1, 2, 3, 4, 5]
+}
+```
+
+**Response (201):**
+```json
+{
+  "added": [
+    { "keyword": "best seo tools 2026", "keywordId": 1 },
+    { "keyword": "seo software free", "keywordId": 2 }
+  ],
+  "skipped": [
+    { "keyword": "seo", "reason": "Already tracking" }
+  ]
+}
+```
+
+**Behavior:**
+- Uses database transaction for atomicity
+- Validates each suggestion belongs to the site
+- Returns separate arrays for added and skipped suggestions
+
+### Dismiss Endpoint
+`POST /api/v1/sites/{siteId}/suggestions/{suggestionId}/dismiss`
+
+**Description:** Marks a suggestion as dismissed so it won't appear in future suggestion lists. Also creates a record in the `dismissed_suggestions` table to prevent rediscovery.
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "is_dismissed": true
+}
+```
+
+**Side Effects:**
+- Updates `keyword_suggestions.is_dismissed = true`
+- Creates record in `dismissed_suggestions` table
+
+### Authorization Flow
+| Request | Response |
+|---------|----------|
+| Unauthenticated | 401 Unauthorized |
+| Authenticated, wrong user | 403 Forbidden |
+| Owner | Full access |
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/SuggestionController.php`
+- Methods: `track()`, `bulkTrack()`, `dismiss()`
+- Routes defined in: `backend/routes/api.php`
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| SuggestionControllerTest | 80 | 192 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Track endpoint | 9 | Single suggestion tracking |
+| Bulk-track endpoint | 11 | Multiple suggestions, added/skipped arrays |
+| Dismiss endpoint | 8 | Suggestion dismissal |
+| Authorization | 6 | 401/403 response verification |
+| Security/Adversarial | 7 | SQL injection, XSS, invalid inputs |
+
+### Security Notes
+- SQL injection protection: Eloquent ORM with parameterized queries
+- XSS protection: Input validation and output escaping
+- Authorization enforced at controller level
+- Database transactions for bulk operations
+
+### Production Status
+- **Deployed**: 2026-02-27 (GitHub Actions run 22492252069)
+- **Health Check**: Passing
+- **Tests**: 80/80 passing (192 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-5-1 (Database schema - keyword_suggestions, dismissed_suggestions tables)
+- TASK-5-2 (KeywordSuggestion model and repository)
+- FEAT-001 (Keywords table for tracking)
+
+---
 ## Suggestion Aggregation Service (TASK-5-6)
 
 ### Service Description
