@@ -1,7 +1,7 @@
 # SPEC-001-6: Dashboard API Endpoint
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 ## PRIORITY
 `High`
 
