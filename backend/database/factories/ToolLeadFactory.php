@@ -6,7 +6,10 @@ use App\Models\ToolLead;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ToolLead>
+ * Factory for ToolLead model.
+ * 
+ * TASK-16-5: Email Capture Modal & API
+ * TASK-16-6: Lead Storage Service
  */
 class ToolLeadFactory extends Factory
 {
@@ -25,13 +28,8 @@ class ToolLeadFactory extends Factory
     public function definition(): array
     {
         return [
-            'email' => fake()->unique()->safeEmail(),
-            'tool' => fake()->randomElement([
-                'meta-tag-analyzer',
-                'keyword-density',
-                'mobile-friendly',
-                'social-preview',
-            ]),
+            'email' => fake()->safeEmail(),
+            'tool' => fake()->randomElement(ToolLead::VALID_TOOLS),
             'url' => fake()->url(),
             'ip_address' => fake()->ipv4(),
             'user_agent' => fake()->userAgent(),
@@ -39,7 +37,7 @@ class ToolLeadFactory extends Factory
     }
 
     /**
-     * Indicate the lead is for a specific tool.
+     * Create a lead for a specific tool.
      */
     public function forTool(string $tool): static
     {
@@ -49,39 +47,7 @@ class ToolLeadFactory extends Factory
     }
 
     /**
-     * Indicate the lead is for meta-tag-analyzer.
-     */
-    public function metaTagAnalyzer(): static
-    {
-        return $this->forTool('meta-tag-analyzer');
-    }
-
-    /**
-     * Indicate the lead is for keyword-density.
-     */
-    public function keywordDensity(): static
-    {
-        return $this->forTool('keyword-density');
-    }
-
-    /**
-     * Indicate the lead is for mobile-friendly.
-     */
-    public function mobileFriendly(): static
-    {
-        return $this->forTool('mobile-friendly');
-    }
-
-    /**
-     * Indicate the lead is for social-preview.
-     */
-    public function socialPreview(): static
-    {
-        return $this->forTool('social-preview');
-    }
-
-    /**
-     * Indicate the lead has a specific email.
+     * Create a lead with a specific email.
      */
     public function withEmail(string $email): static
     {
@@ -91,17 +57,41 @@ class ToolLeadFactory extends Factory
     }
 
     /**
-     * Indicate the lead has a specific IP address.
+     * Create a meta-tag-analyzer lead.
      */
-    public function withIp(string $ipAddress): static
+    public function metaTagAnalyzer(): static
+    {
+        return $this->forTool('meta-tag-analyzer');
+    }
+
+    /**
+     * Create a keyword-density lead.
+     */
+    public function keywordDensity(): static
+    {
+        return $this->forTool('keyword-density');
+    }
+
+    /**
+     * Create a mobile-friendly lead.
+     */
+    public function mobileFriendly(): static
+    {
+        return $this->forTool('mobile-friendly');
+    }
+
+    /**
+     * Create a soft-deleted lead.
+     */
+    public function softDeleted(): static
     {
         return $this->state(fn (array $attributes) => [
-            'ip_address' => $ipAddress,
+            'deleted_at' => now(),
         ]);
     }
 
     /**
-     * Indicate the lead has no URL.
+     * Create a lead without URL.
      */
     public function withoutUrl(): static
     {
@@ -111,12 +101,12 @@ class ToolLeadFactory extends Factory
     }
 
     /**
-     * Indicate the lead is soft deleted (GDPR request).
+     * Create a lead with IPv6 address.
      */
-    public function softDeleted(): static
+    public function withIpv6(): static
     {
         return $this->state(fn (array $attributes) => [
-            'deleted_at' => now(),
+            'ip_address' => fake()->ipv6(),
         ]);
     }
 }
