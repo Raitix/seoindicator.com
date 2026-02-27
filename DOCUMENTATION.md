@@ -1,6 +1,138 @@
 # DOCUMENTATION.md
 
 ---
+## Tools Infrastructure (TASK-16-1)
+
+### Feature Description
+Foundational infrastructure for interactive SEO tools. Provides CORS proxy API endpoint, HTML parsing capabilities, base tool class architecture, and shared utilities for all interactive SEO analysis tools in FEAT-016.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/tools/analyze` | Main tool analysis endpoint |
+| GET | `/api/v1/tools/rate-limit-status` | Get current rate limit status |
+| GET | `/api/v1/tools/captcha-config` | Get CAPTCHA configuration |
+
+### Analyze Endpoint
+`POST /api/v1/tools/analyze`
+
+**Request Body:**
+```json
+{
+  "url": "https://example.com",
+  "tool": "meta-tag-analyzer"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://example.com",
+    "analyzedAt": "2026-02-27T12:00:00Z",
+    "tool": "meta-tag-analyzer",
+    "results": { ... }
+  }
+}
+```
+
+### Core Components
+
+| Component | File | Description |
+|-----------|------|-------------|
+| API Controller | `APIProxyController.php` | Main endpoint handling CORS proxy |
+| HTML Parser | `HtmlParserService.php` | Symfony DomCrawler integration |
+| Base SEOTool | `Services/Tools/SEOTool.php` | Abstract base class for tools |
+| URL Validation | `URLValidationService.php` | SSRF protection and URL sanitization |
+| Rate Limiting | `ToolsRateLimitService.php` | Per-IP rate limiting |
+| ToolResult DTO | `Services/Tools/ToolResult.php` | Structured result container |
+
+### Base SEOTool Class
+```php
+abstract class SEOTool
+{
+    abstract public function name(): string;
+    abstract public function analyze(Crawler $crawler, string $url): ToolResult;
+    
+    // Shared methods available to all tools
+    protected function fetchUrl(string $url): string;
+    protected function parseHtml(string $html): Crawler;
+    protected function validateUrl(string $url): bool;
+}
+```
+
+### URL Validation (SSRF Protection)
+| Protection | Description |
+|------------|-------------|
+| Localhost blocked | `localhost`, `127.*` blocked |
+| Private IPs blocked | `10.*`, `172.16-31.*`, `192.168.*` blocked |
+| Cloud metadata blocked | `169.254.169.254` blocked |
+| File protocol blocked | `file://` protocol blocked |
+| Internal domains | Domains containing "internal" blocked |
+
+### Rate Limiting Configuration
+| Limit Type | Default | Description |
+|------------|---------|-------------|
+| Per-IP Daily Limit | 3 requests | Max tool uses per IP per 24 hours |
+| CAPTCHA Threshold | 3 uses | CAPTCHA shown after 3 tool uses |
+| Request Timeout | 30s | Total request timeout |
+| Connection Timeout | 10s | Connection establishment timeout |
+| Max Response Size | 10MB | Maximum HTML response size |
+
+### Response Headers
+```
+X-RateLimit-Limit: 3
+X-RateLimit-Remaining: 2
+X-RateLimit-Reset: 1709049600
+```
+
+### Error Handling
+| Error Code | HTTP Status | Description |
+|------------|-------------|-------------|
+| `INVALID_URL` | 400 | URL format validation failed |
+| `BLOCKED_URL` | 403 | URL blocked by SSRF protection |
+| `FETCH_FAILED` | 502 | Failed to fetch external URL |
+| `RATE_LIMIT_EXCEEDED` | 429 | Rate limit exceeded |
+| `TOOL_NOT_FOUND` | 404 | Unknown tool name |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SSRF Protection | URL validation service blocks private IPs, localhost |
+| Rate Limiting | Per-IP tracking with configurable limits |
+| CAPTCHA Integration | hCaptcha/ReCAPTCHA support after threshold |
+| Request Timeout | Prevents hanging on slow responses |
+| Response Size Limit | Prevents memory exhaustion from large pages |
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `ToolsRateLimitServiceTest` | 64 | 250 |
+| `APIProxyControllerTest` | Feature tests | API endpoint tests |
+| `URLValidationServiceTest` | URL validation tests | SSRF protection tests |
+| `MetaTagAnalyzerTest` | Tool-specific tests | Extraction tests |
+| `KeywordDensityCheckerTest` | Tool-specific tests | Density calculation tests |
+
+### Production Status
+- **Deployed**: 2026-02-27 (via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 64+ tests passing
+- **Status**: Complete
+
+### Dependencies
+- Symfony DomCrawler (HTML parsing)
+- Laravel HTTP Client (URL fetching)
+
+### Related Tasks
+- TASK-16-2: Meta Tag Analyzer Tool
+- TASK-16-3: Keyword Density Checker Tool
+- TASK-16-4: Tool Embedding System
+- TASK-16-11: Rate Limiting & Anti-Abuse
+
+---
 ## Keyword Add/Edit Forms (TASK-1-14)
 
 ### Feature Description
