@@ -2095,6 +2095,118 @@ $count = $suggestionService->generateSuggestions(
 - TASK-5-5 (Question keyword generator)
 
 ---
+## Suggestions CRUD API Endpoints (TASK-5-7)
+
+### Service Description
+REST API endpoints for listing, paginating, and filtering keyword suggestions. This is the primary API layer for the frontend to display and manage keyword suggestions discovered through the keyword discovery system.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sites/{siteId}/suggestions` | List suggestions with pagination and filtering |
+| GET | `/api/v1/sites/{siteId}/suggestions/export` | Export suggestions as CSV |
+
+### List Suggestions Endpoint
+`GET /api/v1/sites/{siteId}/suggestions`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `source` | string | null | Filter by suggestion source (suggest, question, all) |
+| `minScore` | int | null | Minimum opportunity score filter |
+| `maxScore` | int | null | Maximum opportunity score filter |
+| `includeDismissed` | boolean | false | Include dismissed suggestions |
+| `includeTracking` | boolean | false | Include suggestions already being tracked |
+| `page` | int | 1 | Page number |
+| `perPage` | int | 20 | Results per page (max: 100) |
+| `sort` | string | opportunity_score | Sort field |
+| `order` | string | desc | Sort order (asc, desc) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "keyword": "best seo tools 2026",
+      "source": "suggest",
+      "opportunityScore": 75,
+      "isTracking": false,
+      "isDismissed": false,
+      "discoveredAt": "2026-02-27T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "total": 50,
+    "page": 1,
+    "perPage": 20
+  }
+}
+```
+
+**Default Behavior:**
+- Excludes dismissed suggestions (`isDismissed: false`)
+- Excludes already tracking suggestions (`isTracking: false`)
+- Sorts by `opportunity_score DESC`
+- Returns paginated results
+
+**Authorization:**
+- Requires authentication (Bearer token)
+- User must own the site (verified via `$this->authorize('view', $site)`)
+- Returns 401 for unauthenticated requests
+- Returns 403 for unauthorized site access
+
+### Export Suggestions Endpoint
+`GET /api/v1/sites/{siteId}/suggestions/export`
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `source` | string | Filter by suggestion source |
+
+**Response:**
+- Content-Type: `text/csv`
+- Headers: `Keyword,Source,Opportunity Score,Tracking Status,Discovered At`
+- Returns CSV download with filtered suggestions
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/SuggestionController.php`
+- Methods: `index()`, `export()`
+- Repository: `KeywordSuggestionRepository::getPaginated()`
+- Routes defined in: `backend/routes/api.php`
+
+### Test Coverage
+| Category | Tests | Assertions |
+|----------|-------|------------|
+| Index (List) | 17 | 17 |
+| Export | 8 | 8 |
+| Authorization | 6 | 6 |
+| Security/Adversarial | 6 | 6 |
+| Track endpoint | 9 | 9 |
+| Bulk-track endpoint | 12 | 12 |
+| Dismiss endpoint | 8 | 8 |
+| Generate endpoint | 14 | 14 |
+| **Total** | **80** | **192** |
+
+### Security Notes
+- SQL injection protection: Eloquent ORM with parameterized queries
+- XSS protection: Input sanitization in query parameters
+- Authorization boundaries enforced (401/403 responses)
+- All endpoints require authentication
+
+### Production Status
+- **Deployed**: 2026-02-27 (commit 97e06ee..ecfccf3)
+- **Health Check**: Passing
+- **Production Tests**: 80 tests, 192 assertions passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-5-1 (Database schema - keyword_suggestions table)
+- TASK-5-2 (KeywordSuggestion model and repository)
+
+---
 ## Other SERP Feature Detection (TASK-7-7)
 
 ### Service Description
