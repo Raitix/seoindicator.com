@@ -332,6 +332,124 @@ CREATE TABLE projects (
 - TASK-8-10: Integration tests
 
 ---
+## GSC Data Controller API (TASK-12-8)
+
+### Service Description
+REST API controller for exposing Google Search Console metrics and opportunity keywords. Provides endpoints for retrieving GSC data with filtering and pagination, plus opportunity keyword identification based on CTR gaps.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/projects/{projectId}/gsc` | Retrieve GSC data with date filters |
+| GET | `/api/v1/projects/{projectId}/gsc/opportunities` | List opportunity keywords (CTR gap analysis) |
+
+### GSC Data Endpoint
+`GET /api/v1/projects/{projectId}/gsc`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `from` | date | 30 days ago | Start date filter (YYYY-MM-DD) |
+| `to` | date | today | End date filter (YYYY-MM-DD) |
+| `page` | int | 1 | Page number |
+| `perPage` | int | 15 | Results per page (max: 100) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "query": "seo tools",
+      "page": "https://example.com/tools",
+      "clicks": 150,
+      "impressions": 3000,
+      "ctr": 5.0,
+      "avg_position": 3.2,
+      "data_date": "2026-02-27"
+    }
+  ],
+  "meta": {
+    "total": 45,
+    "page": 1,
+    "perPage": 15
+  }
+}
+```
+
+### Opportunity Keywords Endpoint
+`GET /api/v1/projects/{projectId}/gsc/opportunities`
+
+Returns keywords with high impressions but lower-than-expected CTR, indicating optimization potential.
+
+**Algorithm:**
+- Calculates expected CTR based on average position (industry benchmarks)
+- Identifies queries where actual CTR < expected CTR
+- Scores by potential missed clicks: `(expected_ctr - actual_ctr) * impressions`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "query": "keyword research tool",
+      "clicks": 50,
+      "impressions": 800,
+      "ctr": 6.25,
+      "avg_position": 4.5,
+      "expected_ctr": 8.5,
+      "opportunity_score": 18.0
+    }
+  ]
+}
+```
+
+### Authorization
+- All endpoints require authentication (Bearer token)
+- User must have project access via `ProjectPolicy`
+- Returns 401 for unauthenticated requests
+- Returns 403 for unauthorized project access
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/GSCDataController.php`
+- Methods: `index()`, `opportunities()`
+- Uses: `scopeOpportunities()` for CTR gap heuristic
+- Routes: Defined in `backend/routes/api.php` under `/api/v1/projects/{projectId}/gsc`
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| GSCApiEndpointsTest | 11 | 13 |
+| GSCSecurityTest | 14 | 37 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Data retrieval | 4 | Pagination, date filters |
+| Opportunities | 3 | CTR gap calculation |
+| Authorization | 4 | 401/403 responses |
+| Security | 14 | SQL injection, XSS, path traversal |
+
+### Production Status
+- **Deployed**: 2026-02-23 (commit 2d3d903)
+- **Routing Fix**: Added `.htaccess` for `/api/*` rewrite
+- **Health Check**: Passing
+- **Routes Verified**: 200 OK (health), 401 (protected endpoints)
+- **Status**: Complete
+
+### Security Notes
+- SQL injection protection: Eloquent ORM with parameterized queries
+- XSS protection: Input validation and output escaping
+- Path traversal: Rejected at routing layer (404)
+- Invalid project IDs: Rejected at auth layer (401)
+
+### Dependencies
+- TASK-12-5: Data sync service populates GSC data
+- TASK-12-6: Query matching links keywords to GSC data
+
+---
 ## Unit Tests: Projects (TASK-8-9)
 
 ### Test Coverage Summary
