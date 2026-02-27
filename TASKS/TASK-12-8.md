@@ -1,7 +1,7 @@
 # TASK-12-8: GSC Data Controller
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -145,4 +145,12 @@ API controller for GSC data retrieval and opportunity analysis.
 - Added APP_KEY to phpunit.xml for local test environment
 
 **Status:** To Document
+
+### [2026-02-27 19:05] DocSystemAnalyst: Documentation Complete
+- Added GSC Data Controller section to DOCUMENTATION.md
+- Documented API endpoints: GET /api/v1/projects/{projectId}/gsc and /opportunities
+- Included query parameters, response format, authorization, test coverage
+- Production status: Deployed, routing fix verified, tests passing (25 tests, 50 assertions)
+
+**Status:** Done
 
