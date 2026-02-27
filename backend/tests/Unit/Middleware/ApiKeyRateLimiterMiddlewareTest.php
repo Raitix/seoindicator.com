@@ -3,6 +3,9 @@
 namespace Tests\Unit\Middleware;
 
 use Tests\TestCase;
+use App\Http\Middleware\ApiKeyRateLimiter;
+use App\Services\ApiKeyRateLimiterService;
+use App\Models\ApiKey;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
@@ -25,9 +28,14 @@ use Mockery;
  */
 class ApiKeyRateLimiterMiddlewareTest extends TestCase
 {
+    protected ApiKeyRateLimiterService $service;
+    protected ApiKeyRateLimiter $middleware;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->service = app(ApiKeyRateLimiterService::class);
+        $this->middleware = new ApiKeyRateLimiter($this->service);
         Cache::flush();
     }
 
@@ -47,9 +55,12 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
      */
     public function test_request_passes_with_valid_key_under_limit(): void
     {
-        $request = $this->createMockRequest(1, 60); // API key ID 1, rate_limit 60
+        $apiKey = $this->createMockApiKey(1, 60);
+        $request = $this->createRequestWithApiKey($apiKey);
 
-        $response = $this->simulateMiddleware($request, 60);
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $this->assertEquals(200, $response->getStatusCode());
     }
@@ -61,15 +72,19 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
     {
         $apiKeyId = 2;
         $rateLimit = 60;
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
         // Next request should be blocked
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $this->assertEquals(429, $response->getStatusCode());
     }
@@ -84,18 +99,25 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust key1
+        $key1 = 'api_key:' . $key1Id;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($key1Id);
+            $this->service->increment($key1, 60000);
         }
 
         // key1 should be blocked
-        $request1 = $this->createMockRequest($key1Id, $rateLimit);
-        $response1 = $this->simulateMiddleware($request1, $rateLimit);
+        $apiKey1 = $this->createMockApiKey($key1Id, $rateLimit);
+        $request1 = $this->createRequestWithApiKey($apiKey1);
+        $response1 = $this->middleware->handle($request1, function ($req) {
+            return new Response('OK', 200);
+        });
         $this->assertEquals(429, $response1->getStatusCode());
 
         // key2 should still be allowed
-        $request2 = $this->createMockRequest($key2Id, $rateLimit);
-        $response2 = $this->simulateMiddleware($request2, $rateLimit);
+        $apiKey2 = $this->createMockApiKey($key2Id, $rateLimit);
+        $request2 = $this->createRequestWithApiKey($apiKey2);
+        $response2 = $this->middleware->handle($request2, function ($req) {
+            return new Response('OK', 200);
+        });
         $this->assertEquals(200, $response2->getStatusCode());
     }
 
@@ -104,8 +126,12 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
      */
     public function test_rate_limit_headers_present(): void
     {
-        $request = $this->createMockRequest(5, 60);
-        $response = $this->simulateMiddleware($request, 60);
+        $apiKey = $this->createMockApiKey(5, 60);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $this->assertTrue($response->headers->has('X-RateLimit-Limit'));
         $this->assertTrue($response->headers->has('X-RateLimit-Remaining'));
@@ -121,12 +147,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $this->assertEquals(429, $response->getStatusCode());
         $this->assertTrue($response->headers->has('Retry-After'));
@@ -138,15 +169,20 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
     public function test_per_key_configurable_limit_applied(): void
     {
         $apiKeyId = 7;
-        $customLimit = 300; // Custom rate limit
+        $customLimit = 300;
 
         // Make 250 requests (within custom limit)
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 250; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $customLimit);
-        $response = $this->simulateMiddleware($request, $customLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $customLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         // Should still be allowed
         $this->assertEquals(200, $response->getStatusCode());
@@ -160,11 +196,30 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
      */
     public function test_default_limit_applied_when_none_set(): void
     {
-        $request = $this->createMockRequest(8, null); // No custom limit
-        $response = $this->simulateMiddleware($request, 60); // Default 60
+        $apiKey = $this->createMockApiKey(8, null);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         // Should use default limit
         $this->assertEquals('60', $response->headers->get('X-RateLimit-Limit'));
+    }
+
+    /**
+     * MI-008: Missing API key passes through
+     */
+    public function test_missing_api_key_passes_through(): void
+    {
+        $request = Request::create('/api/v1/test', 'GET');
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
+
+        // Should pass through (auth middleware handles missing keys)
+        $this->assertEquals(200, $response->getStatusCode());
     }
 
     // =========================================================================
@@ -176,8 +231,12 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
      */
     public function test_x_ratelimit_limit_header_correct_value(): void
     {
-        $request = $this->createMockRequest(10, 120);
-        $response = $this->simulateMiddleware($request, 120);
+        $apiKey = $this->createMockApiKey(10, 120);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $this->assertEquals('120', $response->headers->get('X-RateLimit-Limit'));
     }
@@ -191,12 +250,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // First request
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response1 = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+        $response1 = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
         $this->assertEquals('59', $response1->headers->get('X-RateLimit-Remaining'));
 
         // Second request
-        $response2 = $this->simulateMiddleware($request, $rateLimit);
+        $response2 = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
         $this->assertEquals('58', $response2->headers->get('X-RateLimit-Remaining'));
     }
 
@@ -205,8 +269,12 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
      */
     public function test_x_ratelimit_reset_is_unix_timestamp(): void
     {
-        $request = $this->createMockRequest(12, 60);
-        $response = $this->simulateMiddleware($request, 60);
+        $apiKey = $this->createMockApiKey(12, 60);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $resetTime = $response->headers->get('X-RateLimit-Reset');
 
@@ -219,8 +287,12 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
      */
     public function test_headers_on_successful_request(): void
     {
-        $request = $this->createMockRequest(13, 60);
-        $response = $this->simulateMiddleware($request, 60);
+        $apiKey = $this->createMockApiKey(13, 60);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertNotNull($response->headers->get('X-RateLimit-Limit'));
@@ -237,12 +309,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $this->assertEquals(429, $response->getStatusCode());
         $this->assertNotNull($response->headers->get('X-RateLimit-Limit'));
@@ -259,12 +336,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $this->assertEquals('0', $response->headers->get('X-RateLimit-Remaining'));
     }
@@ -277,8 +359,13 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $customLimits = [10, 60, 300, 1000];
 
         foreach ($customLimits as $index => $limit) {
-            $request = $this->createMockRequest(100 + $index, $limit);
-            $response = $this->simulateMiddleware($request, $limit);
+            Cache::flush();
+            $apiKey = $this->createMockApiKey(100 + $index, $limit);
+            $request = $this->createRequestWithApiKey($apiKey);
+
+            $response = $this->middleware->handle($request, function ($req) {
+                return new Response('OK', 200);
+            });
 
             $this->assertEquals((string) $limit, $response->headers->get('X-RateLimit-Limit'));
         }
@@ -297,12 +384,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $this->assertEquals(429, $response->getStatusCode());
     }
@@ -316,12 +408,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $this->assertInstanceOf(JsonResponse::class, $response);
 
@@ -338,12 +435,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $content = json_decode($response->getContent(), true);
 
@@ -362,12 +464,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $content = json_decode($response->getContent(), true);
 
@@ -384,12 +491,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $content = json_decode($response->getContent(), true);
 
@@ -406,12 +518,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $this->assertTrue($response->headers->has('Retry-After'));
         $this->assertIsNumeric($response->headers->get('Retry-After'));
@@ -426,12 +543,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $content = json_decode($response->getContent(), true);
         $headerRetry = (int) $response->headers->get('Retry-After');
@@ -449,12 +571,17 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Exhaust limit
+        $key = 'api_key:' . $apiKeyId;
         for ($i = 0; $i < 60; $i++) {
-            $this->simulateIncrement($apiKeyId);
+            $this->service->increment($key, 60000);
         }
 
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         $content = json_decode($response->getContent(), true);
 
@@ -482,13 +609,16 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
 
         // Simulate 10 "parallel" requests (in practice, sequential but testing counting)
         for ($i = 0; $i < 10; $i++) {
-            $request = $this->createMockRequest($apiKeyId, $rateLimit);
-            $response = $this->simulateMiddleware($request, $rateLimit);
+            $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+            $request = $this->createRequestWithApiKey($apiKey);
+            $response = $this->middleware->handle($request, function ($req) {
+                return new Response('OK', 200);
+            });
             $this->assertEquals(200, $response->getStatusCode());
         }
 
         // Verify count is 10
-        $count = Cache::get("rate_limit:api_key:{$apiKeyId}", 0);
+        $count = $this->service->getCount('api_key:' . $apiKeyId, 60000);
         $this->assertEquals(10, $count);
     }
 
@@ -505,8 +635,11 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $blockedCount = 0;
 
         for ($i = 0; $i < 100; $i++) {
-            $request = $this->createMockRequest($apiKeyId, $rateLimit);
-            $response = $this->simulateMiddleware($request, $rateLimit);
+            $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+            $request = $this->createRequestWithApiKey($apiKey);
+            $response = $this->middleware->handle($request, function ($req) {
+                return new Response('OK', 200);
+            });
 
             if ($response->getStatusCode() === 200) {
                 $successCount++;
@@ -533,8 +666,11 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
         $rateLimit = 60;
 
         // Make request
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
 
         // Verify response
         $this->assertEquals(200, $response->getStatusCode());
@@ -552,14 +688,20 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
 
         // Make 60 requests
         for ($i = 0; $i < 60; $i++) {
-            $request = $this->createMockRequest($apiKeyId, $rateLimit);
-            $response = $this->simulateMiddleware($request, $rateLimit);
+            $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+            $request = $this->createRequestWithApiKey($apiKey);
+            $response = $this->middleware->handle($request, function ($req) {
+                return new Response('OK', 200);
+            });
             $this->assertEquals(200, $response->getStatusCode());
         }
 
         // 61st should be blocked
-        $request = $this->createMockRequest($apiKeyId, $rateLimit);
-        $response = $this->simulateMiddleware($request, $rateLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $rateLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
         $this->assertEquals(429, $response->getStatusCode());
     }
 
@@ -574,21 +716,27 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
 
         // Alternate requests between two keys
         for ($i = 0; $i < 50; $i++) {
-            $request1 = $this->createMockRequest($key1Id, $rateLimit);
-            $response1 = $this->simulateMiddleware($request1, $rateLimit);
+            $apiKey1 = $this->createMockApiKey($key1Id, $rateLimit);
+            $request1 = $this->createRequestWithApiKey($apiKey1);
+            $response1 = $this->middleware->handle($request1, function ($req) {
+                return new Response('OK', 200);
+            });
             $this->assertEquals(200, $response1->getStatusCode());
 
-            $request2 = $this->createMockRequest($key2Id, $rateLimit);
-            $response2 = $this->simulateMiddleware($request2, $rateLimit);
+            $apiKey2 = $this->createMockApiKey($key2Id, $rateLimit);
+            $request2 = $this->createRequestWithApiKey($apiKey2);
+            $response2 = $this->middleware->handle($request2, function ($req) {
+                return new Response('OK', 200);
+            });
             $this->assertEquals(200, $response2->getStatusCode());
         }
 
         // Both should still have remaining requests
-        $remaining1 = Cache::get("rate_limit:api_key:{$key1Id}", 0);
-        $remaining2 = Cache::get("rate_limit:api_key:{$key2Id}", 0);
+        $count1 = $this->service->getCount('api_key:' . $key1Id, 60000);
+        $count2 = $this->service->getCount('api_key:' . $key2Id, 60000);
 
-        $this->assertEquals(50, $remaining1);
-        $this->assertEquals(50, $remaining2);
+        $this->assertEquals(50, $count1);
+        $this->assertEquals(50, $count2);
     }
 
     /**
@@ -601,14 +749,20 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
 
         // Make 10 requests (exactly at limit)
         for ($i = 0; $i < 10; $i++) {
-            $request = $this->createMockRequest($apiKeyId, $customLimit);
-            $response = $this->simulateMiddleware($request, $customLimit);
+            $apiKey = $this->createMockApiKey($apiKeyId, $customLimit);
+            $request = $this->createRequestWithApiKey($apiKey);
+            $response = $this->middleware->handle($request, function ($req) {
+                return new Response('OK', 200);
+            });
             $this->assertEquals(200, $response->getStatusCode());
         }
 
         // 11th should be blocked
-        $request = $this->createMockRequest($apiKeyId, $customLimit);
-        $response = $this->simulateMiddleware($request, $customLimit);
+        $apiKey = $this->createMockApiKey($apiKeyId, $customLimit);
+        $request = $this->createRequestWithApiKey($apiKey);
+        $response = $this->middleware->handle($request, function ($req) {
+            return new Response('OK', 200);
+        });
         $this->assertEquals(429, $response->getStatusCode());
 
         // Verify custom limit in headers
@@ -620,77 +774,23 @@ class ApiKeyRateLimiterMiddlewareTest extends TestCase
     // =========================================================================
 
     /**
-     * Create a mock request with API key context
+     * Create a mock API key object
      */
-    protected function createMockRequest(int $apiKeyId, ?int $rateLimit): Request
+    protected function createMockApiKey(int $id, ?int $rateLimit): ApiKey
+    {
+        $apiKey = Mockery::mock(ApiKey::class)->makePartial();
+        $apiKey->shouldReceive('getAttribute')->with('id')->andReturn($id);
+        $apiKey->shouldReceive('getAttribute')->with('rate_limit')->andReturn($rateLimit);
+        return $apiKey;
+    }
+
+    /**
+     * Create a request with API key attached
+     */
+    protected function createRequestWithApiKey(ApiKey $apiKey): Request
     {
         $request = Request::create('/api/v1/test', 'GET');
-
-        // Simulate API key being attached by auth middleware
-        $request->attributes->set('api_key', (object) [
-            'id' => $apiKeyId,
-            'rate_limit' => $rateLimit ?? 60,
-        ]);
-
+        $request->attributes->set('api_key', $apiKey);
         return $request;
-    }
-
-    /**
-     * Simulate middleware execution
-     */
-    protected function simulateMiddleware(Request $request, int $maxRequests): Response
-    {
-        $apiKey = $request->attributes->get('api_key');
-        $key = "rate_limit:api_key:{$apiKey->id}";
-
-        // Get current count
-        $count = Cache::get($key, 0);
-
-        // Check if allowed
-        if ($count >= $maxRequests) {
-            // Build 429 response
-            $retryAfter = 30; // Simplified for testing
-
-            $response = new JsonResponse([
-                'success' => false,
-                'error' => [
-                    'code' => 'RATE_LIMIT_EXCEEDED',
-                    'message' => "Rate limit exceeded. Retry after {$retryAfter} seconds.",
-                    'retry_after' => $retryAfter,
-                ],
-            ], 429);
-
-            // Add headers
-            $response->headers->set('X-RateLimit-Limit', (string) $maxRequests);
-            $response->headers->set('X-RateLimit-Remaining', '0');
-            $response->headers->set('X-RateLimit-Reset', (string) (time() + 60));
-            $response->headers->set('Retry-After', (string) $retryAfter);
-
-            return $response;
-        }
-
-        // Increment counter
-        Cache::put($key, $count + 1, now()->addMinute());
-
-        // Create success response
-        $response = new Response('OK', 200);
-
-        // Add headers
-        $remaining = max(0, $maxRequests - $count - 1);
-        $response->headers->set('X-RateLimit-Limit', (string) $maxRequests);
-        $response->headers->set('X-RateLimit-Remaining', (string) $remaining);
-        $response->headers->set('X-RateLimit-Reset', (string) (time() + 60));
-
-        return $response;
-    }
-
-    /**
-     * Simulate increment for testing
-     */
-    protected function simulateIncrement(int $apiKeyId): void
-    {
-        $key = "rate_limit:api_key:{$apiKeyId}";
-        $count = Cache::get($key, 0);
-        Cache::put($key, $count + 1, now()->addMinute());
     }
 }

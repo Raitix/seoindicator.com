@@ -1,7 +1,7 @@
 # TASK-6-3: API Key Generation and Validation
 
 ## Status
-`To Test Prod`
+`Testing Prod`
 
 ## Priority
 `High`
