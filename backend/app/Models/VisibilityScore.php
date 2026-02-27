@@ -27,6 +27,15 @@ class VisibilityScore extends Model
     use HasFactory;
 
     /**
+     * Indicates if the model should be timestamped.
+     *
+     * This model uses calculated_at instead of created_at/updated_at.
+     *
+     * @var bool
+     */
+    public $timestamps = false;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -109,7 +118,7 @@ class VisibilityScore extends Model
         return static::forProject($projectId)
             ->where('calculated_at', '>=', now()->subDays($days))
             ->orderBy('calculated_at')
-            ->get(['score', 'calculated_at', 'position_component', 'serp_component', 'volume_component'])
+            ->get(['id', 'score', 'calculated_at', 'position_component', 'serp_component', 'volume_component'])
             ->toArray();
     }
 }
