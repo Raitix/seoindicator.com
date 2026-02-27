@@ -1,7 +1,7 @@
 # TASK-10-1: Create Visibility Scores Table
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `High`
