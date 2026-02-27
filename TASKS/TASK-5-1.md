@@ -1,7 +1,7 @@
 # TASK-5-1: Database Schema - Keyword Suggestions Table
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -92,3 +92,48 @@ Status: To Develop → Developer
 
 ### [2026-02-26 22:42] Agent: ProjectManager
 Created task from SPEC-005 breakdown. Priority: High (foundation task for all TASK-5-* tasks). Risk: Medium (non-destructive schema migration). Dependencies: FEAT-001 (sites table).
+
+### [2026-02-27 08:10] Agent: LocalTester
+**Local Testing Complete - PASS**
+
+**Test Execution:**
+```
+php artisan test --filter CreateKeywordSuggestionsTableTest
+```
+
+**Results: 26/26 PASS (46 assertions)**
+
+**keyword_suggestions table (19 tests):**
+- ✓ Table exists
+- ✓ All required columns (id, site_id, keyword, source, search_volume, difficulty_score, opportunity_score, is_tracking, is_dismissed, discovered_at, updated_at)
+- ✓ Primary key auto-increment
+- ✓ FK constraint to sites.id (rejects invalid site_id)
+- ✓ Required fields (keyword, source) reject NULL
+- ✓ Nullable fields (search_volume, difficulty_score, opportunity_score) accept NULL
+- ✓ Boolean defaults: is_tracking=FALSE, is_dismissed=FALSE
+- ✓ Timestamp defaults: discovered_at=CURRENT_TIMESTAMP
+- ✓ Unique constraint on (site_id, keyword) - duplicates rejected
+- ✓ Same keyword allowed for different sites
+- ✓ Cascade delete when site deleted
+- ✓ Valid source values: 'suggest', 'competitor', 'related'
+- ✓ Indexes: idx_suggestions_site_id, idx_suggestions_keyword
+
+**dismissed_suggestions table (7 tests):**
+- ✓ Table exists
+- ✓ All required columns (id, site_id, keyword, dismissed_at)
+- ✓ FK constraint to sites.id
+- ✓ Timestamp default: dismissed_at=CURRENT_TIMESTAMP
+- ✓ Cascade delete when site deleted
+- ✓ Index: idx_dismissed_site
+
+**Migration rollback:**
+- ✓ down() method exists and drops both tables
+
+**Adversarial Testing:**
+- Tested invalid FK references - correctly rejected
+- Tested duplicate unique constraint - correctly rejected
+- Tested NULL in required fields - correctly rejected
+
+**Decision: APPROVED FOR DEPLOYMENT**
+
+Status: Testing Locally → To Deploy
