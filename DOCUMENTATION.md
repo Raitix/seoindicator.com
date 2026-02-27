@@ -1,6 +1,133 @@
 # DOCUMENTATION.md
 
 ---
+## Rankings API Endpoints (TASK-6-9)
+
+### Service Description
+REST API endpoint for retrieving keyword ranking history. Provides programmatic access to historical ranking data via secure API key authentication, enabling integration with external dashboards, reporting tools, and automation systems.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/keywords/{id}/rankings` | Get ranking history for a keyword |
+
+### Get Ranking History
+`GET /api/v1/keywords/{id}/rankings`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `from` | ISO 8601 date | 30 days ago | Start date filter |
+| `to` | ISO 8601 date | today | End date filter |
+| `limit` | int | 100 | Max results (max: 1000) |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "keyword_id": 1,
+    "history": [
+      {
+        "position": 5,
+        "checked_at": "2026-02-27T17:00:00Z"
+      },
+      {
+        "position": 7,
+        "checked_at": "2026-02-26T17:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Missing or invalid API key |
+| 403 | Keyword owned by another user |
+| 404 | Keyword not found |
+| 422 | Invalid date parameters |
+
+### Authentication
+- **Method:** API Key via Bearer token
+- **Header:** `Authorization: Bearer sk_live_...`
+- **Permission:** `rankings:read` required
+
+### Authorization
+| Check | Behavior |
+|-------|----------|
+| Valid API key | Request processed |
+| Invalid/revoked key | 401 Unauthorized |
+| Cross-user keyword | 403 Forbidden |
+| Non-existent keyword | 404 Not Found |
+
+### Security Implementation
+| Measure | Implementation |
+|---------|----------------|
+| Authentication | API Key middleware with Bearer token |
+| IDOR Protection | User isolation via keyword ownership check |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| Route Constraint | Numeric ID only (`where('id', '[0-9]+')`) |
+| Rate Limiting | Per-key rate limits with headers |
+
+### Rate Limit Headers
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 58
+X-RateLimit-Reset: 1709049600
+```
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/RankingsApiController.php`
+- Route: Defined in `backend/routes/api.php`
+- Middleware: `api-key.auth:rankings:read`
+
+### Route Configuration
+```php
+Route::get('keywords/{id}/rankings', [RankingsApiController::class, 'index'])
+    ->middleware('api-key.auth:rankings:read')
+    ->where('id', '[0-9]+');
+```
+
+### Ordering
+- Results ordered by `checked_at DESC` (most recent first)
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| RankingsApiControllerTest | 44 | 125 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Success cases | 10 | History retrieval, filtering, pagination |
+| Authentication | 6 | API key validation, revoked/expired keys |
+| Authorization | 3 | User isolation, keyword ownership |
+| Validation | 8 | Date parameters, limit bounds |
+| Edge cases | 8 | Position 0, deep rankings, ISO dates |
+| Security | 4 | SQL injection, IDOR, path traversal |
+| Rate limiting | 4 | Headers, per-key limits |
+| Integration | 2 | Full workflow, user isolation |
+
+### Production Status
+- **Deployed**: 2026-02-27 (via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 44/44 passing (125 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-6-3 (API Key Service)
+- TASK-6-8 (Keywords API)
+- FEAT-001 (Keywords & Rankings tables)
+
+### Related Tasks
+- TASK-6-8: Keywords API endpoints
+- TASK-6-3: API Key Service
+- TASK-6-5: Rate Limiting Middleware
+
+---
 ## Project CRUD API (TASK-8-7)
 
 ### Service Description
