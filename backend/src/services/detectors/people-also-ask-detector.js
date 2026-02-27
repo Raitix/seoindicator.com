@@ -42,7 +42,8 @@ export function detectPeopleAlsoAsk(serp, targetUrl) {
   
   const normalizedTarget = normalizeHostname(targetHostname);
   
-  // Track matched questions
+  // Track matches
+  let isOurs = false;
   const matchedQuestions = [];
   
   // Search for target URL in PAA entries
@@ -69,6 +70,7 @@ export function detectPeopleAlsoAsk(serp, targetUrl) {
     const answerHostname = extractHostname(answerUrl);
     if (answerHostname && normalizeHostname(answerHostname) === normalizedTarget) {
       // Found match!
+      isOurs = true;
       if (item.question && typeof item.question === 'string') {
         matchedQuestions.push(item.question);
       }
@@ -78,7 +80,7 @@ export function detectPeopleAlsoAsk(serp, targetUrl) {
   // Build result
   const result = {
     type: 'people_also_ask',
-    isPresent: matchedQuestions.length > 0,
+    isPresent: isOurs,
     questionCount: paa.length
   };
   

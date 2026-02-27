@@ -1781,6 +1781,94 @@ Each keyword in the response now includes a `serpFeatures` object:
 - Status: Implementation complete, tests passing
 
 ---
+## Google Suggest Fetcher (TASK-5-4)
+
+### Service Description
+Fetcher for Google Suggest API to retrieve keyword suggestions. This is the primary FREE source for keyword discovery in MVP, providing autocomplete suggestions from Google's search data.
+
+### Core Functionalities
+
+**SuggestFetcherInterface:**
+- `fetch(string $keyword): array` - Fetch suggestions for a keyword
+- Returns array of suggestion strings
+- Graceful error handling (returns empty array on failure)
+
+**GoogleSuggestFetcher Implementation:**
+- API endpoint: `http://suggestqueries.google.com/complete/search?client=firefox&q={keyword}`
+- Parses JSON response (array format: `[originalKeyword, suggestions[]]`)
+- In-memory caching for repeated requests (same session)
+- Configurable timeout via constructor
+
+### Error Handling
+| Error Type | HTTP Code | Behavior |
+|------------|-----------|----------|
+| Rate Limit | 429 | Throw `RateLimitException` |
+| Server Error | 5xx | Throw `FetchException` |
+| Network Error | N/A | Throw `NetworkException` |
+| 4xx (except 429) | 400-499 | Return empty array (no exception) |
+
+### Response Format
+Google's response format:
+```json
+["seo tools", ["seo tools free", "seo tools for beginners", "seo tools google", ...]]
+```
+
+Parsed result:
+```php
+["seo tools free", "seo tools for beginners", "seo tools google", ...]
+```
+
+### Technical Implementation
+- Interface: `backend/app/Services/Fetchers/SuggestFetcherInterface.php`
+- Implementation: `backend/app/Services/Fetchers/GoogleSuggestFetcher.php`
+- Exceptions:
+  - `FetchException` - General fetch errors
+  - `NetworkException` - Connection issues
+  - `RateLimitException` - HTTP 429 responses
+  - `TimeoutException` - Request timeout
+
+### Unit Tests
+25 tests, 39 assertions covering:
+- Successful fetch scenarios
+- Empty/malformed response handling
+- Error handling: rate limit (429), server error (5xx), network, timeout
+- URL encoding and special characters
+- Unicode handling
+- Caching behavior
+- Edge cases: empty keyword, long keyword, whitespace
+- Security: XSS prevention, SQL injection, null byte injection
+
+### Production Verification
+| Test | Description | Result |
+|------|-------------|--------|
+| Basic fetch | 'seo tools' | PASS (10 suggestions) |
+| Empty keyword | Empty string | PASS (empty array) |
+| Unicode | 'café' | PASS (0 suggestions) |
+| Special chars | 'seo-tools' | PASS (10 suggestions) |
+| Caching | Same keyword | PASS (cached) |
+| XSS attempt | `<script>` | PASS (safe) |
+| SQL injection | `' OR 1=1` | PASS (safe) |
+
+### Security Notes
+- URL encoding with `rawurlencode()` for RFC 3986 compliance
+- Non-string values filtered from suggestions
+- No XSS/injection vulnerabilities detected
+- Rate limiting respected to avoid IP blocking
+
+### API Usage Limits
+- FREE API - no API key required
+- Rate limiting: Respect to avoid IP blocking
+- Consider retry logic with exponential backoff for production
+
+### Dependencies
+None (standalone fetcher)
+
+### Deployment
+- Deployed: 2026-02-27 via GitHub Actions
+- Production verified: 2026-02-27
+- Status: Complete
+
+---
 ## Frontend Components: Projects (TASK-8-8)
 
 ### Overview
