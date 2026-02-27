@@ -267,7 +267,26 @@ class SuggestionController extends Controller
             ->where('id', $suggestionId)
             ->firstOrFail();
 
-        $suggestion->update(['is_dismissed' => true]);
+        DB::transaction(function () use ($suggestion, $site) {
+            // Mark suggestion as dismissed
+            $suggestion->update(['is_dismissed' => true]);
+
+            // Add record to dismissed_suggestions table (idempotent)
+            $exists = DB::table('dismissed_suggestions')
+                ->where('site_id', $site->id)
+                ->where('keyword', $suggestion->keyword)
+                ->exists();
+
+            if (!$exists) {
+                DB::table('dismissed_suggestions')->insert([
+                    'site_id' => $site->id,
+                    'keyword' => $suggestion->keyword,
+                    'dismissed_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        });
 
         return response()->json([
             'success' => true,
