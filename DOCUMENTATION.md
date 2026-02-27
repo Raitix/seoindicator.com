@@ -2501,6 +2501,101 @@ None (standalone utility)
 - Injected via DI container
 
 ---
+## Rate Limiting & Anti-Abuse (TASK-16-11)
+
+### Service Description
+Implements rate limiting and anti-abuse measures for interactive SEO tools. Prevents spam, abuse, and ensures fair usage of server resources through per-IP rate limiting, CAPTCHA challenges, and SSRF protection.
+
+### Core Functionalities
+
+**Rate Limiting Configuration:**
+| Limit Type | Default | Description |
+|------------|---------|-------------|
+| Per-IP Daily Limit | 100 requests | Max requests per IP per day |
+| CAPTCHA Threshold | 3 uses | CAPTCHA shown after 3 tool uses (unauthenticated) |
+| Configurable | Yes | Limits adjustable via config |
+
+**SSRF Protection:**
+| Protection | Description |
+|------------|-------------|
+| Localhost blocked | `localhost`, `127.*` blocked |
+| Private IPs blocked | `10.*`, `172.16-31.*`, `192.168.*` blocked |
+| File protocol blocked | `file://` protocol blocked |
+| Internal domains | Domains containing "internal" blocked |
+
+### Response Headers
+```
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 7
+X-RateLimit-Reset: 1709049600
+Retry-After: 60
+```
+
+### 429 Rate Limit Response
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "You have exceeded the rate limit. Please complete the CAPTCHA to continue.",
+    "captchaRequired": true,
+    "captchaSiteKey": null,
+    "captchaDriver": "recaptcha"
+  }
+}
+```
+
+### API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/v1/tools/analyze` | Main tool analysis endpoint (rate limited) |
+| `GET /api/v1/tools/rate-limit-status` | Get current rate limit status |
+| `GET /api/v1/tools/captcha-config` | Get CAPTCHA configuration |
+
+### Technical Implementation
+- Service: `backend/app/Services/Tools/ToolsRateLimitService.php`
+- Middleware: Rate limiting middleware for tool routes
+- CAPTCHA: hCaptcha/ReCAPTCHA integration (configurable)
+
+### Security Assessment
+| Test | Status | Details |
+|------|--------|---------|
+| SSRF Protection (localhost) | ✅ PASS | Error: "Access to this host is not allowed" |
+| SSRF Protection (192.168.x.x) | ✅ PASS | Blocked correctly |
+| SSRF Protection (file://) | ✅ PASS | Blocked correctly |
+| Rate Limit Headers | ✅ PASS | X-RateLimit-* headers present |
+| Rate Limit Enforcement | ✅ PASS | 429 returned after limit exceeded |
+
+### Unit Tests
+64 tests, 250 assertions covering:
+- Per-Minute Rate Limiting (8 tests)
+- Per-Day Rate Limiting (8 tests)
+- CAPTCHA Integration (10 tests)
+- URL Blocklist (12 tests)
+- Rate Limit Headers (8 tests)
+- Abuse Logging (6 tests)
+- Edge Cases (12 tests)
+
+### Deferred Items
+- Request throttling (max concurrent requests per IP) - deferred
+- Admin dashboard for rate limit monitoring - deferred
+
+### Known Issues
+- 429 response body may be empty in production (LiteSpeed/CDN configuration issue)
+- CAPTCHA keys require configuration (`RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY`)
+
+### Dependencies
+- TASK-16-1 (Tools Infrastructure)
+
+### Deployment
+- **Deployed**: 2026-02-27
+- **Method**: Git push to origin/main + manual SSH deployment
+- **Backend**: Deployed via SSH (frontend build had pre-existing Windows issue)
+- **Health Check**: PASS
+- **Tests**: 64 tests, 250 assertions passing
+
+---
 ## Frontend Components: Projects (TASK-8-8)
 
 ### Overview
