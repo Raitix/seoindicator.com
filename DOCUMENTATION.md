@@ -234,6 +234,112 @@ CREATE TABLE project_members (
 - TASK-11-4: Permission validator
 
 ---
+## Database Schema: Keyword Suggestions Tables (TASK-5-1)
+
+### Keyword Suggestions Table
+Stores discovered keyword opportunities for tracking. Populated by the keyword discovery system (FEAT-005) using Google Suggest API and question-based generation.
+
+```sql
+CREATE TABLE keyword_suggestions (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    keyword VARCHAR(255) NOT NULL,
+    source VARCHAR(255) NOT NULL,
+    search_volume INT NULL,
+    difficulty_score INT NULL,
+    opportunity_score INT NULL,
+    is_tracking TINYINT(1) DEFAULT 0,
+    is_dismissed TINYINT(1) DEFAULT 0,
+    discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+    UNIQUE KEY keyword_suggestions_site_id_keyword_unique (site_id, keyword)
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id |
+| `keyword` | VARCHAR(255) | The suggested keyword |
+| `source` | VARCHAR(255) | Source: `suggest`, `competitor`, `related` |
+| `search_volume` | INT | Monthly search volume (nullable - MVP has no data) |
+| `difficulty_score` | INT | Keyword difficulty 0-100 (nullable - MVP has no data) |
+| `opportunity_score` | INT | Calculated opportunity score (0-100) |
+| `is_tracking` | TINYINT(1) | Whether keyword is already being tracked |
+| `is_dismissed` | TINYINT(1) | Whether user dismissed this suggestion |
+| `discovered_at` | TIMESTAMP | When suggestion was first discovered |
+
+**Constraints:**
+- Foreign Key: `site_id → sites.id` ON DELETE CASCADE
+- Unique: `(site_id, keyword)` - prevents duplicate suggestions per site
+
+**Indexes:**
+- `idx_suggestions_site_id` on `site_id`
+- `idx_suggestions_keyword` on `keyword`
+- `idx_suggestions_opportunity` on `opportunity_score DESC`
+
+### Dismissed Suggestions Table
+Tracks keywords the user has explicitly dismissed from suggestions, preventing rediscovery.
+
+```sql
+CREATE TABLE dismissed_suggestions (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    keyword VARCHAR(255) NOT NULL,
+    dismissed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id |
+| `keyword` | VARCHAR(255) | The dismissed keyword |
+| `dismissed_at` | TIMESTAMP | When user dismissed the suggestion |
+
+**Constraints:**
+- Foreign Key: `site_id → sites.id` ON DELETE CASCADE
+
+**Indexes:**
+- `idx_dismissed_site` on `site_id`
+
+### Model Relationships
+
+**KeywordSuggestion Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `site()` | belongsTo | The site this suggestion belongs to |
+
+**DismissedSuggestion Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `site()` | belongsTo | The site this dismissed keyword belongs to |
+
+### Production Status
+- **Deployed**: 2026-02-27 (migration batch 13)
+- **Migration**: `2026_02_26_230500_create_keyword_suggestions_tables.php`
+- **Verified**: Health check passing, 26/26 tests passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-1-1 (Sites table)
+- FEAT-001 (Keyword Rank Tracking)
+
+### Related Tasks
+- TASK-5-2: KeywordSuggestion model and repository
+- TASK-5-3: Opportunity scorer utility
+- TASK-5-4: Google Suggest fetcher
+- TASK-5-5: Question keyword generator
+- TASK-5-6: Suggestion aggregation service
+
+---
 ## Database Schema: Projects Table (TASK-8-1)
 
 ### Projects Table
