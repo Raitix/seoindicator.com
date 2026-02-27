@@ -1,53 +1,97 @@
-# TASK-16-1: Develop Meta Tag Analyzer (Frontend)
+# TASK-16-1: Setup Tools Infrastructure
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Prioritize`
 
 ## PRIORITY
 `High`
 
 ## RISK
-`Low`
+`Medium`
+
+## Related
+- Feature: [FEAT-016](../FEATURES/FEAT-016.md)
+- Specification: [SPEC-016](../SPECIFICATIONS/SPEC-016.md)
+
+---
 
 ## Description
-Build the Meta Tag Analyzer tool in **Next.js**, allowing real-time analysis of title tags, meta descriptions, and SERP previews.
+Set up the foundational infrastructure for interactive SEO tools. This includes the CORS proxy API endpoint, Cheerio integration for HTML parsing, base tool class architecture, and shared utilities for all tools.
 
-## Responsibilities
-1. Create a **MetaTagToolForm** component for user input (URL or custom HTML).
-2. Display analysis results (title length warnings, meta description diagnostics).
-3. Render **SERP preview** of the analyzed page.
-
-## Mock Example
-```javascript
-<MetaTagToolForm>
-    <input type="url" placeholder="Enter page URL" />
-    <textarea placeholder="Or paste HTML here"></textarea>
-</MetaTagToolForm>
-```
+---
 
 ## Acceptance Criteria
-- [ ] Tool accepts both URL and custom HTML for analysis.
-- [ ] Displays title/meta length validation.
-- [ ] SERP preview renders real-time results.
-- [ ] Includes client-side validation for inputs.
+- [ ] Create `/api/v1/tools/analyze` endpoint for fetching external URLs
+- [ ] Implement CORS proxy to bypass cross-origin restrictions
+- [ ] Integrate Cheerio library for server-side HTML parsing
+- [ ] Create base `SEOTool` abstract class with common methods
+- [ ] Implement URL validation and sanitization utilities
+- [ ] Add rate limiting infrastructure (per IP, track usage)
+- [ ] Create shared types/interfaces for tool results
+- [ ] Add error handling middleware for tool errors
+- [ ] Write unit tests for infrastructure components
+
+---
+
+## Technical Details
+
+### API Endpoint
+```
+POST /api/v1/tools/analyze
+Content-Type: application/json
+
+{
+  "url": "https://example.com",
+  "tool": "meta-tag-analyzer"
+}
+```
+
+### Response Structure
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://example.com",
+    "analyzedAt": "2026-02-27T12:00:00Z",
+    "tool": "meta-tag-analyzer",
+    "results": { ... }
+  }
+}
+```
+
+### Base SEOTool Class
+```typescript
+abstract class SEOTool {
+  abstract name: string;
+  abstract analyze($: CheerioAPI, url: string): ToolResult;
+  
+  // Shared methods
+  protected fetchUrl(url: string): Promise<string>;
+  protected parseHtml(html: string): CheerioAPI;
+  protected validateUrl(url: string): boolean;
+}
+```
+
+### CORS Proxy Logic
+1. Validate URL format
+2. Check against blocklist (localhost, internal IPs)
+3. Fetch URL with timeout (5s max)
+4. Return HTML content for parsing
+
+---
 
 ## Dependencies
-- [ ] TASK-16-3: Backend API integration (API Proxy).
+- None (foundational task)
+
+---
 
 ## Effort Estimate
-6 hours.
+**Medium** (4-6 hours)
 
 ---
 
 ## Comments
-### [2026-02-20 17:54] Agent: SpecSystemAnalyst
-Task created for the Meta Tag Analyzer frontend implementation.
+_Agent communication log_
 
-### [2026-02-26 18:24] Agent: ProjectManager
-**Prioritization Analysis:**
-- Priority confirmed: `High` - MVP SEO tool feature, core functionality
-- Risk confirmed: `Low` - Frontend-only, no database/auth changes
-- **Dependency Order:** TASK-16-3 (Backend API) → TASK-16-1 (this task)
-- This task must wait for TASK-16-3 completion before integration testing
-- Effort estimate reasonable (6 hours frontend work)
-- Status updated to `To Write Tests`
+### [2026-02-27] Agent: SpecSystemAnalyst
+Created task. This is the foundation for all interactive tools. Must be completed before other tool tasks can proceed.

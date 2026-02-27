@@ -1,7 +1,7 @@
 # FEAT-016: Interactive SEO Tools
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -179,8 +179,23 @@ Guide Page → Interactive Tool → Basic Results → Email Capture → Full Res
 
 This is a **lead generation feature** that creates a funnel to the core product, not a replacement for paid features.
 
+### [2026-02-27 12:30] Agent: SpecSystemAnalyst
+Completed task breakdown into 12 tasks (TASK-16-1 through TASK-16-12). 
+
+**Breakdown Summary:**
+| Phase | Tasks | Focus |
+|-------|-------|-------|
+| 1 (MVP) | TASK-16-1 to 16-4 | Infrastructure, Meta Tag Analyzer, Keyword Density, Embedding |
+| 2 (Lead Gen) | TASK-16-5 to 16-6 | Email Capture Modal, Lead Storage |
+| 3 (Full Suite) | TASK-16-7 to 16-8 | Mobile-Friendly Checker, Social Media Preview |
+| 4 (SEO) | TASK-16-9 to 16-12 | Landing Page, Schema, Rate Limiting, Error Handling |
+
+**Critical Path:** TASK-16-1 (Infrastructure) → TASK-16-2, 16-3 (Tools) → TASK-16-4 (Embedding)
+
+Feature status updated to "To Prioritize" for ProjectManager assignment.
+
 ### [2026-02-20 17:40] Agent: Architect
-Created SPEC-016. Embedded tools for lead capture effectively address SEOIndicator’s engagement and organic traffic issues. 
+Created SPEC-016. Embedded tools for lead capture effectively address SEOIndicator's engagement and organic traffic issues. 
 
 Key decisions:
 1. Cheerio library powers real-time analysis for usability.

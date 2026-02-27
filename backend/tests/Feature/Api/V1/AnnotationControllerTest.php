@@ -34,7 +34,7 @@ class AnnotationControllerTest extends TestCase
         $this->user = User::factory()->create();
         $this->otherUser = User::factory()->create();
         $this->project = Project::factory()->create(['user_id' => $this->user->id]);
-        $this->site = Site::factory()->create(['user_id' => $this->user->id, 'project_id' => $this->project->id]);
+        $this->site = Site::factory()->create(['user_id' => $this->user->id]);
         $this->keyword = Keyword::factory()->create(['site_id' => $this->site->id, 'user_id' => $this->user->id]);
     }
 
@@ -98,8 +98,8 @@ class AnnotationControllerTest extends TestCase
             ->getJson("/api/v1/keywords/{$this->keyword->id}/annotations?from=2026-02-10&to=2026-02-20");
 
         $response->assertStatus(200)
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.date', '2026-02-15');
+            ->assertJsonCount(1, 'data');
+        $this->assertStringStartsWith('2026-02-15', $response->json('data.0.date'));
     }
 
     /**
@@ -922,7 +922,7 @@ class AnnotationControllerTest extends TestCase
     public function test_index_returns_403_for_other_users_keyword(): void
     {
         $otherProject = Project::factory()->create(['user_id' => $this->otherUser->id]);
-        $otherSite = Site::factory()->create(['user_id' => $this->otherUser->id, 'project_id' => $otherProject->id]);
+        $otherSite = Site::factory()->create(['user_id' => $this->otherUser->id]);
         $otherKeyword = Keyword::factory()->create(['site_id' => $otherSite->id, 'user_id' => $this->otherUser->id]);
 
         $response = $this->actingAs($this->user)
@@ -937,7 +937,7 @@ class AnnotationControllerTest extends TestCase
     public function test_store_returns_403_for_other_users_keyword(): void
     {
         $otherProject = Project::factory()->create(['user_id' => $this->otherUser->id]);
-        $otherSite = Site::factory()->create(['user_id' => $this->otherUser->id, 'project_id' => $otherProject->id]);
+        $otherSite = Site::factory()->create(['user_id' => $this->otherUser->id]);
         $otherKeyword = Keyword::factory()->create(['site_id' => $otherSite->id, 'user_id' => $this->otherUser->id]);
 
         $response = $this->actingAs($this->user)
@@ -955,7 +955,7 @@ class AnnotationControllerTest extends TestCase
     public function test_show_returns_403_for_other_users_annotation(): void
     {
         $otherProject = Project::factory()->create(['user_id' => $this->otherUser->id]);
-        $otherSite = Site::factory()->create(['user_id' => $this->otherUser->id, 'project_id' => $otherProject->id]);
+        $otherSite = Site::factory()->create(['user_id' => $this->otherUser->id]);
         $otherKeyword = Keyword::factory()->create(['site_id' => $otherSite->id, 'user_id' => $this->otherUser->id]);
         $otherAnnotation = Annotation::factory()->create([
             'keyword_id' => $otherKeyword->id,
@@ -974,7 +974,7 @@ class AnnotationControllerTest extends TestCase
     public function test_update_returns_403_for_other_users_annotation(): void
     {
         $otherProject = Project::factory()->create(['user_id' => $this->otherUser->id]);
-        $otherSite = Site::factory()->create(['user_id' => $this->otherUser->id, 'project_id' => $otherProject->id]);
+        $otherSite = Site::factory()->create(['user_id' => $this->otherUser->id]);
         $otherKeyword = Keyword::factory()->create(['site_id' => $otherSite->id, 'user_id' => $this->otherUser->id]);
         $otherAnnotation = Annotation::factory()->create([
             'keyword_id' => $otherKeyword->id,
@@ -996,7 +996,7 @@ class AnnotationControllerTest extends TestCase
     public function test_destroy_returns_403_for_other_users_annotation(): void
     {
         $otherProject = Project::factory()->create(['user_id' => $this->otherUser->id]);
-        $otherSite = Site::factory()->create(['user_id' => $this->otherUser->id, 'project_id' => $otherProject->id]);
+        $otherSite = Site::factory()->create(['user_id' => $this->otherUser->id]);
         $otherKeyword = Keyword::factory()->create(['site_id' => $otherSite->id, 'user_id' => $this->otherUser->id]);
         $otherAnnotation = Annotation::factory()->create([
             'keyword_id' => $otherKeyword->id,

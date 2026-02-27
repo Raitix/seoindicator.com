@@ -1869,6 +1869,145 @@ None (standalone fetcher)
 - Status: Complete
 
 ---
+## AnnotationController API (TASK-9-4)
+
+### Service Description
+REST API controller for managing keyword annotations. Provides CRUD operations with authorization via policies and request validation for secure annotation management.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/keywords/{keywordId}/annotations` | List annotations for a keyword |
+| POST | `/api/v1/keywords/{keywordId}/annotations` | Create a new annotation |
+| GET | `/api/v1/annotations/{id}` | Get single annotation |
+| PUT | `/api/v1/annotations/{id}` | Update annotation |
+| DELETE | `/api/v1/annotations/{id}` | Delete annotation |
+
+### List Annotations
+`GET /api/v1/keywords/{keywordId}/annotations`
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `from` | date | Filter annotations from date (inclusive) |
+| `to` | date | Filter annotations to date (inclusive) |
+| `category` | string | Filter by category |
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "keyword_id": 123,
+      "date": "2026-02-15",
+      "title": "Updated meta title",
+      "description": "Changed meta title to include target keyword",
+      "category": "content_update",
+      "category_label": "Content Update",
+      "category_icon": "✏️",
+      "created_at": "2026-02-15T10:30:00Z",
+      "updated_at": "2026-02-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+### Create Annotation
+`POST /api/v1/keywords/{keywordId}/annotations`
+
+**Request Body:**
+```json
+{
+  "date": "2026-02-15",
+  "title": "Updated meta title",
+  "description": "Changed meta title to include target keyword",
+  "category": "content_update"
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `date` | Required, date, before_or_equal:today |
+| `title` | Required, string, max:255 |
+| `description` | Nullable, string, max:5000 |
+| `category` | Required, in:content_update,link_building,technical_fix,algorithm_update,competitor_action,seasonal,manual_action,other |
+
+**Response (201):**
+```json
+{
+  "id": 1,
+  "keyword_id": 123,
+  "project_id": 1,
+  "date": "2026-02-15",
+  "title": "Updated meta title",
+  "description": "Changed meta title to include target keyword",
+  "category": "content_update",
+  "created_at": "2026-02-15T10:30:00Z"
+}
+```
+
+### Update Annotation
+`PUT /api/v1/annotations/{id}`
+
+Same request body and validation as create.
+
+### Delete Annotation
+`DELETE /api/v1/annotations/{id}`
+
+**Response (200):**
+```json
+{
+  "success": true
+}
+```
+
+### Authorization
+All endpoints enforce user ownership via `AnnotationPolicy`:
+- Users can only access annotations for projects they own
+- Authorization checks use `$this->authorize()` in controller methods
+- Returns 403 Forbidden for unauthorized access
+
+### Test Coverage
+73 test scenarios in `backend/tests/Feature/Api/V1/AnnotationControllerTest.php`:
+- Index (List): 10 tests (filtering, pagination, authorization)
+- Store (Create): 12 tests (validation, authorization, success)
+- Show (Read): 4 tests
+- Update: 10 tests (validation, authorization)
+- Destroy (Delete): 4 tests
+- Authorization (Unauthenticated): 5 tests (401 responses)
+- Authorization (Cross-User): 5 tests (403 responses)
+- Authorization (Owner): 5 tests (success)
+- Edge Cases: 12 tests (XSS, SQL injection, boundaries)
+- Integration: 6 tests
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/AnnotationController.php`
+- Resource: `backend/app/Http/Resources/AnnotationResource.php`
+- Request: `backend/app/Http/Requests/StoreAnnotationRequest.php`
+- Request: `backend/app/Http/Requests/UpdateAnnotationRequest.php`
+- Policy: `backend/app/Policies/AnnotationPolicy.php`
+
+### Dependencies
+- TASK-9-1 (Annotations table schema)
+- TASK-9-3 (Annotation model)
+- TASK-9-5 (AnnotationPolicy)
+- TASK-9-6 (Input validation requests)
+
+### Security Notes
+- All endpoints require authentication
+- Authorization via policies ensures user isolation
+- Input validation prevents malformed data
+- XSS/SQL injection tests pass (safe handling)
+
+### Deployment Status
+- Implementation complete
+- Tests passing
+- Status: Done
+
+---
 ## Suggestion Aggregation Service (TASK-5-6)
 
 ### Service Description

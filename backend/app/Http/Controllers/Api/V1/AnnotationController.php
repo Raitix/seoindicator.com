@@ -8,10 +8,10 @@ use App\Models\Keyword;
 use App\Models\Project;
 use App\Http\Requests\StoreAnnotationRequest;
 use App\Http\Requests\UpdateAnnotationRequest;
+use App\Http\Resources\Api\V1\AnnotationResource;
+use App\Http\Resources\Api\V1\AnnotationCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 
 /**
  * Annotation API Controller
@@ -27,9 +27,9 @@ class AnnotationController extends Controller
      *
      * @param int $keywordId
      * @param Request $request
-     * @return ResourceCollection
+     * @return AnnotationCollection
      */
-    public function index(int $keywordId, Request $request): ResourceCollection
+    public function index(int $keywordId, Request $request): AnnotationCollection
     {
         $keyword = Keyword::findOrFail($keywordId);
 
@@ -60,15 +60,7 @@ class AnnotationController extends Controller
 
         $annotations = $query->paginate($perPage, ['*'], 'page', $page);
 
-        return JsonResource::collection($annotations)
-            ->additional([
-                'meta' => [
-                    'total' => $annotations->total(),
-                    'page' => $annotations->currentPage(),
-                    'perPage' => $annotations->perPage(),
-                    'last_page' => $annotations->lastPage(),
-                ],
-            ]);
+        return new AnnotationCollection($annotations);
     }
 
     /**
@@ -85,8 +77,8 @@ class AnnotationController extends Controller
         // Authorization: check if user can create annotation for this keyword
         $this->authorize('create', [Annotation::class, $keyword]);
 
-        // Get project_id from keyword's site or use provided project_id
-        $projectId = $keyword->site?->project_id ?? $request->input('project_id');
+        // Get project_id from request or find user's project
+        $projectId = $request->input('project_id');
         
         if (!$projectId) {
             // Fallback: get first project for the user
@@ -102,7 +94,7 @@ class AnnotationController extends Controller
             'category' => $request->category ?? 'other',
         ]);
 
-        return (new JsonResource($annotation))
+        return (new AnnotationResource($annotation))
             ->response()
             ->setStatusCode(201);
     }
@@ -111,15 +103,15 @@ class AnnotationController extends Controller
      * Show a single annotation.
      *
      * @param int $id
-     * @return JsonResource
+     * @return AnnotationResource
      */
-    public function show(int $id): JsonResource
+    public function show(int $id): AnnotationResource
     {
         $annotation = Annotation::findOrFail($id);
 
         $this->authorize('view', $annotation);
 
-        return new JsonResource($annotation);
+        return new AnnotationResource($annotation);
     }
 
     /**
@@ -127,9 +119,9 @@ class AnnotationController extends Controller
      *
      * @param int $id
      * @param UpdateAnnotationRequest $request
-     * @return JsonResource
+     * @return AnnotationResource
      */
-    public function update(int $id, UpdateAnnotationRequest $request): JsonResource
+    public function update(int $id, UpdateAnnotationRequest $request): AnnotationResource
     {
         $annotation = Annotation::findOrFail($id);
 
@@ -137,7 +129,7 @@ class AnnotationController extends Controller
 
         $annotation->update($request->validated());
 
-        return new JsonResource($annotation);
+        return new AnnotationResource($annotation);
     }
 
     /**

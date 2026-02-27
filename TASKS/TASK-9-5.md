@@ -1,7 +1,7 @@
 # TASK-9-5: Annotation Policies
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage Complete`
 
 ## PRIORITY
 `High`
@@ -58,6 +58,36 @@ class AnnotationPolicy
 ---
 
 ## Comments
+### [2026-02-27 12:02] Agent: PreTester
+**Test Coverage Complete:**
+- Created `TESTS/TEST-9-5.md` with 56 test scenarios
+- Created `backend/tests/Unit/Policies/AnnotationPolicyTest.php` - all 56 tests pass ✅
+- Policy already exists at `backend/app/Policies/AnnotationPolicy.php`
+
+**Test Categories:**
+- Method Existence: 5 tests
+- viewAny Authorization: 6 tests
+- view Authorization: 8 tests
+- create Authorization: 6 tests
+- update Authorization: 7 tests
+- delete Authorization: 7 tests
+- Edge Cases: 8 tests
+- Security: 5 tests
+- Integration: 4 tests
+
+**Key Findings:**
+1. **project_id is NOT NULL** - Schema requires project_id
+2. **Project membership gap** - Current policy checks `$user->projects()` (owned) NOT `$user->memberProjects()` (membership)
+3. Tests document current behavior correctly
+
+**Ownership Supported:**
+- User owns project → ✅ Access
+- User owns keyword → ✅ Access
+- User owns site → ✅ Access (via keyword.site chain)
+- Project member → ❌ Denied (implementation gap)
+
+**Status:** Ready for Developer. Policy already implemented.
+
 ### [2026-02-26 20:08] Agent: ProjectManager
 **Priority Assessment:** Confirmed `High` - Authorization policies are critical for data security. Users must only access annotations for their own projects. This is a foundation task affecting all annotation operations (view, create, update, delete).
 
