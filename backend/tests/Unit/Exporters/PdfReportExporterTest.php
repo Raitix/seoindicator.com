@@ -654,4 +654,248 @@ class PdfReportExporterTest extends TestCase
         preg_match_all('/Page \d+ of \d+/', $pdf, $matches);
         $this->assertGreaterThan(1, count($matches[0]));
     }
+
+    // ============================================
+    // SERP FEATURES TESTS (TASK-7-15)
+    // ============================================
+
+    /**
+     * Test SERP features section is rendered.
+     */
+    public function test_serp_features_section_rendered(): void
+    {
+        $report = [
+            'name' => 'Report with SERP Features',
+            'sections' => ['serp_features'],
+        ];
+        $data = [
+            'serp_features' => [
+                'totalKeywords' => 100,
+                'keywordsWithFeatures' => 35,
+                'featureCounts' => [
+                    'featured_snippet' => 8,
+                    'local_pack' => 5,
+                    'sitelinks' => 12,
+                ],
+                'recentChanges' => [
+                    'gained' => [],
+                    'lost' => [],
+                ],
+            ],
+        ];
+
+        $pdf = $this->exporter->generate($report, $data);
+
+        $this->assertStringContainsString('SERP FEATURES', $pdf);
+        $this->assertStringContainsString('Keywords with SERP Features', $pdf);
+        $this->assertStringContainsString('35 / 100', $pdf);
+    }
+
+    /**
+     * Test SERP features section excluded when disabled.
+     */
+    public function test_serp_features_section_excluded_when_disabled(): void
+    {
+        $report = [
+            'name' => 'Report without SERP Features',
+            'sections' => ['cover'], // No serp_features section
+        ];
+        $data = [
+            'serp_features' => [
+                'totalKeywords' => 100,
+                'keywordsWithFeatures' => 35,
+            ],
+        ];
+
+        $pdf = $this->exporter->generate($report, $data);
+
+        $this->assertStringNotContainsString('SERP FEATURES', $pdf);
+    }
+
+    /**
+     * Test SERP features section handles empty data.
+     */
+    public function test_serp_features_section_handles_empty_data(): void
+    {
+        $report = [
+            'name' => 'Report',
+            'sections' => ['serp_features'],
+        ];
+        $data = []; // No serp_features data
+
+        $pdf = $this->exporter->generate($report, $data);
+
+        $this->assertStringContainsString('SERP FEATURES', $pdf);
+        $this->assertStringContainsString('not available', $pdf);
+    }
+
+    /**
+     * Test SERP feature breakdown by type.
+     */
+    public function test_serp_feature_breakdown_by_type(): void
+    {
+        $report = [
+            'name' => 'Report',
+            'sections' => ['serp_features'],
+        ];
+        $data = [
+            'serp_features' => [
+                'totalKeywords' => 50,
+                'keywordsWithFeatures' => 20,
+                'featureCounts' => [
+                    'featured_snippet' => 5,
+                    'local_pack' => 3,
+                    'sitelinks' => 8,
+                    'reviews' => 4,
+                ],
+                'recentChanges' => [
+                    'gained' => [],
+                    'lost' => [],
+                ],
+            ],
+        ];
+
+        $pdf = $this->exporter->generate($report, $data);
+
+        $this->assertStringContainsString('Featured Snippet', $pdf);
+        $this->assertStringContainsString('Local Pack', $pdf);
+        $this->assertStringContainsString('Sitelinks', $pdf);
+        $this->assertStringContainsString('Reviews', $pdf);
+        $this->assertStringContainsString('5 keywords', $pdf);
+    }
+
+    /**
+     * Test SERP feature recent gains displayed.
+     */
+    public function test_serp_feature_recent_gains_displayed(): void
+    {
+        $report = [
+            'name' => 'Report',
+            'sections' => ['serp_features'],
+        ];
+        $data = [
+            'serp_features' => [
+                'totalKeywords' => 50,
+                'keywordsWithFeatures' => 10,
+                'featureCounts' => [],
+                'recentChanges' => [
+                    'gained' => [
+                        ['keyword' => 'seo tools', 'feature' => 'featured_snippet', 'detectedAt' => '2026-02-26T10:00:00Z'],
+                        ['keyword' => 'analytics', 'feature' => 'local_pack', 'detectedAt' => '2026-02-25T10:00:00Z'],
+                    ],
+                    'lost' => [],
+                ],
+            ],
+        ];
+
+        $pdf = $this->exporter->generate($report, $data);
+
+        $this->assertStringContainsString('Recently Gained Features', $pdf);
+        $this->assertStringContainsString('seo tools', $pdf);
+        $this->assertStringContainsString('Featured Snippet', $pdf);
+    }
+
+    /**
+     * Test SERP feature recent losses displayed.
+     */
+    public function test_serp_feature_recent_losses_displayed(): void
+    {
+        $report = [
+            'name' => 'Report',
+            'sections' => ['serp_features'],
+        ];
+        $data = [
+            'serp_features' => [
+                'totalKeywords' => 50,
+                'keywordsWithFeatures' => 10,
+                'featureCounts' => [],
+                'recentChanges' => [
+                    'gained' => [],
+                    'lost' => [
+                        ['keyword' => 'marketing', 'feature' => 'local_pack', 'detectedAt' => '2026-02-24T10:00:00Z'],
+                    ],
+                ],
+            ],
+        ];
+
+        $pdf = $this->exporter->generate($report, $data);
+
+        $this->assertStringContainsString('Recently Lost Features', $pdf);
+        $this->assertStringContainsString('marketing', $pdf);
+        $this->assertStringContainsString('Local Pack', $pdf);
+    }
+
+    /**
+     * Test keyword table includes SERP feature icons.
+     */
+    public function test_keyword_table_includes_serp_feature_icons(): void
+    {
+        $report = [
+            'name' => 'Report',
+            'sections' => ['keywords'],
+        ];
+        $data = [
+            'keywords' => [
+                [
+                    'keyword' => 'seo tools',
+                    'current_position' => 1,
+                    'previous_position' => 2,
+                    'change' => -1,
+                    'serp_features' => '🏆🔗⭐', // Featured snippet + sitelinks + reviews
+                ],
+                [
+                    'keyword' => 'marketing',
+                    'current_position' => 5,
+                    'previous_position' => 3,
+                    'change' => 2,
+                    'serp_features' => '', // No features
+                ],
+            ],
+        ];
+
+        $pdf = $this->exporter->generate($report, $data);
+
+        $this->assertStringContainsString('seo tools', $pdf);
+        $this->assertStringContainsString('🏆', $pdf);
+        $this->assertStringContainsString('🔗', $pdf);
+        $this->assertStringContainsString('⭐', $pdf);
+    }
+
+    /**
+     * Test SERP features section with all sections combined.
+     */
+    public function test_serp_features_with_all_sections(): void
+    {
+        $report = [
+            'name' => 'Complete Report',
+            'date_range_start' => '2026-02-01',
+            'date_range_end' => '2026-02-28',
+            'sections' => ['cover', 'summary', 'keywords', 'changes', 'trends', 'serp_features'],
+        ];
+        $data = [
+            'company_name' => 'Test Corp',
+            'executive_summary' => 'Summary text.',
+            'keywords' => [
+                ['keyword' => 'test', 'current_position' => 1, 'serp_features' => '🏆'],
+            ],
+            'top_performers' => [],
+            'needs_attention' => [],
+            'trends' => [],
+            'serp_features' => [
+                'totalKeywords' => 50,
+                'keywordsWithFeatures' => 25,
+                'featureCounts' => ['featured_snippet' => 10],
+                'recentChanges' => ['gained' => [], 'lost' => []],
+            ],
+        ];
+
+        $pdf = $this->exporter->generate($report, $data);
+
+        $this->assertStringContainsString('COVER PAGE', $pdf);
+        $this->assertStringContainsString('EXECUTIVE SUMMARY', $pdf);
+        $this->assertStringContainsString('KEYWORD RANKINGS', $pdf);
+        $this->assertStringContainsString('POSITION CHANGES', $pdf);
+        $this->assertStringContainsString('TREND CHARTS', $pdf);
+        $this->assertStringContainsString('SERP FEATURES', $pdf);
+    }
 }
