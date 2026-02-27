@@ -1,7 +1,7 @@
 # TASK-6-9: Rankings API Endpoints
 
 ## Status
-`To Deploy`
+`In Deployment`
 
 ## Priority
 `High`

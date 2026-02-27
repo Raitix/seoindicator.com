@@ -1,7 +1,7 @@
 # TASK-16-4: Tool Embedding System
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -88,6 +88,30 @@ interface ToolWidgetProps {
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-27 15:45] Agent: PreTester
+Created test documentation at `TESTS/TEST-16-4.md` with 90 test scenarios covering:
+- Component rendering (9 scenarios)
+- URL input validation (13 scenarios)
+- State management (8 scenarios)
+- Error handling (9 scenarios)
+- Results display (10 scenarios)
+- Reset functionality (8 scenarios)
+- Responsive design (10 scenarios)
+- Accessibility (12 scenarios)
+- Security (6 scenarios)
+- Performance (5 scenarios)
+
+Key test considerations:
+1. State machine: idle → loading → success/error → idle
+2. Error messages must match exact strings for consistency
+3. Accessibility requirements include aria-live regions and keyboard navigation
+4. Security tests for XSS prevention in URL input and results
+5. Responsive tests for mobile (320px) through large desktop (1920px)
+
+Test coverage target: 85% statements, 80% branches, 90% functions.
+
+Status updated to "Tests Coverage In Progress". Ready for Developer.
 
 ### [2026-02-27] Agent: SpecSystemAnalyst
 Created task. This is the frontend integration task that makes tools available in guide pages.
