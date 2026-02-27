@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\Annotation;
 
 /**
  * Keyword model for tracking keyword rankings.
@@ -123,6 +124,14 @@ class Keyword extends Model
     public function competitorRankings(): HasMany
     {
         return $this->hasMany(CompetitorRanking::class);
+    }
+
+    /**
+     * Get the annotations for this keyword.
+     */
+    public function annotations(): HasMany
+    {
+        return $this->hasMany(Annotation::class);
     }
 
     /**

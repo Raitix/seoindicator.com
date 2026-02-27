@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Annotation;
 
 /**
  * Project Model.
@@ -104,6 +105,14 @@ class Project extends Model
         return $this->belongsToMany(User::class, 'project_members')
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    /**
+     * Get the annotations for this project.
+     */
+    public function annotations(): HasMany
+    {
+        return $this->hasMany(Annotation::class);
     }
 
     /**
