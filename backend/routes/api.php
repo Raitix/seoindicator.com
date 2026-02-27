@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\ComparisonController;
 use App\Http\Controllers\Api\V1\IssueTypeController;
 use App\Http\Controllers\Api\V1\GSCDataController;
 use App\Http\Controllers\Api\V1\KeywordController;
+use App\Http\Controllers\Api\V1\KeywordsApiController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\RankingController;
 use App\Http\Controllers\Api\V1\DashboardController;
@@ -36,6 +37,24 @@ Route::get('/health', [DeployController::class, 'health']);
 Route::middleware(['throttle:deploy', 'log-deploy-auth'])->group(function () {
     Route::post('/deploy/migrate', [DeployController::class, 'migrate']);
     Route::post('/deploy/rollback', [DeployController::class, 'rollback']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| External REST API Routes (TASK-6-8)
+|--------------------------------------------------------------------------
+|
+| External API endpoints for programmatic access.
+| Uses API key authentication and per-key rate limiting.
+|
+*/
+Route::prefix('v1')->middleware(['api-key.auth', 'api-key.ratelimit'])->group(function () {
+    // Keywords API (TASK-6-8)
+    Route::get('keywords', [KeywordsApiController::class, 'index'])->middleware('api-key.auth:keywords:read');
+    Route::post('keywords', [KeywordsApiController::class, 'store'])->middleware('api-key.auth:keywords:write');
+    Route::get('keywords/{id}', [KeywordsApiController::class, 'show'])->middleware('api-key.auth:keywords:read');
+    Route::put('keywords/{id}', [KeywordsApiController::class, 'update'])->middleware('api-key.auth:keywords:write');
+    Route::delete('keywords/{id}', [KeywordsApiController::class, 'destroy'])->middleware('api-key.auth:keywords:write');
 });
 
 /*
