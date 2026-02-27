@@ -1,7 +1,7 @@
 # SPEC-004-2: Report Model and Repository
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
