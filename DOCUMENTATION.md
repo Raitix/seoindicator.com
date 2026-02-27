@@ -2351,6 +2351,74 @@ All detectors tested for:
 - **Status**: Complete
 
 ---
+## Question Keyword Generator (TASK-5-5)
+
+### Service Description
+Utility class for generating question-based keyword variations. Provides additional FREE keyword suggestions beyond Google Suggest by combining a seed keyword with common question prefixes.
+
+### Core Functionalities
+
+**QuestionGenerator Class:**
+- `generate(?string $keyword): array` - Returns array of question keywords
+- `__invoke(?string $keyword): array` - Invokable for dependency injection support
+
+**Question Prefixes:**
+| Prefix | Example Output |
+|--------|----------------|
+| `what is` | "what is seo tools" |
+| `how to` | "how to seo tools" |
+| `why` | "why seo tools" |
+| `when` | "when seo tools" |
+| `where` | "where seo tools" |
+| `who` | "who seo tools" |
+| `which` | "which seo tools" |
+
+### Technical Implementation
+- Class: `backend/app/Services/Fetchers/QuestionGenerator.php`
+- Pure PHP utility with no external dependencies
+- No API calls required (FREE source)
+- Handles null/empty input gracefully (returns empty array)
+
+### Security Assessment
+| Test | Input | Result | Status |
+|------|-------|--------|--------|
+| XSS Injection | `<script>alert(1)</script>` | Preserved as-is, no eval | ✓ SAFE |
+| SQL Injection | `'; DROP TABLE users; --` | Preserved as-is, no DB queries | ✓ SAFE |
+| Null Bytes | `test\0keyword` | Handled gracefully | ✓ PASS |
+| DoS (10000 chars) | Very long input | 0ms processing time | ✓ PASS |
+| Unicode/Emoji | `seo 🚀 keywords 🎯` | Preserved correctly | ✓ PASS |
+| Whitespace Only | `   \t\n   ` | Returns empty array | ✓ PASS |
+| RTL Override | `\u202Etest` | Preserved as-is | ✓ PASS |
+| Empty String | `''` | Returns empty array | ✓ PASS |
+| Null Input | `null` | Returns empty array | ✓ PASS |
+
+**Risk Level:** Low - Pure string concatenation utility with no external dependencies
+
+### Unit Tests
+25 tests, 51 assertions covering:
+- All 7 question prefixes
+- Custom prefixes via constructor
+- Invokable support
+- Null/empty keyword handling
+- Whitespace trimming
+- Lowercase output
+- Edge cases (special characters, unicode, long input)
+- Security tests (XSS, SQL injection, null bytes)
+
+### Dependencies
+None (standalone utility)
+
+### Integration
+- Used by `SuggestionService` for question-based keyword generation
+- Part of the keyword discovery system (FEAT-005)
+
+### Deployment
+- **Deployed**: 2026-02-27 (commit 780b608)
+- **Health Check**: Passing
+- **Tests**: 25 passed (51 assertions)
+- **Status**: Complete
+
+---
 ## Opportunity Scorer Utility (TASK-5-3)
 
 ### Service Description
