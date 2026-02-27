@@ -1,7 +1,7 @@
 # TASK-5-10: Suggestions List Page
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `Medium`
