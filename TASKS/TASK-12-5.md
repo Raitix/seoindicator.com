@@ -1,7 +1,7 @@
 # TASK-12-5: Implement GSC Data Sync Service
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `High`
