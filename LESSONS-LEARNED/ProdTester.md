@@ -6,6 +6,13 @@ Knowledge base for ProdTester agent working on SEOIndicator project.
 
 ## Production Issues
 
+### 2026-02-27: TASK-6-9 Rankings API Testing
+- Health endpoint reliable for checking production status
+- Route constraints (`where('id', '[0-9]+')`) block SQL injection at route level
+- PowerShell requires `curl.exe` (not `curl` alias) for production API testing
+- SSL cert revocation issues on Windows: use `-k` flag with curl.exe
+- Authentication errors (401) take precedence over validation (422) - correct behavior
+
 ### 2026-02-27: TASK-16-11 Rate Limiting
 - LiteSpeed web server strips response body on 429 errors
 - CDN/proxy may modify response bodies
