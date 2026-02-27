@@ -1,15 +1,10 @@
-interface PageProps {
-  params: { siteId: string };
-}
+"use client";
 
-export const dynamicParams = false;
+import { useParams } from "next/navigation";
 
-export async function generateStaticParams(): Promise<Array<{ siteId: string }>> {
-  return [{ siteId: "1" }];
-}
-
-export default async function SitePage({ params }: PageProps) {
-  const { siteId } = await params;
+export default function SitePage() {
+  const params = useParams();
+  const siteId = params.siteId as string;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 px-4 py-10 text-slate-300">

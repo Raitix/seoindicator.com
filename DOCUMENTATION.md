@@ -1133,6 +1133,154 @@ app('current_project'); // Returns Project model or null
 - TASK-8-6: ProjectPolicy authorization
 
 ---
+## GSC Connection Controller API (TASK-12-7)
+
+### Service Description
+REST API controller for managing Google Search Console OAuth connections. Provides endpoints for initiating OAuth flow, disconnecting properties, and listing connected GSC properties. Core functionality for the GSC integration feature (FEAT-012).
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/gsc/connect` | Initiate OAuth flow with authorization code |
+| DELETE | `/api/gsc/disconnect/{propertyId}` | Remove connection and revoke tokens |
+| GET | `/api/gsc/properties` | List all connected GSC properties for user |
+
+### Connect Endpoint
+`POST /api/gsc/connect`
+
+**Description:** Initiates the OAuth flow by exchanging an authorization code for access and refresh tokens. Creates a new GSC connection record for the authenticated user.
+
+**Request Body:**
+```json
+{
+  "authorization_code": "4/0AeanS0..."
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "property_url": "https://example.com"
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 400 | Invalid authorization code |
+| 409 | Property already connected |
+
+### Disconnect Endpoint
+`DELETE /api/gsc/disconnect/{propertyId}`
+
+**Description:** Removes a GSC connection and revokes the associated OAuth tokens. Users can only disconnect their own connections.
+
+**Response (200):**
+```json
+{
+  "success": true
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 403 | Connection owned by another user |
+| 404 | Connection not found |
+
+### List Properties Endpoint
+`GET /api/gsc/properties`
+
+**Description:** Returns all GSC properties connected by the authenticated user.
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "property_url": "https://example.com",
+      "site_url": "example.com",
+      "connected_at": "2026-02-27T10:00:00Z"
+    }
+  ]
+}
+```
+
+### Authorization
+- All endpoints require authentication (Bearer token)
+- Users can only access their own connections (user isolation)
+- Returns 401 for unauthenticated requests
+- Returns 403 for unauthorized access attempts
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware on all endpoints |
+| IDOR Protection | Ownership check on all operations |
+| Token Encryption | Tokens encrypted at rest |
+| Token Exposure | Tokens hidden from JSON responses |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| CSRF Protection | Stateless API with token auth |
+| OAuth State | State parameter validation in OAuth flow |
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/GSCConnectionController.php`
+- Model: `backend/app/Models/GSCConnection.php`
+- Routes: Defined in `backend/routes/api.php`
+
+### Model Properties
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | int | Primary key |
+| `user_id` | int | FK to users.id |
+| `site_url` | string | Site URL from GSC |
+| `property_url` | string | GSC property URL |
+| `access_token` | string | Encrypted OAuth access token |
+| `refresh_token` | string | Encrypted OAuth refresh token |
+| `token_expires_at` | timestamp | Token expiration time |
+
+### Model Relationships
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `user()` | belongsTo | User who owns this connection |
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| GSCApiEndpointsTest | 11 | 13 |
+| GSCSecurityTest | 14 | 37 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Connect endpoint | 3 | OAuth flow initiation |
+| Disconnect endpoint | 3 | Connection removal |
+| Properties endpoint | 3 | Listing connections |
+| Authorization | 4 | 401/403 responses |
+| Security | 14 | Token handling, ownership, injection |
+
+### Production Status
+- **Deployed**: 2026-02-27 (commit 0fd81f7)
+- **Health Check**: Passing
+- **Tests**: 25/25 passing (50 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-12-4 (OAuth service)
+- Google OAuth 2.0 integration
+
+### Related Tasks
+- TASK-12-4: OAuth service
+- TASK-12-5: GSC Data Sync
+- TASK-12-8: GSC Data Controller
+
+---
 ## GSC Data Controller API (TASK-12-8)
 
 ### Service Description
