@@ -1,7 +1,7 @@
 # TASK-6-5: Rate Limiter Middleware
 
 ## Status
-`Tests Coverage In Progress`
+`To Develop`
 
 ## Priority
 `High`
@@ -70,3 +70,25 @@ Medium (2-4 hours)
 - Priority: High (security/abuse prevention)
 - Risk: Medium (affects all API traffic)
 - Part of Phase 2: Rate Limiting
+
+### [2026-02-27 14:22] PreTester: Test Documentation and Files Created
+- Created TESTS/TASK-6-5.md with 120+ test scenarios
+- Created unit test: backend/tests/Unit/Services/ApiKeyRateLimiterServiceTest.php
+  - Tests for isAllowed, sliding window, remaining, reset time, count, increment, reset
+  - Per-key configuration tests
+  - Edge cases and security tests
+- Created middleware test: backend/tests/Unit/Middleware/ApiKeyRateLimiterMiddlewareTest.php
+  - Tests for middleware integration with API keys
+  - Header tests (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset)
+  - 429 response format tests matching SPEC-006
+  - Concurrency and integration tests
+- Created feature test: backend/tests/Feature/Api/RateLimitHeadersTest.php
+  - Tests for header presence on API responses
+  - 429 response structure validation
+- Status: To Develop
+- Notes for Developer:
+  1. Implement ApiKeyRateLimiterService with sliding window algorithm
+  2. Use Cache facade or SQLite for storage
+  3. Implement ApiKeyRateLimiter middleware that runs after auth
+  4. Add headers to all API responses
+  5. Return 429 with exact JSON format from SPEC-006
