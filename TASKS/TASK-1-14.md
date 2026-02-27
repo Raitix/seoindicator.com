@@ -1,7 +1,7 @@
 # SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -105,3 +105,31 @@ Next.js static export (`output: 'export'`) does not support dynamic route params
 3. Or pass params via URL searchParams and parse on client side
 
 **Recommendation:** Return to Developer to fix the static export issue. Status -> To Develop.
+
+### [2026-02-27 23:41] Agent: Developer
+**FIX IMPLEMENTED** - Static export dynamic route params issue.
+
+**Changes Made:**
+1. Converted all dynamic route pages to client components using `"use client"` directive
+2. Replaced server component `params` props with `useParams()` hook from `next/navigation`
+3. Removed `generateStaticParams()` and `dynamicParams` exports (not needed for client components)
+
+**Files Updated:**
+- `app/sites/[siteId]/page.tsx` - Site detail page
+- `app/sites/[siteId]/keywords/page.tsx` - Keywords list page
+- `app/sites/[siteId]/keywords/new/page.tsx` - Add keyword page
+- `app/sites/[siteId]/keywords/[keywordId]/page.tsx` - Keyword detail page
+- `app/sites/[siteId]/keywords/[keywordId]/edit/page.tsx` - Edit keyword page
+- `__tests__/app/sites/[siteId]/keywords/add/page.test.tsx` - Updated test to mock `useParams()`
+
+**Why This Works:**
+- `useParams()` hook reads route params from the URL at runtime on the client
+- Server component props only work during SSR/SSG rendering, not static export
+- Client-side routing correctly parses the URL params
+
+**Verification:**
+- All 7 tests pass
+- Build succeeds with static export
+- All dynamic routes generate correctly as SSG pages
+
+Status -> To Test Locally.
