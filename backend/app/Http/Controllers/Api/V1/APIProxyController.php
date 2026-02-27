@@ -10,6 +10,7 @@ use App\Services\RateLimitService;
 use App\Services\URLValidationService;
 use App\Services\Tools\MetaTagAnalyzer;
 use App\Services\Tools\KeywordDensityChecker;
+use App\Services\Tools\MobileFriendlyChecker;
 use App\Services\Tools\ToolResult;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
@@ -34,6 +35,7 @@ class APIProxyController extends Controller
     protected CaptchaService $captcha;
     protected MetaTagAnalyzer $metaTagAnalyzer;
     protected KeywordDensityChecker $keywordDensityChecker;
+    protected MobileFriendlyChecker $mobileFriendlyChecker;
 
     public function __construct(
         URLValidationService $urlValidator,
@@ -41,7 +43,8 @@ class APIProxyController extends Controller
         RateLimitService $rateLimiter,
         CaptchaService $captcha,
         MetaTagAnalyzer $metaTagAnalyzer,
-        KeywordDensityChecker $keywordDensityChecker
+        KeywordDensityChecker $keywordDensityChecker,
+        MobileFriendlyChecker $mobileFriendlyChecker
     ) {
         $this->urlValidator = $urlValidator;
         $this->htmlParser = $htmlParser;
@@ -49,6 +52,7 @@ class APIProxyController extends Controller
         $this->captcha = $captcha;
         $this->metaTagAnalyzer = $metaTagAnalyzer;
         $this->keywordDensityChecker = $keywordDensityChecker;
+        $this->mobileFriendlyChecker = $mobileFriendlyChecker;
     }
 
     /**
@@ -174,6 +178,7 @@ class APIProxyController extends Controller
         try {
             $result = match ($tool) {
                 'keyword-density-checker' => $this->keywordDensityChecker->analyze($url, ['keyword' => $keyword]),
+                'mobile-friendly' => $this->mobileFriendlyChecker->analyze($url),
                 default => $this->metaTagAnalyzer->analyze($url),
             };
 

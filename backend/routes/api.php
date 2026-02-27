@@ -119,11 +119,14 @@ Route::prefix('v1')->group(function () {
     Route::get('sites/{siteId}/scheduled-reports', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'index']);
     Route::get('scheduled-reports/{scheduledId}', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'show']);
 
-    // SEO Tools API Proxy (TASK-16-1, TASK-16-2, TASK-16-3) - public with rate limiting
+    // SEO Tools API Proxy (TASK-16-1, TASK-16-2, TASK-16-3, TASK-16-7) - public with rate limiting
     Route::post('tools/analyze', [APIProxyController::class, 'analyze']);
     Route::get('tools/captcha-config', [APIProxyController::class, 'captchaConfig']);
     Route::get('tools/rate-limit-status', [APIProxyController::class, 'rateLimitStatus']);
     Route::get('tools', [APIProxyController::class, 'tools']);
+
+    // Lead Capture (TASK-16-5)
+    Route::post('tools/capture-email', [\App\Http\Controllers\Api\V1\LeadCaptureController::class, 'store']);
 });
 
 // Authenticated V1 API Routes
@@ -198,4 +201,13 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::get('annotations/{id}', [AnnotationController::class, 'show']);
     Route::put('annotations/{id}', [AnnotationController::class, 'update']);
     Route::delete('annotations/{id}', [AnnotationController::class, 'destroy']);
+
+    // Admin: Lead Management (TASK-16-6)
+    Route::prefix('admin/leads')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'index']);
+        Route::get('/stats', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'stats']);
+        Route::get('/export', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'export']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'destroy']);
+        Route::post('/{id}/restore', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'restore']);
+    });
 });
