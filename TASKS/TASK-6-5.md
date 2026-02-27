@@ -1,7 +1,7 @@
 # TASK-6-5: Rate Limiter Middleware
 
 ## Status
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## Priority
 `High`
