@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\IssueTypeController;
 use App\Http\Controllers\Api\V1\GSCDataController;
 use App\Http\Controllers\Api\V1\KeywordController;
 use App\Http\Controllers\Api\V1\KeywordsApiController;
+use App\Http\Controllers\Api\V1\RankingsApiController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\RankingController;
 use App\Http\Controllers\Api\V1\DashboardController;
@@ -55,6 +56,11 @@ Route::prefix('v1')->middleware(['api-key.auth', 'api-key.ratelimit'])->group(fu
     Route::get('keywords/{id}', [KeywordsApiController::class, 'show'])->middleware('api-key.auth:keywords:read');
     Route::put('keywords/{id}', [KeywordsApiController::class, 'update'])->middleware('api-key.auth:keywords:write');
     Route::delete('keywords/{id}', [KeywordsApiController::class, 'destroy'])->middleware('api-key.auth:keywords:write');
+
+    // Rankings API (TASK-6-9)
+    Route::get('keywords/{id}/rankings', [RankingsApiController::class, 'index'])
+        ->middleware('api-key.auth:rankings:read')
+        ->where('id', '[0-9]+');
 });
 
 /*
@@ -113,10 +119,11 @@ Route::prefix('v1')->group(function () {
     Route::get('sites/{siteId}/scheduled-reports', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'index']);
     Route::get('scheduled-reports/{scheduledId}', [\App\Http\Controllers\Api\V1\ScheduledReportController::class, 'show']);
 
-    // SEO Tools API Proxy (TASK-16-3) - public with rate limiting
+    // SEO Tools API Proxy (TASK-16-1, TASK-16-2, TASK-16-3) - public with rate limiting
     Route::post('tools/analyze', [APIProxyController::class, 'analyze']);
     Route::get('tools/captcha-config', [APIProxyController::class, 'captchaConfig']);
     Route::get('tools/rate-limit-status', [APIProxyController::class, 'rateLimitStatus']);
+    Route::get('tools', [APIProxyController::class, 'tools']);
 });
 
 // Authenticated V1 API Routes

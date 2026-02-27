@@ -1,7 +1,7 @@
 # FEAT-016: Interactive SEO Tools
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
