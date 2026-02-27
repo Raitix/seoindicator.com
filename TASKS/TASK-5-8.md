@@ -1,7 +1,7 @@
 # TASK-5-8: Generate Suggestions Endpoint
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`

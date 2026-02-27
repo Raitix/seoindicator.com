@@ -580,4 +580,256 @@ class SuggestionControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonPath('meta.total', 1);
     }
+
+    // =========================================================================
+    // ADVERSARIAL TESTS
+    // =========================================================================
+
+    /**
+     * Test SQL injection in source parameter.
+     * ADV-001
+     */
+    public function test_sql_injection_in_source(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/suggestions?source='; DROP TABLE keyword_suggestions; --");
+
+        // Should not cause error - invalid source treated as no filter or returns empty
+        $response->assertStatus(200);
+    }
+
+    /**
+     * Test SQL injection in keyword field during generation.
+     * ADV-002
+     */
+    public function test_sql_injection_in_seed_keyword(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->postJson("/api/v1/sites/{$this->site->id}/suggestions/generate", [
+                'seedKeyword' => "'; DROP TABLE keyword_suggestions; --",
+                'sources' => ['question'],
+            ]);
+
+        // Should sanitize or accept safely
+        $response->assertStatus(202);
+    }
+
+    /**
+     * Test XSS in keyword field.
+     * ADV-003
+     */
+    public function test_xss_in_keyword(): void
+    {
+        $suggestion = KeywordSuggestion::factory()->create([
+            'site_id' => $this->site->id,
+            'keyword' => '<script>alert("xss")</script>seo tools',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/suggestions");
+
+        $response->assertStatus(200);
+        // Keyword should be returned as-is (API consumer responsible for escaping)
+        $this->assertStringContainsString('<script>', $response->json('data.0.keyword'));
+    }
+
+    /**
+     * Test very large page number.
+     * ADV-004
+     */
+    public function test_large_page_number(): void
+    {
+        KeywordSuggestion::factory()->count(5)->create(['site_id' => $this->site->id]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/suggestions?page=999999999");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('meta.total', 5)
+            ->assertJsonPath('data', []);
+    }
+
+    /**
+     * Test negative page number.
+     * ADV-005
+     */
+    public function test_negative_page_number(): void
+    {
+        KeywordSuggestion::factory()->count(5)->create(['site_id' => $this->site->id]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/suggestions?page=-1");
+
+        // Should handle gracefully (treat as page 1 or return empty)
+        $response->assertStatus(200);
+    }
+
+    /**
+     * Test very large perPage value.
+     * ADV-006
+     */
+    public function test_large_per_page(): void
+    {
+        KeywordSuggestion::factory()->count(5)->create(['site_id' => $this->site->id]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/suggestions?perPage=10000");
+
+        // Should cap at reasonable max (usually 100)
+        $response->assertStatus(200);
+        $this->assertLessThanOrEqual(100, count($response->json('data')));
+    }
+
+    /**
+     * Test negative perPage value.
+     * ADV-007
+     */
+    public function test_negative_per_page(): void
+    {
+        KeywordSuggestion::factory()->count(5)->create(['site_id' => $this->site->id]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/suggestions?perPage=-10");
+
+        // Should use default perPage
+        $response->assertStatus(200);
+    }
+
+    /**
+     * Test empty result set.
+     * ADV-008
+     */
+    public function test_empty_results(): void
+    {
+        // No suggestions created
+
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/suggestions");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('meta.total', 0)
+            ->assertJsonPath('data', []);
+    }
+
+    /**
+     * Test large keyword string.
+     * ADV-009
+     */
+    public function test_large_keyword_string(): void
+    {
+        $longKeyword = str_repeat('seo ', 100); // 400+ chars
+
+        $response = $this->actingAs($this->user)
+            ->postJson("/api/v1/sites/{$this->site->id}/suggestions/generate", [
+                'seedKeyword' => $longKeyword,
+                'sources' => ['question'],
+            ]);
+
+        // Should handle gracefully (truncate, reject, or accept)
+        $response->assertStatus(202);
+    }
+
+    /**
+     * Test Unicode characters in keyword.
+     * ADV-010
+     */
+    public function test_unicode_in_keyword(): void
+    {
+        $suggestion = KeywordSuggestion::factory()->create([
+            'site_id' => $this->site->id,
+            'keyword' => 'seo tools 日本語 العربية',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/suggestions");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.0.keyword', 'seo tools 日本語 العربية');
+    }
+
+    /**
+     * Test cross-site suggestion access (same user, different site).
+     * ADV-011
+     */
+    public function test_cross_site_access_same_user(): void
+    {
+        $site2 = Site::factory()->create(['user_id' => $this->user->id]);
+
+        $suggestion = KeywordSuggestion::factory()->create([
+            'site_id' => $site2->id,
+            'keyword' => 'site2 keyword',
+        ]);
+
+        // User should NOT see site2 suggestions when querying site1
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/suggestions");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('meta.total', 0);
+    }
+
+    /**
+     * Test tracking suggestion from another site.
+     * ADV-012
+     */
+    public function test_track_suggestion_from_other_site(): void
+    {
+        $otherUser = User::factory()->create();
+        $otherSite = Site::factory()->create(['user_id' => $otherUser->id]);
+        $otherSuggestion = KeywordSuggestion::factory()->create([
+            'site_id' => $otherSite->id,
+        ]);
+
+        // Try to track another site's suggestion through our site's endpoint
+        $response = $this->actingAs($this->user)
+            ->postJson("/api/v1/sites/{$this->site->id}/suggestions/{$otherSuggestion->id}/track");
+
+        // Should fail - suggestion doesn't belong to this site
+        $response->assertStatus(404);
+    }
+
+    /**
+     * Test dismiss with invalid suggestion ID type.
+     * ADV-013
+     */
+    public function test_dismiss_invalid_id_type(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->postJson("/api/v1/sites/{$this->site->id}/suggestions/abc/dismiss");
+
+        // Should return 404 (route binding fails) or 400
+        $response->assertStatus(404);
+    }
+
+    /**
+     * Test bulk track with non-existent IDs.
+     * ADV-014
+     */
+    public function test_bulk_track_non_existent_ids(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->postJson("/api/v1/sites/{$this->site->id}/suggestions/bulk-track", [
+                'suggestionIds' => [99991, 99992, 99993],
+            ]);
+
+        // Should succeed with empty added array
+        $response->assertStatus(201)
+            ->assertJsonPath('data.added', [])
+            ->assertJsonPath('data.skipped', []);
+    }
+
+    /**
+     * Test export with invalid format.
+     * ADV-015
+     */
+    public function test_export_invalid_format(): void
+    {
+        KeywordSuggestion::factory()->count(5)->create(['site_id' => $this->site->id]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/suggestions/export?format=xml");
+
+        // Should default to CSV or return error
+        $response->assertStatus(200);
+    }
 }
