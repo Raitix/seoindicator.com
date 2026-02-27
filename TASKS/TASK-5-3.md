@@ -1,7 +1,7 @@
 # TASK-5-3: Opportunity Scorer Utility
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `Medium`
@@ -148,3 +148,25 @@ Status: To Deploy → To Test Prod
 - All systems operational
 
 Status: To Test Prod → To Document
+
+### [2026-02-27 17:23] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+Updated `DOCUMENTATION.md` with comprehensive OpportunityScorer documentation:
+
+**Documentation Added:**
+- Service description
+- Scoring algorithm with base score and all bonus factors
+- Scoring examples table
+- Technical implementation details
+- Unit test coverage summary (33 tests, 54 assertions)
+- Adversarial testing results
+- Production deployment status
+
+**Key Documentation Points:**
+- Pure function with no external dependencies
+- Invokable for DI support
+- Maximum score enforced at 100
+- Security tested and verified safe
+
+Status: To Document → Done
