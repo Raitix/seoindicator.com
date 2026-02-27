@@ -62,7 +62,7 @@ describe('EmailCaptureModal', () => {
     test('MODAL-001: Shows when triggered with isOpen=true', () => {
       render(<EmailCaptureModal {...defaultProps} isOpen={true} />);
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText(/get full analysis/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /get full analysis/i })).toBeInTheDocument();
     });
 
     test('MODAL-002: Hidden when isOpen=false', () => {

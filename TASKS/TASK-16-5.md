@@ -1,7 +1,7 @@
 # TASK-16-5: Email Capture Modal & API
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -158,3 +158,36 @@ Implementation complete. All components were already implemented:
 **Migration:** Fixed MySQL compatibility issue with timestamps, migration ran successfully.
 
 Status updated to `To Test Locally`. Ready for LocalTester.
+
+### [2026-02-27 23:15] Agent: LocalTester
+Local testing complete. All tests pass:
+
+**Backend Tests (EmailCaptureControllerTest):**
+- 43 tests passed (104 assertions)
+- Duration: 2.47s
+- PHPUnit deprecation warnings (metadata in doc-comments) - non-blocking
+
+**Frontend Tests (EmailCaptureModal.test.tsx):**
+- 44 tests passed
+- Duration: 2.75s
+- Fixed 1 test selector issue (MODAL-001: use `getByRole('heading')` instead of `getByText`)
+
+**Test Categories Passed:**
+| Category | Tests |
+|----------|-------|
+| Modal Visibility | 12 |
+| Email Validation | 10 |
+| Session Handling | 8 |
+| Edge Cases | 10 |
+| Accessibility | 4 |
+
+**Adversarial Testing Results:**
+- SQL injection: Sanitized ✓
+- XSS in email: Sanitized ✓
+- Rate limiting: Working (5/IP/hour) ✓
+- Concurrent requests: Handled ✓
+- Network errors: Graceful handling ✓
+
+**Deployment Recommendation:** PASS - Ready for deployment to production.
+
+Status updated to `To Deploy`. Handing off to DevOps.
