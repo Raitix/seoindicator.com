@@ -1,7 +1,7 @@
 # TASK-10-2: Implement Position Score Algorithm
 
 ## STATUS
-`Prioritization In Progress`
+`To Prioritize`
 
 ## PRIORITY
 `Medium`

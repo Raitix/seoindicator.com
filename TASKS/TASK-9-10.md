@@ -1,7 +1,7 @@
 # TASK-9-10: End-to-End Integration Tests
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `High`

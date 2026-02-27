@@ -1,7 +1,7 @@
 # TASK-10-1: Create Visibility Scores Table
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `High`

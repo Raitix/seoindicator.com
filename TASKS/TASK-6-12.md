@@ -1,7 +1,7 @@
 # TASK-6-12: Webhooks Database Schema
 
 ## Status
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## Priority
 `High`

@@ -1,7 +1,7 @@
 # TASK-12-7: GSC Connection Controller
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`

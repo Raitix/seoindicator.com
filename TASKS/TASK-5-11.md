@@ -1,7 +1,7 @@
 # TASK-5-11: Generate Suggestions Form
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`

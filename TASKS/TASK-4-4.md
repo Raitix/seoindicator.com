@@ -1,7 +1,7 @@
 # SPEC-004-4: CSV Exporter
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `Medium`

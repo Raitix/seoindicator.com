@@ -1,7 +1,7 @@
 # TASK-7-1: Database Schema - SERP Features Tables
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## PRIORITY
 `High`

@@ -1,7 +1,7 @@
 # SPEC-003-6: Frontend - Competitor Management UI
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `Medium`

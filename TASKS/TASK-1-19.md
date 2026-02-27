@@ -1,7 +1,7 @@
 # SPEC-001-19: E2E Tests for Critical Flows
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ### FAILURE INSIGHTS
 
