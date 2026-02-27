@@ -62,7 +62,8 @@ class MetaTagAnalyzer extends SEOTool
         $result = $this->fetchAndParse($url);
 
         if (!$result['success']) {
-            return $this->error($result['error'], $url, 'FETCH_ERROR');
+            $errorCode = $result['errorCode'] ?? 'FETCH_ERROR';
+            return $this->error($result['error'], $url, $errorCode);
         }
 
         $parsed = $result['parsed'];

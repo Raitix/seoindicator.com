@@ -100,9 +100,16 @@ abstract class SEOTool
         $validation = $this->urlValidator->validate($url);
         
         if (!$validation['valid']) {
+            $error = $validation['error'];
+            $errorCode = str_contains(strtolower($error), 'security') 
+                || str_contains(strtolower($error), 'not allowed')
+                ? 'URL_BLOCKED' 
+                : 'INVALID_URL';
+            
             return [
                 'success' => false,
-                'error' => $validation['error'],
+                'error' => $error,
+                'errorCode' => $errorCode,
             ];
         }
 
@@ -125,6 +132,16 @@ abstract class SEOTool
             return [
                 'success' => false,
                 'error' => $parseResult['error'] ?? 'Failed to parse HTML content.',
+                'errorCode' => 'PARSE_ERROR',
+            ];
+        }
+        
+        // Check for empty or invalid content
+        if (empty($fetchResult['html']) || strlen(trim($fetchResult['html'])) < 50) {
+            return [
+                'success' => false,
+                'error' => 'The page returned empty or invalid content.',
+                'errorCode' => 'PARSE_ERROR',
             ];
         }
 
@@ -157,14 +174,21 @@ abstract class SEOTool
                 ->maxRedirects($this->maxRedirects)
                 ->get($url);
         } catch (ConnectionException $e) {
+            $errorMsg = $e->getMessage();
+            $isTimeout = str_contains(strtolower($errorMsg), 'timeout');
+            
             return [
                 'success' => false,
-                'error' => 'Connection timed out or failed. The server may be unreachable.',
+                'error' => $isTimeout 
+                    ? 'The request timed out. The server may be slow to respond.' 
+                    : 'Connection failed. The server may be unreachable.',
+                'errorCode' => $isTimeout ? 'TIMEOUT' : 'FETCH_FAILED',
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'error' => 'Failed to fetch the URL: ' . $e->getMessage(),
+                'errorCode' => 'FETCH_FAILED',
             ];
         }
 
@@ -177,6 +201,7 @@ abstract class SEOTool
             return [
                 'success' => false,
                 'error' => 'The URL does not return HTML content.',
+                'errorCode' => 'FETCH_FAILED',
             ];
         }
 
@@ -186,6 +211,7 @@ abstract class SEOTool
             return [
                 'success' => false,
                 'error' => 'The response is too large. Maximum size is 10MB.',
+                'errorCode' => 'FETCH_FAILED',
             ];
         }
 
@@ -194,6 +220,7 @@ abstract class SEOTool
             return [
                 'success' => false,
                 'error' => "The server returned HTTP {$statusCode}.",
+                'errorCode' => 'FETCH_FAILED',
             ];
         }
 
