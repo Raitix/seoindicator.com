@@ -1,7 +1,7 @@
 # TASK-9-1: Create Annotations Table
 
 ## STATUS
-`To Develop`
+`Testing Locally`
 
 ## PRIORITY
 `High`
@@ -35,10 +35,10 @@ CREATE TABLE annotations (
 ```
 
 ## Acceptance Criteria
-- [ ] Migration file creates the `annotations` table with specified constraints.
-- [ ] Foreign keys `keyword_id` and `project_id` ensure referential integrity.
-- [ ] Indexes support querying by `keyword_id`, `project_id`, `date`, and `category`.
-- [ ] Seeder file for populating sample annotations for testing.
+- [x] Migration file creates the `annotations` table with specified constraints.
+- [x] Foreign keys `keyword_id` and `project_id` ensure referential integrity.
+- [x] Indexes support querying by `keyword_id`, `project_id`, `date`, and `category`.
+- [x] Seeder file for populating sample annotations for testing.
 
 ## Dependencies
 - Task depends on existing `projects` and `keywords` tables already defined.

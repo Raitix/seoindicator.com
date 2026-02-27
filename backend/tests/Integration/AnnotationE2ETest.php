@@ -488,7 +488,7 @@ class AnnotationE2ETest extends TestCase
         $response = $this->actingAs($this->user)
             ->postJson("/api/v1/keywords/{$this->keyword->id}/annotations", [
                 'date' => '2026-02-27',
-                'title" => "'; DROP TABLE annotations;--",
+                'title' => "'; DROP TABLE annotations;--",
             ]);
 
         $response->assertStatus(201);

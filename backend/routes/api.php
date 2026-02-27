@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\SerpFeatureController;
 use App\Http\Controllers\Api\V1\APIProxyController;
 use App\Http\Controllers\Api\GSCConnectionController;
 use App\Http\Controllers\Api\V1\SuggestionController;
+use App\Http\Controllers\Api\V1\AnnotationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -164,4 +165,11 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::post('sites/{siteId}/suggestions/bulk-track', [SuggestionController::class, 'bulkTrack']);
     Route::post('sites/{siteId}/suggestions/{suggestionId}/dismiss', [SuggestionController::class, 'dismiss']);
     Route::get('sites/{siteId}/suggestions/export', [SuggestionController::class, 'export']);
+
+    // Annotations (SPEC-009, TASK-9-4)
+    Route::get('keywords/{keywordId}/annotations', [AnnotationController::class, 'index']);
+    Route::post('keywords/{keywordId}/annotations', [AnnotationController::class, 'store']);
+    Route::get('annotations/{id}', [AnnotationController::class, 'show']);
+    Route::put('annotations/{id}', [AnnotationController::class, 'update']);
+    Route::delete('annotations/{id}', [AnnotationController::class, 'destroy']);
 });
