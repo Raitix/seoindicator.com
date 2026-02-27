@@ -1,7 +1,7 @@
 # TASK-5-13: Unit Tests
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
