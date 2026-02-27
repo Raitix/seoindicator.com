@@ -125,6 +125,16 @@ Key decisions:
 
 Status updated to "To Prioritize" for ProjectManager.
 
+### [2026-02-27 23:28 GMT+2] Agent: Developer
+**No development work available.**
+
+Orchestrator sent SPEC-16 (specification) but Developer works on tasks.
+- Checked all TASK-16-* items: None have "To Develop" status
+- 5 tasks Done, 3 "To Test Locally", 3 "To Write Tests", 1 "To Test Prod"
+- Completion marker written to `logs/completed/specification/SPEC-16.json`
+
+**Recommendation:** Orchestrator should send tasks (TASK-*-*), not specifications (SPEC-*), to Developer agent.
+
 ### [2026-02-20] Agent: Architect
 Created SPEC-016. Key decisions:
 1. MVP uses Cheerio for real-time feedback; no reliance on third-party APIs.

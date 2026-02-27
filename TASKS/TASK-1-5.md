@@ -1,9 +1,9 @@
 # SPEC-001-5: Ranking History API Endpoints
 
 ## STATUS
-`In Development`
+`To Develop`
 ## PRIORITY
-`High`
+`High` (Security Issue)
 
 ## RISK
 `Low`
@@ -89,3 +89,48 @@ Both ranking history API endpoints are live in production:
 **Deployment Method:** Code was already committed and pushed to origin/main. Deployment verified via production endpoint testing.
 
 **Status:** Ready for ProdTester to validate in production environment.
+
+### [2026-02-27 23:24] Agent: ProdTester
+**PRODUCTION TEST RESULTS: ❌ FAIL - SECURITY ISSUE**
+
+**Routes Exist and Functional:** ✅
+- `GET /api/v1/keywords/{id}/history` - Returns data when keyword exists
+- `POST /api/v1/keywords/{id}/check` - Returns 202 with jobId when keyword exists
+- 404 returned for non-existent keywords ✅
+
+**CRITICAL SECURITY ISSUE FOUND:** ❌
+- **Missing Authentication:** Routes are defined in PUBLIC route group (no `auth` middleware)
+- **Impact:** Unauthenticated users can:
+  - Query ranking history for ANY keyword ID
+  - Trigger manual rank checks for ANY keyword ID
+- **Root Cause:** `routes/api.php` places RankingController routes outside the `middleware(['auth'])` group
+- **Comparison:** `/api/v1/projects` correctly returns 401 for unauthenticated requests
+
+**Code Location:**
+```php
+// routes/api.php - PUBLIC group (NO auth)
+Route::prefix('v1')->group(function () {
+    Route::get('keywords/{id}/history', [RankingController::class, 'history']);
+    Route::post('keywords/{id}/check', [RankingController::class, 'check']);
+});
+
+// CORRECT pattern (authenticated):
+Route::prefix('v1')->middleware(['auth'])->group(function () {
+    Route::apiResource('projects', ProjectController::class);
+});
+```
+
+**Additional Issue - Missing IDOR Protection:**
+- Controller does not validate user owns the keyword
+- Even with auth, any user could access any keyword's data
+
+**Test Coverage Gap:**
+- `RankingControllerTest.php` has no authentication tests
+- All tests pass without authentication checks
+
+**REQUIRED FIX:**
+1. Move routes to authenticated group OR add `->middleware('auth')` to routes
+2. Add user ownership validation in controller (IDOR protection)
+3. Add authentication tests to test file
+
+**Status:** Returning to Developer for security fix. Priority: High (Security).

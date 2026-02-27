@@ -1,7 +1,7 @@
 # SPEC-004-10: Template Management API
 
 ## STATUS
-`To Document`
+`Done`
 
 ## Updates
 - Feb 27 2026: **ProdTester - ALL TESTS PASS**

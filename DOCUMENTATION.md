@@ -3955,6 +3955,182 @@ CREATE TABLE backlink_changes (
 - FEAT-013: Backlink Monitoring feature
 
 ---
+## Template Management API (TASK-4-10)
+
+### Service Description
+REST API endpoints for managing report templates. Templates define reusable configurations for SEO reports, including sections, branding, and custom text. Supports both site-specific and global templates.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sites/{siteId}/report-templates` | List templates for a site |
+| GET | `/api/v1/report-templates/{id}` | Get single template details |
+| POST | `/api/v1/sites/{siteId}/report-templates` | Create a new template |
+| PUT | `/api/v1/report-templates/{id}` | Update template |
+| DELETE | `/api/v1/report-templates/{id}` | Delete template |
+
+### Route Access Control
+| Route | Access Level |
+|-------|-------------|
+| `GET /sites/{siteId}/report-templates` | Public (read) |
+| `GET /report-templates/{id}` | Public (read) |
+| `POST /sites/{siteId}/report-templates` | Authenticated |
+| `PUT /report-templates/{id}` | Authenticated |
+| `DELETE /report-templates/{id}` | Authenticated |
+
+### List Templates
+`GET /api/v1/sites/{siteId}/report-templates`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "site_id": 1,
+      "name": "Default Template",
+      "is_default": true,
+      "sections": ["summary", "keywords", "changes", "trends"],
+      "branding": {
+        "logo_url": "https://example.com/logo.png",
+        "primary_color": "#2563eb",
+        "font": "Inter"
+      },
+      "cover_page_text": "Weekly SEO Report",
+      "executive_summary": "Key highlights...",
+      "created_at": "2026-02-24T10:00:00Z",
+      "updated_at": "2026-02-24T10:00:00Z"
+    }
+  ]
+}
+```
+
+### Get Template
+`GET /api/v1/report-templates/{id}`
+
+**Response (200):** Returns single template object
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 404 | Template not found |
+
+### Create Template
+`POST /api/v1/sites/{siteId}/report-templates`
+
+**Request Body:**
+```json
+{
+  "name": "Client Report",
+  "sections": ["summary", "keywords", "top-performers", "needs-attention"],
+  "cover_page_text": "Prepared for ACME Corp",
+  "executive_summary": "Custom summary text..."
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `name` | Required, string, max 255 chars |
+| `sections` | Required, array of valid section names |
+| `branding` | Optional, JSON object |
+| `cover_page_text` | Optional, string |
+| `executive_summary` | Optional, string |
+
+**Valid Sections:**
+- `summary` - Executive summary with key metrics
+- `keywords` - Full keyword rankings table
+- `changes` - Position changes highlights
+- `top-performers` - Best improving keywords
+- `needs-attention` - Declining keywords
+- `trends` - Position history charts
+
+**Response (201):** Returns created template object
+
+### Update Template
+`PUT /api/v1/report-templates/{id}`
+
+**Request Body:** Same fields as create (all optional for partial updates)
+
+**Response (200):** Returns updated template object
+
+### Delete Template
+`DELETE /api/v1/report-templates/{id}`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Template deleted successfully"
+}
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth:sanctum` middleware on write operations |
+| Authorization | User ownership verification for write operations |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Protection | Input sanitization, `strip_tags()` on text fields |
+| Validation | FormRequest validation on all inputs |
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/ReportTemplateController.php`
+- Model: `backend/app/Models/ReportTemplate.php`
+- Repository: `backend/app/Repositories/ReportTemplateRepository.php`
+- Request: `backend/app/Http/Requests/StoreReportTemplateRequest.php`
+- Request: `backend/app/Http/Requests/UpdateReportTemplateRequest.php`
+- Routes: Defined in `backend/routes/api.php`
+
+### Model Properties
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | int | Primary key |
+| `site_id` | int? | FK to sites.id (null = global template) |
+| `name` | string | Template name |
+| `is_default` | bool | Whether this is the default template |
+| `sections` | array | JSON array of section names |
+| `branding` | object? | JSON: `{logo_url, primary_color, font}` |
+| `cover_page_text` | string? | Custom cover page text |
+| `executive_summary` | string? | Default executive summary |
+
+### Model Relationships
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `site()` | belongsTo | Site this template belongs to |
+| `scheduledReports()` | hasMany | Scheduled reports using this template |
+
+### Production Test Results
+| Test | Endpoint | Expected | Actual | Status |
+|------|----------|----------|--------|--------|
+| List templates | GET /sites/1/report-templates | 200 | 200 | ✅ PASS |
+| Get template | GET /report-templates/1 | 200 | 200 | ✅ PASS |
+| Create (no auth) | POST /sites/1/report-templates | 401 | 401 | ✅ PASS |
+| Update (no auth) | PUT /report-templates/1 | 401 | 401 | ✅ PASS |
+| Delete (no auth) | DELETE /report-templates/1 | 401 | 401 | ✅ PASS |
+| SQL injection | GET ?name=';DROP... | Safe | Safe | ✅ PASS |
+| XSS protection | Response body | No scripts | No scripts | ✅ PASS |
+| Not found | GET /report-templates/99999 | 404 | 404 | ✅ PASS |
+
+### Dependencies
+- TASK-4-1 (Reports tables schema)
+- TASK-4-3 (ReportTemplate model/repository)
+
+### Related Tasks
+- TASK-4-7: Reports CRUD API
+- TASK-4-8: Report generation endpoint
+- TASK-4-11: Scheduled Reports API
+
+### Production Status
+- **Deployed**: 2026-02-24 (commit via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 8/8 production tests passing
+- **Status**: Complete
+
+---
 ## Frontend Components: Projects (TASK-8-8)
 
 ### Overview
