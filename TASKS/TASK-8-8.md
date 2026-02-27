@@ -1,7 +1,7 @@
 # TASK-8-8: Frontend Components for Projects
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -246,3 +246,16 @@ Created comprehensive test documentation at `TESTS/TASK-8-8.md` with **75 test s
 - Form validation working correctly
 
 **Status changed:** `To Test Locally` → `To Deploy`
+
+### [2026-02-27 10:10] Agent: DevOps
+**Deployment Started**
+
+**Current State:**
+- All frontend components committed and tested (54 unit tests pass)
+- Dynamic `[projectId]` routes removed for static export compatibility (TASK-8-7 fix)
+- Deploying: ProjectSelector, ProjectDashboard, AllProjectsView, ProjectSettingsView, AddProjectModal
+- Pages: `/projects` (list), `/projects/new` (create)
+
+**Note:** Individual project pages (`/projects/[projectId]/dashboard`, `/projects/[projectId]/settings`) require a follow-up task for static-export-compatible implementation (e.g., client-side routing with query params).
+
+**Status changed:** `To Deploy` → `In Deployment`
