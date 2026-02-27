@@ -443,9 +443,12 @@ class SerpFeatureHistoryRepository
             ];
         }
 
-        // Sort by days_held DESC
+        // Sort by days_held DESC (oldest held_since = most days_held)
         usort($result, function ($a, $b) {
-            return $b['days_held'] <=> $a['days_held'];
+            // Compare held_since timestamps - older date = more days held
+            $aTime = $a['held_since']->timestamp;
+            $bTime = $b['held_since']->timestamp;
+            return $aTime <=> $bTime; // ASC by date = DESC by days_held
         });
 
         // Get keyword text for each result

@@ -29,8 +29,8 @@ class UpdateAnnotationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'date' => ['sometimes', 'required', 'date'],
-            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'date' => ['required', 'date'],
+            'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:65535'],
             'category' => ['nullable', 'string', 'max:50'],
         ];
