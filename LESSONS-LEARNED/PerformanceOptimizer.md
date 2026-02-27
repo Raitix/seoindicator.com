@@ -145,4 +145,34 @@ Ranking::whereIn('keyword_id', $ids)
 
 ---
 
-Last updated: 2026-02-26
+## 2026-02-27: Performance Audit
+
+### GA Metrics Improvement
+
+| Metric | 02-26 | 02-27 | Trend |
+|--------|-------|-------|-------|
+| Bounce Rate | 65.4% | 60.0% | ✅ Improved |
+| Homepage Bounce | 74.8% | 72.3% | ✅ Improved |
+| Engagement Rate | 34.6% | 40.0% | ✅ Improved |
+
+### Page Engagement Analysis
+
+| Page | Bounce | Duration | Assessment |
+|------|--------|----------|------------|
+| `/` | 72.3% | 95s | CRITICAL - Needs UX review |
+| `/seo-guides/*` | 65-75% | 1.5-2.3s | Poor - Content not engaging |
+| `/comparison/` | 60% | 278s | ✅ Excellent engagement |
+| `/competitors/` | 33% | 26s | ✅ Good |
+
+### Code Changes Detected
+
+**KeywordController::index() (lines 176-178):**
+- SERP feature filtering added (batched correctly ✅)
+- N+1 issue **STILL PRESENT** - `getLatestRankings()` called in map loop
+- Line numbers shifted due to new code
+
+**Task Status:** TASK-1-20 regressed from "In Development" to "To Develop"
+
+---
+
+Last updated: 2026-02-27
