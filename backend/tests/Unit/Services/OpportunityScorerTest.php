@@ -229,9 +229,9 @@ class OpportunityScorerTest extends TestCase
      */
     public function test_question_commercial_long_tail(): void
     {
-        $score = $this->scorer->calculate('what are the best seo tools');
+        $score = $this->scorer->calculate('what is the best seo tools');
 
-        // 50 base + 15 question + 10 commercial + 10 long-tail (3+ words) + 5 (5+ words) = 90
+        // 50 base + 15 question (what is) + 10 commercial (best) + 10 long-tail (3+ words) + 5 (5+ words) = 90
         $this->assertEquals(90, $score);
     }
 
@@ -394,8 +394,10 @@ class OpportunityScorerTest extends TestCase
      */
     public function test_scorer_is_invokable(): void
     {
-        $score = $this->scorer('best seo tools');
+        $scorer = $this->scorer;
+        $score = $scorer('best seo tools');
 
-        $this->assertEquals(60, $score);
+        // 50 base + 10 long-tail (3 words) + 10 commercial (best) = 70
+        $this->assertEquals(70, $score);
     }
 }

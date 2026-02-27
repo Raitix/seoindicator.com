@@ -20,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'log-deploy-auth' => \App\Http\Middleware\LogFailedDeployAuth::class,
             'project.context' => \App\Http\Middleware\SetProjectContext::class,
+            'api-key.auth' => \App\Http\Middleware\ApiKeyAuth::class,
+            'api-key.ratelimit' => \App\Http\Middleware\ApiKeyRateLimiter::class,
         ]);
 
         // Add SetProjectContext to web middleware group (session-based)

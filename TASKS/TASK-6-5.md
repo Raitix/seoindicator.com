@@ -1,7 +1,7 @@
 # TASK-6-5: Rate Limiter Middleware
 
 ## Status
-`To Test Locally`
+`Testing Locally`
 
 ## Priority
 `High`
