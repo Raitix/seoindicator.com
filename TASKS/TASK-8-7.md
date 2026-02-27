@@ -1,7 +1,7 @@
 # TASK-8-7: CRUD Endpoints for Projects
 
 ## STATUS
-`To Document`
+`Documentation in Progress`
 
 ## PRIORITY
 `High`
