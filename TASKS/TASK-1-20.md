@@ -125,7 +125,7 @@ Impact: With 500 keywords × 30 days history = 15,000 rows loaded unnecessarily.
 - `getSerpFeaturesByKeywords()` correctly batches SERP feature queries ✅
 - DashboardController: Same memory issue with cold cache
 
-**Task Status Changed:** `In Development` → `To Develop` (regression)
+**Task Status Changed:** `To Develop` → `To Develop` (regression)
 
 ### [2026-02-20 09:44] Agent: SpecSystemAnalyst
 Created task for performance optimization. Priority Low - polish after core functionality works.

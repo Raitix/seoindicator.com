@@ -55,20 +55,38 @@ class DocumentationConsistencyTest extends TestCase
     {
         $doc = File::get($this->docPath);
         
-        // Find audits section (case-insensitive search)
-        $pattern = '/audits.*?(?=###|\Z)/is';
+        // Find the Audits section header and capture until the next ## header
+        // This captures the full section including subsections (### headers)
+        $pattern = '/## Database Schema: SEO Site Audits.*?(?=^##\s|\Z)/ms';
         
         if (preg_match($pattern, $doc, $matches)) {
             $auditsSection = $matches[0];
             
+            // Verify site_id column is documented
             $this->assertStringContainsString('site_id', $auditsSection,
                 'Audits documentation should mention site_id column');
-            $this->assertStringNotContainsString('project_id', $auditsSection,
-                'Audits documentation should NOT use project_id - migrations use site_id');
+            
+            // Verify project_id is NOT used as a column (but mentioning it in explanatory text is OK)
+            // Check that there's no CREATE TABLE with project_id column
+            $this->assertDoesNotMatchRegularExpression(
+                '/CREATE TABLE audits[^;]*\bproject_id\b[^;]*;/is',
+                $auditsSection,
+                'Audits table should NOT have project_id column - migrations use site_id'
+            );
+            
+            // Also verify the FOREIGN KEY references sites.id, not projects.id
+            $this->assertMatchesRegularExpression(
+                '/FOREIGN KEY.*site_id.*REFERENCES sites/i',
+                $auditsSection,
+                'Audits foreign key should reference sites.id'
+            );
         } else {
-            // If no dedicated audits section, at least ensure site_id is mentioned in context
-            $this->assertStringContainsString('site_id', $doc,
-                'Documentation should mention site_id in context of audits');
+            // Fallback: check for CREATE TABLE audits with site_id
+            $this->assertMatchesRegularExpression(
+                '/CREATE TABLE audits[^;]*site_id[^;]*;/is',
+                $doc,
+                'Documentation should show site_id in audits table definition'
+            );
         }
     }
 
