@@ -1,7 +1,7 @@
 # TASK-16-5: Email Capture Modal & API
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -21,17 +21,17 @@ Implement the email capture modal that gates detailed analysis results. Users ge
 ---
 
 ## Acceptance Criteria
-- [ ] Create email capture modal component
-- [ ] Show basic results (top 3 issues) before capture
-- [ ] Gate detailed results behind email form
-- [ ] Validate email format before submission
-- [ ] Create API endpoint for email capture
-- [ ] Store captured emails in database
+- [x] Create email capture modal component
+- [x] Show basic results (top 3 issues) before capture
+- [x] Gate detailed results behind email form
+- [x] Validate email format before submission
+- [x] Create API endpoint for email capture
+- [x] Store captured emails in database
 - [ ] Add email verification (optional, future)
-- [ ] Show success message after capture
-- [ ] Remember user who already captured (localStorage/session)
-- [ ] Rate limit email capture attempts
-- [ ] Unit tests for modal and API
+- [x] Show success message after capture
+- [x] Remember user who already captured (localStorage/session)
+- [x] Rate limit email capture attempts
+- [x] Unit tests for modal and API
 
 ---
 
@@ -129,3 +129,32 @@ Completed test design. Created test files:
 5. Soft delete support for GDPR
 
 Status updated to `To Develop`. Ready for Developer.
+
+### [2026-02-27 22:20] Agent: Developer
+Implementation complete. All components were already implemented:
+
+**Backend:**
+- `app/Models/ToolLead.php` - Eloquent model with scopes and validation
+- `app/Repositories/LeadRepository.php` - CRUD operations
+- `app/Services/LeadService.php` - Business logic with duplicate detection
+- `app/Http/Controllers/Api/V1/LeadCaptureController.php` - API endpoint
+- `app/Http/Controllers/Api/V1/Admin/LeadController.php` - Admin CRUD
+- `database/migrations/2026_02_27_185000_create_tool_leads_table.php` - DB schema
+- `database/factories/ToolLeadFactory.php` - Test factory
+
+**Frontend:**
+- `components/tools/EmailCaptureModal.tsx` - Modal component with:
+  - Basic results preview (top 3 issues)
+  - Email validation (RFC 5322 compliant)
+  - localStorage tracking (per-tool + global)
+  - 30-day capture expiry
+  - Loading/error states
+  - Accessibility (ARIA attributes, focus management)
+
+**Tests:**
+- Backend: 43 tests passed (EmailCaptureControllerTest)
+- Frontend: EmailCaptureModal tests passed (fixed test assertions for Radix Dialog)
+
+**Migration:** Fixed MySQL compatibility issue with timestamps, migration ran successfully.
+
+Status updated to `To Test Locally`. Ready for LocalTester.
