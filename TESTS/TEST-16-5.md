@@ -6,6 +6,7 @@
 ## Related
 - Task: [TASK-16-5](../TASKS/TASK-16-5.md)
 - Feature: [FEAT-016](../FEATURES/FEAT-016.md)
+- Specification: [SPEC-016](../SPECIFICATIONS/SPEC-016.md)
 
 ---
 
@@ -20,7 +21,19 @@
 | Session Handling | 8 | 8 | ✅ |
 | Rate Limiting | 6 | 6 | ✅ |
 | Edge Cases | 10 | 10 | ✅ |
-| **Total** | **68** | **68** | ✅ |
+| Accessibility | 4 | 4 | ✅ |
+| Additional Validation | 5 | 5 | ✅ |
+| **Total** | **77** | **77** | ✅ |
+
+---
+
+## Test Files
+
+| File | Location | Tests | Status |
+|------|----------|-------|--------|
+| EmailCaptureModal.test.tsx | `frontend/__tests__/components/tools/` | 34 | ✅ Created |
+| EmailCaptureControllerTest.php | `backend/tests/Feature/Api/V1/Tools/` | 43 | ✅ Created |
+| ToolLeadFactory.php | `backend/database/factories/` | - | ✅ Created |
 
 ---
 
@@ -129,16 +142,155 @@
 | EC-009 | Missing tool | No tool param | Error |
 | EC-010 | Invalid tool | Unknown tool | Error |
 
+### Accessibility (A11Y)
+
+| ID | Scenario | Condition | Expected |
+|----|----------|-----------|----------|
+| A11Y-001 | ARIA attributes | Modal render | aria-modal="true" |
+| A11Y-002 | Email label | Input visible | Accessible label |
+| A11Y-003 | Error announcement | Validation error | role="alert" |
+| A11Y-004 | Focus trap | Modal open | Tab cycles within |
+
+### Additional Validation (VAL)
+
+| ID | Scenario | Input | Expected |
+|----|----------|-------|----------|
+| VAL-001 | Valid tools | meta-tag-analyzer, etc. | Accepted |
+| VAL-002 | Optional URL | No URL provided | Success |
+| VAL-003 | Long URL | 2083+ chars | Handled |
+| VAL-004 | Email lowercase | User@Example.COM | user@example.com |
+| VAL-005 | IPv6 address | 2001:db8::... | Stored correctly |
+
 ---
 
-## Test Files
+## API Specification
 
-| File | Location | Tests |
-|------|----------|-------|
-| EmailCaptureModal.test.tsx | `frontend/__tests__/components/tools/` | 34 |
-| EmailCaptureControllerTest.php | `backend/tests/Feature/Api/V1/Tools/` | 34 |
+### POST /api/v1/tools/capture-email
+
+**Request:**
+```json
+{
+  "email": "user@example.com",
+  "tool": "meta-tag-analyzer",
+  "url": "https://example.com"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "leadId": 123
+  }
+}
+```
+
+**Response (422 Validation Error):**
+```json
+{
+  "message": "The email field is required.",
+  "errors": {
+    "email": ["The email field is required."]
+  }
+}
+```
+
+**Response (429 Rate Limited):**
+```json
+{
+  "message": "Too many requests"
+}
+```
 
 ---
 
-## Completion Date
-2026-02-27
+## Database Schema
+
+```sql
+CREATE TABLE tool_leads (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    email VARCHAR(255) NOT NULL,
+    tool VARCHAR(50) NOT NULL,
+    url VARCHAR(2083),
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    INDEX idx_tool_leads_email (email),
+    INDEX idx_tool_leads_tool (tool),
+    INDEX idx_tool_leads_created_at (created_at)
+);
+```
+
+---
+
+## Rate Limiting Configuration
+
+```php
+// config/rate-limiting.php
+RateLimiter::for('email-capture', function (Request $request) {
+    return Limit::perHour(5)->by($request->ip());
+});
+```
+
+---
+
+## Frontend Component Props
+
+```typescript
+interface EmailCaptureModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (email: string) => void;
+  tool: 'meta-tag-analyzer' | 'keyword-density' | 'mobile-friendly' | 'social-preview';
+  url?: string;
+  basicResults: Array<{
+    type: 'warning' | 'info' | 'error';
+    message: string;
+  }>;
+}
+```
+
+---
+
+## Local Storage Keys
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `seoindicator_tools_captured` | `'true'` or JSON | Global capture flag |
+| `seoindicator_capture_date` | ISO date | Capture timestamp |
+| `seoindicator_capture_tool_*` | JSON | Per-tool capture status |
+
+---
+
+## Notes for Developer
+
+1. **Email Normalization:** Store emails in lowercase for consistent lookups
+2. **Rate Limiting:** 5 captures per IP per hour - use sliding window
+3. **Idempotency:** Same email + tool combination within 24h = no new record
+4. **GDPR:** Support soft delete for "right to be forgotten" requests
+5. **IPv6:** Store full IPv6 addresses (up to 45 chars)
+
+---
+
+## Comments
+
+### [2026-02-27 17:45] Agent: PreTester
+Created comprehensive test suite for TASK-16-5:
+- Frontend: 34 tests in EmailCaptureModal.test.tsx
+- Backend: 43 tests in EmailCaptureControllerTest.php
+- Factory: ToolLeadFactory with helper states
+
+Test coverage includes:
+- Modal visibility and interaction
+- Email validation (RFC 5322 compliance)
+- API endpoint CRUD operations
+- Lead storage with indexing
+- Session/localStorage handling
+- Rate limiting (5 per IP per hour)
+- Edge cases and security tests
+- Accessibility compliance
+
+Status: Tests Coverage In Progress
+Ready for Developer implementation.
