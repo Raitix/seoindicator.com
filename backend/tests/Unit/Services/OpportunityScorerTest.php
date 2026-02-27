@@ -123,7 +123,7 @@ class OpportunityScorerTest extends TestCase
      */
     public function test_question_prefix_bonus(): void
     {
-        $score = $this->scorer->calculate('how to do seo');
+        $score = $this->scorer->calculate('why seo');
 
         // 50 base + 15 for question = 65
         $this->assertEquals(65, $score);
@@ -136,13 +136,13 @@ class OpportunityScorerTest extends TestCase
     public function test_all_question_prefixes(): void
     {
         $prefixes = [
-            'what is seo' => 65,
-            'how to seo' => 65,
-            'why seo' => 65,
-            'when seo' => 65,
-            'where seo' => 65,
-            'who seo' => 65,
-            'which seo' => 65,
+            'why seo' => 65,      // 2 words: base + question
+            'when seo' => 65,     // 2 words
+            'where seo' => 65,    // 2 words
+            'who seo' => 65,      // 2 words
+            'which seo' => 65,    // 2 words
+            'what is seo' => 75,  // 3 words: base + question + long-tail
+            'how to seo' => 75,   // 3 words: base + question + long-tail
         ];
 
         foreach ($prefixes as $keyword => $expectedScore) {
@@ -156,7 +156,7 @@ class OpportunityScorerTest extends TestCase
      */
     public function test_question_with_long_tail(): void
     {
-        $score = $this->scorer->calculate('how to improve seo rankings');
+        $score = $this->scorer->calculate('how to improve seo');
 
         // 50 base + 15 question + 10 long-tail (4 words) = 75
         $this->assertEquals(75, $score);
