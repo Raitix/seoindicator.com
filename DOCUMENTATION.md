@@ -1,6 +1,148 @@
 # DOCUMENTATION.md
 
 ---
+## Production Routing Configuration (TASK-12-12)
+
+### Service Description
+Production server routing configuration for Laravel API endpoints on shared hosting (LiteSpeed). Documents the `.htaccess` rules required to properly route `/api/*` requests to the Laravel application.
+
+### Problem Solved
+Production API endpoints (`/api/health`, `/api/v1/*`) were returning 404 errors because the `.htaccess` routing was incorrectly stripping the `/api/` prefix before passing requests to Laravel.
+
+### Root Cause
+- **Incorrect Rule:** `RewriteRule ^api/(.*)$ backend/public/index.php [L,QSA]`
+- This captured everything AFTER `/api/` and passed to Laravel
+- Laravel's `api.php` routes already expect `/api/` prefix (configured in `bootstrap/app.php`)
+- Result: Request to `/api/health` became `/health` → 404
+
+### Solution
+Updated `.htaccess` to preserve full `REQUEST_URI`:
+
+```apache
+# API Routes - Route to Laravel with full URI preserved
+RewriteRule ^api/(.*)$ backend/public/index.php [L,QSA,E=REQUEST_URI:/%{REQUEST_URI}]
+```
+
+**Key Change:** The `E=REQUEST_URI:/%{REQUEST_URI}` flag ensures Laravel receives the full original request path including `/api/` prefix.
+
+### Production Environment
+- **Server:** LiteSpeed (shared hosting)
+- **Document Root:** `public_html/`
+- **Laravel Entry Point:** `backend/public/index.php`
+- **Production URL:** https://seoindicator.com
+
+### Verified Endpoints
+| Endpoint | Status | Description |
+|----------|--------|-------------|
+| `GET /api/health` | 200 OK | Health check endpoint |
+| `GET /api/v1/projects/{id}/gsc` | 401 | GSC data (auth required) |
+| `GET /api/v1/projects/{id}/gsc/opportunities` | 401 | Opportunity keywords (auth required) |
+
+### Security Notes
+- All protected endpoints return 401 Unauthorized (not 404) when routes are properly configured
+- Public health endpoint returns 200 with JSON status
+- No sensitive information exposed in error responses
+
+### Technical Implementation
+- File: `public_html/.htaccess` (production server)
+- Related: `backend/routes/api.php` (Laravel API routes)
+- Related: `backend/bootstrap/app.php` (route prefix configuration)
+
+### Deployment
+- **Fixed:** 2026-02-24 (commit in TASK-5-9)
+- **Deployed:** 2026-02-27 (via GitHub Actions)
+- **Verified:** 2026-02-27 (production testing passed)
+
+### Dependencies
+- Laravel routing configuration
+- LiteSpeed/Apache `.htaccess` support
+
+---
+## API Key Service (TASK-6-3)
+
+### Service Description
+Core security service for API key generation, hashing, and validation. Provides cryptographically secure API key management with timing-safe comparison for authentication.
+
+### Core Functionalities
+
+**ApiKeyService Class:**
+| Method | Description |
+|--------|-------------|
+| `generate(): array` | Generate new API key with hash and prefix |
+| `hash(string $key): string` | SHA-256 hash of key (64 lowercase hex chars) |
+| `validate(string $key, string $storedHash): bool` | Timing-safe key validation |
+| `getPrefix(string $key): string` | Extract first 20 chars for identification |
+| `isValidFormat(string $key): bool` | Validate key format (prefix + base64url body) |
+
+### Key Generation
+```php
+$result = $apiKeyService->generate();
+// Returns: ['key' => 'sk_live_...', 'hash' => '...', 'prefix' => 'sk_live_abc123...']
+```
+
+**Generation Process:**
+1. Generate 32 random bytes via `random_bytes()` (CSPRNG, 256-bit entropy)
+2. Encode as base64url (no padding)
+3. Prefix with `sk_live_`
+4. Hash with SHA-256 for storage
+5. Extract first 20 chars as prefix
+
+### Key Format
+```
+sk_live_<base64url_encoded_random_bytes>
+```
+- Prefix: `sk_live_` (9 chars)
+- Body: 43+ chars of base64url-encoded data
+- Total length: 52+ chars
+- Characters: `a-z`, `A-Z`, `0-9`, `-`, `_` (URL-safe)
+
+### Security Implementation
+| Security Measure | Implementation |
+|------------------|----------------|
+| CSPRNG | `random_bytes(32)` - 256 bits of entropy |
+| Hashing | SHA-256, 64 lowercase hex characters |
+| Timing-safe comparison | `hash_equals()` for validation |
+| No plaintext storage | Only hash stored in database |
+| Key shown once | Returned only on creation |
+
+### Validation Flow
+```php
+// 1. Client sends: Authorization: Bearer sk_live_...
+// 2. Server hashes key
+$hash = hash('sha256', $key);
+// 3. Timing-safe comparison with stored hash
+$valid = hash_equals($storedHash, $hash);
+```
+
+### Technical Implementation
+- Service: `backend/app/Services/ApiKeyService.php`
+- Test: `backend/tests/Unit/Services/ApiKeyServiceTest.php`
+- Dependencies: None (pure PHP implementation)
+
+### Test Coverage
+| Category | Tests | Assertions |
+|----------|-------|------------|
+| Key Generation (KG) | 14 | - |
+| Hash Method (HM) | 10 | - |
+| Validation (VL) | 13 | - |
+| Prefix Extraction (PX) | 6 | - |
+| Format Validation (FV) | 11 | - |
+| Security (SC) | 6 | - |
+| Edge Cases (EC) | 5 | - |
+| Integration (IT) | 6 | - |
+| **Total** | **66** | **110** |
+
+### Production Status
+- **Deployed**: 2026-02-27 (commit via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 66/66 passing (110 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-6-1 (API Keys table - pending)
+- TASK-6-2 (ApiKey model/repository - pending)
+
+---
 ## Team Management Service (TASK-11-3)
 
 ### Service Description
@@ -436,6 +578,124 @@ CREATE TABLE projects (
 - TASK-8-8: Frontend project components
 - TASK-8-9: Unit tests
 - TASK-8-10: Integration tests
+
+---
+## Project Context Middleware (TASK-8-4)
+
+### Service Description
+Middleware that injects the current project's context into the application at runtime. Ensures all subsequent queries and operations are scoped to the active project, enabling multi-site data isolation.
+
+### Core Functionalities
+
+**SetProjectContext Middleware:**
+| Method | Description |
+|--------|-------------|
+| `handle(Request, Closure)` | Extract project ID and bind project to app context |
+
+### Context Extraction
+The middleware extracts project ID from two sources (in order of precedence):
+
+1. **HTTP Header:** `X-Project-ID` (takes precedence)
+2. **Session:** `current_project_id`
+
+```php
+$projectId = $request->header('X-Project-ID') 
+             ?? session('current_project_id');
+```
+
+### Project Binding
+When a valid project ID is found:
+1. Fetches project from database where `user_id === auth()->id()`
+2. Binds project to application container: `app()->instance('current_project', $project)`
+3. Makes project available via `app('current_project')` throughout request lifecycle
+
+### Authorization Enforcement
+| Check | Behavior |
+|-------|----------|
+| User owns project | Project bound to context |
+| Cross-user project | Project not bound (silently ignored) |
+| Invalid project ID | Request continues without project context |
+| Unauthenticated | Request continues without project context |
+
+### Security Implementation
+| Measure | Implementation |
+|---------|----------------|
+| SQL Injection Prevention | `filter_var($projectId, FILTER_VALIDATE_INT)` |
+| IDOR Prevention | Ownership check: `user_id === auth()->id()` |
+| Graceful Failure | No exceptions thrown for invalid/missing IDs |
+
+### Middleware Registration
+Registered in `bootstrap/app.php` for both middleware groups:
+
+```php
+->web()
+    ->middleware([/* ... */, \App\Http\Middleware\SetProjectContext::class])
+->api()
+    ->middleware([/* ... */, \App\Http\Middleware\SetProjectContext::class])
+```
+
+**Alias:** `project.context` (for route-level usage)
+
+### Usage Examples
+
+**API Request with Header:**
+```http
+GET /api/v1/keywords HTTP/1.1
+Host: api.example.com
+Authorization: Bearer <token>
+X-Project-ID: 42
+```
+
+**Session-based Project:**
+```php
+// Set current project in session
+session(['current_project_id' => $project->id]);
+
+// Middleware automatically binds project
+app('current_project'); // Returns Project model or null
+```
+
+### Technical Implementation
+- Middleware: `backend/app/Http/Middleware/SetProjectContext.php`
+- Registration: `bootstrap/app.php`
+- Dependencies: `Project` model, `auth()` helper
+
+### Test Coverage
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `SetProjectContextTest.php` (Unit) | 33 | ✅ PASS |
+| `SetProjectContextIntegrationTest.php` | 10 | ✅ PASS |
+| `ProjectContextSecurityTest.php` | 18 | ✅ PASS |
+| **Total** | **61** | ✅ **ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Header Extraction (HE) | 6 | X-Project-ID header handling |
+| Session Extraction (SE) | 5 | Session-based project context |
+| Authorization (AU) | 8 | Cross-user access prevention |
+| Security (SC) | 12 | SQL injection, IDOR prevention |
+| Edge Cases (EC) | 10 | Invalid inputs, null handling |
+
+### Production Status
+- **Deployed**: 2026-02-26 (commit 718ebc6 via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 61/61 passing
+- **Status**: Complete
+
+### Skipped Tests (Dependencies)
+- Tests requiring `/api/test-endpoint` route (to be created)
+- Tests requiring `project_id` column on `keywords` table (TASK-8-2)
+- Tests requiring `/dashboard` route (frontend task)
+
+### Dependencies
+- TASK-8-1 (Projects Table)
+- Authentication middleware (existing)
+
+### Related Tasks
+- TASK-8-2: Add project_id to existing tables
+- TASK-8-5: ProjectScope global scope
+- TASK-8-6: ProjectPolicy authorization
 
 ---
 ## GSC Data Controller API (TASK-12-8)
