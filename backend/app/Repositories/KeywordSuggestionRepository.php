@@ -173,10 +173,13 @@ class KeywordSuggestionRepository
         $perPage = $params['perPage'] ?? 20;
         $source = $params['source'] ?? null;
         $excludeDismissed = $params['excludeDismissed'] ?? true;
+        $includeTracking = $params['includeTracking'] ?? false;
+        $minScore = $params['minScore'] ?? null;
+        $maxScore = $params['maxScore'] ?? null;
+        $sort = $params['sort'] ?? 'opportunity_score';
+        $order = $params['order'] ?? 'desc';
 
-        $query = KeywordSuggestion::bySite($siteId)
-            ->orderBy('opportunity_score', 'desc')
-            ->orderBy('discovered_at', 'desc');
+        $query = KeywordSuggestion::bySite($siteId);
 
         if ($source) {
             $query->bySource($source);
@@ -184,6 +187,30 @@ class KeywordSuggestionRepository
 
         if ($excludeDismissed) {
             $query->notDismissed();
+        }
+
+        // Exclude tracking suggestions by default (unless explicitly included)
+        if (!$includeTracking) {
+            $query->notTracking();
+        }
+
+        // Filter by min opportunity score
+        if ($minScore !== null) {
+            $query->where('opportunity_score', '>=', (int) $minScore);
+        }
+
+        // Filter by max opportunity score
+        if ($maxScore !== null) {
+            $query->where('opportunity_score', '<=', (int) $maxScore);
+        }
+
+        // Dynamic sorting
+        $orderDirection = strtolower($order) === 'asc' ? 'asc' : 'desc';
+        $query->orderBy($sort, $orderDirection);
+
+        // Secondary sort by discovered_at for consistent ordering
+        if ($sort !== 'discovered_at') {
+            $query->orderBy('discovered_at', 'desc');
         }
 
         return $query->paginate($perPage, ['*'], 'page', $page);
