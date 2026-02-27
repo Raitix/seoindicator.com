@@ -56,7 +56,21 @@ As an SEO professional, I want to receive instant notifications when my keyword 
 
 ## Related
 - Specification: [SPEC-002](../SPECIFICATIONS/SPEC-002.md)
-- Tasks: (To be created by Developer)
+- Tasks:
+  - [TASK-002-1](../TASKS/TASK-002-1.md) - alert_settings migration & model
+  - [TASK-002-2](../TASKS/TASK-002-2.md) - keyword_alert_settings migration & model
+  - [TASK-002-3](../TASKS/TASK-002-3.md) - notifications migration & model
+  - [TASK-002-4](../TASKS/TASK-002-4.md) - AlertEvaluator service
+  - [TASK-002-5](../TASKS/TASK-002-5.md) - NotificationDispatcher service
+  - [TASK-002-6](../TASKS/TASK-002-6.md) - Integrate into ranking update job
+  - [TASK-002-7](../TASKS/TASK-002-7.md) - AlertSettingsController API
+  - [TASK-002-8](../TASKS/TASK-002-8.md) - KeywordAlertSettingsController API
+  - [TASK-002-9](../TASKS/TASK-002-9.md) - NotificationController API
+  - [TASK-002-10](../TASKS/TASK-002-10.md) - RankingAlertEmail mailable
+  - [TASK-002-11](../TASKS/TASK-002-11.md) - Gmail SMTP configuration
+  - [TASK-002-12](../TASKS/TASK-002-12.md) - Alert Settings page (frontend)
+  - [TASK-002-13](../TASKS/TASK-002-13.md) - Notification Center (frontend)
+  - [TASK-002-14](../TASKS/TASK-002-14.md) - Notification bell in header
 - Depends on: FEAT-001 (Keyword Rank Tracking)
 
 ## Notes

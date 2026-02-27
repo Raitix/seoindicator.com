@@ -1,7 +1,7 @@
 # TASK-16-2: Meta Tag Analyzer Tool
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
