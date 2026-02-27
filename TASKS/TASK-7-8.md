@@ -1,7 +1,7 @@
 # TASK-7-8: Feature Change Tracker
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
