@@ -236,7 +236,7 @@ export async function fetchWithRetry(
       const response = await fetch(url, options);
       
       if (!response.ok) {
-        const error = new Error(`HTTP ${response.status}`) as Error & { status: number };
+        const error = new Error(`HTTP ${response.status}`) as Error & { status: number; code?: string };
         error.status = response.status;
         
         // Try to get error code from response
