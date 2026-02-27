@@ -169,7 +169,7 @@ function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
           <h4 className="text-sm font-medium text-slate-400 mb-2">Meta Description</h4>
           <p className="text-slate-300">{(description?.value as string) || 'No description found'}</p>
           {Boolean(description?.value) && (
-            <p className="text-xs text-slate-500 mt-1">{description.length as number} characters</p>
+            <p className="text-xs text-slate-500 mt-1">{description?.length as number} characters</p>
           )}
         </div>
 
