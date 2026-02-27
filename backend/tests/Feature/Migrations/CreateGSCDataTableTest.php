@@ -6,6 +6,7 @@ use Tests\TestCase;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use App\Models\GSCData;
+use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /**
@@ -20,6 +21,15 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 class CreateGSCDataTableTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected ?Project $project = null;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Create a project for tests that need project_id
+        $this->project = Project::factory()->create();
+    }
 
     /**
      * Test that the gsc_data table exists.
@@ -70,14 +80,13 @@ class CreateGSCDataTableTest extends TestCase
         // Check for query index
         $this->assertIndexExists($indexes, 'query');
 
-        // Check for data_date index
-        $this->assertIndexExists($indexes, 'data_date');
+        // Check for date index (named idx_date in migration)
+        $this->assertIndexExists($indexes, 'idx_date');
 
         // Check for composite indexes
         $this->assertIndexExists($indexes, 'idx_query_date');
         $this->assertIndexExists($indexes, 'idx_project_date');
         $this->assertIndexExists($indexes, 'idx_project_query');
-        $this->assertIndexExists($indexes, 'idx_date');
     }
 
     /**
@@ -86,7 +95,7 @@ class CreateGSCDataTableTest extends TestCase
     public function test_unique_constraint(): void
     {
         $duplicateData = [
-            'project_id' => 1,
+            'project_id' => $this->project->id,
             'query' => 'seo tools',
             'page' => '/blog/seo-tools',
             'clicks' => 100,
@@ -110,7 +119,7 @@ class CreateGSCDataTableTest extends TestCase
     public function test_page_nullable(): void
     {
         $data = [
-            'project_id' => 1,
+            'project_id' => $this->project->id,
             'query' => 'seo tools',
             'page' => null,
             'clicks' => 100,
@@ -132,7 +141,7 @@ class CreateGSCDataTableTest extends TestCase
     public function test_numeric_field_types(): void
     {
         $data = [
-            'project_id' => 1,
+            'project_id' => $this->project->id,
             'query' => 'test query',
             'page' => '/test',
             'clicks' => 123,
@@ -157,7 +166,7 @@ class CreateGSCDataTableTest extends TestCase
     public function test_data_date_storage(): void
     {
         $data = [
-            'project_id' => 1,
+            'project_id' => $this->project->id,
             'query' => 'date test',
             'page' => null,
             'clicks' => 50,
