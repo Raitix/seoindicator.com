@@ -259,7 +259,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_multiple_sources(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         // Question generator
         $this->mockQuestionGenerator
@@ -283,7 +283,9 @@ class SuggestionServiceTest extends TestCase
             ->times(4)
             ->andReturn(new KeywordSuggestion());
 
-        $count = $this->service->generateSuggestions($site->id, 'seo', ['question', 'suggest']);
+        Log::shouldReceive('info')->once();
+
+        $count = $this->service->generateSuggestions($siteId, 'seo', ['question', 'suggest']);
 
         $this->assertEquals(4, $count);
     }
@@ -293,7 +295,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_deduplicate_across_sources(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         // Both sources return same keyword
         $this->mockQuestionGenerator
@@ -314,7 +316,9 @@ class SuggestionServiceTest extends TestCase
             ->times(2)
             ->andReturn(new KeywordSuggestion());
 
-        $count = $this->service->generateSuggestions($site->id, 'seo', ['question', 'suggest']);
+        Log::shouldReceive('info')->once();
+
+        $count = $this->service->generateSuggestions($siteId, 'seo', ['question', 'suggest']);
 
         $this->assertEquals(2, $count); // Deduplicated
     }
@@ -329,7 +333,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_log_performance(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         $this->mockQuestionGenerator
             ->shouldReceive('generate')
@@ -345,15 +349,15 @@ class SuggestionServiceTest extends TestCase
 
         Log::shouldReceive('info')
             ->once()
-            ->withArgs(function ($message, $context) use ($site) {
+            ->withArgs(function ($message, $context) use ($siteId) {
                 return str_contains(strtolower($message), 'suggestions generated')
                     && isset($context['site_id'])
-                    && $context['site_id'] === $site->id
+                    && $context['site_id'] === $siteId
                     && isset($context['count'])
                     && isset($context['duration_ms']);
             });
 
-        $this->service->generateSuggestions($site->id, 'seo', ['question']);
+        $this->service->generateSuggestions($siteId, 'seo', ['question']);
         
         $this->assertTrue(true);
     }
@@ -368,7 +372,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_handle_fetcher_exception(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         // Question generator throws
         $this->mockQuestionGenerator
@@ -399,7 +403,7 @@ class SuggestionServiceTest extends TestCase
         Log::shouldReceive('info')
             ->once();
 
-        $count = $this->service->generateSuggestions($site->id, 'seo', ['question', 'suggest']);
+        $count = $this->service->generateSuggestions($siteId, 'seo', ['question', 'suggest']);
 
         $this->assertEquals(1, $count);
     }
@@ -410,7 +414,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_transaction_rollback(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         $this->mockQuestionGenerator
             ->shouldReceive('generate')
@@ -427,7 +431,10 @@ class SuggestionServiceTest extends TestCase
         Log::shouldReceive('error')
             ->once();
 
-        $count = $this->service->generateSuggestions($site->id, 'seo', ['question']);
+        Log::shouldReceive('info')
+            ->once();
+
+        $count = $this->service->generateSuggestions($siteId, 'seo', ['question']);
 
         $this->assertEquals(0, $count);
     }
@@ -441,7 +448,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_max_results_limits_output(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         $this->mockQuestionGenerator
             ->shouldReceive('generate')
@@ -457,8 +464,10 @@ class SuggestionServiceTest extends TestCase
             ->times(3)
             ->andReturn(new KeywordSuggestion());
 
+        Log::shouldReceive('info')->once();
+
         $count = $this->service->generateSuggestions(
-            $site->id,
+            $siteId,
             'seo',
             ['question'],
             maxResults: 3
@@ -476,7 +485,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_correct_source_label(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         $this->mockQuestionGenerator
             ->shouldReceive('generate')
@@ -501,7 +510,11 @@ class SuggestionServiceTest extends TestCase
             ->twice()
             ->andReturn(new KeywordSuggestion());
 
-        $this->service->generateSuggestions($site->id, 'seo', ['question', 'suggest']);
+        Log::shouldReceive('info')->once();
+
+        $this->service->generateSuggestions($siteId, 'seo', ['question', 'suggest']);
+        
+        $this->assertTrue(true);
     }
 
     // =========================================================================
@@ -514,7 +527,7 @@ class SuggestionServiceTest extends TestCase
     public function test_integration_with_real_dependencies(): void
     {
         // This test uses real dependencies but mocks external services
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         $realQuestionGenerator = new \App\Services\Fetchers\QuestionGenerator();
         $realOpportunityScorer = new \App\Services\OpportunityScorer();
@@ -539,7 +552,7 @@ class SuggestionServiceTest extends TestCase
 
         Log::shouldReceive('info')->once();
 
-        $count = $service->generateSuggestions($site->id, 'seo', ['question', 'suggest']);
+        $count = $service->generateSuggestions($siteId, 'seo', ['question', 'suggest']);
 
         $this->assertEquals(9, $count);
     }
