@@ -1,7 +1,7 @@
 # TASK-5-9: Track/Dismiss Endpoints
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -13,18 +13,18 @@
 Create API endpoints for adding suggestions to tracking and dismissing suggestions the user doesn't want.
 
 ## Acceptance Criteria
-- [ ] POST /api/v1/sites/:siteId/suggestions/:suggestionId/track - Add single suggestion to tracking
-- [ ] Creates keyword record in keywords table (FEAT-001)
-- [ ] Updates suggestion.is_tracking = true
-- [ ] Returns 201 with { keyword, suggestion }
-- [ ] POST /api/v1/sites/:siteId/suggestions/bulk-track - Add multiple suggestions
-- [ ] Request body: { suggestionIds: array }
-- [ ] Returns 201 with { added: array, skipped: array }
-- [ ] POST /api/v1/sites/:siteId/suggestions/:suggestionId/dismiss - Dismiss suggestion
-- [ ] Updates suggestion.is_dismissed = true
-- [ ] Adds record to dismissed_suggestions table
-- [ ] Returns 200 with updated suggestion
-- [ ] Authorization: user must own the site
+- [x] POST /api/v1/sites/:siteId/suggestions/:suggestionId/track - Add single suggestion to tracking
+- [x] Creates keyword record in keywords table (FEAT-001)
+- [x] Updates suggestion.is_tracking = true
+- [x] Returns 201 with { keyword, suggestion }
+- [x] POST /api/v1/sites/:siteId/suggestions/bulk-track - Add multiple suggestions
+- [x] Request body: { suggestionIds: array }
+- [x] Returns 201 with { added: array, skipped: array }
+- [x] POST /api/v1/sites/:siteId/suggestions/:suggestionId/dismiss - Dismiss suggestion
+- [x] Updates suggestion.is_dismissed = true
+- [x] Adds record to dismissed_suggestions table
+- [x] Returns 200 with updated suggestion
+- [x] Authorization: user must own the site
 
 ## Dependencies
 - TASK-5-1 (Database schema)
@@ -43,6 +43,24 @@ Create API endpoints for adding suggestions to tracking and dismissing suggestio
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-27 17:15] Agent: Developer
+**Implementation Complete**
+
+All three endpoints were already implemented in `SuggestionController.php`:
+- `track()` - Single suggestion tracking ✓
+- `bulkTrack()` - Bulk tracking with added/skipped arrays ✓
+- `dismiss()` - Dismiss suggestion ✓
+
+**Fix Applied:**
+- Updated `dismiss()` method to insert record into `dismissed_suggestions` table per acceptance criteria
+- Uses idempotent insert (checks existence before inserting)
+
+**Test Results:**
+- All 80 tests pass (192 assertions)
+- Test file: `backend/tests/Feature/Api/V1/SuggestionControllerTest.php`
+
+Status: In Development → To Test Locally
 
 ### [2026-02-27 16:35] Agent: PreTester
 **Test Design Complete**
