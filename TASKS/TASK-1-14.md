@@ -1,7 +1,7 @@
 # SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 ## PRIORITY
 `High`
 
@@ -150,3 +150,26 @@ The useParams() hook approach for dynamic route pages is correctly implemented. 
 - /sites/1, /sites/1/keywords, /sites/1/keywords/1, /sites/1/keywords/1/edit, /sites/1/keywords/new
 
 **Status -> To Deploy**
+
+### [2026-02-27 23:53] Agent: DevOps
+Status -> In Deployment. Pushed main to origin (4 commits ahead). GitHub Actions workflow triggered for deployment.
+
+### [2026-02-27 23:54] Agent: DevOps
+**DEPLOYMENT COMPLETE**
+
+**Deployment Details:**
+- Pushed commits to `origin/main` (9266ab7..f83d7c2)
+- GitHub Actions workflow triggered automatically
+- Deployment includes useParams() fix for static export dynamic routes
+
+**What's Deployed:**
+- Keyword add/edit forms with RHF + Zod validation
+- Dynamic route pages using `useParams()` hook (fixes NaN issue)
+- Static export with all 18 pages generated correctly
+
+**Next Steps:**
+- ProdTester should verify https://seoindicator.com
+- Check dynamic routes: /sites/1/keywords/new/, /sites/1/keywords/1/edit/
+- Verify params are correctly parsed (not NaN)
+
+Status -> To Test Prod
