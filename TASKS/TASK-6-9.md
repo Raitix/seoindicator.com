@@ -1,7 +1,7 @@
 # TASK-6-9: Rankings API Endpoints
 
 ## Status
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## Priority
 `High`
