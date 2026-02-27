@@ -1,7 +1,7 @@
 # TASK-6-3: API Key Generation and Validation
 
 ## Status
-`To Write Tests`
+`To Develop`
 
 ## Priority
 `High`
@@ -62,3 +62,23 @@ Medium (2-4 hours)
 - Priority: High (core security feature)
 - Risk: Medium (security-sensitive)
 - Depends on TASK-6-2
+
+### [2026-02-27 13:58] PreTester: Test Documentation Created
+- Created `tests/TASK-6-3.md` with comprehensive test scenarios
+- Created `backend/tests/Unit/Services/ApiKeyServiceTest.php` with 80+ test cases
+- Test coverage includes:
+  - Key generation (15 tests): format, prefix, hash, entropy, uniqueness
+  - Hash method (10 tests): SHA-256 output, determinism, edge cases
+  - Validation (15 tests): correct/incorrect keys, timing-safe comparison
+  - Prefix extraction (6 tests): length, edge cases
+  - Format validation (10 tests): prefix check, base64url chars
+  - Security (5 tests): timing attack prevention, entropy verification, CSPRNG
+  - Edge cases (4 tests): rapid generation, long inputs
+  - Integration (6 tests): full cycles, storage simulation
+- Key security notes for Developer:
+  - Use `random_bytes()` for CSPRNG (never `rand()` or `mt_rand()`)
+  - Use `hash_equals()` for timing-safe validation
+  - Key format: `sk_live_` + base64url (no padding)
+  - Hash: SHA-256, 64 lowercase hex chars
+  - Prefix: first 20 chars for identification
+- Status: To Develop
