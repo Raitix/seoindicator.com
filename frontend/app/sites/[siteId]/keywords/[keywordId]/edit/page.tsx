@@ -1,16 +1,10 @@
+"use client";
+
+import { useParams } from "next/navigation";
 import KeywordEditForm from "@/components/keywords/KeywordEditForm";
 
-interface PageProps {
-  params: { siteId: string; keywordId: string };
-}
-
-export const dynamicParams = false;
-
-export async function generateStaticParams(): Promise<Array<{ siteId: string; keywordId: string }>> {
-  return [{ siteId: "1", keywordId: "1" }];
-}
-
-export default function EditKeywordPage({ params }: PageProps) {
+export default function EditKeywordPage() {
+  const params = useParams();
   const siteId = Number(params.siteId);
   const keywordId = Number(params.keywordId);
 
