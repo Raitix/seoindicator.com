@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * KeywordSuggestion model for keyword discovery feature.
  *
- * Stores suggested keywords from various sources (Google Suggest, Questions, etc.)
- * with opportunity scores to help users prioritize which keywords to track.
+ * Represents a keyword suggestion discovered from various sources
+ * (Google Suggest, competitor analysis, related searches).
  *
  * @property int $id
  * @property int $site_id
@@ -21,15 +22,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $opportunity_score
  * @property bool $is_tracking
  * @property bool $is_dismissed
- * @property \Illuminate\Support\Carbon $discovered_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property \Illuminate\Support\Carbon|null $discovered_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  *
- * @see TASK-5-2
- * @see SPEC-005
+ * @property-read \App\Models\Site $site
+ * @property-read string $tracking_status
  */
 class KeywordSuggestion extends Model
 {
     use HasFactory;
+
+    public const SOURCES = ['suggest', 'competitor', 'related'];
+
+    /**
+     * The model's default attribute values.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_tracking' => false,
+        'is_dismissed' => false,
+    ];
 
     /**
      * The attributes that are mass assignable.
@@ -55,37 +68,31 @@ class KeywordSuggestion extends Model
     protected $casts = [
         'is_tracking' => 'boolean',
         'is_dismissed' => 'boolean',
-        'discovered_at' => 'datetime',
         'search_volume' => 'integer',
         'difficulty_score' => 'integer',
         'opportunity_score' => 'integer',
+        'discovered_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /**
-     * The model's default values for attributes.
+     * The name of the "created at" column.
      *
-     * @var array
+     * @var string|null
      */
-    protected $attributes = [
-        'is_tracking' => false,
-        'is_dismissed' => false,
-    ];
+    const CREATED_AT = null;
 
     /**
-     * The "booted" method of the model.
+     * Set default discovered_at on model creation.
      */
     protected static function booted(): void
     {
-        static::creating(function (KeywordSuggestion $suggestion) {
-            if ($suggestion->discovered_at === null) {
+        static::creating(function (self $suggestion) {
+            if (!$suggestion->discovered_at) {
                 $suggestion->discovered_at = now();
             }
         });
     }
-
-    // =========================================================================
-    // RELATIONSHIPS
-    // =========================================================================
 
     /**
      * Get the site that owns this suggestion.
@@ -95,74 +102,8 @@ class KeywordSuggestion extends Model
         return $this->belongsTo(Site::class);
     }
 
-    // =========================================================================
-    // SCOPES
-    // =========================================================================
-
     /**
-     * Scope to filter by site.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $siteId
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeBySite($query, int $siteId)
-    {
-        return $query->where('site_id', $siteId);
-    }
-
-    /**
-     * Scope to filter by source.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $source
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeBySource($query, string $source)
-    {
-        return $query->where('source', $source);
-    }
-
-    /**
-     * Scope to exclude dismissed suggestions.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeNotDismissed($query)
-    {
-        return $query->where('is_dismissed', false);
-    }
-
-    /**
-     * Scope to exclude tracking suggestions.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeNotTracking($query)
-    {
-        return $query->where('is_tracking', false);
-    }
-
-    /**
-     * Scope to filter by minimum opportunity score.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $minScore
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeHighOpportunity($query, int $minScore = 70)
-    {
-        return $query->where('opportunity_score', '>=', $minScore);
-    }
-
-    // =========================================================================
-    // ACCESSORS
-    // =========================================================================
-
-    /**
-     * Get the tracking status of the suggestion.
+     * Get the tracking status based on suggestion state.
      *
      * @return string 'tracking', 'dismissed', or 'available'
      */
@@ -177,5 +118,51 @@ class KeywordSuggestion extends Model
         }
 
         return 'available';
+    }
+
+    // =========================================================================
+    // QUERY SCOPES
+    // =========================================================================
+
+    /**
+     * Scope suggestions by site.
+     */
+    public function scopeBySite(Builder $query, int $siteId): Builder
+    {
+        return $query->where('site_id', $siteId);
+    }
+
+    /**
+     * Scope suggestions by source.
+     */
+    public function scopeBySource(Builder $query, string $source): Builder
+    {
+        return $query->where('source', $source);
+    }
+
+    /**
+     * Scope suggestions that are not dismissed.
+     */
+    public function scopeNotDismissed(Builder $query): Builder
+    {
+        return $query->where('is_dismissed', false);
+    }
+
+    /**
+     * Scope suggestions that are not being tracked.
+     */
+    public function scopeNotTracking(Builder $query): Builder
+    {
+        return $query->where('is_tracking', false);
+    }
+
+    /**
+     * Scope suggestions with high opportunity score.
+     *
+     * @param int $minScore Minimum opportunity score (default: 70)
+     */
+    public function scopeHighOpportunity(Builder $query, int $minScore = 70): Builder
+    {
+        return $query->where('opportunity_score', '>=', $minScore);
     }
 }

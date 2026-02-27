@@ -4,28 +4,21 @@ namespace App\Repositories;
 
 use App\Models\KeywordSuggestion;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Repository for KeywordSuggestion model operations.
+ * Repository for KeywordSuggestion model.
  *
- * Handles CRUD operations, queries, and state changes for keyword suggestions.
+ * Provides data access layer for keyword discovery feature.
  *
  * @see TASK-5-2
  * @see SPEC-005
  */
 class KeywordSuggestionRepository
 {
-    // =========================================================================
-    // FIND OPERATIONS
-    // =========================================================================
-
     /**
      * Find a suggestion by ID.
-     *
-     * @param int $id
-     * @return KeywordSuggestion|null
      */
     public function find(int $id): ?KeywordSuggestion
     {
@@ -33,66 +26,9 @@ class KeywordSuggestionRepository
     }
 
     /**
-     * Find a suggestion by keyword for a specific site.
-     *
-     * @param int $siteId
-     * @param string $keyword
-     * @return KeywordSuggestion|null
-     */
-    public function findByKeyword(int $siteId, string $keyword): ?KeywordSuggestion
-    {
-        return KeywordSuggestion::where('site_id', $siteId)
-            ->where('keyword', $keyword)
-            ->first();
-    }
-
-    /**
-     * Find all suggestions for a site.
-     *
-     * @param int $siteId
-     * @return Collection
-     */
-    public function findBySite(int $siteId): Collection
-    {
-        return KeywordSuggestion::bySite($siteId)->get();
-    }
-
-    /**
-     * Find dismissed suggestions for a site.
-     *
-     * @param int $siteId
-     * @return Collection
-     */
-    public function findDismissed(int $siteId): Collection
-    {
-        return KeywordSuggestion::bySite($siteId)
-            ->where('is_dismissed', true)
-            ->get();
-    }
-
-    /**
-     * Get suggestions by source.
-     *
-     * @param int $siteId
-     * @param string $source
-     * @return Collection
-     */
-    public function getBySource(int $siteId, string $source): Collection
-    {
-        return KeywordSuggestion::bySite($siteId)
-            ->bySource($source)
-            ->get();
-    }
-
-    // =========================================================================
-    // CREATE OPERATIONS
-    // =========================================================================
-
-    /**
      * Create a new suggestion.
      *
-     * @param array $data
-     * @return KeywordSuggestion
+     * @param array<string, mixed> $data
      */
     public function create(array $data): KeywordSuggestion
     {
@@ -100,185 +36,218 @@ class KeywordSuggestionRepository
     }
 
     /**
-     * Bulk create suggestions.
-     *
-     * @param array $suggestions Array of suggestion data arrays
-     * @return int Number of created suggestions
-     */
-    public function bulkCreate(array $suggestions): int
-    {
-        $count = 0;
-        foreach ($suggestions as $data) {
-            KeywordSuggestion::create($data);
-            $count++;
-        }
-        return $count;
-    }
-
-    /**
-     * Create or update a suggestion (upsert).
-     *
-     * @param array $data Must include site_id and keyword
-     * @return KeywordSuggestion
-     */
-    public function upsertOrCreate(array $data): KeywordSuggestion
-    {
-        $existing = $this->findByKeyword($data['site_id'], $data['keyword']);
-
-        if ($existing) {
-            // Update existing, reset is_dismissed on rediscovery
-            $existing->update(array_merge($data, ['is_dismissed' => false]));
-            $existing->wasRecentlyCreated = false;
-            return $existing;
-        }
-
-        $suggestion = KeywordSuggestion::create($data);
-        $suggestion->wasRecentlyCreated = true;
-        return $suggestion;
-    }
-
-    // =========================================================================
-    // UPDATE OPERATIONS
-    // =========================================================================
-
-    /**
      * Update a suggestion.
      *
-     * @param int $id
-     * @param array $data
-     * @return bool
+     * @param array<string, mixed> $data
      */
     public function update(int $id, array $data): bool
     {
-        $suggestion = $this->find($id);
+        $suggestion = KeywordSuggestion::find($id);
+
         if (!$suggestion) {
             return false;
         }
+
         return $suggestion->update($data);
     }
 
     /**
-     * Mark a suggestion as tracking.
+     * Delete a suggestion.
+     */
+    public function delete(int $id): bool
+    {
+        $suggestion = KeywordSuggestion::find($id);
+
+        if (!$suggestion) {
+            return false;
+        }
+
+        return KeywordSuggestion::where('id', $id)->delete() > 0;
+    }
+
+    /**
+     * Find all suggestions for a site.
      *
-     * @param int $id
-     * @return bool
+     * @return Collection<int, KeywordSuggestion>
+     */
+    public function findBySite(int $siteId): Collection
+    {
+        return KeywordSuggestion::bySite($siteId)
+            ->orderBy('opportunity_score', 'desc')
+            ->orderBy('discovered_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Find dismissed suggestions for a site.
+     *
+     * @return Collection<int, KeywordSuggestion>
+     */
+    public function findDismissed(int $siteId): Collection
+    {
+        return KeywordSuggestion::bySite($siteId)
+            ->where('is_dismissed', true)
+            ->orderBy('discovered_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Mark a suggestion as tracking.
      */
     public function markAsTracking(int $id): bool
     {
-        return $this->update($id, ['is_tracking' => true]);
+        $suggestion = KeywordSuggestion::find($id);
+
+        if (!$suggestion) {
+            return false;
+        }
+
+        return $suggestion->update(['is_tracking' => true]);
     }
 
     /**
      * Dismiss a suggestion.
-     *
-     * @param int $id
-     * @return bool
      */
     public function dismiss(int $id): bool
     {
-        return $this->update($id, ['is_dismissed' => true]);
-    }
+        $suggestion = KeywordSuggestion::find($id);
 
-    // =========================================================================
-    // DELETE OPERATIONS
-    // =========================================================================
-
-    /**
-     * Delete a suggestion.
-     *
-     * @param int $id
-     * @return bool
-     */
-    public function delete(int $id): bool
-    {
-        $suggestion = $this->find($id);
         if (!$suggestion) {
             return false;
         }
-        return $suggestion->delete();
+
+        return $suggestion->update(['is_dismissed' => true]);
     }
 
-    // =========================================================================
-    // QUERY OPERATIONS
-    // =========================================================================
+    /**
+     * Find a suggestion by keyword for a specific site.
+     */
+    public function findByKeyword(int $siteId, string $keyword): ?KeywordSuggestion
+    {
+        return KeywordSuggestion::bySite($siteId)
+            ->where('keyword', $keyword)
+            ->first();
+    }
 
     /**
-     * Check if a suggestion exists for a site/keyword.
+     * Bulk create suggestions.
      *
-     * @param int $siteId
-     * @param string $keyword
-     * @return bool
+     * @param array<int, array<string, mixed>> $suggestions
+     * @return int Number of suggestions created
+     */
+    public function bulkCreate(array $suggestions): int
+    {
+        $count = 0;
+        $now = now();
+
+        foreach ($suggestions as $suggestion) {
+            $suggestion['discovered_at'] = $suggestion['discovered_at'] ?? $now;
+            $suggestion['is_tracking'] = $suggestion['is_tracking'] ?? false;
+            $suggestion['is_dismissed'] = $suggestion['is_dismissed'] ?? false;
+
+            KeywordSuggestion::create($suggestion);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Check if a suggestion exists for a site and keyword.
      */
     public function exists(int $siteId, string $keyword): bool
     {
-        return KeywordSuggestion::where('site_id', $siteId)
+        return KeywordSuggestion::bySite($siteId)
             ->where('keyword', $keyword)
             ->exists();
     }
 
     /**
-     * Count suggestions for a site.
+     * Get paginated suggestions for a site.
      *
-     * @param int $siteId
-     * @param bool $excludeDismissed
-     * @return int
+     * @param array<string, mixed> $params
      */
-    public function countBySite(int $siteId, bool $excludeDismissed = false): int
+    public function getPaginated(int $siteId, array $params = []): LengthAwarePaginator
     {
-        $query = KeywordSuggestion::where('site_id', $siteId);
+        $page = $params['page'] ?? 1;
+        $perPage = $params['perPage'] ?? 20;
+        $source = $params['source'] ?? null;
+        $excludeDismissed = $params['excludeDismissed'] ?? true;
+
+        $query = KeywordSuggestion::bySite($siteId)
+            ->orderBy('opportunity_score', 'desc')
+            ->orderBy('discovered_at', 'desc');
+
+        if ($source) {
+            $query->bySource($source);
+        }
 
         if ($excludeDismissed) {
-            $query->where('is_dismissed', false);
+            $query->notDismissed();
+        }
+
+        return $query->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    /**
+     * Get suggestions by source for a site.
+     *
+     * @return Collection<int, KeywordSuggestion>
+     */
+    public function getBySource(int $siteId, string $source): Collection
+    {
+        return KeywordSuggestion::bySite($siteId)
+            ->bySource($source)
+            ->orderBy('opportunity_score', 'desc')
+            ->orderBy('discovered_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Count suggestions for a site.
+     *
+     * @param bool $excludeDismissed Whether to exclude dismissed suggestions (default: true)
+     */
+    public function countBySite(int $siteId, bool $excludeDismissed = true): int
+    {
+        $query = KeywordSuggestion::bySite($siteId);
+
+        if ($excludeDismissed) {
+            $query->notDismissed();
         }
 
         return $query->count();
     }
 
     /**
-     * Get paginated suggestions with optional filters.
+     * Create or update a suggestion.
      *
-     * @param int $siteId
-     * @param array $filters
-     * @return LengthAwarePaginator
+     * If the suggestion exists (by site_id + keyword), it will be updated
+     * and is_dismissed will be reset to false (rediscovery).
+     *
+     * @param array<string, mixed> $data
      */
-    public function getPaginated(int $siteId, array $filters = []): LengthAwarePaginator
+    public function upsertOrCreate(array $data): KeywordSuggestion
     {
-        $page = $filters['page'] ?? 1;
-        $perPage = $filters['perPage'] ?? 20;
+        $siteId = $data['site_id'];
+        $keyword = $data['keyword'];
 
-        $query = KeywordSuggestion::where('site_id', $siteId)
-            ->orderBy('opportunity_score', 'desc');
+        $existing = $this->findByKeyword($siteId, $keyword);
 
-        // Filter by source
-        if (!empty($filters['source'])) {
-            $query->where('source', $filters['source']);
+        if ($existing) {
+            // Update existing - reset dismissed status on rediscovery
+            $existing->update([
+                'source' => $data['source'] ?? $existing->source,
+                'search_volume' => $data['search_volume'] ?? $existing->search_volume,
+                'difficulty_score' => $data['difficulty_score'] ?? $existing->difficulty_score,
+                'opportunity_score' => $data['opportunity_score'] ?? $existing->opportunity_score,
+                'is_dismissed' => false, // Reset dismissed on rediscovery
+            ]);
+
+            return $existing;
         }
 
-        // Exclude dismissed by default
-        $excludeDismissed = $filters['excludeDismissed'] ?? true;
-        if ($excludeDismissed) {
-            $query->where('is_dismissed', false);
-        }
-
-        // Exclude tracking by default
-        $includeTracking = $filters['includeTracking'] ?? false;
-        if (!$includeTracking) {
-            $query->where('is_tracking', false);
-        }
-
-        // Min/max score filters
-        if (isset($filters['minScore'])) {
-            $query->where('opportunity_score', '>=', $filters['minScore']);
-        }
-        if (isset($filters['maxScore'])) {
-            $query->where('opportunity_score', '<=', $filters['maxScore']);
-        }
-
-        // Sorting
-        $sort = $filters['sort'] ?? 'opportunity_score';
-        $order = $filters['order'] ?? 'desc';
-        $query->orderBy($sort, $order);
-
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        // Create new
+        return KeywordSuggestion::create($data);
     }
 }

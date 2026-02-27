@@ -290,7 +290,7 @@ class QuestionGeneratorTest extends TestCase
      */
     public function test_generator_is_invokable(): void
     {
-        $questions = $this->generator('seo');
+        $questions = ($this->generator)('seo');
 
         $this->assertCount(7, $questions);
     }

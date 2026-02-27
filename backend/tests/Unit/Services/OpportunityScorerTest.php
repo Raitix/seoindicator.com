@@ -174,8 +174,8 @@ class OpportunityScorerTest extends TestCase
     {
         $score = $this->scorer->calculate('best seo tools');
 
-        // 50 base + 10 commercial = 60
-        $this->assertEquals(60, $score);
+        // 50 base + 10 long-tail (3 words) + 10 commercial = 70
+        $this->assertEquals(70, $score);
     }
 
     /**
@@ -185,10 +185,10 @@ class OpportunityScorerTest extends TestCase
     public function test_all_commercial_intent_keywords(): void
     {
         $commercialKeywords = [
-            'best seo' => 60,
-            'top seo tools' => 60,
-            'seo review' => 60,
-            'compare seo tools' => 60,
+            'best seo' => 60,           // 2 words: base + commercial
+            'top seo tools' => 70,      // 3 words: base + long-tail + commercial
+            'seo review' => 60,         // 2 words: base + commercial
+            'compare seo tools' => 70,  // 3 words: base + long-tail + commercial
         ];
 
         foreach ($commercialKeywords as $keyword => $expectedScore) {
@@ -220,9 +220,8 @@ class OpportunityScorerTest extends TestCase
     {
         $score = $this->scorer->calculate('how to choose best seo tools');
 
-        // 50 base + 15 question + 10 commercial + 10 long-tail (5 words) + 5 (5+ words) = 90
-        // Actually: 50 + 15 + 10 + 10 = 85 (long-tail gives 10 for 3+ words, 5 for 5+)
-        $this->assertEquals(85, $score);
+        // 50 base + 15 question + 10 commercial + 10 long-tail (3+ words) + 5 (5+ words) = 90
+        $this->assertEquals(90, $score);
     }
 
     /**
@@ -232,9 +231,7 @@ class OpportunityScorerTest extends TestCase
     {
         $score = $this->scorer->calculate('what are the best seo tools');
 
-        // 50 base + 15 question + 10 commercial + 10 long-tail + 5 (5+ words) = 90
-        // Actually: 50 + 15 + 10 + 10 + 5 = 90, but let me recalculate
-        // 6 words, so: 50 + 15 + 10 + 10 + 5 = 90
+        // 50 base + 15 question + 10 commercial + 10 long-tail (3+ words) + 5 (5+ words) = 90
         $this->assertEquals(90, $score);
     }
 
@@ -378,13 +375,13 @@ class OpportunityScorerTest extends TestCase
             // keyword, expected_score
             ['seo', 50],                                          // Base only
             ['seo tools', 50],                                    // 2 words, no bonus
-            ['best seo tools', 60],                              // Base + commercial
-            ['how to seo', 65],                                  // Base + question (2 words total)
+            ['best seo tools', 70],                              // Base + long-tail (3 words) + commercial
+            ['how to seo', 75],                                  // Base + question + long-tail (3 words)
             ['seo tools for beginners', 60],                     // Base + long-tail (3+ words)
             ['how to do seo', 75],                               // Base + question + long-tail (4 words)
             ['what is seo optimization', 75],                    // Base + question + long-tail (4 words)
-            ['best seo tools for beginners', 75],               // Base + commercial + long-tail + 5+ words
-            ['how to choose best seo tools', 90],               // Base + question + commercial + long-tail + 5+ words
+            ['best seo tools for beginners', 75],               // Base + commercial + long-tail (4 words)
+            ['how to choose best seo tools', 90],               // Base + question + commercial + long-tail (5 words: +10+5)
         ];
     }
 

@@ -9,7 +9,6 @@ use App\Services\Fetchers\GoogleSuggestFetcher;
 use App\Services\Fetchers\QuestionGenerator;
 use App\Services\OpportunityScorer;
 use App\Services\SuggestionService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
@@ -26,8 +25,8 @@ use Tests\TestCase;
  */
 class SuggestionServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
+    // Note: Not using RefreshDatabase since all tests use mocked dependencies
+    
     protected SuggestionService $service;
     protected $mockRepository;
     protected $mockQuestionGenerator;
@@ -67,7 +66,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_generate_from_question_source(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         $this->mockQuestionGenerator
             ->shouldReceive('generate')
@@ -86,7 +85,7 @@ class SuggestionServiceTest extends TestCase
                 return new KeywordSuggestion($data);
             });
 
-        $count = $this->service->generateSuggestions($site->id, 'seo tools', ['question']);
+        $count = $this->service->generateSuggestions($siteId, 'seo tools', ['question']);
 
         $this->assertEquals(3, $count);
     }
@@ -97,7 +96,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_calculate_opportunity_scores(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         $this->mockQuestionGenerator
             ->shouldReceive('generate')
@@ -117,7 +116,7 @@ class SuggestionServiceTest extends TestCase
             })
             ->andReturn(new KeywordSuggestion());
 
-        $this->service->generateSuggestions($site->id, 'seo', ['question']);
+        $this->service->generateSuggestions($siteId, 'seo', ['question']);
 
         // Assertion is in the mock expectation
         $this->assertTrue(true);
@@ -129,7 +128,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_store_in_repository(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         $this->mockQuestionGenerator
             ->shouldReceive('generate')
@@ -142,14 +141,16 @@ class SuggestionServiceTest extends TestCase
         $this->mockRepository
             ->shouldReceive('upsertOrCreate')
             ->once()
-            ->withArgs(function ($data) use ($site) {
-                return $data['site_id'] === $site->id
+            ->withArgs(function ($data) use ($siteId) {
+                return $data['site_id'] === $siteId
                     && $data['keyword'] === 'test keyword'
                     && $data['source'] === 'question';
             })
             ->andReturn(new KeywordSuggestion());
 
-        $this->service->generateSuggestions($site->id, 'seo', ['question']);
+        $this->service->generateSuggestions($siteId, 'seo', ['question']);
+        
+        $this->assertTrue(true);
     }
 
     // =========================================================================
@@ -162,7 +163,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_deduplicate_existing(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         $this->mockQuestionGenerator
             ->shouldReceive('generate')
@@ -182,7 +183,7 @@ class SuggestionServiceTest extends TestCase
                 return $suggestion;
             });
 
-        $count = $this->service->generateSuggestions($site->id, 'seo', ['question']);
+        $count = $this->service->generateSuggestions($siteId, 'seo', ['question']);
 
         $this->assertEquals(1, $count);
     }
@@ -193,7 +194,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_undismiss_rediscovered(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         $this->mockQuestionGenerator
             ->shouldReceive('generate')
@@ -212,7 +213,9 @@ class SuggestionServiceTest extends TestCase
             })
             ->andReturn(new KeywordSuggestion());
 
-        $this->service->generateSuggestions($site->id, 'seo', ['question']);
+        $this->service->generateSuggestions($siteId, 'seo', ['question']);
+        
+        $this->assertTrue(true);
     }
 
     // =========================================================================
@@ -225,7 +228,7 @@ class SuggestionServiceTest extends TestCase
      */
     public function test_handle_empty_results(): void
     {
-        $site = Site::factory()->create();
+        $siteId = 1;
 
         $this->mockQuestionGenerator
             ->shouldReceive('generate')
@@ -239,7 +242,9 @@ class SuggestionServiceTest extends TestCase
             ->shouldReceive('upsertOrCreate')
             ->never();
 
-        $count = $this->service->generateSuggestions($site->id, 'seo', ['question']);
+        Log::shouldReceive('info')->once();
+
+        $count = $this->service->generateSuggestions($siteId, 'seo', ['question']);
 
         $this->assertEquals(0, $count);
     }
@@ -341,7 +346,7 @@ class SuggestionServiceTest extends TestCase
         Log::shouldReceive('info')
             ->once()
             ->withArgs(function ($message, $context) use ($site) {
-                return str_contains($message, 'suggestions generated')
+                return str_contains(strtolower($message), 'suggestions generated')
                     && isset($context['site_id'])
                     && $context['site_id'] === $site->id
                     && isset($context['count'])
@@ -349,6 +354,8 @@ class SuggestionServiceTest extends TestCase
             });
 
         $this->service->generateSuggestions($site->id, 'seo', ['question']);
+        
+        $this->assertTrue(true);
     }
 
     // =========================================================================

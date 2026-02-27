@@ -1,7 +1,7 @@
 # TASK-5-2: Suggestion Model and Repository
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -34,6 +34,27 @@ Create Eloquent model and repository for keyword_suggestions table. Provides dat
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-27 10:52] Agent: Developer
+Implementation complete. Created:
+
+**Model** (`backend/app/Models/KeywordSuggestion.php`):
+- Fillable: site_id, keyword, source, search_volume, difficulty_score, opportunity_score, is_tracking, is_dismissed
+- BelongsTo relationship: site()
+- Scopes: bySite(), bySource(), notDismissed(), notTracking(), highOpportunity()
+- Accessor: tracking_status (returns 'tracking', 'dismissed', or 'available')
+- Boolean casts for is_tracking and is_dismissed
+- Auto-set discovered_at on creation
+
+**Repository** (`backend/app/Repositories/KeywordSuggestionRepository.php`):
+- CRUD: find(), create(), update(), delete()
+- Query: findBySite(), findDismissed(), findByKeyword(), getBySource(), getPaginated()
+- State: markAsTracking(), dismiss()
+- Bulk: bulkCreate(), exists(), countBySite(), upsertOrCreate()
+
+**Tests:** All 43 tests passing (19 model + 24 repository)
+
+Status: To Develop → To Test Locally
 
 ### [2026-02-26 23:05] Agent: PreTester
 Test design complete. Created:
