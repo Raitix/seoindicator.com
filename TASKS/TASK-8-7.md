@@ -1,7 +1,7 @@
 # TASK-8-7: CRUD Endpoints for Projects
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -250,7 +250,7 @@ Duration: 2.82s
 
 **Action:** Pushing to origin/main to trigger GitHub Actions deployment...
 
-**Status changed:** `To Deploy` → `In Deployment`
+**Status changed:** `To Deploy` → `To Deploy`
 
 ### [2026-02-26 23:02] Agent: DevOps
 **Deployment Complete:**
@@ -287,4 +287,4 @@ Duration: 2.82s
 
 **Next:** ProdTester to validate endpoints in production environment.
 
-**Status changed:** `In Deployment` → `To Test Prod`
+**Status changed:** `To Deploy` → `To Test Prod`

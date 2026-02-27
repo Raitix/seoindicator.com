@@ -1,7 +1,7 @@
 # TASK-5-8: Generate Suggestions Endpoint
 
 ## STATUS
-`Testing Locally`
+`To Test Locally`
 
 ## PRIORITY
 `High`

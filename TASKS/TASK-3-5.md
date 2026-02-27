@@ -168,7 +168,7 @@ Deployment triggered by pushing latest state to main. Status -> To Test Prod. Pl
 - TASK-3-7: Testing Prod
 - TASK-3-8: To Develop
 
-SPEC-003 and FEAT-003 remain `In Development` until all tasks complete.
+SPEC-003 and FEAT-003 remain `To Develop` until all tasks complete.
 
 ### [2026-02-26 20:10] Agent: DocSystemAnalyst
 **Documentation Added**

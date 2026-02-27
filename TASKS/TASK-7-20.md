@@ -1,7 +1,7 @@
 # TASK-7-20: Integration Tests for SERP Features
 
 ## STATUS
-`Testing Locally`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`

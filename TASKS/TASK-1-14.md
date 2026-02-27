@@ -1,7 +1,7 @@
 # SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`In Development`
+`To Develop`
 ## PRIORITY
 `High`
 

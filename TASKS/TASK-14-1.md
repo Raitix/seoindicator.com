@@ -1,7 +1,7 @@
 # TASK-14-1: Create Audits Table
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## PRIORITY
 `High`

@@ -1,7 +1,7 @@
 # TASK-16-2: Meta Tag Analyzer Tool
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `High`

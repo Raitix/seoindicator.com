@@ -1,7 +1,7 @@
 # SPEC-003-4: Backend - Ranking Check Integration
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `High`

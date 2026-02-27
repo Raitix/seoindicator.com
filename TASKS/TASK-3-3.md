@@ -1,7 +1,7 @@
 # SPEC-003-3: Backend - Domain Validation Service
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `Medium`
