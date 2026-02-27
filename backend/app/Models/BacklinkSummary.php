@@ -60,6 +60,31 @@ class BacklinkSummary extends Model
     }
 
     /**
+     * The model's default values for attributes.
+     *
+     * @var array
+     */
+    protected $attributes = [
+        'total_backlinks' => 0,
+        'referring_domains' => 0,
+        'domain_authority' => 0.00,
+    ];
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (self $model) {
+            if (empty($model->checked_at)) {
+                $model->checked_at = now();
+            }
+        });
+    }
+
+    /**
      * Get the site that owns this backlink summary.
      */
     public function site(): BelongsTo

@@ -30,6 +30,9 @@ return new class extends Migration
             $table->index('site_id');
             $table->index('domain');
             $table->index('checked_at');
+
+            // Timestamps
+            $table->timestamps();
         });
     }
 

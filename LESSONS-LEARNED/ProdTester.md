@@ -39,3 +39,12 @@ Knowledge base for ProdTester agent working on SEOIndicator project.
 ---
 
 Last updated: 2026-02-27
+
+---
+
+## 2026-02-27: TASK-7-8 SERP Feature Change Tracker
+- Health endpoint reliable for verifying production status
+- SSH access may be unavailable - use API testing as fallback
+- DevOps deployment notes valuable for verification
+- Run tests locally when production data unavailable
+- SERP feature filtering API (`?serpFeature=...`) confirms integration
