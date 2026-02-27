@@ -124,6 +124,6 @@ class Annotation extends Model
      */
     public function scopeOnDate($query, $date)
     {
-        return $query->where('date', $date);
+        return $query->whereDate('date', $date);
     }
 }
