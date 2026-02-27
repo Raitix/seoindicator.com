@@ -3876,6 +3876,85 @@ Retry-After: 60
 - **Tests**: 64 tests, 250 assertions passing
 
 ---
+## Database Schema: Backlink Changes Table (TASK-13-3)
+
+### Backlink Changes Table
+Stores detected changes (new, lost, or modified) for backlinks tracked by projects. Enables historical tracking of link profile evolution and alerts for link building progress or potential issues.
+
+```sql
+CREATE TABLE backlink_changes (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    site_id BIGINT UNSIGNED NOT NULL,
+    backlink_id BIGINT UNSIGNED NOT NULL,
+    change_type ENUM('new', 'lost', 'modified') NOT NULL,
+    details JSON NOT NULL,
+    detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (backlink_id) REFERENCES backlinks(id) ON DELETE CASCADE,
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+    INDEX idx_site_change (site_id, change_type)
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id (project context) |
+| `backlink_id` | BIGINT UNSIGNED | FK to backlinks.id |
+| `change_type` | ENUM | Type of change: `new`, `lost`, or `modified` |
+| `details` | JSON | Change details (flexible structure for different change types) |
+| `detected_at` | TIMESTAMP | When the change was detected |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+| `updated_at` | TIMESTAMP | Last update timestamp |
+
+**Constraints:**
+- Foreign Key: `backlink_id → backlinks.id` ON DELETE CASCADE
+- Foreign Key: `site_id → sites.id` ON DELETE CASCADE
+
+**Indexes:**
+- `idx_site_change` on `(site_id, change_type)` - Optimize queries filtering by site and change type
+- `backlink_changes_backlink_id_index` - Index on backlink_id for efficient lookups
+- `backlink_changes_detected_at_index` - Index for date-based queries
+
+### Change Types
+| Type | Description | Example details JSON |
+|------|-------------|----------------------|
+| `new` | New backlink discovered | `{"source_url": "...", "anchor_text": "...", "domain_authority": 45}` |
+| `lost` | Previously active backlink no longer exists | `{"source_url": "...", "last_seen": "2026-02-20"}` |
+| `modified` | Backlink attributes changed | `{"field": "anchor_text", "old": "SEO Tools", "new": "Best SEO Tools"}` |
+
+### Model Relationships
+
+**BacklinkChange Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `site()` | belongsTo | The site this change belongs to |
+| `backlink()` | belongsTo | The backlink that changed |
+
+**Backlink Model (added relationship):**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `changes()` | hasMany | BacklinkChange records for this backlink |
+
+### Production Status
+- **Deployed**: 2026-02-27 (migration batch 4)
+- **Migration**: `2026_02_21_220100_create_backlink_changes_table.php`
+- **Verified**: Health check passing, production schema verified via SSH
+- **Status**: Complete
+
+### Dependencies
+- TASK-13-2 (backlinks table)
+- TASK-1-1 (sites table)
+
+### Related Tasks
+- TASK-13-1: Backlink summaries table
+- TASK-13-2: Backlinks table
+- FEAT-013: Backlink Monitoring feature
+
+---
 ## Frontend Components: Projects (TASK-8-8)
 
 ### Overview
