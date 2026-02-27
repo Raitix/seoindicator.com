@@ -1,7 +1,7 @@
 # SPEC-001-5: Ranking History API Endpoints
 
 ## STATUS
-`Testing Locally`
+`To Test Locally`
 ## PRIORITY
 `High`
 

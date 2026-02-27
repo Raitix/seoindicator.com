@@ -1,6 +1,239 @@
 # DOCUMENTATION.md
 
 ---
+## Team Management Service (TASK-11-3)
+
+### Service Description
+Backend service class for managing team collaboration features. Handles adding/removing team members, role updates, and invitation token management with security-first design.
+
+### Core Functionalities
+
+**TeamService Class:**
+| Method | Description |
+|--------|-------------|
+| `addMember(array $data): TeamMember` | Invite user to team with secure token |
+| `updateRole(int $teamMemberId, string $role): bool` | Update member's role |
+| `removeMember(int $teamMemberId): bool` | Remove member from team |
+| `validateInvitationToken(string $token): ?TeamMember` | Validate invitation token |
+| `acceptInvitation(string $token, int $userId): bool` | Accept pending invitation |
+| `cancelInvitation(int $teamMemberId): bool` | Cancel pending invitation |
+| `canManageTeam(User $user, Account $account): bool` | Check management permission |
+
+### Security Measures
+
+**Token Security:**
+- 64-character cryptographic tokens
+- Timing-safe comparison via `hash_equals()`
+- Unique token constraint in database
+- Token expiration support (24-hour TTL)
+
+**Role-Based Restrictions:**
+- Owner/Admin can manage team members
+- Role hierarchy enforced via PermissionValidator
+- Self-modification prevention (cannot change own role)
+- Last admin protection (cannot demote last admin)
+
+**Permission Checks:**
+- `canManageTeam()` validates actor permissions
+- Cross-team access prevention
+- Cascade cleanup on member removal (project_members)
+
+### Technical Implementation
+- Service: `backend/app/Services/TeamService.php`
+- Model: `backend/app/Models/TeamMember.php`
+- Model: `backend/app/Models/Account.php`
+- Migration: `2026_02_26_200000_create_accounts_table.php`
+- Migration: `2026_02_26_200100_create_team_members_table.php`
+- Migration: `2026_02_26_200200_add_account_id_to_projects_table.php`
+
+### Model Relationships
+
+**TeamMember Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `account()` | belongsTo | The account this membership belongs to |
+| `user()` | belongsTo | The user who is a member |
+| `inviter()` | belongsTo | User who sent the invitation |
+
+**Account Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `owner()` | belongsTo | Account owner (user) |
+| `members()` | hasMany | TeamMember records |
+| `projects()` | hasMany | Projects belonging to account |
+
+**Project Model (updated):**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `account()` | belongsTo | Account this project belongs to |
+
+**User Model (updated):**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `account()` | belongsTo | User's owned account |
+| `teamMemberships()` | hasMany | TeamMember records |
+
+### Database Schema
+
+**Accounts Table:**
+```sql
+CREATE TABLE accounts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    owner_id BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+**Team Members Table:**
+```sql
+CREATE TABLE team_members (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    account_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    role ENUM('owner', 'admin', 'editor', 'viewer') DEFAULT 'viewer',
+    invitation_token VARCHAR(64) NULL UNIQUE,
+    invited_by BIGINT UNSIGNED NOT NULL,
+    invited_at TIMESTAMP NOT NULL,
+    accepted_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (invited_by) REFERENCES users(id) ON DELETE SET NULL,
+    UNIQUE KEY idx_team_account_user (account_id, user_id)
+);
+```
+
+### Role Hierarchy
+| Role | Level | Permissions |
+|------|-------|-------------|
+| Owner | 100 | Full access, manage team, billing |
+| Admin | 75 | Full access, manage team |
+| Editor | 50 | Add/edit keywords, generate reports |
+| Viewer | 25 | Read-only access |
+
+### Test Coverage
+- **Unit Tests:** 56 tests, 101 assertions
+- **Test File:** `backend/tests/Unit/Services/TeamServiceTest.php`
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Add Member (AM) | 13 | Invitation creation, token generation |
+| Update Role (UR) | 8 | Role change validation |
+| Remove Member (RM) | 7 | Member removal with cascade |
+| Token Validation (TV) | 6 | Token verification |
+| Permission Checks (PC) | 6 | Authorization validation |
+| Security/Edge Cases | 16 | XSS, SQL injection, boundaries |
+
+### Production Status
+- **Deployed**: 2026-02-26 (commit 82a3081)
+- **Migration Batch**: 10
+- **Health Check**: Passing
+- **Tests**: 56/56 passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-11-1: Team members table (pending)
+- TASK-11-4: PermissionValidator (in progress)
+
+### Related Tasks
+- TASK-11-1: Team members table creation
+- TASK-11-2: Project members table
+- TASK-11-4: Permission validator
+
+---
+## Database Schema: Project Members Table (TASK-11-2)
+
+### Project Members Table
+Stores project-level user assignments with role-specific permissions. Enables fine-grained access control for team collaboration, allowing users to be members of multiple projects with different roles.
+
+```sql
+CREATE TABLE project_members (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    role ENUM('editor', 'viewer') DEFAULT 'viewer',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+    UNIQUE KEY idx_project_user (project_id, user_id)
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `project_id` | BIGINT UNSIGNED | FK to projects.id |
+| `user_id` | BIGINT UNSIGNED | FK to users.id |
+| `role` | ENUM | Project role: `editor` or `viewer` (default: `viewer`) |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+| `updated_at` | TIMESTAMP | Last update timestamp |
+
+**Constraints:**
+- Foreign Key: `project_id → projects.id` ON DELETE CASCADE
+- Foreign Key: `user_id → users.id` ON DELETE CASCADE
+- Unique: `(project_id, user_id)` - prevents duplicate project memberships
+
+**Indexes:**
+- `idx_project_user` unique index on `(project_id, user_id)`
+
+**Model:** `App\Models\ProjectMember`
+
+### Role Permissions (Project Level)
+| Permission | Editor | Viewer |
+|------------|--------|--------|
+| View project data | ✅ | ✅ |
+| Add/edit keywords | ✅ | ❌ |
+| Delete keywords | ✅ | ❌ |
+| Manage competitors | ✅ | ❌ |
+| Generate reports | ✅ | ✅ |
+| Schedule reports | ✅ | ❌ |
+| Configure alerts | ✅ | ❌ |
+
+### Model Relationships
+
+**ProjectMember Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `project()` | belongsTo | The project this membership belongs to |
+| `user()` | belongsTo | The user who is a member |
+
+**Project Model (added relationships):**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `members()` | hasMany | ProjectMember records for this project |
+| `users()` | belongsToMany | Users who are members of this project (through project_members) |
+
+**User Model (added relationships):**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `projectMemberships()` | hasMany | ProjectMember records for this user |
+| `memberProjects()` | belongsToMany | Projects this user is a member of (through project_members) |
+
+### Production Status
+- **Deployed**: 2026-02-26 (commit 42ca3ac via GitHub Actions)
+- **Migration**: `2026_02_26_191000_create_project_members_table.php`
+- **Verified**: Health check passing, 28/28 tests passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-8-1 (Projects Table)
+- Existing users table
+
+### Related Tasks
+- TASK-11-1: Team members table (global team roles)
+- TASK-11-3: Team management service
+- TASK-11-4: Permission validator
+
+---
 ## Database Schema: Projects Table (TASK-8-1)
 
 ### Projects Table

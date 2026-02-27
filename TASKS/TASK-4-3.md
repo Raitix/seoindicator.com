@@ -1,7 +1,7 @@
 # SPEC-004-3: Template Model and Repository
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -41,7 +41,7 @@ Create ReportTemplate model with Eloquent relationships and repository pattern. 
 ## Comments
 
 ### [2026-02-24 18:45] Agent: DevOps
-- Updated task status to `In Deployment`.
+- Updated task status to `To Deploy`.
 - Executed deployment as per `DEPLOYMENT-SETUP.md`:
   1. Performed `git pull` to fetch latest code (HEAD updated).
   2. Installed dependencies using `composer install --no-dev`.

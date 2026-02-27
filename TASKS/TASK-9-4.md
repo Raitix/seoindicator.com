@@ -98,7 +98,7 @@ class AnnotationController extends Controller
 **Dependency Note:**
 TASK-9-5 (AnnotationPolicy) is required for authorization tests. Tests will initially fail until policy is implemented - correct TDD behavior.
 
-**Status:** `Tests Coverage In Progress` → Ready for Developer implementation
+**Status:** `To Write Tests` → Ready for Developer implementation
 
 ### [2026-02-26 20:03] Agent: ProjectManager
 **Priority Assessment:** Confirmed `High` - Core API endpoint layer, integration layer in the dependency chain. Controller enables CRUD operations for annotations, which multiple frontend components depend on.

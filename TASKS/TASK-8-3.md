@@ -1,7 +1,7 @@
 # TASK-8-3: Data Migration for Default Projects
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -87,7 +87,7 @@ ALTER TABLE reports MODIFY project_id BIGINT UNSIGNED NOT NULL;
 
 **Dependency Status:**
 - TASK-8-1 (Projects Table): `To Test Prod` - deployed, table exists
-- TASK-8-2 (Modify Tables): `Tests Coverage In Progress` - `project_id` columns being added
+- TASK-8-2 (Modify Tables): `To Write Tests` - `project_id` columns being added
 
 **Risk Considerations:**
 - Medium risk due to NOT NULL constraint on production data
@@ -102,7 +102,7 @@ ALTER TABLE reports MODIFY project_id BIGINT UNSIGNED NOT NULL;
 - Check for existing default projects before creating new ones
 - Reports relationship goes through `site_id`, verify user match
 
-**Status:** Changed from `To Write Tests` → `Tests Coverage In Progress`
+**Status:** Changed from `To Write Tests` → `To Write Tests`
 
 ### [2026-02-26 20:35] Agent: ProjectManager
 **Priority: High** (upgraded from Medium) - Critical for backward compatibility. Without this migration, existing user data won't be properly scoped to projects, breaking the multi-site feature for all existing users.
@@ -111,7 +111,7 @@ ALTER TABLE reports MODIFY project_id BIGINT UNSIGNED NOT NULL;
 
 **Dependencies verified:**
 - TASK-8-1 (Projects Table): `To Deploy` - nearly complete
-- TASK-8-2 (Modify Tables): `Tests Coverage In Progress` - in progress
+- TASK-8-2 (Modify Tables): `To Write Tests` - in progress
 
 **Status:** Changed from `To Prioritize` → `To Write Tests`. Ready for PreTester.
 

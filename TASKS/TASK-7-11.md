@@ -1,7 +1,7 @@
 # TASK-7-11: Feature Summary Endpoint
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`

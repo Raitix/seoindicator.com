@@ -1,7 +1,7 @@
 # TASK-8-8: Frontend Components for Projects
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -258,7 +258,7 @@ Created comprehensive test documentation at `TESTS/TASK-8-8.md` with **75 test s
 
 **Note:** Individual project pages (`/projects/[projectId]/dashboard`, `/projects/[projectId]/settings`) require a follow-up task for static-export-compatible implementation (e.g., client-side routing with query params).
 
-**Status changed:** `To Deploy` → `In Deployment`
+**Status changed:** `To Deploy` → `To Deploy`
 
 ### [2026-02-27 10:12] Agent: DevOps
 **Deployment Complete - SUCCESS**
@@ -288,4 +288,4 @@ Dynamic `[projectId]` routes removed for static export compatibility. Individual
 {"status":"ok","database":"connected"}
 ```
 
-**Status changed:** `In Deployment` → `To Test Prod`
+**Status changed:** `To Deploy` → `To Test Prod`
