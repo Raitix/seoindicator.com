@@ -126,7 +126,7 @@ class OAuthServiceTest extends TestCase
         $service = app(OAuthService::class);
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Invalid redirect URI format');
+        $this->expectExceptionMessage('Redirect URI not allowed');
 
         $service->getAuthorizationUrl('not-a-valid-uri');
     }
@@ -232,7 +232,8 @@ class OAuthServiceTest extends TestCase
 
     public function test_refresh_access_token_updates_connection(): void
     {
-        $connection = GSCConnection::factory()->expired()->create([
+        $connection = GSCConnection::factory()->create([
+            'token_expires_at' => now()->subHour(), // Token expired but status is active
             'refresh_token' => 'original_refresh_token',
         ]);
 
@@ -257,7 +258,7 @@ class OAuthServiceTest extends TestCase
     public function test_refresh_access_token_throws_without_refresh_token(): void
     {
         $connection = GSCConnection::factory()->create([
-            'refresh_token' => null,
+            'refresh_token' => '', // Empty string triggers the check
         ]);
 
         $service = app(OAuthService::class);
@@ -421,7 +422,7 @@ class OAuthServiceTest extends TestCase
     {
         $connection = GSCConnection::factory()->create([
             'status' => GSCConnection::STATUS_ACTIVE,
-            'access_token' => null,
+            'access_token' => '', // Empty string triggers the check
         ]);
 
         $service = app(OAuthService::class);

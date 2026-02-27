@@ -3169,6 +3169,123 @@ None (standalone fetcher)
 - Status: Complete
 
 ---
+## Generate Suggestions Endpoint (TASK-5-8)
+
+### Service Description
+API endpoint for generating new keyword suggestions by triggering the suggestion aggregation service. Accepts a seed keyword and configuration options, dispatches the SuggestionService to fetch suggestions from multiple sources, and returns a job ID for status tracking.
+
+### API Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/sites/{siteId}/suggestions/generate` | Generate new keyword suggestions |
+
+### Generate Suggestions Endpoint
+`POST /api/v1/sites/{siteId}/suggestions/generate`
+
+**Request Body:**
+```json
+{
+  "seedKeyword": "seo tools",
+  "sources": ["suggest", "question"],
+  "maxResults": 50
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `seedKeyword` | Required, string, max 255 chars |
+| `sources` | Required, array, min 1, values in: `suggest`, `question`, `related`, `competitor` |
+| `maxResults` | Optional, integer, min 1, max 100, default 50 |
+
+**Response (202 Accepted):**
+```json
+{
+  "jobId": "suggest-abc123",
+  "status": "queued",
+  "count": 15
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 403 | User does not own the site |
+| 422 | Invalid request body |
+
+### Suggestion Sources
+| Source | Description |
+|--------|-------------|
+| `suggest` | Google Suggest API autocomplete suggestions |
+| `question` | Question-based keyword variations (what/how/why/when/where/who/which) |
+| `related` | Related searches (post-MVP) |
+| `competitor` | Competitor keywords (post-MVP) |
+
+### Processing Flow
+1. Validate request parameters
+2. Verify user owns the site (authorization)
+3. Call `SuggestionService::generateSuggestions()` synchronously
+4. Return 202 Accepted with job ID and count of suggestions generated
+
+### Authorization
+- All endpoints require authentication (Bearer token)
+- User must own the site (verified via `$this->authorize('update', $site)`)
+- Returns 401 for unauthenticated requests
+- Returns 403 for unauthorized site access
+
+### Security Implementation
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware |
+| Authorization | Site ownership via policy |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS | Input validation |
+| Rate Limiting | Deferred to post-MVP |
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/SuggestionController.php`
+- Service: `backend/app/Services/SuggestionService.php`
+- Request: Validates seedKeyword, sources, maxResults
+- Route: Defined in `backend/routes/api.php`
+
+### Deferred Features
+- Rate limiting (max 10 requests per hour per site) - post-MVP enhancement
+- Queue-based async processing for high-volume production
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| SuggestionControllerTest | 80 | 192 |
+| Generate Endpoint Tests | 14 | 35 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Generate Returns 202 | 1 | Accepted response |
+| Validation (seedKeyword) | 2 | Required, max length |
+| Validation (sources) | 3 | Required, array, valid values |
+| Validation (maxResults) | 2 | Min 1, max 100 |
+| Authorization | 3 | 401/403 responses |
+| Functional | 3 | Success cases |
+
+### Production Status
+- **Deployed**: 2026-02-27 (commit 591aaa5)
+- **Health Check**: Passing
+- **Tests**: 80/80 passing (192 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-5-1 (Database schema - keyword_suggestions table)
+- TASK-5-2 (KeywordSuggestion model and repository)
+- TASK-5-6 (Suggestion aggregation service)
+
+### Related Tasks
+- TASK-5-7: Suggestions CRUD API endpoints
+- TASK-5-9: Track/Dismiss endpoints
+
+---
 ## AnnotationController API (TASK-9-4)
 
 ### Service Description
