@@ -327,6 +327,21 @@ function calculateOpportunityScore(keyword: string): number {
 
 ## Comments
 
+### [2026-02-27 14:35] PreTester: Test Coverage Verification
+**Tasks with tests verified/updated:**
+- TASK-5-3 (OpportunityScorer): 33 tests pass (54 assertions) - fixed 2 test issues
+- TASK-5-5 (QuestionGenerator): 25 tests pass (51 assertions) - all tests pass
+- TASK-5-9 (SuggestionController): 41 tests pass (96 assertions) - fixed SQL injection test
+
+**Tasks still in To Write Tests status:**
+- TASK-5-10, TASK-5-11, TASK-5-12: Frontend tasks (React components)
+- TASK-5-14: Integration tests (requires all implementation complete)
+
+**Tasks in Tests Coverage In Progress:**
+- TASK-5-7, TASK-5-8, TASK-5-9: Being worked on by other PreTester instances
+
+Status remains: To Write Tests (frontend and integration tests pending)
+
 ### [2026-02-26 22:42] ProjectManager: Prioritization Complete
 - Created 14 task files (TASK-5-1 through TASK-5-14)
 - Priority assignments:

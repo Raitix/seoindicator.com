@@ -9,6 +9,7 @@ use App\Models\Site;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Tests for Suggestion Track/Dismiss API endpoints.
@@ -750,8 +751,11 @@ class SuggestionControllerTest extends TestCase
         // What matters is that SQL injection doesn't work
         $this->assertNotEquals(200, $response->status());
 
-        // Verify table still exists
-        $this->assertGreaterThan(0, DB::table('keyword_suggestions')->count());
+        // Verify table still exists by checking schema
+        $this->assertTrue(
+            Schema::hasTable('keyword_suggestions'),
+            'keyword_suggestions table should still exist after SQL injection attempt'
+        );
     }
 
     /**
