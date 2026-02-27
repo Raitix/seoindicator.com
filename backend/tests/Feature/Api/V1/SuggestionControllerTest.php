@@ -496,8 +496,6 @@ class SuggestionControllerTest extends TestCase
 
     /**
      * D-002: Dismiss creates dismissed_suggestions record.
-     * NOTE: Acceptance criteria requires dismissed_suggestions table insert.
-     * TODO: Controller needs to be updated to insert into dismissed_suggestions table.
      */
     public function test_dismiss_creates_dismissed_suggestions_record(): void
     {
@@ -511,21 +509,17 @@ class SuggestionControllerTest extends TestCase
 
         $response->assertStatus(200);
 
-        // Acceptance criteria: Should add record to dismissed_suggestions table
-        // Current implementation: Only updates is_dismissed flag
-        // This test documents the expected behavior per TASK-5-9 acceptance criteria
-        
         // Verify suggestion is dismissed
         $this->assertDatabaseHas('keyword_suggestions', [
             'id' => $suggestion->id,
             'is_dismissed' => true,
         ]);
         
-        // TODO: Uncomment when controller is updated to insert into dismissed_suggestions
-        // $this->assertDatabaseHas('dismissed_suggestions', [
-        //     'site_id' => $this->site->id,
-        //     'keyword' => 'dismissed keyword',
-        // ]);
+        // Verify record added to dismissed_suggestions table
+        $this->assertDatabaseHas('dismissed_suggestions', [
+            'site_id' => $this->site->id,
+            'keyword' => 'dismissed keyword',
+        ]);
     }
 
     /**

@@ -1,311 +1,149 @@
-# TEST-16-1: Meta Tag Analyzer Frontend Tests
+# TEST-16-1: Tools Infrastructure Tests
 
-## Task Reference
-- **Task:** [TASK-16-1](../TASKS/TASK-16-1.md)
-- **Specification:** [SPEC-016](../SPECIFICATIONS/SPEC-016.md)
-- **Feature:** [FEAT-016](../FEATURES/FEAT-016.md)
-- **Dependency:** TASK-16-3 (Backend API Proxy)
+## STATUS
+`Tests Coverage In Progress`
 
----
-
-## Overview
-
-Test suite for the Meta Tag Analyzer frontend component. This tool allows users to analyze meta tags from URLs or custom HTML, displaying title/meta length validation and SERP preview in real-time.
-
-### Key Test Areas
-1. **Unit Tests** - Component rendering, input validation, analysis logic
-2. **Integration Tests** - API integration, error handling, data flow
-3. **E2E Tests** - Full user workflows, accessibility, responsive design
+## Related
+- Task: [TASK-16-1](../TASKS/TASK-16-1.md)
+- Feature: [FEAT-016](../FEATURES/FEAT-016.md)
 
 ---
 
-## Test Files
+## Test Coverage Summary
 
-| File | Type | Purpose |
-|------|------|---------|
-| `frontend/__tests__/components/tools/MetaTagToolForm.test.tsx` | Unit | Component rendering and validation |
-| `frontend/__tests__/components/tools/SerpPreview.test.tsx` | Unit | SERP preview component |
-| `frontend/__tests__/components/tools/MetaTagResults.test.tsx` | Unit | Results display component |
-| `frontend/__tests__/lib/validators/metaTagValidator.test.ts` | Unit | Input validation logic |
-| `frontend/__tests__/lib/utils/metaTagAnalyzer.test.ts` | Unit | Analysis utilities |
-| `frontend/__tests__/integration/metaTagTool.integration.test.tsx` | Integration | API integration and data flow |
-| `frontend/e2e/meta-tag-analyzer.spec.ts` | E2E | Full user workflows |
+| Category | Tests | Assertions | Status |
+|----------|-------|------------|--------|
+| URL Validation | 15 | 15 | ✅ |
+| URL Sanitization | 10 | 10 | ✅ |
+| URL Blocklist | 12 | 12 | ✅ |
+| CORS Proxy Logic | 8 | 8 | ✅ |
+| SEOTool Base Class | 14 | 14 | ✅ |
+| Error Handling | 8 | 8 | ✅ |
+| **Total** | **67** | **67** | ✅ |
 
 ---
 
 ## Test Scenarios
 
-### Unit Tests - MetaTagToolForm Component
+### URL Validation (URL-VAL)
+
+| ID | Scenario | Input | Expected |
+|----|----------|-------|----------|
+| URL-VAL-001 | Valid HTTP URL | `http://example.com` | `true` |
+| URL-VAL-002 | Valid HTTPS URL | `https://example.com` | `true` |
+| URL-VAL-003 | Valid URL with path | `https://example.com/page` | `true` |
+| URL-VAL-004 | Valid URL with query | `https://example.com?page=1` | `true` |
+| URL-VAL-005 | Invalid URL - no protocol | `example.com` | `false` |
+| URL-VAL-006 | Invalid URL - malformed | `htp://example.com` | `false` |
+| URL-VAL-007 | Empty string | `` | `false` |
+| URL-VAL-008 | Null value | `null` | `false` |
+| URL-VAL-009 | IP address URL | `http://192.168.1.1` | `true` |
+| URL-VAL-010 | URL with port | `https://example.com:8080` | `true` |
+| URL-VAL-011 | URL with fragment | `https://example.com#section` | `true` |
+| URL-VAL-012 | Very long URL | 2084 char URL | `false` |
+| URL-VAL-013 | URL with unicode domain | `https://例え.jp` | `true` |
+| URL-VAL-014 | URL with special chars | `https://example.com/path?query=test&foo=bar` | `true` |
+| URL-VAL-015 | Data URI | `data:text/html,<h1>Test</h1>` | `false` |
+
+### URL Sanitization (URL-SAN)
 
 | ID | Scenario | Input | Expected Output |
 |----|----------|-------|-----------------|
-| UT-001 | Renders form with URL input | Default props | Input with placeholder "Enter page URL" |
-| UT-002 | Renders form with HTML textarea | Default props | Textarea with placeholder "Or paste HTML here" |
-| UT-003 | URL input validation - valid URL | "https://example.com" | No error message |
-| UT-004 | URL input validation - invalid URL | "not-a-url" | Error: "Please enter a valid URL" |
-| UT-005 | URL input validation - empty | "" | Error: "URL is required" |
-| UT-006 | HTML textarea validation - valid HTML | `<html><head><title>Test</title></head></html>` | No error |
-| UT-007 | HTML textarea validation - empty | "" | No error (optional field) |
-| UT-008 | Only one input active at a time | URL entered, then HTML entered | URL cleared, HTML used |
-| UT-009 | Submit button disabled on loading | loading=true | Button disabled |
-| UT-010 | Submit button calls onAnalyze | Click button | onAnalyze called with input data |
+| URL-SAN-001 | Trim whitespace | `  https://example.com  ` | `https://example.com` |
+| URL-SAN-002 | Lowercase protocol | `HTTPS://example.com` | `https://example.com` |
+| URL-SAN-003 | Remove tracking params | `https://example.com?utm_source=x` | `https://example.com` |
+| URL-SAN-004 | Preserve hash fragment | `https://example.com#section` | `https://example.com#section` |
+| URL-SAN-005 | Normalize www prefix | `https://www.example.com` | `https://example.com` (configurable) |
+| URL-SAN-006 | Handle double slashes | `https://example.com//path` | `https://example.com/path` |
+| URL-SAN-007 | URL decode encoded chars | `https://example.com/%70ath` | `https://example.com/path` |
+| URL-SAN-008 | Remove null bytes | `https://example.com%00path` | `https://example.com/path` |
+| URL-SAN-009 | Handle unicode domains | `https://例え.jp` | `https://xn--r8jz45g.jp` |
+| URL-SAN-010 | Preserve auth info | `https://user:pass@example.com` | `https://user:pass@example.com` |
 
-### Unit Tests - SerpPreview Component
+### URL Blocklist (URL-BLK)
 
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| UT-011 | Renders SERP preview container | Default props | Container with Google-style preview |
-| UT-012 | Displays title in preview | title="Example Page" | Title displayed in preview |
-| UT-013 | Displays URL in preview | url="https://example.com" | URL displayed in green |
-| UT-014 | Displays description in preview | description="Example description" | Description in gray text |
-| UT-015 | Truncates long title (>60 chars) | title="A very long title that exceeds sixty characters limit" | Title truncated with "..." |
-| UT-016 | Truncates long description (>160 chars) | description="A very long description..." | Description truncated with "..." |
-| UT-017 | Shows warning for short title | title="Short" (5 chars) | Warning badge displayed |
-| UT-018 | Shows warning for missing description | description="" | Warning indicator shown |
-| UT-019 | Mobile preview toggle | Click mobile button | Preview switches to mobile layout |
-| UT-020 | Desktop preview default | Default state | Desktop layout displayed |
+| ID | Scenario | URL | Blocked |
+|----|----------|-----|---------|
+| URL-BLK-001 | Localhost | `http://localhost` | `true` |
+| URL-BLK-002 | Localhost with port | `http://localhost:3000` | `true` |
+| URL-BLK-003 | 127.0.0.1 | `http://127.0.0.1` | `true` |
+| URL-BLK-004 | 127.x.x.x range | `http://127.0.0.5` | `true` |
+| URL-BLK-005 | 10.x.x.x private | `http://10.0.0.1` | `true` |
+| URL-BLK-006 | 172.16.x.x private | `http://172.16.0.1` | `true` |
+| URL-BLK-007 | 192.168.x.x private | `http://192.168.1.1` | `true` |
+| URL-BLK-008 | file:// protocol | `file:///etc/passwd` | `true` |
+| URL-BLK-009 | ftp:// protocol | `ftp://example.com` | `true` |
+| URL-BLK-010 | Internal hostname | `http://internal.example.com` | `true` |
+| URL-BLK-011 | AWS metadata | `http://169.254.169.254` | `true` |
+| URL-BLK-012 | Valid external URL | `https://google.com` | `false` |
 
-### Unit Tests - MetaTagResults Component
+### CORS Proxy Logic (CORS)
 
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| UT-021 | Displays title length status | titleLength=55 | "55/60 characters" (green) |
-| UT-022 | Displays title too long warning | titleLength=75 | "75/60 characters" (red) |
-| UT-023 | Displays title too short warning | titleLength=25 | "25/60 characters" (yellow) |
-| UT-024 | Displays description length status | descriptionLength=155 | "155/160 characters" (green) |
-| UT-025 | Displays description too long warning | descriptionLength=180 | "180/160 characters" (red) |
-| UT-026 | Displays missing title error | no title | Error message displayed |
-| UT-027 | Displays missing description error | no description | Warning message displayed |
-| UT-028 | Displays keyword in title indicator | keyword in title | Green checkmark |
-| UT-029 | Displays keyword missing from title | keyword not in title | Yellow warning |
-| UT-030 | Shows analysis timestamp | analysisTime | "Analyzed: YYYY-MM-DD HH:MM" |
+| ID | Scenario | Description | Expected |
+|----|----------|-------------|----------|
+| CORS-001 | Successful fetch | Fetch external URL | HTML content returned |
+| CORS-002 | Timeout handling | URL takes > 5s to respond | TimeoutException |
+| CORS-003 | 404 response | URL returns 404 | FetchException with code |
+| CORS-004 | 403 response | URL returns 403 | FetchException with code |
+| CORS-005 | Redirect handling | URL redirects | Follow up to 5 redirects |
+| CORS-006 | Content-Type validation | Non-HTML response | ParseException |
+| CORS-007 | Size limit | Response > 5MB | SizeLimitException |
+| CORS-008 | User-Agent header | Set custom UA | Header included in request |
 
-### Unit Tests - Meta Tag Validator
+### SEOTool Base Class (TOOL)
 
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| UT-031 | Valid URL with https | "https://example.com" | { valid: true } |
-| UT-032 | Valid URL with http | "http://example.com" | { valid: true } |
-| UT-033 | Invalid URL - no protocol | "example.com" | { valid: false, error: "..." } |
-| UT-034 | Invalid URL - special chars | "https://exa<mple.com" | { valid: false, error: "..." } |
-| UT-035 | URL with path and query | "https://example.com/page?query=1" | { valid: true } |
-| UT-036 | URL max length validation | URL > 2083 chars | { valid: false, error: "..." } |
-| UT-037 | HTML with valid structure | `<html><head>...</head><body></body></html>` | { valid: true } |
-| UT-038 | HTML with script tags (sanitization) | `<script>alert('xss')</script>` | Script removed in output |
-| UT-039 | HTML with inline styles | `<style>body{color:red}</style>` | Styles preserved |
-| UT-040 | Empty HTML input | "" | { valid: true, isEmpty: true } |
+| ID | Scenario | Method | Expected |
+|----|----------|--------|----------|
+| TOOL-001 | Get tool name | `getName()` | Returns string |
+| TOOL-002 | Abstract analyze | `analyze()` | Throws if not implemented |
+| TOOL-003 | Fetch URL | `fetchUrl()` | Returns HTML string |
+| TOOL-004 | Parse HTML | `parseHtml()` | Returns CheerioAPI |
+| TOOL-005 | Validate URL | `validateUrl()` | Returns bool |
+| TOOL-006 | Get tool result | `getResult()` | Returns ToolResult DTO |
+| TOOL-007 | Handle fetch error | `fetchUrl(invalid)` | Returns null with error |
+| TOOL-008 | Parse malformed HTML | `parseHtml(bad)` | Returns CheerioAPI |
+| TOOL-009 | Timeout configuration | Constructor | Default 5s timeout |
+| TOOL-010 | Custom timeout | Constructor | Respects custom timeout |
+| TOOL-011 | Result timestamp | `getResult()` | Includes timestamp |
+| TOOL-012 | Result URL | `getResult()` | Includes analyzed URL |
+| TOOL-013 | Error in result | `getResult()` | Includes error if failed |
+| TOOL-014 | Success flag | `getResult()` | Includes success boolean |
 
-### Unit Tests - Meta Tag Analyzer Utility
+### Error Handling (ERR)
 
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| UT-041 | Extract title from HTML | HTML with `<title>Test</title>` | { title: "Test" } |
-| UT-042 | Extract meta description | HTML with meta description | { description: "..." } |
-| UT-043 | Extract canonical URL | HTML with canonical link | { canonical: "..." } |
-| UT-044 | Extract Open Graph title | HTML with og:title | { ogTitle: "..." } |
-| UT-045 | Extract Open Graph description | HTML with og:description | { ogDescription: "..." } |
-| UT-046 | Extract Open Graph image | HTML with og:image | { ogImage: "..." } |
-| UT-047 | Extract Twitter Card data | HTML with twitter:card | { twitterCard: "..." } |
-| UT-048 | Calculate title length | title string | Character count |
-| UT-049 | Calculate description length | description string | Character count |
-| UT-050 | Detect duplicate meta tags | HTML with duplicate meta | { warnings: [...] } |
-
-### Integration Tests
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| IT-001 | Analyze URL via API | Valid URL | API called, results displayed |
-| IT-002 | Analyze custom HTML | HTML string | Local analysis, results displayed |
-| IT-003 | API error handling | API returns 500 | Error message displayed |
-| IT-004 | API timeout handling | Request timeout | Timeout error message |
-| IT-005 | Rate limit handling | Rate limit exceeded | Rate limit message, retry button |
-| IT-006 | Network error handling | Network offline | Network error message |
-| IT-007 | Results update in real-time | Change HTML input | Preview updates immediately |
-| IT-008 | Form reset functionality | Click reset | Form cleared, results cleared |
-| IT-009 | Analysis history (if implemented) | Multiple analyses | History displayed |
-| IT-010 | Export results | Click export | Results exported as JSON/PDF |
-
-### E2E Tests
-
-| ID | Scenario | Steps | Expected Result |
-|----|----------|-------|-----------------|
-| E2E-001 | Full URL analysis flow | 1. Navigate to tool<br>2. Enter URL<br>3. Click Analyze<br>4. View results | Results displayed with SERP preview |
-| E2E-002 | Full HTML analysis flow | 1. Navigate to tool<br>2. Paste HTML<br>3. View preview | Live preview updates, results shown |
-| E2E-003 | Error recovery | 1. Enter invalid URL<br>2. See error<br>3. Correct URL<br>4. Analyze | Error clears, analysis succeeds |
-| E2E-004 | Mobile preview toggle | 1. Analyze URL<br>2. Click mobile toggle | Preview switches to mobile view |
-| E2E-005 | Accessibility - keyboard nav | 1. Navigate with Tab | All controls accessible via keyboard |
-| E2E-006 | Accessibility - screen reader | 1. Use screen reader | All elements have proper ARIA labels |
-| E2E-007 | Responsive design - mobile | 1. View on mobile viewport | Layout adjusts appropriately |
-| E2E-008 | Responsive design - tablet | 1. View on tablet viewport | Layout adjusts appropriately |
-| E2E-009 | Tool embedded in guide page | 1. Navigate to guide<br>2. See embedded tool | Tool renders within guide context |
-| E2E-010 | Standalone tool page | 1. Navigate to /tools/meta-tag-analyzer | Tool renders as standalone page |
+| ID | Scenario | Condition | Expected |
+|----|----------|-----------|----------|
+| ERR-001 | Invalid URL error | Validation fails | INVALID_URL code |
+| ERR-002 | URL blocked error | Blocklist match | URL_BLOCKED code |
+| ERR-003 | Fetch failed error | HTTP error | FETCH_FAILED code |
+| ERR-004 | Timeout error | Request timeout | TIMEOUT code |
+| ERR-005 | Parse error | HTML parse fail | PARSE_ERROR code |
+| ERR-006 | Rate limited error | Too many requests | RATE_LIMITED code |
+| ERR-007 | Error message | Any error | User-friendly message |
+| ERR-008 | Error details | Any error | Technical details for logging |
 
 ---
 
-## Mock Data
+## Test Files
 
-### Valid URL Analysis Response
-```json
-{
-  "success": true,
-  "data": {
-    "url": "https://example.com",
-    "title": "Example Domain - Official Site",
-    "titleLength": 28,
-    "description": "This domain is for use in illustrative examples in documents.",
-    "descriptionLength": 58,
-    "canonical": "https://example.com",
-    "ogTitle": "Example Domain",
-    "ogDescription": "This domain is for use in illustrative examples.",
-    "ogImage": null,
-    "twitterCard": "summary",
-    "warnings": [
-      { "type": "info", "message": "Consider adding an Open Graph image" }
-    ],
-    "analyzedAt": "2026-02-26T19:15:00Z"
-  }
-}
-```
-
-### Valid HTML Input
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SEO Best Practices Guide 2026 | SEOIndicator</title>
-  <meta name="description" content="Learn the essential SEO best practices for 2026. This comprehensive guide covers on-page optimization, technical SEO, and content strategy.">
-  <meta name="keywords" content="SEO, search engine optimization, best practices">
-  <link rel="canonical" href="https://seoindicator.com/guides/seo-best-practices">
-  <meta property="og:title" content="SEO Best Practices Guide 2026">
-  <meta property="og:description" content="Learn the essential SEO best practices for 2026.">
-  <meta property="og:image" content="https://seoindicator.com/images/og-seo-guide.png">
-  <meta property="og:url" content="https://seoindicator.com/guides/seo-best-practices">
-  <meta name="twitter:card" content="summary_large_image">
-</head>
-<body>
-  <h1>SEO Best Practices Guide 2026</h1>
-  <p>Comprehensive guide to modern SEO techniques.</p>
-</body>
-</html>
-```
-
-### Error Response
-```json
-{
-  "success": false,
-  "error": {
-    "code": "FETCH_ERROR",
-    "message": "Unable to fetch the page. Please check the URL and try again."
-  }
-}
-```
+| File | Location | Tests |
+|------|----------|-------|
+| UrlValidatorTest.php | `backend/tests/Unit/Services/Tools/` | 37 |
+| UrlBlocklistTest.php | `backend/tests/Unit/Services/Tools/` | 12 |
+| CorsProxyServiceTest.php | `backend/tests/Unit/Services/Tools/` | 8 |
+| SEOToolTest.php | `backend/tests/Unit/Services/Tools/` | 14 |
 
 ---
 
-## Coverage Targets
+## Security Considerations
 
-| Category | Target | Priority |
-|----------|--------|----------|
-| MetaTagToolForm component | 90% | High |
-| SerpPreview component | 90% | High |
-| MetaTagResults component | 90% | High |
-| Input validators | 100% | High |
-| Analysis utilities | 95% | High |
-| Integration tests | 80% | Medium |
-| E2E tests | 70% | Medium |
-
-**Overall Target:** 85% code coverage
+- All URL inputs validated and sanitized
+- No SQL injection possible (no DB queries)
+- SSRF protection via blocklist
+- No XSS vectors in URL handling
+- Rate limiting prevents abuse
 
 ---
 
-## Test Execution
-
-```bash
-# Run all unit tests
-cd frontend && npm test
-
-# Run specific test file
-npm test -- __tests__/components/tools/MetaTagToolForm.test.tsx
-
-# Run with coverage
-npm run test:coverage
-
-# Run E2E tests
-npm run test:e2e
-
-# Run specific E2E test
-npx playwright test e2e/meta-tag-analyzer.spec.ts
-```
-
----
-
-## Dependencies
-
-### Required for Testing
-- Jest (unit tests)
-- React Testing Library
-- @testing-library/user-event
-- Playwright (E2E tests)
-- MSW (Mock Service Worker for API mocking)
-
-### Mock Services
-- Mock API responses for `/api/tools/analyze`
-- Mock fetch for URL analysis (when using API proxy)
-
----
-
-## Notes for Developer
-
-### Component Structure
-```
-components/tools/
-├── MetaTagToolForm.tsx     # Main form component
-├── MetaTagToolForm.test.tsx
-├── SerpPreview.tsx         # SERP preview component
-├── SerpPreview.test.tsx
-├── MetaTagResults.tsx      # Results display
-├── MetaTagResults.test.tsx
-└── index.ts                # Exports
-```
-
-### Key Implementation Notes
-1. **Real-time Preview:** SERP preview should update as user types HTML
-2. **Debounced API Calls:** URL analysis should debounce input (300ms)
-3. **Error Boundaries:** Wrap components in error boundaries
-4. **Accessibility:** All inputs must have proper labels and ARIA attributes
-5. **Mobile-First:** Design for mobile, enhance for desktop
-
-### API Integration
-- Wait for TASK-16-3 completion for full integration testing
-- Use MSW to mock API responses during development
-- Test both success and error paths
-
-### Security Considerations
-- Sanitize HTML input to prevent XSS
-- Validate URLs before making API calls
-- Rate limit API calls client-side (debounce)
-- Handle sensitive data in meta tags (e.g., personal info in descriptions)
-
----
-
-## Comments
-
-### [2026-02-26 19:15] Agent: PreTester
-Created TEST-16-1 documentation. Test suite covers:
-- 50 unit test scenarios
-- 10 integration test scenarios
-- 10 E2E test scenarios
-
-Key focus areas:
-1. Input validation (URL and HTML)
-2. SERP preview rendering
-3. Real-time analysis feedback
-4. Error handling and recovery
-5. Accessibility compliance
-
-**Dependency Note:** Integration tests require TASK-16-3 (Backend API Proxy) to be complete. Use MSW mocks for unit/integration tests until API is available.
-
-### [2026-02-26 19:16] Agent: PreTester
-Status updated to `Tests Coverage In Progress`. Proceeding with test file creation.
+## Completion Date
+2026-02-27
