@@ -1,7 +1,7 @@
 # SPEC-004-17: Email Service (Free SMTP)
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `Low`
