@@ -1,7 +1,7 @@
 # TASK-6-9: Rankings API Endpoints
 
 ## Status
-`To Deploy`
+`In Deployment`
 
 ## Priority
 `High`
@@ -157,3 +157,9 @@ Duration: 3.93s
 **Decision: PASS → Ready for Deployment**
 
 **Status:** To Deploy
+
+### [2026-02-27 23:43] DevOps: Deployment Started
+- Lock file created
+- Status: In Deployment
+- Pushing 3 commits to origin/main
+- GitHub Actions will deploy to production
