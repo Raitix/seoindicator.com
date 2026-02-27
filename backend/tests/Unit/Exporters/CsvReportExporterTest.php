@@ -413,4 +413,221 @@ class CsvReportExporterTest extends TestCase
 
         $this->assertStringContainsString(',-10,', $csv);
     }
+
+    // ============================================
+    // SERP FEATURES TESTS (TASK-7-15)
+    // ============================================
+
+    /**
+     * Test SERP features column is present in CSV header.
+     */
+    public function test_serp_features_column_in_header(): void
+    {
+        $data = ['keywords' => []];
+
+        $csv = $this->exporter->generate($data, false);
+
+        $this->assertStringContainsString('SERP Features', $csv);
+    }
+
+    /**
+     * Test SERP feature icons in CSV output.
+     */
+    public function test_serp_feature_icons_in_csv(): void
+    {
+        $data = [
+            'keywords' => [
+                [
+                    'keyword' => 'seo tools',
+                    'current_position' => 1,
+                    'previous_position' => 2,
+                    'change' => -1,
+                    'search_engine' => 'google',
+                    'location' => 'us',
+                    'last_checked_at' => '2026-02-24 10:00:00',
+                    'serp_features' => '🏆🔗⭐', // Featured snippet + sitelinks + reviews
+                ],
+            ],
+        ];
+
+        $csv = $this->exporter->generate($data, false);
+
+        $this->assertStringContainsString('🏆', $csv);
+        $this->assertStringContainsString('🔗', $csv);
+        $this->assertStringContainsString('⭐', $csv);
+    }
+
+    /**
+     * Test empty SERP features cell for keyword without features.
+     */
+    public function test_empty_serp_features_for_keyword_without_features(): void
+    {
+        $data = [
+            'keywords' => [
+                [
+                    'keyword' => 'no features keyword',
+                    'current_position' => 10,
+                    'previous_position' => 8,
+                    'change' => 2,
+                    'search_engine' => 'google',
+                    'location' => 'us',
+                    'last_checked_at' => '2026-02-24 10:00:00',
+                    'serp_features' => '',
+                ],
+            ],
+        ];
+
+        $csv = $this->exporter->generate($data, false);
+
+        // Should have empty cell for serp_features (last column)
+        $lines = explode("\n", trim($csv));
+        $this->assertStringContainsString('no features keyword', $lines[1]);
+    }
+
+    /**
+     * Test multiple SERP feature icons in single cell.
+     */
+    public function test_multiple_serp_feature_icons_in_single_cell(): void
+    {
+        $data = [
+            'keywords' => [
+                [
+                    'keyword' => 'rich result keyword',
+                    'current_position' => 1,
+                    'previous_position' => 1,
+                    'change' => 0,
+                    'search_engine' => 'google',
+                    'location' => 'us',
+                    'last_checked_at' => '2026-02-24 10:00:00',
+                    'serp_features' => '🏆📍🖼️🎬❓', // Multiple features
+                ],
+            ],
+        ];
+
+        $csv = $this->exporter->generate($data, false);
+
+        $this->assertStringContainsString('🏆', $csv);
+        $this->assertStringContainsString('📍', $csv);
+        $this->assertStringContainsString('🖼️', $csv);
+        $this->assertStringContainsString('🎬', $csv);
+        $this->assertStringContainsString('❓', $csv);
+    }
+
+    /**
+     * Test SERP features column order (last column).
+     */
+    public function test_serp_features_column_order(): void
+    {
+        $data = ['keywords' => []];
+
+        $csv = $this->exporter->generate($data, false);
+
+        $lines = explode("\n", trim($csv));
+        
+        // SERP Features should be the last column
+        $this->assertStringContainsString('SERP Features', $lines[0]);
+        
+        // Verify Last Checked comes before SERP Features
+        $lastCheckedPos = strpos($lines[0], 'Last Checked');
+        $serpFeaturesPos = strpos($lines[0], 'SERP Features');
+        $this->assertLessThan($serpFeaturesPos, $lastCheckedPos);
+    }
+
+    /**
+     * Test formatSerpFeatures helper method.
+     */
+    public function test_format_serp_features_helper(): void
+    {
+        $features = ['featured_snippet', 'local_pack', 'sitelinks'];
+        
+        $icons = $this->exporter->formatSerpFeatures($features);
+
+        $this->assertEquals('🏆📍🔗', $icons);
+    }
+
+    /**
+     * Test SERP features with mixed keywords (some with, some without).
+     */
+    public function test_mixed_keywords_with_and_without_features(): void
+    {
+        $data = [
+            'keywords' => [
+                [
+                    'keyword' => 'with features',
+                    'current_position' => 1,
+                    'previous_position' => 1,
+                    'change' => 0,
+                    'search_engine' => 'google',
+                    'location' => 'us',
+                    'last_checked_at' => '2026-02-24 10:00:00',
+                    'serp_features' => '🏆',
+                ],
+                [
+                    'keyword' => 'without features',
+                    'current_position' => 10,
+                    'previous_position' => 8,
+                    'change' => 2,
+                    'search_engine' => 'google',
+                    'location' => 'us',
+                    'last_checked_at' => '2026-02-24 10:00:00',
+                    'serp_features' => '',
+                ],
+                [
+                    'keyword' => 'multiple features',
+                    'current_position' => 3,
+                    'previous_position' => 5,
+                    'change' => -2,
+                    'search_engine' => 'google',
+                    'location' => 'us',
+                    'last_checked_at' => '2026-02-24 10:00:00',
+                    'serp_features' => '📍⭐',
+                ],
+            ],
+        ];
+
+        $csv = $this->exporter->generate($data, false);
+
+        $this->assertStringContainsString('with features', $csv);
+        $this->assertStringContainsString('without features', $csv);
+        $this->assertStringContainsString('multiple features', $csv);
+        $this->assertStringContainsString('🏆', $csv);
+        $this->assertStringContainsString('📍', $csv);
+        $this->assertStringContainsString('⭐', $csv);
+    }
+
+    /**
+     * Test all SERP feature icon types.
+     */
+    public function test_all_serp_feature_icon_types(): void
+    {
+        $allIcons = '🏆📍🖼️🎬❓📋🔗⭐📝🛒';
+        
+        $data = [
+            'keywords' => [
+                [
+                    'keyword' => 'all features',
+                    'current_position' => 1,
+                    'previous_position' => 1,
+                    'change' => 0,
+                    'search_engine' => 'google',
+                    'location' => 'us',
+                    'last_checked_at' => '2026-02-24 10:00:00',
+                    'serp_features' => $allIcons,
+                ],
+            ],
+        ];
+
+        $csv = $this->exporter->generate($data, false);
+
+        $this->assertStringContainsString('🏆', $csv);
+        $this->assertStringContainsString('📍', $csv);
+        $this->assertStringContainsString('🖼️', $csv);
+        $this->assertStringContainsString('🎬', $csv);
+        $this->assertStringContainsString('❓', $csv);
+        $this->assertStringContainsString('📋', $csv);
+        $this->assertStringContainsString('🔗', $csv);
+        $this->assertStringContainsString('⭐', $csv);
+        $this->assertStringContainsString('📝', $csv);
+        $this->assertStringContainsString('🛒', $csv);
+    }
 }

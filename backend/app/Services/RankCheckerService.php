@@ -9,11 +9,14 @@ use App\Models\Ranking;
 use App\Services\SERP\SERPEntry;
 use App\Services\SERP\SERPOptionsData;
 use App\Services\SERP\SERPResult;
+use App\Services\Traits\EmitsWebhookEvents;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class RankCheckerService
 {
+    use EmitsWebhookEvents;
+
     public function __construct(private readonly SERPFetcherInterface $fetcher)
     {
     }
@@ -104,6 +107,8 @@ class RankCheckerService
     /**
      * Run a keyword check and store ranking + competitor rankings.
      *
+     * Emits ranking.changed webhook event if position changed.
+     *
      * @param array<int, string>|null $competitorDomains
      */
     public function checkAndStore(int $keywordId, ?array $competitorDomains = null): bool
@@ -126,17 +131,22 @@ class RankCheckerService
                 ->all();
         }
 
+        // Get previous position before check
+        $previousPosition = $this->getLatestPosition($keyword->id);
+
         $result = $this->checkKeyword($keyword->keyword, $userDomain, $competitorDomains);
 
         $checkedAt = now();
+        $newPosition = $result['user']['position'];
         $serpFeatures = $result['serp_features'] ?? null;
-        $serpFeatures = is_array($serpFeatures) ? json_encode($serpFeatures) : $serpFeatures;
+        $serpFeaturesArray = is_array($serpFeatures) ? $serpFeatures : null;
+        $serpFeaturesJson = is_array($serpFeatures) ? json_encode($serpFeatures) : $serpFeatures;
 
         Ranking::create([
             'keyword_id' => $keyword->id,
-            'position' => $result['user']['position'],
+            'position' => $newPosition,
             'url_found' => $result['user']['url'],
-            'serp_features' => $serpFeatures,
+            'serp_features' => $serpFeaturesJson,
             'checked_at' => $checkedAt,
             'check_duration_ms' => $result['duration_ms'] ?? null,
             'error' => null,
@@ -167,7 +177,37 @@ class RankCheckerService
             }
         }
 
+        // Emit webhook event if position changed
+        if ($this->hasPositionChanged($previousPosition, $newPosition)) {
+            $this->emitRankingChangedEvent(
+                userId: $keyword->user_id,
+                keywordId: $keyword->id,
+                keyword: $keyword->keyword,
+                siteId: $keyword->site_id ?? 0,
+                oldPosition: $previousPosition,
+                newPosition: $newPosition,
+                urlFound: $result['user']['url'],
+                checkedAt: $checkedAt->toIso8601ZuluString(),
+                serpFeatures: $serpFeaturesArray
+            );
+        }
+
         return true;
+    }
+
+    /**
+     * Get the latest position for a keyword.
+     *
+     * @param int $keywordId
+     * @return int|null Position or null if no previous ranking
+     */
+    protected function getLatestPosition(int $keywordId): ?int
+    {
+        $latestRanking = Ranking::where('keyword_id', $keywordId)
+            ->orderBy('checked_at', 'desc')
+            ->first();
+
+        return $latestRanking?->position;
     }
 
     /**

@@ -3,14 +3,21 @@
 namespace App\Repositories;
 
 use App\Models\Keyword;
+use App\Services\Traits\EmitsWebhookEvents;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Keyword Repository for SPEC-001-2.
+ *
+ * Emits webhook events for keyword lifecycle changes:
+ * - keyword.added when a keyword is created
+ * - keyword.removed when a keyword is deleted
  */
 class KeywordRepository
 {
+    use EmitsWebhookEvents;
+
     /**
      * Find keyword by ID.
      */
@@ -41,10 +48,29 @@ class KeywordRepository
 
     /**
      * Create a keyword.
+     *
+     * Emits keyword.added webhook event after creation.
      */
     public function create(array $data): Keyword
     {
-        return Keyword::create($data);
+        $keyword = Keyword::create($data);
+
+        // Emit webhook event for keyword creation
+        if ($keyword->user_id) {
+            $this->emitKeywordAddedEvent(
+                userId: $keyword->user_id,
+                keywordId: $keyword->id,
+                keyword: $keyword->keyword,
+                siteId: $keyword->site_id ?? 0,
+                targetUrl: $keyword->target_url,
+                searchEngine: $keyword->search_engine ?? 'google',
+                location: $keyword->location ?? 'us',
+                device: $keyword->device ?? 'desktop',
+                status: $keyword->status ?? 'active'
+            );
+        }
+
+        return $keyword;
     }
 
     /**
@@ -63,6 +89,8 @@ class KeywordRepository
 
     /**
      * Delete a keyword.
+     *
+     * Emits keyword.removed webhook event before deletion.
      */
     public function delete(int $id, bool $hardDelete = false): bool
     {
@@ -70,6 +98,22 @@ class KeywordRepository
 
         if (!$keyword) {
             return false;
+        }
+
+        // Store data for webhook before deletion
+        $keywordId = $keyword->id;
+        $keywordText = $keyword->keyword;
+        $siteId = $keyword->site_id;
+        $userId = $keyword->user_id;
+
+        // Emit webhook event for keyword deletion
+        if ($userId) {
+            $this->emitKeywordRemovedEvent(
+                userId: $userId,
+                keywordId: $keywordId,
+                keyword: $keywordText,
+                siteId: $siteId ?? 0
+            );
         }
 
         if ($hardDelete) {
