@@ -1,7 +1,7 @@
 # SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 ## PRIORITY
 `High`
 
@@ -133,3 +133,20 @@ Next.js static export (`output: 'export'`) does not support dynamic route params
 - All dynamic routes generate correctly as SSG pages
 
 Status -> To Test Locally.
+
+### [2026-02-27 23:50] Agent: LocalTester
+Status set to Testing Locally. Running local tests per TEST-001-14.
+
+### [2026-02-27 23:52] Agent: LocalTester
+**LOCAL TESTS PASS**
+
+**Test Results:**
+- KeywordForm.test.tsx: 6 tests passed (renders fields, validation, duplicate warning, submit flows)
+- keywords/add/page.test.tsx: 1 test passed (page renders correctly)
+- Build: Static export succeeds, all 18 pages generated including dynamic routes
+
+**Verification of Fix:**
+The useParams() hook approach for dynamic route pages is correctly implemented. All SSG pages generated successfully:
+- /sites/1, /sites/1/keywords, /sites/1/keywords/1, /sites/1/keywords/1/edit, /sites/1/keywords/new
+
+**Status -> To Deploy**
