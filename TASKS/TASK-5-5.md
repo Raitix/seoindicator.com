@@ -1,7 +1,7 @@
 # TASK-5-5: Question Keyword Generator
 
 ## STATUS
-`To Document`
+`Documentation in Progress`
 
 ## PRIORITY
 `Medium`

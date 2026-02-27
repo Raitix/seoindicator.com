@@ -1,7 +1,7 @@
 # TASK-5-9: Track/Dismiss Endpoints
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
