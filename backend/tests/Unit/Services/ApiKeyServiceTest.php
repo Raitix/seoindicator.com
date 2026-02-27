@@ -486,7 +486,7 @@ class ApiKeyServiceTest extends TestCase
         $prefix = $this->service->getPrefix($key);
 
         $this->assertEquals(20, strlen($prefix));
-        $this->assertEquals('sk_live_ABCdefGHIj', $prefix);
+        $this->assertEquals('sk_live_ABCdefGHIjkl', $prefix);
     }
 
     /**
