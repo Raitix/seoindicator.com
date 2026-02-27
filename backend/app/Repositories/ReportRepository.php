@@ -3,15 +3,20 @@
 namespace App\Repositories;
 
 use App\Models\Report;
+use App\Services\Traits\EmitsWebhookEvents;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
 /**
  * Report Repository for SPEC-004-2.
+ *
+ * Emits report.completed webhook event after successful report generation.
  */
 class ReportRepository
 {
+    use EmitsWebhookEvents;
+
     /**
      * Create a report.
      */
@@ -116,6 +121,8 @@ class ReportRepository
 
     /**
      * Generate a report from a scheduled report configuration.
+     *
+     * Emits report.completed webhook event after successful generation.
      */
     public function generateFromSchedule(\App\Models\ScheduledReport $scheduled): Report
     {
@@ -136,6 +143,64 @@ class ReportRepository
             'generated_at' => now(),
         ]);
 
-        return $report->fresh();
+        $report->refresh();
+
+        // Emit webhook event for report completion
+        $this->emitReportCompletedWebhook($report, $scheduled->id);
+
+        return $report;
+    }
+
+    /**
+     * Mark a report as completed and emit webhook event.
+     *
+     * @param Report $report The report to complete
+     * @param string $downloadUrl The download URL for the report
+     * @param int|null $scheduledReportId Optional scheduled report ID if from schedule
+     */
+    public function markCompleted(Report $report, string $downloadUrl, ?int $scheduledReportId = null): void
+    {
+        $report->update([
+            'status' => 'completed',
+            'generated_at' => now(),
+        ]);
+
+        $report->refresh();
+
+        $this->emitReportCompletedWebhook($report, $scheduledReportId, $downloadUrl);
+    }
+
+    /**
+     * Emit webhook event for completed report.
+     */
+    protected function emitReportCompletedWebhook(Report $report, ?int $scheduledReportId = null, ?string $downloadUrl = null): void
+    {
+        // Get user ID from the site
+        $site = $report->site;
+        if (!$site || !$site->user_id) {
+            return;
+        }
+
+        $url = $downloadUrl ?? "/api/v1/reports/{$report->id}/download";
+
+        $dateRange = null;
+        if ($report->date_range_start && $report->date_range_end) {
+            $dateRange = [
+                'start' => $report->date_range_start->toDateString(),
+                'end' => $report->date_range_end->toDateString(),
+            ];
+        }
+
+        $this->emitReportCompletedEvent(
+            userId: $site->user_id,
+            reportId: $report->id,
+            siteId: $report->site_id,
+            type: $report->type,
+            format: $report->format,
+            downloadUrl: $url,
+            fileSize: $report->file_size,
+            scheduledReportId: $scheduledReportId,
+            dateRange: $dateRange
+        );
     }
 }

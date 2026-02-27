@@ -116,6 +116,7 @@ class PdfReportExporter
             'keywords' => 'Keyword Rankings',
             'changes' => 'Position Changes',
             'trends' => 'Trend Charts',
+            'serp_features' => 'SERP Features',
         ];
 
         $title = $titleMap[$section] ?? ucfirst(str_replace('-', ' ', $section));
@@ -139,9 +140,13 @@ class PdfReportExporter
             case 'keywords':
                 $lines[] = ''; // Spacer
                 foreach (($data['keywords'] ?? []) as $row) {
+                    // Get SERP feature icons from keyword data
+                    $serpIcons = $row['serp_features'] ?? '';
+                    $featureStr = $serpIcons ? ' [' . $serpIcons . ']' : '';
                     $lines[] = sprintf(
-                        '%s | Current: %s | Previous: %s | Change: %s',
+                        '%s%s | Current: %s | Previous: %s | Change: %s',
                         $row['keyword'] ?? 'Keyword',
+                        $featureStr,
                         $this->formatValue($row['current_position'] ?? null, 'Not ranked'),
                         $this->formatValue($row['previous_position'] ?? null, 'N/A'),
                         $this->formatValue($row['change'] ?? null, 'N/A')
@@ -169,6 +174,9 @@ class PdfReportExporter
                 if (count($lines) === 2) {
                     $lines[] = 'Trend data not available.';
                 }
+                break;
+            case 'serp_features':
+                $lines = $this->buildSerpFeaturesSection($data, $branding);
                 break;
             default:
                 $lines[] = 'Section content not available.';
@@ -205,6 +213,94 @@ class PdfReportExporter
         $companyName = $branding['company_name'] ?? $data['company_name'] ?? null;
         if ($companyName) {
             $lines[] = 'Prepared for ' . $companyName;
+        }
+
+        return $lines;
+    }
+
+    /**
+     * SERP feature icons mapping.
+     */
+    protected const SERP_FEATURE_ICONS = [
+        'featured_snippet' => 'trophy',
+        'local_pack' => 'map-pin',
+        'image_pack' => 'image',
+        'video' => 'play-circle',
+        'people_also_ask' => 'help-circle',
+        'knowledge_panel' => 'info',
+        'sitelinks' => 'link',
+        'reviews' => 'star',
+        'faq' => 'list',
+        'product' => 'shopping-cart',
+    ];
+
+    /**
+     * Build SERP features section content.
+     */
+    protected function buildSerpFeaturesSection(array $data, array $branding): array
+    {
+        $serpFeatures = $data['serp_features'] ?? null;
+
+        if (!$serpFeatures) {
+            return ['SERP FEATURES', '', 'SERP feature data not available.'];
+        }
+
+        $lines = ['SERP FEATURES'];
+        $lines[] = '';
+
+        // Overview
+        $totalKeywords = $serpFeatures['totalKeywords'] ?? 0;
+        $keywordsWithFeatures = $serpFeatures['keywordsWithFeatures'] ?? 0;
+
+        $lines[] = sprintf('Keywords with SERP Features: %d / %d', $keywordsWithFeatures, $totalKeywords);
+        $lines[] = '';
+
+        // Feature counts
+        $lines[] = 'Feature Breakdown:';
+        $featureCounts = $serpFeatures['featureCounts'] ?? [];
+
+        // Feature name mapping
+        $featureNames = [
+            'featured_snippet' => 'Featured Snippet',
+            'local_pack' => 'Local Pack',
+            'image_pack' => 'Image Pack',
+            'video' => 'Video',
+            'people_also_ask' => 'People Also Ask',
+            'knowledge_panel' => 'Knowledge Panel',
+            'sitelinks' => 'Sitelinks',
+            'reviews' => 'Reviews',
+            'faq' => 'FAQ',
+            'product' => 'Product',
+        ];
+
+        foreach ($featureCounts as $type => $count) {
+            if ($count > 0) {
+                $name = $featureNames[$type] ?? ucfirst(str_replace('_', ' ', $type));
+                $lines[] = sprintf('  - %s: %d keywords', $name, $count);
+            }
+        }
+
+        // Recent changes
+        $recentChanges = $serpFeatures['recentChanges'] ?? [];
+        $gained = $recentChanges['gained'] ?? [];
+        $lost = $recentChanges['lost'] ?? [];
+
+        if (!empty($gained)) {
+            $lines[] = '';
+            $lines[] = 'Recently Gained Features:';
+            foreach (array_slice($gained, 0, 10) as $gain) {
+                $featureName = $featureNames[$gain['feature']] ?? $gain['feature'];
+                $lines[] = sprintf('  + %s: %s', $gain['keyword'], $featureName);
+            }
+        }
+
+        if (!empty($lost)) {
+            $lines[] = '';
+            $lines[] = 'Recently Lost Features:';
+            foreach (array_slice($lost, 0, 10) as $loss) {
+                $featureName = $featureNames[$loss['feature']] ?? $loss['feature'];
+                $lines[] = sprintf('  - %s: %s', $loss['keyword'], $featureName);
+            }
         }
 
         return $lines;

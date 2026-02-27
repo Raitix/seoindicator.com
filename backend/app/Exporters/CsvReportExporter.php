@@ -8,6 +8,22 @@ namespace App\Exporters;
 class CsvReportExporter
 {
     /**
+     * SERP feature icons mapping for CSV output.
+     */
+    protected const SERP_FEATURE_ICONS = [
+        'featured_snippet' => '🏆',
+        'local_pack' => '📍',
+        'image_pack' => '🖼️',
+        'video' => '🎬',
+        'people_also_ask' => '❓',
+        'knowledge_panel' => '📋',
+        'sitelinks' => '🔗',
+        'reviews' => '⭐',
+        'faq' => '📝',
+        'product' => '🛒',
+    ];
+
+    /**
      * Generate CSV content from report data.
      */
     public function generate(array $data, bool $includeBom = true): string
@@ -26,6 +42,7 @@ class CsvReportExporter
             'Search Engine',
             'Location',
             'Last Checked',
+            'SERP Features',
         ];
 
         fputcsv($handle, $header);
@@ -39,6 +56,7 @@ class CsvReportExporter
                 (string) ($row['search_engine'] ?? ''),
                 (string) ($row['location'] ?? ''),
                 (string) ($row['last_checked_at'] ?? ''),
+                (string) ($row['serp_features'] ?? ''),
             ]);
         }
 
@@ -74,5 +92,20 @@ class CsvReportExporter
         }
 
         return (string) $value;
+    }
+
+    /**
+     * Format SERP features for CSV output.
+     *
+     * @param array $features Array of feature types
+     * @return string Icon string
+     */
+    public function formatSerpFeatures(array $features): string
+    {
+        $icons = [];
+        foreach ($features as $type) {
+            $icons[] = self::SERP_FEATURE_ICONS[$type] ?? '';
+        }
+        return implode('', $icons);
     }
 }

@@ -318,6 +318,12 @@ class RateLimitService
         static $available = null;
 
         if ($available === null) {
+            // Check if Redis extension is loaded first
+            if (!extension_loaded('redis')) {
+                $available = false;
+                return $available;
+            }
+
             try {
                 Redis::ping();
                 $available = true;
