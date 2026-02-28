@@ -563,6 +563,11 @@ class CreateSerpFeaturesTablesTest extends TestCase
     /** @test MR-003: migration can be re-run after rollback */
     public function test_mr_003_migration_can_be_rerun_after_rollback(): void
     {
+        // Skip on SQLite due to VACUUM transaction limitation
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            $this->markTestSkipped('SQLite does not support VACUUM within transactions');
+        }
+
         Schema::dropIfExists('serp_features');
         Schema::dropIfExists('serp_feature_history');
 
