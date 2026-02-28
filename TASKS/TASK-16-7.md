@@ -1,7 +1,7 @@
 # TASK-16-7: Mobile-Friendly Checker Tool
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `Medium`
