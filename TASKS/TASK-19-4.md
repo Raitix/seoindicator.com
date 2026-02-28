@@ -1,7 +1,7 @@
 # TASK-19-4: Job CRUD API Endpoints
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`

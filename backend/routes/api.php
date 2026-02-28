@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\IndicatorsController;
 use App\Http\Controllers\Api\V1\SuggestionController;
 use App\Http\Controllers\Api\V1\AnnotationController;
 use App\Http\Controllers\Api\V1\OnboardingController;
+use App\Http\Controllers\Api\V1\AnalysisJobController;
 
 /*
 |--------------------------------------------------------------------------
@@ -234,4 +235,11 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::post('onboarding', [OnboardingController::class, 'store']);
     Route::post('onboarding/complete', [OnboardingController::class, 'complete']);
     Route::post('onboarding/skip', [OnboardingController::class, 'skip']);
+
+    // Analysis Jobs (SPEC-019, FEAT-019)
+    Route::get('sites/{siteId}/analysis/jobs', [AnalysisJobController::class, 'index']);
+    Route::post('sites/{siteId}/analysis/jobs', [AnalysisJobController::class, 'store']);
+    Route::get('analysis/jobs/{jobId}', [AnalysisJobController::class, 'show']);
+    Route::delete('analysis/jobs/{jobId}', [AnalysisJobController::class, 'destroy']);
+    Route::get('analysis/indicators', [AnalysisJobController::class, 'indicators']);
 });

@@ -1,7 +1,7 @@
 # TASK-18-7: ScoreCalculatorService
 
 ## STATUS
-`To Document`
+`Documentation in Progress`
 
 ## PRIORITY
 `High`
