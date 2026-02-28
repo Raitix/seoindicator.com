@@ -1,7 +1,7 @@
 # SPEC-018: Legacy 17-Indicator SEO Analysis (Core Engine)
 
 ## STATUS
-`Specification In Progress`
+`Breaking Into Tasks`
 
 ## PRIORITY
 `High`
