@@ -1,7 +1,7 @@
 # TASK-14-4: Update Documentation for Audits Schema
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
