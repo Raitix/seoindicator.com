@@ -38,7 +38,8 @@ class CaptchaService
      */
     private function getDriver(): string
     {
-        return config('services.captcha.driver', env('CAPTCHA_DRIVER', 'recaptcha'));
+        $driver = config('services.captcha.driver') ?? env('CAPTCHA_DRIVER', 'recaptcha');
+        return is_string($driver) ? $driver : 'recaptcha';
     }
 
     /**
