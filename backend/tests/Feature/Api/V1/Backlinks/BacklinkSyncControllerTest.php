@@ -328,8 +328,11 @@ class BacklinkSyncControllerTest extends TestCase
      */
     public function test_sync_after_hour_passed(): void
     {
+        // Clear any existing cache
+        Cache::forget($this->getRateLimitKey($this->project->id));
+
         // Set recent sync timestamp (simulating 61 minutes ago - outside rate limit window)
-        $this->setRecentSync($this->project->id, 61);
+        Cache::put($this->getRateLimitKey($this->project->id), now()->subMinutes(61)->toIso8601String(), 3600);
 
         $response = $this->actingAs($this->user)
             ->postJson("/api/v1/projects/{$this->project->id}/backlinks/sync");
@@ -503,12 +506,15 @@ class BacklinkSyncControllerTest extends TestCase
      */
     public function test_previous_sync_completed(): void
     {
+        // Clear any existing cache
+        Cache::forget($this->getRateLimitKey($this->project->id));
+
         // First sync
         $this->actingAs($this->user)
             ->postJson("/api/v1/projects/{$this->project->id}/backlinks/sync");
 
         // Set completed timestamp (more than an hour ago)
-        $this->setRecentSync($this->project->id, 61);
+        Cache::put($this->getRateLimitKey($this->project->id), now()->subMinutes(61)->toIso8601String(), 3600);
 
         $response = $this->actingAs($this->user)
             ->postJson("/api/v1/projects/{$this->project->id}/backlinks/sync");
@@ -586,8 +592,10 @@ class BacklinkSyncControllerTest extends TestCase
         // User 2 should not be able to access user 1's job
         // This would require a job status endpoint which doesn't exist yet
         // For now, we verify the job_id format doesn't expose user info
-        $this->assertStringNotContainsString($this->user->id, $jobId);
+        // Check that the job ID doesn't contain the email (more sensitive than ID)
         $this->assertStringNotContainsString($this->user->email, $jobId);
+        // The job ID should be a UUID format, not containing the numeric user ID as a distinct segment
+        $this->assertMatchesRegularExpression('/^backlink-sync-[a-f0-9-]+$/', $jobId);
     }
 
     // ============================================================

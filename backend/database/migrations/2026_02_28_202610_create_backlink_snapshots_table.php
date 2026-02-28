@@ -28,7 +28,7 @@ return new class extends Migration
             $table->unsignedInteger('nofollow_count')->default(0);
             
             // Quality scores (DECIMAL(5,2) = 0.00 to 999.99)
-            $table->decimal('avg_domain_trust', 5, 2)->default(0.00);
+            $table->decimal('avg_domain_trust', 5, 2)->nullable();
             $table->decimal('anchor_diversity_score', 5, 2)->default(0.00);
             
             // Snapshot date
