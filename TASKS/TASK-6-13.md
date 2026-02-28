@@ -1,7 +1,7 @@
 # TASK-6-13: Webhook Management API
 
 ## Status
-`To Write Tests`
+`To Develop`
 
 ## Priority
 `High`
@@ -74,3 +74,20 @@ Medium (3-4 hours)
 - Priority: High (MVP feature)
 - Risk: Medium (new endpoints, secret handling)
 - Part of Phase 4: Webhooks
+
+### [2026-02-28 10:58] PreTester: Tests Completed
+- Created 66 test scenarios in `backend/tests/Feature/Api/V1/WebhookControllerTest.php`
+- Test documentation: `TESTS/TASK-6-13.md`
+- Coverage: CRUD operations, authorization, validation, security, edge cases
+- All tests return 404 (routes not implemented) - expected for TDD
+- Tests verify:
+  - Index: list webhooks, ordering, filtering by user
+  - Store: create, validation (name, url, events), secret generation
+  - Show: get single webhook, secret excluded
+  - Update: name, url, events, enabled status
+  - Destroy: delete webhook, cascade to deliveries
+  - Test endpoint: webhook test with delivery logging
+  - Authorization: unauthenticated (401), cross-user access (404)
+  - Edge cases: empty fields, unicode, SQL injection, XSS
+  - Security: SSRF prevention, javascript URL rejection
+- Ready for Developer to implement WebhookController
