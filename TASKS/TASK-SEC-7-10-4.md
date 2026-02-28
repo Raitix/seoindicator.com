@@ -1,7 +1,7 @@
 # TASK-SEC-7-10-4: Add IDOR Protection to summary Method
 
 ## STATUS
-`To Test Locally`
+`Done`
 
 ## PRIORITY
 `High`
