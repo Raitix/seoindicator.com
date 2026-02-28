@@ -305,6 +305,7 @@ class HtmlFetcherService
                 // Cache successful response
                 if ($cacheTtl > 0) {
                     Cache::put($cacheKey, $result, $cacheTtl);
+                    $this->trackCachedUrl($url);
                 }
 
                 // Log successful fetch for audit
@@ -421,6 +422,21 @@ class HtmlFetcherService
     private function getCacheKey(string $url): string
     {
         return 'html_fetcher_' . md5($url);
+    }
+
+    /**
+     * Track a cached URL for later cleanup.
+     *
+     * @param string $url
+     * @return void
+     */
+    private function trackCachedUrl(string $url): void
+    {
+        $cachedUrls = Cache::get(self::CACHED_URLS_KEY, []);
+        if (!in_array($url, $cachedUrls, true)) {
+            $cachedUrls[] = $url;
+            Cache::put(self::CACHED_URLS_KEY, $cachedUrls);
+        }
     }
 
     /**
