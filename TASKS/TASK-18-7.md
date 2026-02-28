@@ -1,7 +1,7 @@
 # TASK-18-7: ScoreCalculatorService
 
 ## STATUS
-`Documentation in Progress`
+`Done`
 
 ## PRIORITY
 `High`
@@ -144,6 +144,20 @@ Created from SPEC-018 Section 10.2. Core scoring logic.
 - No manual intervention required
 
 **Handoff to ProdTester:** Service deployed and production healthy. Ready for production validation.
+
+### [2026-02-28] DocSystemAnalyst
+**Documentation Complete**
+
+**DOCUMENTATION.md Updated:**
+- Added comprehensive ScoreCalculatorService documentation
+- Documented scoring algorithm (weighted average, 1-3 star system)
+- Documented category scoring (content, technical, accessibility, performance)
+- Documented default weights configuration for all 17 indicators
+- Documented N/A indicator handling (exclusion without weight renormalization)
+- Documented ScoreResult DTO structure and helper methods
+- Documented test coverage (51 tests, 102 assertions)
+
+**Status:** Task complete. Service deployed and documented.
 
 ### [2026-02-28] ProdTester
 **PRODUCTION TESTING COMPLETE - ALL TESTS PASS**
