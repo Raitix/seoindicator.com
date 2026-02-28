@@ -1,7 +1,7 @@
 # SPEC-012: Google Search Console Integration - Technical Specification
 
 ## STATUS
-`To Break Into Tasks`
+`In Progress`
 
 ## PRIORITY
 `Medium`

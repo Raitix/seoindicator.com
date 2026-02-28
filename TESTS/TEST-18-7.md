@@ -1,7 +1,7 @@
 # TEST-18-7: ScoreCalculatorService Tests
 
 ## Status
-`Tests Coverage In Progress`
+`Tests Passed`
 
 ## Related Task
 TASK-18-7: ScoreCalculatorService
