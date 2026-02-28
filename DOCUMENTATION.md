@@ -1628,6 +1628,170 @@ app('current_project'); // Returns Project model or null
 - TASK-8-6: ProjectPolicy authorization
 
 ---
+## GSC OAuth Service (TASK-12-4)
+
+### Service Description
+Backend service for handling Google OAuth 2.0 flow for Search Console API access. Manages authorization codes, token exchange, refresh, and secure storage. Core security layer for the GSC integration feature (FEAT-012).
+
+### Core Functionalities
+
+**OAuthService Class:**
+| Method | Description |
+|--------|-------------|
+| `getAuthorizationUrl(): string` | Generates OAuth URL with CSRF state parameter |
+| `handleCallback(string $code): GSCConnection` | Exchanges authorization code for tokens |
+| `refreshAccessToken(GSCConnection $connection): void` | Refreshes expired tokens |
+| `ensureValidToken(GSCConnection $connection): void` | Proactive refresh with 5-minute buffer |
+| `needsRefresh(GSCConnection $connection): bool` | Checks if token needs refresh |
+| `revokeAccess(GSCConnection $connection): void` | Revokes OAuth access |
+
+### Authorization Flow
+
+**1. Generate Authorization URL:**
+```php
+$url = $oauthService->getAuthorizationUrl();
+// Returns: https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&state=...
+```
+
+**2. Handle OAuth Callback:**
+```php
+$connection = $oauthService->handleCallback($authorizationCode);
+// Exchanges code for tokens, stores encrypted tokens, returns GSCConnection
+```
+
+**3. Token Refresh:**
+```php
+if ($oauthService->needsRefresh($connection)) {
+    $oauthService->refreshAccessToken($connection);
+}
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Token Encryption | Laravel `encrypted` cast on access_token, refresh_token |
+| CSRF Protection | State parameter validation in OAuth flow |
+| Redirect URI Validation | Whitelist check against configured URIs |
+| Proactive Refresh | 5-minute buffer before expiration |
+| Token Exposure | Tokens hidden from JSON serialization (`$hidden` array) |
+
+### Token Management
+
+**Token Refresh Logic:**
+- Proactive refresh: 5 minutes before expiration
+- Automatic refresh on API calls via `ensureValidToken()`
+- Rate limit handling with exponential backoff
+- Connection status updates on failures
+
+**Refresh Buffer:**
+```php
+// Tokens refreshed 5 minutes before actual expiration
+$bufferSeconds = 300;
+$expiresAt = $connection->token_expires_at;
+if (now()->addSeconds($bufferSeconds)->gte($expiresAt)) {
+    // Refresh needed
+}
+```
+
+### Error Handling
+
+| Error | HTTP Code | Behavior |
+|-------|-----------|----------|
+| Invalid Grant | 400 | Mark connection as revoked |
+| Rate Limit | 429 | Exponential backoff, retry |
+| Server Error | 5xx | Log error, retry on next request |
+| Network Error | N/A | Log error, retry on next request |
+
+### Technical Implementation
+- Service: `backend/app/Services/OAuthService.php`
+- Model: `backend/app/Models/GSCConnection.php`
+- Configuration: `config/services.php` (google key)
+
+### Model Integration
+
+**GSCConnection Model (OAuth-related):**
+| Property | Type | Description |
+|----------|------|-------------|
+| `access_token` | string | Encrypted OAuth access token |
+| `refresh_token` | string | Encrypted OAuth refresh token |
+| `token_expires_at` | timestamp | Token expiration time |
+| `status` | enum | Connection status: active, expired, revoked |
+
+**Encrypted Cast:**
+```php
+protected $casts = [
+    'access_token' => 'encrypted',
+    'refresh_token' => 'encrypted',
+];
+```
+
+### Redirect URI Validation
+
+**Whitelist Configuration:**
+```php
+// config/services.php
+'google' => [
+    'redirect_uris' => [
+        'https://seoindicator.com/api/gsc/callback',
+        'http://localhost:8000/api/gsc/callback',
+    ],
+],
+```
+
+**Validation Logic:**
+```php
+if (!in_array($redirectUri, config('services.google.redirect_uris'))) {
+    throw new InvalidRedirectUriException();
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| OAuthServiceTest | 42 | 84 |
+| GSCOAuthIntegrationTest | 9 | 18 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authorization URL | 4 | URL generation, state parameter |
+| Token Exchange | 5 | Code exchange, token storage |
+| Token Encryption | 3 | Tokens encrypted at rest |
+| Token Expiration | 4 | Expiry detection, refresh timing |
+| Token Refresh | 5 | Refresh flow, field updates |
+| Rate Limit Backoff | 3 | Exponential backoff handling |
+| Connection Status | 4 | Status transitions |
+| Connection Scope | 3 | Scope queries |
+| Cascade Delete | 2 | Connection cleanup |
+| Error Handling | 6 | Invalid grant, rate limit, errors |
+
+### Production Test Results (2026-02-28)
+
+| Test Category | Status | Details |
+|---------------|--------|---------|
+| Health Check | ✅ PASS | Database connected, all systems operational |
+| Endpoint Security | ✅ PASS | All endpoints return 401 for unauthenticated requests |
+| Security Tests | ✅ PASS | SQL injection, XSS, path traversal all blocked |
+| Local Tests | ✅ PASS | 20 tests, 49 assertions |
+
+### Production Status
+- **Deployed**: 2026-02-22 (commit f83d7c2)
+- **Health Check**: Passing
+- **Tests**: 51/51 passing (102 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-12-1 (GSC Connections Table)
+- Google OAuth 2.0 credentials
+
+### Related Tasks
+- TASK-12-7: GSC Connection Controller API
+- TASK-12-5: GSC Data Sync Service
+- TASK-12-8: GSC Data Controller API
+
+---
 ## GSC Connection Controller API (TASK-12-7)
 
 ### Service Description
