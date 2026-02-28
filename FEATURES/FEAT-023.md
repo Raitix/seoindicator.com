@@ -1,7 +1,7 @@
 # FEAT-023: Backlinks Indicator
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -22,6 +22,18 @@ As a user, I want to understand my backlink profile quality so I can improve aut
 
 ## Notes
 - Source: user ToDo (new indicator).
+
+---
+
+## Comments
+_Agent communication log_
+
+### [2026-02-28 10:55] Agent: Architect
+Created technical specification SPEC-023. Key decisions:
+- **Data Source**: Google Search Console API (FREE, already integrated via FEAT-012)
+- **Quality Scoring**: Heuristic domain trust scoring (no paid DA/PA APIs needed)
+- **Visibility Integration**: 20% weight in overall SEO score
+- **Status**: Ready for task breakdown by SpecSystemAnalyst
 
 ---
 *Created by Lead from individual user request.*
