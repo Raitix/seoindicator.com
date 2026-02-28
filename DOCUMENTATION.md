@@ -9521,3 +9521,147 @@ overallScore = sum(indicator.score * indicator.weight) / sum(indicator.weight) *
 - TASK-18-26: AnalysisController API
 
 ---
+## Ranking History Chart Component (TASK-1-15)
+
+### Feature Description
+Interactive chart component for visualizing keyword ranking position history over time. Part of the Keyword Rank Tracking feature (FEAT-001), this component provides users with a visual representation of ranking trends.
+
+### Core Functionalities
+
+**Chart Features:**
+| Feature | Description |
+|---------|-------------|
+| Line Chart | Date on X-axis, position on Y-axis |
+| Inverted Y-axis | Position 1 at top, 100 at bottom |
+| Gap Handling | "Not in top 100" shown as gap or line at bottom |
+| Date Range Selector | 7d, 30d, 90d, all options |
+| Hover Tooltip | Shows exact position and date |
+| Chart Title | Displays keyword name |
+| Loading State | Shows while fetching data |
+| Empty State | Displayed for keywords with no history |
+| Responsive Layout | Adapts to container width |
+| PNG Export | Download chart as image |
+
+### Component Implementation
+
+**File:** `frontend/components/charts/RankingHistoryChart.tsx`
+
+**Props:**
+```typescript
+interface RankingHistoryChartProps {
+  keywordId: number;
+  keywordName: string;
+  initialData?: RankingDataPoint[];
+  className?: string;
+}
+
+interface RankingDataPoint {
+  date: string;
+  position: number | null;
+}
+```
+
+**Dependencies:**
+- Recharts library (lightweight, React-friendly)
+- React hooks for state management
+- API integration for data fetching
+
+### Date Range Options
+
+| Option | Range | Description |
+|--------|-------|-------------|
+| 7d | Last 7 days | Short-term trend analysis |
+| 30d | Last 30 days | Default view, monthly trend |
+| 90d | Last 90 days | Quarterly trend analysis |
+| All | All available data | Full historical view |
+
+### Visual Design
+
+**Chart Layout:**
+- Container width: 100% (responsive)
+- Fixed height: 320px
+- Inverted Y-axis: Position 1 at top
+- X-axis: Date labels (auto-formatted)
+- Tooltip: Shows date and position on hover
+
+**Loading State:**
+- Skeleton loader while fetching data
+- Prevents layout shift
+
+**Empty State:**
+- Message: "No ranking history available"
+- Guidance for user to check back later
+
+### Export Feature
+
+**PNG Export:**
+- Button: Download icon + "Export PNG" label
+- Method: SVG → Canvas conversion (no external dependencies)
+- Filename: `ranking-history-{keyword}.png`
+
+### Demo Route
+
+**Public Demo Page:** `/ranking-history`
+- Displays chart with sample data
+- No authentication required
+- Used for production validation
+
+**Sample Data:**
+- 17 data points
+- Positions ranging from 2-21
+- Includes null position (2026-02-25) for gap testing
+
+### Technical Implementation
+
+**Frontend Files:**
+- Component: `frontend/components/charts/RankingHistoryChart.tsx`
+- Demo Page: `frontend/app/ranking-history/page.tsx`
+- Types: `frontend/lib/types/ranking.ts`
+
+**Recharts Components Used:**
+- `ResponsiveContainer` - Adaptive sizing
+- `LineChart` - Main chart component
+- `Line` - Data series
+- `XAxis`, `YAxis` - Axis configuration
+- `CartesianGrid` - Grid lines
+- `Tooltip` - Hover tooltip
+- `Legend` - Chart legend (optional)
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | React auto-escapes content |
+| Data Validation | Position must be 1-100 or null |
+| No Sensitive Data | Demo route uses sample data only |
+| Public Demo | No auth required for demo route |
+
+### Test Coverage
+
+| Test Category | Status | Notes |
+|---------------|--------|-------|
+| Production Validation | ✅ PASS | Verified at /ranking-history |
+| Chart Rendering | ✅ PASS | Recharts container present |
+| Date Range Selector | ✅ PASS | All buttons present |
+| Export PNG Button | ✅ PASS | Button with download icon |
+| Sample Data | ✅ PASS | 17 data points loaded |
+| Null Handling | ✅ PASS | Gap in chart for null position |
+| Responsive Layout | ✅ PASS | Container 100% width |
+| Health Check | ✅ PASS | API health endpoint 200 OK |
+
+### Production Status
+- **Deployed**: 2026-02-23 (commit dcecdd3 via GitHub Actions)
+- **Demo Route**: `https://seoindicator.com/ranking-history`
+- **Health Check**: Passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-1-5 (Ranking History API)
+- Recharts library
+
+### Related Tasks
+- TASK-1-5: Ranking History API Endpoints
+- TASK-1-13: Keyword List Page
+- TASK-1-14: Keyword Add/Edit Forms
+
+---
