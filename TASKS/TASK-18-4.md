@@ -1,7 +1,7 @@
 # TASK-18-4: DomainValidatorService
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
@@ -41,3 +41,25 @@ Create service to normalize domain input, validate format, check accessibility, 
 ## Comments
 ### [2026-02-28] SpecSystemAnalyst
 Created from SPEC-018 Section 10.2. Critical for safe domain processing.
+
+### [2026-02-28] PreTester
+**Test Documentation Created:** TESTS/TEST-18-4.md (80+ test scenarios)
+**Test File Created:** backend/tests/Unit/Services/DomainValidatorServiceTest.php (70+ test methods)
+
+**Test Coverage:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Domain Normalization (DN) | 14 | Protocol handling, www, path/query removal, lowercase, ports |
+| Format Validation (DV) | 15 | Valid/invalid domains, TLDs, punycode, IPs |
+| IDN Handling (IDN) | 6 | Unicode domains (Japanese, Cyrillic, Arabic, Chinese), mixed script |
+| SSRF Protection (SSRF) | 16 | Localhost, private IPs, cloud metadata, protocol bypass, IP bypass attempts |
+| Error Handling (EH) | 4 | Exception types, error codes |
+| Integration (INT) | 2 | URLValidationService integration |
+| Edge Cases | 20+ | Spaces, case, URL encoding, hyphens, underscores, control chars |
+
+**Key Integration Points:**
+- Uses URLValidationService from FEAT-016 for SSRF protection
+- Must mock HTTP client for accessibility tests
+- ValidationException with error codes required
+
+**Status:** Tests written, ready for Developer implementation.
