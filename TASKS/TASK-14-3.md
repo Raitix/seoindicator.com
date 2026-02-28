@@ -1,7 +1,7 @@
 # TASK-14-3: Create Issue Types Table
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -88,4 +88,24 @@ Attempted: `php artisan test --filter=IssueType`
 Result: No tests found.
 No IssueType test files located under backend/tests.
 Action: Returning to Developer to add tests for IssueType CRUD + migration + seeder validation.
+
+### [2026-02-28 22:47] Developer: Tests Added
+**Test file:** `backend/tests/Feature/Api/V1/IssueTypeControllerTest.php`
+- 30 comprehensive tests covering:
+  - INDEX: List, empty, pagination, filter by category/severity, search, sorting (7 tests)
+  - CATEGORIES: Get available categories (1 test)
+  - STORE: Create, validation errors, invalid severity/category, duplicate (5 tests)
+  - SHOW: Get single, not found (2 tests)
+  - UPDATE: Update, not found, validation error, duplicate (4 tests)
+  - DESTROY: Delete, not found (2 tests)
+  - Response format: categoryLabel, timestamps (2 tests)
+  - Security: SQL injection, XSS protection (2 tests)
+  - Authentication: 5 tests for unauthenticated access denial
+
+**Fixes applied:**
+1. Added `$this->actingAs($this->user)` to all authenticated test methods
+2. Fixed route ordering: moved `categories` route before `apiResource` to prevent route conflict
+
+**Test results:** 30 passed (90 assertions)
+Status: To Test Locally
 

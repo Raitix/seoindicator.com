@@ -3297,6 +3297,146 @@ The visibility score is composed of three weighted components:
 - Future: Visibility score history API endpoint
 
 ---
+## SERP Feature Score Calculator (TASK-10-3)
+
+### Service Description
+Calculates visibility bonuses based on presence of SERP features (featured snippets, local packs, etc.) for keywords. Part of the Visibility Score calculation (FEAT-010), contributing 25% weight to the overall visibility score.
+
+### Core Functionalities
+
+**SerpFeatureScoreCalculator Class:**
+| Method | Description |
+|--------|-------------|
+| `calculate(Collection $keywords): float` | Calculate average bonus score for keywords with SERP features |
+| `getFeatureBonus(string $feature): int` | Get bonus points for a specific SERP feature |
+| `getAllFeatureBonuses(): array` | Get all feature bonus mappings |
+
+### SERP Feature Bonus Points
+
+| Feature | Bonus Points | Description |
+|---------|--------------|-------------|
+| `featured_snippet` | 20 | Position 0 - highest visibility |
+| `local_pack` | 15 | Local business results |
+| `sitelinks` | 10 | Additional site links in result |
+| `reviews` | 5 | Star ratings/reviews displayed |
+| `video` | 5 | Video result in SERP |
+| `image_pack` | 5 | Image carousel in results |
+| `people_also_ask` | 3 | FAQ accordion feature |
+
+### Score Calculation Algorithm
+
+```php
+class SerpFeatureScoreCalculator
+{
+    private const BONUS_POINTS = [
+        'featured_snippet' => 20,
+        'local_pack' => 15,
+        'sitelinks' => 10,
+        'reviews' => 5,
+        'video' => 5,
+        'image_pack' => 5,
+        'people_also_ask' => 3,
+    ];
+
+    private const MAX_BONUS_PER_KEYWORD = 50;
+    private const MAX_SCORE = 100;
+
+    public function calculate(Collection $keywords): float
+    {
+        $totalBonus = 0;
+        $keywordsWithFeatures = 0;
+
+        foreach ($keywords as $keyword) {
+            $keywordBonus = 0;
+            foreach ($keyword->serp_features ?? [] as $feature) {
+                $keywordBonus += self::BONUS_POINTS[$feature] ?? 0;
+            }
+
+            if ($keywordBonus > 0) {
+                $totalBonus += min($keywordBonus, self::MAX_BONUS_PER_KEYWORD);
+                $keywordsWithFeatures++;
+            }
+        }
+
+        return $keywordsWithFeatures > 0 
+            ? min(self::MAX_SCORE, ($totalBonus / $keywordsWithFeatures) * 2)
+            : 0;
+    }
+}
+```
+
+### Scoring Logic
+
+**Per-Keyword Cap:** Maximum 50 bonus points per keyword to prevent outliers from skewing the score.
+
+**Normalization:** Final score normalized to 0-100 scale:
+- If all keywords have featured snippets: Score ≈ 40
+- If all keywords have local packs: Score ≈ 30
+- Score doubles to reach 0-100 range
+
+**Empty Handling:** Returns 0 if no keywords have SERP features.
+
+### Technical Implementation
+- **Class:** `backend/app/Services/SEO/SerpFeatureScoreCalculator.php`
+- **Namespace:** `App\Services\SEO`
+- **Dependencies:** None (pure calculation, no external services)
+
+### Usage Example
+
+```php
+use App\Services\SEO\SerpFeatureScoreCalculator;
+use App\Models\Keyword;
+
+$calculator = new SerpFeatureScoreCalculator();
+
+$keywords = Keyword::with('serpFeatures')->get();
+$score = $calculator->calculate($keywords);
+
+// Returns: 0.0 - 100.0
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| SerpFeatureScoreCalculatorTest | 39 | 65 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| TC-001: Single keyword with single SERP feature | 7 | Each feature type tested individually |
+| TC-002: Single keyword with multiple SERP features | 5 | Combined feature bonuses |
+| TC-003: Multiple keywords with SERP features | 4 | Collection handling |
+| TC-004: Edge cases | 6 | Empty collections, null values, invalid features |
+| TC-005: Score normalization | 3 | 0-100 range validation |
+| TC-006: Security & adversarial tests | 5 | SQL injection, XSS, special characters |
+| Additional edge cases | 9 | Cap enforcement, large datasets |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SQL Injection | Pure calculation, no DB queries |
+| XSS | No user input rendered |
+| Invalid Features | Unknown features return 0 bonus |
+| Performance | Handles 10,000 keywords in <1 second |
+
+### Production Status
+- **Deployed:** 2026-02-28 (GitHub Actions run 22527632578)
+- **Health Check:** Passing
+- **Tests:** 39/39 passing (65 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-10-1 (Visibility Scores Table)
+- FEAT-001 (Keywords table with serp_features column)
+
+### Related Tasks
+- TASK-10-1: Visibility Scores Table
+- TASK-10-2: Position Score Calculator
+- FEAT-010: Visibility Score feature
+
+---
 ## Database Schema: Projects Table (TASK-8-1)
 
 ### Projects Table
