@@ -1254,6 +1254,140 @@ CREATE TABLE dismissed_suggestions (
 - TASK-5-6: Suggestion aggregation service
 
 ---
+## Database Schema: Visibility Scores Table (TASK-10-1)
+
+### Visibility Scores Table
+Stores daily calculated visibility scores for each project. These scores are used for trend analysis, dashboard metrics, and tracking SEO performance over time.
+
+```sql
+CREATE TABLE visibility_scores (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT UNSIGNED NOT NULL,
+    score TINYINT UNSIGNED NOT NULL, -- 0-100
+    position_component DECIMAL(5,2) NOT NULL,
+    serp_component DECIMAL(5,2) NOT NULL,
+    volume_component DECIMAL(5,2) NOT NULL,
+    keywords_count INT UNSIGNED NOT NULL DEFAULT 0,
+    calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    INDEX idx_visibility_project_id (project_id),
+    INDEX idx_visibility_calculated_at (calculated_at),
+    UNIQUE KEY unique_project_date (project_id, DATE(calculated_at))
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `project_id` | BIGINT UNSIGNED | FK to projects.id |
+| `score` | TINYINT UNSIGNED | Overall visibility score (0-100) |
+| `position_component` | DECIMAL(5,2) | Position-based component of score |
+| `serp_component` | DECIMAL(5,2) | SERP features component of score |
+| `volume_component` | DECIMAL(5,2) | Search volume component of score |
+| `keywords_count` | INT UNSIGNED | Number of keywords used in calculation |
+| `calculated_at` | TIMESTAMP | When the score was calculated |
+
+**Constraints:**
+- Foreign Key: `project_id → projects.id` ON DELETE CASCADE
+- Unique: `(project_id, DATE(calculated_at))` - one score per project per day
+
+**Indexes:**
+- `idx_visibility_project_id` on `project_id`
+- `idx_visibility_calculated_at` on `calculated_at`
+- `unique_project_date` unique constraint on `(project_id, DATE(calculated_at))`
+
+**Model:** `App\Models\VisibilityScore`
+
+### Model Relationships
+
+**VisibilityScore Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `project()` | belongsTo | The project this score belongs to |
+
+**Project Model (added relationships):**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `visibilityScores()` | hasMany | VisibilityScore records for this project |
+| `latestVisibilityScore()` | hasOne | Most recent visibility score |
+
+### Model Scopes
+
+| Scope | Description |
+|-------|-------------|
+| `forProject($projectId)` | Filter scores by project ID |
+| `dateRange($from, $to)` | Filter scores by date range |
+| `latestPerProject()` | Returns one score per project (latest) |
+
+### Model Methods
+
+| Method | Description |
+|--------|-------------|
+| `getLatestForProject($projectId)` | Static method to get latest score for a project |
+| `getTrendForProject($projectId, $days)` | Static method to get scores within N days |
+
+### Factory States
+
+| State | Description |
+|-------|-------------|
+| `high()` | Creates score in high range (80-100) |
+| `medium()` | Creates score in medium range (40-79) |
+| `low()` | Creates score in low range (0-39) |
+
+### Score Calculation Components
+
+The visibility score is composed of three weighted components:
+
+| Component | Weight | Description |
+|-----------|--------|-------------|
+| `position_component` | ~40% | Based on average keyword positions |
+| `serp_component` | ~30% | Based on SERP feature presence |
+| `volume_component` | ~30% | Based on search volume distribution |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| VisibilityScoreTest | 19 | 47 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Model Creation (MC) | 3 | Basic model creation |
+| Relationships (RL) | 3 | Project relationships, cascade delete |
+| Scopes (SC) | 3 | forProject, dateRange, latestPerProject |
+| Static Methods (SM) | 3 | getLatestForProject, getTrendForProject |
+| Factory States (FS) | 3 | high, medium, low states |
+| Validation (VL) | 2 | Score range validation (0-100) |
+| Edge Cases (EC) | 2 | Zero keywords, multiple scores same day |
+
+### Production Status
+- **Deployed**: 2026-02-28 (commit e731ed2 via GitHub Actions)
+- **Migration**: `2026_02_27_233523_create_visibility_scores_table`
+- **Health Check**: Passing
+- **Tests**: 19/19 passing (47 assertions)
+- **Status**: Complete
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Mass Assignment | `$fillable` whitelist on model |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS | Model stores numeric data only |
+| IDOR | Protected via Project relationship and ProjectPolicy |
+| Cascade Delete | FK with ON DELETE CASCADE ensures data integrity |
+
+### Dependencies
+- TASK-8-1 (Projects Table)
+
+### Related Tasks
+- Future: Visibility trend charts on dashboard
+- Future: Visibility score history API endpoint
+
+---
 ## Database Schema: Projects Table (TASK-8-1)
 
 ### Projects Table

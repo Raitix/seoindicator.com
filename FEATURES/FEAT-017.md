@@ -1,7 +1,27 @@
 # FEAT-017: User Onboarding & Activation Flow
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
+
+## Specification
+- **SPEC-017**: User Onboarding & Activation Flow - [View Specification](../SPECIFICATIONS/SPEC-017.md)
+
+## Comments
+### 2026-02-28 - Architect
+Created technical specification SPEC-017. Key decisions:
+- 5-step wizard with skip/resume functionality
+- `user_onboarding` table for progress tracking
+- Keyword created on completion (not during step 2)
+- Mock ranking preview for MVP (no real SERP API)
+- Free tools only - no paid services required
+
+**Risk Assessment:** Low risk confirmed - frontend-heavy, no complex integrations, simple database schema.
+
+**Implementation Phases:**
+- Phase 1 (MVP): Steps 1, 2, 5 + basic progress tracking
+- Phase 2: Steps 3, 4 + skip/resume UI
+- Phase 3: Analytics tracking
+- Phase 4 (Post-MVP): Smart keyword suggestions
 
 ## PRIORITY
 `High`
