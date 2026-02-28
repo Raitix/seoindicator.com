@@ -4287,6 +4287,122 @@ $opportunities = GSCData::forSite($siteId)
 - TASK-12-8: GSC Data Controller API
 
 ---
+## GSC Data Sync Service (TASK-12-5)
+
+### Service Description
+Backend service for fetching and storing Google Search Console data via API. Handles batch processing, rate limiting with exponential backoff, and daily sync jobs for all connected GSC properties.
+
+### Core Functionalities
+
+**GSCDataSync Class:**
+| Method | Description |
+|--------|-------------|
+| `syncProject(Project $project, ?string $fromDate = null)` | Fetch GSC data for a specific site |
+| `fetchBatch(GSCConnection $conn, array $params)` | Batch API requests with retry logic |
+| `importHistorical(Project $project, string $fromDate, string $toDate)` | Historical data import (16-month limit) |
+| `handleRateLimit()` | Exponential backoff with jitter |
+| `storeData(array $data)` | Upsert with deduplication |
+| `syncAllConnections()` | Sync all active connections |
+| `getSyncStatus(Project $project)` | Connection and data status |
+
+### Rate Limiting Implementation
+
+**Exponential Backoff Pattern:**
+| Attempt | Delay |
+|---------|-------|
+| 1 | 1 second |
+| 2 | 2 seconds |
+| 3 | 4 seconds |
+| 4 | 8 seconds |
+| 5 | 16 seconds |
+
+**Rate Limit Handling:**
+- Max 5 retry attempts per request
+- Jitter added to prevent thundering herd
+- Cache-based rate limit lock prevents concurrent syncs
+- Configurable buffer before hitting actual API limits
+
+### Data Storage
+
+**Upsert Logic:**
+- Unique constraint: `(site_id, query, page, data_date)`
+- Deduplicates records automatically
+- Auto keyword matching via QueryMatcher integration
+- CTR and position calculations validated
+
+### Batch Processing
+
+**API Quota Management:**
+- 25,000 rows per request maximum
+- Date chunking for large date ranges
+- Pagination handling for large result sets
+- Progress tracking for long-running syncs
+
+### Sync Management
+
+**Connection Validation:**
+- Checks connection status before sync
+- Validates token expiration
+- Auto-refreshes tokens via OAuthService
+- Skips revoked/expired connections
+
+**Lock Mechanism:**
+- Prevents concurrent syncs for same project
+- Lock expires after 30 minutes (safety)
+- Lock stored in cache with project-specific key
+
+### Technical Implementation
+- Service: `backend/app/Services/GSCDataSync.php`
+- Uses: `OAuthService` for token management
+- Uses: `QueryMatcher` for keyword matching
+- Model: `GSCData` for storage
+- Model: `GSCConnection` for connection state
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Token Encryption | Tokens encrypted via OAuthService |
+| Rate Limit Compliance | Exponential backoff prevents quota exhaustion |
+| Data Isolation | Per-project sync with user ownership check |
+| Error Handling | Graceful degradation on API failures |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| GSCDataSyncServiceTest | 13 | 45 |
+| GSCOAuthServiceTest | 11 | - |
+| GSCOAuthIntegrationTest | 9 | - |
+| GSCApiEndpointsTest | 11 | 13 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| API Response Parsing | 4 | Edge cases, malformed data |
+| Batch Processing | 3 | API limits, chunking |
+| Rate Limiting | 3 | Backoff, retry logic |
+| Sync Lock | 2 | Concurrent sync prevention |
+| Date Handling | 2 | Range calculation, historical import |
+| CTR/Position Calculations | 2 | Validation, edge cases |
+
+### Production Status
+- **Deployed**: 2026-02-28 (via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 44 tests, 58+ assertions passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-12-2 (gsc_data table)
+- TASK-12-4 (OAuth service)
+- TASK-12-1 (GSC connections)
+
+### Related Tasks
+- TASK-12-4: OAuth Service
+- TASK-12-6: Query Matching
+- TASK-12-8: GSC Data Controller
+
+---
 ## Database Schema: Webhooks Tables (TASK-6-12)
 
 ### Webhooks Table
