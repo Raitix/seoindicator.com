@@ -1,7 +1,7 @@
 # TASK-23-7: Domain Trust Scoring Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -103,3 +103,33 @@ private const SPAM_TLDS = ['xyz', 'top', 'click', 'loan', 'work', 'date'];
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-28 21:38] Agent: ProjectManager
+**Prioritization Complete**
+
+- **Priority Confirmed**: `High` — Core scoring service for backlink quality assessment, critical for feature value
+- **Risk**: `Medium` — New algorithm implementation, no external API dependencies (uses heuristics only)
+
+**Dependency Analysis:**
+- Depends on: TASK-23-2 (Backlink Models) — Status: `To Write Tests`
+- The `ReferringDomain` model stores `domain_trust_score` field that this service populates
+- Dependency chain: TASK-23-1 (Done) → TASK-23-2 (To Write Tests) → TASK-23-7 (Trust Scoring)
+
+**Execution Order:**
+```
+TASK-23-2 (Models) ──→ TASK-23-7 (Trust Scoring) ──→ TASK-23-8 (Profile Health)
+```
+
+**Algorithm Components:**
+| Component | Points | Implementation |
+|-----------|--------|----------------|
+| HTTPS | 0-20 | Check SSL certificate |
+| Age Estimation | 0-30 | DNS/WHOIS lookup (free) |
+| TLD Quality | 0-15 | Static mapping |
+| Length | 0-10 | String analysis |
+| Pattern | 0-10 | Regex validation |
+| Spam Penalty | -30 | Known spam TLD list |
+
+**Free Tools Compliance:** ✅ Uses only heuristic analysis, no paid APIs required.
+
+Handing off to PreTester for test design.
