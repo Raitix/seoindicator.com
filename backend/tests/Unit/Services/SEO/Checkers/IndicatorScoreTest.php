@@ -314,7 +314,12 @@ class IndicatorScoreTest extends TestCase
         $reflection = new \ReflectionClass(IndicatorScore::class);
         
         $this->assertTrue($reflection->isEnum());
-        $this->assertEquals('int', (string) $reflection->getMethod('from')->getReturnType());
+        
+        // Check that the enum is backed by int by verifying the backing type
+        $backingType = $reflection->getConstant('BACKING_TYPE');
+        // If BACKING_TYPE is not defined, we can check via the first case's value type
+        $firstCase = IndicatorScore::cases()[0];
+        $this->assertIsInt($firstCase->value);
     }
 
     /**
