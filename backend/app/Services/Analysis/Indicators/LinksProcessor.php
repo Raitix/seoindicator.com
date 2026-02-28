@@ -3,6 +3,7 @@
 namespace App\Services\Analysis\Indicators;
 
 use RuntimeException;
+use DOMDocument;
 
 /**
  * Links Indicator Processor.
@@ -37,7 +38,7 @@ class LinksProcessor extends IndicatorProcessor
 
         try {
             $html = $this->fetchUrl($url);
-            $crawler = $this->parseHtml($html);
+            $dom = $this->parseHtml($html);
 
             $score = 0.0;
             $maxScore = $this->maxScore();
@@ -49,7 +50,7 @@ class LinksProcessor extends IndicatorProcessor
             $baseHost = $baseUrl['host'] ?? '';
 
             // Extract all links
-            $links = $this->extractLinks($crawler, $baseHost);
+            $links = $this->extractLinks($dom, $baseHost);
             $data['total_count'] = count($links['internal']) + count($links['external']);
 
             // Analyze internal links
@@ -106,24 +107,25 @@ class LinksProcessor extends IndicatorProcessor
     /**
      * Extract all links and categorize as internal/external.
      */
-    protected function extractLinks($crawler, string $baseHost): array
+    protected function extractLinks(DOMDocument $dom, string $baseHost): array
     {
         $links = [
             'internal' => [],
             'external' => [],
         ];
 
-        $crawler->filter('a[href]')->each(function ($node) use ($baseHost, &$links) {
-            $href = $node->attr('href');
-            $text = trim($node->text());
-            $rel = $node->attr('rel');
-            $target = $node->attr('target');
+        $nodes = $this->query($dom, 'a[href]');
+        foreach ($nodes as $node) {
+            $href = $node->hasAttributes() ? ($node->attributes->getNamedItem('href')?->nodeValue ?? null) : null;
+            $text = trim($node->textContent);
+            $rel = $node->hasAttributes() ? ($node->attributes->getNamedItem('rel')?->nodeValue ?? null) : null;
+            $target = $node->hasAttributes() ? ($node->attributes->getNamedItem('target')?->nodeValue ?? null) : null;
 
             // Skip anchors, javascript, and mailto links
             if (!$href || str_starts_with($href, '#') || 
                 str_starts_with($href, 'javascript:') || 
                 str_starts_with($href, 'mailto:')) {
-                return;
+                continue;
             }
 
             $parsedUrl = parse_url($href);
@@ -153,7 +155,7 @@ class LinksProcessor extends IndicatorProcessor
             } else {
                 $links['internal'][] = $linkData;
             }
-        });
+        }
 
         return $links;
     }

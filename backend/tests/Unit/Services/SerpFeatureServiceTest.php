@@ -257,4 +257,136 @@ class SerpFeatureServiceTest extends TestCase
         $this->assertEquals(0, $result['data']['totalKeywords']);
         $this->assertEquals(0, $result['data']['keywordsWithFeatures']);
     }
+
+    // ============================================
+    // Cache Tests (S-003, S-004)
+    // ============================================
+
+    /** @test */
+    public function it_caches_summary_queries(): void
+    {
+        // Arrange - S-003: Service caches frequent queries
+        $cacheKey = "serp_feature_summary:{$this->site->id}:7";
+
+        // Act - First call
+        $result1 = $this->service->getSummary($this->site->id, 7);
+
+        // Assert - Should be cached
+        $this->assertTrue(Cache::has($cacheKey));
+
+        // Act - Second call should use cache
+        $result2 = $this->service->getSummary($this->site->id, 7);
+
+        // Assert - Results should be identical
+        $this->assertEquals($result1, $result2);
+    }
+
+    /** @test */
+    public function it_clears_cache_on_invalidation(): void
+    {
+        // Arrange - S-004: Service clears cache on update
+        $this->service->getSummary($this->site->id, 7);
+        $this->service->getSummary($this->site->id, 30);
+
+        // Act
+        $this->service->invalidateSummaryCache($this->site->id);
+
+        // Assert - All caches for this site should be cleared
+        $this->assertNull(Cache::get("serp_feature_summary:{$this->site->id}:7"));
+        $this->assertNull(Cache::get("serp_feature_summary:{$this->site->id}:30"));
+    }
+
+    /** @test */
+    public function it_uses_different_cache_keys_for_different_day_ranges(): void
+    {
+        // Act
+        $result7 = $this->service->getSummary($this->site->id, 7);
+        $result30 = $this->service->getSummary($this->site->id, 30);
+
+        // Assert - Both should be cached separately
+        $this->assertTrue(Cache::has("serp_feature_summary:{$this->site->id}:7"));
+        $this->assertTrue(Cache::has("serp_feature_summary:{$this->site->id}:30"));
+    }
+
+    // ============================================
+    // Input Validation Tests (S-002)
+    // ============================================
+
+    /** @test */
+    public function it_validates_keyword_id_type(): void
+    {
+        // Act - Non-existent keyword
+        $result = $this->service->getKeywordFeatures(99999);
+
+        // Assert
+        $this->assertFalse($result['success']);
+        $this->assertEquals('KEYWORD_NOT_FOUND', $result['error']);
+    }
+
+    /** @test */
+    public function it_validates_site_id_type(): void
+    {
+        // Act - Non-existent site
+        $result = $this->service->getSiteFeatures(99999);
+
+        // Assert
+        $this->assertFalse($result['success']);
+        $this->assertEquals('SITE_NOT_FOUND', $result['error']);
+    }
+
+    /** @test */
+    public function it_applies_default_pagination_values(): void
+    {
+        // Act - Call without pagination params
+        $result = $this->service->getSiteFeatures($this->site->id);
+
+        // Assert - Should use defaults
+        $this->assertEquals(1, $result['meta']['page']);
+        $this->assertEquals(20, $result['meta']['perPage']);
+    }
+
+    /** @test */
+    public function it_handles_custom_pagination_values(): void
+    {
+        // Act
+        $result = $this->service->getSiteFeatures($this->site->id, 2, 50);
+
+        // Assert
+        $this->assertEquals(2, $result['meta']['page']);
+        $this->assertEquals(50, $result['meta']['perPage']);
+    }
+
+    // ============================================
+    // Boundary Tests
+    // ============================================
+
+    /** @test */
+    public function it_handles_minimum_days_parameter(): void
+    {
+        // Act - Days = 1 (minimum)
+        $result = $this->service->getSummary($this->site->id, 1);
+
+        // Assert
+        $this->assertTrue($result['success']);
+    }
+
+    /** @test */
+    public function it_returns_correct_last_page_calculation(): void
+    {
+        // Arrange - Create multiple features
+        for ($i = 0; $i < 25; $i++) {
+            \App\Models\SerpFeature::create([
+                'keyword_id' => $this->keyword->id,
+                'feature_type' => SerpFeature::FEATURE_TYPES[$i % 10],
+                'is_present' => true,
+                'checked_at' => now()->subMinutes($i)
+            ]);
+        }
+
+        // Act
+        $result = $this->service->getSiteFeatures($this->site->id, 1, 10);
+
+        // Assert
+        $this->assertGreaterThanOrEqual(1, $result['meta']['lastPage']);
+    }
 }

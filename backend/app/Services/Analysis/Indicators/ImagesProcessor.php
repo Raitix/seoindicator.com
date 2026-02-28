@@ -3,6 +3,7 @@
 namespace App\Services\Analysis\Indicators;
 
 use RuntimeException;
+use DOMDocument;
 
 /**
  * Images Indicator Processor.
@@ -37,7 +38,7 @@ class ImagesProcessor extends IndicatorProcessor
 
         try {
             $html = $this->fetchUrl($url);
-            $crawler = $this->parseHtml($html);
+            $dom = $this->parseHtml($html);
 
             $score = 0.0;
             $maxScore = $this->maxScore();
@@ -45,7 +46,7 @@ class ImagesProcessor extends IndicatorProcessor
             $recommendations = [];
 
             // Extract all images
-            $images = $this->extractImages($crawler);
+            $images = $this->extractImages($dom);
             $data['total_count'] = count($images);
 
             if ($data['total_count'] === 0) {
@@ -140,26 +141,27 @@ class ImagesProcessor extends IndicatorProcessor
     /**
      * Extract all images from the page.
      */
-    protected function extractImages($crawler): array
+    protected function extractImages(DOMDocument $dom): array
     {
         $images = [];
 
-        $crawler->filter('img')->each(function ($node) use (&$images) {
-            $src = $node->attr('src');
+        $nodes = $this->query($dom, 'img');
+        foreach ($nodes as $node) {
+            $src = $node->hasAttributes() ? ($node->attributes->getNamedItem('src')?->nodeValue ?? null) : null;
             if (!$src) {
-                return;
+                continue;
             }
 
             $images[] = [
                 'src' => $src,
-                'alt' => $node->attr('alt'),
-                'title' => $node->attr('title'),
-                'width' => $node->attr('width'),
-                'height' => $node->attr('height'),
-                'loading' => $node->attr('loading'),
-                'lazy' => $node->attr('loading') === 'lazy',
+                'alt' => $node->hasAttributes() ? ($node->attributes->getNamedItem('alt')?->nodeValue ?? null) : null,
+                'title' => $node->hasAttributes() ? ($node->attributes->getNamedItem('title')?->nodeValue ?? null) : null,
+                'width' => $node->hasAttributes() ? ($node->attributes->getNamedItem('width')?->nodeValue ?? null) : null,
+                'height' => $node->hasAttributes() ? ($node->attributes->getNamedItem('height')?->nodeValue ?? null) : null,
+                'loading' => $node->hasAttributes() ? ($node->attributes->getNamedItem('loading')?->nodeValue ?? null) : null,
+                'lazy' => $node->hasAttributes() && $node->attributes->getNamedItem('loading')?->nodeValue === 'lazy',
             ];
-        });
+        }
 
         return $images;
     }

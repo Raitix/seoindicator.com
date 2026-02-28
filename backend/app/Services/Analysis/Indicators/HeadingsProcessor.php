@@ -3,6 +3,7 @@
 namespace App\Services\Analysis\Indicators;
 
 use RuntimeException;
+use DOMDocument;
 
 /**
  * Headings Indicator Processor.
@@ -32,7 +33,7 @@ class HeadingsProcessor extends IndicatorProcessor
 
         try {
             $html = $this->fetchUrl($url);
-            $crawler = $this->parseHtml($html);
+            $dom = $this->parseHtml($html);
 
             $score = 0.0;
             $maxScore = $this->maxScore();
@@ -40,7 +41,7 @@ class HeadingsProcessor extends IndicatorProcessor
             $recommendations = [];
 
             // Count all headings
-            $headings = $this->extractHeadings($crawler);
+            $headings = $this->extractHeadings($dom);
             $data['headings'] = $headings;
             $data['counts'] = $this->countHeadings($headings);
 
@@ -93,23 +94,28 @@ class HeadingsProcessor extends IndicatorProcessor
     /**
      * Extract all headings from the page.
      */
-    protected function extractHeadings($crawler): array
+    protected function extractHeadings(DOMDocument $dom): array
     {
         $headings = [];
         $levels = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
 
         foreach ($levels as $level) {
-            $crawler->filter($level)->each(function ($node, $index) use ($level, &$headings) {
-                $text = trim($node->text());
+            $nodes = $this->query($dom, $level);
+            foreach ($nodes as $node) {
+                $text = trim($node->textContent);
                 $headings[] = [
                     'level' => (int) substr($level, 1),
                     'text' => $text,
                     'length' => strlen($text),
                 ];
-            });
+            }
         }
 
-        // Sort by position in document (using the crawler's document order)
+        // Sort by level to maintain document order (DOMNodeList is already in document order)
+        usort($headings, function ($a, $b) {
+            return $a['level'] <=> $b['level'];
+        });
+
         return $headings;
     }
 
