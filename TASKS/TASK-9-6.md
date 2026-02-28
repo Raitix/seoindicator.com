@@ -1,7 +1,7 @@
 # TASK-9-6: Input Validation Requests
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -133,3 +133,24 @@ Created comprehensive test suites for both FormRequest classes:
 - Fixed `test_whitespace_only_title_fails` - Laravel treats whitespace-only as empty
 
 **All 118 tests pass successfully.**
+
+### [2026-02-28 17:10] Agent: Developer
+**Development Complete:**
+
+FormRequest classes already exist and are fully implemented:
+- `StoreAnnotationRequest` at `app/Http/Requests/StoreAnnotationRequest.php`
+- `UpdateAnnotationRequest` at `app/Http/Requests/UpdateAnnotationRequest.php`
+
+**Verification:**
+- Ran StoreAnnotationRequestTest: 95 tests passed
+- Ran UpdateAnnotationRequestTest: 23 tests passed
+- Total: 118 tests passed with 158 assertions
+
+**Implementation details:**
+- Both classes use Laravel's FormRequest validation pattern
+- StoreAnnotationRequest validates: date (required|date), title (required|string|max:255), description (nullable|string), category (required|Rule::in(AnnotationCategory::cases())), project_id (required|exists:projects,id)
+- UpdateAnnotationRequest extends StoreAnnotationRequest with same rules
+- Both have custom error messages
+- Authorization returns true (relying on controller middleware for auth)
+
+Status transitioned to `To Test Locally` for LocalTester validation.
