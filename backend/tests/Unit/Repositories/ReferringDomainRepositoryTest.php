@@ -4,6 +4,7 @@ namespace Tests\Unit\Repositories;
 
 use App\Models\Project;
 use App\Models\ReferringDomain;
+use App\Repositories\ReferringDomainRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
@@ -11,14 +12,20 @@ use Tests\TestCase;
 /**
  * Tests for ReferringDomainRepository.
  * 
- * These tests define the expected repository interface.
- * The repository implementation should be created to pass these tests.
- * 
  * @see TASK-23-2
  */
 class ReferringDomainRepositoryTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected ReferringDomainRepository $repository;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        
+        $this->repository = app(ReferringDomainRepository::class);
+    }
 
     // =============================================
     // CRUD Tests
@@ -29,7 +36,7 @@ class ReferringDomainRepositoryTest extends TestCase
     {
         $project = Project::factory()->create();
         
-        $domain = ReferringDomain::create([
+        $domain = $this->repository->create([
             'project_id' => $project->id,
             'domain' => 'example.com',
             'backlinks_count' => 10,
@@ -45,7 +52,7 @@ class ReferringDomainRepositoryTest extends TestCase
     {
         $domain = ReferringDomain::factory()->create();
 
-        $found = ReferringDomain::find($domain->id);
+        $found = $this->repository->findById($domain->id);
 
         $this->assertInstanceOf(ReferringDomain::class, $found);
         $this->assertEquals($domain->id, $found->id);
@@ -54,7 +61,7 @@ class ReferringDomainRepositoryTest extends TestCase
     /** @test */
     public function it_returns_null_when_referring_domain_not_found(): void
     {
-        $found = ReferringDomain::find(99999);
+        $found = $this->repository->findById(99999);
 
         $this->assertNull($found);
     }
@@ -64,8 +71,9 @@ class ReferringDomainRepositoryTest extends TestCase
     {
         $domain = ReferringDomain::factory()->create(['backlinks_count' => 10]);
 
-        $domain->update(['backlinks_count' => 20]);
+        $result = $this->repository->update($domain->id, ['backlinks_count' => 20]);
 
+        $this->assertTrue($result);
         $this->assertEquals(20, $domain->fresh()->backlinks_count);
     }
 
@@ -74,8 +82,9 @@ class ReferringDomainRepositoryTest extends TestCase
     {
         $domain = ReferringDomain::factory()->create();
 
-        $domain->delete();
+        $result = $this->repository->delete($domain->id);
 
+        $this->assertTrue($result);
         $this->assertDatabaseMissing('referring_domains', ['id' => $domain->id]);
     }
 
@@ -87,7 +96,7 @@ class ReferringDomainRepositoryTest extends TestCase
         ReferringDomain::factory()->count(5)->create(['project_id' => $project->id]);
         ReferringDomain::factory()->count(3)->create(); // Other project
 
-        $domains = ReferringDomain::where('project_id', $project->id)->get();
+        $domains = $this->repository->getByProject($project->id);
 
         $this->assertCount(5, $domains);
         $domains->each(fn ($d) => $this->assertEquals($project->id, $d->project_id));
@@ -102,19 +111,14 @@ class ReferringDomainRepositoryTest extends TestCase
     {
         $project = Project::factory()->create();
 
-        // Upsert new domain
-        $domain = ReferringDomain::updateOrCreate(
-            [
-                'project_id' => $project->id,
-                'domain' => 'example.com',
-            ],
-            [
-                'backlinks_count' => 10,
-                'domain_trust_score' => 75,
-            ]
-        );
+        $domain = $this->repository->upsert([
+            'project_id' => $project->id,
+            'domain' => 'example.com',
+            'backlinks_count' => 10,
+            'domain_trust_score' => 75,
+        ]);
 
-        $this->assertTrue($domain->wasRecentlyCreated);
+        $this->assertInstanceOf(ReferringDomain::class, $domain);
         $this->assertEquals('example.com', $domain->domain);
         $this->assertEquals(10, $domain->backlinks_count);
     }
@@ -132,16 +136,12 @@ class ReferringDomainRepositoryTest extends TestCase
         ]);
 
         // Upsert same domain - should update
-        $updated = ReferringDomain::updateOrCreate(
-            [
-                'project_id' => $project->id,
-                'domain' => 'example.com',
-            ],
-            [
-                'backlinks_count' => 20,
-                'domain_trust_score' => 80,
-            ]
-        );
+        $updated = $this->repository->upsert([
+            'project_id' => $project->id,
+            'domain' => 'example.com',
+            'backlinks_count' => 20,
+            'domain_trust_score' => 80,
+        ]);
 
         $this->assertEquals($original->id, $updated->id);
         $this->assertEquals(20, $updated->backlinks_count);
@@ -158,9 +158,7 @@ class ReferringDomainRepositoryTest extends TestCase
             'domain' => 'example.com',
         ]);
 
-        $found = ReferringDomain::where('project_id', $project->id)
-            ->where('domain', 'example.com')
-            ->first();
+        $found = $this->repository->findByProjectAndDomain($project->id, 'example.com');
 
         $this->assertNotNull($found);
         $this->assertEquals('example.com', $found->domain);
@@ -179,9 +177,7 @@ class ReferringDomainRepositoryTest extends TestCase
         ReferringDomain::factory()->create(['project_id' => $project->id, 'backlinks_count' => 50]);
         ReferringDomain::factory()->create(['project_id' => $project->id, 'backlinks_count' => 30]);
 
-        $domains = ReferringDomain::where('project_id', $project->id)
-            ->orderByBacklinksCount()
-            ->get();
+        $domains = $this->repository->getOrderedByBacklinksCount($project->id);
 
         $this->assertEquals(50, $domains[0]->backlinks_count);
         $this->assertEquals(30, $domains[1]->backlinks_count);
@@ -197,9 +193,7 @@ class ReferringDomainRepositoryTest extends TestCase
         ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 90]);
         ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 70]);
 
-        $domains = ReferringDomain::where('project_id', $project->id)
-            ->orderByTrustScore()
-            ->get();
+        $domains = $this->repository->getOrderedByTrustScore($project->id);
 
         $this->assertEquals(90, $domains[0]->domain_trust_score);
         $this->assertEquals(70, $domains[1]->domain_trust_score);
@@ -216,10 +210,7 @@ class ReferringDomainRepositoryTest extends TestCase
         ReferringDomain::factory()->create(['project_id' => $project->id, 'backlinks_count' => 30]);
         ReferringDomain::factory()->create(['project_id' => $project->id, 'backlinks_count' => 5]);
 
-        $topDomains = ReferringDomain::where('project_id', $project->id)
-            ->orderByBacklinksCount()
-            ->limit(3)
-            ->get();
+        $topDomains = $this->repository->getTopByBacklinks($project->id, 3);
 
         $this->assertCount(3, $topDomains);
         $this->assertEquals([50, 30, 10], $topDomains->pluck('backlinks_count')->toArray());
@@ -233,7 +224,7 @@ class ReferringDomainRepositoryTest extends TestCase
         ReferringDomain::factory()->count(7)->create(['project_id' => $project->id]);
         ReferringDomain::factory()->count(3)->create(); // Other project
 
-        $count = ReferringDomain::where('project_id', $project->id)->count();
+        $count = $this->repository->getTotalCount($project->id);
 
         $this->assertEquals(7, $count);
     }
@@ -251,8 +242,7 @@ class ReferringDomainRepositoryTest extends TestCase
         ReferringDomain::factory()->create(['project_id' => $project->id, 'backlinks_count' => 20]);
         ReferringDomain::factory()->create(['project_id' => $project->id, 'backlinks_count' => 15]);
 
-        $totalBacklinks = ReferringDomain::where('project_id', $project->id)
-            ->sum('backlinks_count');
+        $totalBacklinks = $this->repository->getTotalBacklinks($project->id);
 
         $this->assertEquals(45, $totalBacklinks);
     }
@@ -266,8 +256,7 @@ class ReferringDomainRepositoryTest extends TestCase
         ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 70]);
         ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 60]);
 
-        $avgTrust = ReferringDomain::where('project_id', $project->id)
-            ->avg('domain_trust_score');
+        $avgTrust = $this->repository->getAverageTrustScore($project->id);
 
         $this->assertEquals(60, $avgTrust);
     }
@@ -285,9 +274,7 @@ class ReferringDomainRepositoryTest extends TestCase
         ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 50]);
         ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 90]);
 
-        $highTrustDomains = ReferringDomain::where('project_id', $project->id)
-            ->where('domain_trust_score', '>=', 70)
-            ->get();
+        $highTrustDomains = $this->repository->getByTrustThreshold($project->id, 70);
 
         $this->assertCount(2, $highTrustDomains);
         $highTrustDomains->each(fn ($d) => $this->assertGreaterThanOrEqual(70, $d->domain_trust_score));

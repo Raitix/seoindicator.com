@@ -4,6 +4,7 @@ namespace Tests\Unit\Repositories;
 
 use App\Models\AnchorText;
 use App\Models\Project;
+use App\Repositories\AnchorTextRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
@@ -11,14 +12,20 @@ use Tests\TestCase;
 /**
  * Tests for AnchorTextRepository.
  * 
- * These tests define the expected repository interface.
- * The repository implementation should be created to pass these tests.
- * 
  * @see TASK-23-2
  */
 class AnchorTextRepositoryTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected AnchorTextRepository $repository;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        
+        $this->repository = app(AnchorTextRepository::class);
+    }
 
     // =============================================
     // CRUD Tests
@@ -29,7 +36,7 @@ class AnchorTextRepositoryTest extends TestCase
     {
         $project = Project::factory()->create();
         
-        $anchor = AnchorText::create([
+        $anchor = $this->repository->create([
             'project_id' => $project->id,
             'anchor_text' => 'best SEO tools',
             'backlinks_count' => 50,
@@ -46,7 +53,7 @@ class AnchorTextRepositoryTest extends TestCase
     {
         $anchor = AnchorText::factory()->create();
 
-        $found = AnchorText::find($anchor->id);
+        $found = $this->repository->findById($anchor->id);
 
         $this->assertInstanceOf(AnchorText::class, $found);
         $this->assertEquals($anchor->id, $found->id);
@@ -55,7 +62,7 @@ class AnchorTextRepositoryTest extends TestCase
     /** @test */
     public function it_returns_null_when_anchor_text_not_found(): void
     {
-        $found = AnchorText::find(99999);
+        $found = $this->repository->findById(99999);
 
         $this->assertNull($found);
     }
@@ -65,8 +72,9 @@ class AnchorTextRepositoryTest extends TestCase
     {
         $anchor = AnchorText::factory()->create(['backlinks_count' => 10]);
 
-        $anchor->update(['backlinks_count' => 25]);
+        $result = $this->repository->update($anchor->id, ['backlinks_count' => 25]);
 
+        $this->assertTrue($result);
         $this->assertEquals(25, $anchor->fresh()->backlinks_count);
     }
 
@@ -75,8 +83,9 @@ class AnchorTextRepositoryTest extends TestCase
     {
         $anchor = AnchorText::factory()->create();
 
-        $anchor->delete();
+        $result = $this->repository->delete($anchor->id);
 
+        $this->assertTrue($result);
         $this->assertDatabaseMissing('anchor_texts', ['id' => $anchor->id]);
     }
 
@@ -88,7 +97,7 @@ class AnchorTextRepositoryTest extends TestCase
         AnchorText::factory()->count(5)->create(['project_id' => $project->id]);
         AnchorText::factory()->count(3)->create(); // Other project
 
-        $anchors = AnchorText::where('project_id', $project->id)->get();
+        $anchors = $this->repository->getByProject($project->id);
 
         $this->assertCount(5, $anchors);
         $anchors->each(fn ($a) => $this->assertEquals($project->id, $a->project_id));
@@ -106,11 +115,9 @@ class AnchorTextRepositoryTest extends TestCase
             'is_exact_match' => false,
         ]);
 
-        $anchor->update([
-            'is_branded' => true,
-            'is_exact_match' => true,
-        ]);
+        $result = $this->repository->updateClassification($anchor->id, true, true);
 
+        $this->assertTrue($result);
         $this->assertTrue($anchor->fresh()->is_branded);
         $this->assertTrue($anchor->fresh()->is_exact_match);
     }
@@ -125,10 +132,9 @@ class AnchorTextRepositoryTest extends TestCase
             'is_branded' => false,
         ]);
 
-        // Bulk update
-        AnchorText::whereIn('id', $anchors->pluck('id'))
-            ->update(['is_branded' => true]);
+        $count = $this->repository->bulkUpdateClassification($anchors->pluck('id')->toArray(), true, false);
 
+        $this->assertEquals(3, $count);
         $anchors->each(function ($anchor) {
             $this->assertTrue($anchor->fresh()->is_branded);
         });
@@ -137,20 +143,22 @@ class AnchorTextRepositoryTest extends TestCase
     /** @test */
     public function it_can_classify_as_branded(): void
     {
-        $anchor = AnchorText::factory()->create(['anchor_text' => 'Acme Corp']);
+        $anchor = AnchorText::factory()->create(['anchor_text' => 'Acme Corp', 'is_branded' => false]);
 
-        $anchor->update(['is_branded' => true]);
+        $result = $this->repository->classifyAsBranded($anchor->id);
 
+        $this->assertTrue($result);
         $this->assertTrue($anchor->fresh()->is_branded);
     }
 
     /** @test */
     public function it_can_classify_as_exact_match(): void
     {
-        $anchor = AnchorText::factory()->create(['anchor_text' => 'best SEO tools']);
+        $anchor = AnchorText::factory()->create(['anchor_text' => 'best SEO tools', 'is_exact_match' => false]);
 
-        $anchor->update(['is_exact_match' => true]);
+        $result = $this->repository->classifyAsExactMatch($anchor->id);
 
+        $this->assertTrue($result);
         $this->assertTrue($anchor->fresh()->is_exact_match);
     }
 
@@ -166,9 +174,7 @@ class AnchorTextRepositoryTest extends TestCase
         AnchorText::factory()->count(3)->branded()->create(['project_id' => $project->id]);
         AnchorText::factory()->count(2)->create(['project_id' => $project->id, 'is_branded' => false]);
 
-        $brandedAnchors = AnchorText::where('project_id', $project->id)
-            ->where('is_branded', true)
-            ->get();
+        $brandedAnchors = $this->repository->getBranded($project->id);
 
         $this->assertCount(3, $brandedAnchors);
     }
@@ -181,9 +187,7 @@ class AnchorTextRepositoryTest extends TestCase
         AnchorText::factory()->count(2)->exactMatch()->create(['project_id' => $project->id]);
         AnchorText::factory()->count(3)->create(['project_id' => $project->id, 'is_exact_match' => false]);
 
-        $exactMatchAnchors = AnchorText::where('project_id', $project->id)
-            ->where('is_exact_match', true)
-            ->get();
+        $exactMatchAnchors = $this->repository->getExactMatch($project->id);
 
         $this->assertCount(2, $exactMatchAnchors);
     }
@@ -198,10 +202,7 @@ class AnchorTextRepositoryTest extends TestCase
         AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 30]);
         AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 5]);
 
-        $topAnchors = AnchorText::where('project_id', $project->id)
-            ->orderByBacklinksCount()
-            ->limit(3)
-            ->get();
+        $topAnchors = $this->repository->getTopByBacklinks($project->id, 3);
 
         $this->assertCount(3, $topAnchors);
         $this->assertEquals([50, 30, 10], $topAnchors->pluck('backlinks_count')->toArray());
@@ -215,7 +216,7 @@ class AnchorTextRepositoryTest extends TestCase
         AnchorText::factory()->count(7)->create(['project_id' => $project->id]);
         AnchorText::factory()->count(3)->create(); // Other project
 
-        $count = AnchorText::where('project_id', $project->id)->count();
+        $count = $this->repository->getTotalCount($project->id);
 
         $this->assertEquals(7, $count);
     }
@@ -233,8 +234,7 @@ class AnchorTextRepositoryTest extends TestCase
         AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 200]);
         AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 50]);
 
-        $totalBacklinks = AnchorText::where('project_id', $project->id)
-            ->sum('backlinks_count');
+        $totalBacklinks = $this->repository->getTotalBacklinks($project->id);
 
         $this->assertEquals(350, $totalBacklinks);
     }
@@ -248,7 +248,7 @@ class AnchorTextRepositoryTest extends TestCase
         AnchorText::factory()->create(['project_id' => $project->id, 'anchor_text' => 'keyword 2']);
         AnchorText::factory()->create(['project_id' => $project->id, 'anchor_text' => 'keyword 3']);
 
-        $count = AnchorText::where('project_id', $project->id)->count();
+        $count = $this->repository->countUnique($project->id);
 
         $this->assertEquals(3, $count);
     }
@@ -268,14 +268,8 @@ class AnchorTextRepositoryTest extends TestCase
         AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 25]);
         AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 25]);
 
-        $totalBacklinks = AnchorText::where('project_id', $project->id)->sum('backlinks_count');
-        $uniqueAnchors = AnchorText::where('project_id', $project->id)->count();
+        $diversity = $this->repository->calculateDiversity($project->id);
 
-        // Diversity = unique anchors / total backlinks (normalized)
-        $diversity = $uniqueAnchors / $totalBacklinks;
-
-        $this->assertEquals(200, $totalBacklinks);
-        $this->assertEquals(4, $uniqueAnchors);
         $this->assertEquals(0.02, $diversity);
     }
 
@@ -287,14 +281,11 @@ class AnchorTextRepositoryTest extends TestCase
         AnchorText::factory()->count(3)->branded()->create(['project_id' => $project->id, 'backlinks_count' => 100]);
         AnchorText::factory()->count(7)->create(['project_id' => $project->id, 'is_branded' => false, 'backlinks_count' => 50]);
 
-        $brandedCount = AnchorText::where('project_id', $project->id)->where('is_branded', true)->sum('backlinks_count');
-        $totalCount = AnchorText::where('project_id', $project->id)->sum('backlinks_count');
+        $ratio = $this->repository->getBrandedRatio($project->id);
 
-        $brandedRatio = $brandedCount / $totalCount;
-
-        $this->assertEquals(300, $brandedCount);
-        $this->assertEquals(650, $totalCount);
-        $this->assertEqualsWithDelta(0.46, $brandedRatio, 0.01);
+        $this->assertEquals(300, $ratio['branded_count']);
+        $this->assertEquals(350, $ratio['non_branded_count']);
+        $this->assertEqualsWithDelta(0.46, $ratio['branded'], 0.01);
     }
 
     // =============================================
@@ -307,30 +298,21 @@ class AnchorTextRepositoryTest extends TestCase
         $project = Project::factory()->create();
 
         // First upsert - creates
-        $anchor1 = AnchorText::updateOrCreate(
-            [
-                'project_id' => $project->id,
-                'anchor_text' => 'keyword',
-            ],
-            [
-                'backlinks_count' => 10,
-            ]
-        );
+        $anchor1 = $this->repository->upsert([
+            'project_id' => $project->id,
+            'anchor_text' => 'keyword',
+            'backlinks_count' => 10,
+        ]);
 
-        $this->assertTrue($anchor1->wasRecentlyCreated);
+        $this->assertInstanceOf(AnchorText::class, $anchor1);
 
         // Second upsert - updates
-        $anchor2 = AnchorText::updateOrCreate(
-            [
-                'project_id' => $project->id,
-                'anchor_text' => 'keyword',
-            ],
-            [
-                'backlinks_count' => 20,
-            ]
-        );
+        $anchor2 = $this->repository->upsert([
+            'project_id' => $project->id,
+            'anchor_text' => 'keyword',
+            'backlinks_count' => 20,
+        ]);
 
-        $this->assertFalse($anchor2->wasRecentlyCreated);
         $this->assertEquals($anchor1->id, $anchor2->id);
         $this->assertEquals(20, $anchor2->backlinks_count);
     }

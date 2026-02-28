@@ -61,9 +61,9 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     protected function createSnapshots(Project $project, int $count, string $startDate = null): void
     {
-        $startDate = $startDate ?? today()->subDays($count * 7)->toDateString();
+        $startDate = $startDate ?? now()->subDays($count * 7)->toDateString();
         for ($i = 0; $i < $count; $i++) {
-            $date = now()->parse($startDate)->addDays($i * 7); // Weekly snapshots as Carbon
+            $date = now()->parse($startDate)->addDays($i * 7)->toDateString(); // Weekly snapshots as string
             BacklinkSnapshot::create([
                 'project_id' => $project->id,
                 'snapshot_date' => $date,
@@ -359,7 +359,7 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_all_metrics_included(): void
     {
-        $snapshotDate = today();
+        $snapshotDate = now()->toDateString();
 
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
@@ -377,13 +377,15 @@ class BacklinkHistoryControllerTest extends TestCase
             ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history");
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.0.date', $snapshotDate->toDateString())
+            ->assertJsonPath('data.0.date', $snapshotDate)
             ->assertJsonPath('data.0.total_backlinks', 1250)
             ->assertJsonPath('data.0.referring_domains_count', 89)
             ->assertJsonPath('data.0.dofollow_count', 900)
-            ->assertJsonPath('data.0.nofollow_count', 350)
-            ->assertJsonPath('data.0.avg_domain_trust', 45.2)
-            ->assertJsonPath('data.0.anchor_diversity_score', 68.0);
+            ->assertJsonPath('data.0.nofollow_count', 350);
+
+        // Float comparison - JSON may return 68 instead of 68.0
+        $this->assertEqualsWithDelta(45.2, $response->json('data.0.avg_domain_trust'), 0.01);
+        $this->assertEqualsWithDelta(68.0, $response->json('data.0.anchor_diversity_score'), 0.01);
     }
 
     /**
@@ -394,7 +396,7 @@ class BacklinkHistoryControllerTest extends TestCase
         // Create 30 snapshots (30 days of data)
         $count = 30;
         for ($i = 0; $i < $count; $i++) {
-            $date = today()->subDays($count - 1 - $i);
+            $date = now()->subDays($count - 1 - $i)->toDateString();
             BacklinkSnapshot::create([
                 'project_id' => $this->project->id,
                 'snapshot_date' => $date,
@@ -422,7 +424,7 @@ class BacklinkHistoryControllerTest extends TestCase
     {
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
-            'snapshot_date' => today(),
+            'snapshot_date' => now()->toDateString(),
             'created_at' => now(),
             'total_backlinks' => 1000,
             'referring_domains_count' => 50,
@@ -618,7 +620,7 @@ class BacklinkHistoryControllerTest extends TestCase
     {
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
-            'snapshot_date' => today(),
+            'snapshot_date' => now()->toDateString(),
             'created_at' => now(),
             'total_backlinks' => 0,
             'referring_domains_count' => 0,
@@ -642,7 +644,7 @@ class BacklinkHistoryControllerTest extends TestCase
     {
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
-            'snapshot_date' => today(),
+            'snapshot_date' => now()->toDateString(),
             'created_at' => now(),
             'total_backlinks' => 1500000, // 1.5 million
             'referring_domains_count' => 50000,
@@ -666,7 +668,7 @@ class BacklinkHistoryControllerTest extends TestCase
     {
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
-            'snapshot_date' => today(),
+            'snapshot_date' => now()->toDateString(),
             'created_at' => now(),
             'total_backlinks' => 100,
             'referring_domains_count' => 5,
@@ -689,7 +691,7 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_same_date_multiple_snapshots(): void
     {
-        $snapshotDate = today();
+        $snapshotDate = now()->toDateString();
 
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
@@ -809,7 +811,7 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_date_at_boundary(): void
     {
-        $snapshotDate = today();
+        $snapshotDate = now()->toDateString();
 
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
@@ -825,7 +827,7 @@ class BacklinkHistoryControllerTest extends TestCase
 
         // Date filter should be inclusive
         $response = $this->actingAs($this->user)
-            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from={$snapshotDate->toDateString()}&to={$snapshotDate->toDateString()}");
+            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from={$snapshotDate}&to={$snapshotDate}");
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data');
@@ -886,7 +888,7 @@ class BacklinkHistoryControllerTest extends TestCase
         // This test verifies the response is properly encoded
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
-            'snapshot_date' => today(),
+            'snapshot_date' => now()->toDateString(),
             'created_at' => now(),
             'total_backlinks' => 1000,
             'referring_domains_count' => 50,
@@ -968,7 +970,7 @@ class BacklinkHistoryControllerTest extends TestCase
         // Create 5 snapshots for other user, all within the 30-day window
         // Using 4 days apart to fit within window
         for ($i = 0; $i < 5; $i++) {
-            $date = today()->subDays(20 - ($i * 4));
+            $date = now()->subDays(20 - ($i * 4))->toDateString();
             BacklinkSnapshot::create([
                 'project_id' => $this->otherUserProject->id,
                 'snapshot_date' => $date,
