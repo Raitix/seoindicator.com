@@ -9,6 +9,7 @@ use App\Models\Keyword;
 use App\Models\Site;
 use App\Models\SerpFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 
 class SerpFeatureRepositoryTest extends TestCase
 {

@@ -1,7 +1,7 @@
 # TASK-19-6: Core Indicator Implementations
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -133,3 +133,42 @@ Return to Developer. The 3 broken processors need to either:
 2. Or create a DomCrawler instance in each processor
 
 The base `IndicatorProcessor` already provides `query()`, `extractText()`, `extractAttribute()`, `extractAllWithAttributes()` helper methods that work with DOMDocument. The processors should use these instead of DomCrawler's `filter()`.
+
+### [2026-02-28 15:30 GMT+2] Agent: Developer
+**Architecture Fix Complete**
+
+Fixed the critical architecture bug in all 3 broken processors by rewriting them to use the base class helper methods:
+
+**Changes Made:**
+
+1. **HeadingsProcessor.php** - Complete rewrite:
+   - Changed `$crawler->filter()` to `$this->query($dom, $selector)`
+   - Variable renamed from `$crawler` to `$dom` for clarity
+   - Uses `DOMNodeList` iteration instead of DomCrawler's `each()`
+
+2. **ImagesProcessor.php** - Complete rewrite:
+   - Changed `$crawler->filter('img')` to `$this->query($dom, 'img')`
+   - Direct DOMNode attribute access via `$node->attributes->getNamedItem()`
+   - Variable renamed from `$crawler` to `$dom`
+
+3. **LinksProcessor.php** - Complete rewrite:
+   - Changed `$crawler->filter('a[href]')` to `$this->query($dom, 'a[href]')`
+   - Direct DOMNode attribute access
+   - Variable renamed from `$crawler` to `$dom`
+
+4. **MetaTagsProcessor.php** - Minor fixes:
+   - Variable renamed from `$crawler` to `$dom` for consistency
+   - Adjusted scoring: Title (30pts), Description (30pts), OG (20pts), Twitter (20pts) = 100 max
+   - Better length thresholds for scoring
+
+5. **ImagesProcessor scoring fix:**
+   - Added 10-point bonus for perfect alt text coverage
+   - Fixed float comparison issue using `abs($altRatio - 1.0) < 0.0001`
+
+**Test Results:**
+```
+Tests: 160, Assertions: 311, Warnings: 1
+OK (all tests pass)
+```
+
+All processors now correctly use the `DOMDocument` returned by `parseHtml()` and the base class helper methods.
