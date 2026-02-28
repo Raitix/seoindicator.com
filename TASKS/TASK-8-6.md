@@ -1,7 +1,7 @@
 # TASK-8-6: Implement Project Policies
 
 ## STATUS
-`Testing Prod`
+`Done`
 
 ## PRIORITY
 `High`

@@ -1,7 +1,7 @@
 # SPEC-018: Legacy 17-Indicator SEO Analysis (Core Engine)
 
 ## STATUS
-`Breaking Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -830,6 +830,26 @@ The HTML fetcher must prevent Server-Side Request Forgery:
 - Start with MVP: fewer indicators if needed, expand later
 - Consider queue-based processing for high volume (post-MVP)
 - PDF export can reuse existing infrastructure from FEAT-004
+
+### SpecSystemAnalyst (2026-02-28)
+**Task Breakdown Complete:** Created 36 tasks across 6 phases.
+
+**Task Summary:**
+- Phase 1 (Infrastructure): TASK-18-1 to TASK-18-3 (3 tasks)
+- Phase 2 (Core Services): TASK-18-4 to TASK-18-8 (5 tasks)
+- Phase 3 (Indicator Checkers): TASK-18-9 to TASK-18-25 (17 tasks)
+- Phase 4 (API Layer): TASK-18-26 to TASK-18-28 (3 tasks)
+- Phase 5 (Frontend): TASK-18-29 to TASK-18-32 (4 tasks)
+- Phase 6 (Testing & Polish): TASK-18-33 to TASK-18-36 (4 tasks)
+
+**High Risk Tasks Identified:**
+- TASK-18-5: HtmlFetcherService (SSRF vulnerability potential)
+- TASK-18-17: LinksChecker (external link checks)
+- TASK-18-25: PageSpeedChecker (external API dependency)
+
+**Critical Path:** TASK-18-1 → TASK-18-2 → TASK-18-3 → TASK-18-4 → TASK-18-5 → TASK-18-6 → TASK-18-26 → TASK-18-30
+
+**Handoff to ProjectManager:** Ready for prioritization. Foundation tasks (1-3) should be prioritized first, followed by core services, then indicator checkers can be developed in parallel.
 
 ---
 
