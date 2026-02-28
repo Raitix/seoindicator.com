@@ -71,6 +71,24 @@ class BacklinkProfileScorer
      */
     public function calculateScore(array $metrics): array
     {
+        // If no profile data, return all zeros
+        if (!$this->hasProfileData($metrics)) {
+            return [
+                'overall_score' => 0.0,
+                'diversity_score' => 0.0,
+                'trust_score' => 0.0,
+                'growth_score' => 0.0,
+                'anchor_health_score' => 0.0,
+                'component_details' => [
+                    'referring_domains' => $metrics['referring_domains'] ?? 0,
+                    'total_backlinks' => $metrics['total_backlinks'] ?? 0,
+                    'avg_domain_trust' => $metrics['avg_domain_trust'] ?? 0.0,
+                    'growth_rate' => $metrics['growth_rate'] ?? null,
+                    'exact_match_ratio' => $metrics['exact_match_anchor_ratio'] ?? null,
+                ],
+            ];
+        }
+
         $diversityScore = $this->scoreDiversity($metrics);
         $trustScore = $this->scoreTrust($metrics);
         $growthScore = $this->scoreGrowth($metrics);
@@ -106,7 +124,7 @@ class BacklinkProfileScorer
     protected function hasProfileData(array $metrics): bool
     {
         $totalBacklinks = $metrics['total_backlinks'] ?? 0;
-        return $totalBacklinks > 0;
+        return $totalBacklinks !== null && $totalBacklinks > 0;
     }
 
     /**
@@ -172,11 +190,6 @@ class BacklinkProfileScorer
      */
     public function scoreGrowth(array $metrics): float
     {
-        // If no profile data, return 0
-        if (!$this->hasProfileData($metrics)) {
-            return 0.0;
-        }
-
         $growthRate = $metrics['growth_rate'] ?? null;
 
         // Null growth rate (no previous snapshot) = neutral score
@@ -207,11 +220,6 @@ class BacklinkProfileScorer
      */
     public function scoreAnchorHealth(array $metrics): float
     {
-        // If no profile data, return 0
-        if (!$this->hasProfileData($metrics)) {
-            return 0.0;
-        }
-
         $exactMatchRatio = $metrics['exact_match_anchor_ratio'] ?? null;
 
         // Null ratio (no anchor data) = neutral score
@@ -285,13 +293,17 @@ class BacklinkProfileScorer
             ->orderByDesc('snapshot_date')
             ->first();
 
-        if (!$previousSnapshot || $previousSnapshot->total_backlinks <= 0) {
+        $previousBacklinks = $previousSnapshot->total_backlinks ?? 0;
+
+        if (!$previousSnapshot || $previousBacklinks <= 0) {
             return null;
         }
 
+        $currentBacklinks = $currentSnapshot->total_backlinks ?? 0;
+
         // Calculate percentage change
-        $change = $currentSnapshot->total_backlinks - $previousSnapshot->total_backlinks;
-        $growthRate = ($change / $previousSnapshot->total_backlinks) * 100;
+        $change = $currentBacklinks - $previousBacklinks;
+        $growthRate = ($change / $previousBacklinks) * 100;
 
         return $growthRate;
     }
@@ -308,6 +320,14 @@ class BacklinkProfileScorer
         $totalBacklinks = $snapshot->total_backlinks ?? 0;
 
         if ($totalBacklinks <= 0) {
+            return null;
+        }
+
+        // Check if there are any anchor texts at all
+        $totalAnchorTexts = AnchorText::where('project_id', $project->id)->count();
+
+        if ($totalAnchorTexts === 0) {
+            // No anchor data available - return null for neutral score
             return null;
         }
 
