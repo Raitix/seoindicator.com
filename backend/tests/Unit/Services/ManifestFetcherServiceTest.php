@@ -210,11 +210,7 @@ class ManifestFetcherServiceTest extends TestCase
                 'statusCode' => 200,
             ]);
 
-        Http::fake([
-            $manifestUrl => Http::response(null, 0), // Simulate timeout
-        ]);
-
-        // Simulate connection exception
+        // Simulate connection exception (timeout)
         Http::fake(function ($request) use ($manifestUrl) {
             if ($request->url() === $manifestUrl) {
                 throw new \Illuminate\Http\Client\ConnectionException('Request timed out');
