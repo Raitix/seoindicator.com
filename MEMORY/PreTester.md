@@ -7,6 +7,20 @@ Test design for tasks before development. Creates comprehensive test documentati
 
 ## Completed Tasks
 
+### [2026-02-28] TASK-8-3: Data Migration for Default Projects
+- **Status:** Tests Complete, Task Ready for Developer
+- **Test Files Created:**
+  - `backend/tests/Feature/Migrations/DataMigrationTest.php` - 79 test scenarios (end-to-end)
+  - `backend/tests/Feature/Migrations/DataMigrationRollbackTest.php` - 10 rollback tests
+  - `backend/tests/Unit/Migrations/CreateDefaultProjectsMigrationTest.php` - 25 unit tests
+  - `TESTS/TEST-8-3.md` - Test documentation
+- **Total Tests:** 114 tests across 8 categories
+- **Notes:**
+  - Migration must be wrapped in database transaction
+  - Use chunking for large datasets (100 records per batch)
+  - NOT NULL constraints applied AFTER data migration
+  - Reports relationship goes through `site_id`
+
 ### [2026-02-28] TASK-6-14: Webhook Dispatcher Service
 - **Status:** Tests Complete, Task Ready for Developer
 - **Test Files Created/Updated:**
