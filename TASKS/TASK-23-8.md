@@ -1,7 +1,7 @@
 # TASK-23-8: Backlink Profile Health Scoring
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -144,3 +144,59 @@ TASK-23-7 (Trust) ──────┘
 **Free Tools Compliance:** ✅ Uses heuristic calculations only, no paid APIs.
 
 Handing off to PreTester for test design.
+
+### [2026-02-28 23:40] Agent: PreTester
+**Test Design Complete**
+
+Created comprehensive test suite for BacklinkProfileScorer service:
+
+**Test Files Created:**
+- `TESTS/TEST-23-8.md` — Test documentation with 58 unit tests + 15 integration tests
+- `backend/tests/Unit/Services/SEO/BacklinkProfileScorerTest.php` — Unit tests (58 tests, 140+ assertions)
+- `backend/tests/Integration/Services/SEO/BacklinkProfileScorerIntegrationTest.php` — Integration tests (15 tests)
+
+**Test Coverage:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Diversity Score (DS) | 8 | Ratio calculations, edge cases |
+| Trust Score (TS) | 8 | Trust average scoring |
+| Growth Score (GS) | 10 | Growth/decline scenarios |
+| Anchor Health (AH) | 8 | Exact match ratio penalties |
+| Composite Score (CS) | 8 | Overall profile combinations |
+| Edge Cases (EC) | 7 | Large numbers, null values, decimals |
+| Score Breakdown (SB) | 3 | Result structure validation |
+| Security (SC) | 5 | Injection, XSS, overflow |
+| Integration | 15 | Project model, snapshots, anchors |
+
+**Key Design Decisions:**
+1. Score range: 0-100 overall, 0-25 per component
+2. Null/missing data returns neutral/default values (12.5 for growth/anchor)
+3. Division by zero protected in diversity calculation
+4. Growth rate null (first snapshot) = neutral score (12.5)
+5. Anchor data null = neutral score (12.5)
+6. All component scores capped at 0-25 range
+
+**Return Structure:**
+```php
+[
+    'overall_score' => float,      // 0-100
+    'diversity_score' => float,    // 0-25
+    'trust_score' => float,        // 0-25
+    'growth_score' => float,       // 0-25
+    'anchor_health_score' => float, // 0-25
+    'component_details' => [
+        'referring_domains' => int,
+        'total_backlinks' => int,
+        'avg_domain_trust' => float,
+        'growth_rate' => float,
+        'exact_match_ratio' => float,
+    ]
+]
+```
+
+**Dependencies:**
+- Requires `BacklinkSnapshot` model (TASK-23-3)
+- Requires `BacklinkSnapshotService` (TASK-23-6) for metrics retrieval
+- Requires `DomainTrustScorer` (TASK-23-7) for trust score population
+
+**Status:** Tests ready for implementation. Handing off to Developer.
