@@ -1,7 +1,7 @@
 # TASK-18-9: URLChecker - URL Structure Indicator
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

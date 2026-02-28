@@ -1,7 +1,7 @@
 # TASK-18-3: IndicatorCheckerInterface and Base Classes
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
