@@ -1,7 +1,7 @@
 # TASK-18-7: ScoreCalculatorService
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -13,15 +13,15 @@
 Create service to calculate weighted overall scores and category scores from indicator results.
 
 ## Acceptance Criteria
-- [ ] Accepts array of IndicatorResult objects
-- [ ] Calculates weighted overall score (0-100)
-- [ ] Calculates category scores (content, technical, accessibility, performance)
-- [ ] Uses indicator weights from configuration
-- [ ] Handles missing/failed indicators (exclude from calculation)
-- [ ] Provides score breakdown by indicator
-- [ ] Returns ScoreResult with overall, category, breakdown
-- [ ] Unit tests covering all scoring scenarios
-- [ ] Edge case handling (all indicators failed, single indicator)
+- [x] Accepts array of IndicatorResult objects
+- [x] Calculates weighted overall score (0-100)
+- [x] Calculates category scores (content, technical, accessibility, performance)
+- [x] Uses indicator weights from configuration
+- [x] Handles missing/failed indicators (exclude from calculation)
+- [x] Provides score breakdown by indicator
+- [x] Returns ScoreResult with overall, category, breakdown
+- [x] Unit tests covering all scoring scenarios
+- [x] Edge case handling (all indicators failed, single indicator)
 
 ## Dependencies
 - TASK-18-3 (IndicatorResult)
@@ -68,3 +68,23 @@ Created from SPEC-018 Section 10.2. Core scoring logic.
 **Handoff to Developer:** Tests define expected interface. Service should be implemented at:
 - `App\Services\SEO\ScoreCalculatorService`
 - `App\Services\SEO\ScoreResult`
+
+### [2026-02-28] Developer
+**Implementation Complete** - All 51 tests pass.
+
+**Files Implemented:**
+- `backend/app/Services/SEO/ScoreCalculatorService.php`
+- `backend/app/Services/SEO/ScoreResult.php`
+
+**Implementation Notes:**
+1. ScoreCalculatorService calculates weighted overall and category scores
+2. N/A indicators (score = 0) are filtered out before calculation
+3. Custom weights can be passed via constructor, fallback to DEFAULT_WEIGHTS constant
+4. ScoreResult is an immutable readonly DTO with helper methods
+5. Score labels: Good (80+), Moderate (60-79), Poor (0-59)
+6. Category scores return null for missing categories
+
+**Test Results:**
+- 51 tests, 102 assertions
+- All tests passing
+- PHPUnit deprecations (cosmetic, not functional)
