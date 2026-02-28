@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Models\Site;
 use App\Models\Keyword;
 use App\Models\KeywordSuggestion;
-use App\Models\DismissedSuggestion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 
@@ -588,9 +587,13 @@ class KeywordDiscoveryIntegrationTest extends TestCase
             'is_dismissed' => true,
         ]);
 
-        DismissedSuggestion::create([
+        // Create dismissed_suggestions record directly (model may not exist yet)
+        \DB::table('dismissed_suggestions')->insert([
             'site_id' => $this->site->id,
             'keyword' => 'seo tools',
+            'dismissed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         Http::fake([
@@ -627,7 +630,7 @@ class KeywordDiscoveryIntegrationTest extends TestCase
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
         
-        $content = $response->streamedContent();
+        $content = $response->getContent();
         $this->assertStringContainsString('Keyword,Source', $content);
     }
 

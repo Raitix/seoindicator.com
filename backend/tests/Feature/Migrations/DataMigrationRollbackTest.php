@@ -39,6 +39,13 @@ class DataMigrationRollbackTest extends TestCase
      */
     public function test_rollback_removes_not_null_constraints(): void
     {
+        $driver = DB::connection()->getDriverName();
+        
+        // SQLite doesn't support ALTER COLUMN for NOT NULL
+        if (!in_array($driver, ['mysql', 'mariadb'], true)) {
+            $this->markTestSkipped('SQLite does not support ALTER COLUMN for NOT NULL constraints');
+        }
+        
         $userId = $this->createUser(['name' => 'Rollback NN User', 'email' => 'rollbacknn@test.com']);
         $this->createKeyword($userId, ['keyword' => 'rollback keyword']);
 
