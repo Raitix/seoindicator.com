@@ -87,7 +87,9 @@ class BacklinkSnapshot extends Model
      */
     public function scopeDateRange($query, string $from, string $to)
     {
-        return $query->whereBetween('snapshot_date', [$from, $to]);
+        // Use whereDate for proper date comparison across different database drivers
+        return $query->whereDate('snapshot_date', '>=', $from)
+                     ->whereDate('snapshot_date', '<=', $to);
     }
 
     /**
