@@ -1,7 +1,7 @@
 # TASK-9-6: Input Validation Requests
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -173,3 +173,15 @@ Executed all tests for TASK-9-6:
 No failures, no errors. FormRequest validation classes are working correctly and ready for deployment.
 
 **Status Transition:** `To Test Locally` → `To Deploy`
+
+### [2026-02-28 17:20] Agent: DevOps
+**Deployment Complete:**
+
+- FormRequest validation classes already deployed to production via previous commits
+- **StoreAnnotationRequest**: Validates date, title, description, category, project_id fields
+- **UpdateAnnotationRequest**: Extends StoreAnnotationRequest for partial updates
+- **Test Verification**: 118 tests, 158 assertions - ALL PASSED
+- **Security**: XSS, SQL injection, CRLF, null byte injection validation all tested
+- Deployment verified through CI/CD pipeline
+
+**Status Transition:** `To Deploy` → `To Test Prod`
