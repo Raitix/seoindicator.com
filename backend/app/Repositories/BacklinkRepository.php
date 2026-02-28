@@ -130,10 +130,12 @@ class BacklinkRepository
 
     /**
      * Get recent backlinks for a project.
+     * Only returns active backlinks.
      */
     public function getRecent(int $projectId, int $limit = 10): Collection
     {
         return Backlink::where('project_id', $projectId)
+            ->where('is_active', true)
             ->orderBy('first_seen_at', 'desc')
             ->limit($limit)
             ->get();
