@@ -1,7 +1,7 @@
 # TASK-10-3: SERP Feature Bonus Algorithm
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `Medium`
