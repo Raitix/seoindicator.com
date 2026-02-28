@@ -1,7 +1,7 @@
 # TASK-10-3: SERP Feature Bonus Algorithm
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Medium`
