@@ -1,7 +1,7 @@
 # SPEC-001-5: Ranking History API Endpoints
 
 ## STATUS
-`To Document`
+`Done`
 ## PRIORITY
 `High` (Security Issue)
 
@@ -218,3 +218,23 @@ Security fixes for TASK-1-5 are now live in production:
 **Recommendation:** Security fixes verified. Ready for documentation.
 
 **Status:** Setting to To Document.
+
+### [2026-02-28 10:38] Agent: DocSystemAnalyst
+**DOCUMENTATION COMPLETE** ✓
+
+Updated DOCUMENTATION.md with Ranking History API Endpoints documentation:
+
+**Documentation Added:**
+- API endpoints: GET history, POST check
+- Query parameters and response formats
+- Security implementation (auth middleware, IDOR protection)
+- Test coverage (15 tests, 76 assertions)
+- Security fix history (initial deployment issue + fix)
+- Production status and dependencies
+
+**Security Highlights Documented:**
+- `auth` middleware on all endpoints
+- `userOwnsKeyword()` method for IDOR protection
+- Route configuration with authentication
+
+**Status:** Done. Task closed.

@@ -23,6 +23,7 @@ class ApiKey extends Model
         'keywords:read',
         'keywords:write',
         'rankings:read',
+        'sites:read',
         'reports:read',
         'reports:write',
         'webhooks:read',
