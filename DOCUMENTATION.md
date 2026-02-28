@@ -4998,6 +4998,135 @@ systemctl start seoindicator-scheduler.timer
 - Status: Post-MVP feature (Phase 4)
 
 ---
+## SERP Features API Authentication Security Fix (SPEC-SEC-7-10)
+
+### Security Classification
+**CRITICAL** - Authentication Bypass Vulnerability Fix
+
+### Service Description
+Security fix for SERP Features API endpoints that were deployed without authentication middleware. The fix adds authentication requirements and IDOR protection to prevent unauthorized access to sensitive SEO data.
+
+### Vulnerability Summary
+| Issue | Severity | Status |
+|-------|----------|--------|
+| Authentication Bypass | CRITICAL | ✅ Fixed |
+| IDOR (Insecure Direct Object Reference) | HIGH | ✅ Fixed |
+
+### Affected Endpoints
+| Endpoint | Before | After |
+|----------|--------|-------|
+| `GET /api/v1/keywords/{id}/serp-features` | Public | Authenticated |
+| `GET /api/v1/sites/{siteId}/serp-features` | Public | Authenticated + IDOR |
+| `GET /api/v1/sites/{siteId}/serp-features/summary` | Public | Authenticated + IDOR |
+
+### Security Implementation
+
+**Route Configuration (FIXED):**
+```php
+Route::prefix('v1')->middleware(['auth'])->group(function () {
+    Route::get('keywords/{id}/serp-features', [SerpFeatureController::class, 'keywordFeatures'])
+        ->where('id', '[0-9]+');
+    Route::get('sites/{siteId}/serp-features', [SerpFeatureController::class, 'siteFeatures'])
+        ->where('siteId', '[0-9]+');
+    Route::get('sites/{siteId}/serp-features/summary', [SerpFeatureController::class, 'summary'])
+        ->where('siteId', '[0-9]+');
+});
+```
+
+**IDOR Protection Methods:**
+```php
+// SerpFeatureController.php
+protected function userOwnsSite(Site $site): bool
+{
+    return $site->user_id === auth()->id();
+}
+
+protected function userOwnsKeyword(Keyword $keyword): bool
+{
+    $userId = auth()->id();
+    
+    // Direct ownership
+    if ($keyword->user_id === $userId) {
+        return true;
+    }
+    
+    // Ownership via site relationship
+    if ($keyword->site && $keyword->site->user_id === $userId) {
+        return true;
+    }
+    
+    return false;
+}
+```
+
+### Response Codes
+| Scenario | Code | Response |
+|----------|------|----------|
+| Unauthenticated request | 401 | `{"message": "Unauthenticated."}` |
+| Valid user, own site | 200 | Normal response |
+| Valid user, another's site | 403 | `{"message": "Unauthorized access to this site."}` |
+| Non-existent site/keyword | 404 | `{"message": "No query results for model [Site]"}` |
+
+### Security Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| SerpFeatureSecurityTest | 41 | 65 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authentication (AUTH) | 4 | 401 for unauthenticated requests |
+| IDOR Protection | 8 | 403 for cross-user access |
+| Input Validation | 10 | Invalid IDs, missing resources |
+| SQL Injection | 3 | Blocked via route constraints |
+| XSS Protection | 2 | No script reflection |
+| Path Traversal | 2 | Numeric constraints block traversal |
+| Edge Cases | 8 | Ownership modes, empty data |
+| Date Validation | 3 | Format and range validation |
+
+### OWASP Compliance
+| Vulnerability | Status |
+|---------------|--------|
+| OWASP A01:2021 - Broken Access Control | ✅ Mitigated |
+| OWASP A05:2021 - Security Misconfiguration | ✅ Mitigated |
+
+### Production Verification Results
+| Test | Endpoint | Expected | Result |
+|------|----------|----------|--------|
+| Health Check | `GET /api/health` | 200 | ✅ 200 OK |
+| Auth - Sites | `GET /api/v1/sites/1/serp-features` | 401 | ✅ 401 Unauthorized |
+| Auth - Keywords | `GET /api/v1/keywords/1/serp-features` | 401 | ✅ 401 Unauthorized |
+| Auth - Summary | `GET /api/v1/sites/1/serp-features/summary` | 401 | ✅ 401 Unauthorized |
+| SQL Injection | `GET /api/v1/sites/1' OR '1'='1/serp-features` | 404 | ✅ 404 (route constraint) |
+| Path Traversal | `GET /api/v1/sites/../../../etc/passwd/serp-features` | 404 | ✅ 404 (server blocked) |
+| XSS | `GET /api/v1/sites/<script>/serp-features` | 404 | ✅ 404 (route constraint) |
+| Negative ID | `GET /api/v1/sites/-1/serp-features` | 404 | ✅ 404 (route constraint) |
+| Zero ID | `GET /api/v1/sites/0/serp-features` | 401 | ✅ 401 (auth required) |
+
+### Deployment History
+| Date | Event |
+|------|-------|
+| 2026-02-28 | Initial deployment (vulnerability present) |
+| 2026-02-28 | Security fix deployed (SPEC-SEC-7-10) |
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/SerpFeatureController.php`
+- Routes: `backend/routes/api.php`
+- Test: `backend/tests/Feature/Api/V1/Security/SerpFeatureSecurityTest.php`
+
+### Production Status
+- **Deployed**: 2026-02-28 (security fix)
+- **Health Check**: Passing
+- **Tests**: 41/41 passing (65 assertions)
+- **Status**: Complete - Vulnerability Fixed
+
+### Related Items
+- Feature: [FEAT-007](../FEATURES/FEAT-007.md)
+- Specification: [SPEC-007](../SPECIFICATIONS/SPEC-007.md)
+- Original Task: [TASK-7-10](../TASKS/TASK-7-10.md)
+- Security Tasks: [TASK-SEC-7-10-1] through [TASK-SEC-7-10-6]
+
+---
 ## SERP Feature Summary Endpoint (TASK-7-11)
 
 ### Service Description

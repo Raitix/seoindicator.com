@@ -1,7 +1,7 @@
 # FEAT-002: Ranking Change Alerts
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -102,6 +102,46 @@ notifications: id, user_id, type, keyword_id, data (JSON), read_at, created_at
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-28 13:28 GMT+2] Agent: ProjectManager
+**Prioritization Complete** - All 14 tasks handed to PreTester.
+
+**Priority Assignment:**
+
+| Priority | Tasks | Rationale |
+|----------|-------|-----------|
+| HIGH | 1, 2, 3, 4, 5, 6, 7, 8, 10, 11 | Core MVP - database, services, API, email delivery |
+| MEDIUM | 9, 12, 13, 14 | Phase 2 / Frontend - in-app notifications, UI |
+
+**Execution Order (by dependency):**
+
+**Phase 1 - Foundation (parallel):**
+- TASK-002-1: alert_settings migration/model (no deps)
+- TASK-002-2: keyword_alert_settings migration/model (needs FEAT-001 keywords)
+- TASK-002-3: notifications migration/model (needs FEAT-001 keywords)
+- TASK-002-10: RankingAlertEmail mailable (no deps)
+- TASK-002-11: Gmail SMTP config (no deps)
+
+**Phase 2 - Services:**
+- TASK-002-4: AlertEvaluator service (deps: 1, 2)
+- TASK-002-5: NotificationDispatcher service (deps: 1, 3, 10)
+
+**Phase 3 - Integration:**
+- TASK-002-6: Ranking job integration (deps: 4, 5)
+- TASK-002-7: AlertSettingsController API (deps: 1)
+- TASK-002-8: KeywordAlertSettingsController API (deps: 2)
+
+**Phase 4 - Frontend/In-App:**
+- TASK-002-9: NotificationController API (deps: 3)
+- TASK-002-12: Alert Settings page (deps: 7)
+- TASK-002-13: Notification Center (deps: 9)
+- TASK-002-14: Notification bell (deps: 9, 13)
+
+**Notes:**
+- FEAT-001 (Keyword Rank Tracking) must be deployed first - this feature extends it
+- Email delivery uses free Gmail SMTP (~500/day limit) per FREE TOOLS constraint
+- In-app notifications deferred to Phase 2 per MVP scope decision
+- Status: To Write Tests
 
 ### [2026-02-19 19:12] System Note: FREE TOOLS CONSTRAINT
 ⚠️ **IMPORTANT**: This feature references paid services (SendGrid, Mailgun). These are NOT allowed. The Architect MUST find free alternatives during specification. Consider: Laravel Mail + free SMTP (Gmail), in-app notifications only, or free email tiers.
