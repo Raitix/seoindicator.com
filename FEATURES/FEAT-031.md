@@ -1,7 +1,7 @@
 # FEAT-031: Unified AI Prompt + Context Management
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -23,6 +23,35 @@ As a user, I want faster AI analysis and a clear overall SEO summary without err
 
 ## Notes
 - Source: user ToDo (unified prompt + context handling).
+
+## Comments
+
+### Architect (2026-02-28)
+**Specification Complete:** Created SPEC-031.md with full technical design.
+
+**Key Design Decisions:**
+1. **Unified Architecture**: Single AI call replaces 17+ individual calls (18-20x latency reduction)
+2. **Context Window Management**: Intelligent truncation strategies with model fallback
+3. **Strict JSON Validation**: Schema-validated responses with graceful error handling
+4. **Free-Tier Models**: OpenRouter integration with multiple free models (Gemini 2.0 Flash, Llama 3, Mistral)
+5. **Graceful Degradation**: Handles all failure modes (timeout, malformed response, rate limits)
+
+**Risk Assessment: Confirmed HIGH** - AI integration complexity, response validation, error handling.
+
+**Architecture Components:**
+- `UnifiedPromptService` - Builds consolidated prompt with all 17 indicators
+- `ContextWindowManager` - Tracks token counts and model limits
+- `TruncationService` - Applies progressive truncation strategies
+- `AIAnalysisService` - Executes unified AI request
+- `ModelSelectionService` - Chooses optimal model based on content size
+
+**Task Breakdown:** 17 tasks across 5 phases (see SPEC-031.md Section 12).
+
+**Dependencies:**
+- FEAT-018 (indicator structure and analysis flow)
+- FEAT-026 (model selection and pricing display - optional)
+
+**Handoff to SpecSystemAnalyst:** Ready for task breakdown.
 
 ---
 *Created by Lead from individual user request.*
