@@ -1,7 +1,7 @@
 # FEAT-002: Ranking Change Alerts
 
 ## STATUS
-`To Develop`
+`Done`
 
 ## PRIORITY
 `High`

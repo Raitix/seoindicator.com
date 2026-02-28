@@ -24,6 +24,10 @@ use App\Http\Controllers\Api\V1\SuggestionController;
 use App\Http\Controllers\Api\V1\AnnotationController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\AnalysisJobController;
+use App\Http\Controllers\Api\V1\AlertSettingsController;
+use App\Http\Controllers\Api\V1\KeywordAlertSettingsController;
+use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\AlertUnsubscribeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -245,4 +249,29 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::get('analysis/jobs/{jobId}/progress', [AnalysisJobController::class, 'progress']);
     Route::delete('analysis/jobs/{jobId}', [AnalysisJobController::class, 'destroy']);
     Route::get('analysis/indicators', [AnalysisJobController::class, 'indicators']);
+
+    // Alert Settings (FEAT-002)
+    Route::get('user/alert-settings', [AlertSettingsController::class, 'show']);
+    Route::put('user/alert-settings', [AlertSettingsController::class, 'update']);
+
+    // Keyword Alert Settings (FEAT-002)
+    Route::get('keywords/{keyword}/alert-settings', [KeywordAlertSettingsController::class, 'show']);
+    Route::put('keywords/{keyword}/alert-settings', [KeywordAlertSettingsController::class, 'update']);
+    Route::delete('keywords/{keyword}/alert-settings', [KeywordAlertSettingsController::class, 'destroy']);
+
+    // Notifications (FEAT-002)
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::get('notifications/{notification}', [NotificationController::class, 'show']);
+    Route::patch('notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);
+
+    // Alert Resubscribe (requires auth)
+    Route::post('alerts/resubscribe', [AlertUnsubscribeController::class, 'resubscribe']);
 });
+
+// Alert Unsubscribe (signed URL, no auth required)
+Route::get('alerts/unsubscribe/{user}', [AlertUnsubscribeController::class, 'unsubscribe'])
+    ->name('alerts.unsubscribe')
+    ->middleware('signed');

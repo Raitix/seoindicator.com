@@ -21,6 +21,13 @@ class KeywordAlertSettings extends Model
     use HasFactory;
 
     /**
+     * The model's default values for attributes.
+     */
+    protected $attributes = [
+        'enabled' => true,
+    ];
+
+    /**
      * Available alert event types.
      */
     public const EVENT_TYPES = [
