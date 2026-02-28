@@ -1,6 +1,161 @@
 # DOCUMENTATION.md
 
 ---
+## Ranking History API Endpoints (TASK-1-5)
+
+### Service Description
+REST API endpoints for retrieving ranking history data and triggering manual rank checks. Powers the ranking charts and historical analysis in the keyword tracking feature.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/keywords/{id}/history` | Get ranking history with date range |
+| POST | `/api/v1/keywords/{id}/check` | Trigger manual rank check |
+
+### Get Ranking History
+`GET /api/v1/keywords/{id}/history`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `from` | ISO 8601 date | 30 days ago | Start date filter |
+| `to` | ISO 8601 date | today | End date filter |
+| `limit` | int | 100 | Max results (max: 1000) |
+
+**Response (200):**
+```json
+{
+  "keyword": {
+    "id": 1,
+    "keyword": "seo tools"
+  },
+  "history": [
+    {
+      "position": 5,
+      "url_found": "https://example.com/seo-tools",
+      "serp_features": null,
+      "checked_at": "2026-02-27T17:00:00Z"
+    }
+  ],
+  "summary": {
+    "currentPosition": 5,
+    "bestPosition": 3,
+    "worstPosition": 15,
+    "averagePosition": 7.2,
+    "totalChecks": 30
+  }
+}
+```
+
+**Empty History Response:**
+```json
+{
+  "keyword": { "id": 1, "keyword": "new keyword" },
+  "history": [],
+  "summary": {
+    "currentPosition": null,
+    "bestPosition": null,
+    "worstPosition": null,
+    "averagePosition": null,
+    "totalChecks": 0
+  }
+}
+```
+
+### Trigger Manual Rank Check
+`POST /api/v1/keywords/{id}/check`
+
+**Response (202 Accepted):**
+```json
+{
+  "jobId": "check-abc123",
+  "status": "queued"
+}
+```
+
+### Authorization
+- All endpoints require authentication (Bearer token)
+- User must own the keyword (via site ownership)
+- Returns 401 for unauthenticated requests
+- Returns 403 for unauthorized access (IDOR protection)
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware on all endpoints |
+| IDOR Protection | `userOwnsKeyword()` validates ownership via `user_id` or `site->user_id` |
+| SQL Injection | Eloquent ORM with parameterized queries |
+
+### IDOR Protection Logic
+```php
+// RankingController::userOwnsKeyword()
+protected function userOwnsKeyword(Keyword $keyword): bool
+{
+    $userId = auth()->id();
+    
+    // Check direct ownership
+    if ($keyword->user_id === $userId) {
+        return true;
+    }
+    
+    // Check ownership via site relationship
+    if ($keyword->site && $keyword->site->user_id === $userId) {
+        return true;
+    }
+    
+    return false;
+}
+```
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/RankingController.php`
+- Methods: `history()`, `check()`, `userOwnsKeyword()`
+- Routes: Defined in `backend/routes/api.php` under `middleware(['auth'])` group
+
+### Route Configuration
+```php
+Route::prefix('v1')->middleware(['auth'])->group(function () {
+    Route::get('keywords/{id}/history', [RankingController::class, 'history']);
+    Route::post('keywords/{id}/check', [RankingController::class, 'check']);
+});
+```
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| RankingControllerTest | 15 | 76 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| History Retrieval | 6 | Date range, limit, summary stats |
+| Manual Check | 3 | Job queue integration |
+| Authentication | 2 | 401 for unauthenticated requests |
+| IDOR Protection | 2 | 403 for cross-user access |
+| Empty History | 2 | Handles keywords with no history |
+
+### Security Fix History
+- **2026-02-27**: Initial deployment - routes were public (CRITICAL SECURITY ISSUE)
+- **2026-02-28**: Security fix deployed - added `auth` middleware + IDOR protection
+
+### Production Status
+- **Deployed**: 2026-02-27 (initial), 2026-02-28 (security fix)
+- **Health Check**: Passing
+- **Tests**: 15/15 passing (76 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-1-1 (Keywords table)
+- TASK-1-3 (Ranking repository)
+- TASK-1-4 (Keyword endpoints for context)
+
+### Related Tasks
+- TASK-1-4: Keywords CRUD API
+- TASK-1-15: Ranking History Chart (frontend)
+
+---
 ## Indicators Placeholder Endpoint (TASK-1-22)
 
 ### Feature Description

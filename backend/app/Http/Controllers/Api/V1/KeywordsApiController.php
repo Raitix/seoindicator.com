@@ -210,7 +210,7 @@ class KeywordsApiController extends Controller
         $apiKey = $this->getApiKey($request);
         $user = $apiKey->user;
 
-        // First check if keyword exists (even if deleted)
+        // First check if keyword exists
         $keyword = Keyword::where('id', $id)->first();
 
         if (!$keyword) {
@@ -223,7 +223,7 @@ class KeywordsApiController extends Controller
             ], 404);
         }
 
-        // Check if keyword belongs to the user
+        // Check if keyword belongs to the user (authorization)
         if ($keyword->user_id !== $user->id) {
             return response()->json([
                 'success' => false,
@@ -261,12 +261,32 @@ class KeywordsApiController extends Controller
         $apiKey = $this->getApiKey($request);
         $user = $apiKey->user;
 
-        $keyword = Keyword::where('id', $id)
-            ->where('user_id', $user->id)
-            ->where('status', '!=', 'deleted')
-            ->first();
+        // First check if keyword exists
+        $keyword = Keyword::where('id', $id)->first();
 
         if (!$keyword) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'NOT_FOUND',
+                    'message' => 'Keyword not found.',
+                ],
+            ], 404);
+        }
+
+        // Check if keyword belongs to the user (authorization)
+        if ($keyword->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this keyword.',
+                ],
+            ], 403);
+        }
+
+        // Check if keyword is deleted
+        if ($keyword->status === 'deleted') {
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -317,12 +337,20 @@ class KeywordsApiController extends Controller
         $apiKey = $this->getApiKey($request);
         $user = $apiKey->user;
 
-        $keyword = Keyword::where('id', $id)
-            ->where('user_id', $user->id)
-            ->where('status', '!=', 'deleted')
-            ->first();
+        // First check if keyword exists
+        $keyword = Keyword::where('id', $id)->first();
 
         if (!$keyword) {
+            return response()->noContent(404);
+        }
+
+        // Check if keyword belongs to the user (authorization)
+        if ($keyword->user_id !== $user->id) {
+            abort(403, 'You do not have access to this keyword.');
+        }
+
+        // Check if keyword is already deleted
+        if ($keyword->status === 'deleted') {
             return response()->noContent(404);
         }
 
