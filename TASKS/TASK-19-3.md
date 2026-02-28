@@ -1,7 +1,7 @@
 # TASK-19-3: AnalysisJobService - Core Operations
 
 ## STATUS
-`To Test Locally`
+`In Development`
 
 ## PRIORITY
 `High`
@@ -22,7 +22,7 @@ Create AnalysisJobService with methods for job lifecycle: create, get, cancel, a
 - [ ] `failJob(int $jobId, string $error): bool` - marks job as failed with error message
 - [ ] Authorization check: user can only access their own jobs
 - [ ] Site ownership verification before job creation
-- [ ] Unit tests for all service methods
+- [x] Unit tests for all service methods (36 failures - needs fixes)
 
 ## Dependencies
 - TASK-19-1 (Database migration)
@@ -63,3 +63,69 @@ Created `AnalysisJobService` with all required methods:
 
 **File Created:**
 - `app/Services/AnalysisJobService.php`
+
+### [2026-02-28 13:50 GMT+2] Agent: LocalTester
+**❌ LOCAL TESTS FAILED - Returning to Developer**
+
+**Test Results:** 36 failed, 13 passed (53 assertions)
+
+**Bug Report - Service Implementation vs Test Expectations:**
+
+#### 1. Result Ordering Issue
+- **Test:** `create_job_creates_pending_results_for_each_indicator`
+- **Expected:** Results ordered as `['meta_tags', 'headings']`
+- **Actual:** Results returned in different order `['headings', 'meta_tags']`
+- **Fix:** Ensure results are created/returned in indicator order, or update tests to use unordered comparison
+
+#### 2. Key Naming Convention Mismatch
+- **Test:** `get_job_progress_returns_complete_data`
+- **Expected:** camelCase keys: `totalIndicators`, `completedIndicators`, `failedIndicators`, `progressPercent`, `startedAt`, `completedAt`
+- **Actual:** snake_case keys: `total_indicators`, `completed_indicators`, etc.
+- **Fix:** Service returns snake_case, tests expect camelCase. Either update service to return camelCase for API responses, or update tests.
+
+#### 3. Invalid State Transition Return Values
+- **Tests:** Multiple "fails for completed/cancelled/failed job" tests
+- **Expected:** Return `false` for invalid state transitions
+- **Actual:** Throws `RuntimeException` instead
+- **Fix:** Either update service to return `false` instead of throwing, or update tests to expect exceptions
+
+#### 4. Missing Event Classes
+- **Tests:** `cancel_job_dispatches_cancelled_event`, `start_job_dispatches_started_event`, etc.
+- **Expected:** Events dispatched: `AnalysisJobCancelled`, `AnalysisJobStarted`, `AnalysisJobCompleted`, `AnalysisJobFailed`
+- **Actual:** Events don't exist, not dispatched
+- **Fix:** Create event classes or remove event dispatch expectations from tests
+
+#### 5. Authorization Method Mismatch
+- **Tests:** `get_job_throws_exception_for_unauthorized_user`, `user_cannot_access_another_users_job`, `cannot_cancel_another_users_job`
+- **Expected:** `AuthorizationException` thrown when user doesn't own job
+- **Actual:** Service doesn't throw `AuthorizationException` - it uses optional `$userId` parameter filtering
+- **Fix:** Implement explicit authorization checks that throw `AuthorizationException`, or update tests to match current behavior
+
+#### 6. failJob() Scope Too Narrow
+- **Test:** `fail_job_fails_pending_job`
+- **Expected:** Can fail pending jobs
+- **Actual:** Service only allows failing running jobs
+- **Fix:** Update service to allow failing pending jobs, or update test expectations
+
+#### 7. completed_at Not Set on Failed Job
+- **Test:** `fail_job_fails_running_job`
+- **Expected:** `completed_at` set when job fails
+- **Actual:** `completed_at` remains null
+- **Fix:** Model's `markAsFailed()` should set `completed_at`
+
+#### 8. Indicator Count Mismatch
+- **Test:** `handles_17_indicators_full_seo_analysis`
+- **Expected:** 17 indicators
+- **Actual:** Service has 16 indicators (missing `url_structure` which test expects)
+- **Fix:** Either add missing indicator to service, or update test to match available indicators
+
+#### 9. Exception Types Mismatch
+- **Tests:** `create_job_throws_exception_for_empty_indicators`, `create_job_throws_exception_for_nonexistent_user`, etc.
+- **Expected:** Specific exception types (`InvalidArgumentException`, `AuthorizationException`)
+- **Actual:** Service throws `RuntimeException` for all cases
+- **Fix:** Use appropriate exception types, or update tests to expect `RuntimeException`
+
+**Recommendation:** Developer should align service implementation with test expectations or coordinate with PreTester to adjust test specifications. Key decision needed on:
+- camelCase vs snake_case for API response keys
+- Exception handling (throw vs return false)
+- Event dispatch requirements
