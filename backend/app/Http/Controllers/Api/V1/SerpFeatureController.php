@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Services\SerpFeatureService;
+use App\Models\Keyword;
 use App\Models\Site;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,36 @@ class SerpFeatureController extends Controller
     public function __construct(SerpFeatureService $serpFeatureService)
     {
         $this->serpFeatureService = $serpFeatureService;
+    }
+
+    /**
+     * Check if user owns the site (IDOR protection).
+     *
+     * @param Site $site
+     * @return bool
+     */
+    protected function userOwnsSite(Site $site): bool
+    {
+        return $site->user_id === auth()->id();
+    }
+
+    /**
+     * Check if user owns the keyword (IDOR protection).
+     *
+     * @param Keyword $keyword
+     * @return bool
+     */
+    protected function userOwnsKeyword(Keyword $keyword): bool
+    {
+        // Check direct ownership
+        if ($keyword->user_id === auth()->id()) {
+            return true;
+        }
+        // Check ownership via site
+        if ($keyword->site && $keyword->site->user_id === auth()->id()) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -56,6 +87,17 @@ class SerpFeatureController extends Controller
                     'message' => "Site with ID {$siteId} not found",
                 ],
             ], 404);
+        }
+
+        // IDOR protection - TASK-7-10-SEC
+        if (!$this->userOwnsSite($site)) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this site.',
+                ],
+            ], 403);
         }
 
         // Validate days parameter
@@ -119,6 +161,29 @@ class SerpFeatureController extends Controller
                     'message' => 'Invalid keyword ID. Must be a positive integer.',
                 ],
             ], 400);
+        }
+
+        // Check if keyword exists and user owns it - TASK-7-10-SEC
+        $keyword = Keyword::with('site')->find($id);
+        if (!$keyword) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'KEYWORD_NOT_FOUND',
+                    'message' => "Keyword with ID {$id} not found",
+                ],
+            ], 404);
+        }
+
+        // IDOR protection - TASK-7-10-SEC
+        if (!$this->userOwnsKeyword($keyword)) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this keyword.',
+                ],
+            ], 403);
         }
 
         // Validate query parameters
@@ -194,6 +259,17 @@ class SerpFeatureController extends Controller
             ], 404);
         }
 
+        // IDOR protection - TASK-7-10-SEC
+        if (!$this->userOwnsSite($site)) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this site.',
+                ],
+            ], 403);
+        }
+
         // Validate pagination parameters
         $validator = Validator::make($request->all(), [
             'page' => ['sometimes', 'integer', 'min:1'],
@@ -240,6 +316,29 @@ class SerpFeatureController extends Controller
                     'message' => 'Invalid site ID.',
                 ],
             ], 400);
+        }
+
+        // Check if site exists - TASK-7-10-SEC
+        $site = Site::find($siteId);
+        if (!$site) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'SITE_NOT_FOUND',
+                    'message' => "Site with ID {$siteId} not found",
+                ],
+            ], 404);
+        }
+
+        // IDOR protection - TASK-7-10-SEC
+        if (!$this->userOwnsSite($site)) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this site.',
+                ],
+            ], 403);
         }
 
         $this->serpFeatureService->invalidateSummaryCache($siteId);
