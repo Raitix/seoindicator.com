@@ -4255,6 +4255,131 @@ CREATE INDEX keywords_gsc_query_match_index ON keywords(gsc_query_match);
 - Production verified: 2026-02-23
 
 ---
+## Report Delivery Service (TASK-4-19)
+
+### Service Description
+Email delivery service for sending generated reports to recipients. Handles PDF/CSV attachments, delivery status tracking, and graceful error handling. Core functionality for scheduled report delivery in the Automated SEO Reports feature (FEAT-004).
+
+### Core Functionalities
+
+**ReportDelivery Service Class:**
+| Method | Description |
+|--------|-------------|
+| `deliver(Report $report, array $recipients): DeliveryResult` | Send report to recipients via email |
+| `handleDeliveryFailure(Report $report, string $error): void` | Log and update report on delivery failure |
+
+### Delivery Behavior
+
+**File Size Handling:**
+| File Size | Behavior |
+|-----------|----------|
+| < 10MB | Attach file to email |
+| >= 10MB | Include download link only (no attachment) |
+| Missing file | Return failure with error log |
+
+**Recipient Handling:**
+| Scenario | Behavior |
+|----------|----------|
+| Valid recipients | Send email via queued mailable |
+| Invalid emails | Filter out, continue with valid recipients |
+| Duplicates | Deduplicated before sending |
+| Empty recipients | Return failure, no email sent |
+
+### Email Structure
+
+**ReportReady Mailable:**
+- Implements `ShouldQueue` for async delivery
+- Subject: `{Report Name} - SEO Report Ready`
+- Body includes:
+  - Report name and date range
+  - Download link
+  - Attachment (if under 10MB)
+
+**Email Template:**
+```html
+<h1>{{ $report->name }}</h1>
+<p>Your SEO report is ready for download.</p>
+<p>Report period: {{ $report->date_range_start }} - {{ $report->date_range_end }}</p>
+
+<a href="{{ $downloadUrl }}" class="button">Download Report</a>
+
+<p>Or view in your <a href="{{ $dashboardUrl }}">dashboard</a>.</p>
+```
+
+### Delivery Status Tracking
+
+**Report Model Updates:**
+| Field | Description |
+|-------|-------------|
+| `delivered_at` | Timestamp when delivery completed |
+| `delivery_status` | Enum: `pending`, `sent`, `failed` |
+| `delivery_log` | JSON log of delivery attempts per recipient |
+
+**Per-Recipient Logging:**
+```json
+{
+  "recipients": [
+    {
+      "email": "client@example.com",
+      "status": "sent",
+      "sent_at": "2026-02-27T14:30:00Z"
+    },
+    {
+      "email": "invalid-email",
+      "status": "filtered",
+      "reason": "Invalid email format"
+    }
+  ]
+}
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Email Validation | Filter invalid addresses before sending |
+| Path Traversal | File existence check before attachment |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS | Email content escaped in template |
+| Recipient Privacy | BCC option available for privacy |
+
+### Technical Implementation
+- Service: `backend/app/Services/ReportDelivery.php`
+- Mailable: `backend/app/Mail/ReportReady.php`
+- Model: `backend/app/Models/Report.php` (with delivery fields)
+- Queue: Laravel queue system for async delivery
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| ReportDeliveryTest | 13 | 50 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Success Cases | 4 | Delivery, attachment, link-only |
+| File Handling | 3 | Threshold, missing file, large files |
+| Recipient Handling | 4 | Invalid emails, duplicates, empty |
+| Status Updates | 2 | Report status, delivery log |
+
+### Production Status
+- **Deployed**: 2026-02-27 (commit fc381f6 via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 13/13 passing (50 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-4-8 (Report generation)
+- TASK-4-17 (Email Service)
+- TASK-4-18 (Email Templates)
+
+### Related Tasks
+- TASK-4-11: Scheduled Reports API
+- TASK-4-12: Scheduler Service
+- TASK-4-13: Cron Job Integration
+
+---
 ## Scheduled Reports API (TASK-4-11)
 
 ### Service Description
