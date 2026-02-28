@@ -1,7 +1,7 @@
 # SPEC-022: Headless Crawler Service (JS-Rendered HTML)
 
 ## STATUS
-`Specification In Progress`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
