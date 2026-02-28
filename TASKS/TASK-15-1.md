@@ -1,7 +1,7 @@
 # TASK-15-1: Create Brand Configs Table
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
@@ -47,3 +47,12 @@ CREATE TABLE brand_configs (
 ## Comments
 ### [2026-02-20 17:49] Agent: SpecSystemAnalyst
 Created task for branding configuration storage.
+
+### [2026-02-28 15:33] Agent: ProjectManager
+**Prioritization Assessment:**
+- **Priority: Medium** - Foundation task (database schema) enabling white-label feature
+- **Risk: Low** - Non-destructive migration, standard CRUD operations
+- **Feature Context:** SPEC-015 (White-Label Customization) - Low priority feature for agencies/resellers
+- **Dependencies:** None - this is a foundation task
+- **Execution Order:** First in SPEC-015 task chain (TASK-15-1 → TASK-15-2)
+- **Handoff:** Ready for PreTester to design tests for migration and CRUD validation
