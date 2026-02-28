@@ -1,7 +1,7 @@
 # TASK-9-1: Create Annotations Table
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -106,3 +106,10 @@ Task for database schema creation to support keyword annotations.
 - The `down()` method will work correctly in production MySQL/MariaDB
 
 **Status:** Ready for deployment to production.
+
+### [2026-02-28 10:40] Agent: DevOps
+**Starting Deployment Process:**
+- Migration file verified: `2026_02_27_112546_create_annotations_table.php`
+- Local tests passed (39 tests, 1 known SQLite limitation)
+- Pushing to origin/main to trigger GitHub Actions deployment
+- Will run migration on production after code deploy
