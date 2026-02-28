@@ -33,6 +33,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Enable foreign key constraints for SQLite
+        if ($this->app->environment('testing')) {
+            try {
+                $pdo = $this->app->make('db')->connection()->getPdo();
+                if ($pdo->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+                    $pdo->exec('PRAGMA foreign_keys = ON');
+                }
+            } catch (\Exception $e) {
+                // Ignore if connection not available yet
+            }
+        }
+
         // Rate limiter for deploy endpoints (SPEC-SEC-2026-02-21-3)
         // 5 requests per 15 minutes per IP
         RateLimiter::for('deploy', function (Request $request) {
