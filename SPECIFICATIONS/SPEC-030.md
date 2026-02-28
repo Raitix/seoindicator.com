@@ -1,7 +1,7 @@
 # SPEC-030: Legal + About + How It Works + Cookie Consent
 
 ## STATUS
-`Specification In Progress`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
