@@ -1,6 +1,7 @@
 # TASK-17-5: Step 2 - First Keyword Input Component
 
-## STATUS`n`To Test Locally`
+## STATUS
+`Done`
 
 ## PRIORITY
 `High`
