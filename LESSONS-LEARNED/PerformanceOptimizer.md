@@ -175,4 +175,35 @@ Ranking::whereIn('keyword_id', $ids)
 
 ---
 
-Last updated: 2026-02-27
+## 2026-02-28: Performance Audit
+
+### GA Metrics Trend (4-day comparison)
+
+| Metric | 02-24 | 02-28 | Change |
+|--------|-------|-------|--------|
+| Bounce Rate | 68.2% | 50.0% | ✅ -18.2% |
+| Engagement Rate | 31.8% | 50.0% | ✅ +18.2% |
+| Homepage Bounce | 75.7% | 71.7% | ✅ -4% |
+| Avg Session | 200s | 160s | ➡️ Stable |
+
+### Page Performance
+
+| Page | Bounce | Duration | Status |
+|------|--------|----------|--------|
+| `/` | 71.7% | 97s | CRITICAL |
+| `/seo-guides/*` | 65-75% | 1.5-2.3s | Poor |
+| `/comparison/` | 60% | 278s | ✅ Excellent |
+| `/competitors/` | 33% | 26s | ✅ Good |
+| `/seo-guides/aria` | 0% | 597s | ✅ Excellent |
+
+### Backend Status
+
+**N+1 Query (KeywordController::index):** Still present at lines 91-93
+- `getLatestRankings()` called inside map loop
+- Impact: 501 queries for 500 keywords
+
+**DashboardController:** 5-minute cache mitigates memory issue
+
+---
+
+Last updated: 2026-02-28
