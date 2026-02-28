@@ -4094,6 +4094,156 @@ Returns keywords with high impressions but lower-than-expected CTR, indicating o
 - TASK-12-6: Query matching links keywords to GSC data
 
 ---
+## E2E Tests for Critical Flows (TASK-1-19)
+
+### Service Description
+End-to-end tests for critical user flows in the Keyword Rank Tracking feature (FEAT-001). Tests cover the core user journey from dashboard viewing through keyword management to ranking history analysis.
+
+### Test Framework
+- **Framework:** Playwright
+- **Configuration:** `playwright.config.ts`
+- **Test Directory:** `e2e/`
+- **Execution:** GitHub Actions CI/CD pipeline
+
+### Test Suites
+
+| Suite | File | Tests | Status |
+|-------|------|-------|--------|
+| Dashboard | `e2e/dashboard.spec.ts` | 9 | ✅ ALL PASS |
+| Keyword Density Checker | `e2e/keyword-density-checker.spec.ts` | 12 | ✅ ALL PASS |
+| Keyword Flow | `e2e/keyword-flow.spec.ts` | 8 | ✅ ALL PASS |
+| Ranking History | `e2e/ranking-history.spec.ts` | 11 | ✅ ALL PASS |
+| **Total** | | **40** | ✅ **ALL PASS** |
+
+### Critical Flows Covered
+
+**Dashboard Tests:**
+- Dashboard loads and displays metrics
+- Keyword count statistics display correctly
+- Position change indicators render properly
+- Navigation to keyword list works
+- Quick actions (add keyword, manual check) function
+
+**Keyword Flow Tests:**
+- Add new keyword with validation
+- Edit existing keyword
+- Delete keyword with confirmation
+- Bulk operations (select, delete)
+- Status toggle (active/paused)
+
+**Ranking History Tests:**
+- History chart renders with data
+- Date range filtering works
+- Position tooltip displays on hover
+- Export functionality (when available)
+- Empty state handling
+
+**Keyword Density Checker Tests:**
+- Tool loads with form inputs
+- URL validation works correctly
+- Results display with scores
+- Recommendations section renders
+- Error handling for invalid URLs
+- Help text expansion/collapse
+
+### Test Results Summary
+
+**Latest Run (2026-02-28 22:39 GMT+2):**
+- **Total Tests:** 43
+- **Passed:** 40
+- **Failed:** 0
+- **Skipped:** 3 (intentionally - E2E-009, E2E-012, E2E-014)
+- **Execution Time:** 35.0s
+
+### Fixes Applied During Development
+
+**Strict Mode Violations:**
+- Used `.first()` modifier for selectors matching multiple elements
+- Applied role-based selectors (`getByRole`, `getByText` with exact match)
+- More specific CSS selectors to avoid ambiguous matches
+
+**Timing Issues:**
+- Direct `.focus()` calls instead of tab navigation
+- Proper `waitForURL` with Promise.all patterns
+- Explicit waits for dynamic content loading
+
+**Next.js Route Announcer:**
+- `[role="alert"]` selector matched both error elements and Next.js's route announcer
+- Fixed with `.first()` modifier
+
+### Production Verification
+
+**Smoke Tests Passed:**
+| Test | Result |
+|------|--------|
+| Health Check | ✅ status=ok, database=connected |
+| Frontend Root Page | ✅ HTTP 200, SEOIndicator content present |
+| Next.js Static Export | ✅ `_next/static` detected |
+| Navigation Elements | ✅ Header/nav elements present |
+| API Auth (keywords) | ✅ HTTP 401 for unauthenticated |
+| API Auth (projects) | ✅ HTTP 401 for unauthenticated |
+| Tools API Validation | ✅ Proper validation error for missing URL |
+
+**Security Tests Passed:**
+| Test | Result |
+|------|--------|
+| XSS Protection | ✅ `<script>` tags not rendered in HTML |
+| Path Traversal | ✅ Returns 404 (blocked) |
+| SQL Injection | ✅ No SQL errors exposed in response |
+
+### CI/CD Integration
+
+Tests run automatically on:
+- Push to `main` branch
+- Pull request creation
+- Manual workflow dispatch
+
+**GitHub Actions Workflow:** `.github/workflows/playwright.yml`
+
+### Running Tests Locally
+
+```bash
+# Install Playwright browsers (first time)
+npx playwright install
+
+# Run all E2E tests
+npx playwright test
+
+# Run specific suite
+npx playwright test e2e/dashboard.spec.ts
+
+# Run with UI mode for debugging
+npx playwright test --ui
+
+# Generate test report
+npx playwright show-report
+```
+
+### Test Data Management
+
+- Tests use isolated test data created in beforeEach hooks
+- Cleanup performed in afterEach hooks
+- No reliance on production data
+- Mock authentication for protected routes
+
+### Production Status
+- **Deployed:** 2026-02-28 (commit d4992ba via GitHub Actions run 22528496528)
+- **CI/CD:** Integrated with GitHub Actions
+- **Test Coverage:** 40 passing tests covering 4 critical flows
+- **Status:** Complete
+
+### Dependencies
+- FEAT-001 (Keyword Rank Tracking)
+- TASK-1-13 (Keyword List Page)
+- TASK-1-14 (Add/Edit Keyword Forms)
+- TASK-1-15 (Ranking History Chart)
+
+### Related Tasks
+- TASK-1-17: Unit Tests for Services
+- TASK-1-18: Integration Tests for API
+- TASK-1-20: Performance Optimization
+
+---
 ## Unit Tests: Projects (TASK-8-9)
 
 ### Test Coverage Summary
