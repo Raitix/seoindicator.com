@@ -1,7 +1,7 @@
 # TASK-24-3: ManifestFetcherService
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
