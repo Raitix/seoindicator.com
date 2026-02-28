@@ -94,10 +94,10 @@ test.describe('Dashboard E2E Tests', () => {
     // Wait for the dashboard to load
     await expect(page.locator('h1:has-text("Dashboard Summary")')).toBeVisible();
     
-    // Verify summary cards are visible
-    await expect(page.locator('text=Total Keywords')).toBeVisible();
+    // Verify summary cards are visible (using more specific selectors)
+    await expect(page.locator('text=Total Keywords').first()).toBeVisible();
     await expect(page.locator('text=Average Position')).toBeVisible();
-    await expect(page.locator('text=Ranked')).toBeVisible();
+    await expect(page.getByText('Ranked', { exact: true })).toBeVisible();
     await expect(page.locator('text=Not Ranked')).toBeVisible();
     
     // Verify metrics values (from component's baseData)
@@ -132,10 +132,10 @@ test.describe('Dashboard E2E Tests', () => {
     // Wait for the dashboard to load
     await expect(page.locator('text=Top Keywords')).toBeVisible();
     
-    // Verify table headers
-    await expect(page.locator('text=Keyword')).toBeVisible();
-    await expect(page.locator('text=Position')).toBeVisible();
-    await expect(page.locator('text=Change')).toBeVisible();
+    // Verify table headers (using role-based selectors for specificity)
+    await expect(page.getByRole('columnheader', { name: 'Keyword' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Position' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Change' })).toBeVisible();
     
     // Verify top keywords are displayed
     await expect(page.locator('text=seo indicator')).toBeVisible();
@@ -241,8 +241,8 @@ test.describe('Dashboard E2E Tests', () => {
     // Navigate to dashboard
     await page.goto('/dashboard');
     
-    // Should show loading skeletons initially
-    await expect(page.locator('.animate-pulse')).toBeVisible();
+    // Should show loading skeletons initially (use .first() to handle multiple elements)
+    await expect(page.locator('.animate-pulse').first()).toBeVisible();
     
     // Wait for data to load
     await expect(page.locator('h1:has-text("Dashboard Summary")')).toBeVisible({ timeout: 5000 });
