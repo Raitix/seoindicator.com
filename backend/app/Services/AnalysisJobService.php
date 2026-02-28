@@ -58,6 +58,10 @@ class AnalysisJobService
             'name' => 'Content Quality',
             'max_score' => 100.00,
         ],
+        'url_structure' => [
+            'name' => 'URL Structure',
+            'max_score' => 100.00,
+        ],
         'canonicalization' => [
             'name' => 'Canonicalization',
             'max_score' => 100.00,
@@ -80,10 +84,6 @@ class AnalysisJobService
         ],
         'social_tags' => [
             'name' => 'Social Tags',
-            'max_score' => 100.00,
-        ],
-        'hreflang' => [
-            'name' => 'Hreflang',
             'max_score' => 100.00,
         ],
         'crawlability' => [

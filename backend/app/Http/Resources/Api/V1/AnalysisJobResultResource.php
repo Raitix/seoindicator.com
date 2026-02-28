@@ -22,22 +22,20 @@ class AnalysisJobResultResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id' => $this->id,
-            'job_id' => $this->job_id,
-            'indicator_slug' => $this->indicator_slug,
-            'indicator_name' => $this->indicator_name,
+            'indicatorSlug' => $this->indicator_slug,
+            'indicatorName' => $this->indicator_name,
             'status' => $this->status,
             'score' => $this->score ? (float) $this->score : null,
-            'max_score' => $this->max_score ? (float) $this->max_score : null,
+            'maxScore' => $this->max_score ? (float) $this->max_score : null,
             'percentage' => $this->percentage,
             'data' => $this->data,
             'recommendations' => $this->recommendations,
-            'error_message' => $this->error_message,
-            'started_at' => $this->started_at?->toISOString(),
-            'completed_at' => $this->completed_at?->toISOString(),
-            'processing_time_ms' => $this->processing_time_ms,
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+            'errorMessage' => $this->error_message,
+            'startedAt' => $this->started_at?->toISOString(),
+            'completedAt' => $this->completed_at?->toISOString(),
+            'processingTimeMs' => $this->processing_time_ms,
+            'createdAt' => $this->created_at?->toISOString(),
+            'updatedAt' => $this->updated_at?->toISOString(),
         ];
     }
 }

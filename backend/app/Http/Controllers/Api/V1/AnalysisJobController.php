@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\V1\AnalysisJobResource;
 use App\Models\AnalysisJob;
+use App\Models\Site;
 use App\Services\AnalysisJobService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,18 +30,34 @@ class AnalysisJobController extends Controller
      * List jobs for a site.
      *
      * @param Request $request
-     * @param int $siteId
-     * @return AnonymousResourceCollection
+     * @param mixed $siteId
+     * @return AnonymousResourceCollection|JsonResponse
      */
-    public function index(Request $request, int $siteId): AnonymousResourceCollection
+    public function index(Request $request, $siteId): AnonymousResourceCollection|JsonResponse
     {
+        // Validate siteId is numeric
+        if (!is_numeric($siteId)) {
+            return response()->json(['error' => 'Site not found.'], 404);
+        }
+
+        $siteId = (int) $siteId;
+        $userId = $request->user()->id;
+
+        // Check site exists and belongs to user
+        $site = Site::find($siteId);
+        if (!$site) {
+            return response()->json(['error' => 'Site not found.'], 404);
+        }
+        if ($site->user_id !== $userId) {
+            return response()->json(['error' => 'You do not have access to this site.'], 403);
+        }
+
         $request->validate([
             'status' => 'nullable|string|in:pending,running,completed,cancelled,failed',
             'page' => 'nullable|integer|min:1',
             'perPage' => 'nullable|integer|min:1|max:100',
         ]);
 
-        $userId = $request->user()->id;
         $perPage = $request->input('perPage', 15);
         $status = $request->input('status');
 
@@ -61,29 +79,55 @@ class AnalysisJobController extends Controller
      * Create a new analysis job.
      *
      * @param Request $request
-     * @param int $siteId
+     * @param mixed $siteId
      * @return JsonResponse
      */
-    public function store(Request $request, int $siteId): JsonResponse
+    public function store(Request $request, $siteId): JsonResponse
     {
+        // Validate siteId is numeric
+        if (!is_numeric($siteId)) {
+            return response()->json(['error' => 'Site not found.'], 404);
+        }
+
+        $siteId = (int) $siteId;
+        $userId = $request->user()->id;
+
+        // Check site exists and belongs to user
+        $site = Site::find($siteId);
+        if (!$site) {
+            return response()->json(['error' => 'Site not found.'], 404);
+        }
+        if ($site->user_id !== $userId) {
+            return response()->json(['error' => 'You do not have access to this site.'], 403);
+        }
+
         $request->validate([
             'indicators' => 'required|array|min:1',
             'indicators.*' => 'required|string|distinct',
         ]);
 
-        $userId = $request->user()->id;
         $indicators = $request->input('indicators');
 
         try {
             $job = $this->service->createJob($userId, $siteId, $indicators);
+            $job->load('results');
 
-            return (new AnalysisJobResource($job))
-                ->response()
-                ->setStatusCode(201);
+            return response()->json([
+                'data' => new AnalysisJobResource($job),
+            ], 201);
 
         } catch (\RuntimeException $e) {
+            $message = $e->getMessage();
+            
+            // Check if this is a rate limit error
+            if (str_contains($message, 'limit') || str_contains($message, 'rate')) {
+                return response()->json([
+                    'error' => $message,
+                ], 429)->header('Retry-After', 60);
+            }
+            
             return response()->json([
-                'message' => $e->getMessage(),
+                'error' => $message,
             ], 422);
         }
     }
@@ -92,53 +136,79 @@ class AnalysisJobController extends Controller
      * Get job progress with results.
      *
      * @param Request $request
-     * @param int $jobId
+     * @param mixed $jobId
      * @return JsonResponse
      */
-    public function show(Request $request, int $jobId): JsonResponse
+    public function show(Request $request, $jobId): JsonResponse
     {
-        $userId = $request->user()->id;
-
-        $progress = $this->service->getJobProgress($jobId, $userId);
-
-        if (!$progress) {
-            return response()->json([
-                'message' => 'Job not found.',
-            ], 404);
+        // Validate jobId is numeric
+        if (!is_numeric($jobId)) {
+            return response()->json(['error' => 'Job not found.'], 404);
         }
 
-        return response()->json($progress);
+        $jobId = (int) $jobId;
+        $userId = $request->user()->id;
+
+        $job = AnalysisJob::with('results')->find($jobId);
+
+        if (!$job) {
+            return response()->json(['error' => 'Job not found.'], 404);
+        }
+
+        // Check ownership
+        if ($job->user_id !== $userId) {
+            return response()->json(['error' => 'You do not have access to this job.'], 403);
+        }
+
+        return response()->json([
+            'data' => new AnalysisJobResource($job),
+        ]);
     }
 
     /**
      * Cancel a job.
      *
      * @param Request $request
-     * @param int $jobId
+     * @param mixed $jobId
      * @return JsonResponse
      */
-    public function destroy(Request $request, int $jobId): JsonResponse
+    public function destroy(Request $request, $jobId): JsonResponse
     {
+        // Validate jobId is numeric
+        if (!is_numeric($jobId)) {
+            return response()->json(['error' => 'Job not found.'], 404);
+        }
+
+        $jobId = (int) $jobId;
         $userId = $request->user()->id;
 
-        try {
-            $cancelled = $this->service->cancelJob($jobId, $userId);
+        $job = AnalysisJob::with('results')->find($jobId);
 
-            if (!$cancelled) {
-                return response()->json([
-                    'message' => 'Failed to cancel job.',
-                ], 500);
-            }
-
-            $progress = $this->service->getJobProgress($jobId, $userId);
-
-            return response()->json($progress);
-
-        } catch (\RuntimeException $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], 422);
+        if (!$job) {
+            return response()->json(['error' => 'Job not found.'], 404);
         }
+
+        // Check ownership
+        if ($job->user_id !== $userId) {
+            return response()->json(['error' => 'You do not have access to this job.'], 403);
+        }
+
+        // Check if job can be cancelled
+        if (in_array($job->status, ['completed', 'cancelled', 'failed'])) {
+            return response()->json([
+                'error' => "Cannot cancel a job with status: {$job->status}",
+            ], 400);
+        }
+
+        // Cancel the job
+        $job->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now(),
+        ]);
+
+        return response()->json([
+            'data' => new AnalysisJobResource($job->fresh(['results'])),
+        ]);
     }
 
     /**
@@ -168,17 +238,22 @@ class AnalysisJobController extends Controller
      * SSE stream for real-time job progress updates.
      *
      * @param Request $request
-     * @param int $jobId
+     * @param mixed $jobId
      * @return \Illuminate\Http\Response
      */
-    public function stream(Request $request, int $jobId)
+    public function stream(Request $request, $jobId)
     {
+        if (!is_numeric($jobId)) {
+            return response()->json(['error' => 'Job not found.'], 404);
+        }
+
+        $jobId = (int) $jobId;
         $userId = $request->user()->id;
 
         // Verify user owns the job
         if (!$this->service->canUserAccessJob($userId, $jobId)) {
             return response()->json([
-                'message' => 'Job not found.',
+                'error' => 'Job not found.',
             ], 404);
         }
 
@@ -248,18 +323,23 @@ class AnalysisJobController extends Controller
      * Polling endpoint for job progress (fallback for SSE).
      *
      * @param Request $request
-     * @param int $jobId
+     * @param mixed $jobId
      * @return JsonResponse
      */
-    public function progress(Request $request, int $jobId): JsonResponse
+    public function progress(Request $request, $jobId): JsonResponse
     {
+        if (!is_numeric($jobId)) {
+            return response()->json(['error' => 'Job not found.'], 404);
+        }
+
+        $jobId = (int) $jobId;
         $userId = $request->user()->id;
 
         $progress = $this->service->getJobProgress($jobId, $userId);
 
         if (!$progress) {
             return response()->json([
-                'message' => 'Job not found.',
+                'error' => 'Job not found.',
             ], 404);
         }
 
@@ -272,17 +352,22 @@ class AnalysisJobController extends Controller
      * Start processing a job.
      *
      * @param Request $request
-     * @param int $jobId
+     * @param mixed $jobId
      * @return JsonResponse
      */
-    public function start(Request $request, int $jobId): JsonResponse
+    public function start(Request $request, $jobId): JsonResponse
     {
+        if (!is_numeric($jobId)) {
+            return response()->json(['error' => 'Job not found.'], 404);
+        }
+
+        $jobId = (int) $jobId;
         $userId = $request->user()->id;
 
         // Verify user owns the job
         if (!$this->service->canUserAccessJob($userId, $jobId)) {
             return response()->json([
-                'message' => 'Job not found.',
+                'error' => 'Job not found.',
             ], 404);
         }
 
@@ -291,7 +376,7 @@ class AnalysisJobController extends Controller
 
             if (!$job->isPending()) {
                 return response()->json([
-                    'message' => 'Job is not in pending state.',
+                    'error' => 'Job is not in pending state.',
                 ], 422);
             }
 
@@ -305,7 +390,7 @@ class AnalysisJobController extends Controller
 
         } catch (\RuntimeException $e) {
             return response()->json([
-                'message' => $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 422);
         }
     }

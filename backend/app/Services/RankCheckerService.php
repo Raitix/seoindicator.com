@@ -17,8 +17,11 @@ class RankCheckerService
 {
     use EmitsWebhookEvents;
 
-    public function __construct(private readonly SERPFetcherInterface $fetcher)
-    {
+    public function __construct(
+        private readonly SERPFetcherInterface $fetcher,
+        private readonly ?AlertEvaluator $alertEvaluator = null,
+        private readonly ?NotificationDispatcher $notificationDispatcher = null
+    ) {
     }
 
     /**
@@ -192,7 +195,122 @@ class RankCheckerService
             );
         }
 
+        // Evaluate and dispatch alerts
+        $this->evaluateAndDispatchAlerts(
+            $keyword,
+            $previousPosition,
+            $newPosition,
+            $serpFeaturesArray
+        );
+
         return true;
+    }
+
+    /**
+     * Evaluate alerts and dispatch notifications.
+     *
+     * @param Keyword $keyword
+     * @param int|null $oldPosition
+     * @param int|null $newPosition
+     * @param array|null $serpFeatures
+     */
+    protected function evaluateAndDispatchAlerts(
+        Keyword $keyword,
+        ?int $oldPosition,
+        ?int $newPosition,
+        ?array $serpFeatures
+    ): void {
+        // Skip if services not available (for backward compatibility)
+        if (!$this->alertEvaluator || !$this->notificationDispatcher) {
+            return;
+        }
+
+        try {
+            // Evaluate position changes
+            $events = $this->alertEvaluator->evaluate(
+                $keyword,
+                $oldPosition,
+                $newPosition,
+                ['serp_features' => $this->detectSerpFeatureChanges($keyword, $serpFeatures)]
+            );
+
+            if (empty($events)) {
+                return;
+            }
+
+            // Dispatch notifications
+            if ($keyword->user) {
+                $this->notificationDispatcher->dispatch(
+                    $keyword->user,
+                    $keyword,
+                    $events
+                );
+            }
+        } catch (\Throwable $e) {
+            // Don't fail the ranking check if alerts fail
+            Log::error('Alert evaluation failed', [
+                'keyword_id' => $keyword->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    /**
+     * Detect SERP feature changes for alert evaluation.
+     *
+     * @param Keyword $keyword
+     * @param array|null $currentFeatures
+     * @return array
+     */
+    protected function detectSerpFeatureChanges(Keyword $keyword, ?array $currentFeatures): array
+    {
+        // Get previous SERP features
+        $previousRanking = Ranking::where('keyword_id', $keyword->id)
+            ->whereNotNull('serp_features')
+            ->orderBy('checked_at', 'desc')
+            ->skip(1) // Skip the current one we just saved
+            ->first();
+
+        $previousFeatures = [];
+        if ($previousRanking && is_string($previousRanking->serp_features)) {
+            $decoded = json_decode($previousRanking->serp_features, true);
+            if (is_array($decoded)) {
+                $previousFeatures = $decoded;
+            }
+        } elseif ($previousRanking && is_array($previousRanking->serp_features)) {
+            $previousFeatures = $previousRanking->serp_features;
+        }
+
+        // Normalize feature arrays
+        $currentTypes = $this->extractSerpFeatureTypes($currentFeatures);
+        $previousTypes = $this->extractSerpFeatureTypes($previousFeatures);
+
+        return [
+            'gained' => array_values(array_diff($currentTypes, $previousTypes)),
+            'lost' => array_values(array_diff($previousTypes, $currentTypes)),
+        ];
+    }
+
+    /**
+     * Extract SERP feature types from features array.
+     *
+     * @param array|null $features
+     * @return array
+     */
+    protected function extractSerpFeatureTypes(?array $features): array
+    {
+        if (empty($features)) {
+            return [];
+        }
+
+        // Handle different formats
+        if (isset($features['types'])) {
+            return (array) $features['types'];
+        }
+
+        // Assume it's a flat array of types
+        return array_keys(array_filter($features, fn($v) => $v === true || (is_array($v) && !empty($v))));
     }
 
     /**
