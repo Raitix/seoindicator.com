@@ -1,7 +1,7 @@
 # SPEC-024: PWA / Web App Manifest Indicator
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
