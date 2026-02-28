@@ -122,7 +122,7 @@ test.describe('Dashboard E2E Tests', () => {
     
     // Verify values
     await expect(page.locator('text=34')).toBeVisible(); // Improved
-    await expect(page.locator('text=18')).toBeVisible(); // Declined
+    await expect(page.getByText('18', { exact: true })).toBeVisible(); // Declined
   });
 
   test('E2E-052: View top keywords section', async ({ page }) => {
@@ -183,8 +183,8 @@ test.describe('Dashboard E2E Tests', () => {
     // Wait for the dashboard to load
     await expect(page.locator('text=Dashboard Summary')).toBeVisible();
     
-    // Click "Add keyword" button
-    await page.click('a:has-text("Add keyword")');
+    // Click "Add keyword" link using more specific selector
+    await page.click('a[href*="/keywords/new"]');
     
     // Should navigate to new keyword page
     await expect(page).toHaveURL(/\/sites\/\d+\/keywords\/new/);
