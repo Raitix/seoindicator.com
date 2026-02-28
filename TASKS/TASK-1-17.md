@@ -1,7 +1,7 @@
 # SPEC-001-17: Unit Tests for Services
 
 ## STATUS
-`To Document`
+`Done`
 ## PRIORITY
 `Medium`
 
@@ -147,4 +147,12 @@ TOTAL:                126 tests, 179 assertions - ALL PASS
 - Tests cover error handling, edge cases, Unicode, security
 - PHPUnit deprecation warnings (doc-comments) are non-blocking
 
-**Status:** Testing Prod → To Document
+### [2026-02-28 23:00] Agent: DocSystemAnalyst
+Documentation complete. Updated DOCUMENTATION.md with comprehensive test coverage details for:
+- CaptchaServiceTest (32 tests, 51 assertions)
+- HttpSERPFetcherTest (36 tests, 48 assertions)
+- HtmlParserServiceTest (58 tests, 80 assertions)
+
+Total: 126 tests, 179 assertions documented.
+
+**Status:** Documentation in Progress → Done
