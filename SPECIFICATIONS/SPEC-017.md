@@ -1,7 +1,7 @@
 # SPEC-017: User Onboarding & Activation Flow
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
