@@ -4,6 +4,7 @@ namespace Tests\Unit\Repositories;
 
 use App\Models\Backlink;
 use App\Models\Project;
+use App\Repositories\BacklinkRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
@@ -11,21 +12,19 @@ use Tests\TestCase;
 /**
  * Tests for BacklinkRepository.
  * 
- * These tests define the expected repository interface.
- * The repository implementation should be created to pass these tests.
- * 
  * @see TASK-23-2
  */
 class BacklinkRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected BacklinkRepository $repository;
+
     protected function setUp(): void
     {
         parent::setUp();
         
-        // Create repository instance
-        // $this->repository = app(BacklinkRepository::class);
+        $this->repository = app(BacklinkRepository::class);
     }
 
     // =============================================
@@ -47,8 +46,7 @@ class BacklinkRepositoryTest extends TestCase
             'is_active' => true,
         ];
 
-        // Using model directly until repository is implemented
-        $backlink = Backlink::create($data);
+        $backlink = $this->repository->create($data);
 
         $this->assertInstanceOf(Backlink::class, $backlink);
         $this->assertEquals('example.com', $backlink->source_domain);
@@ -59,7 +57,7 @@ class BacklinkRepositoryTest extends TestCase
     {
         $backlink = Backlink::factory()->create();
 
-        $found = Backlink::find($backlink->id);
+        $found = $this->repository->findById($backlink->id);
 
         $this->assertInstanceOf(Backlink::class, $found);
         $this->assertEquals($backlink->id, $found->id);
@@ -68,7 +66,7 @@ class BacklinkRepositoryTest extends TestCase
     /** @test */
     public function it_returns_null_when_backlink_not_found(): void
     {
-        $found = Backlink::find(99999);
+        $found = $this->repository->findById(99999);
 
         $this->assertNull($found);
     }
@@ -78,8 +76,9 @@ class BacklinkRepositoryTest extends TestCase
     {
         $backlink = Backlink::factory()->create(['anchor_text' => 'old text']);
 
-        $backlink->update(['anchor_text' => 'new text']);
+        $result = $this->repository->update($backlink->id, ['anchor_text' => 'new text']);
 
+        $this->assertTrue($result);
         $this->assertEquals('new text', $backlink->fresh()->anchor_text);
     }
 
@@ -88,8 +87,9 @@ class BacklinkRepositoryTest extends TestCase
     {
         $backlink = Backlink::factory()->create();
 
-        $backlink->delete();
+        $result = $this->repository->delete($backlink->id);
 
+        $this->assertTrue($result);
         $this->assertDatabaseMissing('backlinks', ['id' => $backlink->id]);
     }
 
@@ -101,7 +101,7 @@ class BacklinkRepositoryTest extends TestCase
         Backlink::factory()->count(5)->create(['project_id' => $project->id]);
         Backlink::factory()->count(3)->create(); // Other project
 
-        $backlinks = Backlink::where('project_id', $project->id)->get();
+        $backlinks = $this->repository->getByProject($project->id);
 
         $this->assertCount(5, $backlinks);
         $backlinks->each(fn ($b) => $this->assertEquals($project->id, $b->project_id));
@@ -133,23 +133,18 @@ class BacklinkRepositoryTest extends TestCase
             ],
         ];
 
-        // Batch insert using Eloquent
-        foreach ($backlinks as $data) {
-            Backlink::create($data);
-        }
+        $result = $this->repository->insertBatch($backlinks);
 
+        $this->assertTrue($result);
         $this->assertCount(2, Backlink::where('project_id', $project->id)->get());
     }
 
     /** @test */
     public function it_handles_empty_batch_insert(): void
     {
-        $count = Backlink::count();
+        $result = $this->repository->insertBatch([]);
 
-        // Empty batch - no operation
-        // Should not throw error
-
-        $this->assertEquals($count, Backlink::count());
+        $this->assertTrue($result);
     }
 
     // =============================================
@@ -161,31 +156,31 @@ class BacklinkRepositoryTest extends TestCase
     {
         $project = Project::factory()->create();
         
-        // Create old backlinks
-        Backlink::factory()->count(3)->create([
+        // Create backlinks with active URLs
+        Backlink::factory()->create([
             'project_id' => $project->id,
-            'last_checked_at' => now()->subDays(60),
+            'source_url' => 'https://active1.com/page',
+            'is_active' => true,
+        ]);
+        Backlink::factory()->create([
+            'project_id' => $project->id,
+            'source_url' => 'https://active2.com/page',
             'is_active' => true,
         ]);
         
-        // Create recent backlinks
-        Backlink::factory()->count(2)->create([
+        // Create stale backlinks
+        Backlink::factory()->create([
             'project_id' => $project->id,
-            'last_checked_at' => now()->subDays(5),
+            'source_url' => 'https://stale.com/page',
             'is_active' => true,
         ]);
 
-        // Deactivate backlinks not checked in last 30 days
-        $cutoffDate = now()->subDays(30);
-        Backlink::where('project_id', $project->id)
-            ->where('last_checked_at', '<', $cutoffDate)
-            ->update(['is_active' => false]);
+        $activeUrls = ['https://active1.com/page', 'https://active2.com/page'];
+        
+        $count = $this->repository->deactivateStale($project->id, $activeUrls);
 
-        $activeCount = Backlink::where('project_id', $project->id)->where('is_active', true)->count();
-        $inactiveCount = Backlink::where('project_id', $project->id)->where('is_active', false)->count();
-
-        $this->assertEquals(2, $activeCount);
-        $this->assertEquals(3, $inactiveCount);
+        $this->assertEquals(1, $count);
+        $this->assertEquals(2, Backlink::where('project_id', $project->id)->where('is_active', true)->count());
     }
 
     /** @test */
@@ -195,14 +190,13 @@ class BacklinkRepositoryTest extends TestCase
         
         $recentBacklink = Backlink::factory()->create([
             'project_id' => $project->id,
-            'last_checked_at' => now()->subDays(5),
+            'source_url' => 'https://recent.com/page',
             'is_active' => true,
         ]);
-
-        $cutoffDate = now()->subDays(30);
-        Backlink::where('project_id', $project->id)
-            ->where('last_checked_at', '<', $cutoffDate)
-            ->update(['is_active' => false]);
+        
+        $activeUrls = ['https://recent.com/page'];
+        
+        $this->repository->deactivateStale($project->id, $activeUrls);
 
         $this->assertTrue($recentBacklink->fresh()->is_active);
     }
@@ -219,7 +213,7 @@ class BacklinkRepositoryTest extends TestCase
         Backlink::factory()->count(7)->create(['project_id' => $project->id, 'is_active' => true]);
         Backlink::factory()->count(3)->create(['project_id' => $project->id, 'is_active' => false]);
 
-        $count = Backlink::where('project_id', $project->id)->where('is_active', true)->count();
+        $count = $this->repository->getActiveCount($project->id);
 
         $this->assertEquals(7, $count);
     }
@@ -229,12 +223,10 @@ class BacklinkRepositoryTest extends TestCase
     {
         $project = Project::factory()->create();
         
-        Backlink::factory()->count(5)->dofollow()->create(['project_id' => $project->id]);
-        Backlink::factory()->count(3)->nofollow()->create(['project_id' => $project->id]);
+        Backlink::factory()->count(5)->dofollow()->create(['project_id' => $project->id, 'is_active' => true]);
+        Backlink::factory()->count(3)->nofollow()->create(['project_id' => $project->id, 'is_active' => true]);
 
-        $count = Backlink::where('project_id', $project->id)
-            ->where('link_type', 'dofollow')
-            ->count();
+        $count = $this->repository->getDofollowCount($project->id);
 
         $this->assertEquals(5, $count);
     }
@@ -253,9 +245,7 @@ class BacklinkRepositoryTest extends TestCase
             'source_domain' => 'other.com',
         ]);
 
-        $backlinks = Backlink::where('project_id', $project->id)
-            ->where('source_domain', 'example.com')
-            ->get();
+        $backlinks = $this->repository->getByDomain($project->id, 'example.com');
 
         $this->assertCount(4, $backlinks);
     }
@@ -267,10 +257,7 @@ class BacklinkRepositoryTest extends TestCase
         
         Backlink::factory()->count(10)->create(['project_id' => $project->id]);
 
-        $recent = Backlink::where('project_id', $project->id)
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
+        $recent = $this->repository->getRecent($project->id, 5);
 
         $this->assertCount(5, $recent);
     }
@@ -300,11 +287,11 @@ class BacklinkRepositoryTest extends TestCase
             ];
         }
         
-        // Use insert for performance
-        Backlink::insert($backlinks);
+        $result = $this->repository->insertBatch($backlinks);
         
         $duration = microtime(true) - $startTime;
 
+        $this->assertTrue($result);
         $this->assertLessThan(5, $duration, 'Batch insert should complete in <5 seconds');
         $this->assertCount(100, Backlink::where('project_id', $project->id)->get());
     }
@@ -316,9 +303,7 @@ class BacklinkRepositoryTest extends TestCase
         
         Backlink::factory()->count(25)->create(['project_id' => $project->id]);
 
-        $page1 = Backlink::where('project_id', $project->id)
-            ->orderBy('id')
-            ->paginate(10, ['*'], 'page', 1);
+        $page1 = $this->repository->getPaginated($project->id, 10, 1);
 
         $this->assertCount(10, $page1->items());
         $this->assertEquals(25, $page1->total());
@@ -338,11 +323,7 @@ class BacklinkRepositoryTest extends TestCase
         Backlink::factory()->count(3)->nofollow()->create(['project_id' => $project->id]);
         Backlink::factory()->count(2)->create(['project_id' => $project->id, 'link_type' => 'unknown']);
 
-        $stats = Backlink::where('project_id', $project->id)
-            ->selectRaw('link_type, count(*) as count')
-            ->groupBy('link_type')
-            ->pluck('count', 'link_type')
-            ->toArray();
+        $stats = $this->repository->countByLinkType($project->id);
 
         $this->assertEquals(5, $stats['dofollow']);
         $this->assertEquals(3, $stats['nofollow']);
@@ -354,13 +335,11 @@ class BacklinkRepositoryTest extends TestCase
     {
         $project = Project::factory()->create();
         
-        Backlink::factory()->count(3)->create(['project_id' => $project->id, 'source_domain' => 'example.com']);
-        Backlink::factory()->count(2)->create(['project_id' => $project->id, 'source_domain' => 'test.com']);
-        Backlink::factory()->count(1)->create(['project_id' => $project->id, 'source_domain' => 'other.com']);
+        Backlink::factory()->count(3)->create(['project_id' => $project->id, 'source_domain' => 'example.com', 'is_active' => true]);
+        Backlink::factory()->count(2)->create(['project_id' => $project->id, 'source_domain' => 'test.com', 'is_active' => true]);
+        Backlink::factory()->count(1)->create(['project_id' => $project->id, 'source_domain' => 'other.com', 'is_active' => true]);
 
-        $uniqueDomains = Backlink::where('project_id', $project->id)
-            ->distinct('source_domain')
-            ->count('source_domain');
+        $uniqueDomains = $this->repository->getUniqueReferringDomainsCount($project->id);
 
         $this->assertEquals(3, $uniqueDomains);
     }
