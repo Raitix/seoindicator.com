@@ -43,10 +43,30 @@ class CreatePwaAnalysesTableTest extends TestCase
     // =========================================================================
 
     /**
+     * Create a test user.
+     */
+    protected function createUser(array $attributes = []): int
+    {
+        return DB::table('users')->insertGetId(array_merge([
+            'name' => 'Test User',
+            'email' => 'test-' . uniqid() . '@example.com',
+            'password' => bcrypt('password'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], $attributes));
+    }
+
+    /**
      * Create a test site.
      */
     protected function createSite(array $attributes = []): int
     {
+        // Ensure we have a user_id
+        if (!isset($attributes['user_id'])) {
+            $userId = $this->createUser();
+            $attributes['user_id'] = $userId;
+        }
+
         return DB::table('sites')->insertGetId(array_merge([
             'url' => 'https://example-' . uniqid() . '.com',
             'name' => 'Test Site',
