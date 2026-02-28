@@ -265,7 +265,22 @@ class AnalysisJob extends Model
     // ============================================
 
     /**
-     * Calculate and update progress percent.
+     * Get progress percent (calculated from completed/total indicators).
+     * Returns the stored value if set, otherwise calculates dynamically.
+     */
+    public function getProgressPercentAttribute($value): int
+    {
+        // If we have a stored value and it matches current state, return it
+        if ($value !== null && $value > 0) {
+            // Recalculate to ensure accuracy
+            return $this->calculateProgress();
+        }
+
+        return $this->calculateProgress();
+    }
+
+    /**
+     * Calculate progress percent from completed/total indicators.
      */
     public function calculateProgress(): int
     {
