@@ -1,7 +1,7 @@
 # TASK-SEC-7-10-5: Create Security Test File
 
 ## STATUS
-`To Test Locally`
+`Done`
 
 ## PRIORITY
 `High`
