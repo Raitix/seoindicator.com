@@ -1,7 +1,7 @@
 # TASK-18-6: AnalysisRunnerService
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

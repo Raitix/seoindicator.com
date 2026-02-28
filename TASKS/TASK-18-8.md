@@ -1,7 +1,7 @@
 # TASK-18-8: SuggestionGeneratorService
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`

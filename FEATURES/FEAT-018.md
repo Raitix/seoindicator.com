@@ -1,7 +1,7 @@
 # FEAT-018: Legacy 17-Indicator SEO Analysis (Core Engine)
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -59,6 +59,25 @@ As a user, I want to enter a domain and get a clear SEO score with actionable is
 6. Testing & Polish (4 tasks) - Unit tests, integration tests, frontend tests, performance
 
 **Status:** Ready for ProjectManager prioritization.
+
+### ProjectManager (2026-02-28)
+**Prioritization Complete:** Reviewed and confirmed priorities for all 36 tasks.
+
+**Priority Distribution:**
+| Priority | Count | Tasks |
+|----------|-------|-------|
+| High | 18 | Infrastructure (1-3), Core Services (4-7), Key Indicators (9-11,14,19,25), API (26), Frontend Core (29-30), Unit/Integration Tests (33-34) |
+| Medium | 14 | SuggestionGenerator (8), Mid-weight Indicators (12-13,16-18,22-24), PDF Export (27), Rate Limiting (28), Indicator Components (31), Frontend Tests (35), Performance (36) |
+| Low | 4 | FilenamesChecker (15), LanguageChecker (20), FaviconChecker (21), PDF Download UI (32) |
+
+**Critical Path:** TASK-18-1 → TASK-18-2 → TASK-18-3 → TASK-18-4 → TASK-18-5 → TASK-18-6 → TASK-18-26 → TASK-18-30
+
+**High-Risk Tasks Flagged:**
+- TASK-18-5: HtmlFetcherService (SSRF vulnerability - must use FEAT-016 protection)
+- TASK-18-17: LinksChecker (external link checks)
+- TASK-18-25: PageSpeedChecker (external API dependency)
+
+**Handoff to PreTester:** All tasks updated to status "To Write Tests". Foundation tasks (1-3) should be tested first.
 
 ---
 *Created by Lead from individual user request (legacy migration).*
