@@ -59,6 +59,15 @@ class AnalysisJobResult extends Model
     ];
 
     /**
+     * The model's default attribute values.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'status' => self::STATUS_PENDING,
+    ];
+
+    /**
      * The attributes that should be cast.
      *
      * @return array<string, string>

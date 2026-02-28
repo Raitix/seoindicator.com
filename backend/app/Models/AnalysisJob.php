@@ -56,6 +56,18 @@ class AnalysisJob extends Model
     ];
 
     /**
+     * The model's default attribute values.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'status' => self::STATUS_PENDING,
+        'total_indicators' => 0,
+        'completed_indicators' => 0,
+        'failed_indicators' => 0,
+    ];
+
+    /**
      * The attributes that should be cast.
      *
      * @return array<string, string>
@@ -265,17 +277,17 @@ class AnalysisJob extends Model
     // ============================================
 
     /**
-     * Get progress percent (calculated from completed/total indicators).
-     * Returns the stored value if set, otherwise calculates dynamically.
+     * Get progress percent.
+     * Returns the stored value if explicitly set, otherwise calculates dynamically.
      */
     public function getProgressPercentAttribute($value): int
     {
-        // If we have a stored value and it matches current state, return it
-        if ($value !== null && $value > 0) {
-            // Recalculate to ensure accuracy
-            return $this->calculateProgress();
+        // Return stored value if it exists (not null)
+        if ($value !== null) {
+            return (int) $value;
         }
 
+        // Calculate dynamically based on completed/total indicators
         return $this->calculateProgress();
     }
 

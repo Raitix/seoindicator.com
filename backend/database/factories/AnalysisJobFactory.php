@@ -33,7 +33,7 @@ class AnalysisJobFactory extends Factory
             'total_indicators' => 0,
             'completed_indicators' => 0,
             'failed_indicators' => 0,
-            'progress_percent' => 0,
+            // progress_percent is calculated dynamically via accessor
             'started_at' => null,
             'completed_at' => null,
             'cancelled_at' => null,
