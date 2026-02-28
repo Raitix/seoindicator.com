@@ -1851,6 +1851,135 @@ Route::get('keywords/{id}/rankings', [RankingsApiController::class, 'index'])
 - TASK-6-5: Rate Limiting Middleware
 
 ---
+## Sites API Endpoints (TASK-6-10)
+
+### Service Description
+REST API endpoint for listing user's sites with keyword counts. Provides programmatic access to site data via secure API key authentication, enabling integration with external dashboards and reporting tools.
+
+### API Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sites` | List all sites for authenticated user |
+
+### List Sites
+`GET /api/v1/sites`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | int | 1 | Page number |
+| `per_page` | int | 20 | Results per page (max: 100) |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "url": "https://example.com",
+      "name": "Example Site",
+      "keyword_count": 50,
+      "created_at": "2026-02-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "per_page": 20,
+    "total_pages": 1
+  }
+}
+```
+
+**Site Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Unique site identifier |
+| `url` | string | Site URL (normalized) |
+| `name` | string|null | Optional site name |
+| `keyword_count` | int | Number of non-deleted keywords |
+| `created_at` | string | ISO 8601 creation timestamp |
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Missing or invalid API key |
+| 403 | API key lacks `sites:read` permission |
+| 422 | Invalid pagination parameters |
+
+### Authentication
+- **Method:** API Key via Bearer token
+- **Header:** `Authorization: Bearer sk_live_...`
+- **Permission:** `sites:read` required
+
+### Authorization
+| Check | Behavior |
+|-------|----------|
+| Valid API key | Request processed |
+| Invalid/revoked key | 401 Unauthorized |
+| Missing sites:read | 403 Forbidden |
+| Cross-user data | Empty result (user isolation) |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | API Key middleware with Bearer token |
+| IDOR Protection | User isolation via site ownership |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| Input Validation | FormRequest with type/bounds checking |
+| Rate Limiting | Per-key rate limits with headers |
+
+### Keyword Count Logic
+- Counts keywords where `site_id` matches site
+- Excludes keywords with `status = 'deleted'`
+- Includes all other statuses (active, paused, etc.)
+
+### Rate Limiting Headers
+All responses include rate limit information:
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 59
+X-RateLimit-Reset: 1709123456
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| SitesApiControllerTest | 44 | 166 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Success cases | 10 | List sites, empty list, pagination |
+| Authentication | 6 | API key validation, revoked/expired keys |
+| Authorization | 3 | User isolation, cross-user access |
+| Validation | 7 | Page/per_page bounds, non-numeric |
+| Edge cases | 8 | Large counts, deleted keywords, long URLs |
+| Security | 4 | SQL injection, IDOR, XSS |
+| Rate limiting | 4 | Headers, per-key limits |
+| Integration | 2 | Full flow, user isolation |
+
+### Production Status
+- **Deployed:** 2026-02-28 (GitHub Actions run 22517617687)
+- **Health Check:** Passing
+- **Tests:** 44/44 passing (166 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-6-4 (API Key Management)
+- TASK-1-1 (Sites table and Site model)
+- FEAT-001 (Keywords table)
+
+### Related Tasks
+- TASK-6-8: Keywords API endpoints
+- TASK-6-3: API Key Service
+- TASK-6-5: Rate Limiting Middleware
+
+---
 ## Project CRUD API (TASK-8-7)
 
 ### Service Description
