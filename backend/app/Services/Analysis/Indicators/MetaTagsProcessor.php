@@ -3,6 +3,7 @@
 namespace App\Services\Analysis\Indicators;
 
 use RuntimeException;
+use DOMDocument;
 
 /**
  * Meta Tags Indicator Processor.
@@ -32,7 +33,7 @@ class MetaTagsProcessor extends IndicatorProcessor
 
         try {
             $html = $this->fetchUrl($url);
-            $crawler = $this->parseHtml($html);
+            $dom = $this->parseHtml($html);
 
             $score = 0.0;
             $maxScore = $this->maxScore();
@@ -40,25 +41,25 @@ class MetaTagsProcessor extends IndicatorProcessor
             $recommendations = [];
 
             // Analyze title tag
-            $titleResult = $this->analyzeTitle($crawler);
+            $titleResult = $this->analyzeTitle($dom);
             $score += $titleResult['score'];
             $data['title'] = $titleResult['data'];
             $recommendations = array_merge($recommendations, $titleResult['recommendations']);
 
             // Analyze meta description
-            $descriptionResult = $this->analyzeDescription($crawler);
+            $descriptionResult = $this->analyzeDescription($dom);
             $score += $descriptionResult['score'];
             $data['description'] = $descriptionResult['data'];
             $recommendations = array_merge($recommendations, $descriptionResult['recommendations']);
 
             // Analyze Open Graph tags
-            $ogResult = $this->analyzeOpenGraph($crawler);
+            $ogResult = $this->analyzeOpenGraph($dom);
             $score += $ogResult['score'];
             $data['open_graph'] = $ogResult['data'];
             $recommendations = array_merge($recommendations, $ogResult['recommendations']);
 
             // Analyze Twitter Card tags
-            $twitterResult = $this->analyzeTwitterCards($crawler);
+            $twitterResult = $this->analyzeTwitterCards($dom);
             $score += $twitterResult['score'];
             $data['twitter_cards'] = $twitterResult['data'];
             $recommendations = array_merge($recommendations, $twitterResult['recommendations']);
@@ -93,13 +94,13 @@ class MetaTagsProcessor extends IndicatorProcessor
      *
      * @return array{score: float, data: array, recommendations: array}
      */
-    protected function analyzeTitle($crawler): array
+    protected function analyzeTitle(DOMDocument $dom): array
     {
         $score = 0.0;
         $data = [];
         $recommendations = [];
 
-        $title = $this->extractText($crawler, 'title');
+        $title = $this->extractText($dom, 'title');
         $data['text'] = $title;
         $data['length'] = $title ? strlen($title) : 0;
         $data['present'] = !empty($title);
@@ -112,12 +113,20 @@ class MetaTagsProcessor extends IndicatorProcessor
             );
         } else {
             // Score for presence
-            $score += 10;
+            $score += 15;
 
             // Check length (optimal: 50-60 characters)
             if ($data['length'] >= 50 && $data['length'] <= 60) {
                 $score += 15;
                 $data['length_status'] = 'optimal';
+            } elseif ($data['length'] >= 30 && $data['length'] < 50) {
+                $score += 10;
+                $data['length_status'] = 'slightly_short';
+                $recommendations[] = $this->recommendation(
+                    'low',
+                    'Title tag is slightly short',
+                    "Title is {$data['length']} characters. Aim for 50-60 characters for optimal display in search results."
+                );
             } elseif ($data['length'] < 30) {
                 $score += 5;
                 $data['length_status'] = 'too_short';
@@ -127,7 +136,7 @@ class MetaTagsProcessor extends IndicatorProcessor
                     "Title is {$data['length']} characters. Aim for 50-60 characters for optimal display in search results."
                 );
             } elseif ($data['length'] > 60 && $data['length'] <= 70) {
-                $score += 10;
+                $score += 12;
                 $data['length_status'] = 'slightly_long';
                 $recommendations[] = $this->recommendation(
                     'low',
@@ -157,13 +166,13 @@ class MetaTagsProcessor extends IndicatorProcessor
      *
      * @return array{score: float, data: array, recommendations: array}
      */
-    protected function analyzeDescription($crawler): array
+    protected function analyzeDescription(DOMDocument $dom): array
     {
         $score = 0.0;
         $data = [];
         $recommendations = [];
 
-        $description = $this->extractAttribute($crawler, 'meta[name="description"]', 'content');
+        $description = $this->extractAttribute($dom, 'meta[name="description"]', 'content');
         $data['text'] = $description;
         $data['length'] = $description ? strlen($description) : 0;
         $data['present'] = !empty($description);
@@ -176,12 +185,20 @@ class MetaTagsProcessor extends IndicatorProcessor
             );
         } else {
             // Score for presence
-            $score += 10;
+            $score += 15;
 
             // Check length (optimal: 150-160 characters)
             if ($data['length'] >= 150 && $data['length'] <= 160) {
                 $score += 15;
                 $data['length_status'] = 'optimal';
+            } elseif ($data['length'] >= 100 && $data['length'] < 150) {
+                $score += 10;
+                $data['length_status'] = 'slightly_short';
+                $recommendations[] = $this->recommendation(
+                    'low',
+                    'Meta description is slightly short',
+                    "Description is {$data['length']} characters. Aim for 150-160 characters for optimal display."
+                );
             } elseif ($data['length'] < 100) {
                 $score += 5;
                 $data['length_status'] = 'too_short';
@@ -191,7 +208,7 @@ class MetaTagsProcessor extends IndicatorProcessor
                     "Description is {$data['length']} characters. Aim for 150-160 characters for optimal display."
                 );
             } elseif ($data['length'] > 160 && $data['length'] <= 200) {
-                $score += 10;
+                $score += 12;
                 $data['length_status'] = 'slightly_long';
                 $recommendations[] = $this->recommendation(
                     'low',
@@ -221,7 +238,7 @@ class MetaTagsProcessor extends IndicatorProcessor
      *
      * @return array{score: float, data: array, recommendations: array}
      */
-    protected function analyzeOpenGraph($crawler): array
+    protected function analyzeOpenGraph(DOMDocument $dom): array
     {
         $score = 0.0;
         $data = [];
@@ -231,7 +248,7 @@ class MetaTagsProcessor extends IndicatorProcessor
         $foundTags = [];
 
         foreach ($ogTags as $tag) {
-            $value = $this->extractAttribute($crawler, "meta[property=\"{$tag}\"]", 'content');
+            $value = $this->extractAttribute($dom, "meta[property=\"{$tag}\"]", 'content');
             $foundTags[$tag] = $value;
             $data[$tag] = $value;
         }
@@ -245,10 +262,10 @@ class MetaTagsProcessor extends IndicatorProcessor
                 'Add Open Graph tags for better social media sharing previews.'
             );
         } else {
-            // Score for each present tag
+            // Score for each present tag (max 20 points)
             foreach ($foundTags as $tag => $value) {
                 if (!empty($value)) {
-                    $score += 3;
+                    $score += 4;
                 }
             }
 
@@ -266,7 +283,7 @@ class MetaTagsProcessor extends IndicatorProcessor
         }
 
         return [
-            'score' => min($score, 15), // Max 15 points for OG tags
+            'score' => min($score, 20), // Max 20 points for OG tags
             'data' => $data,
             'recommendations' => $recommendations,
         ];
@@ -277,7 +294,7 @@ class MetaTagsProcessor extends IndicatorProcessor
      *
      * @return array{score: float, data: array, recommendations: array}
      */
-    protected function analyzeTwitterCards($crawler): array
+    protected function analyzeTwitterCards(DOMDocument $dom): array
     {
         $score = 0.0;
         $data = [];
@@ -287,7 +304,7 @@ class MetaTagsProcessor extends IndicatorProcessor
         $foundTags = [];
 
         foreach ($twitterTags as $tag) {
-            $value = $this->extractAttribute($crawler, "meta[name=\"{$tag}\"]", 'content');
+            $value = $this->extractAttribute($dom, "meta[name=\"{$tag}\"]", 'content');
             $foundTags[$tag] = $value;
             $data[$tag] = $value;
         }
@@ -302,16 +319,16 @@ class MetaTagsProcessor extends IndicatorProcessor
                 'Consider adding Twitter Card tags for better Twitter sharing previews, though Open Graph tags will be used as fallback.'
             );
         } else {
-            // Score for each present tag
+            // Score for each present tag (max 20 points)
             foreach ($foundTags as $tag => $value) {
                 if (!empty($value)) {
-                    $score += 2.5;
+                    $score += 5;
                 }
             }
         }
 
         return [
-            'score' => min($score, 10), // Max 10 points for Twitter cards
+            'score' => min($score, 20), // Max 20 points for Twitter cards
             'data' => $data,
             'recommendations' => $recommendations,
         ];

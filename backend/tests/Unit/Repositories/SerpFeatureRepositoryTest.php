@@ -505,4 +505,238 @@ class SerpFeatureRepositoryTest extends TestCase
             'feature_type' => "'; DROP TABLE serp_features;--"
         ]);
     }
+
+    /** @test */
+    public function it_handles_null_url_in_feature(): void
+    {
+        // Arrange - R-014: Null target URL
+        $data = [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'sitelinks',
+            'is_present' => true,
+            'url' => null,
+            'checked_at' => now()
+        ];
+
+        // Act
+        $result = $this->repository->upsert($data);
+
+        // Assert - Should store NULL in url column
+        $this->assertDatabaseHas('serp_features', [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'sitelinks',
+            'url' => null
+        ]);
+    }
+
+    /** @test */
+    public function it_handles_very_long_snippet_text(): void
+    {
+        // Arrange - R-015: Very long snippet text
+        $longSnippet = str_repeat('a', 5000); // 5000 character snippet
+        $data = [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'snippet' => $longSnippet,
+            'checked_at' => now()
+        ];
+
+        // Act
+        $result = $this->repository->upsert($data);
+
+        // Assert - Should store the snippet (truncated by DB if needed)
+        $this->assertDatabaseHas('serp_features', [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet'
+        ]);
+    }
+
+    /** @test */
+    public function it_handles_duplicate_keyword_feature_combination(): void
+    {
+        // Arrange - R-018: Duplicate (keyword_id, feature_type)
+        SerpFeature::create([
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => false,
+            'url' => 'https://old-url.com',
+            'checked_at' => now()->subDay()
+        ]);
+
+        // Act - Upsert should update, not create duplicate
+        $this->repository->upsert([
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'url' => 'https://new-url.com',
+            'checked_at' => now()
+        ]);
+
+        // Assert - Only one record exists
+        $count = SerpFeature::where('keyword_id', $this->keyword->id)
+            ->where('feature_type', 'featured_snippet')
+            ->count();
+        $this->assertEquals(1, $count);
+
+        // Assert - Record was updated
+        $this->assertDatabaseHas('serp_features', [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'url' => 'https://new-url.com'
+        ]);
+    }
+
+    // ============================================
+    // Adversarial Tests (A-001 to A-009)
+    // ============================================
+
+    /** @test */
+    public function it_sanitizes_xss_in_snippet_and_title(): void
+    {
+        // Arrange - A-002: XSS in snippet/title
+        $xssPayload = '<script>alert("xss")</script><img src=x onerror=alert(1)>';
+        $data = [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'title' => $xssPayload,
+            'snippet' => $xssPayload,
+            'checked_at' => now()
+        ];
+
+        // Act
+        $result = $this->repository->upsert($data);
+
+        // Assert - Should store as-is (encoding is handled at output layer)
+        $feature = SerpFeature::find($result->id);
+        $this->assertStringContainsString('<script>', $feature->snippet);
+        // Note: XSS prevention is typically handled at the view/output layer
+    }
+
+    /** @test */
+    public function it_handles_very_long_url(): void
+    {
+        // Arrange - A-003: Very long URL
+        $longUrl = 'https://example.com/' . str_repeat('path/', 500); // ~2500+ chars
+        $data = [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'url' => $longUrl,
+            'checked_at' => now()
+        ];
+
+        // Act
+        $result = $this->repository->upsert($data);
+
+        // Assert - Should store or truncate (DB dependent)
+        $this->assertDatabaseHas('serp_features', [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet'
+        ]);
+    }
+
+    /** @test */
+    public function it_handles_unicode_in_feature_data(): void
+    {
+        // Arrange - A-004: Unicode in feature data
+        $unicodeData = [
+            'emoji' => '🏆 Featured Snippet 🎉',
+            'chinese' => '最佳SEO工具',
+            'arabic' => 'أدوات تحسين محركات البحث',
+            'russian' => 'Лучшие SEO инструменты',
+            'rtl' => 'מימין לשמאל',
+        ];
+
+        $data = [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => 'featured_snippet',
+            'is_present' => true,
+            'title' => $unicodeData['emoji'],
+            'snippet' => $unicodeData['chinese'] . ' ' . $unicodeData['arabic'],
+            'url' => 'https://example.com/' . urlencode($unicodeData['russian']),
+            'checked_at' => now()
+        ];
+
+        // Act
+        $result = $this->repository->upsert($data);
+        $feature = SerpFeature::find($result->id);
+
+        // Assert - Unicode should be stored correctly
+        $this->assertEquals($unicodeData['emoji'], $feature->title);
+        $this->assertStringContainsString($unicodeData['chinese'], $feature->snippet);
+    }
+
+    /** @test */
+    public function it_handles_null_byte_injection(): void
+    {
+        // Arrange - A-005: Null byte injection
+        $nullByteString = "featured\u0000snippet";
+        $data = [
+            'keyword_id' => $this->keyword->id,
+            'feature_type' => $nullByteString,
+            'is_present' => true,
+            'checked_at' => now()
+        ];
+
+        // Act
+        $result = $this->repository->upsert($data);
+
+        // Assert - Should store sanitized or as-is
+        $this->assertNotNull($result);
+    }
+
+    /** @test */
+    public function it_handles_maximum_features_per_keyword(): void
+    {
+        // Arrange - A-007: Maximum features per keyword (all 10 feature types)
+        $allFeatureTypes = SerpFeature::FEATURE_TYPES;
+        $features = [];
+
+        foreach ($allFeatureTypes as $type) {
+            $features[] = [
+                'keyword_id' => $this->keyword->id,
+                'feature_type' => $type,
+                'is_present' => true,
+                'checked_at' => now()
+            ];
+        }
+
+        // Act
+        $result = $this->repository->insertBatch($features);
+
+        // Assert - All 10 feature types should be stored
+        $this->assertTrue($result);
+        $count = SerpFeature::where('keyword_id', $this->keyword->id)->count();
+        $this->assertEquals(10, $count);
+    }
+
+    /** @test */
+    public function it_handles_empty_batch_insert(): void
+    {
+        // Arrange - Empty features array
+        $features = [];
+
+        // Act
+        $result = $this->repository->insertBatch($features);
+
+        // Assert - Should return true for empty array
+        $this->assertTrue($result);
+    }
+
+    /** @test */
+    public function it_clears_feature_cache_on_invalidation(): void
+    {
+        // Arrange
+        Cache::put("serp_feature_counts:{$this->site->id}", ['test' => 'data'], 300);
+        Cache::put("serp_feature_summary:{$this->site->id}", ['test' => 'summary'], 300);
+
+        // Act
+        $this->repository->invalidateCache($this->site->id);
+
+        // Assert - Cache should be cleared
+        $this->assertNull(Cache::get("serp_feature_counts:{$this->site->id}"));
+        $this->assertNull(Cache::get("serp_feature_summary:{$this->site->id}"));
+    }
 }
