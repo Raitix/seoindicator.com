@@ -1,7 +1,7 @@
 # TASK-18-1: Database Migration - seo_analyses Table
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
@@ -38,3 +38,19 @@ Create the database migration for the `seo_analyses` table to store analysis res
 ## Comments
 ### [2026-02-28] SpecSystemAnalyst
 Created from SPEC-018 Section 10.1. Foundation task for SEO analysis storage.
+
+### [2026-02-28] PreTester
+**Test Coverage Designed:**
+- Created `TEST-18-1.md` with 35+ test scenarios
+- Created `backend/tests/Feature/Migrations/CreateSeoAnalysesTableTest.php`
+- 31 test methods covering:
+  - Schema structure (13 tests): all columns with correct types
+  - Index validation (5 tests): user_domain, session_domain, normalized_url, status, expires_at
+  - Foreign key constraints (2 tests): FK to users.id with CASCADE delete
+  - Enum validation (4 tests): pending, running, completed, failed
+  - Migration rollback (2 tests): rollback and re-run
+  - Security (3 tests): SQL injection, XSS, length limits
+  - JSON handling (4 tests): empty, nested, valid objects
+  - Edge cases (3 tests): unicode, large data, null values
+- Tests follow TDD approach - will pass once migration is implemented
+- Status: **Tests Written, Awaiting Implementation**
