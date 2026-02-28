@@ -1400,6 +1400,112 @@ CREATE TABLE team_members (
 - TASK-11-4: Permission validator
 
 ---
+## PermissionValidator - Role Assignment Validation (TASK-11-4)
+
+### Service Description
+Validation service for role-based access permissions in team collaboration. Ensures that role transitions and member operations follow strict business rules, preventing unauthorized access and maintaining organizational hierarchy integrity.
+
+### Core Functionalities
+
+**PermissionValidator Class:**
+| Method | Description |
+|--------|-------------|
+| `canUpdateRole(User $actor, User $target, string $newRole): bool` | Validates role change permissions |
+| `canRemoveMember(User $actor, User $target): bool` | Validates member removal permissions |
+| `hasPermission(User $user, string $permission): bool` | Checks action permissions |
+| `canInviteWithRole(User $actor, string $role): bool` | Validates invitation permissions |
+| `getMaxAssignableRole(User $user): string` | Returns max role a user can assign |
+
+### Role Hierarchy
+
+| Role | Level | Description |
+|------|-------|-------------|
+| `owner` | 100 | Full access, manage team, billing |
+| `admin` | 75 | Full access, manage team |
+| `editor` | 50 | Add/edit keywords, generate reports |
+| `viewer` | 25 | Read-only access |
+
+### Validation Rules
+
+**Role Update Rules:**
+| Rule | Description |
+|------|-------------|
+| Self-modification prevention | Owners cannot change their own role |
+| Hierarchy enforcement | Users cannot modify accounts with equal or higher roles |
+| Last admin protection | Cannot demote the last admin in an account |
+
+**Member Removal Rules:**
+| Rule | Description |
+|------|-------------|
+| Self-removal prevention | Users cannot remove themselves |
+| Hierarchy enforcement | Cannot remove members with equal or higher roles |
+| Owner protection | Owners can only be removed by other owners |
+
+**Scope Permissions:**
+| Scope | Description |
+|-------|-------------|
+| Global (team level) | Account-wide roles (owner, admin, editor, viewer) |
+| Project-specific | Per-project roles (editor, viewer) |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SQL Injection | Eloquent ORM with parameterized queries |
+| Role Escalation | Hierarchy level comparison before any role change |
+| Cross-team Access | Scope validation (team vs project roles) |
+| Authorization | Integrated with TeamService for permission checks |
+
+### Technical Implementation
+- Service: `backend/app/Services/PermissionValidator.php`
+- Used by: TeamService, InvitationController, RoleAssignmentController
+- Integration: Called before any role modification or member removal operation
+
+### Usage Example
+```php
+$validator = app(PermissionValidator::class);
+
+// Check if admin can promote a viewer to editor
+if ($validator->canUpdateRole($admin, $viewer, 'editor')) {
+    // Proceed with role update
+}
+
+// Get the maximum role an admin can assign
+$maxRole = $validator->getMaxAssignableRole($admin); // Returns 'editor'
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| PermissionValidatorTest | 55 | 109 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Role Update (RU) | 15 | Permission checks for role changes |
+| Member Removal (MR) | 12 | Removal permission validation |
+| Permission Checks (PC) | 10 | Action permission validation |
+| Invitation (IN) | 8 | Invitation role restrictions |
+| Hierarchy (HY) | 5 | Role level comparisons |
+| Edge Cases (EC) | 5 | Null handling, invalid roles |
+
+### Production Status
+- **Deployed**: 2026-02-22 (commit f83d7c2)
+- **Health Check**: Passing
+- **Tests**: 55/55 passing (109 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-11-2: Project members table
+- TeamMember model (role constants)
+
+### Related Tasks
+- TASK-11-1: Team members table
+- TASK-11-2: Project members table
+- TASK-11-3: Team management service
+
+---
 ## Database Schema: Project Members Table (TASK-11-2)
 
 ### Project Members Table
