@@ -213,7 +213,7 @@ class ImagesProcessor extends IndicatorProcessor
                 $recommendations[] = $this->recommendation(
                     'medium',
                     'Some images missing alt text',
-                    "{$data['without_alt']} of {$data['total_count']} images are missing alt text. Add descriptive alt text for accessibility and SEO."
+                    "{$data['without_alt']} of " . count($images) . " images are missing alt text. Add descriptive alt text for accessibility and SEO."
                 );
             }
 
