@@ -2,11 +2,13 @@
 // Tests SERPFeatureRepository and SERPFeatureHistoryRepository classes
 
 const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
 const sinon = require("sinon");
 
-// Use chai-as-promised for async assertions
+// Import chai-as-promised and register with chai
+// chai-as-promised v8 exports as { default }
+const chaiAsPromised = require("chai-as-promised").default || require("chai-as-promised");
 chai.use(chaiAsPromised);
+
 const expect = chai.expect;
 
 // Import the repositories - CommonJS wrapper for ES modules
@@ -32,12 +34,11 @@ const createMockDb = () => {
 
 // Helper to create mock run result with lastID
 const mockRunSuccess = (lastID = 1) => {
-  return function(callback) {
-    if (callback) {
-      const context = { lastID, changes: 1 };
-      callback.call(context, null);
-    }
-    return this;
+  return function(sql, params, callback) {
+    const context = { lastID, changes: 1 };
+    // Call callback with null error and set 'this' to context
+    callback.call(context, null);
+    return context;
   };
 };
 
