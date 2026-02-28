@@ -344,7 +344,8 @@ class DataMigrationRollbackTest extends TestCase
     {
         return DB::table('sites')->insertGetId([
             'user_id' => $userId,
-            'domain' => $domain,
+            'url' => 'https://' . $domain,
+            'name' => $domain,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -390,6 +391,8 @@ class DataMigrationRollbackTest extends TestCase
             'name' => 'Test Report',
             'type' => 'weekly',
             'status' => 'pending',
+            'date_range_start' => now()->subDays(7)->format('Y-m-d'),
+            'date_range_end' => now()->format('Y-m-d'),
             'created_at' => now(),
             'updated_at' => now(),
         ], $attributes));
@@ -400,6 +403,8 @@ class DataMigrationRollbackTest extends TestCase
      */
     private function runDataMigration(): void
     {
+        $driver = DB::connection()->getDriverName();
+        
         // Create default projects for users without one
         $usersWithoutDefault = DB::table('users')
             ->leftJoin('projects as dp', function ($join) {
@@ -412,40 +417,90 @@ class DataMigrationRollbackTest extends TestCase
             ->get();
 
         foreach ($usersWithoutDefault as $user) {
-            DB::table('projects')->insert([
-                'user_id' => $user->id,
-                'name' => 'Default Project',
-                'domain' => null,
-                'is_default' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Check again for idempotency
+            $exists = DB::table('projects')
+                ->where('user_id', $user->id)
+                ->where('is_default', true)
+                ->exists();
+            
+            if (!$exists) {
+                DB::table('projects')->insert([
+                    'user_id' => $user->id,
+                    'name' => 'Default Project',
+                    'domain' => null,
+                    'is_default' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
 
-        // Assign keywords
-        DB::statement('
-            UPDATE keywords k
-            JOIN projects p ON p.user_id = k.user_id AND p.is_default = TRUE
-            SET k.project_id = p.id
-            WHERE k.project_id IS NULL
-        ');
+        // Assign keywords (SQLite-compatible)
+        if ($driver === 'sqlite') {
+            $keywords = DB::table('keywords')->whereNull('project_id')->get();
+            foreach ($keywords as $keyword) {
+                $defaultProject = DB::table('projects')
+                    ->where('user_id', $keyword->user_id)
+                    ->where('is_default', true)
+                    ->first();
+                if ($defaultProject) {
+                    DB::table('keywords')->where('id', $keyword->id)->update(['project_id' => $defaultProject->id]);
+                }
+            }
+        } else {
+            DB::statement('
+                UPDATE keywords k
+                JOIN projects p ON p.user_id = k.user_id AND p.is_default = TRUE
+                SET k.project_id = p.id
+                WHERE k.project_id IS NULL
+            ');
+        }
 
-        // Assign competitors
-        DB::statement('
-            UPDATE competitors c
-            JOIN projects p ON p.user_id = c.user_id AND p.is_default = TRUE
-            SET c.project_id = p.id
-            WHERE c.project_id IS NULL
-        ');
+        // Assign competitors (SQLite-compatible)
+        if ($driver === 'sqlite') {
+            $competitors = DB::table('competitors')->whereNull('project_id')->get();
+            foreach ($competitors as $competitor) {
+                $defaultProject = DB::table('projects')
+                    ->where('user_id', $competitor->user_id)
+                    ->where('is_default', true)
+                    ->first();
+                if ($defaultProject) {
+                    DB::table('competitors')->where('id', $competitor->id)->update(['project_id' => $defaultProject->id]);
+                }
+            }
+        } else {
+            DB::statement('
+                UPDATE competitors c
+                JOIN projects p ON p.user_id = c.user_id AND p.is_default = TRUE
+                SET c.project_id = p.id
+                WHERE c.project_id IS NULL
+            ');
+        }
 
-        // Assign reports
-        DB::statement('
-            UPDATE reports r
-            JOIN sites s ON r.site_id = s.id
-            JOIN projects p ON p.user_id = s.user_id AND p.is_default = TRUE
-            SET r.project_id = p.id
-            WHERE r.project_id IS NULL
-        ');
+        // Assign reports (SQLite-compatible)
+        if ($driver === 'sqlite') {
+            $reports = DB::table('reports')->whereNull('project_id')->whereNotNull('site_id')->get();
+            foreach ($reports as $report) {
+                $site = DB::table('sites')->where('id', $report->site_id)->first();
+                if ($site) {
+                    $defaultProject = DB::table('projects')
+                        ->where('user_id', $site->user_id)
+                        ->where('is_default', true)
+                        ->first();
+                    if ($defaultProject) {
+                        DB::table('reports')->where('id', $report->id)->update(['project_id' => $defaultProject->id]);
+                    }
+                }
+            }
+        } else {
+            DB::statement('
+                UPDATE reports r
+                JOIN sites s ON r.site_id = s.id
+                JOIN projects p ON p.user_id = s.user_id AND p.is_default = TRUE
+                SET r.project_id = p.id
+                WHERE r.project_id IS NULL
+            ');
+        }
     }
 
     /**
@@ -466,6 +521,13 @@ class DataMigrationRollbackTest extends TestCase
      */
     private function applyNotNullConstraints(): void
     {
+        $driver = DB::connection()->getDriverName();
+        
+        // SQLite doesn't support ALTER COLUMN for NOT NULL
+        if (!in_array($driver, ['mysql', 'mariadb'], true)) {
+            return;
+        }
+        
         DB::statement('ALTER TABLE keywords MODIFY project_id BIGINT UNSIGNED NOT NULL');
         DB::statement('ALTER TABLE competitors MODIFY project_id BIGINT UNSIGNED NOT NULL');
         DB::statement('ALTER TABLE reports MODIFY project_id BIGINT UNSIGNED NOT NULL');
@@ -476,6 +538,13 @@ class DataMigrationRollbackTest extends TestCase
      */
     private function rollbackNotNullConstraints(): void
     {
+        $driver = DB::connection()->getDriverName();
+        
+        // SQLite doesn't support ALTER COLUMN for NOT NULL
+        if (!in_array($driver, ['mysql', 'mariadb'], true)) {
+            return;
+        }
+        
         DB::statement('ALTER TABLE keywords MODIFY project_id BIGINT UNSIGNED NULL');
         DB::statement('ALTER TABLE competitors MODIFY project_id BIGINT UNSIGNED NULL');
         DB::statement('ALTER TABLE reports MODIFY project_id BIGINT UNSIGNED NULL');

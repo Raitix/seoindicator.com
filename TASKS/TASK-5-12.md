@@ -1,7 +1,7 @@
 # TASK-5-12: Suggestion Card Component
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`

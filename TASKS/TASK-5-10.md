@@ -1,7 +1,7 @@
 # TASK-5-10: Suggestions List Page
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`

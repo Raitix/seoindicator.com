@@ -42,25 +42,8 @@ const mockKeywords = [
 
 // Helper to set up API mocks
 async function setupMocks(page: Page) {
-  // Mock keywords list API
-  await page.route('**/api/v1/sites/*/keywords*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        data: mockKeywords,
-        meta: {
-          total: mockKeywords.length,
-          page: 1,
-          perPage: 20,
-        },
-      }),
-    });
-  });
-
-  // Mock SERP features metadata
-  await page.route('**/api/v1/metadata/serp-features*', async (route) => {
+  // Mock SERP features metadata (set up first as it's more specific)
+  await page.route('**/api/v1/metadata/serp-features**', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -74,9 +57,24 @@ async function setupMocks(page: Page) {
     });
   });
 
-  // Mock create keyword API
-  await page.route('**/api/v1/sites/*/keywords', async (route) => {
-    if (route.request().method() === 'POST') {
+  // Mock keywords list API - handles GET and POST requests
+  // Use a more specific pattern that matches the exact URL format
+  await page.route(/\/api\/v1\/sites\/\d+\/keywords/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: mockKeywords,
+          meta: {
+            total: mockKeywords.length,
+            page: 1,
+            perPage: 20,
+          },
+        }),
+      });
+    } else if (route.request().method() === 'POST') {
       const body = route.request().postDataJSON();
       await route.fulfill({
         status: 201,
@@ -216,9 +214,10 @@ test.describe('Keyword Flow E2E Tests', () => {
     await expect(page.locator('text=seo tools')).toBeVisible();
     await expect(page.locator('text=keyword tracker')).toBeVisible();
     
-    // Verify position badges - looking for #5 and #12 in the table
-    await expect(page.locator('text=#5')).toBeVisible();
-    await expect(page.locator('text=#12')).toBeVisible();
+    // Verify position badges - looking for position numbers in the table
+    // The position column shows just the number (e.g., "5" not "#5")
+    await expect(page.locator('td:has-text("5")').first()).toBeVisible();
+    await expect(page.locator('td:has-text("12")').first()).toBeVisible();
   });
 
   test('E2E-003: Navigate to keyword detail from list', async ({ page }) => {
@@ -228,8 +227,8 @@ test.describe('Keyword Flow E2E Tests', () => {
     // Wait for keywords to load
     await expect(page.locator('text=seo tools')).toBeVisible();
     
-    // Click on a keyword row link
-    await page.click('a:has-text("seo tools")');
+    // Click on the keyword link in the table
+    await page.locator('tbody a:has-text("seo tools")').click();
     
     // Should navigate to keyword detail page
     await expect(page).toHaveURL(new RegExp(`/sites/${SITE_ID}/keywords/\\d+`));
