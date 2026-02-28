@@ -1,7 +1,7 @@
 # TASK-18-5: HtmlFetcherService (with SSRF Protection)
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -180,3 +180,20 @@ Created from SPEC-018 Section 10.2. HIGH RISK task - requires thorough security 
 - All security measures working correctly
 
 **Status:** Production tests passed. Moving to Documentation.
+
+### [2026-02-28 22:25 GMT+2] DocSystemAnalyst
+**Documentation Complete.**
+
+**DOCUMENTATION.md Updated:**
+- Added HtmlFetcherService section with:
+  - Core functionality and API methods
+  - SSRF protection details (11 blocked patterns validated in production)
+  - Error codes and handling
+  - Configuration options
+  - Caching strategy
+  - Test coverage summary (70 tests, 137 assertions)
+  - Production security validation results
+
+**Task Status:** Done
+
+**Note:** SPEC-018 not marked complete - TASK-18-4 and TASK-18-6 still in development.

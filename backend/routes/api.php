@@ -79,7 +79,7 @@ Route::prefix('v1')->middleware(['api-key.auth', 'api-key.ratelimit'])->group(fu
 
 /*
 |--------------------------------------------------------------------------
-| GSC Connection Routes (TASK-12-7)
+| GSC Connection Routes (TASK-12-7, TASK-12-9)
 |--------------------------------------------------------------------------
 |
 | Google Search Console OAuth connection management.
@@ -90,6 +90,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/gsc/connect', [GSCConnectionController::class, 'connect']);
     Route::delete('/gsc/disconnect/{propertyId}', [GSCConnectionController::class, 'disconnect']);
     Route::get('/gsc/properties', [GSCConnectionController::class, 'properties']);
+    
+    // OAuth flow endpoints (TASK-12-9)
+    Route::get('/gsc/oauth/redirect', [GSCConnectionController::class, 'redirectToGoogle']);
+    Route::get('/gsc/oauth/callback', [GSCConnectionController::class, 'handleGoogleCallback']);
+    Route::post('/gsc/oauth/select-property', [GSCConnectionController::class, 'selectProperty']);
+    Route::get('/gsc/oauth/available-properties', [GSCConnectionController::class, 'availableProperties']);
 });
 
 /*
