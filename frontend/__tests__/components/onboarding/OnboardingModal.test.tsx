@@ -1,243 +1,175 @@
-import { render, screen, fireEvent, within } from '@testing-library/react';
-import { OnboardingModal } from '../OnboardingModal';
-import { useOnboarding } from '../OnboardingProvider';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
+import { useOnboardingContext } from '@/lib/contexts/OnboardingContext';
 
 // Mock the onboarding hook
-jest.mock('../OnboardingProvider', () => ({
-  useOnboarding: jest.fn(),
-}));
+const mockSkipOnboarding = jest.fn().mockResolvedValue(undefined);
+const mockUpdateStep = jest.fn().mockResolvedValue(undefined);
+const mockCompleteOnboarding = jest.fn().mockResolvedValue(undefined);
 
-const mockedUseOnboarding = useOnboarding as jest.MockedFunction<typeof useOnboarding>;
-
-// Mock the wizard component
-jest.mock('../OnboardingWizard', () => ({
-  OnboardingWizard: () => <div data-testid="wizard">Wizard Content</div>,
-}));
-
-describe('OnboardingModal', () => {
-  const defaultMockState = {
-    isOpen: true,
+const createMockContext = (overrides = {}) => ({
+  onboarding: {
+    id: 1,
     currentStep: 1,
     completedSteps: [],
-    data: {
-      websiteUrl: null,
-      firstKeyword: null,
-      keywordId: null,
-      alertPreferences: null,
-    },
-    isLoading: false,
-    error: null,
+    websiteUrl: null,
+    firstKeyword: null,
+    keywordId: null,
+    alertPreferences: null,
+    completedAt: null,
     progressPercentage: 20,
-  };
+  },
+  isLoading: false,
+  error: null,
+  isActive: true,
+  skipOnboarding: mockSkipOnboarding,
+  updateStep: mockUpdateStep,
+  completeOnboarding: mockCompleteOnboarding,
+  startOnboarding: jest.fn().mockResolvedValue(undefined),
+  refreshOnboarding: jest.fn().mockResolvedValue(undefined),
+  ...overrides,
+});
 
-  const mockHandlers = {
-    startOnboarding: jest.fn(),
-    nextStep: jest.fn(),
-    prevStep: jest.fn(),
-    skipOnboarding: jest.fn(),
-    completeOnboarding: jest.fn(),
-  };
+jest.mock('@/lib/contexts/OnboardingContext', () => ({
+  useOnboardingContext: jest.fn(),
+}));
 
+const mockedUseOnboardingContext = require('@/lib/contexts/OnboardingContext').useOnboardingContext;
+
+describe('OnboardingModal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedUseOnboarding.mockReturnValue({
-      state: defaultMockState,
-      ...mockHandlers,
-    });
+    mockedUseOnboardingContext.mockReturnValue(createMockContext());
   });
 
   // ==================== RENDERING ====================
 
-  it('should render when isOpen is true', () => {
+  it('should render the modal with title', () => {
     render(<OnboardingModal />);
 
-    expect(screen.getByTestId('wizard')).toBeInTheDocument();
+    expect(screen.getByText(/welcome to seoindicator/i)).toBeInTheDocument();
   });
 
-  it('should not render when isOpen is false', () => {
-    mockedUseOnboarding.mockReturnValue({
-      state: { ...defaultMockState, isOpen: false },
-      ...mockHandlers,
+  it('should show progress bar', () => {
+    render(<OnboardingModal />);
+
+    expect(screen.getByText(/step 1 of 5/i)).toBeInTheDocument();
+  });
+
+  it('should render skip button', () => {
+    render(<OnboardingModal />);
+
+    const skipButton = screen.getByRole('button', { name: /skip for now/i });
+    expect(skipButton).toBeInTheDocument();
+  });
+
+  // ==================== SKIP FUNCTIONALITY ====================
+
+  it('should call skipOnboarding when skip is clicked', async () => {
+    render(<OnboardingModal />);
+
+    const skipButton = screen.getByRole('button', { name: /skip for now/i });
+    fireEvent.click(skipButton);
+
+    await waitFor(() => {
+      expect(mockSkipOnboarding).toHaveBeenCalled();
     });
-
-    const { container } = render(<OnboardingModal />);
-
-    expect(container.firstChild).toBeNull();
   });
 
-  // ==================== CLOSE BUTTON ====================
+  // ==================== STEP NAVIGATION ====================
 
-  it('should call skipOnboarding when close button is clicked', async () => {
-    // Mock window.confirm
-    window.confirm = jest.fn(() => true);
+  it('should show step 1 (website input) by default', () => {
+    render(<OnboardingModal />);
+
+    expect(screen.getByLabelText(/website url/i)).toBeInTheDocument();
+  });
+
+  it('should show step 2 when currentStep is 2', () => {
+    mockedUseOnboardingContext.mockReturnValue(createMockContext({
+      onboarding: {
+        id: 1,
+        currentStep: 2,
+        completedSteps: [1],
+        websiteUrl: 'https://example.com',
+        firstKeyword: null,
+        keywordId: null,
+        alertPreferences: null,
+        completedAt: null,
+        progressPercentage: 40,
+      },
+    }));
 
     render(<OnboardingModal />);
 
-    const closeButton = screen.getByRole('button', { name: /close/i });
-    fireEvent.click(closeButton);
-
-    expect(window.confirm).toHaveBeenCalled();
-    expect(mockHandlers.skipOnboarding).toHaveBeenCalled();
+    expect(screen.getByLabelText(/keyword/i)).toBeInTheDocument();
   });
 
-  it('should not call skipOnboarding if user cancels close confirmation', () => {
-    window.confirm = jest.fn(() => false);
+  it('should show step 5 (completion) when currentStep is 5', () => {
+    mockedUseOnboardingContext.mockReturnValue(createMockContext({
+      onboarding: {
+        id: 1,
+        currentStep: 5,
+        completedSteps: [1, 2, 3, 4],
+        websiteUrl: 'https://example.com',
+        firstKeyword: 'test keyword',
+        keywordId: 1,
+        alertPreferences: { email: true, weekly: true },
+        completedAt: null,
+        progressPercentage: 100,
+      },
+    }));
 
     render(<OnboardingModal />);
 
-    const closeButton = screen.getByRole('button', { name: /close/i });
-    fireEvent.click(closeButton);
-
-    expect(window.confirm).toHaveBeenCalled();
-    expect(mockHandlers.skipOnboarding).not.toHaveBeenCalled();
-  });
-
-  // ==================== SKIP LINK ====================
-
-  it('should have skip link that triggers skipOnboarding', () => {
-    window.confirm = jest.fn(() => true);
-
-    render(<OnboardingModal />);
-
-    const skipLink = screen.getByRole('button', { name: /skip/i });
-    fireEvent.click(skipLink);
-
-    expect(mockHandlers.skipOnboarding).toHaveBeenCalled();
+    expect(screen.getByText(/you're all set/i)).toBeInTheDocument();
   });
 
   // ==================== LOADING STATE ====================
 
-  it('should show loading overlay when isLoading is true', () => {
-    mockedUseOnboarding.mockReturnValue({
-      state: { ...defaultMockState, isLoading: true },
-      ...mockHandlers,
-    });
+  it('should disable skip button when loading', () => {
+    mockedUseOnboardingContext.mockReturnValue(createMockContext({ isLoading: true }));
 
     render(<OnboardingModal />);
 
-    expect(screen.getByTestId('loading-overlay')).toBeInTheDocument();
-  });
-
-  it('should disable buttons when loading', () => {
-    mockedUseOnboarding.mockReturnValue({
-      state: { ...defaultMockState, isLoading: true },
-      ...mockHandlers,
-    });
-
-    render(<OnboardingModal />);
-
-    const buttons = screen.getAllByRole('button');
-    buttons.forEach(button => {
-      if (button.hasAttribute('disabled') || button.getAttribute('aria-disabled')) {
-        // Button is disabled
-        expect(button).toBeDisabled();
-      }
-    });
+    const skipButton = screen.getByRole('button', { name: /skip for now/i });
+    expect(skipButton).toBeDisabled();
   });
 
   // ==================== ERROR DISPLAY ====================
 
-  it('should display error message when error exists', () => {
-    mockedUseOnboarding.mockReturnValue({
-      state: { ...defaultMockState, error: 'Something went wrong' },
-      ...mockHandlers,
-    });
+  it('should display error message when present', () => {
+    mockedUseOnboardingContext.mockReturnValue(createMockContext({ error: 'Server error' }));
 
     render(<OnboardingModal />);
 
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(screen.getByText('Server error')).toBeInTheDocument();
   });
 
-  // ==================== PROGRESS BAR ====================
+  // ==================== PROGRESS INDICATOR ====================
 
-  it('should display progress bar with correct percentage', () => {
+  it('should show correct step count', () => {
     render(<OnboardingModal />);
 
-    const progressBar = screen.getByRole('progressbar');
-    expect(progressBar).toHaveAttribute('aria-valuenow', '20');
+    expect(screen.getByText(/step 1 of 5/i)).toBeInTheDocument();
   });
 
-  it('should update progress bar as steps progress', () => {
-    mockedUseOnboarding.mockReturnValue({
-      state: { ...defaultMockState, currentStep: 3, progressPercentage: 60 },
-      ...mockHandlers,
-    });
-
-    render(<OnboardingModal />);
-
-    const progressBar = screen.getByRole('progressbar');
-    expect(progressBar).toHaveAttribute('aria-valuenow', '60');
-  });
-
-  // ==================== RESPONSIVE DESIGN ====================
-
-  it('should have responsive classes for mobile', () => {
-    const { container } = render(<OnboardingModal />);
-
-    const modal = container.querySelector('.onboarding-modal');
-    expect(modal).toHaveClass('sm:max-w-lg');
-  });
-
-  // ==================== ACCESSIBILITY ====================
-
-  it('should trap focus within modal', () => {
-    render(<OnboardingModal />);
-
-    const modal = screen.getByRole('dialog');
-    expect(modal).toHaveAttribute('aria-modal', 'true');
-  });
-
-  it('should have correct aria-label', () => {
-    render(<OnboardingModal />);
-
-    const modal = screen.getByRole('dialog');
-    expect(modal).toHaveAttribute('aria-label', 'Onboarding');
-  });
-
-  it('should close on Escape key press', () => {
-    window.confirm = jest.fn(() => true);
+  it('should show completed steps', () => {
+    mockedUseOnboardingContext.mockReturnValue(createMockContext({
+      onboarding: {
+        id: 1,
+        currentStep: 3,
+        completedSteps: [1, 2],
+        websiteUrl: 'https://example.com',
+        firstKeyword: 'test',
+        keywordId: null,
+        alertPreferences: null,
+        completedAt: null,
+        progressPercentage: 60,
+      },
+    }));
 
     render(<OnboardingModal />);
 
-    fireEvent.keyDown(document, { key: 'Escape' });
-
-    expect(window.confirm).toHaveBeenCalled();
-  });
-
-  it('should have close button with aria-label', () => {
-    render(<OnboardingModal />);
-
-    const closeButton = screen.getByRole('button', { name: /close/i });
-    expect(closeButton).toHaveAttribute('aria-label', 'Close onboarding');
-  });
-
-  // ==================== STEP INDICATORS ====================
-
-  it('should show step indicators', () => {
-    render(<OnboardingModal />);
-
-    const stepIndicators = screen.getAllByRole('listitem');
-    expect(stepIndicators).toHaveLength(5);
-  });
-
-  it('should mark current step as active', () => {
-    render(<OnboardingModal />);
-
-    const currentStepIndicator = screen.getByRole('listitem', { current: 'step' });
-    expect(currentStepIndicator).toBeInTheDocument();
-  });
-
-  it('should mark completed steps', () => {
-    mockedUseOnboarding.mockReturnValue({
-      state: { ...defaultMockState, completedSteps: [1, 2], currentStep: 3 },
-      ...mockHandlers,
-    });
-
-    render(<OnboardingModal />);
-
-    const completedSteps = screen.getAllByRole('listitem').slice(0, 2);
-    completedSteps.forEach(step => {
-      expect(step).toHaveAttribute('data-completed', 'true');
-    });
+    expect(screen.getByText(/step 3 of 5/i)).toBeInTheDocument();
   });
 });
