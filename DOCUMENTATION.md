@@ -7962,6 +7962,252 @@ React component for displaying a timeline of SERP feature changes for a specific
 - TASK-7-18: SERP feature filter UI
 
 ---
+## IndicatorProcessor Base Class (TASK-19-5)
+
+### Service Description
+Abstract base class for all SEO indicator processors in the Progressive Analysis system (FEAT-019). Provides a standardized interface for implementing indicator checkers with built-in SSRF protection, HTML parsing, and common helper methods.
+
+### Core Functionalities
+
+**IndicatorProcessor Abstract Class:**
+| Method | Type | Description |
+|--------|------|-------------|
+| `slug(): string` | Abstract | Unique identifier for the indicator |
+| `name(): string` | Abstract | Human-readable indicator name |
+| `maxScore(): float` | Abstract | Maximum possible score (typically 100.0) |
+| `process(string $url): IndicatorResult` | Abstract | Main processing logic |
+| `fetchUrl(string $url): string` | Protected | HTTP fetch with SSRF protection |
+| `parseHtml(string $html): DOMDocument` | Protected | DOM parsing helper |
+| `query(DOMDocument $doc, string $selector): DOMNodeList` | Protected | CSS selector query |
+| `extractText(DOMNode $node): string` | Protected | Extract text content |
+| `extractAttribute(DOMNode $node, string $attr): ?string` | Protected | Extract attribute value |
+
+### IndicatorResult DTO
+
+**Properties:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `score` | float | Calculated score (0 to maxScore) |
+| `maxScore` | float | Maximum possible score |
+| `percentage` | int | Score as percentage (0-100) |
+| `data` | array | Indicator-specific data |
+| `recommendations` | array | List of improvement suggestions |
+| `processingTimeMs` | int | Processing duration in milliseconds |
+| `error` | ?string | Error message if failed |
+
+**Factory Methods:**
+| Method | Description |
+|--------|-------------|
+| `success(float $score, float $maxScore, array $data, array $recommendations): self` | Create successful result |
+| `failed(string $error, array $data = []): self` | Create failed result |
+
+### Configuration
+
+**Default Settings:**
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `timeout` | 30 seconds | HTTP request timeout |
+| `maxResponseSize` | 10 MB | Maximum response size |
+| `userAgent` | SEOIndicator/1.0 | HTTP User-Agent header |
+
+**Configurable via constructor:**
+```php
+$processor = new MetaTagsProcessor(
+    timeout: 60,
+    maxResponseSize: 20 * 1024 * 1024 // 20MB
+);
+```
+
+### SSRF Protection
+
+Integration with `URLValidationService` from TASK-16-1:
+
+| Protection | Description |
+|------------|-------------|
+| Localhost blocked | `localhost`, `127.*` blocked |
+| Private IPs blocked | `10.*`, `172.16-31.*`, `192.168.*` blocked |
+| Cloud metadata blocked | `169.254.169.254` blocked |
+| File protocol blocked | `file://`, `gopher://` blocked |
+| Internal domains | Domains containing "internal" blocked |
+
+**Implementation:**
+```php
+protected function fetchUrl(string $url): string
+{
+    // Validate URL against SSRF rules
+    if (!$this->urlValidationService->isValidAnalysisUrl($url)) {
+        throw new SSRFProtectionException("URL blocked by SSRF protection");
+    }
+    
+    // Fetch with configured timeout and size limits
+    return $this->httpClient->get($url, [
+        'timeout' => $this->timeout,
+        'max_response_size' => $this->maxResponseSize,
+    ]);
+}
+```
+
+### HTML Parsing
+
+**Native PHP DOMDocument:**
+- Uses `DOMDocument` with `DOMXPath` for querying
+- Symfony CssSelector component for CSS-to-XPath conversion
+- libxml error suppression for malformed HTML handling
+
+**Example Usage:**
+```php
+protected function parseHtml(string $html): DOMDocument
+{
+    $dom = new DOMDocument();
+    libxml_use_internal_errors(true);
+    $dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+    libxml_clear_errors();
+    return $dom;
+}
+
+protected function query(DOMDocument $doc, string $selector): DOMNodeList
+{
+    $xpath = new DOMXPath($doc);
+    $xpathQuery = $this->cssToXPath($selector);
+    return $xpath->query($xpathQuery);
+}
+```
+
+### Helper Methods
+
+**Text Extraction:**
+```php
+// Extract text content from node
+$h1 = $this->query($dom, 'h1')->item(0);
+$text = $this->extractText($h1); // Returns trimmed text content
+```
+
+**Attribute Extraction:**
+```php
+// Extract attribute value
+$metaDesc = $this->query($dom, 'meta[name="description"]')->item(0);
+$content = $this->extractAttribute($metaDesc, 'content');
+```
+
+### Indicator Implementations
+
+Built on this base class (TASK-19-6):
+
+| Indicator | Slug | Description |
+|-----------|------|-------------|
+| MetaTagsProcessor | `meta_tags` | Title, description, Open Graph |
+| HeadingsProcessor | `headings` | H1-H6 structure analysis |
+| ImagesProcessor | `images` | Alt text, sizes, lazy loading |
+| LinksProcessor | `links` | Internal/external, broken links |
+
+### Creating Custom Indicators
+
+**Implementation Pattern:**
+```php
+class CustomIndicatorProcessor extends IndicatorProcessor
+{
+    public function slug(): string
+    {
+        return 'custom_indicator';
+    }
+    
+    public function name(): string
+    {
+        return 'Custom Indicator';
+    }
+    
+    public function maxScore(): float
+    {
+        return 100.0;
+    }
+    
+    public function process(string $url): IndicatorResult
+    {
+        $startTime = microtime(true);
+        
+        try {
+            $html = $this->fetchUrl($url);
+            $dom = $this->parseHtml($html);
+            
+            // Perform indicator-specific analysis
+            $data = $this->analyzeContent($dom);
+            $score = $this->calculateScore($data);
+            $recommendations = $this->generateRecommendations($data);
+            
+            return IndicatorResult::success(
+                score: $score,
+                maxScore: $this->maxScore(),
+                data: $data,
+                recommendations: $recommendations
+            )->withProcessingTime((microtime(true) - $startTime) * 1000);
+        } catch (\Exception $e) {
+            return IndicatorResult::failed($e->getMessage());
+        }
+    }
+}
+```
+
+### Technical Implementation
+
+**Files:**
+| File | Description |
+|------|-------------|
+| `app/Services/Analysis/Indicators/IndicatorProcessor.php` | Abstract base class |
+| `app/Services/Analysis/Indicators/IndicatorResult.php` | Result DTO |
+| `app/Services/URLValidationService.php` | SSRF protection (from TASK-16-1) |
+
+**Dependencies:**
+- Guzzle HTTP Client
+- Symfony CssSelector component
+- Native PHP DOMDocument/DOMXPath
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SSRF Protection | URLValidationService integration |
+| HTML Injection | libxml with error suppression, no entity expansion |
+| Memory Safety | Max response size limit |
+| Timeout Protection | Configurable HTTP timeout |
+| Error Isolation | Exceptions caught and returned as failed results |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| IndicatorProcessorTest | 40 | 65 |
+| IndicatorResultTest | 44 | 122 |
+| **Total** | **84** | **187** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Abstract Methods | 4 | slug, name, maxScore, process signatures |
+| Fetch URL | 8 | SSRF protection, HTTP errors, timeout |
+| HTML Parsing | 10 | Valid, malformed, empty HTML |
+| CSS Selectors | 6 | Element, class, ID, nested |
+| Helper Methods | 6 | Text/attribute extraction |
+| IndicatorResult DTO | 26 | Structure, factories, immutability |
+| Configuration | 4 | Timeout, max response size |
+| Security | 20 | SSRF patterns, injection attempts |
+
+### Production Status
+- **Deployed**: 2026-02-28 (commit 48e8db8 via GitHub Actions run 22520760922)
+- **Health Check**: Passing
+- **Tests**: 84/84 passing (187 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-16-1 (Tools infrastructure - SSRF protection)
+- Guzzle HTTP Client
+- Symfony CssSelector
+
+### Related Tasks
+- TASK-19-6: Core Indicator Implementations
+- TASK-19-7: Queue Worker with Concurrency
+- TASK-19-15: SSRF Protection Integration
+
+---
 ## ScoreCalculatorService (TASK-18-7)
 
 ### Service Description
