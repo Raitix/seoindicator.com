@@ -1,7 +1,7 @@
 # TASK-17-1: Database Migration - User Onboarding Table
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`
