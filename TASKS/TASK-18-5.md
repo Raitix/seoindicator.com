@@ -1,7 +1,7 @@
 # TASK-18-5: HtmlFetcherService (with SSRF Protection)
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`
