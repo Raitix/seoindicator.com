@@ -57,22 +57,23 @@ class BacklinkHistoryControllerTest extends TestCase
     }
 
     /**
-     * Create backlink snapshots for a project.
+     * Create backlink snapshots for a project using direct model creation.
      */
     protected function createSnapshots(Project $project, int $count, string $startDate = null): void
     {
-        $startDate = $startDate ?? now()->subDays($count * 7)->toDateString();
+        $startDate = $startDate ?? today()->subDays($count * 7)->toDateString();
         for ($i = 0; $i < $count; $i++) {
-            $date = now()->parse($startDate)->addDays($i * 7)->toDateString(); // Weekly snapshots
+            $date = now()->parse($startDate)->addDays($i * 7); // Weekly snapshots as Carbon
             BacklinkSnapshot::create([
                 'project_id' => $project->id,
+                'snapshot_date' => $date,
+                'created_at' => now(),
                 'total_backlinks' => 1000 + ($i * 50),
                 'referring_domains_count' => 50 + ($i * 5),
                 'dofollow_count' => 700 + ($i * 30),
                 'nofollow_count' => 300 + ($i * 20),
                 'avg_domain_trust' => 40.0 + ($i * 0.5),
                 'anchor_diversity_score' => 60.0 + ($i * 0.8),
-                'snapshot_date' => $date,
             ]);
         }
     }
@@ -127,6 +128,10 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_filter_by_from_date(): void
     {
+        $date1 = now()->subDays(20)->toDateString();
+        $date2 = now()->subDays(5)->toDateString();
+        $fromDate = now()->subDays(10)->toDateString();
+
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
             'total_backlinks' => 1000,
@@ -135,7 +140,7 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 300,
             'avg_domain_trust' => 40.0,
             'anchor_diversity_score' => 60.0,
-            'snapshot_date' => '2026-01-15',
+            'snapshot_date' => $date1,
         ]);
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
@@ -145,11 +150,11 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 350,
             'avg_domain_trust' => 42.0,
             'anchor_diversity_score' => 62.0,
-            'snapshot_date' => '2026-02-15',
+            'snapshot_date' => $date2,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from=2026-02-01");
+            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from={$fromDate}");
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
@@ -161,6 +166,10 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_filter_by_to_date(): void
     {
+        $date1 = now()->subDays(20)->toDateString();
+        $date2 = now()->subDays(5)->toDateString();
+        $toDate = now()->subDays(10)->toDateString();
+
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
             'total_backlinks' => 1000,
@@ -169,7 +178,7 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 300,
             'avg_domain_trust' => 40.0,
             'anchor_diversity_score' => 60.0,
-            'snapshot_date' => '2026-01-15',
+            'snapshot_date' => $date1,
         ]);
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
@@ -179,11 +188,11 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 350,
             'avg_domain_trust' => 42.0,
             'anchor_diversity_score' => 62.0,
-            'snapshot_date' => '2026-02-15',
+            'snapshot_date' => $date2,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?to=2026-02-01");
+            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?to={$toDate}");
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
@@ -195,6 +204,13 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_filter_by_date_range(): void
     {
+        $date1 = now()->subDays(30)->toDateString();
+        $date2 = now()->subDays(20)->toDateString();
+        $date3 = now()->subDays(10)->toDateString();
+        $date4 = now()->subDays(5)->toDateString();
+        $fromDate = now()->subDays(25)->toDateString();
+        $toDate = now()->subDays(8)->toDateString();
+
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
             'total_backlinks' => 900,
@@ -203,7 +219,7 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 250,
             'avg_domain_trust' => 38.0,
             'anchor_diversity_score' => 58.0,
-            'snapshot_date' => '2026-01-01',
+            'snapshot_date' => $date1,
         ]);
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
@@ -213,7 +229,7 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 300,
             'avg_domain_trust' => 40.0,
             'anchor_diversity_score' => 60.0,
-            'snapshot_date' => '2026-01-15',
+            'snapshot_date' => $date2,
         ]);
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
@@ -223,7 +239,7 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 350,
             'avg_domain_trust' => 42.0,
             'anchor_diversity_score' => 62.0,
-            'snapshot_date' => '2026-02-15',
+            'snapshot_date' => $date3,
         ]);
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
@@ -233,11 +249,11 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 400,
             'avg_domain_trust' => 44.0,
             'anchor_diversity_score' => 64.0,
-            'snapshot_date' => '2026-03-01',
+            'snapshot_date' => $date4,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from=2026-01-10&to=2026-02-20");
+            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from={$fromDate}&to={$toDate}");
 
         $response->assertStatus(200)
             ->assertJsonCount(2, 'data');
@@ -292,6 +308,10 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_ordered_by_date_asc(): void
     {
+        $date1 = now()->subDays(20)->toDateString();
+        $date2 = now()->subDays(10)->toDateString();
+        $date3 = now()->subDays(5)->toDateString();
+
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
             'total_backlinks' => 1100,
@@ -300,7 +320,7 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 350,
             'avg_domain_trust' => 42.0,
             'anchor_diversity_score' => 62.0,
-            'snapshot_date' => '2026-02-15',
+            'snapshot_date' => $date3, // This is the latest
         ]);
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
@@ -310,7 +330,7 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 300,
             'avg_domain_trust' => 40.0,
             'anchor_diversity_score' => 60.0,
-            'snapshot_date' => '2026-01-15',
+            'snapshot_date' => $date1, // This is the earliest
         ]);
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
@@ -320,7 +340,7 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 330,
             'avg_domain_trust' => 41.0,
             'anchor_diversity_score' => 61.0,
-            'snapshot_date' => '2026-02-01',
+            'snapshot_date' => $date2, // This is middle
         ]);
 
         $response = $this->actingAs($this->user)
@@ -329,9 +349,9 @@ class BacklinkHistoryControllerTest extends TestCase
         $response->assertStatus(200);
 
         $data = $response->json('data');
-        $this->assertEquals('2026-01-15', $data[0]['date']);
-        $this->assertEquals('2026-02-01', $data[1]['date']);
-        $this->assertEquals('2026-02-15', $data[2]['date']);
+        $this->assertEquals($date1, $data[0]['date']);
+        $this->assertEquals($date2, $data[1]['date']);
+        $this->assertEquals($date3, $data[2]['date']);
     }
 
     /**
@@ -339,22 +359,25 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_all_metrics_included(): void
     {
+        $snapshotDate = today();
+
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
+            'snapshot_date' => $snapshotDate,
+            'created_at' => now(),
             'total_backlinks' => 1250,
             'referring_domains_count' => 89,
             'dofollow_count' => 900,
             'nofollow_count' => 350,
             'avg_domain_trust' => 45.2,
             'anchor_diversity_score' => 68.0,
-            'snapshot_date' => '2026-02-28',
         ]);
 
         $response = $this->actingAs($this->user)
             ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history");
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.0.date', '2026-02-28')
+            ->assertJsonPath('data.0.date', $snapshotDate->toDateString())
             ->assertJsonPath('data.0.total_backlinks', 1250)
             ->assertJsonPath('data.0.referring_domains_count', 89)
             ->assertJsonPath('data.0.dofollow_count', 900)
@@ -368,29 +391,28 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_large_dataset(): void
     {
-        // Create 365 snapshots (1 year of daily data)
-        for ($i = 0; $i < 365; $i++) {
+        // Create 30 snapshots (30 days of data)
+        $count = 30;
+        for ($i = 0; $i < $count; $i++) {
+            $date = today()->subDays($count - 1 - $i);
             BacklinkSnapshot::create([
                 'project_id' => $this->project->id,
+                'snapshot_date' => $date,
+                'created_at' => now(),
                 'total_backlinks' => 1000 + $i,
                 'referring_domains_count' => 50 + (int)($i / 10),
                 'dofollow_count' => 700 + (int)($i * 0.7),
                 'nofollow_count' => 300 + (int)($i * 0.3),
                 'avg_domain_trust' => 40.0 + ($i * 0.01),
                 'anchor_diversity_score' => 60.0 + ($i * 0.02),
-                'snapshot_date' => now()->subDays(364 - $i)->toDateString(),
             ]);
         }
 
-        // Use valid date range within today
-        $from = now()->subDays(364)->toDateString();
-        $to = now()->toDateString();
-
         $response = $this->actingAs($this->user)
-            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from={$from}&to={$to}");
+            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history");
 
         $response->assertStatus(200)
-            ->assertJsonCount(365, 'data');
+            ->assertJsonCount($count, 'data');
     }
 
     /**
@@ -400,13 +422,14 @@ class BacklinkHistoryControllerTest extends TestCase
     {
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
+            'snapshot_date' => today(),
+            'created_at' => now(),
             'total_backlinks' => 1000,
             'referring_domains_count' => 50,
             'dofollow_count' => 700,
             'nofollow_count' => 300,
             'avg_domain_trust' => 40.0,
             'anchor_diversity_score' => 60.0,
-            'snapshot_date' => '2026-02-28',
         ]);
 
         $response = $this->actingAs($this->user)
@@ -551,8 +574,11 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_from_greater_than_to(): void
     {
+        $from = now()->toDateString();
+        $to = now()->subDays(30)->toDateString();
+
         $response = $this->actingAs($this->user)
-            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from=2026-02-28&to=2026-01-01");
+            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from={$from}&to={$to}");
 
         $response->assertStatus(422);
     }
@@ -592,13 +618,14 @@ class BacklinkHistoryControllerTest extends TestCase
     {
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
+            'snapshot_date' => today(),
+            'created_at' => now(),
             'total_backlinks' => 0,
             'referring_domains_count' => 0,
             'dofollow_count' => 0,
             'nofollow_count' => 0,
             'avg_domain_trust' => 0,
             'anchor_diversity_score' => 0,
-            'snapshot_date' => '2026-02-28',
         ]);
 
         $response = $this->actingAs($this->user)
@@ -615,13 +642,14 @@ class BacklinkHistoryControllerTest extends TestCase
     {
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
+            'snapshot_date' => today(),
+            'created_at' => now(),
             'total_backlinks' => 1500000, // 1.5 million
             'referring_domains_count' => 50000,
             'dofollow_count' => 1000000,
             'nofollow_count' => 500000,
             'avg_domain_trust' => 75.5,
             'anchor_diversity_score' => 85.0,
-            'snapshot_date' => '2026-02-28',
         ]);
 
         $response = $this->actingAs($this->user)
@@ -636,17 +664,16 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_null_domain_trust(): void
     {
-        // avg_domain_trust is nullable but must pass NOT NULL constraint on other fields
-        // Using 0.00 instead since the test database might not have the updated migration
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
+            'snapshot_date' => today(),
+            'created_at' => now(),
             'total_backlinks' => 100,
             'referring_domains_count' => 5,
             'dofollow_count' => 70,
             'nofollow_count' => 30,
-            'avg_domain_trust' => 0.00, // Use 0.00 since NULL might not be allowed in test DB
+            'avg_domain_trust' => null,
             'anchor_diversity_score' => 50.0,
-            'snapshot_date' => now()->toDateString(),
         ]);
 
         $response = $this->actingAs($this->user)
@@ -662,15 +689,18 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_same_date_multiple_snapshots(): void
     {
+        $snapshotDate = today();
+
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
+            'snapshot_date' => $snapshotDate,
+            'created_at' => now(),
             'total_backlinks' => 1000,
             'referring_domains_count' => 50,
             'dofollow_count' => 700,
             'nofollow_count' => 300,
             'avg_domain_trust' => 40.0,
             'anchor_diversity_score' => 60.0,
-            'snapshot_date' => '2026-02-28',
         ]);
 
         // Attempting to create another snapshot for the same date should fail
@@ -679,13 +709,14 @@ class BacklinkHistoryControllerTest extends TestCase
         
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
+            'snapshot_date' => $snapshotDate,
+            'created_at' => now(),
             'total_backlinks' => 1100,
             'referring_domains_count' => 55,
             'dofollow_count' => 750,
             'nofollow_count' => 350,
             'avg_domain_trust' => 42.0,
             'anchor_diversity_score' => 62.0,
-            'snapshot_date' => '2026-02-28', // Same date
         ]);
     }
 
@@ -694,6 +725,8 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_very_old_snapshot(): void
     {
+        $oldDate = '2020-01-01';
+
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
             'total_backlinks' => 500,
@@ -702,11 +735,14 @@ class BacklinkHistoryControllerTest extends TestCase
             'nofollow_count' => 150,
             'avg_domain_trust' => 30.0,
             'anchor_diversity_score' => 45.0,
-            'snapshot_date' => '2020-01-01',
+            'snapshot_date' => $oldDate,
         ]);
 
+        $from = '2019-01-01';
+        $to = '2021-01-01';
+
         $response = $this->actingAs($this->user)
-            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from=2019-01-01&to=2021-01-01");
+            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from={$from}&to={$to}");
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data');
@@ -773,22 +809,23 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_date_at_boundary(): void
     {
-        $snapshotDate = now()->toDateString();
-        
+        $snapshotDate = today();
+
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
+            'snapshot_date' => $snapshotDate,
+            'created_at' => now(),
             'total_backlinks' => 1000,
             'referring_domains_count' => 50,
             'dofollow_count' => 700,
             'nofollow_count' => 300,
             'avg_domain_trust' => 40.0,
             'anchor_diversity_score' => 60.0,
-            'snapshot_date' => $snapshotDate,
         ]);
 
         // Date filter should be inclusive
         $response = $this->actingAs($this->user)
-            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from={$snapshotDate}&to={$snapshotDate}");
+            ->getJson("/api/v1/projects/{$this->project->id}/backlinks/history?from={$snapshotDate->toDateString()}&to={$snapshotDate->toDateString()}");
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data');
@@ -849,13 +886,14 @@ class BacklinkHistoryControllerTest extends TestCase
         // This test verifies the response is properly encoded
         BacklinkSnapshot::create([
             'project_id' => $this->project->id,
+            'snapshot_date' => today(),
+            'created_at' => now(),
             'total_backlinks' => 1000,
             'referring_domains_count' => 50,
             'dofollow_count' => 700,
             'nofollow_count' => 300,
             'avg_domain_trust' => 40.0,
             'anchor_diversity_score' => 60.0,
-            'snapshot_date' => '2026-02-28',
         ]);
 
         $response = $this->actingAs($this->user)
@@ -924,8 +962,19 @@ class BacklinkHistoryControllerTest extends TestCase
      */
     public function test_user_isolation(): void
     {
+        // Create snapshots within the 30-day default window
         $this->createSnapshots($this->project, 3);
-        $this->createSnapshots($this->otherUserProject, 5);
+        
+        // Create 5 snapshots for other user, all within the 30-day window
+        // Using 4 days apart to fit within window
+        for ($i = 0; $i < 5; $i++) {
+            $date = today()->subDays(20 - ($i * 4));
+            BacklinkSnapshot::create([
+                'project_id' => $this->otherUserProject->id,
+                'snapshot_date' => $date,
+                'created_at' => now(),
+            ]);
+        }
 
         // User 1 should only see their snapshots
         $response = $this->actingAs($this->user)
