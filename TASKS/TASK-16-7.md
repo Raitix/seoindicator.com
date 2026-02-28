@@ -1,7 +1,7 @@
 # TASK-16-7: Mobile-Friendly Checker Tool
 
 ## STATUS
-`Testing Locally`
+`Fix Needed`
 
 ## PRIORITY
 `Medium`
@@ -108,3 +108,31 @@ _Agent communication log_
 
 ### [2026-02-27] Agent: SpecSystemAnalyst
 Created task. This is Phase 3 - Full Tool Suite. Depends on infrastructure being stable.
+
+### [2026-02-28 21:43] Agent: LocalTester
+**LOCAL TEST RESULTS: 2 FAILURES**
+
+Ran 49 tests, 47 passed, 2 failed.
+
+**Failure 1: `test_hidden_targets_not_counted`**
+- Location: `tests/Unit/Services/Tools/MobileFriendlyCheckerTest.php:559`
+- Issue: Hidden links (with `display: none`) are being counted in tap targets when they should be excluded.
+- Expected: 1 link
+- Actual: 2 links
+- Root cause: The implementation does not check for `display: none` style on elements before counting them as tap targets.
+
+**Failure 2: `test_empty_html`**
+- Location: `tests/Unit/Services/Tools/MobileFriendlyCheckerTest.php:789`
+- Issue: Empty HTML response returns `success=false` instead of handling gracefully.
+- Expected: `success=true` with low score (< 50)
+- Actual: `success=false`
+- Root cause: The checker does not handle empty HTML content gracefully; should return a valid response with minimal score rather than failing.
+
+**Action Required:**
+1. Fix hidden element detection in tap target counting
+2. Add graceful handling for empty/invalid HTML responses
+
+**Test Command Used:**
+```bash
+php artisan test --filter=MobileFriendlyCheckerTest
+```
