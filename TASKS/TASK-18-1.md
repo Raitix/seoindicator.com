@@ -1,7 +1,7 @@
 # TASK-18-1: Database Migration - seo_analyses Table
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
