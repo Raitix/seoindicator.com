@@ -9,9 +9,9 @@ use App\Models\User;
 use App\Models\Webhook;
 use App\Services\RankCheckerService;
 use App\Services\SERPFetcherInterface;
+use App\Services\SERP\SERPResultData;
+use App\Services\SERP\SERPEntryData;
 use App\Services\SERP\SERPResult;
-use App\Services\SERP\SERPEntry;
-use App\Services\SERP\SERPOptionsData;
 use App\Services\WebhookDispatcherService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -26,17 +26,11 @@ class RankCheckerServiceEventTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
-
     /** @test */
     public function it_emits_ranking_changed_event_on_position_improvement(): void
     {
         $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
+        $site = Site::factory()->create(['user_id' => $user->id, 'url' => 'https://example.com']);
         $keyword = Keyword::factory()->create([
             'user_id' => $user->id,
             'site_id' => $site->id,
@@ -91,7 +85,7 @@ class RankCheckerServiceEventTest extends TestCase
     public function it_emits_ranking_changed_event_on_position_decline(): void
     {
         $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
+        $site = Site::factory()->create(['user_id' => $user->id, 'url' => 'https://example.com']);
         $keyword = Keyword::factory()->create([
             'user_id' => $user->id,
             'site_id' => $site->id,
@@ -103,6 +97,16 @@ class RankCheckerServiceEventTest extends TestCase
             'keyword_id' => $keyword->id,
             'position' => 5,
             'checked_at' => now()->subDay(),
+        ]);
+
+        // Create webhook for user
+        Webhook::create([
+            'user_id' => $user->id,
+            'name' => 'Test Webhook',
+            'url' => 'https://example.com/webhook',
+            'secret' => 'test_secret',
+            'events' => ['ranking.changed'],
+            'enabled' => true,
         ]);
 
         // Mock SERP fetcher
@@ -132,7 +136,7 @@ class RankCheckerServiceEventTest extends TestCase
     public function it_emits_ranking_changed_event_on_first_ranking(): void
     {
         $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
+        $site = Site::factory()->create(['user_id' => $user->id, 'url' => 'https://example.com']);
         $keyword = Keyword::factory()->create([
             'user_id' => $user->id,
             'site_id' => $site->id,
@@ -140,6 +144,16 @@ class RankCheckerServiceEventTest extends TestCase
         ]);
 
         // No previous ranking
+
+        // Create webhook for user
+        Webhook::create([
+            'user_id' => $user->id,
+            'name' => 'Test Webhook',
+            'url' => 'https://example.com/webhook',
+            'secret' => 'test_secret',
+            'events' => ['ranking.changed'],
+            'enabled' => true,
+        ]);
 
         // Mock SERP fetcher
         $mockFetcher = Mockery::mock(SERPFetcherInterface::class);
@@ -168,7 +182,7 @@ class RankCheckerServiceEventTest extends TestCase
     public function it_emits_ranking_changed_event_on_drop_from_top_100(): void
     {
         $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
+        $site = Site::factory()->create(['user_id' => $user->id, 'url' => 'https://example.com']);
         $keyword = Keyword::factory()->create([
             'user_id' => $user->id,
             'site_id' => $site->id,
@@ -180,6 +194,16 @@ class RankCheckerServiceEventTest extends TestCase
             'keyword_id' => $keyword->id,
             'position' => 50,
             'checked_at' => now()->subDay(),
+        ]);
+
+        // Create webhook for user
+        Webhook::create([
+            'user_id' => $user->id,
+            'name' => 'Test Webhook',
+            'url' => 'https://example.com/webhook',
+            'secret' => 'test_secret',
+            'events' => ['ranking.changed'],
+            'enabled' => true,
         ]);
 
         // Mock SERP fetcher - not found in top 100
@@ -209,7 +233,7 @@ class RankCheckerServiceEventTest extends TestCase
     public function it_does_not_emit_event_on_same_position(): void
     {
         $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
+        $site = Site::factory()->create(['user_id' => $user->id, 'url' => 'https://example.com']);
         $keyword = Keyword::factory()->create([
             'user_id' => $user->id,
             'site_id' => $site->id,
@@ -243,7 +267,7 @@ class RankCheckerServiceEventTest extends TestCase
     public function it_includes_serp_features_in_event(): void
     {
         $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
+        $site = Site::factory()->create(['user_id' => $user->id, 'url' => 'https://example.com']);
         $keyword = Keyword::factory()->create([
             'user_id' => $user->id,
             'site_id' => $site->id,
@@ -254,6 +278,16 @@ class RankCheckerServiceEventTest extends TestCase
             'keyword_id' => $keyword->id,
             'position' => 7,
             'checked_at' => now()->subDay(),
+        ]);
+
+        // Create webhook for user
+        Webhook::create([
+            'user_id' => $user->id,
+            'name' => 'Test Webhook',
+            'url' => 'https://example.com/webhook',
+            'secret' => 'test_secret',
+            'events' => ['ranking.changed'],
+            'enabled' => true,
         ]);
 
         // Mock SERP fetcher with features
@@ -292,18 +326,27 @@ class RankCheckerServiceEventTest extends TestCase
         if ($position && $url) {
             for ($i = 1; $i <= 100; $i++) {
                 if ($i === $position) {
-                    $entries[] = new SERPEntry($i, $url, "Title {$i}", "Description {$i}");
+                    $entries[] = new SERPEntryData($i, $url, "Title {$i}", "Description {$i}", true);
                 } else {
-                    $entries[] = new SERPEntry($i, "https://other{$i}.com", "Title {$i}", "Description {$i}");
+                    $entries[] = new SERPEntryData($i, "https://other{$i}.com", "Title {$i}", "Description {$i}", false);
                 }
             }
         } else {
             for ($i = 1; $i <= 100; $i++) {
-                $entries[] = new SERPEntry($i, "https://other{$i}.com", "Title {$i}", "Description {$i}");
+                $entries[] = new SERPEntryData($i, "https://other{$i}.com", "Title {$i}", "Description {$i}", false);
             }
         }
 
-        return new SERPResult($keyword, 'google', 'us', 'desktop', $entries, 100);
+        return new SERPResultData(
+            keyword: $keyword,
+            searchEngine: 'google',
+            location: 'us',
+            device: 'desktop',
+            results: $entries,
+            checkedAt: now()->toIso8601String(),
+            error: null,
+            durationMs: 100
+        );
     }
 
     /**
@@ -311,11 +354,31 @@ class RankCheckerServiceEventTest extends TestCase
      */
     protected function createSerpResultWithFeatures(string $keyword, ?int $position, ?string $url, array $features): SERPResult
     {
-        $result = $this->createSerpResult($keyword, $position, $url);
-        // Add SERP features if the class supports it
-        if (method_exists($result, 'setSerpFeatures')) {
-            $result->setSerpFeatures($features);
+        $entries = [];
+        if ($position && $url) {
+            for ($i = 1; $i <= 100; $i++) {
+                if ($i === $position) {
+                    $entries[] = new SERPEntryData($i, $url, "Title {$i}", "Description {$i}", true);
+                } else {
+                    $entries[] = new SERPEntryData($i, "https://other{$i}.com", "Title {$i}", "Description {$i}", false);
+                }
+            }
+        } else {
+            for ($i = 1; $i <= 100; $i++) {
+                $entries[] = new SERPEntryData($i, "https://other{$i}.com", "Title {$i}", "Description {$i}", false);
+            }
         }
-        return $result;
+
+        return new SERPResultData(
+            keyword: $keyword,
+            searchEngine: 'google',
+            location: 'us',
+            device: 'desktop',
+            results: $entries,
+            checkedAt: now()->toIso8601String(),
+            error: null,
+            durationMs: 100,
+            serpFeatures: $features
+        );
     }
 }

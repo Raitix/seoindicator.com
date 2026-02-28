@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\GSCDataController;
 use App\Http\Controllers\Api\V1\KeywordController;
 use App\Http\Controllers\Api\V1\KeywordsApiController;
 use App\Http\Controllers\Api\V1\RankingsApiController;
+use App\Http\Controllers\Api\V1\SitesApiController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\RankingController;
 use App\Http\Controllers\Api\V1\DashboardController;
@@ -65,6 +66,9 @@ Route::prefix('v1')->middleware(['api-key.auth', 'api-key.ratelimit'])->group(fu
     Route::get('keywords/{id}/rankings', [RankingsApiController::class, 'index'])
         ->middleware('api-key.auth:rankings:read')
         ->where('id', '[0-9]+');
+
+    // Sites API (TASK-6-10)
+    Route::get('sites', [SitesApiController::class, 'index'])->middleware('api-key.auth:sites:read');
 });
 
 /*
@@ -96,12 +100,10 @@ Route::prefix('v1')->group(function () {
     Route::get('metadata', [\App\Http\Controllers\Api\V1\MetadataController::class, 'index']);
     Route::get('metadata/serp-features', [\App\Http\Controllers\Api\V1\MetadataController::class, 'serpFeatures']);
 
-    // Keywords (SPEC-001-4)
+    // Keywords (SPEC-001-4) - Site-scoped routes for web UI
     Route::get('sites/{siteId}/keywords', [KeywordController::class, 'index']);
     Route::post('sites/{siteId}/keywords', [KeywordController::class, 'store']);
-    Route::get('keywords/{id}', [KeywordController::class, 'show']);
-    Route::put('keywords/{id}', [KeywordController::class, 'update']);
-    Route::delete('keywords/{id}', [KeywordController::class, 'destroy']);
+    // Note: Individual keyword routes (show/update/destroy) for web UI are in the authenticated group below
 
     // Dashboard (SPEC-001-6)
     Route::get('sites/{siteId}/dashboard', [DashboardController::class, 'index']);
