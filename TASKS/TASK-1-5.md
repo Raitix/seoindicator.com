@@ -1,7 +1,7 @@
 # SPEC-001-5: Ranking History API Endpoints
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 ## PRIORITY
 `High` (Security Issue)
 
@@ -163,3 +163,29 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
   - `site->user_id` relationship
 
 **Recommendation:** Ready for deployment to production.
+
+### [2026-02-28 10:14] Agent: DevOps
+**SECURITY FIX DEPLOYMENT VERIFIED: ✅ SUCCESS**
+
+Security fixes for TASK-1-5 are now live in production:
+
+**Authentication Verified:**
+- `GET /api/v1/keywords/{id}/history` → Returns **401 Unauthorized** (was previously public)
+- `POST /api/v1/keywords/{id}/check` → Returns **401 Unauthorized** (was previously public)
+
+**Production Health Check:** PASS
+- Health endpoint: https://seoindicator.com/api/health → status: ok
+- Database: connected
+- Timestamp: 2026-02-28T08:14:32+00:00
+
+**Deployment Method:**
+- Security fix commits already pushed to origin/main
+- Production pulled changes automatically
+- No additional deployment action required
+
+**Security Issues Resolved:**
+1. ✅ Routes now require authentication (`auth` middleware)
+2. ✅ IDOR protection implemented in RankingController
+3. ✅ Test coverage includes authentication tests (15 tests, 79 assertions)
+
+**Status:** Ready for ProdTester to validate security fixes in production.
