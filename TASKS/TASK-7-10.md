@@ -1,7 +1,7 @@
 # TASK-7-10: SERP Features API Endpoints
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
