@@ -4,21 +4,26 @@ namespace App\Services\Analysis\Indicators;
 
 use App\Services\URLValidationService;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\CssSelector\CssSelectorConverter;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use RuntimeException;
+use DOMDocument;
+use DOMXPath;
+use DOMNode;
+use DOMNodeList;
 
 /**
  * Abstract base class for SEO indicator processors.
  *
  * Provides common functionality for fetching URLs, parsing HTML,
- * and returning standardized results.
+ * and returning standardized results using native PHP DOM.
  */
 abstract class IndicatorProcessor
 {
     protected URLValidationService $urlValidator;
     protected Client $httpClient;
+    protected ?CssSelectorConverter $cssConverter = null;
 
     /**
      * Default timeout in seconds.
@@ -108,12 +113,15 @@ abstract class IndicatorProcessor
 
             $duration = round((microtime(true) - $startTime) * 1000);
 
-            Log::info('URL fetched successfully', [
-                'url' => $normalizedUrl,
-                'status' => $statusCode,
-                'size' => strlen($content),
-                'duration_ms' => $duration,
-            ]);
+            // Log if available (not in unit tests)
+            if (app()->bound('log')) {
+                Log::info('URL fetched successfully', [
+                    'url' => $normalizedUrl,
+                    'status' => $statusCode,
+                    'size' => strlen($content),
+                    'duration_ms' => $duration,
+                ]);
+            }
 
             return $content;
 
@@ -123,71 +131,136 @@ abstract class IndicatorProcessor
     }
 
     /**
-     * Parse HTML into a DomCrawler instance.
+     * Parse HTML into a DOMDocument instance.
      *
      * @param string $html
-     * @return Crawler
+     * @return DOMDocument
+     * @throws RuntimeException If HTML is invalid
      */
-    protected function parseHtml(string $html): Crawler
+    protected function parseHtml(string $html): DOMDocument
     {
-        $crawler = new Crawler($html);
-
-        // Check for valid HTML
-        if ($crawler->filter('html')->count() === 0) {
+        if (empty(trim($html))) {
             throw new RuntimeException('Invalid HTML content');
         }
 
-        return $crawler;
+        $dom = new DOMDocument();
+        
+        // Suppress libxml errors (HTML5 tags cause warnings)
+        libxml_use_internal_errors(true);
+        
+        // Load HTML with UTF-8 encoding
+        $loaded = $dom->loadHTML(
+            '<?xml encoding="UTF-8">' . $html,
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        
+        libxml_clear_errors();
+
+        if (!$loaded || $dom->documentElement === null) {
+            throw new RuntimeException('Invalid HTML content');
+        }
+
+        return $dom;
+    }
+
+    /**
+     * Get the CSS selector converter.
+     *
+     * @return CssSelectorConverter
+     */
+    protected function getCssConverter(): CssSelectorConverter
+    {
+        if ($this->cssConverter === null) {
+            $this->cssConverter = new CssSelectorConverter();
+        }
+        return $this->cssConverter;
+    }
+
+    /**
+     * Convert CSS selector to XPath.
+     *
+     * @param string $selector
+     * @return string
+     */
+    protected function cssToXpath(string $selector): string
+    {
+        return $this->getCssConverter()->toXPath($selector);
+    }
+
+    /**
+     * Query DOM using CSS selector.
+     *
+     * @param DOMDocument $dom
+     * @param string $selector
+     * @return DOMNodeList
+     */
+    protected function query(DOMDocument $dom, string $selector): DOMNodeList
+    {
+        $xpath = new DOMXPath($dom);
+        $xpathExpr = $this->cssToXpath($selector);
+        $result = $xpath->query($xpathExpr);
+        
+        return $result !== false ? $result : new DOMNodeList();
     }
 
     /**
      * Extract text content from a selector.
      *
-     * @param Crawler $crawler
+     * @param DOMDocument $dom
      * @param string $selector
      * @return string|null
      */
-    protected function extractText(Crawler $crawler, string $selector): ?string
+    protected function extractText(DOMDocument $dom, string $selector): ?string
     {
-        $node = $crawler->filter($selector)->first();
-        if ($node->count() === 0) {
+        $nodes = $this->query($dom, $selector);
+        
+        if ($nodes->length === 0) {
             return null;
         }
 
-        return trim($node->text());
+        return trim($nodes->item(0)->textContent);
     }
 
     /**
      * Extract attribute value from a selector.
      *
-     * @param Crawler $crawler
+     * @param DOMDocument $dom
      * @param string $selector
      * @param string $attribute
      * @return string|null
      */
-    protected function extractAttribute(Crawler $crawler, string $selector, string $attribute): ?string
+    protected function extractAttribute(DOMDocument $dom, string $selector, string $attribute): ?string
     {
-        $node = $crawler->filter($selector)->first();
-        if ($node->count() === 0) {
+        $nodes = $this->query($dom, $selector);
+        
+        if ($nodes->length === 0) {
             return null;
         }
 
-        return $node->attr($attribute);
+        $node = $nodes->item(0);
+        if (!$node->hasAttributes()) {
+            return null;
+        }
+
+        $attr = $node->attributes->getNamedItem($attribute);
+        return $attr !== null ? $attr->nodeValue : null;
     }
 
     /**
      * Extract all matching elements' text content.
      *
-     * @param Crawler $crawler
+     * @param DOMDocument $dom
      * @param string $selector
      * @return array
      */
-    protected function extractAllText(Crawler $crawler, string $selector): array
+    protected function extractAllText(DOMDocument $dom, string $selector): array
     {
+        $nodes = $this->query($dom, $selector);
         $results = [];
-        $crawler->filter($selector)->each(function (Crawler $node) use (&$results) {
-            $results[] = trim($node->text());
-        });
+
+        foreach ($nodes as $node) {
+            $results[] = trim($node->textContent);
+        }
 
         return $results;
     }
@@ -195,21 +268,27 @@ abstract class IndicatorProcessor
     /**
      * Extract all matching elements with attributes.
      *
-     * @param Crawler $crawler
+     * @param DOMDocument $dom
      * @param string $selector
      * @param array $attributes
      * @return array
      */
-    protected function extractAllWithAttributes(Crawler $crawler, string $selector, array $attributes): array
+    protected function extractAllWithAttributes(DOMDocument $dom, string $selector, array $attributes): array
     {
+        $nodes = $this->query($dom, $selector);
         $results = [];
-        $crawler->filter($selector)->each(function (Crawler $node) use (&$results, $attributes) {
-            $item = ['text' => trim($node->text())];
+
+        foreach ($nodes as $node) {
+            $item = ['text' => trim($node->textContent)];
+            
             foreach ($attributes as $attr) {
-                $item[$attr] = $node->attr($attr);
+                $item[$attr] = $node->hasAttributes() 
+                    ? ($node->attributes->getNamedItem($attr)?->nodeValue ?? null)
+                    : null;
             }
+            
             $results[] = $item;
-        });
+        }
 
         return $results;
     }
@@ -217,13 +296,13 @@ abstract class IndicatorProcessor
     /**
      * Count elements matching a selector.
      *
-     * @param Crawler $crawler
+     * @param DOMDocument $dom
      * @param string $selector
      * @return int
      */
-    protected function countElements(Crawler $crawler, string $selector): int
+    protected function countElements(DOMDocument $dom, string $selector): int
     {
-        return $crawler->filter($selector)->count();
+        return $this->query($dom, $selector)->length;
     }
 
     /**
