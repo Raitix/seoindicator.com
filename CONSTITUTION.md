@@ -5,6 +5,28 @@ SEOIndicator — SEO analysis and monitoring tool.
 
 ---
 
+## Development Services
+
+**Use Desktop shortcuts to start/stop all services:**
+
+| Shortcut | Action |
+|----------|--------|
+| `Start Services.lnk` | Starts all 5 services (run as Admin) |
+| `Stop Services.lnk` | Stops all 5 services |
+
+**Services managed:**
+1. MySQL Database (XAMPP)
+2. GLM-5 Vertex Proxy (port 18790)
+3. Backend API (Laravel on port 8000)
+4. Frontend (Next.js on port 3000)
+5. Workflow Control Center (port 3333)
+
+**Scripts location:** `~/.openclaw/scripts/start-services.ps1` and `stop-services.ps1`
+
+> **Note:** The Lead agent does NOT need to start services manually. Use desktop shortcuts instead.
+
+---
+
 ## ⚠️ CRITICAL CONSTRAINT: FREE TOOLS ONLY
 
 **All features and implementations must use FREE tools and services only.**
