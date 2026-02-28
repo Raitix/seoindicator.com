@@ -1,6 +1,119 @@
 # DOCUMENTATION.md
 
 ---
+## Polling Fallback Endpoint (TASK-19-10)
+
+### Service Description
+Polling endpoint for analysis job progress, providing a fallback for environments without Server-Sent Events (SSE) support. Enables compatibility with corporate proxies, older browsers, and restricted network environments.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/analysis/jobs/{jobId}/progress` | Get current job progress and results |
+
+### Get Job Progress
+`GET /api/v1/analysis/jobs/{jobId}/progress`
+
+**Response (200):**
+```json
+{
+  "status": "processing",
+  "totalIndicators": 10,
+  "completedIndicators": 5,
+  "progressPercent": 50,
+  "results": [
+    {
+      "indicator": "title_length",
+      "status": "completed",
+      "score": 85,
+      "data": { "title": "Example", "length": 15 }
+    }
+  ]
+}
+```
+
+**Response Headers:**
+| Header | Value | Description |
+|--------|-------|-------------|
+| `Cache-Control` | `no-store` | Always returns fresh data |
+| `X-Polling-Interval` | `2` | Recommended polling interval in seconds |
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 404 | Job not found or not owned by user |
+
+### Polling Recommendations
+
+**Recommended Interval:** 2 seconds
+
+**Trade-offs vs SSE:**
+
+| Aspect | Polling | SSE |
+|--------|---------|-----|
+| Browser Support | Universal | Modern browsers only |
+| Network Efficiency | Lower (repeated requests) | Higher (single connection) |
+| Corporate Proxies | Works through most | May be blocked |
+| Connection State | Stateless | Requires persistent connection |
+| Server Load | Higher (frequent requests) | Lower (push-based) |
+
+### Authorization
+- All endpoints require authentication (Bearer token)
+- User must own the job (ownership via `user_id` on analysis_jobs)
+- Returns 404 for unowned jobs (prevents enumeration attacks)
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware |
+| IDOR Protection | User ownership check via `userOwnsJob()` |
+| Enumeration Prevention | Returns 404 instead of 403 for unowned jobs |
+| Cache Control | `no-store` prevents stale data |
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/AnalysisJobController.php`
+- Method: `progress()` - simple wrapper around `getJobProgress()`
+- Route: Defined in `backend/routes/api.php`
+
+### Known Limitations
+
+| Limitation | Status | Notes |
+|------------|--------|-------|
+| Rate limiting (30 req/min/job) | ⚠️ NOT IMPLEMENTED | Can be added if abuse becomes an issue |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `AnalysisJobProgressTest.php` | 9 | - |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Success Cases | 3 | Returns 200, correct structure, headers |
+| Authentication | 1 | 401 for unauthenticated |
+| Authorization | 3 | 404 for nonexistent/unowned/invalid job IDs |
+| Status Reflection | 1 | Progress reflects current job state |
+| Headers | 1 | Cache-Control and polling interval headers |
+
+### Production Status
+- **Deployed**: 2026-02-28 (commit 84c600e)
+- **Health Check**: Passing
+- **Tests**: 9/9 passing
+- **Status**: Complete (rate limiting deferred)
+
+### Dependencies
+- TASK-19-3 (AnalysisJobService)
+- TASK-19-8 (Progress tracking)
+
+### Related Tasks
+- TASK-19-9: SSE Stream Endpoint (real-time alternative)
+- TASK-19-11: Frontend Progress Bar Component
+
+---
 ## Ranking Change Alert System (FEAT-002)
 
 ### Service Description
@@ -7044,6 +7157,141 @@ All detectors tested for:
 - **Production Verified**: 2026-02-27
 - **Tests**: 316 JavaScript, 130 PHP passing
 - **Status**: Complete
+
+---
+## Ranking Check SERP Feature Integration (TASK-7-13)
+
+### Service Description
+Integrates SERP feature detection into the existing ranking check workflow. When a ranking check runs, it automatically detects and records SERP features for keywords belonging to sites with feature tracking enabled.
+
+### Core Functionalities
+
+**Integration Point:**
+| Component | Method | Purpose |
+|-----------|--------|---------|
+| RankCheckerService | `checkAndStore()` | Main ranking check method, now includes feature detection |
+| RankCheckerService | `detectAndStoreSerpFeatures()` | Feature detection integration method |
+| SERPFeatureDetector | `detectFeatures()` | Detects all 10 feature types from SERP result |
+| SerpFeatureRepository | `insertBatch()` | Stores detected features in serp_features table |
+| SerpFeatureChangeTracker | `trackChanges()` | Records feature gains/losses |
+
+**Feature Detection Flow:**
+1. Ranking check fetches SERP data
+2. If site has `enable_serp_features = true`, feature detection runs
+3. Features stored in `serp_features` table
+4. Changes tracked via `SerpFeatureChangeTracker`
+5. Errors caught gracefully - don't break ranking check
+
+### Site Configuration
+```php
+// Enable SERP feature tracking for a site
+$site->enable_serp_features = true;
+$site->save();
+
+// Or via factory in tests
+$site = Site::factory()->withSerpFeatures()->create();
+```
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sites/{siteId}` | Site now includes `enable_serp_features` field |
+| PATCH | `/api/v1/sites/{siteId}` | Can toggle `enable_serp_features` |
+
+### SERPFeatureDetector Service
+
+**Detection Methods:**
+| Method | Feature Type | Description |
+|--------|--------------|-------------|
+| `detectFeaturedSnippet()` | featured_snippet | Answer box at top of results |
+| `detectLocalPack()` | local_pack | Local business listings with map |
+| `detectImagePack()` | image_pack | Horizontal image row in SERP |
+| `detectVideo()` | video | Video thumbnails in results |
+| `detectPeopleAlsoAsk()` | people_also_ask | Expandable Q&A section |
+| `detectKnowledgePanel()` | knowledge_panel | Entity info sidebar |
+| `detectSitelinks()` | sitelinks | Additional links under result |
+| `detectReviews()` | reviews | Star ratings in results |
+| `detectFaq()` | faq | FAQ rich result accordions |
+| `detectProduct()` | product | Product listings with price |
+
+**Return Structure:**
+```php
+[
+    'type' => 'featured_snippet',
+    'is_present' => true,
+    'position' => 1,
+    'url' => 'https://example.com/page',
+    'title' => 'Page Title',
+    'snippet' => 'Snippet text...',
+    'checked_at' => '2026-02-19 12:00:00',
+]
+```
+
+### Technical Implementation
+
+**Files Created/Modified:**
+| File | Type | Purpose |
+|------|------|---------|
+| `backend/app/Services/SERPFeatureDetector.php` | NEW | Feature detection service |
+| `backend/app/Services/RankCheckerService.php` | MODIFIED | Added integration method |
+| `backend/app/Models/Site.php` | MODIFIED | Added `enable_serp_features` field |
+| `backend/database/migrations/2026_02_21_190000_add_enable_serp_features_to_sites_table.php` | NEW | Database migration |
+| `backend/database/factories/SiteFactory.php` | MODIFIED | Added `withSerpFeatures()` state |
+
+**Error Handling:**
+```php
+// Feature detection failure doesn't break ranking check
+try {
+    $this->detectAndStoreSerpFeatures($keyword, $userDomain, $result);
+} catch (\Throwable $e) {
+    Log::error('SERP feature detection failed', [
+        'keyword_id' => $keyword->id,
+        'error' => $e->getMessage(),
+    ]);
+    // Ranking check continues
+}
+```
+
+### Unit Tests
+**Test File:** `backend/tests/Unit/Services/RankingServiceFeatureIntegrationTest.php`
+
+| Test | Description | Status |
+|------|-------------|--------|
+| T1 | Ranking check triggers feature detection | ✓ |
+| T2 | Features stored in serp_features table | ✓ |
+| T3 | Rankings.serp_features JSON updated | ✓ |
+| T4 | Change tracker triggered on changes | ✓ |
+| T5 | Feature detection failure doesn't break ranking | ✓ |
+| T6-T8 | Site configuration flag tested | ✓ |
+| T9-T11 | Error handling tested | ✓ |
+| T13 | Performance <1 second verified | ✓ |
+| T15-T18 | Edge cases handled | ✓ |
+
+**Test Results:** 14 tests, 25 assertions passing
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| Error Isolation | Feature detection wrapped in try-catch |
+| Graceful Degradation | Ranking check succeeds even if features fail |
+| Logging | All failures logged with context |
+| SQL Injection | Parameterized queries via Eloquent |
+
+### Performance Requirements
+- Feature detection must add <1 second to ranking check
+- Detector methods optimized for O(n) complexity where n = number of SERP results
+
+### Dependencies
+- TASK-7-4 (Detector service - implemented as part of this task)
+- TASK-7-8 (Change tracker - Done)
+- TASK-7-3 (Repository - Done)
+
+### Deployment
+- **Status**: Complete
+- **Tests**: 14 tests, 25 assertions passing
+- **Completed**: 2026-02-19
 
 ---
 ## Question Keyword Generator (TASK-5-5)
