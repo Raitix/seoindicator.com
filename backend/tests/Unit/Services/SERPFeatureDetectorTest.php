@@ -507,6 +507,79 @@ class SERPFeatureDetectorTest extends TestCase
         }
     }
 
+    /** @test */
+    public function it_uses_link_field_as_alternative_to_url(): void
+    {
+        // FS-006: Answer box with 'link' field instead of 'url'
+        $serpData = [
+            'answerBox' => [
+                'type' => 'featured_snippet',
+                'link' => 'https://example.com/page', // Using 'link' instead of 'url'
+                'title' => 'Page Title',
+            ]
+        ];
+
+        $result = $this->detector->detectFeatures('test', 'https://example.com', $serpData);
+        
+        $featuredSnippet = collect($result)->firstWhere('type', 'featured_snippet');
+        $this->assertTrue($featuredSnippet['is_present']);
+        $this->assertEquals('https://example.com/page', $featuredSnippet['url']);
+    }
+
+    /** @test */
+    public function it_uses_answer_field_as_alternative_to_snippet(): void
+    {
+        // FS-007: Answer box with 'answer' field instead of 'snippet'
+        $serpData = [
+            'answerBox' => [
+                'type' => 'featured_snippet',
+                'url' => 'https://example.com/page',
+                'answer' => 'This is the answer text...', // Using 'answer' instead of 'snippet'
+            ]
+        ];
+
+        $result = $this->detector->detectFeatures('test', 'https://example.com', $serpData);
+        
+        $featuredSnippet = collect($result)->firstWhere('type', 'featured_snippet');
+        $this->assertTrue($featuredSnippet['is_present']);
+        $this->assertEquals('This is the answer text...', $featuredSnippet['snippet']);
+    }
+
+    /** @test */
+    public function it_rejects_unknown_answer_box_types(): void
+    {
+        // FS-008: Answer box with unknown type should not be detected as featured snippet
+        $serpData = [
+            'answerBox' => [
+                'type' => 'calculator', // Not a valid featured snippet type
+                'url' => 'https://example.com/page',
+            ]
+        ];
+
+        $result = $this->detector->detectFeatures('test', 'https://example.com', $serpData);
+        
+        $featuredSnippet = collect($result)->firstWhere('type', 'featured_snippet');
+        $this->assertFalse($featuredSnippet['is_present']);
+    }
+
+    /** @test */
+    public function it_handles_answer_box_without_type(): void
+    {
+        // FS-009: Answer box without type field
+        $serpData = [
+            'answerBox' => [
+                'url' => 'https://example.com/page',
+                'snippet' => 'Some answer text',
+            ]
+        ];
+
+        $result = $this->detector->detectFeatures('test', 'https://example.com', $serpData);
+        
+        $featuredSnippet = collect($result)->firstWhere('type', 'featured_snippet');
+        // Should not be detected as featured snippet without valid type
+        $this->assertFalse($featuredSnippet['is_present']);
+    }
+
     // ============================================
     // Local Pack Detection (LP-001 to LP-006)
     // ============================================
