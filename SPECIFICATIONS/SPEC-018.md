@@ -1,7 +1,7 @@
 # SPEC-018: Legacy 17-Indicator SEO Analysis (Core Engine)
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

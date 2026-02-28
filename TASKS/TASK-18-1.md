@@ -1,7 +1,7 @@
 # TASK-18-1: Database Migration - seo_analyses Table
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
