@@ -736,10 +736,13 @@ class SyncBacklinksJobTest extends TestCase
 
         Backlink::factory()->create(['project_id' => $project->id]);
 
-        // Create exactly 5 referring domains
-        ReferringDomain::factory()->count(5)->create([
-            'project_id' => $project->id,
-        ]);
+        // Create exactly 5 referring domains with unique domains
+        for ($i = 1; $i <= 5; $i++) {
+            ReferringDomain::factory()->create([
+                'project_id' => $project->id,
+                'domain' => "domain{$i}.example.com",
+            ]);
+        }
 
         $snapshotService = app(BacklinkSnapshotService::class);
 
