@@ -48,7 +48,9 @@ class AnalysisJobResultFactory extends Factory
      */
     public function definition(): array
     {
-        $indicatorSlug = fake()->randomElement(array_keys(self::INDICATORS));
+        // Use unique() to ensure each indicator_slug is unique per job
+        // This prevents unique constraint violations when creating multiple results
+        $indicatorSlug = fake()->unique()->randomElement(array_keys(self::INDICATORS));
         $indicatorName = self::INDICATORS[$indicatorSlug];
 
         return [
