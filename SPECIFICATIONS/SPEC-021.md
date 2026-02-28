@@ -1,7 +1,7 @@
 # SPEC-021: AI Suggestions via OpenRouter/Vercel Gateway
 
 ## STATUS
-`Specification In Progress`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -497,6 +497,23 @@ Created SPEC-021 for AI Suggestions feature.
 **Free Tools Compliance**: ✅ OpenRouter provides free models that meet requirements.
 
 Status: Specification In Progress → Ready for SpecSystemAnalyst breakdown.
+
+### [2026-02-28 10:52 GMT+2] Agent: Architect
+**Specification Complete.**
+
+Status updated to `To Break Into Tasks`.
+
+**Handoff to SpecSystemAnalyst**:
+- 12 tasks defined in Task Breakdown section
+- 3 phases: Core Infrastructure → API & Integration → Vercel Integration & Polish
+- All tasks have priority assignments
+- Dependencies: TASK-16-1 (Tools Infrastructure) is already complete
+
+**Next Steps for SpecSystemAnalyst**:
+1. Create individual TASK files (TASK-21-1 through TASK-21-12)
+2. Each task should reference this specification
+3. Set initial status to `To Prioritize`
+4. Add acceptance criteria based on the spec
 
 ---
 
