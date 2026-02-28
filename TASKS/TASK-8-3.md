@@ -1,7 +1,7 @@
 # TASK-8-3: Data Migration for Default Projects
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
