@@ -4589,6 +4589,142 @@ systemctl start seoindicator-scheduler.timer
 - Status: Post-MVP feature (Phase 4)
 
 ---
+## SERP Feature Model and Types (TASK-7-2)
+
+### Service Description
+TypeScript/JavaScript type definitions, interfaces, and model classes for SERP feature data. Provides the foundational types for SERP feature tracking throughout the application.
+
+### Type Definitions
+
+**SERPFeatureType:**
+```typescript
+type SERPFeatureType =
+  | 'featured_snippet'
+  | 'local_pack'
+  | 'image_pack'
+  | 'video'
+  | 'people_also_ask'
+  | 'knowledge_panel'
+  | 'sitelinks'
+  | 'reviews'
+  | 'faq'
+  | 'product';
+```
+
+**SERPFeature Interface:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | SERPFeatureType | Yes | Feature type identifier |
+| `isPresent` | boolean | Yes | Whether feature is present |
+| `position` | number? | No | Position within feature (e.g., #1 in local pack) |
+| `url` | string? | No | URL shown in feature |
+| `title` | string? | No | Title shown in feature |
+| `snippet` | string? | No | Snippet text (for featured snippets) |
+
+**SERPFeatureDetection Interface:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `keywordId` | number | Keyword being analyzed |
+| `rankingId` | number | Ranking record ID |
+| `features` | SERPFeature[] | Array of detected features |
+| `detectedAt` | Date | Detection timestamp |
+
+### Constants
+
+**SERP_FEATURE_META:**
+Metadata for each SERP feature type including name, icon, description, and CTR impact.
+
+| Feature Type | Name | Icon | CTR Impact |
+|--------------|------|------|------------|
+| `featured_snippet` | Featured Snippet | 🏆 | +30-50% |
+| `local_pack` | Local Pack | 📍 | High for local |
+| `image_pack` | Image Pack | 🖼️ | Visual attraction |
+| `video` | Video Result | 🎬 | High engagement |
+| `people_also_ask` | People Also Ask | ❓ | Secondary visibility |
+| `knowledge_panel` | Knowledge Panel | 📋 | Brand authority |
+| `sitelinks` | Sitelinks | 🔗 | +20-30% |
+| `reviews` | Reviews/Ratings | ⭐ | +10-15% |
+| `faq` | FAQ Rich Result | 📝 | Increased visibility |
+| `product` | Product Listing | 🛒 | Shopping intent |
+
+**ALL_FEATURE_TYPES:**
+Frozen array containing all 10 feature types for iteration and validation.
+
+### Model Class: SERPFeatureModel
+
+**Constructor:** Validates input and creates model instance with type coercion.
+
+**Methods:**
+| Method | Description |
+|--------|-------------|
+| `toObject()` | Serialize to plain object (omits undefined fields) |
+| `toJSON()` | Serialize to JSON string |
+| `static fromJSON(json)` | Deserialize from JSON string |
+| `static isValidType(type)` | Validate SERPFeatureType |
+| `static getAllTypes()` | Get all feature types array |
+| `static getMeta(type)` | Get metadata for feature type |
+
+### Helper Functions
+
+| Function | Description |
+|----------|-------------|
+| `isValidFeatureType(type)` | Check if string is valid SERPFeatureType |
+| `getFeatureMeta(type)` | Get metadata object for feature type |
+| `validateSERPFeature(feature)` | Validate SERPFeature interface |
+| `validateSERPFeatureDetection(detection)` | Validate SERPFeatureDetection interface |
+
+### Error Classes
+
+| Class | Description |
+|-------|-------------|
+| `SERPFeatureValidationError` | Thrown for invalid feature data |
+| `SERPFeatureParseError` | Thrown for JSON parsing failures |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Prototype Pollution | Protected against via Object.create(null) |
+| Constants Immutability | Objects frozen with Object.freeze() |
+| Input Validation | Type checking in constructor and validators |
+| Position Validation | Negative values rejected with error |
+
+### Technical Implementation
+- File: `backend/src/models/serp-feature.js`
+- Exports: Named exports (no default)
+- Dependencies: None (standalone module)
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| serp-feature-types.test.js | 106 | - |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Type Validation | 16 | SERPFeatureType validation |
+| Interface Validation | 24 | SERPFeature, SERPFeatureDetection |
+| Constants | 28 | SERP_FEATURE_META, ALL_FEATURE_TYPES |
+| Model Class | 20 | Serialization, deserialization |
+| Edge Cases | 11 | Boundary values, Unicode, special chars |
+| Security | 7 | Prototype pollution, immutability |
+
+### Production Status
+- **Deployed**: 2026-02-28 (GitHub Actions run 22518531946)
+- **Health Check**: Passing
+- **Tests**: 106/106 passing
+- **Status**: Complete
+
+### Dependencies
+- None (pure TypeScript/JavaScript definitions)
+
+### Related Tasks
+- TASK-7-1: Database schema for SERP features
+- TASK-7-3: SERP feature repository
+- TASK-7-4: SERP feature detector service
+
+---
 ## Comparison Engine Service (TASK-3-5)
 
 ### Service Description
