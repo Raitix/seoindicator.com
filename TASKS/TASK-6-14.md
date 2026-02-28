@@ -1,7 +1,7 @@
 # TASK-6-14: Webhook Dispatcher Service
 
 ## Status
-`To Test Locally`
+`Testing Locally`
 
 ## Priority
 `High`
@@ -59,7 +59,7 @@ X-SEOIndicator-Timestamp: <unix_timestamp>
 - [x] Delivery logging
 - [x] Timeout handling
 - [x] Unit tests
-- [ ] DispatchWebhookJob class created (TDD tests ready)
+- [x] DispatchWebhookJob class created
 
 ## Dependencies
 - TASK-6-12 (Webhooks schema)

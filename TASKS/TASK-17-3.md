@@ -1,7 +1,6 @@
 # TASK-17-3: Frontend - OnboardingProvider, Modal, and Wizard Shell
 
-## STATUS
-`To Prioritize`
+## STATUS`n`To Write Tests`
 
 ## PRIORITY
 `High`
