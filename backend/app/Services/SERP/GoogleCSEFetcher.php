@@ -126,7 +126,7 @@ class GoogleCSEFetcher implements SERPFetcherInterface
         }
 
         return Http::timeout(30)
-            ->retry(2, 1000)
+            ->retry(2, 1000, throw: false)
             ->get(self::API_URL, $params);
     }
 
@@ -187,13 +187,19 @@ class GoogleCSEFetcher implements SERPFetcherInterface
     ): SERPResult {
         $statusCode = $response->status();
         $errorData = $response->json();
-        $errorMessage = $errorData['error']['message'] ?? "HTTP {$statusCode}";
+        
+        // Extract error message from Google API response format
+        $errorMessage = $errorData['error']['message'] 
+            ?? $errorData['error']['errors'][0]['message'] 
+            ?? $errorData['error'] 
+            ?? "HTTP {$statusCode}";
 
         // Determine error type
+        $errorMessageLower = strtolower($errorMessage);
         $errorType = match (true) {
             $statusCode === 429 => self::ERROR_RATE_LIMITED,
-            $statusCode === 403 && str_contains($errorMessage, 'quota') => self::ERROR_QUOTA_EXCEEDED,
-            $statusCode === 400 && str_contains($errorMessage, 'API key') => self::ERROR_INVALID_CREDENTIALS,
+            $statusCode === 403 && str_contains($errorMessageLower, 'quota') => self::ERROR_QUOTA_EXCEEDED,
+            $statusCode === 400 && str_contains($errorMessageLower, 'api key') => self::ERROR_INVALID_CREDENTIALS,
             default => self::ERROR_API_ERROR,
         };
 

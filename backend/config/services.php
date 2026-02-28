@@ -55,4 +55,19 @@ return [
         ]),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Google Custom Search API
+    |--------------------------------------------------------------------------
+    |
+    | Credentials for Google Custom Search JSON API (free tier: 100 queries/day).
+    | Create a Custom Search Engine at: https://programmablesearchengine.google.com/
+    | Get API key from: https://console.cloud.google.com/apis/credentials
+    |
+    */
+    'google_cse' => [
+        'api_key' => env('GOOGLE_CSE_API_KEY'),
+        'search_engine_id' => env('GOOGLE_CSE_ID'),
+    ],
+
 ];
