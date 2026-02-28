@@ -1,7 +1,7 @@
 # FEAT-012: Google Search Console Integration
 
 ## STATUS
-`To Break Into Tasks`
+`In Progress`
 
 ## PRIORITY
 `Medium`
