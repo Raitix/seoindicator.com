@@ -300,7 +300,7 @@ class PWAAnalysisRepositoryTest extends TestCase
     {
         $site = Site::factory()->create();
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(\InvalidArgumentException::class);
 
         $this->repository->create([
             'site_id' => $site->id,

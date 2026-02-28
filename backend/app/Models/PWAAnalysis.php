@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -160,5 +161,95 @@ class PWAAnalysis extends Model
             && $this->manifest_valid
             && $this->hasAllRequiredFields()
             && $this->icons_192_present;
+    }
+
+    // ==========================================
+    // Scopes
+    // ==========================================
+
+    /**
+     * Scope to filter by site ID.
+     */
+    public function scopeForSite(Builder $query, int $siteId): Builder
+    {
+        return $query->where('site_id', $siteId);
+    }
+
+    /**
+     * Scope to filter analyses with manifest.
+     */
+    public function scopeWithManifest(Builder $query): Builder
+    {
+        return $query->where('has_manifest', true);
+    }
+
+    /**
+     * Scope to filter analyses without manifest.
+     */
+    public function scopeWithoutManifest(Builder $query): Builder
+    {
+        return $query->where('has_manifest', false);
+    }
+
+    /**
+     * Scope to filter by readiness level.
+     */
+    public function scopeByReadinessLevel(Builder $query, string $level): Builder
+    {
+        return $query->where('readiness_level', $level);
+    }
+
+    /**
+     * Scope to filter by minimum PWA score.
+     */
+    public function scopeMinScore(Builder $query, int $minScore): Builder
+    {
+        return $query->where('pwa_score', '>=', $minScore);
+    }
+
+    // ==========================================
+    // Accessors
+    // ==========================================
+
+    /**
+     * Get manifest fields as structured data.
+     *
+     * @return array<string, array{present: bool, value: mixed}>
+     */
+    public function getManifestFieldsAttribute(): array
+    {
+        $manifest = $this->manifest_json ?? [];
+        
+        $fields = [
+            'name' => ['present' => $this->has_name, 'value' => $manifest['name'] ?? null],
+            'short_name' => ['present' => $this->has_short_name, 'value' => $manifest['short_name'] ?? null],
+            'start_url' => ['present' => $this->has_start_url, 'value' => $manifest['start_url'] ?? null],
+            'display' => ['present' => $this->has_display, 'value' => $manifest['display'] ?? null],
+            'background_color' => ['present' => $this->has_background_color, 'value' => $manifest['background_color'] ?? null],
+            'theme_color' => ['present' => $this->has_theme_color, 'value' => $manifest['theme_color'] ?? null],
+            'description' => ['present' => $this->has_description, 'value' => $manifest['description'] ?? null],
+        ];
+
+        return $fields;
+    }
+
+    /**
+     * Get icon validation summary.
+     *
+     * @return array<string, mixed>
+     */
+    public function getIconSummaryAttribute(): array
+    {
+        return [
+            'total' => $this->icons_total,
+            'valid' => $this->icons_valid,
+            'validity_ratio' => $this->getIconValidityRatio(),
+            'required' => [
+                '192x192' => ['present' => $this->icons_192_present],
+                '512x512' => ['present' => $this->icons_512_present],
+                '180x180' => ['present' => $this->icons_180_present],
+            ],
+            'errors' => $this->icon_errors ?? [],
+        ];
     }
 }
