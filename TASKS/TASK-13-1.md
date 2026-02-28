@@ -1,7 +1,7 @@
 # TASK-13-1: Create Backlink Summaries Table
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
