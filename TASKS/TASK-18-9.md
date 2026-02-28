@@ -1,7 +1,6 @@
 # TASK-18-9: URLChecker - URL Structure Indicator
 
-## STATUS
-`To Write Tests`
+## STATUS`n`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
@@ -42,3 +41,10 @@ Implement indicator checker for URL structure analysis: HTTPS, length, keywords,
 ## Comments
 ### [2026-02-28] SpecSystemAnalyst
 Created from SPEC-018 Section 4.3.1. First indicator checker implementation.
+
+
+### [2026-02-28] PreTester
+**Test Coverage Designed:**
+- Created TEST-TASK-18-9.md with comprehensive test scenarios
+- Tests cover all acceptance criteria
+- Status: **Tests Written, Awaiting Implementation**
