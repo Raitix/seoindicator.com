@@ -200,6 +200,9 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::get('projects/{projectId}/gsc', [GSCDataController::class, 'index']);
     Route::get('projects/{projectId}/gsc/opportunities', [GSCDataController::class, 'opportunities']);
 
+    // Backlinks Overview (TASK-23-9, SPEC-023)
+    Route::get('projects/{projectId}/backlinks', [\App\Http\Controllers\Api\V1\Backlinks\BacklinkController::class, 'index']);
+
     // Backlinks History & Sync (TASK-23-11, SPEC-023)
     Route::get('projects/{projectId}/backlinks/history', [\App\Http\Controllers\Api\V1\Backlinks\BacklinkHistoryController::class, 'index']);
     Route::post('projects/{projectId}/backlinks/sync', [\App\Http\Controllers\Api\V1\Backlinks\BacklinkSyncController::class, 'store']);
