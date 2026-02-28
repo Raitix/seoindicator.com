@@ -1,7 +1,7 @@
 # TASK-19-2: AnalysisJob and AnalysisJobResult Models
 
 ## STATUS
-`Testing Locally`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -13,15 +13,15 @@
 Create Eloquent models for AnalysisJob and AnalysisJobResult with relationships, accessors, and scopes.
 
 ## Acceptance Criteria
-- [ ] AnalysisJob model with fillable: user_id, site_id, status, total_indicators, completed_indicators, failed_indicators, progress_percent, started_at, completed_at, cancelled_at, error_message
-- [ ] AnalysisJobResult model with fillable: job_id, indicator_slug, indicator_name, status, score, max_score, percentage, data, recommendations, error_message, started_at, completed_at, processing_time_ms
-- [ ] Relationships:
+- [x] AnalysisJob model with fillable: user_id, site_id, status, total_indicators, completed_indicators, failed_indicators, progress_percent, started_at, completed_at, cancelled_at, error_message
+- [x] AnalysisJobResult model with fillable: job_id, indicator_slug, indicator_name, status, score, max_score, percentage, data, recommendations, error_message, started_at, completed_at, processing_time_ms
+- [x] Relationships:
   - AnalysisJob belongsTo User, belongsTo Site, hasMany AnalysisJobResult
   - AnalysisJobResult belongsTo AnalysisJob
-- [ ] Status scopes: pending(), running(), completed(), cancelled(), failed()
-- [ ] Progress accessor: calculates percentage based on completed/total
-- [ ] Duration accessor: calculates time elapsed from started_at to completed_at
-- [ ] Cast JSON columns (data, recommendations) to array
+- [x] Status scopes: pending(), running(), completed(), cancelled(), failed()
+- [x] Progress accessor: calculates percentage based on completed/total
+- [x] Duration accessor: calculates time elapsed from started_at to completed_at
+- [x] Cast JSON columns (data, recommendations) to array
 
 ## Dependencies
 - TASK-19-1 (Database migration must be complete)
@@ -57,3 +57,26 @@ Created models with full functionality:
 - `database/factories/AnalysisJobResultFactory.php`
 
 All model tests pass via `php artisan model:show`.
+
+### [2026-02-28 20:10 GMT+2] Agent: LocalTester
+**Local Testing Complete - PASSED**
+
+**Tests Run:**
+- `AnalysisJobTest.php` - 36 tests
+- `AnalysisJobResultTest.php` - 34 tests
+- `CreateAnalysisJobsTablesTest.php` - 62 tests
+
+**Total: 132 tests, 286 assertions - ALL PASSED**
+
+**Fixes Applied:**
+1. Added default attribute values to `AnalysisJob` model:
+   - `status => 'pending'`, `total_indicators => 0`, `completed_indicators => 0`, `failed_indicators => 0`
+2. Added default attribute values to `AnalysisJobResult` model:
+   - `status => 'pending'`
+3. Fixed `progress_percent` accessor to return stored value if set, otherwise calculate dynamically
+4. Updated `AnalysisJobFactory` to not set `progress_percent` by default, allowing accessor to calculate dynamically
+
+**Files Modified:**
+- `backend/app/Models/AnalysisJob.php` - Added `$attributes` defaults, fixed accessor
+- `backend/app/Models/AnalysisJobResult.php` - Added `$attributes` defaults
+- `backend/database/factories/AnalysisJobFactory.php` - Removed `progress_percent` from default state
