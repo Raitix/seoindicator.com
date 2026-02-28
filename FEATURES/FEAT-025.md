@@ -1,7 +1,7 @@
 # FEAT-025: User Accounts + Dashboard + Analysis History
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`

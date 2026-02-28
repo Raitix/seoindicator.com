@@ -84,7 +84,11 @@ class HtmlParserService
      */
     private function extractTitle(Crawler $crawler): ?string
     {
-        $title = $crawler->filter('title')->first()->text('');
+        $node = $crawler->filter('title')->first();
+        if ($node->count() === 0) {
+            return null;
+        }
+        $title = $node->text('');
         return $this->cleanText($title);
     }
 
@@ -256,9 +260,13 @@ class HtmlParserService
         // Try to get body content, fallback to full document
         $body = $bodyCrawler->filter('body');
         if ($body->count() === 0) {
+            // No body tag, use the full document
             $body = $bodyCrawler;
-        } else {
-            $body = $body;
+        }
+
+        // Check if we have any content at all
+        if ($body->count() === 0) {
+            return '';
         }
 
         // Remove script and style elements

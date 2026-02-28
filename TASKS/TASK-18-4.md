@@ -1,7 +1,7 @@
 # TASK-18-4: DomainValidatorService
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -63,3 +63,20 @@ Created from SPEC-018 Section 10.2. Critical for safe domain processing.
 - ValidationException with error codes required
 
 **Status:** Tests written, ready for Developer implementation.
+
+### [2026-02-28] PreTester
+**Integration Tests Created:** backend/tests/Feature/Services/DomainValidatorServiceIntegrationTest.php (45+ test methods)
+
+**Integration Test Coverage:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Accessibility (AC) | 12 | HTTP status codes, redirects, DNS failures |
+| Redirect Limits (RL) | 8 | 1-3 redirects, loop detection, cross-domain |
+| Timeout (TO) | 3 | Fast/slow responses, custom timeout |
+| Return Values (RV) | 5 | Complete structure, error codes |
+| Error Handling (EH) | 4 | Rate limit, SSRF, redirect errors |
+| Integration (INT) | 3 | URLValidationService integration |
+| Full Flow | 4 | End-to-end validation scenarios |
+
+**Total Tests:** 115+ test methods across unit + integration
+**Status:** All tests complete, ready for Developer implementation.
