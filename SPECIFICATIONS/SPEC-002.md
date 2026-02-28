@@ -1,7 +1,7 @@
 # SPEC-002: Ranking Change Alerts - Technical Specification
 
 ## STATUS
-`To Develop`
+`Done`
 
 ## PRIORITY
 `High`
