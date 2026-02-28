@@ -1,233 +1,259 @@
-# TEST-18-3: IndicatorCheckerInterface and Base Classes
+# TEST-18-3: IndicatorCheckerInterface and Base Classes Tests
 
-## Task Reference
-- **Task:** TASK-18-3
-- **Feature:** FEAT-018 (Legacy 17-Indicator SEO Analysis Core Engine)
-- **Status:** Tests Coverage In Progress
+## Test Scope
+Unit tests for the core interface and base classes that establish the contract for all 17 SEO indicator checkers.
 
 ---
 
-## Overview
-Tests for the core interface and base classes that establish the contract for all 17 indicator checkers. Tests cover DTOs, enums, interface compliance, and base class functionality.
+## Files to Test
+
+| File | Type | Description |
+|------|------|-------------|
+| `IndicatorCheckerInterface.php` | Interface | Contract for all indicator checkers |
+| `IndicatorResult.php` | DTO | Immutable result object (EXISTS) |
+| `Suggestion.php` | DTO | Immutable suggestion object |
+| `BaseIndicatorChecker.php` | Abstract Class | Base class with common utilities |
+| `IndicatorCategory.php` | Enum | Category enumeration |
+| `IndicatorScore.php` | Enum/Constants | 1-3 star score constants |
 
 ---
 
 ## Test Files
 
-| File | Type | Tests | Assertions |
-|------|------|-------|------------|
-| `backend/tests/Unit/Services/SEO/Checkers/IndicatorCheckerInterfaceTest.php` | Unit | 15+ | 30+ |
-| `backend/tests/Unit/Services/SEO/Checkers/IndicatorResultTest.php` | Unit | 20+ | 40+ |
-| `backend/tests/Unit/Services/SEO/Checkers/SuggestionTest.php` | Unit | 15+ | 30+ |
-| `backend/tests/Unit/Services/SEO/Checkers/BaseIndicatorCheckerTest.php` | Unit | 20+ | 40+ |
-| `backend/tests/Unit/Enums/IndicatorCategoryTest.php` | Unit | 10+ | 20+ |
-| `backend/tests/Unit/Enums/IndicatorScoreTest.php` | Unit | 10+ | 20+ |
+| Test File | Location |
+|-----------|----------|
+| `IndicatorResultTest.php` | `tests/Unit/Services/SEO/Checkers/` (EXISTS) |
+| `SuggestionTest.php` | `tests/Unit/Services/SEO/Checkers/` (EXISTS) |
+| `IndicatorCheckerInterfaceTest.php` | `tests/Unit/Services/SEO/Checkers/` |
+| `BaseIndicatorCheckerTest.php` | `tests/Unit/Services/SEO/Checkers/` |
+| `IndicatorCategoryTest.php` | `tests/Unit/Services/SEO/Checkers/` |
+| `IndicatorScoreTest.php` | `tests/Unit/Services/SEO/Checkers/` |
 
 ---
 
 ## Test Scenarios
 
-### IndicatorCheckerInterface Tests
+### 1. IndicatorResult DTO (EXISTS - 18 tests)
 
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| IC-01 | Interface defines id() | Reflection | Method exists with string return |
-| IC-02 | Interface defines name() | Reflection | Method exists with string return |
-| IC-03 | Interface defines category() | Reflection | Method exists with string return |
-| IC-04 | Interface defines weight() | Reflection | Method exists with float return |
-| IC-05 | Interface defines check() | Reflection | Method exists with IndicatorResult return |
-| IC-06 | Interface defines getSuggestions() | Reflection | Method exists with array return |
-| IC-07 | Implementation returns correct types | Concrete implementation | All methods return correct types |
-| IC-08 | Weight range validation | weight() = 0.08 | Float between 0.0 and 1.0 |
-| IC-09 | Category valid value | category() = 'content' | Valid enum value |
-| IC-10 | Check accepts Crawler | check($crawler, $url) | Method accepts DomCrawler |
-
-### IndicatorResult DTO Tests
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| IR-01 | Create with all fields | Valid constructor | DTO created |
-| IR-02 | Immutable - cannot modify | Try to set property | Error/exception |
-| IR-03 | getId() returns string | getId() | Indicator ID |
-| IR-04 | getName() returns string | getName() | Indicator name |
-| IR-05 | getCategory() returns string | getCategory() | Category enum value |
-| IR-06 | getScore() returns int | getScore() | 1-3 |
-| IR-07 | getWeight() returns float | getWeight() | 0.0-1.0 |
-| IR-08 | getPassed() returns bool | getPassed() | Boolean |
-| IR-09 | getDetails() returns array | getDetails() | Array of details |
-| IR-10 | hasSuggestions() returns bool | hasSuggestions() | Boolean |
-| IR-11 | toArray() serializes correctly | toArray() | Array representation |
-| IR-12 | toJson() serializes correctly | toJson() | JSON string |
-| IR-13 | fromArray() creates DTO | fromArray($data) | New DTO instance |
-| IR-14 | Score 3 = Excellent | score=3 | isExcellent() = true |
-| IR-15 | Score 2 = Good | score=2 | isGood() = true |
-| IR-16 | Score 1 = Poor | score=1 | isPoor() = true |
-| IR-17 | Score 0 = N/A | score=0 | isNotApplicable() = true |
-| IR-18 | Invalid score rejected | score=4 | Exception/error |
-| IR-19 | Empty details allowed | details=[] | Valid DTO |
-| IR-20 | Large details array | details with 100 items | Valid DTO |
-
-### Suggestion DTO Tests
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| SG-01 | Create with all fields | Valid constructor | DTO created |
-| SG-02 | Immutable - cannot modify | Try to set property | Error/exception |
-| SG-03 | getType() returns string | getType() | 'warning', 'error', 'info' |
-| SG-04 | getMessage() returns string | getMessage() | Suggestion text |
-| SG-05 | getAction() returns string | getAction() | Action text |
-| SG-06 | getPriority() returns int | getPriority() | Priority level |
-| SG-07 | toArray() serializes correctly | toArray() | Array representation |
-| SG-08 | toJson() serializes correctly | toJson() | JSON string |
-| SG-09 | fromArray() creates DTO | fromArray($data) | New DTO instance |
-| SG-10 | Type validation - warning | type='warning' | Valid |
-| SG-11 | Type validation - error | type='error' | Valid |
-| SG-12 | Type validation - info | type='info' | Valid |
-| SG-13 | Invalid type rejected | type='invalid' | Exception/error |
-| SG-14 | Empty message rejected | message='' | Exception/error |
-| SG-15 | Optional action field | action=null | Valid DTO |
-
-### IndicatorCategory Enum Tests
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| CA-01 | Content category exists | IndicatorCategory::Content | 'content' |
-| CA-02 | Technical category exists | IndicatorCategory::Technical | 'technical' |
-| CA-03 | Accessibility category exists | IndicatorCategory::Accessibility | 'accessibility' |
-| CA-04 | Performance category exists | IndicatorCategory::Performance | 'performance' |
-| CA-05 | All categories count | count(cases) | 4 |
-| CA-06 | Label method | ->label() | Human-readable label |
-| CA-07 | Color method | ->color() | Hex color code |
-| CA-08 | Icon method | ->icon() | Icon identifier |
-| CA-09 | Weight sum = 1.0 | Sum of all weights | 1.0 (approximately) |
-| CA-10 | Try from valid string | from('content') | Enum instance |
-
-### IndicatorScore Enum/Constants Tests
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| SC-01 | Score EXCELLENT = 3 | Score::EXCELLENT | 3 |
-| SC-02 | Score GOOD = 2 | Score::GOOD | 2 |
-| SC-03 | Score POOR = 1 | Score::POOR | 1 |
-| SC-04 | Score NOT_APPLICABLE = 0 | Score::NOT_APPLICABLE | 0 |
-| SC-05 | Label for each score | Score::EXCELLENT->label() | 'Excellent' |
-| SC-06 | Color for each score | Score::EXCELLENT->color() | Green hex |
-| SC-07 | Validation - valid score | isValid(2) | true |
-| SC-08 | Validation - invalid score | isValid(5) | false |
-| SC-09 | Try from valid int | from(3) | Enum instance |
-| SC-10 | Try from invalid int | from(5) | Exception |
-
-### BaseIndicatorChecker Tests
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| BC-01 | Implements interface | Instance check | Implements IndicatorCheckerInterface |
-| BC-02 | Abstract - cannot instantiate | new BaseIndicatorChecker() | Error |
-| BC-03 | extractTitle() helper | HTML with title | Title text |
-| BC-04 | extractTitle() - no title | HTML without title | null |
-| BC-05 | extractMetaDescription() helper | HTML with meta | Description text |
-| BC-06 | extractMetaDescription() - no meta | HTML without meta | null |
-| BC-07 | extractH1s() helper | HTML with H1s | Array of H1 texts |
-| BC-08 | extractH1s() - no H1s | HTML without H1s | Empty array |
-| BC-09 | extractImages() helper | HTML with images | Array of image data |
-| BC-10 | extractLinks() helper | HTML with links | Array of link data |
-| BC-11 | normalizeUrl() helper | URL string | Normalized URL |
-| BC-12 | isHttps() helper | URL string | Boolean |
-| BC-13 | getUrlLength() helper | URL string | Integer |
-| BC-14 | countKeywords() helper | Text, keywords | Integer count |
-| BC-15 | createResult() helper | Score, details | IndicatorResult instance |
-| BC-16 | createSuggestion() helper | Type, message | Suggestion instance |
-| BC-17 | calculateScore() helper | Criteria array | Score 1-3 |
-| BC-18 | validateUrl() helper | URL string | Boolean |
-| BC-19 | getUrlPath() helper | URL string | Path segment |
-| BC-20 | hasKeywordInUrl() helper | URL, keywords | Boolean |
+| ID | Scenario | Expected Result |
+|----|----------|-----------------|
+| IR-001 | Create with all fields | All properties accessible |
+| IR-002 | DTO is immutable | Error on property modification |
+| IR-003 | Score 3 returns "Excellent" | getScoreLabel() = "Excellent" |
+| IR-004 | Score 2 returns "Good" | getScoreLabel() = "Good" |
+| IR-005 | Score 1 returns "Poor" | getScoreLabel() = "Poor" |
+| IR-006 | Score 0 returns "N/A" | getScoreLabel() = "N/A" |
+| IR-007 | Invalid score (4) throws exception | InvalidArgumentException |
+| IR-008 | Negative score throws exception | InvalidArgumentException |
+| IR-009 | Weight validation (0.0-1.0) | Valid range accepted |
+| IR-010 | Weight outside range throws exception | InvalidArgumentException |
+| IR-011 | toArray() serialization | All fields present |
+| IR-012 | toJson() serialization | Valid JSON output |
+| IR-013 | fromArray() deserialization | Creates valid DTO |
+| IR-014 | Empty details allowed | Empty array accepted |
+| IR-015 | Large details array | 100+ items handled |
+| IR-016 | isExcellent() helper | Returns true for score 3 |
+| IR-017 | isGood() helper | Returns true for score 2 |
+| IR-018 | isPoor() helper | Returns true for score 1 |
 
 ---
 
-## Mock Data
+### 2. Suggestion DTO (EXISTS - 18 tests)
 
-### Valid IndicatorResult
-```php
-[
-    'id' => 'url',
-    'name' => 'URL Structure',
-    'category' => 'technical',
-    'score' => 3,
-    'weight' => 0.08,
-    'passed' => true,
-    'details' => [
-        'urlLength' => 35,
-        'hasKeywords' => true,
-        'isHttps' => true,
-    ],
-]
-```
-
-### Valid Suggestion
-```php
-[
-    'type' => 'warning',
-    'message' => 'Title tag is too short.',
-    'action' => 'Add more descriptive text.',
-    'priority' => 2,
-]
-```
+| ID | Scenario | Expected Result |
+|----|----------|-----------------|
+| SG-001 | Create with all fields | All properties accessible |
+| SG-002 | DTO is immutable | Error on property modification |
+| SG-003 | Type "warning" is valid | Accepted |
+| SG-004 | Type "error" is valid | Accepted |
+| SG-005 | Type "info" is valid | Accepted |
+| SG-006 | Invalid type throws exception | InvalidArgumentException |
+| SG-007 | Empty message throws exception | InvalidArgumentException |
+| SG-008 | Optional action field (null) | Accepted |
+| SG-009 | Default priority is 1 | Priority defaults to 1 |
+| SG-010 | toArray() serialization | All fields present |
+| SG-011 | toJson() serialization | Valid JSON output |
+| SG-012 | fromArray() deserialization | Creates valid DTO |
+| SG-013 | isWarning() helper | Returns true for type "warning" |
+| SG-014 | isError() helper | Returns true for type "error" |
+| SG-015 | isInfo() helper | Returns true for type "info" |
+| SG-016 | Priority validation (1-3) | Valid range accepted |
+| SG-017 | Invalid priority throws exception | InvalidArgumentException |
+| SG-018 | Long message handling | 1000+ chars accepted |
 
 ---
 
-## Coverage Targets
+### 3. IndicatorCheckerInterface (15 tests)
 
-| Category | Target | Description |
-|----------|--------|-------------|
-| Interface Compliance | 100% | All interface methods |
-| DTO Immutability | 100% | Cannot modify after creation |
-| Enum Values | 100% | All cases covered |
-| Base Class Helpers | 90% | All helper methods |
-| Validation | 100% | Invalid inputs rejected |
-| Serialization | 100% | toArray/toJson works |
+| ID | Scenario | Expected Result |
+|----|----------|-----------------|
+| IC-001 | Interface defines id() method | Returns string |
+| IC-002 | Interface defines name() method | Returns string |
+| IC-003 | Interface defines category() method | Returns string |
+| IC-004 | Interface defines weight() method | Returns float 0.0-1.0 |
+| IC-005 | Interface defines check() method | Returns IndicatorResult |
+| IC-006 | Interface defines getSuggestions() method | Returns array of Suggestion |
+| IC-007 | Mock implementation works | All methods callable |
+| IC-008 | check() accepts Crawler and URL | Correct signature |
+| IC-009 | check() accepts optional options array | Options parameter |
+| IC-010 | Multiple implementations can coexist | Independent instances |
+| IC-011 | Interface can be type-hinted | Works as type declaration |
+| IC-012 | Implementation returns correct result type | IndicatorResult returned |
+| IC-013 | Implementation returns correct suggestions type | Suggestion[] returned |
+| IC-014 | Weight must be declared per implementation | Different weights allowed |
+| IC-015 | Category must be valid | Valid category string |
 
 ---
 
-## Test Execution
+### 4. BaseIndicatorChecker Abstract Class (25 tests)
 
-```bash
-# Run interface tests
-php artisan test --filter=IndicatorCheckerInterfaceTest
+| ID | Scenario | Expected Result |
+|----|----------|-----------------|
+| BC-001 | Abstract class implements interface | Interface contract satisfied |
+| BC-002 | Abstract methods: id(), name(), category(), weight() | Must be implemented by subclass |
+| BC-003 | Abstract method: performCheck() | Must be implemented by subclass |
+| BC-004 | Concrete method: check() calls performCheck() | Template method pattern |
+| BC-005 | Concrete method: getSuggestions() | Default implementation returns empty array |
+| BC-006 | Protected helper: createResult() | Creates IndicatorResult correctly |
+| BC-007 | Protected helper: createSuggestion() | Creates Suggestion correctly |
+| BC-008 | Protected helper: extractText() | Extracts text from DOM |
+| BC-009 | Protected helper: extractAttribute() | Extracts attribute from DOM |
+| BC-010 | Protected helper: extractAllWithAttributes() | Batch extraction |
+| BC-011 | Protected helper: countElements() | Counts DOM elements |
+| BC-012 | Protected helper: query() | XPath query on DOM |
+| BC-013 | Protected property: $defaultScore | Default score fallback |
+| BC-014 | Protected property: $defaultWeight | Default weight fallback |
+| BC-015 | Constructor validates dependencies | Dependencies injected |
+| BC-016 | check() returns IndicatorResult | Correct return type |
+| BC-017 | check() handles exceptions gracefully | Returns error result |
+| BC-018 | check() logs errors | Error logging enabled |
+| BC-019 | getSuggestions() receives IndicatorResult | Parameter type correct |
+| BC-020 | createResult() sets all required fields | Complete result object |
+| BC-021 | createResult() validates score | Score in valid range |
+| BC-022 | createResult() validates weight | Weight in valid range |
+| BC-023 | Abstract class is not instantiable directly | Cannot create instance |
+| BC-024 | Subclass can override default methods | Override capability |
+| BC-025 | Template method pattern works correctly | Correct execution order |
 
-# Run DTO tests
-php artisan test --filter=IndicatorResultTest
-php artisan test --filter=SuggestionTest
+---
 
-# Run enum tests
-php artisan test --filter=IndicatorCategoryTest
-php artisan test --filter=IndicatorScoreTest
+### 5. IndicatorCategory Enum (12 tests)
 
-# Run base class tests
-php artisan test --filter=BaseIndicatorCheckerTest
+| ID | Scenario | Expected Result |
+|----|----------|-----------------|
+| CA-001 | Enum has CONTENT case | 'content' value |
+| CA-002 | Enum has TECHNICAL case | 'technical' value |
+| CA-003 | Enum has ACCESSIBILITY case | 'accessibility' value |
+| CA-004 | Enum has PERFORMANCE case | 'performance' value |
+| CA-005 | fromValue() creates correct enum | Returns correct case |
+| CA-006 | tryFromValue() returns null for invalid | Returns null |
+| CA-007 | values() returns all categories | Array of all values |
+| CA-008 | label() returns human-readable | Readable labels |
+| CA-009 | Enum is backed by string | String-backed enum |
+| CA-010 | All cases have unique values | No duplicates |
+| CA-011 | Total of 4 categories | Exactly 4 cases |
+| CA-012 | Can iterate over all cases | foreach works |
 
-# Run all checker tests
-php artisan test --filter=Indicator
-```
+---
+
+### 6. IndicatorScore Enum/Constants (15 tests)
+
+| ID | Scenario | Expected Result |
+|----|----------|-----------------|
+| SC-001 | NOT_APPLICABLE = 0 | Score 0 |
+| SC-002 | POOR = 1 | Score 1 |
+| SC-003 | GOOD = 2 | Score 2 |
+| SC-004 | EXCELLENT = 3 | Score 3 |
+| SC-005 | isValid(0) returns true | 0 is valid |
+| SC-006 | isValid(1) returns true | 1 is valid |
+| SC-007 | isValid(2) returns true | 2 is valid |
+| SC-008 | isValid(3) returns true | 3 is valid |
+| SC-009 | isValid(4) returns false | 4 is invalid |
+| SC-010 | isValid(-1) returns false | Negative is invalid |
+| SC-011 | getLabel(0) returns "N/A" | Correct label |
+| SC-012 | getLabel(1) returns "Poor" | Correct label |
+| SC-013 | getLabel(2) returns "Good" | Correct label |
+| SC-014 | getLabel(3) returns "Excellent" | Correct label |
+| SC-015 | getLabel() throws for invalid | InvalidArgumentException |
+
+---
+
+## Edge Cases
+
+| ID | Scenario | Expected Behavior |
+|----|----------|-------------------|
+| EC-001 | Empty URL in check() | Returns error result |
+| EC-002 | Null DOM in check() | Returns error result |
+| EC-003 | Malformed HTML | Graceful handling |
+| EC-004 | Unicode in suggestions | Preserved correctly |
+| EC-005 | Very long suggestion message | Truncation or handling |
+| EC-006 | Circular reference in details | JSON serialization safe |
+| EC-007 | Binary data in details | Handled gracefully |
+| EC-008 | Maximum weight (1.0) | Accepted |
+| EC-009 | Minimum weight (0.0) | Accepted |
+| EC-010 | Zero weight calculation | No contribution to score |
+
+---
+
+## Security Tests
+
+| ID | Scenario | Expected Behavior |
+|----|----------|-------------------|
+| SEC-001 | XSS in suggestion message | Escaped in output |
+| SEC-002 | SQL injection in details | Not executed (array) |
+| SEC-003 | Script tag in URL | Sanitized/rejected |
+| SEC-004 | Excessive array depth in details | Depth limit enforced |
+| SEC-005 | Memory exhaustion in large details | Memory limit handled |
+
+---
+
+## Total Test Count
+
+| Component | Tests |
+|-----------|-------|
+| IndicatorResult DTO | 18 |
+| Suggestion DTO | 18 |
+| IndicatorCheckerInterface | 15 |
+| BaseIndicatorChecker | 25 |
+| IndicatorCategory Enum | 12 |
+| IndicatorScore Enum | 15 |
+| Edge Cases | 10 |
+| Security | 5 |
+| **TOTAL** | **118** |
 
 ---
 
 ## Dependencies
-- None (foundation task)
+
+- PHP 8.2+ (readonly properties, enums)
+- PHPUnit 10+
+- Symfony DomCrawler
 
 ---
 
-## Notes for Developer
-- Use PHP 8.2+ readonly properties for DTOs
-- Use PHP 8.1+ backed enums for categories and scores
-- DTOs should implement JsonSerializable
-- Base class should be abstract with protected helper methods
-- Consider using readonly classes for immutability
+## Run Commands
+
+```bash
+# Run all tests for this task
+php artisan test tests/Unit/Services/SEO/Checkers/
+
+# Run specific test file
+php artisan test tests/Unit/Services/SEO/Checkers/IndicatorResultTest.php
+
+# Run with coverage
+php artisan test --coverage tests/Unit/Services/SEO/Checkers/
+```
 
 ---
 
-## Comments
+## Status
+- [x] IndicatorResult DTO (EXISTS)
+- [x] Suggestion DTO tests (EXISTS)
+- [ ] IndicatorCheckerInterface tests (TO CREATE)
+- [ ] BaseIndicatorChecker tests (TO CREATE)
+- [ ] IndicatorCategory tests (TO CREATE)
+- [ ] IndicatorScore tests (TO CREATE)
 
-### [2026-02-28] PreTester
-- Test documentation created
-- 80+ test scenarios covering interface, DTOs, enums, base class
-- Ready for test implementation
+---
+
+*Test documentation created by PreTester agent for TASK-18-3.*
