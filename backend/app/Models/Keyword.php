@@ -95,6 +95,15 @@ class Keyword extends Model
     }
 
     /**
+     * Permanently delete the keyword from the database.
+     * This bypasses the soft-delete and triggers foreign key cascades.
+     */
+    public function forceDelete(): bool|null
+    {
+        return parent::delete();
+    }
+
+    /**
      * Get the site that owns this keyword.
      */
     public function site(): BelongsTo

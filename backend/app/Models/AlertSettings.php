@@ -23,6 +23,16 @@ class AlertSettings extends Model
 {
     use HasFactory;
 
+    /**
+     * The model's default values for attributes.
+     */
+    protected $attributes = [
+        'global_enabled' => true,
+        'default_threshold' => 3,
+        'digest_mode' => 'instant',
+        'serp_feature_alerts_enabled' => true,
+    ];
+
     protected $fillable = [
         'user_id',
         'global_enabled',
