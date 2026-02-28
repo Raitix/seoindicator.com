@@ -3,7 +3,7 @@
 ## Task Reference
 - **Task:** TASK-18-6
 - **Feature:** FEAT-018 (Legacy 17-Indicator SEO Analysis Core Engine)
-- **Status:** Tests Coverage In Progress
+- **Status:** To Develop
 
 ---
 
