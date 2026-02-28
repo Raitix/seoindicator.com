@@ -12152,3 +12152,203 @@ Comprehensive unit test coverage for backend services, including CaptchaService,
 - TASK-1-19: E2E Tests for Critical Flows
 
 ---
+
+---
+## PWA Analyses Table (TASK-24-1)
+
+### Service Description
+Database migration for storing PWA (Progressive Web App) manifest analysis results. Foundation table for the PWA Indicator feature (FEAT-024), enabling caching of manifest validation data, icon checks, and PWA readiness scores.
+
+### Database Schema
+
+```sql
+CREATE TABLE pwa_analyses (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    site_id BIGINT UNSIGNED NOT NULL,
+    has_manifest TINYINT(1) DEFAULT 0,
+    manifest_valid TINYINT(1) DEFAULT 0,
+    manifest_url VARCHAR(500) NULL,
+    manifest_json JSON NULL,
+    
+    -- Field presence flags
+    has_name TINYINT(1) DEFAULT 0,
+    has_short_name TINYINT(1) DEFAULT 0,
+    has_start_url TINYINT(1) DEFAULT 0,
+    has_display TINYINT(1) DEFAULT 0,
+    has_background_color TINYINT(1) DEFAULT 0,
+    has_theme_color TINYINT(1) DEFAULT 0,
+    has_description TINYINT(1) DEFAULT 0,
+    
+    -- Icon validation
+    icons_total INT UNSIGNED DEFAULT 0,
+    icons_valid INT UNSIGNED DEFAULT 0,
+    icons_192_present TINYINT(1) DEFAULT 0,
+    icons_512_present TINYINT(1) DEFAULT 0,
+    icons_180_present TINYINT(1) DEFAULT 0,
+    icon_errors JSON NULL,
+    
+    -- Overall score
+    pwa_score TINYINT UNSIGNED DEFAULT 0,
+    readiness_level ENUM('none', 'basic', 'enhanced', 'full') DEFAULT 'none',
+    
+    -- Metadata
+    analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+    INDEX idx_site_analyzed (site_id, analyzed_at),
+    INDEX idx_pwa_score (pwa_score)
+);
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id |
+| `has_manifest` | TINYINT(1) | Whether manifest.json was found |
+| `manifest_valid` | TINYINT(1) | Whether manifest JSON is valid |
+| `manifest_url` | VARCHAR(500) | URL of the manifest file |
+| `manifest_json` | JSON | Full manifest content (nullable) |
+| `has_name` | TINYINT(1) | Manifest has 'name' field |
+| `has_short_name` | TINYINT(1) | Manifest has 'short_name' field |
+| `has_start_url` | TINYINT(1) | Manifest has 'start_url' field |
+| `has_display` | TINYINT(1) | Manifest has 'display' field |
+| `has_background_color` | TINYINT(1) | Manifest has 'background_color' field |
+| `has_theme_color` | TINYINT(1) | Manifest has 'theme_color' field |
+| `has_description` | TINYINT(1) | Manifest has 'description' field |
+| `icons_total` | INT UNSIGNED | Total number of icons in manifest |
+| `icons_valid` | INT UNSIGNED | Number of accessible icons |
+| `icons_192_present` | TINYINT(1) | 192x192 icon present (Android required) |
+| `icons_512_present` | TINYINT(1) | 512x512 icon present (Android splash) |
+| `icons_180_present` | TINYINT(1) | 180x180 icon present (iOS) |
+| `icon_errors` | JSON | Array of icon validation errors |
+| `pwa_score` | TINYINT UNSIGNED | PWA readiness score (0-100) |
+| `readiness_level` | ENUM | Level: 'none', 'basic', 'enhanced', 'full' |
+| `analyzed_at` | TIMESTAMP | When analysis was performed |
+
+### Indexes
+
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `idx_site_analyzed` | site_id, analyzed_at | Lookup by site with recency |
+| `idx_pwa_score` | pwa_score | Sort/filter by PWA score |
+
+### Foreign Keys
+
+| Constraint | Columns | References | On Delete |
+|------------|---------|------------|-----------|
+| `pwa_analyses_site_id_foreign` | site_id | sites.id | CASCADE |
+
+### PWAAnalysis Model
+
+**Model:** `backend/app/Models/PWAAnalysis.php`
+
+**Fillable Attributes:**
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `site_id` | int | FK to sites.id |
+| `has_manifest` | bool | Whether manifest found |
+| `manifest_valid` | bool | Whether manifest is valid JSON |
+| `manifest_url` | string? | URL of manifest file |
+| `manifest_json` | array? | Parsed manifest content |
+| `has_name` | bool | Has 'name' field |
+| `has_short_name` | bool | Has 'short_name' field |
+| `has_start_url` | bool | Has 'start_url' field |
+| `has_display` | bool | Has 'display' field |
+| `has_background_color` | bool | Has 'background_color' field |
+| `has_theme_color` | bool | Has 'theme_color' field |
+| `has_description` | bool | Has 'description' field |
+| `icons_total` | int | Total icon count |
+| `icons_valid` | int | Valid icon count |
+| `icons_192_present` | bool | 192x192 icon present |
+| `icons_512_present` | bool | 512x512 icon present |
+| `icons_180_present` | bool | 180x180 icon present |
+| `icon_errors` | array? | Icon error details |
+| `pwa_score` | int | Score 0-100 |
+| `readiness_level` | string | Enum: none/basic/enhanced/full |
+| `analyzed_at` | Carbon | Analysis timestamp |
+
+**Model Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `manifest_json` | `array` (JSON) |
+| `icon_errors` | `array` (JSON) |
+| `has_*` (boolean fields) | `boolean` |
+
+**Model Relationships:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `site()` | belongsTo | The site this analysis belongs to |
+
+**Model Helper Methods:**
+| Method | Return | Description |
+|--------|--------|-------------|
+| `hasAllRequiredFields()` | bool | Checks name, short_name, start_url, display |
+| `hasAllRequiredIcons()` | bool | Checks 192x192 and 512x512 icons |
+| `getIconValidityRatio()` | float | Ratio of valid to total icons (0.0-1.0) |
+| `isInstallable()` | bool | True if has manifest, valid, and required icons |
+
+### Readiness Levels
+
+| Level | Score Range | Description |
+|-------|-------------|-------------|
+| `none` | 0-39 | No manifest or critically incomplete |
+| `basic` | 40-69 | Manifest present with basic fields |
+| `enhanced` | 70-89 | Most fields and icons present |
+| `full` | 90-100 | Complete PWA with all recommended elements |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Protection | JSON columns stored as parameterized queries |
+| Mass Assignment | Model `$fillable` whitelist |
+| Foreign Key | CASCADE delete ensures data integrity |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CreatePwaAnalysesTableTest.php` | 33 | 89 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Schema Structure | 11 | All columns with correct types and defaults |
+| Foreign Key Constraints | 3 | FK to sites.id with CASCADE delete |
+| Indexes | 3 | Composite index (site_id, analyzed_at), pwa_score index |
+| Enum Validation | 4 | readiness_level ENUM values (none, basic, enhanced, full) |
+| Migration Rollback | 2 | Reversible migration verified |
+| JSON Handling | 4 | manifest_json and icon_errors columns |
+| Score Range Validation | 3 | pwa_score 0-100 range |
+| Security Tests | 3 | SQL injection, XSS, large JSON handling |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-01 (commit via GitHub Actions run 22530412420) |
+| **Migration** | `2026_03_01_000001_create_pwa_analyses_table.php` |
+| **Health Check** | Passing |
+| **Tests** | 33/33 passing (89 assertions) |
+| **Status** | Complete |
+
+### Dependencies
+
+- TASK-16-1 (Tools infrastructure - URL validation, SSRF protection)
+- sites table (existing)
+
+### Related Tasks
+
+- TASK-24-2: PWAAnalysis Model and Repository
+- TASK-24-3: ManifestFetcherService
+- TASK-24-4: ManifestValidatorService
+- TASK-24-5: IconValidatorService
+- TASK-24-6: PWAScorerService
+- TASK-24-7: PWASuggestionService
+- TASK-24-8: PWA Analysis API Endpoints
+- FEAT-024: PWA / Web App Manifest Indicator
