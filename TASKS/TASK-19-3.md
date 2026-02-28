@@ -1,7 +1,7 @@
 # TASK-19-3: AnalysisJobService - Core Operations
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`

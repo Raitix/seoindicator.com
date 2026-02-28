@@ -1,7 +1,7 @@
 # TASK-19-2: AnalysisJob and AnalysisJobResult Models
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`

@@ -1,6 +1,7 @@
 # TASK-17-4: Step 1 - Website URL Input Component
 
-## STATUS`n`To Test Locally`
+## STATUS
+`Done`
 
 ## PRIORITY
 `High`

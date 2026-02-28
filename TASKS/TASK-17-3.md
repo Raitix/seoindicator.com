@@ -1,6 +1,7 @@
 # TASK-17-3: Frontend - OnboardingProvider, Modal, and Wizard Shell
 
-## STATUS`n`To Test Locally`
+## STATUS
+`Done`
 
 ## PRIORITY
 `High`

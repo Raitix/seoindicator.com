@@ -1,6 +1,7 @@
 # TASK-17-6: Step 5 - Completion Summary Component
 
-## STATUS`n`To Test Locally`
+## STATUS
+`Done`
 
 ## PRIORITY
 `High`

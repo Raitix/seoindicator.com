@@ -1,7 +1,7 @@
 # TASK-19-5: IndicatorProcessor Base Class
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
