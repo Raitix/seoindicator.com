@@ -1,7 +1,7 @@
 # FEAT-19: Progressive Analysis & Job System
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -60,3 +60,37 @@ Task breakdown completed: 16 tasks created.
 
 High-risk tasks: TASK-19-7 (Queue concurrency), TASK-19-15 (SSRF protection)
 Status: → To Prioritize
+
+### [2026-02-28] Agent: ProjectManager
+Prioritization completed. All 16 tasks updated to status `To Write Tests`.
+
+**Priority Breakdown:**
+- **High Priority (8 tasks):** Core foundation and security-critical
+  - TASK-19-1: Database Migration (foundation)
+  - TASK-19-2: Models (foundation)
+  - TASK-19-3: AnalysisJobService (core business logic)
+  - TASK-19-4: Job CRUD API (exposes services)
+  - TASK-19-5: IndicatorProcessor Base (foundation for indicators)
+  - TASK-19-6: Core Indicators (core functionality)
+  - TASK-19-7: Queue Worker (HIGH RISK - concurrency)
+  - TASK-19-15: SSRF Protection (HIGH RISK - security)
+- **Medium Priority (8 tasks):** UI and polish
+  - TASK-19-8: Progress Tracking
+  - TASK-19-9: SSE Endpoint
+  - TASK-19-10: Polling Endpoint
+  - TASK-19-11: Frontend Progress Bar
+  - TASK-19-12: Frontend Results Table
+  - TASK-19-13: Error Handling
+  - TASK-19-14: Rate Limiting
+  - TASK-19-16: Tests
+
+**Execution Order Recommendation:**
+1. TASK-19-1 → 19-2 → 19-3 → 19-4 (sequential foundation)
+2. TASK-19-5 → 19-6 (indicator processors)
+3. TASK-19-8 → 19-7 (progress + queue worker)
+4. TASK-19-15 (SSRF protection - security review required)
+5. TASK-19-9 → 19-10 → 19-11 → 19-12 (frontend)
+6. TASK-19-13 → 19-14 (polish)
+7. TASK-19-16 (final validation)
+
+Status: → To Write Tests

@@ -1,7 +1,7 @@
 # TASK-19-4: Job CRUD API Endpoints
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`

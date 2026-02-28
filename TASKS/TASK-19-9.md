@@ -1,7 +1,7 @@
 # TASK-19-9: SSE Stream Endpoint
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`

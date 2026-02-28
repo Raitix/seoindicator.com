@@ -1,7 +1,7 @@
 # TASK-19-8: Progress Tracking and Updates
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
