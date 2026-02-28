@@ -21,15 +21,15 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained()->onDelete('cascade');
             
-            // Snapshot metrics
-            $table->unsignedInteger('total_backlinks')->default(0);
-            $table->unsignedInteger('referring_domains_count')->default(0);
-            $table->unsignedInteger('dofollow_count')->default(0);
-            $table->unsignedInteger('nofollow_count')->default(0);
+            // Snapshot metrics (nullable for corrupted/incomplete data handling)
+            $table->unsignedInteger('total_backlinks')->nullable()->default(0);
+            $table->unsignedInteger('referring_domains_count')->nullable()->default(0);
+            $table->unsignedInteger('dofollow_count')->nullable()->default(0);
+            $table->unsignedInteger('nofollow_count')->nullable()->default(0);
             
             // Quality scores (DECIMAL(5,2) = 0.00 to 999.99)
             $table->decimal('avg_domain_trust', 5, 2)->nullable();
-            $table->decimal('anchor_diversity_score', 5, 2)->default(0.00);
+            $table->decimal('anchor_diversity_score', 5, 2)->nullable()->default(0.00);
             
             // Snapshot date
             $table->date('snapshot_date');
