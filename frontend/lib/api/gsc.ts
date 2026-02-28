@@ -1,6 +1,6 @@
 // GSC API Service for TASK-12-10
 
-import { GSCDataResponse, GSCOpportunitiesResponse, GSCTrendResponse, DateRange } from '@/lib/types/gsc';
+import { GSCDataResponse, GSCOpportunitiesResponse, GSCTrendResponse, DateRange, GSCPropertiesResponse, GSCConnectRequest, GSCConnectResponse, GSCDisconnectResponse } from '@/lib/types/gsc';
 
 const API_BASE = '/api';
 
@@ -65,6 +65,66 @@ export async function fetchGSCOpportunities(
   }
 
   return response.json();
+}
+
+// GSC Connection API for TASK-12-9
+
+/**
+ * Fetch connected GSC properties for current user
+ */
+export async function fetchGSCProperties(): Promise<GSCPropertiesResponse> {
+  const response = await fetch(`${API_BASE}/gsc/properties`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch GSC properties: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Connect a GSC property using OAuth authorization code
+ */
+export async function connectGSCProperty(data: GSCConnectRequest): Promise<GSCConnectResponse> {
+  const response = await fetch(`${API_BASE}/gsc/connect`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || `Failed to connect GSC property: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Disconnect a GSC property
+ */
+export async function disconnectGSCProperty(propertyId: number): Promise<GSCDisconnectResponse> {
+  const response = await fetch(`${API_BASE}/gsc/disconnect/${propertyId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.message || `Failed to disconnect GSC property: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Get Google OAuth authorization URL
+ */
+export function getGSCOAuthUrl(): string {
+  // The backend will redirect to Google OAuth
+  // After authorization, Google redirects back to our callback
+  return `${API_BASE}/gsc/oauth/redirect`;
 }
 
 /**
