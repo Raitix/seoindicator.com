@@ -1,7 +1,7 @@
 # SPEC-019: Progressive Analysis & Job System
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
