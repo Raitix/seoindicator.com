@@ -1,7 +1,7 @@
 # TASK-19-9: SSE Stream Endpoint
 
 ## STATUS
-`Testing Prod`
+`To Document`
 
 ## PRIORITY
 `Medium`
