@@ -1,7 +1,7 @@
 # TASK-23-4: Backlink Sync Command and Job
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -92,3 +92,29 @@ class SyncBacklinksJob implements ShouldQueue
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-28 21:33] Agent: ProjectManager
+**Prioritization Complete**
+
+- **Priority Confirmed**: `High` — Foundation task enabling the backlink sync pipeline. Required for scoring engine (TASK-23-7) and API endpoints (TASK-23-10, TASK-23-11)
+- **Risk**: `Medium` — External API integration via GSC, queued job processing with chunking, retry logic required
+- **Dependencies Verified**:
+  - TASK-23-2 (Backlink Models): `To Write Tests` — Models required for data persistence
+  - TASK-23-3 (GSC Backlink Fetcher): `To Write Tests` — Fetcher required for data retrieval
+
+**Dependency Chain for SPEC-023 (Sync Layer):**
+```
+TASK-23-1 (Migrations) ──→ TASK-23-2 (Models) ──┬──→ TASK-23-4 (Sync Job) ──→ TASK-23-5 (Scoring)
+                                                 │
+TASK-23-3 (GSC Service) ────────────────────────┘
+```
+
+**Execution Order**: TASK-23-4 must wait for both TASK-23-2 and TASK-23-3 to reach `To Test Locally` or later before starting development.
+
+**Technical Notes**:
+- Uses Laravel queue system with `ShouldQueue` and `Batchable`
+- Chunked processing prevents memory issues with large backlink datasets
+- Progress bar for CLI monitoring during manual syncs
+- Error handling with retry logic for transient GSC API failures
+
+Handing off to PreTester for test design.
