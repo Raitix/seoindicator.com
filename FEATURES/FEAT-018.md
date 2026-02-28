@@ -1,7 +1,7 @@
 # FEAT-018: Legacy 17-Indicator SEO Analysis (Core Engine)
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -46,6 +46,19 @@ As a user, I want to enter a domain and get a clear SEO score with actionable is
 **Task Breakdown:** 36 tasks across 6 phases (see SPEC-018.md Section 10).
 
 **Handoff to SpecSystemAnalyst:** Ready for task breakdown. Each indicator checker should be its own task for granular testing.
+
+### SpecSystemAnalyst (2026-02-28)
+**Task Breakdown Complete:** Created 36 tasks (TASK-18-1 through TASK-18-36).
+
+**Phases:**
+1. Infrastructure (3 tasks) - Database, model, interfaces
+2. Core Services (5 tasks) - Domain validation, HTML fetcher, analysis runner, scoring, suggestions
+3. Indicator Checkers (17 tasks) - All 17 SEO indicators
+4. API Layer (3 tasks) - Controller, PDF export, rate limiting
+5. Frontend (4 tasks) - Form, dashboard, components, PDF download
+6. Testing & Polish (4 tasks) - Unit tests, integration tests, frontend tests, performance
+
+**Status:** Ready for ProjectManager prioritization.
 
 ---
 *Created by Lead from individual user request (legacy migration).*
