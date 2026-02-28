@@ -1,7 +1,7 @@
 # TASK-9-1: Create Annotations Table
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -164,3 +164,21 @@ Task for database schema creation to support keyword annotations.
 - ✅ No data exposure vulnerabilities
 
 **Status:** Ready for documentation update.
+
+### [2026-02-28 11:43] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+**Documentation Updates:**
+- Added `## Database Schema: Annotations Table (TASK-9-1)` section to DOCUMENTATION.md
+- Documented full table schema with all columns, constraints, and indexes
+- Documented Annotation model: relationships, scopes, factory states
+- Documented all 8 annotation categories with icons
+- Documented security implementation and test coverage
+- Added production status and dependencies
+
+**Task Status:**
+- Status updated to `Done`
+- All acceptance criteria met
+- 39 tests passing (90 assertions)
+
+**Note:** Other tasks in SPEC-009 (TASK-9-2 through TASK-9-10) are still in progress. Specification cannot be closed until all tasks complete.

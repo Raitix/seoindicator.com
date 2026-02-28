@@ -1,7 +1,7 @@
 # SPEC-019: Progressive Analysis & Job System
 
 ## STATUS
-`Specification In Progress`
+`To Prioritize`
 
 ## PRIORITY
 `High`
