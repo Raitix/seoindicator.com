@@ -1,7 +1,7 @@
 # TASK-24-3: ManifestFetcherService
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -60,3 +60,42 @@ Created task for manifest fetching. Core service that discovers and retrieves ma
 - **Security:** Reuses URL validation service from TASK-16-1 for SSRF protection
 
 Status updated to `To Write Tests`. Ready for PreTester to create test cases for manifest fetching scenarios.
+
+### [2026-03-01 00:45 GMT+2] Agent: PreTester
+**Test Coverage Complete**
+
+Created comprehensive test suite for ManifestFetcherService:
+
+**Test Documentation:** `tests/SPEC-24-3.md`
+**Test Implementation:** `backend/tests/Unit/Services/ManifestFetcherServiceTest.php`
+
+**Test Categories (51 tests):**
+1. **fetch() Method (10 tests):** Main entry point for fetching manifests
+   - Success, no manifest link, invalid JSON, timeout, size limit, HTML failure, null/empty URL, HTTP error, complete manifest with icons
+2. **extractManifestUrl() Method (10 tests):** HTML parsing for manifest link
+   - Standard link, alternate order, additional attributes, no link, multiple links, absolute URL, protocol-relative, query params, empty href
+3. **resolveManifestUrl() Method (8 tests):** URL resolution logic
+   - Relative path, subdirectory, absolute URL, protocol-relative, port, query string, fragment, null input
+4. **Cross-Origin Handling (5 tests):** CDN and cross-origin manifests
+5. **SSRF Protection (7 tests):** Security validation using URLValidationService
+   - Localhost, private IP, cloud metadata, decimal IP, hex IP, file protocol blocked
+6. **Manifest Content Validation (6 tests):** JSON parsing and structure
+   - Empty object, minimal manifest, Unicode handling
+7. **Edge Cases (8 tests):** Malformed input, BOM, JSONP, etc.
+   - Self-closing tag, multiple links, whitespace, HTML entities, BOM, JSONP
+
+**Key Dependencies:**
+- URLValidationService for SSRF protection (TASK-16-1)
+- HtmlFetcherService for HTTP requests (TASK-18-5)
+- Symfony DomCrawler for HTML parsing
+
+**Security Focus:** All SSRF tests are High priority. The service MUST reuse URLValidationService for all URL validations.
+
+**Implementation Requirements:**
+- 30 second timeout for total fetch (HTML + manifest)
+- 10KB max manifest size
+- BOM stripping for UTF-8 manifests
+- Warning log (not error) for missing manifests
+- Cross-origin manifest URLs allowed (after SSRF validation)
+
+Status updated to `To Develop`. Ready for Developer to implement the service.
