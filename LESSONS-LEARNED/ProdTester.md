@@ -68,3 +68,11 @@ Last updated: 2026-02-28
 - DevOps deployment notes valuable for verification
 - Run tests locally when production data unavailable
 - SERP feature filtering API (`?serpFeature=...`) confirms integration
+
+---
+
+## 2026-02-28: TASK-1-19 E2E Tests
+- Production validation can rely on CI/CD test results when GitHub Actions passes
+- Smoke tests verify: health check, frontend accessibility, API authentication, security
+- Playwright tests in CI/CD are equivalent to local test execution
+- 404 on some frontend routes is expected (protected routes, static export routing)

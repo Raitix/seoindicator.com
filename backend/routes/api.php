@@ -191,9 +191,10 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
         ->only(['index', 'store', 'show', 'update', 'destroy']);
 
     // Issue Type Management (TASK-14-3)
+    // Note: categories route must be before apiResource to avoid being matched by show
+    Route::get('issue-types/categories', [IssueTypeController::class, 'categories']);
     Route::apiResource('issue-types', IssueTypeController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
-    Route::get('issue-types/categories', [IssueTypeController::class, 'categories']);
 
     // GSC Data (TASK-12-8)
     Route::get('projects/{projectId}/gsc', [GSCDataController::class, 'index']);
