@@ -1,20 +1,17 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OnboardingProvider, useOnboarding } from '../OnboardingProvider';
-import * as api from '@/lib/api';
 
 // Mock the API module
-jest.mock('@/lib/api', () => ({
-  onboardingApi: {
-    getProgress: jest.fn(),
-    start: jest.fn(),
-    updateStep: jest.fn(),
-    complete: jest.fn(),
-    skip: jest.fn(),
-  },
+jest.mock('@/lib/api/onboarding', () => ({
+  useOnboarding: jest.fn(),
+  startOnboarding: jest.fn(),
+  updateOnboardingStep: jest.fn(),
+  completeOnboarding: jest.fn(),
+  skipOnboarding: jest.fn(),
 }));
 
-const mockedApi = api as jest.Mocked<typeof api>;
+const mockedApi = require('@/lib/api/onboarding');
 
 // Test component to access context
 const TestComponent = () => {

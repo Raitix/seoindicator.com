@@ -52,6 +52,16 @@ Last updated: 2026-02-28
 
 ---
 
+## 2026-02-28: TASK-4-19 Report Delivery
+- ReportDelivery service is auto-resolved via Laravel DI (no explicit binding needed)
+- Email validation uses PHP's FILTER_VALIDATE_EMAIL - secure and reliable
+- File size threshold for attachments: 10MB (constant in service)
+- Delivery status tracking: 'pending', 'sent', 'partial', 'failed'
+- Unsubscribe token uses hash('sha256', report_id + site_id + app.key)
+- All report-related endpoints require authentication (401 for unauthenticated)
+
+---
+
 ## 2026-02-27: TASK-7-8 SERP Feature Change Tracker
 - Health endpoint reliable for verifying production status
 - SSH access may be unavailable - use API testing as fallback
