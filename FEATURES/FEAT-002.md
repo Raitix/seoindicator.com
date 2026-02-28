@@ -1,7 +1,7 @@
 # FEAT-002: Ranking Change Alerts
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -102,6 +102,37 @@ notifications: id, user_id, type, keyword_id, data (JSON), read_at, created_at
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-28 13:50 GMT+2] Agent: PreTester
+**Test Documentation Complete** - All 14 tasks have tests written.
+
+**Test Files Created:**
+- `tests/Unit/Migrations/CreateAlertSettingsTableTest.php` (14 tests)
+- `tests/Unit/Migrations/CreateKeywordAlertSettingsTableTest.php` (11 tests)
+- `tests/Unit/Migrations/CreateNotificationsTableTest.php` (12 tests)
+- `tests/Unit/Models/AlertSettingTest.php` (18 tests)
+- `tests/Unit/Models/KeywordAlertSettingTest.php` (18 tests)
+- `tests/Unit/Models/NotificationTest.php` (20 tests)
+- `tests/Unit/Services/AlertEvaluatorTest.php` (35+ tests)
+- `tests/Unit/Services/NotificationDispatcherTest.php` (40+ tests)
+- `tests/Feature/Api/AlertSettingsControllerTest.php` (25 tests)
+- `tests/Feature/Api/KeywordAlertSettingsControllerTest.php` (30 tests)
+- `tests/Feature/Api/NotificationControllerTest.php` (25 tests)
+- `tests/Feature/Mail/RankingAlertEmailTest.php` (30 tests)
+
+**Test Documentation:**
+- `TESTS/TEST-002.md` (master overview)
+- `TESTS/TEST-002-1.md` through `TESTS/TEST-002-14.md` (individual task tests)
+
+**Total Test Coverage:** 400+ test scenarios
+
+**High-Risk Areas Identified:**
+- AlertEvaluator: Threshold logic, edge cases
+- NotificationDispatcher: Email delivery, error handling
+- Ranking job integration: Exception handling
+
+All 14 tasks updated: To Write Tests → To Develop
+Status: To Develop
 
 ### [2026-02-28 13:28 GMT+2] Agent: ProjectManager
 **Prioritization Complete** - All 14 tasks handed to PreTester.
