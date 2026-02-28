@@ -2922,6 +2922,157 @@ CREATE TABLE projects (
 - TASK-8-10: Integration tests
 
 ---
+## Data Migration for Default Projects (TASK-8-3)
+
+### Service Description
+Database migration that creates default projects for existing users and assigns all legacy data (keywords, competitors, reports) to their respective default projects. Ensures backward compatibility when rolling out the multi-site project management feature.
+
+### Migration Files
+
+| Migration | Description |
+|-----------|-------------|
+| `2026_02_28_170000_add_project_id_to_tables.php` | Adds `project_id` column to keywords, competitors, reports, alert_settings |
+| `2026_02_28_170100_migrate_data_to_default_projects.php` | Creates default projects and migrates existing data |
+
+### Migration Steps
+
+**Step 1: Add project_id Columns**
+```sql
+ALTER TABLE keywords ADD COLUMN project_id BIGINT UNSIGNED NULL;
+ALTER TABLE competitors ADD COLUMN project_id BIGINT UNSIGNED NULL;
+ALTER TABLE reports ADD COLUMN project_id BIGINT UNSIGNED NULL;
+ALTER TABLE alert_settings ADD COLUMN project_id BIGINT UNSIGNED NULL;
+```
+
+**Step 2: Create Default Projects**
+```sql
+INSERT INTO projects (user_id, name, domain, is_default, created_at, updated_at)
+SELECT 
+    id AS user_id, 
+    'Default Project' AS name, 
+    NULL AS domain, 
+    TRUE AS is_default, 
+    NOW() AS created_at, 
+    NOW() AS updated_at
+FROM users;
+```
+
+**Step 3: Assign Existing Records**
+```sql
+UPDATE keywords k
+JOIN projects p ON p.user_id = k.user_id AND p.is_default = TRUE
+SET k.project_id = p.id;
+
+UPDATE competitors c
+JOIN projects p ON p.user_id = c.user_id AND p.is_default = TRUE
+SET c.project_id = p.id;
+
+UPDATE reports r
+JOIN projects p ON p.user_id = r.user_id AND p.is_default = TRUE
+SET r.project_id = p.id;
+```
+
+**Step 4: Apply NOT NULL Constraints**
+```sql
+ALTER TABLE keywords MODIFY project_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE competitors MODIFY project_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE reports MODIFY project_id BIGINT UNSIGNED NOT NULL;
+```
+
+### Database Changes
+
+**Tables Modified:**
+| Table | Change |
+|-------|--------|
+| `keywords` | Added `project_id BIGINT UNSIGNED NOT NULL` |
+| `competitors` | Added `project_id BIGINT UNSIGNED NOT NULL` |
+| `reports` | Added `project_id BIGINT UNSIGNED NOT NULL` |
+| `alert_settings` | Added `project_id BIGINT UNSIGNED NULL` (intentional - alerts can exist without project) |
+
+**Foreign Key Constraints:**
+- All `project_id` columns have FK to `projects.id` with `ON DELETE CASCADE`
+- Indexes created on all `project_id` columns for query optimization
+
+### Migration Safety Features
+
+| Feature | Implementation |
+|---------|----------------|
+| Idempotent | Safe to run multiple times |
+| Transaction Wrapping | Atomic rollback on failure |
+| Driver Detection | MySQL/MariaDB vs SQLite compatibility |
+| Chunked Processing | Large dataset handling (100 records/batch) |
+| Audit Logging | `Log::info()` for each step |
+
+### Rollback Support
+
+The migrations implement proper `down()` methods:
+1. Remove NOT NULL constraints
+2. Set `project_id` to NULL on all tables
+3. Default projects are preserved (not deleted on rollback)
+
+### Production Verification
+
+**Migration Batch:** 22
+
+**Verification Results:**
+| Metric | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| Default projects | = users | 1/1 | ✅ |
+| Keywords assigned | = total | 0/0 | ✅ |
+| Competitors assigned | = total | 0/0 | ✅ |
+| Reports assigned | = total | 3/3 | ✅ |
+
+**NOT NULL Constraints:**
+| Table | project_id Null | Status |
+|-------|-----------------|--------|
+| keywords | NO | ✅ |
+| competitors | NO | ✅ |
+| reports | NO | ✅ |
+| alert_settings | YES | ℹ️ Intentional (not in scope) |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `DataMigrationTest.php` | 74 passed, 6 skipped | 185 |
+| `DataMigrationRollbackTest.php` | 9 passed, 1 skipped | - |
+| `CreateDefaultProjectsMigrationTest.php` | 23 passed, 1 skipped | 29 |
+| **Total** | **106 passed, 8 skipped** | **214+** |
+
+**Test Categories:**
+- Default Project Creation (DP-001 to DP-010)
+- Keywords Assignment (KA-001 to KA-010)
+- Competitors Assignment (CA-001 to CA-008)
+- Reports Assignment (RA-001 to RA-008)
+- NOT NULL Constraint (NN-001 to NN-010)
+- Migration Safety (MS-001 to MS-010)
+- Edge Cases (EC-001 to EC-015)
+- Data Integrity (DI-001 to DI-008)
+
+### Production Status
+- **Deployed**: 2026-02-28 (commit via manual SSH deployment)
+- **Health Check**: Passing
+- **Tests**: 106/114 passing (8 skipped due to SQLite limitations)
+- **Status**: Complete
+
+### Known Issues
+
+| Issue | Status | Notes |
+|-------|--------|-------|
+| GitHub Actions SSH timeout | ⚠️ Known | Hostinger firewall blocks GitHub IPs; manual deployment workaround used |
+| SQLite NOT NULL tests | ℹ️ Skipped | SQLite limitation - tests pass on MySQL/MariaDB |
+
+### Dependencies
+- TASK-8-1 (Projects Table)
+- TASK-8-2 (Add project_id columns)
+
+### Related Tasks
+- TASK-8-1: Projects Table schema
+- TASK-8-2: Add project_id to existing tables
+- TASK-8-4: SetProjectContext middleware
+- TASK-8-7: Project CRUD API
+
+---
 ## Project Context Middleware (TASK-8-4)
 
 ### Service Description
