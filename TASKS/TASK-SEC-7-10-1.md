@@ -1,7 +1,7 @@
 # TASK-SEC-7-10-1: Move Routes to Authenticated Middleware Group
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`

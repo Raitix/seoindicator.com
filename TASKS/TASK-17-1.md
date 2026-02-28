@@ -1,6 +1,7 @@
 # TASK-17-1: Database Migration - User Onboarding Table
 
-## STATUS`n`To Write Tests`
+## STATUS
+`To Test Locally`
 
 ## PRIORITY
 `High`

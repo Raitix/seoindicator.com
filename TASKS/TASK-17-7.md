@@ -1,6 +1,6 @@
 # TASK-17-7: Progress Tracking Integration
 
-## STATUS`n`To Write Tests`
+## STATUS`n`To Test Locally`
 
 ## PRIORITY
 `High`
