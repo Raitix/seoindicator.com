@@ -1,7 +1,7 @@
 # TASK-18-5: HtmlFetcherService (with SSRF Protection)
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -13,17 +13,17 @@
 Create service to fetch HTML content from URLs with comprehensive SSRF protection, timeout handling, and caching.
 
 ## Acceptance Criteria
-- [ ] Fetches HTML content from validated URLs
-- [ ] SSRF protection using URLValidationService (private IPs, localhost, metadata endpoints blocked)
-- [ ] Timeout handling (30 second max)
-- [ ] Response size limit (10MB max)
-- [ ] Caches successful responses (1 hour TTL)
-- [ ] Handles SSL certificate errors gracefully
-- [ ] Handles redirects (max 5)
-- [ ] Returns HtmlFetcherResult with content, headers, timing
-- [ ] Proper error handling with specific error types
-- [ ] Content-Type validation (text/html only)
-- [ ] Unit tests with mocked HTTP responses
+- [x] Fetches HTML content from validated URLs
+- [x] SSRF protection using URLValidationService (private IPs, localhost, metadata endpoints blocked)
+- [x] Timeout handling (30 second max)
+- [x] Response size limit (10MB max)
+- [x] Caches successful responses (1 hour TTL)
+- [x] Handles SSL certificate errors gracefully
+- [x] Handles redirects (max 5)
+- [x] Returns HtmlFetcherResult with content, headers, timing
+- [x] Proper error handling with specific error types
+- [x] Content-Type validation (text/html only)
+- [x] Unit tests with mocked HTTP responses
 - [ ] Integration tests with real domains
 
 ## Dependencies
@@ -85,3 +85,25 @@ Created from SPEC-018 Section 10.2. HIGH RISK task - requires thorough security 
 - Content-Type validation (text/html only)
 
 **Status:** Tests complete. Ready for Developer implementation. HIGH RISK.
+
+### [2026-02-28 21:40 GMT+2] Developer
+**Implementation Complete.**
+
+**Files Created:**
+- `backend/app/Services/HtmlFetcherService.php`
+
+**Files Modified:**
+- `backend/tests/Unit/Services/HtmlFetcherServiceTest.php` (fixed line 108: invalid `Http::response()->timeout()` → `Http::failedConnection()`)
+
+**Test Results:**
+- 70 tests passed
+- 137 assertions
+- Duration: ~4 seconds
+
+**Key Implementation Details:**
+1. Disables Laravel's automatic redirect following to validate each redirect URL for SSRF
+2. Tracks cached URLs for efficient `clearAllCache()` implementation
+3. Comprehensive error codes: TIMEOUT, SSL_ERROR, CONNECTION_FAILED, BLOCKED_URL, BLOCKED_REDIRECT, BLOCKED_PROTOCOL, RESPONSE_TOO_LARGE, INVALID_CONTENT_TYPE, NOT_FOUND, FORBIDDEN, RATE_LIMITED, HTTP_ERROR
+4. Logs security-relevant blocked requests to 'security' channel
+
+**Status:** Ready for LocalTester. All acceptance criteria complete except integration tests with real domains (requires local testing environment).
