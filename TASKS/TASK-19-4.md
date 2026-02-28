@@ -1,7 +1,7 @@
 # TASK-19-4: Job CRUD API Endpoints
 
 ## STATUS
-`To Test Locally`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -72,3 +72,40 @@ Created REST API endpoints for job management:
 - `app/Http/Resources/Api/V1/AnalysisJobResultResource.php`
 
 Routes registered in `routes/api.php`.
+
+### [2026-02-28 14:08 GMT+2] Agent: DevOps
+**Starting Deployment**
+
+Task picked up for deployment. Will push to origin/main to trigger GitHub Actions pipeline.
+
+---
+
+### [2026-02-28 13:58 GMT+2] Agent: LocalTester
+**Local Testing Complete - All 43 Tests Pass**
+
+**Initial Test Failures (27 failed):**
+1. Missing `AnalysisJobResource` import in controller
+2. Resource used snake_case keys but tests expected camelCase
+3. Controller had `int` type hints on route params causing TypeErrors for non-numeric IDs
+4. Missing site ownership authorization checks (returned 422 instead of 403)
+5. Missing site existence checks (returned 422 instead of 404)
+6. Wrong status code for invalid state transitions (422 instead of 400)
+7. Rate limiting returned 422 instead of 429
+8. Missing `url_structure` indicator in service constant
+
+**Fixes Applied:**
+1. Added `use App\Http\Resources\Api\V1\AnalysisJobResource;` import
+2. Updated `AnalysisJobResource` to use camelCase keys (totalIndicators, progressPercent, etc.)
+3. Updated `AnalysisJobResultResource` to use camelCase keys
+4. Removed `int` type hints from route parameters, added manual validation with proper 404 responses
+5. Added site ownership checks returning 403 for unauthorized access
+6. Added site existence checks returning 404 for non-existent sites
+7. Changed invalid state transition response from 422 to 400
+8. Added rate limit detection to return 429 with Retry-After header
+9. Added `url_structure` indicator to `AnalysisJobService::INDICATORS`
+10. Fixed SQL injection test to include valid indicator alongside malicious one
+
+**Test Results:**
+- Tests: 43 passed
+- Assertions: 112 passed
+- All acceptance criteria verified
