@@ -4,14 +4,14 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-interface SwitchProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+interface SwitchProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
 }
 
-const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
-  ({ className, checked, onCheckedChange, disabled, ...props }, ref) => {
-    const handleClick = () => {
+const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
+  ({ className, checked = false, onCheckedChange, disabled, ...props }, ref) => {
+    const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
       if (!disabled && onCheckedChange) {
         onCheckedChange(!checked);
       }
@@ -19,6 +19,7 @@ const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
 
     return (
       <button
+        ref={ref}
         type="button"
         role="switch"
         aria-checked={checked}
