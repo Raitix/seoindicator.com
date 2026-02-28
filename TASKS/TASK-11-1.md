@@ -1,7 +1,7 @@
 # TASK-11-1: Create Team Members Table
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -56,3 +56,12 @@ Database task created to set up the team collaboration base.
 - **Execution Order:** 1st in SPEC-011 (Team Collaboration) - must be created before team member management features
 - Handed to PreTester for test design
 - Status: To Write Tests
+
+### [2026-02-28 15:15 GMT+2] Agent: PreTester
+**Tests Complete**
+- Created `CreateTeamMembersTableTest.php` (19 tests, migration validation)
+- Created `TeamMemberTest.php` (42 tests, model validation)
+- Total: 61 tests, all passing
+- Test IDs: TM-MT-001 to TM-MT-019, TM-MD-001 to TM-MD-042
+- Coverage: table structure, columns, constraints, relationships, role management, invitation lifecycle
+- Status: To Develop
