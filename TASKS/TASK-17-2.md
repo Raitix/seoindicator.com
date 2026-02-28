@@ -1,6 +1,6 @@
 # TASK-17-2: Backend - OnboardingService and Controller
 
-## STATUS`n`To Write Tests`
+## STATUS`n`To Test Locally`
 
 ## PRIORITY
 `High`
