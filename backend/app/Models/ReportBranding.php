@@ -28,6 +28,13 @@ class ReportBranding extends Model
     use HasFactory;
 
     /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'report_branding';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
