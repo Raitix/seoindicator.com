@@ -1,7 +1,7 @@
 # TASK-18-2: SEOAnalysis Model and Repository
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -64,3 +64,28 @@ Created from SPEC-018 Section 10.1. Model provides data access layer for analyse
 - Repository tests: 30+ test methods (CRUD, caching, pagination, stats, cleanup)
 - Factory: 10+ states for flexible test data generation
 - Status updated: `To Develop` — ready for Developer implementation
+
+### [2026-02-28] Developer
+**Implementation Complete:**
+- Created `backend/app/Models/SEOAnalysis.php`
+  - Model with explicit `$table = 'seo_analyses'` (required due to class naming SEOAnalysis -> s_e_o_analyses)
+  - Fillable: user_id, session_id, domain, normalized_url, overall_score, status, error_message, analysis_data, checked_at, expires_at
+  - Casts: analysis_data as array, timestamps as datetime, overall_score as integer
+  - Status constants: PENDING, RUNNING, COMPLETED, FAILED
+  - Relationship: belongsTo User
+  - Scopes: byStatus, byUser, bySession, expired, notExpired, forDomain, pending, completed, failed, recent
+  - Methods: markAsRunning, markAsCompleted, markAsFailed, isExpired, isPending, isRunning, isCompleted, isFailed
+  - Accessor: status_label
+- Updated `backend/app/Models/User.php`
+  - Added seoAnalyses() hasMany relationship
+- Created `backend/app/Repositories/SEOAnalysisRepository.php`
+  - CRUD: create, find, update, delete
+  - Query methods: findByDomain, findCached, findByUser, findBySession, getLatest, getPending, getExpired, findByDomainForUser, findCachedBySession
+  - Pagination: paginate()
+  - Stats: getStats(userId) - returns total, completed, failed, pending counts
+  - Maintenance: cleanupExpired() - deletes expired analyses
+  - Caching: Automatic caching on find(), cache invalidation on update/delete
+- **Test Results:**
+  - SEOAnalysisTest: 34 passed (61 assertions)
+  - SEOAnalysisRepositoryTest: 25 passed (43 assertions)
+- Status: **To Test Locally** — all tests pass, ready for QA
