@@ -1,7 +1,7 @@
 # FEAT-009: Keyword Annotations
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Low`

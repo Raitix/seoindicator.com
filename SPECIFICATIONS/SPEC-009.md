@@ -1,7 +1,7 @@
 # SPEC-009: Keyword Annotations - Technical Specification
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Low`

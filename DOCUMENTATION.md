@@ -1,6 +1,209 @@
 # DOCUMENTATION.md
 
 ---
+## Core Indicator Processors (TASK-19-6)
+
+### Service Description
+Four core SEO indicator processors that analyze HTML pages for common SEO issues. Each processor extends the `IndicatorProcessor` base class and returns structured results with scores, data, and actionable recommendations.
+
+### Processors Overview
+
+| Processor | Slug | Focus Area | Max Score |
+|-----------|------|------------|-----------|
+| MetaTagsProcessor | `meta_tags` | Title, meta description, Open Graph, Twitter Cards | 100 |
+| HeadingsProcessor | `headings` | H1-H6 structure, hierarchy validation | 100 |
+| ImagesProcessor | `images` | Alt text, lazy loading, format analysis | 100 |
+| LinksProcessor | `links` | Internal/external links, security, broken links | 100 |
+
+### MetaTagsProcessor
+
+**Analyzes:**
+- Title tag (presence, length 50-60 chars optimal)
+- Meta description (presence, length 150-160 chars optimal)
+- Open Graph tags (og:title, og:description, og:image, og:url, og:type)
+- Twitter Card tags (twitter:card, twitter:title, twitter:description, twitter:image)
+
+**Scoring Logic:**
+| Element | Points | Criteria |
+|---------|--------|----------|
+| Title tag | 25 | Presence (10), optimal length 50-60 chars (15) |
+| Meta description | 25 | Presence (10), optimal length 150-160 chars (15) |
+| Open Graph | 30 | og:title (6), og:description (6), og:image (6), og:url (6), og:type (6) |
+| Twitter Cards | 20 | twitter:card (5), twitter:title (5), twitter:description (5), twitter:image (5) |
+
+**Recommendations Generated:**
+- Missing title/meta description warnings
+- Length optimization suggestions
+- Missing Open Graph/Twitter Card tags
+
+**Example Result:**
+```json
+{
+  "indicator": "meta_tags",
+  "status": "completed",
+  "score": 85,
+  "max_score": 100,
+  "percentage": 85,
+  "data": {
+    "title": { "present": true, "content": "Example Page", "length": 12 },
+    "description": { "present": true, "content": "...", "length": 155 },
+    "open_graph": { "og:title": true, "og:description": true, "og:image": false }
+  },
+  "recommendations": [
+    "Add og:image tag for better social sharing"
+  ]
+}
+```
+
+### HeadingsProcessor
+
+**Analyzes:**
+- H1 presence and uniqueness (single H1 required)
+- H1-H6 heading structure
+- Heading hierarchy validation (no skipped levels)
+- Empty heading detection
+
+**Scoring Logic:**
+| Element | Points | Criteria |
+|---------|--------|----------|
+| H1 presence | 40 | Single H1 exists (40), multiple H1s (20), no H1 (0) |
+| Hierarchy | 30 | No skipped levels (30), minor issues (15), major issues (0) |
+| Content quality | 30 | No empty headings (15), meaningful H1 content (15) |
+
+**Data Output:**
+```json
+{
+  "data": {
+    "h1": { "count": 1, "content": ["Main Heading"] },
+    "h2": { "count": 3, "content": ["Section 1", "Section 2", "Section 3"] },
+    "hierarchy_valid": true,
+    "outline": [
+      { "level": 1, "text": "Main Heading" },
+      { "level": 2, "text": "Section 1" }
+    ]
+  }
+}
+```
+
+### ImagesProcessor
+
+**Analyzes:**
+- Total image count
+- Alt text presence and quality
+- Large images (>500KB) without lazy loading
+- Image format analysis (modern vs legacy)
+- Decorative image handling
+
+**Scoring Logic:**
+| Element | Points | Criteria |
+|---------|--------|----------|
+| Alt text coverage | 50 | 100% images with alt (50), scaling by percentage |
+| Lazy loading | 25 | Large images have loading="lazy" (25) |
+| Modern formats | 25 | WebP/AVIF usage (25), all legacy (10) |
+
+**Recommendations Generated:**
+- Images missing alt text
+- Large images needing lazy loading
+- Legacy format suggestions
+
+**Example Recommendations:**
+```json
+{
+  "recommendations": [
+    "5 of 10 images are missing alt text",
+    "Add loading='lazy' to large images: hero-banner.jpg (1.2MB)",
+    "Consider converting PNG images to WebP for better performance"
+  ]
+}
+```
+
+### LinksProcessor
+
+**Analyzes:**
+- Internal link count and quality
+- External link count
+- Nofollow, sponsored, UGC attributes on external links
+- Security: noopener on target="_blank" links
+- Broken link detection (4xx/5xx responses)
+
+**Scoring Logic:**
+| Element | Points | Criteria |
+|---------|--------|----------|
+| Internal links | 30 | Reasonable count (5-100), descriptive anchor text |
+| External link safety | 40 | noopener on target="_blank", rel attributes |
+| Anchor text quality | 30 | Descriptive text, not generic ("click here") |
+
+**Data Output:**
+```json
+{
+  "data": {
+    "internal_count": 15,
+    "external_count": 3,
+    "external_with_nofollow": 2,
+    "external_without_noopener": 1,
+    "broken_links": [
+      { "url": "https://example.com/broken", "status": 404 }
+    ]
+  }
+}
+```
+
+**Security Recommendations:**
+- Add `rel="noopener"` to external links with `target="_blank"`
+- Use `rel="nofollow"` for untrusted external links
+- Use `rel="sponsored"` for paid links
+
+### Technical Implementation
+
+**Base Class:** `IndicatorProcessor` (TASK-19-5)
+
+**Helper Methods Available:**
+| Method | Description |
+|--------|-------------|
+| `query(DOMDocument, string $selector)` | XPath query on DOM |
+| `extractText(DOMElement)` | Get element text content |
+| `extractAttribute(DOMElement, string $attr)` | Get attribute value |
+| `extractAllWithAttributes(string $selector, array $attrs)` | Batch extraction |
+
+**Files:**
+- `app/Services/Analysis/Indicators/MetaTagsProcessor.php`
+- `app/Services/Analysis/Indicators/HeadingsProcessor.php`
+- `app/Services/Analysis/Indicators/ImagesProcessor.php`
+- `app/Services/Analysis/Indicators/LinksProcessor.php`
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| MetaTagsProcessorTest | 22 | - |
+| HeadingsProcessorTest | 22 | - |
+| ImagesProcessorTest | 22 | - |
+| LinksProcessorTest | 27 | - |
+| **Total** | **93** | **174** |
+
+**Test Categories:**
+- Perfect page analysis
+- Missing elements handling
+- Edge cases (empty pages, malformed HTML)
+- Score calculation accuracy
+- Recommendation generation
+
+### Production Status
+- **Deployed**: 2026-02-28 (commit 3ad89e2 via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 93/93 passing (174 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-19-5 (IndicatorProcessor base class)
+- TASK-16-1 (URL validation, SSRF protection)
+
+### Related Tasks
+- TASK-19-7: Queue Worker (processes these indicators)
+- TASK-19-8: Progress Tracking (tracks indicator completion)
+- TASK-19-11: Frontend Progress Bar (displays results)
+
+---
 ## Polling Fallback Endpoint (TASK-19-10)
 
 ### Service Description
