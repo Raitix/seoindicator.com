@@ -1,7 +1,7 @@
 # FEAT-024: PWA / Web App Manifest Indicator
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
