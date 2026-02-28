@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\GSCConnection;
 use App\Models\Project;
 use App\Services\Backlinks\BacklinkSnapshotService;
 use Illuminate\Bus\Queueable;
@@ -80,8 +81,10 @@ class SyncBacklinksJob implements ShouldQueue
             return;
         }
 
-        // Check for GSC connection
-        $hasGscConnection = $project->gscConnections()->active()->exists();
+        // Check for GSC connection (linked via user_id, not project_id)
+        $hasGscConnection = GSCConnection::where('user_id', $project->user_id)
+            ->where('status', GSCConnection::STATUS_ACTIVE)
+            ->exists();
         if (!$hasGscConnection) {
             Log::warning("SyncBacklinksJob: No active GSC connection", ['project_id' => $this->projectId]);
             return;
