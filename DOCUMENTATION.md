@@ -1,6 +1,166 @@
 # DOCUMENTATION.md
 
 ---
+## Google CSE Fetcher (TASK-1-8)
+
+### Service Description
+SERP fetcher implementation using Google Custom Search API free tier. Provides real search results within free quota limits (100 queries/day), enabling production testing with actual search data while respecting the free tools constraint.
+
+### Core Functionalities
+
+**GoogleCSEFetcher Class:**
+| Method | Description |
+|--------|-------------|
+| `fetch(string $keyword, array $options = []): SERPResult` | Fetch SERP results for a keyword |
+| `isQuotaExceeded(): bool` | Check if API quota has been exceeded |
+| `setFallbackFetcher(?SERPFetcherInterface $fetcher): void` | Set fallback fetcher for quota/rate limit scenarios |
+
+### API Configuration
+
+**Environment Variables:**
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_CSE_API_KEY` | Google Custom Search API key |
+| `GOOGLE_CSE_ID` | Custom Search Engine ID |
+
+**Configuration (config/services.php):**
+```php
+'google_cse' => [
+    'api_key' => env('GOOGLE_CSE_API_KEY'),
+    'search_engine_id' => env('GOOGLE_CSE_ID'),
+    'timeout' => 30,
+    'max_results' => 10,
+],
+```
+
+### Free Tier Limitations
+
+| Limitation | Value | Mitigation |
+|------------|-------|------------|
+| Daily quota | 100 queries/day | Fallback to MockSERPFetcher |
+| Results per query | 10 results | Document limitation, use for top 10 tracking |
+| Rate limiting | 429 errors | Retry with exponential backoff |
+
+### Error Handling
+
+| HTTP Code | Error Type | Behavior |
+|-----------|------------|----------|
+| 200 | Success | Parse and return results |
+| 400 | Invalid credentials | Return error, no fallback |
+| 403 | Quota exceeded | Fall back to MockSERPFetcher |
+| 429 | Rate limited | Fall back to MockSERPFetcher |
+| 500+ | Server error | Retry up to 3 times |
+
+### SERP Result Structure
+
+```php
+interface SERPResult {
+    public string $keyword;
+    public string $searchEngine;
+    public string $location;
+    public string $device;
+    public array $results;       // SERPEntry[]
+    public DateTime $checkedAt;
+    public ?string $error;
+    public int $durationMs;
+}
+
+interface SERPEntry {
+    public int $position;
+    public string $url;
+    public string $title;
+    public string $description;
+    public bool $isOurSite;
+}
+```
+
+### SERP Features Extraction
+
+The fetcher extracts additional SERP features from API response:
+- `did_you_mean` - Spelling correction suggestions
+- `images` - Image pack results
+- `structured_data` - Rich snippets (reviews, ratings)
+
+### Fallback Behavior
+
+When quota is exceeded or rate limited:
+1. Log warning with quota usage details
+2. If fallback fetcher is configured, delegate to it
+3. Return fallback results with indication of fallback status
+
+```php
+// Fallback configuration
+$googleFetcher = new GoogleCSEFetcher($apiKey, $searchEngineId);
+$mockFetcher = new MockSERPFetcher();
+$googleFetcher->setFallbackFetcher($mockFetcher);
+```
+
+### Quota Monitoring
+
+Daily logging of API usage for quota tracking:
+```php
+Log::channel('daily')->info('Google CSE API usage', [
+    'queries_today' => $queryCount,
+    'quota_limit' => 100,
+    'remaining' => max(0, 100 - $queryCount),
+]);
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| API Key Storage | Environment variables, not in code |
+| Input Validation | Keyword sanitized before API call |
+| Timeout Protection | 30-second timeout on HTTP requests |
+| Error Message Sanitization | No credentials exposed in errors |
+
+### Technical Implementation
+
+| Component | Location |
+|-----------|----------|
+| Class | `backend/app/SERP/GoogleCSEFetcher.php` |
+| Interface | `backend/app/SERP/SERPFetcherInterface.php` |
+| Test | `backend/tests/Unit/Services/SERP/GoogleCSEFetcherTest.php` |
+| Config | `backend/config/services.php` |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| GoogleCSEFetcherTest | 35 | 59 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic fetch tests | 6 | Valid response, results extraction, max 10 results |
+| Request parameters | 4 | Keyword, API key, search engine ID, num parameter |
+| Result data | 4 | Position, URL, title, description |
+| Error handling | 4 | 429 rate limit, 403 quota exceeded, 400 invalid, 500 server |
+| Fallback behavior | 5 | Quota exceeded → mock, rate limited → mock, missing credentials |
+| SERP features | 2 | Feature extraction, null handling |
+| Duration/Timestamp | 2 | Response timing, checked_at field |
+| Edge cases | 8 | Special characters, Unicode, missing URL/title/snippet |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-02-28 (commit 5d7dc51) |
+| **Health Check** | Passing |
+| **Tests** | 35 tests, 59 assertions - all passing |
+| **Status** | Complete |
+
+### Dependencies
+- TASK-1-7 (SERP Fetcher Interface)
+- Google Cloud Project with Custom Search API enabled
+- Environment variables configured in production
+
+### Related Tasks
+- TASK-1-7: SERP Fetcher Interface (MockSERPFetcher)
+- TASK-1-9: Self-Hosted Scraper (optional fallback)
+
+---
 ## SEO Analyses Table (TASK-18-1)
 
 ### Service Description
