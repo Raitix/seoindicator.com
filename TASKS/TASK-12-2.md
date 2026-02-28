@@ -43,6 +43,22 @@ CREATE TABLE gsc_data (
 ---
 
 ## Comments
+### [2026-02-28 10:05] DocSystemAnalyst: Documentation Complete ✓
+**Documentation Updated:**
+- Added GSC Data Table schema documentation to `DOCUMENTATION.md`
+- Documented: table structure, fields, constraints, indexes
+- Documented: model scopes, factory states, opportunity detection
+- Documented: test coverage (22 tests, 89 assertions)
+- Documented: schema enhancements vs. task requirements
+
+**Schema Notes:**
+- Implementation uses `site_id` instead of `project_id` (consistent with multi-site architecture)
+- Uses `DECIMAL` for CTR and position (more precise than `FLOAT`)
+- Unique constraint prevents duplicate data imports
+- Additional indexes for query optimization
+
+Status: Done
+
 ### [2026-02-28 00:24] ProdTester: Production Tests Passed ✓
 **Production Verification Summary:**
 
