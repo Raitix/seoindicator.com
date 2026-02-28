@@ -1,7 +1,7 @@
 # TASK-19-7: Queue Worker with Concurrency Throttling
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
