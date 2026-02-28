@@ -1,0 +1,134 @@
+<?php
+
+namespace App\Services\Backlinks;
+
+use App\Models\BacklinkSnapshot;
+use App\Models\Project;
+use Illuminate\Support\Collection;
+
+/**
+ * Service for managing backlink snapshots and historical data.
+ * 
+ * TASK-23-6: Backlink Snapshot Service
+ * TASK-23-11: Used by BacklinkHistoryController
+ * 
+ * @see SPEC-023
+ */
+class BacklinkSnapshotService
+{
+    /**
+     * Get snapshot history for a project within a date range.
+     *
+     * @param int $projectId
+     * @param string|null $from Date string (Y-m-d) or null for default
+     * @param string|null $to Date string (Y-m-d) or null for default
+     * @return Collection
+     */
+    public function getHistory(int $projectId, ?string $from = null, ?string $to = null): Collection
+    {
+        // Default to last 30 days if no range specified
+        $fromDate = $from ?? now()->subDays(30)->toDateString();
+        $toDate = $to ?? now()->toDateString();
+
+        return BacklinkSnapshot::forProject($projectId)
+            ->dateRange($fromDate, $toDate)
+            ->orderByDateAsc()
+            ->get()
+            ->map(fn ($snapshot) => $snapshot->toApiResponse());
+    }
+
+    /**
+     * Create a snapshot for a project.
+     *
+     * @param Project $project
+     * @return BacklinkSnapshot
+     */
+    public function createSnapshot(Project $project): BacklinkSnapshot
+    {
+        $metrics = $this->calculateMetrics($project);
+
+        return BacklinkSnapshot::create([
+            'project_id' => $project->id,
+            'total_backlinks' => $metrics['total_backlinks'],
+            'referring_domains_count' => $metrics['referring_domains_count'],
+            'dofollow_count' => $metrics['dofollow_count'],
+            'nofollow_count' => $metrics['nofollow_count'],
+            'avg_domain_trust' => $metrics['avg_domain_trust'],
+            'anchor_diversity_score' => $metrics['anchor_diversity_score'],
+            'snapshot_date' => now()->toDateString(),
+            'created_at' => now(),
+        ]);
+    }
+
+    /**
+     * Calculate anchor diversity score (0-100).
+     * Higher score = more diverse anchor text.
+     * Score 0 = all backlinks use same anchor.
+     * Score 100 = perfectly even distribution.
+     *
+     * @param int $projectId
+     * @return float
+     */
+    public function calculateAnchorDiversity(int $projectId): float
+    {
+        $anchors = \App\Models\AnchorText::where('project_id', $projectId)
+            ->orderByDesc('backlinks_count')
+            ->get();
+
+        if ($anchors->isEmpty()) {
+            return 0.0;
+        }
+
+        $totalBacklinks = $anchors->sum('backlinks_count');
+        if ($totalBacklinks === 0) {
+            return 0.0;
+        }
+
+        $topAnchorPercent = $anchors->first()->backlinks_count / $totalBacklinks;
+
+        return round(100 - ($topAnchorPercent * 100), 2);
+    }
+
+    /**
+     * Calculate average domain trust for a project.
+     *
+     * @param int $projectId
+     * @return float|null
+     */
+    public function calculateAverageTrust(int $projectId): ?float
+    {
+        $avgTrust = \App\Models\ReferringDomain::where('project_id', $projectId)
+            ->where('domain_trust_score', '>', 0)
+            ->avg('domain_trust_score');
+
+        return $avgTrust ? round($avgTrust, 2) : null;
+    }
+
+    /**
+     * Calculate all metrics for a project.
+     *
+     * @param Project $project
+     * @return array
+     */
+    protected function calculateMetrics(Project $project): array
+    {
+        $backlinks = \App\Models\Backlink::where('project_id', $project->id)
+            ->where('is_active', true);
+
+        $totalBacklinks = $backlinks->count();
+        $dofollowCount = (clone $backlinks)->dofollow()->count();
+        $nofollowCount = (clone $backlinks)->nofollow()->count();
+
+        $referringDomainsCount = \App\Models\ReferringDomain::where('project_id', $project->id)
+            ->count();
+
+        return [
+            'total_backlinks' => $totalBacklinks,
+            'referring_domains_count' => $referringDomainsCount,
+            'dofollow_count' => $dofollowCount,
+            'nofollow_count' => $nofollowCount,
+            'avg_domain_trust' => $this->calculateAverageTrust($project->id),
+            'anchor_diversity_score' => $this->calculateAnchorDiversity($project->id),
+        ];
+    }
+}
