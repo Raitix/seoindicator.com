@@ -1,7 +1,7 @@
 # TASK-23-8: Backlink Profile Health Scoring
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -110,3 +110,37 @@ protected function calculateBacklinkComponent(Project $project): float
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-28 21:43] Agent: ProjectManager
+**Prioritization Complete**
+
+- **Priority Confirmed**: `High` — Core scoring service combining diversity, trust, growth, and anchor health into overall profile score. Critical for SEO visibility integration.
+- **Risk**: `Medium` — Algorithm implementation with 4 scoring components, no external API dependencies
+
+**Dependency Analysis:**
+| Dependency | Status | Impact |
+|------------|--------|--------|
+| TASK-23-6 (Snapshot Service) | `To Prioritize` | ⚠️ BLOCKING - Must complete first |
+| TASK-23-7 (Domain Trust Scorer) | `To Write Tests` | ⚠️ BLOCKING - Must complete first |
+
+**Execution Order:**
+```
+TASK-23-6 (Snapshots) ──┬──→ TASK-23-8 (Profile Scorer) ──→ TASK-23-15 (Visibility Integration)
+TASK-23-7 (Trust) ──────┘
+```
+
+**Scoring Components (0-25 each):**
+| Component | Calculation | Source |
+|-----------|-------------|--------|
+| Diversity | `(referring_domains / backlinks) * 100` | Snapshot metrics |
+| Trust | `avg_domain_trust / 4` | TASK-23-7 output |
+| Growth | `12.5 + (growth_rate / 2)` | Historical snapshots |
+| Anchor Health | `25 - (exact_match_ratio * 50)` | Anchor analysis |
+
+**Visibility Score Integration:**
+- Profile score contributes **20% weight** to overall SEO visibility score
+- TASK-23-15 will integrate this into `VisibilityScoreService`
+
+**Free Tools Compliance:** ✅ Uses heuristic calculations only, no paid APIs.
+
+Handing off to PreTester for test design.

@@ -1,7 +1,7 @@
 # SPEC-023: Backlinks Indicator - Technical Specification
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
