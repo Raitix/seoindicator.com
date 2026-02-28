@@ -1,7 +1,7 @@
 # SPEC-023: Backlinks Indicator - Technical Specification
 
 ## STATUS
-`Specification In Progress`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
