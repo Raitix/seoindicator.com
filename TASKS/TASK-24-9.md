@@ -1,7 +1,7 @@
 # TASK-24-9: PWA Guide API Endpoint
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`

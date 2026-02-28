@@ -1,7 +1,7 @@
 # TASK-24-7: PWASuggestionService
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
