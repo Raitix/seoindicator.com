@@ -1,7 +1,7 @@
 # TASK-18-5: HtmlFetcherService (with SSRF Protection)
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -107,3 +107,23 @@ Created from SPEC-018 Section 10.2. HIGH RISK task - requires thorough security 
 4. Logs security-relevant blocked requests to 'security' channel
 
 **Status:** Ready for LocalTester. All acceptance criteria complete except integration tests with real domains (requires local testing environment).
+
+### [2026-02-28 21:57 GMT+2] DevOps
+**Deployment Complete.**
+
+**Deployment Details:**
+- GitHub Actions run: #22527877976
+- Build-and-test: ✓ (1m11s)
+- Deploy: ✓ (22s)
+- Health check: 200 OK
+
+**Production State:**
+- HtmlFetcherService.php deployed to production
+- Health endpoint responding: `{"status":"ok","database":"connected"}`
+
+**Security Notes:**
+- HIGH RISK task - SSRF protection implemented via URLValidationService
+- Audit logging enabled for all fetch attempts
+- ProdTester should verify SSRF protection in production
+
+**Status:** Deployed. Ready for ProdTester validation.
