@@ -1,7 +1,7 @@
 # TASK-23-7: Domain Trust Scoring Service
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -103,6 +103,37 @@ private const SPAM_TLDS = ['xyz', 'top', 'click', 'loan', 'work', 'date'];
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-28 23:35] Agent: PreTester
+**Test Design Complete**
+
+Created comprehensive test suite for DomainTrustScorer service:
+
+**Test Files Created:**
+- `TESTS/TEST-23-7.md` — Test documentation with 52 unit tests + 12 integration tests
+- `tests/Unit/Services/SEO/DomainTrustScorerTest.php` — Unit tests (52 tests, 120+ assertions)
+- `tests/Integration/Services/SEO/DomainTrustScorerIntegrationTest.php` — Integration tests (12 tests)
+
+**Test Coverage:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| HTTPS Scoring (HS) | 6 | HTTPS support verification |
+| TLD Scoring (TS) | 16 | Trusted/moderate/spam TLDs |
+| Length Scoring (LS) | 7 | Domain length analysis |
+| Pattern Scoring (PS) | 7 | Clean pattern detection |
+| Edge Cases (EC) | 13 | IPs, subdomains, IDN, etc. |
+| Score Boundaries (SB) | 3 | 0-100 range enforcement |
+| Security (SC) | 5 | Injection/XSS protection |
+| Integration | 12 | Real-world scenarios, caching |
+
+**Key Design Decisions:**
+1. Score range: 0-100 with min/max capping
+2. Spam penalty (-30) cannot result in negative score
+3. IP addresses return 0 (no TLD analysis)
+4. Domain normalization before scoring (strip path, query, port)
+5. IDN domains converted to punycode for analysis
+
+**Status:** Tests ready for implementation. Handing off to Developer.
 
 ### [2026-02-28 21:38] Agent: ProjectManager
 **Prioritization Complete**
