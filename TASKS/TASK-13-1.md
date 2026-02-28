@@ -1,7 +1,7 @@
 # TASK-13-1: Create Backlink Summaries Table
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `High`
