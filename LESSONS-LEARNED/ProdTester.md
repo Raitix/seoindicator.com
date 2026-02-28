@@ -38,7 +38,17 @@ Knowledge base for ProdTester agent working on SEOIndicator project.
 
 ---
 
-Last updated: 2026-02-27
+Last updated: 2026-02-28
+
+---
+
+## 2026-02-28: TASK-3-7 Comparison Dashboard
+- Frontend page load verification: check HTTP status + HTML content for UI elements
+- Loading skeleton visible in SSR HTML confirms component deployment
+- XSS test: check if `<script>` tags in query params are rendered in HTML (should NOT be)
+- Path traversal test: try `../../../` in API paths - should return 404 or normalized path
+- All comparison API endpoints require authentication (rankings/comparison, competitors, gaps)
+- Navigation link presence confirms feature integration
 
 ---
 
