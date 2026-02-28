@@ -9816,3 +9816,154 @@ interface RankingDataPoint {
 - TASK-1-14: Keyword Add/Edit Forms
 
 ---
+## Annotation Input Validation (TASK-9-6)
+
+### Service Description
+Laravel FormRequest classes for validating annotation input on creation and update endpoints. Protects backend from malformed or unauthorized requests with comprehensive validation rules and security checks.
+
+### FormRequest Classes
+
+| Class | Purpose | Validation Rules |
+|-------|---------|------------------|
+| `StoreAnnotationRequest` | Create new annotation | Strict validation on all fields |
+| `UpdateAnnotationRequest` | Update existing annotation | Inherits from StoreAnnotationRequest |
+
+### StoreAnnotationRequest
+
+**Validation Rules:**
+| Field | Rules | Description |
+|-------|-------|-------------|
+| `date` | `required`, `date` | Required, must be valid date |
+| `title` | `required`, `string`, `max:255` | Required, max 255 characters |
+| `description` | `nullable`, `string` | Optional text field |
+| `category` | `required`, `Rule::in(AnnotationCategory::cases())` | Must be valid enum value |
+| `project_id` | `required`, `exists:projects,id` | Must reference existing project |
+
+**Code Implementation:**
+```php
+class StoreAnnotationRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'date' => 'required|date',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'category' => [
+                'required',
+                Rule::in(AnnotationCategory::cases()),
+            ],
+            'project_id' => 'required|exists:projects,id',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'date.required' => 'The date field is required.',
+            'date.date' => 'Please provide a valid date.',
+            'title.required' => 'The title field is required.',
+            'title.max' => 'The title may not be greater than 255 characters.',
+            'category.required' => 'Please select a category.',
+            'category.in' => 'The selected category is invalid.',
+            'project_id.required' => 'A project is required.',
+            'project_id.exists' => 'The selected project does not exist.',
+        ];
+    }
+
+    public function authorize(): bool
+    {
+        return true; // Authorization handled by controller middleware
+    }
+}
+```
+
+### UpdateAnnotationRequest
+
+**Behavior:** Extends `StoreAnnotationRequest` with identical validation rules. Laravel's validation allows partial updates by default - only provided fields are validated.
+
+**Code Implementation:**
+```php
+class UpdateAnnotationRequest extends StoreAnnotationRequest
+{
+    // Inherits all validation rules and messages from parent
+    // Laravel handles partial updates automatically
+}
+```
+
+### Valid Category Values
+
+| Category | Value | Description |
+|----------|-------|-------------|
+| Content Update | `content_update` | Content modifications |
+| Link Building | `link_building` | New backlinks acquired |
+| Technical Fix | `technical_fix` | Technical SEO improvements |
+| Algorithm Update | `algorithm_update` | Search algorithm changes |
+| Competitor Action | `competitor_action` | Competitor movements |
+| Seasonal | `seasonal` | Seasonal trends |
+| Manual Action | `manual_action` | Google manual penalties |
+| Other | `other` | Miscellaneous notes |
+
+### Security Implementation
+
+| Security Measure | Implementation | Test Coverage |
+|------------------|----------------|---------------|
+| SQL Injection | Laravel ORM + parameterized queries | SC-001 to SC-008 |
+| XSS Prevention | Input validation, output escaping | SEC-001 to SEC-003 |
+| CRLF Injection | Newline handling tested | EC-003 |
+| Null Byte Injection | Null byte handling tested | EC-004 |
+| Path Traversal | Input validation | EC-005 |
+| Unicode Homoglyphs | Unicode handling tested | EC-006 |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| StoreAnnotationRequestTest | 95 | 119 |
+| UpdateAnnotationRequestTest | 23 | 39 |
+| **Total** | **118** | **158** |
+
+**Test Categories (StoreAnnotationRequestTest):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authorization | AUTH-001, AUTH-002 | Auth middleware integration |
+| Rules Method | RULES-001, RULES-002 | Rules array structure |
+| Field Presence | FP-001 to FP-006 | Required field validation |
+| Date Field | DT-001 to DT-012 | Date format, invalid values |
+| Title Field | TL-001 to TL-014 | Length, special chars, unicode |
+| Description Field | DC-001 to DC-012 | Nullable, string validation |
+| Category Field | CT-001 to CT-010 | Enum validation |
+| project_id Field | PI-001 to PI-006 | FK existence check |
+| Combined Fields | CB-001 to CB-008 | Multi-field validation |
+| Security | SC-001 to SC-008 | SQL injection, XSS, etc. |
+| Custom Messages | MSG-001 to MSG-005 | Error message verification |
+| Edge Cases | EC-001 to EC-010 | Boundary conditions |
+
+**Test Categories (UpdateAnnotationRequestTest):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Inheritance | INH-001 to INH-005 | Parent class extension |
+| Same Rules | SAME-001 to SAME-005 | Validation consistency |
+| Update-Specific | UPD-001 to UPD-005 | Partial update behavior |
+| Security | SEC-001 to SEC-003 | Update security tests |
+| Edge Cases | EDG-001 to EDG-003 | Boundary conditions |
+| Integration | INT-001, INT-002 | Controller integration |
+
+### Production Status
+- **Deployed**: 2026-02-28 (via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 118/118 passing (158 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-9-2 (Annotation Category Enum)
+- TASK-9-3 (Annotation Model)
+- TASK-9-4 (AnnotationController)
+
+### Related Tasks
+- TASK-9-1: Annotations Table Schema
+- TASK-9-2: Annotation Category Enum
+- TASK-9-4: AnnotationController CRUD
+- TASK-9-5: Annotation Authorization Policies
+
+---
