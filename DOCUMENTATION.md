@@ -8040,6 +8040,130 @@ Retry-After: 60
 - **Tests**: 64 tests, 250 assertions passing
 
 ---
+## Database Schema: Backlink Summaries Table (TASK-13-1)
+
+### Backlink Summaries Table
+Stores aggregated backlink metrics per domain for each site. Provides summary-level data for dashboard displays and quick backlink health overview.
+
+```sql
+CREATE TABLE backlink_summaries (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    site_id BIGINT UNSIGNED NOT NULL,
+    domain VARCHAR(255) NOT NULL,
+    total_backlinks INT UNSIGNED DEFAULT 0,
+    referring_domains INT UNSIGNED DEFAULT 0,
+    domain_authority FLOAT UNSIGNED DEFAULT 0,
+    checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_site_domain (site_id, domain)
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id |
+| `domain` | VARCHAR(255) | The domain being summarized |
+| `total_backlinks` | INT UNSIGNED | Total backlinks from this domain (default: 0) |
+| `referring_domains` | INT UNSIGNED | Number of referring domains (default: 0) |
+| `domain_authority` | FLOAT UNSIGNED | Domain authority score 0-100 (default: 0) |
+| `checked_at` | TIMESTAMP | When this summary was last updated |
+
+**Constraints:**
+- Foreign Key: `site_id → sites.id` ON DELETE CASCADE
+- Unique: `(site_id, domain)` - one summary per site-domain pair
+
+**Indexes:**
+- `idx_site_domain` unique index on `(site_id, domain)`
+- `backlink_summaries_site_id_index` on `site_id`
+- `backlink_summaries_domain_index` on `domain`
+- `backlink_summaries_checked_at_index` on `checked_at`
+
+**Model:** `App\Models\BacklinkSummary`
+
+### Model Relationships
+
+**BacklinkSummary Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `site()` | belongsTo | The site this summary belongs to |
+
+**Site Model (added relationship):**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `backlinkSummaries()` | hasMany | BacklinkSummary records for this site |
+
+### Factory States
+
+| State | Description |
+|-------|-------------|
+| `highAuthority` | Creates summary with domain_authority 70-100 |
+| `lowAuthority` | Creates summary with domain_authority 0-30 |
+| `recentlyChecked` | Creates summary with recent checked_at |
+| `stale` | Creates summary with old checked_at (30+ days) |
+
+### Model Attributes
+
+**Default Values:**
+```php
+protected $attributes = [
+    'total_backlinks' => 0,
+    'referring_domains' => 0,
+    'domain_authority' => 0,
+];
+```
+
+**Fillable:**
+```php
+protected $fillable = [
+    'site_id',
+    'domain',
+    'total_backlinks',
+    'referring_domains',
+    'domain_authority',
+    'checked_at',
+];
+```
+
+**Casts:**
+```php
+protected $casts = [
+    'checked_at' => 'datetime',
+];
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| BacklinkSummaryTest | 16 | 45 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Model Creation | 4 | Basic model creation with defaults |
+| Site Relationship | 3 | BelongsTo relationship, cascade delete |
+| Unique Constraint | 3 | Domain uniqueness per site |
+| Factory States | 4 | highAuthority, lowAuthority, recentlyChecked, stale |
+| Unsigned Constraints | 2 | MySQL-specific (skipped on SQLite) |
+
+### Production Status
+- **Deployed**: 2026-02-28 (GitHub Actions run 22523493625)
+- **Migration**: `2026_02_21_215300_create_backlink_summaries_table.php`
+- **Health Check**: Passing
+- **Tests**: 16 tests (13 pass, 3 MySQL-specific skipped in SQLite)
+- **Status**: Complete
+
+### Dependencies
+- TASK-1-1 (Sites table)
+
+### Related Tasks
+- TASK-13-2: Backlinks Table (detailed backlink data)
+- TASK-13-3: Backlink Changes Table (change tracking)
+
+---
 ## Database Schema: Backlink Changes Table (TASK-13-3)
 
 ### Backlink Changes Table
