@@ -50,14 +50,19 @@ class BacklinkController extends Controller
 
         $this->authorize('view', $project);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'summary' => $this->getSummary($project),
-                'recentBacklinks' => $this->getRecentBacklinks($project),
-                'topReferringDomains' => $this->getTopReferringDomains($project),
+        return response()->json(
+            [
+                'success' => true,
+                'data' => [
+                    'summary' => $this->getSummary($project),
+                    'recentBacklinks' => $this->getRecentBacklinks($project),
+                    'topReferringDomains' => $this->getTopReferringDomains($project),
+                ],
             ],
-        ]);
+            200,
+            [],
+            JSON_PRESERVE_ZERO_FRACTION
+        );
     }
 
     /**
@@ -143,7 +148,7 @@ class BacklinkController extends Controller
 
         return $domains->map(function ($domain) {
             return [
-                'domain' => $domain->domain,
+                'domain' => $this->escapeHtml($domain->domain),
                 'backlinks_count' => $domain->backlinks_count,
                 'domain_trust_score' => $domain->domain_trust_score,
                 'first_seen_at' => $domain->first_seen_at?->toIso8601String(),
