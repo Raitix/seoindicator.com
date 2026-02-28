@@ -1,7 +1,7 @@
 # FEAT-017: User Onboarding & Activation Flow
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## Specification
 - **SPEC-017**: User Onboarding & Activation Flow - [View Specification](../SPECIFICATIONS/SPEC-017.md)
