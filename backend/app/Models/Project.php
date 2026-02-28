@@ -6,8 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Annotation;
+use App\Models\PWAAnalysis;
 
 /**
  * Project Model.
@@ -129,6 +131,14 @@ class Project extends Model
     public function latestVisibilityScore()
     {
         return $this->visibilityScores()->orderByDesc('calculated_at');
+    }
+
+    /**
+     * Get the PWA analysis for this project.
+     */
+    public function pwaAnalysis()
+    {
+        return $this->hasOne(PWAAnalysis::class);
     }
 
     /**

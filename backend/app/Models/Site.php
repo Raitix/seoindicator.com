@@ -50,4 +50,20 @@ class Site extends Model
     {
         return $this->hasMany(BacklinkSummary::class);
     }
+
+    /**
+     * Get the PWA analyses for this site.
+     */
+    public function pwaAnalyses(): HasMany
+    {
+        return $this->hasMany(PWAAnalysis::class);
+    }
+
+    /**
+     * Get the latest PWA analysis for this site.
+     */
+    public function latestPwaAnalysis()
+    {
+        return $this->hasOne(PWAAnalysis::class)->latestOfMany('analyzed_at');
+    }
 }
