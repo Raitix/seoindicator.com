@@ -114,15 +114,25 @@ class HtmlParserService
     }
 
     /**
-     * Extract meta tag content by name.
+     * Extract meta tag content by name (case-insensitive).
      */
     private function extractMetaContent(Crawler $crawler, string $name): ?string
     {
+        $nameLower = strtolower($name);
+        
+        // Try exact match first
         $node = $crawler->filter("meta[name=\"{$name}\"]")->first();
-        if ($node->count() === 0) {
-            return null;
+        if ($node->count() > 0) {
+            return $this->cleanText($node->attr('content'));
         }
-        return $this->cleanText($node->attr('content'));
+        
+        // Try case-insensitive match using XPath
+        $node = $crawler->filterXPath("//meta[translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = '{$nameLower}']")->first();
+        if ($node->count() > 0) {
+            return $this->cleanText($node->attr('content'));
+        }
+        
+        return null;
     }
 
     /**

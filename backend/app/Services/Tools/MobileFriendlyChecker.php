@@ -90,7 +90,7 @@ class MobileFriendlyChecker extends SEOTool
     private function analyzeMobileFriendliness(array $parsed, string $html, string $finalUrl): array
     {
         // Analyze viewport
-        $viewportAnalysis = $this->analyzeViewport($parsed);
+        $viewportAnalysis = $this->analyzeViewport($parsed, $html);
 
         // Analyze responsive indicators
         $responsiveAnalysis = $this->analyzeResponsiveIndicators($html);
@@ -144,18 +144,23 @@ class MobileFriendlyChecker extends SEOTool
     /**
      * Analyze viewport meta tag.
      */
-    private function analyzeViewport(array $parsed): array
+    private function analyzeViewport(array $parsed, string $html = ''): array
     {
         $viewportContent = $parsed['viewport'] ?? null;
 
+        // Check if viewport meta tag exists in HTML (even with empty content)
+        $viewportTagExists = $viewportContent !== null 
+            || preg_match('/<meta[^>]+name\s*=\s*["\']?viewport["\']?[^>]*>/i', $html);
+
         $analysis = [
-            'present' => !empty($viewportContent),
+            'present' => $viewportTagExists,
             'content' => $viewportContent,
             'valid' => false,
             'hasDeviceWidth' => false,
             'hasInitialScale' => false,
             'userScalable' => true,
             'maxScale' => null,
+            'hasFixedWidth' => false,
         ];
 
         if (!$viewportContent) {
@@ -168,6 +173,14 @@ class MobileFriendlyChecker extends SEOTool
         $analysis['hasDeviceWidth'] = str_contains($content, 'width=device-width')
             || str_contains($content, 'width = device-width');
 
+        // Check for fixed width viewport (e.g., width=960)
+        if (preg_match('/width\s*=\s*(\d+)/', $content, $matches)) {
+            $width = (int) $matches[1];
+            if ($width > 0 && !$analysis['hasDeviceWidth']) {
+                $analysis['hasFixedWidth'] = true;
+            }
+        }
+
         // Check for initial-scale
         $analysis['hasInitialScale'] = str_contains($content, 'initial-scale');
 
@@ -179,8 +192,8 @@ class MobileFriendlyChecker extends SEOTool
             $analysis['userScalable'] = false;
         }
 
-        // Extract max-scale
-        if (preg_match('/max-scale\s*=\s*([\d.]+)/', $content, $matches)) {
+        // Extract maximum-scale (note: attribute is "maximum-scale", not "max-scale")
+        if (preg_match('/maximum-scale\s*=\s*([\d.]+)/', $content, $matches)) {
             $analysis['maxScale'] = (float) $matches[1];
         }
 
@@ -365,6 +378,12 @@ class MobileFriendlyChecker extends SEOTool
             $issues[] = [
                 'severity' => 'critical',
                 'message' => 'Missing viewport meta tag. This is essential for mobile devices.',
+                'category' => 'viewport',
+            ];
+        } elseif ($viewport['hasFixedWidth']) {
+            $issues[] = [
+                'severity' => 'warning',
+                'message' => 'Viewport uses a fixed width which may not scale properly on mobile devices.',
                 'category' => 'viewport',
             ];
         } elseif (!$viewport['valid']) {
