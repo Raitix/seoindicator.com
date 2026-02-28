@@ -1,6 +1,290 @@
 # DOCUMENTATION.md
 
 ---
+## User Onboarding & Activation Flow (FEAT-017)
+
+### Service Description
+Guided onboarding experience that converts visitors into active users. New users receive a 5-step wizard to set up their first keyword, connect their site, and understand the core value proposition within 5 minutes. Only Phase 1 (MVP) is deployed; Phases 2-4 are planned for future releases.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/onboarding` | Get current onboarding progress |
+| POST | `/api/v1/onboarding` | Start or update onboarding progress |
+| POST | `/api/v1/onboarding/complete` | Complete onboarding and create keyword |
+| POST | `/api/v1/onboarding/skip` | Skip onboarding flow |
+
+### Get Onboarding Progress
+`GET /api/v1/onboarding`
+
+**Response (200 - In Progress):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "current_step": 2,
+    "completed_steps": [1],
+    "website_url": "https://example.com",
+    "first_keyword": null,
+    "keyword_id": null,
+    "alert_preferences": null,
+    "completed_at": null,
+    "progress_percentage": 20
+  }
+}
+```
+
+**Response (200 - Not Started):**
+```json
+{
+  "success": true,
+  "data": null
+}
+```
+
+### Update Onboarding Progress
+`POST /api/v1/onboarding`
+
+**Request Body:**
+```json
+{
+  "step": 1,
+  "data": {
+    "website_url": "https://example.com"
+  }
+}
+```
+
+**Validation Rules:**
+| Step | Field | Rules |
+|------|-------|-------|
+| 1 | `website_url` | Required, valid URL, max 500 chars |
+| 2 | `first_keyword` | Required, string, max 255 chars |
+| 4 | `alert_preferences.email` | Boolean |
+| 4 | `alert_preferences.weekly` | Boolean |
+
+### Complete Onboarding
+`POST /api/v1/onboarding/complete`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "completed_at": "2026-02-28T10:00:00Z",
+    "keyword_id": 1
+  }
+}
+```
+
+**Side Effects:**
+- Creates keyword record in `keywords` table
+- Dispatches `UserActivated` event
+- Sets `completed_at` timestamp
+
+### Skip Onboarding
+`POST /api/v1/onboarding/skip`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "skipped_at": "2026-02-28T10:00:00Z"
+  }
+}
+```
+
+### Database Schema
+
+**user_onboarding Table:**
+```sql
+CREATE TABLE user_onboarding (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT UNSIGNED NOT NULL,
+    project_id BIGINT UNSIGNED NULL,
+    current_step TINYINT UNSIGNED DEFAULT 1,
+    completed_steps JSON NULL,
+    website_url VARCHAR(500) NULL,
+    first_keyword VARCHAR(255) NULL,
+    keyword_id BIGINT UNSIGNED NULL,
+    alert_preferences JSON NULL,
+    completed_at TIMESTAMP NULL,
+    skipped_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
+    FOREIGN KEY (keyword_id) REFERENCES keywords(id) ON DELETE SET NULL,
+    
+    UNIQUE KEY idx_user_onboarding_user (user_id)
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `user_id` | BIGINT UNSIGNED | FK to users.id (unique - one onboarding per user) |
+| `project_id` | BIGINT UNSIGNED | FK to projects.id (linked after step 1) |
+| `current_step` | TINYINT UNSIGNED | Current step number (1-5) |
+| `completed_steps` | JSON | Array of completed step numbers |
+| `website_url` | VARCHAR(500) | User's website URL (step 1) |
+| `first_keyword` | VARCHAR(255) | First keyword to track (step 2) |
+| `keyword_id` | BIGINT UNSIGNED | FK to keywords.id (after keyword created) |
+| `alert_preferences` | JSON | Alert settings: `{email: bool, weekly: bool}` |
+| `completed_at` | TIMESTAMP | When onboarding was completed |
+| `skipped_at` | TIMESTAMP | When user skipped onboarding |
+
+### Onboarding Steps (MVP - Phase 1)
+
+| Step | Name | Description |
+|------|------|-------------|
+| 1 | Welcome & Website | Collect user's website URL for tracking context |
+| 2 | First Keyword | Get user's first keyword to track |
+| 3 | Ranking Preview | Show immediate value - current ranking (MVP: MockSERPFetcher) |
+| 4 | Alert Setup | Configure notification preferences |
+| 5 | All Set! | Confirm completion and guide next steps |
+
+### Frontend Components
+
+**Component Structure:**
+```
+frontend/components/onboarding/
+├── OnboardingProvider.tsx      # Context provider for state
+├── OnboardingModal.tsx         # Entry point modal
+├── OnboardingWizard.tsx        # Main wizard container
+├── steps/
+│   ├── Step1_Website.tsx       # Website URL input
+│   ├── Step2_Keyword.tsx       # First keyword input
+│   ├── Step3_Preview.tsx       # Ranking preview (mock)
+│   ├── Step4_Alerts.tsx        # Alert preferences
+│   └── Step5_Complete.tsx      # Summary & CTA
+```
+
+**State Management:**
+```typescript
+interface OnboardingState {
+  isOpen: boolean;
+  currentStep: number;
+  completedSteps: number[];
+  data: {
+    websiteUrl: string | null;
+    firstKeyword: string | null;
+    keywordId: number | null;
+    alertPreferences: { email: boolean; weekly: boolean } | null;
+  };
+  isLoading: boolean;
+  error: string | null;
+}
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware on all endpoints |
+| IDOR Protection | User can only access their own onboarding data |
+| SSRF Protection | Blocks localhost, 127.x, private IPs (10.x, 172.16-31.x, 192.168.x), cloud metadata (169.254.169.254) |
+| Blocked Protocols | file://, gopher:// |
+| Input Sanitization | URL validation, keyword sanitization |
+| Authorization | 401 for unauthenticated, 403 for cross-user access |
+
+### Event System
+
+**UserActivated Event:**
+Dispatched when user completes onboarding.
+
+```php
+class UserActivated
+{
+    public function __construct(
+        public User $user,
+        public int $keywordId,
+        public ?int $projectId
+    ) {}
+}
+```
+
+**Listeners:**
+| Listener | Action |
+|----------|--------|
+| `TrackActivationAnalytics` | Log to analytics system |
+| `QueueInitialRankCheck` | Queue rank check for first keyword |
+
+### Technical Implementation
+
+**Backend:**
+- Model: `backend/app/Models/UserOnboarding.php`
+- Service: `backend/app/Services/OnboardingService.php`
+- Controller: `backend/app/Http/Controllers/Api/V1/OnboardingController.php`
+- Event: `backend/app/Events/UserActivated.php`
+- Factory: `backend/database/factories/UserOnboardingFactory.php`
+- Migration: `backend/database/migrations/2026_02_28_100000_create_user_onboarding_table.php`
+
+**Frontend:**
+- Context: `frontend/lib/contexts/OnboardingContext.tsx`
+- API: `frontend/lib/api/onboarding.ts`
+- Types: `frontend/lib/types/onboarding.ts`
+- Components: `frontend/components/onboarding/`
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| UserOnboardingTest | 17 | Model, relationships, accessors |
+| OnboardingServiceTest | 32 | CRUD, SSRF protection (30+ patterns) |
+| OnboardingControllerTest | 28 | API endpoints, validation, authorization |
+| UserOnboardingTableTest | 23 | Schema, constraints, foreign keys |
+| Frontend Tests | 65 | Provider, wizard, modal, step components |
+
+**Total: 165 tests passing**
+
+### Security Tests
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| SSRF Protection | 30+ | localhost, private IPs, cloud metadata, blocked protocols |
+| XSS Prevention | 5 | Input sanitization, output escaping |
+| SQL Injection | 5 | Parameterized queries, Eloquent ORM |
+| Authorization | 10 | Unauthenticated access, cross-user isolation |
+
+### Production Status
+- **Deployed**: 2026-02-28 (GitHub Actions run 22519614219)
+- **Commits**: 4025eb1 (includes TypeScript fixes)
+- **Health Check**: Passing
+- **Tests**: 165 tests passing (backend: 100, frontend: 65)
+- **Status**: Complete (Phase 1 MVP)
+
+### Implementation Phases
+
+| Phase | Status | Tasks | Description |
+|-------|--------|-------|-------------|
+| Phase 1: MVP Onboarding | ✅ Complete | TASK-17-1 to TASK-17-7 | Core wizard, progress tracking |
+| Phase 2: Enhanced Experience | 📋 Planned | TASK-17-8 to TASK-17-12 | Skip/resume UI, progress bar |
+| Phase 3: Analytics | 📋 Planned | TASK-17-13 to TASK-17-16 | Event tracking, A/B testing prep |
+| Phase 4: Smart Suggestions | 📋 Planned | TASK-17-17 to TASK-17-20 | Keyword/competitor suggestions |
+
+### Dependencies
+- User authentication (Laravel Sanctum)
+- Projects table (TASK-8-1)
+- Keywords table (TASK-1-1)
+- Sites table (TASK-1-1)
+- MockSERPFetcher (TASK-1-7)
+
+### Success Metrics (Target)
+
+| Metric | Current | Target (30d) | Target (90d) |
+|--------|---------|--------------|--------------|
+| Onboarding completion rate | 0% | 40% | 60% |
+| Returning users | 2 (1.6%) | 15 (10%) | 50 (20%) |
+| Time to first keyword | N/A | <5 min | <3 min |
+| Bounce rate | 78% | 65% | 50% |
+
+---
 ## Ranking History API Endpoints (TASK-1-5)
 
 ### Service Description

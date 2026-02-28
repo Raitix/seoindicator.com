@@ -1,7 +1,7 @@
 # SPEC-017: User Onboarding & Activation Flow
 
 ## STATUS
-`To Prioritize`
+`Done` (Phase 1 MVP complete)
 
 ## PRIORITY
 `High`
