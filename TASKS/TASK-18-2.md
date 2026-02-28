@@ -1,7 +1,7 @@
 # TASK-18-2: SEOAnalysis Model and Repository
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
