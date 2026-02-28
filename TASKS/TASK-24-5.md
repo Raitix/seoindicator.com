@@ -1,7 +1,7 @@
 # TASK-24-5: IconValidatorService
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -48,6 +48,50 @@ Create service to validate PWA icon URLs for accessibility and correctness. Chec
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 00:52 GMT+2] Agent: PreTester
+**Test Coverage Complete**
+
+Created comprehensive test suite for IconValidatorService:
+
+**Test Documentation:** `tests/SPEC-24-5.md`
+**Test Implementation:** `backend/tests/Unit/Services/IconValidatorServiceTest.php`
+
+**Test Categories (70 tests):**
+1. **validateIcons() Method (12 tests):** Main entry point for validating icon arrays
+   - Success, missing sizes, empty array, null inputs, inaccessible icons, timeout, concurrent validation
+   - Relative/absolute URL resolution, mixed sizes, SVG "any" size
+2. **validateIcon() Method (8 tests):** Single icon validation
+   - Valid icon, invalid size, missing src, maskable icons, query params, protocol-relative, multiple sizes, data URI
+3. **checkIconAccessible() Method (10 tests):** HEAD request accessibility checks
+   - 200/404/403/500 responses, timeout, redirects, invalid/null URLs, content-type/size warnings
+4. **SSRF Protection (8 tests):** Security validation using URLValidationService
+   - Localhost, private IP, cloud metadata, decimal IP, hex IP, file protocol, redirect to private, cross-origin CDN
+5. **Size Parsing (8 tests):** Parse "WxH" and "any" formats
+   - Standard format, "any", multiple sizes, invalid/empty, non-square, case sensitivity, whitespace
+6. **URL Resolution (8 tests):** Relative to absolute URL conversion
+   - Relative path, subdirectory, absolute URL, protocol-relative, query/fragment, port, data URI
+7. **Result DTO (6 tests):** Output structure validation
+   - Complete structure, count accuracy, errors array, size flags, warnings, success flag logic
+8. **Edge Cases (10 tests):** Malformed input, Unicode, etc.
+   - Empty src, long URL, Unicode, special chars, missing sizes/type, icon index, concurrent limits, HEAD fallback
+
+**Key Dependencies:**
+- URLValidationService for SSRF protection (TASK-16-1) - Done ✅
+- Laravel HTTP Client for concurrent requests (pool method, max 5 at a time)
+
+**Security Focus:** All SSRF tests are High priority. The service MUST reuse URLValidationService for all URL validations to prevent SSRF attacks through icon URLs.
+
+**Implementation Requirements:**
+- HEAD requests for faster accessibility checks (fallback to GET if HEAD not supported)
+- 10 second timeout per icon
+- Maximum 5 concurrent requests
+- Required sizes: 192x192, 512x512 (PWA requirements)
+- Recommended sizes: 180x180 (iOS)
+- Handle "any" size for SVG icons
+- Partial success: return success even if some icons fail
+
+Status updated to `To Develop`. Ready for Developer to implement the service.
 
 ### [2026-02-28 23:28 GMT+2] Agent: ProjectManager
 **Prioritization Review Complete**
