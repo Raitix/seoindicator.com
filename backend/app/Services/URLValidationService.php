@@ -5,10 +5,17 @@ namespace App\Services;
 use Illuminate\Support\Facades\Log;
 
 /**
- * URL Validation Service for TASK-16-3.
+ * URL Validation Service for TASK-16-3, TASK-19-15.
  * 
  * Validates URLs and prevents SSRF (Server-Side Request Forgery) attacks
  * by blocking access to internal/private IP addresses and dangerous protocols.
+ * 
+ * Features:
+ * - Private IP range blocking (RFC 1918, link-local, etc.)
+ * - Cloud metadata endpoint protection
+ * - DNS rebinding protection via redirect validation
+ * - Configurable whitelist
+ * - Security audit logging
  */
 class URLValidationService
 {
@@ -43,7 +50,7 @@ class URLValidationService
     /**
      * Cloud metadata endpoints (AWS, GCP, Azure, etc.)
      */
-    private const BLOCKED_HOSTS = [
+    private const DEFAULT_BLOCKED_HOSTS = [
         'localhost',
         'localhost.localdomain',
         'ip6-localhost',
@@ -57,9 +64,33 @@ class URLValidationService
     /**
      * Blocked IPs (cloud metadata endpoints).
      */
-    private const BLOCKED_IPS = [
+    private const DEFAULT_BLOCKED_IPS = [
         '169.254.169.254', // AWS/Azure/GCP metadata
     ];
+
+    /**
+     * Runtime blocked hosts (configurable).
+     */
+    private array $blockedHosts = [];
+
+    /**
+     * Runtime blocked IPs (configurable).
+     */
+    private array $blockedIPs = [];
+
+    /**
+     * Whitelisted hosts (can bypass blocks).
+     */
+    private array $whitelist = [];
+
+    /**
+     * Initialize the service with default blocked lists.
+     */
+    public function __construct()
+    {
+        $this->blockedHosts = self::DEFAULT_BLOCKED_HOSTS;
+        $this->blockedIPs = self::DEFAULT_BLOCKED_IPS;
+    }
 
     /**
      * Validate a URL for safe external fetching.
@@ -112,9 +143,26 @@ class URLValidationService
             ];
         }
 
+        // Decode URL-encoded host to catch encoded blocked hosts
+        $decodedHost = urldecode($host);
+        $hostLower = strtolower($decodedHost);
+
+        // Check whitelist first (allows bypass of blocked lists)
+        if ($this->isWhitelisted($hostLower)) {
+            Log::info('URL allowed via whitelist', [
+                'host' => $hostLower,
+                'url' => $url,
+            ]);
+
+            return [
+                'valid' => true,
+                'normalized_url' => $this->normalizeUrl($parsed),
+            ];
+        }
+
         // Check for blocked hosts
-        $hostLower = strtolower($host);
-        if (in_array($hostLower, self::BLOCKED_HOSTS, true)) {
+        if (in_array($hostLower, $this->blockedHosts, true)) {
+            $this->logBlockedRequest($url, 'host_blocked', $hostLower);
             return [
                 'valid' => false,
                 'error' => 'Access to this host is not allowed for security reasons.',
@@ -122,7 +170,9 @@ class URLValidationService
         }
 
         // Check for dangerous URL patterns (decimal, hex, octal IP notation)
-        if ($this->isDangerousIPNotation($host)) {
+        // Check both original and decoded host
+        if ($this->isDangerousIPNotation($host) || $this->isDangerousIPNotation($decodedHost)) {
+            $this->logBlockedRequest($url, 'dangerous_notation', $host);
             return [
                 'valid' => false,
                 'error' => 'Access to this URL is not allowed for security reasons.',
@@ -138,6 +188,7 @@ class URLValidationService
         } else {
             // Check if resolved IP is private or blocked
             if ($this->isPrivateOrBlockedIP($resolvedIP)) {
+                $this->logBlockedRequest($url, 'private_ip', $resolvedIP);
                 return [
                     'valid' => false,
                     'error' => 'Access to this URL is not allowed for security reasons.',
@@ -149,6 +200,165 @@ class URLValidationService
             'valid' => true,
             'normalized_url' => $this->normalizeUrl($parsed),
         ];
+    }
+
+    /**
+     * Validate a redirect URL (DNS rebinding protection).
+     * 
+     * This method should be called for each redirect during HTTP requests
+     * to prevent DNS rebinding attacks where the initial URL resolves to a
+     * valid public IP but redirects to a private/internal IP.
+     *
+     * @param string|null $url The redirect target URL
+     * @return array{valid: bool, error?: string, normalized_url?: string}
+     */
+    public function validateRedirect(?string $url): array
+    {
+        // Use the same validation logic as initial URL
+        // This ensures redirects are also checked for SSRF
+        $result = $this->validate($url);
+
+        // Log redirect validation for audit purposes
+        if (!$result['valid']) {
+            Log::warning('Redirect blocked by SSRF protection', [
+                'url' => $url,
+                'reason' => $result['error'] ?? 'unknown',
+            ]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get structured log entry for a blocked request.
+     *
+     * @param string $url The blocked URL
+     * @param string $reason The reason code
+     * @param string|null $detail Additional detail
+     * @return array{url: string, reason: string, detail: string|null, timestamp: string}
+     */
+    public function getBlockedRequestLog(string $url, string $reason, ?string $detail = null): array
+    {
+        return [
+            'url' => $url,
+            'reason' => $reason,
+            'detail' => $detail,
+            'timestamp' => now()->toISOString(),
+        ];
+    }
+
+    /**
+     * Get the current whitelist.
+     *
+     * @return array
+     */
+    public function getWhitelist(): array
+    {
+        return $this->whitelist;
+    }
+
+    /**
+     * Add a host to the whitelist.
+     * 
+     * Whitelisted hosts can bypass the blocked host list.
+     * Use with caution - only add trusted internal services.
+     *
+     * @param string $host Host to whitelist (e.g., 'trusted.internal')
+     */
+    public function addToWhitelist(string $host): void
+    {
+        $hostLower = strtolower($host);
+        if (!in_array($hostLower, $this->whitelist, true)) {
+            $this->whitelist[] = $hostLower;
+            
+            Log::info('Host added to SSRF whitelist', [
+                'host' => $hostLower,
+            ]);
+        }
+    }
+
+    /**
+     * Remove a host from the whitelist.
+     *
+     * @param string $host Host to remove from whitelist
+     */
+    public function removeFromWhitelist(string $host): void
+    {
+        $hostLower = strtolower($host);
+        $this->whitelist = array_filter(
+            $this->whitelist,
+            fn($h) => $h !== $hostLower
+        );
+    }
+
+    /**
+     * Add a custom blocked host.
+     *
+     * @param string $host Host to block
+     */
+    public function addBlockedHost(string $host): void
+    {
+        $hostLower = strtolower($host);
+        if (!in_array($hostLower, $this->blockedHosts, true)) {
+            $this->blockedHosts[] = $hostLower;
+            
+            Log::info('Host added to SSRF blocked list', [
+                'host' => $hostLower,
+            ]);
+        }
+    }
+
+    /**
+     * Add a custom blocked IP.
+     *
+     * @param string $ip IP address to block
+     */
+    public function addBlockedIP(string $ip): void
+    {
+        if (!in_array($ip, $this->blockedIPs, true)) {
+            $this->blockedIPs[] = $ip;
+            
+            Log::info('IP added to SSRF blocked list', [
+                'ip' => $ip,
+            ]);
+        }
+    }
+
+    /**
+     * Check if host is whitelisted.
+     *
+     * @param string $host
+     * @return bool
+     */
+    private function isWhitelisted(string $host): bool
+    {
+        foreach ($this->whitelist as $whitelisted) {
+            // Support wildcard matching (e.g., *.internal.trusted)
+            if (str_starts_with($whitelisted, '*.')) {
+                $domain = substr($whitelisted, 2);
+                if ($host === $domain || str_ends_with($host, '.' . $domain)) {
+                    return true;
+                }
+            } elseif ($host === $whitelisted) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Log a blocked request for security auditing.
+     *
+     * @param string $url
+     * @param string $reason
+     * @param string|null $detail
+     */
+    private function logBlockedRequest(string $url, string $reason, ?string $detail = null): void
+    {
+        $logEntry = $this->getBlockedRequestLog($url, $reason, $detail);
+
+        Log::channel('security')->warning('SSRF request blocked', $logEntry);
     }
 
     /**
@@ -235,8 +445,8 @@ class URLValidationService
      */
     private function resolveHostToIP(string $host): ?string
     {
-        // Handle IPv6 addresses in brackets
-        if (preg_match('/^\[([a-f0-9:]+)\]$/i', $host, $matches)) {
+        // Handle IPv6 addresses in brackets (including IPv4-mapped IPv6 like ::ffff:127.0.0.1)
+        if (preg_match('/^\[([a-f0-9:\.]+)\]$/i', $host, $matches)) {
             $ipv6 = $matches[1];
             if ($this->isIPv6Private($ipv6)) {
                 return $ipv6; // Will be blocked by isPrivateOrBlockedIP
@@ -272,7 +482,7 @@ class URLValidationService
     private function isPrivateOrBlockedIP(string $ip): bool
     {
         // Check against blocked IPs list
-        if (in_array($ip, self::BLOCKED_IPS, true)) {
+        if (in_array($ip, $this->blockedIPs, true)) {
             return true;
         }
 
@@ -338,6 +548,19 @@ class URLValidationService
             return true;
         }
 
+        // IPv4-mapped IPv6 addresses (::ffff:x.x.x.x)
+        if (str_starts_with($hex, '00000000000000000000ffff')) {
+            // Extract the IPv4 part (last 4 bytes)
+            $ipv4hex = substr($hex, -8);
+            $ipv4 = implode('.', [
+                hexdec(substr($ipv4hex, 0, 2)),
+                hexdec(substr($ipv4hex, 2, 2)),
+                hexdec(substr($ipv4hex, 4, 2)),
+                hexdec(substr($ipv4hex, 6, 2)),
+            ]);
+            return $this->isPrivateOrBlockedIP($ipv4);
+        }
+
         return false;
     }
 
@@ -369,7 +592,7 @@ class URLValidationService
      */
     public static function getBlockedHosts(): array
     {
-        return self::BLOCKED_HOSTS;
+        return self::DEFAULT_BLOCKED_HOSTS;
     }
 
     /**
@@ -377,6 +600,6 @@ class URLValidationService
      */
     public static function getBlockedIPs(): array
     {
-        return self::BLOCKED_IPS;
+        return self::DEFAULT_BLOCKED_IPS;
     }
 }
