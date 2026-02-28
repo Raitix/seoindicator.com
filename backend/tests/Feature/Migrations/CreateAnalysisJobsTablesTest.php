@@ -353,27 +353,42 @@ class CreateAnalysisJobsTablesTest extends TestCase
 
     /**
      * Test that progress_percent boundary values work.
+     * Note: progress_percent is calculated from completed/total_indicators via accessor.
      */
     public function test_analysis_jobs_progress_percent_boundary_values(): void
     {
         $user = User::factory()->create();
         $site = Site::factory()->create(['user_id' => $user->id]);
 
-        // Test 0
+        // Test 0 - no indicators completed
         $job1 = AnalysisJob::factory()->create([
             'user_id' => $user->id,
             'site_id' => $site->id,
-            'progress_percent' => 0,
+            'total_indicators' => 10,
+            'completed_indicators' => 0,
+            'failed_indicators' => 0,
         ]);
         $this->assertEquals(0, $job1->progress_percent);
 
-        // Test 100
+        // Test 100 - all indicators completed
         $job2 = AnalysisJob::factory()->create([
             'user_id' => $user->id,
             'site_id' => $site->id,
-            'progress_percent' => 100,
+            'total_indicators' => 10,
+            'completed_indicators' => 10,
+            'failed_indicators' => 0,
         ]);
         $this->assertEquals(100, $job2->progress_percent);
+
+        // Test 50 - half completed
+        $job3 = AnalysisJob::factory()->create([
+            'user_id' => $user->id,
+            'site_id' => $site->id,
+            'total_indicators' => 10,
+            'completed_indicators' => 5,
+            'failed_indicators' => 0,
+        ]);
+        $this->assertEquals(50, $job3->progress_percent);
     }
 
     /**
