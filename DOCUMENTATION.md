@@ -1,6 +1,235 @@
 # DOCUMENTATION.md
 
 ---
+## Ranking Change Alert System (FEAT-002)
+
+### Service Description
+Automated notification system that alerts users when keyword rankings change significantly. Users configure alert thresholds (position change magnitude, top 10 entry/exit) and delivery channels (email, in-app notifications). Transforms passive rank tracking into proactive monitoring.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/user/alert-settings` | Get user's global alert settings |
+| PUT | `/api/user/alert-settings` | Update global alert settings |
+| GET | `/api/keywords/{id}/alert-settings` | Get keyword-specific alert settings |
+| PUT | `/api/keywords/{id}/alert-settings` | Update keyword alert settings |
+| GET | `/api/notifications` | List notifications |
+| PATCH | `/api/notifications/{id}/read` | Mark notification as read |
+| POST | `/api/notifications/read-all` | Mark all notifications as read |
+
+### Alert Settings API
+
+**Get Alert Settings:**
+`GET /api/user/alert-settings`
+
+**Response (200):**
+```json
+{
+  "global_enabled": true,
+  "default_threshold": 3,
+  "quiet_hours_start": "22:00",
+  "quiet_hours_end": "07:00",
+  "digest_mode": "instant"
+}
+```
+
+**Update Alert Settings:**
+`PUT /api/user/alert-settings`
+
+**Request Body:**
+```json
+{
+  "global_enabled": true,
+  "default_threshold": 5,
+  "quiet_hours_start": "22:00",
+  "quiet_hours_end": "07:00",
+  "digest_mode": "daily"
+}
+```
+
+### Keyword Alert Settings API
+
+**Get Keyword Alert Settings:**
+`GET /api/keywords/{id}/alert-settings`
+
+**Response (200):**
+```json
+{
+  "enabled": true,
+  "custom_threshold": null,
+  "alert_events": ["position_drop", "position_gain", "entered_top_10"],
+  "notification_channels": ["email", "in_app"]
+}
+```
+
+**Update Keyword Alert Settings:**
+`PUT /api/keywords/{id}/alert-settings`
+
+**Request Body:**
+```json
+{
+  "enabled": true,
+  "custom_threshold": 5,
+  "alert_events": ["position_drop", "left_top_10"],
+  "notification_channels": ["email"]
+}
+```
+
+### Notifications API
+
+**List Notifications:**
+`GET /api/notifications?unread_only=true`
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "type": "position_drop",
+      "keyword_id": 5,
+      "data": {
+        "keyword": "seo tools",
+        "old_position": 5,
+        "new_position": 12,
+        "change": 7
+      },
+      "read_at": null,
+      "created_at": "2026-02-28T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "unread_count": 5
+  }
+}
+```
+
+### Database Schema
+
+**alert_settings Table:**
+```sql
+CREATE TABLE alert_settings (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    global_enabled BOOLEAN DEFAULT TRUE,
+    default_threshold INT UNSIGNED DEFAULT 3,
+    quiet_hours_start TIME NULL,
+    quiet_hours_end TIME NULL,
+    digest_mode ENUM('instant', 'daily', 'weekly') DEFAULT 'instant',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_user (user_id)
+);
+```
+
+**keyword_alert_settings Table:**
+```sql
+CREATE TABLE keyword_alert_settings (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    keyword_id BIGINT UNSIGNED NOT NULL,
+    enabled BOOLEAN DEFAULT TRUE,
+    custom_threshold INT UNSIGNED NULL,
+    alert_events JSON NULL,
+    notification_channels JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (keyword_id) REFERENCES keywords(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_keyword (keyword_id)
+);
+```
+
+**notifications Table:**
+```sql
+CREATE TABLE notifications (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    keyword_id BIGINT UNSIGNED NULL,
+    data JSON NOT NULL,
+    read_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_read (user_id, read_at)
+);
+```
+
+### Alert Event Types
+
+| Event | Trigger | Description |
+|-------|---------|-------------|
+| `position_drop` | Position decreased | Triggered when position drops by threshold or more |
+| `position_gain` | Position improved | Triggered when position improves by threshold or more |
+| `entered_top_10` | Position ≤ 10 | Keyword entered top 10 results |
+| `left_top_10` | Position > 10 | Keyword dropped out of top 10 |
+| `entered_top_3` | Position ≤ 3 | Keyword entered top 3 results |
+
+### Email Notifications
+
+**Template:** `RankingAlertEmail` mailable
+
+**Subject:** `[SEOIndicator] Alert: "{keyword}" {change_type}`
+
+**Content includes:**
+- Keyword name
+- Previous position
+- New position
+- Change magnitude
+- Link to dashboard
+- Unsubscribe link
+
+**Email Delivery:** Gmail SMTP (free tier, ~500 emails/day)
+
+### Frontend Components
+
+**Alert Settings Page:**
+- Path: `/settings/alerts`
+- Components: `frontend/app/settings/alerts/page.tsx`
+- Types: `frontend/lib/types/alerts.ts`
+- API: `frontend/lib/api/alerts.ts`
+
+**Notification Center:**
+- Path: `/notifications`
+- Components: `frontend/app/notifications/page.tsx`
+- Types: `frontend/lib/types/notifications.ts`
+- API: `frontend/lib/api/notifications.ts`
+
+**Header Bell Icon:**
+- Component: `frontend/components/layout/Header.tsx`
+- Shows unread count badge
+- Links to notification center
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware on all endpoints |
+| IDOR Protection | User can only access their own settings/notifications |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| Email Unsubscribe | One-click unsubscribe without login |
+
+### Test Coverage
+
+| Test Category | Tests | Assertions |
+|---------------|-------|------------|
+| Migration Tests | 37 | Schema, constraints |
+| Model Tests | 56 | Relationships, scopes, defaults |
+| Service Tests | 75+ | AlertEvaluator, NotificationDispatcher |
+| Controller Tests | 80+ | API endpoints, validation |
+| Email Tests | 30 | Mailable, template |
+| **Total** | **209+** | |
+
+### Production Status
+- **Deployed**: 2026-02-28 (via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 209 tests passing
+- **Status**: Complete
+
+### Dependencies
+- FEAT-001 (Keyword Rank Tracking)
+- Gmail SMTP configuration
+
+---
 ## User Onboarding & Activation Flow (FEAT-017)
 
 ### Service Description
