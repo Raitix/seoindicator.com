@@ -5,6 +5,7 @@ namespace Tests\Unit\Services;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Illuminate\Support\Collection;
+use App\Services\SEO\SerpFeatureScoreCalculator;
 
 /**
  * Unit tests for SerpFeatureScoreCalculator.
@@ -19,43 +20,12 @@ use Illuminate\Support\Collection;
  */
 class SerpFeatureScoreCalculatorTest extends TestCase
 {
-    /**
-     * Bonus points configuration (from implementation spec).
-     */
-    private const BONUS_POINTS = [
-        'featured_snippet' => 20,
-        'local_pack' => 15,
-        'sitelinks' => 10,
-        'reviews' => 5,
-        'video' => 5,
-        'image_pack' => 5,
-        'people_also_ask' => 3,
-    ];
+    private SerpFeatureScoreCalculator $calculator;
 
-    /**
-     * Calculate SERP feature score.
-     * This is the implementation being tested.
-     */
-    private function calculate(Collection $keywords): float
+    protected function setUp(): void
     {
-        $totalBonus = 0;
-        $keywordsWithFeatures = 0;
-
-        foreach ($keywords as $keyword) {
-            $keywordBonus = 0;
-            foreach ($keyword->serp_features ?? [] as $feature) {
-                $keywordBonus += self::BONUS_POINTS[$feature] ?? 0;
-            }
-
-            if ($keywordBonus > 0) {
-                $totalBonus += min($keywordBonus, 50);
-                $keywordsWithFeatures++;
-            }
-        }
-
-        return $keywordsWithFeatures > 0 
-            ? min(100, ($totalBonus / $keywordsWithFeatures) * 2)
-            : 0;
+        parent::setUp();
+        $this->calculator = new SerpFeatureScoreCalculator();
     }
 
     /**
@@ -82,7 +52,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['featured_snippet']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // 20 points * 2 = 40
         $this->assertEquals(40.0, $score);
@@ -94,7 +64,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['local_pack']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // 15 points * 2 = 30
         $this->assertEquals(30.0, $score);
@@ -106,7 +76,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['sitelinks']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // 10 points * 2 = 20
         $this->assertEquals(20.0, $score);
@@ -118,7 +88,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['reviews']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // 5 points * 2 = 10
         $this->assertEquals(10.0, $score);
@@ -130,7 +100,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['video']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // 5 points * 2 = 10
         $this->assertEquals(10.0, $score);
@@ -142,7 +112,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['image_pack']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // 5 points * 2 = 10
         $this->assertEquals(10.0, $score);
@@ -154,7 +124,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['people_also_ask']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // 3 points * 2 = 6
         $this->assertEquals(6.0, $score);
@@ -170,7 +140,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['featured_snippet', 'local_pack']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // (20 + 15) * 2 = 70
         $this->assertEquals(70.0, $score);
@@ -182,7 +152,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['featured_snippet', 'local_pack', 'sitelinks']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // (20 + 15 + 10) * 2 = 90
         $this->assertEquals(90.0, $score);
@@ -202,7 +172,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             ]),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Raw sum: 20+15+10+5+5+5+3 = 63, capped at 50, then *2 = 100 (capped at 100)
         $this->assertEquals(100.0, $score);
@@ -222,7 +192,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             ]),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Raw: 55, capped: 50, *2 = 100
         $this->assertEquals(100.0, $score);
@@ -240,7 +210,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             ]),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Exactly 50 * 2 = 100
         $this->assertEquals(100.0, $score);
@@ -257,7 +227,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['featured_snippet']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Each: 20, Total: 40, Avg: 20, *2 = 40
         $this->assertEquals(40.0, $score);
@@ -270,7 +240,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['local_pack']),       // 15
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Total: 35, Avg: 17.5, *2 = 35
         $this->assertEquals(35.0, $score);
@@ -284,7 +254,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['local_pack']),       // 15
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Total: 35, Keywords with features: 2, Avg: 17.5, *2 = 35
         $this->assertEquals(35.0, $score);
@@ -299,7 +269,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword([]),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Only 1 keyword with features: 20 * 2 = 40
         $this->assertEquals(40.0, $score);
@@ -313,7 +283,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
     {
         $keywords = collect([]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         $this->assertEquals(0.0, $score);
     }
@@ -326,7 +296,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword([]),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         $this->assertEquals(0.0, $score);
     }
@@ -339,7 +309,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
 
         $keywords = collect([$keyword]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         $this->assertEquals(0.0, $score);
     }
@@ -350,7 +320,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['unknown_feature']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Unknown features contribute 0 points
         $this->assertEquals(0.0, $score);
@@ -362,7 +332,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         $this->assertEquals(0.0, $score);
     }
@@ -373,7 +343,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['featured_snippet', 'unknown_feature', 'local_pack']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Only known features: 20 + 15 = 35, *2 = 70
         $this->assertEquals(70.0, $score);
@@ -392,7 +362,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['featured_snippet', 'local_pack', 'sitelinks', 'reviews', 'video']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         $this->assertLessThanOrEqual(100.0, $score);
         $this->assertEquals(100.0, $score);
@@ -404,7 +374,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['people_also_ask']), // 3 points
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // 3 * 2 = 6
         $this->assertEquals(6.0, $score);
@@ -417,7 +387,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['sitelinks']),        // 10
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Total: 30, Avg: 15, *2 = 30
         $this->assertEquals(30.0, $score);
@@ -433,7 +403,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(["'; DROP TABLE keywords; --"]),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // SQL injection string is not a valid feature, returns 0
         $this->assertEquals(0.0, $score);
@@ -445,7 +415,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['<script>alert(1)</script>']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // XSS string is not a valid feature, returns 0
         $this->assertEquals(0.0, $score);
@@ -457,7 +427,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['featured_snippet\'; DELETE FROM users;--']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         $this->assertEquals(0.0, $score);
     }
@@ -470,7 +440,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['featured_snippet']), // Correct case
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Only lowercase 'featured_snippet' matches
         // Total: 20, Avg: 20, *2 = 40
@@ -493,7 +463,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
         }
 
         $startTime = microtime(true);
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
         $duration = microtime(true) - $startTime;
 
         // Should complete in less than 1 second
@@ -512,7 +482,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['featured_snippet']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         $this->assertIsFloat($score);
     }
@@ -524,7 +494,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword([]),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         $this->assertEquals(0.0, $score);
     }
@@ -535,7 +505,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['featured_snippet', 'featured_snippet', 'featured_snippet']),
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Each occurrence adds points: 20 + 20 + 20 = 60, capped at 50, *2 = 100
         $this->assertEquals(100.0, $score);
@@ -549,7 +519,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['featured_snippet', 'local_pack', 'sitelinks']), // 45
         ]);
 
-        $score = $this->calculate($keywords);
+        $score = $this->calculator->calculate($keywords);
 
         // Total: 135, Avg: 45, *2 = 90
         $this->assertEquals(90.0, $score);
@@ -565,8 +535,8 @@ class SerpFeatureScoreCalculatorTest extends TestCase
             $this->createKeyword(['local_pack', 'featured_snippet']),
         ]);
 
-        $score1 = $this->calculate($keywords1);
-        $score2 = $this->calculate($keywords2);
+        $score1 = $this->calculator->calculate($keywords1);
+        $score2 = $this->calculator->calculate($keywords2);
 
         $this->assertEquals($score1, $score2);
     }
@@ -588,7 +558,7 @@ class SerpFeatureScoreCalculatorTest extends TestCase
                 $this->createKeyword([$feature]),
             ]);
 
-            $score = $this->calculate($keywords);
+            $score = $this->calculator->calculate($keywords);
 
             $this->assertEquals(
                 $expectedScore, 
@@ -596,5 +566,40 @@ class SerpFeatureScoreCalculatorTest extends TestCase
                 "Feature '{$feature}' should produce score {$expectedScore}"
             );
         }
+    }
+
+    // ============================================
+    // Additional API Tests
+    // ============================================
+
+    #[Test] public function get_feature_bonus_returns_correct_values(): void
+    {
+        $this->assertEquals(20, $this->calculator->getFeatureBonus('featured_snippet'));
+        $this->assertEquals(15, $this->calculator->getFeatureBonus('local_pack'));
+        $this->assertEquals(10, $this->calculator->getFeatureBonus('sitelinks'));
+        $this->assertEquals(5, $this->calculator->getFeatureBonus('reviews'));
+        $this->assertEquals(5, $this->calculator->getFeatureBonus('video'));
+        $this->assertEquals(5, $this->calculator->getFeatureBonus('image_pack'));
+        $this->assertEquals(3, $this->calculator->getFeatureBonus('people_also_ask'));
+    }
+
+    #[Test] public function get_feature_bonus_returns_zero_for_unknown(): void
+    {
+        $this->assertEquals(0, $this->calculator->getFeatureBonus('unknown_feature'));
+        $this->assertEquals(0, $this->calculator->getFeatureBonus(''));
+    }
+
+    #[Test] public function get_all_feature_bonuses_returns_complete_map(): void
+    {
+        $bonuses = $this->calculator->getAllFeatureBonuses();
+
+        $this->assertCount(7, $bonuses);
+        $this->assertArrayHasKey('featured_snippet', $bonuses);
+        $this->assertArrayHasKey('local_pack', $bonuses);
+        $this->assertArrayHasKey('sitelinks', $bonuses);
+        $this->assertArrayHasKey('reviews', $bonuses);
+        $this->assertArrayHasKey('video', $bonuses);
+        $this->assertArrayHasKey('image_pack', $bonuses);
+        $this->assertArrayHasKey('people_also_ask', $bonuses);
     }
 }
