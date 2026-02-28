@@ -1,7 +1,7 @@
 # FEAT-019: Progressive Analysis & Job System (Realtime Results)
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -23,6 +23,32 @@ As a user, I want results to appear progressively so I can start improving befor
 
 ## Notes
 - Source: legacy progressive job system (user request).
+
+---
+
+## Comments
+
+### [2026-02-28] Architect
+**Specification Created:** SPEC-019.md
+
+**Architecture Decision:**
+- Uses Server-Sent Events (SSE) for real-time updates (simpler than WebSockets, no external service needed)
+- Database-backed job queue with Laravel's native queue system
+- 5 concurrent indicator processing limit to prevent resource exhaustion
+- Polling fallback for environments without SSE support
+
+**Key Components:**
+1. `analysis_jobs` table - tracks job state, progress, timing
+2. `analysis_job_results` table - per-indicator results with scores
+3. `AnalysisJobService` - orchestrates job lifecycle
+4. `IndicatorProcessor` - abstract base for indicator implementations
+5. SSE stream endpoint for real-time UI updates
+
+**Tasks Breakdown:** 16 tasks across 4 phases (see SPEC-019.md)
+
+**Risk Reassessed:** Medium (remains) - SSE is standard technology, queue processing is well-understood. Memory/timing concerns mitigated with limits.
+
+**Status:** Ready for SpecSystemAnalyst to break into tasks.
 
 ---
 *Created by Lead from individual user request (legacy migration).*
