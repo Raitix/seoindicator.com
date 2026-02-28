@@ -1,7 +1,7 @@
 # SPEC-024: PWA / Web App Manifest Indicator
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -11,7 +11,21 @@
 
 ## Related
 - Feature: [FEAT-024](../FEATURES/FEAT-024.md)
-- Tasks: (To be created by SpecSystemAnalyst)
+- Tasks:
+  - TASK-24-1: Database Migration - PWA Analyses Table
+  - TASK-24-2: PWAAnalysis Model and Repository
+  - TASK-24-3: ManifestFetcherService
+  - TASK-24-4: ManifestValidatorService
+  - TASK-24-5: IconValidatorService
+  - TASK-24-6: PWAScorerService
+  - TASK-24-7: PWASuggestionService
+  - TASK-24-8: PWA Analysis API Endpoints
+  - TASK-24-9: PWA Guide API Endpoint
+  - TASK-24-10: PWA Dashboard Components
+  - TASK-24-11: PWA Score Gauge and Icon Validation Table
+  - TASK-24-12: PWA Recommendations Component
+  - TASK-24-13: Visibility Score Integration
+  - TASK-24-14: PWA Guide Page (Frontend)
 - Integrates with: SPEC-010 (Visibility Scores), SPEC-016 (Tools Infrastructure)
 
 ---
@@ -563,6 +577,41 @@ Created specification SPEC-024 for PWA / Web App Manifest Indicator (FEAT-024).
 - Icon validation latency (mitigated by concurrent checks and timeouts)
 
 Ready for SpecSystemAnalyst to break into tasks.
+
+### [2026-02-28 20:55 GMT+2] Agent: SpecSystemAnalyst
+Broke down SPEC-024 into 14 tasks following the rollout plan:
+
+**Phase 1 - Core Infrastructure (3 tasks):**
+- TASK-24-1: Database Migration (pwa_analyses table) - High priority
+- TASK-24-2: PWAAnalysis Model and Repository - High priority
+- TASK-24-3: ManifestFetcherService - High priority, Medium risk
+
+**Phase 2 - Validation (4 tasks):**
+- TASK-24-4: ManifestValidatorService - High priority
+- TASK-24-5: IconValidatorService - High priority, Medium risk
+- TASK-24-6: PWAScorerService - High priority
+- TASK-24-7: PWASuggestionService - Medium priority
+
+**Phase 3 - API (2 tasks):**
+- TASK-24-8: PWA Analysis API Endpoints - High priority, Medium risk
+- TASK-24-9: PWA Guide API Endpoint - Medium priority
+
+**Phase 4 - Frontend (3 tasks):**
+- TASK-24-10: PWA Dashboard Components - Medium priority
+- TASK-24-11: PWA Score Gauge and Icon Validation Table - Medium priority
+- TASK-24-12: PWA Recommendations Component - Medium priority
+
+**Phase 5 - Integration (2 tasks):**
+- TASK-24-13: Visibility Score Integration - High priority, Medium risk
+- TASK-24-14: PWA Guide Page (Frontend) - Low priority
+
+**Key Decisions:**
+- Reused SSRF protection from TASK-16-1 for security
+- Icons validated concurrently (up to 5 simultaneous) for performance
+- Guide content separated into standalone API for reusability
+- PWA contributes 10% to visibility score as per architecture
+
+All tasks ready for ProjectManager prioritization.
 
 ---
 
