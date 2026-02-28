@@ -1,7 +1,7 @@
 # FEAT-023: Backlinks Indicator
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
