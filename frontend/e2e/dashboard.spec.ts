@@ -166,11 +166,14 @@ test.describe('Dashboard E2E Tests', () => {
     // Wait for the dashboard to load
     await expect(page.locator('text=Dashboard Summary')).toBeVisible();
     
-    // Click "View full keyword list" button
-    await page.click('a:has-text("View full keyword list")');
+    // Click "View full keyword list" button and wait for navigation
+    await Promise.all([
+      page.waitForURL(/\/sites\/\d+\/keywords/, { timeout: 10000 }),
+      page.click('a:has-text("View full keyword list")'),
+    ]);
     
-    // Should navigate to keywords page
-    await expect(page).toHaveURL(/\/sites\/\d+\/keywords/);
+    // Verify we're on the keywords page
+    await expect(page.locator('h2:has-text("Keyword list")')).toBeVisible();
   });
 
   test('E2E-055: Navigate to add keyword from dashboard', async ({ page }) => {

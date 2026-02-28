@@ -16,8 +16,8 @@ Tests for the `DomainValidatorService` that normalizes domain input, validates f
 
 | File | Type | Tests | Assertions |
 |------|------|-------|------------|
-| `backend/tests/Unit/Services/DomainValidatorServiceTest.php` | Unit | 45+ | 120+ |
-| `backend/tests/Feature/Services/DomainValidatorServiceIntegrationTest.php` | Integration | 20+ | 50+ |
+| `backend/tests/Unit/Services/DomainValidatorServiceTest.php` | Unit | 70+ | 180+ |
+| `backend/tests/Feature/Services/DomainValidatorServiceIntegrationTest.php` | Integration | 45+ | 100+ |
 
 ---
 
@@ -334,3 +334,10 @@ php artisan test --filter=TEST-18
 - 80+ test scenarios covering normalization, validation, SSRF, redirects
 - Integration with URLValidationService from FEAT-016 required
 - Ready for test implementation
+
+### [2026-02-28] PreTester
+- Unit tests created: 70+ test methods (DomainValidatorServiceTest.php)
+- Integration tests created: 45+ test methods (DomainValidatorServiceIntegrationTest.php)
+- Total: 115+ tests with 280+ assertions
+- All test scenarios from documentation implemented
+- Tests ready for Developer to run during implementation

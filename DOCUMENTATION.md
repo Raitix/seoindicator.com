@@ -1,6 +1,148 @@
 # DOCUMENTATION.md
 
 ---
+## SEO Analyses Table (TASK-18-1)
+
+### Service Description
+Database migration for storing SEO analysis results. Foundation table for the Legacy 17-Indicator SEO Analysis feature (FEAT-018), supporting both authenticated users and anonymous session-based tracking.
+
+### Database Schema
+
+```sql
+CREATE TABLE seo_analyses (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NULL,
+    session_id VARCHAR(64) NULL,
+    domain VARCHAR(500) NOT NULL,
+    normalized_url VARCHAR(500) NOT NULL,
+    overall_score TINYINT UNSIGNED NOT NULL,
+    status ENUM('pending', 'running', 'completed', 'failed') DEFAULT 'pending',
+    error_message TEXT NULL,
+    analysis_data JSON NOT NULL,
+    checked_at TIMESTAMP NULL,
+    expires_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX seo_analyses_user_id_domain_index (user_id, domain),
+    INDEX seo_analyses_session_id_domain_index (session_id, domain),
+    INDEX seo_analyses_normalized_url_index (normalized_url),
+    INDEX seo_analyses_status_index (status),
+    INDEX seo_analyses_expires_at_index (expires_at)
+);
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `user_id` | BIGINT UNSIGNED | FK to users.id (nullable for anonymous users) |
+| `session_id` | VARCHAR(64) | Session identifier for anonymous tracking |
+| `domain` | VARCHAR(500) | Original domain input |
+| `normalized_url` | VARCHAR(500) | Normalized URL (https:// + domain) |
+| `overall_score` | TINYINT UNSIGNED | Weighted SEO score (0-100) |
+| `status` | ENUM | Analysis status: `pending`, `running`, `completed`, `failed` |
+| `error_message` | TEXT | Error message if analysis failed |
+| `analysis_data` | JSON | Full analysis results (indicators, scores, suggestions) |
+| `checked_at` | TIMESTAMP | When analysis was completed |
+| `expires_at` | TIMESTAMP | Cache expiry timestamp (24 hours) |
+
+### Indexes
+
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `seo_analyses_user_id_domain_index` | user_id, domain | User's analyses by domain |
+| `seo_analyses_session_id_domain_index` | session_id, domain | Anonymous analyses by domain |
+| `seo_analyses_normalized_url_index` | normalized_url | Lookup by normalized URL |
+| `seo_analyses_status_index` | status | Filter by status |
+| `seo_analyses_expires_at_index` | expires_at | Cache cleanup queries |
+
+### Foreign Keys
+
+| Constraint | Columns | References | On Delete |
+|------------|---------|------------|-----------|
+| `seo_analyses_user_id_foreign` | user_id | users.id | CASCADE |
+
+### analysis_data JSON Structure
+
+```json
+{
+  "url": "https://example.com",
+  "analyzedAt": "2026-02-28T10:00:00Z",
+  "overallScore": 78,
+  "categoryScores": {
+    "content": 82,
+    "technical": 75,
+    "accessibility": 70,
+    "performance": 85
+  },
+  "indicators": [
+    {
+      "id": "title_tag",
+      "name": "Title Tag",
+      "category": "content",
+      "score": 3,
+      "weight": 0.10,
+      "passed": true,
+      "details": {},
+      "suggestions": []
+    }
+  ],
+  "summary": {
+    "passed": 12,
+    "warnings": 3,
+    "failed": 2
+  }
+}
+```
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-02-28 (commit 7f54385) |
+| **Migration** | `2026_02_28_171900_create_seo_analyses_table.php` |
+| **Health Check** | Passing |
+| **Tests** | 33 tests, 44 assertions |
+| **Status** | Complete |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CreateSeoAnalysesTableTest.php` | 33 | 44 |
+
+**Test Categories:**
+- Schema structure (13 tests): All columns with correct types
+- Index validation (5 tests): Composite and single-column indexes
+- Foreign key constraints (2 tests): FK to users.id with CASCADE delete
+- Enum validation (4 tests): Status values (pending, running, completed, failed)
+- Migration rollback (2 tests): Drop table and re-run
+- Security (3 tests): SQL injection, XSS protection
+- JSON handling (4 tests): Empty, nested, valid structures
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Protection | JSON column stored as parameterized query |
+| Mass Assignment | Model `$fillable` whitelist |
+| Foreign Key | CASCADE delete ensures data integrity |
+
+### Dependencies
+
+None - Foundation task for FEAT-018.
+
+### Related Tasks
+
+- TASK-18-2: SEOAnalysis Model and Repository
+- TASK-18-3: IndicatorChecker Interface
+- TASK-18-6: AnalysisRunnerService
+
+---
 ## Core Indicator Processors (TASK-19-6)
 
 ### Service Description
