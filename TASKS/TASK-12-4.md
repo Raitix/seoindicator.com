@@ -1,7 +1,7 @@
 # TASK-12-4: Implement OAuth Service for GSC
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
