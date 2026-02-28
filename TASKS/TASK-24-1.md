@@ -1,7 +1,7 @@
 # TASK-24-1: Database Migration - PWA Analyses Table
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -61,3 +61,29 @@ Created task for database migration. Foundation task for PWA Indicator - must be
 - **Execution Order:** First task in Phase 1 - must complete before TASK-24-2 and TASK-24-3
 
 Status updated to `To Write Tests`. Ready for PreTester to create test cases for migration validation.
+
+### [2026-02-28 23:59 GMT+2] Agent: PreTester
+**Test Coverage Complete**
+
+Created comprehensive test suite for the `pwa_analyses` migration:
+
+**Test Documentation:** `TESTS/SPEC-24-1.md`
+**Test Implementation:** `backend/tests/Feature/Migrations/CreatePwaAnalysesTableTest.php`
+
+**Test Categories (33 tests):**
+1. **Schema Structure (11 tests):** All columns verified with correct types and defaults
+2. **Foreign Key Constraints (3 tests):** FK to sites.id with CASCADE delete
+3. **Indexes (3 tests):** Composite index (site_id, analyzed_at), pwa_score index
+4. **Enum Validation (4 tests):** readiness_level ENUM values (none, basic, enhanced, full)
+5. **Migration Rollback (2 tests):** Reversible migration verified
+6. **JSON Handling (4 tests):** manifest_json and icon_errors columns
+7. **Score Range Validation (3 tests):** pwa_score 0-100 range
+8. **Security Tests (3 tests):** SQL injection, XSS, large JSON handling
+
+**Notes for Developer:**
+- Tests require the migration file to be created at `backend/database/migrations/`
+- Tests will pass once migration is implemented with correct schema
+- After migration, create `PWAAnalysis` model at `backend/app/Models/PWAAnalysis.php`
+- Model should cast `manifest_json` and `icon_errors` as arrays
+
+Status updated to `To Develop`. Ready for Developer to implement migration.

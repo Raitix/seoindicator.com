@@ -1,7 +1,7 @@
 # TASK-23-9: Backlinks API Endpoints - Overview
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -28,7 +28,7 @@ Create REST API endpoint for backlinks overview. Returns summary metrics, recent
 - [ ] Returns recent backlinks list (last 10)
 - [ ] Returns top referring domains (top 5)
 - [ ] Authorization via ProjectPolicy
-- [ ] Unit and feature tests
+- [x] Unit and feature tests
 
 ---
 
@@ -145,3 +145,46 @@ TASK-23-8 (Scorer) ─┘
 **Free Tools Compliance:** ✅ No external APIs required.
 
 Handing off to PreTester for test design.
+
+### [2026-02-28 23:48] Agent: PreTester
+**Tests Written - Ready for Development**
+
+**Test Documentation:** `TESTS/TEST-23-9.md`
+**Test File:** `backend/tests/Feature/Api/V1/BacklinkOverviewControllerTest.php`
+
+**Test Summary:**
+| Category | Tests | Status |
+|----------|-------|--------|
+| Authorization | 5 | ✅ Written |
+| Summary Structure | 7 | ✅ Written |
+| Summary Calculations | 9 | ✅ Written |
+| Recent Backlinks | 10 | ✅ Written |
+| Top Referring Domains | 8 | ✅ Written |
+| Data Integrity | 5 | ✅ Written |
+| Edge Cases | 9 | ✅ Written |
+| Security | 5 | ✅ Written |
+| **Total** | **58** | ✅ |
+
+**Test Execution Results:**
+- All tests return 404 (expected - route/controller not implemented yet)
+- TDD approach: tests written before implementation
+- Tests will pass once controller and route are implemented
+
+**Key Test Scenarios:**
+1. Authorization tests verify ProjectPolicy integration
+2. Summary tests verify all fields and calculations (dofollow ratio, growth rate, profile score)
+3. Recent backlinks tests verify ordering and field presence
+4. Top domains tests verify ordering by backlinks count
+5. Security tests cover SQL injection, XSS, and IDOR attacks
+
+**Developer Notes:**
+- Route: `GET /api/v1/projects/{projectId}/backlinks`
+- Controller: `BacklinkController::index()`
+- Dependencies already implemented:
+  - `BacklinkRepository::getRecent()` ✅
+  - `ReferringDomainRepository::getTopByBacklinks()` ✅
+  - `BacklinkSnapshotRepository::getLatest()` ✅
+- Growth rate calculation needs comparison with previous snapshot
+- Profile score integration depends on TASK-23-8 (tests ready, awaiting implementation)
+
+Handing off to Developer for implementation.
