@@ -1,7 +1,7 @@
 # SPEC-031: Unified AI Prompt + Context Management
 
 ## STATUS
-`Specification In Progress`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -848,6 +848,7 @@ GET /api/v1/ai/models
 | Date | Agent | Action |
 |------|-------|--------|
 | 2026-02-28 | Architect | Initial specification created |
+| 2026-02-28 | Architect | Status updated to "To Break Into Tasks" - specification complete |
 
 ---
 
