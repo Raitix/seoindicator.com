@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $user_id
  * @property string $url
  * @property string|null $name
+ * @property bool $enable_serp_features
  */
 class Site extends Model
 {
@@ -23,6 +24,11 @@ class Site extends Model
         'user_id',
         'url',
         'name',
+        'enable_serp_features',
+    ];
+
+    protected $casts = [
+        'enable_serp_features' => 'boolean',
     ];
 
     public function user(): BelongsTo

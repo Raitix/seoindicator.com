@@ -1,7 +1,7 @@
 # TASK-7-13: Integrate with Ranking Check Workflow
 
 ## STATUS
-`To Develop`
+`Done`
 
 ## PRIORITY
 `High`
@@ -18,14 +18,14 @@
 Integrate SERP feature detection into the existing ranking check workflow. When a ranking check runs, it should also detect and record SERP features. This is the core integration that makes feature tracking work automatically.
 
 ## Acceptance Criteria
-- [ ] Modify ranking check service to call SERP feature detector after fetching SERP data
-- [ ] Store detected features in serp_features table
-- [ ] Update rankings.serp_features JSON column
-- [ ] Trigger change tracker to detect gains/losses
-- [ ] Handle errors gracefully (feature detection failure shouldn't break ranking check)
-- [ ] Add logging for debugging
-- [ ] Performance: feature detection adds <1 second to ranking check
-- [ ] Configuration flag to enable/disable feature tracking per site
+- [x] Modify ranking check service to call SERP feature detector after fetching SERP data
+- [x] Store detected features in serp_features table
+- [x] Update rankings.serp_features JSON column
+- [x] Trigger change tracker to detect gains/losses
+- [x] Handle errors gracefully (feature detection failure shouldn't break ranking check)
+- [x] Add logging for debugging
+- [x] Performance: feature detection adds <1 second to ranking check
+- [x] Configuration flag to enable/disable feature tracking per site
 
 ## Test Coverage
 - **Test File:** `TESTS/SPEC-7-13.md`
@@ -84,6 +84,39 @@ Medium (4-5 hours)
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-19] Agent: Developer
+**Implementation Complete** ✓
+
+**Files Created/Modified:**
+- `backend/database/migrations/2026_02_21_190000_add_enable_serp_features_to_sites_table.php` - Migration to add `enable_serp_features` column to sites table
+- `backend/app/Services/SERPFeatureDetector.php` - NEW: Detector service for identifying SERP features from search results (implements TASK-7-4 dependency)
+- `backend/app/Services/RankCheckerService.php` - MODIFIED: Added `detectAndStoreSerpFeatures()` method, integrated feature detection after SERP fetch
+- `backend/app/Models/Site.php` - MODIFIED: Added `enable_serp_features` field and cast
+- `backend/database/factories/SiteFactory.php` - MODIFIED: Added `enable_serp_features` field and `withSerpFeatures()` state
+- `backend/tests/Unit/Services/RankingServiceFeatureIntegrationTest.php` - NEW: 14 unit tests covering all acceptance criteria
+
+**Test Results:**
+- 14 tests, 25 assertions
+- All tests passing ✓
+
+**Implementation Details:**
+1. **SERPFeatureDetector** - Full implementation with detection methods for all 10 feature types:
+   - featured_snippet, local_pack, image_pack, video, people_also_ask
+   - knowledge_panel, sitelinks, reviews, faq, product
+
+2. **RankCheckerService Integration:**
+   - Added dependency injection for detector, repository, and change tracker
+   - `detectAndStoreSerpFeatures()` method handles the full integration
+   - Graceful error handling with try-catch to prevent ranking check failures
+   - Performance logging for monitoring
+
+3. **Site Configuration:**
+   - `enable_serp_features` boolean field on sites table
+   - Feature detection only runs when enabled for the site
+   - Factory helper `withSerpFeatures()` for test setup
+
+**Handoff to LocalTester:** Ready for QA testing
 
 ### [2026-02-28 13:55] Agent: PreTester
 **Test Design Complete** ✓

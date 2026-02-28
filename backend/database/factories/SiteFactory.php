@@ -20,6 +20,17 @@ class SiteFactory extends Factory
             'user_id' => \App\Models\User::factory(),
             'url' => fake()->unique()->url(),
             'name' => fake()->optional()->company(),
+            'enable_serp_features' => false,
         ];
+    }
+
+    /**
+     * Indicate that the site has SERP features enabled.
+     */
+    public function withSerpFeatures(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'enable_serp_features' => true,
+        ]);
     }
 }
