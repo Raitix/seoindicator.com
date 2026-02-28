@@ -204,6 +204,11 @@ class ImagesProcessor extends IndicatorProcessor
             $altRatio = $withAlt / count($images);
             $score = $altRatio * 60; // Max 60 points for alt text coverage
 
+            // Bonus for perfect coverage (use abs comparison for float safety)
+            if (abs($altRatio - 1.0) < 0.0001) {
+                $score += 10; // Perfect alt text coverage bonus
+            }
+
             if ($altRatio < 1) {
                 $recommendations[] = $this->recommendation(
                     'medium',
@@ -220,7 +225,7 @@ class ImagesProcessor extends IndicatorProcessor
                 );
             }
         } else {
-            $score = 60;
+            $score = 70;
         }
 
         return [
