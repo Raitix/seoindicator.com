@@ -1,7 +1,7 @@
 # TASK-19-9: SSE Stream Endpoint
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`

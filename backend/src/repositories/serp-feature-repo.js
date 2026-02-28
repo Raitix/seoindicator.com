@@ -57,17 +57,23 @@ class SERPFeatureRepository {
     const errors = [];
 
     // Required: keyword_id (must be number)
-    if (typeof feature.keyword_id !== 'number' || !Number.isInteger(feature.keyword_id)) {
+    if (feature.keyword_id === undefined || feature.keyword_id === null) {
+      errors.push('keyword_id is required');
+    } else if (typeof feature.keyword_id !== 'number' || !Number.isInteger(feature.keyword_id)) {
       errors.push('keyword_id must be an integer');
     }
 
     // Required: feature_type (must be valid SERP feature type)
-    if (!isValidFeatureType(feature.feature_type)) {
+    if (feature.feature_type === undefined || feature.feature_type === null) {
+      errors.push('feature_type is required');
+    } else if (!isValidFeatureType(feature.feature_type)) {
       errors.push(`feature_type must be one of: ${ALL_FEATURE_TYPES.join(', ')}`);
     }
 
     // Required: is_present (must be boolean or 0/1)
-    if (typeof feature.is_present !== 'boolean' && feature.is_present !== 0 && feature.is_present !== 1) {
+    if (feature.is_present === undefined || feature.is_present === null) {
+      errors.push('is_present is required');
+    } else if (typeof feature.is_present !== 'boolean' && feature.is_present !== 0 && feature.is_present !== 1) {
       errors.push('is_present must be a boolean');
     }
 
