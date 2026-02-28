@@ -51,7 +51,7 @@ class WebhookTest extends TestCase
         $secret = Webhook::generateSecret();
 
         $this->assertStringStartsWith('whsec_', $secret);
-        $this->assertEquals(71, strlen($secret)); // 'whsec_' + 64 hex chars
+        $this->assertEquals(70, strlen($secret)); // 'whsec_' (6) + 64 hex chars = 70
     }
 
     /**
@@ -127,11 +127,11 @@ class WebhookTest extends TestCase
     }
 
     /**
-     * Test subscribesTo handles null events.
+     * Test subscribesTo handles empty events array.
      */
-    public function test_subscribes_to_handles_null_events(): void
+    public function test_subscribes_to_handles_empty_events(): void
     {
-        $webhook = Webhook::factory()->create(['events' => null]);
+        $webhook = Webhook::factory()->create(['events' => []]);
 
         $this->assertFalse($webhook->subscribesTo('ranking.changed'));
     }

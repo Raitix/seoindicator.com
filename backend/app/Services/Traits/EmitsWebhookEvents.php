@@ -31,14 +31,17 @@ trait EmitsWebhookEvents
 
     /**
      * Get the webhook dispatcher service.
+     * Always resolves from container to allow mocking in tests.
      */
     protected function getWebhookDispatcher(): WebhookDispatcherService
     {
-        if ($this->webhookDispatcher === null) {
-            $this->webhookDispatcher = app(WebhookDispatcherService::class);
+        // If explicitly set (e.g., for testing), use that
+        if ($this->webhookDispatcher !== null) {
+            return $this->webhookDispatcher;
         }
 
-        return $this->webhookDispatcher;
+        // Always resolve from container to allow mocking
+        return app(WebhookDispatcherService::class);
     }
 
     /**

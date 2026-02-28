@@ -863,9 +863,11 @@ class WebhookDispatcherServiceTest extends TestCase
     }
 
     /**
-     * EC-002: Null webhook events
+     * EC-002: Webhook with non-matching events (empty events already tested in EC-003)
+     * Note: Database schema enforces NOT NULL on events column, so null events
+     * are not possible. This test verifies behavior when events don't match.
      */
-    public function test_dispatch_with_null_webhook_events(): void
+    public function test_dispatch_with_unsubscribed_event_type(): void
     {
         Http::fake();
 
@@ -876,13 +878,13 @@ class WebhookDispatcherServiceTest extends TestCase
             'user_id' => $user->id,
             'url' => 'https://example.com/webhook',
             'secret' => 'whsec_testsecret123',
-            'events' => null,
+            'events' => ['alert.triggered', 'report.completed'], // Different events
             'enabled' => true,
         ]);
 
         $event = [
             'id' => 'evt_test123',
-            'type' => 'ranking.changed',
+            'type' => 'ranking.changed', // Not in webhook's events
             'created_at' => now()->toIso8601String(),
             'data' => ['test' => 'data'],
         ];
