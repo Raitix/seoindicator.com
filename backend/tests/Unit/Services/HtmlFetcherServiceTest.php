@@ -105,7 +105,7 @@ class HtmlFetcherServiceTest extends TestCase
             ->andReturn(['valid' => true]);
 
         Http::fake([
-            $url => Http::response('', 200)->timeout(35),
+            $url => Http::failedConnection('Connection timed out'),
         ]);
 
         // Service should enforce timeout
