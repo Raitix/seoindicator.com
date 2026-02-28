@@ -240,6 +240,9 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::get('sites/{siteId}/analysis/jobs', [AnalysisJobController::class, 'index']);
     Route::post('sites/{siteId}/analysis/jobs', [AnalysisJobController::class, 'store']);
     Route::get('analysis/jobs/{jobId}', [AnalysisJobController::class, 'show']);
+    Route::post('analysis/jobs/{jobId}/start', [AnalysisJobController::class, 'start']);
+    Route::get('analysis/jobs/{jobId}/stream', [AnalysisJobController::class, 'stream']);
+    Route::get('analysis/jobs/{jobId}/progress', [AnalysisJobController::class, 'progress']);
     Route::delete('analysis/jobs/{jobId}', [AnalysisJobController::class, 'destroy']);
     Route::get('analysis/indicators', [AnalysisJobController::class, 'indicators']);
 });
