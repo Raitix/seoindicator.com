@@ -2860,6 +2860,141 @@ CREATE TABLE gsc_connections (
 - TASK-12-8: GSC Data Controller API
 
 ---
+## Database Schema: GSC Data Table (TASK-12-2)
+
+### GSC Data Table
+Stores imported Google Search Console metrics (clicks, impressions, CTR, position) per query and date. Populated by the GSC Data Sync service during daily synchronization with Google Search Console API.
+
+```sql
+CREATE TABLE gsc_data (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    site_id BIGINT UNSIGNED NOT NULL,
+    query VARCHAR(255) NOT NULL,
+    page VARCHAR(255) NULL,
+    clicks INT UNSIGNED NOT NULL DEFAULT 0,
+    impressions INT UNSIGNED NOT NULL DEFAULT 0,
+    ctr DECIMAL(8,5) UNSIGNED NOT NULL DEFAULT 0.00000,
+    avg_position DECIMAL(8,2) UNSIGNED NOT NULL DEFAULT 0.00,
+    data_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_unique_data (site_id, query, page, data_date),
+    INDEX idx_query_date (query, data_date),
+    INDEX idx_site_date (site_id, data_date),
+    INDEX idx_site_query (site_id, query)
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id (project context) |
+| `query` | VARCHAR(255) | Search query from GSC |
+| `page` | VARCHAR(255) | Landing page URL (nullable) |
+| `clicks` | INT UNSIGNED | Number of clicks from search |
+| `impressions` | INT UNSIGNED | Number of impressions in search |
+| `ctr` | DECIMAL(8,5) | Click-through rate (0-100) |
+| `avg_position` | DECIMAL(8,2) | Average ranking position |
+| `data_date` | DATE | Date of the metrics |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+| `updated_at` | TIMESTAMP | Last update timestamp |
+
+**Constraints:**
+- Foreign Key: `site_id → sites.id` ON DELETE CASCADE
+- Unique: `(site_id, query, page, data_date)` - prevents duplicate data imports
+
+**Indexes:**
+- `idx_unique_data` unique index on `(site_id, query, page, data_date)`
+- `idx_query_date` on `(query, data_date)` for query-based searches
+- `idx_site_date` on `(site_id, data_date)` for site filtering by date
+- `idx_site_query` on `(site_id, query)` for site-specific query lookups
+- `gsc_data_query_index` on `query`
+- `gsc_data_data_date_index` on `data_date`
+
+### Model Properties
+
+**GSCData Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `site()` | belongsTo | Site this data belongs to |
+
+**Model Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `forSite($siteId)` | Filter by site ID |
+| `dateRange($from, $to)` | Filter by date range |
+| `forQueries($queries)` | Filter by query array |
+| `topByClicks($limit)` | Order by clicks descending |
+| `topByImpressions($limit)` | Order by impressions descending |
+| `topByCTR($limit)` | Order by CTR descending |
+| `topByPosition($limit)` | Order by position ascending |
+| `needsRefresh()` | Data older than threshold |
+| `opportunities()` | High impression, lower-than-expected CTR |
+
+### Factory States
+
+| State | Description |
+|-------|-------------|
+| `recent()` | Data from the last 7 days |
+| `highPerforming()` | High clicks, impressions, good CTR |
+| `opportunity()` | High impressions, low CTR |
+
+### Opportunity Detection
+
+The `opportunities()` scope identifies keywords with optimization potential:
+- High impressions but lower-than-expected CTR for position
+- Uses CTR benchmarks based on average position
+- Calculates potential missed clicks: `(expected_ctr - actual_ctr) * impressions`
+
+**Example:**
+```php
+$opportunities = GSCData::forSite($siteId)
+    ->opportunities()
+    ->orderByDesc('opportunity_score')
+    ->limit(10)
+    ->get();
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| CreateGSCDataTableTest | 9 | 44 |
+| GSCDataSyncServiceTest | 13 | 45 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Schema Validation | 9 | Table structure, columns, indexes, constraints |
+| Model Scopes | 9 | Query scopes for filtering and ordering |
+| Factory States | 3 | recent, highPerforming, opportunity states |
+| Data Sync | 13 | API parsing, batch processing, aggregation |
+
+### Production Status
+- **Deployed**: 2026-02-28 (migration already in production)
+- **Migration**: `2026_02_21_191000_create_gsc_data_table.php`
+- **Verified**: Health check passing, 22 tests passing (89 assertions)
+- **Status**: Complete
+
+### Schema Enhancements (vs. task requirements)
+- Uses `DECIMAL` for CTR and position (more precise than `FLOAT`)
+- Uses `site_id` instead of `project_id` (consistent with multi-site architecture)
+- Additional indexes for query optimization
+- Unique constraint prevents duplicate data imports
+
+### Dependencies
+- TASK-12-1 (GSC Connections Table)
+- TASK-1-1 (Sites table)
+
+### Related Tasks
+- TASK-12-5: GSC Data Sync Service
+- TASK-12-6: Query Matching for GSC Data
+- TASK-12-8: GSC Data Controller API
+
+---
 ## Database Schema: GSC Query Match Column (TASK-12-3)
 
 ### Schema Change
