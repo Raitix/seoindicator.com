@@ -1,7 +1,7 @@
 # FEAT-018: Legacy 17-Indicator SEO Analysis (Core Engine)
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -27,6 +27,25 @@ As a user, I want to enter a domain and get a clear SEO score with actionable is
 ## Notes
 - Source: legacy project (user request).
 - This feature is the baseline for everything else.
+
+## Comments
+
+### Architect (2026-02-28)
+**Specification Complete:** Created SPEC-018.md with full technical design.
+
+**Architecture Decisions:**
+- 17 indicator checkers implementing `IndicatorCheckerInterface`
+- Weighted scoring system (1-3 stars per indicator)
+- JSON storage for analysis results in `seo_analyses` table
+- Service layer: DomainValidator, HtmlFetcher, AnalysisRunner, ScoreCalculator, SuggestionGenerator
+- Reuses existing infrastructure from FEAT-016 (HTML parsing, SSRF protection)
+- Free Google PageSpeed Insights API for performance metrics
+
+**Risk Assessment: Confirmed HIGH** - This is the core engine with external HTTP requests, SSRF potential, and complex scoring logic.
+
+**Task Breakdown:** 36 tasks across 6 phases (see SPEC-018.md Section 10).
+
+**Handoff to SpecSystemAnalyst:** Ready for task breakdown. Each indicator checker should be its own task for granular testing.
 
 ---
 *Created by Lead from individual user request (legacy migration).*
