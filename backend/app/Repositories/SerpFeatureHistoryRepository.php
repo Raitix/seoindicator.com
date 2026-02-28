@@ -434,7 +434,8 @@ class SerpFeatureHistoryRepository
         $now = now();
         $result = [];
         foreach ($featureStates as $feature) {
-            $daysHeld = (int) $now->diffInDays($feature['held_since']);
+            // held_since is in the past, so we calculate from held_since to now
+            $daysHeld = (int) $feature['held_since']->diffInDays($now);
             $result[] = [
                 'keyword_id' => $feature['keyword_id'],
                 'feature_type' => $feature['feature_type'],
