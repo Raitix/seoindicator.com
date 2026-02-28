@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\ReportTemplateController;
 use App\Http\Controllers\Api\V1\SerpFeatureController;
 use App\Http\Controllers\Api\V1\APIProxyController;
 use App\Http\Controllers\Api\GSCConnectionController;
+use App\Http\Controllers\Api\IndicatorsController;
 use App\Http\Controllers\Api\V1\SuggestionController;
 use App\Http\Controllers\Api\V1\AnnotationController;
 
@@ -32,6 +33,9 @@ use App\Http\Controllers\Api\V1\AnnotationController;
 
 // Health check (public)
 Route::get('/health', [DeployController::class, 'health']);
+
+// Indicators placeholder (TASK-1-22) - public
+Route::get('/indicators', [IndicatorsController::class, 'index']);
 
 // Deploy endpoints (protected by deploy key + rate limiting + logging)
 // SPEC-SEC-2026-02-21-3: Rate limiting (5 req/15min) and failed auth logging
