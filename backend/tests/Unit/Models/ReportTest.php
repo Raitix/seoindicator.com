@@ -190,6 +190,9 @@ class ReportTest extends TestCase
             'file_path',
             'file_size',
             'error',
+            'delivered_at',
+            'delivery_status',
+            'delivery_log',
         ];
         
         $report = new Report();
