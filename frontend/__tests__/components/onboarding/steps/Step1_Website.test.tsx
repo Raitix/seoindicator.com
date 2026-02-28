@@ -54,7 +54,7 @@ describe('Step1_Website', () => {
     const urlInput = screen.getByLabelText(/website url/i);
     expect(urlInput).toBeInTheDocument();
     expect(urlInput).toHaveAttribute('type', 'url');
-    expect(urlInput).toHaveAttribute('placeholder', /https:\/\/example\.com/i);
+    expect(urlInput).toHaveAttribute('placeholder', 'https://example.com');
   });
 
   it('should render tooltip with explanation', () => {
@@ -123,13 +123,18 @@ describe('Step1_Website', () => {
     render(<Step1_Website />);
 
     const urlInput = screen.getByLabelText(/website url/i);
+    // Create a URL that exceeds max length (500 chars)
     const longUrl = 'https://example.com/' + 'a'.repeat(500);
-    await user.type(urlInput, longUrl);
+    
+    // Use paste instead of typing for speed
+    await user.click(urlInput);
+    fireEvent.change(urlInput, { target: { value: longUrl } });
+    await user.tab();
 
     await waitFor(() => {
       expect(screen.getByText(/url must be 500 characters or less/i)).toBeInTheDocument();
     });
-  });
+  }, 10000);
 
   // ==================== FORM SUBMISSION ====================
 

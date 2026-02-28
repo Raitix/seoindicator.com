@@ -1,7 +1,7 @@
 # TASK-SEC-7-10-6: Deploy to Production and Verify
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
