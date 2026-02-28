@@ -106,7 +106,7 @@ export function OnboardingProvider({ children, autoStart = true }: OnboardingPro
   }, [mutate]);
 
   const value: OnboardingContextValue = {
-    onboarding,
+    onboarding: onboarding ?? null,
     isLoading,
     error: error ?? localError,
     isActive,
