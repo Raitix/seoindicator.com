@@ -1,7 +1,7 @@
 # TASK-8-2: Modify Existing Tables for Multi-Site Support
 
 ## STATUS
-`To Write Tests`
+`Tests Written`
 
 ## PRIORITY
 `High`
@@ -88,3 +88,21 @@ Task created to extend existing tables (`keywords`, `competitors`, `reports`, et
 - Foreign keys with CASCADE delete ensure referential integrity
 - Indexes on `project_id` will improve query performance
 - Task can proceed in parallel with TASK-8-1 if migrations are carefully ordered
+
+### [2026-02-28 16:15 GMT+2] Agent: PreTester
+**Tests Written:**
+Created comprehensive migration test file: `backend/tests/Feature/Migrations/AddProjectIdToTablesTest.php`
+
+**Test Coverage:**
+- Column existence: Tests for `project_id` on keywords, competitors, reports, alert_settings
+- Foreign key constraints: Verifies FKs to projects table on all four tables
+- Indexes: Verifies indexes on `project_id` for query optimization
+- Cascade delete: Tests that deleting a project cascades to related records
+- Nullable support: Tests that `project_id` accepts null values (for gradual migration)
+- Update capability: Tests that `project_id` can be updated to link records
+- Rollback: Tests migration rollback removes columns
+- Rerun: Tests migration can be re-run after rollback
+- Data isolation: Tests records with different project_ids coexist properly
+- Column position: Tests `project_id` is positioned after `user_id`
+
+**Status:** `Tests Written` → Ready for Developer to create migration file
