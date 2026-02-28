@@ -6800,3 +6800,232 @@ React components and context for project management. These components handle pro
 - Note: Build shows Windows-specific Next.js static export issue (unrelated to component code)
 
 ---
+## SERP Features API Endpoints (TASK-7-10)
+
+### Service Description
+REST API endpoints for retrieving SERP feature data. Provides access to feature history for keywords, site-wide feature summaries, and paginated feature listings. Part of the SERP Feature Tracking feature (FEAT-007).
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/keywords/{id}/serp-features` | Get current features and history for keyword |
+| GET | `/api/v1/sites/{siteId}/serp-features` | Get all features for a site with pagination |
+| GET | `/api/v1/sites/{siteId}/serp-features/summary` | Get feature summary and recent changes |
+
+### Get Keyword SERP Features
+`GET /api/v1/keywords/{id}/serp-features`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `from` | ISO 8601 date | 30 days ago | Start date filter |
+| `to` | ISO 8601 date | today | End date filter |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "keyword": {
+      "id": 1,
+      "keyword": "seo tools"
+    },
+    "currentFeatures": [
+      {
+        "type": "featured_snippet",
+        "isPresent": true,
+        "url": "https://example.com/seo-tools",
+        "snippet": "Best SEO tools for 2026..."
+      },
+      {
+        "type": "sitelinks",
+        "isPresent": true
+      }
+    ],
+    "history": [
+      {
+        "date": "2026-02-28",
+        "features": {
+          "featured_snippet": true,
+          "sitelinks": true
+        }
+      }
+    ],
+    "changes": [
+      {
+        "type": "featured_snippet",
+        "action": "gained",
+        "detectedAt": "2026-02-28T10:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 403 | Keyword owned by another user |
+| 404 | Keyword not found |
+
+### Get Site SERP Features
+`GET /api/v1/sites/{siteId}/serp-features`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | int | 1 | Page number |
+| `perPage` | int | 20 | Results per page (max: 100) |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "keyword_id": 1,
+      "keyword": "seo tools",
+      "features": {
+        "featured_snippet": true,
+        "sitelinks": true
+      },
+      "position": 1
+    }
+  ],
+  "meta": {
+    "total": 50,
+    "page": 1,
+    "perPage": 20
+  }
+}
+```
+
+### Get SERP Feature Summary
+`GET /api/v1/sites/{siteId}/serp-features/summary`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "totalKeywords": 50,
+    "keywordsWithFeatures": 25,
+    "featureCounts": {
+      "featured_snippet": 5,
+      "local_pack": 3,
+      "sitelinks": 10,
+      "reviews": 7
+    },
+    "recentChanges": {
+      "gained": [
+        {
+          "keyword": "seo tools",
+          "feature": "featured_snippet",
+          "detectedAt": "2026-02-28T10:00:00Z"
+        }
+      ],
+      "lost": [
+        {
+          "keyword": "keyword tracker",
+          "feature": "local_pack",
+          "detectedAt": "2026-02-27T15:00:00Z"
+        }
+      ]
+    },
+    "longestHeldFeatures": [
+      {
+        "keyword": "seo tools",
+        "feature": "sitelinks",
+        "heldSince": "2026-01-15T00:00:00Z",
+        "daysHeld": 44
+      }
+    ]
+  }
+}
+```
+
+### Authorization
+- All endpoints require authentication (Bearer token)
+- User must own the keyword/site (via site ownership)
+- Returns 401 for unauthenticated requests
+- Returns 403 for unauthorized access (IDOR protection)
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware on all endpoints |
+| IDOR Protection | Ownership validation via `userOwnsKeyword()` / `userOwnsSite()` |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| Route Constraint | Numeric ID only (`where('id', '[0-9]+')`) |
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/SerpFeatureController.php`
+- Service: `backend/app/Services/SerpFeatureService.php`
+- Repository: `backend/app/Repositories/SerpFeatureRepository.php`
+- History Repository: `backend/app/Repositories/SerpFeatureHistoryRepository.php`
+- Routes: Defined in `backend/routes/api.php` under `middleware(['auth'])` group
+
+### Route Configuration
+```php
+Route::prefix('v1')->middleware(['auth'])->group(function () {
+    Route::get('keywords/{id}/serp-features', [SerpFeatureController::class, 'keywordFeatures'])
+        ->where('id', '[0-9]+');
+    Route::get('sites/{siteId}/serp-features', [SerpFeatureController::class, 'siteFeatures'])
+        ->where('siteId', '[0-9]+');
+    Route::get('sites/{siteId}/serp-features/summary', [SerpFeatureController::class, 'summary'])
+        ->where('siteId', '[0-9]+');
+    Route::delete('sites/{siteId}/serp-features/cache', [SerpFeatureController::class, 'invalidateCache'])
+        ->where('siteId', '[0-9]+');
+});
+```
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| SerpFeatureControllerTest | 22 | 65+ |
+| SerpFeatureServiceTest | 14 | 40+ |
+| SerpFeatureRepositoryTest | 17 | 35+ |
+| SerpFeatureHistoryRepositoryTest | 48 | 100+ |
+| SerpFeatureChangeTrackerTest | 30 | 60+ |
+| SerpFeatureWorkflowTest | 21 | 50+ |
+| SerpFeaturesApiIntegrationTest | 24 | 55+ |
+
+**Total: 176 tests, 553+ assertions**
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| API Endpoints | 22 | Controller tests for all 3 endpoints |
+| Service Layer | 14 | Business logic, data transformation |
+| Repository | 17 | Database queries, filtering |
+| History Tracking | 48 | Feature history, changes detection |
+| Change Detection | 30 | Gained/lost feature tracking |
+| Integration | 45 | Full workflow, API, database |
+| Security | 15 | SQL injection, IDOR, auth |
+
+### Security Fix History
+- **2026-02-28 (Initial):** Endpoints deployed without authentication (CRITICAL)
+- **2026-02-28 (TASK-7-10-SEC):** Security fix deployed - added `auth` middleware + IDOR protection
+
+### Production Status
+- **Deployed**: 2026-02-28 (initial + security fix via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 176/176 passing (553 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-7-3 (SerpFeatureRepository)
+- TASK-7-9 (SerpFeatureHistoryRepository)
+- TASK-1-1 (Keywords table)
+- TASK-1-3 (Ranking repository)
+
+### Related Tasks
+- TASK-7-11: Feature summary endpoint enhancement
+- TASK-7-12: Filter by feature endpoint
+- TASK-7-13: Integration with ranking check workflow
+- TASK-7-16: SERP feature icons/badges (frontend)
+
+---

@@ -184,7 +184,7 @@ class UserOnboardingTableTest extends TestCase
                 "PRAGMA index_list({$this->tableName})"
             )->fetchAll(\PDO::FETCH_ASSOC);
             
-            $uniqueIndexes = array_filter($result, fn($idx) => $idx['unique'] === '1');
+            $uniqueIndexes = array_filter($result, fn($idx) => $idx['unique'] == 1 || $idx['unique'] === '1');
             $indexNames = array_column($uniqueIndexes, 'name');
             
             // Check if there's a unique index on user_id
@@ -424,7 +424,11 @@ class UserOnboardingTableTest extends TestCase
     }
 
     /**
-     * Test keyword_id set null when keyword is deleted.
+     * Test keyword_id set null when keyword is hard-deleted.
+     * 
+     * Note: Keyword model uses soft-delete via status flag in application code.
+     * This test verifies the FK constraint works when a hard delete occurs
+     * (e.g., direct DB operation or admin cleanup).
      */
     public function test_keyword_id_set_null_on_keyword_delete(): void
     {
@@ -440,8 +444,8 @@ class UserOnboardingTableTest extends TestCase
             'updated_at' => now(),
         ]);
         
-        // Delete keyword
-        $keyword->delete();
+        // Hard delete keyword using DB query (bypasses model's soft-delete)
+        \DB::table('keywords')->where('id', $keyword->id)->delete();
         
         // Verify keyword_id is null
         $this->assertDatabaseHas($this->tableName, [

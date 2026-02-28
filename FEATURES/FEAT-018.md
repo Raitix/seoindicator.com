@@ -1,7 +1,7 @@
 # FEAT-018: Legacy 17-Indicator SEO Analysis (Core Engine)
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
@@ -78,6 +78,20 @@ As a user, I want to enter a domain and get a clear SEO score with actionable is
 - TASK-18-25: PageSpeedChecker (external API dependency)
 
 **Handoff to PreTester:** All tasks updated to status "To Write Tests". Foundation tasks (1-3) should be tested first.
+
+### PreTester (2026-02-28)
+**Tests Created for Core Services (Phase 2):**
+
+| Task | Test Doc | Test File | Status |
+|------|----------|-----------|--------|
+| TASK-18-4 | TEST-18-4.md | DomainValidatorServiceTest.php | Tests Coverage In Progress |
+| TASK-18-5 | TEST-18-5.md | HtmlFetcherServiceTest.php | Tests Coverage In Progress |
+| TASK-18-6 | TEST-18-6.md | AnalysisRunnerServiceTest.php | Tests Coverage In Progress |
+
+**Total Test Scenarios:** 200+ test cases across 3 services
+**Test Files Created:** 3 unit test files with 150+ test methods
+
+**Security Focus:** SSRF protection tests heavily covered in TASK-18-5 (High Risk)
 
 ---
 *Created by Lead from individual user request (legacy migration).*

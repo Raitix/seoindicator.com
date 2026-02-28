@@ -400,6 +400,7 @@ class OnboardingService
 
         return Keyword::create([
             'site_id' => $site->id,
+            'user_id' => $user->id,
             'keyword' => $onboarding->first_keyword,
             'search_engine' => 'google',
             'location' => 'us',
