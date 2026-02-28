@@ -9,7 +9,6 @@ use App\Models\Webhook;
 use App\Repositories\KeywordRepository;
 use App\Services\WebhookDispatcherService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
 use Tests\TestCase;
 
 /**
@@ -17,15 +16,11 @@ use Tests\TestCase;
  *
  * @see TASK-6-16
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+#[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
 class KeywordEventTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
 
     /** @test */
     public function it_emits_keyword_added_event_on_create(): void
@@ -33,11 +28,11 @@ class KeywordEventTest extends TestCase
         $user = User::factory()->create();
         $site = Site::factory()->create(['user_id' => $user->id]);
 
-        // Mock webhook dispatcher
-        $mockDispatcher = Mockery::mock(WebhookDispatcherService::class);
-        $mockDispatcher->shouldReceive('dispatchToUserWebhooks')
+        // Mock webhook dispatcher using Laravel's mock helper
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
             ->once()
-            ->withArgs(function ($userId, $eventType, $data) use ($user) {
+            ->withArgs(function ($userId, $eventType, $data) use ($user, $site) {
                 return $userId === $user->id
                     && $eventType === 'keyword.added'
                     && $data['keyword'] === 'seo tools'
@@ -49,9 +44,7 @@ class KeywordEventTest extends TestCase
             })
             ->andReturn(1);
 
-        $repository = new KeywordRepository();
-        $repository->setWebhookDispatcher($mockDispatcher);
-
+        $repository = app(KeywordRepository::class);
         $keyword = $repository->create([
             'user_id' => $user->id,
             'site_id' => $site->id,
@@ -72,18 +65,16 @@ class KeywordEventTest extends TestCase
         $user = User::factory()->create();
         $site = Site::factory()->create(['user_id' => $user->id]);
 
-        // Mock webhook dispatcher
-        $mockDispatcher = Mockery::mock(WebhookDispatcherService::class);
-        $mockDispatcher->shouldReceive('dispatchToUserWebhooks')
+        // Mock webhook dispatcher using Laravel's mock helper
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
             ->once()
             ->withArgs(function ($userId, $eventType, $data) {
                 return $data['target_url'] === 'https://example.com/seo-tools';
             })
             ->andReturn(1);
 
-        $repository = new KeywordRepository();
-        $repository->setWebhookDispatcher($mockDispatcher);
-
+        $repository = app(KeywordRepository::class);
         $keyword = $repository->create([
             'user_id' => $user->id,
             'site_id' => $site->id,
@@ -105,11 +96,11 @@ class KeywordEventTest extends TestCase
             'keyword' => 'seo tools',
         ]);
 
-        // Mock webhook dispatcher
-        $mockDispatcher = Mockery::mock(WebhookDispatcherService::class);
-        $mockDispatcher->shouldReceive('dispatchToUserWebhooks')
+        // Mock webhook dispatcher using Laravel's mock helper
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
             ->once()
-            ->withArgs(function ($userId, $eventType, $data) use ($user, $keyword) {
+            ->withArgs(function ($userId, $eventType, $data) use ($user, $keyword, $site) {
                 return $userId === $user->id
                     && $eventType === 'keyword.removed'
                     && $data['keyword_id'] === $keyword->id
@@ -119,9 +110,7 @@ class KeywordEventTest extends TestCase
             })
             ->andReturn(1);
 
-        $repository = new KeywordRepository();
-        $repository->setWebhookDispatcher($mockDispatcher);
-
+        $repository = app(KeywordRepository::class);
         $result = $repository->delete($keyword->id);
 
         $this->assertTrue($result);
@@ -138,15 +127,13 @@ class KeywordEventTest extends TestCase
             'keyword' => 'seo tools',
         ]);
 
-        // Mock webhook dispatcher
-        $mockDispatcher = Mockery::mock(WebhookDispatcherService::class);
-        $mockDispatcher->shouldReceive('dispatchToUserWebhooks')
+        // Mock webhook dispatcher using Laravel's mock helper
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
             ->once()
             ->andReturn(1);
 
-        $repository = new KeywordRepository();
-        $repository->setWebhookDispatcher($mockDispatcher);
-
+        $repository = app(KeywordRepository::class);
         $result = $repository->delete($keyword->id, true);
 
         $this->assertTrue($result);
@@ -165,12 +152,10 @@ class KeywordEventTest extends TestCase
         ]);
 
         // Mock webhook dispatcher - should NOT be called
-        $mockDispatcher = Mockery::mock(WebhookDispatcherService::class);
-        $mockDispatcher->shouldNotReceive('dispatchToUserWebhooks');
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldNotReceive('dispatchToUserWebhooks');
 
-        $repository = new KeywordRepository();
-        $repository->setWebhookDispatcher($mockDispatcher);
-
+        $repository = app(KeywordRepository::class);
         $result = $repository->update($keyword->id, ['status' => 'paused']);
 
         $this->assertTrue($result);
@@ -183,11 +168,10 @@ class KeywordEventTest extends TestCase
         $site = Site::factory()->create(['user_id' => null]);
         
         // Mock webhook dispatcher - should NOT be called
-        $mockDispatcher = Mockery::mock(WebhookDispatcherService::class);
-        $mockDispatcher->shouldNotReceive('dispatchToUserWebhooks');
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldNotReceive('dispatchToUserWebhooks');
 
-        $repository = new KeywordRepository();
-        $repository->setWebhookDispatcher($mockDispatcher);
+        $repository = app(KeywordRepository::class);
 
         // Create keyword directly in DB (repository would try to emit)
         $keyword = Keyword::create([
@@ -208,13 +192,12 @@ class KeywordEventTest extends TestCase
         $site = Site::factory()->create(['user_id' => $user->id]);
 
         // Mock webhook dispatcher that throws
-        $mockDispatcher = Mockery::mock(WebhookDispatcherService::class);
-        $mockDispatcher->shouldReceive('dispatchToUserWebhooks')
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
             ->once()
             ->andThrow(new \Exception('Connection error'));
 
-        $repository = new KeywordRepository();
-        $repository->setWebhookDispatcher($mockDispatcher);
+        $repository = app(KeywordRepository::class);
 
         // Should not throw - keyword should still be created
         $keyword = $repository->create([
@@ -239,13 +222,12 @@ class KeywordEventTest extends TestCase
         ]);
 
         // Mock webhook dispatcher that throws
-        $mockDispatcher = Mockery::mock(WebhookDispatcherService::class);
-        $mockDispatcher->shouldReceive('dispatchToUserWebhooks')
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
             ->once()
             ->andThrow(new \Exception('Connection error'));
 
-        $repository = new KeywordRepository();
-        $repository->setWebhookDispatcher($mockDispatcher);
+        $repository = app(KeywordRepository::class);
 
         // Should not throw - delete should still proceed
         $result = $repository->delete($keyword->id);

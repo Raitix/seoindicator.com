@@ -1070,8 +1070,8 @@ class KeywordsApiControllerTest extends TestCase
 
         $response->assertStatus(204);
 
-        // Rankings should still exist
-        $this->assertDatabaseHas('rankings', ['keyword_id' => $keyword->id]);
+        // Rankings should still exist (ranking_history table)
+        $this->assertDatabaseHas('ranking_history', ['keyword_id' => $keyword->id]);
     }
 
     /**
@@ -1087,8 +1087,8 @@ class KeywordsApiControllerTest extends TestCase
 
         $response->assertStatus(204);
 
-        // Rankings should be deleted
-        $this->assertDatabaseMissing('rankings', ['keyword_id' => $keyword->id]);
+        // Rankings should be deleted (ranking_history table)
+        $this->assertDatabaseMissing('ranking_history', ['keyword_id' => $keyword->id]);
     }
 
     // ---------- Error Cases (DE-*) ----------
