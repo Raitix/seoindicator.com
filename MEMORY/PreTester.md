@@ -39,3 +39,25 @@ Test design for tasks before development. Creates comprehensive test documentati
 - Test Documentation: `TESTS/TASK-6-14.md`
 - Service Tests: `backend/tests/Unit/Services/WebhookDispatcherServiceTest.php`
 - Job Tests: `backend/tests/Unit/Jobs/DispatchWebhookJobTest.php`
+
+---
+
+## Security Testing
+
+### [2026-02-28] SPEC-SEC-7-10: SERP Feature Security Tests
+- **Status:** Tests Complete (41 tests, 65 assertions)
+- **Test File:** `backend/tests/Feature/Api/V1/Security/SerpFeatureSecurityTest.php`
+- **Documentation:** `TESTS/TEST-SEC-7-10.md`
+- **Verification:**
+  - Routes already have `auth` middleware
+  - Controller has `userOwnsSite()` and `userOwnsKeyword()` IDOR protection
+  - Route constraints `[0-9]+` block SQL injection and path traversal
+- **Coverage:**
+  - Authentication (4 tests): 401 for unauthenticated
+  - IDOR Protection (8 tests): 403 for cross-user, 200 for owner
+  - Input Validation (10 tests): Invalid IDs, parameter ranges
+  - SQL Injection (3 tests): Route constraints
+  - XSS Protection (2 tests): No script reflection
+  - Path Traversal (2 tests): Numeric constraints
+  - Edge Cases (8 tests): Ownership modes, empty data
+  - Date Validation (3 tests): Format and range
