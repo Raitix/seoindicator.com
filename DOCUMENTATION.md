@@ -2618,6 +2618,114 @@ CREATE TABLE report_branding (
 - `idx_report_branding_site_id` on `site_id` (unique)
 
 ---
+## Template Model and Repository (TASK-4-3)
+
+### Service Description
+ReportTemplate model with Eloquent relationships and repository pattern for managing reusable report configurations. Provides the data layer for creating, storing, and retrieving report templates with site-specific defaults.
+
+### ReportTemplate Model
+
+**Model:** `App\Models\ReportTemplate`
+
+**Fillable Attributes:**
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `site_id` | int? | FK to sites.id (nullable for global templates) |
+| `name` | string | Template name |
+| `is_default` | bool | Whether this is the default template for the site |
+| `sections` | array | JSON array of section names to include |
+| `branding` | array? | JSON: `{logo_url, primary_color, font}` |
+| `cover_page_text` | string? | Custom text for cover page |
+| `executive_summary` | string? | Default executive summary text |
+
+**Model Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `sections` | `array` (JSON) |
+| `branding` | `array` (JSON) |
+| `is_default` | `boolean` |
+
+**Model Relationships:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `site()` | belongsTo | The site this template belongs to (nullable) |
+
+**Model Methods:**
+| Method | Description |
+|--------|-------------|
+| `makeDefault()` | Sets this template as default, unsets other defaults for same site |
+
+**Single Default Enforcement:**
+The model includes a `booted()` hook that enforces only one default template per site:
+- When saving a template with `is_default=true`, automatically unsets `is_default` on other templates for the same site
+- Ensures data integrity at the model level
+
+### ReportTemplateRepository
+
+**Repository:** `App\Repositories\ReportTemplateRepository`
+
+**Methods:**
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `create(array $data)` | `$data` | Create a new template |
+| `find(int $id)` | `$id` | Find template by ID |
+| `findBySite(int $siteId)` | `$siteId` | Get all templates for a site |
+| `findDefault(int $siteId)` | `$siteId` | Get the default template for a site |
+| `update(int $id, array $data)` | `$id, $data` | Update a template |
+| `delete(int $id)` | `$id` | Delete a template |
+
+### Factory States
+
+**ReportTemplateFactory States:**
+| State | Description |
+|-------|-------------|
+| `default()` | Creates template with `is_default=true` |
+| `forSite($siteId)` | Creates template for a specific site |
+| `withSections(array)` | Creates template with custom sections |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Mass Assignment | `$fillable` whitelist on model |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS | Model stores data only (no output) |
+| IDOR | Protected via Site relationship and authorization policies |
+| Default Enforcement | `booted()` hook prevents multiple defaults |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `ReportTemplateTest` | 12 | 27 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|------------|
+| Model Creation | 2 | Basic model creation with attributes |
+| Site Relationship | 2 | BelongsTo relationship tests |
+| JSON Casts | 2 | Sections and branding JSON casting |
+| makeDefault Method | 2 | Default template enforcement |
+| Default Enforcement via booted | 2 | Automatic single default enforcement |
+| Global Templates | 2 | Templates with null site_id |
+
+### Production Status
+- **Deployed**: 2026-02-24 (commit b4c2959, e2b6ec7)
+- **Migration**: `2026_02_22_182500_create_reports_tables` (Batch 4)
+- **Health Check**: Passing
+- **Tests**: 12/12 passing (27 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-4-1 (report_templates table migration)
+- Sites table (existing)
+
+### Related Tasks
+- TASK-4-1: Reports Table schema
+- TASK-4-2: Report model and repository
+- TASK-4-10: Template management API
+
+---
 ## Report Model and Repository (TASK-4-2)
 
 ### Service Description
