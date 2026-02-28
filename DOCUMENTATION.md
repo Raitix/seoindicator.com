@@ -7846,3 +7846,180 @@ React component for displaying a timeline of SERP feature changes for a specific
 - TASK-7-18: SERP feature filter UI
 
 ---
+## ScoreCalculatorService (TASK-18-7)
+
+### Service Description
+Core scoring service for the Legacy 17-Indicator SEO Analysis engine (FEAT-018). Calculates weighted overall scores and category scores from indicator results, providing comprehensive score breakdowns and summary statistics.
+
+### Core Functionalities
+
+**ScoreCalculatorService Class:**
+| Method | Description |
+|--------|-------------|
+| `calculate(array $indicators): ScoreResult` | Calculate weighted overall and category scores |
+| `getDefaultWeights(): array` | Get default indicator weight configuration |
+| `setCustomWeights(array $weights): void` | Override default weights |
+
+**ScoreResult DTO:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `overallScore` | int | Weighted overall score (0-100) |
+| `categoryScores` | array | Per-category scores (content, technical, accessibility, performance) |
+| `breakdown` | array | Score contribution per indicator |
+| `summary` | array | Count of passed/warning/failed indicators |
+| `label` | string | Score label: 'Good', 'Moderate', or 'Poor' |
+
+### Scoring Algorithm
+
+**Overall Score Calculation:**
+```
+overallScore = sum(indicator.score * indicator.weight) / sum(indicator.weight) * 33.33
+```
+
+**Score Interpretation:**
+| Score Range | Label | Color |
+|-------------|-------|-------|
+| 80-100 | Good | Green |
+| 60-79 | Moderate | Yellow |
+| 0-59 | Poor | Red |
+
+**Indicator Score Mapping:**
+| Raw Score | Meaning |
+|-----------|---------|
+| 3 | Excellent (all criteria met) |
+| 2 | Good (minor issues) |
+| 1 | Poor (significant issues) |
+| 0 | N/A (indicator not applicable) |
+
+### Category Scoring
+
+**Categories:**
+| Category | Indicators |
+|----------|------------|
+| Content | title_tag, meta_description, h1_headings, links, filenames, social_meta |
+| Technical | url, canonical, robots_txt, sitemap_xml, 404_page, mobile_friendly, language, favicon |
+| Accessibility | image_alt, aria |
+| Performance | page_speed |
+
+**Category Score Calculation:**
+- Weighted average of indicators within the category
+- Returns `null` if no indicators in category
+
+### Default Weights Configuration
+
+| Indicator | Weight | Category |
+|-----------|--------|----------|
+| Title Tag | 0.10 | Content |
+| Meta Description | 0.08 | Content |
+| H1 Headings | 0.08 | Content |
+| URL Structure | 0.08 | Technical |
+| Canonical URL | 0.06 | Technical |
+| Robots.txt | 0.06 | Technical |
+| Sitemap.xml | 0.05 | Technical |
+| 404 Page | 0.04 | Technical |
+| Mobile Friendly | 0.08 | Technical |
+| Page Speed | 0.10 | Performance |
+| Image Alt Text | 0.05 | Accessibility |
+| ARIA Labels | 0.04 | Accessibility |
+| Links | 0.05 | Content |
+| Filenames | 0.03 | Content |
+| Language | 0.03 | Technical |
+| Favicon | 0.02 | Technical |
+| Social Media Tags | 0.05 | Content |
+
+### N/A Indicator Handling
+
+**Exclusion Logic:**
+- Indicators with `score = 0` are considered N/A
+- N/A indicators are **excluded** from calculation
+- Weights are NOT re-normalized when indicators excluded
+- This prevents artificially inflated scores when indicators are skipped
+
+**Example:**
+```php
+// If image_alt is N/A (score 0, weight 0.05)
+// Total weight reduces from 1.00 to 0.95
+// Only scored indicators contribute to final score
+```
+
+### Score Breakdown Structure
+
+**Breakdown Entry:**
+```php
+[
+    'indicator_id' => 'title_tag',
+    'name' => 'Title Tag',
+    'category' => 'content',
+    'score' => 3,
+    'weight' => 0.10,
+    'contribution' => 10.0, // score * weight * 33.33
+    'status' => 'passed'    // passed, warning, failed, na
+]
+```
+
+### Summary Statistics
+
+**Summary Fields:**
+| Field | Description |
+|-------|-------------|
+| `passed` | Count of indicators with score 3 |
+| `warning` | Count of indicators with score 2 |
+| `failed` | Count of indicators with score 1 |
+| `na` | Count of indicators with score 0 |
+| `total` | Total indicator count |
+
+### Technical Implementation
+
+**Service Class:**
+- File: `backend/app/Services/SEO/ScoreCalculatorService.php`
+- Dependencies: None (pure calculation logic)
+
+**DTO Class:**
+- File: `backend/app/Services/SEO/ScoreResult.php`
+- Properties: readonly (immutable DTO)
+- Helper methods: `isGood()`, `isModerate()`, `isPoor()`, `toArray()`, `toJson()`
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Input Validation | Type checking on indicator arrays |
+| Weight Validation | Weights must be numeric 0-1 |
+| Score Bounds | Scores clamped to 0-100 |
+| No External Calls | Pure calculation, no network access |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| ScoreCalculatorServiceTest | 30 | 60+ |
+| ScoreResultTest | 24 | 48+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Score Calculation (SC) | 5 | Weighted average, boundary values |
+| Category Scores (CS) | 4 | Per-category calculation, missing categories |
+| Edge Cases (EC) | 6 | Empty input, N/A indicators, single indicator |
+| Score Breakdown (SB) | 2 | Indicator contribution tracking |
+| Summary (SM) | 3 | Passed/warning/failed counts |
+| Validation (VL) | 2 | Input validation, weight normalization |
+| Result Object (RO) | 3 | DTO serialization |
+| Configuration (CF) | 2 | Custom weights |
+| ScoreResult DTO (SR) | 24 | Immutability, helpers, serialization |
+
+### Production Status
+- **Deployed**: 2026-02-28 (commit a3c292e via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 51 tests, 102 assertions passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-18-3 (IndicatorResult DTO)
+
+### Related Tasks
+- TASK-18-1: SEO Analyses Table
+- TASK-18-6: AnalysisRunnerService (uses ScoreCalculatorService)
+- TASK-18-26: AnalysisController API
+
+---
