@@ -1,7 +1,6 @@
 # TASK-17-6: Step 5 - Completion Summary Component
 
-## STATUS
-`To Prioritize`
+## STATUS`n`To Write Tests`
 
 ## PRIORITY
 `High`

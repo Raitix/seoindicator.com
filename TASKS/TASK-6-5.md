@@ -1,7 +1,7 @@
 # TASK-6-5: Rate Limiter Middleware
 
 ## Status
-`To Document`
+`Done`
 
 ## Priority
 `High`
@@ -185,3 +185,16 @@ Medium (2-4 hours)
   3. Implement ApiKeyRateLimiter middleware that runs after auth
   4. Add headers to all API responses
   5. Return 429 with exact JSON format from SPEC-006
+
+### [2026-02-28 11:30 GMT+2] DocSystemAnalyst: Documentation Complete
+**Documentation Update:**
+- Added comprehensive Rate Limiter Middleware documentation to `DOCUMENTATION.md`
+- Documented: ApiKeyRateLimiterService class methods and sliding window algorithm
+- Documented: ApiKeyRateLimiter middleware integration and registration
+- Documented: Rate limit headers (X-RateLimit-Limit/Remaining/Reset)
+- Documented: 429 response format matching SPEC-006
+- Documented: Per-key configuration and custom limits
+- Documented: Security implementation and test coverage
+- Location: DOCUMENTATION.md section "Rate Limiter Middleware (TASK-6-5)"
+
+**Status:** Done

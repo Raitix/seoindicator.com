@@ -1,7 +1,6 @@
 # TASK-17-7: Progress Tracking Integration
 
-## STATUS
-`To Prioritize`
+## STATUS`n`To Write Tests`
 
 ## PRIORITY
 `High`

@@ -1,7 +1,7 @@
 # FEAT-017: User Onboarding & Activation Flow
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## Specification
 - **SPEC-017**: User Onboarding & Activation Flow - [View Specification](../SPECIFICATIONS/SPEC-017.md)

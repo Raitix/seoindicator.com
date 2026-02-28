@@ -1094,6 +1094,167 @@ $valid = hash_equals($storedHash, $hash);
 - TASK-6-2 (ApiKey model/repository - pending)
 
 ---
+## Rate Limiter Middleware (TASK-6-5)
+
+### Service Description
+Rate limiting middleware for API endpoints using a sliding window algorithm. Enforces per-API-key rate limits to protect against abuse and ensure fair resource allocation across users.
+
+### Core Functionalities
+
+**ApiKeyRateLimiterService Class:**
+| Method | Description |
+|--------|-------------|
+| `isAllowed(string $key, int $limit): bool` | Check if request is allowed under limit |
+| `hit(string $key): void` | Increment request count for key |
+| `getRemaining(string $key, int $limit): int` | Get remaining requests for window |
+| `getResetTime(string $key): int` | Get Unix timestamp when window resets |
+| `getRetryAfter(string $key, int $limit): int` | Get seconds until next request allowed |
+| `reset(string $key): void` | Clear rate limit for key |
+
+**ApiKeyRateLimiter Middleware:**
+| Method | Description |
+|--------|-------------|
+| `handle($request, Closure $next)` | Process request with rate limit check |
+
+### Sliding Window Algorithm
+- **Window Duration:** 60 seconds (configurable)
+- **Storage:** Laravel Cache (driver-agnostic)
+- **Behavior:** Requests older than window automatically expire
+
+**Algorithm Flow:**
+```
+1. Get all timestamps in current window
+2. Filter out timestamps older than window duration
+3. If count >= limit: reject request
+4. If count < limit: add current timestamp, allow request
+```
+
+### Rate Limit Headers
+All API responses include rate limit information:
+
+```http
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1708368300
+```
+
+**Header Descriptions:**
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum requests per window |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Unix timestamp when window resets |
+
+### Rate Limit Exceeded Response
+When rate limit is exceeded, the middleware returns HTTP 429:
+
+```http
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+Retry-After: 30
+
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Rate limit exceeded. Retry after 30 seconds.",
+    "retry_after": 30
+  }
+}
+```
+
+### Per-Key Configuration
+Rate limits are configurable per API key:
+- **Default:** 60 requests per minute
+- **Custom:** Set via `rate_limit` field on API key
+- **Resolution:** Checked against `ApiKey->rate_limit` attribute
+
+**Custom Limit Example:**
+```php
+// API key with custom limit
+$apiKey = ApiKey::find(1);
+$apiKey->rate_limit = 300; // 300 requests per minute
+$apiKey->save();
+```
+
+### Middleware Registration
+Registered in `bootstrap/app.php`:
+
+```php
+->middleware([
+    \App\Http\Middleware\ApiKeyRateLimiter::class,
+])
+```
+
+**Route-Level Usage:**
+```php
+Route::middleware(['api-key.ratelimit'])->group(function () {
+    // Protected API routes
+});
+```
+
+### Integration with API Key Authentication
+The middleware integrates with the API key authentication middleware:
+1. API Key Auth middleware resolves the API key
+2. Rate Limiter middleware checks limit for that key
+3. Headers added to response
+4. Request processed or 429 returned
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Per-Key Isolation | Each API key has separate rate limit tracking |
+| Timing Attack Prevention | Consistent response time for rate limit checks |
+| Memory Safety | Automatic cleanup of expired entries |
+| Cache Atomicity | Atomic increment operations prevent race conditions |
+| SQL Injection | No database queries (cache-based) |
+
+### Technical Implementation
+- Service: `backend/app/Services/ApiKeyRateLimiterService.php`
+- Middleware: `backend/app/Http/Middleware/ApiKeyRateLimiter.php`
+- Registration: `bootstrap/app.php`
+- Storage: Laravel Cache facade
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| ApiKeyRateLimiterServiceTest | 51 | 200+ |
+| ApiKeyRateLimiterMiddlewareTest | 28 | 80+ |
+| RateLimitHeadersTest | 18 | 37 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rate Limit Check (RL) | 8 | isAllowed, at/over limit, key isolation |
+| Sliding Window (SW) | 6 | Window expiry, boundary handling |
+| Remaining (RM) | 5 | Accurate count, never negative |
+| Reset Time (RT) | 4 | Unix timestamp, future time |
+| Middleware Integration (MI) | 8 | Headers present, 429 responses |
+| Header Tests (HD) | 6 | X-RateLimit-Limit/Remaining/Reset |
+| 429 Response (FR) | 5 | Correct JSON format, retry_after |
+| Per-Key Config (PK) | 4 | Custom limits, default fallback |
+| Edge Cases (EC) | 5 | Empty keys, special characters |
+| Security (SC) | 4 | SQL injection, timing attacks |
+| Concurrency (CC) | 4 | Concurrent requests, burst handling |
+
+### Production Status
+- **Deployed**: 2026-02-28 (commit via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 97 tests passing, 317+ assertions
+- **Status**: Complete
+
+### Dependencies
+- TASK-6-2 (API Key model with rate_limit field)
+- Laravel Cache facade
+
+### Related Tasks
+- TASK-6-2: API Key Model
+- TASK-6-3: API Key Service
+- TASK-6-6: Request Logging
+
+---
 ## Team Management Service (TASK-11-3)
 
 ### Service Description
@@ -3734,6 +3895,225 @@ $opportunities = GSCData::forSite($siteId)
 - TASK-12-5: GSC Data Sync Service
 - TASK-12-6: Query Matching for GSC Data
 - TASK-12-8: GSC Data Controller API
+
+---
+## Database Schema: Webhooks Tables (TASK-6-12)
+
+### Webhooks Table
+Stores webhook configurations for event notifications. Each webhook represents an HTTP endpoint that receives notifications when specific events occur in the system.
+
+```sql
+CREATE TABLE webhooks (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    url VARCHAR(2048) NOT NULL,
+    secret VARCHAR(255) NOT NULL UNIQUE,
+    events JSON NOT NULL,
+    enabled TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `user_id` | BIGINT UNSIGNED | FK to users.id |
+| `name` | VARCHAR(255) | Webhook display name |
+| `url` | VARCHAR(2048) | Webhook endpoint URL |
+| `secret` | VARCHAR(255) | HMAC signature secret (unique) |
+| `events` | JSON | Array of subscribed event types |
+| `enabled` | TINYINT(1) | Whether webhook is active (default: true) |
+
+**Constraints:**
+- Foreign Key: `user_id → users.id` ON DELETE CASCADE
+- Unique: `secret` - prevents secret reuse
+
+**Indexes:**
+- `idx_webhooks_user_id` on `user_id`
+- `idx_webhooks_enabled` on `enabled`
+- Unique index on `secret`
+
+### Webhook Deliveries Table
+Tracks individual webhook delivery attempts with response status and retry scheduling.
+
+```sql
+CREATE TABLE webhook_deliveries (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    webhook_id BIGINT UNSIGNED NOT NULL,
+    event_type VARCHAR(255) NOT NULL,
+    payload JSON NOT NULL,
+    response_status SMALLINT NULL,
+    response_body TEXT NULL,
+    attempt_count TINYINT DEFAULT 1,
+    delivered_at TIMESTAMP NULL,
+    next_retry_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (webhook_id) REFERENCES webhooks(id) ON DELETE CASCADE
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `webhook_id` | BIGINT UNSIGNED | FK to webhooks.id |
+| `event_type` | VARCHAR(255) | Type of event being delivered |
+| `payload` | JSON | Event payload data |
+| `response_status` | SMALLINT | HTTP response status code (nullable) |
+| `response_body` | TEXT | Response body from endpoint (nullable) |
+| `attempt_count` | TINYINT | Number of delivery attempts (default: 1) |
+| `delivered_at` | TIMESTAMP | When delivery succeeded (nullable) |
+| `next_retry_at` | TIMESTAMP | Scheduled retry time (nullable) |
+
+**Constraints:**
+- Foreign Key: `webhook_id → webhooks.id` ON DELETE CASCADE
+
+**Indexes:**
+- `idx_webhook_deliveries_webhook_id` on `webhook_id`
+- `idx_webhook_deliveries_next_retry_at` on `next_retry_at`
+- `idx_webhook_deliveries_response_status` on `response_status`
+
+### Webhook Event Types
+| Event | Trigger | Description |
+|-------|---------|-------------|
+| `ranking.changed` | Position change | Keyword ranking position changed |
+| `alert.triggered` | Alert rule match | Alert condition met |
+| `report.completed` | Report ready | Report generation finished |
+| `keyword.added` | New keyword | Keyword added to tracking |
+| `keyword.removed` | Keyword deleted | Keyword removed from tracking |
+
+### Model Relationships
+
+**Webhook Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `user()` | belongsTo | User who owns this webhook |
+| `deliveries()` | hasMany | WebhookDelivery records |
+
+**WebhookDelivery Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `webhook()` | belongsTo | The webhook this delivery belongs to |
+
+### Model Properties
+
+**Webhook Model:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | int | Primary key |
+| `user_id` | int | FK to users.id |
+| `name` | string | Webhook display name |
+| `url` | string | Webhook endpoint URL |
+| `secret` | string | HMAC signature secret (hidden from JSON) |
+| `events` | array | JSON array of subscribed event types |
+| `enabled` | bool | Whether webhook is active |
+
+**Model Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `events` | `array` (JSON) |
+| `enabled` | `boolean` |
+
+**Model Hidden:**
+| Attribute | Reason |
+|-----------|--------|
+| `secret` | Security - never exposed in API responses |
+
+**WebhookDelivery Model:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | int | Primary key |
+| `webhook_id` | int | FK to webhooks.id |
+| `event_type` | string | Type of event being delivered |
+| `payload` | array | JSON event payload |
+| `response_status` | int? | HTTP response status code |
+| `response_body` | string? | Response body from endpoint |
+| `attempt_count` | int | Number of delivery attempts |
+| `delivered_at` | Carbon? | When delivery succeeded |
+| `next_retry_at` | Carbon? | Scheduled retry time |
+
+**Model Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `payload` | `array` (JSON) |
+| `delivered_at` | `datetime` |
+| `next_retry_at` | `datetime` |
+
+### Model Methods
+
+**Webhook Model:**
+| Method | Description |
+|--------|-------------|
+| `generateSecret(): string` | Static method to generate secure webhook secret |
+| `isEnabled(): bool` | Check if webhook is active |
+| `subscribesTo(string $event): bool` | Check if webhook subscribes to event type |
+
+**WebhookDelivery Model:**
+| Method | Description |
+|--------|-------------|
+| `wasSuccessful(): bool` | Check if delivery returned 2xx status |
+| `markDelivered(int $status, ?string $body): void` | Mark delivery as completed |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Secret Generation | `whsec_` prefix + 64 hex chars from `random_bytes(32)` |
+| Secret Uniqueness | Unique constraint prevents reuse |
+| Secret Exposure | Hidden from JSON serialization |
+| HMAC Signatures | Used for webhook payload verification |
+| Cascade Delete | Webhooks deleted when user deleted |
+| Delivery Cleanup | Deliveries deleted when webhook deleted |
+
+### Webhook Signature Verification
+
+```php
+// X-SEOIndicator-Signature header format
+// Value: sha256=<hmac_hash>
+
+function verifyWebhook(string $payload, string $signature, string $secret): bool
+{
+    $expectedSignature = hash_hmac('sha256', $payload, $secret);
+    return hash_equals($signature, $expectedSignature);
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CreateWebhooksTablesTest` | 40 | 101 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Webhooks Table Structure | 18 | Columns, types, constraints |
+| Webhook Deliveries Table Structure | 14 | Columns, types, constraints |
+| Relationships | 3 | Foreign keys, cascade delete |
+| Security | 5 | SQL injection, XSS, constraints |
+
+### Production Status
+- **Deployed**: 2026-02-28 (migration batch 15)
+- **Migration**: `2026_02_27_125500_create_webhooks_tables.php`
+- **Health Check**: Passing
+- **Tests**: 40/40 passing (101 assertions)
+- **Status**: Complete
+
+### Dependencies
+- Users table (existing)
+
+### Related Tasks
+- TASK-6-13: Webhook management API
+- TASK-6-14: Webhook dispatcher service
+- TASK-6-15: Webhook retry logic
+- TASK-6-16: Event emitters integration
 
 ---
 ## Database Schema: GSC Query Match Column (TASK-12-3)

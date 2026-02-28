@@ -1,7 +1,6 @@
 # TASK-17-9: Step 4 - Alert Preferences Component
 
-## STATUS
-`To Prioritize`
+## STATUS`n`To Write Tests`
 
 ## PRIORITY
 `Medium`

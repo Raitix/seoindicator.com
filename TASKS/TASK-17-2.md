@@ -1,7 +1,6 @@
 # TASK-17-2: Backend - OnboardingService and Controller
 
-## STATUS
-`To Prioritize`
+## STATUS`n`To Write Tests`
 
 ## PRIORITY
 `High`

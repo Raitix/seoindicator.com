@@ -1,7 +1,6 @@
 # TASK-17-5: Step 2 - First Keyword Input Component
 
-## STATUS
-`To Prioritize`
+## STATUS`n`To Write Tests`
 
 ## PRIORITY
 `High`

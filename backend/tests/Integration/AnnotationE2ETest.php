@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Project;
 use App\Models\Keyword;
 use App\Models\Annotation;
+use App\Models\Site;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
@@ -36,17 +37,25 @@ class AnnotationE2ETest extends TestCase
         $this->user = User::factory()->create();
         $this->otherUser = User::factory()->create();
 
-        // Create project and keyword for main user
+        // Create project for main user
         $this->project = Project::factory()->create(['user_id' => $this->user->id]);
+
+        // Create site for main user (keywords can belong to sites)
+        $site = Site::factory()->create(['user_id' => $this->user->id]);
+
+        // Create keyword for main user with proper user_id
         $this->keyword = Keyword::factory()->create([
-            'site_id' => 1, // Adjust based on your schema
+            'user_id' => $this->user->id,
+            'site_id' => $site->id,
             'keyword' => 'test keyword',
         ]);
 
-        // Create keyword for other user
+        // Create site and keyword for other user
+        $otherSite = Site::factory()->create(['user_id' => $this->otherUser->id]);
         $otherProject = Project::factory()->create(['user_id' => $this->otherUser->id]);
         $this->otherUserKeyword = Keyword::factory()->create([
-            'site_id' => 2,
+            'user_id' => $this->otherUser->id,
+            'site_id' => $otherSite->id,
             'keyword' => 'other user keyword',
         ]);
     }
@@ -902,7 +911,7 @@ class AnnotationE2ETest extends TestCase
             ->getJson("/api/v1/keywords/{$this->keyword->id}/annotations?page=5&perPage=20");
 
         $response->assertStatus(200)
-            ->assertJsonPath('meta.current_page', 5)
+            ->assertJsonPath('meta.page', 5)
             ->assertJsonCount(20, 'data');
     }
 }

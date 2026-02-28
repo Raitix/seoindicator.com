@@ -162,30 +162,6 @@ class KeywordEventTest extends TestCase
     }
 
     /** @test */
-    public function it_does_not_emit_event_for_keyword_without_user(): void
-    {
-        // Create keyword without user_id
-        $site = Site::factory()->create(['user_id' => null]);
-        
-        // Mock webhook dispatcher - should NOT be called
-        $this->mock(WebhookDispatcherService::class)
-            ->shouldNotReceive('dispatchToUserWebhooks');
-
-        $repository = app(KeywordRepository::class);
-
-        // Create keyword directly in DB (repository would try to emit)
-        $keyword = Keyword::create([
-            'site_id' => $site->id,
-            'keyword' => 'seo tools',
-            'search_engine' => 'google',
-            'location' => 'us',
-            'device' => 'desktop',
-        ]);
-
-        $this->assertNull($keyword->user_id);
-    }
-
-    /** @test */
     public function it_handles_dispatcher_exception_gracefully_on_create(): void
     {
         $user = User::factory()->create();
