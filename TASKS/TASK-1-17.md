@@ -1,7 +1,7 @@
 # SPEC-001-17: Unit Tests for Services
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 ## PRIORITY
 `Medium`
 
@@ -63,6 +63,27 @@ TOTAL:                126 tests, 179 assertions - ALL PASS
 - PHPUnit deprecation warnings (doc-comments → attributes) are non-blocking
 - Migration tests have SQLite VACUUM issues (unrelated to this task)
 - Ready for deployment to staging environment
+
+### [2026-02-28 21:18] Agent: DevOps
+**Deployment Completed Successfully**
+
+**Deployment Summary:**
+- Commit: `eb0a65b` - feat(tests): update TASK-1-17 status to In Deployment after passing local tests
+- GitHub Actions Run: 22527244867
+- Duration: ~2 minutes total (build-and-test: 1m19s, deploy: 25s)
+
+**CI/CD Results:**
+- Build: ✓ Pass
+- Frontend tests: ✓ Pass
+- Deploy: ✓ Success
+- Health check: ✓ 200 OK
+
+**Health Check Response:**
+```json
+{"status":"ok","timestamp":"2026-02-28T19:18:54+00:00","database":"connected"}
+```
+
+**Next Step:** ProdTester to validate tests pass in production environment.
 
 ### [2026-02-28 11:35] Agent: Developer
 Created comprehensive unit tests for services that exist in codebase:
