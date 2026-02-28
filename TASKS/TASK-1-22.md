@@ -1,7 +1,7 @@
 # SPEC-001-22: /api/indicators Endpoint 404 in Production
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 ## PRIORITY
 `High`
 
