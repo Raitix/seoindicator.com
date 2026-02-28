@@ -5,7 +5,9 @@ import { test, expect, Page } from '@playwright/test';
  * Tests: Dashboard loads, displays correct data, navigation to keywords
  */
 
-// Mock dashboard data
+const SITE_ID = '1';
+
+// Mock dashboard data - matches DashboardSummary component
 const mockDashboardData = {
   totalKeywords: 128,
   averagePosition: 14.3,
@@ -42,7 +44,7 @@ const mockDashboardData = {
 
 // Helper to set up API mocks
 async function setupMocks(page: Page) {
-  // Mock dashboard API
+  // Mock dashboard API (not currently used - component uses static data)
   await page.route('**/api/v1/sites/*/dashboard*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -66,6 +68,18 @@ async function setupMocks(page: Page) {
       }),
     });
   });
+
+  // Mock SERP features metadata
+  await page.route('**/api/v1/metadata/serp-features*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        serpFeatures: [],
+      }),
+    });
+  });
 }
 
 test.describe('Dashboard E2E Tests', () => {
@@ -86,7 +100,7 @@ test.describe('Dashboard E2E Tests', () => {
     await expect(page.locator('text=Ranked')).toBeVisible();
     await expect(page.locator('text=Not Ranked')).toBeVisible();
     
-    // Verify metrics values (from mock data)
+    // Verify metrics values (from component's baseData)
     await expect(page.locator('text=128')).toBeVisible(); // Total Keywords
     await expect(page.locator('text=14.3')).toBeVisible(); // Average Position
     await expect(page.locator('text=96')).toBeVisible(); // Ranked
@@ -182,7 +196,7 @@ test.describe('Dashboard E2E Tests', () => {
     await expect(page.locator('text=Dashboard Summary')).toBeVisible();
     
     // Click refresh button
-    await page.click('button:has-text("Refresh")');
+    await page.click('button:has-text("Refresh all")');
     
     // Should show refreshing state
     await expect(page.locator('text=Refreshing')).toBeVisible();
