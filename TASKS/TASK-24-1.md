@@ -1,7 +1,7 @@
 # TASK-24-1: Database Migration - PWA Analyses Table
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
