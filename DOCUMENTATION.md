@@ -317,6 +317,153 @@ Polling endpoint for analysis job progress, providing a fallback for environment
 - TASK-19-11: Frontend Progress Bar Component
 
 ---
+## SSE Stream Endpoint (TASK-19-9)
+
+### Service Description
+Server-Sent Events endpoint for real-time analysis job progress updates. Provides push-based notifications for job progress, result delivery, and completion status without polling overhead.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/analysis/jobs/{jobId}/stream` | SSE stream for job progress |
+| POST | `/api/v1/analysis/jobs/{jobId}/start` | Dispatch job for processing |
+
+### SSE Stream Endpoint
+`GET /api/v1/analysis/jobs/{jobId}/stream`
+
+**Response Headers:**
+| Header | Value | Description |
+|--------|-------|-------------|
+| `Content-Type` | `text/event-stream` | SSE content type |
+| `Cache-Control` | `no-cache` | Prevent caching |
+| `X-Accel-Buffering` | `no` | Disable nginx buffering |
+| `Connection` | `keep-alive` | Persistent connection |
+
+**Event Types:**
+
+| Event | Data | Description |
+|-------|------|-------------|
+| `progress` | `{ job_id, completed_indicators, total_indicators, progress_percent, status }` | Progress update |
+| `complete` | `{ status, total_indicators, completed_indicators, failed_indicators }` | Job finished |
+| `heartbeat` | `{ time }` | Keepalive (every 15 seconds) |
+| `error` | `{ message }` | Error occurred |
+
+**Event Flow Example:**
+```
+event: progress
+data: {"job_id":1,"completed_indicators":5,"total_indicators":10,"progress_percent":50,"status":"processing"}
+id: progress-1
+
+event: progress
+data: {"job_id":1,"completed_indicators":10,"total_indicators":10,"progress_percent":100,"status":"processing"}
+id: progress-2
+
+event: complete
+data: {"status":"completed","total_indicators":10,"completed_indicators":10,"failed_indicators":0}
+id: complete-1
+```
+
+**Connection Management:**
+| Feature | Implementation |
+|---------|---------------|
+| Heartbeat | Every 15 seconds to keep connection alive |
+| Auto-disconnect | On job completion, cancellation, or failure |
+| Client disconnect | Detected via connection abort check |
+| Reconnection | Supported via Last-Event-ID header |
+
+### Start Job Endpoint
+`POST /api/v1/analysis/jobs/{jobId}/start`
+
+**Description:** Dispatches the analysis job for background processing.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Job dispatched for processing"
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 404 | Job not found or not owned by user |
+
+### Authorization
+- All endpoints require authentication (Bearer token)
+- User must own the job (ownership via `user_id` on analysis_jobs)
+- Returns 401 for unauthenticated requests
+- Returns 404 for unowned jobs (prevents enumeration attacks)
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware on all endpoints |
+| IDOR Protection | User ownership check via `userOwnsJob()` |
+| Enumeration Prevention | Returns 404 instead of 403 for unowned jobs |
+| Connection Validation | Job ID must be numeric (route constraint) |
+
+### Technical Implementation
+- Controller: `backend/app/Http/Controllers/Api/V1/AnalysisJobController.php`
+- Methods: `stream()`, `start()`
+- Response: Laravel `response()->stream()` for SSE
+- Routes: Defined in `backend/routes/api.php`
+
+### Connection Flow
+
+```
+1. Client connects to GET /api/v1/analysis/jobs/{jobId}/stream
+2. Server validates authentication and job ownership
+3. Server sends progress events as indicators complete
+4. Server sends heartbeat every 15 seconds
+5. On job completion, server sends 'complete' event and closes connection
+6. Client can reconnect using Last-Event-ID for missed events
+```
+
+### Comparison with Polling
+
+| Aspect | SSE | Polling |
+|--------|-----|---------|
+| Latency | Real-time | 2-second delay (typical) |
+| Server Load | Lower (single connection) | Higher (repeated requests) |
+| Browser Support | Modern browsers | Universal |
+| Corporate Proxies | May be blocked | Works through most |
+| Connection State | Persistent | Stateless |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `AnalysisJobStreamTest.php` | 18 | 18+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Connection Headers | 5 | Content-Type, Cache-Control, X-Accel-Buffering, Connection |
+| Authorization | 4 | 401 unauthenticated, 404 unowned/nonexistent/invalid |
+| Terminal States | 3 | Completed, failed, cancelled jobs |
+| Security | 3 | IDOR attack, SQL injection, negative job ID |
+| Edge Cases | 3 | Pending job, job with results, large indicator count |
+
+### Production Status
+- **Deployed**: 2026-02-28 (via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 18/18 passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-19-3 (AnalysisJobService)
+- TASK-19-8 (Progress tracking)
+
+### Related Tasks
+- TASK-19-10: Polling Fallback Endpoint (compatibility alternative)
+- TASK-19-11: Frontend Progress Bar Component
+- TASK-19-12: Frontend Live Results Table
+
+---
 ## Ranking Change Alert System (FEAT-002)
 
 ### Service Description

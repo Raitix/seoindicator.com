@@ -202,3 +202,45 @@ export const defaultKeywordMeta: KeywordListMeta = {
   page: 1,
   perPage: 20,
 };
+
+export interface RankingHistoryPoint {
+  date: string;
+  position: number | null;
+}
+
+export function useKeywordHistory(id?: string | number) {
+  const key = id ? `${API_BASE}/keywords/${id}/history` : null;
+
+  const { data, error, isLoading, mutate } = useSWR<RankingHistoryPoint[]>(key, async (url: string) => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch keyword history: ${response.statusText}`);
+    }
+    const payload = await response.json();
+    const history = payload?.data?.history ?? payload?.history ?? [];
+    return history.map((item: any) => ({
+      date: item.checkedAt ?? item.checked_at ?? item.date,
+      position: item.position ?? null,
+    }));
+  });
+
+  return {
+    history: data ?? [],
+    error,
+    isLoading,
+    mutate,
+  };
+}
+
+export async function triggerRankCheck(id: number) {
+  const response = await fetch(`${API_BASE}/keywords/${id}/check`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    throw new Error(errorBody?.message ?? "Failed to trigger rank check");
+  }
+
+  return response.json();
+}

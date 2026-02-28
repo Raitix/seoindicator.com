@@ -65,6 +65,14 @@ const mockKeyword = {
 async function setupMocks(page: Page) {
   // Mock keyword detail API
   await page.route('**/api/v1/keywords/*', async (route) => {
+    const url = route.request().url();
+    
+    // Skip history routes
+    if (url.includes('/history') || url.includes('/check')) {
+      await route.continue();
+      return;
+    }
+    
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,
@@ -132,6 +140,18 @@ async function setupMocks(page: Page) {
       }),
     });
   });
+
+  // Mock SERP features metadata
+  await page.route('**/api/v1/metadata/serp-features*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        serpFeatures: [],
+      }),
+    });
+  });
 }
 
 test.describe('Ranking History E2E Tests', () => {
@@ -147,7 +167,7 @@ test.describe('Ranking History E2E Tests', () => {
     await expect(page.locator('text=seo tools')).toBeVisible();
     
     // Click on keyword to view detail
-    await page.click('text=seo tools');
+    await page.click('a:has-text("seo tools")');
     
     // Should navigate to keyword detail page
     await expect(page).toHaveURL(new RegExp(`/sites/${SITE_ID}/keywords/\\d+`));
@@ -157,11 +177,11 @@ test.describe('Ranking History E2E Tests', () => {
     // Navigate directly to keyword detail
     await page.goto(`/sites/${SITE_ID}/keywords/${KEYWORD_ID}`);
     
-    // Wait for page to load
-    await expect(page.locator(`text=Keyword ${KEYWORD_ID}`)).toBeVisible();
+    // Wait for page to load - look for the keyword name
+    await expect(page.locator('text=seo tools')).toBeVisible();
     
     // Verify keyword information is displayed
-    await expect(page.locator('text=seo tools')).toBeVisible();
+    await expect(page.locator('text=Current Position')).toBeVisible();
   });
 
   test('E2E-012: Navigate to ranking history page', async ({ page }) => {
@@ -180,13 +200,13 @@ test.describe('Ranking History E2E Tests', () => {
     await expect(page.locator('text=seo tools')).toBeVisible();
     
     // Click on keyword to view detail
-    await page.click('text=seo tools');
+    await page.click('a:has-text("seo tools")');
     
-    // Look for manual check button if available
-    const checkButton = page.locator('button:has-text("Check"), button:has-text("Refresh")');
-    if (await checkButton.count() > 0) {
-      await checkButton.first().click();
-    }
+    // Wait for detail page
+    await expect(page.locator('text=seo tools')).toBeVisible();
+    
+    // Look for manual check button
+    await page.click('button:has-text("Check now")');
   });
 
   test('E2E-021: View keyword edit page', async ({ page }) => {
@@ -239,8 +259,8 @@ test.describe('Ranking History E2E Tests', () => {
     // Wait for keywords to load
     await expect(page.locator('text=seo tools')).toBeVisible();
     
-    // Select keyword checkbox
-    await page.locator('input[type="checkbox"]').nth(1).check(); // Skip header checkbox
+    // Select keyword checkbox in tbody
+    await page.locator('tbody input[type="checkbox"]').first().check();
     
     // Verify selection
     await expect(page.locator('text=selected')).toBeVisible();
@@ -256,8 +276,8 @@ test.describe('Ranking History E2E Tests', () => {
     // Wait for keywords to load
     await expect(page.locator('text=seo tools')).toBeVisible();
     
-    // Select keyword checkbox
-    await page.locator('input[type="checkbox"]').nth(1).check();
+    // Select keyword checkbox in tbody
+    await page.locator('tbody input[type="checkbox"]').first().check();
     
     // Click pause button
     await page.click('button:has-text("Pause")');
@@ -270,8 +290,8 @@ test.describe('Ranking History E2E Tests', () => {
     // Wait for keywords to load
     await expect(page.locator('text=seo tools')).toBeVisible();
     
-    // Select keyword checkbox
-    await page.locator('input[type="checkbox"]').nth(1).check();
+    // Select keyword checkbox in tbody
+    await page.locator('tbody input[type="checkbox"]').first().check();
     
     // Click resume button
     await page.click('button:has-text("Resume")');
@@ -285,7 +305,7 @@ test.describe('Ranking History E2E Tests', () => {
     await expect(page.locator('text=seo tools')).toBeVisible();
     
     // Select status filter
-    await page.selectOption('select:has-text("All")', 'active');
+    await page.selectOption('select:has-text("All Status")', 'active');
     
     // Verify filter is applied
     await expect(page.locator('text=seo tools')).toBeVisible();
