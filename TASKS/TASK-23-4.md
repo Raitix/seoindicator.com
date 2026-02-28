@@ -1,7 +1,7 @@
 # TASK-23-4: Backlink Sync Command and Job
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
