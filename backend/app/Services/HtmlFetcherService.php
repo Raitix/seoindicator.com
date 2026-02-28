@@ -391,6 +391,11 @@ class HtmlFetcherService
     {
         $cacheKey = $this->getCacheKey($url);
         Cache::forget($cacheKey);
+        
+        // Remove from tracking list
+        $cachedUrls = Cache::get(self::CACHED_URLS_KEY, []);
+        $cachedUrls = array_filter($cachedUrls, fn($u) => $u !== $url);
+        Cache::put(self::CACHED_URLS_KEY, array_values($cachedUrls));
     }
 
     /**

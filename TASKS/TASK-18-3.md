@@ -1,7 +1,7 @@
 # TASK-18-3: IndicatorCheckerInterface and Base Classes
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
