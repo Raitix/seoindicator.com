@@ -1,7 +1,7 @@
 # FEAT-19: Progressive Analysis & Job System
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
