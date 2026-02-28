@@ -1,12 +1,57 @@
 # FEAT-017: User Onboarding & Activation Flow
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## Specification
 - **SPEC-017**: User Onboarding & Activation Flow - [View Specification](../SPECIFICATIONS/SPEC-017.md)
 
 ## Comments
+### 2026-02-28 - SpecSystemAnalyst
+**Task Breakdown Complete**
+
+Created 20 tasks organized into 4 phases:
+
+**Phase 1: MVP Onboarding (High Priority)**
+- TASK-17-1: Database Migration - User Onboarding Table
+- TASK-17-2: Backend - OnboardingService and Controller
+- TASK-17-3: Frontend - OnboardingProvider, Modal, and Wizard Shell
+- TASK-17-4: Step 1 - Website URL Input Component
+- TASK-17-5: Step 2 - First Keyword Input Component
+- TASK-17-6: Step 5 - Completion Summary Component
+- TASK-17-7: Progress Tracking Integration
+
+**Phase 2: Enhanced Experience (Medium Priority)**
+- TASK-17-8: Step 3 - Ranking Preview Component
+- TASK-17-9: Step 4 - Alert Preferences Component
+- TASK-17-10: Progress Bar Component
+- TASK-17-11: Skip Functionality
+- TASK-17-12: Resume Onboarding Banner
+
+**Phase 3: Analytics & Optimization (Low Priority)**
+- TASK-17-13: Analytics Event Tracking
+- TASK-17-14: A/B Testing Framework Preparation
+- TASK-17-15: Onboarding Completion Rate Tracking
+- TASK-17-16: Time-to-First-Keyword Tracking
+
+**Phase 4: Smart Suggestions - Post-MVP (Low Priority)**
+- TASK-17-17: Keyword Suggestions from URL Parsing
+- TASK-17-18: Competitor Suggestions
+- TASK-17-19: Industry-Specific Onboarding Paths
+- TASK-17-20: Personalized Recommendations
+
+**Dependency Chain:**
+- TASK-17-1 has no dependencies (can start immediately)
+- All backend tasks depend on TASK-17-1
+- All frontend tasks depend on TASK-17-2
+- Phase 2+ tasks depend on Phase 1 completion
+
+**Key Decisions:**
+1. MVP includes only Steps 1, 2, 5 + progress tracking (skip Steps 3, 4)
+2. Keyword created on completion (not during step 2) to prevent orphans
+3. MockSERPFetcher used for Step 3 (no real SERP API calls in MVP)
+4. SSRF protection on website URL validation
+
 ### 2026-02-28 - Architect
 Created technical specification SPEC-017. Key decisions:
 - 5-step wizard with skip/resume functionality

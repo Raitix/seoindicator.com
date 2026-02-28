@@ -1,6 +1,30 @@
 # DOCUMENTATION.md
 
 ---
+## Indicators Placeholder Endpoint (TASK-1-22)
+
+### Feature Description
+Placeholder endpoint for future SEO indicators functionality. Returns an empty data array as a stub for future development.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/indicators` | Get indicators list (placeholder) |
+
+### Response
+```json
+{
+  "data": []
+}
+```
+
+### Implementation
+- **Controller**: `app/Http/Controllers/Api/IndicatorsController.php`
+- **Route**: `routes/api.php`
+- **Public Access**: No authentication required
+
+---
 ## Tools Infrastructure (TASK-16-1)
 
 ### Feature Description
