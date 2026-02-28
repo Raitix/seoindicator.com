@@ -1,7 +1,7 @@
 # TASK-18-5: HtmlFetcherService (with SSRF Protection)
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -45,26 +45,43 @@ Create service to fetch HTML content from URLs with comprehensive SSRF protectio
 ### [2026-02-28] SpecSystemAnalyst
 Created from SPEC-018 Section 10.2. HIGH RISK task - requires thorough security review.
 
-### [2026-02-28] PreTester
-**Test Documentation Created:** TESTS/TEST-18-5.md (80+ test scenarios)
-**Test File Created:** backend/tests/Unit/Services/HtmlFetcherServiceTest.php (50+ test methods)
+### [2026-02-28 21:23 GMT+2] PreTester
+**Test Documentation:** TESTS/TEST-18-5.md (80+ scenarios)
+**Test File:** backend/tests/Unit/Services/HtmlFetcherServiceTest.php (70 test methods)
 
 **Test Coverage:**
 | Category | Tests | Description |
 |----------|-------|-------------|
-| HTML Fetch (HF) | 13 | Success, errors, HTTP status codes |
-| Content-Type (CT) | 9 | Validation of response types |
-| SSRF Protection (SSRF) | 9 | Localhost, private IPs, cloud metadata, protocols |
-| Caching (CA) | 4 | Cache behavior, TTL, invalidation |
-| Redirects (RH) | 4 | 301, 302, redirect chains |
-| SSL/TLS (SSL) | 2 | Certificate handling |
-| Result Structure (RS) | 3 | Response format |
-| Edge Cases | 5 | Empty URL, unicode, custom options |
+| HTML Fetch (HF) | 9 | Success, errors, HTTP status codes, large HTML |
+| Content-Type (CT) | 9 | Validation of HTML, JSON, XML, PDF, binary |
+| SSRF Protection (SSRF) | 14 | Localhost, private IPs, cloud metadata, DNS rebinding, IPv6, redirect attacks |
+| Timeout (TO) | 4 | Default, custom, connection timeout, redirect timeout |
+| Response Size (SIZE) | 4 | Small, large, limit check, custom limit |
+| Header Extraction (HE) | 4 | Content-Type, Content-Length, Server, case handling |
+| Error Handling (EH) | 4 | Invalid URL, connection refused, empty response, rate limiting |
+| Redirects (RH) | 6 | 301, 302, 307, 308, redirect chains, too many redirects |
+| Caching (CA) | 5 | Cache hit/miss, TTL, invalidation, query params |
+| SSL/TLS (SSL) | 2 | Valid/expired certificates |
+| Result Structure (RS) | 3 | Response format, timing, helper methods |
+| Edge Cases | 5 | Empty URL, null URL, unicode URL, custom options |
+| Integration (INT) | 3 | URLValidationService integration |
+
+**Dependencies:**
+- URLValidationService from FEAT-016 (must use for SSRF protection)
+- DomainValidatorService from TASK-18-4
 
 **Security Critical:**
-- All SSRF bypass attempts must be blocked
-- Must use URLValidationService from FEAT-016
+- All SSRF bypass attempts must be blocked (localhost, private IPs, metadata endpoints)
+- Redirects to blocked URLs must be caught
+- DNS rebinding prevention required
 - Audit logging required for all fetch attempts
 - SecurityAuditor review required before deployment
 
-**Status:** Tests written, ready for Developer implementation. HIGH RISK.
+**Implementation Notes:**
+- Use HTTP client with configurable timeout (default 30s)
+- Stream response for early size detection
+- Cache successful responses (1 hour TTL)
+- Return structured result with content, headers, timing
+- Content-Type validation (text/html only)
+
+**Status:** Tests complete. Ready for Developer implementation. HIGH RISK.

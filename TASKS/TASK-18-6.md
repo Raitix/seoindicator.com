@@ -1,7 +1,7 @@
 # TASK-18-6: AnalysisRunnerService
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -69,3 +69,26 @@ Created from SPEC-018 Section 10.2. Central orchestration for analysis pipeline.
 - Requires ScoreCalculatorService (TASK-18-7)
 
 **Status:** Tests written, ready for Developer implementation.
+
+### [2026-02-28] PreTester
+**Integration Tests Created:** backend/tests/Feature/Services/AnalysisRunnerServiceIntegrationTest.php (25+ integration tests)
+
+**Integration Test Coverage:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| End-to-End | 3 | Full workflow, user linking, session linking |
+| Real Indicators | 3 | Title, meta description, H1 integration |
+| Events | 2 | Started/Completed events |
+| Performance | 2 | Timeout compliance, large HTML |
+| Partial Failures | 2 | Partial results, error capture |
+| Score Calculation | 2 | Overall score, category scores |
+| Data Persistence | 2 | JSON storage, timing data |
+| Concurrent Analysis | 2 | Multiple analyses, URL updates |
+| Input Variations | 3 | HTTPS, unicode, HTML5 semantic |
+
+**Test File Summary:**
+- Unit tests: `tests/Unit/Services/AnalysisRunnerServiceTest.php` (35+ tests)
+- Integration tests: `tests/Feature/Services/AnalysisRunnerServiceIntegrationTest.php` (25+ tests)
+- Test documentation: `TESTS/TEST-18-6.md` (comprehensive scenario list)
+
+**Status Change:** Tests Coverage In Progress → To Develop
