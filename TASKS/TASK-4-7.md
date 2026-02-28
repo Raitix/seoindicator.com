@@ -1,7 +1,7 @@
 # SPEC-004-7: Reports CRUD API
 
 ## STATUS
-`Testing Locally`
+`Passed Local Testing`
 
 ## PRIORITY
 `Medium`
@@ -53,3 +53,25 @@ Created as Phase 3 task. Basic CRUD operations for report management.
 - DELETE /api/v1/reports/{reportId} - Delete report and associated file
 - Added routes to api.php
 - Status: To Test Locally
+
+### [2026-02-28 12:15] Agent: LocalTester
+**Test Results: All 29 tests passed (79 assertions)**
+
+**Bug Found & Fixed:**
+- Issue: `ReportBranding` model was looking for `report_brandings` table (Laravel default plural), but migration creates `report_branding` (singular)
+- Fix: Added `protected $table = 'report_branding'` to ReportBranding model
+- This caused PDF report generation tests to fail with 500 error
+
+**Test Categories:**
+- Authentication tests (401 for unauthenticated users)
+- Authorization tests (403 for other users' resources)
+- CRUD operations (list, show, delete)
+- Report generation (PDF, CSV)
+- Download functionality
+- Validation (required fields, date range, sections)
+- Edge cases (missing files, pending reports)
+
+**Files Modified:**
+- `app/Models/ReportBranding.php` - Added explicit table name
+
+Status: Ready for DevOps deployment
