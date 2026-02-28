@@ -1,7 +1,7 @@
 # TASK-7-13: Integrate with Ranking Check Workflow
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -26,6 +26,12 @@ Integrate SERP feature detection into the existing ranking check workflow. When 
 - [ ] Add logging for debugging
 - [ ] Performance: feature detection adds <1 second to ranking check
 - [ ] Configuration flag to enable/disable feature tracking per site
+
+## Test Coverage
+- **Test File:** `TESTS/SPEC-7-13.md`
+- **Unit Tests:** `backend/tests/Unit/Services/RankingServiceFeatureIntegrationTest.php`
+- **Integration Tests:** `backend/tests/Integration/Feature/RankingWorkflowIntegrationTest.php`
+- **Total Scenarios:** 20 test cases across 6 categories
 
 ## Implementation Notes
 ```typescript
@@ -78,6 +84,39 @@ Medium (4-5 hours)
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-28 13:55] Agent: PreTester
+**Test Design Complete** ✓
+
+Test documentation verified and expanded in `TESTS/SPEC-7-13.md`.
+
+**Test Coverage Summary:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Core Integration | 5 | Feature detection triggers, storage, JSON update, change tracking |
+| Configuration | 3 | enableSerpFeatures flag per site |
+| Error Handling | 4 | Graceful degradation, exception isolation |
+| Performance | 2 | <1 second requirement |
+| Edge Cases | 4 | First check, empty SERP, null site, multiple features |
+| Security | 2 | SQL injection, XSS prevention |
+
+**Key Test Scenarios:**
+- T1: Ranking check triggers `SERPFeatureDetector::detectFeatures()` after SERP fetch
+- T5: Feature detection failure doesn't break ranking check (error isolation)
+- T6-T8: Site-level configuration flag `enableSerpFeatures`
+- T13: Performance requirement - feature detection adds <1 second
+- T15: First check (no previous features) - no 'gained' events recorded
+
+**Dependencies Verified:**
+- TASK-7-4 (Detector service) - Test mock required
+- TASK-7-8 (Change tracker) - Test mock required
+- TASK-7-3 (Repository) - Test mock required
+
+**Handoff to Developer:**
+- See `TESTS/SPEC-7-13.md` for full test specifications
+- Mock SERPFetcher, SERPFeatureDetector, SERPFeatureRepository, SERPFeatureChangeTracker
+- Implement configuration flag in Site model
+- Wrap feature detection in try-catch to isolate failures
 
 ### [2026-02-20 16:58] Agent: SpecSystemAnalyst
 Created task for workflow integration. This is the critical integration point. Risk Medium due to modification of core ranking check flow.
