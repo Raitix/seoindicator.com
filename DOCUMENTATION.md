@@ -3968,6 +3968,158 @@ if (!in_array($redirectUri, config('services.google.redirect_uris'))) {
 - TASK-12-8: GSC Data Controller API
 
 ---
+## GSC Connection Page Component (TASK-12-9)
+
+### Service Description
+React frontend component for users to connect/disconnect Google Search Console properties via OAuth flow. Provides the user interface for the GSC integration feature (FEAT-012), enabling property management through a visual interface.
+
+### Component Structure
+
+**Main Component:**
+| Component | Path | Description |
+|-----------|------|-------------|
+| `GSCConnectionPage` | `frontend/app/settings/gsc/page.tsx` | Main GSC connection management page |
+| `SelectPropertyPage` | `frontend/app/settings/gsc/select-property/page.tsx` | Property selection for multiple properties |
+
+**Supporting Files:**
+| File | Path | Description |
+|------|------|-------------|
+| Types | `frontend/lib/types/gsc.ts` | TypeScript interfaces for GSC data |
+| API | `frontend/lib/api/gsc.ts` | GSC API helper functions |
+
+### UI Components
+
+**Connect Button:**
+- Initiates OAuth flow via `/api/gsc/oauth/redirect`
+- Displays "Connect with Google" branding
+- Shows loading state during OAuth process
+
+**Connected Properties List:**
+| Property Badge | Color | Description |
+|----------------|-------|-------------|
+| Active | Green | Token valid, syncing enabled |
+| Expired | Yellow | Token expired, needs refresh |
+| Revoked | Red | Access revoked, needs reconnection |
+
+**Disconnect Modal:**
+- Confirmation dialog before disconnecting
+- Explains data retention policy
+- Calls `DELETE /api/gsc/disconnect/{propertyId}`
+
+### OAuth Flow
+
+```
+1. User clicks "Connect with Google"
+2. Frontend calls GET /api/gsc/oauth/redirect
+3. Backend redirects to Google OAuth consent screen
+4. User authorizes access
+5. Google redirects to /api/gsc/oauth/callback
+6. Backend exchanges code for tokens
+7. If single property: Auto-connect, redirect to settings
+8. If multiple properties: Redirect to select-property page
+```
+
+### Frontend API Functions
+
+**GSC API Module (`frontend/lib/api/gsc.ts`):**
+| Function | Endpoint | Description |
+|----------|----------|-------------|
+| `fetchGSCProperties()` | `GET /api/gsc/properties` | List connected properties |
+| `getGSCOAuthUrl()` | `GET /api/gsc/oauth/redirect` | Get OAuth redirect URL |
+| `disconnectGSCProperty(id)` | `DELETE /api/gsc/disconnect/{id}` | Remove connection |
+
+**TypeScript Types (`frontend/lib/types/gsc.ts`):**
+```typescript
+interface GSCProperty {
+  id: number;
+  property_url: string;
+  site_url: string;
+  status: 'active' | 'expired' | 'revoked';
+  connected_at: string;
+}
+
+interface GSCConnectionRequest {
+  authorization_code: string;
+}
+
+interface GSCConnectionResponse {
+  success: boolean;
+  property_url: string;
+}
+```
+
+### User Features
+
+| Feature | Description |
+|---------|-------------|
+| One-click OAuth | Single button to initiate Google OAuth |
+| Status indicators | Visual badges showing connection health |
+| Disconnect confirmation | Modal prevents accidental disconnection |
+| Multi-property support | Select from multiple GSC properties |
+| Error handling | OAuth error banners with retry option |
+
+### OAuth Callback Handling
+
+**Success Banner:**
+- Shows property URL that was connected
+- Auto-dismisses after 5 seconds
+
+**Error States:**
+| Error | Message | Action |
+|-------|---------|--------|
+| `access_denied` | "You denied access to Google Search Console" | Retry button |
+| `invalid_state` | "Security validation failed" | Retry button |
+| `no_properties` | "No GSC properties found for your account" | Close button |
+| `api_error` | "Failed to connect to Google. Please try again." | Retry button |
+
+### Backend Endpoints Used
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/gsc/oauth/redirect` | GET | Initiate OAuth flow |
+| `/api/gsc/oauth/callback` | GET | Handle Google callback |
+| `/api/gsc/oauth/select-property` | POST | Select property when multiple available |
+| `/api/gsc/oauth/available-properties` | GET | List available properties from session |
+| `/api/gsc/properties` | GET | List connected properties |
+| `/api/gsc/disconnect/{id}` | DELETE | Remove connection |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| CSRF Protection | State parameter stored in session |
+| Token Security | Tokens encrypted at rest (backend) |
+| Token Exposure | Never exposed to frontend |
+| Authorization | User can only see their own connections |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| GSCConnectionTest | 16 | Model tests |
+| GSCOAuthServiceTest | 12 | OAuth flow tests |
+| GSCDataSyncServiceTest | 12 | Sync tests |
+| GSCApiEndpointsTest | 11 | API endpoint tests |
+| **Total** | **51** | **115** |
+
+### Production Status
+- **Deployed**: 2026-02-28 (commit b3716d9 via GitHub Actions)
+- **Frontend Build**: Next.js 16.1.6 (passing)
+- **Backend Tests**: 117 passed, 306 assertions
+- **Health Check**: Passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-12-7 (GSC Connection Controller API)
+- Google OAuth 2.0 credentials
+- Next.js React components
+
+### Related Tasks
+- TASK-12-7: GSC Connection Controller API
+- TASK-12-8: GSC Data Controller API
+- TASK-12-10: GSC Data Dashboard (blocked)
+
+---
 ## GSC Connection Controller API (TASK-12-7)
 
 ### Service Description
@@ -5545,31 +5697,232 @@ CREATE TABLE audits (
 - `idx_status` on `status`
 - `idx_completed_at` on `completed_at`
 
-### Issue Types Table
-Stores issue type definitions for audits. Pre-populated with common SEO issue categories.
+### Issue Types Table (TASK-14-3)
+
+### Service Description
+The Issue Types API manages reusable templates for SEO issues, including default severity levels and recommendation templates. This is a foundational component of the Technical SEO Site Audit feature (FEAT-014), providing standardized issue definitions used during automated site crawls.
+
+### Database Schema
 
 ```sql
 CREATE TABLE issue_types (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     category VARCHAR(50) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    description TEXT,
+    description TEXT NOT NULL,
     severity_default ENUM('critical', 'warning', 'notice') NOT NULL,
-    recommendation_template TEXT,
+    recommendation_template TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 ```
 
-**Fields:**
+### Fields
+
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | BIGINT UNSIGNED | Primary key |
-| `category` | VARCHAR(50) | Issue category (e.g., 'technical', 'content', 'performance') |
-| `name` | VARCHAR(100) | Issue type name |
-| `description` | TEXT | Detailed description of issue type |
+| `category` | VARCHAR(50) | Issue category: `meta`, `content`, `technical`, `performance`, `mobile`, `accessibility`, `security` |
+| `name` | VARCHAR(100) | Issue type name (unique within category) |
+| `description` | TEXT | Detailed description of the issue type |
 | `severity_default` | ENUM | Default severity: `critical`, `warning`, `notice` |
 | `recommendation_template` | TEXT | Template for fix recommendations |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+| `updated_at` | TIMESTAMP | Last update timestamp |
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/issue-types` | List all issue types with filtering and pagination |
+| `GET` | `/api/v1/issue-types/categories` | Get available issue type categories |
+| `GET` | `/api/v1/issue-types/{id}` | Get single issue type |
+| `POST` | `/api/v1/issue-types` | Create new issue type |
+| `PUT` | `/api/v1/issue-types/{id}` | Update issue type |
+| `DELETE` | `/api/v1/issue-types/{id}` | Delete issue type |
+
+### List Issue Types
+
+**Request:**
+```
+GET /api/v1/issue-types?category=meta&severity=warning&search=title&page=1&per_page=20&sort_by=name&sort_order=asc
+```
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `category` | string | Filter by category |
+| `severity` | string | Filter by severity: `critical`, `warning`, `notice` |
+| `search` | string | Search in name and description |
+| `page` | int | Page number (default: 1) |
+| `per_page` | int | Items per page (default: 15, max: 100) |
+| `sort_by` | string | Sort field: `name`, `category`, `severity_default`, `created_at` |
+| `sort_order` | string | Sort direction: `asc`, `desc` |
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "category": "meta",
+      "categoryLabel": "Meta Tags",
+      "name": "Missing Title Tag",
+      "description": "Page does not have a title tag",
+      "severity_default": "critical",
+      "recommendation_template": "Add a unique, descriptive title tag to this page. Keep it under 60 characters.",
+      "created_at": "2026-02-21T22:00:00.000000Z",
+      "updated_at": "2026-02-21T22:00:00.000000Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 24,
+    "last_page": 2
+  }
+}
+```
+
+### Get Categories
+
+**Request:**
+```
+GET /api/v1/issue-types/categories
+```
+
+**Response:**
+```json
+{
+  "data": [
+    { "value": "meta", "label": "Meta Tags" },
+    { "value": "content", "label": "Content" },
+    { "value": "technical", "label": "Technical" },
+    { "value": "performance", "label": "Performance" },
+    { "value": "mobile", "label": "Mobile" },
+    { "value": "accessibility", "label": "Accessibility" },
+    { "value": "security", "label": "Security" }
+  ]
+}
+```
+
+### Create Issue Type
+
+**Request:**
+```
+POST /api/v1/issue-types
+Content-Type: application/json
+
+{
+  "category": "meta",
+  "name": "Duplicate Title Tag",
+  "description": "Multiple pages have the same title tag",
+  "severity_default": "warning",
+  "recommendation_template": "Ensure each page has a unique title tag that accurately describes its content."
+}
+```
+
+**Response:** `201 Created`
+```json
+{
+  "id": 25,
+  "category": "meta",
+  "categoryLabel": "Meta Tags",
+  "name": "Duplicate Title Tag",
+  "description": "Multiple pages have the same title tag",
+  "severity_default": "warning",
+  "recommendation_template": "Ensure each page has a unique title tag that accurately describes its content.",
+  "created_at": "2026-02-28T23:00:00.000000Z",
+  "updated_at": "2026-02-28T23:00:00.000000Z"
+}
+```
+
+### Update Issue Type
+
+**Request:**
+```
+PUT /api/v1/issue-types/25
+Content-Type: application/json
+
+{
+  "severity_default": "critical"
+}
+```
+
+**Response:** `200 OK`
+
+### Delete Issue Type
+
+**Request:**
+```
+DELETE /api/v1/issue-types/25
+```
+
+**Response:** `204 No Content`
+
+**Note:** Cannot delete issue types that are in use by audit issues. Returns `409 Conflict` if attempted.
+
+### Seeded Issue Types
+
+The database is pre-populated with 24 issue types across 7 categories:
+
+| Category | Count | Examples |
+|----------|-------|----------|
+| `meta` | 4 | Missing Title Tag, Duplicate Title, Missing Meta Description, Long Title |
+| `content` | 5 | Missing H1, Multiple H1s, Thin Content, Duplicate Content, Missing Alt Text |
+| `technical` | 4 | Broken Link, Redirect Chain, Missing Sitemap, Blocked by Robots.txt |
+| `performance` | 4 | Slow Page Load, Large Page Size, Uncompressed Images, No Browser Caching |
+| `mobile` | 3 | Missing Viewport, Small Tap Targets, Horizontal Scroll |
+| `accessibility` | 2 | Missing Alt Text, Low Contrast |
+| `security` | 2 | Mixed Content, No HTTPS |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | All endpoints require authenticated user |
+| Authorization | Standard user access (no special permissions required) |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Protection | Input validation, output escaping |
+| Mass Assignment | Model `$fillable` whitelist |
+| Duplicate Prevention | Unique constraint on `(category, name)` |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `IssueTypeControllerTest.php` | 30 | 90 |
+
+**Test Categories:**
+- **INDEX** (7 tests): List all, empty list, pagination, filter by category, filter by severity, search, sorting
+- **CATEGORIES** (1 test): Get available categories
+- **STORE** (5 tests): Create, validation errors, invalid severity, invalid category, duplicate prevention
+- **SHOW** (2 tests): Get single, not found
+- **UPDATE** (4 tests): Update, not found, validation error, duplicate prevention
+- **DESTROY** (2 tests): Delete, not found
+- **Response Format** (2 tests): categoryLabel transformation, timestamps
+- **Security** (2 tests): SQL injection protection, XSS protection
+- **Authentication** (5 tests): Unauthenticated access denied on all endpoints
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-02-28 (commit e235956) |
+| **Migration** | `2026_02_21_222100_create_issue_types_table.php` |
+| **Seeder** | `IssueTypeSeeder.php` (24 records) |
+| **Health Check** | Passing |
+| **Tests** | 30 tests, 90 assertions |
+| **Status** | Complete |
+
+### Dependencies
+
+- None (standalone reference table)
+
+### Related Tasks
+
+- TASK-14-1: Audits Table
+- TASK-14-2: Audit Issues Table (uses issue_type_id foreign key)
 
 ### Audit Issues Table
 Stores detailed issue records discovered during audits.
