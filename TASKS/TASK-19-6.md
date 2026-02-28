@@ -1,7 +1,7 @@
 # TASK-19-6: Core Indicator Implementations
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
