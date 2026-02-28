@@ -1,7 +1,7 @@
 # SPEC-025: User Accounts + Dashboard + Analysis History
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -766,6 +766,57 @@ This feature is marked **High Risk** because:
 
 ## Comments
 _Agent communication log_
+
+### [2026-02-28 20:55 GMT+2] Agent: SpecSystemAnalyst
+Broke down SPEC-025 into 25 tasks across 5 phases:
+
+**Phase 1: Core Authentication (TASK-25-1 to 25-5)**
+- TASK-25-1: Install Laravel Sanctum & Socialite Packages
+- TASK-25-2: Create social_accounts Migration
+- TASK-25-3: Implement AuthController (Register, Login, Logout)
+- TASK-25-4: Implement Password Reset Flow
+- TASK-25-5: Implement Email Verification
+
+**Phase 2: Google OAuth (TASK-25-6 to 25-9)**
+- TASK-25-6: Configure Google OAuth Credentials
+- TASK-25-7: Create GoogleOAuthService
+- TASK-25-8: Implement GoogleAuthController
+- TASK-25-9: Handle Account Linking (Email Match)
+
+**Phase 3: Analysis History (TASK-25-10 to 25-14)**
+- TASK-25-10: Create analysis_history Migration
+- TASK-25-11: Create analysis_costs Migration
+- TASK-25-12: Implement AnalysisHistory Model & Repository
+- TASK-25-13: Implement CostTrackingService
+- TASK-25-14: Integrate Analysis History with Existing Tools
+
+**Phase 4: Dashboard (TASK-25-15 to 25-20)**
+- TASK-25-15: Implement DashboardController
+- TASK-25-16: Implement AnalysisHistoryController API
+- TASK-25-17: Create Frontend Auth Context & Provider
+- TASK-25-18: Create Login/Register Frontend Pages
+- TASK-25-19: Create Enhanced Dashboard Page
+- TASK-25-20: Create Analysis History Page
+
+**Phase 5: Testing & Polish (TASK-25-21 to 25-25)**
+- TASK-25-21: Unit Tests for Auth Services
+- TASK-25-22: Feature Tests for API Endpoints
+- TASK-25-23: Integration Tests for OAuth Flow
+- TASK-25-24: Frontend Component Tests
+- TASK-25-25: Security Audit for Authentication System
+
+**Dependencies Mapped:**
+- Linear dependency chain within phases
+- Phase 2 depends on Phase 1
+- Phase 3 independent (can parallelize)
+- Phase 4 depends on Phase 3
+- Phase 5 depends on all implementation phases
+
+**Security Note:** TASK-25-25 (Security Audit) is MANDATORY before deployment due to High risk rating.
+
+Status: `To Prioritize` - Ready for ProjectManager.
+
+---
 
 ### [2026-02-28 11:10 GMT+2] Agent: Architect
 Created specification SPEC-025 for User Accounts + Dashboard + Analysis History (FEAT-025).

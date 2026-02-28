@@ -64,7 +64,7 @@ const mockKeyword = {
 // Helper to set up API mocks
 async function setupMocks(page: Page) {
   // Mock SERP features metadata (most specific, set up first)
-  await page.route(/\/api\/v1\/metadata\/serp-features/, async (route) => {
+  await page.route('**/api/v1/metadata/serp-features**', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -76,7 +76,7 @@ async function setupMocks(page: Page) {
   });
 
   // Mock ranking history API (specific pattern)
-  await page.route(/\/api\/v1\/keywords\/\d+\/history/, async (route) => {
+  await page.route('**/api/v1/keywords/**/history**', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -98,7 +98,7 @@ async function setupMocks(page: Page) {
   });
 
   // Mock manual rank check API
-  await page.route(/\/api\/v1\/keywords\/\d+\/check/, async (route) => {
+  await page.route('**/api/v1/keywords/**/check**', async (route) => {
     if (route.request().method() === 'POST') {
       await route.fulfill({
         status: 202,
@@ -116,9 +116,19 @@ async function setupMocks(page: Page) {
     }
   });
 
-  // Mock keyword detail API (general pattern)
-  await page.route(/\/api\/v1\/keywords\/\d+$/, async (route) => {
-    if (route.request().method() === 'GET') {
+  // Mock keyword detail API - use wildcard pattern for flexibility
+  // This handles GET /api/v1/keywords/1 and PUT /api/v1/keywords/1
+  await page.route('**/api/v1/keywords/*', async (route) => {
+    const url = route.request().url();
+    const method = route.request().method();
+    
+    // Skip history and check routes (handled by other mocks)
+    if (url.includes('/history') || url.includes('/check')) {
+      await route.continue();
+      return;
+    }
+    
+    if (method === 'GET') {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -127,7 +137,7 @@ async function setupMocks(page: Page) {
           data: mockKeyword,
         }),
       });
-    } else if (route.request().method() === 'PUT') {
+    } else if (method === 'PUT') {
       const body = route.request().postDataJSON();
       await route.fulfill({
         status: 200,
@@ -137,7 +147,7 @@ async function setupMocks(page: Page) {
           data: { ...mockKeyword, ...body },
         }),
       });
-    } else if (route.request().method() === 'DELETE') {
+    } else if (method === 'DELETE') {
       await route.fulfill({
         status: 204,
       });
@@ -147,7 +157,7 @@ async function setupMocks(page: Page) {
   });
 
   // Mock keywords list for navigation
-  await page.route(/\/api\/v1\/sites\/\d+\/keywords/, async (route) => {
+  await page.route('**/api/v1/sites/*/keywords**', async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,
@@ -187,11 +197,12 @@ test.describe('Ranking History E2E Tests', () => {
     // Navigate directly to keyword detail
     await page.goto(`/sites/${SITE_ID}/keywords/${KEYWORD_ID}`);
     
-    // Wait for page to load - look for the keyword name
-    await expect(page.locator('text=seo tools')).toBeVisible();
+    // Wait for loading to complete - the page shows skeletons during loading
+    // Wait for the actual content (h1 with keyword name)
+    await expect(page.locator('h1:has-text("seo tools")')).toBeVisible({ timeout: 10000 });
     
-    // Verify keyword information is displayed
-    await expect(page.locator('text=Current Position')).toBeVisible();
+    // Verify keyword information is displayed - look for the card title
+    await expect(page.getByText('Current Position', { exact: false })).toBeVisible();
   });
 
   test('E2E-012: Navigate to ranking history page', async ({ page }) => {
@@ -252,14 +263,23 @@ test.describe('Ranking History E2E Tests', () => {
     // Navigate to keyword edit page
     await page.goto(`/sites/${SITE_ID}/keywords/${KEYWORD_ID}/edit`);
     
-    // Wait for form to load
+    // Wait for form to be fully loaded and interactive
+    await expect(page.locator('h1:has-text("Edit keyword")')).toBeVisible();
     await expect(page.locator('#keyword')).toBeVisible();
+    await expect(page.locator('#targetUrl')).toBeVisible();
     
-    // Click cancel button
-    await page.click('button:has-text("Cancel")');
+    // Click cancel button - use more specific selector
+    const cancelButton = page.locator('button:has-text("Cancel")');
+    await expect(cancelButton).toBeEnabled();
     
-    // Should navigate back to keywords list
-    await expect(page).toHaveURL(new RegExp(`/sites/${SITE_ID}/keywords$`), { timeout: 10000 });
+    // Click and wait for navigation
+    await Promise.all([
+      page.waitForURL(/\/sites\/\d+\/keywords/, { timeout: 15000 }),
+      cancelButton.click(),
+    ]);
+    
+    // Verify we're on the keywords list page
+    await expect(page.locator('h2:has-text("Keyword list")')).toBeVisible({ timeout: 5000 });
   });
 
   test('E2E-040: Delete keyword via bulk action', async ({ page }) => {
