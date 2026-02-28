@@ -188,8 +188,8 @@ test.describe('Ranking History E2E Tests', () => {
     // Navigate to ranking history page
     await page.goto('/ranking-history');
     
-    // Verify the page loads
-    await expect(page).toHaveURL('/ranking-history');
+    // Verify the page loads - check for h1
+    await expect(page.locator('h1:has-text("Ranking History")')).toBeVisible();
   });
 
   test('E2E-020: Trigger manual rank check', async ({ page }) => {
@@ -235,7 +235,7 @@ test.describe('Ranking History E2E Tests', () => {
     await page.click('button:has-text("Save")');
     
     // Wait for success indication
-    await expect(page.locator('text=success, text=updated, text=Saved')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=updated')).toBeVisible({ timeout: 5000 });
   });
 
   test('E2E-030: Cancel keyword edit', async ({ page }) => {
