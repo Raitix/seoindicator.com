@@ -1,7 +1,7 @@
 # TASK-18-4: DomainValidatorService
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
