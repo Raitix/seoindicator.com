@@ -9,7 +9,9 @@ use App\Repositories\SerpFeatureHistoryRepository;
 use App\Models\Site;
 use App\Models\Keyword;
 use App\Models\User;
+use App\Models\SerpFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 
 class SerpFeatureServiceTest extends TestCase
 {
