@@ -1,7 +1,7 @@
 # FEAT-022: Headless Crawler Service (JS-Rendered HTML)
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -23,6 +23,16 @@ As a user, I want SEO analysis based on real JS‑rendered pages, not just stati
 
 ## Notes
 - Source: user ToDo (crawler + JS rendering).
+
+## Comments
+
+### Architect (2026-02-28)
+- Technical specification created: SPEC-022.md
+- Risk confirmed as HIGH (SSRF, resource exhaustion risks)
+- Technology: Playwright (already in ecosystem), integrated with JobQueue (TASK-1-10)
+- 21 tasks defined across 6 phases
+- Key mitigations: SSRF protection, rate limiting, 3MB content cap, 30s page timeout
+- Handed off to SpecSystemAnalyst for task breakdown
 
 ---
 *Created by Lead from individual user request.*
