@@ -84,20 +84,25 @@ class EmitsWebhookEventsTest extends TestCase
     {
         $testClass = $this->getTestClass();
 
+        // Use reflection to access protected method
+        $reflection = new \ReflectionClass($testClass);
+        $method = $reflection->getMethod('hasPositionChanged');
+        $method->setAccessible(true);
+
         // Position changed
-        $this->assertTrue($testClass->hasPositionChanged(7, 5));
+        $this->assertTrue($method->invoke($testClass, 7, 5));
 
         // Position unchanged
-        $this->assertFalse($testClass->hasPositionChanged(5, 5));
+        $this->assertFalse($method->invoke($testClass, 5, 5));
 
         // First ranking
-        $this->assertTrue($testClass->hasPositionChanged(null, 5));
+        $this->assertTrue($method->invoke($testClass, null, 5));
 
         // Dropped out
-        $this->assertTrue($testClass->hasPositionChanged(10, null));
+        $this->assertTrue($method->invoke($testClass, 10, null));
 
         // Both null (no ranking)
-        $this->assertFalse($testClass->hasPositionChanged(null, null));
+        $this->assertFalse($method->invoke($testClass, null, null));
     }
 
     /** @test */
@@ -287,16 +292,19 @@ class EmitsWebhookEventsTest extends TestCase
         $mockDispatcher->shouldReceive('dispatchToUserWebhooks')
             ->once()
             ->withArgs(function ($userIdArg, $eventType, $data) {
-                return isset($data['serp_features'])
-                    && $data['serp_features']['featured_snippet'] === true
-                    && $data['serp_features']['local_pack'] === false;
+                $this->assertEquals(1, $userIdArg);
+                $this->assertEquals('ranking.changed', $eventType);
+                $this->assertArrayHasKey('serp_features', $data);
+                $this->assertEquals(true, $data['serp_features']['featured_snippet']);
+                $this->assertEquals(false, $data['serp_features']['local_pack']);
+                return true;
             })
             ->andReturn(1);
 
         $testClass = $this->getTestClass();
         $testClass->setWebhookDispatcher($mockDispatcher);
 
-        $testClass->emitRankingChangedEvent(
+        $result = $testClass->emitRankingChangedEvent(
             userId: $userId,
             keywordId: 1,
             keyword: 'seo tools',
@@ -305,6 +313,8 @@ class EmitsWebhookEventsTest extends TestCase
             newPosition: 5,
             serpFeatures: ['featured_snippet' => true, 'local_pack' => false]
         );
+
+        $this->assertEquals(1, $result);
     }
 
     protected function tearDown(): void
