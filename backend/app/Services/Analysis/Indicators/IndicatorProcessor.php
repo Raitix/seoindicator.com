@@ -7,17 +7,23 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\CssSelector\CssSelectorConverter;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\RedirectMiddleware;
 use RuntimeException;
 use DOMDocument;
 use DOMXPath;
 use DOMNode;
 use DOMNodeList;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriInterface;
 
 /**
  * Abstract base class for SEO indicator processors.
  *
  * Provides common functionality for fetching URLs, parsing HTML,
  * and returning standardized results using native PHP DOM.
+ * 
+ * Includes SSRF protection with DNS rebinding prevention via redirect validation.
  */
 abstract class IndicatorProcessor
 {
@@ -36,6 +42,11 @@ abstract class IndicatorProcessor
     protected int $maxResponseSize = 10485760;
 
     /**
+     * Maximum number of redirects.
+     */
+    protected int $maxRedirects = 5;
+
+    /**
      * User agent for HTTP requests.
      */
     protected string $userAgent = 'SEOIndicator/1.0 (+https://seoindicator.com/bot)';
@@ -43,22 +54,7 @@ abstract class IndicatorProcessor
     public function __construct(URLValidationService $urlValidator)
     {
         $this->urlValidator = $urlValidator;
-        $this->httpClient = new Client([
-            'timeout' => $this->timeout,
-            'max_response_size' => $this->maxResponseSize,
-            'headers' => [
-                'User-Agent' => $this->userAgent,
-                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language' => 'en-US,en;q=0.5',
-            ],
-            'allow_redirects' => [
-                'max' => 5,
-                'strict' => true,
-                'referer' => true,
-            ],
-            'verify' => true,
-            'http_errors' => false,
-        ]);
+        $this->httpClient = $this->createHttpClient();
     }
 
     /**
@@ -83,6 +79,8 @@ abstract class IndicatorProcessor
 
     /**
      * Fetch URL content with SSRF protection.
+     *
+     * Includes DNS rebinding protection by validating all redirect targets.
      *
      * @param string $url
      * @return string HTML content
@@ -128,6 +126,55 @@ abstract class IndicatorProcessor
         } catch (RequestException $e) {
             throw new RuntimeException("Failed to fetch URL: {$e->getMessage()}");
         }
+    }
+
+    /**
+     * Create HTTP client with SSRF-protected redirect handling.
+     *
+     * @return Client
+     */
+    protected function createHttpClient(): Client
+    {
+        $urlValidator = $this->urlValidator;
+
+        return new Client([
+            'timeout' => $this->timeout,
+            'max_response_size' => $this->maxResponseSize,
+            'headers' => [
+                'User-Agent' => $this->userAgent,
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language' => 'en-US,en;q=0.5',
+            ],
+            'allow_redirects' => [
+                'max' => $this->maxRedirects,
+                'strict' => true,
+                'referer' => true,
+                'on_redirect' => function (RequestInterface $request, ResponseInterface $response, UriInterface $uri) use ($urlValidator) {
+                    $redirectUrl = (string) $uri;
+
+                    // Validate redirect URL for SSRF (DNS rebinding protection)
+                    $validation = $urlValidator->validateRedirect($redirectUrl);
+
+                    if (!$validation['valid']) {
+                        // Log the blocked redirect
+                        Log::channel('security')->warning('SSRF redirect blocked', [
+                            'original_url' => (string) $request->getUri(),
+                            'redirect_url' => $redirectUrl,
+                            'reason' => $validation['error'] ?? 'unknown',
+                        ]);
+
+                        throw new RuntimeException('Redirect blocked: ' . ($validation['error'] ?? 'SSRF protection'));
+                    }
+
+                    // Log successful redirect validation
+                    Log::debug('Redirect validated', [
+                        'redirect_url' => $redirectUrl,
+                    ]);
+                },
+            ],
+            'verify' => true,
+            'http_errors' => false,
+        ]);
     }
 
     /**
@@ -341,22 +388,7 @@ abstract class IndicatorProcessor
     public function setTimeout(int $seconds): void
     {
         $this->timeout = $seconds;
-        $this->httpClient = new Client([
-            'timeout' => $this->timeout,
-            'max_response_size' => $this->maxResponseSize,
-            'headers' => [
-                'User-Agent' => $this->userAgent,
-                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language' => 'en-US,en;q=0.5',
-            ],
-            'allow_redirects' => [
-                'max' => 5,
-                'strict' => true,
-                'referer' => true,
-            ],
-            'verify' => true,
-            'http_errors' => false,
-        ]);
+        $this->httpClient = $this->createHttpClient();
     }
 
     /**
@@ -367,5 +399,16 @@ abstract class IndicatorProcessor
     public function setMaxResponseSize(int $bytes): void
     {
         $this->maxResponseSize = $bytes;
+    }
+
+    /**
+     * Set max redirects.
+     *
+     * @param int $max
+     */
+    public function setMaxRedirects(int $max): void
+    {
+        $this->maxRedirects = $max;
+        $this->httpClient = $this->createHttpClient();
     }
 }

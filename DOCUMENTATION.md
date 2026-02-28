@@ -476,10 +476,24 @@ class UserActivated
 
 | Category | Tests | Description |
 |----------|-------|-------------|
-| SSRF Protection | 30+ | localhost, private IPs, cloud metadata, blocked protocols |
+| SSRF Protection | 98+ | localhost, private IPs, cloud metadata, blocked protocols, DNS rebinding, alternative notations, IPv6 |
 | XSS Prevention | 5 | Input sanitization, output escaping |
 | SQL Injection | 5 | Parameterized queries, Eloquent ORM |
 | Authorization | 10 | Unauthenticated access, cross-user isolation |
+
+**SSRF Test Coverage (SsrfProtectionTest):**
+- Localhost blocking (IPv4, IPv6, hostname variants)
+- Private IP ranges (10.x, 172.16-31.x, 192.168.x)
+- Link-local addresses (169.254.x.x, fe80::/10)
+- Cloud metadata endpoints (AWS, GCP, Azure, Kubernetes)
+- Protocol restrictions (only http/https allowed)
+- Alternative IP notation (decimal, hex, octal, mixed)
+- IPv6 address handling (including IPv4-mapped)
+- URL-encoded host blocking
+- Whitelist functionality
+- Custom blocked hosts/IPs
+- DNS rebinding protection via redirect validation
+- Security audit logging
 
 ### Production Status
 - **Deployed**: 2026-02-28 (GitHub Actions run 22519614219)
@@ -8247,32 +8261,130 @@ $processor = new MetaTagsProcessor(
 );
 ```
 
-### SSRF Protection
+### SSRF Protection (TASK-16-1, TASK-19-15)
 
-Integration with `URLValidationService` from TASK-16-1:
+Comprehensive SSRF protection implemented via `URLValidationService`:
 
-| Protection | Description |
-|------------|-------------|
-| Localhost blocked | `localhost`, `127.*` blocked |
-| Private IPs blocked | `10.*`, `172.16-31.*`, `192.168.*` blocked |
-| Cloud metadata blocked | `169.254.169.254` blocked |
-| File protocol blocked | `file://`, `gopher://` blocked |
-| Internal domains | Domains containing "internal" blocked |
+#### Blocked IP Ranges
+
+| Category | IP Range | Description |
+|----------|----------|-------------|
+| Localhost | 127.0.0.0/8, ::1 | Loopback addresses |
+| Private Class A | 10.0.0.0/8 | RFC 1918 private |
+| Private Class B | 172.16.0.0/12 | RFC 1918 private |
+| Private Class C | 192.168.0.0/16 | RFC 1918 private |
+| Link-local | 169.254.0.0/16, fe80::/10 | Zeroconf addresses |
+| Cloud metadata | 169.254.169.254 | AWS/GCP/Azure metadata |
+| IPv6 ULA | fc00::/7 | Unique local addresses |
+
+#### Blocked Hosts
+
+- `localhost`, `localhost.localdomain`
+- `metadata.google.internal`
+- `kubernetes.default`, `kubernetes.default.svc`
+
+#### Blocked Protocols
+
+Only `http://` and `https://` allowed. Blocked: `file://`, `ftp://`, `gopher://`, `dict://`, `ldap://`, `javascript:`, `data:`, `about:`
+
+#### DNS Rebinding Protection
+
+The `validateRedirect()` method validates each redirect target to prevent DNS rebinding attacks:
+
+```php
+// In IndicatorProcessor HTTP client configuration
+'on_redirect' => function ($request, $response, $uri) use ($urlValidator) {
+    $redirectUrl = (string) $uri;
+    $validation = $urlValidator->validateRedirect($redirectUrl);
+    
+    if (!$validation['valid']) {
+        throw new RuntimeException('Redirect blocked: ' . $validation['error']);
+    }
+}
+```
+
+#### Alternative IP Notation Blocking
+
+| Notation | Example | Blocked |
+|----------|---------|---------|
+| Decimal | 2130706433 (127.0.0.1) | Yes |
+| Hexadecimal | 0x7f000001 (127.0.0.1) | Yes |
+| Octal | 0177.0.0.1 (127.0.0.1) | Yes |
+| Mixed | 0x7f.0.0.1 | Yes |
+| IPv4-mapped IPv6 | ::ffff:127.0.0.1 | Yes |
+
+#### Whitelist Support
+
+Allow specific internal hosts via whitelist:
+
+```php
+$urlValidator->addToWhitelist('trusted.internal');
+$urlValidator->addToWhitelist('*.internal.trusted'); // Wildcard support
+```
+
+#### Custom Blocked Hosts/IPs
+
+Add runtime blocks:
+
+```php
+$urlValidator->addBlockedHost('malicious.example.com');
+$urlValidator->addBlockedIP('203.0.113.50');
+```
+
+#### Security Logging
+
+All blocked requests are logged to the `security` channel:
+
+```php
+// Automatically logged for blocked requests
+[
+    'url' => 'http://localhost/admin',
+    'reason' => 'host_blocked',
+    'detail' => 'localhost',
+    'timestamp' => '2026-02-28T15:13:00Z'
+]
+```
+
+#### URL Validation Service Methods
+
+| Method | Description |
+|--------|-------------|
+| `validate(?string $url): array` | Main validation with SSRF checks |
+| `validateRedirect(?string $url): array` | DNS rebinding protection |
+| `getBlockedRequestLog(string $url, string $reason): array` | Structured log entry |
+| `getWhitelist(): array` | Get whitelisted hosts |
+| `addToWhitelist(string $host): void` | Add host to whitelist |
+| `removeFromWhitelist(string $host): void` | Remove host from whitelist |
+| `addBlockedHost(string $host): void` | Add custom blocked host |
+| `addBlockedIP(string $ip): void` | Add custom blocked IP |
+| `getPrivateIPRanges(): array` | Static: Get private IP ranges |
+| `getBlockedHosts(): array` | Static: Get default blocked hosts |
+| `getBlockedIPs(): array` | Static: Get default blocked IPs |
+
+#### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| SsrfProtectionTest | 98 | 129 |
+| URLValidationServiceTest | 50+ | Protocol, IP range tests |
+
+**Total: 150+ SSRF-specific tests**
+
+### SSRF Protection Integration
 
 **Implementation:**
 ```php
 protected function fetchUrl(string $url): string
 {
     // Validate URL against SSRF rules
-    if (!$this->urlValidationService->isValidAnalysisUrl($url)) {
-        throw new SSRFProtectionException("URL blocked by SSRF protection");
+    $validation = $this->urlValidator->validate($url);
+    
+    if (!$validation['valid']) {
+        throw new RuntimeException($validation['error']);
     }
     
-    // Fetch with configured timeout and size limits
-    return $this->httpClient->get($url, [
-        'timeout' => $this->timeout,
-        'max_response_size' => $this->maxResponseSize,
-    ]);
+    // HTTP client validates redirects automatically
+    return $this->httpClient->get($validation['normalized_url']);
 }
 ```
 
