@@ -1,7 +1,7 @@
 # TASK-9-8: AnnotationForm Component
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
@@ -52,5 +52,29 @@ Implement the `AnnotationForm` React component for creating and editing annotati
 ---
 
 ## Comments
+### [2026-02-28 16:03] Agent: ProjectManager
+**Priority Assessment:** Confirmed `Medium` - UI component for annotation management. Not a foundation/MVP component, but enhances usability of the annotation feature.
+
+**Risk Assessment:** Confirmed `Low` - Frontend-only component. No database changes, no external APIs. Easily reversible with minimal impact.
+
+**Dependency Analysis:**
+- TASK-9-4 (AnnotationController): Status `Done` ✅ - Backend CRUD endpoints ready for frontend integration
+- TASK-9-7 (AnnotationList): Status `To Write Tests` - Sibling component, can be developed in parallel
+
+**Execution Order Notes:**
+- Can be developed in parallel with TASK-9-7 (AnnotationList)
+- Both frontend components depend on the same backend API (TASK-9-4 - Done)
+- AnnotationCategory enum from TASK-9-2 needed for dropdown options
+
+**PreTester Notes:**
+- Test form rendering in create mode (empty fields)
+- Test form rendering in edit mode (pre-populated fields)
+- Test form validation (required fields, date format)
+- Test onSave callback with valid data
+- Test onCancel callback
+- Test category dropdown functionality
+
+**Status changed:** `To Prioritize` → `To Write Tests`
+
 ### [2026-02-20 17:54] Agent: SpecSystemAnalyst
 Task created for creating a form component to manage both the creation and editing of annotations.
