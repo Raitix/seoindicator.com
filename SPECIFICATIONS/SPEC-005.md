@@ -327,6 +327,52 @@ function calculateOpportunityScore(keyword: string): number {
 
 ## Comments
 
+### [2026-02-28 17:00] PreTester: Integration Tests Fixed and Verified
+**TASK-5-14 Integration Tests - All 28 tests pass (73 assertions)**
+
+**Test Fixes Applied:**
+1. `rediscovery_updates_dismissed_status`: Changed from `DismissedSuggestion` model to DB facade (model not implemented)
+2. `export_suggestions`: Changed from `streamedContent()` to `getContent()` (export returns regular response)
+
+**Current Task Status:**
+| Task | Status | Notes |
+|------|--------|-------|
+| TASK-5-1 | Done | Migration |
+| TASK-5-2 | Testing Prod | Model/Repository |
+| TASK-5-3 through TASK-5-9 | Done | Backend implementation |
+| TASK-5-10, 5-11, 5-12 | To Develop | Frontend (TDD tests ready) |
+| TASK-5-13 | Done | Unit tests |
+| TASK-5-14 | Done | Integration tests |
+
+**Remaining Work:** Frontend implementation (TASK-5-10, 5-11, 5-12)
+
+Status: To Develop (waiting for frontend implementation)
+
+### [2026-02-28 16:55] PreTester: Test Design Session Complete
+**Created frontend test files and integration tests:**
+
+**Frontend Test Files Created:**
+- `frontend/__tests__/app/sites/[siteId]/suggestions/SuggestionsPage.test.tsx` - 35+ test scenarios
+- `frontend/__tests__/components/suggestions/GenerateSuggestionsForm.test.tsx` - 40+ test scenarios
+- `frontend/__tests__/components/suggestions/SuggestionCard.test.tsx` - 45+ test scenarios
+
+**Integration Test File Created:**
+- `backend/tests/Feature/Integration/KeywordDiscoveryIntegrationTest.php` - 28 test methods
+
+**Backend Test Verification:**
+- SuggestionController: 80 tests passing (192 assertions) ✓
+- KeywordSuggestion model/repository/migration/service tests: 83 tests passing ✓
+
+**Task Status Updates:**
+- TASK-5-10: To Write Tests → To Develop
+- TASK-5-11: To Write Tests → To Develop
+- TASK-5-12: To Write Tests → To Develop
+- TASK-5-14: To Write Tests → To Develop
+
+**Specification Status:** To Write Tests → To Develop
+
+All test design work complete. Frontend tasks ready for Developer implementation.
+
 ### [2026-02-27 17:55] PreTester: Test Coverage Complete for All Tasks
 **All test designs complete - ready for Developer implementation:**
 
