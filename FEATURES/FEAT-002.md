@@ -259,3 +259,24 @@ Cleanup:
 - Cleared active-agents entry
 
 Note: Task file referenced "FEAT-2" but correct feature ID is "FEAT-002" (with leading zero). Feature was already complete - no documentation updates needed.
+
+### [2026-02-28 21:18 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass #2** - Orchestrator triggered re-processing again.
+
+Verification:
+- FEAT-002 status: `Done` ✅
+- SPEC-002 status: `Done` ✅
+- All 14 tasks (TASK-002-1 through TASK-002-14): `Done` ✅
+- DOCUMENTATION.md: Present (Ranking Change Alert System) ✅
+
+Cleanup:
+- Removed stale lock file `FEAT-2.lock`
+- Written completion markers: `FEAT-002.json` + `FEAT-2.json` (alias)
+
+**ORCHESTRATOR BUG:** Feature has been verified as complete multiple times (15:08, 21:08, 21:18). The orchestrator continues to spawn agents for "FEAT-2" despite:
+- Feature status = Done
+- Specification status = Done
+- All tasks = Done
+- Completion markers present
+
+Task file naming: "FEAT-2" vs actual file "FEAT-002.md" - orchestrator may not be handling leading zeros correctly.
