@@ -1,7 +1,7 @@
 # FEAT-026: Billing, Credits & Model Selection
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -23,6 +23,17 @@ As a user, I want to buy credits and choose an AI model with clear pricing befor
 
 ## Notes
 - Source: user ToDo (billing + pricing + model choice).
+
+## Comments
+
+### 2026-02-28 - Architect
+- Created SPEC-026.md with full technical specification
+- Risk: HIGH (payment processing, external APIs)
+- Architecture: Credit-based system with Stripe (primary) and PayPal (secondary)
+- 27 tasks across 7 phases defined
+- Key components: CreditService, StripeGatewayService, PayPalGatewayService, ModelPricingService
+- Database tables: credits, credit_transactions, payment_methods, credit_packages, ai_models, user_model_preferences
+- Minimum purchase: $5 USD
 
 ---
 *Created by Lead from individual user request.*
