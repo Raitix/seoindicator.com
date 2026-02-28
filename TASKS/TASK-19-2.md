@@ -1,7 +1,7 @@
 # TASK-19-2: AnalysisJob and AnalysisJobResult Models
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `High`
