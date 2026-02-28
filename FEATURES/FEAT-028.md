@@ -1,13 +1,16 @@
 # FEAT-028: Modern UI/UX + Indicator Catalog
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
 
 ## RISK
 `Medium`
+
+## Related
+- Specification: [SPEC-028](../SPECIFICATIONS/SPEC-028.md)
 
 ## Description
 Redesign the UI with modern dark theme, playful indicator list on homepage, and custom indicator icons. Improve loading states and UX.
