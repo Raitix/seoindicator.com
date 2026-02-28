@@ -9,7 +9,6 @@ use App\Models\Keyword;
 use App\Models\Site;
 use App\Models\UserOnboarding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 
 class OnboardingControllerTest extends TestCase
 {
@@ -32,9 +31,7 @@ class OnboardingControllerTest extends TestCase
             'website_url' => 'https://example.com',
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->getJson($this->baseUrl);
+        $response = $this->actingAs($user)->getJson($this->baseUrl);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -56,9 +53,7 @@ class OnboardingControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
-
-        $response = $this->getJson($this->baseUrl);
+        $response = $this->actingAs($user)->getJson($this->baseUrl);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -88,9 +83,7 @@ class OnboardingControllerTest extends TestCase
             'current_step' => 3,
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->getJson($this->baseUrl);
+        $response = $this->actingAs($user)->getJson($this->baseUrl);
 
         $response->assertStatus(200)
             ->assertJsonPath('data.progress_percentage', 60);
@@ -105,9 +98,7 @@ class OnboardingControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, []);
+        $response = $this->actingAs($user)->postJson($this->baseUrl, []);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -127,9 +118,7 @@ class OnboardingControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 1,
             'data' => [
                 'website_url' => 'https://example.com',
@@ -151,9 +140,7 @@ class OnboardingControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 1,
             'data' => [
                 'website_url' => 'not-a-url',
@@ -173,9 +160,7 @@ class OnboardingControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 1,
             'data' => [
                 'website_url' => 'https://example.com/' . str_repeat('a', 500),
@@ -192,9 +177,7 @@ class OnboardingControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 1,
             'data' => [
                 'website_url' => 'http://localhost/test',
@@ -216,9 +199,7 @@ class OnboardingControllerTest extends TestCase
             'completed_steps' => [1],
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 2,
             'data' => [
                 'first_keyword' => 'seo tools',
@@ -241,9 +222,7 @@ class OnboardingControllerTest extends TestCase
             'current_step' => 2,
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 2,
             'data' => [
                 'first_keyword' => '',
@@ -264,9 +243,7 @@ class OnboardingControllerTest extends TestCase
             'current_step' => 2,
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 2,
             'data' => [
                 'first_keyword' => str_repeat('a', 256),
@@ -288,9 +265,7 @@ class OnboardingControllerTest extends TestCase
             'completed_steps' => [1, 2, 3],
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 4,
             'data' => [
                 'alert_preferences' => [
@@ -316,9 +291,7 @@ class OnboardingControllerTest extends TestCase
             'current_step' => 4,
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 4,
             'data' => [
                 'alert_preferences' => [
@@ -362,9 +335,7 @@ class OnboardingControllerTest extends TestCase
             'first_keyword' => 'seo tools',
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson("{$this->baseUrl}/complete");
+        $response = $this->actingAs($user)->postJson("{$this->baseUrl}/complete");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -391,9 +362,7 @@ class OnboardingControllerTest extends TestCase
             'completed_at' => now()->subMinutes(5),
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson("{$this->baseUrl}/complete");
+        $response = $this->actingAs($user)->postJson("{$this->baseUrl}/complete");
 
         $response->assertStatus(200);
     }
@@ -421,9 +390,7 @@ class OnboardingControllerTest extends TestCase
             'current_step' => 2,
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson("{$this->baseUrl}/skip");
+        $response = $this->actingAs($user)->postJson("{$this->baseUrl}/skip");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -441,9 +408,7 @@ class OnboardingControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson("{$this->baseUrl}/skip");
+        $response = $this->actingAs($user)->postJson("{$this->baseUrl}/skip");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -466,9 +431,7 @@ class OnboardingControllerTest extends TestCase
             'completed_at' => now(),
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson("{$this->baseUrl}/skip");
+        $response = $this->actingAs($user)->postJson("{$this->baseUrl}/skip");
 
         $response->assertStatus(200);
     }
@@ -492,9 +455,7 @@ class OnboardingControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 1,
             'data' => [
                 'website_url' => 'invalid',
@@ -527,9 +488,7 @@ class OnboardingControllerTest extends TestCase
             'website_url' => 'https://example.com',
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->getJson($this->baseUrl);
+        $response = $this->actingAs($user)->getJson($this->baseUrl);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -562,9 +521,7 @@ class OnboardingControllerTest extends TestCase
             'completed_steps' => [1],
         ]);
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 2,
             'data' => [
                 'first_keyword' => '  SEO Tools  ',
@@ -588,10 +545,8 @@ class OnboardingControllerTest extends TestCase
             'skipped_at' => now()->subMinutes(5),
         ]);
 
-        Sanctum::actingAs($user);
-
         // Start again should clear skipped_at and resume
-        $response = $this->postJson($this->baseUrl, []);
+        $response = $this->actingAs($user)->postJson($this->baseUrl, []);
 
         $response->assertStatus(200)
             ->assertJsonPath('data.current_step', 2);
@@ -604,9 +559,7 @@ class OnboardingControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => -1,
             'data' => [],
         ]);
@@ -621,9 +574,7 @@ class OnboardingControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson($this->baseUrl, [
+        $response = $this->actingAs($user)->postJson($this->baseUrl, [
             'step' => 6,
             'data' => [],
         ]);
