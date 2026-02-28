@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\GSCConnectionController;
 use App\Http\Controllers\Api\IndicatorsController;
 use App\Http\Controllers\Api\V1\SuggestionController;
 use App\Http\Controllers\Api\V1\AnnotationController;
+use App\Http\Controllers\Api\V1\OnboardingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -108,10 +109,7 @@ Route::prefix('v1')->group(function () {
     // Dashboard (SPEC-001-6)
     Route::get('sites/{siteId}/dashboard', [DashboardController::class, 'index']);
 
-    // SERP Features (SPEC-007, TASK-7-10, TASK-7-11) - public read
-    Route::get('keywords/{id}/serp-features', [SerpFeatureController::class, 'keywordFeatures'])->where('id', '[0-9]+');
-    Route::get('sites/{siteId}/serp-features', [SerpFeatureController::class, 'siteFeatures'])->where('siteId', '[0-9]+');
-    Route::get('sites/{siteId}/serp-features/summary', [SerpFeatureController::class, 'summary'])->where('siteId', '[0-9]+');
+    // SERP Features (SPEC-007, TASK-7-10, TASK-7-11, TASK-7-10-SEC) - moved to authenticated group
 
     // Report Templates (SPEC-004-10) - public read for now
     Route::get('sites/{siteId}/report-templates', [ReportTemplateController::class, 'index']);
@@ -208,6 +206,12 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::put('annotations/{id}', [AnnotationController::class, 'update']);
     Route::delete('annotations/{id}', [AnnotationController::class, 'destroy']);
 
+    // SERP Features (SPEC-007, TASK-7-10, TASK-7-11, TASK-7-10-SEC) - requires auth + IDOR protection
+    Route::get('keywords/{id}/serp-features', [SerpFeatureController::class, 'keywordFeatures'])->where('id', '[0-9]+');
+    Route::get('sites/{siteId}/serp-features', [SerpFeatureController::class, 'siteFeatures'])->where('siteId', '[0-9]+');
+    Route::get('sites/{siteId}/serp-features/summary', [SerpFeatureController::class, 'summary'])->where('siteId', '[0-9]+');
+    Route::delete('sites/{siteId}/serp-features/cache', [SerpFeatureController::class, 'invalidateCache'])->where('siteId', '[0-9]+');
+
     // Admin: Lead Management (TASK-16-6)
     Route::prefix('admin/leads')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'index']);
@@ -224,4 +228,10 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::put('webhooks/{id}', [\App\Http\Controllers\Api\V1\WebhookController::class, 'update']);
     Route::delete('webhooks/{id}', [\App\Http\Controllers\Api\V1\WebhookController::class, 'destroy']);
     Route::post('webhooks/{id}/test', [\App\Http\Controllers\Api\V1\WebhookController::class, 'test']);
+
+    // Onboarding (SPEC-017, FEAT-017)
+    Route::get('onboarding', [OnboardingController::class, 'index']);
+    Route::post('onboarding', [OnboardingController::class, 'store']);
+    Route::post('onboarding/complete', [OnboardingController::class, 'complete']);
+    Route::post('onboarding/skip', [OnboardingController::class, 'skip']);
 });
