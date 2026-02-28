@@ -59,3 +59,30 @@ export interface SortConfig {
   key: keyof GSCMetric;
   direction: SortDirection;
 }
+
+// GSC Connection Types for TASK-12-9
+
+export interface GSCProperty {
+  id: number;
+  property_url: string;
+  site_url: string;
+  connected_at: string;
+  status?: 'active' | 'expired' | 'revoked';
+}
+
+export interface GSCPropertiesResponse {
+  data: GSCProperty[];
+}
+
+export interface GSCConnectRequest {
+  authorization_code: string;
+}
+
+export interface GSCConnectResponse {
+  success: boolean;
+  property_url: string;
+}
+
+export interface GSCDisconnectResponse {
+  success: boolean;
+}

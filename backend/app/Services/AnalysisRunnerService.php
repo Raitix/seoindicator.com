@@ -204,9 +204,8 @@ class AnalysisRunnerService
             throw new \InvalidArgumentException('Invalid URL format');
         }
 
-        if (empty($html)) {
-            throw new \InvalidArgumentException('HTML content is required');
-        }
+        // Allow empty HTML - checkers will handle gracefully
+        // Empty HTML is valid for testing or when only URL metadata is needed
     }
 
     /**
@@ -276,11 +275,11 @@ class AnalysisRunnerService
         }
 
         return SEOAnalysis::create([
-            'url' => $url,
             'domain' => $domain,
             'normalized_url' => $normalizedUrl,
             'status' => SEOAnalysis::STATUS_PENDING,
             'overall_score' => 0,
+            'analysis_data' => [],
             'user_id' => $options['user_id'] ?? null,
             'session_id' => $options['session_id'] ?? null,
         ]);

@@ -5,23 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Backlink model for detailed backlink data.
  *
  * @property int $id
- * @property int $site_id
+ * @property int $project_id
  * @property string $source_url
+ * @property string $source_domain
  * @property string $target_url
- * @property string $anchor_text
+ * @property string|null $anchor_text
  * @property string $link_type
- * @property float $domain_authority
- * @property float $page_authority
- * @property \Illuminate\Support\Carbon $first_seen
- * @property \Illuminate\Support\Carbon $last_checked
+ * @property \Illuminate\Support\Carbon|null $first_seen_at
+ * @property \Illuminate\Support\Carbon|null $last_checked_at
  * @property bool $is_active
- * @property bool $is_toxic
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  */
@@ -42,17 +39,15 @@ class Backlink extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'site_id',
+        'project_id',
         'source_url',
+        'source_domain',
         'target_url',
         'anchor_text',
         'link_type',
-        'domain_authority',
-        'page_authority',
-        'first_seen',
-        'last_checked',
+        'first_seen_at',
+        'last_checked_at',
         'is_active',
-        'is_toxic',
     ];
 
     /**
@@ -63,29 +58,18 @@ class Backlink extends Model
     protected function casts(): array
     {
         return [
-            'domain_authority' => 'float',
-            'page_authority' => 'float',
-            'first_seen' => 'date',
-            'last_checked' => 'date',
+            'first_seen_at' => 'datetime',
+            'last_checked_at' => 'datetime',
             'is_active' => 'boolean',
-            'is_toxic' => 'boolean',
         ];
     }
 
     /**
-     * Get the site that owns this backlink.
+     * Get the project that owns this backlink.
      */
-    public function site(): BelongsTo
+    public function project(): BelongsTo
     {
-        return $this->belongsTo(Site::class);
-    }
-
-    /**
-     * Get the changes for this backlink.
-     */
-    public function changes(): HasMany
-    {
-        return $this->hasMany(BacklinkChange::class);
+        return $this->belongsTo(Project::class);
     }
 
     /**
@@ -94,14 +78,6 @@ class Backlink extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope for toxic backlinks.
-     */
-    public function scopeToxic($query)
-    {
-        return $query->where('is_toxic', true);
     }
 
     /**

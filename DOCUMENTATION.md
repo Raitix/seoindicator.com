@@ -4634,6 +4634,292 @@ $report->status_label; // Returns human-readable status
 - TASK-4-6: Report Data Aggregator
 
 ---
+## Queue Worker with Concurrency Throttling (TASK-19-7)
+
+### Service Description
+Queue-based processing system for SEO indicator analysis with concurrency limits, memory management, and retry logic. Powers the background job processing for the Progressive Analysis & Job System (SPEC-019).
+
+### Core Components
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `StartAnalysisJob` | `app/Jobs/StartAnalysisJob.php` | Batch job dispatcher for indicator processing |
+| `ProcessIndicatorJob` | `app/Jobs/ProcessIndicatorJob.php` | Single indicator processor with throttling |
+| `ProgressService` | `app/Services/Analysis/ProgressService.php` | Progress tracking and status updates |
+
+### Queue Configuration
+
+```php
+// config/queue.php - 'analysis' queue
+'analysis' => [
+    'driver' => 'database',
+    'table' => 'jobs',
+    'queue' => 'analysis',
+    'retry_after' => 90,
+    'after_commit' => true,
+],
+```
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Driver | database | Persistent queue storage |
+| Retry After | 90 seconds | Time before retrying failed job |
+| After Commit | true | Only dispatch after DB commit |
+
+### ProcessIndicatorJob Configuration
+
+| Property | Value | Description |
+|----------|-------|-------------|
+| Queue | `analysis` | Dedicated queue for analysis jobs |
+| Tries | 2 | Maximum retry attempts |
+| Timeout | 30 seconds | Maximum processing time per indicator |
+| Memory | 256MB | Memory limit per worker |
+| Backoff | [10, 30] seconds | Exponential backoff between retries |
+
+### Batch Processing
+
+```php
+// StartAnalysisJob dispatches indicators as a batch
+Bus::batch($indicatorJobs)
+    ->then(function (Batch $batch) {
+        // All jobs completed successfully
+    })
+    ->catch(function (Batch $batch, Throwable $e) {
+        // First batch job failure
+    })
+    ->finally(function (Batch $batch) {
+        // Batch finished (success or failure)
+    })
+    ->allowFailures() // Continue processing even if some fail
+    ->dispatch();
+```
+
+### Progress Tracking
+
+| Method | Description |
+|--------|-------------|
+| `markRunning($jobId, $indicator)` | Sets indicator status to running |
+| `markComplete($jobId, $indicator, $result)` | Sets indicator status to completed with result |
+| `markFailed($jobId, $indicator, $error)` | Sets indicator status to failed with error |
+| `isJobCancelled($jobId)` | Checks if job was cancelled mid-processing |
+
+### Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Indicator timeout | Job fails, retry with exponential backoff |
+| Memory exceeded | Worker killed, job retried |
+| Unknown indicator | Marked as failed, continues with others |
+| Job cancelled | Skips remaining indicators |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Job Ownership | User ID validated via `userOwnsJob()` |
+| Cross-user Access | Returns 401/404 for unauthorized access |
+| SQL Injection | Eloquent ORM with parameterized queries |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `AnalysisQueueWorkerTest.php` | 30 | 50 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Queue Configuration | 6 | Queue, tries, timeout, memory, backoff |
+| Concurrency | 3 | Batch dispatch, concurrency limit |
+| Status Transitions | 4 | Running, complete, failed, cancelled |
+| Progress Tracking | 5 | markRunning, markComplete, markFailed |
+| Error Handling | 2 | Unknown indicator, job cancellation |
+| Job Tags | 2 | Correct tags for debugging |
+| Batch Behavior | 1 | Batch allows failures |
+| Integration | 2 | Full workflow, cancellation |
+| Rate Limiting | 3 | Concurrent limit, validation |
+| User Access | 2 | Cross-user prevention |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-02-28 (commit 7e365ec) |
+| **Health Check** | Passing |
+| **Tests** | 30 tests, 50 assertions |
+| **Status** | Complete |
+
+### Acceptance Criteria Status
+
+| Criteria | Status |
+|----------|--------|
+| Queue configuration for 'analysis' queue | ✅ Complete |
+| Job dispatching with configurable concurrency (max 5) | ✅ Complete |
+| Per-indicator timeout (30 seconds) | ✅ Complete |
+| Memory limit per worker (256MB) | ✅ Complete |
+| Retry logic with exponential backoff | ✅ Complete |
+| Progress tracking | ✅ Complete |
+| Failed job handling | ✅ Complete |
+| Unit tests | ✅ Complete |
+| Graceful shutdown | ⚠️ Requires integration testing |
+| Queue monitoring | ⚠️ Logging present, needs integration test |
+
+### Dependencies
+
+- TASK-19-3 (AnalysisJobService)
+- TASK-19-5 (IndicatorProcessor base class)
+- TASK-19-6 (Core indicators)
+- Laravel Queue system
+- Laravel Bus batch processing
+
+### Related Tasks
+
+- TASK-19-5: IndicatorProcessor base class
+- TASK-19-6: Core indicator processors
+- TASK-19-8: Progress tracking updates
+- TASK-19-9: SSE stream endpoint
+
+---
+## HtmlFetcherService (TASK-18-5)
+
+### Service Description
+Service to fetch HTML content from URLs with comprehensive SSRF protection, timeout handling, and caching. Part of the Legacy 17-Indicator SEO Analysis engine (FEAT-018).
+
+### Core Functionality
+
+**HtmlFetcherService Class:**
+| Method | Description |
+|--------|-------------|
+| `fetch(string $url, array $options = []): HtmlFetcherResult` | Fetch HTML from validated URL |
+| `clearCache(string $url): void` | Clear cached response for URL |
+| `clearAllCache(): void` | Clear all cached responses |
+
+### Security Implementation (SSRF Protection)
+
+| Protection | Blocked Pattern | Description |
+|------------|-----------------|-------------|
+| Localhost | `localhost`, `127.*`, `::1` | Blocks loopback addresses |
+| Private IPs | `10.*`, `172.16-31.*`, `192.168.*` | Blocks RFC 1918 private ranges |
+| Cloud Metadata | `169.254.169.254` | Blocks AWS/GCP/Azure metadata endpoints |
+| Link-Local | `169.254.*`, `fe80::/10` | Blocks link-local addresses |
+| Blocked Protocols | `file://`, `ftp://`, `gopher://` | Only HTTP/HTTPS allowed |
+| Redirect SSRF | All redirect URLs validated | Prevents SSRF via redirects |
+| DNS Rebinding | Via URLValidationService | Prevents DNS-based bypasses |
+
+### Error Handling
+
+| Error Code | Description |
+|------------|-------------|
+| `TIMEOUT` | Request exceeded timeout limit |
+| `SSL_ERROR` | SSL certificate validation failed |
+| `CONNECTION_FAILED` | Could not connect to server |
+| `BLOCKED_URL` | URL blocked by SSRF protection |
+| `BLOCKED_REDIRECT` | Redirect target blocked by SSRF protection |
+| `BLOCKED_PROTOCOL` | Protocol not allowed (only http/https) |
+| `RESPONSE_TOO_LARGE` | Response exceeded size limit |
+| `INVALID_CONTENT_TYPE` | Response not text/html |
+| `NOT_FOUND` | HTTP 404 response |
+| `FORBIDDEN` | HTTP 403 response |
+| `RATE_LIMITED` | HTTP 429 response |
+| `HTTP_ERROR` | Other HTTP error responses |
+
+### Configuration Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `timeout` | 30 seconds | Maximum request duration |
+| `max_size` | 10MB | Maximum response size |
+| `max_redirects` | 5 | Maximum redirect hops |
+| `cache_ttl` | 1 hour | Cache time-to-live |
+
+### Caching Strategy
+
+- **Successful responses**: Cached for 1 hour
+- **Cache key**: Normalized URL (scheme + host + path)
+- **Cache invalidation**: Manual via `clearCache()` or `clearAllCache()`
+- **Query parameters**: Included in cache key for URL-specific variations
+
+### HtmlFetcherResult Structure
+
+```php
+class HtmlFetcherResult
+{
+    public bool $success;
+    public ?string $html;
+    public array $headers;
+    public int $statusCode;
+    public float $durationMs;
+    public ?array $error;
+    public string $url;
+}
+```
+
+### Audit Logging
+
+All fetch attempts are logged for security auditing:
+- Successful fetches: URL, duration, status code
+- Blocked requests: URL, block reason
+- Failed requests: URL, error code, error message
+
+**Log Channel:** `security`
+
+### Technical Implementation
+- Service: `backend/app/Services/HtmlFetcherService.php`
+- Test: `backend/tests/Unit/Services/HtmlFetcherServiceTest.php`
+- Dependencies: `URLValidationService` from FEAT-016
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `HtmlFetcherServiceTest.php` | 70 | 137 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| HTML Fetch | 9 | Success, errors, HTTP status codes |
+| Content-Type | 9 | HTML, JSON, XML, PDF validation |
+| SSRF Protection | 14 | Localhost, private IPs, metadata, DNS rebinding |
+| Timeout | 4 | Default, custom, connection timeout |
+| Response Size | 4 | Small, large, limit check |
+| Header Extraction | 4 | Content-Type, Content-Length, Server |
+| Error Handling | 4 | Invalid URL, connection refused, empty response |
+| Redirects | 6 | 301, 302, 307, 308, chains, too many |
+| Caching | 5 | Hit/miss, TTL, invalidation |
+| SSL/TLS | 2 | Valid/expired certificates |
+| Result Structure | 3 | Response format, timing, helpers |
+| Edge Cases | 5 | Empty URL, null URL, unicode URL |
+
+### Production Status
+- **Deployed**: 2026-02-28 (GitHub Actions run 22527877976)
+- **Health Check**: Passing
+- **Tests**: 70/70 passing (137 assertions)
+- **Status**: Complete
+
+### Security Validation (Production)
+| Test | URL | Result |
+|------|-----|--------|
+| Localhost | `http://localhost/` | ✅ BLOCKED (403) |
+| Loopback | `http://127.0.0.1/` | ✅ BLOCKED (403) |
+| Private IP 10.x | `http://10.0.0.1/` | ✅ BLOCKED (403) |
+| Private IP 192.168.x | `http://192.168.1.1/` | ✅ BLOCKED (403) |
+| Cloud Metadata | `http://169.254.169.254/` | ✅ BLOCKED (403) |
+| AWS Metadata | `http://169.254.169.254/latest/meta-data/` | ✅ BLOCKED (403) |
+| GCP Metadata | `http://metadata.google.internal/` | ✅ BLOCKED (403) |
+| Azure Metadata | `http://169.254.169.254/metadata/v1/` | ✅ BLOCKED (403) |
+| File Protocol | `file:///etc/passwd` | ✅ BLOCKED (400) |
+| FTP Protocol | `ftp://example.com/file` | ✅ BLOCKED (400) |
+| Gopher Protocol | `gopher://example.com` | ✅ BLOCKED (400) |
+
+### Dependencies
+- FEAT-016 (URLValidationService)
+- TASK-18-4 (DomainValidatorService)
+
+### Related Tasks
+- TASK-18-4: DomainValidatorService
+- TASK-18-6: AnalysisRunnerService
+
+---
 ## Report Generation API (TASK-4-8)
 
 ### Endpoint:
