@@ -1,7 +1,7 @@
 # TASK-5-14: Integration Tests
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
