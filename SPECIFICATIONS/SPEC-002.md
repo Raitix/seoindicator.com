@@ -1,7 +1,7 @@
 # SPEC-002: Ranking Change Alerts - Technical Specification
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -298,3 +298,22 @@ Created SPEC-002 for Ranking Change Alerts. Key decisions:
 - MVP focuses on position changes; SERP features later
 - Digest mode deferred to Phase 2
 Ready for SpecSystemAnalyst breakdown.
+
+### [2026-02-28 13:53] Agent: ProjectManager
+**State Inconsistency Detected & Resolved**
+
+Found workflow state anomaly:
+- Spec status was "To Prioritize" but tasks were already at "To Develop"
+- Tests (TEST-002-*.md) already exist with full coverage
+- Task files had corrupted STATUS fields (literal `n` instead of newline)
+
+Actions taken:
+1. Fixed corrupted STATUS fields in all 14 TASK-002-*.md files
+2. Updated spec status to "To Develop" to reflect actual workflow state
+3. Verified priorities are correctly assigned (8 High, 6 Medium)
+
+**Priority Summary:**
+- High (8): Tasks 1-8, 10-11 (core alert system)
+- Medium (6): Tasks 9, 12-14 (notification center frontend)
+
+Tasks are ready for Developer to pick up.
