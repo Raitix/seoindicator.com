@@ -2742,6 +2742,124 @@ Automated scheduler that queues rank check jobs on a configurable interval. Enab
 2 tests, 6 assertions covering scheduler logic and queue scheduling.
 
 ---
+## Database Schema: GSC Connections Table (TASK-12-1)
+
+### GSC Connections Table
+Stores OAuth tokens and property information for Google Search Console API access. Each connection represents a single GSC property linked to a user account.
+
+```sql
+CREATE TABLE gsc_connections (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    site_url VARCHAR(500) NOT NULL,
+    property_url VARCHAR(500) NOT NULL,
+    access_token VARCHAR(2000) NOT NULL,
+    refresh_token VARCHAR(2000) NOT NULL,
+    token_expires_at TIMESTAMP NOT NULL,
+    status ENUM('active', 'expired', 'revoked') DEFAULT 'active',
+    last_synced_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_user_property (user_id, property_url)
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `user_id` | BIGINT UNSIGNED | FK to users.id |
+| `site_url` | VARCHAR(500) | Site URL from GSC |
+| `property_url` | VARCHAR(500) | GSC property URL |
+| `access_token` | VARCHAR(2000) | Encrypted OAuth access token |
+| `refresh_token` | VARCHAR(2000) | Encrypted OAuth refresh token |
+| `token_expires_at` | TIMESTAMP | Token expiration time |
+| `status` | ENUM | Connection status: `active`, `expired`, `revoked` |
+| `last_synced_at` | TIMESTAMP | Last successful data sync time (nullable) |
+
+**Constraints:**
+- Foreign Key: `user_id → users.id` ON DELETE CASCADE
+- Unique: `(user_id, property_url)` - prevents duplicate property connections
+
+**Indexes:**
+- `idx_user_property` unique index on `(user_id, property_url)`
+- `idx_status` on `status`
+- `idx_token_expires_at` on `token_expires_at`
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Token Encryption | Laravel `encrypted` cast on access_token, refresh_token |
+| Token Exposure | Tokens hidden from JSON serialization (`$hidden` array) |
+| User Isolation | Foreign key cascade delete removes connections on user delete |
+| Duplicate Prevention | Unique constraint on (user_id, property_url) |
+
+### Model Relationships
+
+**GSCConnection Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `user()` | belongsTo | User who owns this connection |
+
+### Model Methods
+
+**Status Helpers:**
+| Method | Description |
+|--------|-------------|
+| `isActive()` | Returns true if status is 'active' |
+| `markAsExpired()` | Sets status to 'expired' |
+| `markAsRevoked()` | Sets status to 'revoked' |
+| `markAsSynced()` | Sets last_synced_at to now |
+
+**Token Helpers:**
+| Method | Description |
+|--------|-------------|
+| `isTokenExpired()` | Returns true if token has expired |
+| `tokenExpiresWithin($minutes)` | Returns true if token expires within given minutes |
+
+**Query Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `active()` | Returns only active connections |
+| `needsRefresh()` | Returns connections with tokens expiring soon |
+| `readyForSync()` | Returns active connections ready for data sync |
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| CreateGSCConnectionsTableTest | 11 | 11 |
+| GSCConnectionTest | 16 | 16 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Schema Validation | 11 | Table structure, columns, indexes, constraints |
+| Model Relationships | 2 | User relationship |
+| Token Management | 4 | Expiration helpers, update method |
+| Status Management | 5 | Status checks, state transitions |
+| Query Scopes | 3 | Active, needsRefresh, readyForSync |
+| Security | 2 | Tokens encrypted, hidden from serialization |
+
+### Production Status
+- **Deployed**: 2026-02-21 (migration batch 3)
+- **Migration**: `2026_02_21_190000_create_gsc_connections_table.php`
+- **Verified**: Health check passing, 27 tests passing (64 assertions)
+- **Status**: Complete
+
+### Dependencies
+- Existing users table
+- Laravel encryption service
+
+### Related Tasks
+- TASK-12-4: OAuth Service
+- TASK-12-5: GSC Data Sync
+- TASK-12-7: GSC Connection Controller API
+- TASK-12-8: GSC Data Controller API
+
+---
 ## Database Schema: GSC Query Match Column (TASK-12-3)
 
 ### Schema Change
