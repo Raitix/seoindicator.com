@@ -47,6 +47,94 @@ class SerpFeatureControllerTest extends TestCase
     }
 
     // ============================================
+    // Authentication Tests
+    // ============================================
+
+    /** @test */
+    public function it_returns_401_for_unauthenticated_keyword_request(): void
+    {
+        // Act - No authentication
+        $response = $this->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features");
+
+        // Assert
+        $response->assertStatus(401);
+    }
+
+    /** @test */
+    public function it_returns_401_for_unauthenticated_site_features_request(): void
+    {
+        // Act - No authentication
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features");
+
+        // Assert
+        $response->assertStatus(401);
+    }
+
+    /** @test */
+    public function it_returns_401_for_unauthenticated_summary_request(): void
+    {
+        // Act - No authentication
+        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary");
+
+        // Assert
+        $response->assertStatus(401);
+    }
+
+    /** @test */
+    public function it_returns_403_for_idor_accessing_other_user_site(): void
+    {
+        // Arrange: Create another user with their own site
+        $otherUser = User::create([
+            'name' => 'Other User',
+            'email' => 'other@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        $otherSite = Site::create([
+            'user_id' => $otherUser->id,
+            'url' => 'https://other-site.com',
+            'name' => 'Other Site'
+        ]);
+
+        // Act: Authenticated as $this->user, but trying to access other user's site
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$otherSite->id}/serp-features");
+
+        // Assert: Should return 403 Forbidden
+        $response->assertStatus(403);
+    }
+
+    /** @test */
+    public function it_returns_403_for_idor_accessing_other_user_keyword(): void
+    {
+        // Arrange: Create another user with their own site and keyword
+        $otherUser = User::create([
+            'name' => 'Other User',
+            'email' => 'other2@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        $otherSite = Site::create([
+            'user_id' => $otherUser->id,
+            'url' => 'https://other-site2.com',
+            'name' => 'Other Site 2'
+        ]);
+
+        $otherKeyword = Keyword::create([
+            'site_id' => $otherSite->id,
+            'keyword' => 'other keyword',
+            'status' => 'active'
+        ]);
+
+        // Act: Authenticated as $this->user, but trying to access other user's keyword
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$otherKeyword->id}/serp-features");
+
+        // Assert: Should return 403 Forbidden
+        $response->assertStatus(403);
+    }
+
+    // ============================================
     // GET /api/v1/keywords/:id/serp-features
     // ============================================
 
@@ -71,7 +159,8 @@ class SerpFeatureControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features");
 
         // Assert
         $response->assertStatus(200)
@@ -93,7 +182,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_returns_default_features_for_keyword_with_no_data(): void
     {
         // Act
-        $response = $this->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features");
 
         // Assert - Service returns all feature types with isPresent: false
         $response->assertStatus(200)
@@ -131,7 +221,8 @@ class SerpFeatureControllerTest extends TestCase
         ]);
 
         // Act: Request with date range
-        $response = $this->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features?from=2026-02-14&to=2026-02-16");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features?from=2026-02-14&to=2026-02-16");
 
         // Assert
         $response->assertStatus(200)
@@ -146,7 +237,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_returns_404_for_nonexistent_keyword(): void
     {
         // Act
-        $response = $this->getJson('/api/v1/keywords/99999/serp-features');
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/keywords/99999/serp-features');
 
         // Assert
         $response->assertStatus(404)
@@ -157,7 +249,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_returns_404_for_invalid_keyword_id_format(): void
     {
         // Act - Laravel route returns 404 for non-numeric route parameter when regex constraint is applied
-        $response = $this->getJson('/api/v1/keywords/abc/serp-features');
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/keywords/abc/serp-features');
 
         // Assert - Should return 404 (route not found) due to route constraint
         $response->assertStatus(404);
@@ -167,7 +260,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_returns_400_for_invalid_date_format(): void
     {
         // Act
-        $response = $this->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features?from=invalid-date");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features?from=invalid-date");
 
         // Assert
         $response->assertStatus(400)
@@ -178,7 +272,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_returns_400_when_from_date_after_to_date(): void
     {
         // Act
-        $response = $this->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features?from=2026-02-20&to=2026-02-01");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features?from=2026-02-20&to=2026-02-01");
 
         // Assert
         $response->assertStatus(400)
@@ -206,7 +301,8 @@ class SerpFeatureControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features");
 
         // Assert
         $response->assertStatus(200);
@@ -244,7 +340,8 @@ class SerpFeatureControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/serp-features");
 
         // Assert - Service uses 'perPage' in meta
         $response->assertStatus(200)
@@ -275,7 +372,8 @@ class SerpFeatureControllerTest extends TestCase
         }
 
         // Act
-        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features?page=2&perPage=10");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/serp-features?page=2&perPage=10");
 
         // Assert - Service uses 'perPage' not 'limit'
         $response->assertStatus(200)
@@ -287,7 +385,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_returns_404_for_nonexistent_site(): void
     {
         // Act
-        $response = $this->getJson('/api/v1/sites/99999/serp-features');
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/sites/99999/serp-features');
 
         // Assert
         $response->assertStatus(404)
@@ -298,7 +397,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_returns_400_for_invalid_pagination_params(): void
     {
         // Act
-        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features?page=-1");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/serp-features?page=-1");
 
         // Assert
         $response->assertStatus(400)
@@ -317,7 +417,8 @@ class SerpFeatureControllerTest extends TestCase
         ]);
 
         // Act - Request with limit exceeding max (100)
-        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features?perPage=1000");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/serp-features?perPage=1000");
 
         // Assert - Should succeed but cap the limit to 100
         $response->assertStatus(200)
@@ -360,7 +461,8 @@ class SerpFeatureControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary");
 
         // Assert
         $response->assertStatus(200)
@@ -404,7 +506,8 @@ class SerpFeatureControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary");
 
         // Assert
         $response->assertStatus(200);
@@ -435,7 +538,8 @@ class SerpFeatureControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary");
 
         // Assert
         $response->assertStatus(200)
@@ -460,7 +564,8 @@ class SerpFeatureControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->getJson("/api/v1/sites/{$emptySite->id}/serp-features/summary");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$emptySite->id}/serp-features/summary");
 
         // Assert
         $response->assertStatus(200)
@@ -472,7 +577,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_validates_days_parameter_in_summary(): void
     {
         // Act - Test with valid days
-        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary?days=30");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary?days=30");
 
         // Assert
         $response->assertStatus(200)
@@ -483,7 +589,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_rejects_invalid_days_parameter(): void
     {
         // Act - Test with invalid days (negative)
-        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary?days=-5");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary?days=-5");
 
         // Assert
         $response->assertStatus(400)
@@ -494,7 +601,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_rejects_days_exceeding_maximum(): void
     {
         // Act - Test with days exceeding max (365)
-        $response = $this->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary?days=500");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/sites/{$this->site->id}/serp-features/summary?days=500");
 
         // Assert
         $response->assertStatus(400)
@@ -509,7 +617,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_handles_sql_injection_in_keyword_id(): void
     {
         // Act - Laravel route with regex constraint returns 404 for non-numeric IDs
-        $response = $this->getJson("/api/v1/keywords/1; DROP TABLE keywords;--/serp-features");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/1; DROP TABLE keywords;--/serp-features");
 
         // Assert: Should return 404 (route not found) - SQL injection is prevented
         $response->assertStatus(404);
@@ -519,7 +628,8 @@ class SerpFeatureControllerTest extends TestCase
     public function it_sanitizes_sql_injection_in_date_params(): void
     {
         // Act
-        $response = $this->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features?from=2026-01-01'; DROP TABLE keywords;--");
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/keywords/{$this->keyword->id}/serp-features?from=2026-01-01'; DROP TABLE keywords;--");
 
         // Assert: Should return 400 (validation error)
         $response->assertStatus(400);
