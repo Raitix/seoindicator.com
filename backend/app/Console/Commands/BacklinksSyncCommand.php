@@ -55,12 +55,12 @@ class BacklinksSyncCommand extends Command
 
         // Validate project ID if provided
         if ($projectId !== null) {
-            if (!is_numeric($projectId) || (int) $projectId <= 0) {
-                if (str_starts_with($projectId, '-')) {
-                    $this->error('Project ID must be a positive number.');
-                } else {
-                    $this->error('Project ID must be a number.');
-                }
+            if (!is_numeric($projectId)) {
+                $this->error('Project ID must be a number.');
+                return self::FAILURE;
+            }
+            if ((int) $projectId <= 0) {
+                $this->error('Project ID must be a positive number.');
                 return self::FAILURE;
             }
             $projectId = (int) $projectId;
