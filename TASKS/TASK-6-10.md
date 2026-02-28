@@ -1,7 +1,7 @@
 # TASK-6-10: Sites API Endpoints
 
 ## Status
-`To Deploy`
+`In Deployment`
 
 ## Priority
 `High`
@@ -97,3 +97,12 @@ Small (1-2 hours)
   - SQL injection prevention verified
   - IDOR prevention confirmed
 - **Status changed to:** To Deploy
+
+### [2026-02-28 10:59] DevOps: Deployment Started
+- Pushing to origin/main to trigger GitHub Actions deployment
+- **Risk:** Low (read-only API endpoint)
+- **Pre-deployment checklist:**
+  - [x] All tests pass locally (44/44)
+  - [x] No security issues flagged
+  - [x] Workflow enabled
+- **Status changed to:** In Deployment
