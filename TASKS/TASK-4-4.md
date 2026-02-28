@@ -1,7 +1,7 @@
 # SPEC-004-4: CSV Exporter
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Medium`
@@ -84,3 +84,10 @@ Created as Phase 2 task. Core export functionality.
 2. **Type coercion (Low)**: Passing non-scalar types (objects, arrays) causes warnings/errors. Input validation recommended.
 
 **Decision:** PASS → Approved for deployment. All acceptance criteria met. Issues found are outside spec scope.
+
+### [2026-02-28 09:18] Agent: DevOps
+**Deployment Started**
+- CSV Exporter code verified: `backend/app/Exporters/CsvReportExporter.php`
+- All 24 tests passing (65 assertions)
+- Pre-deployment checks passed
+- Pushing to origin/main to trigger GitHub Actions deployment
