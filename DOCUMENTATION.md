@@ -143,6 +143,208 @@ None - Foundation task for FEAT-018.
 - TASK-18-6: AnalysisRunnerService
 
 ---
+## IndicatorChecker Interface and Base Classes (TASK-18-3)
+
+### Service Description
+Core interface and base classes for the 17 SEO indicator checkers. Establishes the contract all indicator implementations must follow, providing a consistent API for checking, scoring, and generating suggestions for each SEO indicator.
+
+### Core Components
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `IndicatorCheckerInterface` | `app/Services/SEO/Checkers/IndicatorCheckerInterface.php` | Contract for all indicator checkers |
+| `IndicatorResult` | `app/Services/SEO/Checkers/IndicatorResult.php` | Immutable DTO for check results |
+| `Suggestion` | `app/Services/SEO/Checkers/Suggestion.php` | Immutable DTO for actionable suggestions |
+| `BaseIndicatorChecker` | `app/Services/SEO/Checkers/BaseIndicatorChecker.php` | Abstract base class with common utilities |
+| `IndicatorCategory` | `app/Services/SEO/Checkers/IndicatorCategory.php` | String-backed enum for indicator categories |
+| `IndicatorScore` | `app/Services/SEO/Checkers/IndicatorScore.php` | Int-backed enum for 0-3 star scores |
+
+### IndicatorCheckerInterface
+
+```php
+interface IndicatorCheckerInterface
+{
+    /**
+     * Unique identifier for the indicator (e.g., 'title_tag', 'url')
+     */
+    public function id(): string;
+    
+    /**
+     * Human-readable name for display
+     */
+    public function name(): string;
+    
+    /**
+     * Category for grouping (content, technical, accessibility, performance)
+     */
+    public function category(): IndicatorCategory;
+    
+    /**
+     * Weight in overall score (0.0 - 1.0)
+     */
+    public function weight(): float;
+    
+    /**
+     * Run the indicator check against the DOM
+     */
+    public function check(Crawler $crawler, string $url, array $options = []): IndicatorResult;
+    
+    /**
+     * Generate actionable suggestions based on the result
+     * @return Suggestion[]
+     */
+    public function getSuggestions(IndicatorResult $result): array;
+}
+```
+
+### IndicatorResult DTO
+
+Immutable value object containing the result of an indicator check.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `indicatorId` | string | Unique indicator identifier |
+| `score` | IndicatorScore | 0-3 star rating |
+| `passed` | bool | Whether the check passed |
+| `details` | array | Structured data from the check |
+| `message` | string|null | Optional human-readable message |
+| `weight` | float | Weight used in calculation (0.0-1.0) |
+
+**Validation:**
+- Score must be 0-3 (enforced by IndicatorScore enum)
+- Weight must be 0.0-1.0 (validated on construction)
+- All properties are readonly (immutable)
+
+### Suggestion DTO
+
+Immutable value object for actionable recommendations.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `type` | string | Type: `info`, `warning`, `error`, `success` |
+| `message` | string | Human-readable suggestion text |
+| `priority` | int | Priority for ordering (1 = highest) |
+| `action` | string|null | Optional action URL or command |
+
+**Validation:**
+- Type must be one of: `info`, `warning`, `error`, `success`
+- Priority must be >= 1
+- Message is required
+
+### IndicatorCategory Enum
+
+String-backed enum for grouping indicators:
+
+| Case | Value | Description |
+|------|-------|-------------|
+| `Content` | `content` | Content-related indicators (title, meta, headings) |
+| `Technical` | `technical` | Technical SEO indicators (robots, sitemap, canonical) |
+| `Accessibility` | `accessibility` | Accessibility indicators (alt text, ARIA) |
+| `Performance` | `performance` | Performance indicators (page speed) |
+
+### IndicatorScore Enum
+
+Int-backed enum for 0-3 star scoring:
+
+| Case | Value | Label | Description |
+|------|-------|-------|-------------|
+| `NotApplicable` | 0 | N/A | Indicator not applicable to this page |
+| `Poor` | 1 | Poor | Significant issues, immediate attention needed |
+| `Good` | 2 | Good | Minor issues, room for improvement |
+| `Excellent` | 3 | Excellent | All criteria met, no issues |
+
+### BaseIndicatorChecker
+
+Abstract base class providing common utilities for indicator implementations.
+
+**Abstract Methods:**
+- `performCheck(Crawler $crawler, string $url, array $options): array` - Must be implemented by each indicator
+
+**Template Method Pattern:**
+```php
+public function check(Crawler $crawler, string $url, array $options = []): IndicatorResult
+{
+    $details = $this->performCheck($crawler, $url, $options);
+    $score = $this->calculateScore($details);
+    
+    return new IndicatorResult(
+        indicatorId: $this->id(),
+        score: $score,
+        passed: $score->value >= 2,
+        details: $details,
+        weight: $this->weight()
+    );
+}
+```
+
+**Helper Methods:**
+| Method | Description |
+|--------|-------------|
+| `extractText(Crawler, string $selector)` | Extract text content from selector |
+| `extractAttribute(Crawler, string $selector, string $attr)` | Extract attribute value |
+| `countElements(Crawler, string $selector)` | Count elements matching selector |
+| `elementExists(Crawler, string $selector)` | Check if element exists |
+| `normalizeUrl(string $url)` | Normalize URL for comparison |
+
+### Scoring System
+
+Each indicator is scored on a 1-3 star scale:
+
+| Score | Label | Condition |
+|-------|-------|-----------|
+| 3 | Excellent | All criteria met, no issues |
+| 2 | Good | Minor issues, room for improvement |
+| 1 | Poor | Significant issues, immediate attention needed |
+| 0 | N/A | Indicator not applicable (e.g., no images on page) |
+
+### Weight Distribution
+
+Indicator weights sum to 1.0 across all 17 indicators:
+
+| Category | Indicators | Total Weight |
+|----------|------------|--------------|
+| Content | Title, Meta Description, H1, Links, Filenames, Social Meta | 0.36 |
+| Technical | URL, Canonical, Robots.txt, Sitemap, 404 Page, Mobile, Language, Favicon | 0.42 |
+| Accessibility | Image Alt, ARIA | 0.09 |
+| Performance | Page Speed | 0.13 |
+| **Total** | **17 indicators** | **1.00** |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| IndicatorResultTest | 16 | - |
+| SuggestionTest | 28 | - |
+| IndicatorCheckerInterfaceTest | 15 | - |
+| BaseIndicatorCheckerTest | 24 | - |
+| IndicatorCategoryTest | 20 | - |
+| IndicatorScoreTest | 29 | - |
+| **Total** | **132** | **319** |
+
+**Test Categories:**
+- DTO immutability (readonly properties)
+- Score validation (0-3 range)
+- Weight validation (0.0-1.0 range)
+- Template method pattern
+- DOM parsing utilities
+- Error handling with graceful fallback
+
+### Production Status
+- **Deployed**: 2026-02-28 (commit 2635718 via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 132/132 passing (319 assertions)
+- **Status**: Complete
+
+### Dependencies
+- Symfony DomCrawler (HTML parsing)
+- PHP 8.2+ (enums, readonly properties)
+
+### Related Tasks
+- TASK-18-1: SEO Analyses Table
+- TASK-18-2: SEOAnalysis Model and Repository
+- TASK-18-4 through TASK-18-25: Individual indicator implementations
+
+---
 ## Core Indicator Processors (TASK-19-6)
 
 ### Service Description
