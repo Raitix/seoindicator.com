@@ -126,4 +126,12 @@ class User extends Authenticatable
             ->withPivot('role', 'invited_by', 'invited_at', 'accepted_at')
             ->withTimestamps();
     }
+
+    /**
+     * Get the SEO analyses for this user.
+     */
+    public function seoAnalyses(): HasMany
+    {
+        return $this->hasMany(SEOAnalysis::class);
+    }
 }
