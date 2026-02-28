@@ -328,11 +328,13 @@ class BacklinkSyncControllerTest extends TestCase
      */
     public function test_sync_after_hour_passed(): void
     {
-        // Clear any existing cache
-        Cache::forget($this->getRateLimitKey($this->project->id));
+        // Clear any existing cache to start fresh
+        $rateLimitKey = $this->getRateLimitKey($this->project->id);
+        Cache::forget($rateLimitKey);
 
         // Set recent sync timestamp (simulating 61 minutes ago - outside rate limit window)
-        Cache::put($this->getRateLimitKey($this->project->id), now()->subMinutes(61)->toIso8601String(), 3600);
+        // The rate limit is 1 hour, so a timestamp from 61 minutes ago should allow a new sync
+        Cache::put($rateLimitKey, now()->subMinutes(61)->toIso8601String(), 3600);
 
         $response = $this->actingAs($this->user)
             ->postJson("/api/v1/projects/{$this->project->id}/backlinks/sync");
@@ -506,15 +508,17 @@ class BacklinkSyncControllerTest extends TestCase
      */
     public function test_previous_sync_completed(): void
     {
-        // Clear any existing cache
-        Cache::forget($this->getRateLimitKey($this->project->id));
+        $rateLimitKey = $this->getRateLimitKey($this->project->id);
+        
+        // Clear any existing cache to start fresh
+        Cache::forget($rateLimitKey);
 
         // First sync
         $this->actingAs($this->user)
             ->postJson("/api/v1/projects/{$this->project->id}/backlinks/sync");
 
-        // Set completed timestamp (more than an hour ago)
-        Cache::put($this->getRateLimitKey($this->project->id), now()->subMinutes(61)->toIso8601String(), 3600);
+        // Set completed timestamp (more than an hour ago - outside rate limit window)
+        Cache::put($rateLimitKey, now()->subMinutes(61)->toIso8601String(), 3600);
 
         $response = $this->actingAs($this->user)
             ->postJson("/api/v1/projects/{$this->project->id}/backlinks/sync");

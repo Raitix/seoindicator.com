@@ -96,23 +96,26 @@ class BacklinkSyncController extends Controller
         $lastSync = Cache::get($rateLimitKey);
 
         if ($lastSync) {
-            $retryAfter = now()->addSeconds(self::RATE_LIMIT_SECONDS)->toIso8601String();
+            // Check if the cached timestamp is within the rate limit window
+            $lastSyncTime = is_string($lastSync) && strtotime($lastSync) 
+                ? strtotime($lastSync) 
+                : time();
             
-            // If the cached value is a timestamp, calculate retry_after
-            if (is_string($lastSync) && strtotime($lastSync)) {
-                $lastSyncTime = strtotime($lastSync);
+            $secondsSinceLastSync = time() - $lastSyncTime;
+            
+            if ($secondsSinceLastSync < self::RATE_LIMIT_SECONDS) {
                 $retryAfterTime = $lastSyncTime + self::RATE_LIMIT_SECONDS;
                 $retryAfter = now()->setTimestamp($retryAfterTime)->toIso8601String();
-            }
 
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'RATE_LIMIT_EXCEEDED',
-                    'message' => 'Sync already in progress or recently completed. Please wait before requesting another sync.',
-                    'retry_after' => $retryAfter,
-                ],
-            ], 429);
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'RATE_LIMIT_EXCEEDED',
+                        'message' => 'Sync already in progress or recently completed. Please wait before requesting another sync.',
+                        'retry_after' => $retryAfter,
+                    ],
+                ], 429);
+            }
         }
 
         // Generate a unique job ID
