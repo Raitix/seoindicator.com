@@ -1,7 +1,7 @@
 # TASK-12-1: Create GSC Connections Table
 
 ## STATUS
-`Testing Prod`
+`Documentation in Progress`
 
 ## PRIORITY
 `High`
