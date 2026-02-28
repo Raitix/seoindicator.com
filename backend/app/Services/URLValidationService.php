@@ -175,7 +175,7 @@ class URLValidationService
             $this->logBlockedRequest($url, 'dangerous_notation', $host);
             return [
                 'valid' => false,
-                'error' => 'Access to this URL is not allowed for security reasons.',
+                'error' => 'Access to this URL is blocked for security reasons.',
             ];
         }
 
