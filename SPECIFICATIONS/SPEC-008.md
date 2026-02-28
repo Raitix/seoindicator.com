@@ -1,7 +1,7 @@
 # SPEC-008: Multi-Site Project Management - Technical Specification
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
@@ -618,3 +618,28 @@ Key architectural decisions:
 
 ### [2026-02-20 17:00] Agent: Architect
 Ready for SpecSystemAnalyst to break into tasks.
+
+### [2026-02-28 14:10 GMT+2] Agent: ProjectManager
+**Prioritization Status Review:**
+- All 10 tasks have been previously prioritized and are in progress or complete
+- **Completed (5):** TASK-8-1, TASK-8-4, TASK-8-6, TASK-8-7, TASK-8-9
+- **In Progress (4):** TASK-8-2, TASK-8-3, TASK-8-5, TASK-8-10 (To Write Tests)
+- **Documentation (1):** TASK-8-8 (Frontend Components)
+
+**Priority Summary:**
+- All tasks: **High Priority**
+- Risk distribution: Low (2), Medium (7), Low (1)
+
+**Dependency Chain Verified:**
+1. TASK-8-1 (Projects Table) → Done ✅
+2. TASK-8-2 (Modify Tables) → To Write Tests (depends on 8-1)
+3. TASK-8-3 (Data Migration) → To Write Tests (depends on 8-1, 8-2)
+4. TASK-8-4 (Middleware) → Done ✅
+5. TASK-8-5 (Global Scope) → To Write Tests (depends on 8-4)
+6. TASK-8-6 (Policies) → Done ✅
+7. TASK-8-7 (CRUD Endpoints) → Done ✅
+8. TASK-8-8 (Frontend) → Documentation (depends on 8-7)
+9. TASK-8-9 (Unit Tests) → Done ✅
+10. TASK-8-10 (Integration Tests) → To Write Tests (depends on 8-7, 8-8)
+
+**Status updated:** `To Prioritize` → `To Write Tests` (tasks already prioritized by previous session)
