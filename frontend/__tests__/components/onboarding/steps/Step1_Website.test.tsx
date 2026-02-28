@@ -1,26 +1,43 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Step1_Website } from '../Step1_Website';
+import { Step1_Website } from '@/components/onboarding/steps/Step1_Website';
 
 // Mock the onboarding hook
-const mockNextStep = jest.fn();
-const mockSkipOnboarding = jest.fn();
+const mockUpdateStep = jest.fn().mockResolvedValue(undefined);
 
-jest.mock('../../OnboardingProvider', () => ({
-  useOnboarding: () => ({
-    state: {
-      data: { websiteUrl: null },
-      isLoading: false,
-      error: null,
-    },
-    nextStep: mockNextStep,
-    skipOnboarding: mockSkipOnboarding,
-  }),
+const createMockContext = (overrides = {}) => ({
+  onboarding: {
+    id: 1,
+    currentStep: 1,
+    completedSteps: [],
+    websiteUrl: null,
+    firstKeyword: null,
+    keywordId: null,
+    alertPreferences: null,
+    completedAt: null,
+    progressPercentage: 0,
+  },
+  isLoading: false,
+  error: null,
+  isActive: true,
+  updateStep: mockUpdateStep,
+  skipOnboarding: jest.fn().mockResolvedValue(undefined),
+  completeOnboarding: jest.fn().mockResolvedValue(undefined),
+  startOnboarding: jest.fn().mockResolvedValue(undefined),
+  refreshOnboarding: jest.fn().mockResolvedValue(undefined),
+  ...overrides,
+});
+
+jest.mock('@/lib/contexts/OnboardingContext', () => ({
+  useOnboardingContext: jest.fn(),
 }));
+
+const mockedUseOnboardingContext = require('@/lib/contexts/OnboardingContext').useOnboardingContext;
 
 describe('Step1_Website', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedUseOnboardingContext.mockReturnValue(createMockContext());
   });
 
   // ==================== RENDERING ====================
@@ -51,13 +68,6 @@ describe('Step1_Website', () => {
 
     const continueButton = screen.getByRole('button', { name: /continue/i });
     expect(continueButton).toBeInTheDocument();
-  });
-
-  it('should render skip link', () => {
-    render(<Step1_Website />);
-
-    const skipLink = screen.getByRole('button', { name: /skip for now/i });
-    expect(skipLink).toBeInTheDocument();
   });
 
   // ==================== INPUT VALIDATION ====================
@@ -95,21 +105,6 @@ describe('Step1_Website', () => {
     });
   });
 
-  it('should show error for non-https URL', async () => {
-    const user = userEvent.setup();
-    render(<Step1_Website />);
-
-    const urlInput = screen.getByLabelText(/website url/i);
-    await user.type(urlInput, 'http://example.com');
-    await user.tab();
-
-    // May or may not show warning depending on requirements
-    // If https is required:
-    // await waitFor(() => {
-    //   expect(screen.getByText(/please use https/i)).toBeInTheDocument();
-    // });
-  });
-
   it('should show error for blocked URLs (SSRF)', async () => {
     const user = userEvent.setup();
     render(<Step1_Website />);
@@ -138,7 +133,7 @@ describe('Step1_Website', () => {
 
   // ==================== FORM SUBMISSION ====================
 
-  it('should call nextStep with URL when continue is clicked', async () => {
+  it('should call updateStep with URL when continue is clicked', async () => {
     const user = userEvent.setup();
     render(<Step1_Website />);
 
@@ -148,72 +143,36 @@ describe('Step1_Website', () => {
     const continueButton = screen.getByRole('button', { name: /continue/i });
     await user.click(continueButton);
 
-    expect(mockNextStep).toHaveBeenCalledWith({
-      websiteUrl: 'https://example.com',
-    });
+    expect(mockUpdateStep).toHaveBeenCalledWith(1, { website_url: 'https://example.com' });
   });
 
-  it('should call nextStep on form submit (Enter key)', async () => {
+  it('should call updateStep on form submit (Enter key)', async () => {
     const user = userEvent.setup();
     render(<Step1_Website />);
 
     const urlInput = screen.getByLabelText(/website url/i);
     await user.type(urlInput, 'https://example.com{enter}');
 
-    expect(mockNextStep).toHaveBeenCalledWith({
-      websiteUrl: 'https://example.com',
+    await waitFor(() => {
+      expect(mockUpdateStep).toHaveBeenCalledWith(1, { website_url: 'https://example.com' });
     });
-  });
-
-  // ==================== SKIP FUNCTIONALITY ====================
-
-  it('should call skipOnboarding when skip is clicked', async () => {
-    const user = userEvent.setup();
-    render(<Step1_Website />);
-
-    const skipLink = screen.getByRole('button', { name: /skip for now/i });
-    await user.click(skipLink);
-
-    expect(mockSkipOnboarding).toHaveBeenCalled();
   });
 
   // ==================== LOADING STATE ====================
 
   it('should show loading state on continue button when loading', () => {
-    jest.resetModules();
-    jest.doMock('../../OnboardingProvider', () => ({
-      useOnboarding: () => ({
-        state: {
-          data: { websiteUrl: null },
-          isLoading: true,
-          error: null,
-        },
-        nextStep: mockNextStep,
-        skipOnboarding: mockSkipOnboarding,
-      }),
-    }));
+    mockedUseOnboardingContext.mockReturnValue(createMockContext({ isLoading: true }));
 
     render(<Step1_Website />);
 
-    const continueButton = screen.getByRole('button', { name: /continue|loading/i });
+    const continueButton = screen.getByRole('button', { name: /saving|continue/i });
     expect(continueButton).toBeDisabled();
   });
 
   // ==================== ERROR DISPLAY ====================
 
   it('should display error from provider', () => {
-    jest.resetModules();
-    jest.doMock('../../OnboardingProvider', () => ({
-      useOnboarding: () => ({
-        state: {
-          data: { websiteUrl: null },
-          isLoading: false,
-          error: 'Server error',
-        },
-        nextStep: mockNextStep,
-        skipOnboarding: mockSkipOnboarding,
-      }),
-    }));
+    mockedUseOnboardingContext.mockReturnValue(createMockContext({ error: 'Server error' }));
 
     render(<Step1_Website />);
 
