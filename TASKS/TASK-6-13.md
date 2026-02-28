@@ -1,7 +1,7 @@
 # TASK-6-13: Webhook Management API
 
 ## Status
-`To Deploy`
+`In Deployment`
 
 ## Priority
 `High`
@@ -91,6 +91,10 @@ Medium (3-4 hours)
   - Edge cases: empty fields, unicode, SQL injection, XSS
   - Security: SSRF prevention, javascript URL rejection
 - Ready for Developer to implement WebhookController
+
+### [2026-02-28 20:48] DevOps: Deployment Started
+- Status: In Deployment
+- Triggering GitHub Actions deployment workflow
 
 ### [2026-02-28 11:15] Developer: Implementation Complete
 - Created `WebhookController.php` with all CRUD + test endpoints
