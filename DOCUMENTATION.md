@@ -7168,3 +7168,143 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 - TASK-7-16: SERP feature icons/badges (frontend)
 
 ---
+## SERP Feature History Component (TASK-7-17)
+
+### Feature Description
+React component for displaying a timeline of SERP feature changes for a specific keyword. Provides visual history of feature gains and losses with a "Recent Changes" widget for quick analysis of the last 7 days.
+
+### Component
+`<SERPFeatureHistory keywordId={number} />`
+
+**Props:**
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `keywordId` | number | Yes | ID of the keyword to display history for |
+
+### Features
+
+**Timeline Display:**
+- Shows chronological list of SERP feature changes
+- Icons for each feature type (featured snippet, local pack, etc.)
+- Gains shown with ➕ prefix (green)
+- Losses shown with ➖ prefix (red)
+- Date labels for each change event
+
+**Recent Changes Widget:**
+- Displays changes within configurable time window (default: 7 days)
+- Separate sections for gained and lost features
+- Collapsible for space efficiency
+
+**Expand/Collapse:**
+- "Show more/less" for large datasets
+- Default shows 10 most recent changes
+
+**State Handling:**
+| State | Display |
+|-------|---------|
+| Loading | Skeleton loader with animated pulse |
+| Error | Error message with retry button |
+| Empty | "No SERP feature history yet" message |
+| No Keyword | "Select a keyword to view history" |
+
+### API Integration
+
+**Endpoint:** `GET /api/v1/keywords/{id}/serp-features`
+
+**Data Fetched:**
+- Current features for the keyword
+- Historical feature changes (gained/lost)
+- Timeline data with dates
+
+**Helper Functions:**
+| Function | Description |
+|----------|-------------|
+| `useSerpFeatureHistory(keywordId)` | React Query hook for fetching data |
+| `getFeatureMeta(type)` | Get icon, name, description for feature type |
+| `formatFeatureDate(date)` | Format date for display |
+| `getRelativeTime(date)` | Human-readable relative time (e.g., "2 days ago") |
+| `isWithinDays(date, days)` | Check if date is within N days |
+
+### Feature Metadata
+
+| Feature Type | Icon | Name |
+|--------------|------|------|
+| `featured_snippet` | 🏆 | Featured Snippet |
+| `local_pack` | 📍 | Local Pack |
+| `image_pack` | 🖼️ | Image Pack |
+| `video` | 🎬 | Video Result |
+| `people_also_ask` | ❓ | People Also Ask |
+| `knowledge_panel` | 📋 | Knowledge Panel |
+| `sitelinks` | 🔗 | Sitelinks |
+| `reviews` | ⭐ | Reviews/Ratings |
+| `faq` | 📝 | FAQ Rich Result |
+| `product` | 🛒 | Product Listing |
+
+### Technical Implementation
+
+**Frontend Files:**
+| File | Description |
+|------|-------------|
+| `frontend/components/keywords/SERPFeatureHistory.tsx` | Main component |
+| `frontend/lib/api/serp-features.ts` | API helper functions and hook |
+| `frontend/__tests__/components/SERPFeatureHistory.test.tsx` | Component tests (19) |
+| `frontend/__tests__/lib/serp-features.test.ts` | API helper tests (15) |
+
+**Dependencies:**
+- React Query (TanStack Query) for data fetching
+- Tailwind CSS for styling
+- Lucide React for icons
+
+### Responsive Design
+
+| Breakpoint | Layout |
+|------------|--------|
+| Mobile | Single column, stacked sections |
+| Tablet | Two columns for recent changes |
+| Desktop | Full timeline with sidebar widget |
+
+### Security Verification
+
+| Test | Result | Details |
+|------|--------|---------|
+| API Authentication | ✅ PASS | 401 returned for unauthenticated requests |
+| SQL Injection | ✅ PASS | Blocked with 404 response |
+| Path Traversal | ✅ PASS | Blocked with 404 response |
+| Route Constraint | ✅ PASS | Numeric ID only enforced |
+| XSS Prevention | ✅ PASS | Feature names properly escaped |
+
+### Test Coverage
+
+| Test Suite | Tests | Status |
+|------------|-------|--------|
+| SERPFeatureHistory.test.tsx | 19 | ✅ PASS |
+| serp-features.test.ts | 15 | ✅ PASS |
+| **Total** | **34** | ✅ **ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Component Rendering | 4 | Basic render, props handling |
+| Loading/Error States | 3 | Skeleton, error message, empty |
+| Timeline Display | 6 | Chronological order, icons, dates |
+| Recent Changes Widget | 4 | 7-day filter, gain/loss sections |
+| API Integration | 4 | Data fetching, caching |
+| Accessibility | 2 | ARIA labels, keyboard nav |
+| API Helpers | 15 | Metadata, date formatting, utilities |
+
+### Production Status
+- **Deployed**: 2026-02-28 (GitHub Actions run 22452782593)
+- **Health Check**: Passing
+- **Tests**: 34/34 passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-7-10 (SERP Features API endpoint)
+- FEAT-007 (SERP Feature Tracking)
+
+### Related Tasks
+- TASK-7-10: SERP Features API endpoints
+- TASK-7-16: SERP feature icons/badges
+- TASK-7-18: SERP feature filter UI
+
+---
