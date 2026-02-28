@@ -1,7 +1,7 @@
 # TASK-7-11: Feature Summary Endpoint
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `Medium`
@@ -269,4 +269,21 @@ Status: `To Test Prod`
 
 **Recommendation:** All security tests pass. Endpoint is properly deployed with correct security measures in place. Ready for documentation update.
 
-Status: `To Document`
+Status: `Done`
+
+### [2026-02-28 12:30] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+Updated `DOCUMENTATION.md` with:
+- Feature Summary Endpoint documentation
+- API endpoint details (`GET /api/v1/sites/:siteId/serp-features/summary`)
+- Request/response format with examples
+- Query parameters (days: 1-365, default 7)
+- Authorization and security implementation
+- Caching strategy (5-minute TTL)
+- Test coverage summary (22 tests, 107 assertions)
+- Production status
+
+**Note:** Not all tasks under SPEC-007 are complete, so SPEC-007 and FEAT-007 statuses remain unchanged.
+
+Status: `Done`
