@@ -20,10 +20,9 @@ use Tests\TestCase;
  * Unit tests for RankCheckerService webhook event emission.
  *
  * @see TASK-6-16
- *
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
+#[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
 class RankCheckerServiceEventTest extends TestCase
 {
     use RefreshDatabase;
@@ -59,16 +58,15 @@ class RankCheckerServiceEventTest extends TestCase
         // Create the mock SERP result
         $serpResult = $this->createSerpResult('seo tools', 5, 'https://example.com/seo');
 
-        // Mock SERP fetcher using instance binding
-        $fetcherMock = \Mockery::mock(SERPFetcherInterface::class);
-        $fetcherMock->shouldReceive('fetch')
+        // Mock SERP fetcher using Laravel's mock helper
+        $this->mock(SERPFetcherInterface::class)
+            ->shouldReceive('fetch')
             ->once()
             ->andReturn($serpResult);
-        $this->app->instance(SERPFetcherInterface::class, $fetcherMock);
 
-        // Mock webhook dispatcher using instance binding
-        $dispatcherMock = \Mockery::mock(WebhookDispatcherService::class);
-        $dispatcherMock->shouldReceive('dispatchToUserWebhooks')
+        // Mock webhook dispatcher using Laravel's mock helper
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
             ->once()
             ->withArgs(function ($userId, $eventType, $data) use ($user) {
                 return $userId === $user->id
@@ -78,7 +76,6 @@ class RankCheckerServiceEventTest extends TestCase
                     && $data['change'] === 2; // improvement
             })
             ->andReturn(1);
-        $this->app->instance(WebhookDispatcherService::class, $dispatcherMock);
 
         $service = $this->app->make(RankCheckerService::class);
         $result = $service->checkAndStore($keyword->id);
@@ -117,16 +114,15 @@ class RankCheckerServiceEventTest extends TestCase
         // Create the mock SERP result
         $serpResult = $this->createSerpResult('seo tools', 10, 'https://example.com/seo');
 
-        // Mock SERP fetcher using instance binding
-        $fetcherMock = \Mockery::mock(SERPFetcherInterface::class);
-        $fetcherMock->shouldReceive('fetch')
+        // Mock SERP fetcher using Laravel's mock helper
+        $this->mock(SERPFetcherInterface::class)
+            ->shouldReceive('fetch')
             ->once()
             ->andReturn($serpResult);
-        $this->app->instance(SERPFetcherInterface::class, $fetcherMock);
 
-        // Mock webhook dispatcher using instance binding
-        $dispatcherMock = \Mockery::mock(WebhookDispatcherService::class);
-        $dispatcherMock->shouldReceive('dispatchToUserWebhooks')
+        // Mock webhook dispatcher using Laravel's mock helper
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
             ->once()
             ->withArgs(function ($userId, $eventType, $data) {
                 return $data['old_position'] === 5
@@ -134,10 +130,11 @@ class RankCheckerServiceEventTest extends TestCase
                     && $data['change'] === -5; // decline
             })
             ->andReturn(1);
-        $this->app->instance(WebhookDispatcherService::class, $dispatcherMock);
 
         $service = $this->app->make(RankCheckerService::class);
-        $service->checkAndStore($keyword->id);
+        $result = $service->checkAndStore($keyword->id);
+
+        $this->assertTrue($result);
     }
 
     /** @test */
@@ -166,16 +163,15 @@ class RankCheckerServiceEventTest extends TestCase
         // Create the mock SERP result
         $serpResult = $this->createSerpResult('seo tools', 15, 'https://example.com/seo');
 
-        // Mock SERP fetcher using instance binding
-        $fetcherMock = \Mockery::mock(SERPFetcherInterface::class);
-        $fetcherMock->shouldReceive('fetch')
+        // Mock SERP fetcher using Laravel's mock helper
+        $this->mock(SERPFetcherInterface::class)
+            ->shouldReceive('fetch')
             ->once()
             ->andReturn($serpResult);
-        $this->app->instance(SERPFetcherInterface::class, $fetcherMock);
 
-        // Mock webhook dispatcher using instance binding
-        $dispatcherMock = \Mockery::mock(WebhookDispatcherService::class);
-        $dispatcherMock->shouldReceive('dispatchToUserWebhooks')
+        // Mock webhook dispatcher using Laravel's mock helper
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
             ->once()
             ->withArgs(function ($userId, $eventType, $data) {
                 return $data['old_position'] === null
@@ -183,10 +179,11 @@ class RankCheckerServiceEventTest extends TestCase
                     && $data['change'] === null; // first ranking
             })
             ->andReturn(1);
-        $this->app->instance(WebhookDispatcherService::class, $dispatcherMock);
 
         $service = $this->app->make(RankCheckerService::class);
-        $service->checkAndStore($keyword->id);
+        $result = $service->checkAndStore($keyword->id);
+
+        $this->assertTrue($result);
     }
 
     /** @test */
@@ -220,16 +217,15 @@ class RankCheckerServiceEventTest extends TestCase
         // Create the mock SERP result - not found in top 100
         $serpResult = $this->createSerpResult('seo tools', null, null);
 
-        // Mock SERP fetcher using instance binding
-        $fetcherMock = \Mockery::mock(SERPFetcherInterface::class);
-        $fetcherMock->shouldReceive('fetch')
+        // Mock SERP fetcher using Laravel's mock helper
+        $this->mock(SERPFetcherInterface::class)
+            ->shouldReceive('fetch')
             ->once()
             ->andReturn($serpResult);
-        $this->app->instance(SERPFetcherInterface::class, $fetcherMock);
 
-        // Mock webhook dispatcher using instance binding
-        $dispatcherMock = \Mockery::mock(WebhookDispatcherService::class);
-        $dispatcherMock->shouldReceive('dispatchToUserWebhooks')
+        // Mock webhook dispatcher using Laravel's mock helper
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
             ->once()
             ->withArgs(function ($userId, $eventType, $data) {
                 return $data['old_position'] === 50
@@ -237,10 +233,11 @@ class RankCheckerServiceEventTest extends TestCase
                     && $data['change'] === null; // dropped out
             })
             ->andReturn(1);
-        $this->app->instance(WebhookDispatcherService::class, $dispatcherMock);
 
         $service = $this->app->make(RankCheckerService::class);
-        $service->checkAndStore($keyword->id);
+        $result = $service->checkAndStore($keyword->id);
+
+        $this->assertTrue($result);
     }
 
     /** @test */
@@ -261,23 +258,30 @@ class RankCheckerServiceEventTest extends TestCase
             'checked_at' => now()->subDay(),
         ]);
 
-        // Create the mock SERP result
+        // Create the mock SERP result - same position as previous
         $serpResult = $this->createSerpResult('seo tools', 5, 'https://example.com/seo');
 
-        // Mock SERP fetcher using instance binding
-        $fetcherMock = \Mockery::mock(SERPFetcherInterface::class);
-        $fetcherMock->shouldReceive('fetch')
+        // Mock SERP fetcher using Laravel's mock helper
+        $this->mock(SERPFetcherInterface::class)
+            ->shouldReceive('fetch')
             ->once()
             ->andReturn($serpResult);
-        $this->app->instance(SERPFetcherInterface::class, $fetcherMock);
 
-        // Mock webhook dispatcher - should NOT be called
-        $dispatcherMock = \Mockery::mock(WebhookDispatcherService::class);
-        $dispatcherMock->shouldNotReceive('dispatchToUserWebhooks');
-        $this->app->instance(WebhookDispatcherService::class, $dispatcherMock);
+        // Mock webhook dispatcher - should NOT be called (using never() for clarity)
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
+            ->never();
 
         $service = $this->app->make(RankCheckerService::class);
-        $service->checkAndStore($keyword->id);
+        $result = $service->checkAndStore($keyword->id);
+
+        $this->assertTrue($result);
+        
+        // Verify the new ranking has the same position
+        $latestRanking = Ranking::where('keyword_id', $keyword->id)
+            ->orderBy('checked_at', 'desc')
+            ->first();
+        $this->assertEquals(5, $latestRanking->position);
     }
 
     /** @test */
@@ -315,26 +319,26 @@ class RankCheckerServiceEventTest extends TestCase
             ['featured_snippet' => true, 'local_pack' => false]
         );
 
-        // Mock SERP fetcher using instance binding
-        $fetcherMock = \Mockery::mock(SERPFetcherInterface::class);
-        $fetcherMock->shouldReceive('fetch')
+        // Mock SERP fetcher using Laravel's mock helper
+        $this->mock(SERPFetcherInterface::class)
+            ->shouldReceive('fetch')
             ->once()
             ->andReturn($serpResult);
-        $this->app->instance(SERPFetcherInterface::class, $fetcherMock);
 
-        // Mock webhook dispatcher using instance binding
-        $dispatcherMock = \Mockery::mock(WebhookDispatcherService::class);
-        $dispatcherMock->shouldReceive('dispatchToUserWebhooks')
+        // Mock webhook dispatcher using Laravel's mock helper
+        $this->mock(WebhookDispatcherService::class)
+            ->shouldReceive('dispatchToUserWebhooks')
             ->once()
             ->withArgs(function ($userId, $eventType, $data) {
                 return isset($data['serp_features'])
                     && $data['serp_features']['featured_snippet'] === true;
             })
             ->andReturn(1);
-        $this->app->instance(WebhookDispatcherService::class, $dispatcherMock);
 
         $service = $this->app->make(RankCheckerService::class);
-        $service->checkAndStore($keyword->id);
+        $result = $service->checkAndStore($keyword->id);
+
+        $this->assertTrue($result);
     }
 
     /**
@@ -402,4 +406,3 @@ class RankCheckerServiceEventTest extends TestCase
         );
     }
 }
-

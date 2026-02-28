@@ -1,7 +1,7 @@
 # TASK-6-12: Webhooks Database Schema
 
 ## Status
-`To Test Prod`
+`Testing Prod`
 
 ## Priority
 `High`

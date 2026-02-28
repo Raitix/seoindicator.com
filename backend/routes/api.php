@@ -216,4 +216,12 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
         Route::delete('/{id}', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'destroy']);
         Route::post('/{id}/restore', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'restore']);
     });
+
+    // Webhooks Management (TASK-6-13)
+    Route::get('webhooks', [\App\Http\Controllers\Api\V1\WebhookController::class, 'index']);
+    Route::post('webhooks', [\App\Http\Controllers\Api\V1\WebhookController::class, 'store']);
+    Route::get('webhooks/{id}', [\App\Http\Controllers\Api\V1\WebhookController::class, 'show']);
+    Route::put('webhooks/{id}', [\App\Http\Controllers\Api\V1\WebhookController::class, 'update']);
+    Route::delete('webhooks/{id}', [\App\Http\Controllers\Api\V1\WebhookController::class, 'destroy']);
+    Route::post('webhooks/{id}/test', [\App\Http\Controllers\Api\V1\WebhookController::class, 'test']);
 });

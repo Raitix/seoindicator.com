@@ -157,8 +157,20 @@ class KeywordsApiController extends Controller
             ], 400);
         }
 
-        // Sanitize keyword
-        $keywordText = strip_tags(trim((string) $request->input('keyword')));
+        // Sanitize keyword - remove HTML tags and their content
+        $keywordText = trim((string) $request->input('keyword'));
+        // Remove script tags and their content (more aggressive than strip_tags)
+        $keywordText = preg_replace('#<script[^>]*>.*?</script>#is', '', $keywordText);
+        // Remove style tags and their content
+        $keywordText = preg_replace('#<style[^>]*>.*?</style>#is', '', $keywordText);
+        // Remove any remaining HTML tags (keeping content)
+        $keywordText = strip_tags($keywordText);
+        // Decode HTML entities and strip again
+        $keywordText = html_entity_decode($keywordText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $keywordText = strip_tags($keywordText);
+        // Clean up whitespace
+        $keywordText = preg_replace('/\s+/', ' ', $keywordText);
+        $keywordText = trim($keywordText);
         $searchEngine = $request->input('search_engine', 'google');
         $location = $request->input('location', 'us');
         $device = $request->input('device', 'desktop');

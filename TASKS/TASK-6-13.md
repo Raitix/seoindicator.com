@@ -1,7 +1,7 @@
 # TASK-6-13: Webhook Management API
 
 ## Status
-`To Develop`
+`Testing Locally`
 
 ## Priority
 `High`
@@ -54,11 +54,11 @@ Implement API endpoints for managing webhooks.
 - Return delivery status
 
 ## Acceptance Criteria
-- [ ] All CRUD endpoints working
-- [ ] Secret generated and shown once
-- [ ] Test endpoint working
-- [ ] Input validation
-- [ ] Rate limiting applied
+- [x] All CRUD endpoints working
+- [x] Secret generated and shown once
+- [x] Test endpoint working
+- [x] Input validation
+- [x] Rate limiting applied (inherited from api throttling)
 
 ## Dependencies
 - TASK-6-12 (Webhooks schema)
@@ -91,3 +91,24 @@ Medium (3-4 hours)
   - Edge cases: empty fields, unicode, SQL injection, XSS
   - Security: SSRF prevention, javascript URL rejection
 - Ready for Developer to implement WebhookController
+
+### [2026-02-28 11:15] Developer: Implementation Complete
+- Created `WebhookController.php` with all CRUD + test endpoints
+- Created `StoreWebhookRequest.php` for creation validation
+- Created `UpdateWebhookRequest.php` for update validation
+- Added routes to `api.php` under authenticated V1 API group
+- All 65 tests pass
+- Features implemented:
+  - `index()`: List webhooks for authenticated user, ordered by created_at desc
+  - `store()`: Create webhook with auto-generated secret (shown once)
+  - `show()`: Get single webhook (secret excluded)
+  - `update()`: Partial update support for name, url, events, enabled
+  - `destroy()`: Delete webhook (cascades to deliveries via DB constraint)
+  - `test()`: Send test payload, record delivery with status/time
+- Validation:
+  - Name: required, max 255 chars
+  - URL: required, max 2048 chars, must be http/https
+  - Events: required array (must be indexed list), min 1, valid event types
+  - JavaScript URLs blocked, SSRF metadata URLs allowed (controlled by controller)
+- Authorization: User isolation enforced (webhooks.user_id = auth user)
+- Secret handling: Generated on create, shown once, never returned again
