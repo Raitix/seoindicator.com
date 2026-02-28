@@ -1,7 +1,7 @@
 # FEAT-027: Admin Dashboard (Ops + Usage)
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -22,6 +22,16 @@ As an admin, I want a single view of usage and revenue metrics to manage the pla
 
 ## Notes
 - Source: user ToDo (admin dashboard).
+
+## Comments
+
+### 2026-02-28 - Architect
+- Created SPEC-027.md with full technical specification
+- Architecture: Admin dashboard with 4 main sections (Users, Usage, Credits, Health)
+- 19 tasks across 7 phases defined
+- Risk: Medium (admin authorization requirements)
+- Dependencies: FEAT-026 (credits system) for billing metrics
+- Status: To Break Into Tasks
 
 ---
 *Created by Lead from individual user request.*
