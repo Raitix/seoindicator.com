@@ -4,7 +4,7 @@
 Tests for the `/api/indicators` placeholder endpoint.
 
 ## Status
-`Tests Coverage In Progress`
+`Passed`
 
 ## Test File
 `backend/tests/Feature/Api/V1/IndicatorsControllerTest.php`
