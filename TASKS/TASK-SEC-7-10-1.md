@@ -1,7 +1,7 @@
 # TASK-SEC-7-10-1: Move Routes to Authenticated Middleware Group
 
 ## STATUS
-`To Test Locally`
+`Done`
 
 ## PRIORITY
 `High`

@@ -1,7 +1,7 @@
 # TASK-SEC-7-10-6: Deploy to Production and Verify
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`

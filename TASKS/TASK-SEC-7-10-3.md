@@ -1,7 +1,7 @@
 # TASK-SEC-7-10-3: Add IDOR Protection to siteFeatures Method
 
 ## STATUS
-`To Test Locally`
+`Done`
 
 ## PRIORITY
 `High`
