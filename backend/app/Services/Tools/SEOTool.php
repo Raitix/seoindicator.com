@@ -136,11 +136,11 @@ abstract class SEOTool
             ];
         }
         
-        // Check for empty or invalid content
-        if (empty($fetchResult['html']) || strlen(trim($fetchResult['html'])) < 50) {
+        // Check for empty content (allow any content, including short/malformed HTML)
+        if (empty($fetchResult['html'])) {
             return [
                 'success' => false,
-                'error' => 'The page returned empty or invalid content.',
+                'error' => 'The page returned empty content.',
                 'errorCode' => 'PARSE_ERROR',
             ];
         }

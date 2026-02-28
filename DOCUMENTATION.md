@@ -8511,6 +8511,125 @@ protected $casts = [
 - TASK-13-3: Backlink Changes Table (change tracking)
 
 ---
+## Database Schema: Backlinks Table (TASK-13-2)
+
+### Backlinks Table
+Stores detailed backlink data per site, including anchor text, link type, and authority metrics. Each record represents a single backlink pointing to a tracked domain, enabling granular analysis of link profile quality.
+
+```sql
+CREATE TABLE backlinks (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    site_id BIGINT UNSIGNED NOT NULL,
+    source_url VARCHAR(2083) NOT NULL,
+    target_url VARCHAR(2083) NOT NULL,
+    anchor_text VARCHAR(255) NOT NULL,
+    link_type ENUM('dofollow', 'nofollow') DEFAULT 'dofollow',
+    domain_authority FLOAT UNSIGNED DEFAULT 0,
+    page_authority FLOAT UNSIGNED DEFAULT 0,
+    first_seen DATE NOT NULL,
+    last_checked DATE NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_toxic BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+    INDEX idx_source_target (source_url, target_url),
+    INDEX idx_site_active (site_id, is_active)
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id |
+| `source_url` | VARCHAR(2083) | URL where the backlink originates |
+| `target_url` | VARCHAR(2083) | URL on the tracked site being linked to |
+| `anchor_text` | VARCHAR(255) | Link text/anchor text |
+| `link_type` | ENUM | Link type: `dofollow` or `nofollow` (default: `dofollow`) |
+| `domain_authority` | FLOAT UNSIGNED | Domain authority of source 0-100 (default: 0) |
+| `page_authority` | FLOAT UNSIGNED | Page authority of source URL 0-100 (default: 0) |
+| `first_seen` | DATE | When this backlink was first discovered |
+| `last_checked` | DATE | When this backlink was last verified |
+| `is_active` | BOOLEAN | Whether the backlink still exists (default: TRUE) |
+| `is_toxic` | BOOLEAN | User-marked as potentially harmful (default: FALSE) |
+
+**Constraints:**
+- Foreign Key: `site_id → sites.id` ON DELETE CASCADE
+
+**Indexes:**
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `idx_source_target` | source_url, target_url | Compound index for backlink lookup |
+| `idx_site_active` | site_id, is_active | Filter active backlinks per site |
+| `backlinks_domain_authority_index` | domain_authority | Sort by authority |
+| `backlinks_first_seen_index` | first_seen | Sort by discovery date |
+
+**Model:** `App\Models\Backlink`
+
+### Model Relationships
+
+**Backlink Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `site()` | belongsTo | The site this backlink belongs to |
+| `changes()` | hasMany | BacklinkChange records tracking modifications |
+
+**Site Model (added relationship):**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `backlinks()` | hasMany | Backlink records for this site |
+
+### Link Types
+
+| Type | Description | SEO Impact |
+|------|-------------|------------|
+| `dofollow` | Standard link that passes link equity | Passes authority/ranking signals |
+| `nofollow` | Link with rel="nofollow" attribute | Does not pass authority (but still has value) |
+
+### Toxic Link Detection
+
+Users can manually mark backlinks as toxic for:
+- Low domain authority (< 10)
+- Irrelevant/spammy anchor text
+- Link farms / PBNs
+- Foreign language sites (context-dependent)
+- Adult/gambling sites (context-dependent)
+
+Toxic backlinks can be exported for Google Disavow Tool submission.
+
+### Production Status
+- **Deployed**: 2026-02-28 (migration batch 6)
+- **Migration**: `2026_02_21_220000_create_backlinks_table.php`
+- **Corrective Migration**: `2026_02_24_212440_add_missing_backlinks_indexes.php`
+- **Health Check**: Passing
+- **Tests**: Verified via production smoke tests
+- **Status**: Complete
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| BacklinkTableTest | Schema tests | Column, index, constraint validation |
+
+**Test Categories:**
+| Category | Description |
+|----------|-------------|
+| Schema Structure | All 14 columns with correct types |
+| Index Validation | 5 indexes verified (PRIMARY + 4 secondary) |
+| Foreign Key | CASCADE delete on site removal |
+| Enum Values | link_type: 'dofollow', 'nofollow' |
+
+### Dependencies
+- TASK-1-1 (Sites table)
+- TASK-13-1 (Backlink Summaries Table - provides aggregated data)
+
+### Related Tasks
+- TASK-13-1: Backlink Summaries Table (aggregated metrics)
+- TASK-13-3: Backlink Changes Table (change tracking)
+
+---
 ## Database Schema: Backlink Changes Table (TASK-13-3)
 
 ### Backlink Changes Table

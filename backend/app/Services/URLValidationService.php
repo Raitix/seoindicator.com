@@ -165,7 +165,7 @@ class URLValidationService
             $this->logBlockedRequest($url, 'host_blocked', $hostLower);
             return [
                 'valid' => false,
-                'error' => 'Access to this host is not allowed for security reasons.',
+                'error' => 'Access to this host is blocked for security reasons.',
             ];
         }
 
