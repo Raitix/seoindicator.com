@@ -1,7 +1,7 @@
 # SPEC-026: Billing, Credits & Model Selection
 
 ## STATUS
-`Specification In Progress`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
