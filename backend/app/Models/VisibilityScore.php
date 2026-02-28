@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $position_component Position-based component
  * @property float $serp_component SERP feature component
  * @property float $volume_component Search volume component
+ * @property float $pwa_component PWA readiness component
  * @property int $keywords_count Number of keywords used in calculation
  * @property \Carbon\Carbon $calculated_at When the score was calculated
  * @property-read \App\Models\Project $project
@@ -46,6 +47,7 @@ class VisibilityScore extends Model
         'position_component',
         'serp_component',
         'volume_component',
+        'pwa_component',
         'keywords_count',
         'calculated_at',
     ];
@@ -60,6 +62,7 @@ class VisibilityScore extends Model
         'position_component' => 'decimal:2',
         'serp_component' => 'decimal:2',
         'volume_component' => 'decimal:2',
+        'pwa_component' => 'decimal:2',
         'keywords_count' => 'integer',
         'calculated_at' => 'datetime',
     ];
@@ -118,7 +121,7 @@ class VisibilityScore extends Model
         return static::forProject($projectId)
             ->where('calculated_at', '>=', now()->subDays($days))
             ->orderBy('calculated_at')
-            ->get(['id', 'score', 'calculated_at', 'position_component', 'serp_component', 'volume_component'])
+            ->get(['id', 'score', 'calculated_at', 'position_component', 'serp_component', 'volume_component', 'pwa_component'])
             ->toArray();
     }
 }

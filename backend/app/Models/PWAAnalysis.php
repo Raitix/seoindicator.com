@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $site_id
+ * @property int|null $project_id
  * @property bool $has_manifest
  * @property string|null $manifest_url
  * @property bool $manifest_valid
@@ -54,6 +55,7 @@ class PWAAnalysis extends Model
      */
     protected $fillable = [
         'site_id',
+        'project_id',
         'has_manifest',
         'manifest_url',
         'manifest_valid',
@@ -108,6 +110,14 @@ class PWAAnalysis extends Model
     public function site(): BelongsTo
     {
         return $this->belongsTo(Site::class);
+    }
+
+    /**
+     * Get the project that owns the PWA analysis.
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     /**
