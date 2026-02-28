@@ -6,6 +6,8 @@ use App\Models\Competitor;
 use App\Models\CompetitorRanking;
 use App\Models\Keyword;
 use App\Models\Ranking;
+use App\Models\SerpFeature;
+use App\Repositories\SerpFeatureRepository;
 use App\Services\SERP\SERPEntry;
 use App\Services\SERP\SERPOptionsData;
 use App\Services\SERP\SERPResult;
@@ -20,7 +22,10 @@ class RankCheckerService
     public function __construct(
         private readonly SERPFetcherInterface $fetcher,
         private readonly ?AlertEvaluator $alertEvaluator = null,
-        private readonly ?NotificationDispatcher $notificationDispatcher = null
+        private readonly ?NotificationDispatcher $notificationDispatcher = null,
+        private readonly ?SERPFeatureDetector $featureDetector = null,
+        private readonly ?SerpFeatureRepository $featureRepository = null,
+        private readonly ?SerpFeatureChangeTracker $changeTracker = null,
     ) {
     }
 
@@ -180,6 +185,9 @@ class RankCheckerService
             }
         }
 
+        // Detect and store SERP features if enabled for the site
+        $this->detectAndStoreSerpFeatures($keyword, $userDomain, $result);
+
         // Emit webhook event if position changed
         if ($this->hasPositionChanged($previousPosition, $newPosition)) {
             $this->emitRankingChangedEvent(
@@ -311,6 +319,167 @@ class RankCheckerService
 
         // Assume it's a flat array of types
         return array_keys(array_filter($features, fn($v) => $v === true || (is_array($v) && !empty($v))));
+    }
+
+    /**
+     * Detect and store SERP features for a keyword.
+     *
+     * This is the main integration point for TASK-7-13.
+     * Feature detection is only run if:
+     * 1. Site has enable_serp_features = true
+     * 2. Required services are available
+     *
+     * @param Keyword $keyword
+     * @param string $userDomain
+     * @param array $result The SERP result from checkKeyword
+     * @return void
+     */
+    protected function detectAndStoreSerpFeatures(Keyword $keyword, string $userDomain, array $result): void
+    {
+        // Check if feature detection is enabled for the site
+        if (!$this->isFeatureDetectionEnabled($keyword)) {
+            Log::debug('SERP feature detection skipped - not enabled for site', [
+                'keyword_id' => $keyword->id,
+                'site_id' => $keyword->site_id,
+            ]);
+            return;
+        }
+
+        // Check if required services are available
+        if (!$this->featureDetector || !$this->featureRepository) {
+            Log::debug('SERP feature detection skipped - services not available', [
+                'keyword_id' => $keyword->id,
+            ]);
+            return;
+        }
+
+        try {
+            $startTime = microtime(true);
+            
+            // Detect features from SERP result
+            $features = $this->featureDetector->detectFeatures(
+                $keyword->keyword,
+                $userDomain ? $this->normalizeUrl($userDomain) : null,
+                $result['serp_result'] ?? $result
+            );
+
+            // Store features in serp_features table
+            $featureRecords = [];
+            foreach ($features as $feature) {
+                $featureRecords[] = [
+                    'keyword_id' => $keyword->id,
+                    'feature_type' => $feature['type'],
+                    'is_present' => $feature['is_present'] ?? false,
+                    'position' => $feature['position'] ?? null,
+                    'url' => $feature['url'] ?? null,
+                    'title' => $feature['title'] ?? null,
+                    'snippet' => $feature['snippet'] ?? null,
+                    'checked_at' => $feature['checked_at'] ?? now(),
+                ];
+            }
+
+            $this->featureRepository->insertBatch($featureRecords);
+
+            // Track feature changes
+            $this->trackFeatureChanges($keyword, $features);
+
+            $duration = round((microtime(true) - $startTime) * 1000, 2);
+            
+            Log::info('SERP feature detection completed', [
+                'keyword_id' => $keyword->id,
+                'features_detected' => count(array_filter($features, fn($f) => $f['is_present'] ?? false)),
+                'duration_ms' => $duration,
+            ]);
+
+        } catch (\Throwable $e) {
+            // Feature detection failure should NOT break ranking check
+            Log::error('SERP feature detection failed', [
+                'keyword_id' => $keyword->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    /**
+     * Check if SERP feature detection is enabled for a keyword's site.
+     *
+     * @param Keyword $keyword
+     * @return bool
+     */
+    protected function isFeatureDetectionEnabled(Keyword $keyword): bool
+    {
+        // No site = no feature detection
+        if (!$keyword->site_id || !$keyword->site) {
+            return false;
+        }
+
+        return $keyword->site->enable_serp_features ?? false;
+    }
+
+    /**
+     * Track feature changes using the change tracker.
+     *
+     * @param Keyword $keyword
+     * @param array $currentFeatures
+     * @return void
+     */
+    protected function trackFeatureChanges(Keyword $keyword, array $currentFeatures): void
+    {
+        if (!$this->changeTracker) {
+            return;
+        }
+
+        try {
+            // Get previous features from serp_features table
+            $previousFeatures = $this->getPreviousFeatures($keyword->id);
+
+            // Track changes (only if not first check)
+            if (!empty($previousFeatures)) {
+                $changes = $this->changeTracker->trackChanges(
+                    $keyword->id,
+                    $currentFeatures,
+                    $previousFeatures
+                );
+
+                if (!empty($changes)) {
+                    Log::info('SERP feature changes detected', [
+                        'keyword_id' => $keyword->id,
+                        'changes' => count($changes),
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::error('SERP feature change tracking failed', [
+                'keyword_id' => $keyword->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Get previous SERP features for a keyword.
+     *
+     * @param int $keywordId
+     * @return array
+     */
+    protected function getPreviousFeatures(int $keywordId): array
+    {
+        $features = SerpFeature::where('keyword_id', $keywordId)
+            ->where('checked_at', '<', now())
+            ->orderBy('checked_at', 'desc')
+            ->limit(count(SerpFeature::FEATURE_TYPES))
+            ->get();
+
+        if ($features->isEmpty()) {
+            return [];
+        }
+
+        return $features->map(fn($f) => [
+            'type' => $f->feature_type,
+            'is_present' => $f->is_present,
+            'url' => $f->url,
+        ])->toArray();
     }
 
     /**
