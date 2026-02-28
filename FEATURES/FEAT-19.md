@@ -1,7 +1,6 @@
 # FEAT-19: Progressive Analysis & Job System
 
-## STATUS
-`To Develop`
+## STATUS`New Feature`
 
 ## PRIORITY
 `High`
@@ -59,7 +58,7 @@ Task breakdown completed: 16 tasks created.
 - Phase 4 (Polish & Security): TASK-19-13 to TASK-19-16
 
 High-risk tasks: TASK-19-7 (Queue concurrency), TASK-19-15 (SSRF protection)
-Status: → To Prioritize
+Status: â†’ To Prioritize
 
 ### [2026-02-28] Agent: ProjectManager
 Prioritization completed. All 16 tasks updated to status `To Write Tests`.
@@ -85,12 +84,12 @@ Prioritization completed. All 16 tasks updated to status `To Write Tests`.
   - TASK-19-16: Tests
 
 **Execution Order Recommendation:**
-1. TASK-19-1 → 19-2 → 19-3 → 19-4 (sequential foundation)
-2. TASK-19-5 → 19-6 (indicator processors)
-3. TASK-19-8 → 19-7 (progress + queue worker)
+1. TASK-19-1 â†’ 19-2 â†’ 19-3 â†’ 19-4 (sequential foundation)
+2. TASK-19-5 â†’ 19-6 (indicator processors)
+3. TASK-19-8 â†’ 19-7 (progress + queue worker)
 4. TASK-19-15 (SSRF protection - security review required)
-5. TASK-19-9 → 19-10 → 19-11 → 19-12 (frontend)
-6. TASK-19-13 → 19-14 (polish)
+5. TASK-19-9 â†’ 19-10 â†’ 19-11 â†’ 19-12 (frontend)
+6. TASK-19-13 â†’ 19-14 (polish)
 7. TASK-19-16 (final validation)
 
-Status: → To Write Tests
+Status: â†’ To Write Tests
