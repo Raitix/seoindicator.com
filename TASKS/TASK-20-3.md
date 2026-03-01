@@ -1,7 +1,7 @@
 # TASK-20-3: Create Guide Page Template Component
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`

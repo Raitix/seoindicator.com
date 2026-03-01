@@ -3,9 +3,9 @@
 /**
  * Cost Tracking Configuration
  *
- * Defines cost rates for analysis tools and operations.
- * For MVP, all tools are FREE (base: 0.00, per_unit: 0.00).
- * Architecture supports future paid tiers.
+ * Defines cost rates for analysis tools and default settings.
+ * For MVP, all tools are FREE - costs are estimated/notional for transparency
+ * and future monetization preparation.
  */
 
 return [
@@ -14,7 +14,7 @@ return [
     | Default Rate
     |--------------------------------------------------------------------------
     |
-    | The default cost rate to use when a tool is not explicitly configured.
+    | The default rate applied when a tool is not found in the rates array.
     | This ensures graceful fallback for unknown tools.
     |
     */
@@ -35,32 +35,19 @@ return [
     | Tool Cost Rates
     |--------------------------------------------------------------------------
     |
-    | Configure cost rates per tool. Each tool can have:
-    | - base: Fixed base cost per analysis
-    | - per_unit: Variable cost per unit (e.g., per 1000 words, per API call)
-    | - type: 'free', 'paid', or 'metered'
+    | Cost rates per tool/operation. Each tool can have:
+    | - base: Base cost for using the tool
+    | - per_unit: Cost per variable unit (e.g., per page, per 1000 words)
+    | - type: Tool type (free, paid)
+    | - multiplier: Optional multiplier applied to total cost
     | - currency: Optional override currency
-    | - multiplier: Optional cost multiplier
     | - exchange_rate: Optional exchange rate for currency conversion
     |
-    | MVP: All tools are FREE (transparency only, no actual billing).
+    | MVP: All tools are FREE (base: 0.00, per_unit: 0.00)
     |
     */
     'rates' => [
-        // Meta Tag Analyzer - FREE
-        'meta-tag-analyzer' => [
-            'base' => 0.00,
-            'per_unit' => 0.00,
-            'type' => 'free',
-        ],
         'meta_analyzer' => [
-            'base' => 0.00,
-            'per_unit' => 0.00,
-            'type' => 'free',
-        ],
-
-        // Heading Analyzer - FREE
-        'heading-analyzer' => [
             'base' => 0.00,
             'per_unit' => 0.00,
             'type' => 'free',
@@ -70,54 +57,18 @@ return [
             'per_unit' => 0.00,
             'type' => 'free',
         ],
-
-        // Keyword Density - FREE
-        'keyword-density' => [
-            'base' => 0.00,
-            'per_unit' => 0.00,
-            'type' => 'free',
-        ],
-
-        // Image Alt Checker - FREE
-        'image-alt-checker' => [
-            'base' => 0.00,
-            'per_unit' => 0.00,
-            'type' => 'free',
-        ],
-
-        // Link Analyzer - FREE
-        'link-analyzer' => [
-            'base' => 0.00,
-            'per_unit' => 0.00,
-            'type' => 'free',
-        ],
-
-        // SERP Analyzer - FREE
-        'serp-analyzer' => [
-            'base' => 0.00,
-            'per_unit' => 0.00,
-            'type' => 'free',
-        ],
         'serp_analyzer' => [
             'base' => 0.00,
             'per_unit' => 0.00,
             'type' => 'free',
         ],
-
-        // Backlink Analyzer - FREE
-        'backlink-analyzer' => [
+        'google_cse' => [
             'base' => 0.00,
             'per_unit' => 0.00,
+            'daily_quota' => 100,
             'type' => 'free',
         ],
         'backlink_analyzer' => [
-            'base' => 0.00,
-            'per_unit' => 0.00,
-            'type' => 'free',
-        ],
-
-        // PWA Analyzer - FREE
-        'pwa-analyzer' => [
             'base' => 0.00,
             'per_unit' => 0.00,
             'type' => 'free',
@@ -127,36 +78,15 @@ return [
             'per_unit' => 0.00,
             'type' => 'free',
         ],
-
-        // Google Custom Search API - FREE tier (100 queries/day)
-        'google_cse' => [
+        'keyword_density' => [
             'base' => 0.00,
             'per_unit' => 0.00,
-            'daily_quota' => 100,
             'type' => 'free',
         ],
-
-        // Example paid tool configuration (for future reference)
-        // 'paid_tool' => [
-        //     'base' => 0.05,
-        //     'per_unit' => 0.02,
-        //     'type' => 'paid',
-        // ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Currency Exchange Rates
-    |--------------------------------------------------------------------------
-    |
-    | Exchange rates for converting costs to the default currency.
-    | Rates are relative to USD.
-    |
-    */
-    'exchange_rates' => [
-        'USD' => 1.0,
-        'EUR' => 1.1,
-        'GBP' => 1.27,
-        'JPY' => 0.0067,
+        'meta_tag_analyzer' => [
+            'base' => 0.00,
+            'per_unit' => 0.00,
+            'type' => 'free',
+        ],
     ],
 ];

@@ -733,7 +733,7 @@ class CostTrackingServiceTest extends TestCase
 
         // Check if total is included (implementation may vary)
         $total = $breakdown->sum('cost_amount');
-        $this->assertEquals(0.15, $total);
+        $this->assertEqualsWithDelta(0.15, $total, 0.0001);
     }
 
     /** @test */
