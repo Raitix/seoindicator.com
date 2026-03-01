@@ -47,7 +47,7 @@ class CostTrackingIntegrationTest extends TestCase
     {
         $analysis = AnalysisHistory::factory()->create([
             'user_id' => $this->user->id,
-            'tool_name' => 'meta_analyzer',
+            'tool_name' => 'paid_tool',
             'status' => 'completed',
         ]);
 

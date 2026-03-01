@@ -1,7 +1,7 @@
 # TASK-20-2: Create Guide Index Page Component
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `High`
