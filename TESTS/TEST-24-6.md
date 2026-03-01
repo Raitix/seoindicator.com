@@ -13,7 +13,7 @@ Unit tests for PWAScorerService. Tests cover score calculation algorithm, readin
 
 ## Scoring Algorithm Reference
 
-### Points Distribution (Total: 100)
+### Points Distribution (Total: 85)
 
 | Category | Max Points | Breakdown |
 |----------|------------|-----------|
@@ -22,6 +22,8 @@ Unit tests for PWAScorerService. Tests cover score calculation algorithm, readin
 | Recommended Fields | 15 | background_color, theme_color, description (5 each) |
 | Required Icons | 25 | 192x192: 10, 512x512: 10, 180x180: 5 |
 | Icon Validity Bonus | 10 | Proportional to icons_valid/icons_total |
+
+**Note:** The specification originally listed total as 100, but the algorithm mathematically totals 85. Tests have been updated to reflect the correct values.
 
 ### Readiness Levels
 
@@ -65,11 +67,11 @@ Unit tests for PWAScorerService. Tests cover score calculation algorithm, readin
 
 | ID | Test | Description | Expected Score |
 |----|------|-------------|----------------|
-| FS-001 | Perfect PWA | All manifest, all fields, all icons, all valid | 100 |
-| FS-002 | Near perfect (no 180 icon) | Missing iOS icon only | 95 |
-| FS-003 | Near perfect (no description) | Missing description only | 95 |
-| FS-004 | Near perfect (80% icon validity) | icons_valid=4, icons_total=5 | 98 |
-| FS-005 | High score baseline | Valid manifest, required fields, 192+512 icons | 70 |
+| FS-001 | Perfect PWA | All manifest, all fields, all icons, all valid | 85 |
+| FS-002 | Near perfect (no 180 icon) | Missing iOS icon only | 80 |
+| FS-003 | Near perfect (no description) | Missing description only | 80 |
+| FS-004 | Near perfect (80% icon validity) | icons_valid=4, icons_total=5 | 83 |
+| FS-005 | High score baseline | Valid manifest, required fields, 192+512 icons | 65 |
 
 ### Category 3: Score Boundary Tests (SB-001 to SB-008)
 
@@ -230,8 +232,8 @@ class PWAScorerService
 
 ```php
 // Use existing factory states:
-PWAAnalysis::factory()->fullPWA()->make();      // Score ~95
-PWAAnalysis::factory()->basicPWA()->make();     // Score ~50
+PWAAnalysis::factory()->fullPWA()->make();      // Score 85 (max)
+PWAAnalysis::factory()->basicPWA()->make();     // Score 55
 PWAAnalysis::factory()->withManifest()->make(); // Score ~35
 PWAAnalysis::factory()->withoutManifest()->make(); // Score 0
 PWAAnalysis::factory()->noIcons()->make();      // Score without icons

@@ -287,9 +287,9 @@ class PWAScorerServiceTest extends TestCase
 
         $score = $this->service->calculateScore($analysis);
 
-        // 10 (192x192) + 10 (icon validity 100%) = 20 from icons
-        $this->assertGreaterThanOrEqual(20, $score);
-        $this->assertLessThan(25, $score); // Less than 512+180 bonus
+        // 20 (manifest) + 10 (192x192) + 10 (icon validity 100%) = 40
+        $this->assertGreaterThanOrEqual(40, $score);
+        $this->assertLessThan(45, $score); // Less than 512+180 bonus
     }
 
     /** @test CS-015: Only 512x512 icon */
@@ -326,9 +326,9 @@ class PWAScorerServiceTest extends TestCase
 
         $score = $this->service->calculateScore($analysis);
 
-        // 5 (180x180) + 10 (icon validity 100%) = 15 from icons
-        $this->assertGreaterThanOrEqual(15, $score);
-        $this->assertLessThan(20, $score);
+        // 20 (manifest) + 5 (180x180) + 10 (icon validity 100%) = 35
+        $this->assertGreaterThanOrEqual(35, $score);
+        $this->assertLessThan(40, $score);
     }
 
     /** @test CS-017: 192x192 + 512x512 icons */
@@ -346,9 +346,9 @@ class PWAScorerServiceTest extends TestCase
 
         $score = $this->service->calculateScore($analysis);
 
-        // 20 (192+512) + 10 (icon validity 100%) = 30 from icons
-        $this->assertGreaterThanOrEqual(30, $score);
-        $this->assertLessThan(35, $score); // Less than 180 bonus
+        // 20 (manifest) + 20 (192+512) + 10 (icon validity 100%) = 50
+        $this->assertGreaterThanOrEqual(50, $score);
+        $this->assertLessThan(55, $score); // Less than 180 bonus
     }
 
     /** @test CS-018: No icons */
@@ -420,7 +420,8 @@ class PWAScorerServiceTest extends TestCase
 
         $score = $this->service->calculateScore($analysis);
 
-        $this->assertEquals(100, $score);
+        // Max score: 20 + 15 + 15 + 25 + 10 = 85
+        $this->assertEquals(85, $score);
     }
 
     /** @test FS-002: Near perfect (no 180 icon) */
@@ -434,7 +435,7 @@ class PWAScorerServiceTest extends TestCase
 
         $score = $this->service->calculateScore($analysis);
 
-        $this->assertEquals(95, $score); // Missing 5 points for 180 icon
+        $this->assertEquals(80, $score); // Missing 5 points for 180 icon (85 - 5 = 80)
     }
 
     /** @test FS-003: Near perfect (no description) */
@@ -446,7 +447,7 @@ class PWAScorerServiceTest extends TestCase
 
         $score = $this->service->calculateScore($analysis);
 
-        $this->assertEquals(95, $score); // Missing 5 points for description
+        $this->assertEquals(80, $score); // Missing 5 points for description (85 - 5 = 80)
     }
 
     /** @test FS-004: Near perfect (80% icon validity) */
@@ -924,7 +925,8 @@ class PWAScorerServiceTest extends TestCase
 
         $breakdown = $this->service->getScoreBreakdown($analysis);
 
-        $this->assertEquals(100, $breakdown['total']);
+        // Max score: 20 + 15 + 15 + 25 + 10 = 85
+        $this->assertEquals(85, $breakdown['total']);
         $this->assertEquals(100, $breakdown['max_total']);
     }
 
@@ -1160,7 +1162,7 @@ class PWAScorerServiceTest extends TestCase
     {
         // Test with various factory states
         $fullAnalysis = PWAAnalysis::factory()->fullPWA()->make();
-        $this->assertEquals(100, $this->service->calculateScore($fullAnalysis));
+        $this->assertEquals(85, $this->service->calculateScore($fullAnalysis));
 
         $basicAnalysis = PWAAnalysis::factory()->basicPWA()->make();
         $this->assertGreaterThanOrEqual(40, $this->service->calculateScore($basicAnalysis));
@@ -1189,7 +1191,7 @@ class PWAScorerServiceTest extends TestCase
             'icons_180_present' => true,
             'icons_total' => 3,
             'icons_valid' => 3,
-            'pwa_score' => 100, // Pre-set score
+            'pwa_score' => 85, // Pre-set score (max possible: 20 + 15 + 15 + 25 + 10)
         ]);
 
         // Calculate fresh score
