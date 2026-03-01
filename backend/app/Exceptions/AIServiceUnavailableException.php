@@ -5,35 +5,26 @@ namespace App\Exceptions;
 use Exception;
 
 /**
- * Exception thrown when AI service is unavailable.
+ * Exception thrown when all AI providers are unavailable.
  *
- * This exception is thrown when all AI providers fail
- * and no fallback is available. Results in HTTP 503 response.
+ * This exception indicates that the AI suggestion service
+ * cannot fulfill requests because all configured providers
+ * have failed or are unavailable.
  */
 class AIServiceUnavailableException extends Exception
 {
     /**
      * Create a new AIServiceUnavailableException instance.
      *
-     * @param string $message The error message
-     * @param int $code The error code
-     * @param Exception|null $previous The previous exception
+     * @param string $message The exception message
+     * @param int $code The exception code
+     * @param \Throwable|null $previous The previous exception
      */
     public function __construct(
-        string $message = 'AI service is temporarily unavailable. Please try again later.',
+        string $message = 'All AI providers are currently unavailable',
         int $code = 0,
-        ?Exception $previous = null
+        ?\Throwable $previous = null
     ) {
         parent::__construct($message, $code, $previous);
-    }
-
-    /**
-     * Get the HTTP status code for this exception.
-     *
-     * @return int
-     */
-    public function getStatus(): int
-    {
-        return 503;
     }
 }
