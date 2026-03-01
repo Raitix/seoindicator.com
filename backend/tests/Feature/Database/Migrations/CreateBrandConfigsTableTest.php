@@ -660,9 +660,14 @@ class CreateBrandConfigsTableTest extends TestCase
         $migrationFile = glob(database_path('migrations/*create_brand_configs_table*.php'))[0] ?? null;
         
         if ($migrationFile) {
+            // Normalize paths for cross-platform compatibility
+            $basePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, base_path());
+            $migrationPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $migrationFile);
+            $relativePath = str_replace($basePath . DIRECTORY_SEPARATOR, '', $migrationPath);
+            
             // Run rollback
             $this->artisan('migrate:rollback', [
-                '--path' => str_replace(base_path() . '/', '', $migrationFile),
+                '--path' => $relativePath,
                 '--force' => true,
             ]);
             
@@ -673,7 +678,7 @@ class CreateBrandConfigsTableTest extends TestCase
             
             // Re-run migration
             $this->artisan('migrate', [
-                '--path' => str_replace(base_path() . '/', '', $migrationFile),
+                '--path' => $relativePath,
                 '--force' => true,
             ]);
             
