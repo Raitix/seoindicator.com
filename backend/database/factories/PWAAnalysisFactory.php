@@ -141,7 +141,7 @@ class PWAAnalysisFactory extends Factory
             'icons_512_present' => true,
             'icons_180_present' => true,
             'icon_errors' => null,
-            'pwa_score' => 95,
+            'pwa_score' => 85, // Max score: 20 + 15 + 15 + 25 + 10
             'readiness_level' => 'full',
         ]);
     }
@@ -173,7 +173,7 @@ class PWAAnalysisFactory extends Factory
             'icons_192_present' => true,
             'icons_512_present' => false,
             'icons_180_present' => false,
-            'pwa_score' => 50,
+            'pwa_score' => 55, // 20 + 15 + 0 + 10 + 10
             'readiness_level' => 'basic',
         ]);
     }

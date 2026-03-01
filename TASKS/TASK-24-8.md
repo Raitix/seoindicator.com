@@ -1,7 +1,7 @@
 # TASK-24-8: PWA Analysis API Endpoints
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
