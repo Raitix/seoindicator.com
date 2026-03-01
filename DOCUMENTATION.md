@@ -127,6 +127,83 @@ interface AIProviderInterface
 - TASK-21-5: API Endpoint
 
 ---
+## OpenRouter Provider (TASK-21-2)
+
+### Service Description
+OpenRouter API provider implementation for AI suggestions. Provides access to free AI models (Llama 3.1, Gemma 2, Qwen 2) via OpenRouter's unified API. Implements `AIProviderInterface` with full error handling and security measures.
+
+### Component Location
+- **Provider:** `backend/app/Services/AI/Providers/OpenRouterProvider.php`
+- **Unit Tests:** `backend/tests/Unit/Services/AI/Providers/OpenRouterProviderTest.php`
+- **Feature Tests:** `backend/tests/Feature/Services/AI/OpenRouterProviderIntegrationTest.php`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `generate($prompt, $options)` | Generate AI completion via OpenRouter API |
+| `isAvailable()` | Check if API key is configured |
+| `getName()` | Returns 'openrouter' |
+
+### Free Models Available
+
+| Model ID | Context | Notes |
+|----------|---------|-------|
+| `meta-llama/llama-3.1-8b-instruct:free` | 128K | Default model |
+| `google/gemma-2-9b-it:free` | 8K | Alternative |
+| `qwen/qwen-2-7b-instruct:free` | 32K | Alternative |
+
+### Request Headers
+
+```php
+$headers = [
+    'Authorization' => 'Bearer ' . $apiKey,
+    'HTTP-Referer' => config('app.url'),
+    'X-Title' => 'SEOIndicator',
+    'Content-Type' => 'application/json',
+];
+```
+
+### Error Handling
+
+| HTTP Code | Error Type | Response |
+|-----------|------------|----------|
+| 400 | Bad Request | `AIResponse::error('Bad request: ...')` |
+| 401 | Unauthorized | `AIResponse::error('Invalid API key')` |
+| 403 | Forbidden | `AIResponse::error('Access denied')` |
+| 429 | Rate Limited | `AIResponse::error('Rate limit exceeded')` |
+| 500-503 | Server Error | `AIResponse::error('Server error')` |
+| Timeout | Connection | `AIResponse::error('Request timeout')` |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| ConfigurationTest | 2 | Provider config validation |
+| OpenRouterProviderTest | 57 | Unit tests (API, response, errors) |
+| OpenRouterProviderIntegrationTest | 15 | Feature tests (full cycles) |
+| **Total** | **74** | **116** |
+
+### Security Tests
+
+| Test | Description | Status |
+|------|-------------|--------|
+| API key not logged | Credentials never in logs | ✅ PASS |
+| Prompt injection | Malicious prompts handled safely | ✅ PASS |
+| Response XSS | Content returned as-is (not rendered) | ✅ PASS |
+| URL injection | Invalid base_url rejected | ✅ PASS |
+| SQL injection | No DB interaction with prompts | ✅ PASS |
+
+### Production Status
+- **Deployed**: 2026-03-01 (commit 4f233fc via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 72/72 passing (110 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-21-1 (AI Service Structure and Interfaces)
+
+---
 ## SEO Guides Library - Routing with Static Params Generation (TASK-20-4)
 
 ### Service Description
