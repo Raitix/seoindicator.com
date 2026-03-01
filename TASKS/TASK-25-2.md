@@ -1,7 +1,7 @@
 # TASK-25-2: Create social_accounts Migration
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -287,6 +287,27 @@ Status updated: `To Write Tests`
 
 ### [2026-02-28 20:55 GMT+2] Agent: SpecSystemAnalyst
 Created task as part of SPEC-025 breakdown (Phase 1: Core Authentication).
+
+### [2026-03-01 15:03 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+**Documentation Added:**
+- Added comprehensive section in DOCUMENTATION.md (lines 4717-4880)
+- Database schema with all fields and indexes
+- Model details: casts, relationships, scopes, helpers
+- Security features: token encryption, unique constraints, cascade delete
+- Factory states for testing
+- Test coverage: 64 tests, 119 assertions
+- Production deployment status
+
+**Summary:**
+- Migration creates `social_accounts` table for OAuth provider connections
+- Model uses encrypted casts for secure token storage
+- Unique constraint on (provider, provider_id) prevents account hijacking
+- Cascade delete ensures orphan cleanup when users are deleted
+- All tests passing, deployed to production
+
+**Status:** `Done`
 
 ---
 *Created by SpecSystemAnalyst*
