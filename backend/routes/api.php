@@ -283,6 +283,11 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
     // Alert Resubscribe (requires auth)
     Route::post('alerts/resubscribe', [AlertUnsubscribeController::class, 'resubscribe']);
+
+    // PWA Analysis (TASK-24-8, SPEC-024)
+    Route::get('sites/{siteId}/pwa', [\App\Http\Controllers\Api\V1\PWAController::class, 'show'])->where('siteId', '[0-9]+');
+    Route::post('sites/{siteId}/pwa/analyze', [\App\Http\Controllers\Api\V1\PWAController::class, 'analyze'])->where('siteId', '[0-9]+');
+    Route::post('sites/{siteId}/pwa/refresh', [\App\Http\Controllers\Api\V1\PWAController::class, 'refresh'])->where('siteId', '[0-9]+');
 });
 
 // Alert Unsubscribe (signed URL, no auth required)
