@@ -145,13 +145,18 @@ class GoogleOAuthService
      *
      * @param SocialiteUser $googleUser The Google user data
      * @return User The found or created user
-     * @throws \InvalidArgumentException If Google ID is empty
+     * @throws \InvalidArgumentException If Google ID or email is empty
      */
     public function findOrCreateUser(SocialiteUser $googleUser): User
     {
         // Validate Google ID
         if (empty($googleUser->id)) {
             throw new \InvalidArgumentException('Google ID cannot be empty');
+        }
+
+        // Validate email
+        if (empty($googleUser->email)) {
+            throw new \InvalidArgumentException('Google email cannot be empty');
         }
 
         return DB::transaction(function () use ($googleUser) {
@@ -168,18 +173,25 @@ class GoogleOAuthService
                 return $socialAccount->user;
             }
 
-            // Check for existing user by email
+            // Normalize email for comparison (lowercase, trimmed)
+            $normalizedEmail = $this->normalizeEmail($googleUser->email);
+
+            // Check for existing user by email (case-insensitive)
             $user = User::query()
-                ->where('email', $googleUser->email)
+                ->whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])
                 ->first();
 
             if ($user) {
                 // Link social account to existing user
                 $this->createSocialAccount($user, $googleUser);
 
-                // Auto-verify email if not already verified
-                if (! $user->hasVerifiedEmail()) {
+                // Update avatar if user doesn't have one
+                $this->updateAvatarIfMissing($user, $googleUser);
+
+                // Auto-verify email if not already verified AND Google confirms email is verified
+                if (! $user->hasVerifiedEmail() && $this->isGoogleEmailVerified($googleUser)) {
                     $user->markEmailAsVerified();
+                    $user->refresh(); // Ensure we have the latest timestamp
                 }
 
                 return $user;
@@ -362,5 +374,52 @@ class GoogleOAuthService
 
         // Capitalize words
         return Str::title($name);
+    }
+
+    /**
+     * Normalize an email address for comparison.
+     *
+     * @param string $email The email address
+     * @return string The normalized email
+     */
+    protected function normalizeEmail(string $email): string
+    {
+        return strtolower(trim($email));
+    }
+
+    /**
+     * Update the user's avatar if they don't have one.
+     *
+     * @param User $user The user
+     * @param SocialiteUser $googleUser The Google user data
+     */
+    protected function updateAvatarIfMissing(User $user, SocialiteUser $googleUser): void
+    {
+        // Only update avatar if user doesn't have one and Google provides one
+        if (empty($user->avatar) && !empty($googleUser->avatar)) {
+            $user->update(['avatar' => $googleUser->avatar]);
+        }
+    }
+
+    /**
+     * Check if Google has verified the email address.
+     *
+     * Google OAuth typically only returns verified emails, but we check
+     * the email_verified flag from the user data for defensive coding.
+     *
+     * @param SocialiteUser $googleUser The Google user data
+     * @return bool
+     */
+    protected function isGoogleEmailVerified(SocialiteUser $googleUser): bool
+    {
+        // Check the user array for email_verified flag
+        // Socialite stores raw user data in $googleUser->user
+        if (isset($googleUser->user['email_verified'])) {
+            return (bool) $googleUser->user['email_verified'];
+        }
+
+        // Default to true since Google OAuth typically only returns verified emails
+        // This maintains backward compatibility with existing behavior
+        return true;
     }
 }

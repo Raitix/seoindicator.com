@@ -117,7 +117,7 @@ class AccountLinkingIntegrationTest extends TestCase
     }
 
     /**
-     * Verify email case-insensitive matching
+     * Verify email case-insensitive matching via service
      */
     public function test_email_case_insensitive_matching(): void
     {
@@ -125,11 +125,19 @@ class AccountLinkingIntegrationTest extends TestCase
             'email' => 'John.Doe@Example.COM',
         ]);
 
-        // Query should find user regardless of case
-        $foundUser = User::where('email', 'john.doe@example.com')->first();
+        // The GoogleOAuthService uses LOWER(TRIM(email)) for comparison
+        // This test verifies that the service method finds the user
+        $service = app(\App\Services\Auth\GoogleOAuthService::class);
 
-        $this->assertNotNull($foundUser);
+        $mockGoogleUser = $this->createMockGoogleUser([
+            'email' => 'john.doe@example.com', // Different case
+        ]);
+
+        $foundUser = $service->findOrCreateUser($mockGoogleUser);
+
+        // Should find existing user by case-insensitive email
         $this->assertEquals($user->id, $foundUser->id);
+        $this->assertEquals(1, User::count()); // No new user created
     }
 
     // ==========================================

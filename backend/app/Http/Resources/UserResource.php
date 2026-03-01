@@ -20,7 +20,11 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'email_verified' => !is_null($this->email_verified_at),
             'role' => $this->role ?? 'user',
+            'avatar' => $this->avatar,
             'created_at' => $this->created_at?->toISOString(),
+            'social_accounts' => SocialAccountResource::collection(
+                $this->whenLoaded('socialAccounts')
+            ),
         ];
     }
 }
