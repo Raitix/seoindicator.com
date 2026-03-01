@@ -4,6 +4,7 @@ namespace App\Services\Analysis;
 
 use App\Models\AnalysisJob;
 use App\Models\AnalysisJobResult;
+use App\Services\ProgressService;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
@@ -326,12 +327,7 @@ class ErrorHandlingService
      */
     private function isTimeoutError(\Throwable $error, string $message): bool
     {
-        // Guzzle timeout exceptions
-        if ($error instanceof \GuzzleHttp\Exception\ConnectException) {
-            return true;
-        }
-
-        // Check for timeout in message
+        // Check for timeout in message first
         $timeoutKeywords = ['timeout', 'timed out', 'time out', 'connection timed out'];
         foreach ($timeoutKeywords as $keyword) {
             if (str_contains($message, $keyword)) {
@@ -404,7 +400,7 @@ class ErrorHandlingService
      */
     private function isInvalidURLError(\Throwable $error, string $message): bool
     {
-        $urlKeywords = ['invalid url', 'invalid domain', 'url is required', 'malformed url', 'dns resolution failed'];
+        $urlKeywords = ['invalid url', 'invalid domain', 'url is required', 'malformed url'];
         foreach ($urlKeywords as $keyword) {
             if (str_contains($message, $keyword)) {
                 return true;
