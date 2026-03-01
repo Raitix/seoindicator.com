@@ -304,13 +304,14 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::post('onboarding/complete', [OnboardingController::class, 'complete']);
     Route::post('onboarding/skip', [OnboardingController::class, 'skip']);
 
-    // Analysis Jobs (SPEC-019, FEAT-019)
+    // Analysis Jobs (SPEC-019, FEAT-019) with rate limiting (TASK-19-14)
     Route::get('sites/{siteId}/analysis/jobs', [AnalysisJobController::class, 'index']);
     Route::post('sites/{siteId}/analysis/jobs', [AnalysisJobController::class, 'store']);
     Route::get('analysis/jobs/{jobId}', [AnalysisJobController::class, 'show']);
     Route::post('analysis/jobs/{jobId}/start', [AnalysisJobController::class, 'start']);
     Route::get('analysis/jobs/{jobId}/stream', [AnalysisJobController::class, 'stream']);
-    Route::get('analysis/jobs/{jobId}/progress', [AnalysisJobController::class, 'progress']);
+    Route::get('analysis/jobs/{jobId}/progress', [AnalysisJobController::class, 'progress'])
+        ->middleware('polling.ratelimit');
     Route::delete('analysis/jobs/{jobId}', [AnalysisJobController::class, 'destroy']);
     Route::get('analysis/indicators', [AnalysisJobController::class, 'indicators']);
 

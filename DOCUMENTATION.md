@@ -204,6 +204,206 @@ $headers = [
 - TASK-21-1 (AI Service Structure and Interfaces)
 
 ---
+## AI Suggestion API Endpoint (TASK-21-5)
+
+### Service Description
+REST API endpoint for generating AI-powered SEO suggestions. Receives indicator type and page context, processes through the AI suggestion service, and returns structured optimization recommendations with scoring and actionable suggestions.
+
+### Component Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/AISuggestionController.php`
+- **Request:** `backend/app/Http/Requests/AISuggestionRequest.php`
+- **Rule:** `backend/app/Rules/MaxContextLength.php`
+- **Exception:** `backend/app/Exceptions/AIServiceUnavailableException.php`
+- **Route:** `POST /api/v1/ai/suggestions`
+
+### API Endpoint
+
+**POST /api/v1/ai/suggestions**
+
+| Header | Value |
+|--------|-------|
+| Content-Type | application/json |
+| Accept | application/json |
+
+**Request Body:**
+```json
+{
+    "indicator": "title",
+    "context": {
+        "title": "Home - My Website",
+        "content_summary": "E-commerce homepage selling widgets...",
+        "keyword": "best widgets"
+    },
+    "provider": "openrouter",
+    "debug": false
+}
+```
+
+**Request Parameters:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `indicator` | string | Yes | SEO indicator type (enum) |
+| `context` | object | Yes | Page context data (max 5000 chars) |
+| `provider` | string | No | AI provider: openrouter, vercel, static |
+| `debug` | boolean | No | Enable debug mode (requires auth) |
+
+**Supported Indicators:**
+| Indicator | Description |
+|-----------|-------------|
+| `title` | Title tag optimization |
+| `meta_description` | Meta description optimization |
+| `robots` | Robots.txt analysis |
+| `sitemap` | XML sitemap analysis |
+| `headings` | Heading structure analysis |
+| `image_alt` | Image alt text suggestions |
+| `filenames` | SEO-friendly filename suggestions |
+| `url` | URL structure analysis |
+| `links` | Internal/external link analysis |
+| `404` | 404 error handling suggestions |
+
+**Success Response (200):**
+```json
+{
+    "success": true,
+    "data": {
+        "indicator": "title",
+        "score": 65,
+        "issues": ["Title is too generic", "Missing target keyword"],
+        "suggestions": [
+            {
+                "type": "rewrite",
+                "text": "Best Widgets 2026 | Premium Quality Widgets Online",
+                "reason": "Includes target keyword and value proposition"
+            }
+        ],
+        "best_practices": [
+            "Keep title under 60 characters",
+            "Place primary keyword near the beginning"
+        ],
+        "provider": "openrouter",
+        "model": "llama-3.1-8b-instruct",
+        "generated_at": "2026-03-01T12:00:00Z"
+    }
+}
+```
+
+**Fallback Response (200 - when AI unavailable):**
+```json
+{
+    "success": true,
+    "data": {
+        "indicator": "title",
+        "score": 0,
+        "issues": [],
+        "suggestions": [],
+        "best_practices": [],
+        "provider": "static_fallback",
+        "model": null,
+        "generated_at": "2026-03-01T12:00:00Z",
+        "fallback_reason": "AI provider timeout"
+    }
+}
+```
+
+**Debug Response (with `?debug=true`):**
+```json
+{
+    "success": true,
+    "data": { /* ... suggestions ... */ },
+    "debug": {
+        "prompt": "Full prompt text sent to AI...",
+        "raw_response": "Raw JSON string from provider...",
+        "tokens_used": 245,
+        "latency_ms": 1250,
+        "provider": "openrouter",
+        "model": "llama-3.1-8b-instruct"
+    }
+}
+```
+
+**Error Responses:**
+| Status | Description | Response |
+|--------|-------------|----------|
+| 422 | Validation Error | `{"message": "The selected indicator is invalid."}` |
+| 429 | Rate Limit Exceeded | `{"message": "Too many requests. Please try again later."}` |
+| 500 | Internal Server Error | `{"message": "An error occurred processing your request."}` |
+| 503 | Service Unavailable | `{"message": "AI service temporarily unavailable."}` |
+
+### AISuggestionController
+
+```php
+class AISuggestionController extends Controller
+{
+    public function __construct(
+        private AISuggestionService $service
+    ) {}
+
+    public function generate(AISuggestionRequest $request): JsonResponse
+    {
+        // Validates via AISuggestionRequest
+        // Calls AISuggestionService::getSuggestions()
+        // Returns structured JSON response
+    }
+}
+```
+
+### Request Validation
+
+**AISuggestionRequest Rules:**
+| Field | Rules |
+|-------|-------|
+| `indicator` | required, enum (title, meta_description, robots, sitemap, headings, image_alt, filenames, url, links, 404) |
+| `context` | required, array, max 5000 chars total |
+| `provider` | nullable, enum (openrouter, vercel, static) |
+| `debug` | nullable, boolean |
+
+**Custom Rule: MaxContextLength**
+- Calculates total character count of all context values
+- Enforces 5000 character limit to prevent oversized prompts
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| Rate Limiting | `ai.ratelimit` middleware (20/hour per user, 10/hour per IP) |
+| Input Sanitization | Context validated for type and length |
+| Error Masking | Generic messages to client, detailed in logs |
+| Debug Mode | Requires authenticated user |
+| Data Privacy | No sensitive data in responses |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| AISuggestionControllerTest | 71 | 119 |
+
+**Test Categories:**
+| Category | Count | Description |
+|----------|-------|-------------|
+| Controller Instantiation | 2 | DI and service binding |
+| Route Registration | 2 | Route accessible |
+| Request Validation | 12 | Input validation rules |
+| Response Structure (Success) | 11 | Success response format |
+| Response Structure (Fallback) | 4 | Fallback response format |
+| Debug Mode Response | 4 | Debug info in response |
+| Error Handling | 5 | Error responses |
+| Feature Tests | 6 | End-to-end flows |
+| Security Tests | 5 | SQL injection, XSS, data exposure |
+| Edge Cases | 8 | Unicode, nulls, boundaries, concurrency |
+
+### Production Status
+- **Deployed**: 2026-03-01 (GitHub Actions #22549557993)
+- **Health Check**: Passing
+- **Tests**: 71/71 passing (119 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-21-1 (AI Service Structure and Interfaces)
+- TASK-21-2 (OpenRouter Provider)
+- TASK-21-3 (Static Fallback Provider) - In Development
+- TASK-21-4 (Prompt Templates)
+
+---
 ## SEO Guides Library - Routing with Static Params Generation (TASK-20-4)
 
 ### Service Description

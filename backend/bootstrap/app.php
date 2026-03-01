@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api-key.auth' => \App\Http\Middleware\ApiKeyAuth::class,
             'api-key.ratelimit' => \App\Http\Middleware\ApiKeyRateLimiter::class,
             'ai.ratelimit' => \App\Http\Middleware\AIRateLimiter::class,
+            'polling.ratelimit' => \App\Http\Middleware\PollingRateLimiter::class,
         ]);
 
         // Add SetProjectContext to web middleware group (session-based)
