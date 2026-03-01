@@ -4611,6 +4611,158 @@ app('current_project'); // Returns Project model or null
 - TASK-8-6: ProjectPolicy authorization
 
 ---
+## Frontend Live Results Table (TASK-19-12)
+
+### Service Description
+React/Next.js component for displaying analysis results as they complete during progressive SEO analysis. Provides real-time UI updates with sorting, filtering, and expandable details for each indicator result.
+
+### Component Location
+- **Main Component:** `frontend/components/analysis/ResultsTable.tsx`
+- **Row Component:** `frontend/components/analysis/ResultRow.tsx`
+- **Types:** `frontend/lib/types/analysis-job.ts`
+- **API Utilities:** `frontend/lib/api/analysis-job.ts`
+- **Storybook:** `frontend/stories/components/analysis/ResultsTable.stories.tsx`
+- **Tests:** `frontend/__tests__/components/ResultsTable.test.tsx`
+
+### Core Functionalities
+
+**ResultsTable Component:**
+| Feature | Description |
+|---------|-------------|
+| Job Results Display | Shows all indicator results for an analysis job |
+| Summary Stats | Displays completed/failed/pending counts |
+| Sorting | By status (completed first), score (lowest first), or name (alphabetical) |
+| Filtering | Show all, completed only, or failed only |
+| Real-time Updates | Re-renders when results prop changes |
+| Empty State | Friendly message when no results available |
+
+**ResultRow Component:**
+| Feature | Description |
+|---------|-------------|
+| Status Indicator | Color-coded status badge (pending/running/completed/failed/skipped) |
+| Score Display | Percentage with color coding (green/yellow/orange/red) |
+| Expandable Details | Collapsible section showing data and recommendations |
+| Click Handling | Optional callback for row click |
+| Keyboard Navigation | Full keyboard accessibility |
+
+### Component Props
+
+**ResultsTableProps:**
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `jobId` | number | Yes | Analysis job ID |
+| `results` | AnalysisJobResult[] | Yes | Array of indicator results |
+| `onResultClick` | (result) => void | No | Optional click handler |
+
+**ResultRowProps:**
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `result` | AnalysisJobResult | Yes | Single indicator result |
+| `onClick` | (result) => void | No | Optional click handler |
+
+### Status Colors and Labels
+
+| Status | Color | Label |
+|--------|-------|-------|
+| `pending` | Gray | Pending |
+| `running` | Blue | Running |
+| `completed` | Green | Completed |
+| `failed` | Red | Failed |
+| `skipped` | Yellow | Skipped |
+
+### Score Color Thresholds
+
+| Score Range | Color | CSS Class |
+|-------------|-------|-----------|
+| 80-100% | Green | `text-green-600` |
+| 60-79% | Yellow | `text-yellow-600` |
+| 40-59% | Orange | `text-orange-600` |
+| 0-39% | Red | `text-red-600` |
+
+### Sorting Behavior
+
+**Status Sort:**
+- Order: completed → failed → running → pending → skipped
+- Within same status: alphabetical by indicator name
+
+**Score Sort:**
+- Order: lowest scores first (highlighting issues)
+- Pending/running results at end (no score yet)
+
+**Name Sort:**
+- Alphabetical by indicator display name
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Table Semantics | `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` |
+| ARIA Live Region | `role="status"` on summary for screen reader announcements |
+| Keyboard Navigation | Tab through controls, Enter/Space on interactive elements |
+| Focus Indicators | Visible focus rings on all interactive elements |
+
+### Utility Functions
+
+**sortResults(results, sortBy):**
+```typescript
+function sortResults(results: AnalysisJobResult[], sortBy: ResultsSortBy): AnalysisJobResult[]
+```
+
+**filterResults(results, filterBy):**
+```typescript
+function filterResults(results: AnalysisJobResult[], filterBy: ResultsFilterBy): AnalysisJobResult[]
+```
+
+**getIndicatorDisplayName(slug):**
+```typescript
+function getIndicatorDisplayName(slug: string): string
+```
+
+### Indicator Display Names
+
+| Slug | Display Name |
+|------|--------------|
+| `meta_tags` | Meta Tags |
+| `headings` | Headings |
+| `images` | Images |
+| `links` | Links |
+| `performance` | Performance |
+| `mobile` | Mobile |
+| `security` | Security |
+| `structured_data` | Structured Data |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `ResultsTable.test.tsx` | 27 | 50+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| ResultRow Component | 10 | Status rendering, score colors, expansion, click handling |
+| ResultsTable Component | 11 | Default rendering, summary, sorting, filtering, empty state |
+| Sorting Tests | 2 | Score and name sorting behavior |
+| Edge Cases | 4 | Empty array, missing fields, all failed, all completed |
+
+### Production Status
+- **Deployed**: 2026-03-01 (commit c3d6146 via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 27/27 passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-19-4 (Job CRUD API)
+- TASK-19-11 (Progress Bar component)
+- React 18+ (hooks, memo)
+- Tailwind CSS (styling)
+
+### Related Tasks
+- TASK-19-9: SSE Stream Endpoint
+- TASK-19-10: Polling Fallback Endpoint
+- TASK-19-11: Frontend Progress Bar Component
+
+---
 ## GSC OAuth Service (TASK-12-4)
 
 ### Service Description
