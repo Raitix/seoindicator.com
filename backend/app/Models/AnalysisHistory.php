@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * AnalysisHistory model for tracking tool analyses.
@@ -26,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property-read \App\Models\User $user
  * @property-read \App\Models\Site|null $site
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\AnalysisCost> $costs
  */
 class AnalysisHistory extends Model
 {
@@ -83,6 +85,14 @@ class AnalysisHistory extends Model
     public function site(): BelongsTo
     {
         return $this->belongsTo(Site::class);
+    }
+
+    /**
+     * Get the costs associated with the analysis.
+     */
+    public function costs(): HasMany
+    {
+        return $this->hasMany(AnalysisCost::class, 'analysis_id');
     }
 
     // =========================================================================

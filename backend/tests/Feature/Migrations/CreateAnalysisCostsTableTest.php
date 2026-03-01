@@ -337,6 +337,7 @@ class CreateAnalysisCostsTableTest extends TestCase
 
     /**
      * DP-002: cost_units truncation (5 decimals).
+     * Note: SQLite stores full precision, MySQL rounds/truncates to column precision.
      */
     public function test_dp002_cost_units_truncation_5_decimals(): void
     {
@@ -345,12 +346,21 @@ class CreateAnalysisCostsTableTest extends TestCase
         $userId = $this->createUser();
         $analysisId = $this->createAnalysisHistory($userId);
 
-        // MySQL may round or truncate depending on mode
+        // MySQL rounds/truncates to 4 decimals, SQLite stores full precision
+        $connection = Schema::getConnection();
+        $driver = $connection->getDriverName();
+
         $costId = $this->createAnalysisCost($analysisId, ['cost_units' => 123.45678]);
 
         $cost = DB::table('analysis_costs')->find($costId);
-        // Should be truncated/rounded to 4 decimals
-        $this->assertMatchesRegularExpression('/^123\.456[67]$/', $cost->cost_units);
+
+        if ($driver === 'sqlite') {
+            // SQLite stores full precision (no enforcement)
+            $this->assertEquals('123.45678', $cost->cost_units, 'SQLite stores full precision');
+        } else {
+            // MySQL should truncate/round to 4 decimals
+            $this->assertMatchesRegularExpression('/^123\.456[67]$/', $cost->cost_units);
+        }
     }
 
     /**
