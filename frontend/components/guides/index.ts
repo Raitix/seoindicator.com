@@ -6,3 +6,6 @@
 export { GuideCard } from './GuideCard';
 export { CategoryFilter } from './CategoryFilter';
 export { GuideSearch } from './GuideSearch';
+export { default as GuideChecklist } from './GuideChecklist';
+export { default as GuideCodeBlock } from './GuideCodeBlock';
+export { default as GuideSection } from './GuideSection';
