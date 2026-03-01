@@ -91,7 +91,7 @@ class ValidCrawlUrl implements ValidationRule
         // Check protocol
         $scheme = strtolower($parsed['scheme'] ?? '');
         if (!in_array($scheme, self::ALLOWED_PROTOCOLS)) {
-            $fail('The :attribute must use HTTP or HTTPS protocol.');
+            $fail('The :attribute Protocol must be HTTP or HTTPS.');
             return;
         }
 
@@ -107,7 +107,7 @@ class ValidCrawlUrl implements ValidationRule
 
         // Check blocked hostnames
         if (in_array($hostLower, self::BLOCKED_HOSTNAMES)) {
-            $fail('The :attribute contains a blocked hostname.');
+            $fail('The :attribute hostname is not allowed.');
             return;
         }
 
