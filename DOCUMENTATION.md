@@ -1,6 +1,125 @@
 # DOCUMENTATION.md
 
 ---
+## Mobile-Friendliness SEO Guide (TASK-20-14)
+
+### Guide Description
+Comprehensive SEO guide content for the Mobile-Friendliness indicator, covering responsive design, mobile-first indexing, and testing tools. Explains Google's mobile-first approach and provides actionable best practices for mobile optimization. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `mobile-friendly`
+- **URL:** `https://seoindicator.com/seo-guides/mobile-friendly/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What is Mobile-Friendliness? | Definition, importance (60% mobile traffic), Google ranking factor | ~300 |
+| Mobile-First Indexing | Google's approach, crawler behavior, ranking impact, content consistency | ~350 |
+| Responsive Design Principles | Viewport meta tag, CSS media queries, flexible layouts, mobile-first approach | ~400 |
+| Common Mobile SEO Issues | Text too small, touch targets, horizontal scrolling, intrusive interstitials | ~350 |
+| Testing Your Site | Google Mobile-Friendly Test, Search Console, Chrome DevTools, real device testing | ~250 |
+
+**Total Content:** ~1,650 words
+**Read Time:** 5 minutes
+
+### Key Technical Details
+
+| Topic | Details |
+|-------|---------|
+| Viewport Meta Tag | `<meta name="viewport" content="width=device-width, initial-scale=1.0">` |
+| Touch Target Size | Minimum 44x44 pixels (WCAG guideline) |
+| Font Size | Minimum 16px prevents iOS zoom on focus |
+| Google's Mobile-First | Google crawls and indexes the mobile version of your site first |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| Viewport meta tag | HTML | Essential responsive design tag |
+| Mobile-first responsive container | CSS | Progressive breakpoints (mobile → tablet → desktop) |
+| Mobile CSS fixes | CSS | Font size, touch targets, overflow, responsive images |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Add viewport meta tag to all pages |
+| Critical | Ensure touch targets are at least 44x44 pixels |
+| Critical | Use 16px minimum font size to prevent iOS zoom |
+| Critical | Eliminate horizontal scrolling |
+| Important | Avoid intrusive interstitials and pop-ups |
+| Important | Use responsive images with srcset |
+| Important | Test with Google Mobile-Friendly Test |
+| Important | Monitor mobile usability in Search Console |
+| Recommended | Implement mobile-first CSS approach |
+
+### Related Guides
+- `page-speed` - Mobile performance considerations
+- `https-security` - HTTPS is required for mobile-first indexing
+
+### Tool Integration
+- **Tool Slug:** `mobile-friendly-checker`
+- **Tool Name:** Mobile-Friendly Checker
+- **Purpose:** Test pages for mobile-friendliness issues
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'mobile-friendly',
+  title: 'Mobile-Friendliness',
+  summary: 'Ensure your site works perfectly on mobile devices...',
+  category: 'technical',
+  icon: '📱',
+  readTime: 5,
+  hasTool: true,
+  toolSlug: 'mobile-friendly-checker',
+  relatedGuides: ['page-speed', 'https-security'],
+  sections: [ /* 5 sections */ ],
+  checklist: [ /* 9 items */ ],
+  codeExamples: [ /* 3 examples */ ]
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `mobile-friendly-content.test.ts` | 40+ | Content structure validation |
+| `mobile-friendly-code-examples.test.ts` | 15+ | Code examples validation |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Guide Existence | 4 | Slug, title, summary, category |
+| Content Sections | 5 | All required sections present |
+| Mobile-First Indexing | 5 | Google's approach, crawler behavior |
+| Responsive Design | 5 | Viewport, media queries, flexible layouts |
+| Mobile SEO Issues | 5 | Text size, touch targets, horizontal scroll |
+| Testing Tools | 4 | Google Mobile-Friendly Test references |
+| Best Practices Checklist | 5 | 9 items with priorities |
+| Read Time | 3 | 4-6 minute range validation |
+| Related Guides | 3 | page-speed, https-security |
+| Code Examples | 15 | HTML, CSS examples |
+
+### Production Status
+- **Deployed:** 2026-03-01 (GitHub Actions #22549557993)
+- **URL:** https://seoindicator.com/seo-guides/mobile-friendly/
+- **Health Check:** Passing
+- **Tests:** 57 test suites passed
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+
+### Related Tasks
+- TASK-20-13: Page Speed Optimization Guide (related topic)
+- TASK-20-23: Tool embedding for Mobile-Friendly guide
+
+---
 ## Page Speed Optimization Guide (TASK-20-13)
 
 ### Guide Description

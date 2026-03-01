@@ -1,7 +1,7 @@
 # TASK-22-2: CrawlJob and CrawlPage Models
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -78,3 +78,34 @@ Create Eloquent models for CrawlJob and CrawlPage with relationships, casts, and
 
 ## Comments
 _Leave notes for the next agent here_
+
+### ProjectManager (2026-03-01 23:25 GMT+2)
+**Prioritization Assessment:**
+- **Priority:** High (confirmed) - Foundation task for SPEC-022, models required by all subsequent tasks
+- **Risk:** Low (confirmed) - Standard Eloquent model implementation, no external dependencies, easily reversible
+
+**Dependency Status:**
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| TASK-22-1 (Migrations) | Tables Ready ✅ | Migration tables exist and work; feature tests have bugs but migration is correct |
+
+**Dependency Chain (SPEC-022 Phase 1):**
+```
+TASK-22-1 (Migrations) → TASK-22-2 (Models - THIS TASK) → TASK-22-3 (Service skeleton)
+```
+- TASK-22-1 migration tables are functional (confirmed by LocalTester)
+- Feature test bugs are in test implementation, not migration
+- Models can be developed immediately
+
+**Execution Context:**
+- Creates 2 models: `CrawlJob` and `CrawlPage`
+- Models use standard Laravel patterns (fillable, casts, relationships, scopes, accessors)
+- Uses native PHP 8.1+ enum for status (no external package needed)
+- Memory-friendly: MEDIUMTEXT columns already support up to 16MB
+
+**Key Model Features:**
+- CrawlJob: 5 scopes (queued, running, completed, failed, expired), 3 accessors (isComplete, duration, sizeFormatted)
+- CrawlPage: 3 scopes (forJob, atDepth, successful), 3 accessors (sizeFormatted, internalLinks, externalLinks)
+- Relationships: User/Project (BelongsTo), CrawlPages (HasMany)
+
+**Handoff:** Ready for PreTester to design model tests.

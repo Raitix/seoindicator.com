@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\V1\AlertUnsubscribeController;
 use App\Http\Controllers\Api\V1\AnalysisHistoryController;
 use App\Http\Controllers\Api\V1\UserDashboardController;
 use App\Http\Controllers\Api\V1\AISuggestionController;
+use App\Http\Controllers\Api\V1\CrawlController;
 
 /*
 |--------------------------------------------------------------------------
