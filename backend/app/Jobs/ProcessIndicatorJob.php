@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\AnalysisJob;
 use App\Models\AnalysisJobResult;
 use App\Models\Site;
+use App\Services\Analysis\ErrorHandlingService;
 use App\Services\Analysis\Indicators\HeadingsProcessor;
 use App\Services\Analysis\Indicators\ImagesProcessor;
 use App\Services\Analysis\Indicators\LinksProcessor;
@@ -23,6 +24,9 @@ use RuntimeException;
  * Process a single indicator for an analysis job.
  *
  * Handles indicator processing with timeout, memory limits, and error recovery.
+ * 
+ * @see TASK-19-7
+ * @see TASK-19-13 Error handling and recovery
  */
 class ProcessIndicatorJob implements ShouldQueue
 {
@@ -73,14 +77,23 @@ class ProcessIndicatorJob implements ShouldQueue
      */
     public function handle(
         ProgressService $progressService,
-        URLValidationService $urlValidator
+        URLValidationService $urlValidator,
+        ErrorHandlingService $errorHandler
     ): void {
+        $startTime = microtime(true);
+
         // Check if job is cancelled
         if ($progressService->isJobCancelled($this->jobId)) {
             Log::info('Skipping indicator: job cancelled', [
                 'job_id' => $this->jobId,
                 'indicator_slug' => $this->indicatorSlug,
             ]);
+            return;
+        }
+
+        // Check memory before processing
+        if ($errorHandler->isMemoryApproachingLimit(85)) {
+            $this->handleMemoryExhaustion($progressService, $errorHandler);
             return;
         }
 
@@ -95,17 +108,26 @@ class ProcessIndicatorJob implements ShouldQueue
 
         $site = Site::find($job->site_id);
         if (!$site) {
-            throw new RuntimeException("Site {$job->site_id} not found");
+            $errorHandler->handleIndicatorFailure(
+                $this->jobId,
+                $this->indicatorSlug,
+                new RuntimeException("Site not found"),
+                $progressService,
+                ['url' => null, 'site_id' => $job->site_id]
+            );
+            return;
         }
 
         // Get the processor for this indicator
         $processor = $this->getProcessor($this->indicatorSlug, $urlValidator);
 
         if (!$processor) {
-            $progressService->markFailed(
+            $errorHandler->handleIndicatorFailure(
                 $this->jobId,
                 $this->indicatorSlug,
-                "Unknown indicator: {$this->indicatorSlug}"
+                new RuntimeException("Unknown indicator: {$this->indicatorSlug}"),
+                $progressService,
+                ['url' => $site->url]
             );
             return;
         }
@@ -115,10 +137,13 @@ class ProcessIndicatorJob implements ShouldQueue
             $result = $processor->process($site->url);
 
             if ($result->error) {
-                $progressService->markFailed(
+                // Use error handler for proper categorization and logging
+                $errorHandler->handleIndicatorFailure(
                     $this->jobId,
                     $this->indicatorSlug,
-                    $result->error
+                    new RuntimeException($result->error),
+                    $progressService,
+                    ['url' => $site->url, 'processing_time_ms' => $result->processingTimeMs]
                 );
             } else {
                 $progressService->markComplete(
@@ -126,18 +151,54 @@ class ProcessIndicatorJob implements ShouldQueue
                     $this->indicatorSlug,
                     $result
                 );
-            }
-        } catch (RuntimeException $e) {
-            Log::error('Indicator processing failed', [
-                'job_id' => $this->jobId,
-                'indicator_slug' => $this->indicatorSlug,
-                'error' => $e->getMessage(),
-            ]);
 
-            $progressService->markFailed(
+                Log::info('Indicator completed successfully', [
+                    'job_id' => $this->jobId,
+                    'indicator_slug' => $this->indicatorSlug,
+                    'score' => $result->score,
+                    'percentage' => $result->percentage,
+                    'processing_time_ms' => $result->processingTimeMs,
+                ]);
+            }
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            // Handle HTTP errors (including 429 rate limiting)
+            $this->handleRequestException($e, $progressService, $errorHandler, $site->url);
+        } catch (\GuzzleHttp\Exception\ConnectException $e) {
+            // Handle connection errors (timeout, network issues)
+            $this->handleConnectionException($e, $progressService, $errorHandler, $site->url);
+        } catch (RuntimeException $e) {
+            // Handle general runtime errors
+            $errorHandler->handleIndicatorFailure(
                 $this->jobId,
                 $this->indicatorSlug,
-                $e->getMessage()
+                $e,
+                $progressService,
+                ['url' => $site->url, 'processing_time_ms' => $this->calculateProcessingTime($startTime)]
+            );
+
+            // Determine if we should retry based on error category
+            $category = $errorHandler->categorizeError($e);
+            if ($errorHandler->shouldRetry($category) && $this->attempts() < $this->tries) {
+                $backoff = $errorHandler->getBackoffSeconds($category, $this->attempts());
+                Log::info('Scheduling retry for indicator', [
+                    'job_id' => $this->jobId,
+                    'indicator_slug' => $this->indicatorSlug,
+                    'attempt' => $this->attempts(),
+                    'backoff_seconds' => $backoff,
+                ]);
+                // Job will be retried automatically by Laravel
+                return;
+            }
+
+            // Don't throw - we want to continue processing other indicators
+        } catch (\Throwable $e) {
+            // Handle unexpected errors
+            $errorHandler->handleIndicatorFailure(
+                $this->jobId,
+                $this->indicatorSlug,
+                $e,
+                $progressService,
+                ['url' => $site->url, 'processing_time_ms' => $this->calculateProcessingTime($startTime)]
             );
 
             // Don't throw - we want to continue processing other indicators
@@ -158,10 +219,13 @@ class ProcessIndicatorJob implements ShouldQueue
         // Mark indicator as failed
         try {
             $progressService = app(ProgressService::class);
-            $progressService->markFailed(
+            $errorHandler = app(ErrorHandlingService::class);
+
+            $errorHandler->handleIndicatorFailure(
                 $this->jobId,
                 $this->indicatorSlug,
-                $exception?->getMessage() ?? 'Unknown error'
+                $exception ?? new RuntimeException('Unknown error'),
+                $progressService
             );
         } catch (\Throwable $e) {
             Log::error('Failed to mark indicator as failed', [
@@ -170,6 +234,120 @@ class ProcessIndicatorJob implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Handle Guzzle RequestException (HTTP errors).
+     */
+    private function handleRequestException(
+        \GuzzleHttp\Exception\RequestException $e,
+        ProgressService $progressService,
+        ErrorHandlingService $errorHandler,
+        string $url
+    ): void {
+        $response = $e->getResponse();
+        $statusCode = $response ? $response->getStatusCode() : 0;
+
+        // Check for rate limiting (429)
+        if ($statusCode === 429) {
+            $retryAfter = $response->getHeaderLine('Retry-After');
+            $backoff = $retryAfter ? (int) $retryAfter : ErrorHandlingService::RATE_LIMIT_BACKOFF_SECONDS;
+
+            Log::warning('Rate limit detected, applying backoff', [
+                'job_id' => $this->jobId,
+                'indicator_slug' => $this->indicatorSlug,
+                'url' => $url,
+                'retry_after' => $retryAfter,
+                'backoff_seconds' => $backoff,
+            ]);
+
+            // If this is the first attempt, we can retry with backoff
+            if ($this->attempts() < $this->tries) {
+                $this->release($backoff);
+                return;
+            }
+        }
+
+        // Handle as a general error
+        $errorHandler->handleIndicatorFailure(
+            $this->jobId,
+            $this->indicatorSlug,
+            $e,
+            $progressService,
+            ['url' => $url, 'http_status' => $statusCode]
+        );
+    }
+
+    /**
+     * Handle Guzzle ConnectException (network/timeout errors).
+     */
+    private function handleConnectionException(
+        \GuzzleHttp\Exception\ConnectException $e,
+        ProgressService $progressService,
+        ErrorHandlingService $errorHandler,
+        string $url
+    ): void {
+        $category = $errorHandler->categorizeError($e);
+
+        Log::warning('Connection error during indicator processing', [
+            'job_id' => $this->jobId,
+            'indicator_slug' => $this->indicatorSlug,
+            'url' => $url,
+            'category' => $category,
+            'error' => $e->getMessage(),
+        ]);
+
+        // If this is a timeout and we can retry, do so
+        if ($category === ErrorHandlingService::CATEGORY_TIMEOUT && $this->attempts() < $this->tries) {
+            $backoff = $errorHandler->getBackoffSeconds($category, $this->attempts());
+            $this->release($backoff);
+            return;
+        }
+
+        // Handle as a general error
+        $errorHandler->handleIndicatorFailure(
+            $this->jobId,
+            $this->indicatorSlug,
+            $e,
+            $progressService,
+            ['url' => $url, 'category' => $category]
+        );
+    }
+
+    /**
+     * Handle memory exhaustion.
+     */
+    private function handleMemoryExhaustion(
+        ProgressService $progressService,
+        ErrorHandlingService $errorHandler
+    ): void {
+        $memoryUsage = $errorHandler->getMemoryUsage();
+        $memoryLimit = $errorHandler->getMemoryLimit();
+
+        Log::warning('Memory approaching limit, marking indicator as failed', [
+            'job_id' => $this->jobId,
+            'indicator_slug' => $this->indicatorSlug,
+            'memory_usage_mb' => round($memoryUsage / 1024 / 1024, 2),
+            'memory_limit_mb' => round($memoryLimit / 1024 / 1024, 2),
+            'usage_percent' => round(($memoryUsage / $memoryLimit) * 100, 1),
+        ]);
+
+        $errorHandler->handleIndicatorFailure(
+            $this->jobId,
+            $this->indicatorSlug,
+            new RuntimeException("Memory limit approaching ({$memoryUsage}/{$memoryLimit} bytes)"),
+            $progressService
+        );
+
+        // Don't throw - allow job to complete gracefully so other indicators can continue
+    }
+
+    /**
+     * Calculate processing time in milliseconds.
+     */
+    private function calculateProcessingTime(float $startTime): int
+    {
+        return (int) round((microtime(true) - $startTime) * 1000);
     }
 
     /**
