@@ -1015,13 +1015,271 @@ When reviewing performance reports, focus on:
   {
     slug: 'mobile-friendly',
     title: 'Mobile-Friendly Design',
-    summary: 'Ensure your site works flawlessly on all mobile devices.',
+    summary: 'Ensure your site works flawlessly on all mobile devices with responsive design, proper touch targets, and mobile-first optimization.',
     category: 'technical',
     toolSlug: 'mobile-friendly-checker',
     icon: '📱',
     readTime: 5,
-    sections: [],
-    checklist: [],
+    sections: [
+      {
+        title: 'What is Mobile-Friendliness?',
+        content: `**Mobile-friendliness** refers to how well your website functions and displays on mobile devices like smartphones and tablets. A mobile-friendly site adapts its layout, content, and functionality to provide an optimal user experience regardless of screen size.
+
+With over **60% of web traffic** now coming from mobile devices, mobile-friendliness isn't optional—it's essential. A site that works well on mobile delivers:
+
+- **Readable text** without zooming or horizontal scrolling
+- **Tappable elements** sized for touch interaction
+- **Fast loading** on mobile networks
+- **Proper layout** that adapts to any screen width
+
+Mobile-friendliness is also a **Google ranking factor**. Since 2015, Google has boosted mobile-friendly sites in mobile search results, and since 2018, it has used **mobile-first indexing**—crawling and indexing the mobile version of your site first.
+
+A truly mobile-friendly site goes beyond just "working" on mobile. It should feel native and intuitive, with touch-friendly navigation, appropriately sized content, and fast performance even on slower cellular connections.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Mobile-First Indexing',
+        content: `**Mobile-first indexing** means Google predominantly uses the mobile version of your website for indexing and ranking. This shift reflects the reality that most users now search on mobile devices.
+
+### How It Works
+
+Before mobile-first indexing, Google primarily crawled the desktop version of sites. Now, Google's crawler behaves like a mobile user:
+
+1. **Crawls the mobile version** of your site first
+2. **Indexes content** from the mobile page
+3. **Ranks based on mobile experience** including speed and usability
+
+### What This Means for Your Site
+
+If your mobile and desktop versions have identical content, you're in good shape. But many sites have issues:
+
+- **Missing content on mobile**: Some sites show less content on mobile, which won't be indexed
+- **Structured data differences**: Schema markup should match between versions
+- **Metadata mismatches**: Title tags and meta descriptions should be consistent
+- **Different URLs**: If using m-dot subdomains, ensure proper canonicalization
+
+### Ranking Impact
+
+Google explicitly states that **mobile-first indexing affects rankings**. Sites with:
+- Poor mobile usability → Lower rankings
+- Slow mobile performance → Lower rankings
+- Missing mobile content → Reduced visibility
+- Strong mobile experience → Ranking boost
+
+The solution is simple: treat your mobile site as your primary site. Build for mobile first, then enhance for desktop. This "mobile-first" approach ensures you're optimized for how Google sees your content and how most users access it.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Responsive Design Principles',
+        content: `**Responsive design** ensures your website automatically adapts to any screen size—from small phones to large desktop monitors. It's the foundation of mobile-friendly web development.
+
+### The Viewport Meta Tag
+
+The viewport meta tag is the most critical piece of mobile-friendly code. Without it, mobile browsers assume a desktop width and scale the page down, resulting in tiny, unreadable text.
+
+The viewport tag tells the browser to match the screen width and set an initial zoom level of 100%. This is essential for responsive design—without it, media queries won't work as expected.
+
+### CSS Media Queries
+
+Media queries let you apply different styles based on screen characteristics like width, height, and orientation. They're the building blocks of responsive layouts.
+
+**Mobile-first approach**: Start with mobile styles as your base, then add complexity for larger screens using \`min-width\` media queries. This ensures mobile users get the fastest, most focused experience.
+
+### Flexible Layouts
+
+Responsive design uses fluid layouts that adapt to screen size:
+
+- **Percentages over pixels** for widths
+- **Flexbox and CSS Grid** for flexible arrangements
+- **Relative units** (rem, em, vh/vw) for typography and spacing
+- **Max-width constraints** to prevent content from becoming too wide on large screens
+
+### The Responsive Mindset
+
+Think of your design as a fluid continuum rather than fixed breakpoints. Content should reflow naturally, images should scale proportionally, and navigation should remain accessible at every size.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<meta name="viewport" content="width=device-width, initial-scale=1.0">`,
+            description: 'Essential viewport meta tag for responsive design - must be in every page <head>',
+          },
+          {
+            language: 'css',
+            code: `/* Mobile-first base styles */
+.container {
+  width: 100%;
+  padding: 1rem;
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  .container {
+    max-width: 750px;
+    margin: 0 auto;
+  }
+}
+
+/* Desktop and up */
+@media (min-width: 1024px) {
+  .container {
+    max-width: 960px;
+  }
+}
+
+/* Large desktop */
+@media (min-width: 1280px) {
+  .container {
+    max-width: 1200px;
+  }
+}`,
+            description: 'Mobile-first responsive container with progressive breakpoints',
+          },
+        ],
+      },
+      {
+        title: 'Common Mobile SEO Issues',
+        content: `Many websites still suffer from mobile usability problems that hurt both user experience and search rankings. Here are the most common issues and how to fix them.
+
+### Text Too Small
+
+Illegible text frustrates users and violates Google's mobile usability guidelines. **Minimum font size: 16px** for body text.
+
+**Why 16px?** iOS Safari automatically zooms when users focus on inputs with font-size under 16px, creating a jarring experience. Using 16px or larger prevents this zoom behavior.
+
+### Touch Targets Too Small
+
+Buttons, links, and interactive elements must be large enough to tap accurately. **Minimum size: 44x44 pixels** (Apple's guideline, also recommended by Google).
+
+Small touch targets cause mis-taps and frustration. Add padding or use larger font sizes to ensure tapability.
+
+### Horizontal Scrolling
+
+Users shouldn't need to scroll horizontally to see content. This usually indicates:
+
+- Missing viewport meta tag
+- Fixed-width elements wider than the screen
+- Images without responsive sizing
+- Long unbreakable text (URLs, code snippets)
+
+**Fix:** Ensure all content fits within the viewport width using \`overflow-x: hidden\` as a safety net, but fix the root cause.
+
+### Intrusive Interstitials
+
+Pop-ups that cover content on mobile can trigger Google penalties. **Avoid:**
+
+- Full-screen overlays that appear immediately
+- Large banners that push content below the fold
+- App download interstitials that hide content
+
+**Acceptable alternatives:**
+
+- Smaller banners that are easily dismissible
+- Interstitials triggered by user action (exit intent, button click)
+- Cookie consent notices (temporarily allowed)
+
+### Unplayable Content
+
+Avoid Flash, certain video formats, or interactive elements that don't work on mobile. Use HTML5, modern video formats (MP4, WebM), and touch-friendly interactions.`,
+        codeExamples: [
+          {
+            language: 'css',
+            code: `/* Mobile-friendly typography */
+body {
+  font-size: 16px; /* Prevents iOS zoom on focus */
+  line-height: 1.6;
+}
+
+/* Touch-friendly targets */
+button,
+a,
+input[type="submit"] {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 12px 16px;
+}
+
+/* Prevent horizontal scroll */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Responsive images (never overflow) */
+img {
+  max-width: 100%;
+  height: auto;
+}`,
+            description: 'CSS fixes for common mobile issues: font size, touch targets, overflow, and responsive images',
+          },
+        ],
+      },
+      {
+        title: 'Testing Your Site',
+        content: `Regular testing ensures your site delivers a great mobile experience. Use these free tools to identify and fix issues.
+
+### Google Mobile-Friendly Test
+
+Google's official tool analyzes any URL and reports mobile usability issues. Simply enter your URL at **search.google.com/test/mobile-friendly** or use our integrated Mobile-Friendly Checker tool.
+
+**What it checks:**
+- Text readability and size
+- Touch target spacing
+- Viewport configuration
+- Horizontal scrolling issues
+- Plugin compatibility
+
+### Google Search Console
+
+The **Mobile Usability report** in Search Console shows issues Google found across your site. It's essential for ongoing monitoring.
+
+**Common reports:**
+- "Text too small to read"
+- "Clickable elements too close together"
+- "Content wider than screen"
+- "Viewport not configured"
+
+### Chrome DevTools Device Mode
+
+For development testing, Chrome DevTools includes a powerful device emulator:
+
+1. Open DevTools (F12 or right-click → Inspect)
+2. Click the device toolbar icon (or press Ctrl+Shift+M)
+3. Select a device or responsive mode
+4. Test different screen sizes and network speeds
+
+### Real Device Testing
+
+Emulators aren't perfect. Test on actual devices when possible:
+
+- Different screen sizes (small phone, large phone, tablet)
+- Different operating systems (iOS, Android)
+- Different browsers (Safari, Chrome, Firefox)
+- Different network speeds (WiFi, 4G, 3G)
+
+### Using Our Mobile-Friendly Checker
+
+Our integrated tool combines Google's mobile test with additional analysis. Enter any URL to get:
+
+- Mobile-friendliness score
+- Specific issues and recommendations
+- Code examples for fixes
+- Comparison with best practices
+
+Regular testing—ideally after any design or content change—keeps your site mobile-optimized.`,
+        codeExamples: [],
+      },
+    ],
+    checklist: [
+      { text: 'Add viewport meta tag to all pages: <meta name="viewport" content="width=device-width, initial-scale=1.0">', priority: 'critical' },
+      { text: 'Ensure touch targets are at least 44x44 pixels for all interactive elements', priority: 'critical' },
+      { text: 'Use minimum 16px font size for body text to prevent iOS zoom issues', priority: 'critical' },
+      { text: 'Eliminate horizontal scrolling by using responsive layouts and max-width: 100%', priority: 'critical' },
+      { text: 'Avoid intrusive interstitials and popups that cover content on mobile', priority: 'important' },
+      { text: 'Implement responsive images with max-width: 100% and srcset for different sizes', priority: 'important' },
+      { text: 'Test your site with Google Mobile-Friendly Test and fix reported issues', priority: 'important' },
+      { text: 'Use mobile-first CSS approach: write mobile styles first, then add breakpoints for larger screens', priority: 'recommended' },
+      { text: 'Monitor Mobile Usability report in Google Search Console regularly', priority: 'important' },
+    ],
     relatedGuides: ['page-speed', 'https-security'],
   },
   {
