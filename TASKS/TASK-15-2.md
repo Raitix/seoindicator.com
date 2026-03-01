@@ -1,7 +1,7 @@
 # TASK-15-2: Create Custom Domains Table
 
 ## STATUS
-`To Develop`
+`To Deploy`
 
 ## PRIORITY
 `Medium`
@@ -29,9 +29,9 @@ CREATE TABLE custom_domains (
 ```
 
 ## Acceptance Criteria
-- [ ] Migration creates `custom_domains` table.
-- [ ] Domain uniqueness is enforced.
-- [ ] Test DNS verification and SSL provisioning workflows.
+- [x] Migration creates `custom_domains` table.
+- [x] Domain uniqueness is enforced.
+- [x] Test DNS verification and SSL provisioning workflows.
 
 ## Effort Estimate
 3 hours.
@@ -100,3 +100,74 @@ Created comprehensive test suite for TASK-15-2:
 - Model scopes needed: verified(), sslReady(), pending(), forAccount(), byDomain()
 
 **Status Updated:** `To Write Tests` → `To Develop`
+
+### [2026-03-01 17:30] Agent: Developer
+**Implementation Complete - All Tests Passing**
+
+Implemented all components for TASK-15-2:
+
+**Files Created/Modified:**
+1. `backend/database/migrations/2026_03_01_174500_create_custom_domains_table.php`
+   - Creates `custom_domains` table with all required columns
+   - Foreign key to `accounts` with CASCADE DELETE
+   - Unique index on `domain` column
+   - Index on `account_id` for FK performance
+
+2. `backend/app/Models/CustomDomain.php`
+   - Full model with `$fillable`, `$casts`
+   - `belongsTo` relationship to Account
+   - Scopes: `verified()`, `sslReady()`, `pending()`, `forAccount()`, `byDomain()`
+   - Helper methods: `isVerified()`, `isSslReady()`, `markAsVerified()`, `markSslProvisioned()`, `unmarkVerified()`
+
+3. `backend/app/Models/Account.php`
+   - Added `customDomains()` hasMany relationship
+
+4. `backend/app/Repositories/CustomDomainRepository.php`
+   - CRUD: create, find, update, delete
+   - Query methods: findByDomain, findByAccount, findVerifiedByAccount, findSslReadyByAccount
+   - Utility: exists, getPrimaryDomain
+
+5. `backend/database/factories/CustomDomainFactory.php`
+   - Factory with 10 states for test data generation
+
+**Test Results:**
+- 86 tests passed (196 assertions)
+- All acceptance criteria met:
+  - ✅ Migration creates `custom_domains` table
+  - ✅ Domain uniqueness is enforced
+  - ✅ DNS verification and SSL provisioning workflows tested
+
+**Status Updated:** `To Develop` → `To Test Locally`
+
+### [2026-03-01 17:33] Agent: LocalTester
+**Local Testing Complete - All Tests PASS**
+
+**Test Execution Summary:**
+- **Total Tests:** 86 passed (196 assertions)
+- **Duration:** 46.23s
+- **Result:** ✅ PASS
+
+**Test Breakdown:**
+1. **CustomDomainTest (29 tests):** Model creation, relationships, scopes, helper methods, edge cases, security, workflows
+2. **CustomDomainRepositoryTest (28 tests):** CRUD operations, query methods, edge cases, performance, integration
+3. **CreateCustomDomainsTableTest (29 tests):** Schema structure, foreign keys, indexes, rollback, security, edge cases
+
+**Verification Results:**
+- ✅ Migration creates `custom_domains` table correctly
+- ✅ Domain uniqueness is enforced via unique index
+- ✅ Foreign key cascade delete works correctly
+- ✅ DNS verification workflow tested (WF-001)
+- ✅ SSL provisioning workflow tested (WF-002)
+- ✅ Full domain lifecycle tested (WF-003)
+- ✅ Security tests passed (SQL injection, XSS, path traversal)
+
+**Adversarial Testing:**
+- SQL injection attempts properly sanitized
+- XSS payloads stored as text (not executed)
+- Path traversal characters handled safely
+- Unicode/IDN domains handled correctly
+- Long domains (255 chars) stored correctly
+
+**Decision:** Approved for deployment. All acceptance criteria met, no issues found.
+
+**Status Updated:** `To Test Locally` → `To Deploy`
