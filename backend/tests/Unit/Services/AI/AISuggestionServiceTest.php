@@ -138,7 +138,7 @@ class AISuggestionServiceTest extends TestCase
         $returnType = $method->getReturnType();
         
         $this->assertNotNull($returnType, 'getSuggestions must have return type');
-        $this->assertEquals('SuggestionResult', $returnType->getName(), 'getSuggestions must return SuggestionResult');
+        $this->assertEquals('App\Services\AI\DTOs\SuggestionResult', $returnType->getName(), 'getSuggestions must return SuggestionResult');
     }
 
     // =========================================================================

@@ -263,6 +263,7 @@ export function ResultsTable({
         {/* Live region for screen readers */}
         <div
           className="sr-only"
+          role="status"
           aria-live="polite"
           aria-atomic="true"
         >

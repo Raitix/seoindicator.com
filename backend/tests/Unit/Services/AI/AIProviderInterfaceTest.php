@@ -104,7 +104,7 @@ class AIProviderInterfaceTest extends TestCase
         $returnType = $method->getReturnType();
         
         $this->assertNotNull($returnType, 'generate() must have a return type');
-        $this->assertEquals('AIResponse', $returnType->getName(), 'generate() must return AIResponse');
+        $this->assertEquals('App\Services\AI\DTOs\AIResponse', $returnType->getName(), 'generate() must return AIResponse');
     }
 
     // =========================================================================
