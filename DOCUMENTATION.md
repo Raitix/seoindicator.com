@@ -4709,6 +4709,182 @@ REST API controller for managing Google Search Console OAuth connections. Provid
 - TASK-12-8: GSC Data Controller
 
 ---
+## Social Accounts Table (TASK-25-2)
+
+### Service Description
+Database migration for OAuth provider connections. Stores user links to external OAuth providers (Google, GitHub, Facebook, LinkedIn) with encrypted token storage for secure authentication. Part of the User Accounts + Dashboard + Analysis History feature (FEAT-025 Phase 1).
+
+### Database Schema
+
+```sql
+CREATE TABLE social_accounts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    provider VARCHAR(50) NOT NULL,
+    provider_id VARCHAR(255) NOT NULL,
+    provider_token TEXT NULL,
+    provider_refresh_token TEXT NULL,
+    provider_token_expires_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_provider_user (provider, provider_id),
+    INDEX idx_user_provider (user_id, provider)
+);
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `user_id` | BIGINT UNSIGNED | FK to users.id (CASCADE delete) |
+| `provider` | VARCHAR(50) | OAuth provider: `google`, `github`, `facebook`, `linkedin` |
+| `provider_id` | VARCHAR(255) | Unique user ID from provider |
+| `provider_token` | TEXT | Encrypted OAuth access token |
+| `provider_refresh_token` | TEXT | Encrypted OAuth refresh token |
+| `provider_token_expires_at` | TIMESTAMP | Token expiration timestamp |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+| `updated_at` | TIMESTAMP | Record update timestamp |
+
+### Indexes
+
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `PRIMARY` | id | Primary key lookup |
+| `unique_provider_user` | (provider, provider_id) | Prevent duplicate provider links |
+| `idx_user_provider` | (user_id, provider) | Fast lookup by user and provider |
+
+### Foreign Keys
+
+| Constraint | Columns | References | On Delete |
+|------------|---------|------------|-----------|
+| `social_accounts_user_id_foreign` | user_id | users.id | CASCADE |
+
+### Security Features
+
+| Feature | Implementation |
+|---------|----------------|
+| Token Encryption | Laravel `encrypted` cast on `provider_token`, `provider_refresh_token` |
+| Hidden Attributes | Tokens hidden from JSON serialization |
+| Account Hijacking Prevention | Unique constraint on (provider, provider_id) |
+| Orphan Cleanup | CASCADE delete removes social accounts when user deleted |
+
+### Model: SocialAccount
+
+**Location:** `backend/app/Models/SocialAccount.php`
+
+**Casts:**
+| Field | Cast | Purpose |
+|-------|------|---------|
+| `provider_token` | `encrypted` | AES-256 encryption at rest |
+| `provider_refresh_token` | `encrypted` | AES-256 encryption at rest |
+| `provider_token_expires_at` | `datetime` | Carbon datetime instance |
+
+**Hidden Attributes:**
+- `provider_token`
+- `provider_refresh_token`
+
+**Relationships:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `user()` | belongsTo | The user who owns this social account |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `byProvider($provider)` | Filter by OAuth provider name |
+| `byUser($userId)` | Filter by user ID |
+| `hasToken()` | Accounts with valid access token |
+| `hasRefreshToken()` | Accounts with refresh token |
+| `tokenNotExpired()` | Accounts with non-expired tokens |
+
+**Helper Methods:**
+| Method | Return | Description |
+|--------|--------|-------------|
+| `isTokenExpired()` | bool | Check if token has expired |
+
+**User Model Relationship:**
+```php
+// In User.php
+public function socialAccounts(): HasMany
+{
+    return $this->hasMany(SocialAccount::class);
+}
+```
+
+### Supported Providers
+
+| Provider | Value | OAuth Version |
+|----------|-------|---------------|
+| Google | `google` | OAuth 2.0 |
+| GitHub | `github` | OAuth 2.0 |
+| Facebook | `facebook` | OAuth 2.0 |
+| LinkedIn | `linkedin` | OAuth 2.0 |
+
+### Factory States
+
+| State | Description |
+|-------|-------------|
+| `google` | Google provider with sample token |
+| `github` | GitHub provider with sample token |
+| `facebook` | Facebook provider with sample token |
+| `linkedin` | LinkedIn provider with sample token |
+| `forUser($userId)` | Associate with specific user |
+| `withToken()` | Include valid access token |
+| `withoutToken()` | No access token |
+| `expiredToken()` | Expired access token |
+| `validToken()` | Non-expired access token |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CreateSocialAccountsTableTest` | 36 | 68 |
+| `SocialAccountTest` | 28 | 51 |
+| **Total** | **64** | **119** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Schema Structure | 9 | Column types, defaults |
+| Foreign Keys | 4 | Cascade delete, constraint validation |
+| Unique Constraints | 3 | Duplicate prevention |
+| Indexes | 2 | Composite index verification |
+| Migration Rollback | 2 | Drop table on rollback |
+| Data Validation | 6 | Provider validation, token handling |
+| Edge Cases | 8 | Unicode, long tokens, empty providers |
+| Security | 2 | Token encryption |
+| Model Scopes | 6 | Query scopes |
+| Helper Methods | 4 | isTokenExpired() |
+
+### Security Tests
+
+| Test ID | Description | Result |
+|---------|-------------|--------|
+| SEC-001 | SQL injection prevention | PASS |
+| SEC-002 | XSS prevention in provider fields | PASS |
+| SEC-003 | Token encryption at rest | PASS |
+| SEC-004 | Refresh token encryption | PASS |
+| SEC-005 | Unique constraint prevents hijacking | PASS |
+
+### Production Status
+- **Deployed:** 2026-03-01 (commit 496b0bf via GitHub Actions run 22543807403)
+- **Migration Batch:** 27
+- **Health Check:** Passing
+- **Tests:** 64/64 passing (119 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-25-1 (Laravel Sanctum & Socialite packages)
+
+### Related Tasks
+- TASK-25-6: Configure Google OAuth Credentials
+- TASK-25-7: Create GoogleOAuthService
+- TASK-25-8: Implement GoogleAuthController
+- FEAT-025: User Accounts + Dashboard + Analysis History
+
+---
 ## Dashboard API (TASK-25-15)
 
 ### Service Description
