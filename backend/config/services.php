@@ -37,20 +37,37 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Google OAuth for Search Console Integration
+    | Google OAuth for Socialite (User Authentication)
     |--------------------------------------------------------------------------
     |
-    | Credentials for Google OAuth 2.0 flow used to access Google Search Console API.
-    | Create credentials at: https://console.cloud.google.com/apis/credentials
+    | Credentials for Google OAuth 2.0 flow used for user authentication via
+    | Laravel Socialite. Create credentials at:
+    | https://console.cloud.google.com/apis/credentials
     |
-    | Required scopes: https://www.googleapis.com/auth/webmasters.readonly
+    | Required scopes: email, profile (default from Socialite)
+    |
+    | Setup Instructions:
+    | 1. Go to Google Cloud Console: https://console.cloud.google.com
+    | 2. Create/select a project (e.g., "SEOIndicator")
+    | 3. Go to APIs & Services > Credentials
+    | 4. Create OAuth 2.0 Client ID (Web application)
+    | 5. Add authorized JavaScript origins:
+    |    - Development: http://localhost:3000
+    |    - Production: https://seoindicator.com
+    | 6. Add authorized redirect URIs:
+    |    - Development: http://localhost:8000/api/v1/auth/google/callback
+    |    - Production: https://seoindicator.com/api/v1/auth/google/callback
+    | 7. Copy Client ID and Client Secret to .env
+    |
+    | FREE Tier: 100 OAuth logins per day
     */
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+        // Additional redirect URIs for multi-environment support
         'redirect_uris' => array_filter([
             env('GOOGLE_REDIRECT_URI'),
-            // Production URI (if different from env)
             env('GOOGLE_REDIRECT_URI_PROD'),
         ]),
     ],
