@@ -156,7 +156,7 @@ const GUIDES: SEOGuide[] = [
     readTime: 6,
     sections: [],
     checklist: [],
-    relatedGuides: ['heading-hierarchy', 'open-graph'],
+    relatedGuides: ['open-graph', 'canonical-urls'],
   },
   {
     slug: 'canonical-urls',

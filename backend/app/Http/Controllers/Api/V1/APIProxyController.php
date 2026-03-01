@@ -461,6 +461,12 @@ class APIProxyController extends Controller
                         'description' => 'Analyzes keyword frequency and density in page content.',
                         'requiresKeyword' => true,
                     ],
+                    [
+                        'id' => 'social-media-preview',
+                        'name' => 'Social Media Preview',
+                        'description' => 'Analyzes Open Graph and Twitter Card tags and generates social media share previews for Facebook, Twitter, and LinkedIn.',
+                        'requiresKeyword' => false,
+                    ],
                 ],
             ],
         ]);

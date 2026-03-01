@@ -173,4 +173,52 @@ class ProgressService
             ->where('status', AnalysisJob::STATUS_CANCELLED)
             ->exists();
     }
+
+    /**
+     * Mark an indicator as skipped.
+     * Used when an indicator cannot be processed due to resource constraints.
+     */
+    public function markSkipped(int $jobId, string $indicatorSlug, string $reason): void
+    {
+        DB::transaction(function () use ($jobId, $indicatorSlug, $reason) {
+            $jobResult = AnalysisJobResult::where('job_id', $jobId)
+                ->where('indicator_slug', $indicatorSlug)
+                ->first();
+
+            if (!$jobResult) {
+                Log::warning('Mark skipped failed: result not found', [
+                    'job_id' => $jobId,
+                    'indicator_slug' => $indicatorSlug,
+                ]);
+                return;
+            }
+
+            // Update result
+            $jobResult->status = AnalysisJobResult::STATUS_SKIPPED;
+            $jobResult->error_message = $reason;
+            $jobResult->completed_at = now();
+            $jobResult->save();
+
+            // Update job progress (skipped counts toward completion)
+            $job = AnalysisJob::find($jobId);
+            $job->completed_indicators = $job->results()
+                ->where('status', AnalysisJobResult::STATUS_COMPLETED)
+                ->count();
+            $job->failed_indicators = $job->results()
+                ->where('status', AnalysisJobResult::STATUS_FAILED)
+                ->count();
+            $job->progress_percent = $job->calculateProgress();
+            $job->save();
+
+            // Broadcast events
+            event(new AnalysisIndicatorComplete($jobResult));
+            event(new AnalysisProgressUpdated($job));
+
+            Log::info('Indicator skipped', [
+                'job_id' => $jobId,
+                'indicator_slug' => $indicatorSlug,
+                'reason' => $reason,
+            ]);
+        });
+    }
 }

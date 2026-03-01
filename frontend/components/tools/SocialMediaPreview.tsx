@@ -39,7 +39,7 @@ export function SocialMediaPreview({
     setError(null);
 
     try {
-      const response = await fetch("/api/tools/analyze", {
+      const response = await fetch("/api/v1/tools/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -136,6 +136,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Analysis errors log channel (TASK-19-13)
+        'analysis-errors' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/analysis-errors.log'),
+            'level' => 'debug',
+            'days' => 14, // Keep analysis error logs for 14 days
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];
