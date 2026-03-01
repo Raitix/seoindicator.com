@@ -1,7 +1,7 @@
 # TASK-21-4: Create Prompt Templates for All Indicators
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
