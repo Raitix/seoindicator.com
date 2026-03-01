@@ -30,6 +30,7 @@ class ProxyAnalyzeRequest extends FormRequest
             'url' => ['required', 'string', 'max:2048'],
             'tool' => ['nullable', 'string', 'in:meta-tag-analyzer,keyword-density-checker'],
             'keyword' => ['nullable', 'string', 'max:255'],
+            'site_id' => ['nullable', 'integer', 'exists:sites,id'],
         ];
     }
 

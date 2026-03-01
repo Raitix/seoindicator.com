@@ -19,7 +19,7 @@ return new class extends Migration
             $table->id();
 
             // Foreign keys
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('site_id')->nullable();
 
             // Analysis details

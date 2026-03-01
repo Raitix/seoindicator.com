@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
- * API Proxy Controller for TASK-16-1, TASK-16-2, TASK-16-3.
+ * API Proxy Controller for TASK-16-1, TASK-16-2, TASK-16-3, TASK-25-14.
  * 
  * Provides a secure proxy endpoint for fetching and analyzing external web pages
  * for SEO tool functionality. Implements SSRF protection, rate limiting, and CAPTCHA.
@@ -29,6 +29,11 @@ use Illuminate\Support\Str;
  * Supported tools:
  * - meta-tag-analyzer: Analyzes meta tags, title, description, Open Graph, Twitter Cards
  * - keyword-density-checker: Analyzes keyword frequency and density
+ * 
+ * Analysis History Integration (TASK-25-14):
+ * - Every tool execution creates an AnalysisHistory record
+ * - Duration tracking in milliseconds
+ * - Cost tracking triggered for successful analyses
  */
 class APIProxyController extends Controller
 {
@@ -39,6 +44,8 @@ class APIProxyController extends Controller
     protected MetaTagAnalyzer $metaTagAnalyzer;
     protected KeywordDensityChecker $keywordDensityChecker;
     protected MobileFriendlyChecker $mobileFriendlyChecker;
+    protected AnalysisHistoryService $analysisHistoryService;
+    protected CostTrackingService $costTrackingService;
 
     public function __construct(
         URLValidationService $urlValidator,
@@ -47,7 +54,9 @@ class APIProxyController extends Controller
         CaptchaService $captcha,
         MetaTagAnalyzer $metaTagAnalyzer,
         KeywordDensityChecker $keywordDensityChecker,
-        MobileFriendlyChecker $mobileFriendlyChecker
+        MobileFriendlyChecker $mobileFriendlyChecker,
+        AnalysisHistoryService $analysisHistoryService,
+        CostTrackingService $costTrackingService
     ) {
         $this->urlValidator = $urlValidator;
         $this->htmlParser = $htmlParser;
@@ -56,6 +65,8 @@ class APIProxyController extends Controller
         $this->metaTagAnalyzer = $metaTagAnalyzer;
         $this->keywordDensityChecker = $keywordDensityChecker;
         $this->mobileFriendlyChecker = $mobileFriendlyChecker;
+        $this->analysisHistoryService = $analysisHistoryService;
+        $this->costTrackingService = $costTrackingService;
     }
 
     /**
@@ -98,10 +109,12 @@ class APIProxyController extends Controller
      */
     public function analyze(ProxyAnalyzeRequest $request): JsonResponse
     {
+        $startTime = microtime(true);
         $requestId = $this->generateRequestId();
         $url = $request->input('url');
         $tool = $request->input('tool', 'meta-tag-analyzer');
         $keyword = $request->input('keyword');
+        $siteId = $request->input('site_id');
         $captchaToken = $request->input('captchaToken');
         $clientIp = $this->rateLimiter->getClientIp($request);
 
@@ -122,6 +135,19 @@ class APIProxyController extends Controller
                 'error' => $validation['error'],
                 'code' => $errorCode,
             ]);
+
+            // Create failed analysis history for blocked URLs (SSRF protection)
+            if ($errorCode === 'URL_BLOCKED') {
+                $this->analysisHistoryService->createAnalysis([
+                    'user_id' => auth()->id(),
+                    'site_id' => $siteId,
+                    'tool_name' => $tool,
+                    'input_url' => $url,
+                    'status' => 'failed',
+                    'error_message' => $validation['error'],
+                    'analysis_duration_ms' => $this->analysisHistoryService->calculateDuration($startTime),
+                ]);
+            }
             
             return $this->errorResponse(
                 $errorCode,
@@ -133,6 +159,7 @@ class APIProxyController extends Controller
         }
 
         // Step 2: Rate Limiting Check
+        // Note: Rate limited requests do NOT create history records (AH-015)
         $rateLimit = $this->rateLimiter->check($clientIp);
 
         if (!$rateLimit['allowed']) {
@@ -186,22 +213,65 @@ class APIProxyController extends Controller
             };
 
             if (!$result->success) {
-                return $this->handleToolError($result, $requestId, $url);
+                // Create failed analysis history
+                $duration = $this->analysisHistoryService->calculateDuration($startTime);
+                $analysis = $this->analysisHistoryService->createAnalysis([
+                    'user_id' => auth()->id(),
+                    'site_id' => $siteId,
+                    'tool_name' => $tool,
+                    'input_url' => $url,
+                    'status' => 'failed',
+                    'error_message' => $result->error ?? 'Analysis failed',
+                    'analysis_duration_ms' => $duration,
+                ]);
+
+                return $this->handleToolError($result, $requestId, $url, $analysis->id);
             }
+
+            // Create successful analysis history
+            $duration = $this->analysisHistoryService->calculateDuration($startTime);
+            $analysis = $this->analysisHistoryService->createAnalysis([
+                'user_id' => auth()->id(),
+                'site_id' => $siteId,
+                'tool_name' => $tool,
+                'input_url' => $url,
+                'status' => 'completed',
+                'results' => $result->toArray(),
+                'analysis_duration_ms' => $duration,
+            ]);
+
+            // Trigger cost tracking for successful analysis
+            $this->costTrackingService->recordCost($analysis, ['units' => 1]);
 
             return response()->json(array_merge(
                 $result->toArray(),
-                ['request_id' => $requestId]
+                [
+                    'request_id' => $requestId,
+                    'analysis_id' => $analysis->id,
+                    'analysis_duration_ms' => $duration,
+                ]
             ))->withHeaders($this->rateLimiter->getHeaders($clientIp));
             
         } catch (ConnectionException $e) {
+            $duration = $this->analysisHistoryService->calculateDuration($startTime);
+            $isTimeout = str_contains(strtolower($e->getMessage()), 'timeout');
+            
+            // Create failed analysis history for connection errors
+            $analysis = $this->analysisHistoryService->createAnalysis([
+                'user_id' => auth()->id(),
+                'site_id' => $siteId,
+                'tool_name' => $tool,
+                'input_url' => $url,
+                'status' => 'failed',
+                'error_message' => $e->getMessage(),
+                'analysis_duration_ms' => $duration,
+            ]);
+
             Log::error('Tools API: Connection error', [
                 'request_id' => $requestId,
                 'url' => $url,
                 'error' => $e->getMessage(),
             ]);
-            
-            $isTimeout = str_contains(strtolower($e->getMessage()), 'timeout');
             
             return $this->errorResponse(
                 $isTimeout ? 'TIMEOUT' : 'FETCH_FAILED',
@@ -210,9 +280,25 @@ class APIProxyController extends Controller
                     : 'Failed to fetch the URL. The server may be unreachable.',
                 $isTimeout ? 504 : 502,
                 $requestId,
-                ['suggestion' => $this->getSuggestion($isTimeout ? 'TIMEOUT' : 'FETCH_FAILED')]
+                [
+                    'suggestion' => $this->getSuggestion($isTimeout ? 'TIMEOUT' : 'FETCH_FAILED'),
+                    'analysis_id' => $analysis->id,
+                ]
             );
         } catch (\Exception $e) {
+            $duration = $this->analysisHistoryService->calculateDuration($startTime);
+            
+            // Create failed analysis history for unexpected errors
+            $analysis = $this->analysisHistoryService->createAnalysis([
+                'user_id' => auth()->id(),
+                'site_id' => $siteId,
+                'tool_name' => $tool,
+                'input_url' => $url,
+                'status' => 'failed',
+                'error_message' => $e->getMessage(),
+                'analysis_duration_ms' => $duration,
+            ]);
+
             Log::error('Tools API: Unexpected error', [
                 'request_id' => $requestId,
                 'url' => $url,
@@ -225,7 +311,10 @@ class APIProxyController extends Controller
                 'An unexpected error occurred during analysis.',
                 500,
                 $requestId,
-                config('app.debug') ? ['exception' => $e->getMessage()] : []
+                array_merge(
+                    ['analysis_id' => $analysis->id],
+                    config('app.debug') ? ['exception' => $e->getMessage()] : []
+                )
             );
         }
     }
@@ -233,7 +322,7 @@ class APIProxyController extends Controller
     /**
      * Handle tool-specific errors with appropriate status codes.
      */
-    protected function handleToolError(ToolResult $result, string $requestId, string $url): JsonResponse
+    protected function handleToolError(ToolResult $result, string $requestId, string $url, ?int $analysisId = null): JsonResponse
     {
         $errorCode = $result->errorCode ?? 'TOOL_ERROR';
         $error = $result->error ?? 'An error occurred during analysis.';
@@ -271,14 +360,20 @@ class APIProxyController extends Controller
             'error' => $error,
             'code' => $errorCode,
             'status' => $status,
+            'analysis_id' => $analysisId,
         ]);
+        
+        $additionalData = ['suggestion' => $this->getSuggestion($errorCode)];
+        if ($analysisId) {
+            $additionalData['analysis_id'] = $analysisId;
+        }
         
         return $this->errorResponse(
             $errorCode,
             $error,
             $status,
             $requestId,
-            ['suggestion' => $this->getSuggestion($errorCode)]
+            $additionalData
         );
     }
 

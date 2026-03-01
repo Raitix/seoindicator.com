@@ -277,3 +277,13 @@ The static export HTML shows correct implementation:
 **Status:** Rolled back to `To Deploy` pending composer.lock fix
 
 Status: `To Deploy`
+
+### [2026-03-01 12:53 GMT+2] DevOps - Deployment Retry
+**Issue:** Fixing composer.lock sync issue and redeploying
+
+**Actions:**
+1. Run `composer update` in backend directory
+2. Commit updated `composer.lock`
+3. Push to trigger new deployment
+
+Status: `In Deployment`
