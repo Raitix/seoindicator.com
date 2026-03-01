@@ -2,6 +2,81 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+// JSON-LD Schema for tools
+const toolsSchema = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Free SEO Tools",
+  "description": "Free online SEO tools for meta tag analysis, keyword density checking, mobile-friendly testing, and social media previews.",
+  "numberOfItems": 4,
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "item": {
+        "@type": "SoftwareApplication",
+        "name": "Meta Tag Analyzer",
+        "applicationCategory": "WebApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Analyze your page's meta tags including title, description, Open Graph, and Twitter Card tags."
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "item": {
+        "@type": "SoftwareApplication",
+        "name": "Keyword Density Checker",
+        "applicationCategory": "WebApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Check keyword density and placement in your content. Get recommendations for optimal keyword usage."
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "item": {
+        "@type": "SoftwareApplication",
+        "name": "Mobile-Friendly Test",
+        "applicationCategory": "WebApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Test how mobile-friendly your page is. Check viewport settings, tap targets, and text readability."
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 4,
+      "item": {
+        "@type": "SoftwareApplication",
+        "name": "Social Media Preview",
+        "applicationCategory": "WebApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Preview how your page appears on Facebook, Twitter, and other social platforms."
+      }
+    }
+  ]
+};
+
 const tools = [
   {
     id: "meta-tag-analyzer",
@@ -66,6 +141,12 @@ const tools = [
 export default function ToolsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
+      {/* JSON-LD Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(toolsSchema) }}
+      />
+
       {/* Header */}
       <header className="border-b border-slate-700">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -207,6 +288,62 @@ export default function ToolsPage() {
             </p>
           </CardContent>
         </Card>
+      </section>
+
+      {/* Related SEO Guides */}
+      <section className="container mx-auto px-4 py-12 border-t border-slate-700">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-white mb-6 text-center">
+            Learn More About SEO
+          </h2>
+          <p className="text-slate-400 text-center mb-8">
+            Deepen your SEO knowledge with our comprehensive guides.
+          </p>
+          <div className="grid md:grid-cols-3 gap-4">
+            <Link 
+              href="/seo-guides/meta-title/" 
+              className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 hover:border-emerald-500/50 transition-colors"
+            >
+              <h3 className="font-semibold text-white mb-1">Meta Title Guide</h3>
+              <p className="text-sm text-slate-400">Learn how to write compelling title tags.</p>
+            </Link>
+            <Link 
+              href="/seo-guides/meta-description/" 
+              className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 hover:border-emerald-500/50 transition-colors"
+            >
+              <h3 className="font-semibold text-white mb-1">Meta Description Guide</h3>
+              <p className="text-sm text-slate-400">Master the art of meta descriptions.</p>
+            </Link>
+            <Link 
+              href="/seo-guides/open-graph/" 
+              className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 hover:border-emerald-500/50 transition-colors"
+            >
+              <h3 className="font-semibold text-white mb-1">Open Graph Guide</h3>
+              <p className="text-sm text-slate-400">Optimize social sharing with OG tags.</p>
+            </Link>
+            <Link 
+              href="/seo-guides/mobile-friendly/" 
+              className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 hover:border-emerald-500/50 transition-colors"
+            >
+              <h3 className="font-semibold text-white mb-1">Mobile-Friendly Guide</h3>
+              <p className="text-sm text-slate-400">Make your site mobile-ready.</p>
+            </Link>
+            <Link 
+              href="/seo-guides/twitter-cards/" 
+              className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 hover:border-emerald-500/50 transition-colors"
+            >
+              <h3 className="font-semibold text-white mb-1">Twitter Cards Guide</h3>
+              <p className="text-sm text-slate-400">Optimize for Twitter sharing.</p>
+            </Link>
+            <Link 
+              href="/seo-guides/" 
+              className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 hover:border-emerald-500/50 transition-colors"
+            >
+              <h3 className="font-semibold text-emerald-400 mb-1">All SEO Guides</h3>
+              <p className="text-sm text-slate-400">Browse our complete guide library.</p>
+            </Link>
+          </div>
+        </div>
       </section>
 
       {/* Footer */}

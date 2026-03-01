@@ -8,9 +8,38 @@ export const metadata = {
   keywords: ["meta tag analyzer", "SEO tool", "title tag checker", "meta description", "Open Graph", "Twitter Card"],
 };
 
+// JSON-LD Schema for Meta Tag Analyzer
+const metaTagAnalyzerSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Meta Tag Analyzer",
+  "applicationCategory": "WebApplication",
+  "operatingSystem": "Web Browser",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "description": "Free tool to analyze meta tags including title, description, Open Graph, and Twitter Card tags. Get instant warnings and optimization suggestions.",
+  "featureList": [
+    "Title tag analysis",
+    "Meta description check",
+    "Open Graph tag validation",
+    "Twitter Card tag validation",
+    "SERP preview",
+    "Canonical URL check"
+  ]
+};
+
 export default function MetaTagAnalyzerPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
+      {/* JSON-LD Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(metaTagAnalyzerSchema) }}
+      />
+
       {/* Header */}
       <header className="border-b border-slate-700">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -153,6 +182,56 @@ export default function MetaTagAnalyzerPage() {
                   <span>Set Open Graph tags to control how your page appears when shared on social media</span>
                 </li>
               </ul>
+            </section>
+
+            {/* Learn More - Related Guides */}
+            <section className="bg-slate-800/50 rounded-lg p-6 border border-slate-700">
+              <h2 className="text-xl font-semibold text-white mb-4">📚 Learn More</h2>
+              <p className="text-slate-400 mb-4">
+                Deepen your understanding of meta tags with our comprehensive guides:
+              </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <Link 
+                  href="/seo-guides/meta-title/" 
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                >
+                  <span className="text-2xl">📝</span>
+                  <div>
+                    <h3 className="font-medium text-white">Meta Title Guide</h3>
+                    <p className="text-sm text-slate-400">Write compelling title tags</p>
+                  </div>
+                </Link>
+                <Link 
+                  href="/seo-guides/meta-description/" 
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                >
+                  <span className="text-2xl">📄</span>
+                  <div>
+                    <h3 className="font-medium text-white">Meta Description Guide</h3>
+                    <p className="text-sm text-slate-400">Master meta descriptions</p>
+                  </div>
+                </Link>
+                <Link 
+                  href="/seo-guides/open-graph/" 
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                >
+                  <span className="text-2xl">🔗</span>
+                  <div>
+                    <h3 className="font-medium text-white">Open Graph Guide</h3>
+                    <p className="text-sm text-slate-400">Optimize social sharing</p>
+                  </div>
+                </Link>
+                <Link 
+                  href="/seo-guides/twitter-cards/" 
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                >
+                  <span className="text-2xl">🐦</span>
+                  <div>
+                    <h3 className="font-medium text-white">Twitter Cards Guide</h3>
+                    <p className="text-sm text-slate-400">Optimize for Twitter</p>
+                  </div>
+                </Link>
+              </div>
             </section>
           </div>
         </div>

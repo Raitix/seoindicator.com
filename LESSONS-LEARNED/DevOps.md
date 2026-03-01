@@ -18,6 +18,16 @@ _(Document rollback events and causes)_
 
 ## Deployment Notes
 
+### TASK-25-23 (OAuth Integration Tests)
+- **Date:** 2026-03-01
+- **Method:** GitHub Actions (automatic)
+- **Run ID:** 22547036649
+- **Result:** Successful
+- **Duration:** ~2 minutes (build: 1m22s, deploy: 33s)
+- **Commit:** `dcb4829`
+- **Health Check:** 200 OK, database connected
+- **Note:** Integration tests for OAuth flow (18 tests, 50 assertions). Tests cover state management, user creation/linking, token authentication, and error handling.
+
 ### TASK-25-7 (GoogleOAuthService)
 - **Date:** 2026-03-01
 - **Method:** GitHub Actions (automatic)
