@@ -1,7 +1,7 @@
 # TASK-24-8: PWA Analysis API Endpoints
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `High`

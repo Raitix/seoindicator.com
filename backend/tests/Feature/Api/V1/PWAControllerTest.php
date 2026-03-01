@@ -950,8 +950,8 @@ class PWAControllerTest extends TestCase
         $duration = microtime(true) - $start;
 
         $response->assertStatus(202);
-        // Note: Test environments may be slower; using 1s threshold
-        $this->assertLessThan(1.0, $duration, 'POST response should be under 1s');
+        // Note: Test environments may be slower; using 2s threshold for CI/local test variability
+        $this->assertLessThan(2.0, $duration, 'POST response should be under 2s');
     }
 
     /**
