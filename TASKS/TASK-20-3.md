@@ -1,7 +1,7 @@
 # TASK-20-3: Create Guide Page Template Component
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
