@@ -17,34 +17,67 @@ use Illuminate\Support\Facades\DB;
 class CostTrackingService
 {
     /**
-     * Cached cost rates from configuration.
+     * Cached cost rates from configuration (lazy-loaded on first use).
      */
-    private array $costRates;
+    private ?array $cachedCostRates = null;
 
     /**
-     * Default cost rate for unknown tools.
+     * Cached default rate.
      */
-    private float $defaultRate;
+    private ?float $cachedDefaultRate = null;
 
     /**
-     * Default currency for costs.
+     * Cached default currency.
      */
-    private string $defaultCurrency;
+    private ?string $cachedDefaultCurrency = null;
 
     /**
-     * Exchange rates for currency conversion.
+     * Cached exchange rates.
      */
-    private array $exchangeRates;
+    private ?array $cachedExchangeRates = null;
 
     /**
-     * Create a new CostTrackingService instance.
+     * Get cost rates from configuration (cached on first use).
      */
-    public function __construct()
+    private function getCostRates(): array
     {
-        $this->costRates = Config::get('costs.rates', []);
-        $this->defaultRate = Config::get('costs.default_rate', 0.01);
-        $this->defaultCurrency = Config::get('costs.currency', 'USD');
-        $this->exchangeRates = Config::get('costs.exchange_rates', ['USD' => 1.0]);
+        if ($this->cachedCostRates === null) {
+            $this->cachedCostRates = Config::get('costs.rates', []);
+        }
+        return $this->cachedCostRates;
+    }
+
+    /**
+     * Get default cost rate from configuration (cached on first use).
+     */
+    private function getDefaultRate(): float
+    {
+        if ($this->cachedDefaultRate === null) {
+            $this->cachedDefaultRate = (float) Config::get('costs.default_rate', 0.01);
+        }
+        return $this->cachedDefaultRate;
+    }
+
+    /**
+     * Get default currency from configuration (cached on first use).
+     */
+    private function getDefaultCurrency(): string
+    {
+        if ($this->cachedDefaultCurrency === null) {
+            $this->cachedDefaultCurrency = Config::get('costs.currency', 'USD');
+        }
+        return $this->cachedDefaultCurrency;
+    }
+
+    /**
+     * Get exchange rates from configuration (cached on first use).
+     */
+    private function getExchangeRates(): array
+    {
+        if ($this->cachedExchangeRates === null) {
+            $this->cachedExchangeRates = Config::get('costs.exchange_rates', ['USD' => 1.0]);
+        }
+        return $this->cachedExchangeRates;
     }
 
     /**
@@ -78,14 +111,14 @@ class CostTrackingService
         // Use DB transaction for atomicity
         DB::transaction(function () use ($analysis, $rate, $metrics, $toolName) {
             // Record base cost (compute)
-            $baseCost = $rate['base'] ?? $this->defaultRate;
+            $baseCost = $rate['base'] ?? $this->getDefaultRate();
             $this->validateRate($baseCost, 'base');
 
             AnalysisCost::create([
                 'analysis_id' => $analysis->id,
                 'cost_type' => 'compute',
                 'cost_units' => 1,
-                'cost_currency' => $rate['currency'] ?? $this->defaultCurrency,
+                'cost_currency' => $rate['currency'] ?? $this->getDefaultCurrency(),
                 'cost_amount' => $baseCost,
                 'description' => "Base cost for {$toolName}",
             ]);
@@ -100,7 +133,7 @@ class CostTrackingService
                     'analysis_id' => $analysis->id,
                     'cost_type' => 'variable',
                     'cost_units' => $units,
-                    'cost_currency' => $rate['currency'] ?? $this->defaultCurrency,
+                    'cost_currency' => $rate['currency'] ?? $this->getDefaultCurrency(),
                     'cost_amount' => $amount,
                     'description' => $metrics['description'] ?? 'Variable cost',
                 ]);
@@ -127,7 +160,7 @@ class CostTrackingService
         $rate = $this->getRateForTool($toolName);
 
         // Validate base rate
-        $baseCost = $rate['base'] ?? $this->defaultRate;
+        $baseCost = $rate['base'] ?? $this->getDefaultRate();
         $this->validateRate($baseCost, 'base');
 
         // Start with base cost
@@ -149,12 +182,13 @@ class CostTrackingService
         }
 
         // Apply exchange rate for currency conversion
-        if (isset($rate['currency']) && $rate['currency'] !== $this->defaultCurrency) {
-            $exchangeRate = $rate['exchange_rate'] ?? ($this->exchangeRates[$rate['currency']] ?? 1.0);
+        if (isset($rate['currency']) && $rate['currency'] !== $this->getDefaultCurrency()) {
+            $exchangeRate = $rate['exchange_rate'] ?? ($this->getExchangeRates()[$rate['currency']] ?? 1.0);
             $totalCost *= (float) $exchangeRate;
         }
 
-        return $totalCost;
+        // Round to avoid floating point precision issues
+        return round($totalCost, 10);
     }
 
     /**
@@ -186,13 +220,15 @@ class CostTrackingService
         $byType = [];
 
         $costs = $query->get();
+        $exchangeRates = $this->getExchangeRates();
+        $defaultCurrency = $this->getDefaultCurrency();
 
         foreach ($costs as $cost) {
             $amount = (float) $cost->cost_amount;
             
             // Convert to default currency if needed
-            if ($cost->cost_currency !== $this->defaultCurrency) {
-                $exchangeRate = $this->exchangeRates[$cost->cost_currency] ?? 1.0;
+            if ($cost->cost_currency !== $defaultCurrency) {
+                $exchangeRate = $exchangeRates[$cost->cost_currency] ?? 1.0;
                 $amount *= $exchangeRate;
             }
 
@@ -235,12 +271,14 @@ class CostTrackingService
      */
     private function getRateForTool(string $toolName): array
     {
+        $costRates = $this->getCostRates();
+        
         // Check if rates array is empty - if so, use default
-        if (empty($this->costRates)) {
-            return ['base' => $this->defaultRate];
+        if (empty($costRates)) {
+            return ['base' => $this->getDefaultRate()];
         }
 
-        return $this->costRates[$toolName] ?? ['base' => $this->defaultRate];
+        return $costRates[$toolName] ?? ['base' => $this->getDefaultRate()];
     }
 
     /**

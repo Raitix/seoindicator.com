@@ -4696,6 +4696,142 @@ npx playwright show-report
 - TASK-1-20: Performance Optimization
 
 ---
+## Analysis Costs Table (TASK-25-11)
+
+### Service Description
+Database migration for tracking per-analysis resource costs. Enables cost transparency for users and provides architecture foundation for future monetization. Part of the User Accounts + Dashboard + Analysis History feature (FEAT-025).
+
+### Database Schema
+
+```sql
+CREATE TABLE analysis_costs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    analysis_id BIGINT UNSIGNED NOT NULL,
+    cost_type VARCHAR(50) NOT NULL,
+    cost_units DECIMAL(10,4) NOT NULL DEFAULT 0,
+    cost_currency VARCHAR(3) DEFAULT 'USD',
+    cost_amount DECIMAL(10,6) NOT NULL DEFAULT 0,
+    description VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (analysis_id) REFERENCES analysis_history(id) ON DELETE CASCADE,
+    INDEX idx_analysis_costs_analysis_id (analysis_id),
+    INDEX idx_analysis_costs_cost_type (cost_type)
+);
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `analysis_id` | BIGINT UNSIGNED | FK to analysis_history.id |
+| `cost_type` | VARCHAR(50) | Cost type: `api_call`, `compute`, `storage`, `variable` |
+| `cost_units` | DECIMAL(10,4) | Number of units consumed |
+| `cost_currency` | VARCHAR(3) | Currency code (default: 'USD') |
+| `cost_amount` | DECIMAL(10,6) | Total cost amount (high precision for micro-costs) |
+| `description` | VARCHAR(255) | Human-readable cost description |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+
+### Indexes
+
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `idx_analysis_costs_analysis_id` | analysis_id | Fast lookup by analysis |
+| `idx_analysis_costs_cost_type` | cost_type | Filter by cost type |
+
+### Foreign Keys
+
+| Constraint | Columns | References | On Delete |
+|------------|---------|------------|-----------|
+| `analysis_costs_analysis_id_foreign` | analysis_id | analysis_history.id | CASCADE |
+
+### Cost Types
+
+| Type | Description |
+|------|-------------|
+| `api_call` | External API usage costs |
+| `compute` | CPU/compute time costs |
+| `storage` | Storage usage costs |
+| `variable` | Dynamic costs based on usage metrics |
+
+### Decimal Precision
+
+| Field | Precision | Use Case |
+|-------|-----------|----------|
+| `cost_units` | DECIMAL(10,4) | Supports fractional units up to 999,999.9999 |
+| `cost_amount` | DECIMAL(10,6) | High precision for micro-costs ($0.000001) |
+
+### Model: AnalysisCost
+
+**Location:** `backend/app/Models/AnalysisCost.php`
+
+**Relationships:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `analysis()` | belongsTo | The analysis this cost belongs to |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `forAnalysis($analysisId)` | Filter costs by analysis ID |
+| `ofType($costType)` | Filter costs by type |
+| `withCurrency($currency)` | Filter costs by currency |
+
+**Accessors:**
+| Accessor | Description |
+|----------|-------------|
+| `formatted_amount` | Cost amount with currency symbol |
+| `cost_type_label` | Human-readable cost type label |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-01 (commit b0d950a) |
+| **Migration** | `2026_03_01_000004_create_analysis_costs_table.php` |
+| **Health Check** | Passing |
+| **Tests** | 47 tests, 85 assertions - all passing |
+| **Status** | Complete |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| CreateAnalysisCostsTableTest | 32 | 52 |
+| AnalysisCostTest | 15 | 33 |
+| **Total** | **47** | **85** |
+
+**Test Categories:**
+- Schema structure (8 tests): All columns with correct types
+- Decimal precision (6 tests): DECIMAL(10,4) and DECIMAL(10,6) working
+- Foreign keys (2 tests): CASCADE delete verified
+- Indexes (2 tests): analysis_id and cost_type indexes exist
+- Default values (4 tests): USD currency, zero defaults working
+- Migration rollback (2 tests): Down method drops table correctly
+- Cost type validation (5 tests): All types accepted (flexible VARCHAR)
+- Security (3 tests): SQL injection and XSS protection
+- Model tests (15 tests): Relationships, scopes, accessors
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SQL Injection | Eloquent ORM with parameterized queries |
+| Mass Assignment | Model `$fillable` whitelist |
+| Foreign Key | CASCADE delete ensures data integrity |
+| XSS Protection | Input validation and output escaping |
+
+### Dependencies
+
+- TASK-25-10 (analysis_history table)
+
+### Related Tasks
+
+- TASK-25-10: analysis_history Table
+- TASK-25-12: AnalysisHistory Model & Repository
+- TASK-25-13: CostTrackingService
+
+---
 ## IconValidatorService (TASK-24-5)
 
 ### Service Description
