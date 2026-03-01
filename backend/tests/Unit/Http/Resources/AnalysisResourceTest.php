@@ -181,14 +181,15 @@ class AnalysisResourceTest extends TestCase
     /** @test AR-011: Site relationship */
     public function test_site_relationship(): void
     {
+        $site = \App\Models\Site::factory()->create();
         $analysis = AnalysisHistory::factory()->create([
-            'site_id' => 123,
+            'site_id' => $site->id,
         ]);
 
         $resource = new AnalysisResource($analysis);
         $data = $resource->toArray(request());
 
-        $this->assertEquals(123, $data['siteId']);
+        $this->assertEquals($site->id, $data['siteId']);
     }
 
     /** @test AR-012: Site null handling */
