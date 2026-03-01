@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\PasswordResetController;
+use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\CompetitorController;
 use App\Http\Controllers\Api\V1\ComparisonController;
 use App\Http\Controllers\Api\V1\IssueTypeController;
@@ -95,10 +97,23 @@ Route::post('/v1/auth/register', [AuthController::class, 'register']);
 Route::post('/v1/auth/login', [AuthController::class, 'login'])
     ->middleware('throttle:5,1');
 
+// Password reset routes (TASK-25-4)
+Route::post('/v1/auth/forgot-password', [PasswordResetController::class, 'forgotPassword']);
+Route::post('/v1/auth/reset-password', [PasswordResetController::class, 'resetPassword']);
+
+// Email verification routes (TASK-25-5)
+Route::get('/v1/auth/verify-email/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed'])
+    ->name('verification.verify')
+    ->where('id', '[0-9]+');
+
 // Protected auth routes
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/v1/auth/logout', [AuthController::class, 'logout']);
     Route::get('/v1/auth/user', [AuthController::class, 'user']);
+
+    // Email verification resend (TASK-25-5)
+    Route::post('/v1/auth/resend-verification', [EmailVerificationController::class, 'resend']);
 });
 
 /*
