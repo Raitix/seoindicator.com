@@ -142,4 +142,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(AnalysisHistory::class);
     }
+
+    /**
+     * Get the social accounts (OAuth connections) for this user.
+     */
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
 }
