@@ -1,7 +1,7 @@
 # TASK-25-6: Configure Google OAuth Credentials
 
 ## STATUS
-`To Test Locally`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -69,6 +69,50 @@ Config in `config/services.php`:
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 16:15 GMT+2] Agent: DevOps
+**Deployment Analysis:**
+
+This is a **configuration task**, not a code deployment task. The acceptance criteria clearly indicate that most items require **manual user action in Google Cloud Console**.
+
+**What's Deployed (Code-Level):**
+- ✅ `config/services.php` has Google OAuth provider configuration (from previous work)
+- ✅ Local `.env` has placeholder credentials (format-compliant for development)
+- ✅ Tests verify configuration structure is correct
+
+**What Requires Manual User Action:**
+- ❌ Google Cloud Project creation
+- ❌ OAuth 2.0 Client ID creation
+- ❌ Authorized JavaScript origins configuration
+- ❌ Authorized redirect URIs configuration
+- ❌ Real Client ID/Secret generation
+
+**Deployment Status:**
+- No code changes to deploy for this task (`.env` is gitignored)
+- The Google OAuth feature **will not work** until user completes Google Cloud Console setup
+- Placeholder credentials are for development testing only
+
+**User Action Required:**
+1. Go to https://console.cloud.google.com/apis/credentials
+2. Create/select a Google Cloud project
+3. Create OAuth 2.0 Client ID (Web application type)
+4. Configure authorized JavaScript origins:
+   - Local: `http://localhost:3000`
+   - Production: `https://seoindicator.com`
+5. Configure authorized redirect URIs:
+   - Local: `http://localhost:8000/api/v1/auth/google/callback`
+   - Production: `https://seoindicator.com/api/v1/auth/google/callback`
+6. Copy Client ID and Client Secret to production `.env` file
+
+**Next Agent (ProdTester):**
+- Verify configuration files are in place
+- Note: OAuth login will fail until user provides real credentials
+- The task is structurally complete, functionality requires external setup
+
+Status updated: `To Test Prod`
+
+---
+*Created by DevOps*
 
 ### [2026-03-01 16:05 GMT+2] Agent: Developer
 **Implementation Complete:**
