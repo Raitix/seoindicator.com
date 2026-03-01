@@ -30,8 +30,16 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// Mock Next.js Link
+jest.mock('next/link', () => {
+  return function MockLink({ children, href, ...props }: { children: React.ReactNode; href: string }) {
+    return <a href={href} {...props}>{children}</a>;
+  };
+});
+
 // Import after mocks
 import { getAllGuides, getGuidesByCategory, getGuidesWithTools } from '@/lib/guides/registry';
+import GuidesIndexPage from '@/app/seo-guides/page';
 
 // Test data - 17 guides with correct distribution
 const mockGuides = [
@@ -58,67 +66,20 @@ const mockGuides = [
 ];
 
 const mockGuidesWithTools = mockGuides.filter(g => g.toolSlug);
-
-// Helper to render the component (will be replaced with actual import)
-// For TDD, we define the expected behavior
-function renderGuideIndexPage() {
-  // This will be replaced with: render(<GuideIndexPage />)
-  // For now, we're documenting expected behavior
-  return render(
-    <div data-testid="guide-index-page">
-      <h1>SEO Guides</h1>
-      <p data-testid="page-description">Master SEO with our comprehensive guides</p>
-      
-      {/* Category Filter */}
-      <div role="tablist" data-testid="category-filter">
-        <button role="tab" aria-selected="true" data-testid="tab-all">All</button>
-        <button role="tab" aria-selected="false" data-testid="tab-on-page">On-Page</button>
-        <button role="tab" aria-selected="false" data-testid="tab-technical">Technical</button>
-        <button role="tab" aria-selected="false" data-testid="tab-content">Content</button>
-      </div>
-      
-      {/* Search Input */}
-      <div data-testid="search-container">
-        <input 
-          type="search" 
-          placeholder="Search guides..." 
-          aria-label="Search guides"
-          data-testid="search-input"
-        />
-      </div>
-      
-      {/* Guide Grid */}
-      <div data-testid="guide-grid" role="list">
-        {mockGuides.map(guide => (
-          <article 
-            key={guide.slug} 
-            role="listitem"
-            data-testid={`guide-card-${guide.slug}`}
-          >
-            <span data-testid={`icon-${guide.slug}`}>{guide.icon}</span>
-            <h2 data-testid={`title-${guide.slug}`}>{guide.title}</h2>
-            <p data-testid={`summary-${guide.slug}`}>{guide.summary}</p>
-            <span data-testid={`read-time-${guide.slug}`}>{guide.readTime} min read</span>
-            {guide.toolSlug && (
-              <span data-testid={`tool-badge-${guide.slug}`}>Has Tool</span>
-            )}
-            <a href={`/seo-guides/${guide.slug}`} data-testid={`link-${guide.slug}`}>
-              Read guide
-            </a>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
+const mockOnPageGuides = mockGuides.filter(g => g.category === 'on-page');
+const mockTechnicalGuides = mockGuides.filter(g => g.category === 'technical');
+const mockContentGuides = mockGuides.filter(g => g.category === 'content');
 
 describe('Guide Index Page', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getAllGuides as jest.Mock).mockReturnValue(mockGuides);
-    (getGuidesByCategory as jest.Mock).mockImplementation((category) => 
-      category ? mockGuides.filter(g => g.category === category) : mockGuides
-    );
+    (getGuidesByCategory as jest.Mock).mockImplementation((category) => {
+      if (category === 'on-page') return mockOnPageGuides;
+      if (category === 'technical') return mockTechnicalGuides;
+      if (category === 'content') return mockContentGuides;
+      return mockGuides;
+    });
     (getGuidesWithTools as jest.Mock).mockReturnValue(mockGuidesWithTools);
   });
 
@@ -127,23 +88,24 @@ describe('Guide Index Page', () => {
   // ============================================================
   describe('Page Rendering', () => {
     it('R1: Page renders without errors', () => {
-      renderGuideIndexPage();
-      expect(screen.getByTestId('guide-index-page')).toBeInTheDocument();
+      render(<GuidesIndexPage />);
+      expect(screen.getByRole('heading', { name: 'SEO Guides' })).toBeInTheDocument();
     });
 
     it('R2: All 17 guides displayed in grid', () => {
-      renderGuideIndexPage();
-      const cards = screen.getAllByRole('listitem');
+      render(<GuidesIndexPage />);
+      const grid = screen.getByTestId('guide-grid');
+      const cards = within(grid).getAllByRole('listitem');
       expect(cards).toHaveLength(17);
     });
 
     it('R3: Page title set correctly', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       expect(screen.getByRole('heading', { name: 'SEO Guides', level: 1 })).toBeInTheDocument();
     });
 
     it('R4: Page description displayed', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       expect(screen.getByTestId('page-description')).toBeInTheDocument();
     });
   });
@@ -153,47 +115,47 @@ describe('Guide Index Page', () => {
   // ============================================================
   describe('Guide Cards', () => {
     it('C1: Each card shows icon', () => {
-      renderGuideIndexPage();
-      const icon = screen.getByTestId('icon-meta-title');
+      render(<GuidesIndexPage />);
+      const icon = screen.getByTestId('guide-icon-meta-title');
       expect(icon).toHaveTextContent('📝');
     });
 
     it('C2: Each card shows title', () => {
-      renderGuideIndexPage();
-      expect(screen.getByTestId('title-meta-title')).toHaveTextContent('Meta Title Optimization');
+      render(<GuidesIndexPage />);
+      expect(screen.getByTestId('guide-title-meta-title')).toHaveTextContent('Meta Title Optimization');
     });
 
     it('C3: Each card shows summary', () => {
-      renderGuideIndexPage();
-      expect(screen.getByTestId('summary-meta-title')).toHaveTextContent('Learn how to craft compelling page titles');
+      render(<GuidesIndexPage />);
+      expect(screen.getByTestId('guide-summary-meta-title')).toHaveTextContent('Learn how to craft compelling page titles');
     });
 
     it('C4: Each card shows read time', () => {
-      renderGuideIndexPage();
-      expect(screen.getByTestId('read-time-meta-title')).toHaveTextContent('5 min read');
+      render(<GuidesIndexPage />);
+      expect(screen.getByTestId('guide-read-time-meta-title')).toHaveTextContent('5 min read');
     });
 
     it('C5: Cards with tools show badge', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       // meta-title has toolSlug
       expect(screen.getByTestId('tool-badge-meta-title')).toHaveTextContent('Has Tool');
     });
 
     it('C6: Cards without tools show no badge', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       // h1-headings has no toolSlug
       expect(screen.queryByTestId('tool-badge-h1-headings')).not.toBeInTheDocument();
     });
 
     it('C7: Card links to correct guide page', () => {
-      renderGuideIndexPage();
-      const link = screen.getByTestId('link-meta-title');
+      render(<GuidesIndexPage />);
+      const link = screen.getByTestId('guide-link-meta-title');
       expect(link).toHaveAttribute('href', '/seo-guides/meta-title');
     });
 
-    it('C8: Card is keyboard accessible', () => {
-      renderGuideIndexPage();
-      const link = screen.getByTestId('link-meta-title');
+    it('C8: Card is keyboard accessible', async () => {
+      render(<GuidesIndexPage />);
+      const link = screen.getByTestId('guide-link-meta-title');
       link.focus();
       expect(link).toHaveFocus();
     });
@@ -204,38 +166,50 @@ describe('Guide Index Page', () => {
   // ============================================================
   describe('Category Filter', () => {
     it('F1: All tab selected by default', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       const allTab = screen.getByTestId('tab-all');
       expect(allTab).toHaveAttribute('aria-selected', 'true');
     });
 
-    it('F2: On-Page tab filters correctly (8 guides)', () => {
-      renderGuideIndexPage();
+    it('F2: On-Page tab filters correctly (8 guides)', async () => {
+      const user = userEvent.setup();
+      render(<GuidesIndexPage />);
+      
       const onPageTab = screen.getByTestId('tab-on-page');
-      fireEvent.click(onPageTab);
+      await user.click(onPageTab);
       
-      // Should call getGuidesByCategory with 'on-page'
-      expect(getGuidesByCategory).toHaveBeenCalledWith('on-page');
+      // Should show only on-page guides
+      const grid = screen.getByTestId('guide-grid');
+      const cards = within(grid).getAllByRole('listitem');
+      expect(cards).toHaveLength(8);
     });
 
-    it('F3: Technical tab filters correctly (7 guides)', () => {
-      renderGuideIndexPage();
+    it('F3: Technical tab filters correctly (7 guides)', async () => {
+      const user = userEvent.setup();
+      render(<GuidesIndexPage />);
+      
       const technicalTab = screen.getByTestId('tab-technical');
-      fireEvent.click(technicalTab);
+      await user.click(technicalTab);
       
-      expect(getGuidesByCategory).toHaveBeenCalledWith('technical');
+      const grid = screen.getByTestId('guide-grid');
+      const cards = within(grid).getAllByRole('listitem');
+      expect(cards).toHaveLength(7);
     });
 
-    it('F4: Content tab filters correctly (2 guides)', () => {
-      renderGuideIndexPage();
-      const contentTab = screen.getByTestId('tab-content');
-      fireEvent.click(contentTab);
+    it('F4: Content tab filters correctly (2 guides)', async () => {
+      const user = userEvent.setup();
+      render(<GuidesIndexPage />);
       
-      expect(getGuidesByCategory).toHaveBeenCalledWith('content');
+      const contentTab = screen.getByTestId('tab-content');
+      await user.click(contentTab);
+      
+      const grid = screen.getByTestId('guide-grid');
+      const cards = within(grid).getAllByRole('listitem');
+      expect(cards).toHaveLength(2);
     });
 
     it('F5: Active tab shows visual indicator', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       const allTab = screen.getByTestId('tab-all');
       expect(allTab).toHaveAttribute('aria-selected', 'true');
       
@@ -245,7 +219,7 @@ describe('Guide Index Page', () => {
 
     it('F6: Tab navigation is keyboard accessible', async () => {
       const user = userEvent.setup();
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
       const allTab = screen.getByTestId('tab-all');
       allTab.focus();
@@ -262,64 +236,78 @@ describe('Guide Index Page', () => {
   // ============================================================
   describe('Search', () => {
     it('S1: Search input renders', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       expect(screen.getByTestId('search-input')).toBeInTheDocument();
     });
 
     it('S2: Search filters by title', async () => {
-      renderGuideIndexPage();
+      const user = userEvent.setup();
+      render(<GuidesIndexPage />);
+      
       const searchInput = screen.getByTestId('search-input');
+      await user.type(searchInput, 'meta');
       
-      fireEvent.change(searchInput, { target: { value: 'meta' } });
-      
-      // Should show only guides with "meta" in title
-      const visibleCards = screen.getAllByRole('listitem');
-      // meta-title and meta-description contain "meta"
-      expect(visibleCards.length).toBe(2);
+      // Wait for debounce
+      await waitFor(() => {
+        const grid = screen.getByTestId('guide-grid');
+        const visibleCards = within(grid).getAllByRole('listitem');
+        // meta-title and meta-description contain "meta"
+        expect(visibleCards.length).toBe(2);
+      }, { timeout: 1000 });
     });
 
-    it('S3: Search is case-insensitive', () => {
-      renderGuideIndexPage();
+    it('S3: Search is case-insensitive', async () => {
+      const user = userEvent.setup();
+      render(<GuidesIndexPage />);
+      
       const searchInput = screen.getByTestId('search-input');
+      await user.type(searchInput, 'META');
       
-      fireEvent.change(searchInput, { target: { value: 'META' } });
-      
-      const visibleCards = screen.getAllByRole('listitem');
-      expect(visibleCards.length).toBe(2);
+      await waitFor(() => {
+        const grid = screen.getByTestId('guide-grid');
+        const visibleCards = within(grid).getAllByRole('listitem');
+        expect(visibleCards.length).toBe(2);
+      }, { timeout: 1000 });
     });
 
-    it('S4: Empty search shows all guides', () => {
-      renderGuideIndexPage();
-      const searchInput = screen.getByTestId('search-input');
+    it('S4: Empty search shows all guides', async () => {
+      render(<GuidesIndexPage />);
       
-      fireEvent.change(searchInput, { target: { value: '' } });
-      
-      const visibleCards = screen.getAllByRole('listitem');
+      const grid = screen.getByTestId('guide-grid');
+      const visibleCards = within(grid).getAllByRole('listitem');
       expect(visibleCards).toHaveLength(17);
     });
 
-    it('S5: No results message displayed', () => {
-      renderGuideIndexPage();
+    it('S5: No results message displayed', async () => {
+      const user = userEvent.setup();
+      render(<GuidesIndexPage />);
+      
       const searchInput = screen.getByTestId('search-input');
+      await user.type(searchInput, 'xyznonexistent');
       
-      fireEvent.change(searchInput, { target: { value: 'xyznonexistent' } });
-      
-      expect(screen.getByText(/no guides found/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+        expect(screen.getByText(/no guides found/i)).toBeInTheDocument();
+      }, { timeout: 1000 });
     });
 
-    it('S6: Search works with category filter', () => {
-      renderGuideIndexPage();
+    it('S6: Search works with category filter', async () => {
+      const user = userEvent.setup();
+      render(<GuidesIndexPage />);
       
       // Select on-page category
-      fireEvent.click(screen.getByTestId('tab-on-page'));
+      await user.click(screen.getByTestId('tab-on-page'));
       
       // Search within category
       const searchInput = screen.getByTestId('search-input');
-      fireEvent.change(searchInput, { target: { value: 'meta' } });
+      await user.type(searchInput, 'meta');
       
-      // Should only show on-page guides with "meta" in title
-      const visibleCards = screen.getAllByRole('listitem');
-      expect(visibleCards.length).toBe(2);
+      await waitFor(() => {
+        const grid = screen.getByTestId('guide-grid');
+        const visibleCards = within(grid).getAllByRole('listitem');
+        // Only meta-title and meta-description are on-page + contain "meta"
+        expect(visibleCards.length).toBe(2);
+      }, { timeout: 1000 });
     });
   });
 
@@ -328,31 +316,32 @@ describe('Guide Index Page', () => {
   // ============================================================
   describe('Responsive Grid', () => {
     it('G1: 3 columns on desktop (>=1024px)', () => {
-      // Mock window.innerWidth
       Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
       
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       const grid = screen.getByTestId('guide-grid');
       
-      // Should have grid-cols-3 class or similar
-      expect(grid.className).toMatch(/grid-cols-3|lg:grid-cols-3/);
+      // Should have lg:grid-cols-3 class
+      expect(grid.className).toMatch(/lg:grid-cols-3/);
     });
 
     it('G2: 2 columns on tablet (>=768px)', () => {
       Object.defineProperty(window, 'innerWidth', { value: 768, writable: true });
       
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       const grid = screen.getByTestId('guide-grid');
       
-      expect(grid.className).toMatch(/grid-cols-2|md:grid-cols-2/);
+      // Should have md:grid-cols-2 class
+      expect(grid.className).toMatch(/md:grid-cols-2/);
     });
 
     it('G3: 1 column on mobile (<768px)', () => {
       Object.defineProperty(window, 'innerWidth', { value: 375, writable: true });
       
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       const grid = screen.getByTestId('guide-grid');
       
+      // Should have grid-cols-1 class
       expect(grid.className).toMatch(/grid-cols-1/);
     });
   });
@@ -362,27 +351,27 @@ describe('Guide Index Page', () => {
   // ============================================================
   describe('Tool Badge', () => {
     it('T1: Guides with toolSlug show badge', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
       // meta-title has toolSlug
       expect(screen.getByTestId('tool-badge-meta-title')).toBeInTheDocument();
     });
 
     it('T2: Guides without toolSlug hide badge', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
       // h1-headings has no toolSlug
       expect(screen.queryByTestId('tool-badge-h1-headings')).not.toBeInTheDocument();
     });
 
     it('T3: Badge text correct', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       const badge = screen.getByTestId('tool-badge-meta-title');
       expect(badge).toHaveTextContent('Has Tool');
     });
 
     it('T5: Correct guides have badges (5 total)', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
       // Guides with tools: meta-title, meta-description, mobile-friendly, open-graph, twitter-cards
       const badges = screen.getAllByText('Has Tool');
@@ -395,7 +384,7 @@ describe('Guide Index Page', () => {
   // ============================================================
   describe('Accessibility', () => {
     it('A1: All cards have accessible names', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
       const cards = screen.getAllByRole('listitem');
       cards.forEach(card => {
@@ -404,7 +393,7 @@ describe('Guide Index Page', () => {
     });
 
     it('A2: Filter tabs have proper roles', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
       const tablist = screen.getByRole('tablist');
       expect(tablist).toBeInTheDocument();
@@ -414,7 +403,7 @@ describe('Guide Index Page', () => {
     });
 
     it('A3: Search input has label', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
       const searchInput = screen.getByTestId('search-input');
       expect(searchInput).toHaveAttribute('aria-label', 'Search guides');
@@ -426,16 +415,16 @@ describe('Guide Index Page', () => {
   // ============================================================
   describe('Navigation', () => {
     it('N1: Card click navigates to guide', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
-      const link = screen.getByTestId('link-meta-title');
+      const link = screen.getByTestId('guide-link-meta-title');
       expect(link).toHaveAttribute('href', '/seo-guides/meta-title');
     });
 
     it('N3: Direct URL access works', () => {
       // The page should render correctly when accessed directly
-      renderGuideIndexPage();
-      expect(screen.getByTestId('guide-index-page')).toBeInTheDocument();
+      render(<GuidesIndexPage />);
+      expect(screen.getByRole('heading', { name: 'SEO Guides' })).toBeInTheDocument();
     });
   });
 
@@ -445,27 +434,33 @@ describe('Guide Index Page', () => {
   describe('Edge Cases', () => {
     it('E1: Empty guide list handled', () => {
       (getAllGuides as jest.Mock).mockReturnValue([]);
+      (getGuidesByCategory as jest.Mock).mockReturnValue([]);
       
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
       // Should show empty state message
-      expect(screen.getByText(/no guides found/i)).toBeInTheDocument();
+      expect(screen.getByTestId('empty-state')).toBeInTheDocument();
     });
 
-    it('E3: Search with special chars (no XSS)', () => {
-      renderGuideIndexPage();
+    it('E3: Search with special chars (no XSS)', async () => {
+      const user = userEvent.setup();
+      render(<GuidesIndexPage />);
       
       const searchInput = screen.getByTestId('search-input');
-      fireEvent.change(searchInput, { target: { value: '<script>alert("xss")</script>' } });
+      await user.type(searchInput, '<script>alert("xss")</script>');
       
-      // Should not execute script, should show no results
+      // Should not execute script, should show empty state
+      await waitFor(() => {
+        expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+      }, { timeout: 1000 });
+      
       expect(screen.queryByText('alert("xss")')).not.toBeInTheDocument();
     });
 
     it('E4: Long guide titles truncate', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
-      const title = screen.getByTestId('title-structured-data');
+      const title = screen.getByTestId('guide-title-structured-data');
       // CSS should handle truncation
       expect(title).toBeInTheDocument();
     });
@@ -476,28 +471,29 @@ describe('Guide Index Page', () => {
   // ============================================================
   describe('Integration', () => {
     it('I1: getAllGuides() called on mount', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       expect(getAllGuides).toHaveBeenCalled();
     });
 
-    it('I2: Category filter uses getGuidesByCategory()', () => {
-      renderGuideIndexPage();
+    it('I2: Category filter uses getGuidesByCategory()', async () => {
+      const user = userEvent.setup();
+      render(<GuidesIndexPage />);
       
-      fireEvent.click(screen.getByTestId('tab-on-page'));
+      await user.click(screen.getByTestId('tab-on-page'));
       expect(getGuidesByCategory).toHaveBeenCalledWith('on-page');
     });
 
     it('I3: Tool badge checks toolSlug from registry', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
       // Should use data from registry to determine badge visibility
       expect(getAllGuides).toHaveBeenCalled();
     });
 
     it('I4: Links use correct slug format', () => {
-      renderGuideIndexPage();
+      render(<GuidesIndexPage />);
       
-      const link = screen.getByTestId('link-xml-sitemap');
+      const link = screen.getByTestId('guide-link-xml-sitemap');
       expect(link).toHaveAttribute('href', '/seo-guides/xml-sitemap');
     });
   });
@@ -507,19 +503,19 @@ describe('Guide Index Page', () => {
 // SEO META TAGS TESTS
 // ============================================================
 describe('SEO Meta Tags', () => {
-  it('M1: Page title correct', () => {
-    // This would test the document.title or <title> tag
-    // For Next.js App Router, this is in metadata export
-    expect(true).toBe(true); // Placeholder - requires metadata export testing
+  it('M1: Page title correct', async () => {
+    // Import metadata for testing
+    const { metadata } = await import('@/app/seo-guides/page');
+    expect(metadata.title).toBe('SEO Guides - SEOIndicator');
   });
 
-  it('M2: Meta description set', () => {
-    // Test metadata export description
-    expect(true).toBe(true); // Placeholder
+  it('M2: Meta description set', async () => {
+    const { metadata } = await import('@/app/seo-guides/page');
+    expect(metadata.description).toContain('comprehensive guides');
   });
 
-  it('M3: Canonical URL set', () => {
-    // Test metadata export alternates/canonical
-    expect(true).toBe(true); // Placeholder
+  it('M3: Canonical URL set', async () => {
+    const { metadata } = await import('@/app/seo-guides/page');
+    expect(metadata.alternates?.canonical).toBe('/seo-guides');
   });
 });
