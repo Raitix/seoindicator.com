@@ -496,8 +496,168 @@ The example below shows both HTML and JSON-LD implementation for maximum SEO ben
     category: 'on-page',
     icon: '🌐',
     readTime: 4,
-    sections: [],
-    checklist: [],
+    sections: [
+      {
+        title: 'What are External Links?',
+        content: `**External links** are hyperlinks that point from your website to pages on a different domain. Unlike internal links that connect pages within your own site, external links send visitors to other websites—providing additional resources, citations, and references.
+
+Every external link consists of the destination URL and the anchor text (clickable text). When you link to another site, you're essentially vouching for that content and directing your users—and search engine crawlers—to that resource.
+
+### External vs Internal Links
+
+| Aspect | External Links | Internal Links |
+|--------|----------------|----------------|
+| Destination | Different domain | Same domain |
+| Purpose | Cite sources, provide resources | Navigation, distribute authority |
+| Link equity | Passes to external site | Stays within your site |
+| User behavior | Opens new tab (recommended) | Same tab |
+
+External links signal that your content is well-researched and connected to the broader web ecosystem. They're a natural part of a healthy link profile.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Why External Links Matter for SEO',
+        content: `External linking might seem counterintuitive—why send visitors away? But strategic external linking actually benefits your SEO and user experience in several ways.
+
+### Authority and Credibility
+
+Linking to authoritative sources demonstrates that your content is well-researched and trustworthy. Search engines like Google use external links to understand the context and quality of your content. When you cite reputable sources, you strengthen your **E-E-A-T** signals (Experience, Expertise, Authoritativeness, Trustworthiness).
+
+### User Value
+
+External links provide additional value to your readers by:
+- Offering deeper dives on complex topics
+- Providing evidence and citations for claims
+- Connecting users to tools, resources, and further reading
+
+### Citation and Reference Value
+
+Just as academic papers cite sources, web content benefits from linking to original research, data sources, and authoritative references. This citation behavior helps search engines understand your content's place in the information ecosystem.
+
+### Relationship Building
+
+Linking to other websites can foster relationships with peers in your industry. Many site owners track their backlinks and may reciprocate with links or social shares, expanding your reach.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Security Attributes (noopener, noreferrer, nofollow)',
+        content: `When linking to external sites, especially with \`target="_blank"\`, security attributes protect your users and your site from potential vulnerabilities.
+
+### The target="_blank" Security Risk
+
+Links that open in new tabs using \`target="_blank"\` create a potential security vulnerability called **tabnabbing**. The opened page gains access to your page via \`window.opener\`, allowing it to:
+- Redirect your page to a phishing site
+- Access information about your users
+
+### noopener and noreferrer
+
+**noopener** prevents the opened page from accessing your page's \`window.opener\` property, blocking tabnabbing attacks. **noreferrer** goes further by also hiding the referrer information—the external site won't know where the traffic came from.
+
+**Best practice:** Always use both \`noopener\` and \`noreferrer\` together with \`target="_blank"\` for maximum security.
+
+### When to Use Each Attribute
+
+| Attribute | Purpose | When to Use |
+|-----------|---------|-------------|
+| noopener | Blocks tabnabbing | All target="_blank" links |
+| noreferrer | Hides referrer | When you don't want to reveal your URL |
+| nofollow | Prevents link equity passing | Sponsored/UGC content |
+
+The code example below shows the correct, secure pattern.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<a href="https://example.com" target="_blank" rel="noopener noreferrer">
+  Visit Example Site
+</a>`,
+            description: 'Secure external link with noopener and noreferrer attributes',
+          },
+        ],
+      },
+      {
+        title: 'When to Use Nofollow',
+        content: `The \`nofollow\` attribute tells search engines not to pass link equity (sometimes called "link juice") to the linked page. It's essentially saying "I'm linking here, but I'm not endorsing this content."
+
+### Google's Link Attribute Guidelines
+
+Google recognizes three link attribute types:
+
+**rel="sponsored"** — For paid links, sponsorships, and advertising relationships. Required for affiliate links and paid placements.
+
+**rel="ugc"** — For User-Generated Content like comments, forum posts, and user-submitted content. Helps manage links you don't directly control.
+
+**rel="nofollow"** — For cases where you want to link but not endorse. This is also appropriate when you're unsure about the quality of the destination.
+
+### When to Use Each
+
+| Scenario | Attribute |
+|----------|-----------|
+| Paid/affiliate links | \`rel="sponsored"\` or \`rel="nofollow sponsored"\` |
+| User comments/forums | \`rel="ugc"\` or \`rel="nofollow ugc"\` |
+| Untrusted links | \`rel="nofollow"\` |
+| Editorial links to trusted sites | No special attribute needed |
+
+You can combine attributes—for example, \`rel="nofollow noopener noreferrer"\` for sponsored links that open in new tabs.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<a href="https://sponsored-site.com" rel="nofollow sponsored">
+  Sponsored Partner
+</a>
+
+<a href="https://user-comment-link.com" rel="ugc">
+  User Submitted Link
+</a>`,
+            description: 'Sponsored link and UGC link with appropriate attributes',
+          },
+        ],
+      },
+      {
+        title: 'Common External Linking Mistakes',
+        content: `Avoid these common pitfalls when linking to external sites:
+
+### 1. Missing Security Attributes on target="_blank"
+
+Opening external links in new tabs without \`noopener\` and \`noreferrer\` creates a security vulnerability. Always include these attributes with \`target="_blank"\`.
+
+**Impact:** Users could be exposed to tabnabbing attacks.
+
+### 2. Excessive External Links
+
+Too many external links can dilute your page's value and send users away from your content. Keep external links relevant and purposeful.
+
+**Guideline:** Focus on quality over quantity. 3-5 well-chosen external links are better than 20 random ones.
+
+### 3. Broken External Links (Link Rot)
+
+External pages move, change, or disappear. Broken links (404 errors) hurt user experience and waste crawl budget.
+
+**Solution:** Periodically audit external links using tools like Screaming Frog, Ahrefs, or Google Search Console. Fix or remove broken links.
+
+### 4. Linking to Low-Quality or Spammy Sites
+
+Linking to untrustworthy sites can harm your own site's reputation. Search engines may associate your site with "bad neighborhoods."
+
+**Guideline:** Before linking, check the destination site's quality, reputation, and security (HTTPS). Avoid linking to:
+- Sites with excessive ads or pop-ups
+- Known spam or malware sites
+- Sites with poor content quality
+
+### 5. Not Opening External Links in New Tabs
+
+For user experience, external links should typically open in new tabs so users don't lose their place on your site.`,
+        codeExamples: [],
+      },
+    ],
+    checklist: [
+      { text: 'Add rel="noopener noreferrer" to all target="_blank" links', priority: 'critical' },
+      { text: 'Use rel="nofollow sponsored" for paid and affiliate links', priority: 'critical' },
+      { text: 'Link to reputable, authoritative sources only', priority: 'important' },
+      { text: 'Check external links periodically for broken pages (404s)', priority: 'important' },
+      { text: 'Use rel="ugc" for user-generated content links', priority: 'important' },
+      { text: 'Open external links in new tabs for better UX', priority: 'recommended' },
+      { text: 'Avoid excessive external links on a single page', priority: 'recommended' },
+    ],
     relatedGuides: ['internal-links', 'https-security'],
   },
 
