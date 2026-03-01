@@ -1,7 +1,7 @@
 # TASK-25-3: Implement AuthController (Register, Login, Logout)
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -74,6 +74,49 @@ Route::middleware('throttle:5,1')->post('/auth/login', ...);
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 14:35 GMT+2] Agent: ProjectManager
+**Prioritization Analysis:**
+
+**Priority Confirmed: High**
+- Core authentication API - all other auth features depend on this
+- Required for Phase 1 (Core Authentication)
+- Business-critical: Users cannot register/login without this
+- Medium effort (4-6 hours), high impact
+
+**Risk Confirmed: High**
+- Authentication security is critical
+- Password handling, token management
+- Rate limiting to prevent brute force
+- SecurityAuditor MUST review before deployment
+
+**Dependency Status:**
+- TASK-25-1 (Sanctum & Socialite packages): `In Development` ⚠️
+- Development blocked until TASK-25-1 reaches `To Test Locally` or `Done`
+- Tests CAN be written now (TDD approach)
+
+**Test Coverage Requirements (for PreTester):**
+1. Registration validation (name, email, password, password_confirmation)
+2. Password strength validation (min 8 chars, letters + numbers)
+3. Duplicate email rejection
+4. Login with valid/invalid credentials
+5. Rate limiting (5 attempts per minute)
+6. Logout token revocation
+7. User retrieval by token
+8. Error response formatting
+
+**Execution Order:**
+1. TASK-25-1 (In Development) → Complete first
+2. TASK-25-3 (this) → Can start test writing now
+3. TASK-25-4, 25-5 → Can run in parallel after this
+
+**Notes for Developer:**
+- Uses Laravel Sanctum for token management
+- Rate limiting via `throttle:5,1` middleware on login
+- Form Requests for validation: StoreUserRequest, LoginRequest
+- API Resource: UserResource for response formatting
+
+Status updated: `To Write Tests`
 
 ### [2026-02-28 20:55 GMT+2] Agent: SpecSystemAnalyst
 Created task as part of SPEC-025 breakdown (Phase 1: Core Authentication).
