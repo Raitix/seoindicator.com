@@ -184,9 +184,19 @@ class StaticFallbackProvider implements AIProviderInterface
 
         // Length analysis
         $length = mb_strlen(trim($title));
+        $rawLength = mb_strlen($title);
 
-        if ($length === 0) {
-            $score = 40;
+        // Check for whitespace-only title (has chars but trims to empty)
+        if ($rawLength > 0 && $length === 0) {
+            $score = 45;
+            $issues[] = 'Title contains only whitespace. Add a descriptive title for this page.';
+            $suggestions[] = [
+                'type' => 'add',
+                'text' => $keyword ? "{$keyword} | Your Brand" : 'Page Title | Your Brand',
+                'reason' => 'Add a descriptive title that includes your target keyword.',
+            ];
+        } elseif ($length === 0) {
+            $score = 50;
             $issues[] = 'Title is empty. Add a descriptive title for this page.';
             $suggestions[] = [
                 'type' => 'add',
@@ -194,7 +204,11 @@ class StaticFallbackProvider implements AIProviderInterface
                 'reason' => 'Add a descriptive title that includes your target keyword.',
             ];
         } elseif ($length < 30) {
-            $score -= 20;
+            // Check if this is a valid brand-formatted title (Brand | Product or Product | Brand)
+            $hasBrandSeparator = preg_match('/\s[\|\-–—]\s/', $title);
+            $brandPenalty = $hasBrandSeparator ? 15 : 25;
+            
+            $score -= $brandPenalty;
             $issues[] = "Title is too short ({$length} chars). Aim for 50-60 characters.";
             $suggestions[] = [
                 'type' => 'improve',
@@ -542,7 +556,7 @@ class StaticFallbackProvider implements AIProviderInterface
         ];
 
         if (empty(trim($content)) && $urlCount === 0) {
-            $score -= 60;
+            $score = 35;
             $issues[] = 'No sitemap content provided. Ensure sitemap.xml exists on your site.';
             $suggestions[] = [
                 'type' => 'add',
@@ -736,6 +750,7 @@ class StaticFallbackProvider implements AIProviderInterface
             $emptyAlt = 0;
             $genericAlt = 0;
             $keywordInAlt = 0;
+            $keywordStuffed = 0;
 
             foreach ($images as $image) {
                 $alt = $image['alt'] ?? null;
@@ -755,6 +770,11 @@ class StaticFallbackProvider implements AIProviderInterface
                     // Check keyword presence
                     if ($keyword && str_contains($altLower, mb_strtolower($keyword))) {
                         $keywordInAlt++;
+                        
+                        // Check for keyword stuffing (keyword appears multiple times)
+                        if (substr_count($altLower, mb_strtolower($keyword)) > 1) {
+                            $keywordStuffed++;
+                        }
                     }
 
                     // Check alt text length
@@ -768,7 +788,7 @@ class StaticFallbackProvider implements AIProviderInterface
             $totalImages = count($images);
 
             if ($missingAlt > 0) {
-                $penalty = min(30, $missingAlt * 10);
+                $penalty = min(35, $missingAlt * 12);
                 $score -= $penalty;
                 $issues[] = "{$missingAlt} image(s) missing alt text.";
                 $suggestions[] = [
@@ -788,9 +808,24 @@ class StaticFallbackProvider implements AIProviderInterface
                 $issues[] = "{$genericAlt} image(s) have generic alt text (e.g., 'image', 'photo').";
             }
 
+            if ($keywordStuffed > 0) {
+                $score -= $keywordStuffed * 8;
+                $issues[] = "{$keywordStuffed} image(s) have keyword stuffing in alt text. Use keywords naturally.";
+            }
+
             if ($keyword && $keywordInAlt === 0 && $totalImages > 0) {
                 $score -= 5;
                 $issues[] = "Target keyword '{$keyword}' not found in any image alt text.";
+            }
+            
+            // Coverage score
+            $coverage = ($totalImages - $missingAlt - $emptyAlt) / $totalImages * 100;
+            if ($coverage < 50) {
+                $score -= 15;
+                $issues[] = 'Alt text coverage is below 50%. Add alt text to all images.';
+            } elseif ($coverage < 100) {
+                $score -= 5;
+                $issues[] = 'Some images are missing alt text.';
             }
         }
 
@@ -814,7 +849,19 @@ class StaticFallbackProvider implements AIProviderInterface
      */
     private function analyzeFilenames(array $context): array
     {
+        // Support both 'filenames' (array of strings) and 'files' (array of objects with 'name')
         $filenames = $context['filenames'] ?? [];
+        $files = $context['files'] ?? [];
+        
+        // Convert files array to filenames if needed
+        if (empty($filenames) && !empty($files)) {
+            foreach ($files as $file) {
+                if (isset($file['name'])) {
+                    $filenames[] = $file['name'];
+                }
+            }
+        }
+        
         $score = 100;
         $issues = [];
         $suggestions = [];
@@ -828,39 +875,44 @@ class StaticFallbackProvider implements AIProviderInterface
         if (empty($filenames)) {
             $issues[] = 'No filenames provided for analysis.';
         } else {
-            $issuesFound = 0;
-
             foreach ($filenames as $filename) {
-                $name = basename($filename);
+                $name = basename((string)$filename);
 
                 // Check for spaces
                 if (str_contains($name, ' ')) {
-                    $issuesFound++;
+                    $score -= 15;
                     $issues[] = "Filename contains spaces: \"{$name}\". Use hyphens instead.";
+                    if (empty($suggestions) || !collect($suggestions)->some(fn($s) => str_contains($s['text'], 'hyphen'))) {
+                        $suggestions[] = [
+                            'type' => 'rewrite',
+                            'text' => str_replace(' ', '-', $name),
+                            'reason' => 'Replace spaces with hyphens for better SEO.',
+                        ];
+                    }
                 }
 
                 // Check for uppercase
                 if ($name !== mb_strtolower($name) && preg_match('/[A-Z]/', $name)) {
-                    $issuesFound++;
+                    $score -= 10;
                     $issues[] = "Filename contains uppercase: \"{$name}\". Use lowercase.";
                 }
 
                 // Check for underscores
                 if (str_contains($name, '_')) {
-                    $issuesFound++;
+                    $score -= 10;
                     $issues[] = "Filename uses underscores: \"{$name}\". Consider using hyphens for better SEO.";
                 }
 
-                // Check for special characters
-                if (preg_match('/[^a-z0-9.\-]/', $name)) {
-                    $issuesFound++;
+                // Check for special characters (excluding dots for extension and hyphens)
+                $nameWithoutExt = pathinfo($name, PATHINFO_FILENAME);
+                if (preg_match('/[^a-zA-Z0-9\-]/', $nameWithoutExt)) {
+                    $score -= 15;
                     $issues[] = "Filename contains special characters: \"{$name}\". Use only letters, numbers, and hyphens.";
                 }
 
                 // Check for generic names
-                $nameWithoutExt = pathinfo($name, PATHINFO_FILENAME);
-                if (preg_match('/^(img|image|photo|file|document|page|untitled)\d*$/i', $nameWithoutExt)) {
-                    $issuesFound++;
+                if (preg_match('/^(img|image|photo|file|document|page|untitled|dsc|img_|screenshot)\d*$/i', $nameWithoutExt)) {
+                    $score -= 15;
                     $issues[] = "Generic filename: \"{$name}\". Use descriptive names.";
                     $suggestions[] = [
                         'type' => 'rewrite',
@@ -868,9 +920,26 @@ class StaticFallbackProvider implements AIProviderInterface
                         'reason' => 'Use descriptive filenames for better SEO.',
                     ];
                 }
-            }
 
-            $score -= min(50, $issuesFound * 5);
+                // Check for hash-like filenames
+                if (preg_match('/^[a-f0-9]{16,}$/i', $nameWithoutExt)) {
+                    $score -= 15;
+                    $issues[] = "Hash-like filename: \"{$name}\". Use descriptive names.";
+                }
+
+                // Check for too long filenames
+                if (mb_strlen($nameWithoutExt) > 100) {
+                    $score -= 10;
+                    $issues[] = "Filename is too long: \"{$name}\". Keep under 100 characters.";
+                }
+
+                // Check for missing extension
+                $extension = pathinfo($name, PATHINFO_EXTENSION);
+                if (empty($extension)) {
+                    $score -= 20;
+                    $issues[] = "Missing file extension: \"{$name}\".";
+                }
+            }
         }
 
         return [
@@ -1030,8 +1099,7 @@ class StaticFallbackProvider implements AIProviderInterface
     private function analyzeLinks(array $context): array
     {
         $links = $context['links'] ?? [];
-        $internalCount = $context['internal_count'] ?? 0;
-        $externalCount = $context['external_count'] ?? 0;
+        $baseUrl = $context['base_url'] ?? null;
         $score = 100;
         $issues = [];
         $suggestions = [];
@@ -1042,10 +1110,8 @@ class StaticFallbackProvider implements AIProviderInterface
             'Check for and fix broken links regularly.',
         ];
 
-        $totalLinks = $internalCount + $externalCount;
-
-        if (empty($links) && $totalLinks === 0) {
-            $score -= 30;
+        if (empty($links)) {
+            $score -= 40;
             $issues[] = 'No links found on this page. Add internal and external links.';
             $suggestions[] = [
                 'type' => 'add',
@@ -1053,32 +1119,40 @@ class StaticFallbackProvider implements AIProviderInterface
                 'reason' => 'Add internal links to help users discover more content.',
             ];
         } else {
-            // Check internal links ratio
-            if ($totalLinks > 0) {
-                $internalRatio = $internalCount / $totalLinks;
-
-                if ($internalCount === 0) {
-                    $score -= 20;
-                    $issues[] = 'No internal links found. Add links to other pages on your site.';
-                } elseif ($internalRatio < 0.3) {
-                    $score -= 10;
-                    $issues[] = 'Low internal link ratio. Consider adding more internal links.';
-                }
-
-                if ($externalCount > 10) {
-                    $score -= 10;
-                    $issues[] = 'Many external links detected. Ensure they open in new tabs and are relevant.';
-                }
-            }
-
-            // Analyze link details
+            // Count internal and external links
+            $internalCount = 0;
+            $externalCount = 0;
             $brokenLinks = 0;
             $genericAnchors = 0;
             $nofollowInternal = 0;
+            $externalNoFollowMissing = 0;
+            $totalLinks = count($links);
 
             foreach ($links as $link) {
+                // Determine if internal or external
+                $url = $link['url'] ?? '';
+                $type = $link['type'] ?? null;
+                
+                // If type is provided, use it; otherwise determine from URL
+                if ($type === null) {
+                    if ($baseUrl && str_contains($url, parse_url($baseUrl, PHP_URL_HOST) ?? '')) {
+                        $type = 'internal';
+                    } else {
+                        $type = str_starts_with($url, 'http') && !str_contains($url, parse_url($baseUrl ?? '', PHP_URL_HOST) ?? 'invalid') 
+                            ? 'external' 
+                            : 'internal';
+                    }
+                }
+                
+                if ($type === 'internal') {
+                    $internalCount++;
+                } elseif ($type === 'external') {
+                    $externalCount++;
+                }
+
                 // Check for broken links
-                if (($link['status'] ?? 200) >= 400) {
+                $status = $link['status'] ?? 200;
+                if ($status >= 400) {
                     $brokenLinks++;
                 }
 
@@ -1089,25 +1163,48 @@ class StaticFallbackProvider implements AIProviderInterface
                 }
 
                 // Check for nofollow on internal links
-                $isInternal = $link['internal'] ?? true;
-                $hasNofollow = ($link['rel'] ?? '') === 'nofollow';
+                $isInternal = $type === 'internal';
+                $rel = $link['rel'] ?? '';
+                $hasNofollow = str_contains(mb_strtolower($rel), 'nofollow');
+                
                 if ($isInternal && $hasNofollow) {
                     $nofollowInternal++;
                 }
+                
+                // Check for missing nofollow on external links (informational)
+                if ($type === 'external' && !$hasNofollow && !str_contains(mb_strtolower($rel), 'sponsored')) {
+                    $externalNoFollowMissing++;
+                }
+            }
+
+            // Score calculations
+            if ($internalCount === 0 && $externalCount === 0) {
+                // Already handled above
+            } elseif ($internalCount === 0) {
+                $score -= 25;
+                $issues[] = 'No internal links found. Add links to other pages on your site.';
+            } elseif ($internalCount < 3) {
+                $score -= 10;
+                $issues[] = 'Few internal links found. Consider adding more internal links.';
+            }
+
+            if ($externalCount > 15) {
+                $score -= 10;
+                $issues[] = 'Many external links detected. Ensure they open in new tabs and are relevant.';
             }
 
             if ($brokenLinks > 0) {
-                $score -= $brokenLinks * 10;
+                $score -= $brokenLinks * 12;
                 $issues[] = "{$brokenLinks} broken link(s) found. Fix or remove them.";
             }
 
             if ($genericAnchors > 0) {
-                $score -= $genericAnchors * 3;
+                $score -= $genericAnchors * 4;
                 $issues[] = "{$genericAnchors} link(s) use generic anchor text. Use descriptive text instead.";
             }
 
             if ($nofollowInternal > 0) {
-                $score -= $nofollowInternal * 5;
+                $score -= $nofollowInternal * 6;
                 $issues[] = "{$nofollowInternal} internal link(s) have nofollow. Remove nofollow from internal links.";
             }
         }
@@ -1132,11 +1229,13 @@ class StaticFallbackProvider implements AIProviderInterface
      */
     private function analyzeNotFound(array $context): array
     {
+        $url = $context['url'] ?? '';
+        $referrer = $context['referrer'] ?? null;
+        $siteStructure = $context['site_structure'] ?? null;
         $hasCustom404 = $context['has_custom_404'] ?? false;
         $hasSearchForm = $context['has_search_form'] ?? false;
         $hasNavigation = $context['has_navigation'] ?? false;
         $hasHomeLink = $context['has_home_link'] ?? false;
-        $url = $context['url'] ?? '';
         $score = 100;
         $issues = [];
         $suggestions = [];
@@ -1147,6 +1246,31 @@ class StaticFallbackProvider implements AIProviderInterface
             'Link to the homepage and popular pages.',
         ];
 
+        // Analyze the URL that resulted in 404
+        $parsedUrl = parse_url($url);
+        $path = $parsedUrl['path'] ?? '';
+        
+        // Common 404 causes
+        if (!empty($url)) {
+            // Check for common patterns that cause 404s
+            if (preg_match('/\.(html?|php|asp)$/i', $path)) {
+                $issues[] = 'URL has an outdated file extension that may no longer exist.';
+            }
+            if (preg_match('/\/\d{4}\//', $path)) {
+                $issues[] = 'URL contains a year-based archive path that may be outdated.';
+            }
+            if (str_contains($url, '%20')) {
+                $issues[] = 'URL contains encoded spaces. This may indicate a linking error.';
+            }
+            if (preg_match('/\/page\/\d+\/?$/i', $path)) {
+                $issues[] = 'Paginated URL may no longer exist if content was reduced.';
+            }
+            if (preg_match('/\/category\//i', $path) || preg_match('/\/tag\//i', $path)) {
+                $issues[] = 'Taxonomy URL may have been renamed or removed.';
+            }
+        }
+
+        // Custom 404 page analysis
         if (!$hasCustom404) {
             $score -= 30;
             $issues[] = 'No custom 404 page detected. Create a user-friendly 404 page.';
@@ -1182,30 +1306,33 @@ class StaticFallbackProvider implements AIProviderInterface
             ];
         }
 
-        // Common 404 causes
-        $commonCauses = [];
+        // Suggest redirects based on URL patterns
         if (!empty($url)) {
-            if (preg_match('/\.(html?|php|asp)$/i', $url)) {
-                $commonCauses[] = 'URL has a file extension that may be outdated.';
-            }
-            if (preg_match('/\/\d{4}\//', $url)) {
-                $commonCauses[] = 'URL contains a year-based archive path that may be outdated.';
-            }
-            if (str_contains($url, '%20')) {
-                $commonCauses[] = 'URL contains encoded spaces. This may indicate a linking error.';
-            }
-        }
-
-        if (!empty($commonCauses)) {
-            $issues = array_merge($issues, $commonCauses);
-        }
-
-        // Suggest redirects
-        if (!empty($url)) {
+            $slug = basename($path);
+            
+            // Suggest redirect with similar URL
             $suggestions[] = [
-                'type' => 'warning',
-                'text' => "Consider setting up a redirect from {$url} to a relevant page.",
+                'type' => 'redirect',
+                'text' => "Redirect {$url} to a relevant page",
                 'reason' => 'Redirects preserve SEO value and improve user experience.',
+            ];
+            
+            // Suggest checking referrer
+            if ($referrer) {
+                $suggestions[] = [
+                    'type' => 'fix',
+                    'text' => "Fix broken link on {$referrer}",
+                    'reason' => 'The linking page may have an outdated or incorrect link.',
+                ];
+            }
+        }
+
+        // Site structure suggestions
+        if ($siteStructure) {
+            $suggestions[] = [
+                'type' => 'info',
+                'text' => 'Review site structure for related content',
+                'reason' => 'Find existing content that matches the user intent.',
             ];
         }
 
