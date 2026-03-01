@@ -1,7 +1,7 @@
 # SPEC-020: SEO Guides Library + Clean Routing
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -430,6 +430,7 @@ export async function generateStaticParams() {
 |------|--------|-------|-------|
 | 2026-02-28 | Specification In Progress | Architect | Initial specification created |
 | 2026-02-28 | To Break Into Tasks | Architect | Specification complete, 30 tasks defined, ready for SpecSystemAnalyst |
+| 2026-03-01 | To Prioritize | SpecSystemAnalyst | Task breakdown complete - 30 tasks created across 4 phases |
 
 ---
 
