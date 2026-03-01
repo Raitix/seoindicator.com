@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw, History, AlertCircle } from "lucide-react";
 
@@ -19,13 +20,13 @@ import {
 
 import type { AnalysisRecord } from "@/lib/types/analysis";
 
-// ==================== History Page ====================
+// ==================== History Content (uses useSearchParams) ====================
 
-export default function HistoryPage() {
+function HistoryContent() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Analysis history hook
+  // Analysis history hook (uses useSearchParams internally)
   const {
     data,
     isLoading,
@@ -244,5 +245,23 @@ export default function HistoryPage() {
         />
       </div>
     </div>
+  );
+}
+
+// ==================== History Page (with Suspense) ====================
+
+export default function HistoryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-950">
+          <div className="container mx-auto px-4 py-10">
+            <HistorySkeleton />
+          </div>
+        </div>
+      }
+    >
+      <HistoryContent />
+    </Suspense>
   );
 }
