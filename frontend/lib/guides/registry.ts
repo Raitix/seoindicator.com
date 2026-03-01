@@ -1633,12 +1633,466 @@ Add this to your security headers:
   {
     slug: 'structured-data',
     title: 'Structured Data (Schema.org)',
-    summary: 'Implement rich snippets and structured data for enhanced search results.',
+    summary: 'Implement Schema.org markup to unlock rich snippets, knowledge panels, and enhanced search visibility.',
     category: 'technical',
     icon: '📊',
     readTime: 6,
-    sections: [],
-    checklist: [],
+    sections: [
+      {
+        title: 'What is Structured Data?',
+        content: `**Structured data** is a standardized format for providing information about a page and classifying its content. Using the **Schema.org** vocabulary (a collaboration between Google, Microsoft, Yahoo, and Yandex), you can explicitly tell search engines what your content means—not just what it says.
+
+Think of structured data as a translation layer between your website and search engines. While humans can easily understand that "4.8 stars from 2,500 reviews" indicates product quality, search engines need help interpreting this context. Structured data provides that translation.
+
+### How It Works
+
+Structured data uses a defined vocabulary to label content elements:
+
+- **Items** — Things like products, articles, events, or organizations
+- **Properties** — Attributes like name, price, rating, or date
+- **Types** — Categories defined in Schema.org (Article, Product, FAQPage, etc.)
+
+When you mark up a page with structured data, search engines can:
+
+1. **Understand your content** more precisely
+2. **Create rich snippets** in search results
+3. **Enable voice search** answers
+4. **Power knowledge panels** and entity panels
+
+The result? Your search listings become more informative, attractive, and clickable—driving higher click-through rates and better user engagement.`,
+        codeExamples: [],
+      },
+      {
+        title: 'SEO Benefits of Structured Data',
+        content: `Structured data directly impacts your search visibility and click-through rates. Here's why it matters for SEO:
+
+### Rich Snippets
+
+Rich snippets are enhanced search results that display additional information beyond the standard title, URL, and meta description. They make your listing stand out and provide users with valuable information before they click.
+
+**Common rich snippet types:**
+- **Review stars** — Display average ratings and review counts
+- **Product information** — Show price, availability, and product images
+- **FAQ accordions** — Expandable Q&A pairs directly in search results
+- **Recipe details** — Cooking time, calories, and star ratings
+- **Event listings** — Date, time, location, and ticket availability
+- **Job postings** — Salary range, location, and application deadline
+
+### Knowledge Panels
+
+Structured data helps Google build **Knowledge Graph** entities. When Google understands your organization, products, or content as distinct entities, it can display knowledge panels—information boxes that appear on the right side of search results for branded queries.
+
+### Improved Click-Through Rates
+
+Studies consistently show that rich snippets increase click-through rates by **20-40%** on average. Users are more likely to click on results that provide additional context:
+
+- Star ratings signal quality and trust
+- Pricing information helps qualified buyers self-select
+- FAQ snippets answer questions before the click
+- Event dates help users find relevant occasions
+
+### Voice Search Optimization
+
+Voice assistants (Google Assistant, Alexa, Siri) rely heavily on structured data to answer questions. When users ask "What time does the event start?" or "How much does this product cost?", the answers often come from structured markup.
+
+### Future-Proofing
+
+Structured data is increasingly important as search evolves. Google's AI-powered features like **AI Overviews** and **Search Generative Experience (SGE)** use structured data to understand content and generate accurate responses.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Common Schema.org Types',
+        content: `Schema.org defines hundreds of types, but most websites only need a handful. Here are the most valuable types for SEO:
+
+### Article
+
+Mark up news articles, blog posts, and editorial content. Helps search engines understand headline, author, publication date, and article body.
+
+**Use for:** Blog posts, news articles, opinion pieces, tutorials
+
+### Product
+
+Essential for e-commerce. Displays price, availability, ratings, and product images in search results.
+
+**Use for:** Product pages, item listings, catalog pages
+
+### FAQPage
+
+Displays FAQ content as expandable accordions in search results—taking up more screen space and answering user questions directly.
+
+**Use for:** FAQ sections, help pages, Q&A content
+
+### BreadcrumbList
+
+Helps search engines understand your site navigation and can display breadcrumb trails in search results instead of URLs.
+
+**Use for:** All pages with breadcrumb navigation
+
+### Organization
+
+Defines your company or organization as an entity. Powers knowledge panels for branded searches.
+
+**Use for:** Homepage, about page, contact page
+
+### LocalBusiness
+
+Combines organization data with location, hours, and contact information. Essential for local SEO and Google Business Profile.
+
+**Use for:** Physical business locations, store pages, restaurant pages
+
+### HowTo
+
+Step-by-step instructions with images and time estimates. Can appear as rich results with expandable steps.
+
+**Use for:** Tutorials, guides, recipes, DIY content
+
+### Event
+
+Displays event details (date, time, location, ticket availability) directly in search results.
+
+**Use for:** Conferences, webinars, concerts, workshops
+
+### Review and AggregateRating
+
+Enables star ratings in search results. Can be standalone or nested within other types (Product, LocalBusiness).
+
+**Use for:** Product reviews, business reviews, service reviews`,
+        codeExamples: [],
+      },
+      {
+        title: 'Implementation Methods',
+        content: `There are three primary methods to add structured data to your pages. Google recommends **JSON-LD** as the preferred format.
+
+### JSON-LD (Recommended)
+
+**JSON-LD** (JavaScript Object Notation for Linked Data) is a JavaScript notation embedded in a \`<script>\` tag in your page's \`<head>\` or \`<body>\`. It's Google's preferred and recommended format.
+
+**Advantages:**
+- Separate from visible HTML content
+- Easy to maintain and update
+- Can be dynamically generated
+- Readable by all major search engines
+- Easy to validate and debug
+
+**Implementation:** Place a \`<script type="application/ld+json">\` block containing your structured data anywhere in the page HTML.
+
+### Microdata (Legacy)
+
+Microdata uses HTML attributes (\`itemscope\`, \`itemtype\`, \`itemprop\`) directly on existing elements. It's more complex to maintain because structured data is mixed with visible content.
+
+**Disadvantages:**
+- Tightly coupled to HTML structure
+- Harder to modify without breaking display
+- Can complicate HTML markup
+- Less commonly used today
+
+### RDFa (Legacy)
+
+RDFa (Resource Description Framework in Attributes) is similar to Microdata but uses different attribute names. Rarely used for SEO purposes.
+
+### Why JSON-LD is Preferred
+
+Google explicitly recommends JSON-LD because:
+
+1. **Separation of concerns** — Data structure is independent of display
+2. **Easier implementation** — No need to modify existing HTML elements
+3. **Dynamic generation** — CMS and frameworks can easily generate JSON-LD
+4. **Better debugging** — Cleaner separation makes validation easier
+
+**Note:** Google can read JSON-LD even when it's dynamically generated via JavaScript, though static server-side rendering is preferred for faster discovery.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- JSON-LD structured data in <head> -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Complete Guide to Structured Data for SEO",
+  "author": {
+    "@type": "Person",
+    "name": "Jane Doe"
+  },
+  "datePublished": "2024-01-15",
+  "dateModified": "2024-01-20",
+  "publisher": {
+    "@type": "Organization",
+    "name": "SEOIndicator",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://example.com/logo.png"
+    }
+  }
+}
+</script>`,
+            description: 'JSON-LD Article schema in a script tag (Google\'s preferred format)',
+          },
+          {
+            language: 'html',
+            code: `<!-- Microdata format (legacy, not recommended) -->
+<div itemscope itemtype="https://schema.org/Article">
+  <h1 itemprop="headline">Complete Guide to Structured Data</h1>
+  <span itemprop="author" itemscope itemtype="https://schema.org/Person">
+    By <span itemprop="name">Jane Doe</span>
+  </span>
+  <time itemprop="datePublished" datetime="2024-01-15">January 15, 2024</time>
+</div>`,
+            description: 'Microdata format for comparison (legacy approach, use JSON-LD instead)',
+          },
+        ],
+      },
+      {
+        title: 'Testing and Validation',
+        content: `Always validate your structured data before deploying. Errors can prevent rich snippets from appearing, and incorrect markup may confuse search engines.
+
+### Google Rich Results Test
+
+The **Google Rich Results Test** is the official tool for checking if your structured data qualifies for rich results. It shows exactly which rich result types your markup can generate.
+
+**URL:** search.google.com/test/rich-results
+
+**Features:**
+- Tests by URL or code snippet
+- Shows which rich result types are detected
+- Highlights errors and warnings
+- Validates against Google's requirements
+
+### Schema Markup Validator
+
+The **Schema Markup Validator** (from schema.org) checks your markup against the full Schema.org vocabulary. It catches syntax errors and structural issues that the Rich Results Test might miss.
+
+**URL:** validator.schema.org
+
+**Features:**
+- Validates against full Schema.org specification
+- Shows nested types and properties
+- Identifies missing recommended properties
+
+### Google Search Console
+
+The **Enhancements** section in Google Search Console shows structured data errors and warnings detected across your site. It's essential for ongoing monitoring.
+
+**Key reports:**
+- Product markup errors
+- FAQ and Q&A issues
+- Article and breadcrumb warnings
+- Manual actions for spammy structured data
+
+### Chrome DevTools
+
+For local development, Chrome DevTools shows JSON-LD in the Elements panel. You can also use the Console to parse and inspect your structured data.
+
+### Testing Best Practices
+
+1. **Test before deploying** — Validate in staging environments
+2. **Check all pages** — Different page types may have different markup
+3. **Monitor Search Console** — Google may find issues after deployment
+4. **Fix errors promptly** — Errors can block rich results entirely
+5. **Use both tools** — Rich Results Test for rich results eligibility, Schema Validator for syntax`,
+        codeExamples: [
+          {
+            language: 'javascript',
+            code: `// Quick test: Parse JSON-LD in browser console
+const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+scripts.forEach((script, i) => {
+  try {
+    const data = JSON.parse(script.textContent);
+    console.log('Schema ' + (i + 1) + ':', data['@type'], data);
+  } catch (e) {
+    console.error('Schema ' + (i + 1) + ': Invalid JSON');
+  }
+});`,
+            description: 'Browser console snippet to inspect and validate JSON-LD on any page',
+          },
+        ],
+      },
+      {
+        title: 'JSON-LD Code Examples',
+        content: `Here are practical JSON-LD examples for the most common schema types. Copy and adapt these templates for your pages.
+
+### Product Schema
+
+Essential for e-commerce. Displays price, availability, ratings, and images in search results.
+
+### Article Schema
+
+For blog posts and news articles. Includes author, publication dates, and publisher information.
+
+### FAQPage Schema
+
+Creates expandable FAQ accordions in search results. Each question-answer pair must be properly formatted.
+
+### Organization Schema
+
+Defines your business entity. Place on your homepage to enable knowledge panel eligibility.
+
+### BreadcrumbList Schema
+
+Helps search engines understand site structure. Often generated dynamically based on page location.
+
+**Implementation Tips:**
+
+1. Place JSON-LD in the \`<head>\` or at the end of \`<body>\`
+2. Use dynamic generation from your CMS when possible
+3. Include all required properties for each schema type
+4. Nest related types (e.g., Organization inside Article as publisher)
+5. Keep data synchronized with visible page content`,
+        codeExamples: [
+          {
+            language: 'json',
+            code: `{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Wireless Bluetooth Headphones",
+  "image": [
+    "https://example.com/photos/headphones-1x.jpg",
+    "https://example.com/photos/headphones-2x.jpg"
+  ],
+  "description": "Premium wireless headphones with 30-hour battery life.",
+  "sku": "WBH-12345",
+  "brand": {
+    "@type": "Brand",
+    "name": "AudioTech"
+  },
+  "offers": {
+    "@type": "Offer",
+    "url": "https://example.com/headphones",
+    "priceCurrency": "USD",
+    "price": "149.99",
+    "priceValidUntil": "2024-12-31",
+    "availability": "https://schema.org/InStock",
+    "seller": {
+      "@type": "Organization",
+      "name": "Example Store"
+    }
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "reviewCount": "2450"
+  }
+}`,
+            description: 'Complete Product schema with offers, brand, and aggregate ratings',
+          },
+          {
+            language: 'json',
+            code: `{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How to Implement Structured Data for SEO",
+  "image": [
+    "https://example.com/photos/article-1x.jpg",
+    "https://example.com/photos/article-2x.jpg"
+  ],
+  "datePublished": "2024-01-15T08:00:00+00:00",
+  "dateModified": "2024-01-20T10:30:00+00:00",
+  "author": [{
+    "@type": "Person",
+    "name": "Jane Doe",
+    "url": "https://example.com/authors/jane-doe"
+  }],
+  "publisher": {
+    "@type": "Organization",
+    "name": "SEOIndicator Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://example.com/logo.png"
+    }
+  },
+  "description": "A comprehensive guide to implementing Schema.org structured data for better search visibility."
+}`,
+            description: 'Article schema with author, publisher, and date information',
+          },
+          {
+            language: 'json',
+            code: `{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is structured data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Structured data is a standardized format for providing information about a page and classifying its content using the Schema.org vocabulary."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which format does Google recommend?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Google recommends JSON-LD as the preferred format for structured data because it's easier to implement and maintain."
+      }
+    }
+  ]
+}`,
+            description: 'FAQPage schema with question-answer pairs for rich FAQ snippets',
+          },
+          {
+            language: 'json',
+            code: `{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "SEOIndicator",
+  "url": "https://example.com",
+  "logo": "https://example.com/logo.png",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "+1-800-555-0123",
+    "contactType": "customer service"
+  },
+  "sameAs": [
+    "https://twitter.com/seoindicator",
+    "https://www.linkedin.com/company/seoindicator",
+    "https://www.facebook.com/seoindicator"
+  ]
+}`,
+            description: 'Organization schema for knowledge panel eligibility',
+          },
+          {
+            language: 'json',
+            code: `{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://example.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Guides",
+      "item": "https://example.com/guides/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Structured Data",
+      "item": "https://example.com/guides/structured-data/"
+    }
+  ]
+}`,
+            description: 'BreadcrumbList schema for navigation breadcrumbs in search results',
+          },
+        ],
+      },
+    ],
+    checklist: [
+      { text: 'Use JSON-LD format (Google\'s preferred method) in a <script type="application/ld+json"> tag', priority: 'critical' },
+      { text: 'Include all required properties for your schema type (name, description, etc.)', priority: 'critical' },
+      { text: 'Test all structured data with Google Rich Results Test before deployment', priority: 'critical' },
+      { text: 'Implement schema types that match your content: Article, Product, FAQPage, Organization, LocalBusiness', priority: 'important' },
+      { text: 'Keep structured data synchronized with visible page content to avoid manual actions', priority: 'important' },
+      { text: 'Add Organization schema to your homepage for knowledge panel eligibility', priority: 'important' },
+      { text: 'Implement BreadcrumbList schema on all pages with navigation hierarchy', priority: 'important' },
+      { text: 'Monitor Google Search Console Enhancement reports for errors and warnings', priority: 'important' },
+      { text: 'Include AggregateRating and Review schema only if you have genuine reviews', priority: 'recommended' },
+      { text: 'Use valid ISO 8601 date formats (YYYY-MM-DD) for all date properties', priority: 'recommended' },
+    ],
     relatedGuides: ['open-graph', 'canonical-urls'],
   },
   {
