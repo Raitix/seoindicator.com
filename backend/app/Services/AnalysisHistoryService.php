@@ -37,6 +37,11 @@ class AnalysisHistoryService
             $data['analyzed_at'] = now();
         }
 
+        // Truncate error message if too long for TEXT column
+        if (isset($data['error_message'])) {
+            $data['error_message'] = $this->truncateErrorMessage($data['error_message']);
+        }
+
         return $this->repository->create($data);
     }
 

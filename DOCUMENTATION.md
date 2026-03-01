@@ -1,6 +1,287 @@
 # DOCUMENTATION.md
 
 ---
+## SEO Guides Library - Routing with Static Params Generation (TASK-20-4)
+
+### Service Description
+Next.js routing configuration for SEO guides with static site generation. Implements `generateStaticParams()` for build-time generation of all 17 guide pages, enabling clean URLs with trailing slashes and proper 404 handling for invalid slugs.
+
+### Component Location
+- **File:** `frontend/app/seo-guides/[slug]/page.tsx`
+- **404 Page:** `frontend/app/seo-guides/[slug]/not-found.tsx`
+
+### Core Functionalities
+
+**Routing Features:**
+| Feature | Description |
+|---------|-------------|
+| Static Site Generation | All 17 guide pages pre-rendered at build time |
+| Clean URLs | Trailing slash support for `/seo-guides/[slug]/` |
+| 404 Handling | Custom not-found page for invalid slugs |
+| SEO Metadata | Per-guide title, description, canonical URL |
+| JSON-LD Schema | Article schema for each guide |
+
+### Next.js Configuration
+
+```typescript
+// next.config.ts
+{
+  output: 'export',           // Static site generation
+  trailingSlash: true,        // Clean URLs
+  images: { unoptimized: true } // Static export compatibility
+}
+```
+
+### generateStaticParams Implementation
+
+```typescript
+export function generateStaticParams(): { slug: string }[] {
+  return GUIDE_SLUGS.map((slug) => ({ slug }));
+}
+```
+
+**Generated Slugs (17 total):**
+| Category | Slugs |
+|----------|-------|
+| On-Page | `meta-title`, `meta-description`, `h1-headings`, `heading-hierarchy` |
+| Content | `image-alt-text`, `image-optimization`, `internal-links`, `external-links` |
+| Technical | `page-speed`, `mobile-friendly`, `https-security`, `structured-data`, `canonical-urls`, `robots-txt`, `xml-sitemap` |
+| Social | `open-graph`, `twitter-cards` |
+
+### Output Structure
+
+```
+out/seo-guides/
+├── index.html                    # Guide index page
+├── meta-title/index.html         # Meta Title guide
+├── meta-description/index.html   # Meta Description guide
+├── h1-headings/index.html        # H1 Headings guide
+├── heading-hierarchy/index.html  # Heading Hierarchy guide
+├── image-alt-text/index.html     # Image Alt Text guide
+├── image-optimization/index.html # Image Optimization guide
+├── internal-links/index.html     # Internal Links guide
+├── external-links/index.html     # External Links guide
+├── page-speed/index.html         # Page Speed guide
+├── mobile-friendly/index.html    # Mobile-Friendliness guide
+├── https-security/index.html     # HTTPS/Security guide
+├── structured-data/index.html    # Structured Data guide
+├── canonical-urls/index.html     # Canonical URLs guide
+├── robots-txt/index.html         # Robots.txt guide
+├── xml-sitemap/index.html        # XML Sitemap guide
+├── open-graph/index.html         # Open Graph Tags guide
+└── twitter-cards/index.html      # Twitter Cards guide
+```
+
+### Page Component Features
+
+**GuidePage Component:**
+| Feature | Description |
+|---------|-------------|
+| Breadcrumb Navigation | Home > SEO Guides > Guide Title |
+| Hero Section | Category badge, tool badge, read time |
+| Content Placeholder | Phase 2 will populate actual content |
+| Related Guides | Shows up to 3 related guides |
+| Prev/Next Navigation | Sequential guide navigation |
+| JSON-LD Structured Data | Article schema for SEO |
+
+### Metadata Generation
+
+```typescript
+export async function generateMetadata({ params }): Promise<Metadata> {
+  const guide = getGuideBySlug(params.slug);
+  return {
+    title: `${guide.title} - SEO Guide | SEOIndicator`,
+    description: guide.summary,
+    openGraph: { title, description, url },
+    twitter: { card: 'summary', title, description },
+  };
+}
+```
+
+### 404 Handling
+
+- Invalid slugs trigger Next.js `notFound()` function
+- Custom `not-found.tsx` component displays user-friendly error page
+- Case-sensitive slug validation (Meta-Title returns 404, only meta-title works)
+- Security: XSS, SQL injection, path traversal attempts all return 404
+
+### Production URLs
+
+| URL | Status |
+|-----|--------|
+| `https://seoindicator.com/seo-guides/` | 200 OK |
+| `https://seoindicator.com/seo-guides/[slug]/` | 200 OK (17 guides) |
+| `https://seoindicator.com/seo-guides/invalid/` | 404 Not Found |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `next.config.test.ts` | 20 | Config verification |
+| `generateStaticParams.test.ts` | 45 | Static params generation |
+| `guide-routing.test.tsx` | 32 | Routing integration |
+| **Total** | **97** | |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Next.js Config | 20 | Static export, trailing slash, images config |
+| Static Params | 45 | All slugs generated, no duplicates, valid format |
+| Routing Integration | 25 | Navigation, 404, case sensitivity |
+| Security | 5 | XSS, SQL injection, path traversal |
+| Accessibility | 2 | ARIA, landmarks |
+
+### Production Status
+- **Deployed**: 2026-03-01 (commit 69ae048 via GitHub Actions)
+- **Build**: Next.js 16.1.6 Turbopack
+- **Health Check**: Passing
+- **Tests**: 97/97 passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+- TASK-20-3 (Guide page template)
+
+### Related Tasks
+- TASK-20-1: Guide data structure and TypeScript types
+- TASK-20-2: Guide index page component
+- TASK-20-3: Guide page template component
+
+---
+## SEO Guides Library - Guide Index Page Component (TASK-20-2)
+
+### Service Description
+Frontend component for the SEO Guides Library index page. Displays a grid of all 17 SEO indicator guides with category filtering, search functionality, and visual indicators for guides with integrated tools. Part of the SEO Guides Library + Clean Routing feature (FEAT-020).
+
+### Component Location
+- **File:** `frontend/app/seo-guides/page.tsx`
+- **Related Components:**
+  - `frontend/components/guides/GuideCard.tsx`
+  - `frontend/components/guides/GuideFilters.tsx`
+  - `frontend/components/guides/GuideSearch.tsx`
+
+### Core Functionalities
+
+**Guide Index Page:**
+| Feature | Description |
+|---------|-------------|
+| Guide Grid | Displays all 17 SEO guides in a responsive grid layout |
+| Category Filter | Filter guides by category: on-page, technical, content |
+| Search | Real-time search by guide title |
+| Tool Badge | Visual indicator for guides with integrated tools |
+
+### Guide Categories
+
+| Category | Guides |
+|----------|--------|
+| **On-Page** | Meta Title, Meta Description, H1 Headings, Heading Hierarchy |
+| **Content** | Image Alt Text, Image Optimization, Internal Links, External Links |
+| **Technical** | Page Speed, Mobile-Friendliness, HTTPS/Security, Structured Data, Canonical URLs, Robots.txt, XML Sitemap |
+| **Social** | Open Graph Tags, Twitter Cards |
+
+### Guide Card Component
+
+**Props:**
+| Prop | Type | Description |
+|------|------|-------------|
+| `guide` | SEOGuide | Guide data object |
+| `hasTool` | boolean | Whether guide has integrated tool |
+
+**Card Features:**
+- Guide icon/emoji display
+- Title and summary
+- Category badge with color coding
+- Read time estimate
+- Tool badge indicator
+- Hover animation effects
+
+### Category Badge Colors
+
+| Category | Color | CSS Class |
+|----------|-------|-----------|
+| on-page | Blue | `bg-blue-100 text-blue-800` |
+| technical | Purple | `bg-purple-100 text-purple-800` |
+| content | Green | `bg-green-100 text-green-800` |
+
+### Search Implementation
+
+**Client-Side Filtering:**
+- Debounced search input (300ms delay)
+- Filters by guide title (case-insensitive)
+- Combined with category filter (AND logic)
+- Real-time grid updates
+
+### Responsive Design
+
+| Breakpoint | Grid Columns |
+|------------|--------------|
+| Mobile (<640px) | 1 column |
+| Tablet (640-1024px) | 2 columns |
+| Desktop (>1024px) | 3 columns |
+
+### Integration with FEAT-016 Tools
+
+**Guides with Integrated Tools:**
+| Guide | Tool |
+|-------|------|
+| Meta Title | Meta Tag Analyzer |
+| Meta Description | Meta Tag Analyzer |
+| Mobile-Friendliness | Mobile-Friendly Checker |
+| Open Graph Tags | Social Media Preview |
+| Twitter Cards | Social Media Preview |
+
+### Navigation
+
+**Links from Index Page:**
+- Each guide card links to `/seo-guides/[slug]`
+- Breadcrumb: Home > SEO Guides
+- Site header navigation integration
+
+### Technical Implementation
+
+**Dependencies:**
+- `lib/guides/registry.ts` - Guide data and helper functions
+- `lib/guides/types.ts` - TypeScript type definitions
+- Shadcn/UI components for styling
+
+**Server-Side Rendering:**
+- Static generation via Next.js `generateStaticParams`
+- Pre-rendered at build time for optimal performance
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| GuideIndexPage.test.tsx | 15 | 32 |
+| GuideCard.test.tsx | 8 | 16 |
+| GuideFilters.test.tsx | 6 | 12 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 5 | Page loads, cards display |
+| Filtering | 4 | Category filter, combined filters |
+| Search | 3 | Search functionality, debouncing |
+| Navigation | 3 | Links, routing |
+| Responsive | 2 | Grid layout at breakpoints |
+| Accessibility | 3 | ARIA labels, keyboard navigation |
+
+### Production Status
+- **Deployed**: 2026-03-01 (via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 29/29 passing (60 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure and TypeScript types)
+- FEAT-016 (Interactive SEO Tools for tool integration)
+
+### Related Tasks
+- TASK-20-1: Guide data structure and TypeScript types
+- TASK-20-3: Guide page template component
+- TASK-20-4: Routing with static params generation
+
+---
 ## Google CSE Fetcher (TASK-1-8)
 
 ### Service Description
