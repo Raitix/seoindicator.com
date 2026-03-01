@@ -1,7 +1,7 @@
 # TASK-25-7: Create GoogleOAuthService
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -266,6 +266,29 @@ Full OAuth flow cannot be tested via HTTP endpoints until TASK-25-8 (GoogleAuthC
 - TASK-25-8 should be deployed and tested to verify full OAuth flow
 
 **Status:** `Testing Prod` → `To Document`
+
+### [2026-03-01 16:48 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete** ✓
+
+**Documentation Added:**
+- Added comprehensive section to DOCUMENTATION.md (lines 15170+)
+- Service description and location
+- Core functionalities (7 methods documented)
+- OAuth flow diagram
+- CSRF state protection implementation
+- User creation & linking logic
+- Exception handling (5 custom exceptions)
+- Security features (6 measures)
+- Database changes (2 migrations)
+- Test coverage (109 tests, 133 assertions)
+
+**Key Documentation Highlights:**
+- State parameter: 40-char, 10-min TTL, one-time use
+- Token encryption via SocialAccount model encrypted casts
+- User creation with auto-verified email and nullable password
+- Account linking by email match (prevents account hijacking)
+
+**Status:** `To Document` → `Done`
 
 ### [2026-03-01 16:30 GMT+2] Agent: Developer
 **Implementation Complete**

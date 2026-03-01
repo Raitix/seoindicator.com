@@ -15167,3 +15167,195 @@ Google OAuth 2.0 credential configuration for user authentication. Enables "Sign
 | **Configuration** | Complete (placeholder credentials) |
 | **User Action Required** | Google Cloud Console setup |
 | **Status** | Configuration Complete |
+
+---
+## Google OAuth Service (TASK-25-7)
+
+### Service Description
+Backend service for handling Google OAuth 2.0 authentication flow for user sign-in. Manages OAuth redirect URL generation, callback processing, CSRF protection via state parameter, and user account creation/linking. Core authentication service enabling "Sign in with Google" functionality (FEAT-025 Phase 2).
+
+### Service Location
+- **File:** `backend/app/Services/Auth/GoogleOAuthService.php`
+- **Dependencies:** Laravel Socialite, SocialAccount model
+
+### Core Functionalities
+
+**GoogleOAuthService Class:**
+| Method | Description |
+|--------|-------------|
+| `getRedirectUrl(): string` | Generates Google OAuth redirect URL with CSRF state token |
+| `handleCallback(string $code, string $state): array` | Processes OAuth callback, validates state, returns user+token |
+| `findOrCreateUser($googleUser): User` | Creates new user or links existing by email |
+| `validateState(string $state): void` | Validates CSRF state token (throws on failure) |
+| `validateScopes($googleUser): void` | Ensures email scope was granted (throws on failure) |
+| `createUser($googleUser): User` | Creates new user from Google profile data |
+| `createSocialAccount(User $user, $googleUser): SocialAccount` | Links social account to user |
+
+### OAuth Flow
+
+```
+┌─────────────┐    ┌──────────────┐    ┌─────────────┐    ┌──────────────┐
+│   Frontend  │───▶│ getRedirectUrl│───▶│   Google    │───▶│   Callback   │
+│             │    │   (state)     │    │   Consent   │    │   Handler    │
+└─────────────┘    └──────────────┘    └─────────────┘    └──────────────┘
+                                                                  │
+                                                                  ▼
+                                                         ┌──────────────┐
+                                                         │ handleCallback│
+                                                         │ (code, state) │
+                                                         └──────────────┘
+                                                                  │
+                    ┌─────────────────────────────────────────────┼─────────────────────────────────────────────┐
+                    │                                             │                                             │
+                    ▼                                             ▼                                             ▼
+           ┌──────────────┐                              ┌──────────────┐                              ┌──────────────┐
+           │ validateState│                              │ findOrCreate │                              │    Return    │
+           │   (CSRF)     │                              │    User      │                              │  User+Token  │
+           └──────────────┘                              └──────────────┘                              └──────────────┘
+```
+
+### CSRF State Protection
+
+**State Parameter Flow:**
+1. `getRedirectUrl()` generates 40-character random state
+2. State stored in cache with 10-minute TTL: `oauth_state_{state} => true`
+3. State included in Google OAuth URL
+4. `handleCallback()` validates state exists in cache
+5. State consumed (deleted) after validation - one-time use
+
+**State Validation:**
+```php
+public function validateState(string $state): void
+{
+    $key = 'oauth_state_' . $state;
+    
+    if (!Cache::has($key)) {
+        throw new InvalidOAuthStateException('Invalid or expired OAuth state');
+    }
+    
+    Cache::forget($key); // Consume state - one-time use
+}
+```
+
+### User Creation & Linking
+
+**findOrCreateUser Logic:**
+| Scenario | Behavior |
+|----------|----------|
+| New email | Create new user with Google data |
+| Existing email, no social account | Link existing user by email |
+| Existing email, social account exists | Update social account tokens |
+
+**User Creation Data:**
+| Field | Source |
+|-------|--------|
+| `name` | Google profile name |
+| `email` | Google profile email |
+| `avatar` | Google profile avatar URL |
+| `email_verified_at` | Now (auto-verified) |
+| `password` | NULL (OAuth-only users) |
+
+**Social Account Data:**
+| Field | Source |
+|-------|--------|
+| `provider` | 'google' |
+| `provider_id` | Google user ID |
+| `provider_token` | OAuth access token (encrypted) |
+| `provider_refresh_token` | OAuth refresh token (encrypted) |
+| `provider_token_expires_at` | Token expiration timestamp |
+
+### Exception Handling
+
+**Custom Exceptions:**
+| Exception | When Thrown |
+|-----------|-------------|
+| `ConfigurationException` | Missing OAuth client_id or client_secret |
+| `InvalidOAuthStateException` | CSRF state validation failure |
+| `AccessDeniedException` | User denied authorization in Google consent |
+| `InsufficientScopeException` | Email scope not granted by user |
+| `OAuthFailedException` | General OAuth API errors |
+
+### Security Features
+
+| Feature | Implementation |
+|---------|----------------|
+| CSRF Protection | 40-char state parameter, 10-min TTL, one-time use |
+| Token Encryption | AES-256 via SocialAccount encrypted casts |
+| Email Verification | Auto-verified for Google sign-ins |
+| Account Hijacking Prevention | Unique constraint on (provider, provider_id) |
+| Password Nullable | OAuth-only users don't require password |
+| Input Validation | All parameters validated before use |
+
+### Database Changes
+
+**Migrations Applied:**
+| Migration | Description |
+|-----------|-------------|
+| `add_avatar_to_users_table` | Adds nullable `avatar` VARCHAR(500) to users |
+| `make_password_nullable_in_users_table` | Makes `password` nullable for OAuth-only users |
+
+**User Model Updates:**
+- Added `avatar` to fillable array
+- Added `email_verified_at` to fillable array
+- Password now nullable for OAuth-only accounts
+
+### API Response Structure
+
+**Success Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "avatar": "https://lh3.googleusercontent.com/...",
+      "email_verified": true
+    },
+    "token": "1|abc123def456..."
+  }
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `GoogleOAuthServiceTest` | 91 | 107 |
+| `GoogleOAuthFlowTest` (Integration) | 18 | 26 |
+| **Total** | **109** | **133** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| URL Generation | 12 | Redirect URL, state parameter, scope configuration |
+| Callback Processing | 10 | Code exchange, state validation, token retrieval |
+| User Creation | 15 | New user from Google data, avatar, email verification |
+| Account Linking | 8 | Email match linking, multiple providers |
+| CSRF State | 8 | State generation, validation, expiration, one-time use |
+| Error Handling | 10 | API errors, network issues, rate limits |
+| Security | 10 | Token encryption, CSRF prevention, XSS |
+| Integration | 8 | Full OAuth flow end-to-end |
+| Edge Cases | 10 | Unicode, timeouts, concurrent requests |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-01 (commit via GitHub Actions run 22545442333) |
+| **Service** | `App\Services\Auth\GoogleOAuthService` |
+| **Migrations** | Applied (avatar, nullable password) |
+| **Tests** | 109/109 passing (133 assertions) |
+| **Status** | Complete |
+
+### Dependencies
+- TASK-25-2 (social_accounts table with encrypted tokens)
+- TASK-25-6 (Google OAuth credentials configuration)
+- Laravel Socialite package
+
+### Related Tasks
+- TASK-25-6: Configure Google OAuth Credentials
+- TASK-25-8: Implement GoogleAuthController (uses this service)
+- TASK-25-9: Handle Account Linking
+- FEAT-025: User Accounts + Dashboard + Analysis History
