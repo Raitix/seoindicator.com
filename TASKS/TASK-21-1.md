@@ -1,7 +1,7 @@
 # TASK-21-1: Create AI Service Structure and Interfaces
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
