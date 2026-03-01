@@ -51,15 +51,10 @@ class CustomDomain extends Model
         'account_id' => 'integer',
         'dns_verified' => 'boolean',
         'ssl_provisioned' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
         'verified_at' => 'datetime',
     ];
-
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
 
     // =========================================================================
     // Relationships
