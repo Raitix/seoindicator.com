@@ -665,13 +665,352 @@ For user experience, external links should typically open in new tabs so users d
   {
     slug: 'page-speed',
     title: 'Page Speed Optimization',
-    summary: 'Improve Core Web Vitals and page load times for better user experience.',
+    summary: 'Improve Core Web Vitals and page load times for better user experience, higher search rankings, and increased conversions.',
     category: 'technical',
     icon: '🚀',
     readTime: 7,
-    sections: [],
-    checklist: [],
-    relatedGuides: ['mobile-friendly', 'image-optimization'],
+    sections: [
+      {
+        title: 'What is Page Speed?',
+        content: `**Page speed** measures how quickly a web page loads and becomes interactive for users. It encompasses multiple metrics that capture different aspects of the loading experience—from the initial server response to when the page is fully usable.
+
+Page speed isn't a single number. It's a collection of metrics that together paint a complete picture of performance:
+
+### Key Page Load Metrics
+
+**First Contentful Paint (FCP)** — When the first piece of content (text, image, or canvas) appears on screen. A fast FCP gives users confidence the page is loading.
+
+**Largest Contentful Paint (LCP)** — When the largest content element becomes visible. This is often a hero image or main heading. LCP is a Core Web Vital.
+
+**Time to Interactive (TTI)** — When the page becomes fully interactive and responsive to user input. A page can appear loaded but still be unresponsive if JavaScript is still processing.
+
+**Total Blocking Time (TBT)** — The total time the page was blocked from responding to user input due to long JavaScript tasks.
+
+**Speed Index** — How quickly content is visually displayed during page load. A lower score means users see content faster.
+
+### Why Seconds Matter
+
+Studies consistently show that users expect pages to load in **2 seconds or less**. Every additional second of delay increases bounce rates and decreases conversions. In the era of mobile-first indexing, page speed is both a ranking factor and a critical user experience element.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Core Web Vitals',
+        content: `**Core Web Vitals** are Google's standardized metrics for measuring user experience. They focus on three key aspects: loading, interactivity, and visual stability. These metrics directly impact search rankings and should be at the heart of your optimization efforts.
+
+### Largest Contentful Paint (LCP)
+
+LCP measures when the largest visible content element renders on screen. It should occur within **2.5 seconds** of the page starting to load.
+
+**Common causes of poor LCP:**
+- Slow server response times (TTFB)
+- Large, unoptimized images
+- Render-blocking JavaScript and CSS
+- Client-side rendering delays
+
+**How to improve LCP:**
+- Optimize server response time to under 600ms
+- Use a CDN for faster content delivery
+- Preload critical resources like hero images
+- Optimize and compress images
+
+### First Input Delay (FID)
+
+FID measures the time from when a user first interacts with your page (clicks a link, taps a button) to when the browser can respond. A good FID is **100 milliseconds or less**.
+
+**Common causes of poor FID:**
+- Long JavaScript tasks blocking the main thread
+- Heavy third-party scripts
+- Excessive event handlers
+
+**How to improve FID:**
+- Break up long JavaScript tasks
+- Use async/defer for non-critical scripts
+- Minimize main thread work
+- Remove unused JavaScript
+
+### Cumulative Layout Shift (CLS)
+
+CLS measures visual stability—how much elements shift around during loading. A good CLS score is **0.1 or less**.
+
+**Common causes of poor CLS:**
+- Images without explicit dimensions
+- Ads or embeds that push content
+- Dynamically injected content
+- Web fonts causing FOUT/FOIT
+
+**How to improve CLS:**
+- Always set width and height on images
+- Reserve space for ad slots and embeds
+- Use font-display: swap for web fonts
+- Avoid inserting content above existing content
+
+### Interaction to Next Paint (INP)
+
+INP is the newest Core Web Vital, replacing FID in March 2024. It measures responsiveness throughout the entire page session, not just the first interaction. A good INP is **200 milliseconds or less**.
+
+INP captures the worst-case interaction latency, ensuring your page remains responsive even during complex operations.`,
+        codeExamples: [
+          {
+            language: 'text',
+            code: `Core Web Vitals Thresholds (Good / Needs Improvement / Poor)
+
+LCP: < 2.5s / 2.5s–4s / > 4s
+FID: < 100ms / 100ms–300ms / > 300ms
+INP: < 200ms / 200ms–500ms / > 500ms
+CLS: < 0.1 / 0.1–0.25 / > 0.25`,
+            description: 'Core Web Vitals threshold reference table',
+          },
+        ],
+      },
+      {
+        title: 'Why Speed Matters',
+        content: `Page speed isn't just a technical metric—it directly impacts your bottom line. From search rankings to user satisfaction to conversion rates, speed touches every aspect of online success.
+
+### SEO and Search Rankings
+
+Google has used page speed as a ranking factor since 2010 for desktop and 2018 for mobile searches. With the Page Experience Update in 2021, Core Web Vitals became official ranking signals.
+
+**Key SEO impacts:**
+- Faster pages are crawled more efficiently
+- Good Core Web Vitals scores improve visibility
+- Poor speed can trigger mobile-first indexing issues
+- Google's crawl budget is wasted on slow pages
+
+### User Experience and Engagement
+
+Speed shapes user perception from the first impression. A fast-loading site signals professionalism and reliability.
+
+**User behavior statistics:**
+- **53% of mobile users abandon sites** that take longer than 3 seconds to load
+- **Every 1-second delay** reduces page views by 11%
+- **Bounce rates increase** by 32% when page load time goes from 1 to 3 seconds
+- **79% of shoppers** who experience dissatisfaction with website performance are less likely to buy again
+
+### Conversion and Revenue Impact
+
+The relationship between speed and conversions is well-documented. Faster pages convert better across industries.
+
+**Real-world conversion data:**
+- Walmart found that **every 1-second improvement** in load time increased conversions by 2%
+- Amazon calculated that a **100ms delay** cost 1% in sales
+- Pinterest reduced perceived wait time by 40% and saw a **15% increase in sign-ups**
+- BBC found they lost **10% of users** for every additional second of load time
+
+### Mobile Performance
+
+With mobile-first indexing, your mobile page speed directly impacts rankings. Mobile networks (3G, 4G, 5G) introduce latency that desktop connections don't face. Optimizing for mobile means:
+
+- Minimizing JavaScript payload
+- Using responsive images
+- Implementing aggressive caching
+- Reducing server round trips`,
+        codeExamples: [],
+      },
+      {
+        title: 'Optimization Techniques',
+        content: `Improving page speed requires a multi-faceted approach. Here are the most effective optimization techniques, organized by impact and implementation complexity.
+
+### 1. Browser Caching
+
+Caching stores copies of your site's resources locally on users' devices, eliminating the need to re-download them on repeat visits. Set appropriate cache-control headers for static assets.
+
+**Recommended cache durations:**
+- HTML pages: 0–1 hour (dynamic content)
+- CSS/JavaScript: 1 year (with versioned filenames)
+- Images: 1 year (with versioned filenames)
+- Fonts: 1 year (rarely change)
+
+### 2. Content Delivery Network (CDN)
+
+A CDN distributes your content across multiple servers worldwide, serving users from the nearest location. This dramatically reduces latency and server load.
+
+**Popular CDN options:**
+- Cloudflare (free tier available)
+- AWS CloudFront
+- Fastly
+- BunnyCDN
+
+### 3. Code Minification and Compression
+
+Minification removes whitespace, comments, and unnecessary characters from code. Compression (Gzip or Brotli) further reduces file sizes during transfer.
+
+**Impact:** Minification typically reduces JavaScript/CSS by 20-30%; compression adds another 60-70% reduction.
+
+### 4. Image Optimization
+
+Images often account for 50%+ of page weight. Optimization includes:
+- Using modern formats (WebP, AVIF)
+- Proper compression (75-85% quality)
+- Responsive images with srcset
+- Lazy loading for below-fold images
+
+### 5. JavaScript and CSS Optimization
+
+Render-blocking resources delay page display. Optimize by:
+- Using defer/async on scripts
+- Inlining critical CSS
+- Removing unused CSS/JavaScript
+- Code splitting for large bundles
+
+### 6. Server Optimization
+
+Backend improvements yield significant gains:
+- Reduce Time to First Byte (TTFB) to under 600ms
+- Enable HTTP/2 or HTTP/3
+- Implement server-side caching
+- Use efficient database queries`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Preload critical resources -->
+<link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+
+<!-- Prefetch resources for next navigation -->
+<link rel="prefetch" href="/about" as="document">`,
+            description: 'Resource hints: preload critical assets, prefetch next pages',
+          },
+          {
+            language: 'html',
+            code: `<!-- Defer non-critical JavaScript -->
+<script src="analytics.js" defer></script>
+
+<!-- Async for independent scripts -->
+<script src="ads.js" async></script>
+
+<!-- Difference: defer executes in order, async executes ASAP when ready -->`,
+            description: 'Script loading with defer (ordered) and async (independent)',
+          },
+          {
+            language: 'html',
+            code: `<img 
+  src="hero-image.webp" 
+  alt="Hero image description" 
+  width="1200" 
+  height="630"
+  loading="lazy"
+  decoding="async"
+>`,
+            description: 'Image with lazy loading and explicit dimensions',
+          },
+          {
+            language: 'apache',
+            code: `# .htaccess - Browser caching configuration
+<IfModule mod_expires.c>
+  ExpiresActive On
+  
+  # Images
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  
+  # CSS and JavaScript
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  
+  # Fonts
+  ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+# Enable Gzip compression
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript
+</IfModule>`,
+            description: 'Apache .htaccess for browser caching and Gzip compression',
+          },
+          {
+            language: 'nginx',
+            code: `# nginx.conf - Gzip and Brotli compression
+gzip on;
+gzip_types text/plain text/css application/json application/javascript text/xml;
+gzip_min_length 256;
+
+# Brotli (if installed)
+brotli on;
+brotli_types text/plain text/css application/javascript;
+brotli_comp_level 4;`,
+            description: 'Nginx configuration for Gzip and Brotli compression',
+          },
+        ],
+      },
+      {
+        title: 'Measurement Tools',
+        content: `Regularly measuring page speed ensures your optimizations are effective and helps identify new opportunities for improvement. Use multiple tools for a complete picture.
+
+### Google PageSpeed Insights
+
+The official Google tool that analyzes page speed and provides both lab and field data. Shows Core Web Vitals status and specific optimization recommendations.
+
+**URL:** pagespeed.web.dev
+
+**Best for:** Quick audits, Core Web Vitals verification, mobile vs desktop comparison
+
+### Google Lighthouse
+
+An open-source automated tool built into Chrome DevTools. Runs comprehensive audits on performance, accessibility, SEO, and best practices.
+
+**How to use:**
+1. Open Chrome DevTools (F12)
+2. Navigate to Lighthouse tab
+3. Select categories and run audit
+
+**Best for:** Detailed technical analysis, local testing, CI/CD integration
+
+### GTmetrix
+
+A popular third-party tool that combines Lighthouse data with historical tracking and waterfall charts. Offers free and paid tiers.
+
+**URL:** gtmetrix.com
+
+**Features:**
+- Historical performance tracking
+- Waterfall visualization
+- Video playback of page load
+- Regional testing locations
+
+### WebPageTest
+
+A sophisticated testing tool that provides detailed waterfall charts, video capture, and content breakdown. Excellent for deep performance analysis.
+
+**URL:** webpagetest.org
+
+**Features:**
+- Test from multiple locations and devices
+- Connection speed throttling (3G, 4G, etc.)
+- Detailed waterfall charts
+- Filmstrip view of loading progress
+
+### Web.dev Measure
+
+Google's developer-focused tool that provides actionable recommendations based on Lighthouse audits.
+
+**Best for:** Developer-focused recommendations, implementation guidance
+
+### Interpreting Scores
+
+When reviewing performance reports, focus on:
+
+1. **Core Web Vitals status** — Are all metrics in the "good" range?
+2. **Opportunities** — High-impact fixes with estimated savings
+3. **Diagnostics** — Technical issues affecting performance
+4. **Field data vs Lab data** — Real user data vs simulated tests
+
+**Pro tip:** Run tests multiple times and across different locations. Performance can vary significantly based on server load and network conditions.`,
+        codeExamples: [],
+      },
+    ],
+    checklist: [
+      { text: 'Achieve LCP under 2.5 seconds on mobile and desktop', priority: 'critical' },
+      { text: 'Achieve FID under 100ms and INP under 200ms for responsiveness', priority: 'critical' },
+      { text: 'Achieve CLS under 0.1 by setting image dimensions', priority: 'critical' },
+      { text: 'Implement browser caching with appropriate cache-control headers', priority: 'important' },
+      { text: 'Use a CDN to serve content from edge locations near users', priority: 'important' },
+      { text: 'Optimize images with WebP/AVIF format and lazy loading', priority: 'important' },
+      { text: 'Minify and compress CSS/JavaScript with Gzip or Brotli', priority: 'important' },
+      { text: 'Use defer/async for non-critical JavaScript to prevent render blocking', priority: 'important' },
+      { text: 'Reduce server TTFB to under 600ms with caching and optimization', priority: 'recommended' },
+      { text: 'Enable HTTP/2 or HTTP/3 for multiplexed requests', priority: 'recommended' },
+    ],
+    relatedGuides: ['image-optimization', 'mobile-friendly'],
   },
   {
     slug: 'mobile-friendly',
