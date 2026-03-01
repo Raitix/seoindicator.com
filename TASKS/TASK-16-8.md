@@ -1,7 +1,7 @@
 # TASK-16-8: Social Media Preview Tool
 
 ## STATUS
-`To Test Prod`
+`To Deploy`
 
 ## PRIORITY
 `Medium`
@@ -120,6 +120,46 @@ Implement the Social Media Preview tool that analyzes Open Graph and Twitter Car
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01] Agent: ProdTester
+**Production Test FAILED - Integration Incomplete**
+
+**Test Results:**
+
+| Test | Status | Details |
+|------|--------|---------|
+| Health Check | ✅ PASS | 200 OK, database connected |
+| Tool Page Load | ✅ PASS | 200 OK, 30KB content, keywords present |
+| API Tool Call | ❌ FAIL | Validation error: tool not registered |
+
+**Root Cause Analysis:**
+
+The SocialMediaPreview tool was deployed but **not properly integrated** into the API infrastructure:
+
+1. **ProxyAnalyzeRequest.php validation missing:**
+   - Only allows: `meta-tag-analyzer`, `keyword-density-checker`
+   - Does NOT include: `social-media-preview` or `social-preview`
+   - Error: `Invalid tool specified. Valid options: meta-tag-analyzer, keyword-density-checker.`
+
+2. **APIProxyController.php match statement incomplete:**
+   - Service is injected (`$this->socialMediaPreview`)
+   - But NO case for `'social-media-preview'` in the match statement
+   - Default falls through to `metaTagAnalyzer`
+
+3. **Frontend/Backend name mismatch:**
+   - Frontend calls: `tool: "social-preview"`
+   - Backend service name: `'social-media-preview'`
+   - Neither is registered in validation
+
+**Required Fixes:**
+
+1. Add `'social-media-preview'` to ProxyAnalyzeRequest validation rules
+2. Add case for `'social-media-preview'` in APIProxyController match statement
+3. Update frontend to use correct tool name: `'social-media-preview'`
+
+**Status updated to `To Deploy`** for DevOps to apply fixes and redeploy.
+
+---
 
 ### [2026-03-01] Agent: DevOps
 **Deployment Complete - Ready for Production Testing**

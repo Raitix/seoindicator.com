@@ -213,6 +213,7 @@ class APIProxyController extends Controller
             $result = match ($tool) {
                 'keyword-density-checker' => $this->keywordDensityChecker->analyze($url, ['keyword' => $keyword]),
                 'mobile-friendly' => $this->mobileFriendlyChecker->analyze($url),
+                'social-media-preview' => $this->socialMediaPreview->analyze($url),
                 default => $this->metaTagAnalyzer->analyze($url),
             };
 

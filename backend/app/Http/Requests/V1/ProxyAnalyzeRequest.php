@@ -28,7 +28,7 @@ class ProxyAnalyzeRequest extends FormRequest
     {
         return [
             'url' => ['required', 'string', 'max:2048'],
-            'tool' => ['nullable', 'string', 'in:meta-tag-analyzer,keyword-density-checker'],
+            'tool' => ['nullable', 'string', 'in:meta-tag-analyzer,keyword-density-checker,social-media-preview'],
             'keyword' => ['nullable', 'string', 'max:255'],
             'site_id' => ['nullable', 'integer', 'exists:sites,id'],
         ];
@@ -45,7 +45,7 @@ class ProxyAnalyzeRequest extends FormRequest
             'url.required' => 'URL is required.',
             'url.string' => 'URL must be a valid string.',
             'url.max' => 'URL is too long. Maximum length is 2048 characters.',
-            'tool.in' => 'Invalid tool specified. Valid options: meta-tag-analyzer, keyword-density-checker.',
+            'tool.in' => 'Invalid tool specified. Valid options: meta-tag-analyzer, keyword-density-checker, social-media-preview.',
             'keyword.max' => 'Keyword is too long. Maximum length is 255 characters.',
         ];
     }
