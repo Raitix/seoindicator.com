@@ -38,7 +38,19 @@ Knowledge base for ProdTester agent working on SEOIndicator project.
 
 ---
 
-Last updated: 2026-02-28
+## 2026-03-01: TASK-25-22 Feature Tests for API Endpoints
+- Feature tests are development artifacts - not deployed to production
+- Run tests locally via `php artisan test --filter="ControllerName"`
+- Production smoke tests verify: health check, API authentication (401), security
+- All protected API endpoints should return 401 for unauthenticated requests
+- SQL injection attempts may return 000 (connection reset by WAF) or 401
+- XSS in query params should return 401 (auth required) + sanitized
+- Path traversal attempts should return 404 (route not found)
+- Tests can be validated via CI/CD pipeline when available
+
+---
+
+Last updated: 2026-03-01
 
 ---
 
