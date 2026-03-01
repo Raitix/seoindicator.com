@@ -18,6 +18,9 @@ class PWAScorerService
 {
     /**
      * Scoring constants.
+     * 
+     * Total: 20 + 15 + 15 + 25 + 10 = 85
+     * Normalized to 0-100 scale.
      */
     private const MANIFEST_PRESENCE_POINTS = 10;
     private const MANIFEST_VALIDITY_POINTS = 10;
@@ -27,6 +30,11 @@ class PWAScorerService
     private const ICON_512_POINTS = 10;
     private const ICON_180_POINTS = 5;
     private const ICON_VALIDITY_MAX_POINTS = 10;
+    
+    /**
+     * Maximum raw score (before normalization).
+     */
+    private const MAX_RAW_SCORE = 85;
 
     /**
      * Calculate PWA readiness score (0-100).
