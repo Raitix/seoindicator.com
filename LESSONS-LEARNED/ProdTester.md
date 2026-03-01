@@ -50,6 +50,16 @@ Knowledge base for ProdTester agent working on SEOIndicator project.
 
 ---
 
+## 2026-03-01: TASK-25-5 Email Verification
+- Signed URL verification endpoints return 403 for invalid signatures (correct behavior)
+- Route constraints (`where('id', '[0-9]+')`) block SQL injection at route level
+- Resend verification endpoint requires authentication (401 for unauthenticated)
+- Rate limiting on resend: 1 per minute per user with X-RateLimit headers
+- Timing-safe hash comparison prevents timing attacks
+- All verification tests can be run via `php artisan test --filter=EmailVerificationControllerTest`
+
+---
+
 Last updated: 2026-03-01
 
 ---
