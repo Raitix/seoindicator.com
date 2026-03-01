@@ -282,6 +282,169 @@ Frontend component for the SEO Guides Library index page. Displays a grid of all
 - TASK-20-4: Routing with static params generation
 
 ---
+## SEO Guides Library - Apache .htaccess Configuration (TASK-20-26)
+
+### Service Description
+Apache `.htaccess` configuration for SEO guides clean URL routing with trailing slash normalization, 301 permanent redirects, and comprehensive security features. Ensures all 17 guide routes work correctly on production Apache/LiteSpeed servers with proper SEO optimization.
+
+### Component Location
+- **File:** `frontend/public/.htaccess`
+- **Deployed To:** `out/.htaccess` (copied during build)
+- **Production Path:** `public_html/.htaccess` (Hostinger)
+
+### Core Functionalities
+
+**Routing Rules:**
+
+| Rule | Pattern | Action | Status Code |
+|------|---------|--------|-------------|
+| Index Redirect | `/seo-guides` | → `/seo-guides/` | 301 |
+| Index Serve | `/seo-guides/` | Serve `index.html` | 200 |
+| Guide Redirect | `/seo-guides/[slug]` | → `/seo-guides/[slug]/` | 301 |
+| Guide Serve | `/seo-guides/[slug]/` | Serve `index.html` | 200 |
+
+**Rewrite Rules:**
+```apache
+# Enable rewrite engine
+RewriteEngine On
+
+# /seo-guides -> /seo-guides/ (301 permanent redirect)
+RewriteCond %{REQUEST_URI} ^/seo-guides$ [NC]
+RewriteRule ^(.*)$ /seo-guides/ [L,R=301]
+
+# /seo-guides/[slug] -> /seo-guides/[slug]/ (301 permanent redirect)
+RewriteCond %{REQUEST_URI} ^/seo-guides/([a-z0-9-]+)$ [NC]
+RewriteRule ^seo-guides/(.*)$ /seo-guides/$1/ [L,R=301]
+```
+
+### Security Features
+
+**File Access Blocking:**
+
+| Category | Pattern | Reason |
+|----------|---------|--------|
+| Hidden Files | `^\.([a-z]+)$` | Block .htaccess, .env, .git, etc. |
+| Backup Files | `\.(bak|backup|old|orig|save)$` | Prevent backup file exposure |
+| Sensitive Files | `package\.json|composer\.json|yarn\.lock` | Hide project configuration |
+
+**Security Headers:**
+```apache
+# Security Headers
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "SAMEORIGIN"
+Header set X-XSS-Protection "1; mode=block"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
+```
+
+### Performance Features
+
+**Gzip Compression:**
+| Content Type | Extensions |
+|--------------|------------|
+| Text/HTML | html, htm, css, js |
+| Application | json, xml, atom, rss |
+| Fonts | woff, woff2, svg |
+
+**Cache Headers:**
+
+| Resource Type | Cache Duration | Headers |
+|---------------|----------------|---------|
+| Images | 1 year | Cache-Control: max-age=31536000 |
+| Fonts | 1 year | Cache-Control: max-age=31536000 |
+| CSS/JS | 1 month | Cache-Control: max-age=2592000 |
+| HTML | 1 hour | Cache-Control: max-age=3600 |
+
+### Configuration
+
+**Apache Requirements:**
+- `mod_rewrite` enabled
+- `mod_headers` enabled
+- `mod_deflate` enabled (for gzip)
+- `AllowOverride All` in Apache config
+
+**Next.js Integration:**
+```typescript
+// next.config.ts
+{
+  output: 'export',           // Static site generation
+  trailingSlash: true,        // Required for clean URLs
+  images: { unoptimized: true }
+}
+```
+
+**Build Output Structure:**
+```
+out/
+├── .htaccess                    # Apache configuration
+├── seo-guides/
+│   ├── index.html               # Guide index
+│   ├── meta-title/index.html    # Guide page
+│   ├── meta-description/index.html
+│   └── ... (17 guides total)
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| TASK-20-26-htaccess-routes.test.js | 51 | 51 passed, 1 skipped |
+| seo-guides-routing.spec.ts | 54 | E2E tests |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Index Redirect | 3 | 301 redirect from /seo-guides to /seo-guides/ |
+| Index Serving | 3 | index.html serving and content verification |
+| Guide Redirect | 3 | 301 redirect for guide pages |
+| Guide Serving | 4 | Guide page content and SEO tags |
+| All 17 Routes | 17 | Each guide route tested individually |
+| 301 Verification | 4 | Redirect chain and status code verification |
+| Compatibility | 3 | Existing .htaccess rules unaffected |
+| Edge Cases | 7 | Invalid slugs, path traversal, XSS, etc. |
+| Security | 4 | Hidden files, backup files, directory listing |
+| SEO | 3 | Canonical URLs, OG tags (1 skipped: robots.txt) |
+
+**Test Results Summary:**
+- ✅ All 17 guide routes working (200 OK)
+- ✅ 301 redirects for trailing slash normalization
+- ✅ Security tests passed (path traversal, hidden files, XSS)
+- ✅ API compatibility verified (existing routes unaffected)
+
+### Production Status
+- **Deployed**: 2026-03-01 (via GitHub Actions)
+- **Server**: Hostinger Apache/LiteSpeed
+- **Health Check**: Passing
+- **Tests**: 51/51 passing, 1 skipped
+- **Status**: Complete
+
+### Deployment Verification
+
+**Production Test Commands:**
+```bash
+# Run production tests
+PROD_BASE_URL=https://seoindicator.com npx jest tests/api/TASK-20-26-htaccess-routes.test.js
+
+# Manual verification
+curl -I https://seoindicator.com/seo-guides          # Expect 301
+curl -I https://seoindicator.com/seo-guides/         # Expect 200
+curl -I https://seoindicator.com/seo-guides/meta-title  # Expect 301
+curl -I https://seoindicator.com/seo-guides/meta-title/ # Expect 200
+```
+
+### Dependencies
+- TASK-20-4 (Routing with static params generation)
+- All Phase 2 tasks (TASK-20-5 to TASK-20-21: Guide page content)
+
+### Related Tasks
+- TASK-20-1: Guide data structure and TypeScript types
+- TASK-20-2: Guide index page component
+- TASK-20-3: Guide page template component
+- TASK-20-4: Routing with static params generation
+- TASK-20-27: Schema markup for SEO guides
+- TASK-20-28: Open Graph images for social sharing
+
+---
 ## Google CSE Fetcher (TASK-1-8)
 
 ### Service Description
