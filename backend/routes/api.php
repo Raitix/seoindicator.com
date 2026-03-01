@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DeployController;
+use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompetitorController;
 use App\Http\Controllers\Api\V1\ComparisonController;
 use App\Http\Controllers\Api\V1\IssueTypeController;
@@ -77,6 +78,27 @@ Route::prefix('v1')->middleware(['api-key.auth', 'api-key.ratelimit'])->group(fu
 
     // Sites API (TASK-6-10)
     Route::get('sites', [SitesApiController::class, 'index'])->middleware('api-key.auth:sites:read');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Authentication Routes (TASK-25-3)
+|--------------------------------------------------------------------------
+|
+| User authentication endpoints for registration, login, logout, and user retrieval.
+| Uses Laravel Sanctum for API token authentication.
+|
+*/
+
+// Public auth routes
+Route::post('/v1/auth/register', [AuthController::class, 'register']);
+Route::post('/v1/auth/login', [AuthController::class, 'login'])
+    ->middleware('throttle:5,1');
+
+// Protected auth routes
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/v1/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/v1/auth/user', [AuthController::class, 'user']);
 });
 
 /*
