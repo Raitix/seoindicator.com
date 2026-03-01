@@ -104,7 +104,7 @@ class CreateSocialAccountsTableTest extends TestCase
                 $indexes[] = [
                     'name' => $row->name,
                     'columns' => $columns,
-                    'unique' => $row->unique ?? false,
+                    'unique' => (bool) ($row->unique ?? false),
                 ];
             }
             return $indexes;
