@@ -4709,6 +4709,208 @@ REST API controller for managing Google Search Console OAuth connections. Provid
 - TASK-12-8: GSC Data Controller
 
 ---
+## Dashboard API (TASK-25-15)
+
+### Service Description
+Backend API endpoints for the user dashboard, aggregating analysis history, cost summaries, and quick insights. Provides the data layer for the enhanced dashboard feature (FEAT-025 Phase 4), displaying user-scoped statistics and recent activity.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/dashboard` | Get full dashboard data with caching |
+| GET | `/api/v1/dashboard/stats` | Get quick stats cards data |
+| GET | `/api/v1/dashboard/recent-analyses` | Get recent analyses list |
+| GET | `/api/v1/dashboard/cost-summary` | Get cost summary by period |
+
+### Full Dashboard Data
+`GET /api/v1/dashboard`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "stats": {
+      "totalAnalyses": 127,
+      "thisMonth": 23,
+      "thisWeek": 8,
+      "today": 2
+    },
+    "costSummary": {
+      "totalCost": 12.45,
+      "thisMonthCost": 3.20,
+      "currency": "USD"
+    },
+    "recentAnalyses": [
+      {
+        "id": 127,
+        "toolName": "meta-tag-analyzer",
+        "inputUrl": "https://example.com",
+        "status": "completed",
+        "analyzedAt": "2026-03-01T10:00:00Z"
+      }
+    ],
+    "quickInsights": {
+      "mostUsedTool": "meta-tag-analyzer",
+      "avgAnalysisTime": 1.2,
+      "successRate": 98.4
+    }
+  }
+}
+```
+
+### Quick Stats
+`GET /api/v1/dashboard/stats`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "totalAnalyses": 127,
+    "thisMonth": 23,
+    "thisWeek": 8,
+    "today": 2
+  }
+}
+```
+
+### Recent Analyses
+`GET /api/v1/dashboard/recent-analyses`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 127,
+      "toolName": "meta-tag-analyzer",
+      "inputUrl": "https://example.com",
+      "status": "completed",
+      "analyzedAt": "2026-03-01T10:00:00Z"
+    }
+  ]
+}
+```
+
+**Note:** Returns up to 10 most recent analyses, ordered by `analyzed_at DESC`.
+
+### Cost Summary
+`GET /api/v1/dashboard/cost-summary`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "totalCost": 12.45,
+    "thisMonthCost": 3.20,
+    "currency": "USD"
+  }
+}
+```
+
+### Core Components
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `UserDashboardController` | `app/Http/Controllers/Api/V1/UserDashboardController.php` | Dashboard API endpoints |
+| `DashboardAggregator` | `app/Services/DashboardAggregator.php` | Service for aggregating dashboard data |
+| `AnalysisHistoryRepository` | `app/Repositories/AnalysisHistoryRepository.php` | Data access layer |
+
+### DashboardAggregator Service
+
+**Methods:**
+| Method | Description |
+|--------|-------------|
+| `getDashboardData(userId)` | Get full dashboard data with caching |
+| `getStats(userId)` | Get stats: totalAnalyses, thisMonth, thisWeek, today |
+| `getRecentAnalyses(userId)` | Get last 10 analyses with mapped fields |
+| `getCostSummary(userId)` | Get total and monthly costs with currency |
+| `getQuickInsights(userId)` | Get most used tool, avg time, success rate |
+| `clearCache(userId)` | Clear cached dashboard data |
+
+### Caching Implementation
+
+**Cache Strategy:**
+- **TTL:** 60 seconds (1 minute)
+- **Cache Keys:** `dashboard.{userId}`, `dashboard.stats.{userId}`, etc.
+- **Cache-Control Header:** `private, max-age=60` (user-specific caching)
+
+**Cache Invalidation:**
+```php
+// Clear cache when new analysis is recorded
+app(DashboardAggregator::class)->clearCache($userId);
+```
+
+### Quick Insights Calculation
+
+| Metric | Calculation |
+|--------|-------------|
+| `mostUsedTool` | Tool with highest count in user's analyses |
+| `avgAnalysisTime` | Average `analysis_duration_ms` across all analyses |
+| `successRate` | `(completed / (completed + failed)) * 100` |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware on all endpoints |
+| User Isolation | All queries scoped to `$request->user()->id` |
+| IDOR Protection | User-scoped data via repository methods |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Protection | Output serialization via JSON response |
+| Cache-Control | `private` directive prevents CDN caching |
+
+### Authorization
+- All endpoints require authentication (Bearer token)
+- Users can only access their own dashboard data
+- Returns 401 for unauthenticated requests
+
+### Response Headers
+```http
+Cache-Control: private, max-age=60
+Content-Type: application/json
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `DashboardAggregatorTest` | 31 | 55 |
+| `DashboardControllerTest` | 44 | 116 |
+| `DashboardIntegrationTest` | 13 | 29 |
+| **Total** | **88** | **200** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| getStats() | 15 | Counts, boundaries, caching |
+| getRecentAnalyses() | 12 | Ordering, limits, structure |
+| getCostSummary() | 12 | Aggregation, periods |
+| getQuickInsights() | 12 | Tools, timing, rates |
+| getDashboardData() | 10 | Full data, caching |
+| Security | 7 | SQL injection, IDOR, XSS |
+| Performance | 3 | Response time, caching |
+
+### Production Status
+- **Deployed:** 2026-03-01 (commit 3ffe2c4 via GitHub Actions run 22542876437)
+- **Health Check:** Passing
+- **Tests:** 88/88 passing (200 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-25-12 (AnalysisHistory Repository)
+- TASK-25-13 (CostTrackingService)
+
+### Related Tasks
+- TASK-25-16: AnalysisHistoryController API
+- TASK-25-19: Enhanced Dashboard Page (frontend)
+- FEAT-025: User Accounts + Dashboard + Analysis History
+
+---
 ## GSC Data Controller API (TASK-12-8)
 
 ### Service Description
