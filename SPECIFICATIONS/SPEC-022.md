@@ -1,7 +1,7 @@
 # SPEC-022: Headless Crawler Service (JS-Rendered HTML)
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -463,6 +463,22 @@ Future optimization: Move large content to file storage (S3-compatible or local 
 - Risk level confirmed as HIGH due to external resource fetching and potential SSRF
 - Using existing Playwright infrastructure from OpenClaw ecosystem
 - Integrated with existing JobQueue (TASK-1-10) for consistency
+
+### SpecSystemAnalyst (2026-03-01 22:20 GMT+2)
+- Task breakdown completed: 21 tasks created (TASK-22-1 through TASK-22-21)
+- **Phase 1 (Core Infrastructure):** TASK-22-1 to TASK-22-3 (Database, Models, Service skeleton)
+- **Phase 2 (Rendering Engine):** TASK-22-4 to TASK-22-6 (Playwright, Renderer, Content Processor)
+- **Phase 3 (Crawl Logic):** TASK-22-7 to TASK-22-10 (URL validation, Depth controller, Size limiter, Link queue)
+- **Phase 4 (API Layer):** TASK-22-11 to TASK-22-14 (Endpoints, Validation, Rate limiting, Content retrieval)
+- **Phase 5 (Worker & Queue):** TASK-22-15 to TASK-22-17 (Worker, Queue integration, Timeout handling)
+- **Phase 6 (Testing & Documentation):** TASK-22-18 to TASK-22-21 (Unit tests, Feature tests, Integration tests, Docs)
+- Key decisions preserved from specification:
+  - Playwright for headless browser (FREE, already in ecosystem)
+  - SQLite/database queue (leverages existing JobQueue)
+  - Comprehensive SSRF protection (localhost, private IPs, cloud metadata)
+  - 3MB content cap with size limiter service
+  - Rate limiting: 10/day per user, 3 concurrent, 1/sec per domain
+- Handed off to ProjectManager for prioritization
 
 ---
 
