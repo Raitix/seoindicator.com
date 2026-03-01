@@ -5,6 +5,7 @@ use App\Http\Controllers\DeployController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\EmailVerificationController;
+use App\Http\Controllers\Api\V1\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\V1\CompetitorController;
 use App\Http\Controllers\Api\V1\ComparisonController;
 use App\Http\Controllers\Api\V1\IssueTypeController;
@@ -95,6 +96,11 @@ Route::prefix('v1')->middleware(['api-key.auth', 'api-key.ratelimit'])->group(fu
 // Public auth routes
 Route::post('/v1/auth/register', [AuthController::class, 'register']);
 Route::post('/v1/auth/login', [AuthController::class, 'login'])
+    ->middleware('throttle:5,1');
+
+// Google OAuth routes (TASK-25-8)
+Route::post('/v1/auth/google', [GoogleAuthController::class, 'redirect']);
+Route::post('/v1/auth/google/callback', [GoogleAuthController::class, 'callback'])
     ->middleware('throttle:5,1');
 
 // Password reset routes (TASK-25-4)
