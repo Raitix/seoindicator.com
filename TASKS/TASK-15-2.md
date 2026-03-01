@@ -1,7 +1,7 @@
 # TASK-15-2: Create Custom Domains Table
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -51,3 +51,52 @@ Created task for custom domain tracking.
 - **Parallel Execution:** Can be developed in parallel with TASK-15-1 since tables are independent
 - **Phase Note:** Custom domains marked as Phase 2 in SPEC-015 rollout, but task exists for implementation
 - **Handoff:** Ready for PreTester to design tests for migration, uniqueness constraints, and DNS/SSL workflows
+
+### [2026-03-01 10:55] Agent: PreTester
+**Tests Complete - Ready for Developer**
+
+Created comprehensive test suite for TASK-15-2:
+
+**Test Files:**
+1. `TESTS/TEST-15-2.md` - Test documentation with 49 test scenarios
+2. `backend/tests/Feature/Migrations/CreateCustomDomainsTableTest.php` - 29 tests covering:
+   - Schema structure (8 tests)
+   - Foreign key constraints (4 tests)
+   - Indexes (2 tests)
+   - Migration rollback (2 tests)
+   - Security (3 tests)
+   - Edge cases (8 tests)
+3. `backend/tests/Unit/Models/CustomDomainTest.php` - 25 tests covering:
+   - Model creation (6 tests)
+   - Relationships (3 tests)
+   - Scopes (5 tests)
+   - Accessor/Methods (5 tests)
+   - Edge cases (4 tests)
+   - Security (2 tests)
+   - Workflows (4 tests)
+4. `backend/tests/Unit/Repositories/CustomDomainRepositoryTest.php` - 28 tests covering:
+   - CRUD operations (8 tests)
+   - Query methods (9 tests)
+   - Edge cases (6 tests)
+   - Performance (3 tests)
+   - Integration (4 tests)
+5. `backend/database/factories/CustomDomainFactory.php` - Factory with 10 states:
+   - Default, forAccount, verified, pending, withSsl, withoutSsl
+   - fullyConfigured, withDomain, verifiedAt, unicodeDomain, subdomain, longDomain
+
+**Key Test Coverage:**
+- Domain uniqueness constraint (SC-008)
+- Foreign key cascade delete (FK-003)
+- DNS verification workflow (WF-001)
+- SSL provisioning workflow (WF-002)
+- Full domain lifecycle (WF-003)
+- Security: SQL injection, XSS, path traversal
+
+**Notes for Developer:**
+- Migration should include unique index on `domain` column
+- Model needs `belongsTo` relationship to Account
+- Account model needs `hasMany` relationship to CustomDomain
+- Repository methods needed: create, find, findByDomain, findByAccount, update, delete, findVerifiedByAccount, exists, getPrimaryDomain, findSslReadyByAccount
+- Model scopes needed: verified(), sslReady(), pending(), forAccount(), byDomain()
+
+**Status Updated:** `To Write Tests` → `To Develop`
