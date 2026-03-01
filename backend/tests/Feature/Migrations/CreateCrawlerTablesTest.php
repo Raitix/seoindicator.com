@@ -739,8 +739,9 @@ class CreateCrawlerTablesTest extends TestCase
     {
         $indexes = $this->getTableIndexes('crawl_pages');
 
-        // Check for crawl_job_id index
-        $this->assertIndexExists($indexes, 'crawl_job_id');
+        // Check for crawl_job_id index (index name contains 'job_id')
+        // Note: Migration uses custom index name 'idx_crawl_pages_job_id'
+        $this->assertIndexExists($indexes, 'job_id');
 
         // Check for composite index (crawl_job_id, depth)
         $this->assertCompositeIndexExists($indexes, ['crawl_job_id', 'depth']);
@@ -1108,8 +1109,8 @@ class CreateCrawlerTablesTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        // 1MB HTML content
-        $largeHtml = '<html><body>' . str_repeat('<p>Test content paragraph.</p>', 25000) . '</body></html>';
+        // Generate > 1MB HTML content (29 chars per paragraph, need ~34500 for 1MB)
+        $largeHtml = '<html><body>' . str_repeat('<p>Test content paragraph.</p>', 35000) . '</body></html>';
 
         $id = DB::table('crawl_pages')->insertGetId([
             'crawl_job_id' => $jobId,
