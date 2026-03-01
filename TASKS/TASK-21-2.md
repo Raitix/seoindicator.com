@@ -1,7 +1,7 @@
 # TASK-21-2: Implement OpenRouter Provider
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
