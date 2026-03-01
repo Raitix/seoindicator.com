@@ -66,11 +66,15 @@ class AnalysisHistoryRepository
 
         // Apply date range filter
         if (isset($filters['from']) && isset($filters['to'])) {
-            $query->analyzedBetween($filters['from'], $filters['to']);
+            $from = is_string($filters['from']) ? \Carbon\Carbon::parse($filters['from'])->startOfDay() : $filters['from'];
+            $to = is_string($filters['to']) ? \Carbon\Carbon::parse($filters['to'])->endOfDay() : $filters['to'];
+            $query->whereBetween('analyzed_at', [$from, $to]);
         } elseif (isset($filters['from'])) {
-            $query->where('analyzed_at', '>=', $filters['from']);
+            $from = is_string($filters['from']) ? \Carbon\Carbon::parse($filters['from'])->startOfDay() : $filters['from'];
+            $query->where('analyzed_at', '>=', $from);
         } elseif (isset($filters['to'])) {
-            $query->where('analyzed_at', '<=', $filters['to']);
+            $to = is_string($filters['to']) ? \Carbon\Carbon::parse($filters['to'])->endOfDay() : $filters['to'];
+            $query->where('analyzed_at', '<=', $to);
         }
 
         // Order by analyzed_at descending
@@ -151,6 +155,21 @@ class AnalysisHistoryRepository
     }
 
     /**
+     * Count analyses for a user within a date range.
+     *
+     * @param int $userId
+     * @param \Carbon\Carbon|string $from
+     * @param \Carbon\Carbon|string $to
+     * @return int
+     */
+    public function countByUserAndDateRange(int $userId, $from, $to): int
+    {
+        return AnalysisHistory::byUser($userId)
+            ->whereBetween('analyzed_at', [$from, $to])
+            ->count();
+    }
+
+    /**
      * Get analysis statistics for a user.
      *
      * @param int $userId
@@ -187,12 +206,36 @@ class AnalysisHistoryRepository
             ? round(($byStatus['completed'] / $total) * 100, 1) 
             : 0;
 
+        // Time-period counts
+        $now = \Carbon\Carbon::now();
+        
+        $thisMonth = (clone $baseQuery)
+            ->whereBetween('analyzed_at', [
+                $now->copy()->startOfMonth(),
+                $now->copy()->endOfMonth()
+            ])->count();
+        
+        $thisWeek = (clone $baseQuery)
+            ->whereBetween('analyzed_at', [
+                $now->copy()->startOfWeek(),
+                $now
+            ])->count();
+        
+        $today = (clone $baseQuery)
+            ->whereBetween('analyzed_at', [
+                $now->copy()->startOfDay(),
+                $now
+            ])->count();
+
         return [
             'total' => $total,
             'by_status' => $byStatus,
             'by_tool' => $byTool,
             'avg_duration_ms' => (float) $avgDuration,
             'success_rate' => (float) $successRate,
+            'this_month' => $thisMonth,
+            'this_week' => $thisWeek,
+            'today' => $today,
         ];
     }
 }
