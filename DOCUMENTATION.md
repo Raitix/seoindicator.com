@@ -9124,6 +9124,175 @@ Each keyword in the response now includes a `serpFeatures` object:
 - Status: Implementation complete, tests passing
 
 ---
+## Guide Data Structure and TypeScript Types (TASK-20-1)
+
+### Service Description
+Foundation TypeScript types and data structures for the SEO Guides Library feature (FEAT-020). Defines the core interfaces for SEO guides, content sections, checklists, and the guide registry containing all 17 SEO indicator guide stubs.
+
+### TypeScript Interfaces
+
+**SEOGuide Interface:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `slug` | string | Yes | URL-friendly identifier (kebab-case) |
+| `title` | string | Yes | Display title for the guide |
+| `summary` | string | Yes | Brief description (1-2 sentences) |
+| `category` | GuideCategory | Yes | Category: 'on-page' \| 'technical' \| 'content' |
+| `toolSlug` | string | No | Links to interactive tool from FEAT-016 |
+| `icon` | string | Yes | Emoji or icon component name |
+| `readTime` | number | Yes | Estimated read time in minutes |
+| `sections` | GuideSection[] | No | Content sections (populated in Phase 2) |
+| `checklist` | ChecklistItem[] | No | Actionable checklist items |
+| `relatedGuides` | string[] | No | Slugs of related guides (max 3) |
+
+**GuideSection Interface:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | Yes | Section heading |
+| `content` | string | Yes | Markdown content |
+| `codeExamples` | CodeExample[] | No | Code snippets for the section |
+
+**ChecklistItem Interface:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | Checklist item text |
+| `priority` | ChecklistPriority | Yes | 'critical' \| 'important' \| 'recommended' |
+
+**CodeExample Interface:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `language` | string | Yes | Programming language for syntax highlighting |
+| `code` | string | Yes | Code snippet content |
+| `description` | string | No | Optional description of the example |
+
+### Type Guards
+
+Runtime validation functions for type safety:
+
+| Function | Description |
+|----------|-------------|
+| `isSEOGuide(value)` | Validates SEOGuide object structure |
+| `isGuideSection(value)` | Validates GuideSection object |
+| `isChecklistItem(value)` | Validates ChecklistItem object |
+| `isCodeExample(value)` | Validates CodeExample object |
+| `isValidCategory(value)` | Validates category string against enum |
+| `isValidPriority(value)` | Validates priority string against enum |
+
+### Constants
+
+| Constant | Type | Description |
+|----------|------|-------------|
+| `GUIDE_CATEGORIES` | readonly string[] | ['on-page', 'technical', 'content'] |
+| `CHECKLIST_PRIORITIES` | readonly string[] | ['critical', 'important', 'recommended'] |
+| `GUIDE_SLUGS` | readonly string[] | All 17 guide slugs |
+
+### Guide Registry Functions
+
+| Function | Parameters | Returns | Description |
+|----------|------------|---------|-------------|
+| `getGuideBySlug(slug)` | string | SEOGuide \| null | Exact match lookup (case-sensitive) |
+| `getAllGuides()` | - | SEOGuide[] | Returns copies of all 17 guides |
+| `getRelatedGuides(slug)` | string | SEOGuide[] | Up to 3 related guides |
+| `getGuidesByCategory(category)` | GuideCategory | SEOGuide[] | Filter by category |
+| `getGuidesByToolSlug(toolSlug)` | string | SEOGuide[] | Filter by tool integration |
+| `getGuidesWithTools()` | - | SEOGuide[] | Returns 5 guides with tools |
+| `getGuidesWithoutTools()` | - | SEOGuide[] | Returns 12 guides without tools |
+
+### All 17 Guide Stubs
+
+**On-Page Category (8 guides):**
+| Slug | Title | Tool Integration |
+|------|-------|------------------|
+| `meta-title` | Meta Title Guide | meta-tag-analyzer |
+| `meta-description` | Meta Description Guide | meta-tag-analyzer |
+| `h1-headings` | H1 Headings Guide | - |
+| `heading-hierarchy` | Heading Hierarchy Guide | - |
+| `image-alt-text` | Image Alt Text Guide | - |
+| `image-optimization` | Image Optimization Guide | - |
+| `internal-links` | Internal Links Guide | - |
+| `external-links` | External Links Guide | - |
+
+**Technical Category (7 guides):**
+| Slug | Title | Tool Integration |
+|------|-------|------------------|
+| `page-speed` | Page Speed Guide | - |
+| `mobile-friendly` | Mobile-Friendliness Guide | mobile-friendly-checker |
+| `https-security` | HTTPS/Security Guide | - |
+| `structured-data` | Structured Data Guide | - |
+| `canonical-urls` | Canonical URLs Guide | - |
+| `robots-txt` | Robots.txt Guide | - |
+| `xml-sitemap` | XML Sitemap Guide | - |
+
+**Content Category (2 guides):**
+| Slug | Title | Tool Integration |
+|------|-------|------------------|
+| `open-graph` | Open Graph Tags Guide | social-media-preview |
+| `twitter-cards` | Twitter Cards Guide | social-media-preview |
+
+### Technical Implementation
+
+| Component | File |
+|-----------|------|
+| Types | `frontend/lib/guides/types.ts` |
+| Registry | `frontend/lib/guides/registry.ts` |
+| Tests | `frontend/__tests__/lib/guides/types.test.ts` |
+| Tests | `frontend/__tests__/lib/guides/registry.test.ts` |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| types.test.ts | 50 | 101 |
+| registry.test.ts | 51 | 102 |
+| **Total** | **101** | **203** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| SEOGuide Interface | 15 | Required fields, optional fields, validation |
+| GuideSection Interface | 4 | Required fields, codeExamples |
+| CodeExample Interface | 4 | Required fields, optional description |
+| ChecklistItem Interface | 8 | Required fields, priority validation |
+| isValidCategory | 5 | Category validation |
+| isValidPriority | 5 | Priority validation |
+| Type Guards Integration | 6 | Runtime validation |
+| getGuideBySlug | 8 | Lookup by slug, null handling |
+| getAllGuides | 6 | Return count, structure validation |
+| getRelatedGuides | 6 | Related guides logic, max 3 |
+| getGuidesByCategory | 5 | Category filtering |
+| getGuidesByToolSlug | 4 | Tool integration filtering |
+| Immutability | 4 | Registry returns copies |
+| Edge Cases | 14 | Special inputs, null handling |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Immutability | Registry functions return deep copies |
+| Input Validation | All slug inputs validated before lookup |
+| Injection Prevention | No SQL/DOM operations on user input |
+| Prototype Pollution | Object.create(null) used internally |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-01 (commit 2c4d8a7) |
+| **Health Check** | Passing |
+| **Tests** | 101 tests, 203 assertions |
+| **TypeScript** | Compiles without errors |
+| **Status** | Complete |
+
+### Dependencies
+- None (foundation task)
+
+### Related Tasks
+- TASK-20-2: Guide index page component
+- TASK-20-3: Guide page template component
+- TASK-20-4: Routing with static params
+- TASK-20-5 to TASK-20-21: Content writing tasks
+
+---
 ## Google Suggest Fetcher (TASK-5-4)
 
 ### Service Description
