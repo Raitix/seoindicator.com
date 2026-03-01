@@ -186,7 +186,7 @@ class StaticFallbackProvider implements AIProviderInterface
         $length = mb_strlen(trim($title));
 
         if ($length === 0) {
-            $score -= 50;
+            $score = 40;
             $issues[] = 'Title is empty. Add a descriptive title for this page.';
             $suggestions[] = [
                 'type' => 'add',
@@ -217,8 +217,9 @@ class StaticFallbackProvider implements AIProviderInterface
                 }
             }
             
-            // Brand-only detection: 1-3 words with brand indicator OR just 1-2 capitalized words
-            if ($wordCount <= 3 && ($hasBrandIndicator || $wordCount <= 2)) {
+            // Brand-only detection: only when it has brand indicators
+            // Don't penalize generic short titles like "Home Page"
+            if ($hasBrandIndicator && $wordCount <= 3) {
                 $score -= 15;
                 $issues[] = 'Title appears to be a brand name only. Add descriptive content.';
                 $suggestions[] = [
@@ -235,6 +236,11 @@ class StaticFallbackProvider implements AIProviderInterface
                 'text' => mb_substr($title, 0, 57) . '...',
                 'reason' => 'Shorten the title to fit within search result limits.',
             ];
+            
+            // Additional penalty for very long titles (100+ chars)
+            if ($length > 100) {
+                $score -= 20;
+            }
         }
 
         // Keyword analysis

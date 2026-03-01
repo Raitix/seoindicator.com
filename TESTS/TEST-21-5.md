@@ -1,219 +1,206 @@
 # TEST-21-5: AI Suggestion API Endpoint Tests
 
 ## Task Reference
-- **Task**: [TASK-21-5](../TASKS/TASK-21-5.md)
-- **Specification**: [SPEC-021](../SPECIFICATIONS/SPEC-021.md)
-- **Feature**: [FEAT-021](../FEATURES/FEAT-021.md) - AI Suggestions via OpenRouter/Vercel Gateway
+- **Task:** [TASK-21-5](../TASKS/TASK-21-5.md)
+- **Specification:** [SPEC-021](../SPECIFICATIONS/SPEC-021.md)
+- **Feature:** [FEAT-021](../FEATURES/FEAT-021.md)
 
 ---
 
 ## Overview
-Tests for the REST API endpoint that generates AI suggestions for SEO indicators. The endpoint receives indicator type and context data, processes it through the AI service, and returns structured suggestions.
+
+Comprehensive feature tests for the AI Suggestion REST API endpoint. Tests cover request validation, response structure, debug mode, error handling, fallback behavior, security, and edge cases.
 
 ---
 
 ## Test Files
 
-| File | Type | Tests | Assertions |
-|------|------|-------|------------|
-| `backend/tests/Feature/Api/V1/AISuggestionControllerTest.php` | Feature | 45+ | 100+ |
-| `backend/tests/Unit/Http/Requests/AISuggestionRequestTest.php` | Unit | 25+ | 50+ |
+| File | Tests | Assertions |
+|------|-------|------------|
+| `backend/tests/Feature/Http/Controllers/Api/V1/AISuggestionControllerTest.php` | 65+ | 120+ |
 
 ---
 
 ## Test Scenarios
 
-### TC-001: Controller Creation (AC-1)
+### AC1: Controller Created (2 tests)
 
 | ID | Scenario | Input | Expected Output |
 |----|----------|-------|-----------------|
-| TC-001-01 | Controller file exists | N/A | File at `backend/app/Http/Controllers/Api/V1/AISuggestionController.php` |
-| TC-001-02 | Controller has generate method | N/A | Method `generate(Request $request): JsonResponse` exists |
-| TC-001-03 | Controller injects AISuggestionService | N/A | Constructor accepts AISuggestionInterface |
-| TC-001-04 | Controller can be resolved from container | N/A | Instance created successfully |
+| AC1-01 | Controller file exists | N/A | File exists at `app/Http/Controllers/Api/V1/AISuggestionController.php` |
+| AC1-02 | Controller has generate method | N/A | Method `generate()` exists |
 
-### TC-002: Route Registration (AC-2)
+### AC2: Route Registered (2 tests)
 
 | ID | Scenario | Input | Expected Output |
 |----|----------|-------|-----------------|
-| TC-002-01 | Route registered | POST `/api/v1/ai/suggestions` | Route exists in route list |
-| TC-002-02 | Route returns 401 without auth | No Authorization header | HTTP 401 |
-| TC-002-03 | Route accepts POST method | POST request | HTTP 200 or 422 |
-| TC-002-04 | Route rejects GET method | GET request | HTTP 405 |
+| AC2-01 | Route is registered | N/A | Route `POST /api/v1/ai/suggestions` exists |
+| AC2-02 | Route returns 200 for valid request | Valid payload | HTTP 200 |
 
-### TC-003: Request Validation - Indicator Field (AC-3)
+### AC3: Request Validation (12 tests)
 
 | ID | Scenario | Input | Expected Output |
 |----|----------|-------|-----------------|
-| TC-003-01 | Valid indicator: title | `{"indicator": "title"}` | HTTP 200 |
-| TC-003-02 | Valid indicator: meta_description | `{"indicator": "meta_description"}` | HTTP 200 |
-| TC-003-03 | Valid indicator: robots | `{"indicator": "robots"}` | HTTP 200 |
-| TC-003-04 | Valid indicator: sitemap | `{"indicator": "sitemap"}` | HTTP 200 |
-| TC-003-05 | Valid indicator: headings | `{"indicator": "headings"}` | HTTP 200 |
-| TC-003-06 | Valid indicator: image_alt | `{"indicator": "image_alt"}` | HTTP 200 |
-| TC-003-07 | Valid indicator: filenames | `{"indicator": "filenames"}` | HTTP 200 |
-| TC-003-08 | Valid indicator: url | `{"indicator": "url"}` | HTTP 200 |
-| TC-003-09 | Valid indicator: links | `{"indicator": "links"}` | HTTP 200 |
-| TC-003-10 | Valid indicator: 404 | `{"indicator": "404"}` | HTTP 200 |
-| TC-003-11 | Missing indicator field | `{}` | HTTP 422, validation error |
-| TC-003-12 | Invalid indicator value | `{"indicator": "invalid"}` | HTTP 422, validation error |
-| TC-003-13 | Empty indicator | `{"indicator": ""}` | HTTP 422, validation error |
+| AC3-01 | Requires indicator field | Missing indicator | 422 with validation error |
+| AC3-02 | Indicator must be valid enum | `invalid_indicator` | 422 with validation error |
+| AC3-03 | All valid indicators accepted | Each valid indicator | 200 OK |
+| AC3-04 | Requires context field | Missing context | 422 with validation error |
+| AC3-05 | Context must be array | String context | 422 with validation error |
+| AC3-06 | Context max 5000 chars | 5001 char context | 422 with validation error |
+| AC3-07 | Provider is optional | No provider field | 200 OK |
+| AC3-08 | Provider must be valid enum | `invalid_provider` | 422 with validation error |
+| AC3-09 | Valid providers accepted | openrouter, vercel, static | 200 OK |
+| AC3-10 | Debug is optional | No debug field | 200 OK |
+| AC3-11 | Debug must be boolean | String debug | 422 with validation error |
+| AC3-12 | Returns 422 with clear messages | Empty payload | 422 with error structure |
 
-### TC-004: Request Validation - Context Field (AC-3)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| TC-004-01 | Valid context object | `{"indicator": "title", "context": {"title": "Test"}}` | HTTP 200 |
-| TC-004-02 | Missing context field | `{"indicator": "title"}` | HTTP 422, validation error |
-| TC-004-03 | Context not array | `{"indicator": "title", "context": "string"}` | HTTP 422, validation error |
-| TC-004-04 | Context exceeds max chars | `{"indicator": "title", "context": {...5000+ chars...}}` | HTTP 422, validation error |
-
-### TC-005: Request Validation - Provider Field (AC-3)
+### AC4: Response Structure - Success (11 tests)
 
 | ID | Scenario | Input | Expected Output |
 |----|----------|-------|-----------------|
-| TC-005-01 | Valid provider: openrouter | `{"indicator": "title", "context": {}, "provider": "openrouter"}` | HTTP 200 |
-| TC-005-02 | Valid provider: vercel | `{"indicator": "title", "context": {}, "provider": "vercel"}` | HTTP 200 |
-| TC-005-03 | Valid provider: static | `{"indicator": "title", "context": {}, "provider": "static"}` | HTTP 200 |
-| TC-005-04 | Invalid provider | `{"indicator": "title", "context": {}, "provider": "invalid"}` | HTTP 422, validation error |
-| TC-005-05 | Provider optional | `{"indicator": "title", "context": {}}` | HTTP 200, uses default |
+| AC4-01 | Returns HTTP 200 with JSON | Valid request | 200, Content-Type: application/json |
+| AC4-02 | Contains success: true | Valid request | `{"success": true}` |
+| AC4-03 | Contains data object with all fields | Valid request | Complete data structure |
+| AC4-04 | Data indicator matches request | indicator: meta_description | data.indicator: "meta_description" |
+| AC4-05 | Score is integer 0-100 | Valid request | Integer in range 0-100 |
+| AC4-06 | Issues is array | Valid request | Array of strings |
+| AC4-07 | Suggestions has proper structure | Valid request | Array with type, text, reason |
+| AC4-08 | Best practices is array | Valid request | Array of strings |
+| AC4-09 | Provider is string | Valid request | String value |
+| AC4-10 | Model is string or null | Valid request | String or null |
+| AC4-11 | Generated_at is ISO 8601 | Valid request | Valid timestamp format |
 
-### TC-006: Request Validation - Debug Field (AC-3)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| TC-006-01 | Debug true | `{"indicator": "title", "context": {}, "debug": true}` | HTTP 200, includes debug |
-| TC-006-02 | Debug false | `{"indicator": "title", "context": {}, "debug": false}` | HTTP 200, no debug |
-| TC-006-03 | Debug invalid | `{"indicator": "title", "context": {}, "debug": "yes"}` | HTTP 422, validation error |
-| TC-006-04 | Debug optional | `{"indicator": "title", "context": {}}` | HTTP 200, defaults to false |
-
-### TC-007: Response Structure - Success (AC-4)
+### AC5: Response Structure - Error with Fallback (4 tests)
 
 | ID | Scenario | Input | Expected Output |
 |----|----------|-------|-----------------|
-| TC-007-01 | Response has success field | Valid request | `{"success": true}` |
-| TC-007-02 | Response has data object | Valid request | `{"data": {...}}` |
-| TC-007-03 | Data has indicator field | Valid request | `data.indicator: string` |
-| TC-007-04 | Data has score field | Valid request | `data.score: int (0-100)` |
-| TC-007-05 | Data has issues array | Valid request | `data.issues: array` |
-| TC-007-06 | Data has suggestions array | Valid request | `data.suggestions: array` |
-| TC-007-07 | Data has best_practices array | Valid request | `data.best_practices: array` |
-| TC-007-08 | Data has provider field | Valid request | `data.provider: string` |
-| TC-007-09 | Data has model field | Valid request | `data.model: string\|null` |
-| TC-007-10 | Data has generated_at field | Valid request | `data.generated_at: ISO 8601` |
+| AC5-01 | Returns 200 on AI failure with fallback | AI fails, fallback available | HTTP 200 |
+| AC5-02 | Contains success: true on fallback | AI fails, fallback used | `{"success": true}` |
+| AC5-03 | Contains fallback_reason | Fallback used | `data.fallback_reason` present |
+| AC5-04 | Provider is "static_fallback" | Fallback used | `data.provider: "static_fallback"` |
 
-### TC-008: Response Structure - Fallback (AC-5)
+### AC6: Debug Mode Response (4 tests)
 
 | ID | Scenario | Input | Expected Output |
 |----|----------|-------|-----------------|
-| TC-008-01 | Fallback returns 200 | AI fails, fallback used | HTTP 200 |
-| TC-008-02 | Fallback has success true | AI fails, fallback used | `{"success": true}` |
-| TC-008-03 | Fallback has provider | AI fails, fallback used | `data.provider: "static_fallback"` |
-| TC-008-04 | Fallback has reason | AI fails, fallback used | `data.fallback_reason: string` |
+| AC6-01 | Debug adds debug object | debug: true, authenticated | Response includes debug object |
+| AC6-02 | Debug requires authentication | debug: true, not authenticated | Debug ignored or 401 |
+| AC6-03 | Debug contains prompt | debug: true | `debug.prompt` present |
+| AC6-04 | Debug contains latency_ms | debug: true | `debug.latency_ms` present |
 
-### TC-009: Debug Mode Response (AC-6)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| TC-009-01 | Debug includes prompt | `debug: true` | `debug.prompt: string` |
-| TC-009-02 | Debug includes raw_response | `debug: true` | `debug.raw_response: string` |
-| TC-009-03 | Debug includes tokens_used | `debug: true` | `debug.tokens_used: int` |
-| TC-009-04 | Debug includes latency_ms | `debug: true` | `debug.latency_ms: int` |
-| TC-009-05 | Debug includes provider | `debug: true` | `debug.provider: string` |
-| TC-009-06 | Debug includes model | `debug: true` | `debug.model: string` |
-| TC-009-07 | Debug hidden when false | `debug: false` | No `debug` key in response |
-
-### TC-010: Error Handling (AC-7)
+### AC7: Error Handling (5 tests)
 
 | ID | Scenario | Input | Expected Output |
 |----|----------|-------|-----------------|
-| TC-010-01 | Internal server error | Service throws exception | HTTP 500 |
-| TC-010-02 | Service unavailable | All providers down | HTTP 503 |
-| TC-010-03 | Error logs context | Service throws exception | Error logged with context |
-| TC-010-04 | Generic error message | Service throws exception | No sensitive data in response |
+| AC7-01 | Returns 500 for internal errors | Service throws Exception | HTTP 500 |
+| AC7-02 | Returns 429 for rate limit | Rate limit exceeded | HTTP 429 with Retry-After |
+| AC7-03 | Returns 503 for service unavailable | All providers down | HTTP 503 |
+| AC7-04 | Logs errors with context | Error occurs | Log entry with context |
+| AC7-05 | Generic error messages | Internal error | Generic user-facing message |
+
+### AC8: Feature Tests (6 tests)
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| AC8-01 | Test file exists | N/A | File at correct location |
+| AC8-02 | Successful generation | Valid request | 200 with complete response |
+| AC8-03 | Validation errors | Invalid payload | 422 with error details |
+| AC8-04 | Debug mode | debug: true | Debug info in response |
+| AC8-05 | Fallback behavior | Provider fails | Fallback response |
+| AC8-06 | Error responses | Service error | Appropriate error code |
+
+### Security Tests (5 tests)
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| SEC-01 | SQL injection protection | `'; DROP TABLE users; --` | 200, no SQL error |
+| SEC-02 | XSS protection | `<script>alert("xss")</script>` | 200, script escaped |
+| SEC-03 | Large payload handling | 5001 char context | 422 validation error |
+| SEC-04 | No sensitive data in errors | Error with API key | Generic error message |
+| SEC-05 | Context data validation | Various context values | Validated appropriately |
+
+### Edge Cases (8 tests)
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| EDGE-01 | Empty context array | `context: []` | 200 OK |
+| EDGE-02 | Unicode in context | `日本語タイトル 🎉` | 200 OK |
+| EDGE-03 | Null values in context | `title: null` | 200 OK |
+| EDGE-04 | Very long context field | 5001 chars | 422 validation error |
+| EDGE-05 | Concurrent requests | 3 simultaneous | All return 200 |
+| EDGE-06 | Special characters in indicator | `title<script>` | 422 validation error |
+| EDGE-07 | Case sensitivity | `TITLE` (uppercase) | 422 validation error |
+| EDGE-08 | Score boundary values | Score 0 and 100 | Correct values in response |
 
 ---
 
 ## Mock Data
 
-### Valid Request (Title Indicator)
+### Valid Request Payload
+
 ```json
 {
     "indicator": "title",
     "context": {
         "title": "Home - My Website",
-        "content_summary": "E-commerce homepage selling widgets...",
+        "content_summary": "E-commerce homepage selling widgets",
         "keyword": "best widgets"
-    },
-    "provider": "openrouter",
-    "debug": false
+    }
 }
 ```
 
 ### Valid Response
+
 ```json
 {
     "success": true,
     "data": {
         "indicator": "title",
-        "score": 65,
-        "issues": [
-            "Title is too generic",
-            "Missing target keyword"
-        ],
+        "score": 75,
+        "issues": ["Title is too short", "Missing keyword"],
         "suggestions": [
             {
                 "type": "rewrite",
-                "text": "Best Widgets 2026 | Premium Quality Widgets Online",
-                "reason": "Includes target keyword and value proposition"
+                "text": "Better Title | Your Brand",
+                "reason": "Includes keyword and brand"
             }
         ],
-        "best_practices": [
-            "Keep title under 60 characters",
-            "Place primary keyword near the beginning"
-        ],
+        "best_practices": ["Keep title under 60 characters", "Include primary keyword"],
         "provider": "openrouter",
         "model": "llama-3.1-8b-instruct",
-        "generated_at": "2026-03-01T12:00:00Z"
+        "generated_at": "2026-03-01T12:00:00+00:00"
     }
 }
 ```
 
 ### Fallback Response
+
 ```json
 {
     "success": true,
     "data": {
         "indicator": "title",
         "score": 50,
-        "issues": ["No specific issues detected"],
-        "suggestions": [
-            {
-                "type": "improve",
-                "text": "Consider adding your target keyword to the title",
-                "reason": "Helps search engines understand page content"
-            }
-        ],
-        "best_practices": [
-            "Keep title under 60 characters",
-            "Include primary keyword near the beginning"
-        ],
+        "issues": ["Unable to analyze with AI"],
+        "suggestions": [],
+        "best_practices": ["Keep title under 60 characters"],
         "provider": "static_fallback",
         "fallback_reason": "AI provider timeout",
         "model": null,
-        "generated_at": "2026-03-01T12:00:00Z"
+        "generated_at": "2026-03-01T12:00:00+00:00"
     }
 }
 ```
 
 ### Debug Response
+
 ```json
 {
     "success": true,
-    "data": { /* ... suggestions ... */ },
+    "data": { "... suggestion data ..." },
     "debug": {
-        "prompt": "You are an SEO expert. Analyze this title tag...",
-        "raw_response": "{\"score\": 65, \"issues\": [...], ...}",
+        "prompt": "You are an SEO expert. Analyze this title...",
+        "raw_response": "{\"score\": 75, \"issues\": [...]}",
         "tokens_used": 245,
         "latency_ms": 1250,
         "provider": "openrouter",
@@ -226,87 +213,107 @@ Tests for the REST API endpoint that generates AI suggestions for SEO indicators
 
 ## Coverage Targets
 
-| Category | Target | Tests |
-|----------|--------|-------|
-| Controller Creation | 100% | 4 |
-| Route Registration | 100% | 4 |
-| Request Validation | 100% | 20 |
-| Response Structure | 100% | 14 |
-| Error Handling | 100% | 4 |
-| **Total** | **100%** | **46+** |
+| Category | Target | Status |
+|----------|--------|--------|
+| Controller instantiation | 100% | ✅ |
+| Route registration | 100% | ✅ |
+| Request validation | 100% | ✅ |
+| Response structure (success) | 100% | ✅ |
+| Response structure (fallback) | 100% | ✅ |
+| Debug mode | 100% | ✅ |
+| Error handling | 100% | ✅ |
+| Security tests | 100% | ✅ |
+| Edge cases | 100% | ✅ |
 
 ---
 
 ## Test Execution
 
 ```bash
-# Run all AI suggestion tests
+# Run all AI Suggestion tests
 cd backend
-php artisan test --filter=AISuggestionController
-
-# Run specific test file
-php artisan test tests/Feature/Api/V1/AISuggestionControllerTest.php
+php artisan test tests/Feature/Http/Controllers/Api/V1/AISuggestionControllerTest.php
 
 # Run with coverage
-php artisan test --coverage --filter=AISuggestionController
+php artisan test --coverage tests/Feature/Http/Controllers/Api/V1/AISuggestionControllerTest.php
+
+# Run specific test
+php artisan test --filter "test_validation_requires_indicator"
 ```
 
 ---
 
 ## Dependencies
 
-- TASK-21-1 (AI Service Structure) - ✅ Complete
-- TASK-21-2 (OpenRouter Provider) - In Development
-- TASK-21-3 (Static Fallback Provider) - To Test Locally
-- TASK-21-4 (Prompt Templates) - To Test Locally
-
-**Note**: Tests use mocked `AISuggestionService` to allow testing independently of provider implementations.
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| TASK-21-1 (AI Service Structure) | Done | AISuggestionService, AIProviderInterface, DTOs |
+| TASK-21-2 (OpenRouter Provider) | In Progress | Will be mocked in tests |
+| TASK-21-3 (Static Fallback Provider) | In Progress | Used in fallback tests |
+| TASK-21-4 (Prompt Templates) | In Progress | Used by service |
 
 ---
 
 ## Notes for Developer
 
-### Implementation Requirements
+### Implementation Checklist
 
-1. **Controller Structure**:
-   - `AISuggestionController` at `backend/app/Http/Controllers/Api/V1/AISuggestionController.php`
-   - Constructor dependency injection for `AISuggestionService`
-   - Single public method `generate(Request $request): JsonResponse`
+1. **Controller** (`backend/app/Http/Controllers/Api/V1/AISuggestionController.php`)
+   - `generate(Request $request): JsonResponse` method
+   - Inject `AISuggestionService` via constructor
+   - Handle all error cases gracefully
 
-2. **Request Validation**:
-   - Create `AISuggestionRequest` FormRequest class
-   - Validate `indicator` against enum values
-   - Validate `context` is array with max 5000 chars
-   - Validate `provider` as optional enum
-   - Validate `debug` as optional boolean
+2. **FormRequest** (`backend/app/Http/Requests/AISuggestionRequest.php`)
+   - Validation rules for indicator, context, provider, debug
+   - Custom error messages
 
-3. **Response Format**:
-   - Always return JSON
-   - Use consistent structure for success/error
-   - Include `generated_at` as ISO 8601 timestamp
+3. **Route** (`backend/routes/api.php`)
+   - `Route::post('/ai/suggestions', [AISuggestionController::class, 'generate'])`
+   - Consider rate limiting middleware
 
-4. **Error Handling**:
-   - Log errors with full context
-   - Return generic messages to client
-   - Never expose API keys or internal details
+4. **Exception** (`backend/app/Exceptions/AIServiceUnavailableException.php`)
+   - Custom exception for 503 responses
 
-5. **Debug Mode**:
-   - Only enable for authenticated admin users
-   - Include full prompt and raw response
-   - Include timing metrics
+### Key Considerations
+
+- **Fallback always available**: Never return error if fallback can provide value
+- **Privacy**: Sanitize context before sending to AI providers
+- **Logging**: Log all AI interactions for debugging
+- **Rate limiting**: Implement per-IP limits (TASK-21-10)
+- **Caching**: Implement in TASK-21-6
 
 ---
 
 ## Comments
 _Agent log_
 
-### [2026-03-01 19:15 GMT+2] PreTester - Tests Coverage In Progress
-Creating test documentation and feature tests for TASK-21-5.
+### [2026-03-01 19:20 GMT+2] PreTester - Test Design Complete
+**Status:** `To Write Tests` → `Tests Coverage In Progress` → `To Develop`
 
-**Approach**:
-- Mock `AISuggestionService` to test controller independently
-- Use `RefreshDatabase` trait for isolation
-- Follow existing test patterns from ProjectControllerTest
-- Cover all acceptance criteria from task
+**Summary:**
+- Created 65+ test cases covering all 8 acceptance criteria
+- Tests use mocked AISuggestionService for isolation
+- Security tests cover SQL injection, XSS, sensitive data exposure
+- Edge cases cover Unicode, nulls, boundaries, concurrency
 
-Status: `To Write Tests` → `Tests Coverage In Progress`
+**Test Structure:**
+- Uses RefreshDatabase for clean test state
+- Mocks AISuggestionService via Mockery
+- Follows project test patterns from LESSONS-LEARNED/PreTester.md
+
+**Handoff to Developer:**
+1. Implement `AISuggestionController` with `generate()` method
+2. Create `AISuggestionRequest` form request for validation
+3. Register route in `routes/api.php`
+4. Create `AIServiceUnavailableException` for 503 handling
+5. All tests should pass after implementation
+
+**Test Run:**
+```bash
+cd backend
+php artisan test tests/Feature/Http/Controllers/Api/V1/AISuggestionControllerTest.php
+```
+
+---
+
+*Created by PreTester on 2026-03-01*
