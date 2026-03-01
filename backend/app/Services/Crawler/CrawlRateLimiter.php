@@ -278,6 +278,6 @@ class CrawlRateLimiter
      */
     protected function isAdmin(User $user): bool
     {
-        return $user->is_admin === true;
+        return $user->role === 'admin';
     }
 }

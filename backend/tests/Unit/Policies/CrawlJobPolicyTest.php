@@ -56,7 +56,7 @@ class CrawlJobPolicyTest extends TestCase
      */
     protected function createAdmin(): User
     {
-        return $this->createUser(['is_admin' => true]);
+        return $this->createUser(['role' => 'admin']);
     }
 
     /**
@@ -359,7 +359,7 @@ class CrawlJobPolicyTest extends TestCase
     /** @test */
     public function policy_edge_03_admin_with_non_admin_flag(): void
     {
-        $user = $this->createUser(['is_admin' => false]);
+        $user = $this->createUser(['role' => 'user']);
         $otherUser = $this->createUser();
         $job = $this->createCrawlJob(['user_id' => $otherUser->id]);
 
