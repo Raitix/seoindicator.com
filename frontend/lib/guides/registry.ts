@@ -1285,12 +1285,349 @@ Regular testing—ideally after any design or content change—keeps your site m
   {
     slug: 'https-security',
     title: 'HTTPS & Security Headers',
-    summary: 'Secure your site with SSL and implement security best practices.',
+    summary: 'Secure your site with SSL/TLS encryption and implement security headers to protect users, improve SEO rankings, and build trust with visitors.',
     category: 'technical',
     icon: '🔒',
     readTime: 5,
-    sections: [],
-    checklist: [],
+    sections: [
+      {
+        title: 'What is HTTPS?',
+        content: `**HTTPS** (Hypertext Transfer Protocol Secure) is the secure version of HTTP, the protocol used to transfer data between a web browser and a website. HTTPS encrypts all communications using **SSL** (Secure Sockets Layer) or **TLS** (Transport Layer Security) protocols, ensuring that data cannot be intercepted or tampered with during transmission.
+
+### How HTTPS Works
+
+When a user connects to an HTTPS website, a secure connection is established through a process called the **SSL/TLS handshake**:
+
+1. **Browser requests secure connection** — The browser connects to the server and requests identification
+2. **Server presents SSL certificate** — A digital certificate from a trusted **Certificate Authority (CA)** proves the site's identity
+3. **Browser verifies certificate** — The browser checks if the certificate is valid, trusted, and matches the domain
+4. **Encrypted session established** — Both parties generate session keys for encrypted communication
+
+### Encryption, Authentication, Integrity
+
+HTTPS provides three key security guarantees:
+
+- **Encryption** — Data is scrambled so interceptors cannot read it
+- **Authentication** — Users can verify they're connected to the legitimate site
+- **Integrity** — Data cannot be modified during transfer without detection
+
+Without HTTPS, all data sent between a user's browser and your server—including passwords, credit card numbers, and personal information—travels in plaintext that can be intercepted by anyone on the network.`,
+        codeExamples: [],
+      },
+      {
+        title: 'SEO Benefits of HTTPS',
+        content: `HTTPS is no longer optional for SEO—it's a baseline requirement. Google has been pushing for a more secure web since 2014, and HTTPS provides tangible ranking benefits.
+
+### Google's Ranking Signal
+
+In 2014, Google announced HTTPS as a **ranking signal**. While it's a relatively lightweight factor compared to content quality, it can be a tiebreaker when competing sites are otherwise equal. More importantly, Google has consistently increased the importance of security signals over time.
+
+### Browser Trust Indicators
+
+Modern browsers prominently display security status in the address bar:
+
+- **Secure sites**: Show a padlock icon and "Secure" label
+- **Non-HTTPS sites**: Display "Not Secure" warnings that alarm users
+
+These warnings significantly impact user trust and can dramatically increase bounce rates. Users are far less likely to enter personal information or complete transactions on sites marked as insecure.
+
+### Mobile-First Indexing
+
+With mobile-first indexing, Google predominantly crawls the mobile version of your site. Mobile browsers are even more aggressive about security warnings, making HTTPS essential for mobile SEO performance.
+
+### Referrer Data Preservation
+
+HTTPS preserves referrer data when users click from HTTPS sites. When a user clicks from an HTTPS site to an HTTP site, the referrer information is stripped for security. This means you lose valuable analytics data about where your traffic comes from if your site isn't HTTPS.
+
+### Google Search Console Requirements
+
+Some Google Search Console features require HTTPS:
+- **Core Web Vitals** reporting works best on HTTPS
+- **AMP** pages require HTTPS
+- **PWA** (Progressive Web Apps) require HTTPS
+
+The bottom line: HTTPS is table stakes for modern SEO. There's no legitimate reason to avoid it.`,
+        codeExamples: [],
+      },
+      {
+        title: 'SSL Certificate Types',
+        content: `SSL certificates come in several types, differing by validation level and the number of domains they cover. Choosing the right certificate depends on your needs and budget.
+
+### Validation Levels
+
+**Domain Validated (DV) Certificates**
+- **Validation**: Email or DNS record control
+- **Issuance time**: Minutes to hours
+- **Cost**: Free to low cost
+- **Best for**: Personal sites, blogs, small businesses
+- **Example**: Let's Encrypt (free)
+
+**Organization Validated (OV) Certificates**
+- **Validation**: Organization identity verified by CA
+- **Issuance time**: 1-3 days
+- **Cost**: $50-200/year
+- **Best for**: Businesses, organizations, e-commerce
+- **Browser display**: Shows organization name in certificate details
+
+**Extended Validation (EV) Certificates**
+- **Validation**: Extensive verification of legal entity
+- **Issuance time**: 1-2 weeks
+- **Cost**: $150-500/year
+- **Best for**: Banks, financial institutions, large e-commerce
+- **Browser display**: Shows organization name in address bar (historically)
+
+### Free SSL with Let's Encrypt
+
+**Let's Encrypt** is a free, automated, and open Certificate Authority that provides DV certificates at no cost. It's the most popular choice for websites of all sizes, trusted by millions of domains worldwide.
+
+**Advantages:**
+- Completely free (no cost ever)
+- Automated renewal via ACME protocol
+- 90-day certificates with automatic renewal
+- Supported by all major hosting providers
+- Use **Certbot** for easy installation
+
+**Most hosting providers** now offer one-click Let's Encrypt installation through their control panels (cPanel, Plesk, etc.), making free SSL accessible to everyone.
+
+### Certificate Scope
+
+| Type | Coverage |
+|------|----------|
+| Single-domain | One domain (example.com) |
+| Wildcard | Domain + all subdomains (*.example.com) |
+| Multi-domain (SAN) | Multiple domains on one certificate |
+
+For most sites, a free Let's Encrypt DV certificate is the best choice. It provides the same encryption strength as paid certificates.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Implementing HTTPS & Redirects',
+        content: `Installing an SSL certificate is just the first step. You must also configure your server to redirect all HTTP traffic to HTTPS and update your internal links.
+
+### HTTPS Redirect Configuration
+
+After installing your SSL certificate, configure your server to automatically redirect all HTTP requests to HTTPS. This ensures users and search engines always access the secure version of your site.
+
+**Critical**: Use **301 (permanent) redirects**, not 302 (temporary). A 301 redirect passes link equity to the HTTPS version and signals to search engines that the move is permanent.
+
+### Update Internal Links
+
+After enabling HTTPS, audit your site for mixed content:
+- Update all internal links from \`http://\` to \`https://\`
+- Update canonical tags to HTTPS URLs
+- Update sitemap URLs to HTTPS
+- Update Open Graph and Twitter Card URLs
+- Update structured data URLs
+
+### Update Google Search Console
+
+Add your HTTPS property to Google Search Console and submit your updated sitemap. This ensures Google indexes the HTTPS version.`,
+        codeExamples: [
+          {
+            language: 'apache',
+            code: `# .htaccess - Force HTTPS with 301 redirect
+RewriteEngine On
+
+# Redirect HTTP to HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Alternative for specific domain
+RewriteCond %{HTTP_HOST} ^example\.com [NC]
+RewriteCond %{SERVER_PORT} 80
+RewriteRule ^(.*)$ https://example.com/$1 [L,R=301]`,
+            description: 'Apache .htaccess configuration for HTTPS redirect with 301 permanent status',
+          },
+          {
+            language: 'nginx',
+            code: `# nginx - HTTP to HTTPS redirect
+server {
+    listen 80;
+    server_name example.com www.example.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name example.com www.example.com;
+    
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+    
+    # SSL configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
+    ssl_prefer_server_ciphers off;
+}`,
+            description: 'Nginx server block for HTTPS redirect with modern TLS configuration',
+          },
+        ],
+      },
+      {
+        title: 'Security Headers',
+        content: `Security headers are HTTP response headers that instruct browsers to enable built-in security protections. They help prevent common attacks like XSS, clickjacking, and content injection. Implementing these headers is essential for any production website.
+
+### HTTP Strict Transport Security (HSTS)
+
+**HSTS** forces browsers to always connect to your site via HTTPS, even if the user types \`http://\` or clicks an HTTP link. This prevents downgrade attacks where attackers try to force an insecure connection.
+
+**Key directives:**
+- \`max-age\` — How long to remember this setting (recommend 1 year: 31536000 seconds)
+- \`includeSubDomains\` — Apply to all subdomains
+- \`preload\` — Submit to browser preload lists
+
+### X-Frame-Options
+
+**X-Frame-Options** prevents your site from being embedded in an iframe on other domains, protecting against **clickjacking attacks**.
+
+**Values:**
+- \`DENY\` — Block all framing
+- \`SAMEORIGIN\` — Allow only from your domain
+
+**Note**: \`ALLOW-FROM\` is deprecated and should not be used.
+
+### X-Content-Type-Options
+
+**X-Content-Type-Options: nosniff** prevents browsers from MIME-type sniffing. Without this header, browsers may execute malicious scripts disguised as images or other file types.
+
+### Content-Security-Policy (CSP)
+
+**CSP** is a powerful header that controls which resources can be loaded. It's the most complex but provides the strongest XSS protection.
+
+**Start simple and expand**: CSP can break functionality if misconfigured. Start with a permissive policy and tighten gradually.
+
+### Testing Security Headers
+
+Use **SSL Labs** (ssllabs.com/ssltest/) to test your HTTPS configuration and **Security Headers** (securityheaders.com) to check your header implementation. Both are free tools that provide detailed recommendations.`,
+        codeExamples: [
+          {
+            language: 'apache',
+            code: `# .htaccess - Security Headers Configuration
+<IfModule mod_headers.c>
+    # HTTP Strict Transport Security (HSTS)
+    # 1 year max-age, include subdomains, enable preload
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # Prevent MIME-sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # XSS Protection (legacy but still useful)
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Content Security Policy (adjust for your needs)
+    # Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+</IfModule>`,
+            description: 'Complete Apache .htaccess security headers configuration with HSTS, X-Frame-Options, and X-Content-Type-Options',
+          },
+          {
+            language: 'nginx',
+            code: `# nginx - Security Headers Configuration
+server {
+    # ... SSL and other config ...
+    
+    # HTTP Strict Transport Security (HSTS)
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    
+    # Prevent clickjacking
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    
+    # Prevent MIME-sniffing
+    add_header X-Content-Type-Options "nosniff" always;
+    
+    # XSS Protection
+    add_header X-XSS-Protection "1; mode=block" always;
+    
+    # Referrer Policy
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    
+    # Content Security Policy (adjust for your needs)
+    # add_header Content-Security-Policy "default-src 'self';" always;
+}`,
+            description: 'Complete Nginx security headers configuration with HSTS includeSubDomains',
+          },
+        ],
+      },
+      {
+        title: 'Mixed Content Issues',
+        content: `**Mixed content** occurs when a secure HTTPS page loads insecure HTTP resources like images, scripts, or stylesheets. This creates security vulnerabilities and triggers browser warnings.
+
+### Types of Mixed Content
+
+**Mixed Passive Content** (images, audio, video)
+- Considered "passive" because it doesn't execute code
+- Browsers may still display a "Not Secure" warning
+- Less severe but should still be fixed
+
+**Mixed Active Content** (scripts, stylesheets, iframes, AJAX requests)
+- Can execute code and modify the page
+- Browsers often **block** this content entirely
+- Breaks functionality and creates security risks
+
+### How to Fix Mixed Content
+
+1. **Update internal links** — Change all \`http://\` URLs to \`https://\` in your HTML, CSS, and JavaScript
+2. **Use protocol-relative URLs** — Replace \`http://\` with \`//\` for external resources (browser uses current protocol)
+3. **Use upgrade-insecure-requests** — A CSP directive that automatically upgrades HTTP requests to HTTPS
+
+### Finding Mixed Content
+
+**Browser DevTools**: Open Chrome DevTools (F12) → Console. Mixed content warnings appear in red.
+
+**Google Search Console**: The Security Issues report shows mixed content problems.
+
+**Online tools**: Why No Padlock? (whynopadlock.com) scans your site for insecure resources.
+
+### Prevention
+
+The \`upgrade-insecure-requests\` CSP directive tells browsers to automatically upgrade all HTTP requests to HTTPS. This is a safety net that prevents mixed content issues.
+
+Add this to your security headers:
+\`Content-Security-Policy: upgrade-insecure-requests\``,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Mixed content example (BAD) -->
+<img src="http://example.com/image.jpg" alt="Image">
+<script src="http://example.com/script.js"></script>
+
+<!-- Fixed: Use HTTPS (GOOD) -->
+<img src="https://example.com/image.jpg" alt="Image">
+<script src="https://example.com/script.js"></script>
+
+<!-- Fixed: Protocol-relative URL (also good) -->
+<img src="//example.com/image.jpg" alt="Image">`,
+            description: 'Examples of mixed content issues and how to fix them by changing HTTP to HTTPS',
+          },
+          {
+            language: 'apache',
+            code: `# .htaccess - Upgrade insecure requests automatically
+<IfModule mod_headers.c>
+    # Force browsers to upgrade HTTP requests to HTTPS
+    Header always set Content-Security-Policy "upgrade-insecure-requests"
+</IfModule>`,
+            description: 'CSP directive to automatically upgrade insecure HTTP requests to HTTPS',
+          },
+        ],
+      },
+    ],
+    checklist: [
+      { text: 'Install SSL certificate from Let\'s Encrypt (free) or your preferred CA', priority: 'critical' },
+      { text: 'Configure 301 permanent redirect from HTTP to HTTPS', priority: 'critical' },
+      { text: 'Implement HSTS header with includeSubDomains and at least 1 year max-age', priority: 'critical' },
+      { text: 'Add X-Frame-Options: SAMEORIGIN to prevent clickjacking', priority: 'important' },
+      { text: 'Add X-Content-Type-Options: nosniff to prevent MIME sniffing', priority: 'important' },
+      { text: 'Fix all mixed content by updating HTTP resources to HTTPS', priority: 'important' },
+      { text: 'Update internal links and canonical tags to HTTPS URLs', priority: 'important' },
+      { text: 'Set up automatic SSL certificate renewal (Let\'s Encrypt auto-renews)', priority: 'recommended' },
+      { text: 'Test configuration with SSL Labs (ssllabs.com/ssltest/)', priority: 'recommended' },
+      { text: 'Add HTTPS property to Google Search Console and submit updated sitemap', priority: 'recommended' },
+    ],
     relatedGuides: ['mobile-friendly', 'canonical-urls'],
   },
   {
