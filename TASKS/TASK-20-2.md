@@ -1,7 +1,7 @@
 # TASK-20-2: Create Guide Index Page Component
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -70,3 +70,49 @@ Create the guide index page at `/seo-guides/` that displays all 17 SEO guides in
 - Uses existing Shadcn/UI components
 
 Status: `To Write Tests`
+
+### [2026-03-01 12:15 GMT+2] PreTester - Test Coverage Complete
+**Test Documentation Created:**
+- `TESTS/TASK-20-2.md` - Comprehensive test documentation with 50+ test cases
+
+**Test Files Created:**
+- `frontend/__tests__/app/seo-guides/page.test.tsx` - Main page tests (70+ tests)
+- `frontend/__tests__/components/guides/GuideCard.test.tsx` - Card component tests
+- `frontend/__tests__/components/guides/CategoryFilter.test.tsx` - Filter tabs tests
+- `frontend/__tests__/components/guides/GuideSearch.test.tsx` - Search input tests
+
+**Test Coverage Summary:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Page Rendering | 4 | Component mount, guides display, title, description |
+| Guide Cards | 8 | Icon, title, summary, read time, tool badge, links |
+| Category Filter | 7 | Tab selection, filtering, counts, accessibility |
+| Search | 6 | Input, filtering, case-insensitive, no results |
+| Responsive Grid | 3 | Desktop/tablet/mobile column layout |
+| Tool Badge | 5 | Badge visibility, count, styling |
+| Accessibility | 4 | ARIA roles, labels, keyboard nav |
+| Navigation | 2 | Links, URL access |
+| Edge Cases | 4 | Empty list, special chars, long titles |
+| Integration | 4 | Registry calls, data flow |
+| SEO Meta | 3 | Title, description, canonical |
+
+**Key Test Patterns:**
+1. Mock `getAllGuides()` and `getGuidesByCategory()` from registry
+2. Mock Next.js navigation with `useRouter`
+3. Test responsive breakpoints: 375px (mobile), 768px (tablet), 1024px (desktop)
+4. Test combined filtering (category + search)
+5. Test accessibility: tablist role, aria-selected, aria-label
+
+**Notes for Developer:**
+1. Use Shadcn/UI components: Card, Input, Tabs, Badge
+2. State management: useState for category and search query
+3. Use useMemo for filtered guides array
+4. Tailwind responsive: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+5. Debounce search input (300ms) for performance
+6. Export metadata for SEO: title, description, canonical
+
+**Dependency Status:**
+- TASK-20-1 is at `To Test Locally` - types and registry ready for import
+- Import: `import { getAllGuides, getGuidesByCategory } from '@/lib/guides/registry'`
+
+Status: `To Develop`
