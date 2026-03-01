@@ -4864,6 +4864,214 @@ Non-critical issues logged as warnings:
 - TASK-24-8: PWA Analysis API Endpoints
 
 ---
+## PWA Analysis API Endpoints (TASK-24-8)
+
+### Service Description
+REST API endpoints for PWA (Progressive Web App) analysis. Enables frontend to trigger PWA analysis jobs and retrieve comprehensive PWA readiness data including manifest validation, icon analysis, and scoring.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sites/{siteId}/pwa` | Get PWA analysis data |
+| POST | `/api/v1/sites/{siteId}/pwa/analyze` | Trigger PWA analysis |
+| POST | `/api/v1/sites/{siteId}/pwa/refresh` | Refresh PWA analysis |
+
+### Get PWA Analysis
+`GET /api/v1/sites/{siteId}/pwa`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "hasManifest": true,
+    "manifestUrl": "https://example.com/manifest.json",
+    "manifestValid": true,
+    "pwaScore": 85,
+    "readinessLevel": "enhanced",
+    "fields": {
+      "name": { "present": true, "value": "Example App" },
+      "short_name": { "present": true, "value": "Example" },
+      "start_url": { "present": true, "value": "/" },
+      "display": { "present": true, "value": "standalone" },
+      "background_color": { "present": true, "value": "#ffffff" },
+      "theme_color": { "present": true, "value": "#000000" },
+      "icons": { "present": true, "value": "6 icons defined" }
+    },
+    "icons": [
+      {
+        "src": "/icon-192.png",
+        "sizes": "192x192",
+        "type": "image/png",
+        "accessible": true,
+        "warnings": []
+      }
+    ],
+    "recommendations": [
+      {
+        "field": "icons",
+        "severity": "warning",
+        "message": "Add a 512x512 icon for better PWA support"
+      }
+    ],
+    "analyzedAt": "2026-03-01T09:30:00Z"
+  }
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 403 | User does not own the site |
+| 404 | Site not found or no analysis exists |
+
+**No Analysis Response (404):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ANALYSIS_NOT_FOUND",
+    "message": "No PWA analysis found for this site",
+    "suggestion": "POST /api/v1/sites/{siteId}/pwa/analyze to trigger analysis"
+  }
+}
+```
+
+### Trigger Analysis
+`POST /api/v1/sites/{siteId}/pwa/analyze`
+
+**Description:** Dispatches a queued job to analyze the site's PWA manifest and icons. Returns immediately with a job ID for status tracking.
+
+**Response (202 Accepted):**
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "pwa-analyze-abc123",
+    "status": "queued",
+    "message": "PWA analysis started. Poll for results."
+  }
+}
+```
+
+**Rate Limiting:**
+- Maximum 10 analysis requests per hour per site
+- Returns 429 when limit exceeded:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "retryAfter": 1800
+  }
+}
+```
+
+### Refresh Analysis
+`POST /api/v1/sites/{siteId}/pwa/refresh`
+
+**Description:** Forces a fresh analysis, invalidating cached results. Same rate limiting and response format as analyze endpoint.
+
+### Authorization
+
+| Scenario | Response |
+|----------|----------|
+| Unauthenticated | 401 Unauthorized |
+| Wrong user (not site owner) | 403 Forbidden |
+| Site owner | Full access |
+
+### Caching Strategy
+
+| Operation | Cache Key | TTL | Invalidation |
+|-----------|-----------|-----|--------------|
+| GET analysis | `pwa-analysis:{siteId}` | 24 hours | On analyze/refresh |
+| Rate limit | `pwa-analyze:{siteId}` | 1 hour | Auto-expire |
+
+### Readiness Levels
+
+| Score Range | Level | Description |
+|-------------|-------|-------------|
+| 0-39 | `none` | No PWA support |
+| 40-69 | `basic` | Basic manifest, missing some features |
+| 70-89 | `enhanced` | Good PWA support, minor improvements needed |
+| 90-100 | `full` | Complete PWA implementation |
+
+### PWA Score Calculation
+
+The score is calculated by `PWAScorerService` based on:
+- **Manifest presence (30 points):** Has manifest.json linked
+- **Required fields (30 points):** name, short_name, start_url, display
+- **Optional fields (20 points):** icons, background_color, theme_color
+- **Icon quality (20 points):** Size variety, accessibility
+
+### Technical Implementation
+
+| Component | File |
+|-----------|------|
+| Controller | `backend/app/Http/Controllers/Api/V1/PWAController.php` |
+| Job | `backend/app/Jobs/PWAAnalysisJob.php` |
+| Repository | `backend/app/Repositories/PWAAnalysisRepository.php` |
+| Routes | `backend/routes/api.php` |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `PWAControllerTest.php` | 51 | 180 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| SHOW Endpoint | 11 | Get analysis, 404 handling, authorization |
+| ANALYZE Endpoint | 9 | Job dispatch, rate limiting, authorization |
+| REFRESH Endpoint | 8 | Refresh job, cache invalidation |
+| Authorization | 3 | Owner access, IDOR prevention |
+| Security | 4 | SQL injection, XSS, path traversal |
+| Edge Cases | 11 | No manifest, invalid manifest, unicode |
+| Integration | 2 | Full workflow, repository integration |
+| Performance | 3 | Response time targets |
+| Data Consistency | 3 | Score matching, latest analysis |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-01 (commit f7521a6) |
+| **GitHub Actions Run** | 22540593364 |
+| **Health Check** | Passing |
+| **Tests** | 51 tests, 180 assertions |
+| **Status** | Complete |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware on all endpoints |
+| Authorization | User must own site via policy |
+| IDOR Prevention | Site ownership check in controller |
+| Route Constraints | Numeric siteId only |
+| Rate Limiting | 10 requests/hour/site via Cache |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS | Input sanitization in manifest parsing |
+
+### Dependencies
+
+- TASK-24-2: PWAAnalysis model/repository
+- TASK-24-3: ManifestFetcherService
+- TASK-24-4: ManifestValidatorService
+- TASK-24-5: IconValidatorService
+- TASK-24-6: PWAScorerService
+- TASK-24-7: PWASuggestionService
+
+### Related Tasks
+
+- TASK-24-3: ManifestFetcherService
+- TASK-24-6: PWAScorerService
+- TASK-24-7: PWASuggestionService
+
+---
 ## Unit Tests: Projects (TASK-8-9)
 
 ### Test Coverage Summary

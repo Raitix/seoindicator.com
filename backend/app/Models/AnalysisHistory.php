@@ -159,6 +159,97 @@ class AnalysisHistory extends Model
         return $query->whereBetween('analyzed_at', [$startDate, $endDate]);
     }
 
+    /**
+     * Scope a query to filter by date range (alias for forDateRange).
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param \Illuminate\Support\Carbon|string $from
+     * @param \Illuminate\Support\Carbon|string $to
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeAnalyzedBetween($query, $from, $to)
+    {
+        return $query->whereBetween('analyzed_at', [$from, $to]);
+    }
+
+    /**
+     * Scope a query to only include completed analyses.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    /**
+     * Scope a query to only include pending analyses.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    /**
+     * Scope a query to only include failed analyses.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeFailed($query)
+    {
+        return $query->where('status', 'failed');
+    }
+
+    /**
+     * Scope a query to filter by site.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int $siteId
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeBySite($query, int $siteId)
+    {
+        return $query->where('site_id', $siteId);
+    }
+
+    /**
+     * Scope a query to order by analyzed_at descending (alias for latestFirst).
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeRecent($query)
+    {
+        return $query->orderBy('analyzed_at', 'desc');
+    }
+
+    /**
+     * Scope a query to only include analyses with results.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeWithResults($query)
+    {
+        return $query->whereNotNull('results');
+    }
+
+    /**
+     * Scope a query to only include analyses without a site.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeWithoutSite($query)
+    {
+        return $query->whereNull('site_id');
+    }
+
     // =========================================================================
     // Accessors & Helpers
     // =========================================================================

@@ -66,4 +66,12 @@ class Site extends Model
     {
         return $this->hasOne(PWAAnalysis::class)->latestOfMany('analyzed_at');
     }
+
+    /**
+     * Get the analysis history for this site.
+     */
+    public function analysisHistory(): HasMany
+    {
+        return $this->hasMany(AnalysisHistory::class);
+    }
 }
