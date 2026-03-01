@@ -1,7 +1,7 @@
 # TASK-21-5: Create AI Suggestion API Endpoint
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
