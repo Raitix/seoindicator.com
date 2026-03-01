@@ -1,7 +1,7 @@
 # TASK-22-1: Database Migrations for Crawler
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -104,3 +104,39 @@ _Leave notes for the next agent here_
 3. TASK-22-3 (service skeleton) - after models ready
 
 **No blockers detected.** Task proceeds to PreTester for test design.
+
+### PreTester (2026-03-01 23:58 GMT+2)
+**Test Design Complete:**
+- Created test documentation: `TESTS/TEST-22-1.md` (83+ test scenarios)
+- Created feature test file: `tests/Feature/Migrations/CreateCrawlerTablesTest.php`
+- Tests follow existing project patterns (see `CreateAnalysisJobsTablesTest.php`)
+
+**Test Coverage:**
+| Category | Tests |
+|----------|-------|
+| Table Structure | 14 tests |
+| Indexes | 6 tests |
+| Foreign Keys | 10 tests |
+| Enum Validation | 3 tests |
+| Column Constraints | 23 tests |
+| JSON Columns | 8 tests |
+| Large Content | 4 tests |
+| Relationships | 6 tests |
+| Security | 6 tests |
+| **Total** | **80+ tests** |
+
+**Key Design Decisions:**
+- FK cascade: `user_id` → CASCADE delete (user's data cleanup)
+- FK set null: `project_id` → SET NULL on delete (preserve orphaned jobs)
+- MEDIUMTEXT (16MB) for `rendered_html` and `structured_text`
+- Composite index on `(crawl_job_id, depth)` for efficient depth-based queries
+- Job ID format: `crawl-{uuid}` stored in VARCHAR(64)
+
+**Notes for Developer:**
+1. Tests will fail until migration runs (expected TDD behavior)
+2. Create migration: `php artisan make:migration create_crawler_tables`
+3. Table order: `crawl_jobs` first, then `crawl_pages` (FK dependency)
+4. Rollback order: Drop `crawl_pages` first, then `crawl_jobs`
+5. All FK columns tested for constraint enforcement
+
+**Handoff:** Ready for Developer to create migration file.

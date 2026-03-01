@@ -1,6 +1,124 @@
 # DOCUMENTATION.md
 
 ---
+## Page Speed Optimization Guide (TASK-20-13)
+
+### Guide Description
+Comprehensive SEO guide content for the Page Speed indicator, covering Core Web Vitals (LCP, FID, CLS, INP), optimization techniques, measurement tools, and best practices for improving page load performance. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `page-speed`
+- **URL:** `https://seoindicator.com/seo-guides/page-speed/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What is Page Speed? | FCP, LCP, TTI, TBT, Speed Index metrics definition | ~350 |
+| Core Web Vitals | LCP (2.5s), FID (100ms), CLS (0.1), INP (200ms) with thresholds | ~400 |
+| Why Speed Matters | SEO ranking impact, UX statistics, conversion data | ~300 |
+| Optimization Techniques | Caching, CDN, minification, image optimization, JS/CSS, server | ~450 |
+| Measurement Tools | PageSpeed Insights, Lighthouse, GTmetrix, WebPageTest, web.dev | ~250 |
+| SEO Best Practices Checklist | 10 actionable items with priority levels | ~150 |
+
+**Total Content:** ~1,900 words
+**Read Time:** 7 minutes
+
+### Core Web Vitals Thresholds
+
+| Metric | Good | Needs Improvement | Poor |
+|--------|------|-------------------|------|
+| LCP (Largest Contentful Paint) | ≤ 2.5s | 2.5s - 4.0s | > 4.0s |
+| FID (First Input Delay) | ≤ 100ms | 100ms - 300ms | > 300ms |
+| CLS (Cumulative Layout Shift) | ≤ 0.1 | 0.1 - 0.25 | > 0.25 |
+| INP (Interaction to Next Paint) | ≤ 200ms | 200ms - 500ms | > 500ms |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| Resource hints | HTML | preload/prefetch for critical resources |
+| Script loading | HTML | defer/async attribute usage |
+| Image lazy loading | HTML | Native lazy loading with dimensions |
+| Browser caching | Apache | .htaccess caching headers |
+| Server compression | Nginx | Gzip/Brotli configuration |
+| CDN configuration | Apache | Cache-Control headers for CDN |
+| Core Web Vitals thresholds | TypeScript | Reference thresholds object |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Optimize Core Web Vitals (LCP < 2.5s, FID < 100ms, CLS < 0.1) |
+| Critical | Enable browser caching for static assets |
+| Critical | Compress images and use modern formats (WebP, AVIF) |
+| Important | Use a Content Delivery Network (CDN) |
+| Important | Minify CSS, JavaScript, and HTML |
+| Important | Implement lazy loading for images and videos |
+| Important | Optimize server response time (TTFB < 600ms) |
+| Important | Remove unused CSS and JavaScript |
+| Recommended | Use resource hints (preload, prefetch) |
+| Recommended | Implement critical CSS for above-the-fold content |
+
+### Related Guides
+- `image-optimization` - Image file optimization techniques
+- `mobile-friendly` - Mobile performance considerations
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'page-speed',
+  title: 'Page Speed Optimization',
+  summary: 'Improve your page load speed for better SEO rankings...',
+  category: 'technical',
+  icon: '⚡',
+  readTime: 7,
+  hasTool: false,
+  relatedGuides: ['image-optimization', 'mobile-friendly'],
+  sections: [ /* 6 sections */ ],
+  checklist: [ /* 10 items */ ],
+  codeExamples: [ /* 7 examples */ ]
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `page-speed-content.test.ts` | 62 | Content structure validation |
+| `page-speed-code-examples.test.ts` | 19 | Code examples validation |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Guide Existence | 4 | Slug, title, summary, category |
+| Content Sections | 6 | All required sections present |
+| Core Web Vitals | 7 | LCP, FID, CLS, INP thresholds |
+| Optimization Techniques | 8 | Caching, CDN, minification, etc. |
+| Measurement Tools | 6 | PageSpeed Insights, Lighthouse, GTmetrix |
+| Best Practices Checklist | 7 | 10 items with priorities |
+| Read Time | 3 | 5-7 minute range validation |
+| Related Guides | 4 | image-optimization, mobile-friendly |
+| Code Examples | 19 | HTML, Apache, Nginx, TypeScript |
+
+### Production Status
+- **Deployed:** 2026-03-01 (GitHub Actions)
+- **URL:** https://seoindicator.com/seo-guides/page-speed/
+- **Health Check:** Passing
+- **Tests:** 81/81 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+
+### Related Tasks
+- TASK-20-10: Image Optimization Guide (related topic)
+- TASK-20-14: Mobile-Friendliness Guide (related topic)
+
+---
 ## AI Suggestion Service Structure (TASK-21-1)
 
 ### Service Description
