@@ -1,7 +1,7 @@
 # TASK-25-2: Create social_accounts Migration
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -78,6 +78,37 @@ protected $casts = [
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 13:30 GMT+2] Agent: ProjectManager
+**Prioritization Analysis:**
+
+**Priority Confirmed: High**
+- Foundation task for OAuth provider connections
+- Required for Phase 1 (Core Authentication)
+- Small effort (1-2 hours), enables TASK-25-6 to 25-9 (Google OAuth)
+
+**Risk Confirmed: Medium**
+- Non-destructive migration (add table)
+- Encrypted token storage (Laravel `encrypted` cast)
+- Foreign key cascade delete for data integrity
+- No data migration from existing tables
+
+**Dependency Status:**
+- TASK-25-1 (Sanctum & Socialite packages): `In Development` ⚠️
+- This task can proceed to test writing now
+- Development blocked until TASK-25-1 is `To Test Locally` or `Done`
+
+**Execution Order:**
+1. TASK-25-1 (In Development) → Complete first
+2. TASK-25-2 (this) → Can be tested/developed after TASK-25-1
+3. TASK-25-3, 25-4, 25-5 → Can run in parallel with this task
+
+**Notes for PreTester:**
+- Migration creates `social_accounts` table with encrypted casts
+- Test: foreign key cascade, unique constraints, token encryption
+- Model should use `encrypted` cast for token fields
+
+Status updated: `To Write Tests`
 
 ### [2026-02-28 20:55 GMT+2] Agent: SpecSystemAnalyst
 Created task as part of SPEC-025 breakdown (Phase 1: Core Authentication).
