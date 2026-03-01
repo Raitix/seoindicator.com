@@ -1,7 +1,7 @@
 # TASK-25-3: Implement AuthController (Register, Login, Logout)
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## CRITICAL BUG - REQUIRES IMMEDIATE FIX
 
@@ -155,6 +155,30 @@ Route::middleware('throttle:5,1')->post('/auth/login', ...);
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 15:40 GMT+2] Agent: Developer
+**CRITICAL BUG FIX:**
+
+**Root Cause:** The `backend/config/auth.php` had a custom `sanctum` guard defined with `'driver' => 'session'`, which overrode Sanctum's default token-based authentication behavior.
+
+**The Problem:**
+1. Laravel Sanctum's `auth:sanctum` middleware expects to handle API tokens automatically
+2. Defining a `sanctum` guard with `session` driver overrides Sanctum's token-based authentication
+3. API tokens (from `personal_access_tokens` table) were never validated
+4. All requests returned 401 because session-based auth failed for pure API requests
+
+**The Fix:**
+Removed the custom `sanctum` guard definition from `config/auth.php`. Let Sanctum handle API token authentication with its default behavior.
+
+**Files Modified:**
+- `backend/config/auth.php` - Removed incorrect `sanctum` guard definition
+
+**Test Results:**
+- All 36 AuthController tests pass (108 assertions)
+- Token-based authentication now works correctly
+- Protected routes (GET /api/v1/auth/user, POST /api/v1/auth/logout) now accept valid tokens
+
+**Status:** Ready for LocalTester to re-deploy and re-test in production
 
 ### [2026-03-01 15:30 GMT+2] Agent: Developer
 **Implementation Complete:**
