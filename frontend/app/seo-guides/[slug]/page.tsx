@@ -1,6 +1,7 @@
 /**
  * SEO Guide Dynamic Page
  * Task: TASK-20-4 - Set Up Routing with Static Params Generation
+ * Updated: TASK-20-29 - Render Guide Content in Page Component
  * 
  * Dynamic route for individual SEO guide pages with static site generation.
  * Generates static HTML for all 17 guide slugs at build time.
@@ -9,13 +10,14 @@
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { 
-  getGuideBySlug, 
-  getAllGuides, 
+import {
+  getGuideBySlug,
+  getAllGuides,
   GUIDE_SLUGS,
-  getRelatedGuides 
+  getRelatedGuides
 } from '@/lib/guides/registry';
 import type { SEOGuide } from '@/lib/guides/types';
+import { GuideSection, GuideChecklist } from '@/components/guides';
 
 // ============================================================================
 // Static Params Generation (SSG)
@@ -37,10 +39,10 @@ export function generateStaticParams(): { slug: string }[] {
  * Generate metadata for each guide page
  * Includes title, description, Open Graph, and Twitter cards
  */
-export async function generateMetadata({ 
-  params 
-}: { 
-  params: Promise<{ slug: string }> 
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params;
   const guide = getGuideBySlug(slug);
@@ -87,13 +89,13 @@ interface GuidePageProps {
 /**
  * Get previous and next guides for navigation
  */
-function getPrevNextGuides(currentSlug: string): { 
-  prev: SEOGuide | null; 
-  next: SEOGuide | null 
+function getPrevNextGuides(currentSlug: string): {
+  prev: SEOGuide | null;
+  next: SEOGuide | null
 } {
   const guides = getAllGuides();
   const currentIndex = guides.findIndex(g => g.slug === currentSlug);
-  
+
   return {
     prev: currentIndex > 0 ? guides[currentIndex - 1] : null,
     next: currentIndex < guides.length - 1 ? guides[currentIndex + 1] : null,
@@ -125,6 +127,11 @@ export default async function GuidePage({ params }: GuidePageProps) {
   const relatedGuides = getRelatedGuides(slug);
   const { prev, next } = getPrevNextGuides(slug);
 
+  // Check if guide has content
+  const hasSections = guide.sections && guide.sections.length > 0;
+  const hasChecklist = guide.checklist && guide.checklist.length > 0;
+  const hasContent = hasSections || hasChecklist;
+
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       {/* Breadcrumb Navigation */}
@@ -132,8 +139,8 @@ export default async function GuidePage({ params }: GuidePageProps) {
         <div className="mx-auto max-w-4xl px-4 py-3">
           <ol className="flex items-center gap-2 text-sm text-slate-400">
             <li>
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className="hover:text-emerald-400 transition-colors"
               >
                 Home
@@ -141,8 +148,8 @@ export default async function GuidePage({ params }: GuidePageProps) {
             </li>
             <li className="text-slate-600">/</li>
             <li>
-              <Link 
-                href="/seo-guides/" 
+              <Link
+                href="/seo-guides/"
                 className="hover:text-emerald-400 transition-colors"
               >
                 SEO Guides
@@ -161,7 +168,7 @@ export default async function GuidePage({ params }: GuidePageProps) {
         <header className="mb-8">
           <div className="flex flex-wrap items-center gap-3 mb-4">
             {/* Category Badge */}
-            <span 
+            <span
               className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${categoryColors[guide.category]}`}
             >
               {guide.category.charAt(0).toUpperCase() + guide.category.slice(1)} SEO
@@ -195,14 +202,33 @@ export default async function GuidePage({ params }: GuidePageProps) {
           </p>
         </header>
 
-        {/* Content Placeholder - Phase 2 will populate */}
-        <div className="prose prose-invert prose-slate max-w-none mb-8">
-          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-8 text-center">
-            <p className="text-slate-400">
-              Guide content will be added in Phase 2.
-            </p>
+        {/* Content Area */}
+        {hasContent ? (
+          <div className="mb-8">
+            {/* Sections */}
+            {hasSections && (
+              <div data-testid="guide-sections" className="space-y-12">
+                {guide.sections.map((section, index) => (
+                  <GuideSection key={index} section={section} index={index} />
+                ))}
+              </div>
+            )}
+
+            {/* Checklist */}
+            {hasChecklist && (
+              <GuideChecklist items={guide.checklist} />
+            )}
           </div>
-        </div>
+        ) : (
+          /* Placeholder for guides without content */
+          <div className="prose prose-invert prose-slate max-w-none mb-8">
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-8 text-center">
+              <p className="text-slate-400">
+                Guide content coming soon. Check back later for detailed information about {guide.title.toLowerCase()}.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Related Guides */}
         {relatedGuides.length > 0 && (
