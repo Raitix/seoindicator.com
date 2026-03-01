@@ -1,7 +1,7 @@
 # TASK-20-1: Create Guide Data Structure and TypeScript Types
 
 ## STATUS
-`Prioritization In Progress`
+`To Write Tests`
 
 ## PRIORITY
 `High`
