@@ -1,7 +1,7 @@
 # TASK-25-3: Implement AuthController (Register, Login, Logout)
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`

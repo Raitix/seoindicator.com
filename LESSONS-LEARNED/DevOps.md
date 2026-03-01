@@ -18,6 +18,13 @@ _(Document rollback events and causes)_
 
 ## Deployment Notes
 
+### TASK-25-3 (AuthController - Register, Login, Logout)
+- **Date:** 2026-03-01
+- **Method:** GitHub Actions (automatic)
+- **Run ID:** 22544253623
+- **Result:** Successful
+- **Note:** Changes were already committed by Developer. Deployment triggered via `git push origin main`. Health check confirmed.
+
 ### TASK-25-12 (AnalysisHistory Model & Repository)
 - **Date:** 2026-03-01
 - **Method:** GitHub Actions (automatic)
