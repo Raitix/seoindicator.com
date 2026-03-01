@@ -1,7 +1,7 @@
 # TASK-25-9: Handle Account Linking (Email Match)
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -174,6 +174,26 @@ The account linking functionality was already implemented in `GoogleOAuthService
 - `backend/tests/Integration/Auth/AccountLinkingIntegrationTest.php` - Fixed tests
 
 **Status:** `To Develop` → `To Test Locally`
+
+### [2026-03-01 17:13 GMT+2] Agent: DevOps
+**Deployment Started**
+
+Initiating deployment to production. The task has been verified and all 84 tests passed in local testing.
+
+**Deployment Steps:**
+1. ✅ Status updated to `In Deployment`
+2. ⏳ Committing status change
+3. ⏳ Pushing to origin/main
+4. ⏳ GitHub Actions CI/CD pipeline
+5. ⏳ Production deployment via SSH
+6. ⏳ Health check verification
+
+**Previous Commits to Deploy:**
+- 5 commits ahead of origin/main
+- Account linking implementation in `GoogleOAuthService.php`
+- Test files and resource updates
+
+---
 
 ### [2026-03-01 17:45 GMT+2] Agent: PreTester
 **Test Design Complete**
