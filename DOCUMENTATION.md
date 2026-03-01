@@ -4696,6 +4696,174 @@ npx playwright show-report
 - TASK-1-20: Performance Optimization
 
 ---
+## IconValidatorService (TASK-24-5)
+
+### Service Description
+Service for validating PWA icon URLs for accessibility and correctness. Checks if icons exist and are properly sized, supporting concurrent validation for performance. Part of the PWA / Web App Manifest Indicator feature (FEAT-024).
+
+### Core Functionalities
+
+**IconValidatorService Class:**
+| Method | Description |
+|--------|-------------|
+| `validateIcons(array $icons, string $baseUrl): IconValidationResult` | Validate array of icon objects against base URL |
+| `validateIcon(array $icon, string $baseUrl): IconResult` | Validate single icon object |
+| `checkIconAccessible(string $url): bool` | Check if icon URL is accessible via HEAD request |
+
+### Icon Validation Logic
+
+**URL Resolution:**
+- Resolves relative icon URLs against the base URL
+- Handles protocol-relative URLs (`//example.com/icon.png`)
+- Supports data URIs (no network validation needed)
+
+**Accessibility Check:**
+- Uses HEAD requests for faster validation (falls back to GET if 405)
+- 10-second timeout per icon
+- Validates Content-Type and Content-Length headers
+- Logs warnings for non-critical issues (wrong content-type, large files)
+
+**Size Parsing:**
+- Parses "WxH" format (e.g., "192x192", "512x512")
+- Handles "any" size for SVG icons
+- Supports multiple sizes in single string (e.g., "192x192 512x512")
+
+### Icon Requirements
+
+| Size | Purpose | Required |
+|------|---------|----------|
+| 192x192 | Android home screen | Yes |
+| 512x512 | Android splash screen | Yes |
+| 180x180 | iOS (apple-touch-icon) | Recommended |
+
+### Result Structures
+
+**IconValidationResult:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `total` | int | Total icons in manifest |
+| `valid` | int | Number of accessible icons |
+| `icons` | array | Individual IconResult objects |
+| `hasRequired192` | bool | 192x192 icon present |
+| `hasRequired512` | bool | 512x512 icon present |
+| `hasRecommended180` | bool | 180x180 icon present |
+| `errors` | array | Validation error messages |
+
+**IconResult:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `url` | string | Resolved icon URL |
+| `size` | array|null | Parsed [width, height] or null |
+| `accessible` | bool | Whether URL is reachable |
+| `type` | string|null | MIME type from headers |
+| `purpose` | string | Icon purpose (any, maskable) |
+
+### Concurrent Validation
+
+**Performance Optimization:**
+- Maximum 5 concurrent icon checks
+- Uses Laravel HTTP Client pool for batching
+- Chunked processing to respect concurrency limit
+
+```php
+// Concurrent validation example
+$chunks = array_chunk($icons, self::MAX_CONCURRENT);
+foreach ($chunks as $chunk) {
+    $results = Http::pool(fn($pool) => [
+        // Process up to 5 icons simultaneously
+    ]);
+}
+```
+
+### SSRF Protection
+
+Integrates with URLValidationService from TASK-16-1:
+
+| Protection | Implementation |
+|------------|----------------|
+| Localhost blocked | `localhost`, `127.*` blocked |
+| Private IPs blocked | `10.*`, `172.16-31.*`, `192.168.*` blocked |
+| Cloud metadata blocked | `169.254.169.254` blocked |
+| File protocol blocked | `file://` protocol blocked |
+| Redirect validation | Validates redirect URLs for SSRF |
+
+### Error Handling
+
+| Error | Code | Description |
+|-------|------|-------------|
+| `BLOCKED_URL` | 403 | URL blocked by SSRF protection |
+| `BLOCKED_PROTOCOL` | 403 | Protocol not allowed (only http/https) |
+| `INVALID_URL` | 400 | Malformed URL format |
+| `TIMEOUT` | 408 | Request timeout (10s) |
+| `NOT_FOUND` | 404 | Icon URL returned 404 |
+
+### Warning System
+
+Non-critical issues logged as warnings:
+
+| Warning | Condition |
+|---------|-----------|
+| Wrong content type | Content-Type is not image/* |
+| Large file | Content-Length > 500KB |
+| Missing sizes | Icon object has no sizes attribute |
+| Multiple sizes | Single icon declares multiple sizes |
+
+### Technical Implementation
+
+| Component | File |
+|-----------|------|
+| Service | `backend/app/Services/IconValidatorService.php` |
+| DTO | `backend/app/Services/DTO/IconValidationResult.php` |
+| DTO | `backend/app/Services/DTO/IconResult.php` |
+| Test | `backend/tests/Unit/Services/IconValidatorServiceTest.php` |
+
+### Dependencies
+
+| Dependency | Task | Description |
+|------------|------|-------------|
+| URLValidationService | TASK-16-1 | SSRF protection and URL validation |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `IconValidatorServiceTest` | 70 | 161 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| validateIcons() | 12 | Icon array validation, missing sizes, empty array |
+| validateIcon() | 8 | Single icon validation, maskable icons, data URI |
+| checkIconAccessible() | 10 | HEAD request validation, timeouts, redirects |
+| SSRF Protection | 8 | Localhost, private IP, cloud metadata, protocols |
+| Size Parsing | 8 | "WxH", "any", multiple sizes, invalid formats |
+| URL Resolution | 8 | Relative, absolute, protocol-relative, data URI |
+| Result DTO | 6 | Structure validation, count accuracy |
+| Edge Cases | 10 | Empty src, Unicode, concurrent limits, HEAD fallback |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SSRF Protection | URLValidationService integration |
+| Timeout Protection | 10-second per-icon timeout |
+| Concurrent Limits | Max 5 simultaneous checks |
+| Content-Type Validation | Warning for non-image types |
+| Redirect Validation | Manual SSRF check on redirects |
+
+### Production Status
+- **Deployed**: 2026-03-01 (commit a41f896 via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 70/70 passing (161 assertions)
+- **Status**: Complete
+
+### Related Tasks
+- TASK-16-1: Tools Infrastructure (URL validation, SSRF protection)
+- TASK-24-3: ManifestFetcherService
+- TASK-24-6: PWAScorerService
+- TASK-24-8: PWA Analysis API Endpoints
+
+---
 ## Unit Tests: Projects (TASK-8-9)
 
 ### Test Coverage Summary
