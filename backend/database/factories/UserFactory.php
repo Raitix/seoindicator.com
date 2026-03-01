@@ -29,6 +29,7 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'avatar' => null,
         ];
     }
 
@@ -39,6 +40,27 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate the user was created via OAuth (no password).
+     */
+    public function oauthUser(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'password' => null,
+            'email_verified_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate the user has an avatar.
+     */
+    public function withAvatar(?string $avatar = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'avatar' => $avatar ?? fake()->imageUrl(200, 200, 'people'),
         ]);
     }
 }

@@ -34,5 +34,9 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Google OAuth Configuration (Development/Test Values) -->
+        <env name="GOOGLE_CLIENT_ID" value="123456789012-dev-oauth-client.apps.googleusercontent.com"/>
+        <env name="GOOGLE_CLIENT_SECRET" value="GOCSPX-dev-oauth-secret-key-12345"/>
+        <env name="GOOGLE_REDIRECT_URI" value="http://localhost:8000/api/v1/auth/google/callback"/>
     </php>
 </phpunit>

@@ -15106,3 +15106,64 @@ class ManifestError {
 | **DTOs** | `App\DTO\ManifestValidationResult`, `App\DTO\ManifestError` |
 | **Tests** | 64/64 passing (132 assertions) |
 | **Status** | Complete |
+
+---
+## Google OAuth Configuration (TASK-25-6)
+
+### Service Description
+Google OAuth 2.0 credential configuration for user authentication. Enables "Sign in with Google" functionality using Laravel Socialite.
+
+### Configuration Files
+
+**config/services.php:**
+```php
+'google' => [
+    'client_id' => env('GOOGLE_CLIENT_ID'),
+    'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+    'redirect' => env('GOOGLE_REDIRECT_URI'),
+],
+```
+
+### Environment Variables
+
+| Variable | Description | Format |
+|----------|-------------|--------|
+| `GOOGLE_CLIENT_ID` | OAuth Client ID | `\d+-[a-zA-Z0-9-]+\.apps\.googleusercontent\.com` |
+| `GOOGLE_CLIENT_SECRET` | OAuth Client Secret | `GOCSPX-*` (min 20 chars) |
+| `GOOGLE_REDIRECT_URI` | Callback URL | `https://seoindicator.com/api/v1/auth/google/callback` |
+
+### Google Cloud Console Setup
+
+1. Go to https://console.cloud.google.com/apis/credentials
+2. Create/select a Google Cloud project
+3. Create OAuth 2.0 Client ID (Web application type)
+4. Configure authorized JavaScript origins:
+   - Local: `http://localhost:3000`
+   - Production: `https://seoindicator.com`
+5. Configure authorized redirect URIs:
+   - Local: `http://localhost:8000/api/v1/auth/google/callback`
+   - Production: `https://seoindicator.com/api/v1/auth/google/callback`
+
+### FREE Tier Limits
+
+- 100 OAuth logins per day
+- No cost for basic profile/email scopes
+- Sufficient for development and small-scale production
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| GoogleOAuthConfigurationTest | 17 | ✓ Pass |
+| GoogleOAuthCredentialsFormatTest | 12 | ✓ Pass |
+| GoogleOAuthRedirectUriTest | 6 | ✓ Pass |
+| GoogleOAuthServiceSetupTest | 6 | ✓ Pass |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-01 |
+| **Configuration** | Complete (placeholder credentials) |
+| **User Action Required** | Google Cloud Console setup |
+| **Status** | Configuration Complete |

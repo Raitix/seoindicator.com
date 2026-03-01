@@ -21,8 +21,11 @@ class OAuthFailedException extends Exception
     /**
      * Create a new OAuth failed exception.
      */
-    public function __construct(string $message = 'Google OAuth authentication failed', int $code = 400)
-    {
-        parent::__construct($message, $code);
+    public function __construct(
+        string $message = 'Google OAuth authentication failed',
+        int $code = 400,
+        ?\Throwable $previous = null
+    ) {
+        parent::__construct($message, $code, $previous);
     }
 }

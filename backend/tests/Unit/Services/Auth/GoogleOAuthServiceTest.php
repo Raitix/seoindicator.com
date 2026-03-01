@@ -1116,9 +1116,9 @@ class GoogleOAuthServiceTest extends TestCase
         $socialAccount = $user->socialAccounts()->first();
         $json = $socialAccount->toJson();
 
-        // Tokens should be hidden
-        $this->assertStringNotContainsString('provider_token', $json);
-        $this->assertStringNotContainsString('provider_refresh_token', $json);
+        // Tokens should be hidden (check for actual JSON keys, not substrings)
+        $this->assertStringNotContainsString('"provider_token":', $json);
+        $this->assertStringNotContainsString('"provider_refresh_token":', $json);
     }
 
     /**
@@ -1356,12 +1356,18 @@ class GoogleOAuthServiceTest extends TestCase
         $mockGoogleUser = $this->createMockGoogleUser();
         $this->mockSocialiteUser($mockGoogleUser);
 
-        // Simulate DB error
+        // Simulate DB error with correct QueryException constructor args
         DB::shouldReceive('transaction')->andThrow(
-            new \Illuminate\Database\QueryException('', [], new \Exception('Connection lost'))
+            new \Illuminate\Database\QueryException(
+                'mysql', // connection name
+                'SELECT 1', // SQL
+                [], // bindings
+                new \Exception('Connection lost') // previous exception
+            )
         );
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        // Service wraps database exceptions in OAuthFailedException
+        $this->expectException(\App\Exceptions\Auth\OAuthFailedException::class);
         $this->service->handleCallback('code', $state);
     }
 
