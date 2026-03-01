@@ -42,6 +42,11 @@ class CrawlJobPolicy
             return false;
         }
 
+        // Cannot view soft deleted jobs
+        if ($crawlJob->deleted_at !== null) {
+            return false;
+        }
+
         // Admin can view any job
         if ($this->isAdmin($user)) {
             return true;
@@ -152,6 +157,6 @@ class CrawlJobPolicy
      */
     protected function isAdmin(User $user): bool
     {
-        return $user->is_admin === true;
+        return $user->role === 'admin';
     }
 }
