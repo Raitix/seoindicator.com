@@ -120,7 +120,7 @@ describe("Dialog Buttons", () => {
     const cancelButton = screen.getByRole("button", { name: /cancel/i });
     expect(cancelButton.className).not.toMatch(/red|rose|destructive|danger/i);
   });
-};
+});
 
 // ==================== DCD-004: Cancel Action ====================
 
