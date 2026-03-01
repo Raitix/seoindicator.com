@@ -64,6 +64,17 @@ Last updated: 2026-03-01
 
 ---
 
+## 2026-03-01: TASK-25-6 Google OAuth Credentials
+- Configuration tasks can be verified separately from full OAuth flow
+- OAuth-only users require nullable password column in users table
+- Test failures in OAuth service tests don't block credential configuration tests
+- GoogleOAuthConfigurationTest, GoogleOAuthCredentialsFormatTest, GoogleOAuthRedirectUriTest verify config structure
+- GoogleOAuthServiceTest verifies full OAuth flow (user creation, token handling)
+- Placeholder credentials are valid for configuration testing, won't work for actual OAuth login
+- Manual user action required for Google Cloud Console setup
+
+---
+
 ## 2026-02-28: TASK-3-7 Comparison Dashboard
 - Frontend page load verification: check HTTP status + HTML content for UI elements
 - Loading skeleton visible in SSR HTML confirms component deployment
