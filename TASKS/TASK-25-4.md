@@ -1,7 +1,7 @@
 # TASK-25-4: Implement Password Reset Flow
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -73,6 +73,50 @@ Custom notification for branded emails.
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 14:40 GMT+2] Agent: ProjectManager
+**Prioritization Analysis:**
+
+**Priority Confirmed: High**
+- Essential for production authentication - users need password recovery
+- Part of Phase 1 Core Authentication (critical path)
+- No workaround - permanent lockout risk without this feature
+- Uses Laravel's built-in Password facade (free, no external services)
+
+**Risk Confirmed: Medium**
+- Uses proven Laravel Password reset implementation
+- Standard token-based reset with 60-minute expiration
+- Rate limiting prevents abuse (1 request per email per minute)
+- Generic responses prevent email enumeration
+- Not High risk because using framework built-in, not custom auth
+
+**Dependency Status:**
+- TASK-25-3 (AuthController): `To Develop` ⚠️
+- Tests CAN be written now (TDD approach)
+- Development blocked until TASK-25-3 reaches `To Test Locally`
+
+**Test Coverage Requirements (for PreTester):**
+1. Forgot password validation (email required, valid format)
+2. Reset password validation (token, email, password, password_confirmation)
+3. Token expiration (60 minutes)
+4. Rate limiting (1 request per email per minute)
+5. Generic success response (no email enumeration)
+6. Password update and existing token revocation
+7. Error messages for invalid/expired tokens
+8. Password strength validation (min 8 chars, letters + numbers)
+
+**Execution Order:**
+1. TASK-25-3 (To Develop) → Complete implementation first
+2. TASK-25-4 (this) → Can start test writing now
+3. Tests wait for TASK-25-3 to reach To Test Locally before integration tests
+
+**Notes for PreTester:**
+- Use Laravel's built-in Password facade (`Password::sendResetLink`, `Password::reset`)
+- Custom notification for branded emails
+- Token stored in `password_resets` table (Laravel default)
+- Rate limiting via middleware or custom logic
+
+Status updated: `To Write Tests`
 
 ### [2026-02-28 20:55 GMT+2] Agent: SpecSystemAnalyst
 Created task as part of SPEC-025 breakdown (Phase 1: Core Authentication).
