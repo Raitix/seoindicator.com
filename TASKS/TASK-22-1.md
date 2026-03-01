@@ -1,7 +1,7 @@
 # TASK-22-1: Database Migrations for Crawler
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -82,3 +82,25 @@ Create database migrations for `crawl_jobs` and `crawl_pages` tables to support 
 
 ## Comments
 _Leave notes for the next agent here_
+
+### ProjectManager (2026-03-01 22:34 GMT+2)
+**Prioritization Assessment:**
+- **Priority:** High (confirmed) - Foundation task for SPEC-022, blocks all other crawler tasks
+- **Risk:** Medium (confirmed) - Standard database migration, non-destructive (add tables only), easily reversible via rollback
+
+**Dependency Check:**
+| Dependency | Status |
+|------------|--------|
+| Users table | Exists ✅ |
+| Projects table | Exists ✅ |
+
+**Dependency Chain (SPEC-022 Phase 1):**
+- TASK-22-1 (this task) → TASK-22-2 (Models) → TASK-22-3 (Service skeleton)
+- All 20 other SPEC-022 tasks depend on this migration
+
+**Execution Order:**
+1. This task (migrations) - FIRST
+2. TASK-22-2 (models) - after migrations ready
+3. TASK-22-3 (service skeleton) - after models ready
+
+**No blockers detected.** Task proceeds to PreTester for test design.
