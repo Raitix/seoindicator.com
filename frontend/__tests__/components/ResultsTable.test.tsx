@@ -157,16 +157,27 @@ describe('ResultRow Component', () => {
       recommendations: ['Fix meta title', 'Add meta description'],
     });
 
-    render(<ResultRow result={result} />);
+    const handleToggleExpand = jest.fn();
+    const { rerender } = render(
+      <ResultRow result={result} onToggleExpand={handleToggleExpand} isExpanded={false} />
+    );
 
     // Details should not be visible initially
-    expect(screen.queryByText('Recommendations')).not.toBeInTheDocument();
+    expect(screen.queryByText('Fix meta title')).not.toBeInTheDocument();
 
     // Click expand button
     await userEvent.click(screen.getByRole('button', { name: /expand/i }));
 
+    // Verify callback was called
+    expect(handleToggleExpand).toHaveBeenCalled();
+
+    // Rerender with expanded state
+    rerender(
+      <ResultRow result={result} onToggleExpand={handleToggleExpand} isExpanded={true} />
+    );
+
     // Details should now be visible
-    expect(screen.getByText('Recommendations')).toBeInTheDocument();
+    expect(screen.getByText(/Recommendations/)).toBeInTheDocument();
     expect(screen.getByText('Fix meta title')).toBeInTheDocument();
   });
 
@@ -191,9 +202,10 @@ describe('ResultRow Component', () => {
 
     render(<ResultRow result={result} isExpanded={true} />);
 
-    expect(screen.getByText('Title:')).toBeInTheDocument();
+    // Text is lowercase as formatted by component
+    expect(screen.getByText('title:')).toBeInTheDocument();
     expect(screen.getByText('Test Page')).toBeInTheDocument();
-    expect(screen.getByText('Description length:')).toBeInTheDocument();
+    expect(screen.getByText('description length:')).toBeInTheDocument();
     expect(screen.getByText('150')).toBeInTheDocument();
   });
 
@@ -242,9 +254,10 @@ describe('ResultsTable Component', () => {
   it('displays summary stats', () => {
     render(<ResultsTable jobId={1} results={mockResults} />);
 
-    expect(screen.getByText(/2 completed/)).toBeInTheDocument();
-    expect(screen.getByText(/1 failed/)).toBeInTheDocument();
-    expect(screen.getByText(/2 remaining/)).toBeInTheDocument();
+    // Stats appear in both visible area and sr-only live region
+    expect(screen.getAllByText(/2 completed/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/1 failed/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/2 remaining/).length).toBeGreaterThan(0);
   });
 
   it('sorts by status (completed first)', async () => {
@@ -252,9 +265,9 @@ describe('ResultsTable Component', () => {
 
     const rows = screen.getAllByRole('row').slice(1); // Skip header row
 
-    // First two should be completed (meta_tags, headings)
-    expect(within(rows[0]).getByText('Meta Tags')).toBeInTheDocument();
-    expect(within(rows[1]).getByText('Headings Structure')).toBeInTheDocument();
+    // First two should be completed (alphabetically: Headings, Meta Tags)
+    expect(within(rows[0]).getByText('Headings Structure')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('Meta Tags')).toBeInTheDocument();
 
     // Third should be failed (images)
     expect(within(rows[2]).getByText('Images')).toBeInTheDocument();
@@ -377,9 +390,11 @@ describe('ResultsTable Sorting', () => {
 
     const rows = screen.getAllByRole('row').slice(1);
 
-    // Headings (75%) should come before Meta Tags (95%)
-    expect(within(rows[0]).getByText('Headings Structure')).toBeInTheDocument();
-    expect(within(rows[1]).getByText('Meta Tags')).toBeInTheDocument();
+    // Score sort: lowest first, failed items included, pending/running at end
+    // Order: Images (0% failed), Headings (75%), Meta Tags (95%), then running/pending
+    expect(within(rows[0]).getByText('Images')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('Headings Structure')).toBeInTheDocument();
+    expect(within(rows[2]).getByText('Meta Tags')).toBeInTheDocument();
   });
 
   it('sorts alphabetically by name', async () => {

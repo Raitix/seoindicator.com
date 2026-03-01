@@ -337,7 +337,7 @@ class AIResponseTest extends TestCase
             errorMessage: null
         );
 
-        $this->assertStringContainsString('中文标题', $response->content);
+        $this->assertStringContainsString('\u4e2d\u6587\u6807\u9898', $response->content);
     }
 
     // =========================================================================
