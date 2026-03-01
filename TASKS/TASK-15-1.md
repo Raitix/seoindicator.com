@@ -1,7 +1,7 @@
 # TASK-15-1: Create Brand Configs Table
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `Medium`
@@ -56,3 +56,9 @@ Created task for branding configuration storage.
 - **Dependencies:** None - this is a foundation task
 - **Execution Order:** First in SPEC-015 task chain (TASK-15-1 → TASK-15-2)
 - **Handoff:** Ready for PreTester to design tests for migration and CRUD validation
+
+### [2026-02-28 23:15] Agent: PreTester
+**Test Design Started:**
+- Creating test documentation and migration tests
+- Tests will cover: schema validation, constraints, CRUD operations, edge cases
+- Reference: TESTS/SPEC-15-1.md
