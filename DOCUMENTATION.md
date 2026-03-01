@@ -4832,6 +4832,155 @@ CREATE TABLE analysis_costs (
 - TASK-25-13: CostTrackingService
 
 ---
+## AnalysisHistory Model & Repository (TASK-25-12)
+
+### Service Description
+Model and repository for managing analysis history records. Tracks all tool analyses performed by users with full CRUD operations, filtering, pagination, and statistics. Part of the User Accounts + Dashboard + Analysis History feature (FEAT-025).
+
+### Model: AnalysisHistory
+
+**Location:** `backend/app/Models/AnalysisHistory.php`
+
+**Fillable Attributes:**
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `user_id` | int | FK to users.id |
+| `site_id` | int|null | FK to sites.id (nullable) |
+| `tool_name` | string | Tool identifier (e.g., 'meta-tag-analyzer') |
+| `input_url` | string | URL that was analyzed (max 2083 chars) |
+| `status` | string | Enum: 'pending', 'completed', 'failed' |
+| `results` | array|null | JSON results from analysis |
+| `error_message` | string|null | Error message if failed |
+| `analysis_duration_ms` | int|null | Duration in milliseconds |
+| `analyzed_at` | Carbon|null | Timestamp when analysis completed |
+
+**Casts:**
+| Attribute | Cast |
+|-----------|------|
+| `results` | `array` |
+| `analyzed_at` | `datetime` |
+
+**Relationships:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `user()` | belongsTo | The user who requested the analysis |
+| `site()` | belongsTo | The site associated with the analysis (nullable) |
+| `costs()` | hasMany | AnalysisCost records for this analysis |
+
+**Query Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `completed()` | Filter where status = 'completed' |
+| `pending()` | Filter where status = 'pending' |
+| `failed()` | Filter where status = 'failed' |
+| `byTool($tool)` | Filter by tool_name |
+| `byUser($userId)` | Filter by user_id |
+| `bySite($siteId)` | Filter by site_id |
+| `analyzedBetween($from, $to)` | Filter by analyzed_at date range |
+| `recent($days = 30)` | Filter to recent analyses |
+| `withResults()` | Filter where results IS NOT NULL |
+| `withoutSite()` | Filter where site_id IS NULL |
+
+### Repository: AnalysisHistoryRepository
+
+**Location:** `backend/app/Repositories/AnalysisHistoryRepository.php`
+
+**Methods:**
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `create(array $data)` | AnalysisHistory | Create new analysis record |
+| `findById(int $id)` | AnalysisHistory\|null | Find by ID |
+| `findByUser(int $userId, array $filters = [])` | LengthAwarePaginator | Paginated user history with filters |
+| `update(int $id, array $data)` | AnalysisHistory | Update existing record |
+| `delete(int $id)` | bool | Delete record |
+| `getByTool(int $userId, string $tool)` | Collection | Get all analyses for a specific tool |
+| `getRecent(int $userId, int $limit = 10)` | Collection | Get recent analyses |
+| `getStats(int $userId)` | array | Get analysis statistics |
+
+**Filter Options for findByUser():**
+| Filter | Type | Description |
+|--------|------|-------------|
+| `status` | string | Filter by status (pending/completed/failed) |
+| `tool_name` | string | Filter by tool name |
+| `site_id` | int | Filter by site ID |
+| `date_from` | string | Filter from date (Y-m-d) |
+| `date_to` | string | Filter to date (Y-m-d) |
+| `per_page` | int | Items per page (default: 15) |
+
+**Statistics Structure (getStats):**
+```php
+[
+    'total' => 150,
+    'by_status' => [
+        'completed' => 142,
+        'pending' => 3,
+        'failed' => 5
+    ],
+    'by_tool' => [
+        'meta-tag-analyzer' => 50,
+        'keyword-density' => 45,
+        'pwa-analyzer' => 30,
+        // ...
+    ],
+    'avg_duration_ms' => 1250.5,
+    'success_rate' => 94.67 // percentage
+]
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| User Isolation | All repository methods enforce user scoping |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Protection | Input validation and output escaping |
+| Cross-user Access | Blocked in all query methods |
+| Mass Assignment | Model `$fillable` whitelist |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| AnalysisHistoryTest (Model) | 38 | 78 |
+| AnalysisHistoryRepositoryTest | 47 | 116 |
+| **Total** | **85** | **194** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Model Creation | 10 | Fillable fields, casts, nullables |
+| Relationships | 7 | User, Site, AnalysisCost relations |
+| Scopes | 10 | All query scopes verified |
+| Repository CRUD | 8 | Create, find, update, delete |
+| Repository Queries | 10 | findByUser, getByTool, getRecent |
+| Repository Stats | 7 | Statistics calculation |
+| Pagination | 4 | Default/custom page size, navigation |
+| Edge Cases | 7 | Large JSON, unicode, long strings |
+| Security | 5 | SQL injection, XSS, user isolation |
+| Performance | 4 | Large results, many records |
+| Integration | 2 | Full workflow, relationship integrity |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-01 (commit 4d8d585) |
+| **Model** | `App\Models\AnalysisHistory` |
+| **Repository** | `App\Repositories\AnalysisHistoryRepository` |
+| **Health Check** | Passing |
+| **Tests** | 85 tests, 194 assertions - 100% passing |
+
+### Dependencies
+
+- TASK-25-10 (analysis_history migration)
+
+### Related Tasks
+
+- TASK-25-10: analysis_history Table
+- TASK-25-11: analysis_costs Table
+- TASK-25-13: CostTrackingService
+
+---
 ## IconValidatorService (TASK-24-5)
 
 ### Service Description
