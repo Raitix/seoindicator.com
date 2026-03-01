@@ -10,40 +10,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
-// Mock component for TDD (will be replaced with actual import)
-function MockGuideSearch({ 
-  value, 
-  onChange,
-  placeholder = 'Search guides...'
-}: { 
-  value: string; 
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <div className="guide-search" data-testid="guide-search">
-      <input
-        type="search"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        aria-label="Search guides"
-        data-testid="search-input"
-        className="search-input"
-      />
-      {value && (
-        <button
-          onClick={() => onChange('')}
-          aria-label="Clear search"
-          data-testid="clear-button"
-          className="clear-button"
-        >
-          ×
-        </button>
-      )}
-    </div>
-  );
-}
+import { GuideSearch } from '@/components/guides/GuideSearch';
 
 describe('GuideSearch Component', () => {
   const mockOnChange = jest.fn();
@@ -55,7 +22,7 @@ describe('GuideSearch Component', () => {
   describe('Rendering', () => {
     it('renders search input', () => {
       render(
-        <MockGuideSearch value="" onChange={mockOnChange} />
+        <GuideSearch value="" onChange={mockOnChange} />
       );
       
       expect(screen.getByTestId('search-input')).toBeInTheDocument();
@@ -63,7 +30,7 @@ describe('GuideSearch Component', () => {
 
     it('displays placeholder text', () => {
       render(
-        <MockGuideSearch value="" onChange={mockOnChange} placeholder="Find guides..." />
+        <GuideSearch value="" onChange={mockOnChange} placeholder="Find guides..." />
       );
       
       expect(screen.getByTestId('search-input')).toHaveAttribute('placeholder', 'Find guides...');
@@ -71,7 +38,7 @@ describe('GuideSearch Component', () => {
 
     it('uses default placeholder when not specified', () => {
       render(
-        <MockGuideSearch value="" onChange={mockOnChange} />
+        <GuideSearch value="" onChange={mockOnChange} />
       );
       
       expect(screen.getByTestId('search-input')).toHaveAttribute('placeholder', 'Search guides...');
@@ -79,7 +46,7 @@ describe('GuideSearch Component', () => {
 
     it('shows clear button when input has value', () => {
       render(
-        <MockGuideSearch value="meta" onChange={mockOnChange} />
+        <GuideSearch value="meta" onChange={mockOnChange} />
       );
       
       expect(screen.getByTestId('clear-button')).toBeInTheDocument();
@@ -87,7 +54,7 @@ describe('GuideSearch Component', () => {
 
     it('hides clear button when input is empty', () => {
       render(
-        <MockGuideSearch value="" onChange={mockOnChange} />
+        <GuideSearch value="" onChange={mockOnChange} />
       );
       
       expect(screen.queryByTestId('clear-button')).not.toBeInTheDocument();
@@ -97,7 +64,7 @@ describe('GuideSearch Component', () => {
   describe('Value Handling', () => {
     it('displays current value', () => {
       render(
-        <MockGuideSearch value="page speed" onChange={mockOnChange} />
+        <GuideSearch value="page speed" onChange={mockOnChange} />
       );
       
       expect(screen.getByTestId('search-input')).toHaveValue('page speed');
@@ -108,7 +75,7 @@ describe('GuideSearch Component', () => {
       
       function TestWrapper() {
         const [value, setValue] = useState('');
-        return <MockGuideSearch value={value} onChange={setValue} />;
+        return <GuideSearch value={value} onChange={setValue} />;
       }
       
       render(<TestWrapper />);
@@ -125,7 +92,7 @@ describe('GuideSearch Component', () => {
       const user = userEvent.setup();
       
       render(
-        <MockGuideSearch value="" onChange={mockOnChange} />
+        <GuideSearch value="" onChange={mockOnChange} />
       );
       
       const input = screen.getByTestId('search-input');
@@ -139,7 +106,7 @@ describe('GuideSearch Component', () => {
       
       function TestWrapper() {
         const [value, setValue] = useState('meta');
-        return <MockGuideSearch value={value} onChange={setValue} />;
+        return <GuideSearch value={value} onChange={setValue} />;
       }
       
       render(<TestWrapper />);
@@ -154,7 +121,7 @@ describe('GuideSearch Component', () => {
       function TestWrapper() {
         const [value, setValue] = useState('meta');
         return (
-          <MockGuideSearch 
+          <GuideSearch 
             value={value} 
             onChange={setValue} 
           />
@@ -167,7 +134,6 @@ describe('GuideSearch Component', () => {
       input.focus();
       await user.keyboard('{Escape}');
       
-      // Should clear or remain depending on implementation
       expect(screen.getByTestId('search-input')).toHaveValue('');
     });
   });
@@ -175,7 +141,7 @@ describe('GuideSearch Component', () => {
   describe('Accessibility', () => {
     it('has aria-label', () => {
       render(
-        <MockGuideSearch value="" onChange={mockOnChange} />
+        <GuideSearch value="" onChange={mockOnChange} />
       );
       
       expect(screen.getByTestId('search-input')).toHaveAttribute('aria-label', 'Search guides');
@@ -183,7 +149,7 @@ describe('GuideSearch Component', () => {
 
     it('has search type for semantic meaning', () => {
       render(
-        <MockGuideSearch value="" onChange={mockOnChange} />
+        <GuideSearch value="" onChange={mockOnChange} />
       );
       
       expect(screen.getByTestId('search-input')).toHaveAttribute('type', 'search');
@@ -191,7 +157,7 @@ describe('GuideSearch Component', () => {
 
     it('clear button has accessible label', () => {
       render(
-        <MockGuideSearch value="test" onChange={mockOnChange} />
+        <GuideSearch value="test" onChange={mockOnChange} />
       );
       
       expect(screen.getByTestId('clear-button')).toHaveAttribute('aria-label', 'Clear search');
@@ -201,7 +167,7 @@ describe('GuideSearch Component', () => {
       const user = userEvent.setup();
       
       render(
-        <MockGuideSearch value="" onChange={mockOnChange} />
+        <GuideSearch value="" onChange={mockOnChange} />
       );
       
       const input = screen.getByTestId('search-input');
@@ -218,7 +184,7 @@ describe('GuideSearch Component', () => {
       
       function TestWrapper() {
         const [value, setValue] = useState('');
-        return <MockGuideSearch value={value} onChange={setValue} />;
+        return <GuideSearch value={value} onChange={setValue} />;
       }
       
       render(<TestWrapper />);
@@ -235,7 +201,7 @@ describe('GuideSearch Component', () => {
       
       function TestWrapper() {
         const [value, setValue] = useState('');
-        return <MockGuideSearch value={value} onChange={setValue} />;
+        return <GuideSearch value={value} onChange={setValue} />;
       }
       
       render(<TestWrapper />);
@@ -246,11 +212,11 @@ describe('GuideSearch Component', () => {
       expect(input).toHaveValue('标题');
     });
 
-    it('handles very long search strings', async () => {
+    it('handles very long search strings', () => {
       const longString = 'a'.repeat(1000);
       
       render(
-        <MockGuideSearch value={longString} onChange={mockOnChange} />
+        <GuideSearch value={longString} onChange={mockOnChange} />
       );
       
       expect(screen.getByTestId('search-input')).toHaveValue(longString);
@@ -261,7 +227,7 @@ describe('GuideSearch Component', () => {
       
       function TestWrapper() {
         const [value, setValue] = useState('');
-        return <MockGuideSearch value={value} onChange={setValue} />;
+        return <GuideSearch value={value} onChange={setValue} />;
       }
       
       render(<TestWrapper />);
@@ -277,7 +243,7 @@ describe('GuideSearch Component', () => {
       
       function TestWrapper() {
         const [value, setValue] = useState('');
-        return <MockGuideSearch value={value} onChange={setValue} />;
+        return <GuideSearch value={value} onChange={setValue} />;
       }
       
       render(<TestWrapper />);
@@ -293,9 +259,6 @@ describe('GuideSearch Component', () => {
 
   describe('Debouncing', () => {
     it('should debounce search input for performance', async () => {
-      // This test documents the expected behavior
-      // The actual implementation should use debouncing
-      
       jest.useFakeTimers();
       
       const debouncedOnChange = jest.fn();
@@ -303,15 +266,10 @@ describe('GuideSearch Component', () => {
       function DebouncedTestWrapper() {
         const [value, setValue] = useState('');
         
-        const handleChange = (newValue: string) => {
-          setValue(newValue);
-          // Simulated debounced call
-          setTimeout(() => {
-            debouncedOnChange(newValue);
-          }, 300);
-        };
-        
-        return <MockGuideSearch value={value} onChange={handleChange} />;
+        return <GuideSearch value={value} onChange={(v) => {
+          setValue(v);
+          debouncedOnChange(v);
+        }} />;
       }
       
       render(<DebouncedTestWrapper />);
