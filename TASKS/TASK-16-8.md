@@ -1,7 +1,7 @@
 # TASK-16-8: Social Media Preview Tool
 
 ## STATUS
-`Done`
+`To Deploy`
 
 ## PRIORITY
 `Medium`
@@ -166,6 +166,28 @@ The SocialMediaPreview tool was deployed but **not properly integrated** into th
 - Committed as 67ff229, pushed to origin/main
 
 **Waiting for GitHub Actions deployment to complete, then re-testing.**
+
+---
+
+### [2026-03-01] Agent: ProdTester
+**Additional Fix Required - Frontend API URL Incorrect**
+
+**Issue Found:**
+During follow-up production testing, discovered the frontend was calling wrong API endpoint:
+- Frontend called: `/api/tools/analyze` → 404 Not Found
+- Backend route: `/api/v1/tools/analyze` → Working (returns 429 when rate limited)
+
+**Root Cause:**
+`SocialMediaPreview.tsx` was calling `/api/tools/analyze` instead of `/api/v1/tools/analyze`. This would cause the tool to fail in production with 404 errors.
+
+**Fix Applied:**
+1. Updated `SocialMediaPreview.tsx` to call `/api/v1/tools/analyze`
+2. Added `social-media-preview` to tools list in `APIProxyController.tools()`
+3. Committed as 3d63582, pushed to origin/main
+
+**Note:** The previous "PASSED" test was unable to verify API call due to rate limiting. The actual frontend would have returned 404 for users.
+
+**Status:** Waiting for deployment and re-test.
 
 ---
 
