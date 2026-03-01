@@ -1,7 +1,7 @@
 # TASK-24-4: ManifestValidatorService
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
