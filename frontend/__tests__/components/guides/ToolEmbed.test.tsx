@@ -98,6 +98,7 @@ const VALID_TOOL_SLUGS = [
   'keyword-density',
   'social-preview',
   'mobile-friendly',
+  'mobile-friendly-checker',
 ] as const;
 
 // Tool slug to route mapping
@@ -106,6 +107,7 @@ const TOOL_ROUTES: Record<string, string> = {
   'keyword-density': '/tools/keyword-density/',
   'social-preview': '/tools/social-preview/',
   'mobile-friendly': '/tools/mobile-friendly/',
+  'mobile-friendly-checker': '/tools/mobile-friendly-checker/',
 };
 
 describe('ToolEmbed', () => {
@@ -199,7 +201,17 @@ describe('ToolEmbed', () => {
       );
     });
 
-    // TE-001-08: Renders with custom className
+    // TE-001-08: Renders mobile-friendly-checker tool (TASK-20-23)
+    it('should render mobile-friendly-checker tool', () => {
+      render(<ToolEmbed toolSlug="mobile-friendly-checker" />);
+
+      expect(screen.getByTestId('tool-widget')).toHaveAttribute(
+        'data-tool',
+        'mobile-friendly-checker'
+      );
+    });
+
+    // TE-001-09: Renders with custom className
     it('should apply custom className', () => {
       const { container } = render(
         <ToolEmbed
