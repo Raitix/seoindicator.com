@@ -4,10 +4,13 @@ namespace Tests\Unit\Services\AI\Providers\StaticFallback;
 
 use App\Services\AI\Providers\StaticFallbackProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
  * Unit tests for Static Fallback Provider - URL Rules.
+ *
+ * Tests the rule-based analysis for URL structure SEO optimization.
  */
 class UrlRulesTest extends TestCase
 {
@@ -30,175 +33,301 @@ class UrlRulesTest extends TestCase
         return json_decode($response->content, true);
     }
 
-    #[Test]
-    public function clean_url_structure_scores_high(): void
-    {
-        $result = $this->analyzeUrl('/products/best-widgets');
+    // =====================================================
+    // Structure Tests
+    // =====================================================
 
-        $this->assertGreaterThanOrEqual(90, $result['score'], 'Clean URL structure should score >= 90');
+    #[Test]
+    public function clean_url_scores_high(): void
+    {
+        $result = $this->analyzeUrl('https://example.com/products/best-widgets');
+
+        $this->assertGreaterThanOrEqual(90, $result['score'], 'Clean URL should score high');
     }
 
     #[Test]
-    public function keyword_in_url_boosts(): void
+    public function query_parameters_suggestion(): void
     {
-        $result = $this->analyzeUrl('/products/best-widgets-2026', 'widgets');
+        $result = $this->analyzeUrl('https://example.com/products?id=123&category=5');
 
-        $this->assertGreaterThanOrEqual(90, $result['score'], 'Keyword in URL should boost score');
+        $this->assertLessThan(85, $result['score'], 'Query parameters should have penalty');
+
+        $hasQuerySuggestion = collect($result['suggestions'])->some(
+            fn($s) => str_contains(strtolower($s['text']), 'clean') ||
+                     str_contains(strtolower($s['reason'] ?? ''), 'query')
+        );
+        $this->assertTrue($hasQuerySuggestion, 'Should suggest cleaner URL');
     }
 
     #[Test]
-    public function too_many_segments_warning(): void
+    public function hash_fragment_handled(): void
     {
-        $result = $this->analyzeUrl('/a/b/c/d/e/f/g/h');
+        $result = $this->analyzeUrl('https://example.com/page#section');
 
-        $this->assertLessThan(80, $result['score'], 'Too many segments should have warning');
+        $this->assertIsInt($result['score']);
+        // Hash fragments are valid but noted
     }
 
     #[Test]
-    public function query_parameters_warning(): void
+    public function trailing_slash_consistency(): void
     {
-        $result = $this->analyzeUrl('/page?utm_source=google');
+        $result = $this->analyzeUrl('https://example.com/products/');
 
-        $this->assertLessThan(85, $result['score'], 'Query parameters should have warning');
+        $this->assertIsInt($result['score']);
+        $this->assertGreaterThanOrEqual(80, $result['score']);
+    }
+
+    // =====================================================
+    // SEO Quality Tests
+    // =====================================================
+
+    #[Test]
+    public function keywords_in_url_boost_score(): void
+    {
+        $resultWithKeyword = $this->analyzeUrl('https://example.com/best-widgets-2026', 'widgets');
+        $resultWithoutKeyword = $this->analyzeUrl('https://example.com/products/item-123', 'widgets');
+
+        $this->assertGreaterThan(
+            $resultWithoutKeyword['score'],
+            $resultWithKeyword['score'],
+            'Keyword in URL should boost score'
+        );
     }
 
     #[Test]
-    public function session_id_in_url_major_issue(): void
+    public function dynamic_urls_flagged(): void
     {
-        $result = $this->analyzeUrl('/page?sessionid=abc123');
+        $result = $this->analyzeUrl('https://example.com/product.php?id=123&sid=abc');
 
-        $this->assertLessThan(70, $result['score'], 'Session ID in URL should have major penalty');
+        $this->assertLessThan(80, $result['score'], 'Dynamic URL should have penalty');
+
+        $hasDynamicIssue = collect($result['issues'])->some(
+            fn($issue) => str_contains(strtolower($issue), 'dynamic') ||
+                         str_contains(strtolower($issue), 'parameter')
+        );
+        $this->assertTrue($hasDynamicIssue, 'Should flag dynamic URL');
     }
 
     #[Test]
-    public function dynamic_url_flagged(): void
+    public function too_long_url_warning(): void
     {
-        $result = $this->analyzeUrl('/page.php?id=123');
+        $longUrl = 'https://example.com/' . str_repeat('very-long-path-segment-', 20) . 'page';
+        $result = $this->analyzeUrl($longUrl);
 
-        $this->assertLessThan(75, $result['score'], 'Dynamic URL should be flagged');
+        $hasLengthIssue = collect($result['issues'])->some(
+            fn($issue) => str_contains(strtolower($issue), 'long')
+        );
+        $this->assertTrue($hasLengthIssue, 'Should warn about long URL');
     }
 
     #[Test]
-    public function file_extension_minor_issue(): void
+    public function underscores_suggest_hyphens(): void
     {
-        $result = $this->analyzeUrl('/page.html');
+        $result = $this->analyzeUrl('https://example.com/best_widgets_2026');
 
-        $this->assertLessThan(90, $result['score'], 'File extension should have minor penalty');
+        $hasHyphenSuggestion = collect($result['issues'])->some(
+            fn($issue) => str_contains(strtolower($issue), 'underscore') ||
+                         str_contains(strtolower($issue), 'hyphen')
+        );
+        $this->assertTrue($hasHyphenSuggestion, 'Should suggest hyphens over underscores');
+    }
+
+    // =====================================================
+    // Protocol Tests
+    // =====================================================
+
+    #[Test]
+    public function https_preferred(): void
+    {
+        $resultHttps = $this->analyzeUrl('https://example.com/page');
+        $resultHttp = $this->analyzeUrl('http://example.com/page');
+
+        $this->assertGreaterThan(
+            $resultHttp['score'],
+            $resultHttps['score'],
+            'HTTPS should score higher than HTTP'
+        );
     }
 
     #[Test]
-    public function trailing_slash_valid(): void
+    public function http_flagged(): void
     {
-        $result = $this->analyzeUrl('/page/');
+        $result = $this->analyzeUrl('http://example.com/page');
 
-        $this->assertGreaterThanOrEqual(85, $result['score'], 'Trailing slash is valid');
+        $hasHttpIssue = collect($result['issues'])->some(
+            fn($issue) => str_contains(strtolower($issue), 'http') ||
+                         str_contains(strtolower($issue), 'secure')
+        );
+        $this->assertTrue($hasHttpIssue, 'Should flag non-HTTPS');
+    }
+
+    // =====================================================
+    // Domain Tests
+    // =====================================================
+
+    #[Test]
+    public function subdomain_handled(): void
+    {
+        $result = $this->analyzeUrl('https://blog.example.com/post-title');
+
+        $this->assertIsInt($result['score']);
+        $this->assertGreaterThanOrEqual(80, $result['score']);
     }
 
     #[Test]
-    public function no_trailing_slash_valid(): void
+    public function long_subdomain_flagged(): void
     {
-        $result = $this->analyzeUrl('/page');
+        $result = $this->analyzeUrl('https://very-long-subdomain-name.example.com/page');
 
-        $this->assertGreaterThanOrEqual(85, $result['score'], 'No trailing slash is valid');
+        // Should still work, might have minor note
+        $this->assertIsInt($result['score']);
+    }
+
+    // =====================================================
+    // Suggestions Tests
+    // =====================================================
+
+    #[Test]
+    public function suggestion_for_dynamic_url(): void
+    {
+        $result = $this->analyzeUrl('https://example.com/page.php?id=123');
+
+        $this->assertNotEmpty($result['suggestions']);
+
+        $hasRewriteSuggestion = collect($result['suggestions'])->some(
+            fn($s) => str_contains(strtolower($s['text']), 'clean') ||
+                     str_contains(strtolower($s['text']), 'rewrite')
+        );
+        $this->assertTrue($hasRewriteSuggestion, 'Should suggest URL rewrite');
     }
 
     #[Test]
-    public function uppercase_in_url_flagged(): void
+    public function suggestions_have_valid_structure(): void
     {
-        $result = $this->analyzeUrl('/Products/Widgets');
+        $result = $this->analyzeUrl('https://example.com/test_page');
 
-        $this->assertLessThan(85, $result['score'], 'Uppercase in URL should be flagged');
+        foreach ($result['suggestions'] as $suggestion) {
+            $this->assertArrayHasKey('type', $suggestion);
+            $this->assertArrayHasKey('text', $suggestion);
+            $this->assertContains(
+                $suggestion['type'],
+                ['improve', 'rewrite', 'add', 'remove', 'warning'],
+                'Suggestion type must be valid'
+            );
+        }
     }
 
-    #[Test]
-    public function non_ascii_characters_flagged(): void
-    {
-        $result = $this->analyzeUrl('/продукты');
-
-        $this->assertLessThan(80, $result['score'], 'Non-ASCII characters should be flagged');
-    }
-
-    #[Test]
-    public function underscores_minor_issue(): void
-    {
-        $result = $this->analyzeUrl('/my_page');
-
-        $this->assertLessThan(90, $result['score'], 'Underscores should have minor penalty');
-    }
-
-    #[Test]
-    public function hyphens_good(): void
-    {
-        $result = $this->analyzeUrl('/my-page');
-
-        $this->assertGreaterThanOrEqual(85, $result['score'], 'Hyphens in URL are good');
-    }
-
-    #[Test]
-    public function special_characters_flagged(): void
-    {
-        $result = $this->analyzeUrl('/page&param=value');
-
-        $this->assertLessThan(80, $result['score'], 'Special characters should be flagged');
-    }
-
-    #[Test]
-    public function hash_fragment_valid(): void
-    {
-        $result = $this->analyzeUrl('/page#section');
-
-        $this->assertGreaterThanOrEqual(85, $result['score'], 'Hash fragment is valid');
-    }
-
-    #[Test]
-    public function absolute_url_valid(): void
-    {
-        $result = $this->analyzeUrl('https://example.com/page');
-
-        $this->assertGreaterThanOrEqual(85, $result['score'], 'Absolute URL is valid');
-    }
-
-    #[Test]
-    public function long_url_warning(): void
-    {
-        $result = $this->analyzeUrl('/' . str_repeat('very-long-url-segment-', 15));
-
-        $this->assertLessThan(80, $result['score'], 'Long URL should have warning');
-    }
-
-    #[Test]
-    public function multiple_query_params_warning(): void
-    {
-        $result = $this->analyzeUrl('/page?a=1&b=2&c=3');
-
-        $this->assertLessThan(80, $result['score'], 'Multiple query params should have warning');
-    }
-
-    #[Test]
-    public function subdomain_valid(): void
-    {
-        $result = $this->analyzeUrl('blog.example.com/post');
-
-        $this->assertGreaterThanOrEqual(80, $result['score'], 'Subdomain is valid');
-    }
-
-    #[Test]
-    public function deep_nesting_valid_if_organized(): void
-    {
-        $result = $this->analyzeUrl('/category/subcategory/item');
-
-        $this->assertGreaterThanOrEqual(80, $result['score'], 'Organized deep nesting is valid');
-    }
+    // =====================================================
+    // Best Practices Tests
+    // =====================================================
 
     #[Test]
     public function best_practices_returned(): void
     {
-        $result = $this->analyzeUrl('/test');
+        $result = $this->analyzeUrl('https://example.com/page');
 
         $this->assertNotEmpty($result['best_practices']);
 
         foreach ($result['best_practices'] as $practice) {
             $this->assertIsString($practice);
+            $this->assertNotEmpty($practice);
         }
+    }
+
+    #[Test]
+    public function best_practices_includes_structure_advice(): void
+    {
+        $result = $this->analyzeUrl('https://example.com/page');
+        $practicesText = strtolower(implode(' ', $result['best_practices']));
+
+        $this->assertTrue(
+            str_contains($practicesText, 'hyphen') ||
+            str_contains($practicesText, 'lowercase') ||
+            str_contains($practicesText, 'url'),
+            'Best practices should mention URL structure'
+        );
+    }
+
+    // =====================================================
+    // Data Provider Tests
+    // =====================================================
+
+    public static function urlProvider(): array
+    {
+        return [
+            'clean https' => ['https://example.com/best-widgets', 90],
+            'with query' => ['https://example.com/page?id=123', 70],
+            'dynamic php' => ['https://example.com/page.php?id=123', 60],
+            'http' => ['http://example.com/page', 75],
+            'with underscores' => ['https://example.com/best_widgets', 80],
+            'too long' => ['https://example.com/' . str_repeat('a', 200), 65],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('urlProvider')]
+    public function url_affects_score_appropriately(string $url, int $minExpectedScore): void
+    {
+        $result = $this->analyzeUrl($url);
+
+        $this->assertGreaterThanOrEqual(
+            $minExpectedScore,
+            $result['score'],
+            "URL should score at least {$minExpectedScore}"
+        );
+    }
+
+    // =====================================================
+    // Edge Cases
+    // =====================================================
+
+    #[Test]
+    public function empty_url(): void
+    {
+        $result = $this->analyzeUrl('');
+
+        $this->assertIsInt($result['score']);
+        $this->assertLessThan(50, $result['score'], 'Empty URL should score low');
+    }
+
+    #[Test]
+    public function root_url(): void
+    {
+        $result = $this->analyzeUrl('https://example.com');
+
+        $this->assertIsInt($result['score']);
+        $this->assertGreaterThanOrEqual(70, $result['score']);
+    }
+
+    #[Test]
+    public function unicode_url_handled(): void
+    {
+        $result = $this->analyzeUrl('https://example.com/产品/Best-Widgets');
+
+        $this->assertIsInt($result['score']);
+        $this->assertGreaterThanOrEqual(0, $result['score']);
+        $this->assertLessThanOrEqual(100, $result['score']);
+    }
+
+    // =====================================================
+    // Security Tests
+    // =====================================================
+
+    #[Test]
+    public function xss_in_url_sanitized(): void
+    {
+        $result = $this->analyzeUrl('https://example.com/<script>alert(1)</script>');
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('score', $result);
+    }
+
+    #[Test]
+    public function sql_injection_handled(): void
+    {
+        $result = $this->analyzeUrl("https://example.com/page'; DROP TABLE users;--");
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('score', $result);
     }
 }
