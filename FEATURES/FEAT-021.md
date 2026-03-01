@@ -1,7 +1,7 @@
 # FEAT-021: AI Suggestions via OpenRouter/Vercel Gateway
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
