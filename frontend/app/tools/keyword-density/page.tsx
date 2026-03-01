@@ -8,9 +8,37 @@ export const metadata = {
   keywords: ["keyword density", "SEO tool", "keyword analysis", "keyword stuffing", "content optimization"],
 };
 
+// JSON-LD Schema for Keyword Density Checker
+const keywordDensitySchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Keyword Density Checker",
+  "applicationCategory": "WebApplication",
+  "operatingSystem": "Web Browser",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "description": "Free tool to check keyword density and placement in your content. Get recommendations for optimal keyword usage and avoid over-optimization.",
+  "featureList": [
+    "Keyword density calculation",
+    "Heading placement analysis",
+    "Over-optimization detection",
+    "First paragraph check",
+    "Title & description analysis"
+  ]
+};
+
 export default function KeywordDensityPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
+      {/* JSON-LD Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(keywordDensitySchema) }}
+      />
+
       {/* Header */}
       <header className="border-b border-slate-700">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -167,6 +195,56 @@ export default function KeywordDensityPage() {
                   <span>Avoid keyword stuffing - it can result in search engine penalties</span>
                 </li>
               </ul>
+            </section>
+
+            {/* Learn More - Related Guides */}
+            <section className="bg-slate-800/50 rounded-lg p-6 border border-slate-700">
+              <h2 className="text-xl font-semibold text-white mb-4">📚 Learn More</h2>
+              <p className="text-slate-400 mb-4">
+                Master keyword optimization with our comprehensive guides:
+              </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <Link 
+                  href="/seo-guides/content-optimization/" 
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                >
+                  <span className="text-2xl">📝</span>
+                  <div>
+                    <h3 className="font-medium text-white">Content Optimization Guide</h3>
+                    <p className="text-sm text-slate-400">Write SEO-friendly content</p>
+                  </div>
+                </Link>
+                <Link 
+                  href="/seo-guides/keyword-research/" 
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                >
+                  <span className="text-2xl">🔍</span>
+                  <div>
+                    <h3 className="font-medium text-white">Keyword Research Guide</h3>
+                    <p className="text-sm text-slate-400">Find the right keywords</p>
+                  </div>
+                </Link>
+                <Link 
+                  href="/seo-guides/on-page-seo/" 
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                >
+                  <span className="text-2xl">📄</span>
+                  <div>
+                    <h3 className="font-medium text-white">On-Page SEO Guide</h3>
+                    <p className="text-sm text-slate-400">Optimize your pages</p>
+                  </div>
+                </Link>
+                <Link 
+                  href="/seo-guides/" 
+                  className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 transition-colors"
+                >
+                  <span className="text-2xl">📚</span>
+                  <div>
+                    <h3 className="font-medium text-emerald-400">All SEO Guides</h3>
+                    <p className="text-sm text-slate-400">Browse all guides</p>
+                  </div>
+                </Link>
+              </div>
             </section>
           </div>
         </div>
