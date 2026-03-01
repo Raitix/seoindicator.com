@@ -1,7 +1,7 @@
 # TASK-21-2: Implement OpenRouter Provider
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
