@@ -229,7 +229,8 @@ describe('Registry Structure', () => {
     it('should have all slugs in kebab-case format', () => {
       const guides = getAllGuides();
       guides.forEach((guide) => {
-        expect(guide.slug).toMatch(/^[a-z]+(-[a-z]+)*$/);
+        // Allow alphanumeric kebab-case (e.g., h1-headings, xml-sitemap)
+        expect(guide.slug).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
       });
     });
   });

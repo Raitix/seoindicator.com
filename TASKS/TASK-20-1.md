@@ -1,7 +1,7 @@
 # TASK-20-1: Create Guide Data Structure and TypeScript Types
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -13,17 +13,17 @@
 Create the TypeScript types and data structures for SEO guides, including the `SEOGuide` interface, `GuideSection`, `ChecklistItem`, and the guide registry with all 17 guide definitions.
 
 ## Acceptance Criteria
-- [ ] Create `lib/guides/types.ts` with TypeScript interfaces:
+- [x] Create `lib/guides/types.ts` with TypeScript interfaces:
   - `SEOGuide` interface with all fields from SPEC-020
   - `GuideSection` interface for content sections
   - `ChecklistItem` interface with priority levels
   - `CodeExample` interface for code snippets
-- [ ] Create `lib/guides/registry.ts` with guide data array
-- [ ] Export `getGuideBySlug(slug: string)` helper function
-- [ ] Export `getAllGuides()` helper function
-- [ ] Export `getRelatedGuides(slug: string)` helper function
-- [ ] All 17 guide stubs defined with slug, title, summary, category
-- [ ] Type definitions compile without errors
+- [x] Create `lib/guides/registry.ts` with guide data array
+- [x] Export `getGuideBySlug(slug: string)` helper function
+- [x] Export `getAllGuides()` helper function
+- [x] Export `getRelatedGuides(slug: string)` helper function
+- [x] All 17 guide stubs defined with slug, title, summary, category
+- [x] Type definitions compile without errors
 
 ## Dependencies
 - None (foundation task)
@@ -105,3 +105,59 @@ Status: `To Write Tests`
 3. All 17 guide stubs must be defined with: slug, title, summary, category, icon, readTime
 
 Status: `To Develop`
+
+### [2026-03-01 11:58 GMT+2] Developer - Implementation Complete
+**Files Created:**
+- `frontend/lib/guides/types.ts` - TypeScript interfaces and type guards
+- `frontend/lib/guides/registry.ts` - Guide registry with all 17 guide stubs
+
+**Implementation Details:**
+
+1. **TypeScript Interfaces (types.ts):**
+   - `SEOGuide` - Main guide interface with all required fields
+   - `GuideSection` - Content section with optional codeExamples
+   - `ChecklistItem` - Actionable item with priority level
+   - `CodeExample` - Code snippet with language and optional description
+   - `GuideCategory` - Type for category ('on-page' | 'technical' | 'content')
+   - `ChecklistPriority` - Type for priority ('critical' | 'important' | 'recommended')
+
+2. **Type Guards (types.ts):**
+   - `isSEOGuide()` - Runtime validation for SEOGuide objects
+   - `isGuideSection()` - Runtime validation for GuideSection
+   - `isChecklistItem()` - Runtime validation for ChecklistItem
+   - `isCodeExample()` - Runtime validation for CodeExample
+   - `isValidCategory()` - Validates category string
+   - `isValidPriority()` - Validates priority string
+
+3. **Constants (types.ts):**
+   - `GUIDE_CATEGORIES` - Readonly array of valid categories
+   - `CHECKLIST_PRIORITIES` - Readonly array of valid priorities
+
+4. **Registry Functions (registry.ts):**
+   - `getGuideBySlug(slug)` - Exact match lookup (case-sensitive, no trimming)
+   - `getAllGuides()` - Returns copies of all 17 guides
+   - `getRelatedGuides(slug)` - Returns up to 3 related guides
+   - `getGuidesByCategory(category)` - Filter by category
+   - `getGuidesByToolSlug(toolSlug)` - Filter by tool integration
+   - `getGuidesWithTools()` - Returns 5 guides with tool integration
+   - `getGuidesWithoutTools()` - Returns 12 guides without tools
+   - `GUIDE_SLUGS` - Readonly array of all 17 slugs
+
+5. **All 17 Guide Stubs Defined:**
+   - On-Page (8): meta-title, meta-description, h1-headings, heading-hierarchy, image-alt-text, image-optimization, internal-links, external-links
+   - Technical (7): page-speed, mobile-friendly, https-security, structured-data, canonical-urls, robots-txt, xml-sitemap
+   - Content (2): open-graph, twitter-cards
+
+6. **Tool Integration:**
+   - meta-title, meta-description → meta-tag-analyzer
+   - mobile-friendly → mobile-friendly-checker
+   - open-graph, twitter-cards → social-media-preview
+
+**Test Results:** 101 tests passed
+- types.test.ts: All interface and type guard tests pass
+- registry.test.ts: All registry function tests pass
+
+**Minor Test Fix:**
+- Updated slug regex to allow alphanumeric kebab-case (e.g., "h1-headings", "xml-sitemap")
+
+Status: `To Test Locally`
