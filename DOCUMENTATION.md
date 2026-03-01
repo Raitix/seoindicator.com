@@ -4911,6 +4911,240 @@ Content-Type: application/json
 - FEAT-025: User Accounts + Dashboard + Analysis History
 
 ---
+## Analysis History API (TASK-25-16)
+
+### Service Description
+REST API endpoints for managing analysis history records. Provides CRUD operations for users to view, filter, and delete their tool analysis history with full IDOR protection ensuring users can only access their own analyses.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/analyses` | List analyses (paginated with filters) |
+| GET | `/api/v1/analyses/{id}` | Get single analysis with cost breakdown |
+| DELETE | `/api/v1/analyses/{id}` | Delete analysis record |
+| GET | `/api/v1/analyses/{id}/costs` | Get detailed cost breakdown |
+
+### List Analyses
+`GET /api/v1/analyses`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | int | 1 | Page number |
+| `perPage` | int | 15 | Results per page (max: 100) |
+| `tool` | string | null | Filter by tool name (e.g., 'meta-tag-analyzer') |
+| `status` | string | null | Filter by status: pending, completed, failed |
+| `from` | date | null | Filter from date (YYYY-MM-DD) |
+| `to` | date | null | Filter to date (YYYY-MM-DD) |
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 127,
+      "toolName": "meta-tag-analyzer",
+      "inputUrl": "https://example.com",
+      "status": "completed",
+      "cost": {
+        "total": 0.05,
+        "currency": "USD"
+      },
+      "analysisDurationMs": 1234,
+      "analyzedAt": "2026-03-01T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 127,
+    "last_page": 9
+  }
+}
+```
+
+### Get Single Analysis
+`GET /api/v1/analyses/{id}`
+
+**Response (200):**
+```json
+{
+  "data": {
+    "id": 127,
+    "toolName": "meta-tag-analyzer",
+    "inputUrl": "https://example.com",
+    "status": "completed",
+    "results": {
+      "title": "Example Domain",
+      "metaDescription": "This domain is for use...",
+      "h1Count": 1
+    },
+    "cost": {
+      "total": 0.05,
+      "currency": "USD"
+    },
+    "costs": [
+      {
+        "type": "compute",
+        "amount": 0.01,
+        "currency": "USD",
+        "description": "Base cost for meta-tag-analyzer"
+      }
+    ],
+    "analysisDurationMs": 1234,
+    "analyzedAt": "2026-03-01T10:00:00Z",
+    "createdAt": "2026-03-01T10:00:00Z"
+  }
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 403 | Analysis owned by another user |
+| 404 | Analysis not found |
+
+### Delete Analysis
+`DELETE /api/v1/analyses/{id}`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Analysis deleted."
+}
+```
+
+**Side Effects:** Cascades delete to associated `analysis_costs` records.
+
+### Get Cost Breakdown
+`GET /api/v1/analyses/{id}/costs`
+
+**Response (200):**
+```json
+{
+  "data": {
+    "analysisId": 127,
+    "totalCost": 0.05,
+    "currency": "USD",
+    "costs": [
+      {
+        "type": "compute",
+        "amount": 0.01,
+        "currency": "USD",
+        "description": "Base cost for meta-tag-analyzer"
+      },
+      {
+        "type": "variable",
+        "amount": 0.04,
+        "currency": "USD",
+        "description": "Processing cost"
+      }
+    ]
+  }
+}
+```
+
+### Core Components
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `AnalysisHistoryController` | `app/Http/Controllers/Api/V1/AnalysisHistoryController.php` | API controller |
+| `AnalysisResource` | `app/Http/Resources/AnalysisResource.php` | Response transformation |
+| `AnalysisCostResource` | `app/Http/Resources/AnalysisCostResource.php` | Cost transformation |
+| `AnalysisHistoryRepository` | `app/Repositories/AnalysisHistoryRepository.php` | Data access layer |
+
+### AnalysisResource Structure
+
+The `AnalysisResource` transforms `AnalysisHistory` models for consistent API responses:
+
+| Property | Source | Description |
+|----------|--------|-------------|
+| `id` | `id` | Analysis ID |
+| `toolName` | `tool_name` | Tool identifier |
+| `inputUrl` | `input_url` | Analyzed URL |
+| `status` | `status` | Analysis status |
+| `results` | `results` | JSON results (only on single analysis) |
+| `cost` | computed | Cost summary with total and currency |
+| `costs` | `costs` relationship | Detailed costs (only when loaded) |
+| `analysisDurationMs` | `analysis_duration_ms` | Processing time |
+| `analyzedAt` | `analyzed_at` | Completion timestamp |
+| `createdAt` | `created_at` | Creation timestamp |
+
+### IDOR Protection
+
+All endpoints implement explicit ownership checks:
+
+```php
+if ($analysis->user_id !== auth()->id()) {
+    abort(403, 'Unauthorized access to analysis.');
+}
+```
+
+**Protection Scope:**
+- `show()` - Single analysis retrieval
+- `destroy()` - Delete operation
+- `costs()` - Cost breakdown access
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth` middleware on all endpoints |
+| IDOR Protection | Explicit `user_id` check on every resource access |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| Input Validation | FormRequest with type/bounds checking |
+| Route Constraint | `where('id', '[0-9]+')` for numeric IDs |
+| Mass Assignment | `$fillable` whitelist on models |
+
+### Authorization
+- All endpoints require authentication (Bearer token)
+- Users can only access their own analyses
+- Returns 401 for unauthenticated requests
+- Returns 403 for cross-user access attempts
+- Returns 404 for non-existent analyses (prevents enumeration)
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `AnalysisHistoryControllerTest` | 49 | 189 |
+| `AnalysisResourceTest` | 17 | 37 |
+| `AnalysisCollectionTest` | 13 | 43 |
+| **Total** | **79** | **269** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| List Analyses (LA) | 15 | Pagination, filtering, limits |
+| Show Analysis (SA) | 9 | Single retrieval, costs loading |
+| Delete Analysis (DA) | 7 | Cascade delete, authorization |
+| Cost Breakdown (CB) | 7 | Cost details, aggregation |
+| Security (SEC) | 8 | IDOR, SQL injection, XSS |
+| Edge Cases (EC) | 10 | Boundaries, invalid inputs |
+| Performance (PF) | 3 | Response time benchmarks |
+| Resource Transformation | 17 | AnalysisResource output |
+| Collection Pagination | 13 | Meta, links, structure |
+
+### Production Status
+- **Deployed:** 2026-03-01 (commit 629c597 via GitHub Actions)
+- **Health Check:** Passing
+- **Tests:** 79/79 passing (269 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-25-12 (AnalysisHistory Repository)
+- TASK-25-13 (CostTrackingService)
+
+### Related Tasks
+- TASK-25-12: AnalysisHistory Repository
+- TASK-25-15: DashboardController API
+- TASK-25-19: Enhanced Dashboard Page (frontend)
+- FEAT-025: User Accounts + Dashboard + Analysis History
+
+---
 ## GSC Data Controller API (TASK-12-8)
 
 ### Service Description
