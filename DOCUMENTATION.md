@@ -12352,3 +12352,136 @@ CREATE TABLE pwa_analyses (
 - TASK-24-7: PWASuggestionService
 - TASK-24-8: PWA Analysis API Endpoints
 - FEAT-024: PWA / Web App Manifest Indicator
+
+---
+
+## ManifestValidatorService (TASK-24-4)
+
+### Service Description
+Validates PWA manifest structure and required fields according to W3C Web App Manifest specification. Ensures manifest meets PWA standards with detailed error reporting.
+
+### Core Functionalities
+
+**ManifestValidatorService Class:**
+| Method | Description |
+|--------|-------------|
+| `validate(?array $manifest): ManifestValidationResult` | Main validation entry point |
+| `validateField(string $field, mixed $value): bool` | Individual field validation |
+| `getErrors(): array` | Retrieve errors from last validation |
+
+### Required Fields (Generate Errors)
+
+| Field | Validation Rules |
+|-------|-----------------|
+| `name` | Required string, cannot be empty |
+| `short_name` | Required string, cannot be empty |
+| `start_url` | Required, relative or absolute URL |
+| `display` | Required, enum: standalone, fullscreen, minimal-ui, browser (case-sensitive) |
+| `icons` | Required array, must contain at least one icon |
+
+### Recommended Fields (Generate Warnings)
+
+| Field | Validation Rules |
+|-------|-----------------|
+| `background_color` | Optional, valid CSS color (hex, named, rgb) |
+| `theme_color` | Optional, valid CSS color (hex, named, rgb) |
+| `description` | Optional string |
+
+### Icon Validation Rules
+
+| Property | Required | Validation |
+|----------|----------|------------|
+| `src` | Yes | Non-empty string (URL) |
+| `sizes` | Recommended | String (e.g., "192x192", "any") |
+| `type` | Recommended | MIME type (e.g., "image/png") |
+| `purpose` | Optional | Enum: any, any maskable |
+
+### Color Format Support
+
+| Format | Examples |
+|--------|----------|
+| Hex 3-digit | `#FFF`, `#abc` |
+| Hex 6-digit | `#FFFFFF`, `#aabbcc` |
+| Named colors | `red`, `blue`, `transparent` |
+| RGB | `rgb(255, 0, 0)` |
+| RGBA | `rgba(255, 0, 0, 0.5)` |
+
+### DTO Classes
+
+**ManifestValidationResult:**
+```php
+class ManifestValidationResult {
+    public bool $valid;
+    public array $errors;      // ManifestError[]
+    public array $warnings;    // ManifestError[]
+    public array $fieldPresence; // [field => bool]
+    
+    public function hasErrors(): bool;
+    public function hasWarnings(): bool;
+    public function toArray(): array;
+}
+```
+
+**ManifestError:**
+```php
+class ManifestError {
+    public string $field;
+    public string $code;
+    public string $message;
+    public string $severity; // 'error' or 'warning'
+    
+    public static function error(string $field, string $code, string $message): self;
+    public static function warning(string $field, string $code, string $message): self;
+    public function toArray(): array;
+}
+```
+
+### Error Codes
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| `REQUIRED_FIELD_MISSING` | Error | Required field is missing |
+| `INVALID_DISPLAY_VALUE` | Error | Display value not in allowed enum |
+| `EMPTY_ICONS_ARRAY` | Error | Icons array is empty |
+| `ICON_MISSING_SRC` | Error | Icon missing required src property |
+| `INVALID_ICON_PURPOSE` | Error | Icon purpose not in allowed values |
+| `RECOMMENDED_FIELD_MISSING` | Warning | Recommended field is missing |
+| `INVALID_COLOR_FORMAT` | Warning | Color format is invalid |
+| `JAVASCRIPT_URL_DETECTED` | Warning | JavaScript URL in icon src |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `ManifestValidatorServiceTest.php` | 64 | 132 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| validate() Method | 10 | Main validation entry point |
+| validateField() Method | 12 | Individual field validation |
+| Icon Validation | 10 | Icon array structure and content |
+| Recommended Fields | 6 | background_color, theme_color, description |
+| getErrors() Method | 3 | Error retrieval |
+| ManifestValidationResult DTO | 6 | Result object structure |
+| ManifestError DTO | 4 | Error object structure |
+| Edge Cases | 10 | Unicode, extra fields, case sensitivity |
+| Security Tests | 3 | XSS, SQL injection, JavaScript URLs |
+
+### Security Considerations
+
+| Test | Behavior |
+|------|----------|
+| XSS in name | Not sanitized (caller's responsibility) |
+| SQL injection in start_url | Not sanitized (caller's responsibility) |
+| JavaScript URL in icon src | Detected as warning |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-01 (commit 373c5af via GitHub Actions run 22539826489) |
+| **Service** | `App\Services\ManifestValidatorService` |
+| **DTOs** | `App\DTO\ManifestValidationResult`, `App\DTO\ManifestError` |
+| **Tests** | 64/64 passing (132 assertions) |
+| **Status** | Complete |

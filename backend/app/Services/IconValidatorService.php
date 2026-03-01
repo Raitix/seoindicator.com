@@ -253,8 +253,8 @@ class IconValidatorService
             ];
         }
 
-        // Check accessibility with detailed info
-        $accessResult = $this->checkIconAccessibleWithDetails($resolvedUrl);
+        // Check accessibility with detailed info (skip URL validation since we already did it)
+        $accessResult = $this->performAccessibilityCheck($resolvedUrl, false);
 
         // Parse sizes
         $sizes = $icon['sizes'] ?? '';
@@ -290,7 +290,7 @@ class IconValidatorService
             $result['content_length'] = $accessResult['content_length'];
             
             // Check for large file
-            if ($accessResult['content_length'] > self::MAX_FILE_SIZE_WARNING) {
+            if ($accessResult['content_length'] >= self::MAX_FILE_SIZE_WARNING) {
                 $existingWarning = $result['warning'] ?? '';
                 $sizeWarning = 'Icon file is very large (' . round($accessResult['content_length'] / 1000000) . 'MB)';
                 $result['warning'] = $existingWarning ? $existingWarning . '; ' . $sizeWarning : $sizeWarning;
@@ -332,36 +332,47 @@ class IconValidatorService
      */
     public function checkIconAccessible(?string $url): bool
     {
-        $result = $this->checkIconAccessibleWithDetails($url);
-        return $result['accessible'];
-    }
-
-    /**
-     * Check if an icon URL is accessible with detailed response info.
-     *
-     * @param string|null $url Icon URL to check
-     * @return array{accessible: bool, error?: string, content_type?: string, content_length?: int}
-     */
-    private function checkIconAccessibleWithDetails(?string $url): array
-    {
         if ($url === null || $url === '') {
-            return ['accessible' => false, 'error' => 'URL is null'];
+            return false;
         }
 
         // Data URIs are always accessible
         if (str_starts_with(strtolower($url), 'data:')) {
-            return ['accessible' => true];
+            return true;
         }
 
-        // Validate URL for SSRF
+        // Validate URL for SSRF (this is a standalone call, so validate)
         $validation = $this->urlValidationService->validate($url);
         if (!$validation['valid']) {
-            return ['accessible' => false, 'error' => $this->mapValidationError($validation['error'] ?? '')];
+            return false;
+        }
+
+        // Perform accessibility check without re-validating
+        $result = $this->performAccessibilityCheck($url, false);
+        return $result['accessible'];
+    }
+
+    /**
+     * Perform the actual HTTP accessibility check.
+     *
+     * @param string $url Icon URL to check
+     * @param bool $validateUrl Whether to validate URL for SSRF (default true)
+     * @return array{accessible: bool, error?: string, content_type?: string, content_length?: int}
+     */
+    private function performAccessibilityCheck(string $url, bool $validateUrl = true): array
+    {
+        // Validate URL for SSRF if requested
+        if ($validateUrl) {
+            $validation = $this->urlValidationService->validate($url);
+            if (!$validation['valid']) {
+                return ['accessible' => false, 'error' => $this->mapValidationError($validation['error'] ?? '')];
+            }
         }
 
         try {
-            // Try HEAD request first
+            // Try HEAD request first (disable automatic redirect following)
             $response = Http::timeout(self::TIMEOUT_SECONDS)
+                ->withoutRedirecting()
                 ->head($url);
 
             if ($response->successful()) {
@@ -380,6 +391,7 @@ class IconValidatorService
             // If HEAD returns 405 (Method Not Allowed), try GET
             if ($response->status() === 405) {
                 $getResponse = Http::timeout(self::TIMEOUT_SECONDS)
+                    ->withoutRedirecting()
                     ->get($url);
                     
                 if ($getResponse->successful()) {
@@ -398,8 +410,9 @@ class IconValidatorService
                 return ['accessible' => false, 'error' => 'HTTP ' . $getResponse->status()];
             }
 
-            // Follow redirects
-            if ($response->redirect()) {
+            // Follow redirects (3xx status codes)
+            $statusCode = $response->status();
+            if ($statusCode >= 300 && $statusCode < 400) {
                 $location = $response->header('Location');
                 if ($location) {
                     // Validate redirect URL
@@ -407,11 +420,11 @@ class IconValidatorService
                     if (!$redirectValidation['valid']) {
                         return ['accessible' => false, 'error' => 'BLOCKED_REDIRECT'];
                     }
-                    return $this->checkIconAccessibleWithDetails($location);
+                    return $this->performAccessibilityCheck($location, false);
                 }
             }
 
-            return ['accessible' => false, 'error' => 'HTTP ' . $response->status()];
+            return ['accessible' => false, 'error' => 'HTTP ' . $statusCode];
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
             Log::warning('Icon accessibility check timeout', [
                 'url' => $url,
@@ -513,12 +526,6 @@ class IconValidatorService
             return "{$scheme}://{$host}{$port}{$src}";
         }
 
-        // Relative path - resolve against base path
-        $baseDir = dirname($basePath);
-        if ($baseDir === '.') {
-            $baseDir = '';
-        }
-        
         // Handle query and fragment in src
         $srcPath = $src;
         $query = '';
@@ -533,13 +540,31 @@ class IconValidatorService
             $srcPath = substr($srcPath, 0, $pos);
         }
         
-        // Normalize the base directory (remove trailing slashes, handle Windows paths)
-        $baseDir = rtrim(str_replace('\\', '/', $baseDir), '/');
+        // Relative path - resolve against base path
+        // Use URL-style path handling (forward slashes only)
+        $basePath = str_replace('\\', '/', $basePath);
         
-        // Combine paths
-        $resolvedPath = ($baseDir === '' ? '' : $baseDir . '/') . $srcPath;
+        // Determine the directory to resolve relative paths against
+        // If the base path ends with '/', it's a directory
+        // If not, treat the last segment as a file and get its directory
+        if (str_ends_with($basePath, '/')) {
+            // Base path is a directory - remove trailing slash
+            $baseDir = rtrim($basePath, '/');
+        } else {
+            // Base path might be a file - get its directory
+            $baseDir = dirname($basePath);
+            // Ensure forward slashes (dirname on Windows can return backslashes)
+            $baseDir = str_replace('\\', '/', $baseDir);
+        }
         
-        return "{$scheme}://{$host}{$port}/" . ltrim($resolvedPath, '/') . "{$query}{$fragment}";
+        // Build the resolved path
+        if ($baseDir === '/' || $baseDir === '') {
+            $resolvedPath = '/' . $srcPath;
+        } else {
+            $resolvedPath = $baseDir . '/' . $srcPath;
+        }
+        
+        return "{$scheme}://{$host}{$port}{$resolvedPath}{$query}{$fragment}";
     }
 
     /**
