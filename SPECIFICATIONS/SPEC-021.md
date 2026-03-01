@@ -1,7 +1,7 @@
 # SPEC-021: AI Suggestions via OpenRouter/Vercel Gateway
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -518,3 +518,36 @@ Status updated to `To Break Into Tasks`.
 ---
 
 *Created by Architect on 2026-02-28*
+
+### [2026-03-01 18:25 GMT+2] Agent: SpecSystemAnalyst
+**Task Breakdown Complete.**
+
+Created 12 tasks across 3 phases:
+
+**Phase 1: Core Infrastructure (TASK-21-1 to TASK-21-4)**
+- TASK-21-1: Create AI Service Structure and Interfaces
+- TASK-21-2: Implement OpenRouter Provider
+- TASK-21-3: Implement Static Fallback Provider
+- TASK-21-4: Create Prompt Templates for All Indicators
+
+**Phase 2: API & Integration (TASK-21-5 to TASK-21-8)**
+- TASK-21-5: Create AI Suggestion API Endpoint
+- TASK-21-6: Implement Caching Layer
+- TASK-21-7: Add Debug Mode and Logging
+- TASK-21-8: Create Database Migrations
+
+**Phase 3: Vercel Integration & Polish (TASK-21-9 to TASK-21-12)**
+- TASK-21-9: Implement Vercel AI Provider
+- TASK-21-10: Add Rate Limiting
+- TASK-21-11: Frontend Integration with Tools
+- TASK-21-12: Documentation and Tests
+
+**Key Decisions:**
+1. Tasks follow dependency chain - infrastructure first, then API, then polish
+2. Each task has detailed acceptance criteria with checkboxes
+3. Effort estimates provided for planning
+4. Security and privacy considerations integrated throughout
+
+Status: `To Break Into Tasks` → `To Prioritize`
+
+**Handoff to ProjectManager**: All tasks ready for prioritization.

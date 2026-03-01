@@ -219,3 +219,146 @@ export function getIndicatorSummary(
     running: results.filter((r) => r.status === 'running').length,
   };
 }
+
+// ==================== Results Table Utilities - TASK-19-12 ====================
+
+import {
+  IndicatorStatus,
+  ResultsSortBy,
+  ResultsFilterBy,
+  IndicatorResult as IndicatorResultType,
+} from '@/lib/types/analysis-job';
+
+/**
+ * Status priority for sorting (lower = higher priority for display)
+ */
+const STATUS_PRIORITY: Record<IndicatorStatus, number> = {
+  completed: 1,
+  failed: 2,
+  running: 3,
+  pending: 4,
+  skipped: 5,
+};
+
+/**
+ * Sort results by specified criteria
+ */
+export function sortResults(
+  results: IndicatorResultType[],
+  sortBy: ResultsSortBy
+): IndicatorResultType[] {
+  const sorted = [...results];
+
+  switch (sortBy) {
+    case 'status':
+      // Completed first, then failed, running, pending, skipped
+      return sorted.sort((a, b) => {
+        const priorityDiff =
+          STATUS_PRIORITY[a.status as IndicatorStatus] -
+          STATUS_PRIORITY[b.status as IndicatorStatus];
+        if (priorityDiff !== 0) return priorityDiff;
+        // Secondary sort by name
+        return a.indicator.localeCompare(b.indicator);
+      });
+
+    case 'score':
+      // Lowest score first (ascending)
+      return sorted.sort((a, b) => {
+        // Pending/running items should be at the end
+        if (a.status === 'pending' || a.status === 'running') return 1;
+        if (b.status === 'pending' || b.status === 'running') return -1;
+        return a.percentage - b.percentage;
+      });
+
+    case 'name':
+      // Alphabetical by indicator name
+      return sorted.sort((a, b) => a.indicator.localeCompare(b.indicator));
+
+    default:
+      return sorted;
+  }
+}
+
+/**
+ * Filter results by specified criteria
+ */
+export function filterResults(
+  results: IndicatorResultType[],
+  filterBy: ResultsFilterBy
+): IndicatorResultType[] {
+  switch (filterBy) {
+    case 'completed':
+      return results.filter((r) => r.status === 'completed');
+    case 'failed':
+      return results.filter((r) => r.status === 'failed');
+    case 'all':
+    default:
+      return results;
+  }
+}
+
+/**
+ * Get status icon name for indicator
+ */
+export function getStatusIcon(status: IndicatorStatus): string {
+  switch (status) {
+    case 'completed':
+      return 'check-circle';
+    case 'failed':
+      return 'x-circle';
+    case 'running':
+      return 'loader';
+    case 'pending':
+      return 'clock';
+    case 'skipped':
+      return 'minus-circle';
+    default:
+      return 'help-circle';
+  }
+}
+
+/**
+ * Get score color class based on percentage
+ */
+export function getScoreColor(percentage: number): string {
+  if (percentage >= 80) return 'text-green-600 dark:text-green-400';
+  if (percentage >= 60) return 'text-yellow-600 dark:text-yellow-400';
+  if (percentage >= 40) return 'text-orange-600 dark:text-orange-400';
+  return 'text-red-600 dark:text-red-400';
+}
+
+/**
+ * Get score background color class based on percentage
+ */
+export function getScoreBgColor(percentage: number): string {
+  if (percentage >= 80) return 'bg-green-100 dark:bg-green-900/30';
+  if (percentage >= 60) return 'bg-yellow-100 dark:bg-yellow-900/30';
+  if (percentage >= 40) return 'bg-orange-100 dark:bg-orange-900/30';
+  return 'bg-red-100 dark:bg-red-900/30';
+}
+
+/**
+ * Get indicator display name
+ */
+export function getIndicatorDisplayName(slug: string): string {
+  const names: Record<string, string> = {
+    meta_tags: 'Meta Tags',
+    headings: 'Headings Structure',
+    images: 'Images',
+    links: 'Links',
+    url_structure: 'URL Structure',
+    content_quality: 'Content Quality',
+    mobile_friendly: 'Mobile Friendly',
+    page_speed: 'Page Speed',
+    structured_data: 'Structured Data',
+    security: 'Security',
+    accessibility: 'Accessibility',
+    social_tags: 'Social Tags',
+    canonical: 'Canonical URLs',
+    robots: 'Robots.txt',
+    sitemap: 'XML Sitemap',
+    internal_links: 'Internal Links',
+    external_links: 'External Links',
+  };
+  return names[slug] || slug.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}

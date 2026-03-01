@@ -1,7 +1,7 @@
 # TASK-16-8: Social Media Preview Tool
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`
@@ -158,6 +158,14 @@ The SocialMediaPreview tool was deployed but **not properly integrated** into th
 3. Update frontend to use correct tool name: `'social-media-preview'`
 
 **Status updated to `To Deploy`** for DevOps to apply fixes and redeploy.
+
+**UPDATE [2026-03-01]:** Fixes applied by ProdTester:
+- Added `'social-media-preview'` to ProxyAnalyzeRequest validation
+- Added case for `'social-media-preview'` in APIProxyController match statement
+- Fixed frontend to use correct tool name `'social-media-preview'`
+- Committed as 67ff229, pushed to origin/main
+
+**Waiting for GitHub Actions deployment to complete, then re-testing.**
 
 ---
 

@@ -56,6 +56,13 @@ class MockEventSource {
 
   simulateOpen() {
     this.readyState = 1;
+    // Dispatch to addEventListener listeners
+    const listeners = this.listeners.get('open');
+    if (listeners) {
+      const event = new Event('open');
+      listeners.forEach((l) => l(event));
+    }
+    // Also call onopen if set
     if (this.onopen) {
       this.onopen.call(this, new Event('open'));
     }
@@ -94,7 +101,6 @@ describe('useAnalysisProgress', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
     mockEventSource = null;
     mockGetJobProgress.mockResolvedValue(createMockJobProgress());
     mockCancelAnalysisJob.mockResolvedValue({
@@ -103,7 +109,6 @@ describe('useAnalysisProgress', () => {
   });
 
   afterEach(() => {
-    jest.useRealTimers();
     if (mockEventSource) {
       mockEventSource.close();
     }
@@ -261,7 +266,6 @@ describe('useAnalysisProgress', () => {
 
       await act(async () => {
         await result.current.start();
-        jest.runAllTimersAsync();
       });
 
       act(() => {
@@ -312,7 +316,6 @@ describe('useAnalysisProgress', () => {
 
       await act(async () => {
         await result.current.start();
-        jest.runAllTimersAsync();
       });
 
       // Elapsed time should be calculated from started_at
@@ -334,7 +337,6 @@ describe('useAnalysisProgress', () => {
 
       await act(async () => {
         await result.current.start();
-        jest.runAllTimersAsync();
       });
 
       expect(mockCreateEventSource).toHaveBeenCalledWith(42);
@@ -349,11 +351,12 @@ describe('useAnalysisProgress', () => {
         useAnalysisProgress({ jobId: 1 })
       );
 
-      act(() => {
-        result.current.start();
+      // Start the async operation
+      await act(async () => {
+        await result.current.start();
       });
 
-      // Should be connecting after start is called
+      // isConnecting should be true after SSE connection is initiated
       expect(result.current.isConnecting).toBe(true);
     });
 
@@ -368,15 +371,20 @@ describe('useAnalysisProgress', () => {
 
       await act(async () => {
         await result.current.start();
-        jest.runAllTimersAsync();
       });
+
+      // Verify connecting state
+      expect(result.current.isConnecting).toBe(true);
 
       // Simulate open event
       act(() => {
         mockES.simulateOpen();
       });
 
-      expect(result.current.isConnecting).toBe(false);
+      // Now wait for connecting to clear
+      await waitFor(() => {
+        expect(result.current.isConnecting).toBe(false);
+      });
     });
   });
 
@@ -394,14 +402,15 @@ describe('useAnalysisProgress', () => {
 
       await act(async () => {
         await result.current.start();
-        jest.runAllTimersAsync();
       });
 
       act(() => {
         mockES.simulateError();
       });
 
-      expect(result.current.reconnectAttempts).toBe(1);
+      await waitFor(() => {
+        expect(result.current.reconnectAttempts).toBe(1);
+      });
     });
 
     it('falls back to polling after max attempts', async () => {
@@ -415,7 +424,6 @@ describe('useAnalysisProgress', () => {
 
       await act(async () => {
         await result.current.start();
-        jest.runAllTimersAsync();
       });
 
       // Simulate 3 errors
@@ -423,12 +431,12 @@ describe('useAnalysisProgress', () => {
         act(() => {
           mockES.simulateError();
         });
-        await act(async () => {
-          jest.runAllTimersAsync();
-        });
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
 
-      expect(result.current.isPolling).toBe(true);
+      await waitFor(() => {
+        expect(result.current.isPolling).toBe(true);
+      });
     });
   });
 

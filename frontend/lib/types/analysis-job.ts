@@ -214,3 +214,98 @@ export const STATUS_COLORS: Record<JobStatus, string> = {
 export const DEFAULT_POLLING_INTERVAL = 2000;
 export const DEFAULT_MAX_RECONNECT_ATTEMPTS = 3;
 export const SSE_HEARTBEAT_INTERVAL = 15000;
+
+// ==================== Results Table Types - TASK-19-12 ====================
+
+/** Indicator status for results table (includes skipped) */
+export type IndicatorStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+
+/** Sort options for results table */
+export type ResultsSortBy = 'status' | 'score' | 'name';
+
+/** Filter options for results table */
+export type ResultsFilterBy = 'all' | 'completed' | 'failed';
+
+/** Props for ResultsTable component */
+export interface ResultsTableProps {
+  /** Job ID */
+  jobId: number;
+
+  /** Analysis results to display */
+  results: IndicatorResult[];
+
+  /** Callback when a result row is clicked */
+  onResultClick?: (result: IndicatorResult) => void;
+
+  /** Optional CSS class name */
+  className?: string;
+
+  /** Initial sort option */
+  initialSortBy?: ResultsSortBy;
+
+  /** Initial filter option */
+  initialFilterBy?: ResultsFilterBy;
+
+  /** Show sorting controls */
+  showSortControls?: boolean;
+
+  /** Show filtering controls */
+  showFilterControls?: boolean;
+}
+
+/** Props for ResultRow component */
+export interface ResultRowProps {
+  /** Indicator result data */
+  result: IndicatorResult;
+
+  /** Callback when row is clicked */
+  onClick?: (result: IndicatorResult) => void;
+
+  /** Whether the row is expanded to show details */
+  isExpanded?: boolean;
+
+  /** Callback to toggle expanded state */
+  onToggleExpand?: () => void;
+
+  /** Optional CSS class name */
+  className?: string;
+}
+
+/** Status label mapping for indicator results */
+export const INDICATOR_STATUS_LABELS: Record<IndicatorStatus, string> = {
+  pending: 'Pending',
+  running: 'Running',
+  completed: 'Completed',
+  failed: 'Failed',
+  skipped: 'Skipped',
+};
+
+/** Status color mapping for indicator results */
+export const INDICATOR_STATUS_COLORS: Record<IndicatorStatus, string> = {
+  pending: 'yellow',
+  running: 'blue',
+  completed: 'green',
+  failed: 'red',
+  skipped: 'gray',
+};
+
+/** Indicator display names mapping */
+export const INDICATOR_NAMES: Record<string, string> = {
+  meta_tags: 'Meta Tags',
+  headings: 'Headings Structure',
+  images: 'Images',
+  links: 'Links',
+  url_structure: 'URL Structure',
+  content_quality: 'Content Quality',
+  mobile_friendly: 'Mobile Friendly',
+  page_speed: 'Page Speed',
+  structured_data: 'Structured Data',
+  security: 'Security',
+  accessibility: 'Accessibility',
+  social_tags: 'Social Tags',
+  canonical: 'Canonical URLs',
+  robots: 'Robots.txt',
+  sitemap: 'XML Sitemap',
+  internal_links: 'Internal Links',
+  external_links: 'External Links',
+};

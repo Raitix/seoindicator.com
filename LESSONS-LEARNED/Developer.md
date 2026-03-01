@@ -1,8 +1,33 @@
 # Developer Memory
 
-## Last Updated: 2026-02-28
+## Last Updated: 2026-03-01
 
 ### Completed Work
+
+#### TASK-19-12: Frontend Live Results Table (2026-03-01)
+
+**Implementation Summary:**
+Created ResultsTable and ResultRow components for displaying analysis results with real-time updates.
+
+**Files Created:**
+- `frontend/components/analysis/ResultRow.tsx` - Individual row component with status indicator, score display, expandable details
+- `frontend/components/analysis/ResultsTable.tsx` - Main table with sorting/filtering controls
+- `frontend/__tests__/components/ResultsTable.test.tsx` - Unit tests for both components
+- `frontend/stories/components/analysis/ResultsTable.stories.tsx` - Storybook documentation
+
+**Files Modified:**
+- `frontend/lib/types/analysis-job.ts` - Added types: IndicatorStatus, ResultsSortBy, ResultsFilterBy, component props
+- `frontend/lib/api/analysis-job.ts` - Added utility functions: sortResults, filterResults, getScoreColor, getIndicatorDisplayName
+- `frontend/components/analysis/index.ts` - Added exports
+
+**Features:**
+- Status sorting: completed → failed → running → pending → skipped
+- Score sorting: lowest first (pending/running at end)
+- Name sorting: alphabetical
+- Filtering by completion status
+- Smooth CSS transitions for state changes
+- Full accessibility support (table semantics, ARIA live regions)
+- React.memo optimization for row rendering
 
 #### FEAT-002: Ranking Change Alert System (2026-02-28)
 
