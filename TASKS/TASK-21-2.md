@@ -1,7 +1,7 @@
 # TASK-21-2: Implement OpenRouter Provider
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -135,7 +135,44 @@ Implement the OpenRouter API provider for AI suggestions. OpenRouter provides ac
 ## Comments
 _Agent log_
 
-(No entries yet)
+### [2026-03-01 18:40 GMT+2] ProjectManager - Prioritization Complete
+**Priority Confirmed: High** ✅
+**Risk Confirmed: High** ✅
+
+**Rationale for Priority:**
+- Primary AI provider for SPEC-021 (OpenRouter is the recommended default)
+- Enables actual AI-powered suggestions - core value of the feature
+- Phase 1 critical path - blocks TASK-21-5 (API Endpoint) and downstream tasks
+- Free models available (Llama 3.1, Gemma 2) - complies with CONSTITUTION.md
+
+**Rationale for Risk:**
+- External API dependency (OpenRouter availability, rate limits)
+- HTTP client implementation with timeout handling
+- Error handling for 4xx/5xx responses, malformed JSON, rate limiting (429)
+- Response parsing with validation
+- Recommended models use `:free` suffix which may have availability variability
+
+**Dependency Analysis:**
+- TASK-21-1 (AI Service Structure): `To Test Locally` ✅
+  - Interface `AIProviderInterface` is defined
+  - DTOs `AIResponse` is available for return type
+  - Configuration structure in `config/ai.php` is ready
+- Can proceed with test design - interfaces are available
+
+**Execution Order within SPEC-021:**
+1. TASK-21-1: `To Test Locally` (nearly done)
+2. TASK-21-2 (this), TASK-21-3, TASK-21-4: Can run in parallel
+3. TASK-21-5: After all providers are ready
+
+**Handoff to PreTester:** Ready for test design. Focus on:
+- HTTP client mocking for OpenRouter API (`/api/v1/chat/completions`)
+- Authorization header format: `Bearer {api_key}`
+- Required headers: `HTTP-Referer`, `X-Title`
+- Response parsing: `choices[0].message.content`, `usage` field
+- Error scenarios: 4xx, 5xx, timeout, malformed JSON, rate limiting (429)
+- Configuration validation: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`
+
+Status: `To Prioritize` → `To Write Tests`
 
 ---
 *Created by SpecSystemAnalyst on 2026-03-01*
