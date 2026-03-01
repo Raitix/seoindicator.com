@@ -1,7 +1,7 @@
 # TASK-22-2: CrawlJob and CrawlPage Models
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
