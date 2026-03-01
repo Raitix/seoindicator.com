@@ -2,366 +2,563 @@
 
 namespace Tests\Unit\Models;
 
-use Tests\TestCase;
 use App\Models\AnalysisHistory;
 use App\Models\User;
 use App\Models\Site;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Tests\TestCase;
 
 /**
- * Test suite for TASK-25-10: AnalysisHistory Model
+ * Unit tests for AnalysisHistory model.
  *
- * Tests the Eloquent model for the analysis_history table.
- *
- * Test Categories:
- * - M-001 to M-003: Model Attributes & Casts
- * - M-004 to M-006: Relationships
- * - M-007 to M-011: Scopes
- * - M-012 to M-015: Accessors & Helpers
- * - M-016 to M-018: Edge Cases
- *
- * @see TASK-25-10
- * @see SPEC-025
- * @see FEAT-025
+ * @see TASK-25-12
+ * @see TEST-25-12
  */
 class AnalysisHistoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    // =========================================================================
-    // Category 1: Model Attributes & Casts (M-001 to M-003)
-    // =========================================================================
+    // ==========================================
+    // Model Creation Tests (MC)
+    // ==========================================
 
-    /**
-     * M-001: Fillable attributes are correct.
-     */
-    public function test_m001_fillable_attributes(): void
-    {
-        $model = new AnalysisHistory();
-
-        $expectedFillable = [
-            'user_id',
-            'site_id',
-            'tool_name',
-            'input_url',
-            'status',
-            'results',
-            'error_message',
-            'analysis_duration_ms',
-            'analyzed_at',
-        ];
-
-        $this->assertEquals(
-            sort($expectedFillable),
-            sort($model->getFillable()),
-            'Model should have correct fillable attributes'
-        );
-    }
-
-    /**
-     * M-002: results cast to array.
-     */
-    public function test_m002_results_cast_to_array(): void
-    {
-        $model = new AnalysisHistory();
-
-        $casts = $model->getCasts();
-
-        $this->assertArrayHasKey('results', $casts, 'results should have a cast');
-        $this->assertEquals('array', $casts['results'], 'results should be cast to array');
-    }
-
-    /**
-     * M-003: analyzed_at cast to datetime.
-     */
-    public function test_m003_analyzed_at_cast_to_datetime(): void
-    {
-        $model = new AnalysisHistory();
-
-        $casts = $model->getCasts();
-
-        $this->assertArrayHasKey('analyzed_at', $casts, 'analyzed_at should have a cast');
-        $this->assertEquals('datetime', $casts['analyzed_at'], 'analyzed_at should be cast to datetime');
-    }
-
-    // =========================================================================
-    // Category 2: Relationships (M-004 to M-006)
-    // =========================================================================
-
-    /**
-     * M-004: BelongsTo user relationship.
-     */
-    public function test_m004_belongs_to_user_relationship(): void
-    {
-        $model = new AnalysisHistory();
-
-        $relationship = $model->user();
-
-        $this->assertInstanceOf(BelongsTo::class, $relationship, 'user relationship should be BelongsTo');
-        $this->assertEquals(User::class, $relationship->getRelated()::class, 'user relationship should relate to User model');
-    }
-
-    /**
-     * M-005: BelongsTo site relationship.
-     */
-    public function test_m005_belongs_to_site_relationship(): void
-    {
-        $model = new AnalysisHistory();
-
-        $relationship = $model->site();
-
-        $this->assertInstanceOf(BelongsTo::class, $relationship, 'site relationship should be BelongsTo');
-        $this->assertEquals(Site::class, $relationship->getRelated()::class, 'site relationship should relate to Site model');
-    }
-
-    /**
-     * M-006: Site relationship is nullable.
-     */
-    public function test_m006_site_relationship_is_nullable(): void
+    /** @test MC-001: Can create analysis with all fields */
+    public function test_mc_001_can_create_with_all_fields(): void
     {
         $user = User::factory()->create();
+        $site = Site::factory()->create();
 
-        $analysis = AnalysisHistory::factory()->create([
+        $analysis = AnalysisHistory::create([
             'user_id' => $user->id,
-            'site_id' => null,
+            'site_id' => $site->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com/page',
+            'status' => 'completed',
+            'results' => ['title' => 'Test', 'score' => 85],
+            'error_message' => null,
+            'analysis_duration_ms' => 1234,
+            'analyzed_at' => now(),
         ]);
 
-        $this->assertNull($analysis->site_id, 'site_id should allow null');
-        $this->assertNull($analysis->site, 'site relationship should return null when site_id is null');
+        $this->assertDatabaseHas('analysis_history', [
+            'id' => $analysis->id,
+            'user_id' => $user->id,
+            'site_id' => $site->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'status' => 'completed',
+            'analysis_duration_ms' => 1234,
+        ]);
     }
 
-    // =========================================================================
-    // Category 3: Scopes (M-007 to M-011)
-    // =========================================================================
-
-    /**
-     * M-007: Scope by status.
-     */
-    public function test_m007_scope_by_status(): void
+    /** @test MC-002: Can create with minimal fields */
+    public function test_mc_002_can_create_with_minimal_fields(): void
     {
         $user = User::factory()->create();
 
-        // Create analyses with different statuses
-        AnalysisHistory::factory()->create(['user_id' => $user->id, 'status' => 'completed']);
-        AnalysisHistory::factory()->create(['user_id' => $user->id, 'status' => 'completed']);
-        AnalysisHistory::factory()->create(['user_id' => $user->id, 'status' => 'failed']);
-        AnalysisHistory::factory()->create(['user_id' => $user->id, 'status' => 'pending']);
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'keyword-density',
+            'input_url' => 'https://example.com',
+        ]);
 
-        $completedCount = AnalysisHistory::byStatus('completed')->count();
-        $failedCount = AnalysisHistory::byStatus('failed')->count();
-        $pendingCount = AnalysisHistory::byStatus('pending')->count();
-
-        $this->assertEquals(2, $completedCount, 'Should have 2 completed analyses');
-        $this->assertEquals(1, $failedCount, 'Should have 1 failed analysis');
-        $this->assertEquals(1, $pendingCount, 'Should have 1 pending analysis');
+        $this->assertDatabaseHas('analysis_history', [
+            'id' => $analysis->id,
+            'user_id' => $user->id,
+            'tool_name' => 'keyword-density',
+        ]);
     }
 
-    /**
-     * M-008: Scope by tool_name.
-     */
-    public function test_m008_scope_by_tool_name(): void
+    /** @test MC-003: Default status is 'completed' */
+    public function test_mc_003_default_status_is_completed(): void
     {
         $user = User::factory()->create();
 
-        // Create analyses with different tools
-        AnalysisHistory::factory()->create(['user_id' => $user->id, 'tool_name' => 'meta-tag-analyzer']);
-        AnalysisHistory::factory()->create(['user_id' => $user->id, 'tool_name' => 'meta-tag-analyzer']);
-        AnalysisHistory::factory()->create(['user_id' => $user->id, 'tool_name' => 'keyword-density']);
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'heading-analyzer',
+            'input_url' => 'https://example.com',
+        ]);
 
-        $metaTagCount = AnalysisHistory::byTool('meta-tag-analyzer')->count();
-        $keywordCount = AnalysisHistory::byTool('keyword-density')->count();
-
-        $this->assertEquals(2, $metaTagCount, 'Should have 2 meta-tag-analyzer analyses');
-        $this->assertEquals(1, $keywordCount, 'Should have 1 keyword-density analysis');
+        $analysis->refresh(); // Get DB defaults
+        $this->assertEquals('completed', $analysis->status);
     }
 
-    /**
-     * M-009: Scope by user.
-     */
-    public function test_m009_scope_by_user(): void
+    /** @test MC-004: results cast to array */
+    public function test_mc_004_results_cast_to_array(): void
+    {
+        $user = User::factory()->create();
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com',
+            'results' => ['title' => 'Test Title', 'score' => 85, 'issues' => []],
+        ]);
+
+        $this->assertIsArray($analysis->results);
+        $this->assertEquals('Test Title', $analysis->results['title']);
+        $this->assertEquals(85, $analysis->results['score']);
+    }
+
+    /** @test MC-005: analyzed_at cast to datetime */
+    public function test_mc_005_analyzed_at_cast_to_datetime(): void
+    {
+        $user = User::factory()->create();
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com',
+            'analyzed_at' => '2026-03-01 10:30:00',
+        ]);
+
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $analysis->analyzed_at);
+        $this->assertEquals('2026-03-01 10:30:00', $analysis->analyzed_at->format('Y-m-d H:i:s'));
+    }
+
+    /** @test MC-006: Null site_id allowed */
+    public function test_mc_006_null_site_id_allowed(): void
+    {
+        $user = User::factory()->create();
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'site_id' => null,
+            'tool_name' => 'link-analyzer',
+            'input_url' => 'https://example.com',
+        ]);
+
+        $this->assertNull($analysis->site_id);
+    }
+
+    /** @test MC-007: Null results allowed */
+    public function test_mc_007_null_results_allowed(): void
+    {
+        $user = User::factory()->create();
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com',
+            'results' => null,
+        ]);
+
+        $this->assertNull($analysis->results);
+    }
+
+    /** @test MC-008: Null error_message allowed */
+    public function test_mc_008_null_error_message_allowed(): void
+    {
+        $user = User::factory()->create();
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com',
+            'error_message' => null,
+        ]);
+
+        $this->assertNull($analysis->error_message);
+    }
+
+    /** @test MC-009: Null analysis_duration_ms allowed */
+    public function test_mc_009_null_analysis_duration_ms_allowed(): void
+    {
+        $user = User::factory()->create();
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com',
+            'analysis_duration_ms' => null,
+        ]);
+
+        $this->assertNull($analysis->analysis_duration_ms);
+    }
+
+    /** @test MC-010: Valid status enum values */
+    public function test_mc_010_valid_status_enum_values(): void
+    {
+        $user = User::factory()->create();
+        $validStatuses = ['pending', 'completed', 'failed'];
+
+        foreach ($validStatuses as $status) {
+            $analysis = AnalysisHistory::create([
+                'user_id' => $user->id,
+                'tool_name' => 'meta-tag-analyzer',
+                'input_url' => 'https://example.com',
+                'status' => $status,
+            ]);
+
+            $this->assertEquals($status, $analysis->status);
+        }
+    }
+
+    // ==========================================
+    // Relationship Tests (RL)
+    // ==========================================
+
+    /** @test RL-001: BelongsTo User relationship */
+    public function test_rl_001_belongs_to_user(): void
+    {
+        $user = User::factory()->create();
+        $analysis = AnalysisHistory::factory()->forUser($user)->create();
+
+        $this->assertEquals($user->id, $analysis->user->id);
+        $this->assertInstanceOf(User::class, $analysis->user);
+    }
+
+    /** @test RL-002: BelongsTo Site relationship */
+    public function test_rl_002_belongs_to_site(): void
+    {
+        $site = Site::factory()->create();
+        $analysis = AnalysisHistory::factory()->forSite($site)->create();
+
+        $this->assertEquals($site->id, $analysis->site->id);
+        $this->assertInstanceOf(Site::class, $analysis->site);
+    }
+
+    /** @test RL-003: Site relationship returns null when no site */
+    public function test_rl_003_site_relationship_returns_null(): void
+    {
+        $analysis = AnalysisHistory::factory()->withoutSite()->create();
+
+        $this->assertNull($analysis->site);
+    }
+
+    /** @test RL-004: User hasMany analysisHistory */
+    public function test_rl_004_user_has_many_analysis_history(): void
+    {
+        $user = User::factory()->create();
+        $analysis1 = AnalysisHistory::factory()->forUser($user)->create();
+        $analysis2 = AnalysisHistory::factory()->forUser($user)->create();
+
+        $this->assertCount(2, $user->analysisHistory);
+        $this->assertTrue($user->analysisHistory->contains($analysis1));
+        $this->assertTrue($user->analysisHistory->contains($analysis2));
+    }
+
+    /** @test RL-005: Site hasMany analysisHistory */
+    public function test_rl_005_site_has_many_analysis_history(): void
+    {
+        $site = Site::factory()->create();
+        $analysis1 = AnalysisHistory::factory()->forSite($site)->create();
+        $analysis2 = AnalysisHistory::factory()->forSite($site)->create();
+
+        $this->assertCount(2, $site->analysisHistory);
+        $this->assertTrue($site->analysisHistory->contains($analysis1));
+        $this->assertTrue($site->analysisHistory->contains($analysis2));
+    }
+
+    /** @test RL-006: Deleting user cascades to analyses */
+    public function test_rl_006_deleting_user_cascades_to_analyses(): void
+    {
+        $user = User::factory()->create();
+        $analysis = AnalysisHistory::factory()->forUser($user)->create();
+
+        $user->delete();
+
+        $this->assertDatabaseMissing('analysis_history', [
+            'id' => $analysis->id,
+        ]);
+    }
+
+    /** @test RL-007: Deleting site sets site_id to NULL */
+    public function test_rl_007_deleting_site_sets_site_id_null(): void
+    {
+        $site = Site::factory()->create();
+        $analysis = AnalysisHistory::factory()->forSite($site)->create();
+
+        $site->delete();
+
+        $analysis->refresh();
+        $this->assertNull($analysis->site_id);
+        $this->assertDatabaseHas('analysis_history', [
+            'id' => $analysis->id,
+        ]);
+    }
+
+    // ==========================================
+    // Scope Tests (SC)
+    // ==========================================
+
+    /** @test SC-001: scopeCompleted filters completed */
+    public function test_sc_001_scope_completed_filters(): void
+    {
+        $user = User::factory()->create();
+
+        AnalysisHistory::factory()->forUser($user)->count(3)->create(['status' => 'completed']);
+        AnalysisHistory::factory()->forUser($user)->create(['status' => 'pending']);
+        AnalysisHistory::factory()->forUser($user)->create(['status' => 'failed']);
+
+        $results = AnalysisHistory::completed()->get();
+
+        $this->assertCount(3, $results);
+        $results->each(fn ($a) => $this->assertEquals('completed', $a->status));
+    }
+
+    /** @test SC-002: scopePending filters pending */
+    public function test_sc_002_scope_pending_filters(): void
+    {
+        $user = User::factory()->create();
+
+        AnalysisHistory::factory()->forUser($user)->create(['status' => 'completed']);
+        AnalysisHistory::factory()->forUser($user)->count(2)->create(['status' => 'pending']);
+        AnalysisHistory::factory()->forUser($user)->create(['status' => 'failed']);
+
+        $results = AnalysisHistory::pending()->get();
+
+        $this->assertCount(2, $results);
+        $results->each(fn ($a) => $this->assertEquals('pending', $a->status));
+    }
+
+    /** @test SC-003: scopeFailed filters failed */
+    public function test_sc_003_scope_failed_filters(): void
+    {
+        $user = User::factory()->create();
+
+        AnalysisHistory::factory()->forUser($user)->create(['status' => 'completed']);
+        AnalysisHistory::factory()->forUser($user)->create(['status' => 'pending']);
+        AnalysisHistory::factory()->forUser($user)->count(3)->create(['status' => 'failed']);
+
+        $results = AnalysisHistory::failed()->get();
+
+        $this->assertCount(3, $results);
+        $results->each(fn ($a) => $this->assertEquals('failed', $a->status));
+    }
+
+    /** @test SC-004: scopeByTool filters by tool_name */
+    public function test_sc_004_scope_by_tool_filters(): void
+    {
+        $user = User::factory()->create();
+
+        AnalysisHistory::factory()->forUser($user)->count(3)->create(['tool_name' => 'meta-tag-analyzer']);
+        AnalysisHistory::factory()->forUser($user)->count(2)->create(['tool_name' => 'keyword-density']);
+
+        $results = AnalysisHistory::byTool('meta-tag-analyzer')->get();
+
+        $this->assertCount(3, $results);
+        $results->each(fn ($a) => $this->assertEquals('meta-tag-analyzer', $a->tool_name));
+    }
+
+    /** @test SC-005: scopeByUser filters by user_id */
+    public function test_sc_005_scope_by_user_filters(): void
     {
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
 
-        // Create analyses for different users
-        AnalysisHistory::factory()->create(['user_id' => $user1->id]);
-        AnalysisHistory::factory()->create(['user_id' => $user1->id]);
-        AnalysisHistory::factory()->create(['user_id' => $user2->id]);
+        AnalysisHistory::factory()->forUser($user1)->count(3)->create();
+        AnalysisHistory::factory()->forUser($user2)->count(2)->create();
 
-        $user1Count = AnalysisHistory::byUser($user1->id)->count();
-        $user2Count = AnalysisHistory::byUser($user2->id)->count();
+        $results = AnalysisHistory::byUser($user1->id)->get();
 
-        $this->assertEquals(2, $user1Count, 'User 1 should have 2 analyses');
-        $this->assertEquals(1, $user2Count, 'User 2 should have 1 analysis');
+        $this->assertCount(3, $results);
+        $results->each(fn ($a) => $this->assertEquals($user1->id, $a->user_id));
     }
 
-    /**
-     * M-010: Order by analyzed_at descending.
-     */
-    public function test_m010_order_by_analyzed_at_desc(): void
+    /** @test SC-006: scopeBySite filters by site_id */
+    public function test_sc_006_scope_by_site_filters(): void
+    {
+        $site1 = Site::factory()->create();
+        $site2 = Site::factory()->create();
+
+        AnalysisHistory::factory()->forSite($site1)->count(3)->create();
+        AnalysisHistory::factory()->forSite($site2)->count(2)->create();
+
+        $results = AnalysisHistory::bySite($site1->id)->get();
+
+        $this->assertCount(3, $results);
+        $results->each(fn ($a) => $this->assertEquals($site1->id, $a->site_id));
+    }
+
+    /** @test SC-007: scopeAnalyzedBetween date range */
+    public function test_sc_007_scope_analyzed_between_filters(): void
     {
         $user = User::factory()->create();
 
-        $analysis1 = AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
-            'analyzed_at' => now()->subDays(2),
-        ]);
-        $analysis2 = AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
-            'analyzed_at' => now()->subDay(),
-        ]);
-        $analysis3 = AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
-            'analyzed_at' => now(),
-        ]);
-
-        $ordered = AnalysisHistory::latestFirst()->get();
-
-        $this->assertEquals($analysis3->id, $ordered[0]->id, 'Most recent should be first');
-        $this->assertEquals($analysis2->id, $ordered[1]->id, 'Second most recent should be second');
-        $this->assertEquals($analysis1->id, $ordered[2]->id, 'Oldest should be last');
-    }
-
-    /**
-     * M-011: Scope for date range.
-     */
-    public function test_m011_scope_for_date_range(): void
-    {
-        $user = User::factory()->create();
-
-        AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
+        $old = AnalysisHistory::factory()->forUser($user)->create([
             'analyzed_at' => now()->subDays(10),
         ]);
-        AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
+        $middle = AnalysisHistory::factory()->forUser($user)->create([
             'analyzed_at' => now()->subDays(5),
         ]);
-        AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
+        $recent = AnalysisHistory::factory()->forUser($user)->create([
             'analyzed_at' => now(),
         ]);
 
-        $lastWeekCount = AnalysisHistory::forDateRange(
-            now()->subDays(7),
-            now()
-        )->count();
+        $results = AnalysisHistory::analyzedBetween(
+            now()->subDays(7)->startOfDay(),
+            now()->subDays(3)->endOfDay()
+        )->get();
 
-        $this->assertEquals(2, $lastWeekCount, 'Should have 2 analyses in last week');
+        $this->assertCount(1, $results);
+        $this->assertEquals($middle->id, $results->first()->id);
     }
 
-    // =========================================================================
-    // Category 4: Accessors & Helpers (M-012 to M-015)
-    // =========================================================================
-
-    /**
-     * M-012: Duration formatting helper.
-     */
-    public function test_m012_duration_formatting_helper(): void
+    /** @test SC-008: scopeRecent ordered by analyzed_at DESC */
+    public function test_sc_008_scope_recent_orders_desc(): void
     {
         $user = User::factory()->create();
 
-        // Test milliseconds
-        $analysis = AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
-            'analysis_duration_ms' => 500,
+        $old = AnalysisHistory::factory()->forUser($user)->create([
+            'analyzed_at' => now()->subDays(2),
         ]);
-        $this->assertEquals('500ms', $analysis->formatted_duration);
+        $middle = AnalysisHistory::factory()->forUser($user)->create([
+            'analyzed_at' => now()->subDay(),
+        ]);
+        $recent = AnalysisHistory::factory()->forUser($user)->create([
+            'analyzed_at' => now(),
+        ]);
 
-        // Test seconds
-        $analysis = AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
-            'analysis_duration_ms' => 2500,
-        ]);
-        $this->assertEquals('2.50s', $analysis->formatted_duration);
+        $results = AnalysisHistory::recent()->get();
 
-        // Test null
-        $analysis = AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
-            'analysis_duration_ms' => null,
-        ]);
-        $this->assertNull($analysis->formatted_duration);
+        $this->assertEquals($recent->id, $results->first()->id);
+        $this->assertEquals($old->id, $results->last()->id);
     }
 
-    /**
-     * M-013: Is completed check.
-     */
-    public function test_m013_is_completed_check(): void
+    /** @test SC-009: scopeWithResults filters non-null results */
+    public function test_sc_009_scope_with_results_filters(): void
     {
         $user = User::factory()->create();
 
-        $completed = AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
-            'status' => 'completed',
-        ]);
-        $failed = AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
-            'status' => 'failed',
-        ]);
-        $pending = AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
-            'status' => 'pending',
-        ]);
+        AnalysisHistory::factory()->forUser($user)->count(3)->withResults()->create();
+        AnalysisHistory::factory()->forUser($user)->count(2)->create(['results' => null]);
 
-        $this->assertTrue($completed->isCompleted());
-        $this->assertFalse($failed->isCompleted());
-        $this->assertFalse($pending->isCompleted());
+        $results = AnalysisHistory::withResults()->get();
+
+        $this->assertCount(3, $results);
+        $results->each(fn ($a) => $this->assertNotNull($a->results));
     }
 
-    /**
-     * M-014: Is failed check.
-     */
-    public function test_m014_is_failed_check(): void
+    /** @test SC-010: scopeWithoutSite filters null site_id */
+    public function test_sc_010_scope_without_site_filters(): void
+    {
+        $site = Site::factory()->create();
+
+        AnalysisHistory::factory()->forSite($site)->count(3)->create();
+        AnalysisHistory::factory()->withoutSite()->count(2)->create();
+
+        $results = AnalysisHistory::withoutSite()->get();
+
+        $this->assertCount(2, $results);
+        $results->each(fn ($a) => $this->assertNull($a->site_id));
+    }
+
+    // ==========================================
+    // Edge Case Tests (EC)
+    // ==========================================
+
+    /** @test EC-001: Large JSON in results */
+    public function test_ec_001_large_json_in_results(): void
     {
         $user = User::factory()->create();
 
-        $completed = AnalysisHistory::factory()->create([
+        // Create large JSON (~100KB)
+        $largeResults = [
+            'data' => str_repeat('A', 100000),
+            'items' => array_fill(0, 1000, ['key' => 'value']),
+        ];
+
+        $analysis = AnalysisHistory::create([
             'user_id' => $user->id,
-            'status' => 'completed',
-        ]);
-        $failed = AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
-            'status' => 'failed',
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com',
+            'results' => $largeResults,
         ]);
 
-        $this->assertFalse($completed->isFailed());
-        $this->assertTrue($failed->isFailed());
+        $this->assertIsArray($analysis->results);
+        $this->assertCount(1000, $analysis->results['items']);
     }
 
-    /**
-     * M-015: Is pending check.
-     */
-    public function test_m015_is_pending_check(): void
+    /** @test EC-002: Unicode in input_url */
+    public function test_ec_002_unicode_in_input_url(): void
     {
         $user = User::factory()->create();
 
-        $completed = AnalysisHistory::factory()->create([
+        $analysis = AnalysisHistory::create([
             'user_id' => $user->id,
-            'status' => 'completed',
-        ]);
-        $pending = AnalysisHistory::factory()->create([
-            'user_id' => $user->id,
-            'status' => 'pending',
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com/путь/страница',
         ]);
 
-        $this->assertFalse($completed->isPending());
-        $this->assertTrue($pending->isPending());
+        $this->assertEquals('https://example.com/путь/страница', $analysis->input_url);
     }
 
-    // =========================================================================
-    // Category 5: Edge Cases (M-016 to M-018)
-    // =========================================================================
-
-    /**
-     * M-016: Empty results handled correctly.
-     */
-    public function test_m016_empty_results_handled_correctly(): void
+    /** @test EC-003: Unicode in results */
+    public function test_ec_003_unicode_in_results(): void
     {
         $user = User::factory()->create();
 
-        $analysis = AnalysisHistory::factory()->create([
+        $analysis = AnalysisHistory::create([
             'user_id' => $user->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com',
+            'results' => [
+                'title' => 'Заголовок страницы',
+                'description' => 'Описание с unicode символами: €£¥',
+            ],
+        ]);
+
+        $this->assertEquals('Заголовок страницы', $analysis->results['title']);
+        $this->assertStringContainsString('€£¥', $analysis->results['description']);
+    }
+
+    /** @test EC-004: Very long tool_name (100 chars) */
+    public function test_ec_004_long_tool_name(): void
+    {
+        $user = User::factory()->create();
+
+        $longName = str_repeat('a', 100);
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => $longName,
+            'input_url' => 'https://example.com',
+        ]);
+
+        $this->assertEquals($longName, $analysis->tool_name);
+    }
+
+    /** @test EC-005: Very long input_url (2083 chars) */
+    public function test_ec_005_long_input_url(): void
+    {
+        $user = User::factory()->create();
+
+        $longUrl = 'https://example.com/path?' . str_repeat('a', 2050);
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => $longUrl,
+        ]);
+
+        $this->assertEquals($longUrl, $analysis->input_url);
+    }
+
+    /** @test EC-006: Zero duration */
+    public function test_ec_006_zero_duration(): void
+    {
+        $user = User::factory()->create();
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com',
+            'analysis_duration_ms' => 0,
+        ]);
+
+        $this->assertEquals(0, $analysis->analysis_duration_ms);
+    }
+
+    /** @test EC-007: Empty results object */
+    public function test_ec_007_empty_results_object(): void
+    {
+        $user = User::factory()->create();
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com',
             'results' => [],
         ]);
 
@@ -369,53 +566,81 @@ class AnalysisHistoryTest extends TestCase
         $this->assertEmpty($analysis->results);
     }
 
-    /**
-     * M-017: Large results handled correctly.
-     */
-    public function test_m017_large_results_handled_correctly(): void
+    // ==========================================
+    // Security Tests (SEC)
+    // ==========================================
+
+    /** @test SEC-001: SQL injection in input_url prevented */
+    public function test_sec_001_sql_injection_in_url_prevented(): void
     {
         $user = User::factory()->create();
 
-        // Create a large results array
-        $largeResults = [
-            'items' => array_fill(0, 1000, [
-                'url' => 'https://example.com/page',
-                'title' => 'Example Page',
-                'data' => str_repeat('x', 100),
-            ]),
-        ];
+        $maliciousUrl = "https://example.com?id=1'; DROP TABLE analysis_history; --";
 
-        $analysis = AnalysisHistory::factory()->create([
+        $analysis = AnalysisHistory::create([
             'user_id' => $user->id,
-            'results' => $largeResults,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => $maliciousUrl,
         ]);
 
-        $analysis->refresh();
+        // Verify the data is stored as-is (parameterized query)
+        $this->assertStringContainsString("DROP TABLE", $analysis->input_url);
 
-        $this->assertCount(1000, $analysis->results['items']);
+        // Verify table still exists
+        $this->assertDatabaseHas('analysis_history', ['id' => $analysis->id]);
     }
 
-    /**
-     * M-018: Unicode in results handled correctly.
-     */
-    public function test_m018_unicode_in_results_handled_correctly(): void
+    /** @test SEC-002: SQL injection in tool_name prevented */
+    public function test_sec_002_sql_injection_in_tool_name_prevented(): void
     {
         $user = User::factory()->create();
 
-        $results = [
-            'title' => '标题 — 中文测试',
-            'emoji' => '🎉🎊🎁',
-            'special' => '«»€£¥§¶',
-        ];
+        $maliciousName = "tool'; DELETE FROM analysis_history WHERE 1=1; --";
 
-        $analysis = AnalysisHistory::factory()->create([
+        $analysis = AnalysisHistory::create([
             'user_id' => $user->id,
-            'results' => $results,
+            'tool_name' => $maliciousName,
+            'input_url' => 'https://example.com',
         ]);
 
-        $analysis->refresh();
+        // Verify table still exists
+        $this->assertDatabaseHas('analysis_history', ['id' => $analysis->id]);
+    }
 
-        $this->assertEquals('标题 — 中文测试', $analysis->results['title']);
-        $this->assertEquals('🎉🎊🎁', $analysis->results['emoji']);
+    /** @test SEC-003: XSS in error_message not executed */
+    public function test_sec_003_xss_in_error_message_not_executed(): void
+    {
+        $user = User::factory()->create();
+
+        $xssPayload = '<script>alert("xss")</script>';
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com',
+            'error_message' => $xssPayload,
+        ]);
+
+        // Values are stored as-is, output escaping happens at display layer
+        $this->assertEquals($xssPayload, $analysis->error_message);
+    }
+
+    /** @test SEC-004: XSS in results JSON not executed */
+    public function test_sec_004_xss_in_results_json_not_executed(): void
+    {
+        $user = User::factory()->create();
+
+        $analysis = AnalysisHistory::create([
+            'user_id' => $user->id,
+            'tool_name' => 'meta-tag-analyzer',
+            'input_url' => 'https://example.com',
+            'results' => [
+                'title' => '<script>alert("xss")</script>',
+                'description' => '<img src="x" onerror="alert(1)">',
+            ],
+        ]);
+
+        // Values are stored as-is, output escaping happens at display layer
+        $this->assertEquals('<script>alert("xss")</script>', $analysis->results['title']);
     }
 }
