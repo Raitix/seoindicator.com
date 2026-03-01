@@ -1190,9 +1190,6 @@ class AISuggestionControllerTest extends TestCase
     public function test_score_boundary_values(): void
     {
         // Test score 0
-        $this->mockService = Mockery::mock(AISuggestionService::class, [$this->mockProvider]);
-        $this->app->instance(AISuggestionService::class, $this->mockService);
-        
         $this->mockService
             ->shouldReceive('getSuggestions')
             ->once()
@@ -1201,14 +1198,13 @@ class AISuggestionControllerTest extends TestCase
         $response = $this->postJson('/api/v1/ai/suggestions', $this->validPayload());
         $response->assertJsonPath('data.score', 0);
 
-        // Test score 100
-        $this->mockService = Mockery::mock(AISuggestionService::class, [$this->mockProvider]);
-        $this->app->instance(AISuggestionService::class, $this->mockService);
-        
-        $this->mockService
-            ->shouldReceive('getSuggestions')
+        // Test score 100 - rebind a fresh mock
+        $this->app->forgetInstance(AISuggestionService::class);
+        $newMock = Mockery::mock(AISuggestionService::class, [$this->mockProvider]);
+        $newMock->shouldReceive('getSuggestions')
             ->once()
             ->andReturn($this->createValidSuggestionResult('title', 100));
+        $this->app->instance(AISuggestionService::class, $newMock);
 
         $response = $this->postJson('/api/v1/ai/suggestions', $this->validPayload());
         $response->assertJsonPath('data.score', 100);
