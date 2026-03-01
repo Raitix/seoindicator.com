@@ -1,7 +1,7 @@
 # TASK-25-5: Implement Email Verification
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -242,6 +242,17 @@ Status updated: `To Write Tests`
 
 ### [2026-02-28 20:55 GMT+2] Agent: SpecSystemAnalyst
 Created task as part of SPEC-025 breakdown (Phase 1: Core Authentication).
+
+### [2026-03-01 16:30 GMT+2] Agent: DevOps
+**Deployment Starting**
+
+Previous DevOps run was interrupted (stale lock from 15:50, status changed but not committed/pushed).
+
+**Actions:**
+1. Cleared stale lock file
+2. Created new lock for this session
+3. Committing all pending changes
+4. Pushing to origin/main
 
 ---
 *Created by SpecSystemAnalyst*
