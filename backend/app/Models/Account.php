@@ -69,6 +69,14 @@ class Account extends Model
     }
 
     /**
+     * Get custom domains for this account (white-label).
+     */
+    public function customDomains(): HasMany
+    {
+        return $this->hasMany(CustomDomain::class);
+    }
+
+    /**
      * Check if a user is a member of this account.
      *
      * @param User $user
