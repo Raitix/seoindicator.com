@@ -3,24 +3,18 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
 /**
- * Form request for validating AI suggestion requests.
+ * Form Request for AI Suggestion API validation.
  *
- * TASK-21-5: Create AI Suggestion API Endpoint
- *
- * Validates:
- * - indicator: required, enum of valid SEO indicators
- * - context: required, array, max 5000 chars total
- * - provider: optional, enum of valid AI providers
- * - debug: optional, boolean
+ * Validates requests to the AI suggestions endpoint,
+ * ensuring indicator types and context data are valid.
  */
 class AISuggestionRequest extends FormRequest
 {
     /**
-     * Valid SEO indicator types.
+     * Valid indicator types for AI suggestions.
      */
     public const VALID_INDICATORS = [
         'title',
@@ -36,7 +30,7 @@ class AISuggestionRequest extends FormRequest
     ];
 
     /**
-     * Valid AI provider types.
+     * Valid provider options.
      */
     public const VALID_PROVIDERS = [
         'openrouter',
@@ -45,14 +39,12 @@ class AISuggestionRequest extends FormRequest
     ];
 
     /**
-     * Maximum total characters for context.
+     * Maximum total characters allowed in context.
      */
     public const MAX_CONTEXT_CHARS = 5000;
 
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * AI suggestions endpoint is public (with rate limiting).
      *
      * @return bool
      */
@@ -72,34 +64,17 @@ class AISuggestionRequest extends FormRequest
             'indicator' => [
                 'required',
                 'string',
-                'in:' . implode(',', self::VALID_INDICATORS),
+                Rule::in(self::VALID_INDICATORS),
             ],
             'context' => [
                 'required',
                 'array',
-                function ($attribute, $value, $fail) {
-                    // Only validate character count if value is actually an array
-                    // (the 'array' rule runs first and will reject non-arrays)
-                    if (!is_array($value)) {
-                        return;
-                    }
-                    
-                    $totalChars = 0;
-                    array_walk_recursive($value, function ($item) use (&$totalChars) {
-                        if (is_string($item)) {
-                            $totalChars += strlen($item);
-                        }
-                    });
-
-                    if ($totalChars > self::MAX_CONTEXT_CHARS) {
-                        $fail("The {$attribute} may not exceed " . self::MAX_CONTEXT_CHARS . ' characters total.');
-                    }
-                },
+                'max_context_length',
             ],
             'provider' => [
                 'nullable',
                 'string',
-                'in:' . implode(',', self::VALID_PROVIDERS),
+                Rule::in(self::VALID_PROVIDERS),
             ],
             'debug' => [
                 'nullable',
@@ -126,60 +101,17 @@ class AISuggestionRequest extends FormRequest
     }
 
     /**
-     * Handle a failed validation attempt.
-     *
-     * @param Validator $validator
-     * @return void
-     *
-     * @throws HttpResponseException
-     */
-    protected function failedValidation(Validator $validator): void
-    {
-        throw new HttpResponseException(
-            response()->json([
-                'message' => 'The given data was invalid.',
-                'errors' => $validator->errors(),
-            ], 422)
-        );
-    }
-
-    /**
-     * Get the validated indicator.
-     *
-     * @return string
-     */
-    public function getIndicator(): string
-    {
-        return $this->validated()['indicator'];
-    }
-
-    /**
-     * Get the validated context.
+     * Get validated data with defaults applied.
      *
      * @return array<string, mixed>
      */
-    public function getContext(): array
+    public function validatedWithDefaults(): array
     {
-        return $this->validated()['context'];
-    }
+        $validated = $this->validated();
+        
+        $validated['provider'] = $validated['provider'] ?? config('ai.default', 'openrouter');
+        $validated['debug'] = $validated['debug'] ?? false;
 
-    /**
-     * Get the provider if specified, or null.
-     *
-     * @return string|null
-     */
-    public function getProvider(): ?string
-    {
-        return $this->validated()['provider'] ?? null;
-    }
-
-    /**
-     * Check if debug mode is requested.
-     *
-     * @return bool
-     */
-    public function isDebugEnabled(): bool
-    {
-        return (bool) ($this->validated()['debug'] ?? false);
+        return $validated;
     }
 }
