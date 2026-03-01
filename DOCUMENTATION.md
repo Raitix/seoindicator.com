@@ -551,6 +551,246 @@ export async function generateMetadata({ params }): Promise<Metadata> {
 - TASK-20-3: Guide page template component
 
 ---
+## Rate Limiting for Analysis Jobs (TASK-19-14)
+
+### Service Description
+Comprehensive rate limiting system for analysis job creation and API endpoints. Implements multiple rate limit tiers to prevent abuse while allowing legitimate usage, with Redis-backed distributed rate limiting for multi-instance deployments.
+
+### Component Location
+- **Service:** `backend/app/Services/Analysis/AnalysisRateLimiterService.php`
+- **Middleware:** `backend/app/Http/Middleware/PollingRateLimiter.php`
+- **Config:** `bootstrap/app.php` (middleware alias: `polling.ratelimit`)
+
+### Core Functionalities
+
+**AnalysisRateLimiterService Class:**
+| Method | Description |
+|--------|-------------|
+| `canCreateJob(User $user, Site $site): bool` | Check if user can create a new job |
+| `canMakeApiRequest(User $user): bool` | Check API rate limit (60/min) |
+| `canPollJob(User $user, AnalysisJob $job): bool` | Check polling rate limit (30/min/job) |
+| `recordJobCreation(User $user, Site $site): void` | Record job creation for rate limiting |
+| `recordApiRequest(User $user): void` | Record API request |
+| `recordPollRequest(User $user, AnalysisJob $job): void` | Record polling request |
+| `getRateLimitHeaders(string $key, int $limit): array` | Generate rate limit headers |
+| `buildRateLimitResponse(string $message, int $retryAfter): JsonResponse` | Build 429 response |
+
+### Rate Limit Tiers
+
+| Limit Type | Value | Scope | Purpose |
+|------------|-------|-------|---------|
+| Jobs per user per hour | 10 | Per user | Prevent job flooding |
+| Jobs per site per hour | 5 | Per site | Site-level protection |
+| Concurrent jobs per user | 2 | Per user | Resource management |
+| API requests per minute | 60 | Per user | General API protection |
+| Polling requests per minute | 30 | Per job | Prevent polling abuse |
+
+### Sliding Window Algorithm
+
+Rate limiting uses a sliding window via Laravel Cache (Redis-backed):
+
+```php
+class AnalysisRateLimiterService
+{
+    private const JOB_LIMITS = [
+        'user_hourly' => 10,
+        'site_hourly' => 5,
+        'user_concurrent' => 2,
+    ];
+    
+    private const API_LIMITS = [
+        'requests_per_minute' => 60,
+        'polling_per_minute' => 30,
+    ];
+    
+    public function canCreateJob(User $user, Site $site): bool
+    {
+        // Check all three limits
+        return $this->checkUserHourlyLimit($user)
+            && $this->checkSiteHourlyLimit($site)
+            && $this->checkConcurrentLimit($user);
+    }
+}
+```
+
+### Rate Limit Headers
+
+All rate-limited responses include standard headers:
+
+```http
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1709049600
+```
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum requests allowed in window |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Unix timestamp when window resets |
+
+### 429 Response Format
+
+When rate limit is exceeded, the API returns HTTP 429:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Rate limit exceeded. Please try again later.",
+    "retry_after": 30
+  }
+}
+```
+
+**Response Headers:**
+```http
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+Retry-After: 30
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1709049600
+```
+
+### Admin Bypass
+
+Admin users can bypass rate limits for testing and debugging:
+
+```php
+public function canCreateJob(User $user, Site $site): bool
+{
+    // Admin bypass
+    if ($user->is_admin ?? false) {
+        return true;
+    }
+    
+    return $this->enforceLimits($user, $site);
+}
+```
+
+### PollingRateLimiter Middleware
+
+Dedicated middleware for polling endpoint rate limiting:
+
+```php
+class PollingRateLimiter
+{
+    public function handle($request, Closure $next)
+    {
+        $job = $request->route('job');
+        $user = $request->user();
+        
+        if (!$this->rateLimiter->canPollJob($user, $job)) {
+            return $this->rateLimiter->buildRateLimitResponse(
+                'Polling rate limit exceeded',
+                $this->rateLimiter->getRetryAfter($user, $job)
+            );
+        }
+        
+        $this->rateLimiter->recordPollRequest($user, $job);
+        
+        $response = $next($request);
+        
+        // Add rate limit headers
+        foreach ($this->rateLimiter->getRateLimitHeaders($user, $job) as $name => $value) {
+            $response->header($name, $value);
+        }
+        
+        return $response;
+    }
+}
+```
+
+### Redis Configuration
+
+Rate limiting uses Laravel Cache with Redis driver for distributed systems:
+
+```php
+// config/cache.php
+'default' => env('CACHE_STORE', 'redis'),
+
+'stores' => [
+    'redis' => [
+        'driver' => 'redis',
+        'connection' => 'cache',
+        'lock_connection' => 'default',
+    ],
+],
+```
+
+**Key Patterns:**
+| Key Pattern | TTL | Purpose |
+|-------------|-----|---------|
+| `rate_limit:user:{id}:hourly` | 3600s | User hourly job limit |
+| `rate_limit:site:{id}:hourly` | 3600s | Site hourly job limit |
+| `rate_limit:user:{id}:concurrent` | - | Concurrent job count |
+| `rate_limit:api:{id}:minute` | 60s | API rate limit |
+| `rate_limit:poll:{job_id}:minute` | 60s | Polling rate limit |
+
+### SPEC-006 Compatibility
+
+Rate limit responses follow the existing SPEC-006 format:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Rate limit exceeded. Retry after 30 seconds.",
+    "retry_after": 30
+  }
+}
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Per-User Isolation | Each user has separate rate limit tracking |
+| Per-Job Isolation | Polling limits scoped to individual jobs |
+| Timing Attack Prevention | Consistent response times |
+| Admin Bypass | Admin users skip rate limits |
+| Distributed Support | Redis-backed for multi-instance |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `AnalysisJobRateLimitTest.php` | 33 | 143 |
+| `AnalysisRateLimiterServiceTest.php` | 31 | 273 |
+| **Total** | **64** | **416** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Job Creation Limits (JC) | 8 | User hourly, site hourly, concurrent |
+| API Rate Limiting (AR) | 4 | 60/min per user |
+| Polling Rate Limiting (PR) | 3 | 30/min per job |
+| Rate Limit Headers (RH) | 5 | X-RateLimit-Limit/Remaining/Reset |
+| 429 Response (FR) | 4 | Error format, retry_after |
+| Admin Bypass (AB) | 2 | Admin users skip limits |
+| SPEC-006 Compatibility (SC) | 2 | Format matches existing spec |
+| Edge Cases (EC) | 4 | Missing user, cache failure, reset |
+
+### Production Status
+- **Deployed**: 2026-03-01 (GitHub Actions #22550010245)
+- **Health Check**: Passing
+- **Tests**: 64/64 passing (416 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-19-4 (Job CRUD API)
+- Existing rate limiting middleware (SPEC-006)
+- Redis cache driver
+
+### Related Tasks
+- TASK-19-4: Job CRUD API
+- TASK-19-10: Polling Fallback Endpoint
+- TASK-19-13: Error Handling and Recovery
+
+---
 ## SEO Guides Library - Guide Index Page Component (TASK-20-2)
 
 ### Service Description

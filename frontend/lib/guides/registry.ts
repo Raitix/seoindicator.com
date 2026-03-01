@@ -84,20 +84,409 @@ const GUIDES: SEOGuide[] = [
     summary: 'Optimize images for faster loading without sacrificing quality.',
     category: 'on-page',
     icon: '⚡',
-    readTime: 6,
-    sections: [],
-    checklist: [],
+    readTime: 4,
+    sections: [
+      {
+        title: 'What is Image Optimization?',
+        content: `**Image optimization** is the process of delivering high-quality images in the right format, size, and resolution while keeping file sizes minimal. Images typically account for **50%+ of a webpage's total size**, making optimization critical for performance.
+
+The goal: **reduce file size without sacrificing visual quality**. Modern techniques include:
+
+- **Choosing the right format** (WebP, AVIF vs JPEG, PNG)
+- **Compression** (lossy vs lossless)
+- **Resizing** to match display dimensions
+- **Lazy loading** to defer off-screen images
+
+When done correctly, image optimization can reduce image weight by **70-90%** while maintaining visual fidelity.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Why Image Optimization Matters',
+        content: `Image optimization directly impacts your **Core Web Vitals** scores and SEO performance.
+
+### Core Web Vitals Impact
+
+**Largest Contentful Paint (LCP)** measures when the largest content element becomes visible. Images are often the LCP element—unoptimized images delay this metric.
+
+**Cumulative Layout Shift (CLS)** occurs when images load without reserved space. Setting explicit width and height attributes prevents layout shifts.
+
+### Key Benefits
+
+- **Faster crawl rates** and improved rankings
+- **Better user engagement** with lower bounce rates
+- **Mobile performance** essential for mobile-first indexing
+- **53% of mobile users abandon sites** that take longer than 3 seconds to load
+
+Optimizing images is one of the **highest-impact, lowest-effort** improvements you can make.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Image File Formats',
+        content: `Choosing the right format is the foundation of image optimization.
+
+### Modern Formats
+
+**WebP** — Best all-around choice
+- **25-35% smaller** than JPEG at equivalent quality
+- Supports lossy, lossless, and transparency
+- **Browser support**: 97%+ globally
+
+**AVIF** — Next-generation format
+- **50% smaller** than JPEG at same quality
+- Supports HDR and wide color gamut
+- **Browser support**: 90%+ and growing
+
+### Legacy Formats
+
+**JPEG** — Best for photographs with many colors (when WebP/AVIF unavailable)
+
+**PNG** — Best for graphics with transparency (logos, icons, screenshots)
+
+**Pro tip**: Use the &lt;picture&gt; element to serve modern formats with fallbacks.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<picture>
+  <source srcset="image.avif" type="image/avif">
+  <source srcset="image.webp" type="image/webp">
+  <img src="image.jpg" alt="Description" width="800" height="600">
+</picture>`,
+            description: 'Picture element with AVIF/WebP fallback to JPEG',
+          },
+        ],
+      },
+      {
+        title: 'Compression and Resizing',
+        content: `Proper compression and resizing dramatically reduce file sizes.
+
+### Lossy vs Lossless
+
+**Lossy compression** permanently removes data for smaller files (60-80% savings). Best for photos.
+
+**Lossless compression** reduces size without quality loss (10-50% savings). Best for graphics and logos.
+
+### Best Practices
+
+1. **Match display dimensions** — Don't upload 4000px images for 400px displays
+2. **Set explicit dimensions** — Prevent CLS with width/height attributes
+3. **Use responsive images** — Serve different sizes with srcset
+
+### Recommended Quality Settings
+
+| Format | Quality |
+|--------|---------|
+| WebP | 75-85% |
+| AVIF | 50-65% |
+| JPEG | 75-85% |
+
+### Free Tools
+
+**Squoosh** (squoosh.app), **TinyPNG**, **ImageMagick**, **Sharp** (Node.js)`,
+        codeExamples: [],
+      },
+      {
+        title: 'Lazy Loading Implementation',
+        content: `Lazy loading defers off-screen images until the user scrolls near them, improving initial page load.
+
+### Native Lazy Loading
+
+The simplest approach uses the HTML \`loading="lazy"\` attribute. Supported by all modern browsers with zero JavaScript overhead.
+
+### Next.js Image Component
+
+If using Next.js, the &lt;Image&gt; component handles optimization automatically:
+- Automatic format selection (WebP/AVIF)
+- Responsive sizing and lazy loading
+- Prevents layout shifts
+
+**Important:** Never lazy load above-fold images (hero, LCP candidates)—this delays critical content.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<img 
+  src="gallery-image.webp" 
+  alt="Gallery image description" 
+  width="800" 
+  height="600"
+  loading="lazy"
+>`,
+            description: 'Native lazy loading with WebP format',
+          },
+          {
+            language: 'jsx',
+            code: `import Image from 'next/image';
+
+<Image
+  src="/gallery-image.webp"
+  alt="Gallery image description"
+  width={800}
+  height={600}
+  loading="lazy"
+/>`,
+            description: 'Next.js Image component with lazy loading',
+          },
+        ],
+      },
+    ],
+    checklist: [
+      { text: 'Use WebP or AVIF format for all images', priority: 'critical' },
+      { text: 'Implement lazy loading for below-fold images', priority: 'critical' },
+      { text: 'Compress images to 75-85% quality for optimal size', priority: 'important' },
+      { text: 'Set explicit width and height attributes to prevent CLS', priority: 'important' },
+      { text: 'Use responsive images with srcset for different devices', priority: 'important' },
+      { text: 'Add descriptive alt text to all images for accessibility', priority: 'important' },
+      { text: 'Consider Next.js Image component for automatic optimization', priority: 'recommended' },
+    ],
     relatedGuides: ['image-alt-text', 'page-speed'],
   },
   {
     slug: 'internal-links',
     title: 'Internal Linking Strategy',
-    summary: 'Build a strong site architecture through strategic internal linking.',
+    summary: 'Build a strong site architecture through strategic internal linking to improve crawlability, distribute page authority, and enhance user navigation.',
     category: 'on-page',
     icon: '🔗',
     readTime: 5,
-    sections: [],
-    checklist: [],
+    sections: [
+      {
+        title: 'What are Internal Links?',
+        content: `**Internal links** are hyperlinks that connect one page of your website to another page on the same domain. Unlike external links that point to other websites, internal links keep users within your site's ecosystem, guiding them through your content journey.
+
+Every internal link consists of two key components: the **destination URL** (where the link points) and the **anchor text** (the clickable text users see). These elements work together to create pathways through your website.
+
+### Types of Internal Links
+
+**Navigational links** appear in your main menu, footer, and sidebar—helping users find key pages.
+
+**Contextual links** appear within your content, connecting related articles and topics. These carry the most SEO weight because they're surrounded by relevant content.
+
+**Footer links** provide quick access to important pages like privacy policies, contact info, and sitemap.
+
+**Breadcrumb links** show users their location within your site hierarchy and help search engines understand your site structure.
+
+Internal linking is one of the few SEO strategies you have complete control over—use it wisely.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Why Internal Links Matter for SEO',
+        content: `Internal linking is one of the most powerful yet overlooked SEO strategies. Here's why it matters:
+
+### Search Engine Crawlability
+
+Search engines like Google use links to discover and index pages. A strong internal linking structure ensures crawlers can find all your important content. Pages without any internal links pointing to them are called **orphan pages**—they're nearly invisible to search engines.
+
+### Page Authority Distribution
+
+When one page earns backlinks from external sites, it accumulates **link equity** (also called "link juice"). Internal links pass this authority to other pages on your site. Strategic internal linking helps distribute authority from your strongest pages to those that need a boost.
+
+### User Navigation and Engagement
+
+Clear internal linking helps users discover related content, increasing time on site and reducing bounce rates. When visitors can easily find what they're looking for, they're more likely to convert.
+
+### Ranking Power
+
+Pages with more internal links tend to rank higher. Google's algorithms use internal link structure to understand which pages are most important on your site. Your most-linked pages signal topical relevance and priority.
+
+### Site Architecture Clarity
+
+A logical linking structure helps search engines understand your site's hierarchy and content relationships—key for topical authority.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Site Architecture and Link Equity',
+        content: `Your internal linking structure defines how **link equity** flows through your website. Understanding this concept is essential for maximizing your SEO potential.
+
+### The Hub-and-Spoke Model
+
+The **hub-and-spoke** (or pillar-cluster) model organizes content around central "hub" pages that link to related "spoke" pages. Hub pages target broad keywords; spoke pages target specific long-tail keywords. All spoke pages link back to the hub, creating a tightly connected content cluster.
+
+\`\`\`
+Hub Page (Comprehensive Guide)
+    ├── Spoke Page 1 (Specific Topic)
+    ├── Spoke Page 2 (Specific Topic)
+    └── Spoke Page 3 (Specific Topic)
+\`\`\`
+
+This structure:
+- Establishes topical authority
+- Distributes link equity efficiently
+- Helps search engines understand content relationships
+- Improves user navigation between related topics
+
+### Link Depth and Crawl Budget
+
+**Link depth** refers to how many clicks it takes to reach a page from your homepage. Keep important pages within **3 clicks** of the homepage. Pages buried deeper may be crawled less frequently and carry less authority.
+
+### URL Structure Alignment
+
+Your URL structure should reflect your internal linking hierarchy:
+- \`/blog/\` — Blog hub
+- \`/blog/seo-tips/\` — SEO category
+- \`/blog/seo-tips/internal-linking/\` — Specific article
+
+Consistent URLs reinforce your site architecture for both users and search engines.`,
+        codeExamples: [
+          {
+            language: 'text',
+            code: `SEO Guide Hub (/guides/)
+    ├── Meta Title Guide (/guides/meta-title/)
+    ├── Internal Links Guide (/guides/internal-links/)
+    └── Page Speed Guide (/guides/page-speed/)
+
+Each spoke links back to the hub and to related spokes.`,
+            description: 'Hub-and-spoke internal linking model example',
+          },
+        ],
+      },
+      {
+        title: 'Anchor Text Best Practices',
+        content: `**Anchor text** is the visible, clickable text in a hyperlink. It's one of the strongest signals search engines use to understand what the linked page is about.
+
+### Use Descriptive, Relevant Anchor Text
+
+Good anchor text clearly indicates what users will find on the destination page. This helps both users and search engines understand the link's context.
+
+**Good examples:**
+- "meta title optimization guide"
+- "our SEO tools"
+- "WordPress image optimization"
+
+**Avoid generic text:**
+- "click here"
+- "read more"
+- "learn more"
+- "this article"
+
+### Balance Keyword Usage
+
+Using keywords in anchor text helps SEO, but overdoing it can trigger spam filters. Aim for natural, varied anchor text:
+
+- **Exact match**: "internal linking strategy" (use sparingly)
+- **Partial match**: "improve your internal linking" (good balance)
+- **Branded**: "SEOIndicator's guide" (natural and safe)
+- **Generic**: "this guide" (use occasionally, not for key pages)
+
+### Keep It Concise
+
+Anchor text should be brief but descriptive—typically 2-5 words. Long anchor text can dilute the keyword signal and looks unnatural.
+
+### Surround with Context
+
+Place internal links within relevant paragraphs where the surrounding text supports the link's purpose. Context helps both users and search engines understand the relationship between pages.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Good: Descriptive anchor text -->
+<p>Learn how to <a href="/guides/meta-title/">optimize your meta titles</a> for better click-through rates.</p>
+
+<!-- Bad: Generic anchor text -->
+<p>Learn how to optimize your meta titles <a href="/guides/meta-title/">here</a>.</p>`,
+            description: 'Good vs bad anchor text examples',
+          },
+        ],
+      },
+      {
+        title: 'Common Internal Linking Mistakes',
+        content: `Avoid these common pitfalls that can hurt your SEO performance:
+
+### 1. Orphan Pages
+
+**Orphan pages** have no internal links pointing to them. They're isolated from your site's link structure, making them hard for search engines to find and users to discover.
+
+**Solution**: Regularly audit your site for orphan pages using Google Search Console or crawling tools. Add contextual links from relevant pages.
+
+### 2. Over-Optimization
+
+Stuffing too many internal links with exact-match anchor text looks spammy and can trigger penalties. Keep it natural—vary your anchor text and link only when relevant.
+
+**Solution**: Limit links to what's genuinely helpful. If a paragraph has 5+ internal links, you're probably overdoing it.
+
+### 3. Broken Internal Links
+
+Links pointing to deleted or moved pages (404 errors) waste crawl budget and hurt user experience. They also prevent link equity from flowing properly.
+
+**Solution**: Run monthly broken link audits. Set up 301 redirects for moved pages.
+
+### 4. Excessive Links Per Page
+
+Google has historically recommended keeping links under 100 per page. While not a strict limit, excessive links dilute the value passed by each link.
+
+**Solution**: Focus on quality over quantity. Link to your most important pages. Keep total links (internal + external) under 150 for most pages.
+
+### 5. Ignoring Breadcrumbs
+
+Breadcrumbs improve navigation and help search engines understand site structure. They also create additional internal links automatically.
+
+**Solution**: Implement breadcrumb navigation with schema markup for enhanced search results.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Breadcrumbs and Navigation',
+        content: `**Breadcrumbs** are secondary navigation elements that show users their location within your site hierarchy. They provide crucial internal linking benefits:
+
+### Benefits of Breadcrumbs
+
+- **User experience**: Users can easily navigate back to parent categories
+- **Internal linking**: Automatically creates links to parent pages
+- **Search results**: Google may display breadcrumbs in search snippets
+- **Site structure**: Reinforces your content hierarchy
+
+### Implementation Best Practices
+
+Use semantic HTML with proper ARIA labels for accessibility. Include breadcrumb schema (JSON-LD) for rich results in Google search.
+
+The example below shows both HTML and JSON-LD implementation for maximum SEO benefit.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<nav aria-label="Breadcrumb">
+  <ol class="breadcrumb">
+    <li><a href="/">Home</a></li>
+    <li><a href="/guides/">Guides</a></li>
+    <li><a href="/guides/internal-links/" aria-current="page">Internal Links</a></li>
+  </ol>
+</nav>`,
+            description: 'Breadcrumb navigation HTML with accessibility attributes',
+          },
+          {
+            language: 'json',
+            code: `{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://example.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Guides",
+      "item": "https://example.com/guides/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Internal Links",
+      "item": "https://example.com/guides/internal-links/"
+    }
+  ]
+}`,
+            description: 'JSON-LD breadcrumb schema for rich search results',
+          },
+        ],
+      },
+    ],
+    checklist: [
+      { text: 'Use descriptive, keyword-rich anchor text (never "click here")', priority: 'critical' },
+      { text: 'Implement hub-and-spoke content structure for topical authority', priority: 'important' },
+      { text: 'Audit and fix orphan pages regularly (at least monthly)', priority: 'important' },
+      { text: 'Keep important pages within 3 clicks from homepage', priority: 'important' },
+      { text: 'Add breadcrumb navigation with JSON-LD schema markup', priority: 'recommended' },
+      { text: 'Check and fix broken internal links monthly', priority: 'important' },
+      { text: 'Limit internal links to relevant, valuable connections', priority: 'recommended' },
+    ],
     relatedGuides: ['external-links', 'xml-sitemap'],
   },
   {

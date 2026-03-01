@@ -1,208 +1,248 @@
-# TEST-19: Progressive Analysis & Job System - Test Suite
+# TEST-19: Progressive Analysis System Test Documentation
+
+**Created:** 2026-03-01
+**Author:** Developer Agent
+**Status:** Completed
+**Task:** TASK-19-16
+
+---
 
 ## Overview
-Comprehensive test suite for the Progressive Analysis & Job System (SPEC-019). This document provides an overview of all test documentation and test files.
+
+This document describes the test suite for the Progressive Analysis system (SPEC-19), which provides real-time SEO analysis with progress tracking via SSE streams and polling endpoints.
 
 ---
 
-## Architecture Under Test
+## Test Structure
 
-```
-┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
-│   Frontend  │───▶│  API Layer   │───▶│  Job Queue      │
-│  (Progress) │◀───│  (REST/SSE)  │◀───│  (Processing)   │
-└─────────────┘    └──────────────┘    └─────────────────┘
-```
+### Unit Tests
 
----
+| File | Purpose | Coverage |
+|------|---------|----------|
+| `tests/Unit/Services/AnalysisJobServiceTest.php` | Core job operations | Job creation, status transitions, cancellation, progress |
+| `tests/Unit/Services/AnalysisRateLimiterServiceTest.php` | Rate limiting logic | Concurrent, hourly, API, and polling limits |
+| `tests/Unit/Services/ProgressServiceTest.php` | Progress tracking | Mark complete/failed/running/skipped |
+| `tests/Unit/Services/Analysis/Indicators/IndicatorProcessorTest.php` | Base processor | Abstract processor methods |
+| `tests/Unit/Services/Analysis/Indicators/MetaTagsProcessorTest.php` | Meta tags analysis | Title, description, robots meta |
+| `tests/Unit/Services/Analysis/Indicators/HeadingsProcessorTest.php` | Headings analysis | H1-H6 structure |
+| `tests/Unit/Services/Analysis/Indicators/ImagesProcessorTest.php` | Images analysis | Alt text, size, format |
+| `tests/Unit/Services/Analysis/Indicators/LinksProcessorTest.php` | Links analysis | Internal/external, broken links |
+| `tests/Unit/Services/Analysis/ErrorHandlingServiceTest.php` | Error handling | Error recovery, logging |
+| `tests/Unit/Services/Analysis/IndicatorResultTest.php` | Result DTO | Score calculation, data structure |
 
-## Test Documentation Index
+### Feature Tests
 
-| Task | Description | Test Doc | Test File | Risk |
-|------|-------------|----------|-----------|------|
-| TASK-19-1 | Database Migration | [TEST-19-1.md](TEST-19-1.md) | `tests/Unit/Migrations/CreateAnalysisJobsTableTest.php` | Medium |
-| TASK-19-2 | Models | [TEST-19-2.md](TEST-19-2.md) | `tests/Unit/Models/AnalysisJobTest.php`, `tests/Unit/Models/AnalysisJobResultTest.php` | Low |
-| TASK-19-3 | AnalysisJobService | [TEST-19-3.md](TEST-19-3.md) | `tests/Unit/Services/AnalysisJobServiceTest.php` | Medium |
-| TASK-19-4 | Job CRUD API | [TEST-19-4.md](TEST-19-4.md) | `tests/Feature/Api/AnalysisJobApiTest.php` | Medium |
-| TASK-19-5 | IndicatorProcessor Base | [TEST-19-5.md](TEST-19-5.md) | `tests/Unit/Services/IndicatorProcessorTest.php` | Medium |
-| TASK-19-6 | Core Indicators | [TEST-19-6.md](TEST-19-6.md) | `tests/Unit/Processors/*ProcessorTest.php` | Medium |
-| TASK-19-7 | Queue Worker | [TEST-19-7.md](TEST-19-7.md) | `tests/Unit/Services/AnalysisQueueWorkerTest.php` | **HIGH** |
-| TASK-19-8 | Progress Tracking | [TEST-19-8.md](TEST-19-8.md) | `tests/Unit/Services/ProgressServiceTest.php` | Low |
-| TASK-19-9 | SSE Stream Endpoint | [TEST-19-9.md](TEST-19-9.md) | `tests/Feature/Api/AnalysisJobStreamTest.php` | Medium |
-| TASK-19-10 | Polling Endpoint | [TEST-19-10.md](TEST-19-10.md) | `tests/Feature/Api/AnalysisJobPollingTest.php` | Low |
-| TASK-19-11 | Frontend Progress Bar | [TEST-19-11.md](TEST-19-11.md) | `tests/Frontend/components/AnalysisProgress.test.tsx` | Low |
-| TASK-19-12 | Frontend Results Table | [TEST-19-12.md](TEST-19-12.md) | `tests/Frontend/components/ResultsTable.test.tsx` | Low |
-| TASK-19-13 | Error Handling | [TEST-19-13.md](TEST-19-13.md) | `tests/Unit/Services/AnalysisErrorHandlerTest.php` | Medium |
-| TASK-19-14 | Rate Limiting | [TEST-19-14.md](TEST-19-14.md) | `tests/Feature/Api/AnalysisJobRateLimitTest.php` | Medium |
-| TASK-19-15 | SSRF Protection | [TEST-19-15.md](TEST-19-15.md) | `tests/Unit/Services/SsrfProtectionTest.php` | **HIGH** |
-| TASK-19-16 | Integration Tests | [TEST-19-16.md](TEST-19-16.md) | `tests/Integration/AnalysisJobFlowTest.php` | Low |
+| File | Purpose | Coverage |
+|------|---------|----------|
+| `tests/Feature/AnalysisJobApiTest.php` | API endpoints | CRUD, authorization, rate limiting |
+| `tests/Feature/AnalysisJobStreamTest.php` | SSE streaming | Real-time progress, heartbeats |
+| `tests/Feature/AnalysisJobPerformanceTest.php` | Performance | Response times, memory usage |
+
+### Integration Tests
+
+| File | Purpose | Coverage |
+|------|---------|----------|
+| `tests/Integration/AnalysisJobLifecycleTest.php` | Full lifecycle | Create → Process → Complete |
+| `tests/Integration/AnalysisJobErrorRecoveryTest.php` | Error scenarios | Failures, cancellation, data integrity |
 
 ---
 
 ## Test Coverage Summary
 
-### Phase 1: Core Job System (Tasks 19-1 to 19-4)
-- Database schema validation
-- Model relationships and accessors
-- Service layer business logic
-- REST API endpoints
+### AnalysisJobService
 
-### Phase 2: Processing Queue (Tasks 19-5 to 19-8)
-- Indicator processor abstraction
-- Core SEO indicator implementations
-- Queue concurrency and throttling
-- Progress tracking and events
+| Method | Tests | Coverage |
+|--------|-------|----------|
+| `createJob()` | 10 | User validation, indicator filtering, result creation |
+| `getJob()` | 4 | Retrieval, ownership check |
+| `getJobProgress()` | 5 | Progress data, ownership, results |
+| `startJob()` | 3 | Status transition, validation |
+| `completeJob()` | 3 | Status transition, completion |
+| `failJob()` | 3 | Status transition, error message |
+| `cancelJob()` | 5 | Cancellation, result skipping, ownership |
+| `updateProgress()` | 3 | Counter updates, auto-completion |
+| `canUserAccessJob()` | 3 | Ownership verification |
+| `getAvailableIndicators()` | 2 | Indicator list, structure |
 
-### Phase 3: Real-time Updates (Tasks 19-9 to 19-12)
-- SSE stream endpoint
-- Polling fallback
-- Frontend progress component
-- Frontend results table
+### AnalysisRateLimiterService
 
-### Phase 4: Polish & Security (Tasks 19-13 to 19-16)
-- Error handling and recovery
-- Rate limiting
-- SSRF protection (HIGH RISK)
-- Integration tests
+| Method | Tests | Coverage |
+|--------|-------|----------|
+| `canCreateJob()` | 7 | Concurrent, hourly, site limits, admin bypass |
+| `checkApiRateLimit()` | 3 | API rate limiting, admin bypass |
+| `hitApiRateLimit()` | 2 | Counter increment, blocking |
+| `checkPollingRateLimit()` | 3 | Per-job rate limiting |
+| `hitPollingRateLimit()` | 2 | Counter increment, blocking |
+| `getJobCreationHeaders()` | 3 | Header format, remaining count |
+| `getApiHeaders()` | 1 | Header format |
+| `getPollingHeaders()` | 1 | Header format |
+| `buildRateLimitResponse()` | 3 | Response structure, headers |
+
+### API Endpoints
+
+| Endpoint | Tests | Coverage |
+|----------|-------|----------|
+| `GET /sites/{siteId}/analysis/jobs` | 5 | Auth, filtering, pagination, authorization |
+| `POST /sites/{siteId}/analysis/jobs` | 8 | Auth, validation, creation, rate limiting |
+| `GET /analysis/jobs/{jobId}` | 4 | Auth, retrieval, authorization |
+| `DELETE /analysis/jobs/{jobId}` | 5 | Auth, cancellation, state validation |
+| `POST /analysis/jobs/{jobId}/start` | 4 | Auth, dispatch, state validation |
+| `GET /analysis/jobs/{jobId}/progress` | 5 | Auth, data, rate limiting headers |
+| `GET /analysis/jobs/{jobId}/stream` | 10 | Auth, SSE format, events |
+| `GET /analysis/indicators` | 2 | Auth, indicator list |
 
 ---
 
-## High-Risk Areas
+## Rate Limits
 
-### 1. Queue Worker (TASK-19-7) - HIGH RISK
-- Concurrency complexity
-- Memory management
-- Error handling during processing
-- Race conditions
-
-### 2. SSRF Protection (TASK-19-15) - HIGH RISK
-- Security-critical component
-- Must block all internal IPs
-- DNS rebinding protection
-- Comprehensive logging
-
----
-
-## Test Files Created
-
-### Unit Tests
-```
-tests/Unit/
-├── Migrations/
-│   └── CreateAnalysisJobsTableTest.php (✓ created)
-├── Models/
-│   ├── AnalysisJobTest.php (✓ created)
-│   └── AnalysisJobResultTest.php (✓ created)
-├── Services/
-│   ├── AnalysisJobServiceTest.php (✓ created)
-│   ├── IndicatorProcessorTest.php (pending)
-│   ├── AnalysisQueueWorkerTest.php (pending)
-│   ├── ProgressServiceTest.php (pending)
-│   ├── AnalysisErrorHandlerTest.php (pending)
-│   └── SsrfProtectionTest.php (pending)
-└── Processors/
-    ├── MetaTagsProcessorTest.php (pending)
-    ├── HeadingsProcessorTest.php (pending)
-    ├── ImagesProcessorTest.php (pending)
-    └── LinksProcessorTest.php (pending)
-```
-
-### Feature Tests
-```
-tests/Feature/
-└── Api/
-    ├── AnalysisJobApiTest.php (✓ created)
-    ├── AnalysisJobStreamTest.php (pending)
-    ├── AnalysisJobPollingTest.php (pending)
-    └── AnalysisJobRateLimitTest.php (pending)
-```
-
-### Integration Tests
-```
-tests/Integration/
-└── AnalysisJobFlowTest.php (pending)
-```
-
-### Frontend Tests
-```
-tests/Frontend/
-└── components/
-    ├── AnalysisProgress.test.tsx (pending)
-    └── ResultsTable.test.tsx (pending)
-```
+| Limit Type | Value | Scope |
+|------------|-------|-------|
+| Concurrent jobs | 2 | Per user |
+| User hourly | 10 | Per user per hour |
+| Site hourly | 5 | Per site per hour |
+| API requests | 60 | Per user per minute |
+| Polling | 30 | Per job per minute |
 
 ---
 
 ## Running Tests
 
+### All Tests
+
 ```bash
-# Run all tests for SPEC-19
-php artisan test --filter=AnalysisJob
-
-# Run specific test file
-php artisan test tests/Unit/Models/AnalysisJobTest.php
-
-# Run with coverage
-php artisan test --coverage --min=80
-
-# Run integration tests only
-php artisan test tests/Integration/
+cd backend
+php artisan test --filter=Analysis
 ```
 
----
+### Unit Tests Only
 
-## Test Data
+```bash
+php artisan test --filter="Unit.*Analysis"
+```
 
-### Sample HTML Fixtures
-- `tests/fixtures/html/complete.html` - Page with all SEO elements
-- `tests/fixtures/html/minimal.html` - Minimal valid HTML
-- `tests/fixtures/html/missing-meta.html` - Missing meta tags
-- `tests/fixtures/html/broken-links.html` - Contains broken links
-- `tests/fixtures/html/large-images.html` - Large unoptimized images
+### Feature Tests Only
 
-### Mock API Responses
-- `tests/fixtures/responses/` - Mock HTTP responses for testing
+```bash
+php artisan test --filter="Feature.*Analysis"
+```
 
----
+### Integration Tests Only
 
-## Security Test Checklist
+```bash
+php artisan test --filter="Integration.*Analysis"
+```
 
-- [ ] All SSRF vectors blocked
-- [ ] IDOR protection on all endpoints
-- [ ] Rate limiting enforced
-- [ ] Input validation complete
-- [ ] Error messages don't leak info
-- [ ] SQL injection prevented
-- [ ] XSS prevented
-- [ ] CSRF protected
+### Specific Test File
+
+```bash
+php artisan test tests/Unit/Services/AnalysisJobServiceTest.php
+```
+
+### With Coverage Report
+
+```bash
+php artisan test --coverage --min=80
+```
 
 ---
 
 ## Performance Benchmarks
 
-| Operation | Target | Test |
-|-----------|--------|------|
-| Job creation | < 200ms | API test |
-| Progress update | < 100ms | Unit test |
-| Indicator processing | < 5s each | Integration |
-| Full 17-indicator job | < 60s | Integration |
-| SSE event latency | < 100ms | Feature test |
-| Memory per worker | < 256MB | Integration |
+| Operation | Target | Notes |
+|-----------|--------|-------|
+| Job creation | < 1s | With all 17 indicators |
+| Progress update | < 0.1s | Single indicator |
+| API response | < 0.5s | All endpoints |
+| Full lifecycle | < 3s | 4 indicators |
+| Memory per job | < 10MB | Creation + processing |
 
 ---
 
-## Pre-Deployment Checklist
+## Test Data
 
-- [ ] All unit tests passing
-- [ ] All feature tests passing
-- [ ] All integration tests passing
-- [ ] Code coverage >= 80%
-- [ ] Security tests passing
-- [ ] Performance benchmarks met
-- [ ] SSRF protection verified
-- [ ] Error handling verified
+### Available Indicators
+
+```php
+$indicators = [
+    'meta_tags', 'headings', 'images', 'links',
+    'performance', 'mobile', 'security', 'structured_data',
+    'content_quality', 'url_structure', 'canonicalization',
+    'robots_txt', 'sitemap', 'internal_linking',
+    'external_links', 'social_tags', 'crawlability',
+];
+```
+
+### Job Status Values
+
+- `pending` - Job created, waiting to start
+- `running` - Job is processing
+- `completed` - All indicators processed successfully
+- `failed` - Job failed with error
+- `cancelled` - User cancelled the job
+
+### Result Status Values
+
+- `pending` - Waiting to process
+- `running` - Currently processing
+- `completed` - Processed successfully
+- `failed` - Failed with error
+- `skipped` - Skipped due to cancellation
 
 ---
 
-*Created by PreTester for SPEC-019*
-*Last updated: 2026-02-28*
+## Common Test Patterns
+
+### Creating a Test Job
+
+```php
+$job = $this->service->createJob(
+    $userId,
+    $siteId,
+    ['meta_tags', 'headings']
+);
+```
+
+### Simulating Progress
+
+```php
+$this->service->startJob($job->id);
+$this->progressService->markRunning($job->id, 'meta_tags');
+$this->progressService->markComplete(
+    $job->id,
+    'meta_tags',
+    IndicatorResult::success('meta_tags', 'Meta Tags', 85.0, 100.0, processingTimeMs: 100)
+);
+```
+
+### Testing Rate Limits
+
+```php
+// Create jobs up to limit
+for ($i = 0; $i < $limit; $i++) {
+    AnalysisJob::create([...]);
+}
+
+// Should fail
+$response = $this->postJson(...);
+$response->assertStatus(429);
+```
+
+---
+
+## Notes
+
+1. **Admin Bypass:** Users with `admin` or `super_admin` role bypass all rate limits
+2. **SSE Reconnection:** Client should handle reconnection with `Last-Event-ID` header
+3. **Polling Fallback:** Use polling endpoint if SSE is not supported
+4. **Concurrent Processing:** Multiple indicators can be processed in parallel
+5. **Error Recovery:** Failed indicators don't stop other indicators from processing
+
+---
+
+## Related Documentation
+
+- `SPECIFICATIONS/SPEC-19.md` - Progressive Analysis specification
+- `TASKS/TASK-19-16.md` - Test implementation task
+- `backend/app/Services/AnalysisJobService.php` - Core service
+- `backend/app/Services/AnalysisRateLimiterService.php` - Rate limiting
+- `backend/app/Http/Controllers/Api/V1/AnalysisJobController.php` - API controller

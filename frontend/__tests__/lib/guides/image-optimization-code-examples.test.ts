@@ -485,10 +485,22 @@ describe('Image Optimization Guide - Code Relevance', () => {
 
       guide.sections.forEach((section) => {
         section.codeExamples?.forEach((example) => {
-          if (example.code.includes('width=') && example.code.includes('height=')) {
-            // Width and height should be numeric
-            expect(example.code).toMatch(/width=["']?\d+/);
-            expect(example.code).toMatch(/height=["']?\d+/);
+          // Check for width/height in both HTML attributes and JSX props
+          const hasWidthAndHeight = 
+            (example.code.includes('width=') && example.code.includes('height=')) ||
+            (example.code.includes('width={') && example.code.includes('height={'));
+          
+          if (hasWidthAndHeight) {
+            // Width and height should be numeric (HTML: width="1200" or JSX: width={1200})
+            const hasNumericWidth = 
+              /width=["']?\d+/.test(example.code) || 
+              /width=\{\d+\}/.test(example.code);
+            const hasNumericHeight = 
+              /height=["']?\d+/.test(example.code) || 
+              /height=\{\d+\}/.test(example.code);
+            
+            expect(hasNumericWidth).toBe(true);
+            expect(hasNumericHeight).toBe(true);
           }
         });
       });
