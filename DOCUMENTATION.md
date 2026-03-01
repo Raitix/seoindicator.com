@@ -1,6 +1,124 @@
 # DOCUMENTATION.md
 
 ---
+## Structured Data SEO Guide (TASK-20-16)
+
+### Guide Description
+Comprehensive SEO guide content for the Structured Data indicator, covering Schema.org markup, rich snippets, and implementation methods. Explains JSON-LD as Google's preferred format and provides actionable best practices for structured data implementation. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `structured-data`
+- **URL:** `https://seoindicator.com/seo-guides/structured-data/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What is Structured Data? | Definition, Schema.org vocabulary, search engine translation layer | ~250 |
+| SEO Benefits | Rich snippets, knowledge panels, 20-40% CTR improvement, voice search | ~300 |
+| Common Schema.org Types | Article, Product, FAQPage, BreadcrumbList, Organization, LocalBusiness, HowTo, Event, Review | ~400 |
+| Implementation Methods | JSON-LD (preferred), Microdata (legacy), RDFa (legacy), comparison table | ~350 |
+| Testing and Validation | Google Rich Results Test, Schema Markup Validator, Search Console, Chrome DevTools | ~250 |
+| JSON-LD Code Examples | Product, Article, FAQPage, Organization, BreadcrumbList schemas | ~400 |
+
+**Total Content:** ~1,950 words
+**Read Time:** 6 minutes
+
+### Key Technical Details
+
+| Topic | Details |
+|-------|---------|
+| JSON-LD Format | `<script type="application/ld+json">{...}</script>` in `<head>` or `<body>` |
+| Required Properties | @context: "https://schema.org", @type, and type-specific properties |
+| Google's Preference | JSON-LD is the recommended format for all structured data |
+| Rich Snippet Types | Product, Article, FAQ, Breadcrumb, Organization, LocalBusiness, HowTo, Event, Review |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| Article schema (JSON-LD) | JSON | Full article structured data with author, publisher, date |
+| Product schema (JSON-LD) | JSON | Product with offers, ratings, availability |
+| FAQPage schema (JSON-LD) | JSON | Q&A pairs for FAQ rich results |
+| Organization schema (JSON-LD) | JSON | Business info for knowledge panels |
+| BreadcrumbList schema (JSON-LD) | JSON | Navigation breadcrumbs for SERP |
+| Microdata comparison | HTML | Legacy format example (not recommended) |
+| Browser console snippet | JavaScript | How to inspect JSON-LD in DevTools |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Use JSON-LD format for all structured data (Google's preferred method) |
+| Critical | Include all required properties for your schema type |
+| Critical | Test with Google Rich Results Test before deploying |
+| Important | Choose the most specific schema type for your content |
+| Important | Keep structured data in sync with visible page content |
+| Important | Add Organization schema to your homepage for knowledge panels |
+| Important | Implement BreadcrumbList schema for all navigational paths |
+| Important | Monitor structured data errors in Google Search Console |
+| Recommended | Add AggregateRating schema for products with reviews |
+| Recommended | Use ISO 8601 date format for all date properties |
+
+### Related Guides
+- `open-graph` - Social sharing optimization
+- `canonical-urls` - Duplicate content prevention
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'structured-data',
+  title: 'Structured Data (Schema.org)',
+  summary: 'Implement Schema.org markup for rich snippets and enhanced search results...',
+  category: 'technical',
+  icon: '📊',
+  readTime: 6,
+  hasTool: false,
+  relatedGuides: ['open-graph', 'canonical-urls'],
+  sections: [ /* 6 sections */ ],
+  checklist: [ /* 10 items */ ],
+  codeExamples: [ /* 7 examples */ ]
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `structured-data-guide.test.ts` | 44 | Content structure validation |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|------------|
+| Guide Structure | 6 | Registry entry, slug, title, category, icon, read time |
+| What is Structured Data | 3 | Section exists, Schema.org mentioned, purpose explained |
+| SEO Benefits | 4 | Benefits section, rich snippets, knowledge panels, CTR |
+| Schema.org Types | 6 | Types section, Article, Product, FAQ, Breadcrumb, Organization |
+| Implementation Methods | 4 | Implementation section, JSON-LD preferred, Microdata, script tag |
+| Testing Tools | 3 | Testing section, Rich Results Test, schema validator |
+| Code Examples | 5 | JSON-LD examples, @context, @type, valid JSON |
+| Checklist | 5 | 10 items, valid structure, critical/important priorities |
+| Related Guides | 3 | open-graph, canonical-urls, valid slugs |
+| Content Quality | 5 | Summary, icon, sections count, substantial content |
+
+### Production Status
+- **Deployed:** 2026-03-01 (GitHub Actions)
+- **URL:** https://seoindicator.com/seo-guides/structured-data/
+- **Health Check:** Passing
+- **Tests:** 44/44 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+
+### Related Tasks
+- TASK-20-18: Open Graph Tags Guide (related topic)
+- TASK-20-17: Canonical URLs Guide (related topic)
+
+---
 ## Mobile-Friendliness SEO Guide (TASK-20-14)
 
 ### Guide Description
