@@ -1,7 +1,7 @@
 # TASK-22-3: CrawlerService Skeleton
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -94,3 +94,51 @@ Create the CrawlerService skeleton with job management methods. This establishes
 
 ## Comments
 _Leave notes for the next agent here_
+
+### ProjectManager (2026-03-01 23:28 GMT+2)
+**Prioritization Assessment:**
+- **Priority:** High (confirmed) - Foundation service skeleton for SPEC-022, required by all downstream tasks
+- **Risk:** Medium (confirmed) - Service skeleton with job management logic, config file creation, error handling patterns
+
+**Dependency Status:**
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| TASK-22-1 (Migrations) | Tables Ready ✅ | Migration tables exist and work |
+| TASK-22-2 (Models) | To Write Tests ⏳ | NOT implemented yet - PreTester phase |
+| TASK-1-10 (JobQueue) | Done ✅ | Queue system available for job dispatch |
+
+**Dependency Chain (SPEC-022 Phase 1):**
+```
+TASK-22-1 (Migrations) → TASK-22-2 (Models) → TASK-22-3 (Service skeleton - THIS TASK)
+```
+
+**Critical Decision - BLOCKED for Development:**
+- TASK-22-2 (Models) is NOT Done - models don't exist yet
+- CrawlerService requires `CrawlJob` and `CrawlPage` models for:
+  - Constructor injection
+  - Type hints in method signatures
+  - Database operations
+
+**TDD Approach - Tests Can Proceed:**
+- PreTester CAN design tests NOW using mocked model interfaces
+- Test design: Mock `CrawlJob::class` and `CrawlPage::class`
+- Define expected service interface from acceptance criteria
+- Tests will fail until models implemented (expected TDD behavior)
+
+**Service Methods to Test:**
+1. `createJob($userId, $url, $options)` - Creates CrawlJob, dispatches to queue
+2. `getJob($jobId)` - Retrieves CrawlJob by job_id
+3. `processJob($jobId)` - Main crawl execution (skeleton, logic in later tasks)
+4. `cancelJob($jobId)` - Update status to 'cancelled' if queued/running
+5. `cleanup()` - Delete expired jobs and pages
+
+**Config Values to Create (config/crawler.php):**
+- max_depth: 2, max_pages: 50, max_content_size: 3MB
+- page_timeout: 30s, job_timeout: 5min, retention_days: 7
+
+**Execution Order:**
+1. TASK-22-2 must reach `To Test Locally` (models implemented)
+2. Then Developer can implement CrawlerService skeleton
+3. Service skeleton enables Phase 2-5 tasks
+
+**Handoff:** Ready for PreTester to design tests with mocked models.
