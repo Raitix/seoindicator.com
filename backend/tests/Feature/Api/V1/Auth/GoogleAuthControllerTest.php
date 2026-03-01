@@ -337,7 +337,7 @@ class GoogleAuthControllerTest extends TestCase
             ->once()
             ->andReturn([
                 'user' => $user,
-                'token' => '1|sanctum_token_here',
+                'token' => '1|sanctumtoken123abc',
                 'is_new_user' => false,
             ]);
         
