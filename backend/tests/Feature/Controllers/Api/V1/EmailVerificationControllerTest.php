@@ -783,7 +783,7 @@ class EmailVerificationControllerTest extends TestCase
         Notification::assertSentTo(
             $user,
             VerifyEmail::class,
-            function ($notification) use (&$verificationUrl) {
+            function ($notification) use (&$verificationUrl, $user) {
                 $verificationUrl = $notification->toMail($user)->actionUrl;
                 return true;
             }
