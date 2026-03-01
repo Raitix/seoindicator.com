@@ -9,7 +9,7 @@
 - [x] Unit tests written
 - [ ] Integration tests written
 - [ ] E2E tests written (N/A - migration task)
-- [ ] All tests passing locally (blocked: migration not created yet)
+- [x] All tests passing locally
 - [ ] All tests passing in production
 
 ## Overview
