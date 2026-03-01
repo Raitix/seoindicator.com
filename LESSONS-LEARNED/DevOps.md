@@ -18,6 +18,20 @@ _(Document rollback events and causes)_
 
 ## Deployment Notes
 
+### TASK-25-7 (GoogleOAuthService)
+- **Date:** 2026-03-01
+- **Method:** GitHub Actions (automatic)
+- **Run ID:** 22545442333
+- **Result:** Successful
+- **Duration:** ~2 minutes (build: 1m22s, deploy: 29s)
+- **Deployed Files:**
+  - `GoogleOAuthService.php` - 366 lines
+  - 5 exception classes
+  - 2 migrations (add_avatar_to_users, make_password_nullable)
+  - Test files
+- **Health Check:** 200 OK, database connected
+- **Note:** OAuth service implementation for Google sign-in. Migrations add avatar support and nullable password for OAuth-only users.
+
 ### TASK-25-6 (Google OAuth Credentials Configuration)
 - **Date:** 2026-03-01
 - **Type:** Configuration task (not code deployment)
