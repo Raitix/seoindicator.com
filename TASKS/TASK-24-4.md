@@ -1,7 +1,7 @@
 # TASK-24-4: ManifestValidatorService
 
 ## STATUS
-`To Document`
+`Documentation in Progress`
 
 ## PRIORITY
 `High`
