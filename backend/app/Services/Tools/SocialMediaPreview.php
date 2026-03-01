@@ -102,7 +102,7 @@ class SocialMediaPreview extends SEOTool
             'title' => $this->sanitize($this->extractMetaProperty($crawler, 'og:title')),
             'description' => $this->sanitize($this->extractMetaProperty($crawler, 'og:description')),
             'image' => $this->normalizeUrl($this->sanitize($this->extractMetaProperty($crawler, 'og:image')), $baseUrl),
-            'url' => $this->sanitize($this->extractMetaProperty($crawler, 'og:url')),
+            'url' => $this->normalizeUrl($this->sanitize($this->extractMetaProperty($crawler, 'og:url')), $baseUrl),
             'type' => $this->sanitize($this->extractMetaProperty($crawler, 'og:type')),
             'siteName' => $this->sanitize($this->extractMetaProperty($crawler, 'og:site_name')),
             'locale' => $this->sanitize($this->extractMetaProperty($crawler, 'og:locale')),
@@ -110,13 +110,8 @@ class SocialMediaPreview extends SEOTool
             'imageHeight' => $this->extractIntMetaProperty($crawler, 'og:image:height'),
         ];
 
-        // Fallback to parsed data if not found
-        if (empty($tags['title']) && !empty($parsed['title'])) {
-            $tags['title'] = $parsed['title'];
-        }
-        if (empty($tags['description']) && !empty($parsed['description'])) {
-            $tags['description'] = $parsed['description'];
-        }
+        // Note: Fallback to parsed data is handled in generatePreviews(), not here
+        // This keeps the raw extracted OG tags separate from preview fallbacks
 
         return $tags;
     }
@@ -292,7 +287,7 @@ class SocialMediaPreview extends SEOTool
 
         // Image dimension warnings
         if (!empty($openGraph['imageWidth']) && !empty($openGraph['imageHeight'])) {
-            if ($openGraph['imageWidth'] < self::MIN_IMAGE_WIDTH || $openGraph['imageHeight'] < self::MIN_IMAGE_HEIGHT) {
+            if ($openGraph['imageWidth'] <= self::MIN_IMAGE_WIDTH || $openGraph['imageHeight'] <= self::MIN_IMAGE_HEIGHT) {
                 $warnings[] = [
                     'field' => 'og:image',
                     'message' => 'Image is too small. Recommended minimum size is 200x200 pixels for proper display.',

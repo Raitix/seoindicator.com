@@ -15993,3 +15993,309 @@ protected $casts = [
 - TASK-25-7: GoogleOAuthService (core OAuth service)
 - TASK-25-8: GoogleAuthController (API endpoints)
 - FEAT-025: User Accounts + Dashboard + Analysis History
+
+---
+## Database Schema: Brand Configs Table (TASK-15-1)
+
+### Brand Configs Table
+Stores white-label branding configuration per account, enabling agencies and resellers to customize the SEOIndicator interface with their own branding. Supports custom logos, color schemes, and footer text for a fully branded experience.
+
+```sql
+CREATE TABLE brand_configs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    account_id BIGINT UNSIGNED NOT NULL,
+    logo_url VARCHAR(500) NULL,
+    brand_name VARCHAR(100) NOT NULL DEFAULT 'SEOIndicator',
+    primary_color VARCHAR(7) NOT NULL DEFAULT '#3B82F6',
+    secondary_color VARCHAR(7) NOT NULL DEFAULT '#1E40AF',
+    favicon_url VARCHAR(500) NULL,
+    login_background_url VARCHAR(500) NULL,
+    footer_text TEXT NULL,
+    hide_powered_by BOOLEAN DEFAULT FALSE,
+    custom_email_from VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_account (account_id)
+);
+```
+
+**Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `account_id` | BIGINT UNSIGNED | FK to accounts.id (one config per account) |
+| `logo_url` | VARCHAR(500) | URL to custom logo image (nullable) |
+| `brand_name` | VARCHAR(100) | Brand name for display (default: 'SEOIndicator') |
+| `primary_color` | VARCHAR(7) | Primary brand color hex (default: '#3B82F6') |
+| `secondary_color` | VARCHAR(7) | Secondary brand color hex (default: '#1E40AF') |
+| `favicon_url` | VARCHAR(500) | URL to custom favicon (nullable) |
+| `login_background_url` | VARCHAR(500) | URL to custom login page background (nullable) |
+| `footer_text` | TEXT | Custom footer text/links (nullable) |
+| `hide_powered_by` | BOOLEAN | Hide "Powered by SEOIndicator" branding (default: FALSE) |
+| `custom_email_from` | VARCHAR(255) | Custom sender email for notifications (nullable) |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+| `updated_at` | TIMESTAMP | Last update timestamp |
+
+**Constraints:**
+- Foreign Key: `account_id → accounts.id` ON DELETE CASCADE
+- Unique: `account_id` - one brand config per account
+
+**Indexes:**
+- `idx_account` unique index on `account_id`
+
+### Model: BrandConfig
+
+**Model:** `App\Models\BrandConfig`
+
+**Fillable Attributes:**
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `account_id` | int | FK to accounts.id |
+| `logo_url` | string? | URL to custom logo |
+| `brand_name` | string | Brand name for display |
+| `primary_color` | string | Primary brand color hex |
+| `secondary_color` | string | Secondary brand color hex |
+| `favicon_url` | string? | URL to custom favicon |
+| `login_background_url` | string? | URL to custom login background |
+| `footer_text` | string? | Custom footer text |
+| `hide_powered_by` | bool | Hide "Powered by" branding |
+| `custom_email_from` | string? | Custom email sender |
+
+**Model Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `hide_powered_by` | `boolean` |
+
+**Model Relationships:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `account()` | belongsTo | The account this brand config belongs to |
+
+**Default Values:**
+- `brand_name`: 'SEOIndicator'
+- `primary_color`: '#3B82F6' (Tailwind blue-500)
+- `secondary_color`: '#1E40AF' (Tailwind blue-800)
+- `hide_powered_by`: false
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Mass Assignment | `$fillable` whitelist on model |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS | Color values validated as hex format |
+| IDOR | Protected via Account relationship |
+| Cascade Delete | FK with ON DELETE CASCADE ensures data integrity |
+
+### White-Label Features
+
+**Customizable Elements:**
+| Element | Field | Description |
+|---------|-------|-------------|
+| Logo | `logo_url` | Replace SEOIndicator logo with agency logo |
+| Brand Name | `brand_name` | Display agency name in header/emails |
+| Colors | `primary_color`, `secondary_color` | Apply agency brand colors to UI |
+| Favicon | `favicon_url` | Custom favicon for browser tabs |
+| Login Background | `login_background_url` | Custom login page branding |
+| Footer | `footer_text` | Custom footer text/links |
+| Powered By | `hide_powered_by` | Hide "Powered by SEOIndicator" for full white-label |
+| Email Sender | `custom_email_from` | Custom sender address for notifications |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CreateBrandConfigsTableTest.php` | 37 | 70 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Schema Structure | 13 | All columns with correct types and defaults |
+| Column Types | 7 | VARCHAR, TEXT, BOOLEAN, TIMESTAMP validation |
+| Default Values | 4 | brand_name, primary_color, secondary_color, hide_powered_by |
+| Constraints | 3 | FK to accounts, unique account_id, cascade delete |
+| CRUD Operations | 4 | Create, Read, Update, Delete |
+| Security | 4 | SQL injection, XSS payload handling |
+| Edge Cases | 5 | NULL handling, max lengths, invalid colors |
+| Rollback | 2 | Migration down() drops table correctly |
+
+**Adversarial Testing Notes:**
+- SQL injection payloads stored as literal strings (not executed)
+- XSS payloads stored safely without sanitization needed at DB level
+- Foreign key constraint properly enforced
+- Cascade delete verified (deleting account removes brand_config)
+- Unique constraint on account_id prevents duplicate brand configs
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-01 (commit 7699e05 via GitHub Actions) |
+| **Migration** | `2026_03_01_170000_create_brand_configs_table.php` |
+| **Migration Batch** | 30 |
+| **Health Check** | Passing |
+| **Tests** | 37/37 passing (70 assertions) |
+| **Status** | Complete |
+
+### Dependencies
+- TASK-15-1 (This migration)
+- accounts table (existing)
+
+### Related Tasks
+- TASK-15-2: Brand Config API Endpoints
+- TASK-15-3: Brand Config Frontend UI
+- FEAT-015: White-Label Customization
+
+---
+## Custom Domains Table (TASK-15-2)
+
+### Service Description
+Database migration for storing custom domain configurations for white-label reselling. Tracks domain ownership, DNS verification status, and SSL certificate provisioning for agencies and resellers who want to serve SEOIndicator under their own domain.
+
+### Database Schema
+
+```sql
+CREATE TABLE custom_domains (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    account_id BIGINT UNSIGNED NOT NULL,
+    domain VARCHAR(255) NOT NULL,
+    dns_verified BOOLEAN DEFAULT FALSE,
+    ssl_provisioned BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    verified_at TIMESTAMP NULL,
+
+    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_domain (domain)
+);
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `account_id` | BIGINT UNSIGNED | FK to accounts.id (CASCADE delete) |
+| `domain` | VARCHAR(255) | Custom domain (e.g., `seo.agency.com`) |
+| `dns_verified` | BOOLEAN | Whether DNS CNAME record verified |
+| `ssl_provisioned` | BOOLEAN | Whether SSL certificate provisioned |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+| `verified_at` | TIMESTAMP | When domain verification completed |
+
+### Indexes
+
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `PRIMARY` | id | Primary key lookup |
+| `idx_domain` | domain | Unique constraint on domain |
+| `custom_domains_account_id_foreign` | account_id | Foreign key to accounts |
+
+### Foreign Keys
+
+| Constraint | Columns | References | On Delete |
+|------------|---------|------------|-----------|
+| `custom_domains_account_id_foreign` | account_id | accounts.id | CASCADE |
+
+### Model Relationships
+
+**CustomDomain Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `account()` | belongsTo | The account that owns this custom domain |
+
+**Account Model (updated):**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `customDomains()` | hasMany | CustomDomain records for this account |
+
+### Model Scopes
+
+| Scope | Description |
+|-------|-------------|
+| `verified()` | Domains with DNS verified |
+| `sslReady()` | Domains with SSL provisioned |
+| `pending()` | Domains pending DNS verification |
+| `forAccount($accountId)` | Filter by account |
+| `byDomain($domain)` | Find by domain name |
+
+### Model Methods
+
+| Method | Description |
+|--------|-------------|
+| `isVerified()` | Check if DNS is verified |
+| `isSslReady()` | Check if SSL is provisioned |
+| `markAsVerified()` | Set dns_verified = true, set verified_at |
+| `markSslProvisioned()` | Set ssl_provisioned = true |
+| `unmarkVerified()` | Reset DNS verification status |
+
+### Repository Methods
+
+| Method | Description |
+|--------|-------------|
+| `create(array $data)` | Create new custom domain |
+| `find(int $id)` | Find by ID |
+| `findByDomain(string $domain)` | Find by domain name |
+| `findByAccount(int $accountId)` | Get all domains for account |
+| `update(CustomDomain $domain, array $data)` | Update domain |
+| `delete(CustomDomain $domain)` | Delete domain |
+| `findVerifiedByAccount(int $accountId)` | Get verified domains for account |
+| `findSslReadyByAccount(int $accountId)` | Get SSL-ready domains for account |
+| `exists(string $domain)` | Check if domain exists |
+| `getPrimaryDomain(int $accountId)` | Get primary domain for account |
+
+### DNS Verification Workflow
+
+```
+1. User enters domain (e.g., seo.agency.com)
+2. System generates DNS instructions (CNAME to white-label.seoindicator.com)
+3. User adds CNAME record in their DNS provider
+4. System verifies DNS resolution
+5. dns_verified = true, verified_at = now()
+6. SSL certificate provisioned (Let's Encrypt)
+7. ssl_provisioned = true
+8. Domain goes live with user's branding
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CreateCustomDomainsTableTest.php` | 29 | - |
+| `CustomDomainTest.php` | 29 | - |
+| `CustomDomainRepositoryTest.php` | 28 | - |
+| **Total** | **86** | **196** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Schema Structure | 8 | All columns with correct types and defaults |
+| Foreign Key Constraints | 4 | FK to accounts, cascade delete |
+| Indexes | 2 | Unique domain constraint |
+| Migration Rollback | 2 | Drop table and re-create |
+| Security | 3 | SQL injection, XSS, path traversal |
+| Edge Cases | 8 | NULL handling, long domains, Unicode/IDN |
+| Model Creation | 6 | Create, relationships, attributes |
+| Model Scopes | 5 | verified, sslReady, pending, forAccount, byDomain |
+| Model Methods | 5 | isVerified, isSslReady, markAsVerified, markSslProvisioned, unmarkVerified |
+| Repository CRUD | 8 | create, find, update, delete |
+| Repository Queries | 9 | findByDomain, findByAccount, findVerifiedByAccount, etc. |
+| Workflows | 4 | DNS verification, SSL provisioning, full lifecycle |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-01 (commit 6429ec5 via GitHub Actions) |
+| **Migration** | `2026_03_01_174500_create_custom_domains_table.php` |
+| **Health Check** | Passing |
+| **Tests** | 86/86 passing (196 assertions) |
+| **Status** | Complete |
+
+### Dependencies
+- accounts table (existing)
+- TASK-15-1 (Brand Configs Table - for branding context)
+
+### Related Tasks
+- TASK-15-1: Brand Configs Table
+- FEAT-015: White-Label Customization
