@@ -1,7 +1,7 @@
 # TASK-25-8: Implement GoogleAuthController
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
