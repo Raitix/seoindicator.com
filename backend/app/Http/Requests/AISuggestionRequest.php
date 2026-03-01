@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Rules\MaxContextLength;
 
 /**
  * Form Request for AI Suggestion API validation.
@@ -69,7 +70,7 @@ class AISuggestionRequest extends FormRequest
             'context' => [
                 'required',
                 'array',
-                'max_context_length',
+                new MaxContextLength(self::MAX_CONTEXT_CHARS),
             ],
             'provider' => [
                 'nullable',

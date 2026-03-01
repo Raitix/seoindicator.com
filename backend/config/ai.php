@@ -95,4 +95,29 @@ return [
 
     'debug' => env('AI_DEBUG', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Rate Limits (TASK-21-10)
+    |--------------------------------------------------------------------------
+    |
+    | Configure rate limiting for AI suggestion endpoints to prevent abuse
+    | and manage API quotas. Uses sliding window algorithm.
+    |
+    | Per-user limits apply to authenticated users.
+    | Per-IP limits apply to anonymous requests.
+    |
+    */
+
+    'rate_limits' => [
+        'user' => [
+            'limit' => (int) env('AI_RATE_LIMIT_USER', 20),
+            'window_seconds' => 3600, // 1 hour
+        ],
+        'ip' => [
+            'limit' => (int) env('AI_RATE_LIMIT_IP', 10),
+            'window_seconds' => 3600, // 1 hour
+        ],
+        'admin_whitelist' => env('AI_RATE_LIMIT_ADMIN_WHITELIST', true),
+    ],
+
 ];
