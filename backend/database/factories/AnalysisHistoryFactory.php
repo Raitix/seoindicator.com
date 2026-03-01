@@ -185,4 +185,24 @@ class AnalysisHistoryFactory extends Factory
             ],
         ]);
     }
+
+    /**
+     * Associate with a specific user.
+     */
+    public function forUser(User $user): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'user_id' => $user->id,
+        ]);
+    }
+
+    /**
+     * Associate with a specific site.
+     */
+    public function forSite(Site $site): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'site_id' => $site->id,
+        ]);
+    }
 }
