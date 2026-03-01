@@ -88,17 +88,28 @@ describe('GuideSearch Component', () => {
   });
 
   describe('Interaction', () => {
-    it('calls onChange when input changes', async () => {
-      const user = userEvent.setup();
+    it('calls onChange when input changes (after debounce)', async () => {
+      jest.useFakeTimers();
       
-      render(
-        <GuideSearch value="" onChange={mockOnChange} />
-      );
+      const localOnChange = jest.fn();
+      
+      function TestWrapper() {
+        return <GuideSearch value="" onChange={localOnChange} />;
+      }
+      
+      render(<TestWrapper />);
       
       const input = screen.getByTestId('search-input');
-      await user.type(input, 't');
+      fireEvent.change(input, { target: { value: 't' } });
       
-      expect(mockOnChange).toHaveBeenCalled();
+      // Before debounce timer
+      expect(localOnChange).not.toHaveBeenCalled();
+      
+      // After debounce timer
+      jest.advanceTimersByTime(300);
+      expect(localOnChange).toHaveBeenCalledWith('t');
+      
+      jest.useRealTimers();
     });
 
     it('clears input when clear button clicked', async () => {
@@ -263,16 +274,12 @@ describe('GuideSearch Component', () => {
       
       const debouncedOnChange = jest.fn();
       
-      function DebouncedTestWrapper() {
-        const [value, setValue] = useState('');
-        
-        return <GuideSearch value={value} onChange={(v) => {
-          setValue(v);
-          debouncedOnChange(v);
-        }} />;
+      // Simple wrapper without state update in onChange
+      function TestWrapper() {
+        return <GuideSearch value="" onChange={debouncedOnChange} />;
       }
       
-      render(<DebouncedTestWrapper />);
+      render(<TestWrapper />);
       
       const input = screen.getByTestId('search-input');
       fireEvent.change(input, { target: { value: 'test' } });
