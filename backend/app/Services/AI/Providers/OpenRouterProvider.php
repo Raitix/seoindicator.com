@@ -5,22 +5,28 @@ namespace App\Services\AI\Providers;
 use App\Services\AI\Contracts\AIProviderInterface;
 use App\Services\AI\DTOs\AIResponse;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Client\ConnectionException;
 
 /**
  * OpenRouter AI Provider implementation.
  *
- * Integrates with the OpenRouter API to provide access to various AI models
- * including free models like Llama 3.1, Gemma 2, and Qwen 2.
+ * Provides access to OpenRouter's AI models including free models like
+ * Llama 3.1 and Gemma 2. Implements the AIProviderInterface for
+ * consistent integration with the AI suggestion system.
  *
  * @see https://openrouter.ai/docs
  */
 class OpenRouterProvider implements AIProviderInterface
 {
     /**
-     * The API key for OpenRouter authentication.
+     * The API key for authentication.
      */
     private string $apiKey;
+
+    /**
+     * The model to use for generation.
+     */
+    private string $model;
 
     /**
      * The base URL for the OpenRouter API.
@@ -28,27 +34,22 @@ class OpenRouterProvider implements AIProviderInterface
     private string $baseUrl;
 
     /**
-     * The model to use for completions.
-     */
-    private string $model;
-
-    /**
      * The timeout in seconds for API requests.
      */
     private int $timeout;
 
     /**
-     * The maximum tokens to generate in responses.
+     * The maximum tokens for generation.
      */
     private int $maxTokens;
 
     /**
-     * The temperature for response generation (0.0 to 2.0).
+     * The default temperature for generation.
      */
     private float $temperature;
 
     /**
-     * Optional system prompt to prepend to all requests.
+     * Optional system prompt for all requests.
      */
     private ?string $systemPrompt;
 
@@ -60,17 +61,22 @@ class OpenRouterProvider implements AIProviderInterface
      */
     public function __construct(array $config)
     {
-        // Validate API key
-        if (!isset($config['api_key']) || !is_string($config['api_key'])) {
-            throw new \InvalidArgumentException('api_key is required for OpenRouter provider');
+        // Validate required api_key
+        if (!isset($config['api_key'])) {
+            throw new \InvalidArgumentException('api_key is required');
+        }
+
+        // Validate api_key is not null
+        if ($config['api_key'] === null) {
+            throw new \InvalidArgumentException('api_key is required');
         }
 
         $this->apiKey = $config['api_key'];
-        $this->baseUrl = $this->validateBaseUrl($config['base_url'] ?? 'https://openrouter.ai/api/v1');
         $this->model = $config['model'] ?? 'meta-llama/llama-3.1-8b-instruct:free';
+        $this->baseUrl = $this->validateBaseUrl($config['base_url'] ?? 'https://openrouter.ai/api/v1');
         $this->timeout = $this->validateTimeout($config['timeout'] ?? 30);
         $this->maxTokens = $this->validateMaxTokens($config['max_tokens'] ?? 1000);
-        $this->temperature = (float)($config['temperature'] ?? 0.7);
+        $this->temperature = $config['temperature'] ?? 0.7;
         $this->systemPrompt = $config['system_prompt'] ?? null;
     }
 
@@ -87,14 +93,18 @@ class OpenRouterProvider implements AIProviderInterface
 
         try {
             $response = $this->makeRequest($prompt, $options);
-            $latencyMs = (int)((microtime(true) - $startTime) * 1000);
+            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
 
-            return $this->parseResponse($response, $latencyMs);
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            $latencyMs = (int)((microtime(true) - $startTime) * 1000);
+            if (!$response->successful()) {
+                return $this->handleErrorResponse($response, $latencyMs);
+            }
+
+            return $this->handleSuccessResponse($response, $latencyMs);
+        } catch (ConnectionException $e) {
+            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
             return AIResponse::error('Request timeout', $latencyMs);
         } catch (\Exception $e) {
-            $latencyMs = (int)((microtime(true) - $startTime) * 1000);
+            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
             return AIResponse::error($e->getMessage(), $latencyMs);
         }
     }
@@ -140,7 +150,7 @@ class OpenRouterProvider implements AIProviderInterface
     }
 
     /**
-     * Get the configured maximum tokens.
+     * Get the configured max tokens.
      *
      * @return int The maximum tokens
      */
@@ -150,11 +160,11 @@ class OpenRouterProvider implements AIProviderInterface
     }
 
     /**
-     * Make the HTTP request to the OpenRouter API.
+     * Make the HTTP request to OpenRouter API.
      *
-     * @param string $prompt The prompt to send
-     * @param array<string, mixed> $options Optional parameters
-     * @return \Illuminate\Http\Client\Response The HTTP response
+     * @param string $prompt The user prompt
+     * @param array<string, mixed> $options Request options
+     * @return \Illuminate\Http\Client\Response
      */
     private function makeRequest(string $prompt, array $options): \Illuminate\Http\Client\Response
     {
@@ -173,7 +183,7 @@ class OpenRouterProvider implements AIProviderInterface
     }
 
     /**
-     * Build the messages array for the API request.
+     * Build the messages array for the request.
      *
      * @param string $prompt The user prompt
      * @return array<int, array{role: string, content: string}> The messages array
@@ -213,83 +223,91 @@ class OpenRouterProvider implements AIProviderInterface
     }
 
     /**
-     * Parse the API response and return an AIResponse.
+     * Handle a successful API response.
      *
      * @param \Illuminate\Http\Client\Response $response The HTTP response
-     * @param int $latencyMs The latency in milliseconds
+     * @param int $latencyMs The request latency in milliseconds
      * @return AIResponse The parsed response
      */
-    private function parseResponse(\Illuminate\Http\Client\Response $response, int $latencyMs): AIResponse
+    private function handleSuccessResponse(\Illuminate\Http\Client\Response $response, int $latencyMs): AIResponse
     {
-        // Handle HTTP errors
-        if ($response->failed()) {
-            return $this->handleError($response, $latencyMs);
-        }
+        $body = $response->body();
 
         // Handle empty response
-        $body = $response->body();
         if (empty($body)) {
-            return AIResponse::error('Empty response from API', $latencyMs);
+            return AIResponse::error('Empty response from provider', $latencyMs);
         }
 
         // Parse JSON
         try {
-            $data = $response->json();
-        } catch (\Exception $e) {
-            return AIResponse::error('Invalid response format', $latencyMs);
+            $data = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            return AIResponse::error('Invalid JSON response from provider', $latencyMs);
         }
 
-        // Validate response structure
+        // Validate choices array exists
         if (!isset($data['choices']) || !is_array($data['choices'])) {
             return AIResponse::error('Invalid response format: missing choices', $latencyMs);
         }
 
+        // Validate choices is not empty
         if (empty($data['choices'])) {
             return AIResponse::error('No response generated', $latencyMs);
         }
 
-        $choice = $data['choices'][0];
+        // Extract content from first choice
+        $firstChoice = $data['choices'][0];
 
-        if (!isset($choice['message'])) {
+        if (!isset($firstChoice['message'])) {
             return AIResponse::error('Invalid response format: missing message', $latencyMs);
         }
 
-        $content = $choice['message']['content'] ?? null;
+        $content = $firstChoice['message']['content'] ?? null;
+
+        // Extract token usage
         $tokensUsed = $data['usage']['total_tokens'] ?? null;
 
-        return AIResponse::success(
+        // Use constructor directly to allow null content
+        return new AIResponse(
+            success: true,
             content: $content,
             tokensUsed: $tokensUsed,
-            latencyMs: $latencyMs
+            latencyMs: $latencyMs,
+            errorMessage: null
         );
     }
 
     /**
-     * Handle an error response from the API.
+     * Handle an error API response.
      *
      * @param \Illuminate\Http\Client\Response $response The HTTP response
-     * @param int $latencyMs The latency in milliseconds
+     * @param int $latencyMs The request latency in milliseconds
      * @return AIResponse The error response
      */
-    private function handleError(\Illuminate\Http\Client\Response $response, int $latencyMs): AIResponse
+    private function handleErrorResponse(\Illuminate\Http\Client\Response $response, int $latencyMs): AIResponse
     {
-        $status = $response->status();
-        $body = $response->json();
+        $statusCode = $response->status();
 
-        // Extract error message from response
-        $errorMessage = $body['error']['message'] ?? null;
+        // Try to extract error message from response body
+        $errorData = $response->json();
+        $errorMessage = $errorData['error']['message'] ?? null;
 
-        return match ($status) {
-            400 => AIResponse::error($errorMessage ?? "Bad request (400)", $latencyMs),
-            401 => AIResponse::error('Invalid API key (401)', $latencyMs),
-            403 => AIResponse::error('Access denied (403)', $latencyMs),
-            404 => AIResponse::error('Endpoint not found (404)', $latencyMs),
-            429 => AIResponse::error('Rate limit exceeded. Please try again later.', $latencyMs),
-            500 => AIResponse::error('Server error (500)', $latencyMs),
-            502 => AIResponse::error('Bad gateway (502)', $latencyMs),
-            503 => AIResponse::error('Service unavailable (503)', $latencyMs),
-            default => AIResponse::error("Request failed with status {$status}", $latencyMs),
+        $message = match ($statusCode) {
+            400 => $errorMessage ?? 'Bad request',
+            401 => 'Invalid API key',
+            403 => 'Access denied',
+            404 => 'Endpoint not found',
+            429 => 'Rate limit exceeded',
+            500 => 'Server error',
+            502 => 'Bad gateway',
+            503 => 'Service unavailable',
+            default => $errorMessage ?? "HTTP error {$statusCode}",
         };
+
+        // Include status code in error message for better debugging
+        $message = "{$statusCode}: {$message}";
+
+        return AIResponse::error($message, $latencyMs);
     }
 
     /**
@@ -310,24 +328,24 @@ class OpenRouterProvider implements AIProviderInterface
     /**
      * Validate and sanitize the timeout value.
      *
-     * @param mixed $timeout The timeout to validate
+     * @param mixed $timeout The timeout value
      * @return int The validated timeout
      */
     private function validateTimeout(mixed $timeout): int
     {
-        $timeout = (int)$timeout;
+        $timeout = (int) $timeout;
         return $timeout > 0 ? $timeout : 30;
     }
 
     /**
      * Validate and sanitize the max_tokens value.
      *
-     * @param mixed $maxTokens The max_tokens to validate
+     * @param mixed $maxTokens The max_tokens value
      * @return int The validated max_tokens
      */
     private function validateMaxTokens(mixed $maxTokens): int
     {
-        $maxTokens = (int)$maxTokens;
+        $maxTokens = (int) $maxTokens;
         return $maxTokens > 0 ? $maxTokens : 1000;
     }
 }

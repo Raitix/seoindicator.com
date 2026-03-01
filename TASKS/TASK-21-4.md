@@ -1,7 +1,7 @@
 # TASK-21-4: Create Prompt Templates for All Indicators
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
@@ -187,6 +187,45 @@ _Agent log_
 - All 10 indicator templates have complete coverage
 
 Status: `To Prioritize` → `To Write Tests`
+
+### [2026-03-01 19:10 GMT+2] PreTester - Test Design Complete
+**Status**: `To Write Tests` → `Tests Coverage In Progress`
+
+**Test Suite Created:**
+- `backend/tests/Unit/Services/AI/Prompts/PromptTemplateTest.php`
+- `TESTS/SPEC-21-4.md` - Test documentation
+
+**Test Coverage:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Class Structure | 8 | File existence, methods, return types |
+| Title Indicator | 9 | System prompt, user prompt, schema |
+| Meta Description | 6 | CTA guidance, token efficiency |
+| Robots.txt | 6 | Content, URL, schema fields |
+| Sitemap | 5 | URL, page count, coverage analysis |
+| Headings | 4 | Hierarchy, accessibility |
+| Image Alt | 4 | Missing alts, suggestions per image |
+| Filenames | 4 | Naming conventions |
+| URL | 5 | Slug optimization |
+| Links | 5 | Internal, external, broken links |
+| 404 | 5 | Redirect recommendations, UX |
+| Variable Substitution | 6 | Single, multiple, special chars, Unicode |
+| Edge Cases | 8 | Invalid indicators, XSS, token limits |
+| **Total** | **75+** | Comprehensive coverage |
+
+**Key Test Patterns:**
+- Token count verification (< 100 tokens for system prompts)
+- Variable substitution with `{placeholder}` syntax
+- XSS prevention in template values
+- Unicode support in all prompts
+- Schema structure validation per indicator
+
+**Handoff to Developer:** Ready for implementation.
+1. Create `backend/app/Services/AI/Prompts/PromptTemplate.php`
+2. Implement `getSystemPrompt()`, `getUserPrompt()`, `getExpectedSchema()` methods
+3. Use TEMPLATES constant with nested array structure
+4. Implement variable substitution with `{variable}` placeholders
+5. Keep system prompts under 100 tokens for free AI model efficiency
 
 ---
 *Created by SpecSystemAnalyst on 2026-03-01*

@@ -1,6 +1,132 @@
 # DOCUMENTATION.md
 
 ---
+## AI Suggestion Service Structure (TASK-21-1)
+
+### Service Description
+Core AI suggestion service architecture with provider interface, response DTOs, and configuration scaffolding. Foundation for all AI-powered SEO suggestion functionality. Supports multiple AI providers (OpenRouter, Vercel AI Gateway) with fallback capabilities.
+
+### Component Location
+- **Interface:** `backend/app/Services/AI/Contracts/AIProviderInterface.php`
+- **Service:** `backend/app/Services/AI/AISuggestionService.php`
+- **DTOs:** `backend/app/Services/AI/DTOs/AIResponse.php`, `SuggestionResult.php`
+- **Config:** `backend/config/ai.php`
+- **Provider:** `backend/app/Providers/AIServiceProvider.php`
+
+### Core Components
+
+| Component | Description |
+|-----------|-------------|
+| `AIProviderInterface` | Contract for AI providers (generate, isAvailable, getName) |
+| `AIResponse` | Immutable DTO for AI responses (success, content, tokens, latency) |
+| `SuggestionResult` | Immutable DTO for SEO suggestions (indicator, score, issues, suggestions) |
+| `AISuggestionService` | Core service with provider injection and suggestion methods |
+
+### AIProviderInterface Contract
+
+```php
+interface AIProviderInterface
+{
+    public function generate(string $prompt, array $options = []): AIResponse;
+    public function isAvailable(): bool;
+    public function getName(): string;
+}
+```
+
+### AIResponse DTO
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `success` | bool | Whether the AI call succeeded |
+| `content` | ?string | The generated content (null on error) |
+| `tokensUsed` | int | Total tokens consumed |
+| `latencyMs` | int | Response latency in milliseconds |
+| `errorMessage` | ?string | Error message (null on success) |
+
+**Factory Methods:**
+- `AIResponse::success($content, $tokensUsed, $latencyMs)` - Create success response
+- `AIResponse::error($errorMessage, $latencyMs)` - Create error response
+
+### SuggestionResult DTO
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `indicator` | string | The SEO indicator being analyzed |
+| `score` | int | Score 0-100 for the indicator |
+| `issues` | array | List of detected issues |
+| `suggestions` | array | Actionable suggestions with type and text |
+| `bestPractices` | array | Best practice recommendations |
+| `provider` | string | AI provider name |
+| `model` | string | Model used for generation |
+| `generatedAt` | DateTimeInterface | Timestamp of generation |
+
+### Configuration
+
+```php
+// config/ai.php
+[
+    'default' => env('AI_PROVIDER', 'openrouter'),
+    'providers' => [
+        'openrouter' => [
+            'api_key' => env('OPENROUTER_API_KEY'),
+            'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+            'model' => env('OPENROUTER_MODEL', 'meta-llama/llama-3.1-8b-instruct:free'),
+            'timeout' => env('AI_TIMEOUT_SECONDS', 30),
+            'max_tokens' => env('AI_MAX_TOKENS', 1000),
+        ],
+        'vercel' => [
+            'api_key' => env('VERCEL_AI_API_KEY'),
+            'model' => env('VERCEL_AI_MODEL', 'gpt-4o-mini'),
+            'timeout' => env('AI_TIMEOUT_SECONDS', 30),
+            'max_tokens' => env('AI_MAX_TOKENS', 1000),
+        ],
+    ],
+    'fallback' => ['enabled' => env('AI_FALLBACK_ENABLED', true)],
+    'cache' => ['ttl_hours' => env('AI_CACHE_TTL_HOURS', 24)],
+    'debug' => env('AI_DEBUG', false),
+]
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `AI_PROVIDER` | Default AI provider | `openrouter` |
+| `OPENROUTER_API_KEY` | OpenRouter API key | Required |
+| `OPENROUTER_MODEL` | Model to use | `meta-llama/llama-3.1-8b-instruct:free` |
+| `AI_TIMEOUT_SECONDS` | Request timeout | `30` |
+| `AI_MAX_TOKENS` | Max tokens per request | `1000` |
+| `AI_FALLBACK_ENABLED` | Enable static fallback | `true` |
+| `AI_CACHE_TTL_HOURS` | Cache TTL in hours | `24` |
+| `AI_DEBUG` | Debug mode (includes raw prompts/responses) | `false` |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| AIProviderInterfaceTest | 15 | Interface contract |
+| AIResponseTest | 20 | DTO validation, immutability, JSON |
+| SuggestionResultTest | 30 | DTO validation, bounds checking |
+| AISuggestionServiceTest | 20 | Service instantiation, provider injection |
+| ConfigurationTest | 17 | Config structure, defaults |
+| **Total** | **102** | **233** |
+
+### Production Status
+- **Deployed**: 2026-03-01 (commit 82b6b4e via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 102/102 passing (233 assertions)
+- **Status**: Complete
+
+### Dependencies
+- None (foundation task for SPEC-021)
+
+### Related Tasks
+- TASK-21-2: OpenRouter Provider Implementation
+- TASK-21-3: Static Fallback Provider
+- TASK-21-4: Prompt Templates
+- TASK-21-5: API Endpoint
+
+---
 ## SEO Guides Library - Routing with Static Params Generation (TASK-20-4)
 
 ### Service Description

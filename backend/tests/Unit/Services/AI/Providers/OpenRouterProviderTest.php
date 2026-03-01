@@ -616,7 +616,7 @@ class OpenRouterProviderTest extends TestCase
     public function test_request_timeout(): void
     {
         Http::fake([
-            'openrouter.ai/*' => Http::timeout(),
+            'openrouter.ai/*' => Http::failedConnection(),
         ]);
 
         $provider = new OpenRouterProvider(['api_key' => 'test-key']);
@@ -630,7 +630,7 @@ class OpenRouterProviderTest extends TestCase
     public function test_connection_refused(): void
     {
         Http::fake([
-            'openrouter.ai/*' => Http::response(null, 0),
+            'openrouter.ai/*' => Http::failedConnection(),
         ]);
 
         $provider = new OpenRouterProvider(['api_key' => 'test-key']);
