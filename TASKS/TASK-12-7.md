@@ -110,3 +110,10 @@ Status -> In Deployment. Deployment not started yet; awaiting explicit approval 
 
 Status → Done
 
+### [2026-03-01 19:55] DocSystemAnalyst: Documentation Complete
+- DOCUMENTATION.md entry already present under "GSC Connection Controller API (TASK-12-7)"
+- Documentation includes: API endpoints, security implementation, authorization, technical details
+- All acceptance criteria verified and documented
+- Task status remains Done
+- Note: SPEC-012 not yet complete - TASK-12-10 (Blocked), TASK-12-11 (Tested Locally - Passed)
+
