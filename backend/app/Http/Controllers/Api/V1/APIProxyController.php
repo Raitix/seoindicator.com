@@ -14,6 +14,7 @@ use App\Services\URLValidationService;
 use App\Services\Tools\MetaTagAnalyzer;
 use App\Services\Tools\KeywordDensityChecker;
 use App\Services\Tools\MobileFriendlyChecker;
+use App\Services\Tools\SocialMediaPreview;
 use App\Services\Tools\ToolResult;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
@@ -44,6 +45,7 @@ class APIProxyController extends Controller
     protected MetaTagAnalyzer $metaTagAnalyzer;
     protected KeywordDensityChecker $keywordDensityChecker;
     protected MobileFriendlyChecker $mobileFriendlyChecker;
+    protected SocialMediaPreview $socialMediaPreview;
     protected AnalysisHistoryService $analysisHistoryService;
     protected CostTrackingService $costTrackingService;
 
@@ -55,6 +57,7 @@ class APIProxyController extends Controller
         MetaTagAnalyzer $metaTagAnalyzer,
         KeywordDensityChecker $keywordDensityChecker,
         MobileFriendlyChecker $mobileFriendlyChecker,
+        SocialMediaPreview $socialMediaPreview,
         AnalysisHistoryService $analysisHistoryService,
         CostTrackingService $costTrackingService
     ) {
@@ -65,6 +68,7 @@ class APIProxyController extends Controller
         $this->metaTagAnalyzer = $metaTagAnalyzer;
         $this->keywordDensityChecker = $keywordDensityChecker;
         $this->mobileFriendlyChecker = $mobileFriendlyChecker;
+        $this->socialMediaPreview = $socialMediaPreview;
         $this->analysisHistoryService = $analysisHistoryService;
         $this->costTrackingService = $costTrackingService;
     }

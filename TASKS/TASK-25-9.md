@@ -1,7 +1,7 @@
 # TASK-25-9: Handle Account Linking (Email Match)
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -336,6 +336,22 @@ Status updated: `To Write Tests`
 Created task as part of SPEC-025 breakdown (Phase 2: Google OAuth).
 
 **High Risk**: Account linking security implications - must verify Google email.
+
+### [2026-03-01 17:35 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+Updated `DOCUMENTATION.md` with comprehensive Account Linking documentation including:
+
+1. **Service Description** - Account linking flow and email matching logic
+2. **Implementation Details** - `findOrCreateUser()` and `linkSocialAccount()` methods
+3. **Security Implementation** - Account hijacking prevention, token encryption, email verification
+4. **API Response Changes** - User resource with social_accounts relationship
+5. **Database Schema** - social_accounts table structure
+6. **Test Coverage** - 84 tests across unit, feature, and integration suites
+7. **Production Verification** - Health checks, security tests, deployment verification
+8. **Known Limitations** - OAuth flow testing blocked by TASK-25-6
+
+**Status:** `To Document` → `Done`
 
 ---
 *Created by SpecSystemAnalyst*
