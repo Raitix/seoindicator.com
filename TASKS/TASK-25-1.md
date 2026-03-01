@@ -1,7 +1,7 @@
 # TASK-25-1: Install Laravel Sanctum & Socialite Packages
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -60,6 +60,38 @@ Install and configure Laravel Sanctum (SPA authentication) and Laravel Socialite
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 11:10 GMT+2] Agent: PreTester
+**Test Design Complete:**
+
+Created 43 tests across 4 test files to verify Sanctum and Socialite installation/configuration:
+
+| Test File | Tests | Coverage |
+|-----------|-------|----------|
+| SanctumInstallationTest.php | 15 | Package installation, config, middleware, session |
+| SocialiteInstallationTest.php | 12 | Package installation, Google OAuth config |
+| SanctumCorsConfigurationTest.php | 10 | CORS for SPA cookie-based auth |
+| PackageVersionTest.php | 6 | Version compatibility checks |
+
+**Test Documentation:** `TESTS/TASK-25-1.md`
+
+**Key Test Scenarios:**
+- Verify packages installed via Composer
+- Verify config files published and valid
+- Verify SANCTUM_STATEFUL_DOMAINS configuration
+- Verify SESSION_DOMAIN and same_site settings
+- Verify CORS allows credentials for SPA auth
+- Verify Google OAuth provider configured in services.php
+
+**Notes for Developer:**
+1. Tests will fail until packages are installed (expected TDD behavior)
+2. See `TESTS/TASK-25-1.md` for detailed implementation notes
+3. Ensure `personal_access_tokens` migration is run after Sanctum install
+
+Status updated: `To Develop`
+
+---
+*Created by PreTester*
 
 ### [2026-03-01 10:54 GMT+2] Agent: ProjectManager
 **Prioritization Analysis:**
