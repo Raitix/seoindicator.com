@@ -35,7 +35,7 @@ class CrawlRequestValidationTest extends TestCase
         parent::setUp();
 
         $this->user = User::factory()->create();
-        $this->admin = User::factory()->create(['is_admin' => true]);
+        $this->admin = User::factory()->create(['role' => 'admin']);
         $this->project = Project::factory()->create(['user_id' => $this->user->id]);
     }
 

@@ -45,6 +45,12 @@ class URLValidationService
         ['start' => '169.254.0.0', 'end' => '169.254.255.255'],
         // IPv4 - This network
         ['start' => '0.0.0.0', 'end' => '0.255.255.255'],
+        // IPv4 - Multicast (224.0.0.0/4)
+        ['start' => '224.0.0.0', 'end' => '239.255.255.255'],
+        // IPv4 - Reserved for Future Use (240.0.0.0/4)
+        ['start' => '240.0.0.0', 'end' => '255.255.255.254'],
+        // IPv4 - Broadcast
+        ['start' => '255.255.255.255', 'end' => '255.255.255.255'],
     ];
 
     /**
@@ -548,6 +554,11 @@ class URLValidationService
             return true;
         }
 
+        // ff00::/8 - Multicast
+        if (str_starts_with($hex, 'ff')) {
+            return true;
+        }
+
         // IPv4-mapped IPv6 addresses (::ffff:x.x.x.x)
         if (str_starts_with($hex, '00000000000000000000ffff')) {
             // Extract the IPv4 part (last 4 bytes)
@@ -559,6 +570,24 @@ class URLValidationService
                 hexdec(substr($ipv4hex, 6, 2)),
             ]);
             return $this->isPrivateOrBlockedIP($ipv4);
+        }
+
+        // IPv4-compatible IPv6 addresses (::x.x.x.x without ffff)
+        // These are deprecated but still should be blocked for SSRF protection
+        // Format: 80 bits of zeros + 16 bits of zeros + 32-bit IPv4
+        if (str_starts_with($hex, '000000000000000000000000')) {
+            // Last 8 hex chars (32 bits) contain an IPv4 address
+            $ipv4hex = substr($hex, -8);
+            // Check if it's not all zeros (which would be ::)
+            if ($ipv4hex !== '00000000') {
+                $ipv4 = implode('.', [
+                    hexdec(substr($ipv4hex, 0, 2)),
+                    hexdec(substr($ipv4hex, 2, 2)),
+                    hexdec(substr($ipv4hex, 4, 2)),
+                    hexdec(substr($ipv4hex, 6, 2)),
+                ]);
+                return $this->isPrivateOrBlockedIP($ipv4);
+            }
         }
 
         return false;
