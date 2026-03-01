@@ -25,7 +25,11 @@ return new class extends Migration
             $table->boolean('dns_verified')->default(false);
             $table->boolean('ssl_provisioned')->default(false);
             $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('updated_at')->useCurrentOnUpdate()->nullable();
             $table->timestamp('verified_at')->nullable();
+
+            // Explicit index for foreign key (SQLite doesn't auto-create)
+            $table->index('account_id');
         });
     }
 

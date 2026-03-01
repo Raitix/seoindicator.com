@@ -22,7 +22,8 @@ class CustomDomainRepository
      */
     public function create(array $data): CustomDomain
     {
-        return CustomDomain::create($data);
+        $domain = CustomDomain::create($data);
+        return $domain->fresh();
     }
 
     /**
