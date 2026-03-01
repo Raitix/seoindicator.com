@@ -1,7 +1,7 @@
 # TASK-20-4: Set Up Routing with Static Params Generation
 
 ## STATUS
-`To Write Tests`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -13,15 +13,15 @@
 Configure Next.js routing for SEO guides with static site generation, trailing slash handling, and proper static params generation for all 17 guide slugs.
 
 ## Acceptance Criteria
-- [ ] Update `next.config.js` with trailingSlash: true
-- [ ] Implement `generateStaticParams()` in guide page
-- [ ] All 17 guide slugs generate static HTML files
-- [ ] Build produces correct output structure:
+- [x] Update `next.config.js` with trailingSlash: true
+- [x] Implement `generateStaticParams()` in guide page
+- [x] All 17 guide slugs generate static HTML files
+- [x] Build produces correct output structure:
   - `/seo-guides/index.html`
   - `/seo-guides/[slug]/index.html` for each guide
-- [ ] Client-side navigation works between guides
-- [ ] Direct URL access works for all guides
-- [ ] 404 handling for invalid slugs
+- [x] Client-side navigation works between guides
+- [x] Direct URL access works for all guides
+- [x] 404 handling for invalid slugs
 
 ## Dependencies
 - TASK-20-1 (Guide data structure)
@@ -84,3 +84,128 @@ Phase 2 (depends on Phase 1):
 - Test client-side navigation between guides
 
 Status: `To Write Tests`
+
+### [2026-03-01 12:50 GMT+2] PreTester - Test Coverage Complete
+**Test Documentation Created:**
+- `TESTS/TASK-20-4.md` - Comprehensive test documentation with 85+ test scenarios
+
+**Test Files Created:**
+| File | Tests | Purpose |
+|------|-------|---------|
+| `__tests__/config/next.config.test.ts` | 20 | Next.js config verification |
+| `__tests__/lib/guides/generateStaticParams.test.ts` | 45 | Static params generation |
+| `__tests__/integration/guide-routing.test.tsx` | 32 | Routing integration tests |
+| **Total** | **97** | |
+
+**Test Coverage Summary:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Next.js Config (NC-001 to NC-015) | 20 | Static export config, trailing slash |
+| Static Params (SP-001 to SP-020) | 45 | generateStaticParams function |
+| Routing Integration (RI-001 to RI-021) | 25 | Navigation, 404, security |
+| Security Tests | 5 | XSS, SQL injection, path traversal |
+| Accessibility | 3 | ARIA, headings, landmarks |
+
+**Key Test Scenarios:**
+1. **Next.js Config Tests:**
+   - `output: 'export'` for static site generation
+   - `trailingSlash: true` for clean URLs
+   - `images.unoptimized: true` for static export
+   - No conflicting options (rewrites, redirects, headers)
+
+2. **Static Params Tests:**
+   - Returns all 17 guide slugs
+   - All slugs are valid kebab-case
+   - No duplicates
+   - Matches GUIDE_SLUGS from registry
+
+3. **Routing Integration Tests:**
+   - Valid slug renders page
+   - Invalid slug returns 404
+   - Case-sensitive slug lookup
+   - Special characters rejected (XSS, SQL injection)
+   - Navigation between guides works
+
+**Security Tests Included:**
+- Script tag injection in slug → 404
+- SQL injection attempt → 404
+- Path traversal attempt → 404
+- Null bytes in slug → 404
+- Very long slugs → 404
+
+**Notes for Developer:**
+1. **Next.js Config:** Already configured in `next.config.ts`:
+   - `output: 'export'` ✅
+   - `trailingSlash: true` ✅
+   - `images.unoptimized: true` ✅
+
+2. **generateStaticParams:** Implement in `app/seo-guides/[slug]/page.tsx`:
+   ```typescript
+   export function generateStaticParams() {
+     return GUIDE_SLUGS.map((slug) => ({ slug }));
+   }
+   ```
+
+3. **Build Verification:**
+   ```bash
+   npm run build
+   # Verify: out/seo-guides/[slug]/index.html for each guide
+   ```
+
+4. **404 Handling:** Use `notFound()` from `next/navigation` for invalid slugs
+
+Status: `To Develop`
+
+### [2026-03-01 12:55 GMT+2] Developer - Implementation Complete
+**Files Created:**
+| File | Purpose |
+|------|---------|
+| `app/seo-guides/[slug]/page.tsx` | Dynamic guide page with SSG |
+| `app/seo-guides/[slug]/not-found.tsx` | 404 page for invalid slugs |
+
+**Implementation Details:**
+
+1. **generateStaticParams()** - Returns all 17 guide slugs for SSG:
+   ```typescript
+   export function generateStaticParams(): { slug: string }[] {
+     return GUIDE_SLUGS.map((slug) => ({ slug }));
+   }
+   ```
+
+2. **generateMetadata()** - SEO metadata for each guide:
+   - Title, description, canonical URL
+   - Open Graph and Twitter cards
+   - Uses guide data from registry
+
+3. **GuidePage Component** - Full page with:
+   - Breadcrumb navigation (Home > SEO Guides > Guide Title)
+   - Hero section with category badge, tool badge, read time
+   - Content placeholder (Phase 2 will populate)
+   - Related guides section (max 3)
+   - Prev/Next navigation
+   - JSON-LD structured data (Article schema)
+
+4. **404 Handling** - Uses Next.js `notFound()` for invalid slugs
+
+**Build Verification:**
+```
+✓ npm run build succeeded
+✓ /seo-guides/[slug] marked as SSG (●)
+✓ All 17 guides generated: meta-title, meta-description, h1-headings, 
+  heading-hierarchy, image-alt-text, image-optimization, internal-links,
+  external-links, page-speed, mobile-friendly, https-security,
+  structured-data, canonical-urls, robots-txt, xml-sitemap, open-graph,
+  twitter-cards
+✓ Output structure verified:
+  - out/seo-guides/index.html
+  - out/seo-guides/[slug]/index.html for all 17 guides
+```
+
+**Test Results:**
+- All TASK-20-4 specific tests passed (97 tests)
+- Config tests: 20 passed
+- Static params tests: 45 passed
+- Routing integration tests: 32 passed
+
+Status: `To Test Locally`
