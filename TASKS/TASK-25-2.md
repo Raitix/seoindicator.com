@@ -1,7 +1,7 @@
 # TASK-25-2: Create social_accounts Migration
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `High`

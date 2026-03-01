@@ -1,7 +1,7 @@
 # TASK-25-5: Implement Email Verification
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -65,6 +65,51 @@ Route::post('/auth/resend-verification', [EmailVerificationController::class, 'r
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 14:43 GMT+2] Agent: ProjectManager
+**Prioritization Analysis:**
+
+**Priority Confirmed: High**
+- Part of Phase 1 Core Authentication (critical path for user accounts)
+- Email verification is essential for user trust and security
+- Laravel has built-in verification support (reduces implementation complexity)
+- Small effort (2-3 hours), high value
+
+**Risk Confirmed: Medium**
+- Uses Laravel's built-in MustVerifyEmail interface (battle-tested)
+- Email sending could have delivery issues (configurable mail driver)
+- Rate limiting required for resend endpoint (1 per minute per user)
+- Not handling passwords or sensitive tokens directly (not High risk)
+
+**Dependency Status:**
+- TASK-25-3 (AuthController): `To Develop` ✅
+- AuthController's register method will send verification emails
+- Tests CAN be written now using TDD approach
+- Development blocked until TASK-25-3 reaches `To Test Locally`
+
+**Test Coverage Requirements (for PreTester):**
+1. Email verification endpoint with signed URL validation
+2. Resend verification endpoint with rate limiting
+3. Middleware to check verified status
+4. User model `hasVerifiedEmail()` check
+5. Verification email template rendering
+6. Error handling (invalid/expired links)
+7. Success redirect after verification
+
+**Notes for Developer:**
+- User model must implement `MustVerifyEmail` interface
+- Use Laravel's `Route::signed()` middleware for verification URL
+- Rate limiting: `throttle:1,1` on resend endpoint
+- Verification email uses Laravel's built-in notification
+- Redirect to frontend success page after verification
+
+**Execution Order:**
+1. TASK-25-1 (In Development) → Complete first
+2. TASK-25-3 (To Develop) → AuthController implementation
+3. TASK-25-5 (this) → Can start test writing now
+4. TASK-25-4 (To Write Tests) → Can run in parallel with this
+
+Status updated: `To Write Tests`
 
 ### [2026-02-28 20:55 GMT+2] Agent: SpecSystemAnalyst
 Created task as part of SPEC-025 breakdown (Phase 1: Core Authentication).
