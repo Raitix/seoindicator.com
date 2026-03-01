@@ -1,7 +1,7 @@
 # TASK-25-3: Implement AuthController (Register, Login, Logout)
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## BUG FIX VERIFIED ✓
 
@@ -155,6 +155,33 @@ Route::middleware('throttle:5,1')->post('/auth/login', ...);
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 15:46 GMT+2] Agent: DevOps
+**Deployment Complete - Bug Fix Deployed**
+
+**GitHub Actions Run:** 22544665394
+- **Build:** ✓ Completed in 1m20s
+- **Deploy:** ✓ Completed in 36s
+- **Health Check:** ✓ Passing
+
+**Deployment Details:**
+- Commits pushed: 6 commits including auth bug fix
+- Bug fix commit: `d9efbc5 fix(auth): remove incorrect sanctum guard from auth.php config`
+- Deployment method: GitHub Actions → SSH
+- Frontend build: Static export successful
+- Backend: git pull + composer install via SSH
+
+**Verified Endpoints:**
+- `GET /api/health` → 200 OK
+- Database: connected
+- App: SEOIndicator
+
+**Bug Fix Summary:**
+- Root cause: Custom `sanctum` guard in `config/auth.php` with `session` driver overrode Sanctum's token-based authentication
+- Fix: Removed the custom `sanctum` guard definition - let Sanctum handle API token authentication with its default behavior
+- Verification: All 36 tests pass locally, token-based authentication now works correctly
+
+**Status:** Updated to `To Test Prod` - ready for ProdTester to verify token authentication in production
 
 ### [2026-03-01 15:42 GMT+2] Agent: LocalTester
 **Local Testing Complete - ALL TESTS PASS**
