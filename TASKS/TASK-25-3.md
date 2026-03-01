@@ -1,7 +1,7 @@
 # TASK-25-3: Implement AuthController (Register, Login, Logout)
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRODUCTION TEST PASSED ✓
 
@@ -403,6 +403,28 @@ Status updated: `To Write Tests`
 Created task as part of SPEC-025 breakdown (Phase 1: Core Authentication).
 
 **High Risk**: Authentication security is critical. SecurityAuditor must review.
+
+### [2026-03-01 16:00 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+**Documentation Added:** DOCUMENTATION.md (new section: Authentication API)
+- Service description and API endpoints
+- Request/response examples for register, login, logout, user
+- Token management details (7-day default, 30-day with remember)
+- Security implementation (bcrypt, Sanctum, rate limiting)
+- Bug fix documentation (sanctum guard config issue)
+- Test coverage: 36 tests, 108 assertions
+- Production verification: 12/12 tests passing (100%)
+
+**Key Implementation Details Documented:**
+- 4 API endpoints: register, login, logout, user
+- Rate limiting: 5 requests/min on login
+- Password rules: min 8 chars, letters + numbers
+- Token revocation on logout
+- Form Requests: RegisterRequest, LoginRequest
+- API Resource: UserResource
+
+**Status:** Updated to `Done`
 
 ---
 *Created by SpecSystemAnalyst*
