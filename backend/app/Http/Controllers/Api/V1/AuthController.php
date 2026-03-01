@@ -93,10 +93,12 @@ class AuthController extends Controller
      */
     public function user(Request $request): JsonResponse
     {
+        $user = $request->user()->load('socialAccounts');
+
         return response()->json([
             'success' => true,
             'data' => [
-                'user' => new UserResource($request->user()),
+                'user' => new UserResource($user),
             ],
         ]);
     }
