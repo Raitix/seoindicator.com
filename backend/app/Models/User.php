@@ -134,4 +134,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(SEOAnalysis::class);
     }
+
+    /**
+     * Get the analysis history for this user.
+     */
+    public function analysisHistory(): HasMany
+    {
+        return $this->hasMany(AnalysisHistory::class);
+    }
 }
