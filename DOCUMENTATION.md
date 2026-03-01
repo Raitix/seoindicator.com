@@ -16425,3 +16425,172 @@ CREATE TABLE custom_domains (
 ### Related Tasks
 - TASK-15-1: Brand Configs Table
 - FEAT-015: White-Label Customization
+
+---
+## Frontend Progress Bar Component (TASK-19-11)
+
+### Service Description
+React/Next.js component for displaying SEO analysis progress with real-time updates via Server-Sent Events (SSE). Part of the Progressive Analysis & Job System (FEAT-019), enabling users to monitor ongoing analyses with live progress updates and cancellation support.
+
+### Component Location
+
+| File | Path | Description |
+|------|------|-------------|
+| Component | `frontend/components/analysis/AnalysisProgress.tsx` | Main React component |
+| Hook | `frontend/lib/hooks/useAnalysisProgress.ts` | SSE connection management hook |
+| Types | `frontend/lib/types/analysis-job.ts` | TypeScript type definitions |
+| API | `frontend/lib/api/analysis-job.ts` | API helper functions |
+| Storybook | `frontend/stories/components/analysis/AnalysisProgress.stories.tsx` | Component documentation |
+
+### Component Props
+
+```typescript
+interface AnalysisProgressProps {
+  jobId: number;           // Analysis job ID to track
+  onComplete: (results: AnalysisResult[]) => void;  // Callback when job completes
+  onCancel: () => void;    // Callback when user cancels
+}
+```
+
+### UI Elements
+
+| Element | Description |
+|---------|-------------|
+| Progress Bar | Visual progress indicator with percentage |
+| Status Indicator | Shows: pending, running, completed, cancelled, failed |
+| Cancel Button | Allows cancelling running jobs (disabled when not running) |
+| Elapsed Time | Shows time elapsed since job started |
+
+### Hook: useAnalysisProgress
+
+**Custom hook for SSE connection management:**
+
+```typescript
+interface UseAnalysisProgressOptions {
+  jobId: number;
+  onComplete?: (results: AnalysisResult[]) => void;
+  onError?: (error: Error) => void;
+}
+
+interface UseAnalysisProgressReturn {
+  progress: number;           // 0-100 percentage
+  status: JobStatus;          // Current job status
+  results: AnalysisResult[];  // Completed indicator results
+  isConnected: boolean;       // SSE connection state
+  elapsedSeconds: number;     // Time since job started
+  cancel: () => Promise<void>; // Cancel the job
+}
+```
+
+### SSE Connection Management
+
+| Feature | Implementation |
+|---------|---------------|
+| Auto-reconnect | Exponential backoff (1s, 2s, 4s, 8s max) |
+| Reconnect attempts | 3 attempts before fallback to polling |
+| Polling fallback | 2-second interval when SSE unavailable |
+| Connection cleanup | Automatic cleanup on unmount |
+
+**Connection Flow:**
+```
+1. Component mounts → initiate SSE connection
+2. Connect to /api/v1/analysis/jobs/{jobId}/stream
+3. Listen for: progress, result, complete, error events
+4. On disconnect → attempt reconnect with backoff
+5. After 3 failed attempts → switch to polling
+6. Poll /api/v1/analysis/jobs/{jobId}/progress every 2s
+7. On job complete → cleanup connection, call onComplete
+```
+
+### TypeScript Types
+
+**AnalysisJob:**
+```typescript
+interface AnalysisJob {
+  id: number;
+  status: 'pending' | 'running' | 'completed' | 'cancelled' | 'failed';
+  totalIndicators: number;
+  completedIndicators: number;
+  progressPercent: number;
+  results: AnalysisResult[];
+  startedAt?: string;
+  completedAt?: string;
+  errorMessage?: string;
+}
+```
+
+**AnalysisResult:**
+```typescript
+interface AnalysisResult {
+  indicatorSlug: string;
+  indicatorName: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  score?: number;
+  maxScore?: number;
+  percentage?: number;
+  data?: Record<string, unknown>;
+  recommendations?: string[];
+}
+```
+
+### Accessibility
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Labels | `aria-label`, `aria-valuenow`, `aria-valuemin`, `aria-valuemax` |
+| Keyboard Navigation | Tab to cancel button, Enter/Space to activate |
+| Screen Reader | Progress announced via `aria-live="polite"` |
+| Focus Management | Focus trapped within component during analysis |
+
+### API Helper Functions
+
+| Function | Endpoint | Description |
+|----------|----------|-------------|
+| `getJobProgress(jobId)` | `GET /api/v1/analysis/jobs/{jobId}` | Get job status and progress |
+| `cancelJob(jobId)` | `DELETE /api/v1/analysis/jobs/{jobId}` | Cancel running job |
+| `getSSEUrl(jobId)` | - | Generate SSE stream URL |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `AnalysisProgress.test.tsx` | 37 | Component rendering, SSE, cancellation |
+| `useAnalysisProgress.test.ts` | 21 | Hook state management, reconnection |
+| **Total** | **58** | **79+** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Component Rendering | 10 | Props, states, UI elements |
+| SSE Connection | 8 | Connection, reconnection, cleanup |
+| Polling Fallback | 5 | Fallback behavior, interval |
+| Progress Updates | 7 | Real-time progress display |
+| Cancellation | 5 | Cancel button, API call |
+| Error Handling | 4 | Network errors, job failures |
+| Accessibility | 5 | ARIA labels, keyboard navigation |
+| Edge Cases | 4 | Missing data, rapid updates |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-01 (GitHub Actions run 22547690828) |
+| **Health Check** | Passing |
+| **Tests** | 58/58 passing (79+ assertions) |
+| **Status** | Complete |
+
+### Dependencies
+
+| Dependency | Task | Description |
+|------------|------|-------------|
+| Job CRUD API | TASK-19-4 | Backend job endpoints |
+| SSE Endpoint | TASK-19-9 | Real-time progress stream |
+| Polling Endpoint | TASK-19-10 | Fallback progress endpoint |
+
+### Related Tasks
+
+- TASK-19-4: Job CRUD API Endpoints
+- TASK-19-9: SSE Stream Endpoint
+- TASK-19-10: Polling Fallback Endpoint
+- TASK-19-12: Frontend Live Results Table
+- FEAT-019: Progressive Analysis & Job System

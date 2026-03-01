@@ -1,7 +1,7 @@
 # TASK-21-3: Implement Static Fallback Provider
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
