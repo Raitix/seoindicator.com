@@ -7,6 +7,7 @@ use App\Http\Resources\Api\V1\AnalysisJobResource;
 use App\Models\AnalysisJob;
 use App\Models\Site;
 use App\Services\AnalysisJobService;
+use App\Services\AnalysisRateLimiterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -16,14 +17,19 @@ use Illuminate\Validation\ValidationException;
  * AnalysisJobController - API endpoints for analysis job management.
  *
  * Handles CRUD operations for SEO analysis jobs with real-time progress tracking.
+ * Includes rate limiting for job creation and API endpoints (TASK-19-14).
  */
 class AnalysisJobController extends Controller
 {
     protected AnalysisJobService $service;
+    protected AnalysisRateLimiterService $rateLimiter;
 
-    public function __construct(AnalysisJobService $service)
-    {
+    public function __construct(
+        AnalysisJobService $service,
+        AnalysisRateLimiterService $rateLimiter
+    ) {
         $this->service = $service;
+        $this->rateLimiter = $rateLimiter;
     }
 
     /**
@@ -112,18 +118,47 @@ class AnalysisJobController extends Controller
             $job = $this->service->createJob($userId, $siteId, $indicators);
             $job->load('results');
 
+            // Get rate limit headers
+            $headers = $this->rateLimiter->getJobCreationHeaders($userId, $siteId);
+
             return response()->json([
                 'data' => new AnalysisJobResource($job),
-            ], 201);
+            ], 201)->withHeaders($headers);
 
         } catch (\RuntimeException $e) {
             $message = $e->getMessage();
             
-            // Check if this is a rate limit error
-            if (str_contains($message, 'limit') || str_contains($message, 'rate')) {
+            // Check if this is a rate limit error (new format: RATE_LIMIT:retry_after:message)
+            if (str_starts_with($message, 'RATE_LIMIT:')) {
+                $parts = explode(':', $message, 3);
+                $retryAfter = (int) ($parts[1] ?? 60);
+                $errorMessage = $parts[2] ?? 'Rate limit exceeded.';
+                
+                $response = $this->rateLimiter->buildRateLimitResponse(
+                    $errorMessage,
+                    $retryAfter,
+                    time() + $retryAfter,
+                    'job_user_hourly'
+                );
+                
                 return response()->json([
-                    'error' => $message,
-                ], 429)->header('Retry-After', 60);
+                    'success' => $response['success'],
+                    'error' => $response['error'],
+                ], $response['status'])->withHeaders($response['headers']);
+            }
+            
+            // Legacy rate limit check
+            if (str_contains($message, 'limit') || str_contains($message, 'rate')) {
+                $headers = $this->rateLimiter->getJobCreationHeaders($userId, $siteId);
+                
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'RATE_LIMIT_EXCEEDED',
+                        'message' => $message,
+                        'retry_after' => 60,
+                    ],
+                ], 429)->withHeaders($headers + ['Retry-After' => '60']);
             }
             
             return response()->json([
@@ -343,9 +378,13 @@ class AnalysisJobController extends Controller
             ], 404);
         }
 
+        // Get polling rate limit headers
+        $headers = $this->rateLimiter->getPollingHeaders($userId, $jobId);
+
         return response()->json($progress)
             ->header('Cache-Control', 'no-store')
-            ->header('X-Polling-Interval', '2');
+            ->header('X-Polling-Interval', '2')
+            ->withHeaders($headers);
     }
 
     /**

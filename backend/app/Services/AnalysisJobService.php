@@ -15,9 +15,36 @@ use RuntimeException;
  *
  * Manages the lifecycle of analysis jobs including creation,
  * cancellation, and status transitions.
+ * 
+ * Rate limiting is handled by AnalysisRateLimiterService (TASK-19-14).
  */
 class AnalysisJobService
 {
+    protected ?AnalysisRateLimiterService $rateLimiter = null;
+
+    /**
+     * Set the rate limiter service (for dependency injection).
+     *
+     * @param AnalysisRateLimiterService $rateLimiter
+     */
+    public function setRateLimiter(AnalysisRateLimiterService $rateLimiter): void
+    {
+        $this->rateLimiter = $rateLimiter;
+    }
+
+    /**
+     * Get the rate limiter service.
+     *
+     * @return AnalysisRateLimiterService
+     */
+    protected function getRateLimiter(): AnalysisRateLimiterService
+    {
+        if ($this->rateLimiter === null) {
+            $this->rateLimiter = app(AnalysisRateLimiterService::class);
+        }
+        return $this->rateLimiter;
+    }
+
     /**
      * Available indicator definitions.
      */
@@ -446,32 +473,28 @@ class AnalysisJobService
      */
     protected function checkRateLimits(int $userId, int $siteId): void
     {
-        // Check concurrent jobs limit
-        $runningJobs = AnalysisJob::where('user_id', $userId)
-            ->whereIn('status', [AnalysisJob::STATUS_PENDING, AnalysisJob::STATUS_RUNNING])
-            ->count();
+        $result = $this->getRateLimiter()->canCreateJob($userId, $siteId);
 
-        if ($runningJobs >= self::MAX_CONCURRENT_JOBS_PER_USER) {
-            throw new RuntimeException('Maximum concurrent jobs limit reached. Please wait for existing jobs to complete.');
+        if (!$result['allowed']) {
+            $message = $result['reason'] ?? 'Rate limit exceeded.';
+            
+            // Include retry_after in the error for proper 429 response
+            $retryAfter = $result['retry_after'] ?? 60;
+            
+            throw new RuntimeException("RATE_LIMIT:{$retryAfter}:{$message}");
         }
+    }
 
-        // Check user hourly limit
-        $userJobsLastHour = AnalysisJob::where('user_id', $userId)
-            ->where('created_at', '>=', now()->subHour())
-            ->count();
-
-        if ($userJobsLastHour >= self::MAX_JOBS_PER_USER_PER_HOUR) {
-            throw new RuntimeException('Hourly job limit reached. Please try again later.');
-        }
-
-        // Check site hourly limit
-        $siteJobsLastHour = AnalysisJob::where('site_id', $siteId)
-            ->where('created_at', '>=', now()->subHour())
-            ->count();
-
-        if ($siteJobsLastHour >= self::MAX_JOBS_PER_SITE_PER_HOUR) {
-            throw new RuntimeException('Hourly job limit for this site reached. Please try again later.');
-        }
+    /**
+     * Get rate limit headers for the last job creation check.
+     *
+     * @param int $userId
+     * @param int $siteId
+     * @return array<string, string>
+     */
+    public function getRateLimitHeaders(int $userId, int $siteId): array
+    {
+        return $this->getRateLimiter()->getJobCreationHeaders($userId, $siteId);
     }
 
     /**
