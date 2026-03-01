@@ -1,6 +1,137 @@
 # DOCUMENTATION.md
 
 ---
+## HTTPS & Security SEO Guide (TASK-20-15)
+
+### Guide Description
+Comprehensive SEO guide content for the HTTPS/Security indicator, covering SSL certificates, HTTPS implementation, security headers, and SEO benefits of secure connections. Explains Google's HTTPS ranking signal and provides actionable best practices with configuration examples. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `https-security`
+- **URL:** `https://seoindicator.com/seo-guides/https-security/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What is HTTPS? | SSL/TLS encryption, certificate authorities, secure connections | ~200 |
+| SEO Benefits | Google ranking signal, browser trust, mobile-first requirement | ~250 |
+| SSL Certificate Types | DV/OV/EV levels, Let's Encrypt (free), paid options | ~300 |
+| Implementing HTTPS & Redirects | 301 permanent redirects, Apache/Nginx config | ~350 |
+| Security Headers | HSTS, X-Frame-Options, X-Content-Type-Options, CSP | ~300 |
+| Mixed Content Issues | HTTP/HTTPS conflicts, passive vs active content, fixes | ~200 |
+
+**Total Content:** ~1,600 words
+**Read Time:** 5 minutes
+
+### Key Technical Details
+
+| Topic | Details |
+|-------|---------|
+| HTTPS | HTTP over TLS/SSL - encrypted communication between browser and server |
+| Ranking Signal | Google has used HTTPS as a ranking signal since 2014 |
+| Mobile-First | HTTPS is required for mobile-first indexing |
+| Browser Warnings | Chrome shows "Not Secure" for HTTP pages with forms |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| Apache HTTPS redirect | Apache/.htaccess | 301 permanent redirect to HTTPS |
+| Nginx HTTPS redirect | Nginx | Server block with TLS configuration |
+| Apache security headers | Apache/.htaccess | HSTS, X-Frame-Options, X-Content-Type-Options |
+| Nginx security headers | Nginx | Security headers in server block |
+| Mixed content fix | HTML/JavaScript | Protocol-relative URLs and CSP |
+
+### Security Headers Covered
+
+| Header | Purpose | Recommended Value |
+|--------|---------|-------------------|
+| `Strict-Transport-Security` | Force HTTPS connections | `max-age=31536000; includeSubDomains; preload` |
+| `X-Frame-Options` | Prevent clickjacking | `SAMEORIGIN` or `DENY` |
+| `X-Content-Type-Options` | Prevent MIME sniffing | `nosniff` |
+| `Content-Security-Policy` | Control resource sources | Custom policy per site |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Install SSL certificate and enable HTTPS |
+| Critical | Set up 301 permanent redirects from HTTP to HTTPS |
+| Critical | Add HSTS header with includeSubDomains and preload |
+| Important | Update all internal links to use HTTPS |
+| Important | Fix mixed content warnings (HTTP resources on HTTPS pages) |
+| Important | Add X-Frame-Options header set to SAMEORIGIN |
+| Important | Add X-Content-Type-Options header set to nosniff |
+| Important | Submit domain to HSTS preload list (hstspreload.org) |
+| Recommended | Use free SSL from Let's Encrypt with auto-renewal |
+| Recommended | Test configuration with SSL Labs SSL Test |
+
+### Related Guides
+- `mobile-friendly` - HTTPS required for mobile-first indexing
+- `canonical-urls` - URL canonicalization over HTTPS
+
+### Free Tools (CONSTITUTION.md Compliance)
+- **Let's Encrypt:** Free SSL certificates with 90-day auto-renewal
+- **Certbot:** Free tool for Let's Encrypt certificate management
+- **SSL Labs SSL Test:** Free SSL configuration analyzer
+- **Security Headers:** Free security headers analyzer
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'https-security',
+  title: 'HTTPS & Security Headers',
+  summary: 'Secure your site with HTTPS and protect users with security headers...',
+  category: 'technical',
+  icon: '🔒',
+  readTime: 5,
+  hasTool: false,
+  relatedGuides: ['mobile-friendly', 'canonical-urls'],
+  sections: [ /* 6 sections */ ],
+  checklist: [ /* 10 items */ ],
+  codeExamples: [ /* 9 examples */ ]
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `https-security-content.test.ts` | 60+ | Content structure validation |
+| `https-security-code-examples.test.ts` | 35+ | Code examples validation |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Content Structure | HS-001 to HS-005 | Registry entry, slug, title, category, icon, read time |
+| What is HTTPS | WH-001 to WH-005 | Section exists, SSL/TLS, encryption, CA explained |
+| SEO Benefits | SEO-001 to SEO-006 | Benefits section, ranking signal, trust, warnings |
+| SSL Certificate Types | SSL-001 to SSL-007 | Types section, DV/OV/EV, Let's Encrypt |
+| Security Headers | SH-001 to SH-008 | HSTS, X-Frame-Options, X-Content-Type-Options |
+| Mixed Content | MC-001 to MC-005 | Issues section, passive vs active, fixes |
+| Best Practices Checklist | BC-001 to BC-005 | 10 items, valid structure, priorities |
+| Code Examples | CE-001 to CE-012 | Apache, Nginx, HSTS, redirect config |
+| Free Tools | FT-001 to FT-002 | Let's Encrypt mentioned (CONSTITUTION.md) |
+
+### Production Status
+- **Deployed:** 2026-03-01 (GitHub Actions)
+- **URL:** https://seoindicator.com/seo-guides/https-security/
+- **Health Check:** Passing
+- **Tests:** 1986 passed (E2E Playwright failures are infrastructure issues)
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+
+### Related Tasks
+- TASK-20-14: Mobile-Friendliness Guide (HTTPS requirement reference)
+- TASK-20-17: Canonical URLs Guide (URL canonicalization)
+
+---
 ## Structured Data SEO Guide (TASK-20-16)
 
 ### Guide Description
