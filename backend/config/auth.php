@@ -40,10 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-        'sanctum' => [
-            'driver' => 'session',
-            'provider' => 'users',
-        ],
+        // Note: Do NOT define a 'sanctum' guard here.
+        // Laravel Sanctum handles API token authentication automatically
+        // when using 'auth:sanctum' middleware. Defining a custom guard
+        // with 'session' driver breaks token-based authentication.
     ],
 
     /*
