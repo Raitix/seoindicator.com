@@ -1,7 +1,7 @@
 # TASK-25-2: Create social_accounts Migration
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -78,6 +78,55 @@ protected $casts = [
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 14:30 GMT+2] Agent: PreTester
+**Tests Complete**
+
+**Test Documentation Created:**
+- `TESTS/TEST-25-2.md` — 45 test scenarios across 10 categories
+
+**Migration Tests Created:**
+- `backend/tests/Feature/Migrations/CreateSocialAccountsTableTest.php`
+- 33 tests covering:
+  - Schema structure (SC-001 to SC-009)
+  - Foreign key constraints (FK-001 to FK-004)
+  - Unique constraints (UC-001 to UC-003)
+  - Indexes (IX-001 to IX-002)
+  - Migration rollback (RB-001 to RB-002)
+  - Data validation (DV-001 to DV-006)
+  - Edge cases (EC-001 to EC-008)
+  - Security (SEC-001 to SEC-002)
+
+**Model Tests Created:**
+- `backend/tests/Unit/Models/SocialAccountTest.php`
+- 25 tests covering:
+  - Model creation with encrypted casts
+  - User relationship (belongsTo)
+  - Scopes (byProvider, byUser, hasToken, hasRefreshToken, tokenNotExpired)
+  - Helper methods (isTokenExpired)
+  - Security (SQL injection prevention, token encryption)
+
+**Factory Created:**
+- `backend/database/factories/SocialAccountFactory.php`
+- States: google, github, facebook, linkedin, forUser, withToken, withoutToken, withRefreshToken, withoutRefreshToken, expiredToken, expiringSoon, validToken, minimal
+
+**Model Created (for testing):**
+- `backend/app/Models/SocialAccount.php`
+- Encrypted casts for provider_token and provider_refresh_token
+- User relationship
+- Scopes: byProvider, byUser, hasToken, hasRefreshToken, tokenNotExpired
+- Helper: isTokenExpired()
+
+**User Model Updated:**
+- Added `socialAccounts()` HasMany relationship
+
+**Key Findings:**
+- Encrypted casts ensure token security at rest
+- Unique constraint on (provider, provider_id) prevents account hijacking
+- Cascade delete on user_id ensures orphan cleanup
+- Token expiration handling requires explicit check (no auto-refresh)
+
+Status updated: `To Develop`
 
 ### [2026-03-01 13:30 GMT+2] Agent: ProjectManager
 **Prioritization Analysis:**
