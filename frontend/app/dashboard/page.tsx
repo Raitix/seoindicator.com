@@ -101,7 +101,6 @@ export default function DashboardPage() {
     name: user.name,
     email: user.email,
     avatar: user.avatar,
-    lastLoginAt: user.lastLoginAt,
   } : null;
 
   return (
