@@ -10,6 +10,7 @@ use App\Models\AnalysisHistory;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Mockery;
 
 class DashboardAggregatorTest extends TestCase
@@ -55,6 +56,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gs_002_user_with_total_analyses_returns_correct_count(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->with(1)->andReturn([
             'total' => 50,
@@ -78,6 +81,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gs_006_cross_user_isolation(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->with(1)->andReturn([
             'total' => 10,
@@ -142,8 +147,10 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gr_001_user_with_no_analyses_returns_empty_array(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
-        $mockRepo->shouldReceive('getRecent')->with(1, 10)->andReturn(new Collection([]));
+        $mockRepo->shouldReceive('getRecent')->with(1, 10)->andReturn(new EloquentCollection([]));
 
         $mockCostService = Mockery::mock(CostTrackingService::class);
 
@@ -156,6 +163,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gr_002_user_with_5_analyses_returns_5_items(): void
     {
+        Cache::flush();
+
         $analyses = AnalysisHistory::factory()->count(5)->make([
             'user_id' => 1,
         ]);
@@ -174,6 +183,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gr_003_user_with_15_analyses_limited_to_10(): void
     {
+        Cache::flush();
+
         $analyses = AnalysisHistory::factory()->count(10)->make([
             'user_id' => 1,
         ]);
@@ -192,6 +203,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gr_005_analysis_structure_contains_required_fields(): void
     {
+        Cache::flush();
+
         $analysis = AnalysisHistory::factory()->make([
             'id' => 1,
             'user_id' => 1,
@@ -202,7 +215,7 @@ class DashboardAggregatorTest extends TestCase
         ]);
 
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
-        $mockRepo->shouldReceive('getRecent')->with(1, 10)->andReturn(new Collection([$analysis]));
+        $mockRepo->shouldReceive('getRecent')->with(1, 10)->andReturn(new EloquentCollection([$analysis]));
 
         $mockCostService = Mockery::mock(CostTrackingService::class);
 
@@ -219,6 +232,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gr_006_cross_user_isolation(): void
     {
+        Cache::flush();
+
         $analyses1 = AnalysisHistory::factory()->count(3)->make(['user_id' => 1]);
         $analyses2 = AnalysisHistory::factory()->count(5)->make(['user_id' => 2]);
 
@@ -266,6 +281,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gc_002_user_with_costs_returns_aggregated_total(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockCostService = Mockery::mock(CostTrackingService::class);
         $mockCostService->shouldReceive('getUserCostSummary')
@@ -364,6 +381,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gq_002_most_used_tool_calculated_correctly(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->with(1)->andReturn([
             'total' => 15,
@@ -387,6 +406,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gq_004_average_analysis_time_calculated_correctly(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->with(1)->andReturn([
             'total' => 3,
@@ -410,6 +431,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gq_007_success_rate_calculated_correctly(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->with(1)->andReturn([
             'total' => 100,
@@ -433,6 +456,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gq_008_100_percent_success_rate(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->with(1)->andReturn([
             'total' => 50,
@@ -456,6 +481,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gq_009_0_percent_success_rate(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->with(1)->andReturn([
             'total' => 10,
@@ -479,6 +506,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gq_011_cross_user_isolation(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->with(1)->andReturn([
             'total' => 10,
@@ -521,6 +550,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gd_001_full_dashboard_structure(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->andReturn([
             'total' => 50,
@@ -532,7 +563,7 @@ class DashboardAggregatorTest extends TestCase
             'this_week' => 12,
             'today' => 3,
         ]);
-        $mockRepo->shouldReceive('getRecent')->andReturn(new Collection([]));
+        $mockRepo->shouldReceive('getRecent')->andReturn(new EloquentCollection([]));
 
         $mockCostService = Mockery::mock(CostTrackingService::class);
         $mockCostService->shouldReceive('getUserCostSummary')->andReturn([
@@ -565,7 +596,7 @@ class DashboardAggregatorTest extends TestCase
             'this_week' => 0,
             'today' => 0,
         ]);
-        $mockRepo->shouldReceive('getRecent')->andReturn(new Collection([]));
+        $mockRepo->shouldReceive('getRecent')->andReturn(new EloquentCollection([]));
 
         $mockCostService = Mockery::mock(CostTrackingService::class);
         $mockCostService->shouldReceive('getUserCostSummary')->andReturn([
@@ -597,7 +628,7 @@ class DashboardAggregatorTest extends TestCase
             'this_week' => 0,
             'today' => 0,
         ]);
-        $mockRepo->shouldReceive('getRecent')->andReturn(new Collection([]));
+        $mockRepo->shouldReceive('getRecent')->andReturn(new EloquentCollection([]));
 
         $mockCostService = Mockery::mock(CostTrackingService::class);
         $mockCostService->shouldReceive('getUserCostSummary')->andReturn([
@@ -663,7 +694,7 @@ class DashboardAggregatorTest extends TestCase
             'this_week' => 6,
             'today' => 2,
         ]);
-        $mockRepo->shouldReceive('getRecent')->andReturn(new Collection([]));
+        $mockRepo->shouldReceive('getRecent')->andReturn(new EloquentCollection([]));
 
         $mockCostService = Mockery::mock(CostTrackingService::class);
         $mockCostService->shouldReceive('getUserCostSummary')->andReturn([
@@ -686,6 +717,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function gd_009_empty_user_returns_zeros_and_empty_arrays(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->andReturn([
             'total' => 0,
@@ -697,7 +730,7 @@ class DashboardAggregatorTest extends TestCase
             'this_week' => 0,
             'today' => 0,
         ]);
-        $mockRepo->shouldReceive('getRecent')->andReturn(new Collection([]));
+        $mockRepo->shouldReceive('getRecent')->andReturn(new EloquentCollection([]));
 
         $mockCostService = Mockery::mock(CostTrackingService::class);
         $mockCostService->shouldReceive('getUserCostSummary')->andReturn([
@@ -721,6 +754,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function ec_001_handles_null_analyzed_at_gracefully(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->andReturn([
             'total' => 5,
@@ -745,6 +780,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function ec_002_handles_unicode_in_tool_names(): void
     {
+        Cache::flush();
+
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
         $mockRepo->shouldReceive('getStats')->andReturn([
             'total' => 1,
@@ -768,6 +805,8 @@ class DashboardAggregatorTest extends TestCase
     /** @test */
     public function ec_003_handles_very_long_urls(): void
     {
+        Cache::flush();
+
         $longUrl = 'https://example.com/' . str_repeat('a', 2000);
 
         $analysis = AnalysisHistory::factory()->make([
@@ -777,7 +816,7 @@ class DashboardAggregatorTest extends TestCase
         ]);
 
         $mockRepo = Mockery::mock(AnalysisHistoryRepository::class);
-        $mockRepo->shouldReceive('getRecent')->andReturn(new Collection([$analysis]));
+        $mockRepo->shouldReceive('getRecent')->andReturn(new EloquentCollection([$analysis]));
 
         $mockCostService = Mockery::mock(CostTrackingService::class);
 
