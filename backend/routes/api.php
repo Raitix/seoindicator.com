@@ -28,6 +28,8 @@ use App\Http\Controllers\Api\V1\AlertSettingsController;
 use App\Http\Controllers\Api\V1\KeywordAlertSettingsController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\AlertUnsubscribeController;
+use App\Http\Controllers\Api\V1\AnalysisHistoryController;
+use App\Http\Controllers\Api\V1\UserDashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -283,6 +285,16 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
     // Alert Resubscribe (requires auth)
     Route::post('alerts/resubscribe', [AlertUnsubscribeController::class, 'resubscribe']);
+
+    // Analysis History (TASK-25-14)
+    Route::get('analyses', [AnalysisHistoryController::class, 'index']);
+    Route::get('analyses/{id}', [AnalysisHistoryController::class, 'show'])->where('id', '[0-9]+');
+
+    // User Dashboard (TASK-25-15, SPEC-025)
+    Route::get('dashboard', [UserDashboardController::class, 'index']);
+    Route::get('dashboard/stats', [UserDashboardController::class, 'stats']);
+    Route::get('dashboard/recent-analyses', [UserDashboardController::class, 'recentAnalyses']);
+    Route::get('dashboard/cost-summary', [UserDashboardController::class, 'costSummary']);
 
     // PWA Analysis (TASK-24-8, SPEC-024)
     Route::get('sites/{siteId}/pwa', [\App\Http\Controllers\Api\V1\PWAController::class, 'show'])->where('siteId', '[0-9]+');
