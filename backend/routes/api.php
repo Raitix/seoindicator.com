@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\AlertUnsubscribeController;
 use App\Http\Controllers\Api\V1\AnalysisHistoryController;
 use App\Http\Controllers\Api\V1\UserDashboardController;
+use App\Http\Controllers\Api\V1\AISuggestionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -183,6 +184,9 @@ Route::prefix('v1')->group(function () {
 
     // Lead Capture (TASK-16-5)
     Route::post('tools/capture-email', [\App\Http\Controllers\Api\V1\LeadCaptureController::class, 'store']);
+
+    // AI Suggestions (TASK-21-5) - public with rate limiting
+    Route::post('ai/suggestions', [AISuggestionController::class, 'generate']);
 });
 
 // Authenticated V1 API Routes

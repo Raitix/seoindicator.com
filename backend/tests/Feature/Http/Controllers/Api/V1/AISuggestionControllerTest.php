@@ -39,7 +39,7 @@ class AISuggestionControllerTest extends TestCase
         parent::setUp();
 
         $this->user = User::factory()->create();
-        $this->adminUser = User::factory()->create(['is_admin' => true]);
+        $this->adminUser = User::factory()->create();
 
         // Create mock provider
         $this->mockProvider = Mockery::mock(AIProviderInterface::class);
@@ -306,6 +306,10 @@ class AISuggestionControllerTest extends TestCase
      */
     public function test_validation_accepts_valid_providers(string $provider): void
     {
+        $this->mockService
+            ->shouldReceive('setProvider')
+            ->once()
+            ->with($provider);
         $this->mockService
             ->shouldReceive('getSuggestions')
             ->once()
