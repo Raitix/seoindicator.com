@@ -4885,6 +4885,279 @@ public function socialAccounts(): HasMany
 - FEAT-025: User Accounts + Dashboard + Analysis History
 
 ---
+## Authentication API (TASK-25-3)
+
+### Service Description
+Backend authentication controller providing email-based registration, login, logout, and user retrieval endpoints using Laravel Sanctum for API token authentication. Core authentication API for the user accounts system (FEAT-025 Phase 1).
+
+### API Endpoints
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/v1/auth/register` | Register new user with email | Public |
+| POST | `/api/v1/auth/login` | Login with email/password | Public |
+| POST | `/api/v1/auth/logout` | Revoke current access token | Sanctum |
+| GET | `/api/v1/auth/user` | Get authenticated user data | Sanctum |
+
+### Registration
+`POST /api/v1/auth/register`
+
+**Request Body:**
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "SecurePassword123",
+  "password_confirmation": "SecurePassword123"
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `name` | Required, string, max 255 chars |
+| `email` | Required, email, unique:users |
+| `password` | Required, min 8, confirmed, letters + numbers |
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Registration successful. Please verify your email.",
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "email_verified": false
+    }
+  }
+}
+```
+
+**Error Response (422):**
+```json
+{
+  "message": "The email has already been taken.",
+  "errors": {
+    "email": ["The email has already been taken."]
+  }
+}
+```
+
+### Login
+`POST /api/v1/auth/login`
+
+**Request Body:**
+```json
+{
+  "email": "john@example.com",
+  "password": "SecurePassword123",
+  "remember": true
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `email` | Required, email |
+| `password` | Required, string |
+| `remember` | Optional, boolean |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "email_verified": true
+    },
+    "token": "1|abc123def456..."
+  }
+}
+```
+
+**Error Response (422):**
+```json
+{
+  "message": "Invalid credentials",
+  "errors": {
+    "email": ["The provided credentials are incorrect."]
+  }
+}
+```
+
+**Rate Limiting:** 5 requests per minute per IP address.
+
+### Logout
+`POST /api/v1/auth/logout`
+
+**Headers:**
+```
+Authorization: Bearer 1|abc123def456...
+Accept: application/json
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Logged out successfully"
+}
+```
+
+**Behavior:** Revokes the current access token. Subsequent requests with the same token return 401 Unauthorized.
+
+### Get User
+`GET /api/v1/auth/user`
+
+**Headers:**
+```
+Authorization: Bearer 1|abc123def456...
+Accept: application/json
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "email_verified": true
+  }
+}
+```
+
+**Error Response (401):**
+```json
+{
+  "message": "Unauthenticated."
+}
+```
+
+### Implementation Details
+
+**Controller:** `backend/app/Http/Controllers/Api/V1/AuthController.php`
+
+| Method | Description |
+|--------|-------------|
+| `register()` | Create user, hash password, prepare verification email |
+| `login()` | Validate credentials, create Sanctum token |
+| `logout()` | Revoke current access token |
+| `user()` | Return authenticated user via UserResource |
+
+**Form Requests:**
+| Request | File | Purpose |
+|---------|------|---------|
+| `RegisterRequest` | `app/Http/Requests/Auth/RegisterRequest.php` | Registration validation |
+| `LoginRequest` | `app/Http/Requests/Auth/LoginRequest.php` | Login validation |
+
+**API Resource:**
+| Resource | File | Purpose |
+|----------|------|---------|
+| `UserResource` | `app/Http/Resources/UserResource.php` | User response formatting |
+
+### Token Management
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Default Expiration | 7 days | Standard token lifetime |
+| Remember Me | 30 days | Extended token with `remember: true` |
+| Storage | `personal_access_tokens` table | Sanctum token storage |
+| Revocation | Per-token | Logout revokes current token only |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Password Hashing | bcrypt via `Hash::make()` |
+| Token Authentication | Laravel Sanctum |
+| Rate Limiting | `throttle:5,1` on login endpoint |
+| SQL Injection Prevention | Eloquent ORM |
+| XSS Prevention | Input validation, response escaping |
+| Mass Assignment Protection | `$fillable` whitelist on User model |
+
+**Important Bug Fix (2026-03-01):**
+A configuration issue was discovered where a custom `sanctum` guard in `config/auth.php` with `'driver' => 'session'` overrode Sanctum's token-based authentication. This caused all API token requests to fail with 401 Unauthorized.
+
+**Fix:** Removed the custom `sanctum` guard definition to let Sanctum handle API token authentication with its default behavior.
+
+### Routes Configuration
+
+```php
+// routes/api.php
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/user', [AuthController::class, 'user']);
+});
+```
+
+**Rate Limiting Middleware:**
+```php
+Route::middleware('throttle:5,1')->post('/auth/login', [AuthController::class, 'login']);
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `AuthControllerTest.php` | 36 | 108 | ✅ All Passing |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Registration | 13 | Success, validation, duplicate email |
+| Login | 10 | Success, invalid credentials, rate limiting |
+| Logout | 4 | Token revocation, verification |
+| Get User | 3 | Authenticated retrieval, unauthenticated rejection |
+| Security | 2 | SQL injection, XSS, mass assignment |
+| Edge Cases | 4 | Unicode, whitespace, concurrent logins |
+
+### Production Verification (2026-03-01)
+
+| Test | Status | Details |
+|------|--------|---------|
+| Health Check | ✅ PASS | Database connected |
+| Registration Validation | ✅ PASS | Returns 422 for invalid data |
+| Successful Registration | ✅ PASS | User created with email_verified: false |
+| Login Valid Credentials | ✅ PASS | Token returned successfully |
+| Get User Authenticated | ✅ PASS | Token auth works (bug fix verified) |
+| Logout | ✅ PASS | Token revoked successfully |
+| Token Revoked After Logout | ✅ PASS | Returns 401 after logout |
+| Invalid Password | ✅ PASS | Rejected (422) |
+| Non-existent Email | ✅ PASS | Rejected (422) |
+| Duplicate Email | ✅ PASS | Returns 422 |
+| Unauthenticated Access | ✅ PASS | Returns 401 |
+| Invalid Token | ✅ PASS | Returns 401 |
+
+**Pass Rate: 12/12 (100%)**
+
+### Production Status
+- **Deployed:** 2026-03-01 (commit d9efbc5 via GitHub Actions)
+- **Bug Fix:** Removed incorrect sanctum guard from auth.php
+- **Health Check:** Passing
+- **Tests:** 36/36 passing (108 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-25-1 (Laravel Sanctum & Socialite packages)
+
+### Related Tasks
+- TASK-25-4: Implement Password Reset Flow
+- TASK-25-5: Implement Email Verification
+- TASK-25-17: Frontend Auth Context & Provider
+- TASK-25-18: Login/Register Frontend Pages
+- FEAT-025: User Accounts + Dashboard + Analysis History
+
+---
 ## Dashboard API (TASK-25-15)
 
 ### Service Description
