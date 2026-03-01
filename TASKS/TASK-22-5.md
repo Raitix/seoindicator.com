@@ -1,7 +1,7 @@
 # TASK-22-5: PlaywrightRendererService Implementation
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -124,3 +124,86 @@ Implement the PlaywrightRendererService that renders JavaScript-heavy pages and 
 
 ## Comments
 _Leave notes for the next agent here_
+
+### ProjectManager (2026-03-01 23:50 GMT+2)
+**Priority Confirmed: High**
+- Core rendering service for SPEC-022 Phase 2 (Rendering Engine)
+- Implements Playwright page rendering, content extraction, link/metadata extraction
+- Enables TASK-22-8 (Depth Controller) and TASK-22-10 (Link Queue) functionality
+
+**Risk Confirmed: High**
+- External browser process management (Playwright)
+- Memory management critical (rendered HTML can be large)
+- Network timeouts, navigation failures, JavaScript errors
+- Resource cleanup (browser instances, page contexts)
+- Content size tracking (up to 3MB per job)
+
+**Dependency Status:**
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| TASK-22-4 (Playwright Integration) | To Write Tests ⏳ | BrowserLauncher needed for PlaywrightRendererService |
+| TASK-22-3 (CrawlerService Skeleton) | Tests Coverage In Progress ⏳ | Service interface for job management |
+
+**Critical Dependency - BLOCKED for Development:**
+- TASK-22-4 (Playwright Integration) is `To Write Tests` - NOT implemented
+- PlaywrightRendererService requires:
+  - `BrowserLauncher` service from TASK-22-4
+  - Browser instance management (launch, getSharedInstance, close)
+  - Configuration from `config/playwright.php`
+
+**TDD Approach - Tests Can Proceed:**
+- PreTester CAN design tests NOW using mocked interfaces
+- Test design: Mock `BrowserLauncher`, `Browser`, `Page` interfaces
+- Define `RenderResult` and `ExtractedContent` data structures from acceptance criteria
+- Tests will fail until TASK-22-4 reaches `To Test Locally` (expected TDD behavior)
+
+**RenderResult Data Structure (from spec):**
+```php
+[
+    'url' => string,           // Final URL after redirects
+    'originalUrl' => string,   // Initial URL requested
+    'title' => string,         // Page title
+    'renderedHtml' => string,  // Full rendered HTML
+    'structuredText' => string,// Extracted readable text
+    'meta' => array,           // Metadata object
+    'links' => array,          // Array of links
+    'size' => int,             // Content size in bytes
+    'loadTime' => int,         // Time to render in ms
+    'statusCode' => int,       // HTTP status code
+    'error' => string|null,    // Error message if failed
+]
+```
+
+**Key Methods to Test:**
+1. `render($url, $options)` - Main render method with configurable options
+2. `extractContent(Page $page)` - Extract HTML and structured text
+3. `extractLinks(Page $page)` - Extract all links (internal/external)
+4. `extractMetadata(Page $page)` - Extract meta tags, title, canonical, OG
+5. `close()` - Cleanup browser instances
+
+**Render Options to Test:**
+- `waitForSelector` - CSS selector to wait for
+- `waitTime` - Additional wait in ms
+- `userAgent` - Custom user agent
+- `viewport` - Custom viewport dimensions
+- `headers` - Custom HTTP headers
+- `cookies` - Cookies to set
+- `timeout` - Page timeout override
+
+**Error Scenarios to Test:**
+- TimeoutException - Page took too long
+- NavigationException - Navigation failed
+- RenderException - Content extraction failed
+- Partial results on error
+
+**Execution Order:**
+1. TASK-22-4 must reach `To Test Locally` (BrowserLauncher implemented)
+2. Then Developer can implement PlaywrightRendererService
+3. This service enables Phase 3 (Crawl Logic) tasks
+
+**Parallel Development Opportunity:**
+- TASK-22-6 (ContentProcessorService) has NO dependency on TASK-22-4/22-5
+- Can be developed in parallel using static HTML input
+- Both tasks feed into TASK-22-8 (Depth Controller)
+
+**Handoff:** Ready for PreTester to design tests with mocked BrowserLauncher/Page interfaces.
