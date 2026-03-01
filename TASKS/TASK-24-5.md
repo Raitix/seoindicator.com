@@ -1,7 +1,7 @@
 # TASK-24-5: IconValidatorService
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
