@@ -1,7 +1,7 @@
 # TASK-25-6: Configure Google OAuth Credentials
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -69,6 +69,41 @@ Config in `config/services.php`:
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 15:20 GMT+2] Agent: PreTester
+**Test Design Complete:**
+
+Created 45 tests across 4 test files to verify Google OAuth credentials configuration:
+
+| Test File | Tests | Coverage |
+|-----------|-------|----------|
+| GoogleOAuthConfigurationTest.php | 18 | Environment variables, config structure |
+| GoogleOAuthCredentialsFormatTest.php | 12 | Client ID/secret format validation |
+| GoogleOAuthRedirectUriTest.php | 8 | Redirect URI configuration |
+| GoogleOAuthServiceSetupTest.php | 7 | Socialite integration |
+
+**Test Documentation:** `TESTS/TASK-25-6.md`
+
+**Key Test Scenarios:**
+- Verify GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI env vars set
+- Verify config/services.php has Google provider with all required keys
+- Verify Client ID format matches `*.apps.googleusercontent.com` pattern
+- Verify Client Secret has minimum 20 characters
+- Verify Redirect URI is valid URL with callback path
+- Verify Socialite can use Google driver with configured credentials
+- Verify credentials are not exposed in logs
+
+**Notes for Developer:**
+1. Tests require Socialite package installed (TASK-25-1 dependency)
+2. Tests will fail until credentials are configured in .env (expected TDD behavior)
+3. Follow Google Cloud Console setup steps in `TESTS/TASK-25-6.md`
+4. Use separate credentials for development vs production
+5. FREE tier: 100 OAuth logins/day
+
+Status updated: `To Develop`
+
+---
+*Created by PreTester*
 
 ### [2026-03-01 14:49 GMT+2] Agent: ProjectManager
 **Prioritization Analysis:**
