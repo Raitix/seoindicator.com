@@ -240,7 +240,7 @@ export function AnalysisProgress({
             </Button>
           )}
 
-          {isTerminal && status === 'completed' && (
+          {isTerminal && status === 'completed' && job && (
             <Button
               variant="default"
               onClick={() => onComplete(job)}
