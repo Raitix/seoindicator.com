@@ -3,6 +3,7 @@
 namespace Tests\Feature\Database\Migrations;
 
 use App\Models\Account;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
