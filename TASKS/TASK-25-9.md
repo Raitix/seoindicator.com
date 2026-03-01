@@ -1,7 +1,7 @@
 # TASK-25-9: Handle Account Linking (Email Match)
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -87,6 +87,76 @@ protected function linkSocialAccount(User $user, SocialiteUser $googleUser): voi
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 17:45 GMT+2] Agent: PreTester
+**Test Design Complete**
+
+**Test Documentation Created:**
+- `TESTS/TEST-25-9.md` - 78 test scenarios across 10 categories
+
+**Test Files Created:**
+- `backend/tests/Unit/Services/Auth/AccountLinkingServiceTest.php` (52 unit tests)
+- `backend/tests/Feature/Auth/AccountLinkingFlowTest.php` (22 feature tests)
+- `backend/tests/Integration/Auth/AccountLinkingIntegrationTest.php` (15 integration tests)
+
+**Total Tests: 89 tests**
+
+**Test Categories:**
+1. **Basic Account Linking Tests (BAL)** - 10 tests
+   - Email match linking, password preservation, email verification
+   - Avatar handling, token encryption, token expiration tracking
+
+2. **Email Verification Tests (EV)** - 6 tests
+   - Auto-verification via Google, verification status preservation
+   - Unverified Google email handling
+
+3. **Security Validation Tests (SV)** - 10 tests
+   - Google email verification check, audit logging
+   - Provider uniqueness, idempotent linking, email normalization
+
+4. **Existing Social Account Tests (ESA)** - 5 tests
+   - Multiple providers per user, re-authentication, social account updates
+
+5. **Edge Case Tests (EC)** - 10 tests
+   - Soft-deleted accounts, Unicode emails, concurrent requests
+   - Transaction rollback, database connection loss
+
+6. **Avatar Handling Tests (AV)** - 5 tests
+   - Avatar update logic (only if not already set)
+   - Invalid URLs, very long URLs
+
+7. **Password Confirmation Tests (PC)** - 6 tests
+   - Optional password confirmation before linking
+   - OAuth-only user handling
+
+8. **Integration Tests (INT)** - 8 tests
+   - Full OAuth flow end-to-end
+   - Login with both password and OAuth after linking
+
+9. **Security Attack Tests (SA)** - 8 tests
+   - Account hijacking prevention, CSRF protection
+   - SQL injection, XSS, replay attacks
+
+10. **Database Integration Tests** - 15 tests
+    - Cascade delete, token encryption, audit trail
+    - Performance tests, data integrity
+
+**Key Test Findings:**
+- Email verification should only happen if Google confirms email is verified
+- Avatar should only be updated if user doesn't have one already
+- Password is preserved when linking OAuth to existing account
+- Multiple OAuth providers allowed per user (Google + GitHub + etc.)
+- Unique constraint on (provider, provider_id) prevents account hijacking
+- Tokens are encrypted at rest via SocialAccount model's encrypted casts
+- SocialAccountFactory already has necessary states (google, github, facebook)
+
+**Security Considerations:**
+- Tests verify that account hijacking via provider_id reuse is prevented
+- CSRF protection via state parameter tested in feature tests
+- SQL injection and XSS tests included
+- Audit trail tests verify social_accounts timestamps
+
+**Status:** `To Write Tests` → `To Develop`
 
 ### [2026-03-01 15:18 GMT+2] Agent: ProjectManager
 **Prioritization Analysis:**
