@@ -1,7 +1,7 @@
 # TASK-25-8: Implement GoogleAuthController
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -80,6 +80,34 @@ class GoogleAuthController
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-01 16:46 GMT+2] Agent: DevOps
+**Deployment Complete** ✅
+
+**Deployment Summary:**
+| Step | Status |
+|------|--------|
+| Git Push | ✅ Commit 618b3a0 pushed to origin/main |
+| GitHub Actions | ✅ Workflow 22545677248 completed |
+| Build & Test | ✅ 1m22s |
+| Deploy (SSH) | ✅ 29s |
+| Health Check | ✅ `GET /api/health` returns `status: ok` |
+
+**Files Deployed:**
+- `backend/bootstrap/app.php` - Rate limit JSON handler for 429 responses
+- `backend/app/Http/Controllers/Api/V1/Auth/GoogleAuthController.php` - OAuth endpoints
+- `backend/routes/api.php` - Google OAuth routes
+
+**Production Endpoints Now Available:**
+- `POST /api/v1/auth/google` - Returns Google OAuth redirect URL
+- `POST /api/v1/auth/google/callback` - Handles OAuth callback
+
+**Notes for ProdTester:**
+- Verify OAuth endpoints respond correctly
+- Test rate limiting on callback endpoint (5/min/IP)
+- Verify error handling for invalid state, access denied, etc.
+
+**Status:** `To Deploy` → `To Test Prod`
 
 ### [2026-03-01 16:45 GMT+2] Agent: PreTester
 **Test Design Complete**
