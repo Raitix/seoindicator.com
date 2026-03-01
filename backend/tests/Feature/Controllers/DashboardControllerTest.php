@@ -538,7 +538,7 @@ class DashboardControllerTest extends TestCase
             ->getJson('/api/v1/dashboard/cost-summary');
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.totalCost', 0.00);
+            ->assertJsonPath('data.totalCost', 0);
     }
 
     /** @test */
@@ -589,7 +589,7 @@ class DashboardControllerTest extends TestCase
         $response = $this->actingAs($user1)
             ->getJson('/api/v1/dashboard/cost-summary');
 
-        $response->assertJsonPath('data.totalCost', 100.00);
+        $response->assertJsonPath('data.totalCost', 100);
     }
 
     /** @test */

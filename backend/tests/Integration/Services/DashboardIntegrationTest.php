@@ -132,7 +132,7 @@ class DashboardIntegrationTest extends TestCase
         ]);
 
         // Clear cache (simulating cache invalidation)
-        Cache::forget('dashboard.' . $user->id);
+        $this->aggregator->clearCache($user->id);
 
         // Fresh data should reflect the change
         $data = $this->aggregator->getDashboardData($user->id);

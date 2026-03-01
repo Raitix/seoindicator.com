@@ -57,6 +57,16 @@ class AnalysisHistoryFactory extends Factory
     // =========================================================================
 
     /**
+     * Analysis is completed.
+     */
+    public function completed(): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'status' => 'completed',
+        ]);
+    }
+
+    /**
      * Analysis is pending.
      */
     public function pending(): static
