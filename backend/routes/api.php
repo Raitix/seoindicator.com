@@ -286,9 +286,11 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     // Alert Resubscribe (requires auth)
     Route::post('alerts/resubscribe', [AlertUnsubscribeController::class, 'resubscribe']);
 
-    // Analysis History (TASK-25-14)
+    // Analysis History (TASK-25-14, TASK-25-16)
     Route::get('analyses', [AnalysisHistoryController::class, 'index']);
     Route::get('analyses/{id}', [AnalysisHistoryController::class, 'show'])->where('id', '[0-9]+');
+    Route::delete('analyses/{id}', [AnalysisHistoryController::class, 'destroy'])->where('id', '[0-9]+');
+    Route::get('analyses/{id}/costs', [AnalysisHistoryController::class, 'costs'])->where('id', '[0-9]+');
 
     // User Dashboard (TASK-25-15, SPEC-025)
     Route::get('dashboard', [UserDashboardController::class, 'index']);
