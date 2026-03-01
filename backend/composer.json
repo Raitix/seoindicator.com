@@ -88,22 +88,5 @@
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
-    "repositories": {
-        "socialite": {
-            "type": "path",
-            "url": "../../packages/socialite"
-        },
-        "sanctum": {
-            "type": "path",
-            "url": "../../packages/sanctum"
-        },
-        "0": {
-            "type": "path",
-            "url": "../../packages/sanctum"
-        },
-        "1": {
-            "type": "path",
-            "url": "../../packages/socialite"
-        }
-    }
+    "repositories": []
 }
