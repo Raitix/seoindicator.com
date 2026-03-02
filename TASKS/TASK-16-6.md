@@ -1,7 +1,6 @@
 # TASK-16-6: Lead Storage Service
 
-## STATUS
-`In Development`
+## STATUS`n`To Develop`
 
 ## PRIORITY
 `Medium`

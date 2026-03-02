@@ -1,7 +1,6 @@
 # TASK-18-4: DomainValidatorService
 
-## STATUS
-`In Development`
+## STATUS`n`To Develop`
 
 ## PRIORITY
 `High`

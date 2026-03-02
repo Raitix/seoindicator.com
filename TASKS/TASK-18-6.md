@@ -1,7 +1,6 @@
 # TASK-18-6: AnalysisRunnerService
 
-## STATUS
-`In Development`
+## STATUS`n`To Develop`
 
 ## PRIORITY
 `High`
