@@ -1,7 +1,7 @@
 # TASK-20-6: Write Content for Meta Description Guide
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `Medium`

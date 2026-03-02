@@ -815,13 +815,355 @@ Use these tools to verify your H1 setup:
   {
     slug: 'heading-hierarchy',
     title: 'Heading Hierarchy (H1-H6)',
-    summary: 'Create a logical content structure using proper heading order for better UX and SEO.',
+    summary: 'Create a logical content structure using proper heading order for better UX, accessibility, and SEO.',
     category: 'on-page',
     icon: '📑',
     readTime: 5,
-    sections: [],
-    checklist: [],
-    relatedGuides: ['h1-headings', 'structured-data'],
+    sections: [
+      {
+        title: 'What is Heading Hierarchy?',
+        content: `**Heading hierarchy** refers to the logical structure created by using HTML heading tags (H1 through H6) in a proper, nested order. Just like an outline for a document or book, headings create a content roadmap that helps both users and search engines understand how your page is organized.
+
+HTML provides six levels of headings: \`<h1>\` through \`<h6>\`. Each level represents a different degree of importance and nesting:
+
+- **H1** — The main page title (one per page)
+- **H2** — Major sections or chapters
+- **H3** — Subsections within H2s
+- **H4** — Sub-subsections within H3s
+- **H5-H6** — Further nested content (rarely needed)
+
+Think of heading hierarchy like the table of contents for a book. The book title is H1, chapter titles are H2s, sections within chapters are H3s, and so on. Each level should be nested within the one above it—you wouldn't start a book with a chapter before introducing the book itself.
+
+### The Visual and Semantic Structure
+
+Headings serve two purposes simultaneously:
+
+**Visual structure** — Browsers render headings in different sizes (H1 largest, H6 smallest), giving users a visual cue about content organization.
+
+**Semantic structure** — Screen readers, search engines, and other machines use heading tags to understand your content's logical structure and relationships.
+
+When heading hierarchy is correct, the visual and semantic structures align. When it's wrong (like using H3 for visual styling instead of H2 for a major section), both users and machines get confused.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Why Heading Hierarchy Matters for SEO',
+        content: `Proper heading hierarchy is a fundamental SEO best practice. While not the strongest ranking factor, it contributes significantly to how search engines understand and evaluate your content.
+
+### Content Understanding
+
+Search engines use headings to understand what your page is about and how topics relate to each other. A well-structured heading hierarchy helps Google:
+
+- Identify the main topic (H1)
+- Understand subtopics and their relationships (H2-H6)
+- Create featured snippets and answer boxes
+- Build knowledge graph connections
+
+When your heading structure is logical, search engines can more accurately match your content to relevant queries.
+
+### User Engagement Signals
+
+Users scan web pages rather than reading every word—they look for headings to find the information they need. Good heading hierarchy:
+
+- Helps users find relevant sections quickly
+- Reduces bounce rates by improving navigation
+- Increases time on page and engagement
+- Creates positive user signals that indirectly impact rankings
+
+Studies show that users spend **80% of their time above the fold** scanning for relevant content. Clear headings help them decide to stay and scroll.
+
+### Featured Snippets and Answer Boxes
+
+Google often pulls content for featured snippets from well-structured pages with clear heading hierarchies. When your headings match common search queries, you're more likely to appear in these prominent search features.
+
+### Voice Search Optimization
+
+Voice assistants often read out heading text as part of their responses. A clear heading hierarchy helps these systems understand which parts of your content are most relevant to spoken queries.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Accessibility Benefits',
+        content: `Heading hierarchy is critical for **web accessibility**. For users with visual impairments who rely on screen readers, headings are the primary navigation tool for understanding and moving through web content.
+
+### Screen Reader Navigation
+
+Screen reader users can navigate by headings using keyboard shortcuts:
+
+- **H key** — Jump to the next heading
+- **1-6 keys** — Jump to the next heading of that level (H1, H2, etc.)
+- **Insert+F6** — Open a list of all headings on the page
+
+This navigation only works when heading hierarchy is correct. If you skip from H1 to H3, or use H4 for visual styling instead of semantic meaning, screen reader users get lost.
+
+### Document Outline
+
+Screen readers create a **document outline** from heading structure, similar to a table of contents. Users can browse this outline to understand page structure before reading. A logical hierarchy makes this outline useful; a broken hierarchy makes it confusing.
+
+### WCAG Compliance
+
+Proper heading structure is required for WCAG 2.1 Level AA compliance:
+
+- **Success Criterion 1.3.1** — Information and relationships conveyed through presentation must be programmatically determinable
+- **Success Criterion 2.4.6** — Headings and labels describe topic or purpose
+
+### Statistics That Matter
+
+- **7.6 million** US adults have a visual disability
+- **2.2 billion** people globally have some form of vision impairment
+- Screen reader users report that **heading navigation is the most commonly used feature** for finding content
+
+By implementing proper heading hierarchy, you make your content accessible to millions of users who rely on assistive technology.`,
+        codeExamples: [],
+      },
+      {
+        title: 'How to Structure Headings Properly',
+        content: `Creating a proper heading hierarchy follows simple rules. Master these principles to ensure your content is well-structured for both users and search engines.
+
+### Rule 1: One H1 Per Page
+
+Every page should have exactly **one H1 heading**. This H1 defines the main topic of the page. It's typically similar to (but not identical to) the page's meta title.
+
+The H1 should be the first heading on the page and the most prominent visual heading. All other headings are nested beneath it.
+
+### Rule 2: Follow Numeric Order
+
+Headings should follow a **logical numeric sequence**. An H3 should only appear after an H2; an H4 should only appear after an H3.
+
+**Correct hierarchy:**
+- H1 (Page Title)
+  - H2 (Major Section)
+    - H3 (Subsection)
+    - H3 (Subsection)
+  - H2 (Major Section)
+    - H3 (Subsection)
+      - H4 (Detail)
+
+**Incorrect (skip from H1 to H3):**
+- H1 (Page Title)
+  - H3 (Skipped H2) ❌
+
+### Rule 3: Don't Skip Levels
+
+Never jump from H1 directly to H3, or H2 to H4. Each level represents a degree of nesting. Skipping levels breaks the logical structure and confuses both users and assistive technology.
+
+### Rule 4: Use Headings for Structure, Not Style
+
+Never choose a heading level based on how it looks. Use CSS to control visual appearance. Choose heading levels based on the **semantic structure** of your content.
+
+**Don't do this:**
+\`<h4>Important Announcement</h4>\` (just because it looks smaller)
+
+**Do this:**
+\`<h2>Important Announcement</h2>\` (because it's a major section)
+
+### Visual Representation
+
+A well-structured heading hierarchy looks like this tree diagram:
+
+\`\`\`
+H1: Complete Guide to SEO
+├── H2: On-Page SEO
+│   ├── H3: Meta Tags
+│   └── H3: Content Optimization
+├── H2: Technical SEO
+│   ├── H3: Site Speed
+│   │   └── H4: Image Optimization
+│   └── H3: Crawling and Indexing
+└── H2: Link Building
+\`\`\`
+
+This outline view shows exactly how content is nested and related.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- CORRECT: Proper heading hierarchy -->
+<article>
+  <h1>Complete Guide to Baking Bread</h1>
+  
+  <h2>Choosing Ingredients</h2>
+    <h3>Types of Flour</h3>
+    <h3>Yeast Options</h3>
+  
+  <h2>Mixing the Dough</h2>
+    <h3>Kneading Techniques</h3>
+      <h4>Hand Kneading</h4>
+      <h4>Stand Mixer Method</h4>
+    <h3>Resting Times</h3>
+  
+  <h2>Baking Tips</h2>
+</article>`,
+            description: 'Correct heading hierarchy: H1 > H2 > H3 > H4 in logical nested order',
+          },
+          {
+            language: 'html',
+            code: `<!-- INCORRECT: Skipping heading levels -->
+<article>
+  <h1>Complete Guide to Baking Bread</h1>
+  
+  <h3>Choosing Ingredients</h3>  <!-- WRONG: Skipped H2 -->
+  
+  <h2>Mixing the Dough</h2>
+    <h4>Kneading Techniques</h4>  <!-- WRONG: Skipped H3 -->
+  
+  <h5>Baking Tips</h5>  <!-- WRONG: Skipped H2, H3, H4 -->
+</article>
+
+<!-- INCORRECT: Multiple H1 tags -->
+<article>
+  <h1>Complete Guide to Baking Bread</h1>
+  <h1>Introduction</h1>  <!-- WRONG: Only one H1 per page -->
+</article>`,
+            description: 'Incorrect examples: skipping levels, multiple H1s, and wrong heading order',
+          },
+        ],
+      },
+      {
+        title: 'Common Heading Mistakes',
+        content: `Understanding common mistakes helps you avoid them. Here are the most frequent heading hierarchy errors and how to fix them.
+
+### 1. Multiple H1 Tags
+
+Using more than one H1 tag is one of the most common mistakes. Each page should have exactly one H1 that defines its main topic.
+
+**Impact:** Confuses search engines about the page's primary topic; dilutes SEO signals.
+
+**Fix:** Remove extra H1 tags. Convert them to H2 or appropriate levels.
+
+### 2. Skipping Heading Levels
+
+Jumping from H1 to H3, or H2 to H4, breaks the logical structure. This confuses screen reader users who expect headings to follow in order.
+
+**Impact:** Breaks accessibility navigation; violates WCAG guidelines; confuses search engines about content relationships.
+
+**Fix:** Ensure every heading level follows the one before it. If you need an H3, make sure there's an H2 parent.
+
+### 3. Using Headings for Visual Styling
+
+Choosing H4 instead of H2 because "the text looks better smaller" is a fundamental mistake. Headings convey structure, not appearance.
+
+**Impact:** Breaks semantic structure; confuses assistive technology; violates web standards.
+
+**Fix:** Use CSS to control font size and appearance. Use heading tags only for their semantic meaning.
+
+### 4. Missing H1 Tag Entirely
+
+Some pages have no H1 at all, starting directly with H2 or lower. This leaves the page without a clear main topic.
+
+**Impact:** Search engines and users can't identify the page's primary purpose; accessibility failure.
+
+**Fix:** Add a descriptive H1 as the first heading on every page.
+
+### 5. Headings That Don't Match Content
+
+An H2 titled "Pricing" that contains a contact form, or an H3 that describes something completely different from its parent H2, creates confusion.
+
+**Impact:** Users can't find what they expect; poor user experience signals.
+
+**Fix:** Ensure each heading accurately describes the content that follows it, and that subsections are actually related to their parent sections.
+
+### 6. Empty Headings
+
+Heading tags with no text inside them (like \`<h2></h2>\`) serve no purpose and can confuse screen readers.
+
+**Impact:** Accessibility issues; wasted semantic signals.
+
+**Fix:** Remove empty headings or add meaningful content.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Heading Hierarchy Best Practices',
+        content: `Follow these best practices to ensure your heading hierarchy is optimized for both SEO and accessibility.
+
+### Use Descriptive, Keyword-Rich Headings
+
+Each heading should clearly describe the content that follows. Include relevant keywords naturally, but prioritize clarity over keyword stuffing.
+
+**Good:** \`<h2>How to Optimize Images for Faster Page Speed</h2>\`
+
+**Poor:** \`<h2>Optimization</h2>\`
+
+### Keep Headings Concise
+
+Headings should be brief but descriptive—typically 5-10 words. Long headings are harder to scan and may get truncated in some contexts.
+
+### Front-Load Important Keywords
+
+Place the most important words at the beginning of headings. Users scan headings left-to-right and may not read to the end.
+
+### Match User Intent
+
+Structure your headings to match how users search. If people ask "how to bake bread," having an H2 that says "How to Bake the Dough" aligns with that intent.
+
+### Test with Screen Readers
+
+Use free screen readers like NVDA (Windows) or VoiceOver (Mac) to experience how your heading structure sounds. This reveals issues invisible to sighted users.
+
+### Use Heading Outliner Tools
+
+Browser extensions like "HeadingsMap" or "HTML5 Outliner" visualize your heading structure as an outline. This quickly reveals hierarchy problems.
+
+### Create a Logical Flow
+
+Your heading structure should tell a story when read alone. Someone scanning just the H1 and H2s should understand what the page covers.
+
+### Maintain Consistency
+
+Use parallel structure in headings at the same level. If H2s are questions ("What is SEO?"), keep them all as questions. If they're action phrases ("Optimize Your Images"), maintain that pattern.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Example: Well-structured content with proper hierarchy -->
+<main>
+  <h1>The Ultimate Guide to Organic Gardening</h1>
+  
+  <section>
+    <h2>Getting Started with Organic Gardening</h2>
+    <p>Introduction to organic principles...</p>
+    
+    <h3>Choosing Your Garden Location</h3>
+    <p>Location considerations...</p>
+    
+    <h3>Essential Tools and Supplies</h3>
+    <p>What you'll need...</p>
+  </section>
+  
+  <section>
+    <h2>Soil Preparation and Composting</h2>
+    <p>Building healthy soil...</p>
+    
+    <h3>Testing Your Soil</h3>
+    <p>How to test...</p>
+    
+    <h3>Making Your Own Compost</h3>
+    <p>Compost methods...</p>
+    
+      <h4>Hot Composting</h4>
+      <p>Faster method...</p>
+      
+      <h4>Cold Composting</h4>
+      <p>Easier method...</p>
+  </section>
+  
+  <section>
+    <h2>Plant Selection and Care</h2>
+    <p>Choosing plants...</p>
+  </section>
+</main>`,
+            description: 'Complete example showing proper H1 > H2 > H3 > H4 hierarchy with logical content flow',
+          },
+        ],
+      },
+    ],
+    checklist: [
+      { text: 'Use exactly one H1 tag per page as the main title', priority: 'critical' },
+      { text: 'Never skip heading levels—always go H1 → H2 → H3 in order', priority: 'critical' },
+      { text: 'Use headings for semantic structure, not visual styling (use CSS for appearance)', priority: 'critical' },
+      { text: 'Ensure each heading accurately describes the content that follows', priority: 'important' },
+      { text: 'Include relevant keywords naturally in heading text', priority: 'important' },
+      { text: 'Test heading structure with a screen reader or heading outliner tool', priority: 'important' },
+      { text: 'Keep headings concise (5-10 words) but descriptive', priority: 'recommended' },
+      { text: 'Use parallel structure for headings at the same level', priority: 'recommended' },
+    ],
+    relatedGuides: ['h1-headings', 'internal-links'],
   },
   {
     slug: 'image-alt-text',
