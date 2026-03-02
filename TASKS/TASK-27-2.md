@@ -1,7 +1,7 @@
 # TASK-27-2: Admin Authorization Middleware
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -47,6 +47,37 @@ Implement AdminAuthorizationMiddleware to protect all admin routes. The middlewa
 - Consider adding 2FA requirement for admin actions in future
 
 ## Comments
+
+### 2026-03-02 - ProjectManager
+**Prioritization Complete**
+
+- **Priority: High** (confirmed) - Security-critical component, blocks all admin routes
+- **Risk: High** (confirmed) - Authentication/authorization layer, requires thorough security testing
+- **Dependencies:** TASK-27-1 (admin_activity_logs table) - Currently `Testing Locally`
+- **Execution Order:** Phase 1, Task 2 of 19 (after TASK-27-1 foundation)
+- **Security Review Required:** Yes - SecurityAuditor must review before deployment
+
+**Technical Assessment:**
+- Middleware checks `isAdmin()` on authenticated user
+- Returns 403 Forbidden for non-admin, 401 Unauthorized for unauthenticated
+- Logs unauthorized attempts to admin_activity_logs (requires TASK-27-1)
+- Role hierarchy consideration: super_admin > admin > moderator
+- Rate limiting at route level recommended
+
+**Risk Mitigation:**
+- SecurityAuditor review mandatory before `To Deploy`
+- Feature tests must cover all access scenarios
+- Audit logging must be verified in tests
+- Consider IP-based rate limiting for admin endpoints
+
+**Blockers:** None - TASK-27-1 is in progress (Testing Locally), should complete soon
+
+**Handoff:** Ready for PreTester to design security-focused tests. Focus on:
+- Admin access granted
+- Non-admin denied (403)
+- Unauthenticated denied (401)
+- Logging verification
+- Edge cases (session expiry, role changes)
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
