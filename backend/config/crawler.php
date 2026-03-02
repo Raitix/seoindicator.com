@@ -126,17 +126,32 @@ return [
     |--------------------------------------------------------------------------
     |
     | Rate limits for crawl job creation and execution.
+    | Used by RateLimiterService for comprehensive rate limiting.
+    |
+    | @see TASK-22-13
+    | @see \App\Services\Crawler\RateLimiterService
     |
     */
 
     'rate_limits' => [
-        // Maximum crawl jobs per user per day
+        // Maximum crawl jobs per user per day (default: 10)
+        'user_daily' => env('CRAWLER_USER_DAILY_LIMIT', 10),
+
+        // Maximum concurrent jobs per user (default: 3)
+        'user_concurrent' => env('CRAWLER_USER_CONCURRENT_LIMIT', 3),
+
+        // Requests per second per domain (default: 1)
+        'domain_per_second' => env('CRAWLER_DOMAIN_RATE', 1),
+
+        // Maximum global concurrent browser instances (default: 10)
+        'global_concurrent' => env('CRAWLER_GLOBAL_CONCURRENT', 10),
+
+        // Window duration in hours for daily limit (default: 24)
+        'window_hours' => env('CRAWLER_WINDOW_HOURS', 24),
+
+        // Legacy keys for backward compatibility
         'daily_jobs_per_user' => env('CRAWLER_DAILY_LIMIT', 10),
-
-        // Maximum concurrent jobs per user
         'concurrent_jobs_per_user' => env('CRAWLER_CONCURRENT_LIMIT', 3),
-
-        // Minimum delay between requests to same domain (milliseconds)
         'domain_delay_ms' => env('CRAWLER_DOMAIN_DELAY', 1000),
     ],
 
