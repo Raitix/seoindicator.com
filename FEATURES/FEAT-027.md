@@ -1,7 +1,7 @@
 # FEAT-027: Admin Dashboard (Ops + Usage)
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
