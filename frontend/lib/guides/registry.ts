@@ -29,8 +29,236 @@ const GUIDES: SEOGuide[] = [
     toolSlug: 'meta-tag-analyzer',
     icon: '📝',
     readTime: 5,
-    sections: [],
-    checklist: [],
+    sections: [
+      {
+        title: 'What is a Meta Title?',
+        content: `A **page title** (also called a meta title or title tag) is an HTML element that specifies the title of a web page. It appears in three key places: search engine results pages (SERPs), browser tabs, and when users share your page on social media.
+
+The page title is defined in the \`<head>\` section of your HTML using the \`<title>\` tag. While it's not displayed on the page itself, it's one of the most important on-page SEO factors.
+
+### Where Meta Titles Appear
+
+**Search Engine Results Pages (SERPs)** — The clickable headline that users see when your page appears in search results. This is the most visible and impactful placement.
+
+**Browser Tabs** — The text shown in the tab at the top of your browser window. Clear titles help users navigate when they have multiple tabs open.
+
+**Social Media Shares** — When your page is shared on social platforms, the title often becomes the headline of the preview card (though Open Graph tags can override this).
+
+### Title vs. H1 Heading
+
+The page title and H1 heading serve different purposes:
+
+- **Page Title** — Appears in SERPs and browser tabs; optimized for search engines and click-through rates
+- **H1 Heading** — Appears on the page itself; optimized for users reading your content
+
+While they can be similar, they don't need to match exactly. Your H1 can be more descriptive, while your meta title should be concise and compelling for search.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Meta title in the HTML head -->
+<head>
+  <title>Complete Guide to Meta Title Optimization | BrandName</title>
+</head>`,
+            description: 'Basic meta title tag in HTML head section',
+          },
+        ],
+      },
+      {
+        title: 'Why Meta Titles Matter for SEO',
+        content: `Meta titles are one of the most important on-page SEO factors. They directly impact both search rankings and click-through rates, making them essential for any SEO strategy.
+
+### Ranking Factor
+
+Search engines use meta titles to understand what your page is about. Including relevant keywords in your title helps search engines match your page to user queries. While not the strongest ranking factor, well-optimized titles contribute significantly to topical relevance.
+
+### Click-Through Rate (CTR) Impact
+
+Your meta title is often the **first thing users see** in search results. A compelling title can dramatically increase the percentage of users who click through to your site.
+
+**Studies show:**
+- Top results with optimized titles can achieve **30-40% CTR**
+- Poorly written titles may get less than **10% CTR** even at #1 position
+- Every 1% CTR increase can mean thousands more visitors
+
+### User Experience Signal
+
+When users see a relevant, compelling title and click through, they're more likely to stay on your page. This positive user engagement signals quality to search engines, potentially improving rankings over time.
+
+### Brand Recognition
+
+Consistently including your brand name in titles builds recognition over time. Users who see your brand repeatedly in search results become more likely to click your pages in the future.
+
+### Social Sharing
+
+When your content is shared on social media or messaging apps, the meta title often becomes the headline. A well-crafted title ensures your content looks professional and enticing wherever it's shared.`,
+        codeExamples: [],
+      },
+      {
+        title: 'How to Optimize Meta Titles',
+        content: `Creating effective meta titles requires balancing SEO requirements with user appeal. Follow these best practices to maximize both rankings and click-through rates.
+
+### Title Length Guidelines
+
+The optimal meta title length is **50-60 characters**. Google typically displays the first 50-60 characters (approximately 580 pixels) before truncating with an ellipsis (...).
+
+**Length considerations:**
+- **Too short (under 30 characters):** You're wasting valuable space
+- **Optimal (50-60 characters):** Maximum visibility without truncation
+- **Too long (over 60 characters):** Important keywords may be cut off
+
+**Pro tip:** Front-load your most important keywords. If your title gets truncated, users will still see the key information at the beginning.
+
+### Keyword Placement
+
+Place your primary keyword as close to the beginning of the title as possible. This helps both search engines and users quickly understand your page's topic.
+
+**Keyword placement hierarchy:**
+1. **Primary keyword** — First position is ideal
+2. **Secondary keywords** — Can appear later in the title
+3. **Brand name** — Usually at the end, separated by a pipe (|) or dash (-)
+
+### Creating Unique Titles
+
+Every page on your website should have a **unique meta title**. Duplicate titles confuse search engines and dilute your SEO efforts.
+
+**What to avoid:**
+- Using the same title across multiple pages
+- Generic titles like "Home" or "Products"
+- Auto-generated titles that don't describe the specific page
+
+### Branding in Titles
+
+Include your brand name to build recognition, but don't let it dominate the title. A common format is:
+
+\`Primary Keyword - Compelling Phrase | Brand Name\`
+
+**For established brands:** Consider putting the brand first for homepage and key landing pages.
+
+**For newer brands:** Focus on keywords first; brand recognition will build over time.
+
+### Writing Compelling Titles
+
+Beyond SEO, your title needs to entice clicks. Make it compelling:
+
+- **Use numbers:** "10 Tips for..." or "5 Best..."
+- **Ask questions:** "How to..." or "Why..."
+- **Create urgency:** "Complete Guide" or "Essential Tips"
+- **Be specific:** "2024 Guide" or "Step-by-Step"
+- **Match user intent:** Align with what searchers are looking for`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Good meta title examples -->
+<title>How to Write Meta Titles: Complete SEO Guide | BrandName</title>
+<title>10 Meta Title Best Practices for Higher Rankings</title>
+<title>Meta Title Length: The 2024 Guide to Perfect Titles</title>
+
+<!-- Poor meta title examples (avoid these) -->
+<title>Home</title>
+<title>SEO Meta Title Optimization Best Practices Tips Tricks Guide 2024</title>
+<title>Page 1</title>`,
+            description: 'Good vs bad meta title examples showing length, keyword placement, and branding',
+          },
+        ],
+      },
+      {
+        title: 'Common Meta Title Mistakes',
+        content: `Even experienced marketers make mistakes with meta titles. Avoid these common pitfalls to ensure your titles work for both SEO and users.
+
+### 1. Duplicate Titles Across Pages
+
+When multiple pages have the same title, search engines struggle to determine which page to rank for relevant queries. This cannibalizes your own rankings and confuses users.
+
+**Solution:** Audit your site for duplicate titles using Google Search Console or crawling tools. Create unique, descriptive titles for each page.
+
+### 2. Titles That Are Too Long or Too Short
+
+**Too long:** Google truncates your title, potentially cutting off important keywords or your brand name. Users may not see the most compelling part of your message.
+
+**Too short:** You waste valuable space that could include additional keywords or persuasive copy.
+
+**Solution:** Aim for 50-60 characters. Use tools to preview how your title will appear in search results.
+
+### 3. Keyword Stuffing
+
+Cramming multiple keywords into your title looks spammy and can hurt your rankings. Modern search engines understand context—you don't need to repeat keywords.
+
+**Bad example:** \`SEO Meta Title Optimization Guide Best Practices Tips Tricks 2024\`
+
+**Good example:** \`Meta Title Optimization: Complete SEO Guide for 2024\`
+
+**Solution:** Focus on one primary keyword phrase. Write naturally while incorporating your target terms.
+
+### 4. Missing Brand Name
+
+While not critical for every page, omitting your brand name loses an opportunity for recognition. For branded searches and building authority, including your brand is valuable.
+
+**Solution:** Add your brand name at the end of titles for important pages, separated by a pipe (|) or dash (-).
+
+### 5. Not Matching Page Content
+
+Your title should accurately reflect what users will find on the page. Misleading titles may increase initial clicks but lead to high bounce rates—a negative signal to search engines.
+
+**Solution:** Ensure your title accurately describes the page content and satisfies the intent behind the search query.
+
+### 6. Ignoring Mobile Considerations
+
+Mobile search results display fewer characters than desktop. A title that looks fine on desktop might be heavily truncated on mobile.
+
+**Solution:** Prioritize the most important information in the first 50 characters to ensure visibility across all devices.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Meta Title Best Practices Checklist',
+        content: `Follow this checklist to ensure every meta title on your site is optimized for both search engines and users.
+
+### Quick Reference
+
+| Aspect | Best Practice |
+|--------|---------------|
+| Length | 50-60 characters (max 580 pixels) |
+| Keywords | Primary keyword within first 3-5 words |
+| Uniqueness | Every page has a unique title |
+| Branding | Include brand name (usually at end) |
+| Accuracy | Title matches page content |
+| Readability | Natural, compelling, not stuffed |
+
+### Testing Your Titles
+
+Use Google Search Console to see how your titles appear in search results. If Google frequently rewrites your titles, it may indicate issues with length, relevance, or quality.
+
+**Google may rewrite titles when:**
+- They're too long or too short
+- They don't match page content
+- They contain keyword stuffing
+- They're duplicate or generic
+
+**Pro tip:** Test different title variations by monitoring CTR in Google Search Console. Small changes can lead to significant traffic increases.
+
+### Title Rewriting by Google
+
+Google sometimes rewrites meta titles in search results based on what it thinks best matches the user's query. This can happen when:
+
+- Your title doesn't match the page content
+- Google finds a more relevant heading on the page
+- The query suggests a different intent
+
+To minimize rewriting, ensure your titles are accurate, descriptive, and aligned with page content.`,
+        codeExamples: [],
+      },
+    ],
+    checklist: [
+      { text: 'Keep titles between 50-60 characters to avoid truncation in search results', priority: 'critical' },
+      { text: 'Place primary keyword within the first 3-5 words of the title', priority: 'critical' },
+      { text: 'Create unique titles for every page on your website', priority: 'critical' },
+      { text: 'Include your brand name at the end for recognition (e.g., "Topic | BrandName")', priority: 'important' },
+      { text: 'Front-load important keywords—users and search engines scan titles from left to right', priority: 'important' },
+      { text: 'Avoid keyword stuffing; write natural, compelling titles for humans first', priority: 'important' },
+      { text: 'Match title to page content and user search intent', priority: 'important' },
+      { text: 'Use pipes (|) or dashes (-) to separate sections of your title', priority: 'recommended' },
+      { text: 'Test titles with Google Search Console to monitor CTR and rewriting', priority: 'recommended' },
+      { text: 'Consider mobile display when crafting titles—fewer characters visible', priority: 'recommended' },
+    ],
     relatedGuides: ['meta-description', 'h1-headings', 'open-graph'],
   },
   {
