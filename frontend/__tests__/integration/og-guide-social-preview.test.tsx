@@ -76,54 +76,72 @@ jest.mock('@/lib/guides/registry', () => ({
   GUIDE_SLUGS: ['open-graph', 'twitter-cards'],
 }));
 
-// Mock ToolEmbed component
-jest.mock('@/components/guides/ToolEmbed', () => ({
-  ToolEmbed: jest.fn(({ toolSlug, defaultToolTab, title, showCta, ctaText, stateKey, onAnalysisComplete }) => (
-    <div
-      data-testid="tool-embed"
-      data-tool-slug={toolSlug}
-      data-default-tab={defaultToolTab}
-      data-title={title}
-      data-state-key={stateKey}
-    >
-      <div>Social Media Preview Tool</div>
-      <div data-testid="tool-platform-tabs">
-        <button data-testid="tab-facebook" aria-selected={defaultToolTab === 'facebook'}>
-          Facebook
-        </button>
-        <button data-testid="tab-twitter" aria-selected={defaultToolTab === 'twitter'}>
-          Twitter
-        </button>
-        <button data-testid="tab-linkedin" aria-selected={defaultToolTab === 'linkedin'}>
-          LinkedIn
-        </button>
-      </div>
-      <input
-        type="url"
-        placeholder="Enter page URL"
-        aria-label="Enter page URL"
-        data-testid="url-input"
-      />
-      <button data-testid="analyze-button">Analyze</button>
-      {showCta && (
-        <a
-          href="/tools/social-preview/"
-          data-testid="tool-cta"
-          target="_blank"
-          rel="noopener noreferrer"
+// Mock ToolEmbed component with tab switching support
+jest.mock('@/components/guides/ToolEmbed', () => {
+  const React = require('react');
+  return {
+    ToolEmbed: jest.fn(({ toolSlug, defaultToolTab, title, showCta, ctaText, stateKey, onAnalysisComplete }) => {
+      const [activeTab, setActiveTab] = React.useState(defaultToolTab || 'facebook');
+      return (
+        <div
+          data-testid="tool-embed"
+          data-tool-slug={toolSlug}
+          data-default-tab={defaultToolTab}
+          data-title={title}
+          data-state-key={stateKey}
         >
-          {ctaText || 'Use Full Tool'}
-        </a>
-      )}
-      <button
-        data-testid="mock-complete"
-        onClick={() => onAnalysisComplete?.({ success: true, data: {} })}
-      >
-        Complete
-      </button>
-    </div>
-  )),
-}));
+          <div>Social Media Preview Tool</div>
+          <div data-testid="tool-platform-tabs">
+            <button
+              data-testid="tab-facebook"
+              aria-selected={activeTab === 'facebook'}
+              onClick={() => setActiveTab('facebook')}
+            >
+              Facebook
+            </button>
+            <button
+              data-testid="tab-twitter"
+              aria-selected={activeTab === 'twitter'}
+              onClick={() => setActiveTab('twitter')}
+            >
+              Twitter
+            </button>
+            <button
+              data-testid="tab-linkedin"
+              aria-selected={activeTab === 'linkedin'}
+              onClick={() => setActiveTab('linkedin')}
+            >
+              LinkedIn
+            </button>
+          </div>
+          <input
+            type="url"
+            placeholder="Enter page URL"
+            aria-label="Enter page URL"
+            data-testid="url-input"
+          />
+          <button data-testid="analyze-button">Analyze</button>
+          {showCta && (
+            <a
+              href="/tools/social-preview/"
+              data-testid="tool-cta"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {ctaText || 'Use Full Tool'}
+            </a>
+          )}
+          <button
+            data-testid="mock-complete"
+            onClick={() => onAnalysisComplete?.({ success: true, data: {} })}
+          >
+            Complete
+          </button>
+        </div>
+      );
+    }),
+  };
+});
 
 // Mock GuideSection component
 jest.mock('@/components/guides', () => ({
