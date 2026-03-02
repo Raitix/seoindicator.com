@@ -95,11 +95,11 @@ const formatFullDate = (value: string): string => {
  */
 const CustomTooltip: React.FC<{
   active?: boolean;
-  payload?: Array<{
+  payload?: readonly {
     dataKey: string;
     value: number | null;
     color: string;
-  }>;
+  }[];
   label?: string;
   competitorNames: Record<string, string>;
   showUser: boolean;
