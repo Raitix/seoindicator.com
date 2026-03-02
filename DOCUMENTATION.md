@@ -1,6 +1,131 @@
 # DOCUMENTATION.md
 
 ---
+## Meta Description SEO Guide (TASK-20-6)
+
+### Guide Description
+Comprehensive SEO guide content for the Meta Description indicator, covering definition, SEO impact (CTR), optimization techniques, character limits (150-160), and Google's rewriting behavior. Explains how meta descriptions influence click-through rates and provides actionable best practices with HTML code examples. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `meta-description`
+- **URL:** `https://seoindicator.com/seo-guides/meta-description/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What is a Meta Description? | Definition, HTML tag syntax, where descriptions appear in SERPs | ~300 |
+| Why Meta Descriptions Matter for SEO | CTR impact, user experience, competitive advantage | ~350 |
+| How to Write Compelling Descriptions | Character length (150-160), keywords, CTAs, user intent | ~400 |
+| Common Mistakes to Avoid | Duplicate descriptions, auto-generated, keyword stuffing, misleading content | ~350 |
+| Google Rewriting Behavior | When/why Google rewrites, how snippets are created | ~250 |
+
+**Total Content:** ~1,650 words
+**Read Time:** 5 minutes
+
+### Key Technical Details
+
+| Topic | Details |
+|-------|---------|
+| HTML Meta Description Tag | `<meta name="description" content="Your description here">` in `<head>` |
+| Character Limit | 150-160 characters optimal (Google may truncate longer) |
+| CTR Impact | Well-written descriptions can improve CTR by 5-30% |
+| Google Rewriting | Google rewrites ~60-70% of meta descriptions, chooses snippets based on query |
+| Keywords | Include target keywords naturally; bold in SERPs when matched |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| Basic HTML meta description tag | HTML | Standard meta description syntax in head section |
+| Good vs bad description examples | HTML | Comparison showing effective vs ineffective descriptions |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Keep meta description between 150-160 characters |
+| Critical | Write a unique description for every page |
+| Important | Include your primary keyword naturally |
+| Important | Add a clear call-to-action (CTA) |
+| Important | Match the description to page content accurately |
+| Important | Avoid duplicate descriptions across pages |
+| Important | Don't stuff keywords; write for humans first |
+| Recommended | Consider user intent when writing descriptions |
+| Recommended | Monitor CTR in Google Search Console |
+
+### Related Guides
+- `meta-title` - Meta title optimization
+- `open-graph` - Open Graph tags for social sharing
+
+### Tool Integration
+- **Tool Slug:** `meta-tag-analyzer`
+- **Tool Name:** Meta Tag Analyzer
+- **Purpose:** Analyze meta title and description for length and SEO best practices
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'meta-description',
+  title: 'Meta Description',
+  summary: 'Write compelling meta descriptions that improve CTR...',
+  category: 'on-page',
+  icon: '📝',
+  readTime: 5,
+  hasTool: true,
+  toolSlug: 'meta-tag-analyzer',
+  relatedGuides: ['meta-title', 'open-graph'],
+  sections: [ /* 5 sections */ ],
+  checklist: [ /* 9 items */ ],
+  codeExamples: [ /* 2 examples */ ]
+}
+```
+
+### Google Rewriting Behavior
+
+| Scenario | Google Action | Recommendation |
+|----------|---------------|----------------|
+| Description matches query | Uses your description | Write relevant descriptions |
+| Description doesn't match query | Selects page content snippet | Ensure page content supports queries |
+| Description too long | Truncates with "..." | Keep under 160 characters |
+| Description missing | Generates from page content | Always provide a description |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `meta-description-content.test.ts` | 48 | Content structure validation |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Guide Existence | 3 | Slug exists, retrievable, valid structure |
+| Metadata | 6 | Title, summary, category, toolSlug, icon, readTime |
+| Required Sections | 8 | Content sections for all required topics |
+| Code Examples | 6 | HTML examples present and valid |
+| Checklist | 9 | 5-10 items with proper priorities |
+| Related Guides | 6 | meta-title, open-graph linked |
+| Content Quality | 7 | Length, formatting, SEO keywords, Google rewriting |
+| Integration | 3 | Registry functions work correctly |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions auto-deploy)
+- **URL:** https://seoindicator.com/seo-guides/meta-description/
+- **Health Check:** Passing
+- **Tests:** 48/48 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+
+### Related Tasks
+- TASK-20-5: Meta Title Guide (related topic)
+- TASK-20-18: Open Graph Tags Guide (related topic)
+
+---
 ## H1 Headings SEO Guide (TASK-20-7)
 
 ### Guide Description
