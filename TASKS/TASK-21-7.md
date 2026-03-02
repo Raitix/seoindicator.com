@@ -1,7 +1,7 @@
 # TASK-21-7: Add Debug Mode and Logging
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `Medium`
