@@ -72,6 +72,7 @@ class CreditTransaction extends Model
         'payment_provider',
         'payment_id',
         'metadata',
+        'created_at',
     ];
 
     // ============================================

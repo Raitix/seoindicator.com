@@ -19283,3 +19283,221 @@ queued → running → completed
 - TASK-22-3: CrawlerService Skeleton
 - SPEC-022: Headless Crawler Service
 - FEAT-022: Headless Crawler Service
+
+---
+## Credit Packages Table with Seed Data (TASK-26-3)
+
+### Service Description
+Database migration and seeder for credit packages - predefined pricing tiers users can purchase. Foundation for the billing system (FEAT-026), providing configurable credit bundles with bonus incentives and display ordering.
+
+### Database Schema
+
+```sql
+CREATE TABLE credit_packages (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    credits DECIMAL(10, 2) NOT NULL,
+    price_usd DECIMAL(10, 2) NOT NULL,
+    bonus_percent INT UNSIGNED DEFAULT 0,
+    is_popular TINYINT(1) DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
+    sort_order INT UNSIGNED DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+### Table Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `name` | VARCHAR(100) | Package display name (e.g., "Starter", "Pro") |
+| `credits` | DECIMAL(10, 2) | Base credit value in USD |
+| `price_usd` | DECIMAL(10, 2) | Actual price in USD |
+| `bonus_percent` | INT UNSIGNED | Extra credits percentage (default: 0) |
+| `is_popular` | TINYINT(1) | Highlight badge for recommended package |
+| `is_active` | TINYINT(1) | Soft delete alternative (default: 1) |
+| `sort_order` | INT UNSIGNED | Display order (default: 0) |
+
+### Indexes
+
+| Index | Columns | Purpose |
+|-------|---------|---------|
+| Primary | `id` | Primary key lookup |
+| `idx_credit_packages_is_active` | `is_active` | Filter active packages |
+| `idx_credit_packages_sort_order` | `sort_order` | Order by display sequence |
+
+### CreditPackage Model
+
+**Location:** `backend/app/Models/CreditPackage.php`
+
+**Fillable Attributes:**
+```php
+protected $fillable = [
+    'name',
+    'credits',
+    'price_usd',
+    'bonus_percent',
+    'is_popular',
+    'is_active',
+    'sort_order',
+];
+```
+
+**Casts:**
+```php
+protected $casts = [
+    'credits' => 'decimal:2',
+    'price_usd' => 'decimal:2',
+    'bonus_percent' => 'integer',
+    'is_popular' => 'boolean',
+    'is_active' => 'boolean',
+    'sort_order' => 'integer',
+];
+```
+
+### Model Scopes
+
+| Scope | Description | Usage |
+|-------|-------------|-------|
+| `scopeActive($query)` | Filter active packages only | `CreditPackage::active()->get()` |
+| `scopePopular($query)` | Filter popular packages | `CreditPackage::popular()->get()` |
+| `scopeOrdered($query)` | Order by sort_order | `CreditPackage::ordered()->get()` |
+
+### Model Accessors
+
+| Accessor | Returns | Description |
+|----------|---------|-------------|
+| `effective_credits` | float | Base credits + bonus calculation |
+| `savings_percentage` | int | Returns bonus_percent |
+| `formatted_price` | string | Price formatted as "$25.00" |
+| `formatted_credits` | string | Credits formatted as "$25.00" |
+
+**Effective Credits Calculation:**
+```php
+public function getEffectiveCreditsAttribute(): float
+{
+    return round($this->credits * (1 + $this->bonus_percent / 100), 2);
+}
+```
+
+### Seed Data
+
+**Seeder:** `backend/database/seeders/CreditPackageSeeder.php`
+
+**Packages Seeded:**
+
+| Name | Price | Credits | Bonus | Effective Credits | Popular |
+|------|-------|---------|-------|-------------------|---------|
+| Starter | $5.00 | $5.00 | 0% | $5.00 | No |
+| Basic | $10.00 | $10.00 | 5% | $10.50 | No |
+| Pro | $25.00 | $25.00 | 10% | $27.50 | **Yes** |
+| Enterprise | $50.00 | $50.00 | 15% | $57.50 | No |
+
+### Factory
+
+**Location:** `backend/database/factories/CreditPackageFactory.php`
+
+**States:**
+| State | Description |
+|-------|-------------|
+| `starter()` | $5 package, no bonus |
+| `basic()` | $10 package, 5% bonus |
+| `pro()` | $25 package, 10% bonus, popular |
+| `enterprise()` | $50 package, 15% bonus |
+
+### API Endpoint
+
+**GET /api/v1/packages**
+
+Returns list of active credit packages for the pricing page.
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Starter",
+      "credits": "5.00",
+      "price_usd": "5.00",
+      "bonus_percent": 0,
+      "effective_credits": 5.0,
+      "is_popular": false,
+      "formatted_price": "$5.00"
+    }
+  ]
+}
+```
+
+### Security Considerations
+
+| Measure | Implementation |
+|---------|----------------|
+| Price Server-Side | All pricing values are server-side only |
+| No User Input | Prices cannot be modified by user input |
+| Active Flag | Packages can be hidden without deletion |
+| Admin Management | Future admin interface for package management |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CreditPackageTest.php` | 58 | 126 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Model Creation | 7 | Create, fillable, timestamps |
+| Casts | 13 | Decimal, integer, boolean casting |
+| Accessors | 8 | effective_credits, formatted values |
+| Scopes | 5 | active, popular, ordered |
+| Indexes | 2 | is_active, sort_order indexes |
+| Edge Cases | 10 | Zero bonus, max values, nulls |
+| Security | 2 | Price tampering prevention |
+| Seeder | 12 | 4 packages seeded correctly |
+
+### Production Verification
+
+**Migration Status:**
+- Migration: `2026_03_02_130000_create_credit_packages_table.php`
+- Status: ✅ Ran on production
+
+**Seeded Packages Verified:**
+```bash
+php artisan db:seed --class=CreditPackageSeeder
+# Seeded: Starter, Basic, Pro (popular), Enterprise
+```
+
+**Model Verification:**
+```php
+CreditPackage::active()->ordered()->get();
+// Returns 4 packages in sort_order
+
+CreditPackage::popular()->first()->name;
+// Returns "Pro"
+
+CreditPackage::find(3)->effective_credits;
+// Returns 27.5 (25 + 10% bonus)
+```
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-02 (commit 1d93a16) |
+| **Health Check** | Passing |
+| **Tests** | 58/58 passing (126 assertions) |
+| **Status** | Complete |
+
+### Dependencies
+
+None - Independent table, foundation for billing system.
+
+### Related Tasks
+
+- TASK-26-1: Credits and Transactions Tables
+- TASK-26-20: Pricing Page (uses credit packages)
+- SPEC-026: Billing, Credits & Model Selection
+- FEAT-026: Billing, Credits & Model Selection
