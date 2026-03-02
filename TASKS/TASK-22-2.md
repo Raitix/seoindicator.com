@@ -136,3 +136,35 @@ TASK-22-1 (Migrations) → TASK-22-2 (Models - THIS TASK) → TASK-22-3 (Service
 - Relationships: User/Project (BelongsTo), CrawlPages (HasMany)
 
 **Handoff:** Ready for PreTester to design model tests.
+
+### Developer (2026-03-02 09:55 GMT+2)
+**Implementation Verified - All Tests Passing:**
+
+Both models already implemented and verified:
+- `backend/app/Models/CrawlJob.php` - Complete with all required features
+- `backend/app/Models/CrawlPage.php` - Complete with all required features
+
+**Test Results:**
+- CrawlJobTest: **64 tests passed** (107 assertions)
+- CrawlPageTest: **60 tests passed** (99 assertions)
+- Total: **124 tests, 206 assertions, all passing**
+
+**Verified Features:**
+
+**CrawlJob Model:**
+- ✅ All fillable attributes configured
+- ✅ Casts for options (array), dates (datetime), integers
+- ✅ Relationships: user(), project(), pages()
+- ✅ Scopes: queued, running, completed, failed, cancelled, forUser, forProject, expired
+- ✅ Accessors: is_complete, duration, size_formatted
+- ✅ Helper methods: canBeCancelled(), content_url
+- ✅ Status constants defined
+
+**CrawlPage Model:**
+- ✅ All fillable attributes configured
+- ✅ Casts for meta (array), links (array), dates (datetime), integers
+- ✅ Relationships: crawlJob()
+- ✅ Scopes: forJob, atDepth, successful
+- ✅ Accessors: size_formatted, internal_links, external_links
+
+**Handoff:** Ready for LocalTester to validate in local environment.
