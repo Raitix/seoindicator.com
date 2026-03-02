@@ -2497,23 +2497,979 @@ According to Google's official documentation on canonicalization:
   {
     slug: 'robots-txt',
     title: 'Robots.txt Configuration',
-    summary: 'Control how search engines crawl and index your site.',
+    summary: 'Control how search engines crawl your site with robots.txt directives to optimize crawl budget and protect sensitive paths.',
     category: 'technical',
     icon: '🤖',
-    readTime: 4,
-    sections: [],
-    checklist: [],
-    relatedGuides: ['xml-sitemap', 'canonical-urls'],
+    readTime: 5,
+    sections: [
+      {
+        title: 'What is Robots.txt?',
+        content: `**Robots.txt** is a plain text file placed at the root of your website that instructs search engine crawlers (also called bots, spiders, or user-agents) which pages or files they can or cannot request from your site. It's the first file search engines look for when they visit your domain.
+
+Located at \`https://yourdomain.com/robots.txt\`, this file acts as a gatekeeper—telling crawlers like Googlebot, Bingbot, and others which areas of your site are open for exploration and which should be left alone.
+
+### The Purpose of Robots.txt
+
+The primary purposes of a robots.txt file are:
+
+1. **Manage crawl budget** — Prevent crawlers from wasting time on unimportant pages
+2. **Protect sensitive paths** — Keep private areas like admin panels out of search indexes
+3. **Control server load** — Reduce the number of requests bots make to your server
+4. **Guide crawlers to important content** — Direct attention to pages that matter most
+
+### Where to Place Robots.txt
+
+The robots.txt file **must be placed at the root of your domain**. There can only be one robots.txt file per domain, and it must be accessible at the exact URL:
+
+\`https://example.com/robots.txt\`
+
+**Important placement rules:**
+- Must be at the domain root (not in a subdirectory)
+- Must be accessible via HTTP with a 200 status code
+- Only one robots.txt file per domain (subdomains can have their own)
+- File name must be exactly \`robots.txt\` (lowercase)
+
+If your site uses subdomains (like \`blog.example.com\` or \`shop.example.com\`), each subdomain needs its own robots.txt file at its respective root.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Why Robots.txt Matters for SEO',
+        content: `While robots.txt doesn't directly improve rankings, it plays a crucial role in how search engines discover and crawl your content. Proper configuration can significantly impact your SEO performance.
+
+### Crawl Budget Optimization
+
+**Crawl budget** is the number of pages Google allocates to crawl on your site within a given timeframe. For large sites (thousands of pages), crawl budget matters—you want Google spending its limited time on your most important content.
+
+Without robots.txt guidance, crawlers may waste valuable crawl budget on:
+- Duplicate content pages (print versions, sort orders)
+- Auto-generated pages (calendar views, search results)
+- Admin and backend pages
+- Low-value content archives
+
+By blocking these paths, you ensure crawlers focus on pages that actually drive traffic and conversions.
+
+### Indexation Control
+
+While robots.txt doesn't directly prevent pages from being indexed (use \`noindex\` meta tags for that), it influences which pages search engines discover and crawl. Pages blocked by robots.txt won't be crawled, which typically means they won't be indexed.
+
+### Server Performance
+
+Aggressive crawling can strain server resources. Robots.txt helps manage the pace at which bots access your site, protecting server performance for real users.
+
+### Preventing Sensitive Content Exposure
+
+While robots.txt is not a security measure, it helps keep sensitive paths out of search results. However, **never rely on robots.txt for security**—anyone can view the file and see which paths you're hiding.
+
+### Directing Crawlers to Your Sitemap
+
+Robots.txt is the standard place to declare your XML sitemap location, helping search engines discover all your important pages efficiently.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Allow and Disallow Directives',
+        content: `The **Disallow** and **Allow** directives are the core building blocks of robots.txt. They tell search engine crawlers which paths they can or cannot access.
+
+### User-agent Directive
+
+Every set of directives starts with a \`User-agent\` line that specifies which crawler the rules apply to. You can target specific bots or use the wildcard \`*\` to apply rules to all crawlers.
+
+**Syntax:** \`User-agent: [bot-name-or-*]\`
+
+### Disallow Directive
+
+The \`Disallow\` directive specifies which paths are off-limits to the specified user-agent.
+
+**Syntax:** \`Disallow: [path]\`
+
+**Examples:**
+- \`Disallow: /\` — Blocks the entire site
+- \`Disallow: /admin/\` — Blocks the /admin/ directory
+- \`Disallow: /private-page.html\` — Blocks a specific page
+- \`Disallow:\` (empty) — Allows everything (no restrictions)
+
+### Allow Directive
+
+The \`Allow\` directive overrides \`Disallow\` for specific paths. This is useful when you've blocked a directory but want to allow access to specific files within it.
+
+**Syntax:** \`Allow: [path]\`
+
+**Examples:**
+- \`Allow: /assets/images/\` — Explicitly allows a specific path
+- \`Allow: /public/file.html\` — Allows a specific file
+
+### Rule Priority and Order
+
+When both Allow and Disapply apply to a URL, Google uses the **more specific rule** (the longer path). However, the order of rules also matters—place more specific rules after general ones for clarity.`,
+        codeExamples: [
+          {
+            language: 'text',
+            code: `# Block all crawlers from the entire site
+User-agent: *
+Disallow: /
+
+# Block all crawlers from specific directories
+User-agent: *
+Disallow: /admin/
+Disallow: /private/
+Disallow: /temp/
+
+# Allow a specific file in a blocked directory
+User-agent: *
+Disallow: /private/
+Allow: /public-info.html`,
+            description: 'Basic Allow and Disallow directive examples',
+          },
+          {
+            language: 'text',
+            code: `# Block everything except images
+User-agent: *
+Disallow: /
+Allow: /images/
+Allow: /assets/*.jpg$
+Allow: /assets/*.png$
+
+# In this example:
+# - All paths are blocked by default
+# - /images/ directory is allowed
+# - .jpg and .png files in /assets/ are allowed`,
+            description: 'Using Allow to override Disallow for specific paths',
+          },
+        ],
+      },
+      {
+        title: 'Sitemap Reference in Robots.txt',
+        content: `The \`Sitemap\` directive tells search engines where to find your XML sitemap. While not required, including your sitemap location in robots.txt is a best practice that helps crawlers discover all your important pages.
+
+### Sitemap Directive Syntax
+
+The sitemap directive is simple: just provide the full URL to your XML sitemap file.
+
+**Syntax:** \`Sitemap: [full-url]\`
+
+### Benefits of Declaring Your Sitemap
+
+1. **Discovery** — Search engines automatically find your sitemap without manual submission
+2. **Centralized information** — All crawl guidance in one file
+3. **Multiple sitemaps** — You can declare multiple sitemaps for different content types
+4. **Cross-subdomain sitemaps** — Reference sitemaps on different domains
+
+### Where to Place Sitemap Directives
+
+Sitemap directives can appear anywhere in your robots.txt file—typically at the beginning or end. Unlike User-agent groups, sitemap directives are independent and apply globally.
+
+### Multiple Sitemaps
+
+Large sites often split sitemaps by content type (pages, images, videos, news). You can declare all of them in your robots.txt:`,
+        codeExamples: [
+          {
+            language: 'text',
+            code: `# robots.txt with sitemap declaration
+User-agent: *
+Disallow: /admin/
+Disallow: /search/
+
+Sitemap: https://example.com/sitemap.xml
+
+# Multiple sitemaps for different content types
+Sitemap: https://example.com/sitemap-pages.xml
+Sitemap: https://example.com/sitemap-images.xml
+Sitemap: https://example.com/sitemap-news.xml`,
+            description: 'Robots.txt with single and multiple sitemap declarations',
+          },
+          {
+            language: 'text',
+            code: `# Sitemap on a different domain (useful for cross-subdomain)
+User-agent: *
+Disallow: /private/
+
+Sitemap: https://sitemaps.example.com/main-sitemap.xml`,
+            description: 'Sitemap directive can reference sitemaps on external domains',
+          },
+        ],
+      },
+      {
+        title: 'Wildcards and Patterns',
+        content: `Robots.txt supports two wildcard characters that give you powerful pattern-matching capabilities: the asterisk \`*\` and the dollar sign \`$\`.
+
+### Asterisk Wildcard (*)
+
+The \`*\` matches any sequence of characters (including zero characters). Use it to block or allow groups of similar URLs.
+
+**Common use cases:**
+- Blocking URLs with specific query parameters
+- Blocking file types across all directories
+- Blocking auto-generated pages with patterns
+
+### Dollar Sign Wildcard ($)
+
+The \`$\` matches the end of a URL. Use it to target specific file extensions or exact URL endings.
+
+**Common use cases:**
+- Blocking all PDF files
+- Blocking specific file types (\`.pdf\`, \`.xls\`)
+- Blocking pages with specific endings
+
+### Combining Wildcards
+
+You can combine \`*\` and \`$\` in a single rule for precise targeting.
+
+**Pattern matching examples:**
+- \`/*.pdf$\` — Any path ending in .pdf
+- \`/page*/\` — Any path starting with "page"
+- \`/*?print=\` — Any URL containing "?print="
+- \`/*.js$\` — Any JavaScript file at any path depth`,
+        codeExamples: [
+          {
+            language: 'text',
+            code: `# Block all PDF files from being crawled
+User-agent: *
+Disallow: /*.pdf$
+
+# Block all URLs with "print" parameter
+User-agent: *
+Disallow: /*?print=
+
+# Block all files in any "tmp" directory at any level
+User-agent: *
+Disallow: /*/tmp/
+
+# Block specific file types
+User-agent: *
+Disallow: /*.xls$
+Disallow: /*.doc$
+Disallow: /*.pdf$
+
+# Block search results pages with query parameters
+User-agent: *
+Disallow: /search?
+Disallow: /*?sort=
+Disallow: /*?filter=`,
+            description: 'Wildcard patterns for blocking specific URL patterns',
+          },
+          {
+            language: 'text',
+            code: `# Allow images but block other assets
+User-agent: *
+Disallow: /assets/
+Allow: /assets/*.jpg$
+Allow: /assets/*.png$
+Allow: /assets/*.gif$
+Allow: /assets/*.webp$
+
+# Block admin and test pages
+User-agent: *
+Disallow: /admin*
+Disallow: /*test/
+Disallow: /staging/`,
+            description: 'Combining wildcards with Allow and Disallow directives',
+          },
+        ],
+      },
+      {
+        title: 'Common Robots.txt Mistakes',
+        content: `Even experienced developers make mistakes with robots.txt. Understanding these common pitfalls helps you avoid SEO problems.
+
+### 1. Blocking CSS and JavaScript
+
+One of the most damaging mistakes is blocking CSS and JavaScript files. Modern search engines need to render pages to understand them fully—if you block these resources, Google can't see your page as users do.
+
+**Problem:** Blocking \`/assets/\` or \`/js/\` directories prevents Google from rendering your pages correctly.
+
+**Solution:** Allow CSS and JavaScript files explicitly.
+
+### 2. Blocking Your Entire Site
+
+A single \`Disallow: /\` directive blocks your entire site from being crawled. This is sometimes done accidentally during development or staging and forgotten when going live.
+
+**Impact:** Your site disappears from search results entirely.
+
+**Prevention:** Always check your robots.txt before going live. Use Google Search Console to test.
+
+### 3. Wrong Path Format
+
+Paths in robots.txt are **case-sensitive** and must match your actual URL structure exactly.
+
+**Common errors:**
+- Wrong case: \`/Admin/\` vs \`/admin/\`
+- Missing trailing slash: \`/admin\` vs \`/admin/\`
+- Not matching URL-encoded characters
+
+### 4. Using Robots.txt for Security
+
+**Critical misconception:** Robots.txt is NOT a security measure. It's merely a suggestion to well-behaved crawlers.
+
+**Problems with relying on robots.txt for security:**
+- Malicious bots ignore robots.txt completely
+- Anyone can view your robots.txt and see "hidden" paths
+- Disallowed pages can still be indexed if linked from other sites
+
+**Solution:** Use proper authentication, authorization, and \`noindex\` tags for sensitive content.
+
+### 5. Conflicting Rules
+
+Multiple rules can conflict, causing unexpected behavior. Always test your robots.txt with Google's testing tools.
+
+### 6. Forgetting About Crawl-Delay
+
+Some crawlers respect a \`Crawl-delay\` directive that slows their requests. While not part of the official standard, it can help manage server load—though Google doesn't support it.`,
+        codeExamples: [
+          {
+            language: 'text',
+            code: `# MISTAKE: Blocking CSS/JS prevents proper rendering
+User-agent: *
+Disallow: /assets/    # This blocks CSS and JS!
+Disallow: /js/        # Also blocks JavaScript
+
+# CORRECT: Allow CSS and JS for search engines
+User-agent: *
+Disallow: /assets/
+Allow: /assets/*.css$
+Allow: /assets/*.js$
+Allow: /assets/*.woff2$
+
+# Or better: Only block truly private paths
+User-agent: *
+Disallow: /admin/
+Disallow: /private/
+# Don't block CSS/JS at all`,
+            description: 'Mistake: blocking CSS and JavaScript prevents Google from rendering pages',
+          },
+          {
+            language: 'text',
+            code: `# DANGEROUS: This blocks your entire site!
+User-agent: *
+Disallow: /
+
+# This is useful for staging/development sites
+# but catastrophic if left on a production site
+
+# Always verify your robots.txt doesn't contain this
+# unless you intentionally want to block everything`,
+            description: 'The most dangerous mistake: blocking your entire site from crawlers',
+          },
+        ],
+      },
+      {
+        title: 'User-Agent Targeting',
+        content: `Different search engines use different crawler bots, each with its own user-agent name. You can create specific rules for individual crawlers or use the wildcard \`*\` to apply rules to all bots.
+
+### The Wildcard User-agent (*)
+
+Using \`User-agent: *\` applies rules to all crawlers that respect robots.txt. This is the most common approach.
+
+### Targeting Specific Bots
+
+For more granular control, target specific crawlers by name:
+
+| Search Engine | User-agent |
+|---------------|------------|
+| Google | \`Googlebot\` |
+| Google Images | \`Googlebot-Image\` |
+| Bing | \`bingbot\` |
+| Yahoo | \`Slurp\` |
+| DuckDuckGo | \`DuckDuckBot\` |
+| Baidu | \`Baiduspider\` |
+| Yandex | \`Yandex\` |
+
+### Rule Group Order
+
+When you have multiple user-agent groups, crawlers look for their specific user-agent first. If none exists, they fall back to \`*\` rules.
+
+**Best practice:** Place specific user-agent rules before generic \`*\` rules for clarity.`,
+        codeExamples: [
+          {
+            language: 'text',
+            code: `# Rules for all crawlers (default)
+User-agent: *
+Disallow: /admin/
+Disallow: /private/
+Disallow: /search?
+
+# Specific rules for Googlebot only
+User-agent: Googlebot
+Disallow: /temp/
+Allow: /special-google-content/
+
+# Specific rules for Bingbot only
+User-agent: bingbot
+Disallow: /heavy-pages/
+Crawl-delay: 10
+
+# Block an aggressive bot completely
+User-agent: BadBot
+Disallow: /`,
+            description: 'Targeting specific user-agents with custom rules for each crawler',
+          },
+          {
+            language: 'text',
+            code: `# Allow all bots to access everything
+User-agent: *
+Disallow:
+
+# This empty Disallow means "disallow nothing"
+# Equivalent to allowing access to everything
+
+# A completely permissive robots.txt
+User-agent: *
+Allow: /
+Disallow:`,
+            description: 'Permissive robots.txt that allows all crawlers full access',
+          },
+        ],
+      },
+      {
+        title: 'Security Considerations',
+        content: `A critical misconception about robots.txt is that it provides security. It does not. Understanding what robots.txt can and cannot do is essential for protecting your site.
+
+### Robots.txt is NOT a Security Measure
+
+The robots.txt file is publicly viewable—anyone can access \`https://yourdomain.com/robots.txt\` and see exactly which paths you're trying to hide. Malicious bots and scrapers completely ignore robots.txt directives.
+
+**Never use robots.txt to hide:**
+- Admin panel URLs
+- User data directories
+- API endpoints
+- Configuration files
+- Any truly sensitive information
+
+### Disallowed Pages Can Still Be Indexed
+
+Blocking a page in robots.txt prevents crawling, but doesn't prevent indexing. Google can still index a blocked URL if:
+
+1. It's linked from another site
+2. It appears in your sitemap
+3. Google discovered it before you added the block
+
+### The noindex Alternative
+
+For pages you want to keep out of search results, use \`noindex\` directives instead of (or in addition to) robots.txt:
+
+**Meta tag approach:** \`<meta name="robots" content="noindex">\`
+
+**HTTP header approach:** \`X-Robots-Tag: noindex\`
+
+The \`noindex\` directive explicitly tells search engines not to include a page in their index—much more reliable than robots.txt for preventing indexing.
+
+### When to Use Each Approach
+
+| Goal | Solution |
+|------|----------|
+| Prevent crawling | robots.txt Disallow |
+| Prevent indexing | noindex meta tag or header |
+| Block from search results | noindex (not robots.txt) |
+| Manage crawl budget | robots.txt |
+| Hide sensitive content | Proper authentication (not robots.txt) |
+
+### Best Practice: Defense in Depth
+
+For maximum protection:
+1. Use **authentication** for truly sensitive areas
+2. Use **noindex** to prevent indexing
+3. Use **robots.txt** to prevent crawling
+4. Never rely on robots.txt alone for security`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Meta tag for noindex (in the <head> section) -->
+<meta name="robots" content="noindex, nofollow">
+
+<!-- This tells search engines:
+     - noindex: Don't include this page in search results
+     - nofollow: Don't follow links on this page -->
+
+<!-- For specific search engines -->
+<meta name="googlebot" content="noindex">`,
+            description: 'Using noindex meta tag to prevent indexing (more reliable than robots.txt)',
+          },
+          {
+            language: 'apache',
+            code: `# .htaccess - Add X-Robots-Tag header for non-HTML files
+<FilesMatch "\\.pdf$">
+  Header set X-Robots-Tag "noindex, nofollow"
+</FilesMatch>
+
+# Block indexing of all PDF files
+# This works for non-HTML content where you can't add meta tags`,
+            description: 'X-Robots-Tag HTTP header for preventing indexing of non-HTML files',
+          },
+        ],
+      },
+      {
+        title: 'Technical Specifications',
+        content: `Understanding the technical constraints of robots.txt ensures your implementation works correctly across all search engines.
+
+### File Location and Access
+
+- **Location:** Must be at the domain root (\`/robots.txt\`)
+- **Protocol:** Accessible via HTTP or HTTPS
+- **Status code:** Must return HTTP 200 (OK)
+- **Content type:** Should be served as \`text/plain\`
+
+### File Size Limits
+
+Google limits the processing of robots.txt files:
+
+- **Maximum file size:** 500 KiB (approximately 500KB)
+- **Behavior:** Google truncates processing at 500 KiB
+- **Recommendation:** Keep files well under this limit
+
+For complex sites, use pattern matching and wildcard rules rather than listing every path individually.
+
+### Case Sensitivity
+
+Both the file name and paths are **case-sensitive**:
+
+- File must be named exactly \`robots.txt\` (lowercase)
+- Paths must match your actual URL case exactly
+- \`/Admin/\` and \`/admin/\` are different paths
+
+### Character Encoding
+
+- Robots.txt should be encoded in **UTF-8**
+- Characters outside the ASCII range should be URL-encoded
+- Google recommends using Punycode for international domain names
+
+### Crawl-Delay Directive
+
+The \`Crawl-delay\` directive is **not part of the official standard** but is supported by some crawlers (Bing, Yandex, Baidu). Google ignores this directive.
+
+**Syntax:** \`Crawl-delay: [seconds]\`
+
+**Purpose:** Requests the crawler to wait X seconds between requests.
+
+### Comments in Robots.txt
+
+Use \`#\` to add comments. Everything after \`#\` on a line is ignored.
+
+**Note:** Comments cannot be placed on the same line as a directive. Place them on their own lines.`,
+        codeExamples: [
+          {
+            language: 'text',
+            code: `# Robots.txt technical example
+# Last updated: 2024-01-15
+# This file must be at https://example.com/robots.txt
+
+# All bots - block admin and private areas
+User-agent: *
+Disallow: /admin/      # Case-sensitive: must match actual path
+Disallow: /Private/    # Different from /private/
+Disallow: /temp/
+
+# Bing-specific: request slower crawling
+User-agent: bingbot
+Disallow: /admin/
+Crawl-delay: 10        # Bing supports this; Google ignores it
+
+# Sitemap declaration
+Sitemap: https://example.com/sitemap.xml
+
+# File size recommendation: keep under 500KB
+# This example is well under the limit`,
+            description: 'Technical robots.txt example with comments and proper formatting',
+          },
+        ],
+      },
+      {
+        title: 'Testing Your Robots.txt',
+        content: `Always test your robots.txt implementation before relying on it. Google provides free tools to validate and debug your configuration.
+
+### Google Search Console Robots.txt Report
+
+Google Search Console includes a dedicated robots.txt report that shows:
+- Current robots.txt content
+- Any parsing errors
+- When Google last fetched it
+- HTTP status code
+
+**Access:** Search Console → Settings → robots.txt Report
+
+### Google Robots Testing Tool
+
+For quick testing, use Google's online robots.txt testing tool:
+
+**URL:** support.google.com/webmasters/answer/6062598
+
+**Features:**
+- Test if a URL is blocked or allowed
+- See which rule applies
+- Identify syntax errors
+- Test changes before publishing
+
+### Manual Testing Steps
+
+1. **Check file accessibility:** Visit \`yourdomain.com/robots.txt\` in a browser
+2. **Verify HTTP status:** Ensure it returns 200 OK
+3. **Test with Google's tool:** Validate rules work as expected
+4. **Monitor Search Console:** Check for errors after deployment
+5. **Test specific URLs:** Verify important pages aren't accidentally blocked
+
+### Common Testing Scenarios
+
+**Test if Google can access your CSS/JS:**
+- Enter the CSS/JS file URL in the testing tool
+- Verify it shows "Allowed"
+
+**Test if admin pages are blocked:**
+- Enter \`/admin/\` URLs
+- Verify they show "Blocked"
+
+**Test sitemap discovery:**
+- Ensure sitemap directive is present
+- Verify sitemap URL is correct and accessible`,
+        codeExamples: [],
+      },
+    ],
+    checklist: [
+      { text: 'Place robots.txt at the domain root (https://example.com/robots.txt)', priority: 'critical' },
+      { text: 'Never block CSS or JavaScript files that affect page rendering', priority: 'critical' },
+      { text: 'Test with Google Search Console robots.txt testing tool before deploying', priority: 'critical' },
+      { text: 'Use noindex meta tags for pages you want excluded from search results', priority: 'important' },
+      { text: 'Include Sitemap directive to help search engines discover your pages', priority: 'important' },
+      { text: 'Remember robots.txt is not a security measure—use proper authentication for sensitive content', priority: 'important' },
+      { text: 'Keep file size under 500KB to ensure Google processes it completely', priority: 'important' },
+      { text: 'Use wildcards (* and $) for pattern matching instead of listing every URL', priority: 'recommended' },
+      { text: 'Reference Google\'s official robots.txt specifications for complex implementations', priority: 'recommended' },
+    ],
+    relatedGuides: ['xml-sitemap', 'https-security'],
   },
   {
     slug: 'xml-sitemap',
     title: 'XML Sitemap Creation',
-    summary: 'Help search engines discover and index all your important pages.',
+    summary: 'Help search engines discover and index all your important pages with a properly structured XML sitemap.',
     category: 'technical',
     icon: '🗺️',
-    readTime: 4,
-    sections: [],
-    checklist: [],
+    readTime: 5,
+    sections: [
+      {
+        title: 'What is an XML Sitemap?',
+        content: `An **XML sitemap** is a file that lists all the important URLs on your website, helping search engines like Google and Bing discover and crawl your content more efficiently. Think of it as a roadmap that guides search engine crawlers to every valuable page on your site.
+
+The sitemap uses a specific XML format defined by the **sitemaps.org protocol**, a standard jointly created by Google, Yahoo, and Microsoft. This structured format makes it easy for search engines to parse and understand your site's content hierarchy.
+
+### Key Information in a Sitemap
+
+- **URL locations** — The web addresses of your pages
+- **Last modification dates** — When content was last updated
+- **Change frequency** — How often the page typically changes
+- **Priority** — Relative importance of pages on your site
+
+### When You Need a Sitemap
+
+Google recommends using a sitemap when your site:
+
+- Has many pages that aren't well-linked together
+- Has pages with few or no internal links pointing to them (orphan pages)
+- Has a large archive of content pages that are isolated from each other
+- Is new and has few external links pointing to it
+- Uses rich media content (images, video) that appears in Google search
+
+Even for smaller sites, having a sitemap ensures search engines know about all your important pages.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Why XML Sitemaps Matter for SEO',
+        content: `XML sitemaps are a powerful tool for improving how search engines discover, crawl, and index your website. While not required for SEO, they provide significant benefits for most websites.
+
+### Improved Crawlability
+
+Sitemaps help search engines find pages they might otherwise miss. This is especially important for:
+
+- **Large websites** with thousands of pages where some might be buried deep in the site architecture
+- **New websites** with few external backlinks pointing to them
+- **Sites with poor internal linking** where some pages have few incoming links
+- **Dynamic sites** where content changes frequently
+
+### Faster Indexation
+
+When you publish new content, a sitemap helps search engines discover it quickly. Google can use your sitemap to identify new or updated pages and prioritize crawling them, reducing the time between publishing and appearing in search results.
+
+### Better Content Discovery
+
+Sitemaps tell search engines which pages are important. By including priority values and modification dates, you signal which content deserves attention and which pages have been recently updated.
+
+### Control Over What Gets Indexed
+
+While robots.txt tells search engines what NOT to crawl, sitemaps tell them what SHOULD be crawled. This positive guidance helps ensure your most important content gets discovered and indexed.
+
+### SEO Impact on Large Sites
+
+For large e-commerce sites or content-heavy platforms, sitemaps are critical. They help search engines:
+
+- Discover deep pages that might be missed during normal crawling
+- Understand the relationship between pages
+- Allocate crawl budget more efficiently
+- Find new content faster after updates
+
+### Ranking Considerations
+
+While having a sitemap doesn't directly improve rankings, it indirectly benefits SEO by ensuring all your important pages are discoverable and indexed. Pages that aren't indexed can't rank.`,
+        codeExamples: [],
+      },
+      {
+        title: 'XML Sitemap Structure',
+        content: `The XML sitemap follows a specific structure defined by the sitemaps.org protocol. Understanding this structure helps you create valid, effective sitemaps.
+
+### Required Elements
+
+Every sitemap must include these elements:
+
+- **\`<urlset>\`** — The container for all URL entries
+- **\`<url>\`** — Individual page entry
+- **\`<loc>\`** — The URL of the page (absolute URL required)
+
+### Optional Elements
+
+You can include additional information for each URL:
+
+- **\`<lastmod>\`** — When the page was last modified (W3C Datetime format)
+- **\`<changefreq>\` — How often the page changes (always, hourly, daily, weekly, monthly, yearly, never)
+- **\`<priority>\` — Relative priority from 0.0 to 1.0 (default is 0.5)
+
+### Sitemap Protocol Details
+
+The xmlns attribute specifies the sitemap protocol version. Always use the sitemaps.org schema URL.
+
+**Key rules:**
+- Maximum 50,000 URLs per sitemap file
+- Maximum 50MB uncompressed file size
+- Use UTF-8 encoding
+- Escape special characters in URLs (&, ', ", <, >)
+- Use absolute URLs (include protocol and domain)
+
+### Understanding Priority Values
+
+The priority value is **relative to other pages on your site**, not an absolute measure. A priority of 1.0 means "most important on this site," not "most important on the entire web."
+
+**Priority guidelines:**
+- **1.0** — Homepage and critical landing pages
+- **0.8-0.9** — Important category and product pages
+- **0.5-0.7** — Standard content pages
+- **0.0-0.4** — Low-priority or outdated content
+
+**Note:** Google states that priority values are suggestions and may not significantly affect crawl frequency or rankings.`,
+        codeExamples: [
+          {
+            language: 'xml',
+            code: `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://example.com/</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://example.com/about/</loc>
+    <lastmod>2024-01-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://example.com/blog/</loc>
+    <lastmod>2024-01-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+</urlset>`,
+            description: 'Basic XML sitemap with required and optional elements',
+          },
+        ],
+      },
+      {
+        title: 'Submitting to Google Search Console',
+        content: `Once you've created your sitemap, you need to tell search engines where to find it. Google Search Console is the primary tool for managing sitemaps with Google.
+
+### Submitting via Google Search Console
+
+1. **Open Google Search Console** and select your property
+2. **Navigate to Sitemaps** in the left sidebar
+3. **Enter your sitemap URL** (e.g., \`sitemap.xml\` or \`sitemap-index.xml\`)
+4. **Click Submit**
+
+Google will validate your sitemap and begin processing it. You can view the status, including any errors or warnings, in the Sitemaps report.
+
+### Ping Method
+
+You can also notify Google about your sitemap using a simple HTTP request:
+
+\`https://www.google.com/ping?sitemap=https://example.com/sitemap.xml\`
+
+This method is useful for automated sitemap updates but doesn't replace Search Console submission.
+
+### Sitemap Status in Search Console
+
+After submission, monitor these metrics:
+
+- **Discovered URLs** — How many URLs Google found in your sitemap
+- **Indexed URLs** — How many of those URLs are actually indexed
+- **Coverage warnings** — Issues like redirecting URLs or pages with errors
+- **Errors** — Problems that prevent processing
+
+### Why URLs Might Not Be Indexed
+
+Not all submitted URLs get indexed. Common reasons include:
+
+- **Duplicate content** — Page is similar to another indexed page
+- **Low quality** — Content doesn't meet Google's quality standards
+- **Blocked by robots.txt** — Sitemap URLs are blocked by robots directives
+- **Redirects or errors** — URL redirects or returns error status
+- **Canonical issues** — A different URL is specified as canonical
+
+### Resubmitting After Updates
+
+When you add new content or update existing pages significantly, you can resubmit your sitemap in Search Console to notify Google of the changes. However, Google will eventually recrawl your sitemap automatically.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Dynamic Sitemap Generation',
+        content: `For websites with frequently changing content, manually updating sitemaps isn't practical. Dynamic sitemap generation automatically updates your sitemap whenever content changes.
+
+### Why Dynamic Sitemaps?
+
+- **E-commerce sites** — Products added and removed daily
+- **Blogs** — New posts published regularly
+- **News sites** — Multiple articles published per day
+- **User-generated content** — Forums, directories, classifieds
+
+### Implementation Approaches
+
+**Server-Side Generation**: Your server generates the sitemap on demand or via scheduled tasks. When Google requests \`/sitemap.xml\`, your application queries the database for all URLs and renders the XML response.
+
+**CMS Plugins**: Most content management systems have plugins that generate sitemaps automatically:
+- **WordPress**: Yoast SEO, Rank Math, Google XML Sitemaps
+- **Shopify**: Built-in sitemap generation
+- **Drupal**: XML Sitemap module
+- **Magento**: Native sitemap functionality
+
+**Build-Time Generation**: Static site generators like Next.js, Gatsby, and Hugo can generate sitemaps during the build process.
+
+### Update Frequency
+
+How often should your sitemap update?
+
+| Site Type | Recommended Update Frequency |
+|-----------|------------------------------|
+| News sites | Real-time or hourly |
+| E-commerce | Daily or with each product change |
+| Blogs | With each new post |
+| Corporate sites | Weekly or monthly |
+
+### Performance Considerations
+
+For large sites, generating sitemaps on every request can strain your server. Consider:
+
+- **Caching** — Cache generated sitemaps and regenerate periodically
+- **Incremental updates** — Only update changed portions
+- **Pre-generation** — Generate during off-peak hours
+- **CDN delivery** — Serve cached sitemaps from a CDN`,
+        codeExamples: [
+          {
+            language: 'javascript',
+            code: `// Next.js sitemap generation (pages/api/sitemap.ts)
+import { GetServerSideProps } from 'next';
+
+export const getServerSideProps: GetServerSideProps = async ({ res }) => {
+  // Fetch URLs from database or CMS
+  const pages = await getPages(); // Your data fetching
+  
+  const sitemap = \`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+\${pages.map((page) => \`  <url>
+    <loc>https://example.com\${page.slug}</loc>
+    <lastmod>\${page.updatedAt}</lastmod>
+  </url>\`).join('\\n')}
+</urlset>\`;
+
+  res.setHeader('Content-Type', 'application/xml');
+  res.write(sitemap);
+  res.end();
+  
+  return { props: {} };
+};`,
+            description: 'Next.js dynamic sitemap generation example',
+          },
+        ],
+      },
+      {
+        title: 'Sitemap Index Files for Large Sites',
+        content: `When your website exceeds the sitemap limits (50,000 URLs or 50MB), you need to split your sitemap into multiple files and use a **sitemap index file** to list them all.
+
+### Sitemap Limits
+
+A single sitemap file can contain:
+- **Maximum 50,000 URLs**
+- **Maximum 50MB uncompressed**
+
+If you exceed either limit, you must use a sitemap index.
+
+### Sitemap Index Structure
+
+The sitemap index file uses \`<sitemapindex>\` instead of \`<urlset>\` and lists individual sitemap files with their locations and last modification dates.
+
+### When to Use a Sitemap Index
+
+Consider splitting your sitemap when:
+
+- Your site has more than 50,000 indexable URLs
+- Your sitemap file exceeds 50MB uncompressed
+- You want to organize sitemaps by content type (pages, products, images)
+- Different content types have different update frequencies
+
+### Organizing Multiple Sitemaps
+
+Common strategies for organizing split sitemaps:
+
+**By content type:**
+- \`sitemap-pages.xml\` — Static pages
+- \`sitemap-products.xml\` — Product pages
+- \`sitemap-blog.xml\` — Blog posts
+- \`sitemap-images.xml\` — Image sitemap
+
+**By category:**
+- \`sitemap-electronics.xml\`
+- \`sitemap-clothing.xml\`
+- \`sitemap-furniture.xml\`
+
+**By date:**
+- \`sitemap-2024.xml\`
+- \`sitemap-2023.xml\`
+- \`sitemap-archive.xml\`
+
+### Submitting Sitemap Indexes
+
+Submit your sitemap index file to Google Search Console just like a regular sitemap. Google will automatically discover and process all referenced sitemaps.`,
+        codeExamples: [
+          {
+            language: 'xml',
+            code: `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://example.com/sitemap-pages.xml</loc>
+    <lastmod>2024-01-15</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://example.com/sitemap-products.xml</loc>
+    <lastmod>2024-01-14</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://example.com/sitemap-blog.xml</loc>
+    <lastmod>2024-01-15</lastmod>
+  </sitemap>
+</sitemapindex>`,
+            description: 'Sitemap index file listing multiple sitemaps for large sites',
+          },
+        ],
+      },
+    ],
+    checklist: [
+      { text: 'Submit your sitemap to Google Search Console', priority: 'critical' },
+      { text: 'Include only canonical URLs (no duplicates, redirects, or 404s)', priority: 'critical' },
+      { text: 'Keep sitemap updated when content changes', priority: 'important' },
+      { text: 'Reference sitemap in robots.txt file', priority: 'important' },
+      { text: 'Use sitemap index for sites with 50,000+ URLs', priority: 'important' },
+      { text: 'Set appropriate lastmod dates for modified content', priority: 'recommended' },
+      { text: 'Use changefreq and priority judiciously (Google may ignore)', priority: 'recommended' },
+    ],
     relatedGuides: ['robots-txt', 'internal-links'],
   },
 
