@@ -1,6 +1,118 @@
 # DOCUMENTATION.md
 
 ---
+## Image Optimization SEO Guide (TASK-20-10)
+
+### Guide Description
+Comprehensive SEO guide content for the Image Optimization indicator, covering file formats, compression, lazy loading, and performance impact. Explains Core Web Vitals (LCP, CLS) impact and provides actionable best practices with code examples. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `image-optimization`
+- **URL:** `https://seoindicator.com/seo-guides/image-optimization/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What is Image Optimization? | Definition, benefits, impact on page performance | ~200 |
+| Why Image Optimization Matters | Core Web Vitals (LCP, CLS), page speed ranking factor | ~250 |
+| Image File Formats | WebP, AVIF, JPEG, PNG comparison with use cases | ~350 |
+| Compression and Resizing | Lossy vs lossless, quality settings, tools (Squoosh, TinyPNG) | ~300 |
+| Lazy Loading Implementation | Native lazy loading, Next.js Image component | ~300 |
+
+**Total Content:** ~1,400 words
+**Read Time:** 4 minutes
+
+### Key Technical Details
+
+| Topic | Details |
+|-------|---------|
+| Core Web Vitals | LCP (Largest Contentful Paint) - images are often LCP elements |
+| CLS | Cumulative Layout Shift - images without dimensions cause layout shifts |
+| WebP | 25-35% smaller than JPEG, supported in all modern browsers |
+| AVIF | 50% smaller than JPEG, newer format with growing support |
+| Native Lazy Loading | `loading="lazy"` attribute for below-fold images |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| HTML picture element | HTML | AVIF/WebP fallback to JPEG for format support |
+| Native lazy loading | HTML | `loading="lazy"` attribute with width/height |
+| Next.js Image component | TSX | Automatic optimization, lazy loading, blur placeholder |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Use modern image formats (WebP or AVIF) with fallbacks |
+| Critical | Implement lazy loading for below-the-fold images |
+| Important | Specify width and height attributes to prevent CLS |
+| Important | Compress images before uploading (lossy for photos, lossless for graphics) |
+| Important | Use responsive images with srcset for different screen sizes |
+| Important | Optimize images before upload using tools like Squoosh or TinyPNG |
+| Recommended | Use Next.js Image component for automatic optimization |
+
+### Related Guides
+- `page-speed` - Core Web Vitals and page performance
+- `image-alt-text` - Accessibility for images
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'image-optimization',
+  title: 'Image Optimization for Web',
+  summary: 'Optimize images for faster loading and better Core Web Vitals...',
+  category: 'content',
+  icon: '🖼️',
+  readTime: 4,
+  hasTool: false,
+  relatedGuides: ['page-speed', 'image-alt-text'],
+  sections: [ /* 5 sections */ ],
+  checklist: [ /* 7 items */ ],
+  codeExamples: [ /* 3 examples */ ]
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `image-optimization-content.test.ts` | 54 | Content structure validation |
+| `image-optimization-code-examples.test.ts` | 26 | Code examples validation |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Guide Structure | CO-001 to CO-003 | Registry entry, slug, title, category |
+| Core Web Vitals | CW-001 to CW-005 | LCP, CLS mentions, impact explained |
+| File Formats | FF-001 to FF-006 | WebP, AVIF, JPEG, PNG coverage |
+| Compression | CR-001 to CR-005 | Lossy vs lossless, quality settings |
+| Lazy Loading | LL-001 to LL-006 | Native lazy loading, Next.js Image |
+| Best Practices Checklist | BC-001 to BC-005 | 7 items with priorities |
+| Code Examples | CE-001 to CE-008 | Picture element, lazy loading, Next.js |
+| Read Time | RT-001 to RT-003 | 4-6 minute range validation |
+| Related Guides | RG-001 to RG-004 | page-speed, image-alt-text |
+
+### Production Status
+- **Deployed:** 2026-03-01 (GitHub Actions)
+- **URL:** https://seoindicator.com/seo-guides/image-optimization/
+- **Health Check:** Passing
+- **Tests:** 80/80 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+- TASK-20-29 (Render Guide Content - page component fix)
+
+### Related Tasks
+- TASK-20-13: Page Speed Optimization Guide (Core Web Vitals)
+- TASK-20-9: Image Alt Text Guide (related topic)
+
+---
 ## HTTPS & Security SEO Guide (TASK-20-15)
 
 ### Guide Description
