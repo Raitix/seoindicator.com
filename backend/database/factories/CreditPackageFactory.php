@@ -25,18 +25,20 @@ class CreditPackageFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->randomElement(['Starter', 'Basic', 'Pro', 'Enterprise']),
+            'name' => $this->faker->words(2, true),
             'credits' => $this->faker->randomFloat(2, 5, 100),
             'price_usd' => $this->faker->randomFloat(2, 5, 100),
-            'bonus_percent' => $this->faker->randomElement([0, 0, 0, 5, 10, 15]),
+            'bonus_percent' => $this->faker->numberBetween(0, 20),
             'is_popular' => false,
             'is_active' => true,
-            'sort_order' => $this->faker->numberBetween(0, 10),
+            'sort_order' => 0,
         ];
     }
 
     /**
-     * Indicate that the package is the starter tier.
+     * Starter tier package ($5, 0% bonus).
+     *
+     * @return static
      */
     public function starter(): static
     {
@@ -46,12 +48,15 @@ class CreditPackageFactory extends Factory
             'price_usd' => 5.00,
             'bonus_percent' => 0,
             'is_popular' => false,
+            'is_active' => true,
             'sort_order' => 1,
         ]);
     }
 
     /**
-     * Indicate that the package is the basic tier.
+     * Basic tier package ($10, 5% bonus).
+     *
+     * @return static
      */
     public function basic(): static
     {
@@ -61,12 +66,15 @@ class CreditPackageFactory extends Factory
             'price_usd' => 10.00,
             'bonus_percent' => 5,
             'is_popular' => false,
+            'is_active' => true,
             'sort_order' => 2,
         ]);
     }
 
     /**
-     * Indicate that the package is the pro tier (popular).
+     * Pro tier package ($25, 10% bonus, popular).
+     *
+     * @return static
      */
     public function pro(): static
     {
@@ -76,12 +84,15 @@ class CreditPackageFactory extends Factory
             'price_usd' => 25.00,
             'bonus_percent' => 10,
             'is_popular' => true,
+            'is_active' => true,
             'sort_order' => 3,
         ]);
     }
 
     /**
-     * Indicate that the package is the enterprise tier.
+     * Enterprise tier package ($50, 15% bonus).
+     *
+     * @return static
      */
     public function enterprise(): static
     {
@@ -91,12 +102,15 @@ class CreditPackageFactory extends Factory
             'price_usd' => 50.00,
             'bonus_percent' => 15,
             'is_popular' => false,
+            'is_active' => true,
             'sort_order' => 4,
         ]);
     }
 
     /**
-     * Indicate that the package is marked as popular.
+     * Mark package as popular.
+     *
+     * @return static
      */
     public function popular(): static
     {
@@ -106,7 +120,9 @@ class CreditPackageFactory extends Factory
     }
 
     /**
-     * Indicate that the package is inactive.
+     * Mark package as inactive.
+     *
+     * @return static
      */
     public function inactive(): static
     {
@@ -116,7 +132,10 @@ class CreditPackageFactory extends Factory
     }
 
     /**
-     * Indicate that the package has a specific bonus percentage.
+     * Set custom bonus percentage.
+     *
+     * @param int $percent
+     * @return static
      */
     public function withBonus(int $percent): static
     {
@@ -126,18 +145,24 @@ class CreditPackageFactory extends Factory
     }
 
     /**
-     * Indicate that the package has a specific price.
+     * Set custom price.
+     *
+     * @param float $price
+     * @return static
      */
     public function withPrice(float $price): static
     {
         return $this->state(fn (array $attributes) => [
             'price_usd' => $price,
-            'credits' => $price, // Credits equal to price by default
+            'credits' => $price, // credits = price by default
         ]);
     }
 
     /**
-     * Indicate that the package has a specific sort order.
+     * Set custom sort order.
+     *
+     * @param int $order
+     * @return static
      */
     public function withSortOrder(int $order): static
     {
