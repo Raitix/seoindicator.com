@@ -1,7 +1,7 @@
 # TASK-22-9: Size Limiter (3MB Cap Enforcement)
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -148,3 +148,47 @@ _Leave notes for the next agent here_
 - Test warning threshold at 80% (2.4MB)
 - Test page size rejection vs job size limit behavior
 - Test SizeLimiterResult DTO structure
+
+### PreTester Test Design (2026-03-02 18:50 GMT+2)
+
+**Status: Tests Coverage Complete**
+- 73 tests created in `backend/tests/Unit/Services/Crawler/SizeLimiterServiceTest.php`
+- Test documentation in `TESTS/TASK-22-9.md`
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation (SI) | 2 | Container binding, config usage |
+| checkLimit() (CL) | 11 | Limit checking, result structure, boundaries |
+| addSize() (AS) | 6 | Size accumulation, logging, validation |
+| getTotalSize() (GT) | 4 | Size retrieval |
+| getRemaining() (GR) | 5 | Capacity calculation |
+| enforceLimit() (EL) | 6 | Content enforcement, skipped pages |
+| Byte Calculation (BC) | 8 | UTF-8 multibyte, ASCII, emoji |
+| Warning Threshold (WT) | 4 | 80% threshold behavior |
+| Configuration (CF) | 3 | Custom limits, defaults |
+| Integration (IN) | 4 | Full workflow scenarios |
+| Edge Cases (EC) | 5 | Overflow, concurrent, whitespace |
+| Security (SC) | 3 | Injection prevention |
+| Response Structure (RS) | 3 | DTO validation |
+| **Total** | **73** | |
+
+**Key Test Patterns:**
+1. `mb_strlen($content, '8bit')` verified with Japanese (3 bytes), emoji (4 bytes), umlauts (2 bytes)
+2. Exact boundary tests: at limit, one byte under, one byte over
+3. Page rejection vs job limit: 11MB page rejected, 1MB page accepted when at 2.5MB
+4. Never truncate: enforceLimit always returns null (accept or reject, never partial)
+5. Warning threshold: exactly 80% triggers warning, 80%-1 does not
+
+**Critical Tests for Developer:**
+- `BC-001` to `BC-008`: Byte calculation MUST use 8bit encoding
+- `EL-003`: enforceLimit MUST never silently truncate HTML
+- `CL-009`, `CL-010`: Exact boundary handling
+- `AS-004`: Warning logged when crossing 80%
+
+**Handoff to Developer:**
+- Run tests: `php artisan test --filter=SizeLimiterServiceTest`
+- All tests expect service at `app/Services/Crawler/SizeLimiterService.php`
+- Config keys: `crawler.max_content_size`, `crawler.max_page_size`, `crawler.warning_threshold`
+- Use `calculateContentSize()` method for byte counting
+- Log warnings when job crosses 80% threshold
