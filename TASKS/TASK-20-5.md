@@ -1,7 +1,7 @@
 # TASK-20-5: Write Content for Meta Title Guide
 
 ## STATUS
-`To Prioritize`
+`Prioritization In Progress`
 
 ## PRIORITY
 `Medium`
