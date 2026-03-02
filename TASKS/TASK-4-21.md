@@ -1,7 +1,7 @@
 # SPEC-004-21: Integration Tests
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Medium`
