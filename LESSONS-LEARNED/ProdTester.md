@@ -109,3 +109,13 @@ Last updated: 2026-03-01
 - Smoke tests verify: health check, frontend accessibility, API authentication, security
 - Playwright tests in CI/CD are equivalent to local test execution
 - 404 on some frontend routes is expected (protected routes, static export routing)
+
+---
+
+## 2026-03-02: TASK-26-5 CreditService
+- Pure backend services (no direct API endpoints) validated via test suite + smoke tests
+- Use artisan tinker or custom artisan commands for interactive smoke testing
+- PowerShell escaping issues with `$` in tinker commands - write PHP files instead
+- CreditService smoke tests verify: balance operations, exceptions, audit trail, concurrency
+- Race condition handling tested via dedicated `--filter="concurrent"` test runs
+- All financial services require verification of: negative balance prevention, exception handling, audit logging
