@@ -66,6 +66,15 @@ const TOOL_NAMES: Record<ToolSlug, string> = {
   'mobile-friendly-checker': 'Mobile-Friendly Checker',
 };
 
+// Tools that have been deployed to production (must match ToolEmbed.tsx)
+const DEPLOYED_TOOLS: Set<ToolSlug> = new Set([
+  'meta-tag-analyzer',
+  'keyword-density',
+  'social-preview',
+  // 'mobile-friendly-checker' - TODO: Add when TASK-16-7 is deployed
+  // 'mobile-friendly' - TODO: Add when tool page is deployed
+]);
+
 describe('ToolEmbed Component', () => {
   // ============================================
   // TE-001: Component Rendering
@@ -386,12 +395,31 @@ describe('ToolEmbed Integration', () => {
     });
   });
 
-  it('CTA links point to correct routes for all tools', () => {
-    VALID_TOOL_SLUGS.forEach((slug) => {
+  it('CTA links point to correct routes for deployed tools only', () => {
+    // Only deployed tools should show CTA
+    const deployedSlugs = VALID_TOOL_SLUGS.filter((slug) => DEPLOYED_TOOLS.has(slug));
+    
+    deployedSlugs.forEach((slug) => {
       const { unmount } = render(<ToolEmbed toolSlug={slug} showCta={true} />);
       const toolName = TOOL_NAMES[slug];
       const ctaLink = screen.getByRole('link', { name: new RegExp(`open ${toolName}`, 'i') });
       expect(ctaLink).toHaveAttribute('href', TOOL_ROUTES[slug]);
+      unmount();
+    });
+  });
+
+  it('CTA is hidden for tools not yet deployed', () => {
+    // Tools not in DEPLOYED_TOOLS should NOT show CTA
+    const undeployedSlugs = VALID_TOOL_SLUGS.filter((slug) => !DEPLOYED_TOOLS.has(slug));
+    
+    undeployedSlugs.forEach((slug) => {
+      const { unmount } = render(<ToolEmbed toolSlug={slug} showCta={true} />);
+      const toolName = TOOL_NAMES[slug];
+      // CTA link should NOT be present for undeployed tools
+      const ctaLink = screen.queryByRole('link', { name: new RegExp(`open ${toolName}`, 'i') });
+      expect(ctaLink).not.toBeInTheDocument();
+      // Tool widget should still render
+      expect(screen.getByTestId('tool-widget')).toBeInTheDocument();
       unmount();
     });
   });
