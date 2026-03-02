@@ -201,14 +201,13 @@ class AdminAuthorizationMiddleware
                 'action' => $action,
                 'target_type' => 'admin_route',
                 'target_id' => null,
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-                'details' => json_encode([
+                'metadata' => json_encode([
                     'url' => $request->fullUrl(),
                     'method' => $request->method(),
                 ]),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
                 'created_at' => now(),
-                'updated_at' => now(),
             ]);
         } catch (\Exception $e) {
             // Silently fail if logging to database fails
