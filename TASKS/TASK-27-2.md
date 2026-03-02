@@ -1,7 +1,7 @@
 # TASK-27-2: Admin Authorization Middleware
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -78,6 +78,44 @@ Implement AdminAuthorizationMiddleware to protect all admin routes. The middlewa
 - Unauthenticated denied (401)
 - Logging verification
 - Edge cases (session expiry, role changes)
+
+### 2026-03-02 - PreTester
+**Test Design Complete**
+
+**Test Files Created:**
+- `TESTS/TASK-27-2.md` - Test documentation with 51+ scenarios
+- `backend/tests/Feature/Http/Middleware/AdminAuthorizationMiddlewareTest.php` - 55 feature tests
+
+**Test Coverage:**
+- **AA-001 to AA-002:** Admin/Super Admin access granted (5 tests)
+- **AA-003:** Regular user denied 403 Forbidden (5 tests)
+- **AA-004:** Unauthenticated denied 401 Unauthorized (5 tests)
+- **AA-005:** Access attempt logging to file (5 tests)
+- **AA-006:** admin_activity_logs table integration (5 tests - skip if table missing)
+- **AA-007:** Response format validation (3 tests)
+- **AA-008:** HTTP method handling (4 tests)
+- **AA-009:** Role hierarchy (3 tests)
+- **SC-001:** Security tests - SQL injection, XSS, IDOR (5 tests)
+- **EC-001:** Edge cases - unicode roles, null roles (6 tests)
+- **EC-002:** Concurrent sessions (2 tests)
+
+**Key Test Patterns:**
+- Uses existing UserFactory `admin()` and `superAdmin()` states
+- Tests skip DB logging if `admin_activity_logs` table doesn't exist
+- Validates response format: `{success, error:{code, message}}`
+- Security tests cover SQL injection, XSS, IDOR prevention
+- Role hierarchy: super_admin > admin > user
+- Tests both Sanctum token and session authentication
+
+**Response Format Expected:**
+- 401: `{"success":false,"error":{"code":"UNAUTHENTICATED","message":"..."}}`
+- 403: `{"success":false,"error":{"code":"FORBIDDEN","message":"..."}}`
+
+**Handoff:** Ready for Developer to implement middleware. Run tests with:
+```bash
+cd backend
+php artisan test --filter=AdminAuthorizationMiddlewareTest
+```
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
