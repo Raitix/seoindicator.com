@@ -1,7 +1,7 @@
 # TASK-27-4: User Stats Aggregation Queries
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -62,6 +62,30 @@ Implement efficient database queries for user statistics aggregation. Provides c
 ```
 
 ## Comments
+
+### 2026-03-02 - ProjectManager
+**Prioritization Complete**
+
+**Priority Assessment:** High (confirmed)
+- Foundation task for Admin Dashboard user statistics API
+- Phase 2 of SPEC-027 - builds on AdminStatsService (TASK-27-3)
+- User metrics are core admin dashboard feature
+
+**Risk Assessment:** Low (confirmed)
+- Standard database queries with Eloquent/Query Builder
+- No external APIs or security-sensitive operations
+- Caching layer provided by TASK-27-3
+
+**Dependency Analysis:**
+- TASK-27-3 (AdminStatsService): `Prioritization In Progress` ⏳
+- PreTester can design tests NOW with TDD approach (mocked cache service)
+- Implementation waits for TASK-27-3 to reach `To Test Locally`
+
+**Execution Order:**
+1. TASK-27-1 (Testing Locally) → TASK-27-3 → TASK-27-4 → TASK-27-5
+2. Tests can be designed in parallel with TASK-27-3
+
+**Handoff:** Ready for PreTester (test design with mocked caching interface)
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
