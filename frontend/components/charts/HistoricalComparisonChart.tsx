@@ -106,7 +106,7 @@ const CustomTooltip: React.FC<{
 }> = ({ active, payload, label, competitorNames, showUser }) => {
   if (!active || !payload || !label) return null;
 
-  const dateLabel = formatFullDate(label);
+  const dateLabel = formatFullDate(String(label));
 
   return (
     <div className="bg-background border rounded-lg shadow-lg p-3 min-w-[180px]">
