@@ -961,6 +961,121 @@ Comprehensive SEO guide content for the Page Speed indicator, covering Core Web 
 - TASK-20-14: Mobile-Friendliness Guide (related topic)
 
 ---
+## XML Sitemap Guide (TASK-20-21)
+
+### Guide Description
+Comprehensive SEO guide content for the XML Sitemap indicator, covering sitemap structure, generation, submission to search engines, and maintenance. Explains XML Sitemaps as a protocol for helping search engines discover and index website pages efficiently. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `xml-sitemap`
+- **URL:** `https://seoindicator.com/seo-guides/xml-sitemap/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What is an XML Sitemap? | Purpose, when to use one, benefits, sitemap.org protocol | ~300 |
+| Why XML Sitemaps Matter for SEO | Crawlability, indexation, large sites, new content discovery | ~350 |
+| XML Sitemap Structure | Required tags (urlset, url, loc), optional tags (lastmod, changefreq, priority) | ~400 |
+| Submitting to Google Search Console | Step-by-step submission, verification, monitoring | ~300 |
+| Dynamic Sitemap Generation | CMS plugins, server-side generation, automation | ~250 |
+| Sitemap Index Files for Large Sites | 50,000 URL limit, index structure, child sitemaps | ~200 |
+
+**Total Content:** ~1,800 words
+**Read Time:** 5 minutes
+
+### XML Sitemap Structure
+
+| Tag | Required | Description |
+|-----|----------|-------------|
+| `<urlset>` | Yes | Container for all URLs, xmlns attribute required |
+| `<url>` | Yes | Container for each URL entry |
+| `<loc>` | Yes | Canonical URL of the page |
+| `<lastmod>` | No | Last modification date (YYYY-MM-DD) |
+| `<changefreq>` | No | How frequently page changes (daily, weekly, monthly) |
+| `<priority>` | No | Relative priority (0.0 to 1.0) |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| Basic XML sitemap | XML | urlset with url, loc, lastmod, changefreq, priority |
+| Sitemap with schema | XML | xmlns reference to sitemaps.org |
+| Dynamic sitemap generation | TypeScript | Next.js getServerSideProps example |
+| Sitemap index file | XML | Multiple child sitemaps for large sites |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Submit sitemap to Google Search Console |
+| Critical | Include only canonical URLs in sitemap |
+| Important | Keep sitemap updated when content changes |
+| Important | Reference sitemap in robots.txt |
+| Important | Use sitemap index for sites with 50,000+ URLs |
+| Recommended | Include lastmod dates for freshness signals |
+| Recommended | Use changefreq and priority sparingly (Google may ignore) |
+
+### Related Guides
+- `robots-txt` - Crawler instructions and sitemap reference
+- `internal-links` - Site structure and navigation
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'xml-sitemap',
+  title: 'XML Sitemap Creation',
+  summary: 'Create and optimize XML sitemaps for better search engine crawlability...',
+  category: 'technical',
+  icon: '🗺️',
+  readTime: 5,
+  sections: [ /* 6 sections */ ],
+  checklist: [ /* 7 items */ ],
+  relatedGuides: ['robots-txt', 'internal-links'],
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| xml-sitemap-content.test.ts | 50 | Content structure, sections, validation |
+| xml-sitemap-code-examples.test.ts | 20 | XML well-formedness, tag validation |
+| **Total** | **70** | **70+** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Guide Existence | 3 | Slug, title, summary validation |
+| What is XML Sitemap | 4 | Section structure, content |
+| Why Sitemaps Matter | 5 | SEO benefits, crawlability |
+| Sitemap Structure | 6 | Required/optional tags |
+| Google Search Console | 5 | Submission process |
+| Dynamic Generation | 5 | Automation, CMS integration |
+| Sitemap Index Files | 4 | Large sites, 50,000 limit |
+| Best Practices Checklist | 5 | Item count, priorities |
+| Read Time | 3 | 4-6 minute validation |
+| Related Guides | 4 | robots-txt, internal-links |
+| Code Examples | 20 | XML structure, well-formedness |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions auto-deploy)
+- **URL:** https://seoindicator.com/seo-guides/xml-sitemap/
+- **Health Check:** Passing
+- **Tests:** 70 tests passed
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+
+### Related Tasks
+- TASK-20-20: Robots.txt Guide (related topic)
+- TASK-20-11: Internal Links Guide (related topic)
+
+---
 ## AI Suggestion Service Structure (TASK-21-1)
 
 ### Service Description

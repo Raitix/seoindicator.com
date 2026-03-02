@@ -1,7 +1,7 @@
 # TASK-20-5: Write Content for Meta Title Guide
 
 ## STATUS
-`Testing Prod`
+`Done`
 
 ## PRIORITY
 `Medium`
