@@ -1,7 +1,7 @@
 # TASK-22-5: PlaywrightRendererService Implementation
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
