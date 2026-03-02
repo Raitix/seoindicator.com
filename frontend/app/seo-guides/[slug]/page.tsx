@@ -17,7 +17,7 @@ import {
   getRelatedGuides
 } from '@/lib/guides/registry';
 import type { SEOGuide } from '@/lib/guides/types';
-import { GuideSection, GuideChecklist } from '@/components/guides';
+import { GuideSection, GuideChecklist, GuideSchema } from '@/components/guides';
 import { ToolEmbed } from '@/components/guides/ToolEmbed';
 
 // ============================================================================
@@ -327,30 +327,8 @@ export default async function GuidePage({ params }: GuidePageProps) {
         </nav>
       </article>
 
-      {/* JSON-LD Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Article',
-            headline: guide.title,
-            description: guide.summary,
-            author: {
-              '@type': 'Organization',
-              name: 'SEOIndicator',
-            },
-            publisher: {
-              '@type': 'Organization',
-              name: 'SEOIndicator',
-            },
-            mainEntityOfPage: {
-              '@type': 'WebPage',
-              '@id': `https://seoindicator.com/seo-guides/${guide.slug}/`,
-            },
-          }),
-        }}
-      />
+      {/* JSON-LD Structured Data - HowTo Schema for Rich Results */}
+      <GuideSchema guide={guide} />
     </main>
   );
 }
