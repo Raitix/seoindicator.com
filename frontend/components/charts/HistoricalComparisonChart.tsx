@@ -100,7 +100,7 @@ const CustomTooltip: React.FC<{
     value: number | null;
     color: string;
   }[];
-  label?: string;
+  label?: string | number;
   competitorNames: Record<string, string>;
   showUser: boolean;
 }> = ({ active, payload, label, competitorNames, showUser }) => {
