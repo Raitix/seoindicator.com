@@ -87,4 +87,20 @@ return [
         'search_engine_id' => env('GOOGLE_CSE_ID'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | OpenRouter API
+    |--------------------------------------------------------------------------
+    |
+    | Credentials for OpenRouter API - a unified API for multiple LLM providers.
+    | Get your API key at: https://openrouter.ai/keys
+    |
+    | FREE to query model list and pricing data.
+    | Pricing varies by model (many free tier models available).
+    |
+    */
+    'openrouter' => [
+        'api_key' => env('OPENROUTER_API_KEY'),
+    ],
+
 ];
