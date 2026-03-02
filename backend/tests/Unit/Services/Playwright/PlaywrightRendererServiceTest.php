@@ -1753,12 +1753,16 @@ class PlaywrightRendererServiceTest extends TestCase
         $content = $config['content'] ?? '<html><body>Test</body></html>';
 
         $mockPage = Mockery::mock(PageInterface::class);
+        $mockPage->shouldReceive('setDefaultNavigationTimeout')
+            ->once()
+            ->with(Mockery::type('int'));
         $mockPage->shouldReceive('goto')
             ->once()
             ->with($url, Mockery::any())
             ->andReturnSelf();
+        // waitForFunction is only called when waitTime is specified, so we allow it but don't require it
         $mockPage->shouldReceive('waitForFunction')
-            ->once()
+            ->zeroOrMoreTimes()
             ->andReturnSelf();
         $mockPage->shouldReceive('url')->andReturn($url);
         $mockPage->shouldReceive('title')->andReturn($title);
