@@ -1,7 +1,7 @@
 # TASK-26-2: Create Credit Model and Repository
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -71,4 +71,33 @@ Create Eloquent models and repository pattern for Credit and CreditTransaction e
 - Validate type enum values
 
 ## Comments
+
+### 2026-03-02 - ProjectManager
+**Prioritization Complete:**
+- **Priority: High** (confirmed) - Foundation task for billing system MVP
+- **Risk: Medium** (confirmed) - Standard Eloquent models and repository pattern, no external APIs
+
+**Dependency Status:**
+- TASK-26-1 (Migrations): `In Development` ⏳ - Developer actively working
+- TDD approach: PreTester CAN design tests using the expected model interface
+- Tests can be written based on acceptance criteria before implementation completes
+
+**Phase 1 Context:**
+- TASK-26-1 (Migrations): In Development - enables this task
+- TASK-26-2 (this task): Credit model and repository - depends on TASK-26-1
+- TASK-26-3 (Credit packages): To Prioritize - depends on TASK-26-1
+- TASK-26-4 (AI models table): To Prioritize - depends on TASK-26-1
+
+**Test Coverage Requirements for PreTester:**
+- Credit Model: Relationship tests (User, CreditTransaction), accessor tests (formatted balance), balance check method
+- CreditTransaction Model: Relationship tests, scope tests (type, provider), cast tests (DECIMAL, JSON)
+- CreditRepository: findOrCreateForUser, getBalance, getTransactions, transaction-safe updates
+- Edge cases: Negative balance prevention, concurrent operations
+
+**Security Notes:**
+- Mass assignment protection for balance fields
+- Audit logging for model changes
+- Type enum validation (purchase, usage, refund, bonus)
+
+---
 _Leave notes for the next agent here_
