@@ -294,6 +294,13 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
         Route::post('/{id}/restore', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'restore']);
     });
 
+    // Admin: Credits API (TASK-27-10, SPEC-027)
+    Route::middleware(['admin', 'throttle:60,1'])->prefix('admin/credits')->group(function () {
+        Route::get('/overview', [\App\Http\Controllers\Api\V1\Admin\CreditsController::class, 'overview']);
+        Route::get('/transactions', [\App\Http\Controllers\Api\V1\Admin\CreditsController::class, 'transactions']);
+        Route::get('/revenue', [\App\Http\Controllers\Api\V1\Admin\CreditsController::class, 'revenue']);
+    });
+
     // Webhooks Management (TASK-6-13)
     Route::get('webhooks', [\App\Http\Controllers\Api\V1\WebhookController::class, 'index']);
     Route::post('webhooks', [\App\Http\Controllers\Api\V1\WebhookController::class, 'store']);
