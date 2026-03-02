@@ -1,7 +1,7 @@
 # TASK-26-1: Create Credits and Transactions Tables Migration
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -77,4 +77,32 @@ Create database migrations for `credits` and `credit_transactions` tables to sup
 - Audit trail via `credit_transactions` is immutable
 
 ## Comments
+
+### 2026-03-02 - ProjectManager
+**Prioritization Complete:**
+- **Priority: High** (confirmed) - Foundation task for billing system MVP
+- **Risk: Medium** (confirmed) - Non-destructive migration, adds new tables only
+- **Dependencies:** Users table (exists ✅) - No blockers
+- **Execution Order:** First task in Phase 1, enables TASK-26-2, 26-3, 26-4
+
+**Phase 1 Context:**
+- TASK-26-1 (this task): Migrations - foundation, no deps
+- TASK-26-2: Credit model - depends on TASK-26-1
+- TASK-26-3: Credit packages - depends on TASK-26-1
+- TASK-26-4: AI models table - depends on TASK-26-1
+
+**Security Notes for PreTester:**
+- DECIMAL(10,2) for monetary precision
+- Foreign keys with CASCADE delete for data integrity
+- No sensitive payment data stored (only references)
+- Transactions table is immutable (no updated_at)
+
+**Test Coverage Requirements:**
+- Migration rollback test
+- Foreign key constraint test (user cascade delete)
+- Unique constraint test (one credits record per user)
+- Index verification (user_id, type, created_at, payment lookup)
+- JSON metadata field validation
+
+---
 _Leave notes for the next agent here_
