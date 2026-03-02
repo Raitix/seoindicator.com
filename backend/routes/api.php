@@ -301,6 +301,14 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
         Route::get('/revenue', [\App\Http\Controllers\Api\V1\Admin\CreditsController::class, 'revenue']);
     });
 
+    // Admin: Health API (TASK-27-13, SPEC-027)
+    Route::middleware(['admin', 'throttle:120,1'])->prefix('admin/health')->group(function () {
+        Route::get('/overview', [\App\Http\Controllers\Api\V1\Admin\HealthController::class, 'overview']);
+        Route::get('/queues', [\App\Http\Controllers\Api\V1\Admin\HealthController::class, 'queues']);
+        Route::get('/database', [\App\Http\Controllers\Api\V1\Admin\HealthController::class, 'database']);
+        Route::get('/alerts', [\App\Http\Controllers\Api\V1\Admin\HealthController::class, 'alerts']);
+    });
+
     // Webhooks Management (TASK-6-13)
     Route::get('webhooks', [\App\Http\Controllers\Api\V1\WebhookController::class, 'index']);
     Route::post('webhooks', [\App\Http\Controllers\Api\V1\WebhookController::class, 'store']);

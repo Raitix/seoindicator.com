@@ -33,8 +33,8 @@ class HealthControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->adminUser = User::factory()->create(['is_admin' => true]);
-        $this->regularUser = User::factory()->create(['is_admin' => false]);
+        $this->adminUser = User::factory()->admin()->create();
+        $this->regularUser = User::factory()->create();
     }
 
     // ============================================================
@@ -763,7 +763,11 @@ class HealthControllerTest extends TestCase
 
         $response->assertStatus(403)
             ->assertJsonStructure([
-                'message',
+                'success',
+                'error' => [
+                    'code',
+                    'message',
+                ],
             ]);
     }
 
