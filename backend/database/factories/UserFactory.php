@@ -32,7 +32,7 @@ class UserFactory extends Factory
             'avatar' => null,
             'role' => 'user',
             'last_login_at' => fake()->optional(0.8)->dateTimeBetween('-30 days', 'now'),
-            'plan' => fake()->randomElement(['free', 'pro', 'enterprise']),
+            // plan uses database default ('free') - override in tests/factory states if needed
         ];
     }
 
