@@ -1,7 +1,7 @@
 # TASK-26-3: Create Credit Packages Table with Seed Data
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`

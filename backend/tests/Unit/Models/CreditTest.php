@@ -226,8 +226,8 @@ class CreditTest extends TestCase
             'balance' => 123.45,
         ]);
 
-        $this->assertIsFloat($credit->balance);
-        $this->assertEquals(123.45, $credit->balance);
+        // Laravel's decimal cast returns strings for precision
+        $this->assertEquals('123.45', $credit->balance);
     }
 
     /**
@@ -259,8 +259,8 @@ class CreditTest extends TestCase
             'total_purchased' => 1000.50,
         ]);
 
-        $this->assertIsFloat($credit->total_purchased);
-        $this->assertEquals(1000.50, $credit->total_purchased);
+        // Laravel's decimal cast returns strings for precision
+        $this->assertEquals('1000.50', $credit->total_purchased);
     }
 
     /**
