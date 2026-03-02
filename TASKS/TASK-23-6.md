@@ -1,10 +1,10 @@
 # TASK-23-6: Backlink Snapshot Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
-`Medium`
+`High`
 
 ## RISK
 `Low`
@@ -102,3 +102,42 @@ function calculateAnchorDiversity(int $projectId): float
 
 ## Comments
 _Agent communication log_
+
+### [Mon 2026-03-02 23:14 GMT+2] Agent: ProjectManager
+**Prioritization Complete**
+
+- **Priority Upgraded**: `Medium` → `High` — Foundation service blocking TASK-23-11 (API Endpoints - History & Sync)
+- **Risk Confirmed**: `Low` — Pure business logic service, no external APIs, uses existing models from TASK-23-2
+- **Dependency Verified**: TASK-23-2 (Backlink Models) — Status: `Done` ✅ — Fully satisfied
+
+**Dependency Chain for SPEC-023 (Snapshot Layer):**
+```
+TASK-23-2 (Models) ──→ TASK-23-6 (Snapshot Service) ──→ TASK-23-11 (API History & Sync)
+                            ↑
+TASK-23-4 (Sync Job) ───────┘ (creates snapshots during sync)
+```
+
+**Critical Path Analysis:**
+- TASK-23-11 is `Tested Locally` but its tests mock this service — implementation required for production
+- TASK-23-4 (Sync Job) references `BacklinkSnapshotService` integration but service doesn't exist yet
+- This service is the **missing link** between data sync and API exposure
+
+**Key Service Methods:**
+1. `createSnapshot(Project)` — Generates daily snapshot with all 6 metrics
+2. `getHistory(projectId, from, to)` — Historical data retrieval for trend charts
+3. `calculateAnchorDiversity(projectId)` — Diversity score (0-100 scale)
+4. `calculateAverageTrust(projectId)` — Average domain trust from referring domains
+
+**Metrics to Aggregate:**
+| Metric | Source Table |
+|--------|--------------|
+| total_backlinks | backlinks (is_active=true) |
+| referring_domains_count | referring_domains (distinct) |
+| dofollow_count | backlinks (link_type='dofollow') |
+| nofollow_count | backlinks (link_type='nofollow') |
+| avg_domain_trust | referring_domains.domain_trust_score |
+| anchor_diversity_score | Calculated from anchor_texts |
+
+**Execution Order:** PreTester can design tests immediately — all dependencies satisfied
+
+**Handoff:** PreTester for TDD test design
