@@ -1,7 +1,7 @@
 # TASK-22-9: Size Limiter (3MB Cap Enforcement)
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
@@ -109,3 +109,42 @@ Implement size limiter to track and enforce the 3MB total content cap per crawl 
 
 ## Comments
 _Leave notes for the next agent here_
+
+### ProjectManager Prioritization (2026-03-02 17:42 GMT+2)
+
+**Priority: Medium (confirmed)**
+- Resource protection service - prevents memory exhaustion from oversized crawl results
+- Not on critical path but important for production stability
+- Dependencies satisfied - can proceed immediately
+
+**Risk: Medium (confirmed)**
+- Incorrect size calculation could cause false rejections or memory issues
+- UTF-8 byte handling is critical (mb_strlen with 8bit encoding)
+- Affects user experience when limits are hit
+
+**Dependencies Status:**
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| TASK-22-1 (Migrations) | Done ✅ | total_size column exists |
+| TASK-22-2 (Models) | Done ✅ | CrawlJob and CrawlPage models ready |
+
+**Execution Context:**
+- **Phase 3 Service** - Runs after migrations and models
+- Service: `app/Services/Crawler/SizeLimiterService.php`
+- Key methods: checkLimit(), addSize(), getTotalSize(), getRemaining(), enforceLimit()
+- Size limits: 3MB total, 10MB per page, 80% warning threshold
+- Database: Uses crawl_jobs.total_size and crawl_pages.size fields
+
+**Key Implementation Details:**
+1. Byte counting (not characters) - use `mb_strlen($content, '8bit')`
+2. Cumulative tracking per job across all pages
+3. Page size rejection (>10MB) vs job limit (stop crawling, partial results)
+4. Never silently truncate HTML (breaks SEO analysis)
+5. Configuration via `config/crawler.php`
+
+**Handoff to PreTester:**
+- Design tests for size tracking, limit enforcement, Unicode handling
+- Test edge cases: exact limit, 1 byte over, multi-byte UTF-8 characters
+- Test warning threshold at 80% (2.4MB)
+- Test page size rejection vs job size limit behavior
+- Test SizeLimiterResult DTO structure
