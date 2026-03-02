@@ -269,10 +269,13 @@ class AdminAuthorizationMiddlewareTest extends TestCase
         Log::shouldReceive('info')
             ->once()
             ->withArgs(function ($message, $context) use ($user) {
-                return str_contains($message, 'unauthorized') 
+                return str_contains(strtolower($message), 'unauthorized') 
                     && isset($context['user_id']) 
                     && $context['user_id'] === $user->id;
             });
+
+        // Allow error logging from exception handler
+        Log::shouldReceive('error')->byDefault();
 
         $this->actingAs($user)
             ->getJson('/api/v1/admin/stats');
@@ -284,9 +287,12 @@ class AdminAuthorizationMiddlewareTest extends TestCase
         Log::shouldReceive('info')
             ->once()
             ->withArgs(function ($message, $context) {
-                return str_contains($message, 'unauthenticated')
+                return str_contains(strtolower($message), 'unauthenticated')
                     && isset($context['ip']);
             });
+
+        // Allow error logging from exception handler
+        Log::shouldReceive('error')->byDefault();
 
         $this->getJson('/api/v1/admin/stats');
     }
@@ -318,9 +324,8 @@ class AdminAuthorizationMiddlewareTest extends TestCase
             });
 
         $this->actingAs($user)
-            ->getJson('/api/v1/admin/stats', [], [
-                'User-Agent' => 'TestAgent/1.0',
-            ]);
+            ->withHeaders(['User-Agent' => 'TestAgent/1.0'])
+            ->getJson('/api/v1/admin/stats');
     }
 
     #[Test]
@@ -406,9 +411,8 @@ class AdminAuthorizationMiddlewareTest extends TestCase
         $user = User::factory()->create(['role' => 'user']);
 
         $this->actingAs($user)
-            ->getJson('/api/v1/admin/stats', [], [
-                'User-Agent' => 'TestAgent/1.0',
-            ]);
+            ->withHeaders(['User-Agent' => 'TestAgent/1.0'])
+            ->getJson('/api/v1/admin/stats');
 
         $log = DB::table('admin_activity_logs')
             ->where('admin_user_id', $user->id)
@@ -480,11 +484,15 @@ class AdminAuthorizationMiddlewareTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'user']);
 
-        // 403 Forbidden
+        // 403 Forbidden (authenticated non-admin)
         $forbiddenResponse = $this->actingAs($user)
             ->getJson('/api/v1/admin/stats');
 
-        // 401 Unauthenticated
+        // 401 Unauthenticated (clear auth by using a fresh request without actingAs)
+        // Note: We need to ensure the session is cleared for the unauthenticated test
+        $this->app['auth']->forgetUser();
+        $this->app['auth']->guard('web')->logout();
+        
         $unauthResponse = $this->getJson('/api/v1/admin/stats');
 
         // Error codes should be different
