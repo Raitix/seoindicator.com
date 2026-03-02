@@ -1,7 +1,7 @@
 # TASK-20-7: Write Content for H1 Headings Guide
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -54,4 +54,29 @@ Write comprehensive SEO guide content for the H1 Headings indicator, including d
 - No database changes
 - No security implications
 
-Status: `To Write Tests`
+Status: `To Develop`
+
+### [2026-03-02 11:19 GMT+2] PreTester - Test Design Complete
+**Test File Created:** `frontend/__tests__/lib/guides/h1-headings-content.test.ts`
+
+**Test Coverage:**
+- **HE-001 to HE-005:** Guide existence and basic properties
+- **WH-001 to WH-005:** "What are H1 Headings?" section validation
+- **WHY-001 to WHY-006:** Why H1 headings matter for SEO section
+- **HO-001 to HO-006:** How to optimize H1 tags section
+- **CM-001 to CM-006:** Common mistakes section (multiple H1s, missing H1)
+- **BC-001 to BC-005:** Best practices checklist (5-10 items validation)
+- **CE-001 to CE-004:** Code examples (1-2 examples)
+- **RT-001 to RT-003:** Read time validation (3-5 minutes)
+- **RG-001 to RG-004:** Related guides (heading-hierarchy, meta-title)
+- **GR-001 to GR-003:** Registry integration tests
+- **CQ tests:** Content quality validation
+- **Security tests:** XSS prevention
+
+**Key Test Requirements for Developer:**
+1. Content must have 4+ sections covering all acceptance criteria
+2. Checklist must have 5-10 items with valid priorities
+3. Code examples must show H1 tag usage (1-2 examples max)
+4. Read time must be 3-5 minutes
+5. Related guides must include: heading-hierarchy, meta-title
+6. Must mention: one H1 per page, keywords, accessibility, SEO impact
