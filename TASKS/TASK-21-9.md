@@ -1,7 +1,7 @@
 # TASK-21-9: Implement Vercel AI Provider
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
@@ -153,7 +153,49 @@ Authorization: Bearer <api_key>
 ## Comments
 _Agent log_
 
-(No entries yet)
+### [2026-03-02 11:53 GMT+2] ProjectManager - Prioritization Complete
+**Priority Confirmed: Medium** ✅
+**Risk Confirmed: High** ✅
+
+**Rationale for Priority:**
+- **Phase 3 Enhancement** - Alternative provider, not on critical path
+- **Core functionality already works** - OpenRouter + Static Fallback are functional
+- **Redundancy/Options** - Provides users who prefer Vercel's ecosystem an alternative
+- **Can be deferred** - Feature is not blocked if this task is delayed
+
+**Rationale for Risk:**
+- **High Risk** - External API dependency (similar to OpenRouter)
+- Rate limits, availability, API key management
+- Response parsing complexity
+- Potential costs if free tier limits exceeded
+
+**Dependency Analysis:**
+| Task | Status | Ready? |
+|------|--------|--------|
+| TASK-21-1 (AI Service Structure) | `Done` | ✅ |
+| TASK-21-5 (AI Suggestion API Endpoint) | `Done` | ✅ |
+
+**Both dependencies complete!** Task can proceed to PreTester immediately.
+
+**Execution Order within SPEC-021:**
+- This task is independent of Phase 1/2 core implementation
+- Can be developed in parallel with TASK-21-6, 21-7, 21-8
+- After TASK-21-10 (Rate Limiting) would be ideal for consistency
+
+**Technical Notes:**
+- Implements `AIProviderInterface` from TASK-21-1
+- Uses same patterns as OpenRouterProvider (TASK-21-2)
+- Configuration already scaffolded in `config/ai.php`
+- Requires `VERCEL_AI_API_KEY` environment variable
+
+**Handoff to PreTester:** Ready for test design. Focus on:
+- VercelAIProvider implementing AIProviderInterface
+- HTTP client mocking for Vercel AI API format
+- Error handling (4xx, 5xx, timeout, rate limiting)
+- Configuration validation
+- `isAvailable()` check for API key presence
+
+Status: `To Prioritize` → `To Write Tests`
 
 ---
 *Created by SpecSystemAnalyst on 2026-03-01*
