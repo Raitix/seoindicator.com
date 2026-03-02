@@ -36,6 +36,15 @@ const TOOL_ROUTE_MAP: Record<ToolSlug, string> = {
   'mobile-friendly-checker': '/tools/mobile-friendly-checker/',
 };
 
+// Tools that have been deployed to production
+// Add slugs here when their tool pages are live
+const DEPLOYED_TOOLS: Set<ToolSlug> = new Set([
+  'meta-tag-analyzer',
+  'keyword-density',
+  'social-preview',
+  // 'mobile-friendly-checker' - TODO: Add when TASK-16-7 is deployed
+]);
+
 // Tool display names
 const TOOL_NAMES: Record<ToolSlug, string> = {
   'meta-tag-analyzer': 'Meta Tag Analyzer',
@@ -195,6 +204,7 @@ interface ToolEmbedInnerProps {
   ctaText: string;
   toolRoute: string;
   toolName: string;
+  toolSlug: ToolSlug;
   className?: string;
   onAnalysisComplete?: (result: unknown) => void;
 }
@@ -207,6 +217,7 @@ function ToolEmbedInner({
   ctaText,
   toolRoute,
   toolName,
+  toolSlug,
   className,
   onAnalysisComplete,
 }: ToolEmbedInnerProps) {
@@ -233,7 +244,7 @@ function ToolEmbedInner({
           onAnalysisComplete={onAnalysisComplete}
         />
       </div>
-      {showCta && (
+      {showCta && DEPLOYED_TOOLS.has(toolSlug) && (
         <div className="flex justify-center">
           <Button
             asChild
@@ -327,6 +338,7 @@ export function ToolEmbed({
           ctaText={ctaText}
           toolRoute={toolRoute}
           toolName={toolName}
+          toolSlug={toolSlug}
           onAnalysisComplete={onAnalysisComplete}
         />
       </ErrorBoundary>
