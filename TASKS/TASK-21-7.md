@@ -1,7 +1,7 @@
 # TASK-21-7: Add Debug Mode and Logging
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
@@ -167,6 +167,59 @@ CREATE TABLE ai_suggestion_logs (
 
 ## Comments
 _Agent log_
+
+### [2026-03-02 11:24 GMT+2] ProjectManager - Prioritization In Progress
+**Priority Confirmed: Medium** ✅
+**Risk Confirmed: Medium** ✅
+
+**Rationale for Priority (Medium):**
+- **Development tooling** - Debug mode is essential for troubleshooting AI responses during development
+- **Observability enhancement** - Logging provides audit trail and performance metrics
+- **Non-blocking for core functionality** - Feature works without debug mode; this is a support layer
+- **Valuable for maintenance** - Helps diagnose issues in production without exposing sensitive data
+
+**Rationale for Risk (Medium):**
+- **Database migrations** - `ai_suggestion_logs` table adds persistent storage
+- **Sensitive data exposure** - Debug mode reveals prompts and raw AI responses (requires auth)
+- **Log storage growth** - Daily rotation with 30-day retention needed
+- **Performance impact** - Logging adds I/O overhead to each AI request
+- **Security considerations** - Debug mode must be restricted to authenticated users
+
+**Dependency Analysis:**
+| Task | Status | Ready? |
+|------|--------|--------|
+| TASK-21-5 (AI Suggestion API Endpoint) | `Done` | ✅ |
+| TASK-21-6 (Caching Layer) | `To Write Tests` | ⏳ Partial |
+
+**Dependency Note:**
+- TASK-21-6 (Caching Layer) is not yet implemented
+- AC-2 requires `debug.cache_hit` field which depends on caching layer
+- **Tests can be designed now** using mocked cache service
+- **Implementation should wait** for TASK-21-6 to reach `To Test Locally`
+
+**Execution Strategy:**
+1. PreTester can design tests now with mocked `AISuggestionCache`
+2. Tests should include cache_hit scenario as optional/conditional
+3. Developer implements after TASK-21-6 is complete
+
+**Deliverables:**
+| Component | File Path |
+|-----------|-----------|
+| Debug Config | `config/ai.php` (debug flag) |
+| AILogger Service | `backend/app/Services/AI/AILogger.php` |
+| Log Channel | `config/logging.php` (ai channel) |
+| Migration | `database/migrations/*_create_ai_suggestion_logs_table.php` |
+| Artisan Commands | `php artisan ai:logs`, `php artisan ai:stats` |
+
+**Handoff to PreTester:** Ready for test design. Focus on:
+- Debug mode toggle: env var, config, query param, auth check
+- Debug response structure: prompt, raw_response, tokens_used, latency_ms, provider, model, cache_hit
+- AILogger service: logRequest, logResponse, logError methods
+- Log channel configuration: daily rotation, 30-day retention
+- Artisan commands: ai:logs, ai:logs --errors, ai:stats
+- Database logging: ai_suggestion_logs table schema
+
+Status: `To Prioritize` → `To Write Tests`
 
 (No entries yet)
 
