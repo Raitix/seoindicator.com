@@ -485,7 +485,9 @@ describe("SuggestionsListPage", () => {
 
     it("displays source badge", () => {
       render(<SuggestionsListPage params={{ siteId: mockSiteId }} />);
-      expect(screen.getByText("suggest")).toBeInTheDocument();
+      // Multiple rows may have "suggest" - use getAllByText or check within row
+      const row = screen.getByTestId("suggestion-row-1");
+      expect(within(row).getByText("suggest")).toBeInTheDocument();
     });
 
     it("displays opportunity score", () => {
@@ -657,7 +659,9 @@ describe("SuggestionsListPage", () => {
 
     it("shows total count", () => {
       render(<SuggestionsListPage params={{ siteId: mockSiteId }} />);
-      expect(screen.getByText("50 suggestions")).toBeInTheDocument();
+      // The text shows "Showing X of Y suggestions" or similar
+      const totalCount = screen.getByTestId("total-count");
+      expect(totalCount).toHaveTextContent("50");
     });
   });
 

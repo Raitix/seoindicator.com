@@ -1,7 +1,7 @@
 # TASK-5-10: Suggestions List Page
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `Medium`
@@ -39,6 +39,40 @@ Create the main suggestions list page where users can view and manage their keyw
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-02 19:45] Agent: Developer
+**Implementation Started**
+
+Created SuggestionsPage component at `frontend/app/sites/[siteId]/suggestions/page.tsx`:
+
+**Features Implemented:**
+- Page header with title, description, total count, and "Generate Suggestions" button
+- Filter bar with source filter (Google Suggest, Question, Related, Competitor) and status filter (New, Tracking, Dismissed)
+- Sortable columns: Keyword, Source, Opportunity Score (with asc/desc toggle)
+- Table with checkbox selection for bulk actions
+- Bulk actions: Track Selected, Dismiss Selected
+- Individual actions: Track, Dismiss buttons (hidden for already tracked items)
+- Empty state with helpful messaging
+- Loading state with spinner
+- Error state with retry button
+- Pagination controls (Previous/Next)
+- Responsive design matching existing UI patterns
+
+**UI Components Used:**
+- Card, CardContent from shadcn/ui
+- Button from shadcn/ui
+- Lucide icons for visual feedback
+
+**API Integration:**
+- Uses `useSuggestions` hook from `lib/api/suggestions.ts`
+- Uses `trackSuggestion`, `bulkTrackSuggestions`, `dismissSuggestion` functions
+- SWR for data fetching and caching
+
+**Next Steps:**
+- Run tests to verify implementation
+- Fix any failing tests
+
+Status: To Develop → In Development
 
 ### [2026-02-27 17:52] Agent: PreTester
 **Test Design Complete**
