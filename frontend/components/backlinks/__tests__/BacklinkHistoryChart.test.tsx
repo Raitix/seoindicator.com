@@ -16,9 +16,9 @@ import React from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
+import { SWRConfig } from 'swr';
 
 // ============================================================================
 // Types
@@ -207,23 +207,11 @@ const server = setupServer(
 // Test Helpers
 // ============================================================================
 
-function createQueryClient(): QueryClient {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        staleTime: 0,
-      },
-    },
-  });
-}
-
-function renderWithQueryClient(ui: React.ReactElement) {
-  const queryClient = createQueryClient();
+function renderWithSWR(ui: React.ReactElement) {
   return render(
-    <QueryClientProvider client={queryClient}>
+    <SWRConfig value={{ dedupingInterval: 0, provider: () => new Map() }}>
       {ui}
-    </QueryClientProvider>
+    </SWRConfig>
   );
 }
 
@@ -270,7 +258,7 @@ describe('BacklinkHistoryChart Component', () => {
   
   describe('HC-RENDER: Rendering', () => {
     it('HC-RENDER-001: component mounts without error', async () => {
-      const { container } = renderWithQueryClient(
+      const { container } = renderWithSWR(
         <div data-testid="history-chart" data-project-id="1" />
       );
       
@@ -278,7 +266,7 @@ describe('BacklinkHistoryChart Component', () => {
     });
 
     it('HC-RENDER-002: renders Card container', async () => {
-      const { container } = renderWithQueryClient(
+      const { container } = renderWithSWR(
         <div className="card" data-testid="card-container" />
       );
       
@@ -286,7 +274,7 @@ describe('BacklinkHistoryChart Component', () => {
     });
 
     it('HC-RENDER-003: renders chart header with title', async () => {
-      const { getByText } = renderWithQueryClient(
+      const { getByText } = renderWithSWR(
         <div>
           <h2>Backlink History</h2>
         </div>
@@ -296,7 +284,7 @@ describe('BacklinkHistoryChart Component', () => {
     });
 
     it('HC-RENDER-004: renders responsive chart container', async () => {
-      const { container } = renderWithQueryClient(
+      const { container } = renderWithSWR(
         <div style={{ width: '100%', height: 300 }} data-testid="chart-container" />
       );
       
@@ -408,7 +396,7 @@ describe('BacklinkHistoryChart Component', () => {
   
   describe('HC-DATE: Date Range Selector', () => {
     it('HC-DATE-001: renders date range selector', async () => {
-      const { getByTestId } = renderWithQueryClient(
+      const { getByTestId } = renderWithSWR(
         <div data-testid="date-range-selector">
           <button>7 days</button>
           <button>30 days</button>
@@ -550,7 +538,7 @@ describe('BacklinkHistoryChart Component', () => {
   
   describe('HC-LOAD: Loading States', () => {
     it('HC-LOAD-001: shows skeleton during loading', async () => {
-      const { getByTestId } = renderWithQueryClient(
+      const { getByTestId } = renderWithSWR(
         <div className="skeleton" data-testid="loading-skeleton" />
       );
       
@@ -581,7 +569,7 @@ describe('BacklinkHistoryChart Component', () => {
   
   describe('HC-EMPTY: Empty States', () => {
     it('HC-EMPTY-001: shows empty state when no data', async () => {
-      const { getByText } = renderWithQueryClient(
+      const { getByText } = renderWithSWR(
         <div className="empty-state">No backlink history yet</div>
       );
       
@@ -647,7 +635,7 @@ describe('BacklinkHistoryChart Component', () => {
     });
 
     it('HC-A11Y-003: date selector is keyboard accessible', async () => {
-      const { getByRole } = renderWithQueryClient(
+      const { getByRole } = renderWithSWR(
         <button role="button">30 days</button>
       );
       
