@@ -2847,8 +2847,441 @@ Fix: Resize to 1200×630px before uploading`,
     toolSlug: 'social-media-preview',
     icon: '🐦',
     readTime: 4,
-    sections: [],
-    checklist: [],
+    sections: [
+      {
+        title: 'What are Twitter Cards?',
+        content: `**Twitter Cards** are meta tags that control how your content appears when shared on X (formerly Twitter). They enable rich media previews—complete with images, videos, and detailed descriptions—that make your tweets stand out in the feed and drive significantly higher engagement.
+
+When someone shares a link on X, the platform crawls the page looking for Twitter Card meta tags. These tags determine what title, description, image, and media appear in the preview card attached to the tweet. Without Twitter Card tags, links appear as plain text with minimal preview information.
+
+### How Twitter Cards Work
+
+Twitter Cards use HTML \`<meta>\` tags with the \`name\` attribute set to Twitter-specific properties like \`twitter:card\`, \`twitter:title\`, and \`twitter:image\`. When a user tweets a link, X's crawler reads these tags and generates a rich preview.
+
+### Twitter Cards vs Open Graph
+
+While Open Graph tags work for Facebook, LinkedIn, and other platforms, **Twitter has its own meta tag system**. However, there's a useful fallback behavior:
+
+1. **Twitter-specific tags take priority** — If \`twitter:title\` exists, X uses it
+2. **Open Graph fallback** — If Twitter tags are missing, X falls back to \`og:title\`, \`og:image\`, etc.
+3. **Best practice: Implement both** — Use Twitter Cards for X control, OG tags for other platforms
+
+This fallback means you can get basic previews with just Open Graph tags, but dedicated Twitter Card tags give you precise control over how your content appears on X.
+
+### Platforms Using Twitter Cards
+
+- **X (Twitter)** — Primary platform for Twitter Cards
+- **TweetDeck** — Shows rich previews using Card data
+- **Twitter mobile apps** — Display Cards in the timeline
+- **Embedded tweets** — Cards appear on websites embedding tweets`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Basic Twitter Card meta tags -->
+<head>
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@yourusername" />
+  <meta name="twitter:title" content="Your Page Title" />
+  <meta name="twitter:description" content="A compelling description of your content." />
+  <meta name="twitter:image" content="https://example.com/image.jpg" />
+</head>`,
+            description: 'Basic Twitter Card meta tags in the HTML head section',
+          },
+        ],
+      },
+      {
+        title: 'Card Types (summary, summary_large_image, player)',
+        content: `Twitter offers four card types, each designed for different content scenarios. Choosing the right card type ensures your content displays optimally in the Twitter feed.
+
+### Summary Card
+
+The **summary card** is the default and most versatile option. It displays a small square image on the right side with title and description on the left. Perfect for blog posts, articles, and general web pages.
+
+**Best for:** Articles, blog posts, landing pages, general content
+
+**Layout:** Small thumbnail (120×120px display), title, description, and domain name
+
+### Summary Large Image Card
+
+The **summary_large_image** card features a prominent full-width image above the title and description. This card type commands more attention in the feed and typically achieves higher engagement rates.
+
+**Best for:** Visual content, featured articles, product pages, photography
+
+**Layout:** Large landscape image (up to 506px wide), title, description below
+
+**Pro tip:** Use summary_large_image for most content—larger images significantly increase click-through rates.
+
+### Player Card
+
+The **player card** allows you to embed video or audio players directly in tweets. Users can watch videos or listen to audio without leaving Twitter. Requires additional approval from Twitter.
+
+**Best for:** Videos, podcasts, music, live streams, interactive media
+
+**Required additional tags:**
+- \`twitter:player\` — URL to the iframe player
+- \`twitter:player:width\` — Player width in pixels
+- \`twitter:player:height\` — Player height in pixels
+
+**Note:** Player cards require domain approval from Twitter/X before they'll display.
+
+### App Card
+
+The **app card** promotes mobile app downloads with install buttons directly in the tweet. Used primarily by app developers and marketers.
+
+**Best for:** Mobile app promotion (iOS, Android)
+
+**Choosing the Right Card Type:**
+
+| Content Type | Recommended Card |
+|--------------|------------------|
+| Blog posts | summary_large_image |
+| News articles | summary_large_image |
+| Product pages | summary_large_image |
+| Videos | player |
+| Podcasts | player |
+| App download pages | app |
+| Text-heavy content | summary |`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Summary Card (small thumbnail) -->
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@yourbrand" />
+<meta name="twitter:title" content="10 SEO Tips for 2024" />
+<meta name="twitter:description" content="Discover the most effective SEO strategies for modern websites." />
+<meta name="twitter:image" content="https://example.com/seo-tips-thumb.jpg" />`,
+            description: 'Summary card with small thumbnail on the right side',
+          },
+          {
+            language: 'html',
+            code: `<!-- Summary Large Image Card (full-width image) -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@yourbrand" />
+<meta name="twitter:title" content="10 SEO Tips for 2024" />
+<meta name="twitter:description" content="Discover the most effective SEO strategies for modern websites." />
+<meta name="twitter:image" content="https://example.com/seo-tips-hero.jpg" />`,
+            description: 'Summary large image card with prominent full-width image',
+          },
+          {
+            language: 'html',
+            code: `<!-- Player Card for video/audio -->
+<meta name="twitter:card" content="player" />
+<meta name="twitter:site" content="@yourbrand" />
+<meta name="twitter:title" content="Watch: SEO Tutorial" />
+<meta name="twitter:description" content="Learn SEO fundamentals in 10 minutes." />
+<meta name="twitter:image" content="https://example.com/video-thumbnail.jpg" />
+<meta name="twitter:player" content="https://example.com/embed/video" />
+<meta name="twitter:player:width" content="640" />
+<meta name="twitter:player:height" content="360" />`,
+            description: 'Player card for embedded video with player URL and dimensions',
+          },
+        ],
+      },
+      {
+        title: 'Required Twitter Card Tags',
+        content: `Twitter requires specific meta tags for Cards to function properly. Understanding each tag's purpose and format ensures your previews display correctly.
+
+### twitter:card (Required)
+
+Specifies the card type. This is the only required Twitter Card tag, but others are strongly recommended.
+
+**Valid values:**
+- \`summary\` — Small thumbnail card
+- \`summary_large_image\` — Large image card
+- \`player\` — Video/audio player card
+- \`app\` — App promotion card
+
+**Character limit:** 25 characters (card type names are much shorter)
+
+### twitter:site (Recommended)
+
+The Twitter username of the website or organization. Must include the \`@\` symbol.
+
+**Format:** \`@username\` (with @ symbol)
+**Example:** \`@twitterdev\` or \`@nytimes\`
+
+### twitter:title (Recommended)
+
+The title to display in the Card. Should match or complement your page title but can be optimized for Twitter's audience.
+
+**Character limit:** 70 characters (truncation after 70)
+**Best practice:** Keep under 60 characters for full visibility
+
+### twitter:description (Recommended)
+
+A description of the content. Should be concise and compelling—this is your chance to entice clicks.
+
+**Character limit:** 200 characters (truncation after 200)
+**Best practice:** Keep under 150 characters for optimal display
+
+### twitter:image (Recommended)
+
+The URL of the image to display in the Card. Use absolute URLs with \`https://\`.
+
+**Requirements:**
+- **Format:** JPG, PNG, GIF, WebP
+- **Size:** Minimum 144×144 pixels, maximum 4096×4096 pixels
+- **Recommended:** 1200×628 pixels for summary_large_image
+- **File size:** Maximum 5MB for photos, 15MB for GIFs
+- **URL:** Must be absolute (https://example.com/image.jpg)
+
+### twitter:creator (Optional)
+
+The Twitter username of the content author. Useful for attributing articles to specific writers.
+
+**Format:** \`@username\` (with @ symbol)
+
+### twitter:image:alt (Optional but Recommended)
+
+Alt text describing the image for accessibility. Screen readers use this to describe the image to visually impaired users.
+
+**Character limit:** 420 characters
+**Best practice:** Describe the image content clearly and concisely`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Complete Twitter Card implementation -->
+<head>
+  <!-- Required: Card type -->
+  <meta name="twitter:card" content="summary_large_image" />
+  
+  <!-- Site/brand username -->
+  <meta name="twitter:site" content="@seoindicator" />
+  
+  <!-- Author username (for articles) -->
+  <meta name="twitter:creator" content="@authorname" />
+  
+  <!-- Title (max 70 characters) -->
+  <meta name="twitter:title" content="Complete Guide to Twitter Cards for SEO" />
+  
+  <!-- Description (max 200 characters) -->
+  <meta name="twitter:description" content="Learn how to implement Twitter Cards to create rich previews that drive clicks and engagement on X (Twitter)." />
+  
+  <!-- Image (1200×628px recommended) -->
+  <meta name="twitter:image" content="https://example.com/images/twitter-cards-guide.jpg" />
+  
+  <!-- Image alt text (accessibility) -->
+  <meta name="twitter:image:alt" content="Twitter Cards Guide cover showing card preview examples" />
+</head>`,
+            description: 'Complete Twitter Card implementation with all required and recommended tags',
+          },
+          {
+            language: 'html',
+            code: `<!-- Combined Twitter Card + Open Graph implementation -->
+<head>
+  <!-- Twitter Card tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@yourbrand" />
+  <meta name="twitter:title" content="Your Page Title" />
+  <meta name="twitter:description" content="Your page description." />
+  <meta name="twitter:image" content="https://example.com/image.jpg" />
+  
+  <!-- Open Graph tags (for Facebook, LinkedIn, etc.) -->
+  <meta property="og:title" content="Your Page Title" />
+  <meta property="og:description" content="Your page description." />
+  <meta property="og:image" content="https://example.com/image.jpg" />
+  <meta property="og:url" content="https://example.com/page/" />
+  <meta property="og:type" content="article" />
+</head>`,
+            description: 'Best practice: Combine Twitter Card and Open Graph tags for cross-platform support',
+          },
+        ],
+      },
+      {
+        title: 'Image Best Practices for Twitter',
+        content: `Images are the most impactful element of Twitter Cards. A well-chosen image can dramatically increase click-through rates and engagement. Follow these best practices to optimize your Card images.
+
+### Recommended Image Dimensions
+
+For \`summary_large_image\` cards (recommended for most content):
+
+- **Recommended size:** 1200×628 pixels (1.91:1 aspect ratio)
+- **Minimum size:** 144×144 pixels
+- **Maximum size:** 4096×4096 pixels
+- **Display width:** Up to 506 pixels on desktop
+
+For \`summary\` cards (small thumbnail):
+
+- **Recommended size:** 120×120 pixels minimum
+- **Display size:** Approximately 120×120 pixels
+
+### File Format and Size
+
+- **Formats:** JPG, PNG, GIF, WebP
+- **Maximum file size:** 5MB for photos, 15MB for GIFs
+- **Recommendation:** Compress images to under 1MB for faster loading
+
+### Image Content Guidelines
+
+**Do:**
+- Use high-quality, professional images
+- Include clear, readable text if relevant
+- Use brand colors for recognition
+- Feature faces or people for emotional connection
+- Ensure good contrast and visibility
+
+**Avoid:**
+- Pixelated or blurry images
+- Too much text (Twitter may flag as low quality)
+- Misleading images that don't match content
+- Images with logos only (boring and easily skipped)
+
+### Aspect Ratio Considerations
+
+Twitter crops images to fit the Card format. The 1.91:1 aspect ratio (1200×628) ensures your image displays without cropping on both desktop and mobile.
+
+**Important:** Keep key visual elements centered. Twitter may crop edges differently on various devices.
+
+### Testing Your Images
+
+Always test how your images appear:
+1. Use Twitter Card Validator (cards-dev.twitter.com/validator)
+2. Check both desktop and mobile previews
+3. Verify the image loads correctly
+4. Ensure text is readable at Card size`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Image with dimensions specified -->
+<meta name="twitter:image" content="https://example.com/images/hero-1200x628.jpg" />
+
+<!-- Image alt text for accessibility -->
+<meta name="twitter:image:alt" content="Guide cover showing SEO tips infographic" />`,
+            description: 'Twitter Card image tag with alt text for accessibility',
+          },
+          {
+            language: 'text',
+            code: `# Twitter Card Image Specifications
+
+## summary_large_image (Recommended)
+- Size: 1200×628 pixels (1.91:1 aspect ratio)
+- Format: JPG, PNG, WebP
+- Max file size: 5MB (aim for <1MB)
+
+## summary (Small Thumbnail)
+- Size: Minimum 120×120 pixels
+- Display: Square thumbnail on right side
+
+## Player Card
+- Thumbnail: 1200×628 pixels recommended
+- Video player dimensions: Set via twitter:player:width/height
+
+## Common Issues
+❌ Image not loading → Check HTTPS and public accessibility
+❌ Wrong aspect ratio → Crop to 1.91:1 before uploading
+❌ Blurry preview → Use higher resolution source image`,
+            description: 'Quick reference for Twitter Card image specifications',
+          },
+        ],
+      },
+      {
+        title: 'Testing with Social Media Preview Tool',
+        content: `Always test your Twitter Cards before sharing links publicly. Testing ensures your tags are correctly implemented and your previews look great.
+
+### Twitter Card Validator
+
+Twitter's official Card Validator shows exactly how your Card will appear:
+
+**URL:** cards-dev.twitter.com/validator
+
+**What it does:**
+- Displays a preview of your Card
+- Shows detected meta tag values
+- Reports errors and warnings
+- Refreshes Twitter's cache for your URL
+
+**How to use:**
+1. Enter your page URL
+2. Click "Preview card"
+3. Review the preview and any errors
+4. Fix issues and re-test
+
+### Social Media Preview Tool (SEOIndicator)
+
+Use our integrated **Social Media Preview** tool to test how your page appears across multiple platforms at once:
+
+- Twitter/X preview
+- Facebook preview
+- LinkedIn preview
+- WhatsApp and other platforms
+
+**Benefits:**
+- One tool for all platforms
+- Side-by-side comparison
+- Cache refresh for all platforms
+
+### Common Issues and Fixes
+
+**Card not showing:**
+- Verify \`twitter:card\` tag is present
+- Check for HTML errors (unclosed tags, typos)
+- Ensure tags are in the \`<head>\` section
+
+**Image not loading:**
+- Use absolute URLs with \`https://\`
+- Verify image is publicly accessible (not behind login)
+- Check file size is under 5MB
+- Ensure image meets minimum dimensions (144×144px)
+
+**Old preview showing:**
+- Use Card Validator to refresh cache
+- Twitter caches Cards for extended periods
+- Add a query parameter to test changes: \`?v=2\`
+
+**"No card found" error:**
+- Verify meta tags use \`name\` attribute (not \`property\`)
+- Check for JavaScript rendering issues (Twitter may not execute JS)
+- Ensure server returns proper HTTP headers
+
+### Best Practice: Test Every New Page
+
+Make Card testing part of your publishing workflow:
+1. Implement tags before publishing
+2. Test with Card Validator
+3. Check image quality and cropping
+4. Verify on mobile devices
+5. Fix any errors before promoting the link`,
+        codeExamples: [
+          {
+            language: 'text',
+            code: `# Twitter Card Testing Checklist
+
+## Before Publishing
+☐ Add all required meta tags
+☐ Use summary_large_image for visual content
+☐ Verify image is 1200×628 pixels
+☐ Include twitter:image:alt for accessibility
+☐ Test with Card Validator
+
+## Testing URLs
+- Twitter Card Validator: https://cards-dev.twitter.com/validator
+- SEOIndicator Social Media Preview: /tools/social-media-preview
+
+## Common Fixes
+Issue: Image not found
+Fix: Use absolute https:// URL, check public access
+
+Issue: Old image cached
+Fix: Re-run Card Validator to refresh cache
+
+Issue: Card type wrong
+Fix: Check twitter:card content value (summary vs summary_large_image)`,
+            description: 'Checklist for testing Twitter Cards before publishing',
+          },
+        ],
+      },
+    ],
+    checklist: [
+      { text: 'Include twitter:card tag with appropriate type (summary_large_image recommended)', priority: 'critical' },
+      { text: 'Add twitter:site with @username for brand attribution', priority: 'critical' },
+      { text: 'Use images at 1200×628 pixels for summary_large_image cards', priority: 'critical' },
+      { text: 'Keep twitter:title under 60 characters for full visibility', priority: 'important' },
+      { text: 'Keep twitter:description under 150 characters for optimal display', priority: 'important' },
+      { text: 'Test Cards with Twitter Card Validator before publishing', priority: 'important' },
+      { text: 'Add twitter:image:alt for accessibility', priority: 'important' },
+      { text: 'Use absolute https:// URLs for all images', priority: 'important' },
+      { text: 'Implement both Twitter Card and Open Graph tags for cross-platform support', priority: 'recommended' },
+    ],
     relatedGuides: ['open-graph', 'meta-description'],
   },
 ];
