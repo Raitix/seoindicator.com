@@ -136,6 +136,162 @@ CREATE TABLE credit_transactions (
 - TASK-26-14: PayPal Webhook Handler (uses addCredits)
 
 ---
+## Models List API Endpoint (TASK-26-17)
+
+### Endpoint Description
+Public REST API endpoint for listing available AI models with pricing information, capabilities, and context window details. Supports filtering by provider, free tier status, and capabilities. Used by the frontend model picker component for the Billing, Credits & Model Selection feature (FEAT-026).
+
+### Component Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/ModelController.php`
+- **Route:** `backend/routes/api.php`
+- **Tests:** `backend/tests/Feature/Api/V1/ModelControllerTest.php`
+
+### API Specification
+
+| Method | Endpoint | Authentication |
+|--------|----------|----------------|
+| GET | `/api/v1/models` | Optional (public) |
+
+### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | string | No | Filter by provider (e.g., 'openrouter') |
+| `free_only` | boolean | No | Filter to free tier models only (true/1/false/0) |
+| `capability` | string | No | Filter by capability (e.g., 'vision', 'tools') |
+| `sort` | string | No | Sort by 'price', 'name', 'context' (default: 'name') |
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "provider": "openrouter",
+      "model_id": "openai/gpt-4-turbo",
+      "display_name": "GPT-4 Turbo",
+      "cost_per_1k_input": 0.00001,
+      "cost_per_1k_output": 0.00003,
+      "estimated_cost_per_analysis": 0.05,
+      "context_window": 128000,
+      "is_free_tier": false,
+      "capabilities": ["tools", "vision"],
+      "is_user_default": true
+    }
+  ],
+  "meta": {
+    "total": 25,
+    "free_tier_count": 5
+  }
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Internal model ID |
+| `provider` | string | AI provider name (e.g., 'openrouter') |
+| `model_id` | string | Provider's model identifier |
+| `display_name` | string | Human-readable model name |
+| `cost_per_1k_input` | numeric | Cost per 1,000 input tokens (USD) |
+| `cost_per_1k_output` | numeric | Cost per 1,000 output tokens (USD) |
+| `estimated_cost_per_analysis` | numeric | Estimated cost per analysis (USD) |
+| `context_window` | integer | Maximum context window size (tokens) |
+| `is_free_tier` | boolean | Whether model is in free tier |
+| `capabilities` | array | Model capabilities (e.g., 'vision', 'tools') |
+| `is_user_default` | boolean \| null | User's default model flag (authenticated users only) |
+
+### Controller Implementation
+
+**ModelController Methods:**
+| Method | Description |
+|--------|-------------|
+| `index()` | List models with filtering, sorting, and transformation |
+
+**Key Features:**
+- Uses `ModelPricingService` for model data retrieval
+- Handles both object and array model representations
+- Authenticated users receive `is_user_default` flag
+- Supports combined filters (provider + free_only + capability)
+
+### Validation Rules
+
+| Parameter | Validation |
+|-----------|------------|
+| `provider` | String if provided |
+| `free_only` | Boolean (true/1/false/0) if provided |
+| `capability` | String if provided |
+| `sort` | Enum: 'price', 'name', 'context' (default: 'name') |
+
+**Invalid `sort` parameter returns HTTP 422 with validation error.**
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Public Endpoint | No authentication required |
+| Input Validation | All query parameters validated |
+| SQL Injection Protection | Parameterized queries via Eloquent |
+| XSS Protection | Laravel response encoding |
+| Rate Limiting | Standard API rate limits apply |
+| No Sensitive Data | No api_key, password, or secret exposed |
+
+### HTTP Method Restrictions
+
+| Method | Status | Description |
+|--------|--------|-------------|
+| GET | 200 OK | Allowed |
+| POST | 405 Method Not Allowed | Not allowed |
+| PUT | 405 Method Not Allowed | Not allowed |
+| DELETE | 405 Method Not Allowed | Not allowed |
+| PATCH | 405 Method Not Allowed | Not allowed |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `ModelControllerTest.php` | 55 | 216 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Endpoint | 6 | 200 status, JSON structure, success flag, public access, meta info |
+| Provider Filter | 3 | Valid provider, non-existent provider, case sensitivity |
+| Free Tier Filter | 4 | true/1/false/0 variations |
+| Capability Filter | 4 | vision, tools, non-existent, empty capabilities |
+| Sorting | 4 | Default name, explicit name, price ascending, context descending |
+| Validation | 4 | Provider type, free_only type, capability type, sort value |
+| Authentication | 3 | Unauthenticated, authenticated with default, authenticated no default |
+| HTTP Methods | 4 | POST/PUT/DELETE/PATCH not allowed (405) |
+| Security | 6 | SQL injection, XSS, no sensitive data exposure |
+| Rate Limiting | 2 | Reasonable requests allowed, headers present |
+| Edge Cases | 5 | Empty list, combined filters, trailing slash, unknown params, body ignored |
+| Performance | 1 | Response time < 500ms |
+| Data Types | 6 | id integer, costs numeric, booleans, arrays, context window integer |
+| Caching | 2 | Cacheable response, ETag optional |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions auto-deploy)
+- **Commit:** `f437458`
+- **Endpoint URL:** `https://seoindicator.com/api/v1/models`
+- **Health Check:** 200 OK, valid JSON structure
+- **Response Time:** ~186ms
+- **Tests:** 55/55 passing (216 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-26-16 (ModelPricingService) - Model data source
+
+### Related Tasks
+- TASK-26-16: ModelPricingService (provides model data)
+- TASK-26-18: Model Pricing API Endpoint (detailed pricing)
+- TASK-26-19: User Model Preferences (default model selection)
+- TASK-26-22: Model Picker Component (frontend consumer)
+
+---
 ## Meta Description SEO Guide (TASK-20-6)
 
 ### Guide Description
@@ -8976,6 +9132,220 @@ php artisan test --filter="AuthControllerTest"
 - TASK-25-3: AuthController API (COMPLETE)
 - TASK-25-21: Unit Tests for Auth Services
 - FEAT-025: User Accounts + Dashboard + Analysis History
+
+---
+## Frontend Competitor Management UI (TASK-3-6)
+
+### Service Description
+React/Next.js frontend components for managing competitors in the Competitor Rank Comparison feature (FEAT-003). Provides user interface for adding, editing, deleting, and listing competitors with form validation and API integration.
+
+### Component Structure
+
+**Main Components:**
+| Component | Path | Description |
+|-----------|------|-------------|
+| `CompetitorList` | `frontend/components/competitors/CompetitorList.tsx` | List view with add/edit/delete actions |
+| `CompetitorForm` | `frontend/components/competitors/CompetitorForm.tsx` | Shared form for add/edit operations |
+| `CompetitorCard` | `frontend/components/competitors/CompetitorCard.tsx` | Individual competitor display card |
+| `CompetitorBadge` | `frontend/components/competitors/CompetitorBadge.tsx` | Status badge component |
+
+**Page Routes:**
+| Route | Component | Description |
+|-------|-----------|-------------|
+| `/competitors` | `CompetitorList` | Main competitor list page |
+| `/competitors/new` | `CompetitorForm` | Add new competitor |
+| `/competitors/[id]/edit` | `CompetitorForm` | Edit existing competitor |
+
+### Component Props
+
+**CompetitorListProps:**
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `onAddCompetitor` | () => void | No | Callback for add button click |
+| `onEditCompetitor` | (id: number) => void | No | Callback for edit action |
+| `onDeleteCompetitor` | (id: number) => void | No | Callback for delete action |
+
+**CompetitorFormProps:**
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `competitorId` | number | No | ID for edit mode (undefined for add) |
+| `initialData` | Competitor | No | Pre-populated data for edit |
+| `onSave` | (data: CompetitorData) => void | No | Save callback |
+| `onCancel` | () => void | No | Cancel callback |
+
+### Form Fields
+
+| Field | Type | Required | Validation | Description |
+|-------|------|----------|------------|-------------|
+| `domain` | string | Yes | Valid domain format, unique per user | Competitor's website domain |
+| `displayName` | string | No | Max 255 chars | Friendly display name |
+| `notes` | string | No | Max 5000 chars | User notes about competitor |
+
+### Validation Rules
+
+| Field | Validation |
+|-------|------------|
+| `domain` | Required, valid domain format (regex), unique per user |
+| `displayName` | Optional, string, max 255 characters |
+| `notes` | Optional, string, max 5000 characters |
+
+**Domain Validation Regex:**
+```typescript
+const DOMAIN_REGEX = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
+```
+
+### User Features
+
+| Feature | Description |
+|---------|-------------|
+| Add Competitor | Form with domain validation and duplicate detection |
+| Edit Competitor | Update display name and notes (domain immutable) |
+| Delete Competitor | Confirmation modal with cascade warning |
+| Competitor List | Cards showing domain, display name, tracked keywords |
+| Empty State | Friendly message when no competitors added |
+| Error Handling | Toast notifications for API errors |
+
+### Competitor Limit Enforcement
+
+| Plan | Max Competitors | UI Behavior |
+|------|-----------------|-------------|
+| Free | 1 | Add button disabled after 1 competitor |
+| Starter | 3 | Add button disabled after 3 competitors |
+| Pro | 10 | Add button disabled after 10 competitors |
+
+**Limit Warning Message:**
+```
+"You've reached the maximum number of competitors for your plan.
+Upgrade to add more competitors."
+```
+
+### API Integration
+
+**Frontend API Functions:**
+| Function | Endpoint | Description |
+|----------|----------|-------------|
+| `fetchCompetitors()` | `GET /api/v1/competitors` | List all competitors |
+| `createCompetitor(data)` | `POST /api/v1/competitors` | Create new competitor |
+| `updateCompetitor(id, data)` | `PUT /api/v1/competitors/{id}` | Update competitor |
+| `deleteCompetitor(id)` | `DELETE /api/v1/competitors/{id}` | Delete competitor |
+
+**API Module:**
+```typescript
+// frontend/lib/api/competitors.ts
+export async function fetchCompetitors(): Promise<Competitor[]>
+export async function createCompetitor(data: CreateCompetitorDto): Promise<Competitor>
+export async function updateCompetitor(id: number, data: UpdateCompetitorDto): Promise<Competitor>
+export async function deleteCompetitor(id: number): Promise<void>
+```
+
+### TypeScript Types
+
+```typescript
+interface Competitor {
+  id: number;
+  user_id: number;
+  domain: string;
+  display_name: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface CreateCompetitorDto {
+  domain: string;
+  displayName?: string;
+  notes?: string;
+}
+
+interface UpdateCompetitorDto {
+  displayName?: string;
+  notes?: string;
+}
+```
+
+### State Management
+
+**React Query Integration:**
+```typescript
+// Query keys
+const competitorKeys = {
+  all: ['competitors'] as const,
+  list: () => [...competitorKeys.all, 'list'] as const,
+  detail: (id: number) => [...competitorKeys.all, 'detail', id] as const,
+};
+
+// Queries
+useQuery({ queryKey: competitorKeys.list(), queryFn: fetchCompetitors });
+
+// Mutations
+useMutation({ mutationFn: createCompetitor, onSuccess: () => queryClient.invalidateQueries(competitorKeys.all) });
+```
+
+### UI Components
+
+**CompetitorCard:**
+- Domain display (required)
+- Display name (optional, shows domain if not set)
+- Notes preview (truncated to 100 chars)
+- Edit/Delete action buttons
+- Tracked keywords count badge
+
+**Status Badges:**
+| Status | Color | Description |
+|--------|-------|-------------|
+| Active | Green | Competitor being tracked |
+| No Keywords | Yellow | Competitor added but no overlapping keywords |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Form Labels | All inputs have associated labels |
+| Error Messages | ARIA live regions for validation errors |
+| Keyboard Navigation | Tab through form fields, Enter to submit |
+| Focus Management | Focus on first error field after validation |
+| Confirmation Dialog | Escape to close, Tab to focus actions |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CompetitorList.test.tsx` | 12 | 28 |
+| `CompetitorForm.test.tsx` | 18 | 42 |
+| `CompetitorCard.test.tsx` | 8 | 15 |
+| `competitors.test.ts` (API) | 6 | 14 |
+| **Total** | **44** | **99** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| List Rendering | 4 | Empty state, populated list, loading |
+| Form Validation | 8 | Required fields, domain format, length limits |
+| Form Submission | 6 | Create, update, error handling |
+| Delete Confirmation | 4 | Modal, cancel, confirm, cascade warning |
+| API Integration | 6 | CRUD operations, error states |
+| Accessibility | 5 | Keyboard navigation, ARIA labels |
+| Edge Cases | 7 | Unicode, long inputs, concurrent updates |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions)
+- **Health Check:** Passing
+- **Tests:** 86/86 passing (across all competitor tests)
+- **Status:** Complete
+
+### Dependencies
+- TASK-3-1 (Competitors table)
+- TASK-3-2 (Competitor CRUD API)
+- React Hook Form (form handling)
+- Zod (validation)
+- React Query (data fetching)
+- Shadcn/UI (components)
+
+### Related Tasks
+- TASK-3-1: Database Migration
+- TASK-3-2: Competitor CRUD API
+- TASK-3-7: Comparison Dashboard
+- TASK-3-8: Historical Comparison Charts
 
 ---
 ## Frontend Auth Context & Provider (TASK-25-17)
