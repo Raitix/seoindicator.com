@@ -89,6 +89,43 @@ return [
             ],
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | Crawler Queue Connections
+        |--------------------------------------------------------------------------
+        |
+        | These connections are used for the headless crawler service.
+        | Priority levels: crawler-high (manual), crawler (scheduled), crawler-low (background)
+        |
+        */
+
+        'crawler' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'crawler',
+            'retry_after' => 300,
+            'after_commit' => true,
+        ],
+
+        'crawler-high' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'crawler-high',
+            'retry_after' => 300,
+            'after_commit' => true,
+        ],
+
+        'crawler-low' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'crawler-low',
+            'retry_after' => 300,
+            'after_commit' => true,
+        ],
+
     ],
 
     /*

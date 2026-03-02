@@ -46,6 +46,13 @@ class CrawlWorker implements ShouldQueue
     public string $jobId;
 
     /**
+     * The queue the job should be sent to.
+     *
+     * @var string
+     */
+    public $queue = 'crawler';
+
+    /**
      * Maximum execution time in seconds.
      */
     public int $timeout = 300;
