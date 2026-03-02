@@ -1,7 +1,7 @@
 # TASK-27-3: Admin Stats Service with Caching
 
 ## STATUS
-`To Prioritize`
+`Prioritization In Progress`
 
 ## PRIORITY
 `High`
