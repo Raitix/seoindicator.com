@@ -1,6 +1,141 @@
 # DOCUMENTATION.md
 
 ---
+## CreditService with Balance Management (TASK-26-5)
+
+### Service Description
+Core credit balance service for the billing system. Handles all credit operations with transaction safety, race condition prevention, and full audit logging. Foundation for the Billing, Credits & Model Selection feature (FEAT-026).
+
+### Component Location
+- **Service:** `backend/app/Services/CreditService.php`
+- **Model:** `backend/app/Models/Credit.php`
+- **Transaction Model:** `backend/app/Models/CreditTransaction.php`
+- **Exceptions:** `backend/app/Exceptions/InsufficientCreditsException.php`, `InvalidCreditAmountException.php`
+- **Tests:** `backend/tests/Unit/Services/CreditServiceTest.php`
+
+### Core Functionalities
+
+**CreditService Methods:**
+| Method | Description |
+|--------|-------------|
+| `getBalance(User $user): float` | Get current credit balance (creates on-demand) |
+| `addCredits(User $user, float $amount, string $type, array $metadata = []): CreditTransaction` | Add credits (purchase, bonus) with idempotency |
+| `deductCredits(User $user, float $amount, string $referenceType, int $referenceId): CreditTransaction` | Deduct credits (usage) with race condition prevention |
+| `hasSufficientBalance(User $user, float $amount): bool` | Check if user can afford amount |
+| `getTransactionHistory(User $user, int $perPage = 15): LengthAwarePaginator` | Paginated transaction history |
+| `refundCredits(User $user, float $amount, int $originalTransactionId, string $reason): CreditTransaction` | Refund credits with audit trail |
+
+### Transaction Safety
+
+| Safety Measure | Implementation |
+|----------------|----------------|
+| Database Transactions | All balance updates wrapped in `DB::transaction()` |
+| Race Condition Prevention | `lockForUpdate()` prevents concurrent balance modifications |
+| Atomic Operations | Balance update + transaction creation in single transaction |
+| Idempotency | Payment webhook idempotency via `payment_id` in metadata |
+| Balance Integrity | Cannot have negative balance (validated before deduction) |
+
+### Credit Transaction Types
+
+| Type | Description |
+|------|-------------|
+| `purchase` | Credits bought via Stripe/PayPal |
+| `bonus` | Promotional or bonus credits |
+| `usage` | Credits deducted for analysis |
+| `refund` | Credits returned to user |
+
+### Error Handling
+
+| Exception | Trigger |
+|-----------|---------|
+| `InsufficientCreditsException` | Attempt to deduct more than balance |
+| `InvalidCreditAmountException` | Negative or zero amount provided |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Server-side Validation | All amounts validated on server |
+| Balance Locking | `lockForUpdate()` during deductions |
+| Audit Trail | Every balance change logged in `credit_transactions` |
+| Amount Bounds | Positive amounts only, no negative balance |
+
+### Database Schema
+
+**credits table:**
+```sql
+CREATE TABLE credits (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    balance DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    total_purchased DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    total_spent DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_credits_user_unique (user_id)
+);
+```
+
+**credit_transactions table:**
+```sql
+CREATE TABLE credit_transactions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    balance_after DECIMAL(10, 2) NOT NULL,
+    type ENUM('purchase', 'usage', 'refund', 'bonus') NOT NULL,
+    description VARCHAR(500) NOT NULL,
+    reference_type VARCHAR(50) NULL,
+    reference_id BIGINT UNSIGNED NULL,
+    payment_provider VARCHAR(20) NULL,
+    payment_id VARCHAR(255) NULL,
+    metadata JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CreditServiceTest.php` | 60 | 93 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Get Balance (GB) | 5 | Balance retrieval, zero balance, new user, precision |
+| Add Credits (AC) | 10 | Purchase, bonus, validation, idempotency, metadata |
+| Deduct Credits (DC) | 9 | Usage, insufficient balance, validation, reference storage |
+| Has Sufficient Balance (HS) | 7 | Balance checks, edge cases |
+| Transaction History (TH) | 5 | Pagination, ordering, user filtering |
+| Refund Credits (RC) | 5 | Refund creation, original reference, validation |
+| Transaction Safety (TS) | 4 | Database transactions, rollback, atomicity |
+| Concurrency (CC) | 3 | Concurrent operations, locking |
+| Error Handling (EH) | 3 | Custom exceptions, logging |
+| Edge Cases (EC) | 6 | Large amounts, precision, unicode |
+| Security (SC) | 4 | Negative balance prevention, audit trail |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions auto-deploy)
+- **Commits:** `74b0e14`, `ff6d51f`
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** 60/60 passing (93 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-26-1 (Migrations - In Development)
+- TASK-26-2 (Credit Model and Repository - Tests Coverage In Progress)
+
+### Related Tasks
+- TASK-26-6: Credit Balance API Endpoint (depends on this task)
+- TASK-26-7: Transaction History API Endpoint (depends on this task)
+- TASK-26-8: StripeGatewayService (uses addCredits after webhook)
+- TASK-26-10: Stripe Webhook Handler (uses addCredits)
+- TASK-26-14: PayPal Webhook Handler (uses addCredits)
+
+---
 ## Meta Description SEO Guide (TASK-20-6)
 
 ### Guide Description
