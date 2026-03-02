@@ -1,7 +1,7 @@
 # TASK-27-1: Admin Database Tables Migration
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -58,6 +58,33 @@ Create database migrations for `admin_activity_logs` and `system_metrics_cache` 
 - JSON columns for flexible metadata storage
 
 **Handoff:** Ready for PreTester to design migration tests (table structure, indexes, foreign keys, reversibility)
+
+### 2026-03-02 - PreTester
+**Test Design Complete**
+
+**Test Files Created:**
+- `TESTS/TASK-27-1.md` - Test documentation with 50+ scenarios
+- `backend/tests/Unit/Migrations/CreateAdminTablesMigrationTest.php` - Unit test with 80+ assertions
+
+**Test Coverage:**
+- **AL-001 to AL-020:** `admin_activity_logs` table structure, columns, indexes, foreign keys
+- **SM-001 to SM-018:** `system_metrics_cache` table structure, unique constraints, decimal precision
+- **MR-001 to MR-010:** Migration reversibility, rollback, re-run scenarios
+- **DI-001 to DI-008:** Data integrity, queries, cascade behavior
+- **SE-001 to SE-010:** Security & edge cases (SQL injection, XSS, unicode, validation)
+
+**Key Test Patterns:**
+- SQLite-compatible (marks MySQL-specific tests as skipped)
+- Foreign key constraint tests (MySQL/MariaDB only)
+- JSON column validation (MySQL enforces, SQLite does not)
+- IPv6 address storage validation
+- Decimal precision (15,4) validation
+
+**Handoff:** Ready for Developer to implement migration. Run tests with:
+```bash
+cd backend
+php artisan test --filter=CreateAdminTablesMigrationTest
+```
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
