@@ -1,106 +1,202 @@
 <?php
 
+/**
+ * Crawler Service Configuration
+ *
+ * Configuration for the headless crawler service that renders JavaScript-heavy
+ * pages and extracts SEO-relevant content.
+ *
+ * @see SPEC-022
+ * @see TASK-22-3
+ */
+
 return [
+
     /*
     |--------------------------------------------------------------------------
-    | Crawler Rate Limits
+    | Maximum Crawl Depth
     |--------------------------------------------------------------------------
     |
-    | Configure rate limiting for the crawler API.
+    | The maximum depth to crawl from the starting URL.
+    | 0 = page only, 1 = sub-pages, 2 = sub-sub-pages.
+    |
+    */
+
+    'max_depth' => env('CRAWLER_MAX_DEPTH', 2),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Maximum Pages per Job
+    |--------------------------------------------------------------------------
+    |
+    | The maximum number of pages to crawl per job.
+    | This prevents runaway crawls on large sites.
+    |
+    */
+
+    'max_pages' => env('CRAWLER_MAX_PAGES', 50),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Maximum Content Size
+    |--------------------------------------------------------------------------
+    |
+    | The maximum total content size in bytes per job.
+    | Default: 3MB (3 * 1024 * 1024 = 3,145,728 bytes).
+    | This prevents memory exhaustion from large crawls.
+    |
+    */
+
+    'max_content_size' => env('CRAWLER_MAX_CONTENT_SIZE', 3 * 1024 * 1024),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Page Timeout
+    |--------------------------------------------------------------------------
+    |
+    | The maximum time in seconds to wait for a single page to render.
+    | This includes navigation, JS execution, and content extraction.
+    |
+    */
+
+    'page_timeout' => env('CRAWLER_PAGE_TIMEOUT', 30),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Job Timeout
+    |--------------------------------------------------------------------------
+    |
+    | The maximum time in seconds for an entire crawl job to complete.
+    | Default: 5 minutes (300 seconds).
+    |
+    */
+
+    'job_timeout' => env('CRAWLER_JOB_TIMEOUT', 300),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Retention Days
+    |--------------------------------------------------------------------------
+    |
+    | The number of days to keep crawl job data before automatic cleanup.
+    | After this period, jobs and their pages are deleted.
+    |
+    */
+
+    'retention_days' => env('CRAWLER_RETENTION_DAYS', 7),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default User Agent
+    |--------------------------------------------------------------------------
+    |
+    | The default user agent string to use when crawling pages.
+    | Should identify the crawler and provide contact information.
+    |
+    */
+
+    'user_agent' => env('CRAWLER_USER_AGENT', 'SEOIndicator/1.0 Crawler'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Wait Time
+    |--------------------------------------------------------------------------
+    |
+    | The default time in milliseconds to wait after page load
+    | before extracting content. Allows for JS rendering.
+    |
+    */
+
+    'default_wait_time' => env('CRAWLER_DEFAULT_WAIT_TIME', 2000),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Maximum Redirects
+    |--------------------------------------------------------------------------
+    |
+    | The maximum number of HTTP redirects to follow per page.
+    |
+    */
+
+    'max_redirects' => env('CRAWLER_MAX_REDIRECTS', 5),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rate Limiting
+    |--------------------------------------------------------------------------
+    |
+    | Rate limits for crawl job creation and execution.
     |
     */
 
     'rate_limits' => [
-        // Maximum number of crawl jobs per user per day
-        'daily_jobs' => env('CRAWLER_DAILY_LIMIT', 10),
+        // Maximum crawl jobs per user per day
+        'daily_jobs_per_user' => env('CRAWLER_DAILY_LIMIT', 10),
 
-        // Maximum number of concurrent crawl jobs per user
-        'concurrent_jobs' => env('CRAWLER_CONCURRENT_LIMIT', 3),
+        // Maximum concurrent jobs per user
+        'concurrent_jobs_per_user' => env('CRAWLER_CONCURRENT_LIMIT', 3),
 
-        // Maximum requests per second to the same domain
-        'per_domain_per_second' => env('CRAWLER_DOMAIN_RATE', 1),
+        // Minimum delay between requests to same domain (milliseconds)
+        'domain_delay_ms' => env('CRAWLER_DOMAIN_DELAY', 1000),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Crawler Content Limits
+    | Browser Configuration
     |--------------------------------------------------------------------------
     |
-    | Configure content size limits for crawl results.
+    | Settings for the headless browser instance.
     |
     */
 
-    'content_limits' => [
-        // Maximum content size in bytes (default: 3MB)
-        'max_content_size' => env('CRAWLER_MAX_CONTENT_SIZE', 3145728),
+    'browser' => [
+        // Maximum memory per browser instance (MB)
+        'max_memory_mb' => env('CRAWLER_BROWSER_MEMORY', 512),
 
-        // Maximum page size in bytes (default: 10MB)
-        'max_page_size' => env('CRAWLER_MAX_PAGE_SIZE', 10485760),
+        // Browser to use (chromium, firefox, webkit)
+        'browser' => env('CRAWLER_BROWSER', 'chromium'),
+
+        // Whether to run in headless mode
+        'headless' => env('CRAWLER_HEADLESS', true),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Crawler Timeouts
+    | SSRF Protection
     |--------------------------------------------------------------------------
     |
-    | Configure timeouts for crawler operations.
+    | Blocked hosts and IP ranges for SSRF protection.
     |
     */
 
-    'timeouts' => [
-        // Connection timeout in seconds
-        'connect' => env('CRAWLER_CONNECT_TIMEOUT', 10),
+    'ssrf' => [
+        // Blocked IP ranges (CIDR notation)
+        'blocked_ip_ranges' => [
+            '127.0.0.0/8',      // Localhost
+            '10.0.0.0/8',       // Private Class A
+            '172.16.0.0/12',    // Private Class B
+            '192.168.0.0/16',   // Private Class C
+            '169.254.0.0/16',   // Link-local (AWS metadata)
+            '::1/128',          // IPv6 localhost
+            'fe80::/10',        // IPv6 link-local
+        ],
 
-        // Request timeout in seconds
-        'request' => env('CRAWLER_REQUEST_TIMEOUT', 30),
+        // Blocked host patterns
+        'blocked_hosts' => [
+            'localhost',
+            '*.local',
+            '*.internal',
+            '*.localhost',
+        ],
 
-        // Maximum crawl time per job in seconds
-        'max_crawl_time' => env('CRAWLER_MAX_TIME', 300),
+        // Blocked protocols
+        'blocked_protocols' => [
+            'file',
+            'ftp',
+            'gopher',
+            'data',
+            'javascript',
+        ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Crawler Defaults
-    |--------------------------------------------------------------------------
-    |
-    | Default values for crawl options.
-    |
-    */
-
-    'defaults' => [
-        // Default crawl depth
-        'depth' => env('CRAWLER_DEFAULT_DEPTH', 1),
-
-        // Default user agent
-        'user_agent' => env('CRAWLER_USER_AGENT', 'SEOIndicator-Crawler/1.0'),
-
-        // Default wait time in milliseconds
-        'wait_time' => env('CRAWLER_DEFAULT_WAIT_TIME', 0),
-
-        // Follow redirects by default
-        'follow_redirects' => env('CRAWLER_FOLLOW_REDIRECTS', true),
-
-        // Maximum redirects to follow
-        'max_redirects' => env('CRAWLER_MAX_REDIRECTS', 5),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Crawler Job Retention
-    |--------------------------------------------------------------------------
-    |
-    | Configure how long to keep crawl job data.
-    |
-    */
-
-    'retention' => [
-        // Days to keep completed jobs
-        'completed_jobs' => env('CRAWLER_RETENTION_COMPLETED', 7),
-
-        // Days to keep failed jobs
-        'failed_jobs' => env('CRAWLER_RETENTION_FAILED', 30),
-
-        // Days to keep cancelled jobs
-        'cancelled_jobs' => env('CRAWLER_RETENTION_CANCELLED', 3),
-    ],
 ];

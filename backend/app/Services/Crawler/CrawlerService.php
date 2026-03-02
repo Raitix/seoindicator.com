@@ -4,9 +4,11 @@ namespace App\Services\Crawler;
 
 use App\Models\CrawlJob;
 use App\Models\CrawlPage;
+use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Crawler Service implementation.
@@ -16,6 +18,7 @@ use Illuminate\Support\Facades\DB;
  *
  * @see TASK-22-3
  * @see TASK-22-11
+ * @see TASK-22-15
  * @see SPEC-022
  */
 class CrawlerService implements CrawlerServiceInterface
@@ -221,5 +224,184 @@ class CrawlerService implements CrawlerServiceInterface
         // Rough estimate: 30s base + 15s per depth level
         $seconds = 30 + ($depth * 15);
         return $seconds . 's';
+    }
+
+    // =========================================================================
+    // CrawlWorker Integration Methods (TASK-22-15)
+    // =========================================================================
+
+    /**
+     * Get a CrawlJob model by job ID.
+     *
+     * @param string $jobId The job identifier
+     * @return CrawlJob|null The job model or null if not found
+     */
+    public function getCrawlJob(string $jobId): ?CrawlJob
+    {
+        return CrawlJob::where('job_id', $jobId)->first();
+    }
+
+    /**
+     * Update the status of a crawl job.
+     *
+     * @param string $jobId The job identifier
+     * @param string $status The new status
+     * @param array $additionalData Additional data to update (started_at, completed_at, etc.)
+     * @return bool True if updated, false if job not found
+     */
+    public function updateStatus(string $jobId, string $status, array $additionalData = []): bool
+    {
+        $job = CrawlJob::where('job_id', $jobId)->first();
+
+        if (!$job) {
+            return false;
+        }
+
+        $data = array_merge(['status' => $status], $additionalData);
+
+        // Set timestamps based on status
+        if ($status === CrawlJob::STATUS_RUNNING && !isset($data['started_at'])) {
+            $data['started_at'] = now();
+        }
+
+        if (in_array($status, [CrawlJob::STATUS_COMPLETED, CrawlJob::STATUS_FAILED, CrawlJob::STATUS_CANCELLED])) {
+            if (!isset($data['completed_at'])) {
+                $data['completed_at'] = now();
+            }
+        }
+
+        $job->update($data);
+
+        Log::debug('CrawlerService: Job status updated', [
+            'jobId' => $jobId,
+            'status' => $status,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Store a page result for a crawl job.
+     *
+     * @param string $jobId The job identifier
+     * @param array $pageData The page data (url, depth, title, rendered_html, etc.)
+     * @return CrawlPage|null The created page or null if job not found
+     */
+    public function storePageResult(string $jobId, array $pageData): ?CrawlPage
+    {
+        $job = CrawlJob::where('job_id', $jobId)->first();
+
+        if (!$job) {
+            return null;
+        }
+
+        $page = CrawlPage::create([
+            'crawl_job_id' => $job->id,
+            'url' => $pageData['url'],
+            'depth' => $pageData['depth'] ?? 0,
+            'title' => $pageData['title'] ?? null,
+            'rendered_html' => $pageData['html'] ?? $pageData['rendered_html'] ?? null,
+            'structured_text' => $pageData['text'] ?? $pageData['structured_text'] ?? null,
+            'meta' => $pageData['meta'] ?? [],
+            'links' => $pageData['links'] ?? [],
+            'size' => $pageData['size'] ?? 0,
+            'crawled_at' => now(),
+            'error' => $pageData['error'] ?? null,
+        ]);
+
+        Log::debug('CrawlerService: Page result stored', [
+            'jobId' => $jobId,
+            'url' => $pageData['url'],
+            'depth' => $pageData['depth'] ?? 0,
+        ]);
+
+        return $page;
+    }
+
+    /**
+     * Update job statistics (pages crawled, total size).
+     *
+     * @param string $jobId The job identifier
+     * @param array $stats Statistics to update (pages_crawled, total_size, etc.)
+     * @return bool True if updated, false if job not found
+     */
+    public function updateStats(string $jobId, array $stats): bool
+    {
+        $job = CrawlJob::where('job_id', $jobId)->first();
+
+        if (!$job) {
+            return false;
+        }
+
+        $updateData = [];
+
+        if (isset($stats['pages_crawled'])) {
+            $updateData['pages_crawled'] = $stats['pages_crawled'];
+        }
+
+        if (isset($stats['total_size'])) {
+            $updateData['total_size'] = $stats['total_size'];
+        }
+
+        if (!empty($updateData)) {
+            $job->update($updateData);
+        }
+
+        return true;
+    }
+
+    /**
+     * Mark a crawl job as failed.
+     *
+     * @param string $jobId The job identifier
+     * @param string $error The error message
+     * @return bool True if marked as failed, false if job not found
+     */
+    public function markJobFailed(string $jobId, string $error): bool
+    {
+        return $this->updateStatus($jobId, CrawlJob::STATUS_FAILED, [
+            'error' => substr($error, 0, 65535), // Truncate to fit TEXT column
+            'completed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Increment pages crawled count.
+     *
+     * @param string $jobId The job identifier
+     * @return bool True if incremented, false if job not found
+     */
+    public function incrementPagesCrawled(string $jobId): bool
+    {
+        $job = CrawlJob::where('job_id', $jobId)->first();
+
+        if (!$job) {
+            return false;
+        }
+
+        $job->increment('pages_crawled');
+
+        return true;
+    }
+
+    /**
+     * Add to total size.
+     *
+     * @param string $jobId The job identifier
+     * @param int $bytes The bytes to add
+     * @return bool True if updated, false if job not found
+     */
+    public function addTotalSize(string $jobId, int $bytes): bool
+    {
+        $job = CrawlJob::where('job_id', $jobId)->first();
+
+        if (!$job) {
+            return false;
+        }
+
+        $job->total_size += $bytes;
+        $job->save();
+
+        return true;
     }
 }
