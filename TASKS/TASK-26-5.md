@@ -1,7 +1,7 @@
 # TASK-26-5: Implement CreditService with Balance Management
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -23,38 +23,38 @@ Implement the core CreditService that handles all credit balance operations with
 ## Acceptance Criteria
 
 ### CreditService Methods
-- [ ] `getBalance(User $user): float` - Get current credit balance
-- [ ] `addCredits(User $user, float $amount, string $type, array $metadata = []): CreditTransaction` - Add credits (purchase, bonus)
-- [ ] `deductCredits(User $user, float $amount, string $referenceType, int $referenceId): CreditTransaction` - Deduct credits (usage)
-- [ ] `hasSufficientBalance(User $user, float $amount): bool` - Check if user can afford
-- [ ] `getTransactionHistory(User $user, int $perPage = 15): LengthAwarePaginator` - Paginated history
-- [ ] `refundCredits(User $user, float $amount, int $originalTransactionId, string $reason): CreditTransaction` - Refund credits
+- [x] `getBalance(User $user): float` - Get current credit balance
+- [x] `addCredits(User $user, float $amount, string $type, array $metadata = []): CreditTransaction` - Add credits (purchase, bonus)
+- [x] `deductCredits(User $user, float $amount, string $referenceType, int $referenceId): CreditTransaction` - Deduct credits (usage)
+- [x] `hasSufficientBalance(User $user, float $amount): bool` - Check if user can afford
+- [x] `getTransactionHistory(User $user, int $perPage = 15): LengthAwarePaginator` - Paginated history
+- [x] `refundCredits(User $user, float $amount, int $originalTransactionId, string $reason): CreditTransaction` - Refund credits
 
 ### Transaction Safety
-- [ ] All balance updates wrapped in database transactions
-- [ ] Use `lockForUpdate()` to prevent race conditions
-- [ ] Atomic balance + transaction creation
-- [ ] Idempotency support for payment webhooks
+- [x] All balance updates wrapped in database transactions
+- [x] Use `lockForUpdate()` to prevent race conditions
+- [x] Atomic balance + transaction creation
+- [x] Idempotency support for payment webhooks
 
 ### Validation Rules
-- [ ] Cannot have negative balance
-- [ ] Amount must be positive
-- [ ] Type must be valid enum value
-- [ ] User must exist
+- [x] Cannot have negative balance
+- [x] Amount must be positive
+- [x] Type must be valid enum value
+- [x] User must exist
 
 ### Error Handling
-- [ ] Custom exception: `InsufficientCreditsException`
-- [ ] Custom exception: `InvalidCreditAmountException`
-- [ ] Log all errors with context
+- [x] Custom exception: `InsufficientCreditsException`
+- [x] Custom exception: `InvalidCreditAmountException`
+- [x] Log all errors with context
 
 ### Unit Tests
-- [ ] Balance retrieval tests
-- [ ] Add credits tests (purchase, bonus types)
-- [ ] Deduct credits tests
-- [ ] Insufficient balance tests
-- [ ] Concurrent operation tests
-- [ ] Transaction history pagination tests
-- [ ] Refund flow tests
+- [x] Balance retrieval tests
+- [x] Add credits tests (purchase, bonus types)
+- [x] Deduct credits tests
+- [x] Insufficient balance tests
+- [x] Concurrent operation tests
+- [x] Transaction history pagination tests
+- [x] Refund flow tests
 
 ## Dependencies
 - TASK-26-1 (migrations)
@@ -174,3 +174,28 @@ Implement the core CreditService that handles all credit balance operations with
 
 ---
 _Leave notes for the next agent here_
+
+### 2026-03-02 - Developer
+**Implementation Complete:**
+- All acceptance criteria met ✅
+- All 60 unit tests passing ✅
+
+**Files Modified:**
+1. `backend/app/Services/CreditService.php` - Core service with all required methods
+2. `backend/app/Models/CreditTransaction.php` - Added `created_at` to `$fillable` array
+3. `backend/app/Exceptions/InsufficientCreditsException.php` - Custom exception
+4. `backend/app/Exceptions/InvalidCreditAmountException.php` - Custom exception
+
+**Bug Fixes During Implementation:**
+1. **HS-006**: `hasSufficientBalance()` now calls `findOrCreateForUser()` even for zero amounts, ensuring credit record is created for new users
+2. **TH-004**: Added `created_at` to `CreditTransaction::$fillable` so manually set timestamps are preserved (model has `$timestamps = false`)
+
+**Implementation Notes:**
+- `getBalance()` creates credit record on-demand if user doesn't have one
+- `addCredits()` supports idempotency via `payment_id` in metadata
+- `deductCredits()` uses `lockForUpdate()` for race condition prevention
+- All operations wrapped in `DB::transaction()`
+- Balance can never go negative (validated before deduction)
+- Full audit trail in `credit_transactions` table
+
+**Ready for LocalTester**
