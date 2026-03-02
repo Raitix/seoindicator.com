@@ -1172,8 +1172,233 @@ Use parallel structure in headings at the same level. If H2s are questions ("Wha
     category: 'on-page',
     icon: '🖼️',
     readTime: 4,
-    sections: [],
-    checklist: [],
+    sections: [
+      {
+        title: 'What is Image Alt Text?',
+        content: `**Image alt text** (alternative text) is an HTML attribute that provides a text description of an image. It appears in the \`alt\` attribute of the \`<img>\` tag and serves multiple purposes: improving accessibility for screen reader users, providing context when images fail to load, and helping search engines understand image content.
+
+The alt text is displayed when an image cannot be rendered—whether due to slow connections, broken URLs, or users who have disabled images. For visually impaired users relying on screen readers, alt text is often the only way to understand what an image conveys.
+
+### Alt Text vs Title Attribute
+
+**Alt text** (\`alt\` attribute) describes the image content for accessibility and SEO. It's required for all meaningful images.
+
+**Title attribute** provides additional context that appears as a tooltip on hover. It's optional and less critical for SEO.
+
+### When Alt Text is Required
+
+Every \`<img>\` tag must have an \`alt\` attribute—it's required by HTML specification. However, the value depends on the image type:
+
+- **Informative images** — Need descriptive alt text explaining what the image shows
+- **Decorative images** — Use empty alt (\`alt=""\`) to indicate they should be skipped by screen readers
+- **Functional images** (buttons, links) — Describe the action, not the image
+
+Understanding when to use descriptive alt text versus empty alt is fundamental to proper implementation.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Why Alt Text Matters',
+        content: `Alt text serves two critical purposes: **accessibility** and **SEO**. Understanding both benefits helps you write more effective descriptions.
+
+### Accessibility for Screen Readers
+
+Screen readers convert text to speech, allowing visually impaired users to navigate and understand web content. When encountering an image, the screen reader reads the alt text aloud. Without alt text, users miss important visual information.
+
+**WCAG 2.1 Guidelines** require that all non-text content have a text alternative that serves an equivalent purpose. This isn't just good practice—it's a legal requirement in many jurisdictions for public websites.
+
+- **7.6 million US adults** have a visual disability
+- **Screen reader users** rely on alt text to understand images
+- **Empty alt** (\`alt=""\`) tells screen readers to skip decorative images
+
+### SEO and Image Search
+
+Search engines like Google cannot "see" images the way humans do. They rely on alt text, surrounding content, and image file names to understand what images depict. Well-written alt text helps your images appear in Google Image Search results.
+
+**SEO benefits:**
+- Images rank in Google Image Search for relevant queries
+- Image alt text reinforces page topic relevance
+- Product images with good alt text can appear in shopping results
+- Alt text contributes to overall page context for ranking
+
+### User Experience When Images Fail
+
+When images fail to load—due to network issues, broken URLs, or ad blockers—the alt text displays in place of the image. Descriptive alt text ensures users understand what they're missing, rather than seeing a broken image icon with no explanation.
+
+### Context for All Users
+
+Even sighted users benefit from alt text. Hover over an image in most browsers, and the alt text appears as a tooltip (in some browsers). This provides additional context about the image content.`,
+        codeExamples: [],
+      },
+      {
+        title: 'How to Write Effective Alt Text',
+        content: `Writing good alt text requires balancing descriptiveness with conciseness. Follow these principles to create effective descriptions that serve both accessibility and SEO purposes.
+
+### Be Descriptive and Specific
+
+Describe what the image shows, not just what it is. Instead of "a dog," write "a golden retriever playing fetch in a park." Be specific enough that someone who can't see the image understands its content and purpose.
+
+**Good alt text examples:**
+- "Red leather handbag with gold buckle on white background"
+- "Bar chart showing 25% increase in quarterly sales"
+- "Team of developers collaborating around a whiteboard"
+
+**Avoid generic descriptions:**
+- "Image of a product" (too vague)
+- "A photo" (provides no information)
+- "IMG_2345.jpg" (filename is not description)
+
+### Keep It Concise
+
+Most screen readers truncate alt text after about **125 characters**. Aim for descriptions under 125 characters while still being descriptive. If you need more detail, consider providing additional context in surrounding text.
+
+**Length guidelines:**
+- Target: **100-125 characters** maximum
+- Shorter is better when equally descriptive
+- Complex images may need longer descriptions (consider aria-describedby)
+
+### Don\'t Start with "Image of" or "Picture of"
+
+Screen readers already announce that an element is an image. Starting alt text with "image of" or "picture of" is redundant. Jump directly into the description.
+
+**Bad:** "Image of a sunset over mountains"
+**Good:** "Sunset over snow-capped mountain peaks with orange sky"
+
+### Consider Context
+
+The same image might need different alt text depending on context. An image of a product on a product page needs different description than that same product used as an example in a blog post.
+
+**Ask yourself:** What information does a user need from this image in this specific context?
+
+### Include Keywords Naturally
+
+For SEO, include relevant keywords when they naturally fit. Don't force keywords into alt text—write for humans first, optimize for search second. A well-written description will often naturally include relevant terms.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Good alt text examples -->
+<img src="/images/product-bag.jpg" alt="Red leather handbag with gold buckle" />
+<img src="/images/sales-chart.png" alt="Bar chart showing 25% increase in Q4 2025 sales" />
+<img src="/images/team-photo.jpg" alt="Development team collaborating around a whiteboard during sprint planning" />
+
+<!-- Poor alt text examples (avoid these) -->
+<img src="/images/product.jpg" alt="image" />
+<img src="/images/product.jpg" alt="product bag handbag purse leather red fashion style luxury buy now sale discount best price" />
+<img src="/images/product.jpg" alt="IMG_0234.jpg" />`,
+            description: 'Good vs poor alt text examples showing descriptiveness and appropriate length',
+          },
+        ],
+      },
+      {
+        title: 'Common Mistakes',
+        content: `Avoid these common alt text mistakes that hurt accessibility and SEO.
+
+### 1. Keyword Stuffing
+
+Cramming keywords into alt text is spammy and hurts user experience. Search engines may penalize this practice, and screen reader users hear awkward, unnatural descriptions.
+
+**Bad:** \`alt="handbag purse bag leather red fashion luxury designer style trendy women buy shop sale discount best price affordable"\`
+
+**Good:** \`alt="Red leather handbag with adjustable shoulder strap"\`
+
+### 2. Empty Alt on Meaningful Images
+
+Leaving meaningful images with empty alt (\`alt=""\`) tells screen readers to skip them entirely—depriving visually impaired users of important information.
+
+**When this is wrong:** Product images, informational graphics, charts, logos, team photos
+
+**When it's correct:** Decorative dividers, background patterns, spacer images
+
+### 3. Missing Alt Attribute Entirely
+
+Images without any \`alt\` attribute may have their filenames read aloud by screen readers—which is rarely helpful and often confusing.
+
+**Bad:** \`<img src="IMG_0234.jpg" />\` (screen reader reads: "IMG underscore zero two three four dot J P G")
+
+**Good:** \`<img src="IMG_0234.jpg" alt="Product overview infographic" />\`
+
+### 4. Using Filenames as Alt Text
+
+Don't copy the filename into alt text. Filenames like "IMG_0234.jpg" or "screenshot-2024-01-15.png" provide no meaningful information.
+
+### 5. Being Too Vague
+
+Alt text like "a product" or "an image" doesn't help users understand what they're missing. Always provide specific, descriptive text.
+
+### 6. Including "Image of" Prefixes
+
+Screen readers already announce images. Starting with "Image of," "Picture of," or "Photo of" is redundant and wastes character limit.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Decorative Images',
+        content: `Not all images need descriptive alt text. **Decorative images**—those that add visual appeal but convey no meaningful information—should use empty alt text (\`alt=""\`) to tell screen readers to skip them.
+
+### What Counts as Decorative?
+
+Decorative images include:
+
+- **Background patterns** and textures
+- **Spacer images** used for layout
+- **Decorative borders** and dividers
+- **Stock photos** that don\'t add context (generic office photos, abstract backgrounds)
+- **Icons** that are duplicated in adjacent text (e.g., a printer icon next to the word "Print")
+
+### How to Mark Images as Decorative
+
+Use an empty \`alt\` attribute (not missing, but empty quotes). This tells screen readers the image is decorative and should be skipped.
+
+\`<img src="decorative-border.png" alt="" />\`
+
+### Decorative vs Informative: Decision Guide
+
+Ask these questions:
+1. Does this image convey information not available in nearby text?
+2. Would a screen reader user miss important content without this description?
+3. Is this image essential to understanding the page content?
+
+If you answered **yes** to any question, the image is **informative**—use descriptive alt text.
+
+If you answered **no** to all questions, the image is likely **decorative**—use \`alt=""\`.
+
+### Alternative: aria-hidden
+
+For purely decorative images, you can also use \`aria-hidden="true"\` to hide them from assistive technology:
+
+\`<img src="decoration.png" alt="" aria-hidden="true" />\`
+
+This approach is redundant when \`alt=""\` is used, but some developers prefer it for clarity.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Decorative image: empty alt tells screen readers to skip -->
+<img src="/images/decorative-border.png" alt="" />
+
+<!-- Background pattern: no information conveyed -->
+<img src="/images/texture-bg.jpg" alt="" role="presentation" />
+
+<!-- Icon with text label: icon is decorative, text conveys meaning -->
+<button>
+  <img src="/images/printer-icon.svg" alt="" />
+  Print
+</button>
+
+<!-- WRONG: Don't describe decorative images -->
+<img src="/images/decorative-border.png" alt="beautiful decorative border with flowers" />
+<!-- This forces screen readers to announce unnecessary content -->`,
+            description: 'Decorative images use empty alt="" to skip screen reader announcement',
+          },
+        ],
+      },
+    ],
+    checklist: [
+      { text: 'Add descriptive alt text to all meaningful images on your site', priority: 'critical' },
+      { text: 'Use empty alt="" for decorative images only—never on informative images', priority: 'critical' },
+      { text: 'Keep alt text under 125 characters for screen reader compatibility', priority: 'important' },
+      { text: 'Describe image content specifically—avoid vague descriptions like "an image"', priority: 'important' },
+      { text: 'Never keyword stuff alt text—write natural, helpful descriptions', priority: 'important' },
+      { text: 'Don\'t start alt text with "Image of" or "Picture of"—it\'s redundant', priority: 'important' },
+      { text: 'Follow WCAG 2.1 guidelines for accessible image alternatives', priority: 'recommended' },
+    ],
     relatedGuides: ['image-optimization', 'structured-data'],
   },
   {
