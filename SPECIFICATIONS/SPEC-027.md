@@ -1,7 +1,7 @@
 # SPEC-027: Admin Dashboard (Ops + Usage)
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -462,6 +462,30 @@ ADMIN_ACTIVITY_LOG_ENABLED=true
 ---
 
 ## Comments
+
+### 2026-03-02 - SpecSystemAnalyst
+- Created 19 tasks (TASK-27-1 through TASK-27-19)
+- **Phase 1 - Backend Infrastructure (Tasks 1-3):**
+  - Database migrations, authorization middleware, stats service
+- **Phase 2 - User Statistics (Tasks 4-5):**
+  - Aggregation queries, API endpoints
+- **Phase 3 - Usage Metrics (Tasks 6-8):**
+  - Request tracking, aggregation service, API endpoints
+- **Phase 4 - Credit & Billing (Tasks 9-10):**
+  - Credit aggregation, API endpoints (depends on FEAT-026)
+- **Phase 5 - System Health (Tasks 11-13):**
+  - Health check service, queue monitoring, API endpoints
+- **Phase 6 - Frontend (Tasks 14-17):**
+  - Dashboard layout, metric cards, charts, health panel
+- **Phase 7 - Testing & Documentation (Tasks 18-19):**
+  - Comprehensive tests, documentation update
+- **Key Dependencies:**
+  - FEAT-026 (Credits system) required for Tasks 9-10
+  - FEAT-019 (Job Queue) required for Task 12
+- **Risk Notes:**
+  - Task 27-2 (Authorization) marked High risk - critical security component
+  - All other tasks Medium/Low risk
+- Status updated: `To Prioritize`
 
 ### 2026-02-28 - Architect
 - Created initial technical specification
