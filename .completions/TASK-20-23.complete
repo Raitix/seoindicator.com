@@ -1,0 +1,25 @@
+# TASK-20-23 Completion
+
+## Status
+`To Test Locally`
+
+## Fix Applied
+- Added `DEPLOYED_TOOLS` Set to ToolEmbed component
+- CTA only shows for tools with deployed pages
+- `mobile-friendly-checker` CTA hidden until TASK-16-7 is deployed
+
+## Files Changed
+- `frontend/components/guides/ToolEmbed.tsx`
+- `TASKS/TASK-20-23.md`
+
+## Commit
+`491ea40` - TASK-20-23: Fix 404 CTA by adding DEPLOYED_TOOLS validation
+
+## Next Steps
+1. LocalTester: Verify ToolEmbed renders, CTA hidden for mobile-friendly-checker
+2. When TASK-16-7 deploys: Add 'mobile-friendly-checker' to DEPLOYED_TOOLS
+3. DevOps: Deploy to production
+4. ProdTester: Verify fix in production
+
+## Completed
+2026-03-02 13:30 GMT+2

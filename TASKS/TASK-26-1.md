@@ -1,7 +1,7 @@
 # TASK-26-1: Create Credits and Transactions Tables Migration
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
