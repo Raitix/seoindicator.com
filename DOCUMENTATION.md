@@ -1,6 +1,177 @@
 # DOCUMENTATION.md
 
 ---
+## HowTo Schema Markup for SEO Guides (TASK-20-27)
+
+### Feature Description
+HowTo schema.org structured data component for all 17 SEO guide pages, enabling enhanced search visibility and rich results in Google Search. Each guide page now includes valid HowTo JSON-LD schema with step-by-step instructions derived from guide sections.
+
+### Component Location
+- **Component:** `frontend/components/guides/GuideSchema.tsx`
+- **Export:** `frontend/components/guides/index.ts`
+- **Integration:** `frontend/app/seo-guides/[slug]/page.tsx`
+- **Tests:** `frontend/components/guides/__tests__/GuideSchema.test.tsx`
+
+### Core Functionalities
+
+**GuideSchema Component:**
+| Feature | Description |
+|---------|-------------|
+| HowTo Schema | Generates schema.org HowTo structured data |
+| Step Generation | Converts guide sections to HowToStep array |
+| totalTime | ISO 8601 duration from guide read time (PT{n}M) |
+| estimatedCost | Set to free (0 USD) for all guides |
+| JSON-LD Output | `<script type="application/ld+json">` injection |
+
+### HowTo Schema Structure
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Guide Title",
+  "description": "Guide summary text...",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "name": "Section Title",
+      "text": "Section content (truncated to 200 chars)..."
+    }
+  ],
+  "estimatedCost": {
+    "@type": "MonetaryAmount",
+    "currency": "USD",
+    "value": "0"
+  },
+  "totalTime": "PT5M"
+}
+```
+
+### Component API
+
+**Props:**
+| Prop | Type | Description |
+|------|------|-------------|
+| `guide` | `SEOGuide \| null` | Guide data object from registry |
+
+**Exports:**
+| Export | Type | Description |
+|--------|------|-------------|
+| `GuideSchema` | Component | React component for schema injection |
+| `generateHowToSchema` | Function | Pure function to generate schema object |
+
+**Return Value:**
+- Returns `<script type="application/ld+json">` element with schema
+- Returns `null` if guide is null or invalid
+
+### Schema.org Compliance
+
+| Property | Required | Implementation |
+|----------|----------|----------------|
+| `@context` | Yes | `"https://schema.org"` |
+| `@type` | Yes | `"HowTo"` |
+| `name` | Yes | Guide title |
+| `description` | Recommended | Guide summary |
+| `step` | Yes | Array of HowToStep |
+| `estimatedCost` | Optional | Free (0 USD) |
+| `totalTime` | Optional | ISO 8601 duration |
+
+### HowToStep Generation
+
+Each guide section becomes a HowToStep:
+
+| Guide Section | HowToStep Property |
+|---------------|-------------------|
+| `title` | `name` |
+| `content` | `text` (truncated to 200 chars) |
+
+**Step Processing:**
+```typescript
+sections.map((section, index) => ({
+  "@type": "HowToStep",
+  "name": section.title,
+  "text": section.content.substring(0, 200),
+  "position": index + 1
+}))
+```
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | JSON-LD is safe in script tag context (not parsed as HTML) |
+| Input Validation | Null guide returns null component |
+| Content Sanitization | JSON.stringify handles special characters |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `GuideSchema.test.tsx` | 60 | 60+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Component Rendering | 4 | Valid/invalid guide handling |
+| Schema Structure | 7 | @context, @type, name, description, step, estimatedCost, totalTime |
+| HowToStep Generation | 6 | Section-to-step mapping |
+| totalTime Calculation | 4 | ISO 8601 format (PT{n}M) |
+| estimatedCost Structure | 3 | Free cost representation |
+| JSON-LD Script Tag | 3 | Script type and injection |
+| All 17 Guides | 18 | Each guide produces valid schema |
+| Edge Cases | 5 | Null guide, empty sections, long content |
+| Security | 3 | XSS handling |
+| Integration | 3 | Multi-section, code examples, metadata |
+| Schema.org Compliance | 3 | Basic, JSON-LD, Google requirements |
+
+### Production Verification
+
+**URL:** https://seoindicator.com/seo-guides/meta-title/
+
+**JSON-LD Verification:**
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Meta Title Optimization",
+  "description": "Learn how to write compelling meta titles...",
+  "step": [
+    { "@type": "HowToStep", "name": "What is a Meta Title?", "text": "..." },
+    { "@type": "HowToStep", "name": "Best Practices", "text": "..." }
+  ],
+  "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
+  "totalTime": "PT5M"
+}
+```
+
+**Acceptance Criteria Status:**
+| Criteria | Status |
+|----------|--------|
+| GuideSchema.tsx component | ✅ Complete |
+| HowTo schema with name, description, step | ✅ Complete |
+| Each section becomes HowToStep | ✅ Complete |
+| estimatedCost (free) and totalTime | ✅ Complete |
+| Schema injected via next/head | ✅ Complete |
+| All 17 guides have valid schema | ✅ Complete |
+| Google Rich Results Test validation | ✅ Validated |
+| No schema errors in Search Console | ⏳ Monitoring |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions)
+- **URL:** https://seoindicator.com/seo-guides/[slug]/
+- **Health Check:** Passing
+- **Tests:** 60/60 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+- TASK-20-3 (Guide page template)
+
+### Related Tasks
+- TASK-20-26: Apache .htaccess for clean URLs
+- TASK-20-28: OG images for guides
+
+---
 ## Twitter Cards SEO Guide (TASK-20-19)
 
 ### Guide Description

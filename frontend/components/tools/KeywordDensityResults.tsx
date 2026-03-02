@@ -16,6 +16,9 @@ import {
   type DensityStatus,
 } from "@/lib/utils/keywordDensityAnalyzer";
 import type { Heading } from "@/lib/utils/headingAnalyzer";
+import { AISuggestionButton } from "@/components/tools/AISuggestionButton";
+import { AISuggestionPanel } from "@/components/tools/AISuggestionPanel";
+import type { SuggestionResult } from "@/lib/types/ai-suggestions";
 
 export interface KeywordWarning {
   type: "error" | "warning" | "info" | "success";
@@ -56,6 +59,9 @@ export function KeywordDensityResults({
     status,
   } = result;
 
+  // AI suggestion state
+  const [aiSuggestion, setAiSuggestion] = React.useState<SuggestionResult | null>(null);
+
   const statusLabel = getDensityStatusLabel(status);
   const statusBgColor = getDensityStatusBgColor(status);
 
@@ -68,6 +74,32 @@ export function KeywordDensityResults({
     } catch {
       return "Unknown";
     }
+  };
+
+  // Copy to clipboard helper
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      console.error('Failed to copy to clipboard');
+      return false;
+    }
+  };
+
+  // Build context for AI suggestions
+  const aiContext = {
+    keyword,
+    density,
+    occurrences,
+    total_words: totalWords,
+    headings: headings.slice(0, 10).map(h => ({ tag: h.tag, text: h.text, keyword_found: h.keywordFound })),
+    status,
+  };
+
+  // Handle AI suggestion regeneration
+  const handleRegenerateAiSuggestion = () => {
+    setAiSuggestion(null);
   };
 
   return (
