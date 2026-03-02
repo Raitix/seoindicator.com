@@ -1,7 +1,7 @@
 # TASK-21-8: Create Database Migrations
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -209,3 +209,40 @@ This means TASK-21-8 should be completed BEFORE TASK-21-7 can use database loggi
 
 ---
 *Created by SpecSystemAnalyst on 2026-03-01*
+
+### [2026-03-02 17:27 GMT+2] PreTester - Tests Coverage In Progress
+**Test Design Complete** ✅
+
+**Created Files:**
+| File | Description |
+|------|-------------|
+| `TESTS/TEST-21-8.md` | Test documentation with 50+ test scenarios |
+| `backend/tests/Unit/Migrations/AISuggestionTablesTest.php` | PHPUnit test file with comprehensive tests |
+| `database/factories/AISuggestionLogFactory.php` | Model factory for test data |
+| `database/factories/AISuggestionCacheFactory.php` | Model factory for test data |
+
+**Test Coverage:**
+- TC-1: `ai_suggestion_logs` table schema (20 tests)
+- TC-2: `ai_suggestions_cache` table schema (13 tests)
+- TC-3: `AISuggestionLog` model tests (9 tests)
+- TC-4: `AISuggestionCache` model tests (9 tests)
+- TC-5: Migration rollback tests (referenced in schema tests)
+- TC-6: Edge cases (7 tests)
+
+**Factory States:**
+- `AISuggestionLogFactory`: guest(), failed(), indicator(), provider(), slow(), fast()
+- `AISuggestionCacheFactory`: expired(), valid(), indicator(), provider(), ttl(), withHash()
+
+**Key Test Features:**
+- Uses `RefreshDatabase` trait for clean state per test
+- Helper method `getTableIndexes()` for index verification
+- Foreign key cascade test (`nullOnDelete` behavior)
+- Unique constraint tests for `request_hash`
+- Model scope tests (`expired()`, `valid()`)
+- Edge cases: null values, long strings, zero latency
+
+**Handoff to Developer:**
+1. Create migrations with proper timestamps
+2. Create Eloquent models with fillable/casts/relationships/scopes
+3. Run tests: `php artisan test --filter=AISuggestionTablesTest`
+4. All tests should pass after implementation
