@@ -1,6 +1,116 @@
 # DOCUMENTATION.md
 
 ---
+## H1 Headings SEO Guide (TASK-20-7)
+
+### Guide Description
+Comprehensive SEO guide content for the H1 Headings indicator, covering heading structure, single H1 rule, keyword optimization, and accessibility. Explains H1 as the primary heading that defines page topic for both users and search engines. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `h1-headings`
+- **URL:** `https://seoindicator.com/seo-guides/h1-headings/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What are H1 Headings? | Definition, HTML structure, hierarchy, H1 vs meta title | ~350 |
+| Why H1 Headings Matter for SEO | Ranking signals, accessibility, user experience, keyword relevance | ~400 |
+| How to Optimize H1 Tags | One H1 per page, keyword placement, length guidelines, matching title tag | ~350 |
+| Common H1 Heading Mistakes | Multiple H1s, missing H1, empty/generic H1, styling vs semantics, content mismatch | ~400 |
+| H1 Heading Best Practices Checklist | Quick reference table, testing tools, common questions | ~300 |
+
+**Total Content:** ~1,800 words
+**Read Time:** 8 minutes
+
+### Key Technical Details
+
+| Topic | Details |
+|-------|---------|
+| HTML H1 Tag | `<h1>Your Main Heading</h1>` - defines primary page topic |
+| Single H1 Rule | One H1 per page for semantic clarity |
+| Keyword Placement | Primary keyword near the beginning of H1 |
+| Length Guideline | 20-70 characters optimal |
+| Accessibility | H1 is the main landmark for screen readers |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| Proper heading hierarchy | HTML | H1 → H2 → H3 structure example |
+| Good vs bad H1 examples | HTML | Comparison showing effective vs ineffective H1 usage |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Use exactly one H1 tag per page |
+| Critical | Include your primary keyword in the H1 |
+| Critical | Make H1 the first visible heading on the page |
+| Important | Keep H1 text between 20-70 characters |
+| Important | Match H1 content with your meta title for consistency |
+| Important | Use CSS for styling, not heading tags for visual appearance |
+| Important | Ensure H1 accurately describes the page content |
+| Recommended | Place primary keyword near the beginning of H1 |
+
+### Related Guides
+- `heading-hierarchy` - Full H1-H6 structure optimization
+- `meta-title` - Title tag optimization
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'h1-headings',
+  title: 'H1 Headings',
+  summary: 'Optimize your H1 headings for better SEO and accessibility...',
+  category: 'on-page',
+  icon: '📌',
+  readTime: 8,
+  hasTool: false,
+  relatedGuides: ['heading-hierarchy', 'meta-title'],
+  sections: [ /* 5 sections */ ],
+  checklist: [ /* 8 items */ ],
+  codeExamples: [ /* 2 examples */ ]
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `h1-headings-content.test.ts` | 59 | Content structure validation |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Guide Structure | HE-001 to HE-005 | Registry entry, slug, title, category |
+| What are H1 Headings | WH-001 to WH-005 | Section exists, definition, HTML structure |
+| Why H1 Matters | WHY-001 to WHY-006 | SEO benefits, accessibility, ranking signals |
+| How to Optimize | HO-001 to HO-006 | Single H1 rule, keywords, length |
+| Common Mistakes | CM-001 to CM-006 | Multiple H1s, missing H1, empty H1 |
+| Best Practices Checklist | BC-001 to BC-005 | 8 items with valid priorities |
+| Code Examples | CE-001 to CE-004 | HTML examples, hierarchy structure |
+| Read Time | RT-001 to RT-003 | 3-8 minute range validation |
+| Related Guides | RG-001 to RG-004 | heading-hierarchy, meta-title |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions)
+- **URL:** https://seoindicator.com/seo-guides/h1-headings/
+- **Health Check:** Passing
+- **Tests:** 59/59 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+
+### Related Tasks
+- TASK-20-8: Heading Hierarchy Guide (related topic)
+- TASK-20-5: Meta Title Guide (related topic)
+
+---
 ## HowTo Schema Markup for SEO Guides (TASK-20-27)
 
 ### Feature Description

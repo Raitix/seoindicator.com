@@ -1,7 +1,7 @@
 # TASK-20-7: Write Content for H1 Headings Guide
 
 ## STATUS
-`To Document`
+`Documentation in Progress`
 
 ## PRIORITY
 `Medium`
