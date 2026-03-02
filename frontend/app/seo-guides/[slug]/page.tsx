@@ -18,6 +18,7 @@ import {
 } from '@/lib/guides/registry';
 import type { SEOGuide } from '@/lib/guides/types';
 import { GuideSection, GuideChecklist } from '@/components/guides';
+import { ToolEmbed } from '@/components/guides/ToolEmbed';
 
 // ============================================================================
 // Static Params Generation (SSG)
@@ -211,6 +212,18 @@ export default async function GuidePage({ params }: GuidePageProps) {
                 {guide.sections.map((section, index) => (
                   <GuideSection key={index} section={section} index={index} />
                 ))}
+              </div>
+            )}
+
+            {/* Tool Embed - Interactive tool for guides with toolSlug */}
+            {guide.toolSlug && (
+              <div data-testid="guide-tool-embed" className="my-12">
+                <ToolEmbed
+                  toolSlug={guide.toolSlug}
+                  title={`Test Your ${guide.title.replace(' Guide', '').replace(' Optimization', '').replace(' Best Practices', '')}`}
+                  showCta={true}
+                  ctaText="Use Full Tool"
+                />
               </div>
             )}
 
