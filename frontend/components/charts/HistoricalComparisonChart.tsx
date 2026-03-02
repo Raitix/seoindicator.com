@@ -147,11 +147,11 @@ const CustomTooltip: React.FC<{
  * Custom legend component with toggle functionality
  */
 const CustomLegend: React.FC<{
-  payload?: Array<{
+  payload?: readonly {
     dataKey: string;
     color: string;
     value: string;
-  }>;
+  }[];
   competitorNames: Record<string, string>;
   visibleSeries: Record<string, boolean>;
   onToggle: (key: string) => void;
