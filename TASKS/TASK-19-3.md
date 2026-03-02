@@ -1,7 +1,6 @@
 # TASK-19-3: AnalysisJobService - Core Operations
 
-## STATUS
-`In Development`
+## STATUS`n`To Develop`
 
 ## PRIORITY
 `High`
