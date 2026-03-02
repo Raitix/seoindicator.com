@@ -962,7 +962,7 @@ class CrawlQueueServiceTest extends TestCase
             ['url' => 'https://example.com/page1'],
         ], 1);
 
-        $queue = $service->getQueue('job-1']);
+        $queue = $service->getQueue('job-1');
 
         $service->markSkipped($queue[0]['id'], 'External redirect');
 

@@ -1,6 +1,251 @@
 # DOCUMENTATION.md
 
 ---
+## Twitter Cards SEO Guide (TASK-20-19)
+
+### Guide Description
+Comprehensive SEO guide content for the Twitter Cards indicator, covering Twitter/X social sharing optimization, card types, meta tags, and image best practices. Explains Twitter Cards as a meta tag system for rich social media previews on X (formerly Twitter) and provides actionable best practices with HTML code examples. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `twitter-cards`
+- **URL:** `https://seoindicator.com/seo-guides/twitter-cards/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What are Twitter Cards? | Meta tags for X previews, how they work, vs Open Graph, platforms | ~300 |
+| Twitter Card Types | Summary, Summary Large Image, Player, App cards with use cases | ~350 |
+| Required Twitter Card Tags | twitter:card, twitter:site, twitter:title, twitter:description, twitter:image | ~400 |
+| Image Best Practices for Twitter | Dimensions (1200×628px), formats, file size, content guidelines | ~300 |
+| Testing with Social Media Preview Tool | Twitter Card Validator, common issues and fixes | ~250 |
+
+**Total Content:** ~1,600 words
+**Read Time:** 4 minutes
+
+### Key Technical Details
+
+| Topic | Details |
+|-------|---------|
+| Twitter Card Meta Tags | `<meta name="twitter:card" content="summary_large_image" />` in `<head>` |
+| Card Types | summary, summary_large_image, player, app |
+| Recommended Image | 1200×628 pixels (1.91:1 aspect ratio) for summary_large_image |
+| Image Formats | JPG, PNG, GIF, WebP supported |
+| File Size | Max 5MB for photos, 15MB for GIFs |
+| Twitter vs Open Graph | Twitter tags take priority, OG tags serve as fallback |
+
+### Twitter Card Types
+
+| Card Type | Best For | Layout |
+|-----------|----------|--------|
+| `summary` | Articles, blog posts, landing pages | Small thumbnail (120×120px), title, description |
+| `summary_large_image` | Visual content, featured articles, products | Large landscape photo (up to 506px wide) |
+| `player` | Videos, podcasts, music | Embedded video/audio player (requires approval) |
+| `app` | Mobile app promotion | App install buttons directly in tweet |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| Basic Twitter Card meta tags | HTML | Essential twitter:card, twitter:site, twitter:title, twitter:description, twitter:image |
+| Summary card | HTML | Small thumbnail card configuration |
+| Summary large image card | HTML | Full-width image card (recommended) |
+| Player card | HTML | Video/audio player with player URL and dimensions |
+| Complete Twitter Card implementation | HTML | All required and recommended tags including twitter:creator, twitter:image:alt |
+| Combined Twitter Card + Open Graph | HTML | Cross-platform support for X, Facebook, LinkedIn |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Include `twitter:card` meta tag on every page |
+| Critical | Use `summary_large_image` for most content (higher engagement) |
+| Critical | Use 1200×628px images (1.91:1 aspect ratio) for large image cards |
+| Important | Add `twitter:site` with your brand's @username |
+| Important | Include `twitter:image:alt` for accessibility |
+| Important | Combine Twitter Card and Open Graph tags for cross-platform support |
+| Important | Test with Twitter Card Validator before publishing |
+| Important | Use absolute HTTPS URLs for images |
+| Recommended | Add `twitter:creator` for article attribution |
+| Recommended | Keep title under 60 characters, description under 150 characters |
+
+### Related Guides
+- `open-graph` - Open Graph tags for Facebook, LinkedIn, etc.
+- `meta-description` - Meta description for search results
+- `structured-data` - Schema.org markup for rich snippets
+
+### Tool Integration
+- **Tool Slug:** `social-media-preview`
+- **Tool Name:** Social Media Preview
+- **Purpose:** Preview how pages appear on Twitter/X and other social platforms
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'twitter-cards',
+  title: 'Twitter Cards',
+  summary: 'Create rich Twitter card previews that drive engagement and clicks.',
+  category: 'content',
+  icon: '🐦',
+  readTime: 4,
+  hasTool: true,
+  toolSlug: 'social-media-preview',
+  relatedGuides: ['open-graph', 'meta-description', 'structured-data'],
+  sections: [ /* 5 sections */ ],
+  checklist: [ /* 10 items */ ],
+  codeExamples: [ /* 6 examples */ ]
+}
+```
+
+### Common Issues and Solutions
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Card not showing | Missing `twitter:card` tag | Add `<meta name="twitter:card" content="summary_large_image" />` |
+| Image not loading | Non-HTTPS or private URL | Use absolute HTTPS URLs, ensure image is publicly accessible |
+| Old preview showing | Twitter cache | Use Card Validator to refresh cache, add query param `?v=2` |
+| "No card found" error | Wrong attribute or JS rendering | Use `name` attribute (not `property`), ensure server-side rendering |
+| Blurry image | Low resolution source | Use higher resolution source image (1200×628px minimum) |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions)
+- **URL:** https://seoindicator.com/seo-guides/twitter-cards/
+- **Health Check:** Passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+- TASK-20-18 (Open Graph Tags Guide - related topic)
+
+### Related Tasks
+- TASK-20-18: Open Graph Tags Guide (related topic)
+- TASK-20-24: Tool embedding for Social Media Preview guides
+
+---
+## Open Graph Tags SEO Guide (TASK-20-18)
+
+### Guide Description
+Comprehensive SEO guide content for the Open Graph Tags indicator, covering social sharing optimization, Facebook/LinkedIn preview, and implementation. Explains the Open Graph protocol for rich social media previews and provides actionable best practices with HTML code examples. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `open-graph`
+- **URL:** `https://seoindicator.com/seo-guides/open-graph/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What is Open Graph? | Protocol origin, og: namespace, platforms using OG | ~200 |
+| Why Open Graph Matters | Social sharing benefits, CTR improvement, SEO benefits | ~250 |
+| Required Open Graph Tags | og:title, og:description, og:image, og:url, og:type with best practices | ~350 |
+| Image Best Practices | 1200×630px size, formats (JPEG/PNG/WebP), file size, content guidelines | ~300 |
+| Testing and Debugging | Facebook Sharing Debugger, LinkedIn Post Inspector, common issues | ~250 |
+
+**Total Content:** ~1,350 words
+**Read Time:** 5 minutes
+
+### Key Technical Details
+
+| Topic | Details |
+|-------|---------|
+| Open Graph Protocol | Created by Facebook in 2010, uses `og:` namespace in `<meta>` tags |
+| Required Tags | og:title, og:description, og:image, og:url, og:type |
+| Image Size | 1200×630px optimal (1.91:1 aspect ratio) |
+| Image Formats | JPEG, PNG, WebP supported |
+| File Size | Keep under 8MB (1MB recommended for fast loading) |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| Basic OG meta tags | HTML | Essential og:title, og:description, og:image, og:url |
+| Required OG tags with site_name and locale | HTML | Extended set with site_name and locale |
+| og:image with dimensions and alt text | HTML | Image with width, height, and alt for accessibility |
+| Debugging quick reference | HTML | How to use Facebook Sharing Debugger |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Include og:title, og:description, og:image, and og:url on every page |
+| Critical | Use 1200×630px images for optimal display on Facebook and LinkedIn |
+| Critical | Test with Facebook Sharing Debugger before publishing |
+| Important | Add og:type to specify content type (website, article, product) |
+| Important | Include og:site_name for brand recognition |
+| Important | Specify image dimensions (og:image:width, og:image:height) |
+| Important | Use unique images for each page to improve social CTR |
+| Recommended | Add og:locale for international content |
+| Recommended | Update og:image when content changes significantly |
+
+### Related Guides
+- `twitter-cards` - Twitter-specific social sharing optimization
+- `meta-description` - Meta description for search results
+
+### Tool Integration
+- **Tool Slug:** `social-media-preview`
+- **Tool Name:** Social Media Preview
+- **Purpose:** Preview how pages appear on social media platforms
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'open-graph',
+  title: 'Open Graph Tags',
+  summary: 'Optimize social sharing with Open Graph meta tags...',
+  category: 'content',
+  icon: '📱',
+  readTime: 5,
+  hasTool: true,
+  toolSlug: 'social-media-preview',
+  relatedGuides: ['twitter-cards', 'meta-description'],
+  sections: [ /* 5 sections */ ],
+  checklist: [ /* 9 items */ ],
+  codeExamples: [ /* 4 examples */ ]
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `open-graph-content.test.ts` | 55 | Content structure validation |
+| `open-graph-code-examples.test.ts` | 21 | Code examples validation |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Guide Structure | 5 | Registry entry, slug, title, category, read time |
+| What is Open Graph | 5 | Section exists, protocol explanation |
+| Why Open Graph Matters | 5 | Benefits section, CTR, social sharing |
+| Required OG Tags | 8 | og:title, og:description, og:image, og:url, og:type |
+| Image Best Practices | 6 | Size, format, aspect ratio, file size |
+| Testing with Social Media Preview | 5 | Debugger tools, common issues |
+| Best Practices Checklist | 7 | 9 items with priorities |
+| Code Examples | 21 | HTML meta tags, og:* properties |
+| Read Time | 3 | 4-6 minute range validation |
+| Related Guides | 4 | twitter-cards, meta-description |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions)
+- **URL:** https://seoindicator.com/seo-guides/open-graph/
+- **Health Check:** Passing
+- **Tests:** 76/76 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+
+### Related Tasks
+- TASK-20-19: Twitter Cards Guide (related topic)
+- TASK-20-24: Tool embedding for Social Media Preview guides
+
+---
 ## Canonical URLs SEO Guide (TASK-20-17)
 
 ### Guide Description

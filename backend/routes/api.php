@@ -155,6 +155,9 @@ Route::middleware(['auth'])->group(function () {
 */
 
 Route::prefix('v1')->group(function () {
+    // Models (TASK-26-17) - Public endpoint for model listing
+    Route::get('models', [\App\Http\Controllers\Api\V1\ModelController::class, 'index']);
+
     // Metadata (TASK-7-18)
     Route::get('metadata', [\App\Http\Controllers\Api\V1\MetadataController::class, 'index']);
     Route::get('metadata/serp-features', [\App\Http\Controllers\Api\V1\MetadataController::class, 'serpFeatures']);
