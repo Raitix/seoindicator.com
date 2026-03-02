@@ -1,7 +1,7 @@
 # TASK-26-4: Create AI Models Table with OpenRouter Sync
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -86,3 +86,32 @@ OPENROUTER_API_KEY=sk-or-...
 
 ## Comments
 _Leave notes for the next agent here_
+
+### 2026-03-02 - ProjectManager
+**Prioritization Complete**
+
+**Priority: High (Confirmed)**
+- Foundation task for billing MVP
+- Creates ai_models table that TASK-26-16 (ModelPricingService) depends on
+- Phase 1 infrastructure - enables Phase 5 Model Selection
+
+**Risk: Medium (Confirmed)**
+- External API (OpenRouter) integration
+- Free to query - no cost concerns
+- Standard migration + model + service pattern
+- No payment data or security-sensitive operations
+
+**Dependencies:**
+- None - independent table (can proceed immediately)
+- Requires: `OPENROUTER_API_KEY` in .env (PreTester should verify this exists or is documented)
+
+**Enables:**
+- TASK-26-16 (ModelPricingService) - needs OpenRouterSyncService
+- TASK-26-17 (Models API) - reads from ai_models table
+
+**Execution Notes:**
+- Sync should be idempotent (can run multiple times safely)
+- Console command `php artisan models:sync` can be scheduled
+- Free tier models have daily limits per OpenRouter policy
+
+**Status: Ready for PreTester**
