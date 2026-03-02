@@ -843,6 +843,104 @@ Comprehensive SEO guide content for the Mobile-Friendliness indicator, covering 
 - TASK-20-23: Tool embedding for Mobile-Friendly guide
 
 ---
+## ToolEmbed Integration for Mobile-Friendly Guide (TASK-20-23)
+
+### Feature Description
+Integration of the ToolEmbed component into the Mobile-Friendliness SEO guide page, allowing users to test their pages directly from the guide context. Implements DEPLOYED_TOOLS validation to gracefully handle undeployed tools by hiding the CTA until the tool is deployed.
+
+### Component Location
+- **Guide Page:** `frontend/app/seo-guides/[slug]/page.tsx`
+- **ToolEmbed Component:** `frontend/components/guides/ToolEmbed.tsx`
+- **Guide Registry:** `frontend/lib/guides/registry.ts`
+- **URL:** `https://seoindicator.com/seo-guides/mobile-friendly/`
+
+### Key Technical Implementation
+
+**DEPLOYED_TOOLS Validation:**
+```typescript
+const DEPLOYED_TOOLS: Set<ToolSlug> = new Set([
+  'meta-tag-analyzer',
+  'keyword-density',
+  'social-preview',
+  // 'mobile-friendly-checker' - TODO: Add when TASK-16-7 is deployed
+]);
+```
+
+**CTA Rendering Logic:**
+- CTA only shows for tools with deployed pages (`DEPLOYED_TOOLS.has(toolSlug)`)
+- `mobile-friendly-checker` CTA hidden until TASK-16-7 is deployed
+- When TASK-16-7 deploys, add `'mobile-friendly-checker'` to `DEPLOYED_TOOLS`
+
+### Behavior Matrix
+
+| Tool Status | ToolEmbed Renders | CTA Shows | User Experience |
+|-------------|-------------------|-----------|-----------------|
+| Deployed (in DEPLOYED_TOOLS) | ✅ Yes | ✅ Yes | Full tool + link to dedicated page |
+| Not Deployed | ✅ Yes | ❌ No | Tool embedded, no broken links |
+
+### Integration Points
+
+| Guide | Tool Slug | Tool Deployed | CTA Visible |
+|-------|-----------|---------------|-------------|
+| Mobile-Friendliness | `mobile-friendly-checker` | ❌ No (TASK-16-7 pending) | ❌ Hidden |
+| Meta Title | `meta-tag-analyzer` | ✅ Yes | ✅ Visible |
+| Meta Description | `meta-tag-analyzer` | ✅ Yes | ✅ Visible |
+| Open Graph | `social-preview` | ✅ Yes | ✅ Visible |
+| Twitter Cards | `social-preview` | ✅ Yes | ✅ Visible |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `ToolEmbed.test.tsx` | 41 | Component rendering, fallback, CTA, mobile, security |
+| `mobile-friendly-guide-tool.test.tsx` | 35 | Integration tests for guide + tool |
+| **Total** | **76** | **All passing** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| ToolEmbed Integration | 5 | Component renders with correct slug |
+| Tool Slug Validation | 4 | Valid/invalid slug handling |
+| Display & CTA | 7 | Results inline, CTA logic |
+| Mobile Responsiveness | 6 | 375px, 768px, 1024px viewports |
+| Security | 13 | XSS prevention, attributes, error handling |
+
+### Production Verification
+
+| Test | Status | Details |
+|------|--------|---------|
+| Health Check | ✅ PASS | `https://seoindicator.com/api/health` → 200 OK |
+| Mobile-Friendly Guide | ✅ PASS | `https://seoindicator.com/seo-guides/mobile-friendly/` → 200 OK |
+| ToolEmbed Container | ✅ PASS | `data-testid="guide-tool-embed"` present |
+| ToolSlug Validation | ✅ PASS | `data-tool-slug="mobile-friendly-checker"` correct |
+| CTA Hidden (Undeployed Tool) | ✅ PASS | No clickable link to `/tools/mobile-friendly-checker/` |
+| Mobile Viewport (375px) | ✅ PASS | ToolEmbed renders, CTA hidden correctly |
+
+### Future Integration Note
+
+When **TASK-16-7 (Mobile-Friendly Checker tool)** is deployed:
+1. Add `'mobile-friendly-checker'` to `DEPLOYED_TOOLS` set in `ToolEmbed.tsx`
+2. CTA will automatically appear on Mobile-Friendliness guide
+3. No other code changes required
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions)
+- **URL:** https://seoindicator.com/seo-guides/mobile-friendly/
+- **Health Check:** Passing
+- **Tests:** 76/76 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-14 (Mobile-Friendly Guide Content)
+- TASK-20-22 (ToolEmbed Component)
+- FEAT-016 (Mobile-Friendly Checker tool - pending deployment)
+
+### Related Tasks
+- TASK-16-7: Mobile-Friendly Checker Tool (pending - will enable CTA)
+- TASK-20-22: ToolEmbed Component
+- TASK-20-24: Tool embedding for Social Media Preview guides
+
+---
 ## Page Speed Optimization Guide (TASK-20-13)
 
 ### Guide Description
