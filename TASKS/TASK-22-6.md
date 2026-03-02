@@ -1,7 +1,7 @@
 # TASK-22-6: Content Processing and Structured Text Extraction
 
 ## STATUS
-`Prioritization In Progress`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -129,3 +129,49 @@ Create the ContentProcessorService for advanced HTML-to-text conversion and meta
 
 ## Comments
 _Leave notes for the next agent here_
+
+### ProjectManager (2026-03-02 18:30 GMT+2)
+**Prioritization Complete**
+
+**Priority Confirmed: High**
+- Foundation service for content processing in SPEC-022
+- Used after Playwright renders pages to extract structured text and metadata
+- Independent of TASK-22-4/22-5 - can process static HTML without browser
+
+**Risk Confirmed: Low**
+- Pure PHP processing, no external APIs
+- Uses existing Symfony DomCrawler (already in Laravel dependencies)
+- Standard DOM manipulation, no network calls
+- Graceful error handling (never throw exceptions for content processing)
+
+**Dependency Status:**
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| Phase 1 (TASK-22-1 to 22-3) | All Done ✅ | Infrastructure complete |
+| TASK-22-4 (Playwright) | Done ✅ | Not required - can process static HTML |
+| TASK-22-5 (RendererService) | Done ✅ | Not required - parallel service |
+| Symfony DomCrawler | Available ✅ | Already installed via Laravel |
+
+**Parallel Development:**
+- This service operates independently of Playwright/browser tasks
+- Can be used standalone for static HTML processing
+- No blocking dependencies - ready for PreTester immediately
+
+**Key Acceptance Criteria Summary:**
+1. `extractStructuredText()` - HTML to readable text with heading/list/link preservation
+2. `extractMetadata()` - Meta tags, OG, Twitter cards, canonical, robots
+3. `calculateSize()` - Byte size calculation (UTF-8 aware)
+4. `processContent()` - Full pipeline returning ProcessedContent DTO
+
+**Security Considerations:**
+- Handle malformed HTML gracefully (no exceptions)
+- Limit output to 500KB max
+- Memory limit: 128MB for processing
+- Never execute embedded scripts
+
+**Handoff to PreTester:**
+- Test with complex HTML (nested elements, Unicode, large content)
+- Test metadata extraction (all OG/Twitter tags)
+- Test malformed HTML handling
+- Test size calculation (bytes vs characters)
+- Test empty/edge cases
