@@ -1,7 +1,7 @@
 # TASK-20-5: Write Content for Meta Title Guide
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -77,3 +77,74 @@ TASK-20-1 (Types & Registry): Done ✅
 - Use existing `SEOGuide` interface from TASK-20-1
 
 Status: `To Write Tests`
+
+### [2026-03-02 11:05 GMT+2] PreTester - Test Coverage In Progress
+**Test Documentation Created:**
+- `TESTS/TASK-20-5.md` - Comprehensive test documentation
+
+**Test Files Created:**
+- `frontend/__tests__/lib/guides/meta-title.test.ts` - 47 tests for meta-title guide content
+
+**Test Coverage Summary:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Guide Existence | 3 | Slug exists, retrievable, valid structure |
+| Metadata | 6 | Title, summary, category, toolSlug, icon, readTime |
+| Required Sections | 8 | Content sections for all required topics |
+| Code Examples | 6 | HTML examples present and valid |
+| Checklist | 9 | 5-10 items with proper priorities |
+| Related Guides | 6 | meta-description, h1-headings linked |
+| Content Quality | 6 | Length, formatting, SEO keywords |
+| Integration | 3 | Registry functions work correctly |
+
+**Notes for Developer:**
+1. Tests expect `getGuideBySlug('meta-title')` to return a valid SEOGuide with populated sections
+2. Sections must cover: definition, SEO impact, optimization, mistakes
+3. Checklist must have 5-10 items with at least one 'critical' priority
+4. Code examples should demonstrate HTML title tags
+5. readTime should be 3-5 minutes (inclusive)
+6. toolSlug must equal 'meta-tag-analyzer'
+7. relatedGuides must include 'meta-description' and 'h1-headings'
+
+Status: `Tests Coverage In Progress`
+
+### [2026-03-02 11:10 GMT+2] PreTester - Test Coverage Complete
+**Test Documentation Created:**
+- `TESTS/TASK-20-5.md` - Comprehensive test documentation
+
+**Test Files Created:**
+- `frontend/__tests__/lib/guides/meta-title.test.ts` - 47 tests for meta-title guide content
+
+**Test Results:**
+| Suite | Tests | Status |
+|-------|-------|--------|
+| Guide Existence | 3 | ✅ PASS |
+| Metadata | 6 | ✅ PASS |
+| Required Sections | 8 | ❌ FAIL (expected - awaiting content) |
+| Code Examples | 6 | ❌ FAIL (expected - awaiting content) |
+| Checklist | 9 | ❌ FAIL (expected - awaiting content) |
+| Related Guides | 6 | ✅ PASS |
+| Content Quality | 6 | ❌ FAIL (expected - awaiting content) |
+| Integration | 3 | ✅ PASS |
+| **Total** | **47** | **28 PASS, 19 FAIL** |
+
+**Notes for Developer:**
+1. 28 tests already pass - the stub guide exists with correct metadata
+2. 19 tests need content to be written:
+   - `sections` array must be populated with 4+ content sections
+   - `checklist` array must have 5-10 items with proper priorities
+   - `codeExamples` must be added (1-2 HTML examples)
+3. Required sections topics:
+   - What is Meta Title? (definition)
+   - Why Meta Titles Matter for SEO (impact, CTR, rankings)
+   - How to Optimize Meta Titles (length, keywords, branding)
+   - Common Mistakes to Avoid (duplicates, stuffing, too long/short)
+4. Checklist must cover: length optimization, keyword placement, unique titles
+5. Tests verify: total content ≥ 2000 chars, proper markdown formatting
+
+**Test Execution Command:**
+```bash
+npx jest __tests__/lib/guides/meta-title.test.ts --verbose
+```
+
+Status: `To Develop`

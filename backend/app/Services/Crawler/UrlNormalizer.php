@@ -59,6 +59,9 @@ class UrlNormalizer
             return '';
         }
 
+        // Track if original URL has trailing slash
+        $hadTrailingSlash = preg_match('#/+$#', parse_url($url, PHP_URL_PATH) ?? '');
+
         // Parse URL
         $parsed = parse_url($url);
         if ($parsed === false) {
@@ -66,18 +69,18 @@ class UrlNormalizer
         }
 
         // Build normalized URL
-        return $this->buildNormalizedUrl($parsed);
+        return $this->buildNormalizedUrl($parsed, $hadTrailingSlash);
     }
 
     /**
      * Build normalized URL from parsed components.
      */
-    protected function buildNormalizedUrl(array $parsed): string
+    protected function buildNormalizedUrl(array $parsed, bool $hadTrailingSlash = false): string
     {
         $scheme = $this->normalizeScheme($parsed['scheme'] ?? 'https');
         $host = $this->normalizeHost($parsed['host'] ?? '');
         $port = $this->normalizePort($parsed['port'] ?? null, $scheme);
-        $path = $this->normalizePath($parsed['path'] ?? '');
+        $path = $this->normalizePath($parsed['path'] ?? '', $hadTrailingSlash);
         $query = $this->normalizeQuery($parsed['query'] ?? '');
         $fragment = $this->normalizeFragment($parsed['fragment'] ?? null);
 
@@ -162,7 +165,7 @@ class UrlNormalizer
     /**
      * Normalize path (handle trailing slashes).
      */
-    protected function normalizePath(string $path): string
+    protected function normalizePath(string $path, bool $hadTrailingSlash = false): string
     {
         // Remove multiple trailing slashes
         $path = rtrim($path, '/');
@@ -172,10 +175,9 @@ class UrlNormalizer
             return '';
         }
 
-        // Add back trailing slash if configured
-        if ($this->options['keepTrailingSlash'] && !Str::endsWith($path, '/') && $path !== '') {
-            // Only add if original had trailing slash (we need to check this differently)
-            // For now, we just remove trailing slashes
+        // Add back trailing slash if configured and original had it
+        if ($this->options['keepTrailingSlash'] && $hadTrailingSlash && !empty($path)) {
+            $path .= '/';
         }
 
         return $path;

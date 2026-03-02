@@ -1353,6 +1353,10 @@ class DepthControllerServiceTest extends TestCase
     public function test_depth_l0_main_page_only(): void
     {
         $mockValidator = Mockery::mock(UrlValidatorService::class);
+        $mockValidator->shouldReceive('validate')
+            ->once()
+            ->andReturn(['valid' => true]);
+
         $this->app->instance(UrlValidatorService::class, $mockValidator);
 
         $service = app(DepthControllerService::class);
