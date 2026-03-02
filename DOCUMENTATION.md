@@ -2000,6 +2000,193 @@ Frontend component for the SEO Guides Library index page. Displays a grid of all
 - TASK-20-4: Routing with static params generation
 
 ---
+## ToolEmbed Component for Guide-Tool Integration (TASK-20-22)
+
+### Service Description
+Frontend component for embedding interactive SEO tools from FEAT-016 into SEO guide pages. Provides a seamless user experience where users can test their meta tags, check mobile-friendliness, or preview social media shares directly within the educational guide context. Part of the SEO Guides Library + Clean Routing feature (FEAT-020).
+
+### Component Location
+- **File:** `frontend/components/guides/ToolEmbed.tsx`
+- **Export:** `frontend/components/guides/index.ts`
+- **Tests:** `frontend/__tests__/components/guides/ToolEmbed.test.tsx`
+
+### Component Architecture
+
+```
+ToolEmbed (main export)
+├── ToolEmbedInner (wrapped in ErrorBoundary)
+│   ├── LoadingSkeleton (lazy loading state)
+│   ├── FallbackUI (invalid tool slug)
+│   └── ToolWidget (actual tool rendering)
+└── ErrorFallback (error boundary UI)
+```
+
+### Supported Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `toolSlug` | `ToolSlug \| string` | **required** | Tool to embed |
+| `title` | `string` | tool name | Custom title override |
+| `description` | `string` | tool description | Custom description override |
+| `showCta` | `boolean` | `true` | Show "Use Full Tool" CTA button |
+| `ctaText` | `string` | `"Use Full Tool"` | CTA button text |
+| `className` | `string` | - | Additional CSS classes |
+| `lazy` | `boolean` | `true` | Enable lazy loading |
+| `stateKey` | `string` | - | State persistence key |
+| `onAnalysisComplete` | `(result) => void` | - | Analysis callback |
+
+### Valid Tool Slugs
+
+| toolSlug | Tool Page Route | Description |
+|----------|-----------------|-------------|
+| `meta-tag-analyzer` | `/tools/meta-tag-analyzer/` | Meta title and description analyzer |
+| `keyword-density` | `/tools/keyword-density/` | Keyword frequency analysis |
+| `social-preview` | `/tools/social-preview/` | Open Graph and Twitter Card preview |
+| `mobile-friendly-checker` | `/tools/mobile-friendly/` | Mobile responsiveness checker |
+
+### Core Features
+
+**Graceful Fallback:**
+- Invalid or missing `toolSlug` displays friendly message
+- CTA button directs users to tools index page
+- Error boundary catches and displays tool errors
+
+**Mobile Responsiveness:**
+- Responsive wrapper adapts to container width
+- CTA button styled for touch targets
+- Full-width tool widget on mobile
+
+**Security:**
+- XSS prevention for all text inputs
+- `rel="noopener noreferrer"` on external links
+- Sanitized tool slug validation
+
+**Accessibility:**
+- Proper ARIA attributes on interactive elements
+- Screen reader support for tool status
+- Keyboard accessible CTA button
+
+**Performance:**
+- Lazy loading via Next.js `dynamic()` import
+- Loading skeleton during tool load
+- Error boundary prevents full page crashes
+
+### TypeScript Types
+
+```typescript
+type ToolSlug = 'meta-tag-analyzer' | 'keyword-density' | 'social-preview' | 'mobile-friendly-checker';
+
+interface ToolEmbedProps {
+  toolSlug: ToolSlug | string;
+  title?: string;
+  description?: string;
+  showCta?: boolean;
+  ctaText?: string;
+  className?: string;
+  lazy?: boolean;
+  stateKey?: string;
+  onAnalysisComplete?: (result: AnalysisResult) => void;
+}
+```
+
+### Usage Examples
+
+**Basic Tool Embed:**
+```tsx
+import { ToolEmbed } from '@/components/guides';
+
+export default function MetaTitleGuide() {
+  return (
+    <GuideLayout>
+      <GuideContent guide={guide} />
+      <ToolEmbed toolSlug="meta-tag-analyzer" />
+    </GuideLayout>
+  );
+}
+```
+
+**Custom Title and CTA:**
+```tsx
+<ToolEmbed
+  toolSlug="social-preview"
+  title="Preview Your Social Shares"
+  ctaText="Open Full Preview Tool"
+/>
+```
+
+**With State Persistence:**
+```tsx
+<ToolEmbed
+  toolSlug="meta-tag-analyzer"
+  stateKey="guide-meta-title-demo"
+  onAnalysisComplete={(result) => console.log('Analysis:', result)}
+/>
+```
+
+**Disable Lazy Loading:**
+```tsx
+<ToolEmbed
+  toolSlug="keyword-density"
+  lazy={false}
+/>
+```
+
+### Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Invalid `toolSlug` | Fallback UI with CTA to tools index |
+| Tool crashes | Error boundary catches, shows error fallback |
+| Tool unavailable | Loading skeleton → fallback UI |
+
+### Test Coverage
+
+| Category | Tests | Status |
+|----------|-------|--------|
+| TE-001: Component Rendering | 7 | ✅ |
+| TE-002: Graceful Fallback | 6 | ✅ |
+| TE-003: CTA Button | 8 | ✅ |
+| TE-004: Mobile Responsiveness | 2 | ✅ |
+| TE-005: Tool State Persistence | 2 | ✅ |
+| TE-006: Callbacks | 1 | ✅ |
+| TE-007: Lazy Loading | 2 | ✅ |
+| TE-008: Accessibility | 2 | ✅ |
+| TE-009: Security | 3 | ✅ |
+| TE-010: Error Handling | 1 | ✅ |
+| TE-011: Edge Cases | 4 | ✅ |
+| Integration Tests | 2 | ✅ |
+| **Total** | **40** | ✅ |
+
+### Production Status
+
+| Item | Status |
+|------|--------|
+| Component Deployed | ✅ |
+| Tests Passing | 40/40 |
+| TypeScript Check | ✅ |
+| Production URL | https://seoindicator.com |
+
+### Dependencies
+
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| FEAT-016 (Meta Tag Analyzer) | ✅ Done | Tool exists |
+| TASK-20-5 (Meta Title Guide) | In Progress | Content needed for integration |
+| TASK-20-6 (Meta Description Guide) | In Progress | Content needed for integration |
+
+### Pending Integrations
+
+The ToolEmbed component is ready for use. The following guide integrations are pending:
+- TASK-20-5: Meta Title guide embed (waiting for content)
+- TASK-20-6: Meta Description guide embed (waiting for content)
+
+### Related Tasks
+- TASK-20-5: Meta Title guide content
+- TASK-20-6: Meta Description guide content
+- TASK-20-23: Tool embedding for Mobile-Friendly guide
+- TASK-20-24: Tool embedding for Social Media Preview guides
+
+---
 ## SEO Guides Library - Apache .htaccess Configuration (TASK-20-26)
 
 ### Service Description
