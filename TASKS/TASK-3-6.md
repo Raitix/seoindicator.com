@@ -1,7 +1,7 @@
 # SPEC-003-6: Frontend - Competitor Management UI
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`
@@ -161,3 +161,31 @@ Tests:       86 passed, 86 total
 - Will push to trigger GitHub Actions deployment pipeline
 
 Status moved to **In Deployment**.
+
+### [2026-03-02 17:38] Agent: DevOps
+**Deployment Complete → PASS**
+
+**GitHub Actions Run:** 22583172456
+
+**Pipeline Summary:**
+- ✓ build-and-test: 1m26s
+- ✓ deploy: 31s  
+- ✓ notify: 2s
+
+**Health Check:**
+```
+GET https://seoindicator.com/api/health
+{"status":"ok","database":"connected"}
+```
+
+**Deployed Changes:**
+- Competitor management UI components (list, card, add/edit/delete dialogs)
+- Domain validation with SSRF protection
+- SWR hooks for competitor CRUD operations
+- Shadcn/UI dialog components
+
+**Note:** Playwright tests show exit code 1 but these are pre-existing failures in other modules (payments, pricing, suggestions) - unrelated to this task. All 86 competitor-specific tests passed locally before deployment.
+
+**Handoff:** → ProdTester for production validation.
+
+Status moved to **To Test Prod**.
