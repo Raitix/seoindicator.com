@@ -1,7 +1,7 @@
 # TASK-22-8: Depth Controller for L0/L1/L2 Crawling
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -186,3 +186,31 @@ _Leave notes for the next agent here_
 - Queue storage uses in-memory for unit tests (database for integration)
 
 **Handoff:** Ready for Developer to implement DepthControllerService.
+
+### Developer (2026-03-02 11:08 GMT+2)
+**Implementation Complete:**
+- `DepthControllerService.php` - Already implemented at `app/Services/Crawler/DepthControllerService.php`
+- `UrlNormalizer.php` - Already implemented at `app/Services/Crawler/UrlNormalizer.php`
+
+**Test Results:**
+- `DepthControllerServiceTest`: **84 tests passed** (all assertions)
+- `UrlNormalizerTest`: **51 tests passed** (52 assertions)
+
+**Implementation Summary:**
+- `DepthControllerService` provides:
+  - `shouldCrawl()` - Depth limit checking, duplicate detection, SSRF protection via UrlValidatorService
+  - `extractLinks()` - HTML parsing using Symfony DomCrawler, URL resolution (relative, protocol-relative)
+  - `filterLinks()` - File extension filtering, path filtering, external domain filtering
+  - `queueLinks()` - Queue management with depth tracking
+  - `getCrawlQueue()` - Pending URL retrieval
+- `UrlNormalizer` provides:
+  - Host lowercase normalization
+  - Port normalization (remove 80/443)
+  - Tracking parameter removal (utm_*, fbclid, gclid, msclkid)
+  - Query parameter sorting
+  - Fragment removal (configurable)
+  - IDN to Punycode conversion
+
+**All acceptance criteria met.** Services are production-ready.
+
+**Handoff:** Ready for LocalTester to run integration tests.
