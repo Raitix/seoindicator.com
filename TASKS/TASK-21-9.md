@@ -1,7 +1,7 @@
 # TASK-21-9: Implement Vercel AI Provider
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `Medium`
