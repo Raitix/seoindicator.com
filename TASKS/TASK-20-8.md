@@ -1,7 +1,7 @@
 # TASK-20-8: Write Content for Heading Hierarchy Guide
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -70,3 +70,35 @@ Write comprehensive SEO guide content for the Heading Hierarchy indicator, cover
 - No database changes
 
 Status: `To Write Tests`
+
+### [2026-03-02 11:40 GMT+2] PreTester - Test Documentation Complete
+**Test Documentation Created:**
+- `TESTS/TASK-20-8.md` - Comprehensive test documentation
+
+**Test Files Created:**
+- `frontend/__tests__/lib/guides/heading-hierarchy-content.test.ts` - 50+ tests for guide content
+
+**Test Coverage Summary:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Guide Registry Entry | 8 | Slug, title, category, readTime, icon, summary |
+| Sections Structure | 5 | Array length, titles, content, code examples |
+| Required Content Topics | 6 | Definition, SEO, accessibility, structure, mistakes |
+| Section Titles | 5 | Definition, benefits, how-to, mistakes, best practices |
+| Content Quality | 5 | Length, H1/H2-H6 mentions, code examples |
+| Checklist Validation | 7 | 5-10 items, priorities, text validation |
+| Related Guides | 4 | h1-headings, internal-links, valid slugs |
+| Content-Specific Topics | 5 | H1 limit, order, skipping, screen readers, outline |
+| Visual Hierarchy | 2 | Visual representation, correct structure examples |
+
+**Notes for Developer:**
+1. Content must be comprehensive enough for 4-6 minute read time (>= 3000 characters)
+2. Include practical HTML examples showing correct and incorrect heading structures
+3. Include visual diagram or tree structure showing heading hierarchy
+4. Ensure `relatedGuides` includes both 'h1-headings' AND 'internal-links'
+5. Checklist should have 5-10 items with at least 1 critical and 1 important
+6. Content should emphasize both SEO and accessibility benefits
+7. Cover screen reader navigation by headings
+8. Warn against skipping heading levels (H1 → H3)
+
+Status: `To Develop`
