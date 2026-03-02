@@ -1,7 +1,7 @@
 # SPEC-026: Billing, Credits & Model Selection
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -427,6 +427,19 @@ CREDIT_CURRENCY=USD
 - Stripe implementation first, PayPal as secondary option
 - OpenRouter integration for dynamic model pricing
 - Minimum $5 purchase to reduce transaction fees impact
+
+### 2026-03-02 - SpecSystemAnalyst
+- Task breakdown complete: 27 tasks across 7 phases
+- Phase 1 (Database & Models): TASK-26-1 to TASK-26-4 (migrations, Credit model, packages, AI models)
+- Phase 2 (Credit System): TASK-26-5 to TASK-26-7 (CreditService, balance API, transactions API)
+- Phase 3 (Stripe Integration): TASK-26-8 to TASK-26-11 (StripeGatewayService, intent, webhook, payment methods)
+- Phase 4 (PayPal Integration): TASK-26-12 to TASK-26-15 (PayPalGatewayService, order, webhook, smart buttons)
+- Phase 5 (Model Selection): TASK-26-16 to TASK-26-19 (ModelPricingService, models API, pricing API, preferences)
+- Phase 6 (Frontend): TASK-26-20 to TASK-26-24 (pricing page, balance component, model picker, Stripe flow, PayPal flow)
+- Phase 7 (Testing & Documentation): TASK-26-25 to TASK-26-27 (unit tests, integration tests, docs)
+- Key dependencies: Phase 1 → Phase 2 → Phases 3-5 → Phase 6 → Phase 7
+- All tasks include security considerations for payment handling
+- Status updated to "To Prioritize"
 
 ---
 *Created by Architect from FEAT-026*

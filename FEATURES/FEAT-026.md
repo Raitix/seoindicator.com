@@ -1,7 +1,7 @@
 # FEAT-026: Billing, Credits & Model Selection
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
