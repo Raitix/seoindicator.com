@@ -1,7 +1,7 @@
 # TASK-5-10: Suggestions List Page
 
 ## STATUS
-`Tested Locally`
+`To Deploy`
 
 ## TEST RESULTS
 
