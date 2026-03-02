@@ -4,6 +4,7 @@ namespace App\Services\Admin;
 
 use App\Models\Credit;
 use App\Models\CreditTransaction;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -25,6 +26,17 @@ class CreditAggregationService
      * Cache TTL in seconds (5 minutes).
      */
     private const CACHE_TTL = 300;
+
+    /**
+     * Get all aggregated credit metrics.
+     * Alias for getAllMetrics() for test compatibility.
+     *
+     * @return array
+     */
+    public function getStats(): array
+    {
+        return $this->getAllMetrics();
+    }
 
     /**
      * Get all aggregated credit metrics.
@@ -173,6 +185,22 @@ class CreditAggregationService
                 'last_page' => $results->lastPage(),
             ],
         ];
+    }
+
+    /**
+     * Get recent transactions as paginator (for test compatibility).
+     *
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function getRecentTransactions(int $perPage = 20): LengthAwarePaginator
+    {
+        $perPage = min(max(1, $perPage), 100);
+
+        return CreditTransaction::query()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
     }
 
     /**

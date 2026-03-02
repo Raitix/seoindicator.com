@@ -285,23 +285,14 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::get('sites/{siteId}/serp-features/summary', [SerpFeatureController::class, 'summary'])->where('siteId', '[0-9]+');
     Route::delete('sites/{siteId}/serp-features/cache', [SerpFeatureController::class, 'invalidateCache'])->where('siteId', '[0-9]+');
 
-    // Admin: Lead Management (TASK-16-6)
-    Route::prefix('admin/leads')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'index']);
-        Route::get('/stats', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'stats']);
-        Route::get('/export', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'export']);
-        Route::delete('/{id}', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'destroy']);
-        Route::post('/{id}/restore', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'restore']);
-    });
-
-    // Admin: Credits API (TASK-27-10, SPEC-027)
+    // Admin: Credits API (TASK-27-10, SPEC-027) - inside auth group for backwards compat
     Route::middleware(['admin', 'throttle:60,1'])->prefix('admin/credits')->group(function () {
         Route::get('/overview', [\App\Http\Controllers\Api\V1\Admin\CreditsController::class, 'overview']);
         Route::get('/transactions', [\App\Http\Controllers\Api\V1\Admin\CreditsController::class, 'transactions']);
         Route::get('/revenue', [\App\Http\Controllers\Api\V1\Admin\CreditsController::class, 'revenue']);
     });
 
-    // Admin: Health API (TASK-27-13, SPEC-027)
+    // Admin: Health API (TASK-27-13, SPEC-027) - inside auth group for backwards compat
     Route::middleware(['admin', 'throttle:120,1'])->prefix('admin/health')->group(function () {
         Route::get('/overview', [\App\Http\Controllers\Api\V1\Admin\HealthController::class, 'overview']);
         Route::get('/queues', [\App\Http\Controllers\Api\V1\Admin\HealthController::class, 'queues']);
@@ -370,6 +361,42 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::get('sites/{siteId}/pwa', [\App\Http\Controllers\Api\V1\PWAController::class, 'show'])->where('siteId', '[0-9]+');
     Route::post('sites/{siteId}/pwa/analyze', [\App\Http\Controllers\Api\V1\PWAController::class, 'analyze'])->where('siteId', '[0-9]+');
     Route::post('sites/{siteId}/pwa/refresh', [\App\Http\Controllers\Api\V1\PWAController::class, 'refresh'])->where('siteId', '[0-9]+');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Admin Routes (TASK-27-2, SPEC-027)
+|--------------------------------------------------------------------------
+|
+| Admin routes protected by AdminAuthorizationMiddleware.
+| This middleware handles both authentication and authorization.
+| Supports session-based and Sanctum token-based authentication.
+|
+*/
+
+Route::prefix('v1')->middleware(['throttle:60,1'])->group(function () {
+    // Admin: Dashboard Stats
+    Route::get('/admin/stats', [\App\Http\Controllers\Api\V1\Admin\AdminStatsController::class, 'index'])->middleware('admin');
+    Route::post('/admin/stats', [\App\Http\Controllers\Api\V1\Admin\AdminStatsController::class, 'index'])->middleware('admin');
+
+    // Admin: User Management (for middleware testing)
+    Route::prefix('admin/users')->middleware('admin')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\V1\Admin\AdminUsersController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\V1\Admin\AdminUsersController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\V1\Admin\AdminUsersController::class, 'show'])->where('id', '[0-9]+');
+        Route::put('/{id}', [\App\Http\Controllers\Api\V1\Admin\AdminUsersController::class, 'update'])->where('id', '[0-9]+');
+        Route::delete('/{id}', [\App\Http\Controllers\Api\V1\Admin\AdminUsersController::class, 'destroy'])->where('id', '[0-9]+');
+        Route::post('/{id}/impersonate', [\App\Http\Controllers\Api\V1\Admin\AdminUsersController::class, 'impersonate'])->where('id', '[0-9]+');
+    });
+
+    // Admin: Lead Management (TASK-16-6)
+    Route::prefix('admin/leads')->middleware('admin')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'index']);
+        Route::get('/stats', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'stats']);
+        Route::get('/export', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'export']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'destroy']);
+        Route::post('/{id}/restore', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'restore']);
+    });
 });
 
 // Alert Unsubscribe (signed URL, no auth required)

@@ -31,6 +31,8 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
             'avatar' => null,
             'role' => 'user',
+            'last_login_at' => fake()->optional(0.8)->dateTimeBetween('-30 days', 'now'),
+            'plan' => fake()->randomElement(['free', 'pro', 'enterprise']),
         ];
     }
 
