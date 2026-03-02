@@ -1,7 +1,7 @@
 # TASK-22-6: Content Processing and Structured Text Extraction
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
@@ -175,3 +175,49 @@ _Leave notes for the next agent here_
 - Test malformed HTML handling
 - Test size calculation (bytes vs characters)
 - Test empty/edge cases
+
+### PreTester (2026-03-02 18:38 GMT+2)
+**Test Design Complete**
+
+**Files Created:**
+- `backend/tests/Unit/Services/Crawler/ContentProcessorServiceTest.php` (107 tests)
+- `TESTS/TASK-22-6.md` (test documentation)
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 2 | Container binding, logger injection |
+| extractStructuredText() Basic | 4 | Return types, null/empty handling |
+| Script/Style Removal | 4 | script, style, noscript, multiple scripts |
+| Hidden Element Removal | 5 | aria-hidden, display:none, nav, footer, aside |
+| Heading Hierarchy | 7 | H1-H6 with markdown prefixes (#, ##, ###) |
+| List Structures | 3 | Unordered, ordered, nested lists |
+| Links and Images | 5 | Link text, image alt, empty alt |
+| Whitespace Normalization | 3 | Multiple spaces, trimming, paragraphs |
+| Size Limits | 2 | 500KB limit, large HTML |
+| extractMetadata() Basic | 3 | Return type, null/empty handling |
+| Title Extraction | 3 | title tag, og:title, both |
+| Meta Description | 3 | description, og:description, missing |
+| Robots Meta | 2 | robots directive, missing |
+| Canonical URL | 2 | canonical link, missing |
+| Open Graph Tags | 4 | og:type, og:image, og:url, all tags |
+| Twitter Cards | 4 | twitter:card, title, description, all |
+| Language and Charset | 4 | lang attribute, charset meta, Content-Type |
+| calculateSize() | 8 | Bytes vs chars, UTF-8, emoji, null, empty |
+| processContent() Pipeline | 6 | Full output, text, metadata, size, null |
+| Error Handling | 3 | Malformed HTML, never throws exceptions |
+| Unicode/Special Chars | 7 | Japanese, Spanish, Russian, entities, emoji |
+| Security | 3 | No JS execution, SVG sanitized, no API keys |
+| Performance | 2 | Memory efficient, fast processing |
+| Integration | 1 | Full realistic HTML page |
+| **Total** | **107** | |
+
+**Key Test Patterns:**
+- Never throws exceptions - always returns valid output
+- Empty/null inputs return empty string/null values
+- HTML entities decoded to actual characters
+- UTF-8 multibyte characters handled in size calculation
+- Hidden elements removed from text extraction
+- Heading hierarchy preserved with markdown prefixes
+
+**Ready for Developer implementation.**
