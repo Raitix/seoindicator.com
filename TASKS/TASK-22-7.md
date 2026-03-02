@@ -1,7 +1,7 @@
 # TASK-22-7: URL Validation and SSRF Protection
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`

@@ -199,4 +199,35 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | URL Validation Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for the URL validator service (SSRF protection).
+    | Used by UrlValidatorService for comprehensive URL validation.
+    |
+    */
+
+    // Allowed protocols for URL validation
+    'allowed_protocols' => ['http', 'https'],
+
+    // Additional blocked IPs (beyond standard private ranges)
+    'blocked_ips' => [],
+
+    // Blocked domain patterns (wildcards supported)
+    'blocked_domains' => [
+        '*.internal',
+        '*.local',
+        '*.localhost',
+        '*.internal.*',
+    ],
+
+    // Allowed domains whitelist (overrides blocked_domains)
+    // Empty array = no whitelist bypass
+    'allowed_domains' => [],
+
+    // DNS cache TTL in seconds
+    'dns_cache_ttl' => env('CRAWLER_DNS_CACHE_TTL', 60),
+
 ];
