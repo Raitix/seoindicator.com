@@ -162,6 +162,10 @@ jobs:
             echo "=== Running migrations ==="
             php artisan migrate --force
             
+            # Run seeders (idempotent - checks for existing data)
+            echo "=== Running seeders ==="
+            php artisan db:seed --class=CreditPackageSeeder --force 2>/dev/null || echo "Seeder already run or skipped"
+            
             # Cache config and routes for performance
             php artisan config:cache 2>/dev/null || true
             php artisan route:cache 2>/dev/null || true
