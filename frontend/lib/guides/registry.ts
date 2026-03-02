@@ -2098,12 +2098,400 @@ Helps search engines understand site structure. Often generated dynamically base
   {
     slug: 'canonical-urls',
     title: 'Canonical URL Implementation',
-    summary: 'Prevent duplicate content issues with proper canonical tags.',
+    summary: 'Prevent duplicate content issues and consolidate ranking signals with proper canonical tag implementation.',
     category: 'technical',
     icon: '🎯',
-    readTime: 4,
-    sections: [],
-    checklist: [],
+    readTime: 5,
+    sections: [
+      {
+        title: 'What are Canonical URLs?',
+        content: `A **canonical URL** is the preferred version of a web page—the "master copy" that you want search engines to index and rank. When multiple pages have identical or very similar content, the canonical tag tells search engines which version should be treated as the original.
+
+The canonical tag is implemented using the \`<link rel="canonical">\` HTML element placed in the \`<head>\` section of a webpage. It looks like this:
+
+\`<link rel="canonical" href="https://example.com/page/" />\`
+
+### The Problem Canonical Tags Solve
+
+Without canonical tags, search engines may encounter multiple URLs with the same or similar content:
+
+- \`https://example.com/products\`
+- \`https://example.com/products?sort=price\`
+- \`https://www.example.com/products\`
+- \`http://example.com/products\`
+
+To search engines, these are **four different pages** with duplicate content. This creates several problems:
+
+1. **Crawl budget waste** — Search engines spend time crawling multiple versions of the same content
+2. **Diluted link equity** — Backlinks may point to different URLs instead of consolidating on one
+3. **Ranking confusion** — Search engines may rank the wrong version or split ranking signals
+4. **Duplicate content penalties** — In extreme cases, Google may filter out pages it considers duplicates
+
+The canonical tag solves this by explicitly declaring: "This is the authoritative version. Consolidate all signals here."`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Product Category</title>
+  <!-- Canonical tag pointing to the preferred URL -->
+  <link rel="canonical" href="https://example.com/products/" />
+</head>
+<body>
+  <!-- Page content -->
+</body>
+</html>`,
+            description: 'Canonical tag in the <head> section pointing to the preferred URL version',
+          },
+        ],
+      },
+      {
+        title: 'Why Canonical Tags Matter',
+        content: `Canonical tags are essential for managing duplicate content and protecting your SEO performance. Without them, you risk confusing search engines and fragmenting your ranking potential.
+
+### Duplicate Content Penalties
+
+When Google finds multiple pages with similar content, it must decide which version to show in search results. Without canonical guidance, Google may:
+
+- **Choose the wrong version** — Perhaps an HTTP URL instead of HTTPS, or a parameterized URL instead of the clean one
+- **Filter out pages** — Exclude pages from the index entirely if they appear to be duplicates
+- **Split ranking signals** — Divide link equity, engagement metrics, and relevance across multiple URLs
+
+### Link Equity Consolidation
+
+Backlinks are one of the most valuable SEO assets. If three different URLs each earn backlinks, those signals remain fragmented. A canonical tag consolidates all those signals onto the preferred URL, maximizing ranking potential.
+
+**Example:**
+- \`example.com/page\` earns 10 backlinks
+- \`example.com/page?utm_source=newsletter\` earns 5 backlinks
+- \`www.example.com/page\` earns 8 backlinks
+
+Without canonicalization, these 23 links are split. With proper canonicals, all 23 links consolidate onto one URL.
+
+### Crawl Budget Optimization
+
+Google allocates a limited **crawl budget** to each site—the number of pages it will crawl per visit. When duplicate URLs consume that budget, important new content may not get discovered. Canonical tags help search engines focus on unique, valuable content.
+
+### Improved User Experience
+
+Canonical tags ensure users land on the cleanest, most functional version of your page. Parameters like tracking codes or session IDs can cause issues—canonicals guide users to the optimal experience.`,
+        codeExamples: [],
+      },
+      {
+        title: 'When to Use Canonical Tags',
+        content: `Canonical tags are necessary whenever multiple URLs serve identical or substantially similar content. Here are the most common scenarios:
+
+### URL Parameters
+
+E-commerce sites and filters often generate multiple URLs for the same content:
+
+- \`/products?category=shoes\`
+- \`/products?category=shoes&sort=price\`
+- \`/products?category=shoes&color=blue\`
+
+Each URL shows the same core products but with different filters. Set the main category page as canonical for all filtered versions.
+
+### WWW vs Non-WWW
+
+Your site should be accessible via both \`www.example.com\` and \`example.com\`, but only one should be canonical. Choose one and canonicalize all pages to that version.
+
+### HTTP vs HTTPS
+
+After migrating to HTTPS, the HTTP version may still be accessible. Ensure all pages canonicalize to their HTTPS equivalents. This complements your 301 redirects—not all links may redirect properly.
+
+### Trailing Slash Variations
+
+Some servers treat \`/page/\` and \`/page\` as different URLs:
+
+- \`https://example.com/blog/\`
+- \`https://example.com/blog\`
+
+Choose one format (trailing slash is recommended for directories) and canonicalize to it.
+
+### Syndicated Content
+
+When republishing content across domains (guest posts, partner sites, content syndication), use canonical tags to indicate the original source:
+
+- Original: \`yourdomain.com/article\`
+- Syndicated: \`partner.com/your-article\` → canonicalize to original
+
+### Print-Friendly Versions
+
+If you offer print-friendly pages (\`/page/print/\`), canonicalize them to the main page version.
+
+### Session IDs and Tracking Parameters
+
+URLs with session identifiers, UTM parameters, or other tracking codes should canonicalize to the clean URL:
+- \`/page?utm_source=email\` → canonical: \`/page\``,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Parameter URL: example.com/products?sort=price -->
+<head>
+  <!-- Canonical points to the clean, unparameterized URL -->
+  <link rel="canonical" href="https://example.com/products/" />
+</head>
+
+<!-- WWW variant: www.example.com/products -->
+<head>
+  <!-- Canonical points to non-www (your preferred version) -->
+  <link rel="canonical" href="https://example.com/products/" />
+</head>
+
+<!-- HTTP variant: http://example.com/products -->
+<head>
+  <!-- Canonical points to HTTPS version -->
+  <link rel="canonical" href="https://example.com/products/" />
+</head>`,
+            description: 'Canonical tags for parameter URLs, www variants, and HTTP/HTTPS variations',
+          },
+        ],
+      },
+      {
+        title: 'Implementation Methods',
+        content: `There are three primary methods to implement canonical tags. The HTML link tag is most common and recommended for most websites.
+
+### 1. HTML Link Tag (Recommended)
+
+Place a \`<link rel="canonical">\` element in the \`<head>\` section of your page. This is the most widely supported and easiest method.
+
+**Key requirements:**
+- Must be in the \`<head>\` section
+- Use absolute URLs (include protocol and domain)
+- Only one canonical tag per page
+- Must point to an indexable URL (not blocked by robots.txt or noindex)
+
+### 2. HTTP Header
+
+For non-HTML content like PDFs, images, or API responses, you can specify canonical URLs via HTTP headers.
+
+This method is useful when you can't add HTML to the content, such as PDF documents that exist at multiple URLs.
+
+### 3. XML Sitemap
+
+Including URLs in your XML sitemap signals to Google which URLs you consider important. While not a direct canonical signal, Google treats sitemap URLs as preferred versions when choosing between duplicates.
+
+**Best practice:** Use the HTML link tag as your primary method, supplemented by sitemap inclusion.
+
+### Implementation Checklist
+
+- Use absolute URLs (include \`https://\` and full domain)
+- Ensure canonical URLs are accessible (return 200 status)
+- Don't canonicalize to redirected or noindexed pages
+- Match canonical URL to your sitemap URLs
+- Implement at scale with CMS or server configuration`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Method 1: HTML Link Tag (Most Common) -->
+<head>
+  <link rel="canonical" href="https://example.com/page/" />
+</head>`,
+            description: 'HTML link tag method for canonical URL implementation',
+          },
+          {
+            language: 'apache',
+            code: `# Method 2: HTTP Header (Apache)
+# For PDFs and non-HTML files
+<FilesMatch "\\.pdf$">
+  Header set Link '<https://example.com/document.pdf>; rel="canonical"'
+</FilesMatch>`,
+            description: 'HTTP header method for canonical URLs (useful for PDFs and non-HTML content)',
+          },
+          {
+            language: 'xml',
+            code: `<!-- Method 3: XML Sitemap -->
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://example.com/products/</loc>
+    <lastmod>2024-01-15</lastmod>
+  </url>
+</urlset>`,
+            description: 'XML sitemap signals preferred URLs to search engines',
+          },
+        ],
+      },
+      {
+        title: 'Common Canonical Mistakes',
+        content: `Implementing canonical tags incorrectly can harm your SEO more than having no canonical tags at all. Avoid these common pitfalls:
+
+### Canonical Chains
+
+A canonical chain occurs when URL A points to URL B, which points to URL C. Google may not follow the chain all the way through, leaving your intended canonical unrecognized.
+
+**Bad:** \`/page?sort=price\` → \`/page?\` → \`/page\`
+
+**Good:** All variants point directly to \`/page\`
+
+### Self-Referencing Issues
+
+While self-referencing canonicals (a page canonicalizing to itself) are actually **good practice**, problems arise when:
+
+- The self-referencing URL doesn't match the actual page URL
+- Protocol mismatches (HTTP page canonicalizing to HTTPS of itself)
+- Trailing slash inconsistencies
+
+**Best practice:** Every page should have a self-referencing canonical that matches its actual URL exactly. This protects against scrapers and parameter-based duplicates.
+
+### Cross-Domain Canonical Mistakes
+
+Cross-domain canonicals are valid for syndicated content, but mistakes include:
+
+- Canonicalizing to an external page you don't control
+- Both sites canonicalizing to each other (circular reference)
+- Forgetting to update canonicals when content relationships change
+
+### Conflicting Signals
+
+Mixed signals confuse search engines:
+
+- **Canonical + noindex** — A page with both a canonical tag and noindex directive sends contradictory signals. Remove one.
+- **Canonical to redirected URL** — Canonicals should point to the final destination URL, not one that redirects.
+- **Canonical to 404 page** — Always verify canonical URLs return 200 status.
+- **Robots.txt blocking canonical URL** — Search engines can't crawl the canonical URL, making the tag useless.
+
+### Multiple Canonical Tags
+
+Having more than one canonical tag on a page causes Google to ignore them all. This often happens when CMS plugins or themes add canonicals automatically.`,
+        codeExamples: [
+          {
+            language: 'text',
+            code: `# Common Mistakes Examples
+
+❌ Canonical Chain:
+/page?filter=red → canonical: /page? → canonical: /page
+(Google may not follow the chain)
+
+✅ Direct Canonical:
+/page?filter=red → canonical: /page
+/page? → canonical: /page
+(All variants point directly to preferred URL)
+
+❌ Conflicting Signals:
+<link rel="canonical" href="https://example.com/page/" />
+<meta name="robots" content="noindex" />
+(Contradictory: "index this page" + "don't index this page")
+
+✅ Clear Signal:
+<link rel="canonical" href="https://example.com/page/" />
+(Only the canonical directive)
+
+❌ Multiple Canonicals:
+<link rel="canonical" href="https://example.com/page/" />
+<link rel="canonical" href="https://example.com/other-page/" />
+(Google ignores both)
+
+✅ Single Canonical:
+<link rel="canonical" href="https://example.com/page/" />
+(One clear directive)`,
+            description: 'Common canonical tag mistakes and their correct implementations',
+          },
+        ],
+      },
+      {
+        title: 'Pagination and Canonicals',
+        content: `Paginated content (like blog archives and product listings) requires special canonical handling. The approach depends on your content structure and SEO goals.
+
+### The Pagination Problem
+
+A paginated series creates multiple URLs:
+
+- \`/blog/\` — Page 1
+- \`/blog/page/2/\` — Page 2
+- \`/blog/page/3/\` — Page 3
+
+Each page contains different content, so they shouldn't canonicalize to page 1. But they're part of a series, so they need special handling.
+
+### Recommended Approach: Self-Referencing Canonicals
+
+For most pagination scenarios, use **self-referencing canonicals** on each page:
+
+- Page 1: \`<link rel="canonical" href="/blog/" />\`
+- Page 2: \`<link rel="canonical" href="/blog/page/2/" />\`
+- Page 3: \`<link rel="canonical" href="/blog/page/3/" />\`
+
+This tells search engines each page is its own canonical version while using \`rel="prev"\` and \`rel="next"\` to indicate the series relationship.
+
+### View-All Pages
+
+If you have a "view all" page that shows all paginated content on a single URL, you can canonicalize all paginated pages to it:
+
+- \`/blog/page/2/\` → canonical: \`/blog/all/\`
+- \`/blog/page/3/\` → canonical: \`/blog/all/\`
+
+**Note:** Google no longer officially supports \`rel="prev"\` and \`rel="next"\` link attributes, but self-referencing canonicals remain the recommended approach for pagination.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Pagination: Self-referencing canonicals -->
+<!-- Page 1: /blog/ -->
+<head>
+  <link rel="canonical" href="https://example.com/blog/" />
+  <link rel="next" href="https://example.com/blog/page/2/" />
+</head>
+
+<!-- Page 2: /blog/page/2/ -->
+<head>
+  <link rel="canonical" href="https://example.com/blog/page/2/" />
+  <link rel="prev" href="https://example.com/blog/" />
+  <link rel="next" href="https://example.com/blog/page/3/" />
+</head>
+
+<!-- Page 3 (last): /blog/page/3/ -->
+<head>
+  <link rel="canonical" href="https://example.com/blog/page/3/" />
+  <link rel="prev" href="https://example.com/blog/page/2/" />
+</head>`,
+            description: 'Self-referencing canonicals for paginated content with prev/next links',
+          },
+        ],
+      },
+      {
+        title: 'Testing and Best Practices',
+        content: `Canonical tag implementation requires careful testing to avoid SEO issues. Follow these best practices and use Google's tools to verify your setup.
+
+### Google's Official Guidelines
+
+According to Google's official documentation on canonicalization:
+
+1. **Use absolute URLs** — Always include the full URL including protocol and domain
+2. **Don't canonicalize to 404 pages** — Ensure canonical URLs are accessible
+3. **Don't create chains** — All pages should point directly to the final canonical
+4. **Keep canonicals in sitemaps** — List only canonical URLs in your XML sitemap
+5. **Implement redirects when possible** — 301 redirects are stronger signals than canonicals
+
+### Testing Tools
+
+**Google Search Console URL Inspection** — Enter any URL to see what Google considers its canonical. Shows if Google respects your canonical tag or chose a different URL.
+
+**Google Search Console Index Coverage Report** — Shows "Duplicate without canonical" errors and which URLs Google chose as canonicals.
+
+**Third-party crawlers** — Tools like Screaming Frog can extract and validate canonical tags across your site.
+
+### Best Practices Checklist
+
+1. **Every page needs a canonical** — Even if self-referencing
+2. **Use absolute URLs** — \`https://example.com/page/\` not \`/page/\`
+3. **Verify canonicals resolve** — They must return 200 status
+4. **Match sitemap URLs** — Your sitemap should list canonical URLs only
+5. **Monitor via Search Console** — Check for canonical conflicts regularly
+6. **Implement at the CMS level** — Automate canonical generation to avoid human error`,
+        codeExamples: [],
+      },
+    ],
+    checklist: [
+      { text: 'Add self-referencing canonical tag to every page on your site', priority: 'critical' },
+      { text: 'Use absolute URLs in canonical tags (include https:// and full domain)', priority: 'critical' },
+      { text: 'Canonicalize parameter URLs to clean versions (remove tracking codes, filters)', priority: 'critical' },
+      { text: 'Ensure canonical URLs return 200 status and are not blocked by robots.txt', priority: 'important' },
+      { text: 'Avoid canonical chains—all pages should point directly to the final canonical', priority: 'important' },
+      { text: 'Match canonical URLs with your XML sitemap entries', priority: 'important' },
+      { text: 'Use HTTP headers for canonicals on non-HTML content (PDFs, images)', priority: 'recommended' },
+      { text: 'Verify canonicals via Google Search Console URL Inspection tool', priority: 'recommended' },
+    ],
     relatedGuides: ['https-security', 'xml-sitemap'],
   },
   {
