@@ -1,6 +1,123 @@
 # DOCUMENTATION.md
 
 ---
+## Canonical URLs SEO Guide (TASK-20-17)
+
+### Guide Description
+Comprehensive SEO guide content for the Canonical URLs indicator, covering duplicate content prevention, canonical tag implementation, and common pitfalls. Explains how to prevent SEO dilution from duplicate content and provides actionable best practices with HTML code examples. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `canonical-urls`
+- **URL:** `https://seoindicator.com/seo-guides/canonical-urls/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What are Canonical URLs? | Definition, HTML syntax, purpose of canonical tags | ~200 |
+| Why Canonical Tags Matter | Duplicate content penalties, link equity consolidation, crawl budget | ~250 |
+| When to Use Canonical Tags | Parameters, www/non-www, http/https, trailing slash, syndication, print versions | ~350 |
+| Implementation Methods | HTML link tag, HTTP headers, XML sitemap | ~300 |
+| Common Canonical Mistakes | Chains, self-referencing issues, cross-domain, conflicting signals | ~250 |
+| Pagination and Canonicals | Self-referencing approach for paginated content | ~200 |
+
+**Total Content:** ~1,550 words
+**Read Time:** 5 minutes
+
+### Key Technical Details
+
+| Topic | Details |
+|-------|---------|
+| HTML Canonical Tag | `<link rel="canonical" href="https://example.com/page/" />` in `<head>` |
+| HTTP Header | `Link: <https://example.com/page/>; rel="canonical"` |
+| XML Sitemap | Specify `<loc>` with canonical URL in sitemap |
+| Google's Guidance | One canonical per page, avoid chains, self-reference is fine |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| HTML canonical tag | HTML | Standard canonical link in head section |
+| Parameter canonical | HTML | Canonical for pages with query parameters |
+| WWW/HTTP variant canonical | HTML | Canonical across protocol/subdomain variants |
+| HTML link tag method | HTML | Implementation via link tag |
+| HTTP header method | Apache | Implementation via HTTP headers |
+| XML sitemap canonical | XML | Specifying canonical URL in sitemap |
+| Common mistakes comparison | HTML | Correct vs incorrect canonical usage |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Set a canonical URL for every page |
+| Critical | Use absolute URLs in canonical tags (include https://) |
+| Critical | Ensure canonical points to indexable page |
+| Important | Use self-referencing canonicals on preferred version |
+| Important | Keep canonicals consistent with internal links |
+| Important | Avoid canonical chains (A→B→C) |
+| Important | Implement canonicals for pagination carefully |
+| Recommended | Use Search Console to monitor canonical issues |
+
+### Related Guides
+- `https-security` - HTTPS canonicalization considerations
+- `xml-sitemap` - Sitemap canonical URL specification
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'canonical-urls',
+  title: 'Canonical URLs',
+  summary: 'Prevent duplicate content issues with canonical tags...',
+  category: 'technical',
+  icon: '🔗',
+  readTime: 5,
+  hasTool: false,
+  relatedGuides: ['https-security', 'xml-sitemap'],
+  sections: [ /* 6 sections */ ],
+  checklist: [ /* 8 items */ ],
+  codeExamples: [ /* 7 examples */ ]
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `canonical-urls-guide.test.ts` | 49 | Content structure validation |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|------------|
+| Guide Structure | 6 | Registry entry, slug, title, category, icon, read time |
+| What are Canonical URLs | 3 | Definition, concept, purpose |
+| Why Canonicals Matter | 4 | Duplicate content, SEO impact, consolidation |
+| When to Use | 6 | Parameters, www/non-www, http/https, trailing slash, syndication |
+| Implementation Methods | 4 | HTML link, HTTP header, sitemap |
+| Common Mistakes | 5 | Chains, self-referencing, cross-domain, conflicts |
+| Pagination Canonicals | 1 | rel="prev"/"next" handling |
+| Code Examples | 5 | HTML examples, rel="canonical", href |
+| Checklist | 6 | 5-10 items, priorities, structure |
+| Related Guides | 3 | https-security, xml-sitemap |
+| Content Quality | 6 | Summary, sections, structure, Google guidelines |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions)
+- **URL:** https://seoindicator.com/seo-guides/canonical-urls/
+- **Health Check:** Passing
+- **Tests:** 49/49 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+
+### Related Tasks
+- TASK-20-15: HTTPS & Security Guide (related topic)
+- TASK-20-21: XML Sitemap Guide (related topic)
+
+---
 ## Image Optimization SEO Guide (TASK-20-10)
 
 ### Guide Description
@@ -4561,6 +4678,164 @@ The middleware integrates with the API key authentication middleware:
 - TASK-6-2: API Key Model
 - TASK-6-3: API Key Service
 - TASK-6-6: Request Logging
+
+---
+## PlaywrightRendererService Implementation (TASK-22-5)
+
+### Service Description
+Core rendering service for the Headless Crawler Service (FEAT-022). Renders JavaScript-heavy pages using Playwright headless browser and extracts rendered HTML, structured text, links, and metadata. Implements comprehensive SSRF protection and memory management for safe production use.
+
+### Component Location
+- **Service:** `backend/app/Services/Playwright/PlaywrightRendererService.php`
+- **DTOs:**
+  - `backend/app/Services/Playwright/Data/RenderResult.php`
+  - `backend/app/Services/Playwright/Data/ExtractedContent.php`
+- **Exceptions:** `backend/app/Services/Playwright/Exceptions/`
+  - `TimeoutException.php`
+  - `NavigationException.php`
+  - `RenderException.php`
+- **Tests:** `backend/tests/Unit/Services/Playwright/PlaywrightRendererServiceTest.php`
+
+### Core Methods
+
+| Method | Description |
+|--------|-------------|
+| `render(string $url, array $options = []): RenderResult` | Main render method - navigates to URL, waits for JS, extracts content |
+| `extractContent(Page $page): ExtractedContent` | Extract HTML and structured text from page |
+| `extractLinks(Page $page): array` | Extract all links with internal/external classification |
+| `extractMetadata(Page $page): array` | Extract meta tags, title, canonical, Open Graph |
+| `close(): void` | Cleanup browser instances |
+
+### RenderResult Data Structure
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `url` | string | Final URL after redirects |
+| `originalUrl` | string | Initial URL requested |
+| `title` | string | Page title |
+| `renderedHtml` | string | Full rendered HTML |
+| `structuredText` | string | Extracted readable text |
+| `meta` | array | Metadata object |
+| `links` | array | Array of links |
+| `size` | int | Content size in bytes |
+| `loadTime` | int | Time to render in ms |
+| `statusCode` | int | HTTP status code |
+| `error` | string\|null | Error message if failed |
+
+### Render Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `waitForSelector` | string\|null | null | CSS selector to wait for |
+| `waitTime` | int | 0 | Additional wait in ms after page load |
+| `userAgent` | string\|null | null | Custom user agent |
+| `viewport` | array\|null | null | Custom viewport dimensions |
+| `headers` | array\|null | null | Custom HTTP headers |
+| `cookies` | array\|null | null | Cookies to set |
+| `timeout` | int\|null | null | Page timeout override |
+
+### Rendering Flow
+
+1. **URL Validation** - SSRF protection check
+2. **Browser Launch** - Get shared browser instance from BrowserLauncher
+3. **Navigate to URL** - With configured timeout
+4. **Wait for Network Idle** - `networkidle` state for JS-rendered pages
+5. **Apply Custom Waits** - Selector wait, additional wait time
+6. **Extract Content** - HTML, text, links, metadata
+7. **Calculate Metrics** - Size, load time
+8. **Return Results** - RenderResult DTO
+
+### SSRF Protection
+
+| Protection | Implementation |
+|------------|----------------|
+| Localhost blocked | `localhost`, `127.*`, `::1` |
+| Private IPs blocked | `10.*`, `172.16-31.*`, `192.168.*` |
+| Cloud metadata blocked | `169.254.169.254` |
+| Blocked protocols | `file://`, `ftp://`, `gopher://` |
+| Internal domains | `*.internal`, `*.local` |
+
+### Structured Text Extraction
+
+| Step | Description |
+|------|-------------|
+| Remove script/style | Strip JavaScript and CSS |
+| Remove hidden elements | `display: none`, `visibility: hidden` |
+| Extract visible text | Clean text content |
+| Preserve headings | Keep h1-h6 structure |
+| Preserve links | Keep link text |
+
+### Link Extraction
+
+| Field | Description |
+|-------|-------------|
+| `href` | Link URL (absolute) |
+| `text` | Link anchor text |
+| `internal` | Boolean - same domain as page |
+| `rel` | Rel attribute value |
+| `target` | Target attribute value |
+
+### Metadata Extraction
+
+| Field | Description |
+|-------|-------------|
+| `title` | Page `<title>` |
+| `description` | Meta description |
+| `robots` | Meta robots directive |
+| `canonical` | Canonical URL |
+| `og:title` | Open Graph title |
+| `og:description` | Open Graph description |
+| `og:image` | Open Graph image |
+
+### Error Handling
+
+| Exception | Condition |
+|-----------|-----------|
+| `TimeoutException` | Page took too long to load |
+| `NavigationException` | Navigation failed |
+| `RenderException` | Content extraction failed |
+
+All errors return partial results when possible, with error message populated.
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| PlaywrightRendererServiceTest | 64 | 89 |
+| All Playwright tests | 109 | 182 |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 3 | DI, logger injection |
+| render() Basic | 7 | Navigation, response, errors |
+| render() Wait Options | 4 | waitForSelector, waitTime |
+| render() Custom Options | 5 | userAgent, viewport, headers, cookies, timeout |
+| extractContent() | 8 | HTML, text, headings, hidden elements |
+| extractLinks() | 8 | Internal/external, rel, target, absolute URLs |
+| extractMetadata() | 8 | Title, meta, canonical, OG tags |
+| close() | 3 | Browser cleanup |
+| Error Handling | 5 | Timeout, navigation, extraction failures |
+| RenderResult DTO | 8 | Data structure, immutability |
+| Edge Cases | 7 | Large pages, Unicode, SPA routing |
+| Security (SSRF) | 3 | Localhost, private IPs, cloud metadata |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions #22568470742)
+- **Health Check:** Passing
+- **Tests:** 109/109 passing (182 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-22-4 (Playwright Integration - BrowserLauncher)
+- Playwright PHP client
+
+### Related Tasks
+- TASK-22-4: Playwright Integration
+- TASK-22-6: ContentProcessorService
+- TASK-22-8: Depth Controller
+- TASK-22-15: CrawlWorker
 
 ---
 ## CrawlWorker Implementation (TASK-22-15)
