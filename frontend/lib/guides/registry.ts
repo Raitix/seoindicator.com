@@ -2890,12 +2890,12 @@ This fallback means you can get basic previews with just Open Graph tags, but de
         ],
       },
       {
-        title: 'Card Types (summary, summary_large_image, player)',
+        title: 'Twitter Card Types',
         content: `Twitter offers four card types, each designed for different content scenarios. Choosing the right card type ensures your content displays optimally in the Twitter feed.
 
 ### Summary Card
 
-The **summary card** is the default and most versatile option. It displays a small square image on the right side with title and description on the left. Perfect for blog posts, articles, and general web pages.
+The **summary card** is the default and most versatile option. It displays a small square thumbnail on the right side with title and description on the left. Perfect for blog posts, articles, and general web pages.
 
 **Best for:** Articles, blog posts, landing pages, general content
 
@@ -2903,13 +2903,13 @@ The **summary card** is the default and most versatile option. It displays a sma
 
 ### Summary Large Image Card
 
-The **summary_large_image** card features a prominent full-width image above the title and description. This card type commands more attention in the feed and typically achieves higher engagement rates.
+The **summary_large_image** card features a prominent full-width photo above the title and description. This card type commands more attention in the feed and typically achieves higher engagement rates.
 
 **Best for:** Visual content, featured articles, product pages, photography
 
-**Layout:** Large landscape image (up to 506px wide), title, description below
+**Layout:** Large landscape photo (up to 506px wide), title, description below
 
-**Pro tip:** Use summary_large_image for most content—larger images significantly increase click-through rates.
+**Pro tip:** Use summary_large_image for most content—larger visuals significantly increase click-through rates.
 
 ### Player Card
 
@@ -3107,7 +3107,7 @@ For \`summary\` cards (small thumbnail):
 
 ### File Format and Size
 
-- **Formats:** JPG, PNG, GIF, WebP
+- **Image format:** JPG, PNG, GIF, or WebP
 - **Maximum file size:** 5MB for photos, 15MB for GIFs
 - **Recommendation:** Compress images to under 1MB for faster loading
 
@@ -3153,12 +3153,12 @@ Always test how your images appear:
             language: 'text',
             code: `# Twitter Card Image Specifications
 
-## summary_large_image (Recommended)
+## Large Image Card (Recommended)
 - Size: 1200×628 pixels (1.91:1 aspect ratio)
 - Format: JPG, PNG, WebP
 - Max file size: 5MB (aim for <1MB)
 
-## summary (Small Thumbnail)
+## Small Thumbnail Card
 - Size: Minimum 120×120 pixels
 - Display: Square thumbnail on right side
 
@@ -3248,7 +3248,7 @@ Make Card testing part of your publishing workflow:
 
 ## Before Publishing
 ☐ Add all required meta tags
-☐ Use summary_large_image for visual content
+☐ Use large image card type for visual content
 ☐ Verify image is 1200×628 pixels
 ☐ Include twitter:image:alt for accessibility
 ☐ Test with Card Validator
@@ -3265,7 +3265,7 @@ Issue: Old image cached
 Fix: Re-run Card Validator to refresh cache
 
 Issue: Card type wrong
-Fix: Check twitter:card content value (summary vs summary_large_image)`,
+Fix: Check the card type value matches your content`,
             description: 'Checklist for testing Twitter Cards before publishing',
           },
         ],
