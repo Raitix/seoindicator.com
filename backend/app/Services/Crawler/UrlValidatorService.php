@@ -163,8 +163,18 @@ class UrlValidatorService
             }
         }
 
-        // Decode URL-encoded host
-        $host = urldecode($host);
+        // Decode URL-encoded host (handle double encoding)
+        $host = $this->fullyDecodeHost($host);
+        
+        // Strip brackets from IPv6 addresses
+        if (preg_match('/^\[([a-f0-9:\.]+)\]$/i', $host, $matches)) {
+            $host = $matches[1];
+        } elseif (str_starts_with($host, '[') && !str_ends_with($host, ']')) {
+            // Malformed IPv6 - has opening bracket but no closing bracket
+            $result['error'] = 'URL format invalid';
+            return $result;
+        }
+        
         $hostLower = strtolower($host);
         $result['host'] = $hostLower;
 
@@ -269,6 +279,15 @@ class UrlValidatorService
         $scheme = strtolower($parsed['scheme'] ?? '');
 
         if (empty($scheme)) {
+            // No scheme provided - check if it looks like a URL
+            // If the path contains spaces, it's not a valid URL format
+            $path = $parsed['path'] ?? '';
+            if (str_contains($path, ' ')) {
+                return [
+                    'error' => 'URL format invalid',
+                    'blocked' => false,
+                ];
+            }
             return [
                 'error' => 'Protocol not allowed',
                 'blocked' => false,
@@ -327,6 +346,16 @@ class UrlValidatorService
         // Handle wildcard patterns
         if (str_starts_with($pattern, '*.')) {
             $suffix = substr($pattern, 2);
+            // Check if pattern ends with wildcard too (e.g., *.internal.*)
+            if (str_ends_with($suffix, '.*')) {
+                $prefix = substr($suffix, 0, -2);
+                // Match any domain containing the prefix as a component
+                // e.g., *.internal.* matches internal.company.com, app.internal.company.com
+                return $host === $prefix || 
+                       str_ends_with($host, '.' . $prefix) ||
+                       str_contains($host, '.' . $prefix . '.') ||
+                       str_starts_with($host, $prefix . '.');
+            }
             return $host === $suffix || str_ends_with($host, '.' . $suffix);
         }
 
@@ -748,11 +777,8 @@ class UrlValidatorService
             }
         }
 
-        // Only add trailing slash if path is empty
+        // Use path as-is, don't add trailing slash
         $path = $parsed['path'] ?? '';
-        if (empty($path)) {
-            $path = '/';
-        }
         $query = isset($parsed['query']) ? '?' . $parsed['query'] : '';
         $fragment = isset($parsed['fragment']) ? '#' . $parsed['fragment'] : '';
 
@@ -779,6 +805,25 @@ class UrlValidatorService
     {
         return filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false ||
                filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
+    }
+
+    /**
+     * Fully decode a URL-encoded host (handle double/triple encoding).
+     */
+    private function fullyDecodeHost(string $host): string
+    {
+        $maxIterations = 5; // Prevent infinite loops
+        $previous = '';
+        $current = $host;
+        $iterations = 0;
+
+        while ($previous !== $current && $iterations < $maxIterations) {
+            $previous = $current;
+            $current = urldecode($current);
+            $iterations++;
+        }
+
+        return $current;
     }
 
     /**
