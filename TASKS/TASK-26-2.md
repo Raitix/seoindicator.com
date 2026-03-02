@@ -1,7 +1,7 @@
 # TASK-26-2: Create Credit Model and Repository
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
