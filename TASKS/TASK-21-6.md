@@ -1,7 +1,7 @@
 # TASK-21-6: Implement Caching Layer
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `Medium`

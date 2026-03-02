@@ -10,3 +10,4 @@ export { default as GuideChecklist } from './GuideChecklist';
 export { default as GuideCodeBlock } from './GuideCodeBlock';
 export { default as GuideSection } from './GuideSection';
 export { ToolEmbed, type ToolEmbedProps, type ToolSlug } from './ToolEmbed';
+export { GuideSchema, generateHowToSchema } from './GuideSchema';
