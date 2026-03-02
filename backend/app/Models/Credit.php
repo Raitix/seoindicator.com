@@ -65,10 +65,12 @@ class Credit extends Model
 
     /**
      * Get the transactions for this credit.
+     * Uses user_id as the foreign key since credit_transactions table
+     * doesn't have a credit_id column.
      */
     public function transactions(): HasMany
     {
-        return $this->hasMany(CreditTransaction::class);
+        return $this->hasMany(CreditTransaction::class, 'user_id', 'user_id');
     }
 
     // ============================================
