@@ -2521,13 +2521,322 @@ According to Google's official documentation on canonicalization:
   {
     slug: 'open-graph',
     title: 'Open Graph Tags',
-    summary: 'Optimize how your content appears when shared on Facebook and other platforms.',
+    summary: 'Optimize how your content appears when shared on Facebook, LinkedIn, and other social platforms with Open Graph meta tags.',
     category: 'content',
     toolSlug: 'social-media-preview',
     icon: '👍',
     readTime: 5,
-    sections: [],
-    checklist: [],
+    sections: [
+      {
+        title: 'What is Open Graph?',
+        content: `**Open Graph tags** are meta tags that control how your content appears when shared on social media platforms like Facebook, LinkedIn, and Twitter. Originally created by Facebook in 2010, the Open Graph protocol enables any web page to become a rich object in a social graph.
+
+When someone shares a URL on Facebook or LinkedIn, the platform crawls the page looking for Open Graph (OG) tags to determine what title, description, image, and other metadata to display in the preview card. Without OG tags, platforms guess what to show—often with poor results.
+
+### The og: Namespace
+
+All Open Graph tags use the \`og:\` namespace prefix within the \`<meta>\` tag's \`property\` attribute:
+
+\`<meta property="og:title" content="Your Page Title" />\`
+
+This prefix tells social platforms that these are Open Graph properties, distinct from standard HTML meta tags.
+
+### Platforms Using Open Graph
+
+- **Facebook** — Primary user of OG tags; displays rich preview cards in posts
+- **LinkedIn** — Uses OG tags for article previews and shared links
+- **Twitter** — Falls back to OG tags when Twitter Card tags aren't present
+- **WhatsApp, Telegram, iMessage** — Use OG tags for link previews
+- **Slack, Discord** — Display OG previews for shared links
+
+Open Graph is the universal standard for social sharing optimization. Even platforms with their own protocols (like Twitter Cards) will fall back to OG tags when their specific tags are missing.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Basic Open Graph meta tags -->
+<head>
+  <meta property="og:title" content="Complete Guide to SEO Meta Tags" />
+  <meta property="og:description" content="Learn how to optimize your meta tags for better search rankings and social sharing." />
+  <meta property="og:image" content="https://example.com/images/seo-guide.jpg" />
+  <meta property="og:url" content="https://example.com/guides/seo-meta-tags/" />
+  <meta property="og:type" content="article" />
+</head>`,
+            description: 'Basic Open Graph meta tags in the HTML head section',
+          },
+        ],
+      },
+      {
+        title: 'Why Open Graph Matters',
+        content: `Open Graph tags directly impact how your content performs on social media. A well-optimized social preview can dramatically increase click-through rates and engagement.
+
+### Control Your Social Appearance
+
+Without OG tags, social platforms scrape your page and make their best guess at what to show. They might pick the wrong title, use an irrelevant image, or show an incomplete description. OG tags give you **complete control** over how your content appears when shared.
+
+### Increase Click-Through Rates (CTR)
+
+Studies show that posts with rich, well-crafted previews get **2-3x higher CTR** than plain links. An eye-catching image paired with a compelling title and description makes users want to click.
+
+**What makes a compelling preview:**
+- Clear, descriptive title (under 60 characters)
+- Engaging description that creates curiosity
+- High-quality image that stands out in the feed
+- Relevant, trustworthy appearance
+
+### Build Brand Recognition
+
+Consistent OG images and titles help users recognize your content across platforms. When your preview looks professional, it builds trust and credibility before users even visit your site.
+
+### Improve Social Engagement
+
+Rich previews encourage users to:
+- Share your content more often
+- Spend more time engaging with the preview
+- Remember your brand
+- Click through to read more
+
+### SEO Benefits
+
+While OG tags don't directly impact search rankings, they indirectly benefit SEO:
+
+- **Social signals** — More shares can lead to more backlinks
+- **Traffic** — Higher CTR from social drives more visitors
+- **Brand awareness** — Increased visibility across platforms
+
+The bottom line: OG tags are essential for maximizing the value of every social share.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Required Open Graph Tags',
+        content: `Facebook requires four OG tags for a valid preview. Including these ensures your content displays correctly across all platforms.
+
+### og:title
+
+The title of your content as it should appear in social previews. This is often different from your page's \`<title>\` tag—OG titles can be more engaging or specific.
+
+**Best practices:**
+- Keep under 60 characters (Facebook truncates longer titles)
+- Include your brand name for recognition
+- Make it compelling and click-worthy
+- Don't use all caps or excessive punctuation
+
+### og:description
+
+A brief description of your content, typically 1-2 sentences. This appears below the title in social previews.
+
+**Best practices:**
+- Keep under 200 characters (150-160 ideal for full display)
+- Write a clear, engaging summary
+- Include relevant keywords naturally
+- Avoid duplicate content from meta description
+
+### og:image
+
+The URL of the image to display in social previews. This is the most impactful OG tag—a good image can dramatically increase engagement.
+
+**Best practices:**
+- Use absolute URLs with \`https://\`
+- Recommended size: 1200×630 pixels
+- Use high-quality images (no pixelation or blurriness)
+- Test how your image looks at different crop ratios
+
+### og:url
+
+The canonical URL of the page. This helps platforms consolidate engagement metrics when the same content is shared from different URLs.
+
+**Best practices:**
+- Always use the canonical URL
+- Include protocol (\`https://\`)
+- Avoid tracking parameters in the OG URL
+
+### og:type
+
+The type of content being shared. This affects how Facebook displays the preview and what additional properties are available.
+
+**Common values:**
+- \`website\` — Default for most pages
+- \`article\` — News articles, blog posts
+- \`product\` — E-commerce product pages
+- \`profile\` — User profiles`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Required Open Graph Tags -->
+<meta property="og:title" content="How to Build a Successful Blog in 2024" />
+<meta property="og:description" content="Learn the essential strategies for creating a blog that attracts readers, builds authority, and generates income." />
+<meta property="og:image" content="https://example.com/images/blog-success-guide.jpg" />
+<meta property="og:url" content="https://example.com/guides/build-successful-blog/" />
+<meta property="og:type" content="article" />
+
+<!-- Additional recommended tags -->
+<meta property="og:site_name" content="SEOIndicator" />
+<meta property="og:locale" content="en_US" />`,
+            description: 'Complete set of required and recommended Open Graph tags',
+          },
+        ],
+      },
+      {
+        title: 'Image Best Practices',
+        content: `The \`og:image\` tag is the most critical factor in social preview engagement. A well-chosen image can dramatically increase clicks and shares.
+
+### Recommended Image Dimensions
+
+The ideal OG image size depends on the platform, but **1200×630 pixels** (1.91:1 aspect ratio) is the recommended standard that works well across Facebook, LinkedIn, and Twitter.
+
+**Size breakdown by platform:**
+
+| Platform | Recommended Size | Aspect Ratio |
+|----------|------------------|--------------|
+| Facebook | 1200×630px | 1.91:1 |
+| LinkedIn | 1200×627px | 1.91:1 |
+| Twitter | 1200×600px | 2:1 |
+
+**Pro tip:** Use 1200×630px as your standard—it works great everywhere.
+
+### Image Format
+
+- **JPEG** — Best for photographs and complex images
+- **PNG** — Best for graphics with text, logos, or transparency
+- **WebP** — Modern format with excellent compression (check platform support)
+
+Avoid GIFs for static images—they're larger and may not animate in previews.
+
+### File Size Considerations
+
+Keep image file sizes reasonable for fast loading:
+
+- **Target:** Under 1MB for optimal performance
+- **Maximum:** 8MB (Facebook's limit)
+- **Recommended:** 100-500KB for best balance of quality and speed
+
+Large images slow down social platform crawlers and may not load in time for the preview.
+
+### Content Guidelines
+
+**Do:**
+- Include clear, readable text (large font, high contrast)
+- Use brand colors and logos for recognition
+- Feature faces or people for emotional connection
+- Test how the image looks cropped and uncropped
+
+**Avoid:**
+- Too much text (Facebook may flag as low quality)
+- Small text that's unreadable when scaled down
+- Busy, cluttered images
+- Generic stock photos
+
+### Image Dimensions with Meta Tags
+
+For best results, specify image dimensions explicitly:
+
+\`<meta property="og:image:width" content="1200" />\`
+\`<meta property="og:image:height" content="630" />\`
+
+This helps platforms render the image immediately without fetching it first.`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- og:image with dimensions for optimal rendering -->
+<meta property="og:image" content="https://example.com/images/og-preview.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Guide cover showing SEO tips and strategies" />`,
+            description: 'Open Graph image tag with explicit dimensions and alt text for accessibility',
+          },
+        ],
+      },
+      {
+        title: 'Testing and Debugging',
+        content: `Always test your Open Graph tags before publishing. Each platform has tools to preview and debug your social previews.
+
+### Social Media Preview Tool
+
+Use our integrated **Social Media Preview** tool to test how your page will appear across multiple platforms. Simply enter your URL to see real-time previews for Facebook, Twitter, LinkedIn, and more.
+
+### Facebook Sharing Debugger
+
+Facebook's official debugging tool shows exactly how Facebook sees your OG tags:
+
+**URL:** developers.facebook.com/tools/debug/
+
+**What it shows:**
+- Current OG tag values
+- Missing or invalid tags
+- Preview of how your link will appear
+- Any warnings or errors
+
+**Pro tip:** Use the "Scrape Again" button to force Facebook to refresh its cache after updating your OG tags.
+
+### LinkedIn Post Inspector
+
+LinkedIn's tool previews how your content will appear in posts:
+
+**URL:** linkedin.com/post-inspector/
+
+**Features:**
+- Real-time preview
+- Cache clearing
+- Recommendations for improvement
+
+### Common Debugging Scenarios
+
+**Image not showing:**
+- Check that the image URL is absolute (starts with \`https://\`)
+- Verify the image is publicly accessible (not blocked by robots.txt or auth)
+- Ensure the image meets size requirements (minimum 200×200px)
+
+**Old preview showing:**
+- Use the platform's debugger to force a cache refresh
+- Facebook caches for 30+ days unless manually cleared
+- Add a query parameter to the URL to test changes quickly
+
+**Missing tags detected:**
+- Verify tags are in the \`<head>\` section
+- Check for \`property\` attribute (not \`name\`)
+- Ensure tags are properly formatted HTML`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Debugging Quick Reference
+
+Facebook Sharing Debugger:
+https://developers.facebook.com/tools/debug/
+
+LinkedIn Post Inspector:
+https://linkedin.com/post-inspector/
+
+Twitter Card Validator:
+https://cards-dev.twitter.com/card-validator
+
+# Common Issues & Fixes
+
+Issue: Image not loading
+Fix: Use absolute URL with https://
+
+Issue: Old preview showing
+Fix: Use debugger's "Scrape Again" button
+
+Issue: Missing og:title
+Fix: Add <meta property="og:title" content="Your Title" />
+
+Issue: Wrong image aspect ratio
+Fix: Resize to 1200×630px before uploading`,
+            description: 'Quick reference for debugging Open Graph tags across platforms',
+          },
+        ],
+      },
+    ],
+    checklist: [
+      { text: 'Include all required OG tags: og:title, og:description, og:image, og:url', priority: 'critical' },
+      { text: 'Use images at 1200×630 pixels for optimal display across platforms', priority: 'critical' },
+      { text: 'Use absolute URLs starting with https:// for og:image', priority: 'critical' },
+      { text: 'Keep og:title under 60 characters for full display', priority: 'important' },
+      { text: 'Keep og:description between 150-200 characters', priority: 'important' },
+      { text: 'Test OG tags with Facebook Sharing Debugger before publishing', priority: 'important' },
+      { text: 'Add og:image:width and og:image:height for faster rendering', priority: 'important' },
+      { text: 'Include og:type to specify content type (article, product, website)', priority: 'recommended' },
+      { text: 'Add og:site_name for brand recognition in previews', priority: 'recommended' },
+    ],
     relatedGuides: ['twitter-cards', 'meta-description', 'structured-data'],
   },
   {

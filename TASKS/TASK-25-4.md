@@ -1,7 +1,6 @@
 # TASK-25-4: Implement Password Reset Flow
 
-## STATUS
-`In Development`
+## STATUS`n`To Develop`
 
 ## PRIORITY
 `High`
