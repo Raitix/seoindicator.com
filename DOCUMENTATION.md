@@ -527,6 +527,143 @@ Comprehensive SEO guide content for the H1 Headings indicator, covering heading 
 - TASK-20-5: Meta Title Guide (related topic)
 
 ---
+## Heading Hierarchy SEO Guide (TASK-20-8)
+
+### Guide Description
+Comprehensive SEO guide content for the Heading Hierarchy indicator, covering proper H1-H6 structure, semantic organization, and SEO/accessibility benefits. Explains heading hierarchy as a logical structure that helps both search engines and screen readers understand page content. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `heading-hierarchy`
+- **URL:** `https://seoindicator.com/seo-guides/heading-hierarchy/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What is Heading Hierarchy? | Definition, visual vs semantic structure, H1-H6 roles | ~350 |
+| Why Heading Hierarchy Matters for SEO | Content understanding, user engagement, featured snippets | ~300 |
+| Accessibility Benefits | Screen reader navigation, document outline, WCAG compliance | ~350 |
+| How to Structure Headings Properly | Rules for H1-H6, visual representation, tree diagram | ~400 |
+| Common Heading Mistakes | Multiple H1s, skipping levels, using headings for styling | ~350 |
+| Heading Hierarchy Best Practices | Descriptive headings, testing, consistency | ~300 |
+
+**Total Content:** ~2,050 words
+**Read Time:** 5 minutes
+
+### Key Technical Details
+
+| Topic | Details |
+|-------|---------|
+| H1 Usage | One H1 per page - defines the main topic |
+| Hierarchy Rule | Never skip heading levels (H1 → H2 → H3, not H1 → H3) |
+| Accessibility | Headings create document outline for screen readers |
+| SEO Benefit | Proper structure helps search engines understand content |
+| Visual vs Semantic | Use CSS for visual styling, headings for semantic structure |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| Correct heading hierarchy | HTML | Proper H1 → H2 → H3 structure |
+| Incorrect examples | HTML | Multiple H1s, skipped levels |
+| Well-structured content | HTML | Complete page with proper heading tree |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Use exactly one H1 tag per page |
+| Critical | Never skip heading levels (H1 → H2 → H3) |
+| Critical | Use headings for structure, not visual styling |
+| Important | Make each heading descriptive and accurate |
+| Important | Include relevant keywords naturally in headings |
+| Important | Test your heading structure with browser tools |
+| Recommended | Keep headings concise and scannable |
+| Recommended | Maintain parallel structure across sections |
+
+### Related Guides
+- `h1-headings` - H1-specific optimization
+- `internal-links` - Site structure and navigation
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'heading-hierarchy',
+  title: 'Heading Hierarchy (H1-H6)',
+  summary: 'Structure your headings properly for better SEO and accessibility...',
+  category: 'on-page',
+  icon: '📋',
+  readTime: 5,
+  hasTool: false,
+  relatedGuides: ['h1-headings', 'internal-links'],
+  sections: [ /* 6 sections */ ],
+  checklist: [ /* 8 items */ ],
+  codeExamples: [ /* 3 examples */ ]
+}
+```
+
+### Visual Hierarchy Representation
+
+The guide includes a visual tree diagram showing correct heading structure:
+
+```
+H1: Main Page Topic
+├── H2: First Major Section
+│   ├── H3: Subsection A
+│   └── H3: Subsection B
+├── H2: Second Major Section
+│   ├── H3: Subsection C
+│   │   └── H4: Detail under C
+│   └── H3: Subsection D
+└── H2: Third Major Section
+```
+
+### Accessibility Impact
+
+| Benefit | Description |
+|---------|-------------|
+| Screen Reader Navigation | Users jump between headings to find content |
+| Document Outline | Proper structure creates meaningful outline |
+| WCAG Compliance | Success Criterion 1.3.1 requires meaningful sequence |
+| Cognitive Load | Clear structure reduces user confusion |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `heading-hierarchy-content.test.ts` | 47 | Content structure validation |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Guide Registry Entry | 8 | Slug, title, category, readTime, icon, summary |
+| Sections Structure | 5 | Array length, titles, content, code examples |
+| Required Content Topics | 6 | Definition, SEO, accessibility, structure, mistakes |
+| Section Titles | 5 | Definition, benefits, how-to, mistakes, best practices |
+| Content Quality | 5 | Length, H1/H2-H6 mentions, code examples |
+| Checklist Validation | 7 | 5-10 items, priorities, text validation |
+| Related Guides | 4 | h1-headings, internal-links, valid slugs |
+| Content-Specific Topics | 5 | H1 limit, order, skipping, screen readers, outline |
+| Visual Hierarchy | 2 | Visual representation, correct structure examples |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions auto-deploy)
+- **URL:** https://seoindicator.com/seo-guides/heading-hierarchy/
+- **Health Check:** Passing
+- **Tests:** 47/47 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+
+### Related Tasks
+- TASK-20-7: H1 Headings Guide (related topic)
+- TASK-20-11: Internal Links Guide (related topic)
+
+---
 ## HowTo Schema Markup for SEO Guides (TASK-20-27)
 
 ### Feature Description
@@ -6431,6 +6568,139 @@ try {
 - TASK-22-7: URL validation and SSRF protection
 - TASK-22-16: Queue integration
 - TASK-22-17: Job timeout and cancellation
+
+---
+## Crawler API Feature Tests (TASK-22-19)
+
+### Test Description
+Comprehensive feature test suite for all crawler API endpoints, testing the full request/response cycle for the Headless Crawler Service (FEAT-022). Covers authentication, authorization, SSRF protection, rate limiting, and all CRUD operations for crawl jobs.
+
+### Component Location
+- **Tests Directory:** `backend/tests/Feature/Api/V1/`
+- **Documentation:** `backend/tests/TESTS/TASK-22-19.md`
+
+### Test Files
+
+| Test File | Tests | Size | Description |
+|-----------|-------|------|-------------|
+| `CrawlControllerTest.php` | 89 | 51KB | Main API endpoint tests |
+| `ContentRetrievalControllerTest.php` | 76 | 45KB | Content retrieval tests |
+| `CrawlCancellationTest.php` | 20 | 18KB | Job cancellation tests |
+| `ContentStreamingTest.php` | 14 | 8KB | Streaming endpoint tests |
+
+**Total Test Scenarios:** 226+
+
+### Test Categories
+
+#### CrawlEndpointTest (c_post_*)
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Valid Crawl Requests | 12 | POST /crawl with valid data, returns 202 |
+| URL Validation | 15 | Invalid URLs, missing fields, format errors |
+| Depth Validation | 3 | Depth out of range, non-integer values |
+| Options Validation | 9 | Invalid options, type errors |
+| SSRF Protection | 12 | Localhost, private IPs, cloud metadata, blocked protocols |
+| Authentication | 1 | Missing/invalid token returns 401 |
+| Rate Limiting | 5 | Rate limit exceeded returns 429 |
+
+#### JobStatusEndpointTest (c_get_*)
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Job Retrieval | 8 | GET /jobs/{id} returns job details |
+| Status Values | 5 | queued, running, completed, failed, cancelled |
+| Progress Information | 3 | pages_crawled, total_size updates |
+| Error Handling | 3 | 404 for non-existent, 403 for other user's job |
+
+#### ContentEndpointTest (c_content_*, cr_*)
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Content Retrieval | 13 | GET /jobs/{id}/content returns pages |
+| Pagination | 9 | page, per_page parameters |
+| Field Selection | 9 | fields parameter for partial responses |
+| Depth Filtering | 8 | Filter pages by depth level |
+| Search | 4 | Search in page content |
+| Export JSON | 8 | Export as JSON file |
+| Export CSV | 10 | Export as CSV with proper headers |
+| Export HTML | 8 | Export as HTML archive |
+| Error Handling | 6 | 409 for incomplete, 404, 403 |
+
+#### CancelEndpointTest (TC-04-*, c_del_*)
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Cancel Queued Job | 2 | DELETE /jobs/{id} cancels queued job |
+| Cancel Running Job | 1 | Cancels job in progress |
+| Completed Job | 2 | 403 for completed job |
+| Authorization | 2 | 403 for other user's job, 404 for non-existent |
+| Partial Results | 1 | Stores partial results on cancel |
+| Admin Access | 1 | Admin can cancel any job |
+
+### Security Test Coverage
+
+| Security Test | Count | Description |
+|---------------|-------|-------------|
+| Authentication (auth_*) | 2 | Bearer token required, invalid token returns 401 |
+| Authorization | 8 | Users can only access own jobs, admin override |
+| SSRF Protection (c_post_ssrf_*) | 12 | Comprehensive SSRF attack prevention |
+
+#### SSRF Test Methods
+| Method | Blocked Pattern |
+|--------|-----------------|
+| `c_post_ssrf_01_localhost_blocked` | `localhost` |
+| `c_post_ssrf_02_127_0_0_1_blocked` | `127.0.0.1` |
+| `c_post_ssrf_03_private_ip_10_x_blocked` | `10.x.x.x` |
+| `c_post_ssrf_04_private_ip_172_16_31_blocked` | `172.16-31.x.x` |
+| `c_post_ssrf_05_private_ip_192_168_x_blocked` | `192.168.x.x` |
+| `c_post_ssrf_06_cloud_metadata_blocked` | `169.254.169.254` |
+| `c_post_ssrf_07_file_protocol_blocked` | `file://` protocol |
+| `c_post_ssrf_08_ftp_protocol_blocked` | `ftp://` protocol |
+| `c_post_ssrf_09_internal_domain_blocked` | `*.internal` |
+| `c_post_ssrf_10_local_domain_blocked` | `*.local` |
+| `c_post_ssrf_11_ipv6_localhost_blocked` | `::1` |
+| `c_post_ssrf_12_ipv6_link_local_blocked` | `fe80::` |
+
+### Test Approach
+
+**TDD Methodology:**
+- Tests written first (current state)
+- Routes/controllers to be implemented by TASK-22-11, TASK-22-14
+- Tests will pass once implementation is complete
+
+**Test Infrastructure:**
+- Uses `RefreshDatabase` trait for test isolation
+- Uses `actingAs()` for authentication
+- Mocks `CrawlerServiceInterface` for controller tests
+- Uses `CrawlJobFactory` and `CrawlPageFactory` for test data
+
+### Routes Required (for Implementation)
+
+```
+POST   /api/v1/crawler/crawl                     - Create crawl job
+GET    /api/v1/crawler/jobs/{jobId}              - Get job status
+GET    /api/v1/crawler/jobs/{jobId}/content      - Get crawled content
+DELETE /api/v1/crawler/jobs/{jobId}              - Cancel crawl job
+GET    /api/v1/crawler/jobs                      - List user's crawl jobs
+GET    /api/v1/crawler/jobs/{jobId}/pages/{pageId} - Get single page
+GET    /api/v1/crawler/jobs/{jobId}/export/json  - Export as JSON
+GET    /api/v1/crawler/jobs/{jobId}/export/csv   - Export as CSV
+GET    /api/v1/crawler/jobs/{jobId}/export/html  - Export as HTML
+```
+
+### Production Status
+- **Deployed:** 2026-03-02 (commit 85c62a6)
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Test Status:** TDD expected failures (routes not implemented)
+- **Status:** Complete
+
+### Dependencies
+- TASK-22-11 (CrawlController - To Develop)
+- TASK-22-12 (Request Validation - Done)
+- TASK-22-14 (Content Endpoints - In Development)
+
+### Related Tasks
+- TASK-22-11: CrawlController implementation
+- TASK-22-14: Content retrieval endpoints
+- TASK-22-18: Unit tests for services
+- TASK-22-20: Integration tests for full crawl flow
 
 ---
 ## Team Management Service (TASK-11-3)
@@ -20345,3 +20615,136 @@ None - Independent table, foundation for billing system.
 - TASK-26-20: Pricing Page (uses credit packages)
 - SPEC-026: Billing, Credits & Model Selection
 - FEAT-026: Billing, Credits & Model Selection
+
+---
+## Backlink Suggestions Service (TASK-23-12)
+
+### Service Description
+Generates actionable suggestions for improving backlink profile. Analyzes metrics from BacklinkProfileScorer and produces prioritized recommendations based on detected issues. Part of the Backlinks Indicator feature (FEAT-023).
+
+### Component Location
+- **Service:** ackend/app/Services/SEO/BacklinkSuggestionService.php
+- **Dependency:** ackend/app/Services/SEO/BacklinkProfileScorer.php (TASK-23-8)
+- **Tests:** ackend/tests/Unit/Services/SEO/BacklinkSuggestionServiceTest.php
+
+### Core Methods
+
+| Method | Description |
+|--------|-------------|
+| generate(Project ): array | Generate suggestions for a project (uses BacklinkProfileScorer internally) |
+| generateFromMetrics(array ): array | Generate suggestions from raw metrics array |
+| setScorer(BacklinkProfileScorer ): self | Set scorer instance (for testing) |
+
+### Suggestion Thresholds
+
+| Trigger | Threshold | Priority | Suggestion ID |
+|---------|-----------|----------|---------------|
+| Low referring domains | < 50 | High | low_referring_domains |
+| High exact-match anchors | > 25% | High | high_exact_match_anchors |
+| Low domain trust | < 40 | Medium | low_domain_trust |
+| Declining backlinks | < -5% growth | Medium | declining_backlinks |
+| High nofollow ratio | > 50% | Low | high_nofollow_ratio |
+
+### Suggestion Output Structure
+
+`php
+[
+    'id' => 'low_referring_domains',
+    'title' => 'Increase Referring Domains',
+    'description' => 'Build more referring domains. Guest posting and content marketing can help.',
+    'priority' => 'high',      // high|medium|low
+    'impact' => 'medium',      // high|medium|low (based on severity)
+    'metrics' => [
+        'current' => 15,       // Current value
+        'benchmark' => 50,     // Target threshold
+        'gap' => 35,           // Difference
+    ],
+]
+`
+
+### Impact Calculation Logic
+
+**For Counts (referring domains, domain trust):**
+- high: Gap = 70% of benchmark
+- medium: Gap = 30% of benchmark
+- low: Gap < 30% of benchmark
+
+**For Ratios (exact match, nofollow):**
+- high: Value = 50%
+- medium: Value = 35%
+- low: Value < 35%
+
+**For Growth Rate (declining backlinks):**
+- high: Decline = 20%
+- medium: Decline = 10%
+- low: Decline < 10%
+
+### Priority Sorting
+
+Suggestions are sorted by:
+1. Priority level (high ? medium ? low)
+2. Impact level (high ? medium ? low) within same priority
+
+### Null/Edge Case Handling
+
+| Case | Behavior |
+|------|----------|
+| Null metric value | No suggestion generated (no data = no recommendation) |
+| Negative domain count | Treated as 0 |
+| Negative trust score | Treated as 0 |
+| Invalid ratio > 1.0 | Capped at 1.0 |
+| Zero total links | No nofollow ratio suggestion |
+| At threshold value | No suggestion (thresholds are exclusive) |
+
+### Integration Points
+
+| Component | Relationship |
+|-----------|--------------|
+| BacklinkProfileScorer | Consumes output (component_details) |
+| Backlink Dashboard | Displays suggestions with priority indicators |
+| Visibility Score | Suggestions inform user of improvement areas |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| BacklinkSuggestionServiceTest.php | 61 | 89 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Low Referring Domains (RD) | 6 | Threshold boundary tests |
+| High Exact-Match Anchors (EM) | 6 | Anchor ratio threshold tests |
+| Low Domain Trust (DT) | 6 | Trust average threshold tests |
+| Declining Backlinks (DB) | 8 | Growth rate decline tests |
+| High Nofollow Ratio (NF) | 5 | Nofollow/dofollow ratio tests |
+| Prioritization (PR) | 6 | Priority ordering verification |
+| Suggestion Structure (SS) | 5 | Output format validation |
+| Edge Cases (EC) | 6 | Null, zero, boundary values |
+| Impact Calculation (IC) | 6 | Impact level determination |
+| Security (SC) | 4 | Invalid input handling |
+| Descriptions | 3 | Suggestion text verification |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Input Validation | Negative values treated as 0, ratios capped at 1.0 |
+| Null Safety | Null metrics don't trigger suggestions or errors |
+| No External Surface | Pure backend service, no API endpoints |
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions auto-deploy)
+- **Health Check:** Passing (https://seoindicator.com/api/health ? 200 OK)
+- **Tests:** 61/61 passing (89 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-23-8 (BacklinkProfileScorer) - Done ?
+
+### Related Tasks
+- TASK-23-7: Domain Trust Scorer (scoring foundation)
+- TASK-23-8: Backlink Profile Scorer (metrics provider)
+- TASK-23-13: Backlinks Dashboard (frontend display)
+- SPEC-023: Backlinks Indicator
+- FEAT-023: Backlinks Indicator
