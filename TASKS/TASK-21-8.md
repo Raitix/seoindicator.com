@@ -1,7 +1,7 @@
 # TASK-21-8: Create Database Migrations
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
@@ -146,7 +146,66 @@ Schema::create('ai_suggestions_cache', function (Blueprint $table) {
 ## Comments
 _Agent log_
 
-(No entries yet)
+### [2026-03-02 11:43 GMT+2] ProjectManager - Prioritization In Progress
+**Priority Confirmed: Medium** ✅
+**Risk Confirmed: Low** ✅
+
+**Rationale for Priority (Medium):**
+- **Foundation task for observability** - Creates database tables for AI logging and caching
+- **Non-blocking for core functionality** - AI suggestions work without these tables (file-based logging/caching available)
+- **Valuable for production** - Enables debugging, analytics, and performance optimization
+- **Standard migration task** - Well-understood Laravel migration patterns
+- **Enables future enhancements** - Database logging and caching depend on these tables
+
+**Rationale for Risk (Low):**
+- **Non-destructive migration** - Creates new tables, does not modify existing data
+- **Easily reversible** - Standard Laravel rollback drops tables cleanly
+- **No external dependencies** - Pure database schema changes
+- **No security implications** - Tables store operational data, not sensitive user data
+- **Standard Laravel patterns** - Uses familiar migration and Eloquent model patterns
+
+**Dependency Analysis (Corrected):**
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| Users table | ✅ Exists | Foreign key reference |
+| TASK-21-7 | ⚠️ NOT a dependency | TASK-21-7 USES tables created by this task |
+
+**Important Dependency Clarification:**
+The task file incorrectly lists TASK-21-7 as a dependency. Actually:
+- **TASK-21-8 creates the tables** (`ai_suggestion_logs`, `ai_suggestions_cache`)
+- **TASK-21-7 uses these tables** for database logging (AC-8)
+- **TASK-21-6 can optionally use** `ai_suggestions_cache` for database caching (AC-5)
+
+This means TASK-21-8 should be completed BEFORE TASK-21-7 can use database logging functionality. However, both tasks can proceed in parallel:
+- TASK-21-7 can implement file-based logging immediately
+- TASK-21-7's database logging (AC-8) waits for TASK-21-8 migrations
+
+**Table Specifications:**
+| Table | Purpose | Key Features |
+|-------|---------|--------------|
+| `ai_suggestion_logs` | Debug & analytics | FK to users, session tracking, latency, tokens, success flag |
+| `ai_suggestions_cache` | Response caching | SHA-256 hash lookup, TTL expiration, context hash |
+
+**Execution Order within SPEC-021:**
+1. TASK-21-1 through TASK-21-5: Done ✅
+2. TASK-21-6, 21-7, 21-8: Can parallelize (Phase 2 tasks)
+3. TASK-21-9+: Vercel provider and polish
+
+**Deliverables:**
+| Component | File Path |
+|-----------|-----------|
+| Logs Migration | `database/migrations/*_create_ai_suggestion_logs_table.php` |
+| Cache Migration | `database/migrations/*_create_ai_suggestions_cache_table.php` |
+| AISuggestionLog Model | `backend/app/Models/AISuggestionLog.php` |
+| AISuggestionCache Model | `backend/app/Models/AISuggestionCache.php` |
+| Migration Tests | `backend/tests/Unit/Migrations/AISuggestionTablesTest.php` |
+
+**Handoff to PreTester:** Ready for test design. Focus on:
+- Migration file creation with proper timestamps
+- Table structure validation (columns, types, indexes, foreign keys)
+- Model fillable/casts arrays and relationships
+- Rollback functionality (down() methods drop tables)
+- Unit tests for column existence, index creation, FK constraints
 
 ---
 *Created by SpecSystemAnalyst on 2026-03-01*
