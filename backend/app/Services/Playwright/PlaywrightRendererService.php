@@ -48,6 +48,9 @@ class PlaywrightRendererService
 
         $startTime = microtime(true);
         $originalUrl = $url;
+        $page = null;
+        $context = null;
+        $finalUrl = $url;
 
         try {
             $browser = $this->getSharedBrowser();
@@ -72,6 +75,9 @@ class PlaywrightRendererService
                 $page->waitForFunction('() => new Promise(r => setTimeout(r, ' . $options['waitTime'] . '))');
             }
 
+            // Capture final URL before extraction
+            $finalUrl = $page->url();
+
             // Extract content
             $content = $this->extractContent($page);
             $links = $this->extractLinks($page, $url);
@@ -79,11 +85,8 @@ class PlaywrightRendererService
 
             $loadTime = (int) ((microtime(true) - $startTime) * 1000);
 
-            $page->close();
-            $context->close();
-
             return new RenderResult(
-                url: $page->url(),
+                url: $finalUrl,
                 originalUrl: $originalUrl,
                 title: $content->title,
                 renderedHtml: $content->html,
@@ -106,9 +109,19 @@ class PlaywrightRendererService
                 'error' => $e->getMessage(),
             ]);
 
+            // Detect timeout errors
+            if (str_contains($e->getMessage(), 'Timeout') || $e->getCode() === 408) {
+                throw new TimeoutException($url, $options['timeout'] ?? 30000, $e->getMessage());
+            }
+
+            // Detect navigation errors
+            if (str_contains($e->getMessage(), 'Navigation') || str_contains($e->getMessage(), 'net::ERR') || $e->getCode() === 502) {
+                throw new NavigationException($url, $e->getMessage());
+            }
+
             if ($this->returnPartialOnError) {
                 return new RenderResult(
-                    url: $url,
+                    url: $finalUrl,
                     originalUrl: $originalUrl,
                     title: null,
                     renderedHtml: null,
@@ -123,6 +136,22 @@ class PlaywrightRendererService
             }
 
             throw new RenderException($url, 'render', $e->getMessage());
+        } finally {
+            // Always cleanup resources
+            if ($page) {
+                try {
+                    $page->close();
+                } catch (\Exception $e) {
+                    // Ignore close errors
+                }
+            }
+            if ($context) {
+                try {
+                    $context->close();
+                } catch (\Exception $e) {
+                    // Ignore close errors
+                }
+            }
         }
     }
 
@@ -180,7 +209,7 @@ class PlaywrightRendererService
             return [];
         }
 
-        return array_filter(array_map(function ($link) use ($baseDomain) {
+        return array_values(array_filter(array_map(function ($link) use ($baseDomain) {
             if (empty($link['href'])) {
                 return null;
             }
@@ -195,7 +224,7 @@ class PlaywrightRendererService
                 'target' => $link['target'] ?? null,
                 'isInternal' => $linkDomain === $baseDomain,
             ];
-        }, $links), fn($l) => $l !== null);
+        }, $links), fn($l) => $l !== null));
     }
 
     /**
@@ -207,22 +236,22 @@ class PlaywrightRendererService
             'title' => $page->title(),
             'description' => $page->evaluate('
                 () => document.querySelector(\'meta[name="description"]\')?.content
-            '),
+            ') ?? null,
             'robots' => $page->evaluate('
                 () => document.querySelector(\'meta[name="robots"]\')?.content
-            '),
+            ') ?? null,
             'canonical' => $page->evaluate('
                 () => document.querySelector(\'link[rel="canonical"]\')?.href
-            '),
+            ') ?? null,
             'ogTitle' => $page->evaluate('
                 () => document.querySelector(\'meta[property="og:title"]\')?.content
-            '),
+            ') ?? null,
             'ogDescription' => $page->evaluate('
                 () => document.querySelector(\'meta[property="og:description"]\')?.content
-            '),
+            ') ?? null,
             'ogImage' => $page->evaluate('
                 () => document.querySelector(\'meta[property="og:image"]\')?.content
-            '),
+            ') ?? null,
         ];
     }
 
