@@ -1,7 +1,7 @@
 # TASK-22-8: Depth Controller for L0/L1/L2 Crawling
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -156,3 +156,33 @@ _Leave notes for the next agent here_
 - Mock UrlValidatorService for isolated testing
 - Test edge cases: relative URLs, protocol-relative URLs, malformed HTML
 - Verify crawl queue respects max_depth and max_pages limits
+
+### PreTester (2026-03-02 11:30 GMT+2)
+**Test Design Complete:**
+- Created test documentation: `TESTS/TASK-22-8.md` (100+ test scenarios)
+- Created test files:
+  - `backend/tests/Unit/Services/Crawler/DepthControllerServiceTest.php` (100+ tests)
+  - `backend/tests/Unit/Services/Crawler/UrlNormalizerTest.php` (70+ tests)
+
+**Test Coverage:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 5 | DI and config loading |
+| shouldCrawl() | 12 | Depth limits, duplicate detection, SSRF |
+| extractLinks() | 25 | URL resolution, special URLs, attributes |
+| filterLinks() | 20 | Basic filtering, file extensions, paths |
+| URL Normalization | 30 | Host, ports, tracking params, fragments |
+| queueLinks() | 6 | Queue operations |
+| getCrawlQueue() | 3 | Queue retrieval |
+| Depth Management | 3 | L0/L1/L2 scenarios |
+| Duplicate Detection | 3 | Normalized duplicates |
+| Security | 3 | SSRF protection |
+| Edge Cases | 4 | Long URLs, malformed HTML |
+
+**Key Design Decisions:**
+- Mock UrlValidatorService interface for SSRF protection tests
+- Separate UrlNormalizer class for reusability
+- Tests designed for TDD - will fail until implementation exists
+- Queue storage uses in-memory for unit tests (database for integration)
+
+**Handoff:** Ready for Developer to implement DepthControllerService.
