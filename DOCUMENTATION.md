@@ -4563,6 +4563,155 @@ The middleware integrates with the API key authentication middleware:
 - TASK-6-6: Request Logging
 
 ---
+## CrawlWorker Implementation (TASK-22-15)
+
+### Service Description
+Queue worker implementation for processing crawl jobs from the Headless Crawler Service. Orchestrates the full crawl pipeline including browser lifecycle management, SSRF protection, depth-limited crawling, and memory management. Foundation worker for FEAT-022 (Headless Crawler Service).
+
+### Component Location
+- **Job Class:** `backend/app/Jobs/CrawlWorker.php`
+- **Services Used:**
+  - `CrawlerService` - Job management and persistence
+  - `PlaywrightRendererService` - Browser rendering
+  - `UrlValidatorService` - SSRF protection
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `handle(CrawlerService, PlaywrightRendererService, UrlValidatorService)` | Main execution handler |
+| `failed(Throwable)` | Failure handler for job cleanup |
+
+### Job Configuration
+
+| Property | Value | Description |
+|----------|-------|-------------|
+| `$timeout` | 300 | 5 minutes max execution time |
+| `$tries` | 1 | No automatic retry |
+| `$maxExceptions` | 1 | Max exceptions before fail |
+| `$backoff` | [60] | Wait 60s before retry after failure |
+
+### Crawl Pipeline Steps
+
+1. **Validate URL** - SSRF check via `UrlValidatorService`
+2. **Launch Browser** - Playwright browser instance
+3. **Render Main Page** - Depth 0 page rendering
+4. **Extract Content** - HTML and structured text
+5. **Store Results** - Persist to database via `CrawlerService`
+6. **Process Depth Links** - L1/L2 pages if configured
+7. **Update Statistics** - Pages crawled, total size
+8. **Close Browser** - Cleanup in finally block
+9. **Set Completed** - Mark job as complete
+
+### SSRF Protection
+
+| Check | Implementation |
+|-------|----------------|
+| Localhost | `localhost`, `127.*`, `::1` blocked |
+| Private IPs | `10.*`, `172.16-31.*`, `192.168.*` blocked |
+| Cloud Metadata | `169.254.169.254` blocked |
+| Blocked Protocols | `file://`, `ftp://`, `gopher://` |
+| DNS Rebinding | Validate resolved IP before connection |
+
+### Memory Management
+
+| Feature | Implementation |
+|---------|----------------|
+| Memory Limit | 256MB per worker |
+| Garbage Collection | Forced between pages |
+| Memory Check | Before each page render |
+| Graceful Failure | Job fails with error message if exceeded |
+
+### Cancellation Support
+
+| Feature | Implementation |
+|---------|----------------|
+| Flag Check | Between each page via `isCancelled()` |
+| Partial Results | Stored before exiting |
+| Resource Cleanup | Browser closed, job marked cancelled |
+
+### Error Handling
+
+| Exception Type | Behavior |
+|----------------|----------|
+| `SSRFException` | Job fails with SSRF error |
+| `PlaywrightException` | Job fails with browser error |
+| `TimeoutException` | Job fails with timeout message |
+| `NetworkException` | Job fails with network error |
+| `MemoryLimitException` | Job fails gracefully |
+| `Throwable` | Generic error, job marked failed |
+
+### Logging
+
+| Event | Log Level | Details |
+|-------|-----------|---------|
+| Job Start | Info | URL, options, job ID |
+| Page Crawled | Info | URL, depth, size |
+| Job Complete | Info | Stats (pages, size, duration) |
+| Error | Error | Exception type, message, context |
+| Cancellation | Info | Partial results saved |
+
+### Depth Handling
+
+- **BFS Queue:** Breadth-first traversal of pages
+- **Visited Tracking:** Prevents duplicate URL crawling
+- **Depth Limit:** Configurable per job (L0/L1/L2)
+
+### Browser Lifecycle
+
+```php
+try {
+    $browser = $this->playwright->launchBrowser($options);
+    // ... crawl pages ...
+} finally {
+    if (isset($browser)) {
+        $this->playwright->closeBrowser($browser);
+    }
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CrawlWorkerTest.php` | 30 | 33 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Worker Structure | 6 | Job class structure, traits, dispatch |
+| Job Configuration | 6 | Timeout, tries, backoff settings |
+| Main Handler | 5 | Job retrieval, status transitions |
+| SSRF Protection | 3 | URL validation, blocked IPs |
+| Browser Lifecycle | 4 | Launch, use, close pattern |
+| Error Handling | 2 | Exception catching, failure marking |
+| Logging | 3 | Sensitive data redaction |
+| Failed Job Handling | 1 | `failed()` method behavior |
+
+### Production Status
+- **Deployed**: 2026-03-02 (GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 30/30 passing (33 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-22-3 (CrawlerService)
+- TASK-22-5 (PlaywrightRendererService)
+- TASK-22-7 (UrlValidatorService)
+- TASK-22-8 (Depth Controller)
+- TASK-22-9 (Size Limiter)
+
+### Related Tasks
+- TASK-22-1: Database migrations (crawl_jobs, crawl_pages)
+- TASK-22-2: CrawlJob and CrawlPage models
+- TASK-22-3: CrawlerService implementation
+- TASK-22-4: Playwright integration
+- TASK-22-5: PlaywrightRendererService
+- TASK-22-7: URL validation and SSRF protection
+- TASK-22-16: Queue integration
+- TASK-22-17: Job timeout and cancellation
+
+---
 ## Team Management Service (TASK-11-3)
 
 ### Service Description
