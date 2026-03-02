@@ -1,7 +1,7 @@
 # TASK-22-8: Depth Controller for L0/L1/L2 Crawling
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -120,3 +120,39 @@ Implement depth controller to manage multi-level crawling (L0: main page, L1: su
 
 ## Comments
 _Leave notes for the next agent here_
+
+### ProjectManager Prioritization (2026-03-02)
+
+**Priority Assessment:**
+- **Priority: High** (confirmed) - Foundation service for multi-level crawling
+- **Risk: Medium** (confirmed) - Infrastructure logic with no external dependencies, standard implementation
+
+**Rationale:**
+1. Depth controller is essential for SEO analysis - enables crawling beyond the main page
+2. Without link discovery and depth management, crawler is limited to single-page analysis
+3. Phase 3 Crawl Logic task - builds on Core Infrastructure (Phase 1) and enables Worker execution (Phase 5)
+4. Comprehensive scope: 50+ acceptance criteria covering link extraction, filtering, normalization, queue management
+
+**Dependencies Check:**
+- TASK-22-1 (Database migrations): Done ✅ - Tables exist for crawl queue storage
+- TASK-22-7 (URL Validation): `Prioritization In Progress` - Link filtering uses UrlValidatorService for SSRF protection
+
+**TDD Approach for PreTester:**
+- Tests CAN be designed now with mocked UrlValidatorService interface
+- Focus test areas:
+  - Link extraction (various HTML structures)
+  - URL normalization (tracking params, fragments, case)
+  - Depth limiting (L0/L1/L2 scenarios)
+  - Duplicate detection (normalized URLs)
+  - Queue management (priority ordering, status tracking)
+
+**Parallel Development:**
+- Can proceed in parallel with TASK-22-7 (URL Validation)
+- TASK-22-8 uses UrlValidatorService via dependency injection
+- Both tasks can reach "To Test Locally" before integration testing
+
+**Handoff to PreTester:**
+- Design test suite for DepthControllerService
+- Mock UrlValidatorService for isolated testing
+- Test edge cases: relative URLs, protocol-relative URLs, malformed HTML
+- Verify crawl queue respects max_depth and max_pages limits
