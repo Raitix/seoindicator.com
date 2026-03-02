@@ -51,6 +51,31 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Maximum Page Size
+    |--------------------------------------------------------------------------
+    |
+    | The maximum size in bytes for a single page.
+    | Pages larger than this are rejected.
+    | Default: 10MB (10 * 1024 * 1024 = 10,485,760 bytes).
+    |
+    */
+
+    'max_page_size' => env('CRAWLER_MAX_PAGE_SIZE', 10 * 1024 * 1024),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Size Warning Threshold
+    |--------------------------------------------------------------------------
+    |
+    | The percentage (0.0-1.0) of max_content_size at which to log warnings.
+    | Default: 0.8 (80% of max, warning at 2.4MB).
+    |
+    */
+
+    'warning_threshold' => env('CRAWLER_WARNING_THRESHOLD', 0.8),
+
+    /*
+    |--------------------------------------------------------------------------
     | Page Timeout
     |--------------------------------------------------------------------------
     |
