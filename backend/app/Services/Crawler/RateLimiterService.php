@@ -476,13 +476,13 @@ class RateLimiterService
     protected function normalizeDomain(string $domain): string
     {
         // Strip protocol if present
-        $domain = preg_replace('#^https?://#i', '', $domain);
+        $domain = preg_replace('{^https?://}i', '', $domain);
 
         // Strip path/query/fragment
-        $domain = preg_replace('#[/\?#].*$#', '', $domain);
+        $domain = preg_replace('{[/?#].*$}', '', $domain);
 
         // Strip port
-        $domain = preg_replace('#:\d+$#', '', $domain);
+        $domain = preg_replace('{:\d+$}', '', $domain);
 
         // Lowercase and trim
         return strtolower(trim($domain));
