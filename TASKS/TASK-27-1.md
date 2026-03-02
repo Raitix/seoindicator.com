@@ -1,7 +1,7 @@
 # TASK-27-1: Admin Database Tables Migration
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `High`
