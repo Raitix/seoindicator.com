@@ -1,7 +1,7 @@
 # TASK-26-8: Implement StripeGatewayService
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
