@@ -1,7 +1,7 @@
 # TASK-5-10: Suggestions List Page
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `Medium`
