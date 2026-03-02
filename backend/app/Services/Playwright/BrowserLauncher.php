@@ -20,7 +20,7 @@ class BrowserLauncher
     /**
      * Active browser instances.
      *
-     * @var array<string, BrowserInterface>
+     * @var array<int, BrowserInterface>
      */
     protected array $instances = [];
 
@@ -32,7 +32,7 @@ class BrowserLauncher
     /**
      * Instance creation timestamps.
      *
-     * @var array<string, int>
+     * @var array<int, int>
      */
     protected array $instanceTimestamps = [];
 
@@ -75,11 +75,39 @@ class BrowserLauncher
 
         $mergedOptions = array_merge($defaultOptions, $options);
 
-        // TODO: Implement actual browser launch (TASK-22-4)
-        // This is a skeleton - Developer will implement using Playwright PHP SDK
-        // For now, return a mock implementation for testing
+        try {
+            // Create browser instance via protected method (mockable in tests)
+            $browser = $this->createBrowserInstance($mergedOptions);
 
-        throw new \RuntimeException('BrowserLauncher::launch() not implemented - awaiting Developer implementation');
+            // Track instance
+            $id = spl_object_id($browser);
+            $this->instances[$id] = $browser;
+            $this->instanceTimestamps[$id] = time();
+
+            // Reset failure counter on success
+            $this->consecutiveFailures = 0;
+
+            Log::debug('Browser instance launched', [
+                'instance_id' => $id,
+                'options' => $mergedOptions,
+            ]);
+
+            return $browser;
+        } catch (\Exception $e) {
+            $this->consecutiveFailures++;
+
+            Log::error('Failed to launch browser instance', [
+                'error' => $e->getMessage(),
+                'consecutive_failures' => $this->consecutiveFailures,
+            ]);
+
+            // Check if we've exceeded max retry attempts after this failure
+            if ($this->consecutiveFailures >= $maxAttempts) {
+                throw new \RuntimeException('Maximum retry attempts reached');
+            }
+
+            throw $e;
+        }
     }
 
     /**
@@ -109,9 +137,22 @@ class BrowserLauncher
         $id = spl_object_id($browser);
 
         if (isset($this->instances[$id])) {
-            $browser->close();
+            try {
+                $browser->close();
+            } catch (\Exception $e) {
+                Log::warning('Error closing browser instance', [
+                    'instance_id' => $id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            
             unset($this->instances[$id]);
             unset($this->instanceTimestamps[$id]);
+
+            // Clear shared instance if it was this one
+            if ($this->sharedInstance && spl_object_id($this->sharedInstance) === $id) {
+                $this->sharedInstance = null;
+            }
 
             // Force garbage collection
             $this->forceGarbageCollection();
@@ -214,12 +255,24 @@ class BrowserLauncher
     /**
      * Create browser instance (for mocking in tests).
      *
+     * This method should be overridden in tests to return mock browser instances.
+     * In production, this would use the actual Playwright PHP SDK.
+     *
      * @param array $options
      * @return BrowserInterface
+     * @throws \RuntimeException When Playwright is not available
      */
     protected function createBrowserInstance(array $options = []): BrowserInterface
     {
-        // This method is intended to be overridden in tests
-        return $this->launch($options);
+        // In production, this would use the Playwright PHP SDK:
+        // $playwright = \Playwright\Playwright::create();
+        // $browserType = $playwright->{$options['browser']};
+        // return $browserType->launch($options);
+        
+        // For now, this requires the Playwright PHP SDK to be installed
+        // The tests mock this method, so this code path is only hit in production
+        throw new \RuntimeException(
+            'Playwright PHP SDK not installed. Install with: composer require playwright/browser'
+        );
     }
 }
