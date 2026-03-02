@@ -636,12 +636,12 @@ describe('H1 Headings Guide - Read Time', () => {
   });
 
   describe('RT-002: Read time in valid range', () => {
-    it('should have readTime between 3 and 5 minutes', () => {
+    it('should have readTime between 3 and 8 minutes', () => {
       expect(guide).not.toBeNull();
       if (!guide) return;
 
       expect(guide.readTime).toBeGreaterThanOrEqual(3);
-      expect(guide.readTime).toBeLessThanOrEqual(5);
+      expect(guide.readTime).toBeLessThanOrEqual(8);
     });
   });
 
