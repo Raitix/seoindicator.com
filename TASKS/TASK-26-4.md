@@ -1,7 +1,7 @@
 # TASK-26-4: Create AI Models Table with OpenRouter Sync
 
 ## STATUS
-`To Write Tests`
+`In Development`
 
 ## PRIORITY
 `High`
@@ -115,3 +115,53 @@ _Leave notes for the next agent here_
 - Free tier models have daily limits per OpenRouter policy
 
 **Status: Ready for PreTester**
+
+### 2026-03-02 - PreTester
+**Tests Complete - Ready for Developer**
+
+**Test Suite Summary:**
+- **Total Tests:** 177 tests across 3 files
+- **AIModelTest.php:** 82 tests (model creation, casts, scopes, accessors, indexes, edge cases)
+- **OpenRouterSyncServiceTest.php:** 70 tests (API sync, pricing parsing, capabilities, error handling)
+- **ModelsSyncCommandTest.php:** 25 tests (command execution, options, scheduling)
+
+**Test Files Created:**
+1. `backend/tests/Unit/Models/AIModelTest.php`
+2. `backend/tests/Unit/Services/OpenRouterSyncServiceTest.php`
+3. `backend/tests/Feature/Console/ModelsSyncCommandTest.php`
+4. `TESTS/TASK-26-4.md` (documentation)
+
+**Key Test Coverage:**
+- Model creation with required fields and full data
+- DECIMAL(10,6) precision for pricing columns
+- JSON cast for capabilities array
+- Unique index on (provider, model_id)
+- Index on is_active
+- Scopes: active, freeTier, byProvider, ordered
+- Accessor: cost_per_analysis_estimate
+- OpenRouter API sync with HTTP mocking
+- Pricing parsing (per-token to per-1k conversion)
+- Context window parsing with fallback
+- Capabilities detection (vision, tools)
+- Free tier model detection
+- API error handling (500, 429, 504, malformed response)
+- XSS sanitization
+- Console command options (--force, --provider, --quiet)
+
+**Factory Already Exists:**
+- `backend/database/factories/AIModelFactory.php` with states:
+  - `freeTier()` - Free tier model
+  - `inactive()` - Inactive model
+  - `withVision()` - Vision-capable model
+  - `gpt4()` - GPT-4 style model
+  - `claude()` - Claude style model
+  - `llamaFree()` - Llama free tier model
+
+**Notes for Developer:**
+1. AIModelFactory already exists - no need to create
+2. Tests use `Http::fake()` for API mocking
+3. Tests assume `OPENROUTER_API_KEY` in config/services.php
+4. Migration should include unique index on (provider, model_id)
+5. Model should have $casts for DECIMAL, JSON, BOOLEAN, INT
+
+**Status: To Develop**

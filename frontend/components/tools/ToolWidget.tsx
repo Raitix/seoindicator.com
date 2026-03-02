@@ -3,9 +3,11 @@
 /**
  * ToolWidget Component
  * TASK-16-4: Tool Embedding System
+ * TASK-21-11: AI Suggestion Integration
  * 
  * Reusable widget for embedding SEO tools in guide pages.
  * Supports meta-tag-analyzer, keyword-density, mobile-friendly, and social-preview tools.
+ * Now includes AI-powered suggestions for title and meta description analysis.
  */
 
 import * as React from 'react';
@@ -16,6 +18,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToolAnalysis, type ToolType, type ErrorCode, ERROR_MESSAGES } from '@/hooks/useToolAnalysis';
 import { validateUrl } from '@/lib/utils/urlValidation';
+import { AISuggestionButton } from '@/components/tools/AISuggestionButton';
+import { AISuggestionPanel } from '@/components/tools/AISuggestionPanel';
+import type { SuggestionResult, AIIndicatorType } from '@/lib/types/ai-suggestions';
 
 // Tool configuration
 interface ToolConfig {
@@ -147,31 +152,124 @@ interface ResultsDisplayProps {
 }
 
 function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
+  // AI suggestion state for meta tag analyzer
+  const [titleSuggestion, setTitleSuggestion] = React.useState<SuggestionResult | null>(null);
+  const [descriptionSuggestion, setDescriptionSuggestion] = React.useState<SuggestionResult | null>(null);
+  
+  // Copy to clipboard helper
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      console.error('Failed to copy to clipboard');
+      return false;
+    }
+  };
+
   // Render tool-specific results
   const renderMetaTagResults = (result: Record<string, unknown>) => {
     const title = result.title as Record<string, unknown> | undefined;
     const description = result.description as Record<string, unknown> | undefined;
     const warnings = result.warnings as Array<{ type: string; message: string; severity: string }> | undefined;
+    const url = result.url as string | undefined;
+    const keywords = result.keywords as string[] | undefined;
+
+    // Build context for AI suggestions
+    const titleContext = {
+      title: title?.value,
+      url: url,
+      keywords: keywords?.slice(0, 5),
+      content_summary: result.content_summary,
+    };
+
+    const descriptionContext = {
+      description: description?.value,
+      title: title?.value,
+      url: url,
+      keywords: keywords?.slice(0, 5),
+      content_summary: result.content_summary,
+    };
 
     return (
       <div className="space-y-4">
-        {/* Title */}
+        {/* Title with AI Suggestion */}
         <div className="bg-slate-800/50 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-slate-400 mb-2">Title</h4>
+          <div className="flex items-start justify-between gap-4 mb-2">
+            <h4 className="text-sm font-medium text-slate-400">Title</h4>
+            {Boolean(title?.value) && (
+              <AISuggestionButton
+                indicator="title"
+                context={titleContext as Record<string, unknown>}
+                onSuggestion={setTitleSuggestion}
+                buttonText="✨ AI Suggest"
+                className="text-xs px-2 py-1"
+              />
+            )}
+          </div>
           <p className="text-white font-medium">{(title?.value as string) || 'No title found'}</p>
           {Boolean(title?.value) && (
-            <p className="text-xs text-slate-500 mt-1">{title?.length as number} characters</p>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-xs text-slate-500">{title?.length as number} characters</p>
+              <button
+                onClick={() => copyToClipboard(title?.value as string)}
+                className="text-xs text-blue-400 hover:text-blue-300"
+                aria-label="Copy title to clipboard"
+              >
+                Copy
+              </button>
+            </div>
           )}
         </div>
 
-        {/* Description */}
+        {/* Title AI Suggestion Panel */}
+        {titleSuggestion && (
+          <AISuggestionPanel
+            result={titleSuggestion}
+            showRegenerate={true}
+            onRegenerate={() => setTitleSuggestion(null)}
+            className="mt-2"
+          />
+        )}
+
+        {/* Description with AI Suggestion */}
         <div className="bg-slate-800/50 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-slate-400 mb-2">Meta Description</h4>
+          <div className="flex items-start justify-between gap-4 mb-2">
+            <h4 className="text-sm font-medium text-slate-400">Meta Description</h4>
+            {Boolean(description?.value) && (
+              <AISuggestionButton
+                indicator="meta_description"
+                context={descriptionContext as Record<string, unknown>}
+                onSuggestion={setDescriptionSuggestion}
+                buttonText="✨ AI Suggest"
+                className="text-xs px-2 py-1"
+              />
+            )}
+          </div>
           <p className="text-slate-300">{(description?.value as string) || 'No description found'}</p>
           {Boolean(description?.value) && (
-            <p className="text-xs text-slate-500 mt-1">{description?.length as number} characters</p>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-xs text-slate-500">{description?.length as number} characters</p>
+              <button
+                onClick={() => copyToClipboard(description?.value as string)}
+                className="text-xs text-blue-400 hover:text-blue-300"
+                aria-label="Copy description to clipboard"
+              >
+                Copy
+              </button>
+            </div>
           )}
         </div>
+
+        {/* Description AI Suggestion Panel */}
+        {descriptionSuggestion && (
+          <AISuggestionPanel
+            result={descriptionSuggestion}
+            showRegenerate={true}
+            onRegenerate={() => setDescriptionSuggestion(null)}
+            className="mt-2"
+          />
+        )}
 
         {/* Warnings */}
         {warnings && warnings.length > 0 && (
