@@ -8,7 +8,7 @@
 import {
   getGuideBySlug,
   GUIDE_SLUGS,
-} from '../../lib/guides/registry';
+} from '@/lib/guides/registry';
 import {
   isSEOGuide,
   isGuideSection,
@@ -16,7 +16,7 @@ import {
   isValidPriority,
   ChecklistPriority,
   SEOGuide,
-} from '../../lib/guides/types';
+} from '@/lib/guides/types';
 
 describe('TASK-20-8: Heading Hierarchy Guide Content', () => {
   let guide: SEOGuide | null;
