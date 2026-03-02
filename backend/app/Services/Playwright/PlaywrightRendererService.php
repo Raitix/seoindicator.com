@@ -28,7 +28,7 @@ class PlaywrightRendererService
         protected BrowserLauncher $browserLauncher,
         protected ?LoggerInterface $logger = null
     ) {
-        $this->logger = $logger ?? Log::getLogger();
+        $this->logger = $logger ?? app(LoggerInterface::class);
     }
 
     /**
@@ -152,7 +152,7 @@ class PlaywrightRendererService
         return new ExtractedContent(
             html: $html,
             title: $title,
-            structuredText: $structuredText,
+            structuredText: is_string($structuredText) ? $structuredText : '',
             size: strlen($html)
         );
     }
@@ -175,7 +175,12 @@ class PlaywrightRendererService
             }
         ');
 
-        return array_map(function ($link) use ($baseDomain) {
+        // Handle null or non-array results
+        if (!is_array($links)) {
+            return [];
+        }
+
+        return array_filter(array_map(function ($link) use ($baseDomain) {
             if (empty($link['href'])) {
                 return null;
             }
@@ -186,11 +191,11 @@ class PlaywrightRendererService
             return [
                 'url' => $url,
                 'text' => $link['text'] ?? '',
-                'rel' => $link['rel'],
-                'target' => $link['target'],
+                'rel' => $link['rel'] ?? null,
+                'target' => $link['target'] ?? null,
                 'isInternal' => $linkDomain === $baseDomain,
             ];
-        }, array_filter($links, fn($l) => !empty($l['href'])));
+        }, $links), fn($l) => $l !== null);
     }
 
     /**
@@ -316,19 +321,38 @@ class PlaywrightRendererService
 
         $host = parse_url($url, PHP_URL_HOST);
 
-        // Block localhost
-        if (in_array($host, ['localhost', '127.0.0.1', '::1'])) {
+        if (empty($host)) {
+            throw new \InvalidArgumentException('URL must have a valid host');
+        }
+
+        // Block localhost variants
+        $lowerHost = strtolower($host);
+        if (in_array($lowerHost, ['localhost', '127.0.0.1', '::1', '0.0.0.0', '[::1]'])) {
             throw new \InvalidArgumentException('Access to localhost is not allowed');
         }
 
-        // Block private IP ranges
-        if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-            throw new \InvalidArgumentException('Access to private IP addresses is not allowed');
+        // Block localhost subdomains (e.g., localhost.localdomain)
+        if (str_ends_with($lowerHost, '.localhost') || str_ends_with($lowerHost, '.local')) {
+            throw new \InvalidArgumentException('Access to localhost is not allowed');
         }
 
         // Block cloud metadata IP
         if ($host === '169.254.169.254') {
             throw new \InvalidArgumentException('Access to cloud metadata service is not allowed');
+        }
+
+        // Only check IP restrictions if host is an IP address (not a domain name)
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            // Block private/reserved IP ranges (10.x, 172.16-31.x, 192.168.x, etc.)
+            if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+                throw new \InvalidArgumentException('Access to private IP addresses is not allowed');
+            }
+
+            // Block link-local addresses (169.254.x.x)
+            $ipParts = explode('.', $host);
+            if (count($ipParts) === 4 && $ipParts[0] === '169' && $ipParts[1] === '254' && $host !== '169.254.169.254') {
+                throw new \InvalidArgumentException('Access to link-local addresses is not allowed');
+            }
         }
     }
 }
