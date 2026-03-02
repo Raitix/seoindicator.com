@@ -537,7 +537,7 @@ Remember: Templates are starting points. Customize each description to reflect t
     summary: 'Learn how to use H1 tags effectively for SEO, accessibility, and better user experience with proper heading hierarchy.',
     category: 'on-page',
     icon: '🔤',
-    readTime: 5,
+    readTime: 8,
     sections: [
       {
         title: 'What are H1 Headings?',
