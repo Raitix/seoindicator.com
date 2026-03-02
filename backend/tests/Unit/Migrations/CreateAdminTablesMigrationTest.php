@@ -807,7 +807,10 @@ class CreateAdminTablesMigrationTest extends TestCase
      */
     public function test_mr001_down_drops_admin_activity_logs(): void
     {
-        $this->artisan('migrate:rollback', ['--step' => 1]);
+        // Rollback specific migration (migrate:fresh puts all migrations in batch 1)
+        $this->artisan('migrate:rollback', [
+            '--path' => 'database/migrations/2026_03_02_170000_create_admin_tables.php',
+        ]);
         
         $this->assertFalse(
             Schema::hasTable('admin_activity_logs'),
@@ -820,7 +823,10 @@ class CreateAdminTablesMigrationTest extends TestCase
      */
     public function test_mr002_down_drops_system_metrics_cache(): void
     {
-        $this->artisan('migrate:rollback', ['--step' => 1]);
+        // Rollback specific migration (migrate:fresh puts all migrations in batch 1)
+        $this->artisan('migrate:rollback', [
+            '--path' => 'database/migrations/2026_03_02_170000_create_admin_tables.php',
+        ]);
         
         $this->assertFalse(
             Schema::hasTable('system_metrics_cache'),
@@ -833,8 +839,10 @@ class CreateAdminTablesMigrationTest extends TestCase
      */
     public function test_mr003_rerun_migration_after_rollback(): void
     {
-        // Rollback
-        $this->artisan('migrate:rollback', ['--step' => 1]);
+        // Rollback specific migration
+        $this->artisan('migrate:rollback', [
+            '--path' => 'database/migrations/2026_03_02_170000_create_admin_tables.php',
+        ]);
         
         // Re-run
         $this->artisan('migrate');
@@ -851,8 +859,10 @@ class CreateAdminTablesMigrationTest extends TestCase
         // Create user
         $userId = $this->createUser(['email' => 'preserved@test.com']);
         
-        // Rollback admin tables
-        $this->artisan('migrate:rollback', ['--step' => 1]);
+        // Rollback admin tables specific migration
+        $this->artisan('migrate:rollback', [
+            '--path' => 'database/migrations/2026_03_02_170000_create_admin_tables.php',
+        ]);
         
         // User should still exist
         $this->assertDatabaseHas('users', ['email' => 'preserved@test.com']);
@@ -869,8 +879,10 @@ class CreateAdminTablesMigrationTest extends TestCase
             $this->markTestSkipped('Foreign key inspection only supported on MySQL/MariaDB');
         }
         
-        // Rollback
-        $this->artisan('migrate:rollback', ['--step' => 1]);
+        // Rollback specific migration
+        $this->artisan('migrate:rollback', [
+            '--path' => 'database/migrations/2026_03_02_170000_create_admin_tables.php',
+        ]);
         
         // Table should not exist, so no FK
         $this->assertFalse(Schema::hasTable('admin_activity_logs'));
@@ -881,8 +893,10 @@ class CreateAdminTablesMigrationTest extends TestCase
      */
     public function test_mr006_indexes_dropped_on_rollback(): void
     {
-        // Rollback
-        $this->artisan('migrate:rollback', ['--step' => 1]);
+        // Rollback specific migration
+        $this->artisan('migrate:rollback', [
+            '--path' => 'database/migrations/2026_03_02_170000_create_admin_tables.php',
+        ]);
         
         // Tables should not exist, so no indexes
         $this->assertFalse(Schema::hasTable('admin_activity_logs'));
@@ -941,8 +955,10 @@ class CreateAdminTablesMigrationTest extends TestCase
      */
     public function test_mr010_rollback_order_correct(): void
     {
-        // Rollback should work without errors
-        $this->artisan('migrate:rollback', ['--step' => 1]);
+        // Rollback specific migration should work without errors
+        $this->artisan('migrate:rollback', [
+            '--path' => 'database/migrations/2026_03_02_170000_create_admin_tables.php',
+        ]);
         
         // Just verify no errors occurred
         $this->assertTrue(true, 'Rollback should complete without errors');
