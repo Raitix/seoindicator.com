@@ -1,7 +1,7 @@
 # TASK-22-6: Content Processing and Structured Text Extraction
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
