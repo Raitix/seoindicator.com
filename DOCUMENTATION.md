@@ -769,6 +769,110 @@ Comprehensive SEO guide content for the Canonical URLs indicator, covering dupli
 - TASK-20-21: XML Sitemap Guide (related topic)
 
 ---
+## Image Alt Text SEO Guide (TASK-20-9)
+
+### Guide Description
+Comprehensive SEO guide content for the Image Alt Text indicator, covering accessibility, image SEO, and writing effective alt descriptions. Explains WCAG 2.1 compliance requirements and provides actionable best practices with HTML code examples. Part of the SEO Guides Library (FEAT-020).
+
+### Component Location
+- **Registry:** `frontend/lib/guides/registry.ts`
+- **Slug:** `image-alt-text`
+- **URL:** `https://seoindicator.com/seo-guides/image-alt-text/`
+
+### Content Sections
+
+| Section | Description | Word Count |
+|---------|-------------|------------|
+| What is Image Alt Text? | Definition, alt vs title attribute, when alt is required | ~250 |
+| Why Alt Text Matters | Accessibility (WCAG 2.1), SEO, image search, user experience | ~300 |
+| How to Write Effective Alt Text | Descriptiveness, conciseness, keywords, context | ~350 |
+| Common Mistakes | Keyword stuffing, empty alt, missing attribute, vague descriptions | ~250 |
+| Decorative Images | Empty alt usage, decorative vs informative decision guide | ~200 |
+
+**Total Content:** ~1,350 words
+**Read Time:** 4 minutes
+
+### Key Technical Details
+
+| Topic | Details |
+|-------|---------|
+| HTML Alt Attribute | `<img src="image.jpg" alt="Description of image">` - required on all img tags |
+| Character Limit | 100-125 characters optimal for screen readers |
+| Decorative Images | Use `alt=""` (empty quotes) to skip screen reader announcement |
+| WCAG 2.1 Compliance | Required for accessibility - legal requirement for public websites |
+| Image SEO | Alt text helps images rank in Google Image Search |
+
+### Code Examples
+
+| Example | Language | Description |
+|---------|----------|-------------|
+| Good vs poor alt text | HTML | Comparison showing descriptive vs vague alt text |
+| Decorative images | HTML | Empty alt="" usage for decorative images |
+
+### Best Practices Checklist
+
+| Priority | Item |
+|----------|------|
+| Critical | Add descriptive alt text to all meaningful images on your site |
+| Critical | Use empty alt="" for decorative images only—never on informative images |
+| Important | Keep alt text under 125 characters for screen reader compatibility |
+| Important | Describe image content specifically—avoid vague descriptions like "an image" |
+| Important | Never keyword stuff alt text—write natural, helpful descriptions |
+| Important | Don't start alt text with "Image of" or "Picture of"—it's redundant |
+| Recommended | Follow WCAG 2.1 guidelines for accessible image alternatives |
+
+### Related Guides
+- `image-optimization` - Image file optimization techniques
+- `structured-data` - Schema.org markup for rich snippets
+
+### Technical Implementation
+
+**Guide Registry Entry:**
+```typescript
+{
+  slug: 'image-alt-text',
+  title: 'Image Alt Text Optimization',
+  summary: 'Write descriptive alt text that improves accessibility and image search visibility.',
+  category: 'on-page',
+  icon: '🖼️',
+  readTime: 4,
+  relatedGuides: ['image-optimization', 'structured-data'],
+  sections: [ /* 5 sections */ ],
+  checklist: [ /* 7 items */ ],
+  codeExamples: [ /* 2 examples */ ]
+}
+```
+
+### WCAG 2.1 Compliance
+
+| Image Type | Alt Text Requirement |
+|------------|---------------------|
+| Informative images | Descriptive alt text explaining content |
+| Decorative images | Empty `alt=""` to skip announcement |
+| Functional images (buttons, links) | Describe the action, not the image |
+| Complex images (charts, diagrams) | Brief alt + detailed description nearby |
+
+### Accessibility Statistics
+
+- **7.6 million US adults** have a visual disability
+- Screen readers rely on alt text to understand images
+- Empty `alt=""` tells screen readers to skip decorative images
+
+### Production Status
+- **Deployed:** 2026-03-02 (GitHub Actions auto-deploy)
+- **URL:** https://seoindicator.com/seo-guides/image-alt-text/
+- **Health Check:** Passing
+- **Tests:** 60/60 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-1 (Guide data structure)
+
+### Related Tasks
+- TASK-20-10: Image Optimization Guide (related topic)
+- TASK-20-16: Structured Data Guide (related topic)
+
+---
 ## Image Optimization SEO Guide (TASK-20-10)
 
 ### Guide Description

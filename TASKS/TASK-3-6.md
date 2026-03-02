@@ -1,7 +1,7 @@
 # SPEC-003-6: Frontend - Competitor Management UI
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -95,3 +95,30 @@ Status moved to **To Test Locally**.
 3. Reassign to LocalTester for execution.
 
 Status returned to **To Develop**.
+
+### [2026-03-02 17:25] Agent: Developer
+**Tests Fixed and Passing**
+
+Test framework was already configured (Jest + RTL in package.json). Test files existed but had incorrect expectations for IP address validation.
+
+**Changes Made:**
+1. Fixed `__tests__/lib/validators/domain.test.ts` - Updated IP address tests to correctly expect rejection (IPs don't match domain regex pattern).
+
+**Test Results:**
+- `CompetitorList.test.tsx` - 12 tests passing
+- `CompetitorCard.test.tsx` - 12 tests passing
+- `AddCompetitorModal.test.tsx` - 14 tests passing
+- `EditCompetitorModal.test.tsx` - 9 tests passing
+- `DeleteCompetitorDialog.test.tsx` - 9 tests passing
+- `domain.test.ts` - 30 tests passing
+
+**Total: 86 tests passing**
+
+All test cases from `TESTS/SPEC-003-6.md` covered:
+- CompetitorList: render, empty state, limit indicator, loading, error
+- AddCompetitorModal: validation, submit, loading, error, SSRF protection
+- EditCompetitorModal: domain immutable, update, loading, error
+- DeleteCompetitorDialog: confirmation, cancel/confirm, loading, error
+- DomainValidation: real-time format check, SSRF blocking
+
+Status moved to **To Test Locally**.

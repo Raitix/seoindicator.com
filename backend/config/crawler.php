@@ -87,6 +87,35 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Timeout Configuration (TASK-22-17)
+    |--------------------------------------------------------------------------
+    |
+    | Timeout settings for crawl jobs, pages, browser instances, and connections.
+    | All values are in seconds.
+    |
+    | @see \App\Services\Crawler\TimeoutHandlerService
+    |
+    */
+
+    'timeouts' => [
+        // Maximum time for an entire crawl job (default: 5 minutes)
+        'job' => (int) env('CRAWLER_JOB_TIMEOUT', 300),
+
+        // Maximum time for a single page to render (default: 30 seconds)
+        'page' => (int) env('CRAWLER_PAGE_TIMEOUT', 30),
+
+        // Maximum time for browser operations (default: 60 seconds)
+        'browser' => (int) env('CRAWLER_BROWSER_TIMEOUT', 60),
+
+        // Maximum time for HTTP connections (default: 10 seconds)
+        'connection' => (int) env('CRAWLER_CONNECTION_TIMEOUT', 10),
+
+        // Grace period before hard kill for graceful shutdown (default: 30 seconds)
+        'grace_period' => (int) env('CRAWLER_GRACE_PERIOD', 30),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Default User Agent
     |--------------------------------------------------------------------------
     |

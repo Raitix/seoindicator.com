@@ -4,6 +4,9 @@ namespace App\Jobs;
 
 use App\Models\CrawlJob;
 use App\Services\Crawler\CrawlerService;
+use App\Services\Crawler\TimeoutHandlerService;
+use App\Services\Crawler\CancellationService;
+use App\Services\Crawler\PartialResultsService;
 use App\Services\PlaywrightRendererService;
 use App\Services\UrlValidatorService;
 use App\Exceptions\SSRFException;
@@ -12,6 +15,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
@@ -23,6 +27,7 @@ use Throwable;
  * and extracting SEO-relevant content using Playwright.
  *
  * @see TASK-22-15
+ * @see TASK-22-17
  * @see SPEC-022
  *
  * @property string $jobId The crawl job identifier
@@ -86,6 +91,11 @@ class CrawlWorker implements ShouldQueue
     protected float $startTime;
 
     /**
+     * Crawled pages data for partial results.
+     */
+    protected array $crawledPages = [];
+
+    /**
      * Create a new job instance.
      *
      * @param string $jobId The crawl job identifier
@@ -93,6 +103,7 @@ class CrawlWorker implements ShouldQueue
     public function __construct(string $jobId)
     {
         $this->jobId = $jobId;
+        $this->timeout = config('crawler.timeouts.job', 300);
     }
 
     /**
@@ -109,12 +120,18 @@ class CrawlWorker implements ShouldQueue
      * @param CrawlerService $crawler
      * @param PlaywrightRendererService $renderer
      * @param UrlValidatorService $urlValidator
+     * @param TimeoutHandlerService $timeoutHandler
+     * @param CancellationService $cancellationService
+     * @param PartialResultsService $partialResultsService
      * @return void
      */
     public function handle(
-        $crawler,
-        $renderer,
-        $urlValidator
+        CrawlerService $crawler,
+        PlaywrightRendererService $renderer,
+        UrlValidatorService $urlValidator,
+        TimeoutHandlerService $timeoutHandler,
+        CancellationService $cancellationService,
+        PartialResultsService $partialResultsService
     ): void {
         $this->startTime = microtime(true);
 
@@ -142,6 +159,14 @@ class CrawlWorker implements ShouldQueue
 
         $url = $crawlJob->url;
         $depth = $crawlJob->depth;
+        $options = $crawlJob->options ?? [];
+
+        // Start timeout tracking
+        $timeoutHandler->startTracking($this->jobId, [
+            'timeout' => $options['timeout'] ?? config('crawler.timeouts.job', 300),
+            'grace_period' => config('crawler.timeouts.grace_period', 30),
+            'page_timeout' => config('crawler.timeouts.page', 30),
+        ]);
 
         Log::info('CrawlWorker: Starting crawl job', [
             'jobId' => $this->jobId,
@@ -158,11 +183,18 @@ class CrawlWorker implements ShouldQueue
 
             // Step 3: Launch browser
             $this->browser = $renderer->launchBrowser([
-                'timeout' => $this->timeout * 1000,
+                'timeout' => config('crawler.timeouts.browser', 60) * 1000,
             ]);
 
             // Step 4: Crawl pages (starting with depth 0)
-            $this->crawlPages($crawler, $renderer, $url, $depth);
+            $this->crawlPages(
+                $crawler,
+                $renderer,
+                $timeoutHandler,
+                $cancellationService,
+                $url,
+                $depth
+            );
 
             // Step 5: Mark job as completed
             $duration = round(microtime(true) - $this->startTime);
@@ -197,6 +229,18 @@ class CrawlWorker implements ShouldQueue
                 $renderer->closeBrowser($this->browser);
                 $this->browser = null;
             }
+
+            // Stop timeout tracking
+            $timeoutHandler->stopTracking($this->jobId);
+
+            // Clear cancellation flag
+            $cancellationService->clearCancellationFlag($this->jobId);
+
+            // Clear rate limit tokens
+            $this->clearRateLimitTokens($url);
+
+            // Clear URL locks
+            $this->clearUrlLocks();
         }
     }
 
@@ -205,6 +249,8 @@ class CrawlWorker implements ShouldQueue
      *
      * @param CrawlerService $crawler
      * @param PlaywrightRendererService $renderer
+     * @param TimeoutHandlerService $timeoutHandler
+     * @param CancellationService $cancellationService
      * @param string $startUrl
      * @param int $maxDepth
      * @return void
@@ -212,18 +258,56 @@ class CrawlWorker implements ShouldQueue
     protected function crawlPages(
         CrawlerService $crawler,
         PlaywrightRendererService $renderer,
+        TimeoutHandlerService $timeoutHandler,
+        CancellationService $cancellationService,
         string $startUrl,
         int $maxDepth
     ): void {
         $queue = [[$startUrl, 0]]; // [url, depth]
         $visited = [];
+        $totalUrls = 1;
 
         while (!empty($queue)) {
             // Check for cancellation
-            if ($this->isCancelled($crawler)) {
+            if ($cancellationService->shouldCancel($this->jobId)) {
                 Log::info('CrawlWorker: Job cancelled, stopping crawl', [
                     'jobId' => $this->jobId,
+                    'pagesCrawled' => $this->pagesCrawled,
                 ]);
+
+                $this->handleCancellation($crawler, $cancellationService);
+                break;
+            }
+
+            // Check for timeout
+            if (!$timeoutHandler->canContinueCrawling($this->jobId)) {
+                Log::warning('CrawlWorker: Job timeout exceeded', [
+                    'jobId' => $this->jobId,
+                    'elapsed' => $timeoutHandler->getElapsedSeconds($this->jobId),
+                    'timeout' => $timeoutHandler->getDefaultTimeout(),
+                    'pagesCrawled' => $this->pagesCrawled,
+                ]);
+
+                $this->handleTimeout($crawler, $timeoutHandler);
+                break;
+            }
+
+            // Check if approaching timeout (start graceful shutdown)
+            if ($timeoutHandler->shouldStartGracefulShutdown($this->jobId)) {
+                Log::info('CrawlWorker: Approaching timeout, starting graceful shutdown', [
+                    'jobId' => $this->jobId,
+                    'remaining' => $timeoutHandler->getRemainingSeconds($this->jobId),
+                ]);
+            }
+
+            // Check if we have time for next page
+            if (!$timeoutHandler->hasTimeForNextPage($this->jobId)) {
+                Log::info('CrawlWorker: Not enough time for next page, finishing', [
+                    'jobId' => $this->jobId,
+                    'remaining' => $timeoutHandler->getRemainingSeconds($this->jobId),
+                ]);
+
+                $this->handleTimeout($crawler, $timeoutHandler);
                 break;
             }
 
@@ -245,10 +329,25 @@ class CrawlWorker implements ShouldQueue
             }
 
             try {
+                $pageStartTime = microtime(true);
+
                 // Render the page
                 $result = $renderer->renderPage($url, [
-                    'timeout' => 30000, // 30s per page
+                    'timeout' => config('crawler.timeouts.page', 30) * 1000,
                 ]);
+
+                $pageDuration = round(microtime(true) - $pageStartTime);
+
+                // Check if page timed out
+                if ($timeoutHandler->isPageTimeout($pageDuration)) {
+                    Log::warning('CrawlWorker: Page timeout, skipping', [
+                        'jobId' => $this->jobId,
+                        'url' => $this->sanitizeUrlForLog($url),
+                        'duration' => $pageDuration,
+                    ]);
+
+                    continue;
+                }
 
                 // Store the result
                 $crawler->storePageResult($this->jobId, [
@@ -261,6 +360,14 @@ class CrawlWorker implements ShouldQueue
                     'links' => $result['links'],
                     'size' => $result['size'],
                 ]);
+
+                // Track crawled page for partial results
+                $this->crawledPages[] = [
+                    'url' => $url,
+                    'depth' => $currentDepth,
+                    'status' => 'completed',
+                    'size' => $result['size'],
+                ];
 
                 // Update stats
                 $this->pagesCrawled++;
@@ -276,6 +383,7 @@ class CrawlWorker implements ShouldQueue
                     foreach ($result['links'] as $link) {
                         if ($link['internal'] ?? false) {
                             $queue[] = [$link['url'], $currentDepth + 1];
+                            $totalUrls++;
                         }
                     }
                 }
@@ -296,8 +404,104 @@ class CrawlWorker implements ShouldQueue
                     'depth' => $currentDepth,
                     'error' => $e->getMessage(),
                 ]);
+
+                // Track failed page
+                $this->crawledPages[] = [
+                    'url' => $url,
+                    'depth' => $currentDepth,
+                    'status' => 'failed',
+                    'error' => $e->getMessage(),
+                ];
             }
         }
+    }
+
+    /**
+     * Handle job cancellation.
+     *
+     * @param CrawlerService $crawler
+     * @param CancellationService $cancellationService
+     * @return void
+     */
+    protected function handleCancellation(
+        CrawlerService $crawler,
+        CancellationService $cancellationService
+    ): void {
+        $crawlJob = $crawler->getCrawlJob($this->jobId);
+
+        if ($crawlJob && !empty($this->crawledPages)) {
+            // Store partial results
+            $partialResultsService = app(PartialResultsService::class);
+            $partialResultsService->storePartialResults(
+                $crawlJob,
+                $this->crawledPages,
+                'cancelled'
+            );
+        } else {
+            // Just update status
+            $crawler->updateStatus($this->jobId, CrawlJob::STATUS_CANCELLED);
+        }
+
+        Log::info('CrawlWorker: Job cancelled by user', [
+            'jobId' => $this->jobId,
+            'pagesCrawled' => $this->pagesCrawled,
+            'reason' => 'User requested cancellation',
+        ]);
+    }
+
+    /**
+     * Handle job timeout.
+     *
+     * @param CrawlerService $crawler
+     * @param TimeoutHandlerService $timeoutHandler
+     * @return void
+     */
+    protected function handleTimeout(
+        CrawlerService $crawler,
+        TimeoutHandlerService $timeoutHandler
+    ): void {
+        $crawlJob = $crawler->getCrawlJob($this->jobId);
+
+        if ($crawlJob && !empty($this->crawledPages)) {
+            // Store partial results
+            $partialResultsService = app(PartialResultsService::class);
+            $partialResultsService->storePartialResults(
+                $crawlJob,
+                $this->crawledPages,
+                'timeout'
+            );
+        } else {
+            // Just update status
+            $crawler->updateStatus($this->jobId, CrawlJob::STATUS_COMPLETED);
+        }
+
+        $timeoutHandler->logTimeoutEvent($this->jobId);
+    }
+
+    /**
+     * Clear rate limit tokens for a domain.
+     *
+     * @param string $url
+     * @return void
+     */
+    protected function clearRateLimitTokens(string $url): void
+    {
+        $domain = parse_url($url, PHP_URL_HOST);
+        if ($domain) {
+            Cache::forget("crawler:rate:{$domain}");
+        }
+    }
+
+    /**
+     * Clear URL locks for this job.
+     *
+     * @return void
+     */
+    protected function clearUrlLocks(): void
+    {
+        // Clear any URL locks created during crawling
+        // This is a simple implementation - could be enhanced to track specific locks
+        Cache::forget("crawler:url_locks:{$this->jobId}");
     }
 
     /**
