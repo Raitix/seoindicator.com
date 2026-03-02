@@ -161,6 +161,14 @@ class DepthControllerService
         // Normalize URL for checks
         $normalizedUrl = $this->normalizeUrl($url);
 
+        // Validate URL (SSRF protection) - do this early to catch blocked URLs
+        if ($this->urlValidator) {
+            $validation = $this->urlValidator->validate($normalizedUrl);
+            if (!($validation['valid'] ?? false)) {
+                return false;
+            }
+        }
+
         // Check if already crawled
         if ($jobId && $this->isAlreadyCrawled($normalizedUrl, $jobId)) {
             return false;
@@ -169,14 +177,6 @@ class DepthControllerService
         // Check if in queue
         if ($jobId && $this->isInQueue($normalizedUrl, $jobId)) {
             return false;
-        }
-
-        // Validate URL (SSRF protection)
-        if ($this->urlValidator) {
-            $validation = $this->urlValidator->validate($normalizedUrl);
-            if (!($validation['valid'] ?? false)) {
-                return false;
-            }
         }
 
         return true;
@@ -481,7 +481,16 @@ class DepthControllerService
 
         // Handle relative URLs
         $basePath = $baseParsed['path'] ?? '/';
-        $basePath = dirname($basePath);
+        
+        // If base path ends with '/', it's a directory - use it as is
+        // Otherwise, use the parent directory
+        if (str_ends_with($basePath, '/')) {
+            // Base is a directory, use its path directly
+            $basePath = rtrim($basePath, '/');
+        } else {
+            // Base is a file, use parent directory
+            $basePath = str_replace('\\', '/', dirname($basePath));
+        }
 
         // Ensure base path ends with /
         if (!str_ends_with($basePath, '/')) {
@@ -490,7 +499,7 @@ class DepthControllerService
 
         // Resolve parent directory references
         while (str_starts_with($href, '../')) {
-            $basePath = dirname($basePath);
+            $basePath = str_replace('\\', '/', dirname($basePath));
             if (!str_ends_with($basePath, '/')) {
                 $basePath .= '/';
             }
@@ -556,17 +565,20 @@ class DepthControllerService
         $path = strtolower(rtrim($path, '/'));
 
         foreach (self::DEFAULT_SKIP_PATHS as $skipPath) {
-            $skipPath = strtolower(rtrim($skipPath, '*'));
+            $isWildcard = str_ends_with($skipPath, '*');
+            $skipPathNormalized = strtolower(rtrim($skipPath, '*'));
 
             // Wildcard match
-            if (str_ends_with($skipPath, '*')) {
-                $prefix = substr($skipPath, 0, -1);
+            if ($isWildcard) {
+                // Remove the trailing * we already stripped, but need to check prefix
+                // e.g., /api/* should match /api/anything
+                $prefix = $skipPathNormalized;
                 if (str_starts_with($path, $prefix)) {
                     return true;
                 }
             } else {
                 // Exact match
-                if ($path === $skipPath) {
+                if ($path === $skipPathNormalized) {
                     return true;
                 }
             }
