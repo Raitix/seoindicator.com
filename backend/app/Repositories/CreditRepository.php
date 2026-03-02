@@ -77,8 +77,16 @@ class CreditRepository
     public function addCredits(User $user, float $amount, array $data): CreditTransaction
     {
         return DB::transaction(function () use ($user, $amount, $data) {
-            $credit = $this->findOrCreateForUser($user);
-            $credit = $credit->lockForUpdate()->fresh();
+            $credit = Credit::where('user_id', $user->id)->lockForUpdate()->first();
+            
+            if (!$credit) {
+                $credit = Credit::create([
+                    'user_id' => $user->id,
+                    'balance' => 0,
+                    'total_purchased' => 0,
+                    'total_spent' => 0,
+                ]);
+            }
 
             $balanceAfter = $credit->balance + $amount;
 
@@ -126,8 +134,16 @@ class CreditRepository
     public function deductCredits(User $user, float $amount, array $data): CreditTransaction
     {
         return DB::transaction(function () use ($user, $amount, $data) {
-            $credit = $this->findOrCreateForUser($user);
-            $credit = $credit->lockForUpdate()->fresh();
+            $credit = Credit::where('user_id', $user->id)->lockForUpdate()->first();
+            
+            if (!$credit) {
+                $credit = Credit::create([
+                    'user_id' => $user->id,
+                    'balance' => 0,
+                    'total_purchased' => 0,
+                    'total_spent' => 0,
+                ]);
+            }
 
             if (!$credit->hasSufficientBalance($amount)) {
                 throw new \Exception('Insufficient credit balance');
