@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -56,4 +57,19 @@ return Application::configure(basePath: dirname(__DIR__))
                 return $response;
             }
         });
-    })->create();
+    })
+    ->withSchedule(function () {
+        // TASK-23-5: Scheduled Daily Backlink Sync
+        // Runs daily at configured time (default 03:00) to sync backlink data
+        // for all projects with active GSC connections
+        $syncTime = config('backlinks.sync_time', '03:00');
+        [$hour, $minute] = array_map('intval', explode(':', $syncTime) + [0, 0]);
+
+        Schedule::command('backlinks:sync --all')
+            ->dailyAt("$hour:$minute")
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->when(fn () => config('backlinks.sync_enabled', true))
+            ->appendOutputTo(storage_path('logs/backlinks-sync.log'));
+    })
+    ->create();

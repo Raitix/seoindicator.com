@@ -4802,7 +4802,7 @@ Submit your sitemap index file to Google Search Console just like a regular site
     title: 'Open Graph Tags',
     summary: 'Optimize how your content appears when shared on Facebook, LinkedIn, and other social platforms with Open Graph meta tags.',
     category: 'content',
-    toolSlug: 'social-media-preview',
+    toolSlug: 'social-preview',
     icon: '👍',
     readTime: 5,
     sections: [
@@ -5123,7 +5123,7 @@ Fix: Resize to 1200×630px before uploading`,
     title: 'Twitter Cards',
     summary: 'Create rich Twitter card previews that drive engagement and clicks.',
     category: 'content',
-    toolSlug: 'social-media-preview',
+    toolSlug: 'social-preview',
     icon: '🐦',
     readTime: 4,
     sections: [
