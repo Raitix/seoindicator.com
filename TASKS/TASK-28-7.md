@@ -1,7 +1,7 @@
 # TASK-28-7: IndicatorCatalog Main Container
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -65,6 +65,76 @@ interface IndicatorData {
 
 ## Comments
 _Agent log_
+
+### [2026-03-03 13:20 UTC+2] PreTester
+**Test Design Complete**
+
+**Tests Created:**
+- `TESTS/TEST-28-7.md` - Test documentation (108 test scenarios)
+- `frontend/components/indicators/__tests__/IndicatorCatalog.test.tsx` - Test file
+
+**Test Categories:**
+- TypeScript Type Definitions (2 tests) - Props and IndicatorData interfaces
+- Component Rendering (9 tests) - Basic mount, title/description, className, role
+- Title and Description (8 tests) - h2/p tags, conditional render, aria-labelledby
+- Category Tabs (12 tests) - Tabs rendering, selection, keyboard nav, ARIA
+- Loading State (10 tests) - Skeleton grid, disabled interactions, attributes
+- Error State (9 tests) - Error message, retry button, accessibility
+- Empty State (8 tests) - Empty message, icon, category-specific message
+- Refresh Capability (7 tests) - Button rendering, callback, loading state
+- Responsive Padding and Margins (8 tests) - Mobile/tablet/desktop padding
+- Integration with IndicatorGrid (9 tests) - Grid rendering, filtering, props flow
+- Integration with shadcn/ui Components (7 tests) - Tabs, Separator, Skeleton, Button
+- Accessibility (10 tests) - ARIA roles, live regions, keyboard nav
+- Edge Cases (10 tests) - Empty arrays, invalid categories, long text, rapid changes
+- Module Exports (3 tests) - Barrel export, named export, type export
+- Snapshots (8 tests) - Visual regression baseline
+
+**Key Test Patterns:**
+- Mocked IndicatorGrid, Tabs, Separator, Skeleton, Button components
+- State priority testing: Loading > Error > Empty > Content
+- Matrix testing for all state combinations
+- Category filtering logic verification
+- Accessibility-first approach with ARIA attributes
+
+**Implementation Notes for Developer:**
+1. Create `frontend/components/indicators/IndicatorCatalog.tsx`
+2. Use `IndicatorGrid` component for indicator display (TASK-28-6)
+3. Use `Tabs` from shadcn for category filtering (TASK-28-3)
+4. Use `Separator` from shadcn for visual division (TASK-28-3)
+5. Use `Skeleton` from shadcn for loading state (TASK-28-3)
+6. Use `Button` from shadcn for refresh button (TASK-28-3)
+7. Implement state priority: Loading > Error > Empty > Content
+8. Filter indicators by `indicator.category` when category selected
+9. Ensure `data-testid`, `data-loading`, `data-error`, `data-empty` attributes
+10. Apply `focus-visible:ring-2` for keyboard focus indicator
+11. Respect `prefers-reduced-motion` for animations
+12. Default title: "SEO Indicators"
+
+**State Priority Implementation:**
+```
+1. Loading → Show skeleton grid
+2. Error → Show error message with retry
+3. Empty → Show empty state message
+4. Content → Show IndicatorGrid
+```
+
+**Category Filtering Logic:**
+```typescript
+const filteredIndicators = selectedCategory === 'All'
+  ? indicators
+  : indicators.filter(i => i.category === selectedCategory);
+```
+
+**Dependencies Verified:**
+- TASK-28-6 (IndicatorGrid): ✅ To Develop - tests ready
+- TASK-28-5 (IndicatorCard): ✅ To Develop - tests ready
+- TASK-28-3 (shadcn/ui Components): ✅ To Develop - tests ready
+
+**Status Changed:** `To Write Tests` → `To Develop`
+
+---
+*Handed off to Developer for implementation.*
 
 ### [2026-03-03 12:55 UTC+2] ProjectManager
 **Prioritization Complete**
