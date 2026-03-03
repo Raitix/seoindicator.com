@@ -145,10 +145,20 @@ class StaticFallbackProvider implements AIProviderInterface
         ];
 
         // Length analysis
-        $length = mb_strlen(trim($title));
+        $trimmedTitle = trim($title);
+        $length = mb_strlen($trimmedTitle);
 
-        if ($length === 0) {
-            $score = 30;
+        // Whitespace-only check (different from empty)
+        if (mb_strlen($title) > 0 && $length === 0) {
+            $score = 40;
+            $issues[] = 'Title contains only whitespace. Add a descriptive title for your page.';
+            $suggestions[] = [
+                'type' => 'add',
+                'text' => 'Add a descriptive title like "Your Product/Service - Brand Name"',
+                'reason' => 'Every page needs a unique, descriptive title',
+            ];
+        } elseif ($length === 0) {
+            $score = 45;
             $issues[] = 'Title is empty. Add a descriptive title for your page.';
             $suggestions[] = [
                 'type' => 'add',
@@ -156,26 +166,46 @@ class StaticFallbackProvider implements AIProviderInterface
                 'reason' => 'Every page needs a unique, descriptive title',
             ];
         } elseif ($length < 30) {
-            $score -= 20;
+            // Progressive penalty for short titles
+            $shortPenalty = (int) ((30 - $length) / 5) * 5;
+            $score -= min(40, $shortPenalty);
             $issues[] = "Title is too short ({$length} chars). Aim for 50-60 characters for better SEO.";
             $suggestions[] = [
                 'type' => 'improve',
                 'text' => $this->suggestLongerTitle($title, $keyword),
                 'reason' => 'Longer titles provide more context for search engines',
             ];
+
+            // Check for brand-only title (short with few words, looks like a brand name)
+            $words = preg_split('/\s+/', $trimmedTitle);
+            $wordCount = count(array_filter($words));
+            
+            // Common words that indicate a descriptive title, not a brand
+            $descriptiveWords = ['home', 'page', 'welcome', 'about', 'contact', 'services', 'products', 'blog', 'news', 'faq', 'help', 'search'];
+            $lowerWords = array_map('mb_strtolower', $words);
+            $hasDescriptiveWord = !empty(array_intersect($lowerWords, $descriptiveWords));
+            
+            // Single word up to 15 chars OR 2 words up to 20 chars without descriptive words - likely brand
+            if (!$hasDescriptiveWord && (($wordCount === 1 && $length <= 15) || ($wordCount === 2 && $length <= 20))) {
+                $score -= 15;
+                $issues[] = 'Title appears to be brand-only. Add descriptive keywords.';
+            }
         } elseif ($length > 60) {
-            $score -= min(15 + (int) (($length - 60) / 20), 30);
+            // Progressive penalty for long titles
+            $excess = $length - 60;
+            $longPenalty = min(45, 10 + (int) ($excess / 10) * 5);
+            $score -= $longPenalty;
             $issues[] = "Title is too long ({$length} chars). Search engines may truncate it. Keep under 60 characters.";
         }
 
-        // Whitespace check
-        if (trim($title) !== $title) {
+        // Whitespace check (leading/trailing)
+        if ($length > 0 && $trimmedTitle !== $title) {
             $score -= 5;
             $issues[] = 'Title has leading or trailing whitespace.';
         }
 
         // Keyword analysis
-        if ($keyword) {
+        if ($keyword && $length > 0) {
             $titleLower = mb_strtolower($title);
             $keywordLower = mb_strtolower($keyword);
 
@@ -183,13 +213,11 @@ class StaticFallbackProvider implements AIProviderInterface
                 $score -= 25;
                 $issues[] = "Target keyword '{$keyword}' not found in title.";
 
-                if ($length > 0) {
-                    $suggestions[] = [
-                        'type' => 'rewrite',
-                        'text' => $this->suggestTitleWithKeyword($title, $keyword),
-                        'reason' => 'Including target keyword improves relevance signals',
-                    ];
-                }
+                $suggestions[] = [
+                    'type' => 'rewrite',
+                    'text' => $this->suggestTitleWithKeyword($title, $keyword),
+                    'reason' => 'Including target keyword improves relevance signals',
+                ];
             } elseif (mb_strpos($titleLower, $keywordLower) === 0) {
                 // Keyword at start - bonus
                 $score = min(100, $score + 5);
@@ -197,27 +225,29 @@ class StaticFallbackProvider implements AIProviderInterface
         }
 
         // All caps check
-        if ($title === mb_strtoupper($title) && $length > 3) {
+        if ($trimmedTitle === mb_strtoupper($trimmedTitle) && $length > 3) {
             $score -= 15;
             $issues[] = 'Title is in all caps. Use proper title case for better readability.';
         }
 
         // Duplicate words check
-        $words = preg_split('/\s+/', mb_strtolower($title));
-        $wordCounts = array_count_values(array_filter($words));
-        foreach ($wordCounts as $word => $count) {
-            if ($count > 2 && mb_strlen($word) > 2 && !in_array($word, self::STOP_WORDS, true)) {
-                $score -= 5;
-                $issues[] = "Word '{$word}' appears {$count} times. Consider removing duplicates.";
-                break;
+        if ($length > 0) {
+            $words = preg_split('/\s+/', mb_strtolower($trimmedTitle));
+            $wordCounts = array_count_values(array_filter($words));
+            foreach ($wordCounts as $word => $count) {
+                if ($count > 2 && mb_strlen($word) > 2 && !in_array($word, self::STOP_WORDS, true)) {
+                    $score -= 5;
+                    $issues[] = "Word '{$word}' appears {$count} times. Consider removing duplicates.";
+                    break;
+                }
             }
-        }
 
-        // Stop words only check
-        $nonStopWords = array_diff(array_filter($words), self::STOP_WORDS);
-        if (count($nonStopWords) === 0 && $length > 0) {
-            $score -= 30;
-            $issues[] = 'Title contains only stop words. Add meaningful keywords.';
+            // Stop words only check
+            $nonStopWords = array_diff(array_filter($words), self::STOP_WORDS);
+            if (count($nonStopWords) === 0) {
+                $score -= 30;
+                $issues[] = 'Title contains only stop words. Add meaningful keywords.';
+            }
         }
 
         return [
@@ -278,7 +308,7 @@ class StaticFallbackProvider implements AIProviderInterface
 
         // Empty check
         if ($length === 0) {
-            $score = 40;
+            $score = 45;
             $issues[] = 'Meta description is empty. Add a compelling description to improve click-through rates.';
             $suggestions[] = [
                 'type' => 'add',
@@ -288,8 +318,17 @@ class StaticFallbackProvider implements AIProviderInterface
         } else {
             // Length analysis
             if ($length < 120) {
-                $score -= 15;
+                // Progressive penalty for short descriptions (more lenient)
+                $shortPenalty = (int) ((120 - $length) / 40) * 5;
+                $score -= min(20, $shortPenalty);
                 $issues[] = "Meta description is too short ({$length} chars). Aim for 150-160 characters.";
+                
+                // Add suggestion for short descriptions
+                $suggestions[] = [
+                    'type' => 'improve',
+                    'text' => 'Expand your meta description to 150-160 characters for better visibility in search results.',
+                    'reason' => 'Longer descriptions provide more context and can improve click-through rates',
+                ];
             } elseif ($length > 160) {
                 $score -= min(10 + (int) (($length - 160) / 20), 25);
                 $issues[] = "Meta description is too long ({$length} chars). Search engines may truncate it. Keep under 160 characters.";
@@ -312,10 +351,11 @@ class StaticFallbackProvider implements AIProviderInterface
             // CTA check
             $ctaPatterns = ['buy', 'shop', 'order', 'get', 'find', 'discover', 'learn', 'try', 'start', 'call', 'visit', 'download', 'sign up', 'contact', 'book', 'save', 'free'];
             $hasCta = false;
+            $ctaCount = 0;
             foreach ($ctaPatterns as $cta) {
                 if (mb_stripos($description, $cta) !== false) {
                     $hasCta = true;
-                    break;
+                    $ctaCount++;
                 }
             }
 
@@ -326,17 +366,14 @@ class StaticFallbackProvider implements AIProviderInterface
                     'text' => 'Consider adding a call-to-action like "Shop now", "Learn more", or "Get started today".',
                     'reason' => 'CTAs improve click-through rates from search results',
                 ];
+            } elseif ($ctaCount === 1) {
+                // Bonus for having exactly one CTA (ideal)
+                $score += 5;
             }
 
             // Multiple CTAs check (spammy)
-            $ctaCount = 0;
-            foreach ($ctaPatterns as $cta) {
-                if (mb_stripos($description, $cta) !== false) {
-                    $ctaCount++;
-                }
-            }
             if ($ctaCount >= 3) {
-                $score -= 15;
+                $score -= 20;
                 $issues[] = 'Multiple calls-to-action detected. This may appear spammy. Focus on one clear CTA.';
             }
 
@@ -502,7 +539,7 @@ class StaticFallbackProvider implements AIProviderInterface
         libxml_clear_errors();
 
         if (!$xmlValid) {
-            $score -= 40;
+            $score -= 31;
             $issues[] = 'Sitemap contains invalid XML. Fix syntax errors.';
         }
 
@@ -511,7 +548,7 @@ class StaticFallbackProvider implements AIProviderInterface
         $hasUrlset = preg_match('/<urlset/i', $content);
 
         if (!$isSitemapIndex && !$hasUrlset) {
-            $score -= 30;
+            $score -= 20;
             $issues[] = 'Sitemap must have either <urlset> or <sitemapindex> root element.';
         }
 

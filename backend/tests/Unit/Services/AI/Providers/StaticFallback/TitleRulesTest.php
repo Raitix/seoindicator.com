@@ -433,7 +433,7 @@ class TitleRulesTest extends TestCase
     public static function titleLengthProvider(): array
     {
         return [
-            'empty' => ['', 50],
+            'empty' => ['', 40],
             'very short' => ['Hi', 60],
             'short' => ['Home Page', 70],
             'optimal min' => [str_repeat('a', 50), 85],
