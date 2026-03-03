@@ -1146,6 +1146,139 @@ Comprehensive SEO guide content for the Twitter Cards indicator, covering Twitte
 - TASK-20-24: Tool embedding for Social Media Preview guides
 
 ---
+## ToolEmbed Integration for Social Media Preview Guides (TASK-20-24)
+
+### Feature Description
+Integration of the ToolEmbed component into Open Graph and Twitter Cards SEO guide pages, allowing users to preview their social sharing appearance directly within the educational guide context. Uses the Social Media Preview tool from FEAT-016 with context-aware default tab selection.
+
+### Component Location
+- **Open Graph Guide:** `frontend/app/seo-guides/[slug]/page.tsx` (slug: `open-graph`)
+- **Twitter Cards Guide:** `frontend/app/seo-guides/[slug]/page.tsx` (slug: `twitter-cards`)
+- **ToolEmbed Component:** `frontend/components/guides/ToolEmbed.tsx`
+- **Guide Registry:** `frontend/lib/guides/registry.ts`
+
+### ToolEmbed Configuration
+
+| Guide | toolSlug | Default Tab | State Key |
+|-------|----------|-------------|-----------|
+| Open Graph Tags | `social-preview` | Facebook | `guide-open-graph-social-preview` |
+| Twitter Cards | `social-preview` | Twitter | `guide-twitter-cards-social-preview` |
+
+### Core Functionalities
+
+**ToolEmbed Features:**
+| Feature | Description |
+|---------|-------------|
+| URL Input | Users enter any URL to analyze |
+| Analyze Button | Triggers social preview analysis |
+| Tab Switching | Facebook/Twitter tab selection based on guide context |
+| Inline Results | Preview displays directly in guide page |
+| CTA Button | Links to full tool at `/tools/social-preview/` |
+
+### Integration Details
+
+**Open Graph Guide (slug: `open-graph`):**
+- ToolEmbed positioned after content sections, before checklist
+- Facebook tab pre-selected as default
+- State key: `guide-open-graph-social-preview`
+- CTA: "Use Full Social Media Preview" → `/tools/social-preview/`
+
+**Twitter Cards Guide (slug: `twitter-cards`):**
+- ToolEmbed positioned after content sections, before checklist
+- Twitter tab pre-selected as default
+- State key: `guide-twitter-cards-social-preview`
+- CTA: "Use Full Social Media Preview" → `/tools/social-preview/`
+
+### Technical Implementation
+
+**ToolEmbed Props:**
+```typescript
+<ToolEmbed
+  toolSlug="social-preview"
+  defaultToolTab={guideSlug === 'twitter-cards' ? 'twitter' : 'facebook'}
+  title="Preview Your Social Sharing"
+  stateKey={`guide-${guideSlug}-social-preview`}
+  showCta={true}
+  ctaText="Use Full Social Media Preview"
+/>
+```
+
+**Registry Configuration:**
+```typescript
+// Open Graph guide registry entry
+{
+  slug: 'open-graph',
+  hasTool: true,
+  toolSlug: 'social-preview',
+  // ToolEmbed renders with Facebook tab default
+}
+
+// Twitter Cards guide registry entry
+{
+  slug: 'twitter-cards',
+  hasTool: true,
+  toolSlug: 'social-preview',
+  // ToolEmbed renders with Twitter tab default
+}
+```
+
+### Production URLs
+
+| Guide | URL |
+|-------|-----|
+| Open Graph Tags | `https://seoindicator.com/seo-guides/open-graph/` |
+| Twitter Cards | `https://seoindicator.com/seo-guides/twitter-cards/` |
+| Full Tool | `https://seoindicator.com/tools/social-preview/` |
+
+### User Experience Flow
+
+1. User reads guide content about Open Graph/Twitter Cards
+2. ToolEmbed appears with context-relevant default tab
+3. User enters URL and clicks "Analyze"
+4. Social preview displays inline with platform-specific results
+5. CTA offers link to full tool for detailed analysis
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `og-guide-social-preview.test.tsx` | 22 | Integration tests |
+| `twitter-guide-social-preview.test.tsx` | 27 | Integration tests |
+| `SocialPreviewEmbed.test.tsx` | 33 | Component tests |
+| `ToolEmbed.test.tsx` | 41 | Component tests |
+| **Total** | **123** | **All passing** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| ToolEmbed Integration | 15 | Component renders with correct slug |
+| Default Tab Selection | 10 | Facebook/Twitter pre-selected |
+| URL Input & Analysis | 12 | Input field, analyze button |
+| CTA Navigation | 8 | Links to full tool page |
+| Error Handling | 10 | Graceful fallback, Try Again |
+| Accessibility | 8 | ARIA, keyboard navigation |
+| Mobile Responsiveness | 6 | Responsive container |
+| Security | 6 | XSS prevention, attributes |
+
+### Production Status
+- **Deployed:** 2026-03-03 (GitHub Actions)
+- **Health Check:** Passing (`https://seoindicator.com/api/health`)
+- **Tests:** 123/123 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-20-18 (Open Graph Tags Guide content)
+- TASK-20-19 (Twitter Cards Guide content)
+- TASK-20-22 (ToolEmbed Component)
+- FEAT-016 (Social Media Preview tool)
+
+### Related Tasks
+- TASK-20-18: Open Graph Tags Guide
+- TASK-20-19: Twitter Cards Guide
+- TASK-20-22: ToolEmbed Component
+- TASK-20-23: Tool embedding for Mobile-Friendly guide
+
+---
 ## Open Graph Tags SEO Guide (TASK-20-18)
 
 ### Guide Description
