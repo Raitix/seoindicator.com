@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
+use App\Listeners\SerpFeatureChangeListener;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -44,6 +46,9 @@ class AppServiceProvider extends ServiceProvider
                 // Ignore if connection not available yet
             }
         }
+
+        // Register SERP feature change event listeners (TASK-7-14)
+        Event::subscribe(SerpFeatureChangeListener::class);
 
         // Rate limiter for deploy endpoints (SPEC-SEC-2026-02-21-3)
         // 5 requests per 15 minutes per IP
