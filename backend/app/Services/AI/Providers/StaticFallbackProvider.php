@@ -5,103 +5,61 @@ namespace App\Services\AI\Providers;
 use App\Services\AI\Contracts\AIProviderInterface;
 use App\Services\AI\DTOs\AIResponse;
 use DateTimeImmutable;
-use InvalidArgumentException;
 
 /**
- * Static Fallback AI Provider.
+ * Static fallback provider for SEO suggestions.
  *
- * Provides rule-based SEO suggestions without external AI dependencies.
- * This ensures the suggestion system always returns useful results,
- * even when AI providers are unavailable or rate-limited.
- *
- * Implements the AIProviderInterface for seamless integration with
- * the AI suggestion service.
+ * Provides rule-based SEO analysis without external AI dependencies.
+ * Always available and responds quickly for graceful degradation scenarios.
  */
 class StaticFallbackProvider implements AIProviderInterface
 {
     /**
-     * Valid indicator types and their analyzer methods.
+     * Valid suggestion types.
      */
-    private const INDICATOR_ANALYZERS = [
-        'title' => 'analyzeTitle',
-        'meta_description' => 'analyzeMetaDescription',
-        'robots' => 'analyzeRobots',
-        'sitemap' => 'analyzeSitemap',
-        'headings' => 'analyzeHeadings',
-        'image_alt' => 'analyzeImageAlt',
-        'filenames' => 'analyzeFilenames',
-        'url' => 'analyzeUrl',
-        'links' => 'analyzeLinks',
-        '404' => 'analyzeNotFound',
-    ];
+    private const VALID_SUGGESTION_TYPES = ['improve', 'rewrite', 'add', 'remove', 'warning'];
 
     /**
-     * Common call-to-action phrases.
+     * Generic stop words that don't add SEO value.
      */
-    private const CTA_PHRASES = [
-        'buy now', 'shop now', 'order now', 'get started', 'learn more',
-        'sign up', 'subscribe', 'contact us', 'call today', 'book now',
-        'try free', 'download', 'view more', 'read more', 'discover',
-        'explore', 'find out', 'see more', 'start now', 'join now',
-        'save now', 'shop today', 'order today', 'get it now',
-    ];
+    private const STOP_WORDS = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'shall'];
 
     /**
-     * Stop words for title analysis.
+     * Generic anchor text patterns.
      */
-    private const STOP_WORDS = [
-        'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to',
-        'for', 'of', 'with', 'by', 'from', 'is', 'it', 'this', 'that',
-    ];
+    private const GENERIC_ANCHORS = ['click here', 'read more', 'learn more', 'here', 'more', 'link', 'this', 'click', 'go', 'visit'];
 
     /**
-     * Generate an AI response for the given prompt.
+     * Generate SEO suggestions based on the provided context.
      *
-     * @param string $prompt The prompt/context to analyze (JSON encoded context)
-     * @param array<string, mixed> $options Optional parameters (ignored for static provider)
-     * @return AIResponse The response containing SEO suggestions
+     * @param string $prompt JSON-encoded context with indicator type and content
+     * @param array<string, mixed> $options Optional parameters
+     * @return AIResponse The analysis result
      */
     public function generate(string $prompt, array $options = []): AIResponse
     {
         $startTime = microtime(true);
 
-        try {
-            $context = $this->parseContext($prompt);
-            $indicator = $context['indicator'] ?? 'unknown';
-            $result = $this->analyze($indicator, $context);
+        // Parse context from prompt
+        $context = $this->parseContext($prompt);
+        $indicator = $context['indicator'] ?? 'unknown';
 
-            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+        // Analyze based on indicator type
+        $result = $this->analyzeIndicator($indicator, $context);
 
-            $content = json_encode([
-                'indicator' => $indicator,
-                'score' => $result['score'],
-                'issues' => $result['issues'],
-                'suggestions' => $result['suggestions'],
-                'best_practices' => $result['best_practices'],
-                'provider' => 'static_fallback',
-                'model' => 'rule-based',
-                'generated_at' => (new DateTimeImmutable())->format('c'),
-            ], JSON_THROW_ON_ERROR);
+        $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
 
-            return new AIResponse(
-                success: true,
-                content: $content,
-                tokensUsed: 0,
-                latencyMs: $latencyMs,
-                errorMessage: null
-            );
-        } catch (\Exception $e) {
-            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
-            return AIResponse::error($e->getMessage(), $latencyMs);
-        }
+        return AIResponse::success(
+            content: json_encode($result, JSON_UNESCAPED_UNICODE),
+            tokensUsed: 0,
+            latencyMs: $latencyMs
+        );
     }
 
     /**
-     * Check if the provider is available.
+     * Always available - no external dependencies.
      *
-     * The static fallback is always available since it has no external dependencies.
-     *
-     * @return bool Always returns true
+     * @return bool Always true
      */
     public function isAvailable(): bool
     {
@@ -109,9 +67,9 @@ class StaticFallbackProvider implements AIProviderInterface
     }
 
     /**
-     * Get the name of this provider.
+     * Get the provider name.
      *
-     * @return string The provider name
+     * @return string
      */
     public function getName(): string
     {
@@ -119,51 +77,54 @@ class StaticFallbackProvider implements AIProviderInterface
     }
 
     /**
-     * Parse the prompt/context string into an array.
+     * Parse context from prompt string.
      *
-     * @param string $prompt The raw prompt string
-     * @return array<string, mixed> The parsed context
+     * @param string $prompt
+     * @return array<string, mixed>
      */
     private function parseContext(string $prompt): array
     {
-        if (empty(trim($prompt))) {
-            return [];
-        }
-
-        // Try to decode as JSON
+        // Try JSON decode first
         $decoded = json_decode($prompt, true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
             return $decoded;
         }
 
-        // Return raw prompt as context
-        return ['raw' => $prompt];
-    }
-
-    /**
-     * Route analysis to the appropriate indicator analyzer.
-     *
-     * @param string $indicator The indicator type
-     * @param array<string, mixed> $context The analysis context
-     * @return array<string, mixed> The analysis result
-     */
-    private function analyze(string $indicator, array $context): array
-    {
-        $analyzer = self::INDICATOR_ANALYZERS[$indicator] ?? null;
-
-        if ($analyzer && method_exists($this, $analyzer)) {
-            return $this->$analyzer($context);
+        // Try to extract indicator from text
+        if (preg_match('/indicator[:\s]+["\']?(\w+)["\']?/i', $prompt, $matches)) {
+            return ['indicator' => $matches[1]];
         }
 
-        return $this->analyzeUnknown($context);
+        // Default context
+        return ['indicator' => 'unknown'];
     }
 
-    // =====================================================
-    // Title Analysis
-    // =====================================================
+    /**
+     * Analyze based on indicator type.
+     *
+     * @param string $indicator
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    private function analyzeIndicator(string $indicator, array $context): array
+    {
+        return match ($indicator) {
+            'title' => $this->analyzeTitle($context),
+            'meta_description' => $this->analyzeMetaDescription($context),
+            'robots' => $this->analyzeRobots($context),
+            'sitemap' => $this->analyzeSitemap($context),
+            'headings' => $this->analyzeHeadings($context),
+            'image_alt' => $this->analyzeImageAlt($context),
+            'filenames' => $this->analyzeFilenames($context),
+            'url' => $this->analyzeUrl($context),
+            'links' => $this->analyzeLinks($context),
+            '404' => $this->analyze404($context),
+            default => $this->analyzeUnknown($context),
+        };
+    }
 
     /**
-     * Analyze title tag SEO.
+     * Analyze title tag.
      *
      * @param array<string, mixed> $context
      * @return array<string, mixed>
@@ -176,171 +137,123 @@ class StaticFallbackProvider implements AIProviderInterface
         $issues = [];
         $suggestions = [];
         $bestPractices = [
-            'Keep title under 60 characters for optimal display in search results.',
-            'Place primary keyword near the beginning of the title.',
-            'Make each page title unique and descriptive.',
-            'Include brand name at the end if appropriate.',
+            'Keep title between 50-60 characters for optimal display',
+            'Place primary keyword near the beginning of the title',
+            'Make each page title unique and descriptive',
+            'Include brand name at the end if appropriate',
+            'Avoid keyword stuffing and clickbait titles',
         ];
 
         // Length analysis
         $length = mb_strlen(trim($title));
-        $rawLength = mb_strlen($title);
 
-        // Check for whitespace-only title (has chars but trims to empty)
-        if ($rawLength > 0 && $length === 0) {
-            $score = 45;
-            $issues[] = 'Title contains only whitespace. Add a descriptive title for this page.';
+        if ($length === 0) {
+            $score = 30;
+            $issues[] = 'Title is empty. Add a descriptive title for your page.';
             $suggestions[] = [
                 'type' => 'add',
-                'text' => $keyword ? "{$keyword} | Your Brand" : 'Page Title | Your Brand',
-                'reason' => 'Add a descriptive title that includes your target keyword.',
-            ];
-        } elseif ($length === 0) {
-            $score = 50;
-            $issues[] = 'Title is empty. Add a descriptive title for this page.';
-            $suggestions[] = [
-                'type' => 'add',
-                'text' => $keyword ? "{$keyword} | Your Brand" : 'Page Title | Your Brand',
-                'reason' => 'Add a descriptive title that includes your target keyword.',
+                'text' => 'Add a descriptive title like "Your Product/Service - Brand Name"',
+                'reason' => 'Every page needs a unique, descriptive title',
             ];
         } elseif ($length < 30) {
-            // Check if this is a valid brand-formatted title (Brand | Product or Product | Brand)
-            $hasBrandSeparator = preg_match('/\s[\|\-–—]\s/', $title);
-            $brandPenalty = $hasBrandSeparator ? 15 : 25;
-            
-            $score -= $brandPenalty;
-            $issues[] = "Title is too short ({$length} chars). Aim for 50-60 characters.";
+            $score -= 20;
+            $issues[] = "Title is too short ({$length} chars). Aim for 50-60 characters for better SEO.";
             $suggestions[] = [
                 'type' => 'improve',
-                'text' => $this->expandTitle($title, $keyword),
-                'reason' => 'Expand your title to be more descriptive.',
+                'text' => $this->suggestLongerTitle($title, $keyword),
+                'reason' => 'Longer titles provide more context for search engines',
             ];
-
-            // Check for brand-only titles (short titles that look like brand names)
-            $words = preg_split('/\s+/', trim($title));
-            $wordCount = count(array_filter($words));
-            
-            // Check if it looks like a brand name
-            $brandIndicators = ['corp', 'inc', 'ltd', 'llc', 'co', 'company', 'group', 'studio', 'agency'];
-            $titleLower = mb_strtolower($title);
-            $hasBrandIndicator = false;
-            foreach ($brandIndicators as $indicator) {
-                if (str_contains($titleLower, $indicator)) {
-                    $hasBrandIndicator = true;
-                    break;
-                }
-            }
-            
-            // Brand-only detection: only when it has brand indicators
-            // Don't penalize generic short titles like "Home Page"
-            if ($hasBrandIndicator && $wordCount <= 3) {
-                $score -= 15;
-                $issues[] = 'Title appears to be a brand name only. Add descriptive content.';
-                $suggestions[] = [
-                    'type' => 'improve',
-                    'text' => $title . ' | Products & Services',
-                    'reason' => 'Add descriptive content after your brand name.',
-                ];
-            }
         } elseif ($length > 60) {
-            $score -= 15;
-            $issues[] = "Title is too long ({$length} chars). Keep under 60 characters to avoid truncation.";
-            $suggestions[] = [
-                'type' => 'rewrite',
-                'text' => mb_substr($title, 0, 57) . '...',
-                'reason' => 'Shorten the title to fit within search result limits.',
-            ];
-            
-            // Additional penalty for very long titles (100+ chars)
-            if ($length > 100) {
-                $score -= 20;
-            }
+            $score -= min(15 + (int) (($length - 60) / 20), 30);
+            $issues[] = "Title is too long ({$length} chars). Search engines may truncate it. Keep under 60 characters.";
+        }
+
+        // Whitespace check
+        if (trim($title) !== $title) {
+            $score -= 5;
+            $issues[] = 'Title has leading or trailing whitespace.';
         }
 
         // Keyword analysis
         if ($keyword) {
-            $keywordLower = mb_strtolower($keyword);
             $titleLower = mb_strtolower($title);
+            $keywordLower = mb_strtolower($keyword);
 
-            if (!str_contains($titleLower, $keywordLower)) {
+            if (mb_strpos($titleLower, $keywordLower) === false) {
                 $score -= 25;
                 $issues[] = "Target keyword '{$keyword}' not found in title.";
-                $suggestions[] = [
-                    'type' => 'rewrite',
-                    'text' => "{$keyword} | " . ($title ?: 'Your Brand'),
-                    'reason' => 'Include your target keyword in the title.',
-                ];
-            } else {
-                // Check keyword position (earlier is better)
-                $keywordPosition = mb_strpos($titleLower, $keywordLower);
-                if ($keywordPosition > 20) {
-                    $score -= 5;
-                    $issues[] = 'Consider placing the keyword earlier in the title.';
+
+                if ($length > 0) {
+                    $suggestions[] = [
+                        'type' => 'rewrite',
+                        'text' => $this->suggestTitleWithKeyword($title, $keyword),
+                        'reason' => 'Including target keyword improves relevance signals',
+                    ];
                 }
+            } elseif (mb_strpos($titleLower, $keywordLower) === 0) {
+                // Keyword at start - bonus
+                $score = min(100, $score + 5);
             }
         }
 
         // All caps check
-        if (mb_strlen($title) > 3 && $title === mb_strtoupper($title) && preg_match('/[a-zA-Z]/', $title)) {
-            $score -= 10;
+        if ($title === mb_strtoupper($title) && $length > 3) {
+            $score -= 15;
             $issues[] = 'Title is in all caps. Use proper title case for better readability.';
         }
 
         // Duplicate words check
-        $words = preg_split('/\s+/', mb_strtolower(trim($title)));
+        $words = preg_split('/\s+/', mb_strtolower($title));
         $wordCounts = array_count_values(array_filter($words));
         foreach ($wordCounts as $word => $count) {
-            if ($count > 1 && mb_strlen($word) > 3 && !in_array($word, ['best', 'free', 'your'])) {
-                $score -= 3;
-                $issues[] = "Duplicate word '{$word}' detected in title.";
+            if ($count > 2 && mb_strlen($word) > 2 && !in_array($word, self::STOP_WORDS, true)) {
+                $score -= 5;
+                $issues[] = "Word '{$word}' appears {$count} times. Consider removing duplicates.";
                 break;
             }
         }
 
         // Stop words only check
-        if ($length > 0) {
-            $nonStopWords = array_diff(array_filter($words), self::STOP_WORDS);
-            if (empty($nonStopWords) && !empty($words)) {
-                $score -= 25;
-                $issues[] = 'Title contains only common words. Add more descriptive content.';
-            }
-        }
-
-        // Generate suggestions for short/empty titles
-        if ($length < 30 && $keyword && empty($suggestions)) {
-            $suggestions[] = [
-                'type' => 'rewrite',
-                'text' => "{$keyword} - Premium Quality & Best Value",
-                'reason' => 'Expand title with keyword and value proposition.',
-            ];
+        $nonStopWords = array_diff(array_filter($words), self::STOP_WORDS);
+        if (count($nonStopWords) === 0 && $length > 0) {
+            $score -= 30;
+            $issues[] = 'Title contains only stop words. Add meaningful keywords.';
         }
 
         return [
+            'indicator' => 'title',
             'score' => max(0, min(100, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $bestPractices,
+            'provider' => 'static_fallback',
+            'model' => 'rule-based',
+            'generated_at' => (new DateTimeImmutable())->format('c'),
         ];
     }
 
     /**
-     * Expand a short title with relevant content.
+     * Suggest a longer title.
      */
-    private function expandTitle(string $title, ?string $keyword): string
+    private function suggestLongerTitle(string $title, ?string $keyword): string
     {
-        $title = trim($title);
-        if ($keyword && !str_contains(mb_strtolower($title), mb_strtolower($keyword))) {
-            return "{$keyword} | {$title}";
+        if ($keyword) {
+            return "{$keyword} - Premium Quality | Your Brand";
         }
-        return $title . ' | Premium Quality';
+        return "{$title} - Learn More | Your Brand";
     }
 
-    // =====================================================
-    // Meta Description Analysis
-    // =====================================================
+    /**
+     * Suggest title with keyword.
+     */
+    private function suggestTitleWithKeyword(string $title, string $keyword): string
+    {
+        $keyword = trim($keyword);
+        return "{$keyword} - " . trim($title) . " | Your Brand";
+    }
 
     /**
-     * Analyze meta description SEO.
+     * Analyze meta description.
      *
      * @param array<string, mixed> $context
      * @return array<string, mixed>
@@ -354,269 +267,286 @@ class StaticFallbackProvider implements AIProviderInterface
         $issues = [];
         $suggestions = [];
         $bestPractices = [
-            'Keep meta description between 150-160 characters.',
-            'Include a clear call-to-action to encourage clicks.',
-            'Make each meta description unique for every page.',
-            'Include your target keyword naturally in the description.',
+            'Keep meta description between 150-160 characters',
+            'Include a clear call-to-action to encourage clicks',
+            'Make each meta description unique for every page',
+            'Include target keywords naturally in the description',
+            'Avoid duplicating the title tag as meta description',
         ];
 
         $length = mb_strlen(trim($description));
 
-        // Length analysis
+        // Empty check
         if ($length === 0) {
-            $score -= 50;
+            $score = 40;
             $issues[] = 'Meta description is empty. Add a compelling description to improve click-through rates.';
             $suggestions[] = [
                 'type' => 'add',
-                'text' => $keyword
-                    ? "Discover our {$keyword} with exceptional quality. Shop now for the best deals!"
-                    : 'Discover our premium products with exceptional quality. Shop now for the best deals!',
-                'reason' => 'Add a compelling meta description with a call-to-action.',
+                'text' => 'Write a compelling 155-character description that includes your target keyword and a call-to-action.',
+                'reason' => 'Meta descriptions improve click-through rates from search results',
             ];
-        } elseif ($length < 120) {
-            $score -= 15;
-            $issues[] = "Meta description is too short ({$length} chars). Aim for 150-160 characters.";
-            $suggestions[] = [
-                'type' => 'improve',
-                'text' => $description . ' Shop now and enjoy free shipping on all orders!',
-                'reason' => 'Expand the description to be more compelling.',
-            ];
-        } elseif ($length > 160) {
-            $score -= 10;
-            $issues[] = "Meta description is too long ({$length} chars). Keep under 160 characters to avoid truncation.";
-            $suggestions[] = [
-                'type' => 'rewrite',
-                'text' => mb_substr($description, 0, 157) . '...',
-                'reason' => 'Shorten to fit within search result limits.',
-            ];
-        }
-
-        // Keyword check
-        if ($keyword && $length > 0) {
-            $keywordLower = mb_strtolower($keyword);
-            $descLower = mb_strtolower($description);
-
-            if (!str_contains($descLower, $keywordLower)) {
+        } else {
+            // Length analysis
+            if ($length < 120) {
                 $score -= 15;
-                $issues[] = "Target keyword '{$keyword}' not found in meta description.";
+                $issues[] = "Meta description is too short ({$length} chars). Aim for 150-160 characters.";
+            } elseif ($length > 160) {
+                $score -= min(10 + (int) (($length - 160) / 20), 25);
+                $issues[] = "Meta description is too long ({$length} chars). Search engines may truncate it. Keep under 160 characters.";
             }
-        }
 
-        // CTA check
-        $descLower = mb_strtolower($description);
-        $ctaCount = 0;
-        foreach (self::CTA_PHRASES as $cta) {
-            if (str_contains($descLower, $cta)) {
-                $ctaCount++;
+            // Duplicate of title check
+            if ($title && trim(mb_strtolower($description)) === trim(mb_strtolower($title))) {
+                $score -= 20;
+                $issues[] = 'Meta description duplicates the title. Write unique content for each.';
             }
-        }
 
-        if ($length > 0 && $ctaCount === 0) {
-            $score -= 10;
-            $issues[] = 'No clear call-to-action found. Add phrases like "Shop now" or "Learn more" to encourage clicks.';
-            $suggestions[] = [
-                'type' => 'improve',
-                'text' => $description . ' Shop now!',
-                'reason' => 'Add a call-to-action to improve click-through rates.',
-            ];
-        } elseif ($ctaCount > 2) {
-            $score -= 10;
-            $issues[] = 'Multiple call-to-action phrases detected. This may appear spammy.';
-        }
+            // Keyword check
+            if ($keyword) {
+                if (mb_stripos($description, $keyword) === false) {
+                    $score -= 15;
+                    $issues[] = "Target keyword '{$keyword}' not found in meta description.";
+                }
+            }
 
-        // Duplicate of title check
-        if ($title && mb_strtolower(trim($description)) === mb_strtolower(trim($title))) {
-            $score -= 15;
-            $issues[] = 'Meta description is identical to the title. Create a unique, more detailed description.';
-        }
+            // CTA check
+            $ctaPatterns = ['buy', 'shop', 'order', 'get', 'find', 'discover', 'learn', 'try', 'start', 'call', 'visit', 'download', 'sign up', 'contact', 'book', 'save', 'free'];
+            $hasCta = false;
+            foreach ($ctaPatterns as $cta) {
+                if (mb_stripos($description, $cta) !== false) {
+                    $hasCta = true;
+                    break;
+                }
+            }
 
-        // HTML entities check
-        if (preg_match('/&[a-z]+;/i', $description)) {
-            $score -= 5;
-            $issues[] = 'HTML entities detected in meta description. Consider using plain text characters.';
+            if (!$hasCta) {
+                $score -= 10;
+                $suggestions[] = [
+                    'type' => 'improve',
+                    'text' => 'Consider adding a call-to-action like "Shop now", "Learn more", or "Get started today".',
+                    'reason' => 'CTAs improve click-through rates from search results',
+                ];
+            }
+
+            // Multiple CTAs check (spammy)
+            $ctaCount = 0;
+            foreach ($ctaPatterns as $cta) {
+                if (mb_stripos($description, $cta) !== false) {
+                    $ctaCount++;
+                }
+            }
+            if ($ctaCount >= 3) {
+                $score -= 15;
+                $issues[] = 'Multiple calls-to-action detected. This may appear spammy. Focus on one clear CTA.';
+            }
+
+            // HTML entities check
+            if (preg_match('/&[a-z]+;/i', $description)) {
+                $score -= 5;
+                $issues[] = 'HTML entities detected in meta description. Use plain text instead.';
+            }
         }
 
         return [
+            'indicator' => 'meta_description',
             'score' => max(0, min(100, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $bestPractices,
+            'provider' => 'static_fallback',
+            'model' => 'rule-based',
+            'generated_at' => (new DateTimeImmutable())->format('c'),
         ];
     }
 
-    // =====================================================
-    // Robots.txt Analysis
-    // =====================================================
-
     /**
-     * Analyze robots.txt configuration.
+     * Analyze robots.txt content.
      *
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
     private function analyzeRobots(array $context): array
     {
-        // Support multiple context key names for flexibility
-        $content = $context['content'] ?? $context['robots_content'] ?? '';
+        $content = $context['robots_content'] ?? '';
         $score = 100;
         $issues = [];
         $suggestions = [];
         $bestPractices = [
-            'Use robots.txt to control crawler access to your site.',
-            'Allow important pages to be crawled and indexed.',
-            'Block sensitive or duplicate content from being crawled.',
-            'Reference your sitemap.xml in robots.txt.',
+            'Always include a robots.txt file in your root directory',
+            'Reference your XML sitemap in robots.txt',
+            'Use Allow directives to explicitly permit crawling',
+            'Be careful with Disallow: / as it blocks all crawlers',
+            'Test your robots.txt in Google Search Console',
         ];
 
+        // Empty check
         if (empty(trim($content))) {
-            $score -= 50;
-            $issues[] = 'No robots.txt content provided. Ensure robots.txt exists on your site.';
+            $score = 50;
+            $issues[] = 'Robots.txt is empty or missing. Add crawl directives.';
             $suggestions[] = [
                 'type' => 'add',
-                'text' => "User-agent: *\nAllow: /\nSitemap: https://example.com/sitemap.xml",
-                'reason' => 'Add a basic robots.txt file to control crawler behavior.',
+                'text' => "User-agent: *\nAllow: /\nSitemap: https://yoursite.com/sitemap.xml",
+                'reason' => 'A basic robots.txt allows all crawlers and references your sitemap',
             ];
-        } else {
-            // Check for common directives
-            $contentLower = mb_strtolower($content);
 
-            if (!str_contains($contentLower, 'user-agent')) {
-                $score -= 20;
-                $issues[] = 'No User-agent directive found in robots.txt.';
-            }
+            return [
+                'indicator' => 'robots',
+                'score' => $score,
+                'issues' => $issues,
+                'suggestions' => $suggestions,
+                'best_practices' => $bestPractices,
+                'provider' => 'static_fallback',
+                'model' => 'rule-based',
+                'generated_at' => (new DateTimeImmutable())->format('c'),
+            ];
+        }
 
-            if (!str_contains($contentLower, 'allow') && !str_contains($contentLower, 'disallow')) {
-                $score -= 15;
-                $issues[] = 'No Allow or Disallow directives found.';
-            }
+        // Check for blocking all
+        if (preg_match('/disallow:\s*\/\s*$/im', $content)) {
+            $score -= 50;
+            $issues[] = 'WARNING: robots.txt blocks all crawlers from the entire site with "Disallow: /"';
+            $suggestions[] = [
+                'type' => 'warning',
+                'text' => 'Remove "Disallow: /" or change to specific paths if this is unintentional',
+                'reason' => 'Blocking all crawlers prevents search engine indexing',
+            ];
+        }
 
-            if (!str_contains($contentLower, 'sitemap')) {
-                $score -= 10;
-                $issues[] = 'Sitemap location not specified in robots.txt.';
-                $suggestions[] = [
-                    'type' => 'add',
-                    'text' => 'Sitemap: https://example.com/sitemap.xml',
-                    'reason' => 'Add sitemap URL to help search engines discover your content.',
-                ];
-            }
+        // Check for blocking CSS/JS
+        if (preg_match('/disallow:\s*\/css\//im', $content) || preg_match('/disallow:\s*\/js\//im', $content)) {
+            $score -= 20;
+            $issues[] = 'CSS or JavaScript directories are blocked. This may affect rendering and indexing.';
+        }
 
-            // Check for overly restrictive rules (blocks entire site)
-            if (preg_match('/disallow:\s*\//i', $contentLower)) {
-                $score -= 60;
-                $issues[] = 'WARNING: Site appears to block all crawlers (Disallow: /). This prevents indexing.';
-                $suggestions[] = [
-                    'type' => 'warning',
-                    'text' => 'Remove or modify "Disallow: /" if you want your site indexed.',
-                    'reason' => 'Blocking all crawlers prevents your site from appearing in search results.',
-                ];
-            }
+        // Check for sitemap reference
+        if (!preg_match('/sitemap:/i', $content)) {
+            $score -= 10;
+            $issues[] = 'No sitemap reference found in robots.txt.';
+            $suggestions[] = [
+                'type' => 'add',
+                'text' => 'Add: Sitemap: https://yoursite.com/sitemap.xml',
+                'reason' => 'Sitemap reference helps search engines discover your content',
+            ];
+        }
 
-            // Check for blocking CSS/JS
-            if (preg_match('/disallow:\s*\/css/i', $contentLower) || 
-                preg_match('/disallow:\s*\/js/i', $contentLower) ||
-                preg_match('/disallow:\s*.*\.css/i', $contentLower) ||
-                preg_match('/disallow:\s*.*\.js/i', $contentLower)) {
-                $score -= 10;
-                $issues[] = 'CSS or JavaScript files are blocked. This can harm rendering and SEO.';
-            }
+        // Check for User-agent
+        if (!preg_match('/user-agent:/i', $content)) {
+            $score -= 15;
+            $issues[] = 'No User-agent directive found. Add one to specify crawler rules.';
+        }
+
+        // Check for admin path exposure
+        if (preg_match('/disallow:\s*\/(admin|wp-admin)\//im', $content)) {
+            // This is a note, not necessarily an issue
+            $issues[] = 'Note: Admin paths are listed in robots.txt. While this prevents crawling, it also reveals these paths exist.';
         }
 
         return [
+            'indicator' => 'robots',
             'score' => max(0, min(100, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $bestPractices,
+            'provider' => 'static_fallback',
+            'model' => 'rule-based',
+            'generated_at' => (new DateTimeImmutable())->format('c'),
         ];
     }
 
-    // =====================================================
-    // Sitemap Analysis
-    // =====================================================
-
     /**
-     * Analyze sitemap.xml configuration.
+     * Analyze sitemap.
      *
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
     private function analyzeSitemap(array $context): array
     {
-        // Support multiple context key names for flexibility
-        $content = $context['content'] ?? $context['sitemap_content'] ?? '';
-        $urls = $context['urls'] ?? [];
-        $urlCount = $context['url_count'] ?? count($urls);
+        $content = $context['sitemap_content'] ?? '';
+        $urlCount = $context['url_count'] ?? 0;
         $score = 100;
         $issues = [];
         $suggestions = [];
         $bestPractices = [
-            'Include all important pages in your sitemap.',
-            'Keep sitemap under 50MB and 50,000 URLs (use sitemap index for larger sites).',
-            'Update sitemap when adding or removing pages.',
-            'Submit sitemap to Google Search Console and Bing Webmaster Tools.',
+            'Keep sitemap under 50MB and 50,000 URLs',
+            'Include only canonical URLs that should be indexed',
+            'Use lastmod to indicate when content was last modified',
+            'Compress large sitemaps with gzip',
+            'Submit sitemap to Google Search Console and Bing Webmaster Tools',
         ];
 
-        if (empty(trim($content)) && $urlCount === 0) {
-            $score = 35;
-            $issues[] = 'No sitemap content provided. Ensure sitemap.xml exists on your site.';
+        // Empty check
+        if (empty(trim($content))) {
+            $score = 40;
+            $issues[] = 'Sitemap is empty or missing.';
             $suggestions[] = [
                 'type' => 'add',
-                'text' => '<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://example.com/</loc></url>
-</urlset>',
-                'reason' => 'Add a sitemap.xml to help search engines discover your pages.',
+                'text' => 'Generate an XML sitemap with all important pages',
+                'reason' => 'Sitemaps help search engines discover and index your content',
             ];
-        } else {
-            // Check for XML structure
-            if (!empty($content)) {
-                if (!str_contains($content, '<?xml') && !str_contains($content, '<urlset') && !str_contains($content, '<sitemapindex')) {
-                    $score -= 30;
-                    $issues[] = 'Invalid XML structure. Sitemap must be valid XML.';
-                }
 
-                if (!str_contains($content, '<urlset') && !str_contains($content, '<sitemapindex')) {
-                    $score -= 25;
-                    $issues[] = 'Invalid sitemap structure. Missing urlset or sitemapindex element.';
-                }
-            }
+            return [
+                'indicator' => 'sitemap',
+                'score' => $score,
+                'issues' => $issues,
+                'suggestions' => $suggestions,
+                'best_practices' => $bestPractices,
+                'provider' => 'static_fallback',
+                'model' => 'rule-based',
+                'generated_at' => (new DateTimeImmutable())->format('c'),
+            ];
+        }
 
-            // Check URL count
-            if ($urlCount === 0 && !empty($content)) {
-                preg_match_all('/<loc>([^<]+)<\/loc>/i', $content, $matches);
-                $foundUrls = count($matches[1] ?? []);
-                if ($foundUrls === 0) {
-                    $score -= 40;
-                    $issues[] = 'No URLs found in sitemap.';
-                } elseif ($foundUrls < 5) {
-                    $score -= 10;
-                    $issues[] = "Only {$foundUrls} URLs in sitemap. Ensure all important pages are included.";
-                }
-                $urlCount = $foundUrls;
-            }
+        // XML validation
+        libxml_use_internal_errors(true);
+        $xmlValid = simplexml_load_string($content) !== false;
+        libxml_clear_errors();
 
-            // Check for lastmod
-            if (!empty($content) && !str_contains($content, '<lastmod')) {
-                $score -= 5;
-                $issues[] = 'Consider adding <lastmod> tags to indicate when pages were last modified.';
-            }
+        if (!$xmlValid) {
+            $score -= 40;
+            $issues[] = 'Sitemap contains invalid XML. Fix syntax errors.';
+        }
 
-            // Check for changefreq and priority (optional but good)
-            if (!empty($content) && !str_contains($content, '<changefreq') && !str_contains($content, '<priority')) {
-                // Minor note, no penalty
-            }
+        // Check for urlset or sitemapindex
+        $isSitemapIndex = preg_match('/<sitemapindex/i', $content);
+        $hasUrlset = preg_match('/<urlset/i', $content);
+
+        if (!$isSitemapIndex && !$hasUrlset) {
+            $score -= 30;
+            $issues[] = 'Sitemap must have either <urlset> or <sitemapindex> root element.';
+        }
+
+        // URL count check
+        if ($urlCount === 0 && $hasUrlset) {
+            $score -= 25;
+            $issues[] = 'Sitemap contains no URLs. Add pages to your sitemap.';
+        } elseif ($urlCount > 50000) {
+            $score -= 10;
+            $issues[] = "Sitemap has {$urlCount} URLs. Split into multiple sitemaps (limit is 50,000 per file).";
+        }
+
+        // Check for lastmod
+        if ($hasUrlset && !preg_match('/<lastmod>/i', $content)) {
+            $score -= 5;
+            $issues[] = 'Consider adding <lastmod> tags to indicate content freshness.';
+        }
+
+        // Check for loc tags
+        if ($hasUrlset && !preg_match('/<loc>/i', $content)) {
+            $score -= 30;
+            $issues[] = 'URLs missing <loc> tags. Each URL entry must have a location.';
         }
 
         return [
+            'indicator' => 'sitemap',
             'score' => max(0, min(100, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $bestPractices,
+            'provider' => 'static_fallback',
+            'model' => 'rule-based',
+            'generated_at' => (new DateTimeImmutable())->format('c'),
         ];
     }
-
-    // =====================================================
-    // Headings Analysis
-    // =====================================================
 
     /**
      * Analyze heading structure.
@@ -633,94 +563,121 @@ class StaticFallbackProvider implements AIProviderInterface
         $issues = [];
         $suggestions = [];
         $bestPractices = [
-            'Use exactly one H1 heading per page.',
-            'Maintain a logical heading hierarchy (H1 → H2 → H3).',
-            'Include your target keyword in the H1 heading.',
-            'Use headings to structure content, not just for styling.',
+            'Use exactly one H1 heading per page',
+            'Maintain logical heading hierarchy (H1 → H2 → H3)',
+            'Include target keywords in headings naturally',
+            'Make headings descriptive and scannable',
+            'Avoid skipping heading levels',
         ];
 
+        // No headings check
         if (empty($headings)) {
-            $score -= 50;
-            $issues[] = 'No headings found on this page. Add structured headings for better SEO.';
+            $score = 50;
+            $issues[] = 'No headings found on the page. Add structured headings for better SEO.';
             $suggestions[] = [
                 'type' => 'add',
-                'text' => '<h1>Main Page Title</h1>',
-                'reason' => 'Add an H1 heading to define the main topic of your page.',
+                'text' => 'Add an H1 heading and organize content with H2-H6 subheadings',
+                'reason' => 'Headings improve readability and help search engines understand content structure',
             ];
-        } else {
-            // Count H1s
-            $h1s = array_filter($headings, fn($h) => ($h['level'] ?? 0) === 1);
-            $h1Count = count($h1s);
 
-            if ($h1Count === 0) {
-                $score -= 30;
-                $issues[] = 'No H1 heading found. Every page should have exactly one H1.';
-                $suggestions[] = [
-                    'type' => 'add',
-                    'text' => '<h1>Main Page Title</h1>',
-                    'reason' => 'Add an H1 heading as the main title of your page.',
-                ];
-            } elseif ($h1Count > 1) {
-                $score -= 15 * min($h1Count - 1, 2);
-                $issues[] = "Multiple H1 headings found ({$h1Count}). Use only one H1 per page.";
-                $suggestions[] = [
-                    'type' => 'warning',
-                    'text' => 'Convert additional H1 headings to H2 or lower.',
-                    'reason' => 'Multiple H1s can confuse search engines about page structure.',
-                ];
+            return [
+                'indicator' => 'headings',
+                'score' => $score,
+                'issues' => $issues,
+                'suggestions' => $suggestions,
+                'best_practices' => $bestPractices,
+                'provider' => 'static_fallback',
+                'model' => 'rule-based',
+                'generated_at' => (new DateTimeImmutable())->format('c'),
+            ];
+        }
+
+        // Count H1s
+        $h1Count = 0;
+        $h1Text = '';
+        $levels = [];
+        $emptyHeadings = 0;
+
+        foreach ($headings as $heading) {
+            $level = $heading['level'] ?? 0;
+            $text = trim($heading['text'] ?? '');
+
+            $levels[] = $level;
+
+            if ($level === 1) {
+                $h1Count++;
+                $h1Text = $text;
             }
 
-            // Check for empty headings
-            foreach ($headings as $heading) {
-                $text = trim($heading['text'] ?? '');
-                if (empty($text)) {
-                    $score -= 10;
-                    $issues[] = "Empty H{$heading['level']} heading found. Add descriptive text.";
-                }
+            if ($text === '') {
+                $emptyHeadings++;
             }
+        }
 
-            // Check hierarchy
-            $prevLevel = 0;
-            foreach ($headings as $heading) {
-                $level = $heading['level'] ?? 1;
-                if ($level > $prevLevel + 1 && $prevLevel > 0) {
-                    $score -= 5;
-                    $issues[] = "Heading level skipped: H{$prevLevel} → H{$level}. Maintain proper hierarchy.";
-                    break;
-                }
-                $prevLevel = $level;
+        // H1 checks
+        if ($h1Count === 0) {
+            $score -= 30;
+            $issues[] = 'No H1 heading found. Every page should have exactly one H1.';
+            $suggestions[] = [
+                'type' => 'add',
+                'text' => 'Add an H1 heading that describes the main topic of the page',
+                'reason' => 'H1 is the most important heading for SEO',
+            ];
+        } elseif ($h1Count > 1) {
+            $score -= 20;
+            $issues[] = "Multiple H1 headings found ({$h1Count}). Use only one H1 per page.";
+            $suggestions[] = [
+                'type' => 'remove',
+                'text' => 'Keep only one H1 and change others to H2 or lower',
+                'reason' => 'Multiple H1s dilute the page\'s main topic signal',
+            ];
+        }
+
+        // Empty headings check
+        if ($emptyHeadings > 0) {
+            $score -= 10;
+            $issues[] = "{$emptyHeadings} heading(s) are empty. Add descriptive text.";
+        }
+
+        // Hierarchy check
+        $prevLevel = 0;
+        foreach ($levels as $level) {
+            if ($prevLevel > 0 && $level > $prevLevel + 1) {
+                $score -= 10;
+                $issues[] = "Heading hierarchy skips from H{$prevLevel} to H{$level}. Maintain proper nesting.";
+                break;
             }
+            $prevLevel = $level;
+        }
 
-            // Check keyword in H1
-            if ($keyword && $h1Count > 0) {
-                $h1Text = mb_strtolower(reset($h1s)['text'] ?? '');
-                if (!str_contains($h1Text, mb_strtolower($keyword))) {
-                    $score -= 10;
-                    $issues[] = "Target keyword '{$keyword}' not found in H1 heading.";
-                }
+        // H1 vs title check
+        if ($h1Count === 1 && $title) {
+            $h1Lower = mb_strtolower(trim($h1Text));
+            $titleLower = mb_strtolower(trim($title));
+            if ($h1Lower === $titleLower) {
+                // This is good for SEO
             }
+        }
 
-            // Check H1 matches title
-            if ($title && $h1Count === 1) {
-                $h1Text = trim(reset($h1s)['text'] ?? '');
-                if (mb_strtolower($h1Text) !== mb_strtolower($title)) {
-                    // This is often acceptable, just informational
-                    $score -= 0;
-                }
+        // Keyword in H1 check
+        if ($keyword && $h1Count === 1 && $h1Text) {
+            if (mb_stripos($h1Text, $keyword) === false) {
+                $score -= 10;
+                $issues[] = "Target keyword '{$keyword}' not found in H1 heading.";
             }
         }
 
         return [
+            'indicator' => 'headings',
             'score' => max(0, min(100, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $bestPractices,
+            'provider' => 'static_fallback',
+            'model' => 'rule-based',
+            'generated_at' => (new DateTimeImmutable())->format('c'),
         ];
     }
-
-    // =====================================================
-    // Image Alt Analysis
-    // =====================================================
 
     /**
      * Analyze image alt text.
@@ -736,223 +693,229 @@ class StaticFallbackProvider implements AIProviderInterface
         $issues = [];
         $suggestions = [];
         $bestPractices = [
-            'Add descriptive alt text to all images.',
-            'Include relevant keywords naturally in alt text.',
-            'Keep alt text under 125 characters.',
-            'Describe the image content, not just the filename.',
+            'Add descriptive alt text to all meaningful images',
+            'Keep alt text under 125 characters',
+            'Include keywords naturally when relevant',
+            'Use empty alt="" for decorative images',
+            'Avoid generic descriptions like "image" or "photo"',
         ];
 
+        // No images check
         if (empty($images)) {
-            $score -= 20;
-            $issues[] = 'No images found on this page.';
-        } else {
-            $missingAlt = 0;
-            $emptyAlt = 0;
-            $genericAlt = 0;
-            $keywordInAlt = 0;
-            $keywordStuffed = 0;
+            return [
+                'indicator' => 'image_alt',
+                'score' => 80,
+                'issues' => [],
+                'suggestions' => [],
+                'best_practices' => $bestPractices,
+                'provider' => 'static_fallback',
+                'model' => 'rule-based',
+                'generated_at' => (new DateTimeImmutable())->format('c'),
+            ];
+        }
 
-            foreach ($images as $image) {
-                $alt = $image['alt'] ?? null;
-                $src = $image['src'] ?? '';
+        $totalImages = count($images);
+        $missingAlt = 0;
+        $genericAlt = 0;
+        $longAlt = 0;
+        $keywordStuffed = 0;
+        $withKeyword = 0;
 
-                if ($alt === null) {
-                    $missingAlt++;
-                } elseif (empty(trim($alt))) {
-                    $emptyAlt++;
-                } else {
-                    // Check for generic alt text
-                    $altLower = mb_strtolower($alt);
-                    if (in_array($altLower, ['image', 'photo', 'picture', 'img', 'icon', 'logo'])) {
-                        $genericAlt++;
-                    }
+        foreach ($images as $image) {
+            $alt = $image['alt'] ?? null;
 
-                    // Check keyword presence
-                    if ($keyword && str_contains($altLower, mb_strtolower($keyword))) {
-                        $keywordInAlt++;
-                        
-                        // Check for keyword stuffing (keyword appears multiple times)
-                        if (substr_count($altLower, mb_strtolower($keyword)) > 1) {
-                            $keywordStuffed++;
-                        }
-                    }
+            if ($alt === null || $alt === '') {
+                $missingAlt++;
+                continue;
+            }
 
-                    // Check alt text length
-                    if (mb_strlen($alt) > 125) {
-                        $score -= 2;
-                        $issues[] = "Alt text too long: \"{$alt}\". Keep under 125 characters.";
-                    }
+            $altLength = mb_strlen($alt);
+
+            // Check for generic alt text
+            $genericPatterns = ['image', 'photo', 'picture', 'img', 'icon', 'logo', 'graphic', 'graphic'];
+            $altLower = mb_strtolower($alt);
+            foreach ($genericPatterns as $pattern) {
+                if ($altLower === $pattern || $altLower === $pattern . 's') {
+                    $genericAlt++;
+                    break;
                 }
             }
 
-            $totalImages = count($images);
-
-            if ($missingAlt > 0) {
-                $penalty = min(35, $missingAlt * 12);
-                $score -= $penalty;
-                $issues[] = "{$missingAlt} image(s) missing alt text.";
-                $suggestions[] = [
-                    'type' => 'add',
-                    'text' => $keyword ? "alt=\"{$keyword} - descriptive text\"" : 'alt="Descriptive text about the image"',
-                    'reason' => 'Add descriptive alt text to improve accessibility and SEO.',
-                ];
+            // Check for too long alt
+            if ($altLength > 125) {
+                $longAlt++;
             }
 
-            if ($emptyAlt > 0) {
-                $score -= $emptyAlt * 5;
-                $issues[] = "{$emptyAlt} image(s) have empty alt attributes.";
-            }
-
-            if ($genericAlt > 0) {
-                $score -= $genericAlt * 5;
-                $issues[] = "{$genericAlt} image(s) have generic alt text (e.g., 'image', 'photo').";
-            }
-
-            if ($keywordStuffed > 0) {
-                $score -= $keywordStuffed * 8;
-                $issues[] = "{$keywordStuffed} image(s) have keyword stuffing in alt text. Use keywords naturally.";
-            }
-
-            if ($keyword && $keywordInAlt === 0 && $totalImages > 0) {
-                $score -= 5;
-                $issues[] = "Target keyword '{$keyword}' not found in any image alt text.";
-            }
-            
-            // Coverage score
-            $coverage = ($totalImages - $missingAlt - $emptyAlt) / $totalImages * 100;
-            if ($coverage < 50) {
-                $score -= 15;
-                $issues[] = 'Alt text coverage is below 50%. Add alt text to all images.';
-            } elseif ($coverage < 100) {
-                $score -= 5;
-                $issues[] = 'Some images are missing alt text.';
+            // Check for keyword stuffing
+            if ($keyword) {
+                $keywordCount = substr_count($altLower, mb_strtolower($keyword));
+                if ($keywordCount > 2) {
+                    $keywordStuffed++;
+                } elseif ($keywordCount > 0) {
+                    $withKeyword++;
+                }
             }
         }
 
+        // Score adjustments
+        $coverage = ($totalImages - $missingAlt) / $totalImages;
+
+        if ($missingAlt > 0) {
+            $score -= (int) ($missingAlt / $totalImages * 40);
+            $issues[] = "{$missingAlt} image(s) missing alt text out of {$totalImages}.";
+            $suggestions[] = [
+                'type' => 'add',
+                'text' => 'Add descriptive alt text to all meaningful images',
+                'reason' => 'Alt text improves accessibility and helps search engines understand images',
+            ];
+        }
+
+        if ($genericAlt > 0) {
+            $score -= 10;
+            $issues[] = "{$genericAlt} image(s) have generic alt text like 'image' or 'photo'. Use descriptive text.";
+        }
+
+        if ($longAlt > 0) {
+            $score -= 5;
+            $issues[] = "{$longAlt} image(s) have alt text over 125 characters. Keep it concise.";
+        }
+
+        if ($keywordStuffed > 0) {
+            $score -= 15;
+            $issues[] = "{$keywordStuffed} image(s) have keyword stuffing in alt text. Use natural language.";
+        }
+
+        if ($keyword && $withKeyword > 0) {
+            $score += 5; // Bonus for including keyword naturally
+        }
+
         return [
+            'indicator' => 'image_alt',
             'score' => max(0, min(100, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $bestPractices,
+            'provider' => 'static_fallback',
+            'model' => 'rule-based',
+            'generated_at' => (new DateTimeImmutable())->format('c'),
         ];
     }
 
-    // =====================================================
-    // Filenames Analysis
-    // =====================================================
-
     /**
-     * Analyze file and URL naming conventions.
+     * Analyze filenames.
      *
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
     private function analyzeFilenames(array $context): array
     {
-        // Support both 'filenames' (array of strings) and 'files' (array of objects with 'name')
-        $filenames = $context['filenames'] ?? [];
         $files = $context['files'] ?? [];
-        
-        // Convert files array to filenames if needed
-        if (empty($filenames) && !empty($files)) {
-            foreach ($files as $file) {
-                if (isset($file['name'])) {
-                    $filenames[] = $file['name'];
-                }
-            }
-        }
-        
         $score = 100;
         $issues = [];
         $suggestions = [];
         $bestPractices = [
-            'Use descriptive, lowercase filenames with hyphens.',
-            'Avoid special characters, spaces, and underscores in filenames.',
-            'Include relevant keywords in filenames when appropriate.',
-            'Keep filenames concise but descriptive.',
+            'Use lowercase letters with hyphens (e.g., my-file.jpg)',
+            'Keep filenames descriptive and concise',
+            'Avoid special characters, spaces, and underscores',
+            'Include relevant keywords when appropriate',
+            'Use proper file extensions',
         ];
 
-        if (empty($filenames)) {
-            $issues[] = 'No filenames provided for analysis.';
-        } else {
-            foreach ($filenames as $filename) {
-                $name = basename((string)$filename);
+        // No files check
+        if (empty($files)) {
+            return [
+                'indicator' => 'filenames',
+                'score' => 80,
+                'issues' => [],
+                'suggestions' => [],
+                'best_practices' => $bestPractices,
+                'provider' => 'static_fallback',
+                'model' => 'rule-based',
+                'generated_at' => (new DateTimeImmutable())->format('c'),
+            ];
+        }
 
-                // Check for spaces
-                if (str_contains($name, ' ')) {
-                    $score -= 15;
-                    $issues[] = "Filename contains spaces: \"{$name}\". Use hyphens instead.";
-                    if (empty($suggestions) || !collect($suggestions)->some(fn($s) => str_contains($s['text'], 'hyphen'))) {
-                        $suggestions[] = [
-                            'type' => 'rewrite',
-                            'text' => str_replace(' ', '-', $name),
-                            'reason' => 'Replace spaces with hyphens for better SEO.',
-                        ];
-                    }
-                }
+        $issuesFound = 0;
 
-                // Check for uppercase
-                if ($name !== mb_strtolower($name) && preg_match('/[A-Z]/', $name)) {
-                    $score -= 10;
-                    $issues[] = "Filename contains uppercase: \"{$name}\". Use lowercase.";
-                }
+        foreach ($files as $file) {
+            $name = $file['name'] ?? '';
+            $fileIssues = [];
 
-                // Check for underscores
-                if (str_contains($name, '_')) {
-                    $score -= 10;
-                    $issues[] = "Filename uses underscores: \"{$name}\". Consider using hyphens for better SEO.";
-                }
+            // Spaces check
+            if (preg_match('/\s/', $name)) {
+                $fileIssues[] = 'contains spaces';
+            }
 
-                // Check for special characters (excluding dots for extension and hyphens)
-                $nameWithoutExt = pathinfo($name, PATHINFO_FILENAME);
-                if (preg_match('/[^a-zA-Z0-9\-]/', $nameWithoutExt)) {
-                    $score -= 15;
-                    $issues[] = "Filename contains special characters: \"{$name}\". Use only letters, numbers, and hyphens.";
-                }
+            // Uppercase check
+            if (preg_match('/[A-Z]/', $name)) {
+                $fileIssues[] = 'contains uppercase';
+            }
 
-                // Check for generic names
-                if (preg_match('/^(img|image|photo|file|document|page|untitled|dsc|img_|screenshot)\d*$/i', $nameWithoutExt)) {
-                    $score -= 15;
-                    $issues[] = "Generic filename: \"{$name}\". Use descriptive names.";
-                    $suggestions[] = [
-                        'type' => 'rewrite',
-                        'text' => 'descriptive-name-with-keyword.jpg',
-                        'reason' => 'Use descriptive filenames for better SEO.',
-                    ];
-                }
+            // Special characters check
+            if (preg_match('/[^a-zA-Z0-9.\-_]/', $name)) {
+                $fileIssues[] = 'contains special characters';
+            }
 
-                // Check for hash-like filenames
-                if (preg_match('/^[a-f0-9]{16,}$/i', $nameWithoutExt)) {
-                    $score -= 15;
-                    $issues[] = "Hash-like filename: \"{$name}\". Use descriptive names.";
-                }
+            // Underscores check
+            if (preg_match('/_/', $name)) {
+                $fileIssues[] = 'uses underscores';
+            }
 
-                // Check for too long filenames
-                if (mb_strlen($nameWithoutExt) > 100) {
-                    $score -= 10;
-                    $issues[] = "Filename is too long: \"{$name}\". Keep under 100 characters.";
-                }
-
-                // Check for missing extension
-                $extension = pathinfo($name, PATHINFO_EXTENSION);
-                if (empty($extension)) {
-                    $score -= 20;
-                    $issues[] = "Missing file extension: \"{$name}\".";
+            // Generic name check
+            $genericPatterns = ['image', 'img', 'photo', 'pic', 'file', 'document', 'doc'];
+            $baseName = pathinfo($name, PATHINFO_FILENAME);
+            foreach ($genericPatterns as $pattern) {
+                if (preg_match('/^' . preg_quote($pattern, '/') . '\d*$/i', $baseName)) {
+                    $fileIssues[] = 'is generic';
+                    break;
                 }
             }
+
+            // Too long check
+            if (mb_strlen($name) > 100) {
+                $fileIssues[] = 'is too long';
+            }
+
+            // Hash-like check
+            if (preg_match('/^[a-f0-9]{16,}$/i', $baseName)) {
+                $fileIssues[] = 'appears to be a hash';
+            }
+
+            // Missing extension
+            if (!preg_match('/\.[a-z0-9]+$/i', $name)) {
+                $fileIssues[] = 'missing extension';
+            }
+
+            $issuesFound += count($fileIssues);
+        }
+
+        // Calculate score based on issues
+        if ($issuesFound > 0) {
+            $penalty = min(50, $issuesFound * 5);
+            $score -= $penalty;
+
+            if ($issuesFound >= count($files) * 2) {
+                $issues[] = 'Multiple filename issues detected across files.';
+            }
+
+            $suggestions[] = [
+                'type' => 'improve',
+                'text' => 'Use lowercase filenames with hyphens instead of spaces or underscores',
+                'reason' => 'SEO-friendly filenames improve discoverability and URL readability',
+            ];
         }
 
         return [
+            'indicator' => 'filenames',
             'score' => max(0, min(100, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $bestPractices,
+            'provider' => 'static_fallback',
+            'model' => 'rule-based',
+            'generated_at' => (new DateTimeImmutable())->format('c'),
         ];
     }
-
-    // =====================================================
-    // URL Analysis
-    // =====================================================
 
     /**
      * Analyze URL structure.
@@ -968,130 +931,117 @@ class StaticFallbackProvider implements AIProviderInterface
         $issues = [];
         $suggestions = [];
         $bestPractices = [
-            'Keep URLs short, descriptive, and readable.',
-            'Use hyphens to separate words in URLs.',
-            'Include target keywords in the URL slug.',
-            'Avoid URL parameters, session IDs, and special characters.',
+            'Use hyphens to separate words in URLs',
+            'Keep URLs short, descriptive, and lowercase',
+            'Avoid dynamic URL parameters when possible',
+            'Use HTTPS for security and SEO benefits',
+            'Include target keywords naturally in the URL path',
         ];
 
+        // Empty check
         if (empty($url)) {
-            $score = 30;
-            $issues[] = 'No URL provided for analysis.';
-            $suggestions[] = [
-                'type' => 'add',
-                'text' => 'https://example.com/descriptive-page-slug',
-                'reason' => 'Provide a URL to analyze its SEO structure.',
+            $score = 40;
+            $issues[] = 'URL is empty.';
+
+            return [
+                'indicator' => 'url',
+                'score' => $score,
+                'issues' => $issues,
+                'suggestions' => $suggestions,
+                'best_practices' => $bestPractices,
+                'provider' => 'static_fallback',
+                'model' => 'rule-based',
+                'generated_at' => (new DateTimeImmutable())->format('c'),
             ];
+        }
+
+        // Parse URL
+        $parsed = parse_url($url);
+        $path = $parsed['path'] ?? '';
+        $scheme = $parsed['scheme'] ?? '';
+        $host = $parsed['host'] ?? '';
+        $query = $parsed['query'] ?? '';
+
+        // HTTPS check
+        if ($scheme !== 'https') {
+            $score -= 15;
+            $issues[] = 'URL is not using HTTPS. Secure URLs are preferred by search engines.';
+        }
+
+        // Query parameters check
+        if (!empty($query)) {
+            $score -= 20;
+            $issues[] = 'URL contains query parameters. Consider using clean URLs when possible.';
+            $suggestions[] = [
+                'type' => 'rewrite',
+                'text' => 'Use URL rewriting to create clean, SEO-friendly URLs',
+                'reason' => 'Clean URLs are easier for users and search engines to understand',
+            ];
+        }
+
+        // Dynamic URL check
+        if (preg_match('/\.php|\.asp|\.aspx/i', $path)) {
+            $score -= 15;
+            $issues[] = 'URL appears to be dynamic (contains .php, .asp, etc.). Consider URL rewriting.';
+        }
+
+        // Underscores check
+        if (preg_match('/_/', $path)) {
+            $score -= 10;
+            $issues[] = 'URL contains underscores. Use hyphens instead for better SEO.';
+        }
+
+        // Uppercase check
+        if (preg_match('/[A-Z]/', $path)) {
+            $score -= 5;
+            $issues[] = 'URL contains uppercase letters. Use lowercase for consistency.';
+        }
+
+        // Length check
+        if (mb_strlen($path) > 100) {
+            $score -= 10;
+            $issues[] = 'URL path is very long. Keep it concise and focused.';
+        }
+
+        // Keyword check
+        if ($keyword) {
+            $pathLower = mb_strtolower($path);
+            $keywordLower = mb_strtolower($keyword);
+            $keywordInUrl = str_replace(' ', '-', $keywordLower);
+
+            if (mb_strpos($pathLower, $keywordInUrl) !== false) {
+                $score += 5; // Bonus for keyword in URL
+            } else {
+                // Penalty for missing target keyword
+                $score -= 5;
+                $issues[] = "Target keyword '{$keyword}' not found in URL path.";
+            }
         } else {
-            $parsed = parse_url($url);
-            $path = $parsed['path'] ?? '';
-            $scheme = $parsed['scheme'] ?? '';
-
-            // Check URL length
-            if (mb_strlen($url) > 100) {
-                $score -= 10;
-                $issues[] = 'URL is too long. Keep URLs under 100 characters when possible.';
-            }
-
-            // Check for HTTPS
-            if ($scheme === 'http') {
-                $score -= 10;
-                $issues[] = 'URL uses HTTP instead of HTTPS. Secure URLs are preferred by search engines.';
-                $suggestions[] = [
-                    'type' => 'improve',
-                    'text' => 'https://' . substr($url, 7),
-                    'reason' => 'Migrate to HTTPS for better security and SEO.',
-                ];
-            }
-
-            // Check for underscores
-            if (str_contains($path, '_')) {
-                $score -= 10;
-                $issues[] = 'URL contains underscores. Use hyphens instead for better SEO.';
-            }
-
-            // Check for uppercase
-            if ($path !== mb_strtolower($path) && preg_match('/[A-Z]/', $path)) {
+            // Without keyword context, penalize generic paths
+            $pathSegments = array_filter(explode('/', trim($path, '/')));
+            $lastSegment = end($pathSegments);
+            
+            // Check for generic/numeric path segments
+            if ($lastSegment && preg_match('/^(item-\d+|product|page|post|category)$/i', $lastSegment)) {
                 $score -= 5;
-                $issues[] = 'URL contains uppercase letters. Use lowercase.';
-            }
-
-            // Check for query parameters
-            if (!empty($parsed['query'])) {
-                $score -= 16;
-                $issues[] = 'URL contains query parameters. Consider using clean URLs.';
-                $suggestions[] = [
-                    'type' => 'rewrite',
-                    'text' => 'https://example.com/clean-url-path',
-                    'reason' => 'Clean URLs are easier for users and search engines to understand.',
-                ];
-            }
-
-            // Check for special characters
-            if (preg_match('/[^a-z0-9.\-\/]/', $path)) {
-                $score -= 10;
-                $issues[] = 'URL contains special characters. Use only letters, numbers, and hyphens.';
-            }
-
-            // Check for dynamic URLs (file extensions like .php, .asp, etc.)
-            if (preg_match('/\.(php|asp|aspx|jsp|cgi)/i', $path)) {
-                $score -= 20;
-                $issues[] = 'URL has a dynamic file extension. Consider using clean, extensionless URLs.';
-                $suggestions[] = [
-                    'type' => 'rewrite',
-                    'text' => 'https://example.com/clean-url-path',
-                    'reason' => 'Rewrite dynamic URLs to clean, static-looking URLs for better SEO.',
-                ];
-            }
-
-            // Check keyword in URL
-            if ($keyword) {
-                $slug = basename($path);
-                if (!str_contains(mb_strtolower($slug), mb_strtolower($keyword))) {
-                    $score -= 10;
-                    $issues[] = "Target keyword '{$keyword}' not found in URL slug.";
-                    $suggestions[] = [
-                        'type' => 'rewrite',
-                        'text' => "/{$keyword}-page-slug",
-                        'reason' => 'Include the target keyword in your URL slug.',
-                    ];
-                }
-            }
-
-            // Check for numeric IDs
-            if (preg_match('/\/\d+(\/|$)/', $path)) {
-                $score -= 5;
-                $issues[] = 'URL contains numeric IDs. Use descriptive slugs instead.';
-            }
-
-            // Check for deeply nested paths
-            $depth = substr_count(trim($path, '/'), '/');
-            if ($depth > 4) {
-                $score -= 5;
-                $issues[] = 'URL structure is deeply nested. Consider flattening the hierarchy.';
-            }
-
-            // Check for domain-only URLs (no path or just /)
-            if (empty($path) || $path === '/') {
-                // This is the homepage, which is fine
-                // But could add informational note
+                $issues[] = 'URL path appears generic. Include descriptive keywords.';
             }
         }
 
         return [
+            'indicator' => 'url',
             'score' => max(0, min(100, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $bestPractices,
+            'provider' => 'static_fallback',
+            'model' => 'rule-based',
+            'generated_at' => (new DateTimeImmutable())->format('c'),
         ];
     }
 
-    // =====================================================
-    // Links Analysis
-    // =====================================================
-
     /**
-     * Analyze link structure.
+     * Analyze links.
      *
      * @param array<string, mixed> $context
      * @return array<string, mixed>
@@ -1099,257 +1049,238 @@ class StaticFallbackProvider implements AIProviderInterface
     private function analyzeLinks(array $context): array
     {
         $links = $context['links'] ?? [];
-        $baseUrl = $context['base_url'] ?? null;
+        $baseUrl = $context['base_url'] ?? 'https://example.com';
         $score = 100;
         $issues = [];
         $suggestions = [];
         $bestPractices = [
-            'Include internal links to help users and crawlers navigate your site.',
-            'Use descriptive anchor text for links.',
-            'Link to authoritative external sources when relevant.',
-            'Check for and fix broken links regularly.',
+            'Include relevant internal links on every page',
+            'Use descriptive anchor text instead of "click here"',
+            'Add rel="noopener" to external links with target="_blank"',
+            'Fix or remove broken links promptly',
+            'Balance internal and external links appropriately',
         ];
 
+        // No links check
         if (empty($links)) {
-            $score -= 40;
-            $issues[] = 'No links found on this page. Add internal and external links.';
+            $score = 50;
+            $issues[] = 'No links found on the page. Add relevant internal and external links.';
             $suggestions[] = [
                 'type' => 'add',
-                'text' => '<a href="/related-page">Related content</a>',
-                'reason' => 'Add internal links to help users discover more content.',
+                'text' => 'Add internal links to related pages and external links to authoritative sources',
+                'reason' => 'Links help search engines discover content and establish site structure',
             ];
-        } else {
-            // Count internal and external links
-            $internalCount = 0;
-            $externalCount = 0;
-            $brokenLinks = 0;
-            $genericAnchors = 0;
-            $nofollowInternal = 0;
-            $externalNoFollowMissing = 0;
-            $totalLinks = count($links);
 
-            foreach ($links as $link) {
-                // Determine if internal or external
-                $url = $link['url'] ?? '';
-                $type = $link['type'] ?? null;
-                
-                // If type is provided, use it; otherwise determine from URL
-                if ($type === null) {
-                    if ($baseUrl && str_contains($url, parse_url($baseUrl, PHP_URL_HOST) ?? '')) {
-                        $type = 'internal';
-                    } else {
-                        $type = str_starts_with($url, 'http') && !str_contains($url, parse_url($baseUrl ?? '', PHP_URL_HOST) ?? 'invalid') 
-                            ? 'external' 
-                            : 'internal';
-                    }
-                }
-                
-                if ($type === 'internal') {
-                    $internalCount++;
-                } elseif ($type === 'external') {
-                    $externalCount++;
-                }
+            return [
+                'indicator' => 'links',
+                'score' => $score,
+                'issues' => $issues,
+                'suggestions' => $suggestions,
+                'best_practices' => $bestPractices,
+                'provider' => 'static_fallback',
+                'model' => 'rule-based',
+                'generated_at' => (new DateTimeImmutable())->format('c'),
+            ];
+        }
 
-                // Check for broken links
-                $status = $link['status'] ?? 200;
-                if ($status >= 400) {
-                    $brokenLinks++;
-                }
+        $internalCount = 0;
+        $externalCount = 0;
+        $brokenCount = 0;
+        $genericAnchorCount = 0;
+        $missingNoopener = 0;
+        $missingNofollow = 0;
 
-                // Check for generic anchor text
-                $anchor = mb_strtolower(trim($link['anchor'] ?? ''));
-                if (in_array($anchor, ['click here', 'read more', 'more', 'here', 'link'])) {
-                    $genericAnchors++;
-                }
+        foreach ($links as $link) {
+            $type = $link['type'] ?? 'internal';
+            $status = $link['status'] ?? 200;
+            $anchor = $link['anchor'] ?? '';
+            $target = $link['target'] ?? null;
+            $rel = $link['rel'] ?? '';
 
-                // Check for nofollow on internal links
-                $isInternal = $type === 'internal';
-                $rel = $link['rel'] ?? '';
-                $hasNofollow = str_contains(mb_strtolower($rel), 'nofollow');
-                
-                if ($isInternal && $hasNofollow) {
-                    $nofollowInternal++;
-                }
-                
-                // Check for missing nofollow on external links (informational)
-                if ($type === 'external' && !$hasNofollow && !str_contains(mb_strtolower($rel), 'sponsored')) {
-                    $externalNoFollowMissing++;
+            if ($type === 'internal') {
+                $internalCount++;
+            } elseif ($type === 'external') {
+                $externalCount++;
+
+                // Check for nofollow on external
+                if ($rel === null || !preg_match('/nofollow/i', $rel)) {
+                    $missingNofollow++;
                 }
             }
 
-            // Score calculations
-            if ($internalCount === 0 && $externalCount === 0) {
-                // Already handled above
-            } elseif ($internalCount === 0) {
-                $score -= 25;
-                $issues[] = 'No internal links found. Add links to other pages on your site.';
-            } elseif ($internalCount < 3) {
-                $score -= 10;
-                $issues[] = 'Few internal links found. Consider adding more internal links.';
+            // Broken check
+            if ($status >= 400) {
+                $brokenCount++;
             }
 
-            if ($externalCount > 15) {
-                $score -= 10;
-                $issues[] = 'Many external links detected. Ensure they open in new tabs and are relevant.';
+            // Generic anchor check
+            $anchorLower = mb_strtolower(trim($anchor));
+            if (in_array($anchorLower, self::GENERIC_ANCHORS, true)) {
+                $genericAnchorCount++;
             }
 
-            if ($brokenLinks > 0) {
-                $score -= $brokenLinks * 12;
-                $issues[] = "{$brokenLinks} broken link(s) found. Fix or remove them.";
-            }
-
-            if ($genericAnchors > 0) {
-                $score -= $genericAnchors * 4;
-                $issues[] = "{$genericAnchors} link(s) use generic anchor text. Use descriptive text instead.";
-            }
-
-            if ($nofollowInternal > 0) {
-                $score -= $nofollowInternal * 6;
-                $issues[] = "{$nofollowInternal} internal link(s) have nofollow. Remove nofollow from internal links.";
+            // Security check for target="_blank"
+            if ($target === '_blank' && ($rel === null || !preg_match('/noopener/i', $rel))) {
+                $missingNoopener++;
             }
         }
 
+        // Score adjustments
+        if ($brokenCount > 0) {
+            $penalty = min(40, $brokenCount * 10);
+            $score -= $penalty;
+            $issues[] = "{$brokenCount} broken link(s) found. Fix or remove them.";
+        }
+
+        if ($internalCount === 0) {
+            $score -= 20;
+            $issues[] = 'No internal links found. Add links to other pages on your site.';
+        } elseif ($internalCount > 100) {
+            $score -= 10;
+            $issues[] = 'Many internal links may dilute link equity. Consider reducing.';
+        }
+
+        if ($externalCount > 10) {
+            $score -= 10;
+            $issues[] = 'Many external links detected. Ensure they are relevant and properly attributed.';
+        }
+
+        if ($genericAnchorCount > 0) {
+            $score -= min(15, $genericAnchorCount * 5);
+            $issues[] = "{$genericAnchorCount} link(s) use generic anchor text like 'click here'. Use descriptive text.";
+        }
+
+        if ($missingNoopener > 0) {
+            $score -= min(10, $missingNoopener * 3);
+            $issues[] = "{$missingNoopener} external link(s) with target='_blank' missing rel='noopener'. This is a security risk.";
+        }
+
+        if ($missingNofollow > 0) {
+            $suggestions[] = [
+                'type' => 'improve',
+                'text' => "Consider adding rel='nofollow' to {$missingNofollow} external link(s) you don't vouch for",
+                'reason' => 'nofollow helps prevent passing authority to untrusted sites',
+            ];
+        }
+
         return [
+            'indicator' => 'links',
             'score' => max(0, min(100, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $bestPractices,
+            'provider' => 'static_fallback',
+            'model' => 'rule-based',
+            'generated_at' => (new DateTimeImmutable())->format('c'),
         ];
     }
 
-    // =====================================================
-    // 404 Page Analysis
-    // =====================================================
-
     /**
-     * Analyze 404 error handling.
+     * Analyze 404 page.
      *
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
-    private function analyzeNotFound(array $context): array
+    private function analyze404(array $context): array
     {
         $url = $context['url'] ?? '';
         $referrer = $context['referrer'] ?? null;
-        $siteStructure = $context['site_structure'] ?? null;
-        $hasCustom404 = $context['has_custom_404'] ?? false;
-        $hasSearchForm = $context['has_search_form'] ?? false;
-        $hasNavigation = $context['has_navigation'] ?? false;
-        $hasHomeLink = $context['has_home_link'] ?? false;
-        $score = 100;
+        $score = 70; // Base score for 404
         $issues = [];
         $suggestions = [];
         $bestPractices = [
-            'Create a custom 404 page that matches your site design.',
-            'Include a search form to help users find content.',
-            'Provide clear navigation back to main sections.',
-            'Link to the homepage and popular pages.',
+            'Create a custom 404 page with helpful navigation',
+            'Include links to popular pages and a search function',
+            'Monitor 404 errors in Google Search Console',
+            'Set up 301 redirects for moved or deleted pages',
+            'Keep the URL structure consistent to prevent future 404s',
         ];
 
-        // Analyze the URL that resulted in 404
-        $parsedUrl = parse_url($url);
-        $path = $parsedUrl['path'] ?? '';
-        
-        // Common 404 causes
-        if (!empty($url)) {
-            // Check for common patterns that cause 404s
-            if (preg_match('/\.(html?|php|asp)$/i', $path)) {
-                $issues[] = 'URL has an outdated file extension that may no longer exist.';
-            }
-            if (preg_match('/\/\d{4}\//', $path)) {
-                $issues[] = 'URL contains a year-based archive path that may be outdated.';
-            }
-            if (str_contains($url, '%20')) {
-                $issues[] = 'URL contains encoded spaces. This may indicate a linking error.';
-            }
-            if (preg_match('/\/page\/\d+\/?$/i', $path)) {
-                $issues[] = 'Paginated URL may no longer exist if content was reduced.';
-            }
-            if (preg_match('/\/category\//i', $path) || preg_match('/\/tag\//i', $path)) {
-                $issues[] = 'Taxonomy URL may have been renamed or removed.';
-            }
-        }
+        // Parse URL
+        $parsed = parse_url($url);
+        $path = $parsed['path'] ?? '';
 
-        // Custom 404 page analysis
-        if (!$hasCustom404) {
-            $score -= 30;
-            $issues[] = 'No custom 404 page detected. Create a user-friendly 404 page.';
-            $suggestions[] = [
-                'type' => 'add',
-                'text' => 'Create a custom 404 page with navigation and search.',
-                'reason' => 'A custom 404 page improves user experience when pages are not found.',
+        // Empty URL
+        if (empty($url)) {
+            $score = 50;
+            $issues[] = 'URL is empty.';
+
+            return [
+                'indicator' => '404',
+                'score' => $score,
+                'issues' => $issues,
+                'suggestions' => $suggestions,
+                'best_practices' => $bestPractices,
+                'provider' => 'static_fallback',
+                'model' => 'rule-based',
+                'generated_at' => (new DateTimeImmutable())->format('c'),
             ];
         }
 
-        if (!$hasSearchForm) {
-            $score -= 15;
-            $issues[] = '404 page lacks a search form. Help users find what they were looking for.';
-            $suggestions[] = [
-                'type' => 'add',
-                'text' => '<form action="/search"><input type="search" placeholder="Search..."></form>',
-                'reason' => 'Add a search form to help users find content.',
-            ];
+        // Analyze potential causes
+        $potentialCauses = [];
+
+        // File extension in URL
+        if (preg_match('/\.(html?|php|aspx?)$/i', $path)) {
+            $potentialCauses[] = 'URL contains file extension which may indicate outdated structure';
         }
 
-        if (!$hasNavigation) {
-            $score -= 15;
-            $issues[] = '404 page lacks navigation. Add links to main site sections.';
+        // Query parameters
+        if (!empty($parsed['query'])) {
+            $potentialCauses[] = 'URL has query parameters that may no longer be valid';
         }
 
-        if (!$hasHomeLink) {
-            $score -= 10;
-            $issues[] = '404 page lacks a home link. Add a prominent link to the homepage.';
-            $suggestions[] = [
-                'type' => 'add',
-                'text' => '<a href="/">Return to Homepage</a>',
-                'reason' => 'Add a home link to help users recover from 404 errors.',
-            ];
+        // Trailing slash
+        if (preg_match('/\/$/', $path) && mb_strlen($path) > 1) {
+            // This could be a trailing slash mismatch
         }
 
-        // Suggest redirects based on URL patterns
-        if (!empty($url)) {
-            $slug = basename($path);
-            
-            // Suggest redirect with similar URL
-            $suggestions[] = [
-                'type' => 'redirect',
-                'text' => "Redirect {$url} to a relevant page",
-                'reason' => 'Redirects preserve SEO value and improve user experience.',
-            ];
-            
-            // Suggest checking referrer
-            if ($referrer) {
-                $suggestions[] = [
-                    'type' => 'fix',
-                    'text' => "Fix broken link on {$referrer}",
-                    'reason' => 'The linking page may have an outdated or incorrect link.',
-                ];
+        // Referrer analysis
+        if ($referrer) {
+            $referrerParsed = parse_url($referrer);
+            $referrerHost = $referrerParsed['host'] ?? '';
+            $urlHost = $parsed['host'] ?? '';
+
+            if ($referrerHost === $urlHost) {
+                $issues[] = 'Broken internal link detected. The linking page on your site should be updated.';
+            } else {
+                $issues[] = 'External site is linking to this non-existent page. Consider setting up a redirect.';
             }
         }
 
-        // Site structure suggestions
-        if ($siteStructure) {
-            $suggestions[] = [
-                'type' => 'info',
-                'text' => 'Review site structure for related content',
-                'reason' => 'Find existing content that matches the user intent.',
-            ];
+        // Suggestions
+        $suggestions[] = [
+            'type' => 'improve',
+            'text' => 'Set up a 301 redirect to a relevant existing page',
+            'reason' => 'Redirects preserve link equity and improve user experience',
+        ];
+
+        $suggestions[] = [
+            'type' => 'add',
+            'text' => 'Create a custom 404 page with navigation and search',
+            'reason' => 'Custom 404 pages help users find what they were looking for',
+        ];
+
+        if (!empty($potentialCauses)) {
+            foreach ($potentialCauses as $cause) {
+                $issues[] = $cause;
+            }
         }
 
         return [
+            'indicator' => '404',
             'score' => max(0, min(100, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $bestPractices,
+            'provider' => 'static_fallback',
+            'model' => 'rule-based',
+            'generated_at' => (new DateTimeImmutable())->format('c'),
         ];
     }
 
-    // =====================================================
-    // Unknown Indicator Analysis
-    // =====================================================
-
     /**
-     * Handle unknown indicator types.
+     * Analyze unknown indicator type.
      *
      * @param array<string, mixed> $context
      * @return array<string, mixed>
@@ -1357,19 +1288,24 @@ class StaticFallbackProvider implements AIProviderInterface
     private function analyzeUnknown(array $context): array
     {
         return [
-            'score' => 50,
-            'issues' => ['Unknown indicator type. Unable to provide specific SEO suggestions.'],
+            'indicator' => 'unknown',
+            'score' => 70,
+            'issues' => ['Unknown indicator type provided. Unable to provide specific analysis.'],
             'suggestions' => [
                 [
                     'type' => 'warning',
-                    'text' => 'Select a valid indicator type for SEO analysis.',
-                    'reason' => 'This indicator type is not recognized by the static fallback provider.',
+                    'text' => 'Provide a valid indicator type for specific SEO analysis',
+                    'reason' => 'Valid indicators include: title, meta_description, robots, sitemap, headings, image_alt, filenames, url, links, 404',
                 ],
             ],
             'best_practices' => [
-                'Ensure you are using a valid indicator type.',
-                'Valid types: title, meta_description, robots, sitemap, headings, image_alt, filenames, url, links, 404.',
+                'Ensure all page elements are optimized for search engines',
+                'Follow Google\'s SEO guidelines for best results',
+                'Regular audits help maintain SEO health',
             ],
+            'provider' => 'static_fallback',
+            'model' => 'rule-based',
+            'generated_at' => (new DateTimeImmutable())->format('c'),
         ];
     }
 }
