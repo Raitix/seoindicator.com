@@ -641,14 +641,19 @@ class PaymentControllerTest extends TestCase
      */
     public function test_no_sql_injection_via_payment_method_id(): void
     {
+        // Create a payment method to verify table integrity after attack attempt
+        $pm = PaymentMethod::factory()->for($this->user)->create();
+
         $response = $this->actingAs($this->user)
             ->deleteJson("/api/v1/payments/methods/1; DROP TABLE payment_methods;--");
 
         // Should handle gracefully - either 404 or validation error
+        // Route constraint ->where('id', '[0-9]+') prevents non-numeric IDs
         $this->assertContains($response->status(), [404, 422]);
 
-        // Verify table still exists
+        // Verify table still exists and our record is intact
         $this->assertGreaterThan(0, PaymentMethod::count());
+        $this->assertDatabaseHas('payment_methods', ['id' => $pm->id]);
     }
 
     // ==================== ERROR HANDLING TESTS ====================
