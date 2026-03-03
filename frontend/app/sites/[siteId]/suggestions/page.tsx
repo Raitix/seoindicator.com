@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowDown, ArrowUp, Check, Loader2, Minus, RefreshCcw, X } from "lucide-react";
@@ -108,10 +109,11 @@ const defaultFilterState: FilterState = {
 };
 
 /**
- * SuggestionsPage - Main suggestions list page component
+ * SuggestionsPageContent - Main suggestions list content component
  * Displays keyword suggestions with filtering, sorting, pagination, and bulk actions.
+ * This component uses useSearchParams and must be wrapped in Suspense.
  */
-export default function SuggestionsPage() {
+function SuggestionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const params = React.useMemo(() => {
@@ -596,5 +598,23 @@ export default function SuggestionsPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+/**
+ * SuggestionsPage - Main suggestions list page component
+ * Wraps SuggestionsPageContent in Suspense for useSearchParams compatibility.
+ */
+export default function SuggestionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 px-4 py-10">
+        <div className="mx-auto w-full max-w-6xl flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+        </div>
+      </div>
+    }>
+      <SuggestionsPageContent />
+    </Suspense>
   );
 }
