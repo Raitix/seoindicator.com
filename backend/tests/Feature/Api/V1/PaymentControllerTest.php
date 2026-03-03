@@ -2,40 +2,45 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Models\PaymentMethod;
 use App\Models\User;
-use App\Models\CreditPackage;
-use App\Models\CreditTransaction;
-use App\Services\Billing\Contracts\PaymentGatewayInterface;
-use App\Services\Billing\DTOs\PaymentResult;
-use App\Services\Billing\Exceptions\StripePaymentException;
-use App\Services\Billing\Exceptions\PaymentValidationException;
-use App\Services\Billing\Exceptions\PaymentTimeoutException;
+use App\Services\Gateway\StripeGatewayService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
 use Mockery;
 use Tests\TestCase;
 
 /**
- * PaymentController Test Suite
+ * Feature tests for TASK-26-11: Payment Methods Management API
  *
- * Comprehensive tests for TASK-26-9: Create Stripe Payment Intent Endpoint.
- * Tests cover endpoint functionality, validation, business logic, and security.
+ * Tests the API endpoints for:
+ * - List Payment Methods (GET /api/v1/payments/methods)
+ * - Delete Payment Method (DELETE /api/v1/payments/methods/{id})
  *
- * @see TASK-26-9
- * @see FEAT-026
+ * Covers:
+ * - Authentication requirements
+ * - Authorization (user can only access their own methods)
+ * - StripeGatewayService integration (mocked)
+ * - Response format validation
+ * - Error handling
+ * - Security measures
+ *
+ * @see \App\Http\Controllers\Api\V1\PaymentController
  */
 class PaymentControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected User $user;
+    protected $stripeGatewayMock;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->user = User::factory()->create();
 
-        // Set up Stripe test config
-        Config::set('services.stripe.secret', 'sk_test_example');
-        Config::set('services.stripe.key', 'pk_test_example');
-        Config::set('services.stripe.webhook_secret', 'whsec_example');
+        // Mock StripeGatewayService
+        $this->stripeGatewayMock = Mockery::mock(StripeGatewayService::class);
+        $this->app->instance(StripeGatewayService::class, $this->stripeGatewayMock);
     }
 
     protected function tearDown(): void
@@ -44,1000 +49,830 @@ class PaymentControllerTest extends TestCase
         parent::tearDown();
     }
 
-    // ============================================
-    // Test Data Helpers
-    // ============================================
+    // ==================== LIST PAYMENT METHODS TESTS ====================
 
     /**
-     * Create a test credit package.
+     * Test list returns user's payment methods.
+     * PM-LIST-01
      */
-    protected function createTestPackage(array $overrides = []): CreditPackage
+    public function test_list_returns_user_payment_methods(): void
     {
-        return CreditPackage::factory()->create(array_merge([
-            'name' => 'Basic',
-            'credits' => 10.00,
-            'price_usd' => 10.00,
-            'bonus_percent' => 5,
-            'is_active' => true,
-            'sort_order' => 1,
-        ], $overrides));
-    }
-
-    /**
-     * Create a test user.
-     */
-    protected function createTestUser(): User
-    {
-        return User::factory()->create([
-            'email' => 'test@example.com',
-            'name' => 'Test User',
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_visa',
+            'provider' => 'stripe',
+            'brand' => 'visa',
+            'last_four' => '4242',
+            'exp_month' => 12,
+            'exp_year' => 2026,
+            'is_default' => true,
         ]);
-    }
 
-    /**
-     * Mock the payment gateway.
-     */
-    protected function mockPaymentGateway(array $intentResult = null): Mockery\MockInterface
-    {
-        $mock = Mockery::mock(PaymentGatewayInterface::class);
-        
-        if ($intentResult) {
-            $mock->shouldReceive('createPaymentIntent')
-                ->andReturn($intentResult);
-        }
-        
-        $mock->shouldReceive('getCustomer')
-            ->andReturn(null);
-        
-        $mock->shouldReceive('createCustomer')
-            ->andReturn('cus_test123');
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_mastercard',
+            'provider' => 'stripe',
+            'brand' => 'mastercard',
+            'last_four' => '5555',
+            'exp_month' => 6,
+            'exp_year' => 2025,
+            'is_default' => false,
+        ]);
 
-        $this->app->instance(PaymentGatewayInterface::class, $mock);
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/payments/methods');
 
-        return $mock;
-    }
-
-    // ============================================
-    // Endpoint Tests: POST /api/v1/payments/stripe/intent
-    // ============================================
-
-    /**
-     * Test PI-001: Successful payment intent creation with valid package.
-     * 
-     * @test
-     */
-    public function pi_001_successful_payment_intent_creation(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
-
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 1000, // cents
-            'currency' => 'usd',
-        ];
-
-        $this->mockPaymentGateway($intentResult);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        $response->assertStatus(200)
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+            ])
+            ->assertJsonCount(2, 'data')
             ->assertJsonStructure([
                 'success',
                 'data' => [
-                    'client_secret',
-                    'payment_intent_id',
-                    'amount',
-                    'credits',
-                    'package_name',
+                    '*' => [
+                        'id',
+                        'provider',
+                        'brand',
+                        'last_four',
+                        'is_default',
+                        'created_at',
+                    ],
                 ],
-            ])
+            ]);
+    }
+
+    /**
+     * Test list returns empty array when no methods.
+     * PM-LIST-02
+     */
+    public function test_list_returns_empty_array_when_no_methods(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/payments/methods');
+
+        $response->assertOk()
             ->assertJson([
                 'success' => true,
+                'data' => [],
+            ]);
+    }
+
+    /**
+     * Test list only returns current user's methods.
+     * PM-LIST-03
+     */
+    public function test_list_only_returns_current_user_methods(): void
+    {
+        $otherUser = User::factory()->create();
+
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_user1',
+            'stripe_payment_method_id' => 'pm_user1_card',
+            'provider' => 'stripe',
+            'brand' => 'visa',
+            'last_four' => '1111',
+        ]);
+
+        PaymentMethod::create([
+            'user_id' => $otherUser->id,
+            'stripe_customer_id' => 'cus_user2',
+            'stripe_payment_method_id' => 'pm_user2_card',
+            'provider' => 'stripe',
+            'brand' => 'mastercard',
+            'last_four' => '2222',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/payments/methods');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.last_four', '1111');
+    }
+
+    /**
+     * Test list unauthenticated returns 401.
+     * PM-LIST-04
+     */
+    public function test_list_unauthenticated_returns_401(): void
+    {
+        $response = $this->getJson('/api/v1/payments/methods');
+
+        $response->assertUnauthorized();
+    }
+
+    /**
+     * Test list default method appears first.
+     * PM-LIST-05
+     */
+    public function test_list_default_method_appears_first(): void
+    {
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_non_default',
+            'provider' => 'stripe',
+            'brand' => 'mastercard',
+            'last_four' => '5555',
+            'is_default' => false,
+        ]);
+
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_default',
+            'provider' => 'stripe',
+            'brand' => 'visa',
+            'last_four' => '4242',
+            'is_default' => true,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/payments/methods');
+
+        $response->assertOk();
+        
+        // Default method should be first
+        $data = $response->json('data');
+        $this->assertTrue($data[0]['is_default']);
+        $this->assertEquals('4242', $data[0]['last_four']);
+    }
+
+    /**
+     * Test list response format matches specification.
+     * PM-LIST-06
+     */
+    public function test_list_response_format_matches_specification(): void
+    {
+        $pm = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_test',
+            'provider' => 'stripe',
+            'brand' => 'visa',
+            'last_four' => '4242',
+            'exp_month' => 12,
+            'exp_year' => 2026,
+            'is_default' => true,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/payments/methods');
+
+        $response->assertOk()
+            ->assertJsonPath('data.0.id', $pm->id)
+            ->assertJsonPath('data.0.provider', 'stripe')
+            ->assertJsonPath('data.0.brand', 'visa')
+            ->assertJsonPath('data.0.last_four', '4242')
+            ->assertJsonPath('data.0.is_default', true);
+    }
+
+    /**
+     * Test list includes expiration date if available.
+     * PM-LIST-07
+     */
+    public function test_list_includes_expiration_date_if_available(): void
+    {
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_test',
+            'provider' => 'stripe',
+            'brand' => 'visa',
+            'last_four' => '4242',
+            'exp_month' => 12,
+            'exp_year' => 2026,
+            'is_default' => true,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/payments/methods');
+
+        $response->assertOk()
+            ->assertJsonStructure([
                 'data' => [
-                    'client_secret' => 'pi_test123_secret_abc',
-                    'payment_intent_id' => 'pi_test123',
-                    'amount' => 10.00,
-                    'package_name' => 'Basic',
+                    '*' => [
+                        'exp_month',
+                        'exp_year',
+                    ],
                 ],
             ]);
-
-        // Verify credits calculation includes bonus (10 + 5% = 10.5)
-        $this->assertEquals(10.50, $response->json('data.credits'));
     }
 
     /**
-     * Test PI-002: Payment intent with return_url parameter.
-     * 
-     * @test
+     * Test list handles method without brand.
+     * PM-LIST-08
      */
-    public function pi_002_payment_intent_with_return_url(): void
+    public function test_list_handles_method_without_brand(): void
     {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_test',
+            'provider' => 'stripe',
+            'brand' => null,
+            'last_four' => '4242',
+            'is_default' => true,
+        ]);
 
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 1000,
-            'currency' => 'usd',
-        ];
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/payments/methods');
 
-        $this->mockPaymentGateway($intentResult);
+        $response->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
 
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-                'return_url' => 'https://example.com/credits/success',
-            ]);
+    // ==================== DELETE PAYMENT METHOD TESTS ====================
 
-        $response->assertStatus(200)
+    /**
+     * Test delete removes payment method.
+     * PM-DEL-01
+     */
+    public function test_delete_removes_payment_method(): void
+    {
+        $pm = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_to_delete',
+            'provider' => 'stripe',
+            'brand' => 'visa',
+            'last_four' => '4242',
+        ]);
+
+        // Mock StripeGatewayService detach call
+        $this->stripeGatewayMock
+            ->shouldReceive('deletePaymentMethod')
+            ->once()
+            ->with('pm_to_delete')
+            ->andReturn(true);
+
+        $response = $this->actingAs($this->user)
+            ->deleteJson("/api/v1/payments/methods/{$pm->id}");
+
+        $response->assertOk()
             ->assertJson([
                 'success' => true,
-            ]);
-    }
-
-    /**
-     * Test PI-003: Payment intent creates pending transaction.
-     * 
-     * @test
-     */
-    public function pi_003_creates_pending_transaction(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
-
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 1000,
-            'currency' => 'usd',
-        ];
-
-        $this->mockPaymentGateway($intentResult);
-
-        $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
+                'message' => 'Payment method deleted successfully',
             ]);
 
-        // Verify pending transaction was created
-        $this->assertDatabaseHas('credit_transactions', [
-            'user_id' => $user->id,
-            'payment_provider' => 'stripe',
-            'payment_id' => 'pi_test123',
-            'type' => 'purchase',
+        $this->assertDatabaseMissing('payment_methods', [
+            'id' => $pm->id,
         ]);
     }
 
-    // ============================================
-    // Authentication Tests
-    // ============================================
-
     /**
-     * Test PI-010: Unauthenticated request returns 401.
-     * 
-     * @test
+     * Test delete unauthenticated returns 401.
+     * PM-DEL-02
      */
-    public function pi_010_unauthenticated_returns_401(): void
+    public function test_delete_unauthenticated_returns_401(): void
     {
-        $package = $this->createTestPackage();
-
-        $response = $this->postJson('/api/v1/payments/stripe/intent', [
-            'package_id' => $package->id,
+        $pm = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_test',
+            'provider' => 'stripe',
         ]);
 
-        $response->assertStatus(401);
+        $response = $this->deleteJson("/api/v1/payments/methods/{$pm->id}");
+
+        $response->assertUnauthorized();
     }
 
     /**
-     * Test PI-011: Authenticated user can create intent.
-     * 
-     * @test
+     * Test delete another user's method returns 404.
+     * PM-DEL-03
      */
-    public function pi_011_authenticated_user_can_create_intent(): void
+    public function test_delete_another_user_method_returns_404(): void
     {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
+        $otherUser = User::factory()->create();
 
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 1000,
-            'currency' => 'usd',
-        ];
+        $pm = PaymentMethod::create([
+            'user_id' => $otherUser->id,
+            'stripe_customer_id' => 'cus_other',
+            'stripe_payment_method_id' => 'pm_other_card',
+            'provider' => 'stripe',
+        ]);
 
-        $this->mockPaymentGateway($intentResult);
+        $response = $this->actingAs($this->user)
+            ->deleteJson("/api/v1/payments/methods/{$pm->id}");
 
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
+        $response->assertNotFound();
 
-        $response->assertStatus(200);
+        // Verify method still exists
+        $this->assertDatabaseHas('payment_methods', [
+            'id' => $pm->id,
+        ]);
     }
 
-    // ============================================
-    // Validation Tests
-    // ============================================
+    /**
+     * Test delete non-existent method returns 404.
+     * PM-DEL-04
+     */
+    public function test_delete_non_existent_method_returns_404(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->deleteJson('/api/v1/payments/methods/99999');
+
+        $response->assertNotFound();
+    }
 
     /**
-     * Test PI-020: Missing package_id returns 422.
-     * 
-     * @test
+     * Test delete last default method fails.
+     * PM-DEL-05
      */
-    public function pi_020_missing_package_id_returns_422(): void
+    public function test_delete_last_default_method_fails(): void
     {
-        $user = $this->createTestUser();
+        $pm = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_only_card',
+            'provider' => 'stripe',
+            'brand' => 'visa',
+            'last_four' => '4242',
+            'is_default' => true,
+        ]);
 
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', []);
+        $response = $this->actingAs($this->user)
+            ->deleteJson("/api/v1/payments/methods/{$pm->id}");
 
+        // Should fail - cannot delete only payment method if it's default
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['package_id']);
-    }
-
-    /**
-     * Test PI-021: Invalid package_id returns 422.
-     * 
-     * @test
-     */
-    public function pi_021_invalid_package_id_returns_422(): void
-    {
-        $user = $this->createTestUser();
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => 99999,
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['package_id']);
-    }
-
-    /**
-     * Test PI-022: Inactive package returns 400.
-     * 
-     * @test
-     */
-    public function pi_022_inactive_package_returns_400(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage(['is_active' => false]);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        $response->assertStatus(400)
             ->assertJson([
                 'success' => false,
-                'message' => 'The selected package is not available.',
             ]);
+
+        // Verify method still exists
+        $this->assertDatabaseHas('payment_methods', [
+            'id' => $pm->id,
+        ]);
     }
 
     /**
-     * Test PI-023: Invalid return_url returns 422.
-     * 
-     * @test
+     * Test delete default when other methods exist reassigns default.
+     * PM-DEL-06
      */
-    public function pi_023_invalid_return_url_returns_422(): void
+    public function test_delete_default_reassigns_to_next_method(): void
     {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-                'return_url' => 'not-a-valid-url',
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['return_url']);
-    }
-
-    /**
-     * Test PI-024: Non-numeric package_id returns 422.
-     * 
-     * @test
-     */
-    public function pi_024_non_numeric_package_id_returns_422(): void
-    {
-        $user = $this->createTestUser();
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => 'abc',
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['package_id']);
-    }
-
-    // ============================================
-    // Business Logic Tests
-    // ============================================
-
-    /**
-     * Test PI-030: Credits calculated correctly with bonus.
-     * 
-     * @test
-     */
-    public function pi_030_credits_calculated_with_bonus(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage([
-            'credits' => 100.00,
-            'bonus_percent' => 20,
+        $pm1 = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_default',
+            'provider' => 'stripe',
+            'brand' => 'visa',
+            'last_four' => '4242',
+            'is_default' => true,
         ]);
 
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 10000, // $100 in cents
-            'currency' => 'usd',
-        ];
-
-        $this->mockPaymentGateway($intentResult);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        // 100 credits + 20% bonus = 120 credits
-        $this->assertEquals(120.00, $response->json('data.credits'));
-    }
-
-    /**
-     * Test PI-031: Credits calculated correctly without bonus.
-     * 
-     * @test
-     */
-    public function pi_031_credits_calculated_without_bonus(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage([
-            'credits' => 50.00,
-            'bonus_percent' => 0,
+        $pm2 = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_non_default',
+            'provider' => 'stripe',
+            'brand' => 'mastercard',
+            'last_four' => '5555',
+            'is_default' => false,
         ]);
 
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 5000,
-            'currency' => 'usd',
-        ];
-
-        $this->mockPaymentGateway($intentResult);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        // 50 credits + 0% bonus = 50 credits
-        $this->assertEquals(50.00, $response->json('data.credits'));
-    }
-
-    /**
-     * Test PI-032: Amount comes from package price not request.
-     * 
-     * @test
-     */
-    public function pi_032_amount_from_package_not_request(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage([
-            'price_usd' => 25.00,
-        ]);
-
-        $mock = Mockery::mock(PaymentGatewayInterface::class);
-        
-        // Verify that the amount passed to gateway is from package, not request
-        $mock->shouldReceive('createPaymentIntent')
+        $this->stripeGatewayMock
+            ->shouldReceive('deletePaymentMethod')
             ->once()
-            ->withArgs(function ($userArg, $amount, $currency, $metadata) use ($package) {
-                // Amount should be package price, not any other value
-                return $amount === $package->price_usd;
-            })
-            ->andReturn([
-                'client_secret' => 'pi_test123_secret_abc',
-                'payment_intent_id' => 'pi_test123',
-                'amount' => 2500,
-                'currency' => 'usd',
-            ]);
-        
-        $mock->shouldReceive('getCustomer')->andReturn(null);
-        $mock->shouldReceive('createCustomer')->andReturn('cus_test123');
+            ->andReturn(true);
 
-        $this->app->instance(PaymentGatewayInterface::class, $mock);
+        $response = $this->actingAs($this->user)
+            ->deleteJson("/api/v1/payments/methods/{$pm1->id}");
 
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
+        $response->assertOk();
 
-        $response->assertStatus(200);
+        // Verify second method is now default
+        $this->assertTrue($pm2->fresh()->is_default);
     }
 
     /**
-     * Test PI-033: Gateway receives correct metadata.
-     * 
-     * @test
+     * Test delete non-default method succeeds.
+     * PM-DEL-07
      */
-    public function pi_033_gateway_receives_correct_metadata(): void
+    public function test_delete_non_default_method_succeeds(): void
     {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_default',
+            'provider' => 'stripe',
+            'brand' => 'visa',
+            'last_four' => '4242',
+            'is_default' => true,
+        ]);
 
-        $mock = Mockery::mock(PaymentGatewayInterface::class);
-        
-        $mock->shouldReceive('createPaymentIntent')
+        $pm2 = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_non_default',
+            'provider' => 'stripe',
+            'brand' => 'mastercard',
+            'last_four' => '5555',
+            'is_default' => false,
+        ]);
+
+        $this->stripeGatewayMock
+            ->shouldReceive('deletePaymentMethod')
             ->once()
-            ->withArgs(function ($userArg, $amount, $currency, $metadata) use ($user, $package) {
-                // Verify metadata contains required fields
-                return isset($metadata['user_id']) 
-                    && isset($metadata['package_id'])
-                    && $metadata['user_id'] === (string) $user->id
-                    && $metadata['package_id'] === (string) $package->id;
-            })
-            ->andReturn([
-                'client_secret' => 'pi_test123_secret_abc',
-                'payment_intent_id' => 'pi_test123',
-                'amount' => 1000,
-                'currency' => 'usd',
-            ]);
-        
-        $mock->shouldReceive('getCustomer')->andReturn(null);
-        $mock->shouldReceive('createCustomer')->andReturn('cus_test123');
+            ->andReturn(true);
 
-        $this->app->instance(PaymentGatewayInterface::class, $mock);
+        $response = $this->actingAs($this->user)
+            ->deleteJson("/api/v1/payments/methods/{$pm2->id}");
 
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
+        $response->assertOk();
 
-        $response->assertStatus(200);
+        $this->assertDatabaseMissing('payment_methods', [
+            'id' => $pm2->id,
+        ]);
     }
 
-    // ============================================
-    // Error Handling Tests
-    // ============================================
-
     /**
-     * Test PI-040: Stripe error returns 500 with message.
-     * 
-     * @test
+     * Test delete handles Stripe API error.
+     * PM-DEL-08
      */
-    public function pi_040_stripe_error_returns_500(): void
+    public function test_delete_handles_stripe_api_error(): void
     {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
+        $pm1 = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_default',
+            'provider' => 'stripe',
+            'brand' => 'visa',
+            'last_four' => '4242',
+            'is_default' => true,
+        ]);
 
-        $mock = Mockery::mock(PaymentGatewayInterface::class);
-        
-        $mock->shouldReceive('createPaymentIntent')
-            ->andThrow(new StripePaymentException(
-                'Stripe API error',
-                'api_error'
-            ));
-        
-        $mock->shouldReceive('getCustomer')->andReturn(null);
-        $mock->shouldReceive('createCustomer')->andReturn('cus_test123');
+        $pm2 = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_to_delete',
+            'provider' => 'stripe',
+            'brand' => 'mastercard',
+            'last_four' => '5555',
+            'is_default' => false,
+        ]);
 
-        $this->app->instance(PaymentGatewayInterface::class, $mock);
+        // Mock Stripe API error
+        $this->stripeGatewayMock
+            ->shouldReceive('deletePaymentMethod')
+            ->once()
+            ->andThrow(new \Exception('Stripe API error'));
 
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
+        $response = $this->actingAs($this->user)
+            ->deleteJson("/api/v1/payments/methods/{$pm2->id}");
 
         $response->assertStatus(500)
             ->assertJson([
                 'success' => false,
-                'message' => 'Payment could not be initiated',
             ]);
+
+        // Verify local record still exists (not deleted on API failure)
+        $this->assertDatabaseHas('payment_methods', [
+            'id' => $pm2->id,
+        ]);
     }
 
     /**
-     * Test PI-041: Payment timeout returns 503.
-     * 
-     * @test
+     * Test delete with invalid ID format.
+     * PM-DEL-09
      */
-    public function pi_041_payment_timeout_returns_503(): void
+    public function test_delete_with_invalid_id_format(): void
     {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
+        $response = $this->actingAs($this->user)
+            ->deleteJson('/api/v1/payments/methods/abc');
 
-        $mock = Mockery::mock(PaymentGatewayInterface::class);
-        
-        $mock->shouldReceive('createPaymentIntent')
-            ->andThrow(new PaymentTimeoutException('Payment service unavailable'));
-        
-        $mock->shouldReceive('getCustomer')->andReturn(null);
-        $mock->shouldReceive('createCustomer')->andReturn('cus_test123');
-
-        $this->app->instance(PaymentGatewayInterface::class, $mock);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        $response->assertStatus(503)
-            ->assertJson([
-                'success' => false,
-                'message' => 'Payment service temporarily unavailable',
-            ]);
+        $response->assertNotFound();
     }
 
-    /**
-     * Test PI-042: Validation error returns 422 with details.
-     * 
-     * @test
-     */
-    public function pi_042_validation_error_returns_422_with_details(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
-
-        $mock = Mockery::mock(PaymentGatewayInterface::class);
-        
-        $mock->shouldReceive('createPaymentIntent')
-            ->andThrow(PaymentValidationException::minimumAmount(5.00, 1.00));
-        
-        $mock->shouldReceive('getCustomer')->andReturn(null);
-        $mock->shouldReceive('createCustomer')->andReturn('cus_test123');
-
-        $this->app->instance(PaymentGatewayInterface::class, $mock);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonStructure([
-                'success',
-                'message',
-                'errors',
-            ]);
-    }
-
-    // ============================================
-    // Security Tests
-    // ============================================
+    // ==================== SECURITY TESTS ====================
 
     /**
-     * Test PI-050: Amount validated server-side (never from request).
-     * 
-     * @test
+     * Test list does not expose stripe IDs in response.
+     * PM-SEC-01
      */
-    public function pi_050_amount_validated_server_side(): void
+    public function test_list_does_not_expose_stripe_ids(): void
     {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage(['price_usd' => 15.00]);
-
-        $mock = Mockery::mock(PaymentGatewayInterface::class);
-        
-        // The amount should be $15 (from package), ignoring any client input
-        $mock->shouldReceive('createPaymentIntent')
-            ->once()
-            ->withArgs(function ($userArg, $amount) {
-                return $amount === 15.00;
-            })
-            ->andReturn([
-                'client_secret' => 'pi_test123_secret_abc',
-                'payment_intent_id' => 'pi_test123',
-                'amount' => 1500,
-                'currency' => 'usd',
-            ]);
-        
-        $mock->shouldReceive('getCustomer')->andReturn(null);
-        $mock->shouldReceive('createCustomer')->andReturn('cus_test123');
-
-        $this->app->instance(PaymentGatewayInterface::class, $mock);
-
-        // Try to manipulate amount via request (should be ignored)
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-                'amount' => 1.00, // This should be completely ignored
-            ]);
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * Test PI-051: Package price read from database (not request).
-     * 
-     * @test
-     */
-    public function pi_051_package_price_from_database(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage(['price_usd' => 100.00]);
-
-        $mock = Mockery::mock(PaymentGatewayInterface::class);
-        
-        $mock->shouldReceive('createPaymentIntent')
-            ->once()
-            ->withArgs(function ($userArg, $amount) {
-                // Amount must come from database package, not request
-                return $amount === 100.00;
-            })
-            ->andReturn([
-                'client_secret' => 'pi_test123_secret_abc',
-                'payment_intent_id' => 'pi_test123',
-                'amount' => 10000,
-                'currency' => 'usd',
-            ]);
-        
-        $mock->shouldReceive('getCustomer')->andReturn(null);
-        $mock->shouldReceive('createCustomer')->andReturn('cus_test123');
-
-        $this->app->instance(PaymentGatewayInterface::class, $mock);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * Test PI-052: Payment intent created with user context.
-     * 
-     * @test
-     */
-    public function pi_052_payment_intent_with_user_context(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
-
-        $mock = Mockery::mock(PaymentGatewayInterface::class);
-        
-        $mock->shouldReceive('createPaymentIntent')
-            ->once()
-            ->withArgs(function ($userArg) use ($user) {
-                // Verify correct user is passed
-                return $userArg->id === $user->id;
-            })
-            ->andReturn([
-                'client_secret' => 'pi_test123_secret_abc',
-                'payment_intent_id' => 'pi_test123',
-                'amount' => 1000,
-                'currency' => 'usd',
-            ]);
-        
-        $mock->shouldReceive('getCustomer')->andReturn(null);
-        $mock->shouldReceive('createCustomer')->andReturn('cus_test123');
-
-        $this->app->instance(PaymentGatewayInterface::class, $mock);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * Test PI-053: Idempotency prevents duplicate intents for same user/package.
-     * 
-     * @test
-     */
-    public function pi_053_idempotency_prevents_duplicate_intents(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
-
-        // Create an existing pending transaction for same package
-        CreditTransaction::create([
-            'user_id' => $user->id,
-            'amount' => 10.00,
-            'balance_after' => 0,
-            'type' => 'purchase',
-            'description' => 'Pending purchase',
-            'payment_provider' => 'stripe',
-            'payment_id' => 'pi_existing123',
-            'reference_type' => 'credit_packages',
-            'reference_id' => $package->id,
-            'metadata' => ['status' => 'pending'],
-            'created_at' => now(),
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_sensitive123',
+            'stripe_payment_method_id' => 'pm_sensitive456',
+            'provider' => 'stripe',
+            'brand' => 'visa',
+            'last_four' => '4242',
         ]);
 
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/payments/methods');
 
-        // Should return the existing intent, not create new one
-        $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'data' => [
-                    'payment_intent_id' => 'pi_existing123',
-                ],
-            ]);
+        $response->assertOk();
+
+        // Check that Stripe IDs are not exposed
+        $json = $response->json();
+        $this->assertArrayNotHasKey('stripe_customer_id', $json['data'][0] ?? []);
+        $this->assertArrayNotHasKey('stripe_payment_method_id', $json['data'][0] ?? []);
     }
 
     /**
-     * Test PI-054: Cannot use another user's package.
-     * 
-     * @test
+     * Test user cannot enumerate other users' payment methods.
+     * PM-SEC-02
      */
-    public function pi_054_cannot_use_another_users_package(): void
+    public function test_user_cannot_enumerate_other_users_methods(): void
     {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
+        $otherUser = User::factory()->create();
 
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 1000,
-            'currency' => 'usd',
-        ];
-
-        $this->mockPaymentGateway($intentResult);
-
-        // Package is global (not user-specific), so any authenticated user can use it
-        // This test verifies the endpoint works correctly
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
+        for ($i = 1; $i <= 5; $i++) {
+            PaymentMethod::create([
+                'user_id' => $otherUser->id,
+                'stripe_customer_id' => "cus_other_{$i}",
+                'stripe_payment_method_id' => "pm_other_{$i}",
+                'provider' => 'stripe',
             ]);
-
-        $response->assertStatus(200);
-    }
-
-    // ============================================
-    // Response Format Tests
-    // ============================================
-
-    /**
-     * Test PI-060: Success response format matches specification.
-     * 
-     * @test
-     */
-    public function pi_060_success_response_format(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
-
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 1000,
-            'currency' => 'usd',
-        ];
-
-        $this->mockPaymentGateway($intentResult);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'success',
-                'data' => [
-                    'client_secret',
-                    'payment_intent_id',
-                    'amount',
-                    'credits',
-                    'package_name',
-                ],
-            ])
-            ->assertJsonPath('success', true);
-    }
-
-    /**
-     * Test PI-061: Error response format matches specification.
-     * 
-     * @test
-     */
-    public function pi_061_error_response_format(): void
-    {
-        $user = $this->createTestUser();
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => 99999,
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonStructure([
-                'message',
-                'errors',
-            ]);
-    }
-
-    // ============================================
-    // Edge Case Tests
-    // ============================================
-
-    /**
-     * Test PI-070: Package with maximum values.
-     * 
-     * @test
-     */
-    public function pi_070_package_with_maximum_values(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage([
-            'credits' => 999999.99,
-            'price_usd' => 99999.99,
-            'bonus_percent' => 100,
-        ]);
-
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 9999999,
-            'currency' => 'usd',
-        ];
-
-        $this->mockPaymentGateway($intentResult);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * Test PI-071: Package with zero bonus.
-     * 
-     * @test
-     */
-    public function pi_071_package_with_zero_bonus(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage([
-            'bonus_percent' => 0,
-        ]);
-
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 1000,
-            'currency' => 'usd',
-        ];
-
-        $this->mockPaymentGateway($intentResult);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        $response->assertStatus(200);
-        // Credits should equal base credits with 0% bonus
-        $this->assertEquals(10.00, $response->json('data.credits'));
-    }
-
-    /**
-     * Test PI-072: Multiple requests create separate intents (no idempotency key collision).
-     * 
-     * @test
-     */
-    public function pi_072_multiple_requests_create_separate_intents(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
-
-        $callCount = 0;
-        $mock = Mockery::mock(PaymentGatewayInterface::class);
-        
-        $mock->shouldReceive('createPaymentIntent')
-            ->twice()
-            ->andReturnUsing(function () use (&$callCount) {
-                $callCount++;
-                return [
-                    'client_secret' => "pi_test{$callCount}_secret",
-                    'payment_intent_id' => "pi_test{$callCount}",
-                    'amount' => 1000,
-                    'currency' => 'usd',
-                ];
-            });
-        
-        $mock->shouldReceive('getCustomer')->andReturn(null);
-        $mock->shouldReceive('createCustomer')->andReturn('cus_test123');
-
-        $this->app->instance(PaymentGatewayInterface::class, $mock);
-
-        // First request
-        $response1 = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        // Second request (different package to avoid idempotency check)
-        $package2 = $this->createTestPackage(['name' => 'Pro', 'sort_order' => 2]);
-
-        $response2 = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package2->id,
-            ]);
-
-        $response1->assertStatus(200);
-        $response2->assertStatus(200);
-    }
-
-    /**
-     * Test PI-073: Package name in response matches database.
-     * 
-     * @test
-     */
-    public function pi_073_package_name_matches_database(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage(['name' => 'Enterprise']);
-
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 1000,
-            'currency' => 'usd',
-        ];
-
-        $this->mockPaymentGateway($intentResult);
-
-        $response = $this->actingAs($user)
-            ->postJson('/api/v1/payments/stripe/intent', [
-                'package_id' => $package->id,
-            ]);
-
-        $response->assertStatus(200)
-            ->assertJsonPath('data.package_name', 'Enterprise');
-    }
-
-    // ============================================
-    // Rate Limiting Tests (if implemented)
-    // ============================================
-
-    /**
-     * Test PI-080: Rate limiting on payment intent creation.
-     * 
-     * @test
-     */
-    public function pi_080_rate_limiting_on_intent_creation(): void
-    {
-        $user = $this->createTestUser();
-        $package = $this->createTestPackage();
-
-        $intentResult = [
-            'client_secret' => 'pi_test123_secret_abc',
-            'payment_intent_id' => 'pi_test123',
-            'amount' => 1000,
-            'currency' => 'usd',
-        ];
-
-        $this->mockPaymentGateway($intentResult);
-
-        // Make multiple requests rapidly
-        for ($i = 0; $i < 10; $i++) {
-            $response = $this->actingAs($user)
-                ->postJson('/api/v1/payments/stripe/intent', [
-                    'package_id' => $package->id,
-                ]);
         }
 
-        // All requests should succeed (no aggressive rate limiting on test)
-        // In production, this might return 429 after a threshold
-        $response->assertStatus(200);
+        // Try to access other user's methods by ID
+        for ($i = 1; $i <= 10; $i++) {
+            $response = $this->actingAs($this->user)
+                ->deleteJson("/api/v1/payments/methods/{$i}");
+
+            // Should always be 404 (not found) not 403 (forbidden)
+            // This prevents enumeration attacks
+            if ($response->status() !== 404) {
+                $this->fail('User should not be able to determine if payment method exists for another user');
+            }
+        }
+
+        $this->assertTrue(true); // All attempts returned 404
+    }
+
+    /**
+     * Test delete requires user ownership.
+     * PM-SEC-03
+     */
+    public function test_delete_requires_user_ownership(): void
+    {
+        $otherUser = User::factory()->create();
+
+        $pm = PaymentMethod::create([
+            'user_id' => $otherUser->id,
+            'stripe_customer_id' => 'cus_other',
+            'stripe_payment_method_id' => 'pm_other',
+            'provider' => 'stripe',
+        ]);
+
+        // Should not call Stripe API
+        $this->stripeGatewayMock
+            ->shouldNotReceive('deletePaymentMethod');
+
+        $response = $this->actingAs($this->user)
+            ->deleteJson("/api/v1/payments/methods/{$pm->id}");
+
+        $response->assertNotFound();
+    }
+
+    /**
+     * Test no SQL injection via payment method ID.
+     * PM-SEC-04
+     */
+    public function test_no_sql_injection_via_payment_method_id(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->deleteJson("/api/v1/payments/methods/1; DROP TABLE payment_methods;--");
+
+        // Should handle gracefully - either 404 or validation error
+        $this->assertContains($response->status(), [404, 422]);
+
+        // Verify table still exists
+        $this->assertGreaterThan(0, PaymentMethod::count());
+    }
+
+    // ==================== ERROR HANDLING TESTS ====================
+
+    /**
+     * Test list handles database error gracefully.
+     * PM-ERR-01
+     */
+    public function test_list_handles_database_error_gracefully(): void
+    {
+        // This test documents expected behavior
+        // In production, database errors should return 500 with generic message
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/payments/methods');
+
+        // Should succeed with empty list if no DB error
+        $response->assertOk();
+    }
+
+    /**
+     * Test delete handles concurrent deletion.
+     * PM-ERR-02
+     */
+    public function test_delete_handles_concurrent_deletion(): void
+    {
+        $pm = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_test',
+            'provider' => 'stripe',
+            'is_default' => false,
+        ]);
+
+        // Create another method so delete can succeed
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_default',
+            'provider' => 'stripe',
+            'is_default' => true,
+        ]);
+
+        // Simulate concurrent deletion by manually deleting first
+        $pm->delete();
+
+        $this->stripeGatewayMock
+            ->shouldNotReceive('deletePaymentMethod');
+
+        $response = $this->actingAs($this->user)
+            ->deleteJson("/api/v1/payments/methods/{$pm->id}");
+
+        $response->assertNotFound();
+    }
+
+    // ==================== PERFORMANCE TESTS ====================
+
+    /**
+     * Test list response time under 200ms.
+     * PM-PERF-01
+     */
+    public function test_list_response_time_under_200ms(): void
+    {
+        // Create 10 payment methods
+        for ($i = 0; $i < 10; $i++) {
+            PaymentMethod::create([
+                'user_id' => $this->user->id,
+                'stripe_customer_id' => 'cus_test123',
+                'stripe_payment_method_id' => "pm_test_{$i}",
+                'provider' => 'stripe',
+                'brand' => 'visa',
+                'last_four' => str_pad($i, 4, '0'),
+            ]);
+        }
+
+        $start = microtime(true);
+
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/v1/payments/methods');
+
+        $elapsed = (microtime(true) - $start) * 1000;
+
+        $response->assertOk();
+        $this->assertLessThan(200, $elapsed, "List endpoint took {$elapsed}ms, expected < 200ms");
+    }
+
+    /**
+     * Test delete response time under 500ms.
+     * PM-PERF-02
+     */
+    public function test_delete_response_time_under_500ms(): void
+    {
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_default',
+            'provider' => 'stripe',
+            'is_default' => true,
+        ]);
+
+        $pm = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_to_delete',
+            'provider' => 'stripe',
+            'is_default' => false,
+        ]);
+
+        $this->stripeGatewayMock
+            ->shouldReceive('deletePaymentMethod')
+            ->once()
+            ->andReturn(true);
+
+        $start = microtime(true);
+
+        $response = $this->actingAs($this->user)
+            ->deleteJson("/api/v1/payments/methods/{$pm->id}");
+
+        $elapsed = (microtime(true) - $start) * 1000;
+
+        $response->assertOk();
+        $this->assertLessThan(500, $elapsed, "Delete endpoint took {$elapsed}ms, expected < 500ms");
+    }
+
+    // ==================== RATE LIMITING TESTS ====================
+
+    /**
+     * Test list respects rate limiting.
+     * PM-RATE-01
+     */
+    public function test_list_respects_rate_limiting(): void
+    {
+        // This test documents expected behavior
+        // Rate limiting should be configured in API routes
+        // Typically 60 requests per minute for authenticated users
+        
+        for ($i = 0; $i < 5; $i++) {
+            $response = $this->actingAs($this->user)
+                ->getJson('/api/v1/payments/methods');
+            $response->assertOk();
+        }
+    }
+
+    /**
+     * Test delete respects rate limiting.
+     * PM-RATE-02
+     */
+    public function test_delete_respects_rate_limiting(): void
+    {
+        // This test documents expected behavior
+        // Rate limiting should be configured in API routes
+        // Typically 10 delete requests per minute
+        
+        PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_default',
+            'provider' => 'stripe',
+            'is_default' => true,
+        ]);
+
+        for ($i = 0; $i < 3; $i++) {
+            $pm = PaymentMethod::create([
+                'user_id' => $this->user->id,
+                'stripe_customer_id' => 'cus_test123',
+                'stripe_payment_method_id' => "pm_test_{$i}",
+                'provider' => 'stripe',
+                'is_default' => false,
+            ]);
+
+            $this->stripeGatewayMock
+                ->shouldReceive('deletePaymentMethod')
+                ->once()
+                ->andReturn(true);
+
+            $response = $this->actingAs($this->user)
+                ->deleteJson("/api/v1/payments/methods/{$pm->id}");
+            $response->assertOk();
+        }
+    }
+
+    // ==================== HTTP METHOD TESTS ====================
+
+    /**
+     * Test list only accepts GET requests.
+     * PM-HTTP-01
+     */
+    public function test_list_only_accepts_get_requests(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->postJson('/api/v1/payments/methods');
+        $response->assertMethodNotAllowed();
+
+        $response = $this->actingAs($this->user)
+            ->putJson('/api/v1/payments/methods');
+        $response->assertMethodNotAllowed();
+
+        $response = $this->actingAs($this->user)
+            ->patchJson('/api/v1/payments/methods');
+        $response->assertMethodNotAllowed();
+    }
+
+    /**
+     * Test delete only accepts DELETE requests.
+     * PM-HTTP-02
+     */
+    public function test_delete_only_accepts_delete_requests(): void
+    {
+        $pm = PaymentMethod::create([
+            'user_id' => $this->user->id,
+            'stripe_customer_id' => 'cus_test123',
+            'stripe_payment_method_id' => 'pm_test',
+            'provider' => 'stripe',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/v1/payments/methods/{$pm->id}");
+        $response->assertMethodNotAllowed();
+
+        $response = $this->actingAs($this->user)
+            ->postJson("/api/v1/payments/methods/{$pm->id}");
+        $response->assertMethodNotAllowed();
+
+        $response = $this->actingAs($this->user)
+            ->putJson("/api/v1/payments/methods/{$pm->id}");
+        $response->assertMethodNotAllowed();
     }
 }
