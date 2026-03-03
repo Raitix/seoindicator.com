@@ -24,6 +24,7 @@ use App\Models\PWAAnalysis;
  * @property string|null $notes
  * @property bool $is_default
  * @property \Carbon\Carbon|null $archived_at
+ * @property \Carbon\Carbon|null $backlinks_last_synced_at
  * @property int|null $account_id
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
@@ -46,6 +47,7 @@ class Project extends Model
         'notes',
         'is_default',
         'archived_at',
+        'backlinks_last_synced_at',
         'account_id',
     ];
 
@@ -57,6 +59,7 @@ class Project extends Model
     protected $casts = [
         'is_default' => 'boolean',
         'archived_at' => 'datetime',
+        'backlinks_last_synced_at' => 'datetime',
     ];
 
     /**
