@@ -31,6 +31,8 @@ return new class extends Migration
     {
         Schema::table('projects', function (Blueprint $table) {
             $table->dropForeign(['account_id']);
+            // Drop index before column (required for SQLite)
+            $table->dropIndex(['account_id']);
             $table->dropColumn('account_id');
         });
     }

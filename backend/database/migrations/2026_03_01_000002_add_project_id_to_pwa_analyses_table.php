@@ -33,7 +33,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('pwa_analyses', function (Blueprint $table) {
+            // Drop foreign key first
             $table->dropForeign(['project_id']);
+            // Drop index before column (required for SQLite)
+            $table->dropIndex('idx_pwa_project_id');
+            // Now drop the column
             $table->dropColumn('project_id');
         });
     }

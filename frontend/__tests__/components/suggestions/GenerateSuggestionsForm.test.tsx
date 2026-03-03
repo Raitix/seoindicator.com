@@ -4,7 +4,6 @@
  * Specification: SPEC-005
  *
  * Tests for the form component that generates new keyword suggestions.
- * TDD Mode: Tests mock the component until implementation is complete.
  */
 
 import React from 'react';
@@ -12,106 +11,43 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
-// Mock the GenerateSuggestionsForm component (TDD mode)
-jest.mock('@/components/suggestions/GenerateSuggestionsForm', () => {
-  return function MockGenerateSuggestionsForm({
-    siteId,
-    onSuccess,
-  }: {
-    siteId: string;
-    onSuccess?: (count: number) => void;
-  }) {
-    return (
-      <div data-testid="generate-form">
-        <h2>Generate Keyword Suggestions</h2>
-        
-        {/* Seed Keyword Input */}
-        <div>
-          <label htmlFor="seed-keyword">Seed Keyword</label>
-          <input
-            id="seed-keyword"
-            type="text"
-            data-testid="seed-keyword-input"
-            placeholder="Enter a keyword to discover suggestions"
-            aria-required="true"
-          />
-        </div>
+// Mock the generateSuggestions API function
+const mockGenerateSuggestions = jest.fn();
+jest.mock('@/lib/api/suggestions', () => ({
+  generateSuggestions: (...args: any[]) => mockGenerateSuggestions(...args),
+}));
 
-        {/* Source Checkboxes */}
-        <fieldset data-testid="source-checkboxes">
-          <legend>Sources</legend>
-          <label>
-            <input
-              type="checkbox"
-              data-testid="source-suggest"
-              defaultChecked
-            />
-            Google Suggest
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              data-testid="source-question"
-              defaultChecked
-            />
-            Question Keywords
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              data-testid="source-related"
-              disabled
-            />
-            Related Searches (coming soon)
-          </label>
-        </fieldset>
+// Mock Radix-based UI components that cause act issues
+jest.mock('@/components/ui/checkbox', () => ({
+  Checkbox: React.forwardRef<HTMLInputElement, { checked?: boolean; onCheckedChange?: (checked: boolean) => void; disabled?: boolean; 'data-testid'?: string; id?: string }>(
+    ({ checked, onCheckedChange, disabled, 'data-testid': testId, id }, ref) => (
+      <input
+        ref={ref}
+        type="checkbox"
+        data-testid={testId}
+        id={id}
+        checked={checked}
+        onChange={(e) => onCheckedChange?.(e.target.checked)}
+        disabled={disabled}
+      />
+    )
+  ),
+}));
 
-        {/* Max Results Slider */}
-        <div>
-          <label htmlFor="max-results">Max Results: <span data-testid="max-results-value">50</span></label>
-          <input
-            id="max-results"
-            type="range"
-            data-testid="max-results-slider"
-            min="10"
-            max="100"
-            defaultValue="50"
-          />
-        </div>
+jest.mock('@/components/ui/label', () => ({
+  Label: React.forwardRef<HTMLLabelElement, { children: React.ReactNode; htmlFor?: string; className?: string }>(
+    ({ children, htmlFor, className }, ref) => (
+      <label ref={ref} htmlFor={htmlFor} className={className}>
+        {children}
+      </label>
+    )
+  ),
+}));
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          data-testid="generate-button"
-        >
-          Generate Suggestions
-        </button>
+// Mock fetch for any direct API calls
+global.fetch = jest.fn();
 
-        {/* Rate Limit Indicator */}
-        <div data-testid="rate-limit">
-          <span>API Calls: </span>
-          <span data-testid="rate-limit-remaining">10</span>/10 remaining
-        </div>
-
-        {/* Loading State */}
-        <div data-testid="loading-indicator" hidden>
-          Generating suggestions...
-        </div>
-
-        {/* Success Message */}
-        <div data-testid="success-message" hidden role="status">
-          <span data-testid="success-count">0</span> new suggestions generated!
-        </div>
-
-        {/* Error Message */}
-        <div data-testid="error-message" hidden role="alert">
-          <span data-testid="error-text"></span>
-        </div>
-      </div>
-    );
-  };
-});
-
+// Import the real component after mocks are set up
 import GenerateSuggestionsForm from '@/components/suggestions/GenerateSuggestionsForm';
 
 describe('GenerateSuggestionsForm', () => {
@@ -120,6 +56,8 @@ describe('GenerateSuggestionsForm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGenerateSuggestions.mockReset();
+    global.fetch = jest.fn();
   });
 
   // ============================================
@@ -200,13 +138,19 @@ describe('GenerateSuggestionsForm', () => {
 
     it('should clear after successful submission', async () => {
       const user = userEvent.setup();
+      mockGenerateSuggestions.mockResolvedValueOnce({ jobId: '123', status: 'queued', count: 10 });
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} onSuccess={mockOnSuccess} />);
       
       const input = screen.getByTestId('seed-keyword-input');
       await user.type(input, 'seo tools');
       
-      // After submission, input should clear (implementation will handle this)
-      expect(input).toBeInTheDocument();
+      const button = screen.getByTestId('generate-button');
+      await user.click(button);
+      
+      await waitFor(() => {
+        expect(input).toHaveValue('');
+      });
     });
   });
 
@@ -220,8 +164,9 @@ describe('GenerateSuggestionsForm', () => {
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
       const checkbox = screen.getByTestId('source-suggest');
-      await user.click(checkbox);
+      expect(checkbox).toBeChecked();
       
+      await user.click(checkbox);
       expect(checkbox).not.toBeChecked();
     });
 
@@ -230,8 +175,9 @@ describe('GenerateSuggestionsForm', () => {
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
       const checkbox = screen.getByTestId('source-question');
-      await user.click(checkbox);
+      expect(checkbox).toBeChecked();
       
+      await user.click(checkbox);
       expect(checkbox).not.toBeChecked();
     });
 
@@ -243,7 +189,9 @@ describe('GenerateSuggestionsForm', () => {
       await user.click(screen.getByTestId('source-suggest'));
       await user.click(screen.getByTestId('source-question'));
       
-      // Implementation will disable button when no sources selected
+      // Button should be disabled
+      const button = screen.getByTestId('generate-button');
+      expect(button).toBeDisabled();
     });
 
     it('should have related searches disabled (coming soon)', () => {
@@ -272,15 +220,13 @@ describe('GenerateSuggestionsForm', () => {
       expect(slider).toHaveAttribute('max', '100');
     });
 
-    it('should update displayed value when slider changes', async () => {
-      const user = userEvent.setup();
+    it('should update displayed value when slider changes', () => {
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
       const slider = screen.getByTestId('max-results-slider');
       fireEvent.change(slider, { target: { value: '75' } });
       
-      // Implementation will update the displayed value
-      expect(slider).toBeInTheDocument();
+      expect(screen.getByTestId('max-results-value')).toHaveTextContent('75');
     });
   });
 
@@ -291,25 +237,45 @@ describe('GenerateSuggestionsForm', () => {
   describe('Form Submission', () => {
     it('should call API with form data', async () => {
       const user = userEvent.setup();
+      mockGenerateSuggestions.mockResolvedValueOnce({ jobId: '123', status: 'queued', count: 10 });
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
       await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
       await user.click(screen.getByTestId('generate-button'));
       
-      // API call will be made with form data
+      await waitFor(() => {
+        expect(mockGenerateSuggestions).toHaveBeenCalledWith(
+          1,
+          expect.objectContaining({
+            seedKeyword: 'seo tools',
+            sources: expect.arrayContaining(['suggest', 'question']),
+            maxResults: 50,
+          })
+        );
+      });
     });
 
     it('should validate seed keyword is not empty', async () => {
       const user = userEvent.setup();
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
-      await user.click(screen.getByTestId('generate-button'));
+      // Button should be disabled when keyword is empty
+      const button = screen.getByTestId('generate-button');
+      expect(button).toBeDisabled();
       
-      // Should show validation error (implementation)
+      // Enter only whitespace
+      const input = screen.getByTestId('seed-keyword-input');
+      await user.type(input, '   ');
+      
+      // Button should still be disabled (trimmed value is empty)
+      expect(button).toBeDisabled();
     });
 
     it('should send selected sources only', async () => {
       const user = userEvent.setup();
+      mockGenerateSuggestions.mockResolvedValueOnce({ jobId: '123', status: 'queued', count: 10 });
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
       await user.type(screen.getByTestId('seed-keyword-input'), 'seo');
@@ -317,7 +283,14 @@ describe('GenerateSuggestionsForm', () => {
       
       await user.click(screen.getByTestId('generate-button'));
       
-      // Only 'suggest' should be sent
+      await waitFor(() => {
+        expect(mockGenerateSuggestions).toHaveBeenCalledWith(
+          1,
+          expect.objectContaining({
+            sources: ['suggest'], // Only suggest should be sent
+          })
+        );
+      });
     });
   });
 
@@ -326,19 +299,31 @@ describe('GenerateSuggestionsForm', () => {
   // ============================================
   
   describe('Loading State', () => {
-    it('should show loading text during generation', () => {
+    it('should show loading text during generation', async () => {
+      const user = userEvent.setup();
+      mockGenerateSuggestions.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve({ jobId: '123', status: 'queued', count: 10 }), 100)));
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
-      const loadingIndicator = screen.getByTestId('loading-indicator');
-      expect(loadingIndicator).toBeInTheDocument();
+      await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
+      await user.click(screen.getByTestId('generate-button'));
+      
+      // Should show loading indicator
+      expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
+      expect(screen.getByTestId('loading-indicator')).toHaveTextContent('Generating suggestions...');
     });
 
     it('should disable button during loading', async () => {
+      const user = userEvent.setup();
+      mockGenerateSuggestions.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve({ jobId: '123', status: 'queued', count: 10 }), 100)));
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
+      await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
+      await user.click(screen.getByTestId('generate-button'));
+      
       const button = screen.getByTestId('generate-button');
-      // Implementation will disable during loading
-      expect(button).toBeInTheDocument();
+      expect(button).toBeDisabled();
     });
   });
 
@@ -348,24 +333,45 @@ describe('GenerateSuggestionsForm', () => {
   
   describe('Success Message', () => {
     it('should display success message after generation', async () => {
+      const user = userEvent.setup();
+      mockGenerateSuggestions.mockResolvedValueOnce({ jobId: '123', status: 'queued', count: 10 });
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} onSuccess={mockOnSuccess} />);
       
-      const successMessage = screen.getByTestId('success-message');
-      expect(successMessage).toBeInTheDocument();
+      await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
+      await user.click(screen.getByTestId('generate-button'));
+      
+      await waitFor(() => {
+        expect(screen.getByTestId('success-message')).toBeInTheDocument();
+      });
     });
 
     it('should show count of new suggestions', async () => {
+      const user = userEvent.setup();
+      mockGenerateSuggestions.mockResolvedValueOnce({ jobId: '123', status: 'queued', count: 25 });
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} onSuccess={mockOnSuccess} />);
       
-      const countElement = screen.getByTestId('success-count');
-      expect(countElement).toBeInTheDocument();
+      await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
+      await user.click(screen.getByTestId('generate-button'));
+      
+      await waitFor(() => {
+        expect(screen.getByTestId('success-count')).toHaveTextContent('25');
+      });
     });
 
     it('should call onSuccess callback with count', async () => {
+      const user = userEvent.setup();
+      mockGenerateSuggestions.mockResolvedValueOnce({ jobId: '123', status: 'queued', count: 15 });
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} onSuccess={mockOnSuccess} />);
       
-      // Implementation will call onSuccess after successful generation
-      expect(mockOnSuccess).toBeDefined();
+      await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
+      await user.click(screen.getByTestId('generate-button'));
+      
+      await waitFor(() => {
+        expect(mockOnSuccess).toHaveBeenCalledWith(15);
+      });
     });
   });
 
@@ -375,25 +381,48 @@ describe('GenerateSuggestionsForm', () => {
   
   describe('Error Handling', () => {
     it('should display API error message', async () => {
+      const user = userEvent.setup();
+      mockGenerateSuggestions.mockRejectedValueOnce(new Error('Rate limit exceeded'));
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
-      const errorMessage = screen.getByTestId('error-message');
-      expect(errorMessage).toBeInTheDocument();
+      await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
+      await user.click(screen.getByTestId('generate-button'));
+      
+      await waitFor(() => {
+        expect(screen.getByTestId('error-message')).toBeInTheDocument();
+        expect(screen.getByTestId('error-text')).toHaveTextContent('Rate limit exceeded');
+      });
     });
 
     it('should handle network errors', async () => {
+      const user = userEvent.setup();
+      mockGenerateSuggestions.mockRejectedValueOnce(new Error('Network error'));
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
-      // Implementation will show network error
-      const errorText = screen.getByTestId('error-text');
-      expect(errorText).toBeInTheDocument();
+      await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
+      await user.click(screen.getByTestId('generate-button'));
+      
+      await waitFor(() => {
+        expect(screen.getByTestId('error-message')).toBeInTheDocument();
+        expect(screen.getByTestId('error-text')).toHaveTextContent('Network error');
+      });
     });
 
-    it('should have ARIA role for error messages', () => {
+    it('should have ARIA role for error messages', async () => {
+      const user = userEvent.setup();
+      mockGenerateSuggestions.mockRejectedValueOnce(new Error('Test error'));
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
-      const errorMessage = screen.getByTestId('error-message');
-      expect(errorMessage).toHaveAttribute('role', 'alert');
+      await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
+      await user.click(screen.getByTestId('generate-button'));
+      
+      await waitFor(() => {
+        const errorDiv = screen.getByTestId('error-message');
+        expect(errorDiv).toHaveAttribute('role', 'alert');
+      });
     });
   });
 
@@ -410,66 +439,106 @@ describe('GenerateSuggestionsForm', () => {
     });
 
     it('should update remaining after generation', async () => {
+      const user = userEvent.setup();
+      mockGenerateSuggestions.mockResolvedValueOnce({ jobId: '123', status: 'queued', count: 10 });
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
-      // After successful generation, rate limit should decrement
-      const remaining = screen.getByTestId('rate-limit-remaining');
-      expect(remaining).toBeInTheDocument();
+      await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
+      await user.click(screen.getByTestId('generate-button'));
+      
+      await waitFor(() => {
+        const remaining = screen.getByTestId('rate-limit-remaining');
+        expect(remaining).toHaveTextContent('9');
+      });
     });
   });
 
   // ============================================
-  // Adversarial Tests
+  // Adversarial Cases Tests
   // ============================================
   
   describe('Adversarial Cases', () => {
     it('should handle XSS in seed keyword', async () => {
       const user = userEvent.setup();
+      mockGenerateSuggestions.mockResolvedValueOnce({ jobId: '123', status: 'queued', count: 10 });
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
       const input = screen.getByTestId('seed-keyword-input');
       await user.type(input, '<script>alert("xss")</script>');
       
-      // Input should be sanitized, not executed
-      expect(input).toBeInTheDocument();
+      // Input should accept the value (React escapes it)
+      expect(input).toHaveValue('<script>alert("xss")</script>');
+      
+      await user.click(screen.getByTestId('generate-button'));
+      
+      await waitFor(() => {
+        expect(mockGenerateSuggestions).toHaveBeenCalledWith(
+          1,
+          expect.objectContaining({
+            seedKeyword: '<script>alert("xss")</script>',
+          })
+        );
+      });
     });
 
     it('should handle very long keywords', async () => {
       const user = userEvent.setup();
+      const longKeyword = 'a'.repeat(300);
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
-      const longKeyword = 'a'.repeat(300);
       const input = screen.getByTestId('seed-keyword-input');
+      // Input has maxLength of 255
       await user.type(input, longKeyword);
       
-      // Should handle gracefully (truncate or show validation)
-      expect(input).toBeInTheDocument();
+      // Should be truncated to 255 characters
+      expect(input).toHaveValue('a'.repeat(255));
     });
 
     it('should handle special characters', async () => {
       const user = userEvent.setup();
+      mockGenerateSuggestions.mockResolvedValueOnce({ jobId: '123', status: 'queued', count: 10 });
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
       const input = screen.getByTestId('seed-keyword-input');
       await user.type(input, 'seo & tools $100 @gmail.com');
       
-      // Special chars should be handled appropriately
-      expect(input).toBeInTheDocument();
+      expect(input).toHaveValue('seo & tools $100 @gmail.com');
+      
+      await user.click(screen.getByTestId('generate-button'));
+      
+      await waitFor(() => {
+        expect(mockGenerateSuggestions).toHaveBeenCalledWith(
+          1,
+          expect.objectContaining({
+            seedKeyword: 'seo & tools $100 @gmail.com',
+          })
+        );
+      });
     });
 
     it('should handle rapid button clicks', async () => {
       const user = userEvent.setup();
+      mockGenerateSuggestions.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve({ jobId: '123', status: 'queued', count: 10 }), 50)));
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
+      await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
+      
+      // Rapidly click button multiple times
       const button = screen.getByTestId('generate-button');
-      
-      // Rapid clicks should be debounced or prevented
-      await user.click(button);
-      await user.click(button);
       await user.click(button);
       
-      // Only one request should be sent
-      expect(button).toBeInTheDocument();
+      // Button should now be disabled, preventing double submission
+      expect(button).toBeDisabled();
+      
+      // Wait for the first call to complete
+      await waitFor(() => {
+        expect(mockGenerateSuggestions).toHaveBeenCalledTimes(1);
+      });
     });
   });
 
@@ -480,16 +549,48 @@ describe('GenerateSuggestionsForm', () => {
   describe('Integration', () => {
     it('should complete full generation flow', async () => {
       const user = userEvent.setup();
+      mockGenerateSuggestions.mockResolvedValueOnce({ jobId: 'job-123', status: 'queued', count: 42 });
+      
       render(<GenerateSuggestionsForm siteId={mockSiteId} onSuccess={mockOnSuccess} />);
       
       // 1. Enter seed keyword
       await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
       
-      // 2. Keep default sources
-      // 3. Submit
+      // 2. Toggle sources (keep defaults)
+      await user.click(screen.getByTestId('source-question')); // Uncheck
+      expect(screen.getByTestId('source-question')).not.toBeChecked();
+      
+      // 3. Adjust max results
+      const slider = screen.getByTestId('max-results-slider');
+      fireEvent.change(slider, { target: { value: '75' } });
+      expect(screen.getByTestId('max-results-value')).toHaveTextContent('75');
+      
+      // 4. Submit form
       await user.click(screen.getByTestId('generate-button'));
       
-      // Flow should complete (implementation will handle API)
+      // 5. Verify API call
+      await waitFor(() => {
+        expect(mockGenerateSuggestions).toHaveBeenCalledWith(
+          1,
+          expect.objectContaining({
+            seedKeyword: 'seo tools',
+            sources: ['suggest'],
+            maxResults: 75,
+          })
+        );
+      });
+      
+      // 6. Verify success state
+      await waitFor(() => {
+        expect(screen.getByTestId('success-message')).toBeInTheDocument();
+        expect(screen.getByTestId('success-count')).toHaveTextContent('42');
+      });
+      
+      // 7. Verify callback
+      expect(mockOnSuccess).toHaveBeenCalledWith(42);
+      
+      // 8. Verify form reset
+      expect(screen.getByTestId('seed-keyword-input')).toHaveValue('');
     });
   });
 });

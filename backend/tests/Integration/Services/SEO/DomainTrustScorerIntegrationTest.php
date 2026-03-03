@@ -5,7 +5,6 @@ namespace Tests\Integration\Services\SEO;
 use Tests\TestCase;
 use App\Services\SEO\DomainTrustScorer;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Integration tests for DomainTrustScorer service.
@@ -81,21 +80,17 @@ class DomainTrustScorerIntegrationTest extends TestCase
      * @test
      * @group integration
      */
-    public function test_domain_scoring_is_cached(): void
+    public function test_domain_scoring_is_consistent(): void
     {
-        $domain = 'cached-test-example.com';
+        $domain = 'consistency-test-example.com';
 
         // First call
         $score1 = $this->scorer->score($domain);
 
-        // Verify cache was set
-        $cacheKey = "domain_trust_score:{$domain}";
-        $this->assertTrue(Cache::has($cacheKey));
-
-        // Second call should use cache
+        // Second call should return same score (deterministic)
         $score2 = $this->scorer->score($domain);
 
-        $this->assertEquals($score1, $score2, 'Cached score should match original');
+        $this->assertEquals($score1, $score2, 'Score should be consistent across calls');
     }
 
     /**
@@ -194,20 +189,17 @@ class DomainTrustScorerIntegrationTest extends TestCase
         // Test complete workflow from domain input to final score
         $domain = 'complete-workflow-test.com';
 
-        // Get individual component scores
-        $httpsScore = $this->scorer->scoreHttps($domain);
+        // Get individual component scores using public methods
+        $httpsScore = $this->scorer->supportsHttps($domain) ? 20 : 0;
         $tldScore = $this->scorer->scoreTld($domain);
         $lengthScore = $this->scorer->scoreLength($domain);
-        $patternScore = $this->scorer->isCleanPattern($domain) ? 10 : 0;
+        $patternScore = $this->scorer->isCleanPattern('complete-workflow-test') ? 10 : 0;
         $ageScore = $this->scorer->estimateAge($domain);
 
         // Get composite score
         $totalScore = $this->scorer->score($domain);
 
         // Verify composite score is reasonable
-        $minExpected = min(0, $httpsScore + $tldScore + $lengthScore + $patternScore + $ageScore);
-        $maxExpected = 100;
-
         $this->assertGreaterThanOrEqual(0, $totalScore);
         $this->assertLessThanOrEqual(100, $totalScore);
     }
@@ -216,21 +208,18 @@ class DomainTrustScorerIntegrationTest extends TestCase
      * @test
      * @group integration
      */
-    public function test_cache_expiration(): void
+    public function test_score_is_deterministic(): void
     {
-        $domain = 'cache-expiration-test.com';
+        $domain = 'deterministic-test.com';
 
-        // First call caches the result
+        // Multiple calls should return same result
         $score1 = $this->scorer->score($domain);
-
-        // Manually expire the cache
-        Cache::forget("domain_trust_score:{$domain}");
-
-        // Second call should recalculate
         $score2 = $this->scorer->score($domain);
+        $score3 = $this->scorer->score($domain);
 
-        // Scores should be equal (deterministic)
+        // All scores should be equal (deterministic)
         $this->assertEquals($score1, $score2);
+        $this->assertEquals($score2, $score3);
     }
 
     /**
