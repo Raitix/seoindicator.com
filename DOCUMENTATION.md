@@ -2058,12 +2058,138 @@ When **TASK-16-7 (Mobile-Friendly Checker tool)** is deployed:
 ### Dependencies
 - TASK-20-14 (Mobile-Friendly Guide Content)
 - TASK-20-22 (ToolEmbed Component)
-- FEAT-016 (Mobile-Friendly Checker tool - pending deployment)
+- TASK-16-7: Mobile-Friendly Checker Tool (deployed)
 
 ### Related Tasks
-- TASK-16-7: Mobile-Friendly Checker Tool (pending - will enable CTA)
+- TASK-16-7: Mobile-Friendly Checker Tool (deployed - CTA now enabled)
 - TASK-20-22: ToolEmbed Component
 - TASK-20-24: Tool embedding for Social Media Preview guides
+
+---
+## Mobile-Friendly Checker Tool (TASK-16-7)
+
+### Tool Description
+SEO analysis tool that analyzes a page's mobile readiness by checking viewport configuration, responsive design indicators, and providing a mobile preview. Part of the Interactive SEO Tools feature (FEAT-016).
+
+### Component Location
+- **Service:** `backend/app/Services/Tools/MobileFriendlyChecker.php`
+- **Controller:** `backend/app/Http/Controllers/Api/V1/Tools/MobileFriendlyController.php`
+- **Route:** `POST /api/v1/tools/mobile-friendly`
+- **Tests:** `backend/tests/Unit/Services/Tools/MobileFriendlyCheckerTest.php`
+
+### API Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/tools/mobile-friendly` | Analyze page for mobile-friendliness |
+
+**Request Body:**
+```json
+{
+  "url": "https://example.com/page"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "mobileScore": 85,
+    "viewport": {
+      "present": true,
+      "content": "width=device-width, initial-scale=1",
+      "valid": true
+    },
+    "responsiveIndicators": {
+      "hasMediaQueries": true,
+      "hasFlexibleGrid": true,
+      "hasFlexibleImages": true
+    },
+    "readability": {
+      "fontSizeMin": 14,
+      "fontSizeWarning": false
+    },
+    "tapTargets": {
+      "links": 45,
+      "smallTargets": 3,
+      "warning": "3 tap targets may be too small for mobile"
+    },
+    "issues": [
+      {
+        "severity": "warning",
+        "message": "Some tap targets are smaller than 48x48 pixels"
+      }
+    ],
+    "recommendations": [
+      "Viewport meta tag is properly configured ✓",
+      "Consider increasing font size for better mobile readability"
+    ]
+  }
+}
+```
+
+### Mobile Score Calculation
+
+| Factor | Weight | Points |
+|--------|--------|--------|
+| Viewport tag present | 30% | 0-30 |
+| Responsive indicators | 25% | 0-25 |
+| Font readability | 20% | 0-20 |
+| Tap target sizes | 25% | 0-25 |
+
+### Checks Performed
+
+| Check | Description |
+|-------|-------------|
+| Viewport Meta Tag | Detects presence and validates configuration |
+| Responsive Design | Checks for media queries, flexible grids, flexible images |
+| Font Readability | Analyzes minimum font size (16px recommended) |
+| Tap Targets | Checks link/button sizes (48x48px minimum) |
+| Horizontal Scroll | Detects potential horizontal scroll issues |
+| Hidden Elements | Excludes `display: none` elements from tap target count |
+
+### Error Handling
+
+- Empty HTML: Returns `success=true` with score 0 and appropriate message
+- Hidden elements: Excluded from tap target analysis
+- Invalid URLs: Returns error response with message
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `MobileFriendlyCheckerTest.php` | 48 | 120 |
+
+**Test Categories:**
+- Viewport detection tests: 10 tests
+- Responsive indicators tests: 8 tests
+- Font readability tests: 5 tests
+- Tap target tests: 8 tests
+- Horizontal scroll tests: 4 tests
+- Score calculation tests: 5 tests
+- Error handling tests: 6 tests
+- Output structure tests: 3 tests
+
+### Production Status
+- **Deployed:** 2026-03-03 (GitHub Actions #22618201220)
+- **Build Time:** 1m27s
+- **Deploy Time:** 30s
+- **Health Check:** Passing
+- **Tests:** 48/48 passing (120 assertions)
+- **Status:** To Test Prod
+
+### Integration
+- **Tool Slug:** `mobile-friendly-checker`
+- **Related Guide:** `/seo-guides/mobile-friendly/`
+- **ToolEmbed:** CTA now enabled in Mobile-Friendliness guide
+
+### Dependencies
+- TASK-16-1 (Tools Infrastructure)
+
+### Related Tasks
+- TASK-20-14: Mobile-Friendliness Guide (content)
+- TASK-20-23: Tool embedding for Mobile-Friendly guide
 
 ---
 ## Page Speed Optimization Guide (TASK-20-13)
