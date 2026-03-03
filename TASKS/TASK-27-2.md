@@ -1,7 +1,7 @@
 # TASK-27-2: Admin Authorization Middleware
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
