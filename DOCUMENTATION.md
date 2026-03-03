@@ -20935,3 +20935,140 @@ Suggestions are sorted by:
 - TASK-23-13: Backlinks Dashboard (frontend display)
 - SPEC-023: Backlinks Indicator
 - FEAT-023: Backlinks Indicator
+
+---
+## Backlinks History Chart Component (TASK-23-14)
+
+### Component Description
+Interactive React chart component for visualizing backlink history trends over time. Shows backlink count, referring domains, and trust score with dual Y-axis visualization. Provides date range filtering (7d, 30d, 90d, 1y) with responsive design and loading/empty states. Part of the Backlinks Indicator feature (FEAT-023).
+
+### Component Location
+- **Component:** `frontend/components/backlinks/BacklinkHistoryChart.tsx`
+- **API Client:** `frontend/lib/api/backlinks.ts`
+- **Types:** `frontend/components/backlinks/types.ts`
+- **Tests:** `frontend/components/backlinks/__tests__/BacklinkHistoryChart.simple.test.ts`
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| Line Chart | Recharts LineChart with dual Y-axis |
+| 3 Data Series | Backlinks (blue), Domains (green), Trust Score (orange) |
+| Date Range Selector | 4 presets: 7d, 30d, 90d, 1y (default: 30d) |
+| Custom Tooltips | Hover tooltips with K/M number formatting |
+| Responsive Design | ResponsiveContainer with 300px chart height |
+| Loading State | Skeleton component while data fetches |
+| Empty State | EmptyState component when no data available |
+| Growth Indicator | Green up / red down trend indicator |
+
+### Component Props
+
+```typescript
+interface BacklinkHistoryChartProps {
+  projectId: number;           // Project ID for API calls
+  dateRange?: {                // Optional date filter
+    from: string;              // ISO date string
+    to: string;                // ISO date string
+  };
+}
+```
+
+### Data Visualization
+
+**Line Configuration:**
+| Series | Data Key | Color | Y-Axis |
+|--------|----------|-------|--------|
+| Backlinks | `total_backlinks` | `#2563eb` (blue) | Left |
+| Referring Domains | `referring_domains_count` | `#16a34a` (green) | Left |
+| Trust Score | `avg_domain_trust` | `#f59e0b` (orange) | Right |
+
+**Date Range Presets:**
+| Label | Value |
+|-------|-------|
+| 7 days | `{ from: now - 7d, to: now }` |
+| 30 days | `{ from: now - 30d, to: now }` (default) |
+| 90 days | `{ from: now - 90d, to: now }` |
+| 1 year | `{ from: now - 365d, to: now }` |
+
+### API Integration
+
+**Endpoint:** `GET /api/v1/projects/{projectId}/backlinks/history`
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `from` | string | Start date (ISO format) |
+| `to` | string | End date (ISO format) |
+
+**Response Structure:**
+```json
+{
+  "data": [
+    {
+      "date": "2026-03-01",
+      "total_backlinks": 1250,
+      "referring_domains_count": 89,
+      "avg_domain_trust": 45.2
+    }
+  ]
+}
+```
+
+### Helper Functions
+
+| Function | Description |
+|----------|-------------|
+| `formatNumber(value)` | Formats large numbers with K/M suffix |
+| `formatDate(dateString)` | Formats ISO date to locale string |
+| `calculateGrowthRate(data)` | Calculates percentage change over period |
+| `validateDateRange(from, to)` | Validates date range boundaries |
+| `validateProjectId(id)` | Validates project ID (positive integer) |
+| `sanitizeUserInput(input)` | XSS sanitization for user inputs |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Protection | `sanitizeUserInput()` strips HTML/JS |
+| Project ID Validation | Rejects negative, zero, float, string values |
+| Date Validation | Rejects invalid ranges (from > to) |
+| SWR Caching | Prevents redundant API calls |
+| No Sensitive Data | Component displays aggregated metrics only |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `BacklinkHistoryChart.simple.test.ts` | 38 | Unit tests |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Format Number | 7 | K/M suffix for large numbers |
+| Format Date | 3 | ISO date formatting |
+| Growth Rate Calculation | 4 | Percentage change calculation |
+| Date Range Presets | 5 | 7d, 30d, 90d, 1y presets |
+| Date Validation | 4 | Invalid range rejection |
+| Project ID Validation | 5 | Invalid ID rejection |
+| XSS Sanitization | 3 | HTML/JS stripping |
+| Chart Configuration | 4 | Line colors, Y-axis config |
+| API URL Construction | 3 | Query parameter building |
+
+### Production Status
+- **Deployed:** 2026-03-03 (GitHub Actions #22616345857)
+- **Commit:** `24bad50`
+- **Build:** Successful (npm run build)
+- **Health Check:** Passing (https://seoindicator.com/api/health → 200 OK)
+- **Tests:** 38/38 passing
+- **Lint:** No errors in component files
+- **Status:** Complete
+
+### Dependencies
+- TASK-23-11 (History API) - Tested Locally
+- TASK-23-13 (Dashboard Components) - To Write Tests
+
+### Related Tasks
+- TASK-23-11: Backlink History API Endpoint (data source)
+- TASK-23-13: Backlinks Dashboard (parent component)
+- SPEC-023: Backlinks Indicator
+- FEAT-023: Backlinks Indicator
