@@ -176,6 +176,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the AI model preferences for this user.
+     */
+    public function modelPreferences(): HasMany
+    {
+        return $this->hasMany(UserModelPreference::class);
+    }
+
+    /**
      * Send the password reset notification.
      *
      * @param  string  $token

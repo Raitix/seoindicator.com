@@ -26,7 +26,7 @@ class UserModelPreferenceTest extends TestCase
     // Model Creation Tests (UMP-CR)
     // =========================================================================
 
-    /** @testUMP-CR-01 */
+    /** @test */
     public function it_can_create_user_model_preference(): void
     {
         $user = User::factory()->create();
@@ -46,7 +46,7 @@ class UserModelPreferenceTest extends TestCase
         ]);
     }
 
-    /** @testUMP-CR-02 */
+    /** @test */
     public function it_creates_with_default_is_default_false(): void
     {
         $user = User::factory()->create();
@@ -60,7 +60,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertFalse($preference->is_default);
     }
 
-    /** @testUMP-CR-03 */
+    /** @test */
     public function it_can_create_with_is_default_true(): void
     {
         $user = User::factory()->create();
@@ -75,7 +75,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertTrue($preference->is_default);
     }
 
-    /** @testUMP-CR-04 */
+    /** @test */
     public function it_enforces_unique_constraint_on_user_and_model(): void
     {
         $user = User::factory()->create();
@@ -94,7 +94,7 @@ class UserModelPreferenceTest extends TestCase
         ]);
     }
 
-    /** @testUMP-CR-05 */
+    /** @test */
     public function it_allows_same_model_for_different_users(): void
     {
         $user1 = User::factory()->create();
@@ -115,7 +115,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertEquals($preference1->model_id, $preference2->model_id);
     }
 
-    /** @testUMP-CR-06 */
+    /** @test */
     public function it_allows_different_models_for_same_user(): void
     {
         $user = User::factory()->create();
@@ -135,7 +135,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertCount(2, UserModelPreference::where('user_id', $user->id)->get());
     }
 
-    /** @testUMP-CR-07 */
+    /** @test */
     public function it_requires_user_id(): void
     {
         $aiModel = AIModel::factory()->create();
@@ -147,7 +147,7 @@ class UserModelPreferenceTest extends TestCase
         ]);
     }
 
-    /** @testUMP-CR-08 */
+    /** @test */
     public function it_requires_model_id(): void
     {
         $user = User::factory()->create();
@@ -163,7 +163,7 @@ class UserModelPreferenceTest extends TestCase
     // Relationship Tests (UMP-REL)
     // =========================================================================
 
-    /** @testUMP-REL-01 */
+    /** @test */
     public function it_belongs_to_user(): void
     {
         $user = User::factory()->create();
@@ -178,7 +178,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertEquals($user->id, $preference->user->id);
     }
 
-    /** @testUMP-REL-02 */
+    /** @test */
     public function it_belongs_to_ai_model(): void
     {
         $user = User::factory()->create();
@@ -193,7 +193,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertEquals($aiModel->id, $preference->aiModel->id);
     }
 
-    /** @testUMP-REL-03 */
+    /** @test */
     public function it_cascades_delete_with_user(): void
     {
         $user = User::factory()->create();
@@ -211,7 +211,7 @@ class UserModelPreferenceTest extends TestCase
         ]);
     }
 
-    /** @testUMP-REL-04 */
+    /** @test */
     public function it_cascades_delete_with_ai_model(): void
     {
         $user = User::factory()->create();
@@ -233,7 +233,7 @@ class UserModelPreferenceTest extends TestCase
     // Casts Tests (UMP-CA)
     // =========================================================================
 
-    /** @testUMP-CA-01 */
+    /** @test */
     public function it_casts_is_default_to_boolean(): void
     {
         $user = User::factory()->create();
@@ -255,7 +255,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertFalse($preference->is_default);
     }
 
-    /** @testUMP-CA-02 */
+    /** @test */
     public function it_casts_is_default_from_string(): void
     {
         $user = User::factory()->create();
@@ -270,7 +270,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertTrue($preference->is_default);
     }
 
-    /** @testUMP-CA-03 */
+    /** @test */
     public function it_has_timestamps(): void
     {
         $user = User::factory()->create();
@@ -285,7 +285,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertNotNull($preference->updated_at);
     }
 
-    /** @testUMP-CA-04 */
+    /** @test */
     public function it_updates_timestamp_on_update(): void
     {
         $user = User::factory()->create();
@@ -306,7 +306,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertGreaterThan($originalUpdatedAt, $preference->updated_at);
     }
 
-    /** @testUMP-CA-05 */
+    /** @test */
     public function it_casts_user_id_to_integer(): void
     {
         $user = User::factory()->create();
@@ -320,7 +320,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertIsInt($preference->user_id);
     }
 
-    /** @testUMP-CA-06 */
+    /** @test */
     public function it_casts_model_id_to_integer(): void
     {
         $user = User::factory()->create();
@@ -338,7 +338,7 @@ class UserModelPreferenceTest extends TestCase
     // Scope Tests (UMP-SC)
     // =========================================================================
 
-    /** @testUMP-SC-01 */
+    /** @test */
     public function scope_for_user_filters_by_user_id(): void
     {
         $user1 = User::factory()->create();
@@ -362,7 +362,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertEquals($user1->id, $user1Preferences->first()->user_id);
     }
 
-    /** @testUMP-SC-02 */
+    /** @test */
     public function scope_default_filters_by_is_default_true(): void
     {
         $user = User::factory()->create();
@@ -387,7 +387,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertTrue($defaults->first()->is_default);
     }
 
-    /** @testUMP-SC-03 */
+    /** @test */
     public function scope_for_user_with_default_returns_user_default(): void
     {
         $user = User::factory()->create();
@@ -412,7 +412,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertEquals($model1->id, $userDefault->model_id);
     }
 
-    /** @testUMP-SC-04 */
+    /** @test */
     public function scope_ordered_orders_by_created_at_desc(): void
     {
         $user = User::factory()->create();
@@ -450,7 +450,7 @@ class UserModelPreferenceTest extends TestCase
     // Index Tests (UMP-IX)
     // =========================================================================
 
-    /** @testUMP-IX-01 */
+    /** @test */
     public function it_has_index_on_user_id(): void
     {
         $indexes = $this->getTableIndexes('user_model_preferences');
@@ -461,7 +461,7 @@ class UserModelPreferenceTest extends TestCase
         );
     }
 
-    /** @testUMP-IX-02 */
+    /** @test */
     public function it_has_index_on_model_id(): void
     {
         $indexes = $this->getTableIndexes('user_model_preferences');
@@ -472,7 +472,7 @@ class UserModelPreferenceTest extends TestCase
         );
     }
 
-    /** @testUMP-IX-03 */
+    /** @test */
     public function it_has_unique_constraint_on_user_and_model(): void
     {
         $indexes = $this->getTableIndexes('user_model_preferences');
@@ -485,7 +485,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertNotNull($uniqueConstraint, 'Missing unique constraint on (user_id, model_id)');
     }
 
-    /** @testUMP-IX-04 */
+    /** @test */
     public function it_has_index_on_is_default(): void
     {
         $indexes = $this->getTableIndexes('user_model_preferences');
@@ -500,7 +500,7 @@ class UserModelPreferenceTest extends TestCase
     // Edge Case Tests (UMP-EC)
     // =========================================================================
 
-    /** @testUMP-EC-01 */
+    /** @test */
     public function it_handles_multiple_preferences_for_user(): void
     {
         $user = User::factory()->create();
@@ -516,7 +516,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertCount(5, UserModelPreference::where('user_id', $user->id)->get());
     }
 
-    /** @testUMP-EC-02 */
+    /** @test */
     public function it_handles_multiple_defaults_query(): void
     {
         $user = User::factory()->create();
@@ -542,7 +542,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertCount(2, $defaults);
     }
 
-    /** @testUMP-EC-03 */
+    /** @test */
     public function it_handles_user_without_preferences(): void
     {
         $user = User::factory()->create();
@@ -552,7 +552,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertCount(0, $preferences);
     }
 
-    /** @testUMP-EC-04 */
+    /** @test */
     public function it_handles_user_without_default(): void
     {
         $user = User::factory()->create();
@@ -576,7 +576,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertNull($default);
     }
 
-    /** @testUMP-EC-05 */
+    /** @test */
     public function it_handles_mass_assignment_protection(): void
     {
         $user = User::factory()->create();
@@ -598,7 +598,7 @@ class UserModelPreferenceTest extends TestCase
         ]);
     }
 
-    /** @testUMP-EC-06 */
+    /** @test */
     public function it_handles_soft_delete_on_related_models(): void
     {
         // If User or AIModel uses soft deletes, ensure preference still accessible
@@ -614,7 +614,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertNotNull($preference->aiModel);
     }
 
-    /** @testUMP-EC-07 */
+    /** @test */
     public function it_handles_large_user_id(): void
     {
         $user = User::factory()->create();
@@ -633,7 +633,7 @@ class UserModelPreferenceTest extends TestCase
     // Security Tests (UMP-SEC)
     // =========================================================================
 
-    /** @testUMP-SEC-01 */
+    /** @test */
     public function it_prevents_sql_injection_in_user_id(): void
     {
         $this->expectException(\TypeError::class);
@@ -644,7 +644,7 @@ class UserModelPreferenceTest extends TestCase
         ]);
     }
 
-    /** @testUMP-SEC-02 */
+    /** @test */
     public function it_prevents_sql_injection_in_model_id(): void
     {
         $this->expectException(\TypeError::class);
@@ -655,7 +655,7 @@ class UserModelPreferenceTest extends TestCase
         ]);
     }
 
-    /** @testUMP-SEC-03 */
+    /** @test */
     public function it_isolates_preferences_by_user(): void
     {
         $user1 = User::factory()->create();
@@ -674,7 +674,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertCount(0, $user2Preferences);
     }
 
-    /** @testUMP-SEC-04 */
+    /** @test */
     public function it_enforces_foreign_key_constraints(): void
     {
         $this->expectException(QueryException::class);
@@ -685,7 +685,7 @@ class UserModelPreferenceTest extends TestCase
         ]);
     }
 
-    /** @testUMP-SEC-05 */
+    /** @test */
     public function it_validates_boolean_values_for_is_default(): void
     {
         $user = User::factory()->create();
@@ -705,7 +705,7 @@ class UserModelPreferenceTest extends TestCase
     // Helper Methods
     // =========================================================================
 
-    /** @testUMP-HL-01 */
+    /** @test */
     public function it_can_get_user_default_model(): void
     {
         $user = User::factory()->create();
@@ -723,7 +723,7 @@ class UserModelPreferenceTest extends TestCase
         $this->assertEquals($model->id, $defaultPreference->aiModel->id);
     }
 
-    /** @testUMP-HL-02 */
+    /** @test */
     public function it_can_get_all_user_preferred_models(): void
     {
         $user = User::factory()->create();
