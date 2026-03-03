@@ -1,7 +1,7 @@
 # TASK-16-7: Mobile-Friendly Checker Tool
 
 ## STATUS
-`Fix Needed`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -136,3 +136,18 @@ Ran 49 tests, 47 passed, 2 failed.
 ```bash
 php artisan test --filter=MobileFriendlyCheckerTest
 ```
+
+### [2026-03-03 11:37] Agent: Developer
+**FIXED BOTH ISSUES**
+
+**Fix 1: Hidden targets not counted (`test_hidden_targets_not_counted`)**
+- Added `findHiddenSelectors()` method to parse CSS and find classes/IDs with `display: none`
+- Added `isElementHidden()` method to check if element has hidden class, ID, inline style, or hidden attribute
+- Added `countVisibleLinks()` and `countVisibleButtons()` methods to count only visible elements
+- Modified `analyzeTapTargets()` to use the new hidden detection logic
+
+**Fix 2: Empty HTML graceful handling (`test_empty_html`)**
+- Added check in `analyze()` to detect empty HTML error and return `success=true` with low score
+- Added `getEmptyHtmlAnalysis()` method that returns a proper analysis structure with score 0
+
+**Test Results:** All 48 tests pass (120 assertions)

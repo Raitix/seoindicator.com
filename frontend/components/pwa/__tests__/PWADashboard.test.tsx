@@ -136,7 +136,7 @@ const defaultProps = {
 };
 
 // Mock the PWA components since we're testing the dashboard container
-jest.mock('./PWAScoreGauge', () => ({
+jest.mock('../PWAScoreGauge', () => ({
   PWAScoreGauge: ({ score, readinessLevel }: any) => (
     <div data-testid="pwa-score-gauge">
       Score: {score}, Level: {readinessLevel}
@@ -147,7 +147,7 @@ jest.mock('./PWAScoreGauge', () => ({
   ),
 }));
 
-jest.mock('./ManifestStatusCard', () => ({
+jest.mock('../ManifestStatusCard', () => ({
   ManifestStatusCard: ({ hasManifest, manifestUrl, manifestValid, fields }: any) => (
     <div data-testid="manifest-status-card">
       Has Manifest: {hasManifest ? 'Yes' : 'No'}, Valid: {manifestValid ? 'Yes' : 'No'}
