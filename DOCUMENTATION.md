@@ -11281,6 +11281,227 @@ The score is calculated by `PWAScorerService` based on:
 - TASK-24-7: PWASuggestionService
 
 ---
+## PWA Dashboard Components (TASK-24-10)
+
+### Component Description
+React/Next.js components for PWA dashboard display in the SEOIndicator frontend. Provides a main container component with data fetching, loading/error states, and child components for manifest status display and PWA score visualization. Part of the PWA / Web App Manifest Indicator feature (FEAT-024).
+
+### Component Location
+- **Main Container:** `frontend/components/pwa/PWADashboard.tsx`
+- **Status Card:** `frontend/components/pwa/ManifestStatusCard.tsx`
+- **Score Gauge:** `frontend/components/pwa/PWAScoreGauge.tsx`
+- **Skeleton/Loading:** `frontend/components/pwa/PWASkeleton.tsx`
+- **Exports:** `frontend/components/pwa/index.ts`
+- **Types:** `frontend/lib/types/pwa.ts`
+- **API Hook:** `frontend/lib/api/pwa.ts`
+
+### Core Components
+
+**PWADashboard:**
+| Feature | Description |
+|---------|-------------|
+| Data Fetching | SWR hook for GET `/api/v1/sites/{siteId}/pwa` |
+| Loading State | Shows skeleton during fetch |
+| Error State | Shows error message with retry button |
+| Empty State | Shows "Analyze Now" CTA when no analysis exists |
+| Refresh | Triggers POST `/api/v1/sites/{siteId}/pwa/refresh` |
+| Responsive | Grid layout adapts to screen size |
+
+**ManifestStatusCard:**
+| Feature | Description |
+|---------|-------------|
+| Manifest Presence | Shows icon + text for manifest status |
+| Manifest URL | Displays manifest URL if present |
+| Validity Status | Color-coded valid/warning/missing |
+| Field Badges | Shows presence of name, short_name, start_url, display |
+| Color Coding | Green (valid), Yellow (warnings), Red (missing) |
+
+**PWAScoreGauge:**
+| Feature | Description |
+|---------|-------------|
+| Circular Gauge | Animated circular progress indicator |
+| Score Display | Shows 0-100 PWA readiness score |
+| Readiness Badge | Shows level: none, basic, enhanced, full |
+| Color Coding | Score-based color thresholds |
+| Animation | Reduced motion support via prefers-reduced-motion |
+
+**PWASkeleton:**
+| Component | Description |
+|-----------|-------------|
+| LoadingSkeleton | Animated skeleton during data fetch |
+| ErrorState | Error message with retry button |
+| NoAnalysisCTA | "Analyze Now" button when no analysis exists |
+
+### Component Props
+
+**PWADashboardProps:**
+```typescript
+interface PWADashboardProps {
+  siteId: number;
+  onAnalyzeClick?: () => void;
+  className?: string;
+}
+```
+
+**ManifestStatusCardProps:**
+```typescript
+interface ManifestStatusCardProps {
+  hasManifest: boolean;
+  manifestUrl?: string | null;
+  manifestValid?: boolean;
+  fields?: {
+    name?: { present: boolean; value?: string };
+    short_name?: { present: boolean; value?: string };
+    start_url?: { present: boolean; value?: string };
+    display?: { present: boolean; value?: string };
+  };
+  className?: string;
+}
+```
+
+**PWAScoreGaugeProps:**
+```typescript
+interface PWAScoreGaugeProps {
+  score: number;
+  readinessLevel: 'none' | 'basic' | 'enhanced' | 'full';
+  className?: string;
+  animate?: boolean;
+}
+```
+
+### API Integration
+
+**usePWAAnalysis Hook:**
+```typescript
+const { data, error, isLoading, mutate } = usePWAAnalysis(siteId);
+
+// Returns:
+// - data: PWA analysis response or null
+// - error: Error object or null
+// - isLoading: boolean
+// - mutate: Function to refresh data
+```
+
+**API Functions:**
+| Function | Endpoint | Method |
+|----------|----------|--------|
+| `getPWAAnalysis(siteId)` | `/api/v1/sites/{siteId}/pwa` | GET |
+| `analyzePWA(siteId)` | `/api/v1/sites/{siteId}/pwa/analyze` | POST |
+| `refreshPWA(siteId)` | `/api/v1/sites/{siteId}/pwa/refresh` | POST |
+
+### Responsive Design
+
+| Breakpoint | Layout |
+|------------|--------|
+| Mobile (<640px) | Single column stack |
+| Tablet (640-1024px) | 2-column grid |
+| Desktop (>1024px) | 3-column grid |
+
+### Color Coding
+
+| Status | Color | Tailwind Class |
+|--------|-------|----------------|
+| Valid/Good | Green | `text-emerald-400`, `bg-emerald-500/10` |
+| Warning | Yellow | `text-yellow-400`, `bg-yellow-500/10` |
+| Error/Missing | Red | `text-red-400`, `bg-red-500/10` |
+| Info | Blue | `text-blue-400`, `bg-blue-500/10` |
+
+### Score Color Thresholds
+
+| Score Range | Color | Description |
+|-------------|-------|-------------|
+| 0-39 | Red | No PWA support |
+| 40-69 | Yellow | Basic manifest |
+| 70-89 | Blue | Enhanced PWA |
+| 90-100 | Green | Full PWA |
+
+### Accessibility
+
+| Feature | Implementation |
+|---------|----------------|
+| ARIA Labels | `aria-label` on all interactive elements |
+| Roles | `role="progressbar"` on gauge |
+| Semantic Structure | Proper heading hierarchy |
+| Keyboard Navigation | Tab, Enter, Space support |
+| Reduced Motion | Respects `prefers-reduced-motion` |
+| Screen Reader | Score and status announced |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | React auto-escapes content |
+| URL Sanitization | API validates URLs server-side |
+| Auth Token | SWR includes auth header |
+| Error Handling | No sensitive data in error messages |
+
+### TypeScript Types
+
+**PWAAnalysisData:**
+```typescript
+interface PWAAnalysisData {
+  hasManifest: boolean;
+  manifestUrl?: string | null;
+  manifestValid: boolean;
+  pwaScore: number;
+  readinessLevel: 'none' | 'basic' | 'enhanced' | 'full';
+  fields: Record<string, { present: boolean; value?: string }>;
+  icons: IconResult[];
+  recommendations: Recommendation[];
+  analyzedAt: string;
+}
+```
+
+**IconResult:**
+```typescript
+interface IconResult {
+  src: string;
+  sizes: string;
+  type?: string;
+  accessible: boolean;
+  warnings: string[];
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `PWADashboard.test.tsx` | 45 | 45+ |
+| `ManifestStatusCard.test.tsx` | 46 | 46+ |
+| `PWAScoreGauge.test.tsx` | 101 | 101+ |
+| **Total** | **192** | **192+** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Component Rendering | 12 | Mount, props, default state |
+| Data Fetching | 15 | SWR integration, loading, error |
+| User Interactions | 10 | Click handlers, buttons |
+| State Management | 8 | Loading, error, success states |
+| Responsive Design | 6 | Mobile, tablet, desktop |
+| Accessibility | 15 | ARIA, keyboard, screen reader |
+| Edge Cases | 12 | Null values, empty arrays |
+| Animations | 8 | Gauge animation, reduced motion |
+| Integration | 10 | API calls, data flow |
+
+### Production Status
+- **Deployed**: 2026-03-03 (commit 6236a5d via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 192/192 passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-24-8 (PWA Analysis API Endpoints)
+- SWR library (project standard)
+- Tailwind CSS (styling)
+
+### Related Tasks
+- TASK-24-8: PWA Analysis API Endpoints
+- TASK-24-11: PWA Score Gauge and Icon Validation Table
+- TASK-24-12: PWA Recommendations Component
+
+---
 ## Unit Tests: Projects (TASK-8-9)
 
 ### Test Coverage Summary
