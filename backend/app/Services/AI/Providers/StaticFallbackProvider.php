@@ -318,9 +318,14 @@ class StaticFallbackProvider implements AIProviderInterface
         } else {
             // Length analysis
             if ($length < 120) {
-                // Progressive penalty for short descriptions (more lenient)
-                $shortPenalty = (int) ((120 - $length) / 40) * 5;
-                $score -= min(20, $shortPenalty);
+                // Progressive penalty for short descriptions
+                // More severe for very short descriptions
+                if ($length < 50) {
+                    $shortPenalty = (int) ((120 - $length) / 20 * 5);
+                } else {
+                    $shortPenalty = (int) ((120 - $length) / 40 * 5);
+                }
+                $score -= min(35, $shortPenalty);
                 $issues[] = "Meta description is too short ({$length} chars). Aim for 150-160 characters.";
                 
                 // Add suggestion for short descriptions
@@ -352,8 +357,10 @@ class StaticFallbackProvider implements AIProviderInterface
             $ctaPatterns = ['buy', 'shop', 'order', 'get', 'find', 'discover', 'learn', 'try', 'start', 'call', 'visit', 'download', 'sign up', 'contact', 'book', 'save', 'free'];
             $hasCta = false;
             $ctaCount = 0;
+            $descriptionLower = mb_strtolower($description);
             foreach ($ctaPatterns as $cta) {
-                if (mb_stripos($description, $cta) !== false) {
+                // Use word boundary matching to avoid false positives (e.g., "get" in "widgets")
+                if (preg_match('/\b' . preg_quote($cta, '/') . '\b/i', $description)) {
                     $hasCta = true;
                     $ctaCount++;
                 }
