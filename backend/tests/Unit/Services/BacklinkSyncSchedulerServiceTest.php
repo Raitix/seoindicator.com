@@ -287,7 +287,10 @@ class BacklinkSyncSchedulerServiceTest extends TestCase
         $projects = collect([$project1, $project2]);
         $result = $this->service->dispatchSyncJobs($projects);
         
-        Bus::assertDispatchedTimes(SyncBacklinksJob::class, 2);
+        // Jobs are dispatched as a batch, so we check the batch contains 2 jobs
+        Bus::assertBatched(function ($batch) {
+            return $batch->jobs->count() === 2;
+        });
         $this->assertEquals(2, $result['dispatched']);
     }
 

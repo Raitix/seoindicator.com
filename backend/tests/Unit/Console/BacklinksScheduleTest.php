@@ -690,15 +690,17 @@ class BacklinksScheduleTest extends TestCase
             'domain' => null, // Missing domain
         ]);
         
+        // GSC connection must have property_url (database constraint)
+        // Testing that project with missing domain can still exist
         GSCConnection::factory()->create([
             'user_id' => $user->id,
             'status' => GSCConnection::STATUS_ACTIVE,
             'token_expires_at' => now()->addDays(30),
-            'property_url' => null, // Missing property URL
         ]);
         
-        // Sync job should handle missing property gracefully
+        // Sync job should handle missing domain gracefully
         $this->assertNotNull($project);
+        $this->assertNull($project->domain);
     }
 
     // ============================================
