@@ -158,6 +158,10 @@ Route::prefix('v1')->group(function () {
     // Models (TASK-26-17) - Public endpoint for model listing
     Route::get('models', [\App\Http\Controllers\Api\V1\ModelController::class, 'index']);
 
+    // Model Pricing (TASK-26-18) - Public endpoint for model pricing details
+    Route::get('models/{id}/pricing', [\App\Http\Controllers\Api\V1\ModelController::class, 'pricing'])
+        ->where('id', '[0-9]+');
+
     // Metadata (TASK-7-18)
     Route::get('metadata', [\App\Http\Controllers\Api\V1\MetadataController::class, 'index']);
     Route::get('metadata/serp-features', [\App\Http\Controllers\Api\V1\MetadataController::class, 'serpFeatures']);

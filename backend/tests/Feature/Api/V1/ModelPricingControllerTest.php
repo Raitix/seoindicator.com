@@ -68,16 +68,12 @@ class ModelPricingControllerTest extends TestCase
         $mock->shouldReceive('getModelById')
             ->andReturnUsing(function (int $id) use ($model) {
                 if ($model && $model['id'] === $id) {
-                    $mockModel = Mockery::mock('App\Models\AIModel');
-                    $mockModel->id = $model['id'];
-                    $mockModel->provider = $model['provider'];
-                    $mockModel->model_id = $model['model_id'];
-                    $mockModel->display_name = $model['display_name'];
-                    $mockModel->cost_per_1k_input = $model['cost_per_1k_input'];
-                    $mockModel->cost_per_1k_output = $model['cost_per_1k_output'];
-                    $mockModel->context_window = $model['context_window'];
-                    $mockModel->is_free_tier = $model['is_free_tier'];
-                    $mockModel->capabilities = $model['capabilities'];
+                    // Create a partial mock that allows property access
+                    $mockModel = Mockery::mock('App\Models\AIModel')->makePartial();
+                    // Set attributes directly
+                    foreach ($model as $key => $value) {
+                        $mockModel->$key = $value;
+                    }
                     return $mockModel;
                 }
                 return null;

@@ -220,6 +220,148 @@ class ModelController extends Controller
     }
 
     /**
+     * Get detailed pricing information for a specific model.
+     *
+     * TASK-26-18: Model Pricing API Endpoint
+     *
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function pricing(Request $request, int $id): JsonResponse
+    {
+        // Validate query parameters
+        $validated = $request->validate([
+            'analysis_type' => ['sometimes', 'string', 'in:quick,standard,deep'],
+            'estimated_tokens' => ['sometimes', 'integer', 'min:1'],
+        ]);
+
+        // Get model from service
+        $model = $this->modelPricingService->getModelById($id);
+
+        if (!$model) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Model not found',
+            ], 404);
+        }
+
+        // Build pricing response
+        $data = $this->buildPricingResponse($model, $validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ], 200, [], JSON_PRESERVE_ZERO_FRACTION);
+    }
+
+    /**
+     * Build the pricing response data.
+     *
+     * @param mixed $model
+     * @param array $params
+     * @return array
+     */
+    protected function buildPricingResponse($model, array $params): array
+    {
+        // Model info
+        $modelInfo = [
+            'id' => $model->id,
+            'display_name' => $model->display_name,
+            'provider' => $model->provider,
+            'model_id' => $model->model_id,
+        ];
+
+        // Pricing breakdown
+        $pricing = [
+            'cost_per_1m_input' => round((float) $model->cost_per_1k_input * 1000, 2),
+            'cost_per_1m_output' => round((float) $model->cost_per_1k_output * 1000, 2),
+            'cost_per_1k_input' => round((float) $model->cost_per_1k_input, 4),
+            'cost_per_1k_output' => round((float) $model->cost_per_1k_output, 4),
+        ];
+
+        // Token estimates by analysis type
+        $estimates = [
+            'quick_analysis' => $this->calculateEstimate($model, 500),
+            'standard_analysis' => $this->calculateEstimate($model, 2000),
+            'deep_analysis' => $this->calculateEstimate($model, 5000),
+        ];
+
+        // Free tier info
+        $freeTier = [
+            'available' => (bool) $model->is_free_tier,
+            'limit' => null,
+        ];
+
+        $data = [
+            'model' => $modelInfo,
+            'pricing' => $pricing,
+            'estimates' => $estimates,
+            'free_tier' => $freeTier,
+        ];
+
+        // Add specific estimate if analysis_type is provided
+        if (isset($params['analysis_type'])) {
+            $tokens = match ($params['analysis_type']) {
+                'quick' => 500,
+                'standard' => 2000,
+                'deep' => 5000,
+                default => 2000,
+            };
+
+            $data['estimate'] = [
+                'type' => $params['analysis_type'],
+                'tokens' => $tokens,
+                'cost' => $this->calculateCost($model, $tokens),
+            ];
+        }
+
+        // Add custom estimate if estimated_tokens is provided
+        if (isset($params['estimated_tokens'])) {
+            $data['custom_estimate'] = [
+                'tokens' => $params['estimated_tokens'],
+                'cost' => $this->calculateCost($model, $params['estimated_tokens']),
+            ];
+        }
+
+        return $data;
+    }
+
+    /**
+     * Calculate estimate for a given token count.
+     *
+     * @param mixed $model
+     * @param int $tokens
+     * @return array
+     */
+    protected function calculateEstimate($model, int $tokens): array
+    {
+        return [
+            'tokens' => $tokens,
+            'cost' => $this->calculateCost($model, $tokens),
+        ];
+    }
+
+    /**
+     * Calculate cost for a given token count.
+     *
+     * @param mixed $model
+     * @param int $tokens
+     * @return float
+     */
+    protected function calculateCost($model, int $tokens): float
+    {
+        // Use 70% input / 30% output split for estimates
+        $inputTokens = (int) ($tokens * 0.7);
+        $outputTokens = (int) ($tokens * 0.3);
+
+        $inputCost = ($inputTokens / 1000) * (float) $model->cost_per_1k_input;
+        $outputCost = ($outputTokens / 1000) * (float) $model->cost_per_1k_output;
+
+        return round($inputCost + $outputCost, 2);
+    }
+
+    /**
      * Transform models to response format.
      *
      * @param Collection $models
