@@ -390,8 +390,14 @@ class DomainTrustScorer
         // Strip path, query, fragment (use ! delimiter to avoid conflict with #)
         $domain = preg_replace('![/?#].*$!', '', $domain);
 
-        // Strip port
-        $domain = preg_replace('!:\d+$!', '', $domain);
+        // Strip port - but NOT for IPv6 addresses (they contain colons)
+        // Check if it's an IP address first
+        $potentialIp = trim($domain, '[]');
+        if (!filter_var($potentialIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) 
+            && !filter_var($potentialIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            // Not an IP address, safe to strip port
+            $domain = preg_replace('!:\d+$!', '', $domain);
+        }
 
         // Convert to lowercase
         $domain = strtolower($domain);

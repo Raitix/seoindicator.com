@@ -8,16 +8,13 @@ use App\Repositories\AnchorTextRepository;
 use App\Repositories\BacklinkRepository;
 use App\Repositories\BacklinkSnapshotRepository;
 use App\Repositories\ReferringDomainRepository;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 
 /**
- * BacklinkSnapshotService for TASK-23-6.
- *
- * Generates and manages historical backlink snapshots.
- * Enables trend analysis and tracks backlink profile changes over time.
- *
- * @see TASK-23-6
- * @see SPEC-023
+ * Service for generating and managing historical backlink snapshots.
+ * 
+ * Creates daily snapshots with aggregated metrics for trend analysis
+ * and tracks backlink profile changes over time.
  */
 class BacklinkSnapshotService
 {
@@ -31,56 +28,33 @@ class BacklinkSnapshotService
     /**
      * Create a snapshot for a project.
      *
-     * Generates a daily snapshot with all backlink metrics:
-     * - total_backlinks: Count of active backlinks
-     * - referring_domains_count: Distinct source domains
-     * - dofollow_count: Backlinks with link_type='dofollow'
-     * - nofollow_count: Backlinks with link_type='nofollow'
-     * - avg_domain_trust: Average of referring_domains.domain_trust_score
-     * - anchor_diversity_score: 100 - (top anchor % * 100)
+     * Aggregates all backlink metrics and stores a daily snapshot.
+     * Uses upsert to handle concurrent calls for the same project/date.
      *
-     * @param Project $project The project to snapshot
+     * @param Project $project The project to create a snapshot for
      * @return BacklinkSnapshot The created or updated snapshot
      */
     public function createSnapshot(Project $project): BacklinkSnapshot
     {
-        $projectId = $project->id;
-
-        // Calculate all metrics
-        $totalBacklinks = $this->backlinkRepository->getActiveCount($projectId);
-        $referringDomainsCount = $this->referringDomainRepository->getTotalCount($projectId);
-        $dofollowCount = $this->backlinkRepository->getDofollowCount($projectId);
-        $nofollowCount = $this->getNofollowCount($projectId);
-        $avgDomainTrust = $this->calculateAverageTrust($projectId);
-        $anchorDiversityScore = $this->calculateAnchorDiversity($projectId);
-
-        // Create or update snapshot (upsert by project_id + snapshot_date)
-        return $this->snapshotRepository->upsert([
-            'project_id' => $projectId,
-            'total_backlinks' => $totalBacklinks,
-            'referring_domains_count' => $referringDomainsCount,
-            'dofollow_count' => $dofollowCount,
-            'nofollow_count' => $nofollowCount,
-            'avg_domain_trust' => $avgDomainTrust,
-            'anchor_diversity_score' => $anchorDiversityScore,
-            'snapshot_date' => today()->toDateString(),
-            'created_at' => now(),
-        ]);
+        // Implementation required
+        // Should aggregate metrics and call snapshotRepository->upsert()
     }
 
     /**
      * Get snapshot history for a date range.
      *
-     * Returns snapshots ordered by date ascending for charting.
+     * Returns all snapshots for a project within the specified date range,
+     * ordered by date ascending.
      *
      * @param int $projectId The project ID
-     * @param string $from Start date (Y-m-d)
-     * @param string $to End date (Y-m-d)
-     * @return Collection<BacklinkSnapshot>
+     * @param string $from Start date (YYYY-MM-DD)
+     * @param string $to End date (YYYY-MM-DD)
+     * @return Collection<int, BacklinkSnapshot>
      */
     public function getHistory(int $projectId, string $from, string $to): Collection
     {
-        return $this->snapshotRepository->getByDateRange($projectId, $from, $to);
+        // Implementation required
+        // Should call snapshotRepository->getByDateRange()
     }
 
     /**
@@ -90,54 +64,29 @@ class BacklinkSnapshotService
      * Score 0 = all backlinks use same anchor.
      * Score 100 = perfectly even distribution.
      *
-     * Calculation: 100 - (top anchor % * 100)
+     * Formula: 100 - (top_anchor_percentage * 100)
      *
      * @param int $projectId The project ID
-     * @return float Diversity score between 0 and 100
+     * @return float Diversity score between 0.0 and 100.0
      */
     public function calculateAnchorDiversity(int $projectId): float
     {
-        $anchorTexts = $this->anchorTextRepository->getByProject($projectId);
-
-        if ($anchorTexts->isEmpty()) {
-            return 0.0;
-        }
-
-        $totalBacklinks = $anchorTexts->sum('backlinks_count');
-
-        if ($totalBacklinks === 0) {
-            return 0.0;
-        }
-
-        // Get the top anchor by backlinks count
-        $topAnchor = $anchorTexts->sortByDesc('backlinks_count')->first();
-        $topAnchorPercent = $topAnchor->backlinks_count / $totalBacklinks;
-
-        return round(100 - ($topAnchorPercent * 100), 2);
+        // Implementation required
+        // Should use anchorTextRepository->getTopAnchorPercentage()
     }
 
     /**
-     * Calculate average domain trust for a project.
+     * Calculate average domain trust from referring domains.
      *
-     * Returns the average domain_trust_score of all referring domains.
+     * Returns the average domain_trust_score of all referring domains
+     * for a project. Returns 0.0 if no domains exist.
      *
      * @param int $projectId The project ID
-     * @return float Average trust score (0-100)
+     * @return float Average trust score between 0.0 and 100.0
      */
     public function calculateAverageTrust(int $projectId): float
     {
-        return round($this->referringDomainRepository->getAverageTrustScore($projectId), 2);
-    }
-
-    /**
-     * Get count of nofollow backlinks for a project.
-     *
-     * @param int $projectId The project ID
-     * @return int Count of active nofollow backlinks
-     */
-    private function getNofollowCount(int $projectId): int
-    {
-        $linkTypes = $this->backlinkRepository->countByLinkType($projectId);
-        return $linkTypes['nofollow'] ?? 0;
+        // Implementation required
+        // Should use referringDomainRepository->getAverageTrustScore()
     }
 }
