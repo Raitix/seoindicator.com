@@ -3992,6 +3992,178 @@ Log::channel('daily')->info('Google CSE API usage', [
 - TASK-1-9: Self-Hosted Scraper (optional fallback)
 
 ---
+## AI Rate Limiting for Suggestions API (TASK-21-10)
+
+### Service Description
+Comprehensive rate limiting system for AI suggestion endpoints to prevent abuse, manage API quotas, and ensure fair usage. Implements per-user and per-IP rate limits with configurable thresholds using a sliding window algorithm. Part of the AI Suggestions via OpenRouter/Vercel Gateway feature (FEAT-021).
+
+### Component Location
+- **Service:** `backend/app/Services/AI/AIRateLimiter.php`
+- **Middleware:** `backend/app/Http/Middleware/AIRateLimiter.php`
+- **Config:** `backend/config/ai.php` (rate_limits section)
+- **Tests:** `backend/tests/Unit/Services/AI/AIRateLimiterTest.php`, `backend/tests/Feature/Http/Middleware/AIRateLimiterTest.php`
+
+### Core Functionalities
+
+**AIRateLimiter Service Methods:**
+| Method | Description |
+|--------|-------------|
+| `checkLimit(string $identifier, string $type): bool` | Check if request is within rate limit |
+| `getRemaining(string $identifier, string $type): int` | Get remaining requests in window |
+| `getResetTime(string $identifier, string $type): int` | Get Unix timestamp when window resets |
+| `increment(string $identifier, string $type): void` | Record a request against the limit |
+
+### Rate Limit Tiers
+
+| Limit Type | Default | Environment Variable | Scope |
+|------------|---------|---------------------|-------|
+| Per-User | 20 requests/hour | `AI_RATE_LIMIT_USER` | Authenticated users by user ID |
+| Per-IP | 10 requests/hour | `AI_RATE_LIMIT_IP` | Anonymous users by IP address |
+
+### Sliding Window Algorithm
+
+Rate limiting uses a sliding window via Laravel Cache:
+
+```php
+class AIRateLimiter
+{
+    private const WINDOW_SECONDS = 3600; // 1 hour
+
+    public function checkLimit(string $identifier, string $type): bool
+    {
+        $key = "ai_rate_limit:{$type}:{$identifier}";
+        $current = Cache::get($key, []);
+
+        // Filter out expired entries
+        $windowStart = now()->subSeconds(self::WINDOW_SECONDS);
+        $current = array_filter($current, fn($t) => $t > $windowStart);
+
+        $limit = $this->getLimit($type);
+        return count($current) < $limit;
+    }
+}
+```
+
+### Rate Limit Headers
+
+All AI endpoint responses include rate limit headers:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum requests per window |
+| `X-RateLimit-Remaining` | Remaining requests in current window |
+| `X-RateLimit-Reset` | Unix timestamp when window resets |
+
+### 429 Response Format
+
+When rate limit is exceeded, the API returns HTTP 429:
+
+```json
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+Retry-After: 1800
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1709123456
+
+{
+    "success": false,
+    "error": {
+        "code": "RATE_LIMIT_EXCEEDED",
+        "message": "Rate limit exceeded. Try again in 30 minutes.",
+        "retry_after": 1800
+    }
+}
+```
+
+### Configuration
+
+```php
+// config/ai.php
+'rate_limits' => [
+    'user' => [
+        'limit' => env('AI_RATE_LIMIT_USER', 20),
+        'window_seconds' => 3600,
+    ],
+    'ip' => [
+        'limit' => env('AI_RATE_LIMIT_IP', 10),
+        'window_seconds' => 3600,
+    ],
+],
+```
+
+### Middleware Registration
+
+```php
+// bootstrap/app.php
+->alias([
+    'ai.ratelimit' => \App\Http\Middleware\AIRateLimiter::class,
+])
+
+// routes/api.php
+Route::post('/ai/suggestions', [AISuggestionController::class, 'generate'])
+    ->middleware('ai.ratelimit');
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| User Isolation | Each user has separate rate limit tracking |
+| IP Validation | X-Forwarded-For header validated |
+| Null Byte Handling | Identifiers truncated at null bytes |
+| SQL Injection Protection | No database interaction with identifiers |
+| Admin Bypass | Admin users can bypass rate limits |
+| OPTIONS Bypass | CORS preflight requests bypass rate limiting |
+
+### Identifier Formats
+
+| Type | Format | Example |
+|------|--------|---------|
+| User | `user:{id}` | `user:123` |
+| IP | `ip:{address}` | `ip:192.168.1.1` |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `AIRateLimiterTest.php` (Unit) | 34 | 40 |
+| `AIRateLimiterTest.php` (Feature) | 25 | 47 |
+| **Total** | **59** | **87** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Limit Checking (RL-001) | 5 | checkLimit() method |
+| Remaining Count (RL-002) | 5 | getRemaining() method |
+| Reset Time (RL-003) | 3 | getResetTime() method |
+| Sliding Window (RL-004) | 4 | Window expiry behavior |
+| Increment Operation (RL-005) | 3 | increment() method |
+| Type Configuration (RL-006) | 4 | User vs IP limits |
+| Authenticated User Limiting (MW-001) | 4 | User-based rate limiting |
+| Anonymous IP Limiting (MW-002) | 4 | IP-based rate limiting |
+| 429 Response Format (MW-003) | 4 | Error response handling |
+| Rate Limit Headers (MW-004) | 4 | X-RateLimit-* headers |
+| Key Isolation (MW-005) | 3 | User/IP separation |
+| Edge Cases (MW-006) | 3 | IPv6, OPTIONS handling |
+| Security (SC-001) | 8 | SQL injection, spoofing |
+
+### Production Status
+- **Deployed:** 2026-03-03 (GitHub Actions #22619762040)
+- **Commit:** 8ca0398
+- **Health Check:** Passing (`https://seoindicator.com/api/health`)
+- **Tests:** 59/59 passing (87 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-21-5 (AI Suggestion API Endpoint)
+
+### Related Tasks
+- TASK-21-1: AI Service Structure and Interfaces
+- TASK-21-5: AI Suggestion API Endpoint
+- TASK-21-11: Frontend Integration with Tools
+
+---
 ## SEO Analyses Table (TASK-18-1)
 
 ### Service Description
