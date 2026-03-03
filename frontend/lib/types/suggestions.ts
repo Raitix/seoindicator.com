@@ -46,6 +46,7 @@ export interface GenerateSuggestionsPayload {
 export interface GenerateSuggestionsResponse {
   jobId: string;
   status: 'queued' | 'processing' | 'completed' | 'failed';
+  count?: number;
 }
 
 export interface TrackSuggestionResponse {
