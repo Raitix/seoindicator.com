@@ -341,7 +341,7 @@ class StaticFallbackProvider implements AIProviderInterface
 
         if ($length < 120) {
             // Gentle penalty for short descriptions
-            $penalty = min((120 - $length) / 4, 25);
+            $penalty = min((120 - $length) / 3, 25);
             $score -= (int) $penalty;
             $issues[] = "Meta description is too short ({$length} chars). Aim for 150-160 characters.";
 
@@ -357,15 +357,18 @@ class StaticFallbackProvider implements AIProviderInterface
         }
 
         // Check for title duplication
-        if ($title && trim($title) !== '' && $trimmedDesc === trim($title)) {
-            $score -= 30;
-            $issues[] = 'Meta description is identical to title. Create unique description.';
+        if ($title && trim($title) !== '') {
+            $trimmedTitle = trim($title);
+            if (strtolower($trimmedDesc) === strtolower($trimmedTitle)) {
+                $score -= 30;
+                $issues[] = 'Meta description is identical to title. Create unique description.';
 
-            $suggestions[] = [
-                'type' => 'rewrite',
-                'text' => $this->generateDescriptionSuggestion($keyword ?? 'products'),
-                'reason' => 'Unique description that expands on the title',
-            ];
+                $suggestions[] = [
+                    'type' => 'rewrite',
+                    'text' => $this->generateDescriptionSuggestion($keyword ?? 'products'),
+                    'reason' => 'Unique description that expands on the title',
+                ];
+            }
         }
 
         // Keyword check
@@ -400,15 +403,17 @@ class StaticFallbackProvider implements AIProviderInterface
             $issues[] = 'No clear call-to-action found. Add a CTA to improve click-through rate.';
         }
 
-        // Check for multiple CTAs (spammy)
+        // Check for multiple CTAs (spammy) - count exact CTA phrases
+        $ctaPhrases = ['buy now', 'shop now', 'order today', 'get it now', 'call now', 'order here', 'shop today'];
         $ctaCount = 0;
-        foreach (['buy now', 'shop now', 'order today', 'get it now', 'call now'] as $cta) {
-            if (stripos($trimmedDesc, $cta) !== false) {
+        $lowerDesc = strtolower($trimmedDesc);
+        foreach ($ctaPhrases as $cta) {
+            if (strpos($lowerDesc, $cta) !== false) {
                 $ctaCount++;
             }
         }
-        if ($ctaCount > 2) {
-            $score -= 15;
+        if ($ctaCount > 1) {
+            $score -= 20;
             $issues[] = 'Too many call-to-action phrases. Keep it natural.';
         }
 
@@ -419,7 +424,7 @@ class StaticFallbackProvider implements AIProviderInterface
         }
 
         return [
-            'score' => max(0, $score),
+            'score' => max(0, min(100, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $this->getMetaDescriptionBestPractices(),
@@ -677,7 +682,33 @@ class StaticFallbackProvider implements AIProviderInterface
             ];
         }
 
-        // Try to parse XML
+        // For very large sitemaps, use string-based checks instead of XML parsing
+        $contentLength = mb_strlen($sitemapContent);
+        if ($contentLength > 500000) { // > 500KB
+            // Quick string-based validation for large sitemaps
+            $hasUrlset = stripos($sitemapContent, '<urlset') !== false;
+            $hasSitemapIndex = stripos($sitemapContent, '<sitemapindex') !== false;
+            $hasLoc = stripos($sitemapContent, '<loc>') !== false;
+
+            if (!$hasUrlset && !$hasSitemapIndex) {
+                $score -= 30;
+                $issues[] = 'Sitemap should have urlset or sitemapindex root element.';
+            }
+
+            if ($urlCount === 0 && $hasUrlset) {
+                $score = 60;
+                $issues[] = 'Sitemap appears to be empty. Add URLs to your sitemap.';
+            }
+
+            return [
+                'score' => min(100, max(0, $score)),
+                'issues' => $issues,
+                'suggestions' => $suggestions,
+                'best_practices' => $this->getSitemapBestPractices(),
+            ];
+        }
+
+        // Try to parse XML for smaller sitemaps
         $xml = @simplexml_load_string($sitemapContent);
         if ($xml === false) {
             $score = 45;
@@ -842,6 +873,7 @@ class StaticFallbackProvider implements AIProviderInterface
         // Count H1s
         $h1Count = 0;
         $h1Text = '';
+        $h1Empty = false;
         $levels = [];
         $emptyHeadings = [];
 
@@ -855,6 +887,9 @@ class StaticFallbackProvider implements AIProviderInterface
                 $h1Count++;
                 if ($h1Text === '') {
                     $h1Text = $text;
+                    if ($text === '') {
+                        $h1Empty = true;
+                    }
                 }
             }
 
@@ -865,7 +900,7 @@ class StaticFallbackProvider implements AIProviderInterface
 
         // Check for missing H1
         if ($h1Count === 0) {
-            $score -= 30;
+            $score -= 35;
             $issues[] = 'No H1 heading found. Every page should have exactly one H1.';
 
             $suggestions[] = [
@@ -875,13 +910,19 @@ class StaticFallbackProvider implements AIProviderInterface
             ];
         }
 
+        // Check for empty H1 (only H1 with empty text)
+        if ($h1Empty) {
+            $score -= 35;
+            $issues[] = 'H1 heading is empty. Add descriptive content to your H1.';
+        }
+
         // Check for multiple H1s
         if ($h1Count > 1) {
-            $score -= 20;
+            $score -= 25;
             $issues[] = "Multiple H1 headings found ({$h1Count}). Use only one H1 per page.";
         }
 
-        // Check for empty headings
+        // Check for empty headings (non-H1)
         if (!empty($emptyHeadings)) {
             $score -= 10;
             $issues[] = 'Empty headings detected: ' . implode(', ', array_unique($emptyHeadings));
@@ -923,21 +964,6 @@ class StaticFallbackProvider implements AIProviderInterface
                 // Keyword in H1 is good - boost score slightly
                 $score = min($score + 5, 100);
             }
-        }
-
-        // Valid hierarchy check - good structure gets bonus
-        if ($h1Count === 1 && empty($emptyHeadings)) {
-            // Check if hierarchy is well-structured
-            $hasGoodStructure = true;
-            $prevLevel = 0;
-            foreach ($levels as $level) {
-                if ($prevLevel > 0 && $level > $prevLevel + 1) {
-                    $hasGoodStructure = false;
-                    break;
-                }
-                $prevLevel = $level;
-            }
-            // Valid structure gets a slight bonus already reflected in base score
         }
 
         return [
@@ -993,6 +1019,11 @@ class StaticFallbackProvider implements AIProviderInterface
         $missingAlt = 0;
         $emptyAlt = 0;
         $keywordInAlt = 0;
+        $genericAlt = 0;
+        $tooLongAlt = 0;
+        $keywordStuffing = 0;
+
+        $genericAltTexts = ['image', 'img', 'photo', 'picture', 'image1', 'photo1', 'picture1', 'graphic', 'icon', 'logo', 'banner', 'spacer', 'pixel'];
 
         foreach ($images as $image) {
             $alt = $image['alt'] ?? null;
@@ -1002,8 +1033,37 @@ class StaticFallbackProvider implements AIProviderInterface
                 $missingAlt++;
             } elseif (trim($alt) === '') {
                 $emptyAlt++;
-            } elseif ($keyword && stripos($alt, $keyword) !== false) {
-                $keywordInAlt++;
+            } else {
+                $trimmedAlt = trim($alt);
+
+                // Check for generic alt text
+                $lowerAlt = strtolower($trimmedAlt);
+                foreach ($genericAltTexts as $generic) {
+                    if ($lowerAlt === $generic || preg_match('/^' . preg_quote($generic, '/') . '\d*$/i', $trimmedAlt)) {
+                        $genericAlt++;
+                        break;
+                    }
+                }
+
+                // Check for too long alt text (> 125 chars)
+                if (mb_strlen($trimmedAlt) > 125) {
+                    $tooLongAlt++;
+                }
+
+                // Check for keyword stuffing (same word repeated 3+ times)
+                $words = preg_split('/\s+/', strtolower($trimmedAlt));
+                $wordCounts = array_count_values(array_filter($words, fn($w) => mb_strlen($w) > 2));
+                foreach ($wordCounts as $word => $count) {
+                    if ($count >= 3) {
+                        $keywordStuffing++;
+                        break;
+                    }
+                }
+
+                // Check for keyword presence
+                if ($keyword && stripos($trimmedAlt, $keyword) !== false) {
+                    $keywordInAlt++;
+                }
             }
         }
 
@@ -1011,7 +1071,7 @@ class StaticFallbackProvider implements AIProviderInterface
         $problematicImages = $missingAlt + $emptyAlt;
 
         if ($missingAlt > 0) {
-            $penalty = ($missingAlt / $totalImages) * 40;
+            $penalty = ($missingAlt / $totalImages) * 45;
             $score -= (int) $penalty;
             $issues[] = "{$missingAlt} image(s) missing alt attribute. Add descriptive alt text.";
 
@@ -1023,13 +1083,40 @@ class StaticFallbackProvider implements AIProviderInterface
         }
 
         if ($emptyAlt > 0) {
-            $penalty = ($emptyAlt / $totalImages) * 20;
+            $penalty = ($emptyAlt / $totalImages) * 25;
             $score -= (int) $penalty;
             $issues[] = "{$emptyAlt} image(s) have empty alt text.";
         }
 
+        if ($genericAlt > 0) {
+            $score -= min(20, $genericAlt * 5);
+            $issues[] = "{$genericAlt} image(s) have generic alt text. Use descriptive text.";
+
+            $suggestions[] = [
+                'type' => 'improve',
+                'text' => 'Describe the image content specifically, e.g., "Red widget product photo"',
+                'reason' => 'Descriptive alt text improves accessibility and SEO',
+            ];
+        }
+
+        if ($tooLongAlt > 0) {
+            $score -= min(15, $tooLongAlt * 5);
+            $issues[] = "{$tooLongAlt} image(s) have alt text longer than 125 characters. Keep it concise.";
+        }
+
+        if ($keywordStuffing > 0) {
+            $score -= min(20, $keywordStuffing * 5);
+            $issues[] = "{$keywordStuffing} image(s) have repetitive/keyword-stuffed alt text. Use natural language.";
+        }
+
         if ($keyword && $keywordInAlt === 0 && $totalImages > 0) {
             $issues[] = "Target keyword '{$keyword}' not found in any image alt text.";
+        }
+
+        // Boost score for keyword in alt
+        if ($keywordInAlt > 0) {
+            $boost = min(5, $keywordInAlt * 2);
+            $score = min(100, $score + $boost);
         }
 
         return [
@@ -1066,7 +1153,8 @@ class StaticFallbackProvider implements AIProviderInterface
      */
     private function analyzeFilenames(array $context): array
     {
-        $filenames = $context['filenames'] ?? [];
+        // Support both 'files' and 'filenames' keys for compatibility
+        $filenames = $context['filenames'] ?? $context['files'] ?? [];
         $score = 100;
         $issues = [];
         $suggestions = [];
@@ -1086,6 +1174,10 @@ class StaticFallbackProvider implements AIProviderInterface
             'special_chars' => 0,
             'generic' => 0,
             'uppercase' => 0,
+            'underscores' => 0,
+            'too_long' => 0,
+            'hash_like' => 0,
+            'missing_extension' => 0,
         ];
 
         $genericNames = ['image', 'img', 'file', 'document', 'photo', 'picture', 'untitled', 'dsc', 'img_', 'screenshot'];
@@ -1099,13 +1191,18 @@ class StaticFallbackProvider implements AIProviderInterface
                 $problems['spaces']++;
             }
 
-            // Check for special characters
+            // Check for underscores (not counting extension dots)
+            $nameWithoutExt = pathinfo($name, PATHINFO_FILENAME);
+            if (strpos($nameWithoutExt, '_') !== false) {
+                $problems['underscores']++;
+            }
+
+            // Check for special characters (excluding dots, hyphens, underscores in the name part)
             if (preg_match('/[^a-z0-9._-]/i', $name)) {
                 $problems['special_chars']++;
             }
 
             // Check for generic names
-            $nameWithoutExt = pathinfo($name, PATHINFO_FILENAME);
             foreach ($genericNames as $generic) {
                 if (stripos($nameWithoutExt, $generic) === 0) {
                     $problems['generic']++;
@@ -1117,6 +1214,21 @@ class StaticFallbackProvider implements AIProviderInterface
             if (preg_match('/[A-Z]/', $name)) {
                 $problems['uppercase']++;
             }
+
+            // Check for too long filename (> 100 chars)
+            if (mb_strlen($name) > 100) {
+                $problems['too_long']++;
+            }
+
+            // Check for hash-like filenames (long alphanumeric strings)
+            if (preg_match('/^[a-f0-9]{20,}\./i', $name)) {
+                $problems['hash_like']++;
+            }
+
+            // Check for missing extension
+            if (!pathinfo($name, PATHINFO_EXTENSION)) {
+                $problems['missing_extension']++;
+            }
         }
 
         $totalFiles = count($filenames);
@@ -1124,15 +1236,26 @@ class StaticFallbackProvider implements AIProviderInterface
         if ($problems['spaces'] > 0) {
             $score -= min(20, $problems['spaces'] * 5);
             $issues[] = "{$problems['spaces']} filename(s) contain spaces. Use hyphens instead.";
+
+            $suggestions[] = [
+                'type' => 'improve',
+                'text' => str_replace(' ', '-', $nameWithoutExt ?? 'file-name') . '.jpg',
+                'reason' => 'Use hyphens instead of spaces for better URL compatibility',
+            ];
+        }
+
+        if ($problems['underscores'] > 0) {
+            $score -= min(5, $problems['underscores'] * 2);
+            $issues[] = "{$problems['underscores']} filename(s) use underscores. Hyphens are preferred for SEO.";
         }
 
         if ($problems['special_chars'] > 0) {
-            $score -= min(15, $problems['special_chars'] * 3);
+            $score -= min(20, $problems['special_chars'] * 5);
             $issues[] = "{$problems['special_chars']} filename(s) contain special characters.";
         }
 
         if ($problems['generic'] > 0) {
-            $score -= min(15, $problems['generic'] * 3);
+            $score -= min(20, $problems['generic'] * 5);
             $issues[] = "{$problems['generic']} filename(s) are generic. Use descriptive names.";
 
             $suggestions[] = [
@@ -1143,8 +1266,23 @@ class StaticFallbackProvider implements AIProviderInterface
         }
 
         if ($problems['uppercase'] > 0) {
-            $score -= min(5, $problems['uppercase'] * 2);
+            $score -= min(10, $problems['uppercase'] * 3);
             $issues[] = "{$problems['uppercase']} filename(s) use uppercase. Use lowercase.";
+        }
+
+        if ($problems['too_long'] > 0) {
+            $score -= min(15, $problems['too_long'] * 5);
+            $issues[] = "{$problems['too_long']} filename(s) are too long. Keep filenames concise.";
+        }
+
+        if ($problems['hash_like'] > 0) {
+            $score -= min(15, $problems['hash_like'] * 5);
+            $issues[] = "{$problems['hash_like']} filename(s) appear to be hash-generated. Use descriptive names.";
+        }
+
+        if ($problems['missing_extension'] > 0) {
+            $score -= min(10, $problems['missing_extension'] * 3);
+            $issues[] = "{$problems['missing_extension']} filename(s) missing file extension.";
         }
 
         return [
@@ -1359,12 +1497,12 @@ class StaticFallbackProvider implements AIProviderInterface
                 $externalLinks++;
 
                 // Check for nofollow on external links
-                if (strpos($rel, 'nofollow') === false) {
+                if (strpos(strtolower($rel), 'nofollow') === false) {
                     $missingNofollow++;
                 }
 
                 // Check for noopener on target="_blank"
-                if ($target === '_blank' && strpos($rel, 'noopener') === false) {
+                if ($target === '_blank' && strpos(strtolower($rel), 'noopener') === false) {
                     $missingNoopener++;
                 }
             }
@@ -1400,9 +1538,9 @@ class StaticFallbackProvider implements AIProviderInterface
             $issues[] = "Many external links ({$externalLinks}). Ensure they add value.";
         }
 
-        // Check for broken links
+        // Check for broken links - apply stronger penalties
         if ($brokenLinks > 0) {
-            $penalty = min(30, $brokenLinks * 10);
+            $penalty = min(40, $brokenLinks * 15);
             $score -= $penalty;
             $issues[] = "{$brokenLinks} broken link(s) found. Fix or remove them.";
 
@@ -1413,9 +1551,9 @@ class StaticFallbackProvider implements AIProviderInterface
             ];
         }
 
-        // Check for missing noopener
+        // Check for missing noopener - security issue
         if ($missingNoopener > 0) {
-            $score -= $missingNoopener * 5;
+            $score -= $missingNoopener * 10;
             $issues[] = "{$missingNoopener} external link(s) with target='_blank' missing noopener. Security risk.";
         }
 
