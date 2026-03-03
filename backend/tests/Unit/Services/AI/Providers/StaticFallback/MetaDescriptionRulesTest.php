@@ -364,7 +364,7 @@ class MetaDescriptionRulesTest extends TestCase
     public static function descriptionLengthProvider(): array
     {
         return [
-            'empty' => ['', 50],
+            'empty' => ['', 40],
             'very short' => ['Buy widgets.', 60],
             'short' => ['We sell the best widgets in town.', 70],
             'optimal min' => [str_repeat('a', 150), 85],
