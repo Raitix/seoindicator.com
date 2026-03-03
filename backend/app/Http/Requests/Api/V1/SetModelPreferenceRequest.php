@@ -2,12 +2,12 @@
 
 namespace App\Http\Requests\Api\V1;
 
-use App\Models\AIModel;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use App\Models\AIModel;
 
 /**
- * Form Request for setting user model preferences.
+ * Form request for setting user model preferences.
  *
  * TASK-26-19: User Model Preferences
  */
@@ -29,8 +29,15 @@ class SetModelPreferenceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'model_id' => ['required', 'integer', 'exists:ai_models,id'],
-            'is_default' => ['sometimes', 'boolean'],
+            'model_id' => [
+                'required',
+                'integer',
+                'exists:ai_models,id',
+            ],
+            'is_default' => [
+                'sometimes',
+                'boolean',
+            ],
         ];
     }
 
@@ -51,26 +58,35 @@ class SetModelPreferenceRequest extends FormRequest
 
     /**
      * Configure the validator instance.
-     *
-     * @param Validator $validator
-     * @return void
      */
     public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
-            // Check if model is active
             $modelId = $this->input('model_id');
-            
+
             if ($modelId) {
                 $model = AIModel::find($modelId);
-                
+
                 if ($model && !$model->is_active) {
                     $validator->errors()->add(
                         'model_id',
-                        'The selected model is not active and cannot be set as a preference.'
+                        'Cannot set an inactive model as preference.'
                     );
                 }
             }
         });
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Default is_default to false if not provided
+        if (!$this->has('is_default')) {
+            $this->merge([
+                'is_default' => false,
+            ]);
+        }
     }
 }

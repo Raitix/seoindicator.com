@@ -162,6 +162,12 @@ Route::prefix('v1')->group(function () {
     Route::get('models/{id}/pricing', [\App\Http\Controllers\Api\V1\ModelController::class, 'pricing'])
         ->where('id', '[0-9]+');
 
+    // Model Preferences (TASK-26-19) - Requires authentication
+    Route::middleware(['auth'])->group(function () {
+        Route::get('models/preferences', [\App\Http\Controllers\Api\V1\ModelController::class, 'preferences']);
+        Route::post('models/preferences', [\App\Http\Controllers\Api\V1\ModelController::class, 'setPreference']);
+    });
+
     // Metadata (TASK-7-18)
     Route::get('metadata', [\App\Http\Controllers\Api\V1\MetadataController::class, 'index']);
     Route::get('metadata/serp-features', [\App\Http\Controllers\Api\V1\MetadataController::class, 'serpFeatures']);
