@@ -136,6 +136,193 @@ CREATE TABLE credit_transactions (
 - TASK-26-14: PayPal Webhook Handler (uses addCredits)
 
 ---
+## Payment Methods Management API (TASK-26-11)
+
+### Service Description
+REST API endpoints for users to view and manage their saved payment methods (cards, bank accounts). Integrates with Stripe for secure payment method storage, with local references stored in the database. Part of the Billing, Credits & Model Selection feature (FEAT-026).
+
+### Component Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/PaymentController.php`
+- **Model:** `backend/app/Models/PaymentMethod.php`
+- **Service:** `backend/app/Services/Gateway/StripeGatewayService.php`
+- **Migration:** `backend/database/migrations/2026_03_03_100000_create_payment_methods_table.php`
+- **Tests:** `backend/tests/Unit/Models/PaymentMethodTest.php`, `backend/tests/Feature/Api/V1/PaymentControllerTest.php`
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/payments/methods` | List user's saved payment methods |
+| DELETE | `/api/v1/payments/methods/{id}` | Delete a payment method |
+
+### List Payment Methods
+`GET /api/v1/payments/methods`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "provider": "stripe",
+      "brand": "visa",
+      "last_four": "4242",
+      "is_default": true,
+      "created_at": "2026-03-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+### Delete Payment Method
+`DELETE /api/v1/payments/methods/{id}`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Payment method deleted successfully"
+}
+```
+
+**Error Responses:**
+| Status | Condition |
+|--------|-----------|
+| 401 | Unauthenticated request |
+| 404 | Payment method not found or not owned by user |
+| 422 | Cannot delete the only payment method if it's default |
+
+### PaymentMethod Model
+
+**Properties:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | bigint | Primary key |
+| `user_id` | bigint | Foreign key to users |
+| `stripe_customer_id` | string | Stripe customer ID (cus_...) |
+| `stripe_payment_method_id` | string | Stripe payment method ID (pm_...) |
+| `provider` | string | Payment provider (default: 'stripe') |
+| `brand` | string | Card brand (visa, mastercard, amex) |
+| `last_four` | string | Last 4 digits of card |
+| `exp_month` | int | Expiration month |
+| `exp_year` | int | Expiration year |
+| `is_default` | bool | Whether this is the default method |
+
+**Relationships:**
+| Relationship | Type | Description |
+|--------------|------|-------------|
+| `user()` | BelongsTo | User who owns this payment method |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `forUser($userId)` | Filter by user ID |
+| `default()` | Filter default payment methods |
+
+**Accessors:**
+| Accessor | Description |
+|----------|-------------|
+| `formatted_brand` | Capitalized brand name |
+| `expiry_date` | Formatted MM/YY string |
+
+### Database Schema
+
+**payment_methods table:**
+```sql
+CREATE TABLE payment_methods (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    stripe_customer_id VARCHAR(255) NOT NULL,
+    stripe_payment_method_id VARCHAR(255) NULL,
+    provider VARCHAR(50) DEFAULT 'stripe',
+    brand VARCHAR(50) NULL,
+    last_four VARCHAR(4) NULL,
+    exp_month INT NULL,
+    exp_year INT NULL,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY payment_methods_user_stripe_unique (user_id, stripe_payment_method_id),
+    INDEX payment_methods_stripe_customer_index (stripe_customer_id)
+);
+```
+
+### StripeGatewayService Integration
+
+The `StripeGatewayService` provides the following methods for payment method management:
+
+| Method | Description |
+|--------|-------------|
+| `getPaymentMethods(User $user)` | Fetch payment methods from Stripe customer |
+| `deletePaymentMethod(string $paymentMethodId)` | Detach payment method from Stripe |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| User Isolation | User can only access their own payment methods |
+| Ownership Verification | Delete requires user ownership check |
+| Route Constraint | `->where('id', '[0-9]+')` prevents SQL injection |
+| No Sensitive Data | Card numbers stored by Stripe, not locally |
+| 404 for Unauthorized | Returns 404 (not 403) to prevent enumeration |
+
+### Default Payment Method Logic
+
+| Scenario | Behavior |
+|----------|----------|
+| Deleting non-default method | Removed, default unchanged |
+| Deleting default (multiple methods) | Next available becomes default |
+| Deleting default (only method) | Rejected with 422 error |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `PaymentMethodTest.php` (Unit) | 43 | 80 |
+| `PaymentControllerTest.php` (Feature) | 29 | 86 |
+| **Total** | **72** | **166** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Model CRUD (PM-CR) | 8 | Create, read, update, delete operations |
+| Model Relationships (PM-REL) | 3 | User relationship |
+| Model Casts (PM-CA) | 5 | Attribute casting |
+| Model Scopes (PM-SC) | 4 | Query scopes |
+| Model Accessors (PM-AC) | 5 | Formatted attributes |
+| Model Indexes (PM-IX) | 4 | Database indexes |
+| Model Edge Cases (PM-EC) | 7 | Boundary conditions |
+| Model Security (PM-SEC) | 5 | Security tests |
+| Model Helpers (PM-HL) | 2 | Helper methods |
+| List Endpoint (PM-LIST) | 8 | GET /methods tests |
+| Delete Endpoint (PM-DEL) | 9 | DELETE /methods/{id} tests |
+| Security Tests (PM-SEC) | 4 | Authorization tests |
+| Error Handling (PM-ERR) | 2 | Error responses |
+| Performance (PM-PERF) | 2 | Response time |
+| Rate Limiting (PM-RATE) | 2 | Rate limit tests |
+| HTTP Methods (PM-HTTP) | 2 | Method restrictions |
+
+### Production Status
+- **Deployed:** 2026-03-03 (GitHub Actions #22616345857)
+- **Build Time:** 1m24s
+- **Deploy Time:** 28s
+- **Health Check:** Passing
+- **Tests:** 72/72 passing (166 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-26-1 (credits table - migration dependency)
+- TASK-26-8 (StripeGatewayService - service dependency)
+
+### Related Tasks
+- TASK-26-8: StripeGatewayService (provides Stripe integration)
+- TASK-26-10: Stripe Webhook Handler (uses payment methods)
+- TASK-26-14: PayPal Webhook Handler (future payment method support)
+
+---
 ## Models List API Endpoint (TASK-26-17)
 
 ### Endpoint Description
