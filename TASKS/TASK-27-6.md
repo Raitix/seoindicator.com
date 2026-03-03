@@ -1,10 +1,10 @@
 # TASK-27-6: Request Tracking Middleware
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
-`Medium`
+`High`
 
 ## RISK
 `Low`
@@ -42,6 +42,27 @@ Option 1: Redis with TTL-based keys
 Option 2: Database table with hourly aggregation
 
 ## Comments
+
+### 2026-03-03 - ProjectManager
+**Priority Assessment:**
+- **Upgraded to HIGH** - Foundation task for SPEC-027 usage analytics pipeline
+- Creates middleware that captures request data for downstream aggregation
+- Enables TASK-27-7 (Usage Aggregation Service) which enables TASK-27-8 (Usage API)
+
+**Dependency Analysis:**
+- No dependencies - standalone infrastructure task
+- Blocks: TASK-27-7, TASK-27-8 (both depend on request tracking data)
+
+**Risk Assessment:**
+- Risk: LOW (confirmed) - Standard Laravel middleware implementation
+- No external APIs or security-critical logic
+- Performance requirement (< 5ms overhead) is standard for middleware
+
+**Execution Order:**
+- This task should complete BEFORE TASK-27-7 and TASK-27-8
+- Can proceed immediately to PreTester - no blockers
+
+**TDD Ready:** PreTester can design tests with mocked request/response objects
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
