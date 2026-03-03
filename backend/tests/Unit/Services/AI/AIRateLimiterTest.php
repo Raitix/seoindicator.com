@@ -361,21 +361,28 @@ class AIRateLimiterTest extends TestCase
     #[Test]
     public function rl_005_03_increment_updates_remaining(): void
     {
+        // Use closure-based mock to simulate state change
+        $storage = [];
+        
         Cache::shouldReceive('get')
             ->with('ai_rate_limit:user:1', [])
-            ->andReturn([]);
-
+            ->andReturnUsing(function () use (&$storage) {
+                return $storage['ai_rate_limit:user:1'] ?? [];
+            });
+        
         Cache::shouldReceive('put')
-            ->once();
+            ->andReturnUsing(function ($key, $value, $ttl) use (&$storage) {
+                $storage[$key] = $value;
+            });
 
+        // Initial remaining should be 20
+        $remaining = $this->rateLimiter->getRemaining('user:1', 'user');
+        $this->assertEquals(20, $remaining);
+
+        // Increment once
         $this->rateLimiter->increment('user:1', 'user');
 
         // After increment, remaining should be 19
-        $timestamps = $this->generateTimestamps(1);
-        Cache::shouldReceive('get')
-            ->with('ai_rate_limit:user:1', [])
-            ->andReturn($timestamps);
-
         $remaining = $this->rateLimiter->getRemaining('user:1', 'user');
         $this->assertEquals(19, $remaining);
     }
