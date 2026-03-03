@@ -1,7 +1,7 @@
 # TASK-28-4: IndicatorIcon Wrapper Component
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -48,6 +48,44 @@ interface IndicatorIconProps {
 
 ## Comments
 _Agent log_
+
+### [2026-03-03 12:50 UTC+2] PreTester
+**Test Design Complete**
+
+**Tests Created:**
+- `frontend/components/indicators/__tests__/IndicatorIcon.test.tsx` - 100 test scenarios
+- `TESTS/TEST-28-4.md` - Test documentation
+
+**Test Coverage:**
+- TypeScript Type Definitions (1 test)
+- Component Rendering (5 tests)
+- Lucide Icon Rendering (13 tests) - Activity, AlertCircle, CheckCircle, ChevronDown, HelpCircle, Info, Search, Star, TrendingUp, Warning, XCircle, Zap
+- Size Variants (8 tests) - sm(16px), md(24px), lg(32px) with stroke widths
+- Color Variants (11 tests) - default, primary, success, warning, error + dark modes
+- Custom SVG Rendering (5 tests)
+- ViewBox and Styling (7 tests) - 24x24 viewBox, stroke width, rounded corners
+- Accessibility (6 tests) - aria-hidden, aria-label, role, focusable
+- Edge Cases (8 tests) - null handling, invalid inputs, rapid re-renders
+- Module Exports (3 tests) - barrel export verification
+- Integration (5 tests) - matrix combinations, parent inheritance, dark mode
+- Snapshots (4 tests) - visual regression baseline
+
+**Key Test Patterns:**
+- Mocked Lucide icons for predictable SVG testing
+- Matrix testing for all size/color combinations
+- Dark mode variant testing
+- Accessibility-first approach with ARIA attributes
+
+**Implementation Notes for Developer:**
+1. Use `class-variance-authority` (cva) for size and color variants
+2. Apply `rounded-sm` for 1px corner radius
+3. Default stroke width: 2px (stroke-2)
+4. Size mappings: sm=size-4(16px), md=size-6(24px), lg=size-8(32px)
+5. Color mappings include dark mode variants
+6. Use `text-current` for default color inheritance
+7. Create barrel export in `indicators/index.ts`
+
+**Status Changed:** `To Write Tests` → `To Develop`
 
 ### [2026-03-03 12:34 UTC+2] ProjectManager
 **Prioritization Complete**
