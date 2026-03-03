@@ -176,8 +176,9 @@ class StaticFallbackProvider implements AIProviderInterface
         $length = mb_strlen($trimmedTitle);
 
         if ($length < 30) {
-            $penalty = (30 - $length) * 2;
-            $score -= min($penalty, 30);
+            // Short title penalty - but not too harsh for very short titles
+            $penalty = min((30 - $length) * 1.5, 25);
+            $score -= (int) $penalty;
             $issues[] = "Title is too short ({$length} chars). Aim for 50-60 characters for optimal SEO.";
 
             $suggestions[] = [
@@ -186,8 +187,9 @@ class StaticFallbackProvider implements AIProviderInterface
                 'reason' => 'Extended to optimal length while maintaining relevance',
             ];
         } elseif ($length > 60) {
-            $penalty = min(($length - 60) * 1, 25);
-            $score -= $penalty;
+            // Long title penalty
+            $penalty = min(($length - 60) * 1.5, 35);
+            $score -= (int) $penalty;
             $issues[] = "Title is too long ({$length} chars). Keep under 60 characters to prevent truncation.";
 
             $suggestions[] = [
@@ -217,8 +219,16 @@ class StaticFallbackProvider implements AIProviderInterface
             $issues[] = 'Title is in all caps. Use title case for better readability.';
         }
 
-        // Check for duplicate words (words > 3 chars that appear more than once)
+        // Check for stop words only
         $words = preg_split('/\s+/', strtolower($trimmedTitle));
+        $stopWords = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'a', 'an'];
+        $nonStopWords = array_filter($words, fn($w) => !in_array($w, $stopWords) && mb_strlen($w) > 0);
+        if (count($nonStopWords) === 0 && count($words) > 0) {
+            $score = min($score, 55);
+            $issues[] = 'Title contains only stop words. Add meaningful keywords.';
+        }
+
+        // Check for duplicate words (words > 3 chars that appear more than once)
         $wordCounts = array_count_values(array_filter($words, fn($w) => mb_strlen($w) > 3));
         foreach ($wordCounts as $word => $count) {
             if ($count > 1) {
@@ -226,14 +236,6 @@ class StaticFallbackProvider implements AIProviderInterface
                 $issues[] = "Duplicate word '{$word}' in title.";
                 break;
             }
-        }
-
-        // Check for stop words only
-        $stopWords = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'a', 'an'];
-        $nonStopWords = array_diff($words, $stopWords);
-        if (count($nonStopWords) < 2) {
-            $score = min($score, 60);
-            $issues[] = 'Title contains mostly stop words. Add meaningful keywords.';
         }
 
         // Check for brand-only title (common patterns)
@@ -338,8 +340,9 @@ class StaticFallbackProvider implements AIProviderInterface
         $length = mb_strlen($trimmedDesc);
 
         if ($length < 120) {
-            $penalty = (120 - $length);
-            $score -= min($penalty, 50);
+            // Gentle penalty for short descriptions
+            $penalty = min((120 - $length) / 4, 25);
+            $score -= (int) $penalty;
             $issues[] = "Meta description is too short ({$length} chars). Aim for 150-160 characters.";
 
             $suggestions[] = [
@@ -349,7 +352,7 @@ class StaticFallbackProvider implements AIProviderInterface
             ];
         } elseif ($length > 160) {
             $penalty = min(($length - 160) / 2, 20);
-            $score -= $penalty;
+            $score -= (int) $penalty;
             $issues[] = "Meta description is too long ({$length} chars). Keep under 160 characters.";
         }
 
@@ -389,7 +392,10 @@ class StaticFallbackProvider implements AIProviderInterface
             }
         }
 
-        if (!$hasCta) {
+        if ($hasCta) {
+            // Boost score for having CTA
+            $score += 5;
+        } else {
             $score -= 10;
             $issues[] = 'No clear call-to-action found. Add a CTA to improve click-through rate.';
         }
@@ -545,6 +551,14 @@ class StaticFallbackProvider implements AIProviderInterface
                 'text' => "User-agent: *\nAllow: /",
                 'reason' => 'Allow crawlers to index your site',
             ];
+
+            // Return early for blocking all - no point checking other issues
+            return [
+                'score' => $score,
+                'issues' => $issues,
+                'suggestions' => $suggestions,
+                'best_practices' => $this->getRobotsBestPractices(),
+            ];
         }
 
         // Check for missing User-agent
@@ -644,24 +658,52 @@ class StaticFallbackProvider implements AIProviderInterface
      */
     private function analyzeSitemap(array $context): array
     {
-        $sitemapUrl = $context['sitemap_url'] ?? '';
-        $pageCount = $context['page_count'] ?? 0;
+        $sitemapContent = $context['sitemap_content'] ?? '';
+        $urlCount = $context['url_count'] ?? 0;
         $score = 100;
         $issues = [];
         $suggestions = [];
 
-        // Check for sitemap URL
-        if (empty($sitemapUrl)) {
-            $score -= 20;
-            $issues[] = 'No sitemap URL provided. Ensure sitemap.xml exists.';
-        } elseif (!filter_var($sitemapUrl, FILTER_VALIDATE_URL)) {
-            $score -= 15;
-            $issues[] = 'Invalid sitemap URL format.';
+        // Handle empty sitemap content
+        if (empty($sitemapContent) || trim($sitemapContent) === '') {
+            $score = 50;
+            $issues[] = 'Sitemap content is empty. Add URLs to your sitemap.';
+
+            return [
+                'score' => $score,
+                'issues' => $issues,
+                'suggestions' => $suggestions,
+                'best_practices' => $this->getSitemapBestPractices(),
+            ];
         }
 
-        // Check for page count
-        if ($pageCount === 0) {
-            $score -= 25;
+        // Try to parse XML
+        $xml = @simplexml_load_string($sitemapContent);
+        if ($xml === false) {
+            $score = 45;
+            $issues[] = 'Invalid XML structure in sitemap. Fix XML formatting.';
+
+            return [
+                'score' => $score,
+                'issues' => $issues,
+                'suggestions' => $suggestions,
+                'best_practices' => $this->getSitemapBestPractices(),
+            ];
+        }
+
+        // Check for urlset or sitemapindex root
+        $rootName = $xml->getName();
+        $isSitemapIndex = ($rootName === 'sitemapindex');
+        $isUrlset = ($rootName === 'urlset');
+
+        if (!$isUrlset && !$isSitemapIndex) {
+            $score -= 30;
+            $issues[] = 'Sitemap should have urlset or sitemapindex root element.';
+        }
+
+        // Check URL count
+        if ($urlCount === 0 && !$isSitemapIndex) {
+            $score = 60;
             $issues[] = 'Sitemap appears to be empty. Add URLs to your sitemap.';
 
             $suggestions[] = [
@@ -669,17 +711,76 @@ class StaticFallbackProvider implements AIProviderInterface
                 'text' => 'Add all indexable page URLs to your sitemap',
                 'reason' => 'Sitemaps help search engines discover your content',
             ];
-        } elseif ($pageCount < 10) {
-            $issues[] = "Sitemap contains only {$pageCount} URLs. Consider adding more pages if available.";
+        } elseif ($urlCount > 0 && $urlCount < 10 && !$isSitemapIndex) {
+            $issues[] = "Sitemap contains only {$urlCount} URLs. Consider adding more pages if available.";
         }
 
-        // General sitemap advice
-        if (empty($issues)) {
-            $score = 90;
+        // Check for required loc fields in URLs
+        $missingLoc = false;
+        if ($isUrlset) {
+            foreach ($xml->url as $url) {
+                if (!isset($url->loc) || trim((string)$url->loc) === '') {
+                    $missingLoc = true;
+                    break;
+                }
+            }
+        }
+
+        if ($missingLoc) {
+            $score -= 25;
+            $issues[] = 'URL entry missing required loc element.';
+        }
+
+        // Check for lastmod, changefreq, priority
+        $hasLastmod = false;
+        $hasChangefreq = false;
+        $hasPriority = false;
+
+        if ($isUrlset) {
+            foreach ($xml->url as $url) {
+                if (isset($url->lastmod)) {
+                    $hasLastmod = true;
+                }
+                if (isset($url->changefreq)) {
+                    $hasChangefreq = true;
+                }
+                if (isset($url->priority)) {
+                    $hasPriority = true;
+                }
+                if ($hasLastmod && $hasChangefreq && $hasPriority) {
+                    break;
+                }
+            }
+        } elseif ($isSitemapIndex) {
+            foreach ($xml->sitemap as $sitemap) {
+                if (isset($sitemap->lastmod)) {
+                    $hasLastmod = true;
+                    break;
+                }
+            }
+        }
+
+        // Boost score for additional metadata
+        if ($hasLastmod) {
+            $score += 5;
+        }
+        if ($hasChangefreq) {
+            // changefreq is recognized but not boosted (deprecated in modern SEO)
+        }
+        if ($hasPriority) {
+            // priority is recognized but not boosted (often ignored by search engines)
+        }
+
+        // Valid sitemap with URLs gets good score
+        if ($isUrlset && $urlCount > 0 && !$missingLoc) {
+            $score = max($score, 80);
+        }
+        if ($isSitemapIndex) {
+            $score = max($score, 80);
         }
 
         return [
-            'score' => max(0, $score),
+            'score' => min(100, max(0, $score)),
             'issues' => $issues,
             'suggestions' => $suggestions,
             'best_practices' => $this->getSitemapBestPractices(),
@@ -1121,8 +1222,8 @@ class StaticFallbackProvider implements AIProviderInterface
 
             $suggestions[] = [
                 'type' => 'rewrite',
-                'text' => 'Consider URL rewriting to hide query parameters',
-                'reason' => 'Clean URLs are easier for users and search engines to understand',
+                'text' => 'Use clean URL structure instead of query parameters',
+                'reason' => 'Clean URLs improve crawlability and user experience with query strings',
             ];
         }
 
@@ -1131,6 +1232,12 @@ class StaticFallbackProvider implements AIProviderInterface
         if (preg_match('/\.(php|asp|aspx|jsp)\?/i', $url) || preg_match('/\?id=/i', $url)) {
             $score -= 15;
             $issues[] = 'URL appears to be dynamic. Consider using static, SEO-friendly URLs.';
+
+            $suggestions[] = [
+                'type' => 'rewrite',
+                'text' => 'Implement clean URL rewriting for dynamic URLs',
+                'reason' => 'Static URLs are preferred by search engines and users',
+            ];
         }
 
         // Check for underscores
@@ -1363,8 +1470,17 @@ class StaticFallbackProvider implements AIProviderInterface
      */
     private function analyze404(array $context): array
     {
+        // Support both single URL and array of error URLs
         $errorUrls = $context['error_urls'] ?? [];
-        $referrers = $context['referrers'] ?? [];
+        $singleUrl = $context['url'] ?? null;
+        $referrer = $context['referrer'] ?? null;
+        $siteStructure = $context['site_structure'] ?? null;
+
+        // If single URL provided, convert to array format
+        if ($singleUrl && empty($errorUrls)) {
+            $errorUrls = [$singleUrl];
+        }
+
         $score = 100;
         $issues = [];
         $suggestions = [];
@@ -1384,22 +1500,45 @@ class StaticFallbackProvider implements AIProviderInterface
         $score -= min(50, $errorCount * 5);
         $issues[] = "{$errorCount} 404 error(s) detected. These pages are not found.";
 
-        // Common 404 causes
-        $causes = [
-            'URL typos in links',
-            'Deleted pages without redirects',
-            'Changed URL structure',
-            'Case sensitivity issues',
-        ];
-
+        // Provide redirect suggestions
         $suggestions[] = [
             'type' => 'improve',
             'text' => 'Implement 301 redirects for these URLs',
             'reason' => 'Redirects preserve link equity and improve user experience',
         ];
 
-        if (!empty($referrers)) {
-            $issues[] = 'Some 404s have incoming links. Fix these priority URLs.';
+        // Check for referrer context
+        if ($referrer) {
+            $issues[] = "404 page has referrer: {$referrer}. Check this linking page.";
+
+            if (str_contains($referrer, 'example.com')) {
+                $suggestions[] = [
+                    'type' => 'improve',
+                    'text' => 'Fix internal link on the referrer page',
+                    'reason' => 'Internal broken links should be fixed immediately',
+                ];
+            }
+        }
+
+        // Check for old/deleted page patterns
+        foreach ($errorUrls as $url) {
+            if (str_contains($url, 'old-') || str_contains($url, 'deleted-') || str_contains($url, 'archive')) {
+                $suggestions[] = [
+                    'type' => 'improve',
+                    'text' => 'Set up redirect to current version of this page',
+                    'reason' => 'Old/deleted pages should redirect to current content',
+                ];
+                break;
+            }
+        }
+
+        // If site structure provided, suggest similar pages
+        if ($siteStructure) {
+            $suggestions[] = [
+                'type' => 'improve',
+                'text' => 'Consider suggesting similar pages from: ' . $siteStructure,
+                'reason' => 'Help users find relevant content',
+            ];
         }
 
         return [
