@@ -309,9 +309,13 @@ describe('SuggestionCard', () => {
       // Keyword should be escaped, not executed
       const keywordText = screen.getByTestId('keyword-text');
       expect(keywordText).toBeInTheDocument();
-      expect(keywordText).not.toHaveTextContent('alert("xss")');
       // React escapes HTML by default, so the script tag should appear as text
+      // The escaped text is: &lt;script&gt;alert("xss")&lt;/script&gt;
+      // toHaveTextContent checks for substring match, so we check for the full escaped content
       expect(keywordText).toHaveTextContent('<script>alert("xss")</script>');
+      
+      // Verify no actual script element was injected into the DOM
+      expect(document.querySelector('script')).toBeNull();
     });
 
     it('should handle special characters in keyword', () => {

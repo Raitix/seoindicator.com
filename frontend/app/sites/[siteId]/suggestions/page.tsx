@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams, usePathname } from "next/navigation";
 import { ArrowDown, ArrowUp, Check, Loader2, Minus, RefreshCcw, X } from "lucide-react";
 
 import type { KeywordSuggestion, SuggestionSource } from "@/lib/types/suggestions";
@@ -116,12 +116,9 @@ const defaultFilterState: FilterState = {
 function SuggestionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const params = React.useMemo(() => {
-    // In Next.js 16, useParams might not be available, extract from pathname
-    const pathParts = window.location.pathname.split('/');
-    const siteIdIndex = pathParts.indexOf('sites') + 1;
-    return { siteId: pathParts[siteIdIndex] || '' };
-  }, []);
+  const params = useParams();
+  const pathname = usePathname();
+  const siteId = params.siteId as string;
 
   // Initialize filter state from URL params or defaults
   const [filterState, setFilterState] = React.useState<FilterState>(() => {
@@ -143,8 +140,6 @@ function SuggestionsPageContent() {
   const [selected, setSelected] = React.useState<Set<number>>(new Set());
   const [bulkBusy, setBulkBusy] = React.useState(false);
   const [actionLoading, setActionLoading] = React.useState<number | null>(null);
-
-  const siteId = params.siteId;
 
   // Build query params for API call
   const queryParams = React.useMemo(
@@ -197,9 +192,9 @@ function SuggestionsPageContent() {
     }
 
     const queryString = urlParams.toString();
-    const newUrl = queryString ? `?${queryString}` : window.location.pathname;
+    const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
     router.replace(newUrl, { scroll: false });
-  }, [filterState, router]);
+  }, [filterState, router, pathname]);
 
   // Reset page when filters change
   React.useEffect(() => {
