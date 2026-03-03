@@ -119,3 +119,20 @@ Last updated: 2026-03-01
 - CreditService smoke tests verify: balance operations, exceptions, audit trail, concurrency
 - Race condition handling tested via dedicated `--filter="concurrent"` test runs
 - All financial services require verification of: negative balance prevention, exception handling, audit logging
+
+---
+
+## 2026-03-03: TASK-16-7 Mobile-Friendly Checker
+- New tools require registration in BOTH validation rules AND tools list endpoint
+- Check `/api/v1/tools` endpoint to verify tool is listed before testing analyze endpoint
+- Validation `in:` rule must include the tool slug for API to accept requests
+- Unit tests passing ≠ tool accessible via API - always verify API registration
+- Controller match statement uses different slug than frontend expects - check both
+- When tool returns 422 "URL is required" with valid URL, check if validation fails on `tool` field first
+
+**Tool Registration Checklist:**
+1. Service class exists (`app/Services/Tools/ToolName.php`)
+2. Controller injects service and has match case
+3. **ProxyAnalyzeRequest.php** validation includes tool slug in `in:` rule
+4. **APIProxyController.php** `tools()` method lists the tool
+5. Frontend uses correct tool slug (match controller case)
