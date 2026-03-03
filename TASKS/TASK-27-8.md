@@ -1,10 +1,10 @@
 # TASK-27-8: Admin Usage API Endpoints
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
-`Medium`
+`High`
 
 ## RISK
 `Medium`
@@ -40,6 +40,51 @@ Create API endpoints for admin usage metrics. Provides overview, request breakdo
 - Consider adding export functionality (CSV) in future
 
 ## Comments
+
+### 2026-03-03 - ProjectManager
+**Prioritization Complete**
+
+- **Priority: High** (upgraded from Medium) - Admin Dashboard MVP foundation API
+- **Risk: Medium** (confirmed) - Standard Laravel API controller, delegates to services
+
+**Dependency Analysis:**
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| TASK-27-2 (AdminAuthorizationMiddleware) | Done ✅ | Middleware ready for admin route protection |
+| TASK-27-7 (UsageAggregationService) | To Write Tests | Service IMPLEMENTED (8187 bytes), tests need schema fixes |
+
+**Service Methods Available (UsageAggregationService):**
+- `getStats()` → returns `{requests, tokens, analyses}`
+- `getRequestsByEndpoint()` → returns endpoint counts
+- `getTokenTrends(int $days = 7)` → returns time series
+
+**TDD Approach:**
+- PreTester can design tests NOW using mocked UsageAggregationService interface
+- Tests should cover all 4 endpoints with date range parameters
+- Mock AdminAuthorizationMiddleware for non-admin denial tests
+
+**Endpoints to Create:**
+1. `GET /api/v1/admin/usage/overview` → UsageAggregationService::getStats()
+2. `GET /api/v1/admin/usage/requests` → UsageAggregationService::getRequestsByEndpoint()
+3. `GET /api/v1/admin/usage/tokens` → UsageAggregationService::getTokenStats()
+4. `GET /api/v1/admin/usage/trends` → UsageAggregationService::getTokenTrends()
+
+**Priority Upgrade Reasoning:**
+1. Admin Dashboard MVP - high visibility feature
+2. Dependencies essentially satisfied (service exists, middleware done)
+3. Foundation for frontend dashboard components (TASK-27-15, 27-16)
+4. Low-medium risk implementation (read-only endpoints, delegates to services)
+
+**Security Considerations:**
+- All endpoints protected by AdminAuthorizationMiddleware (TASK-27-2 Done)
+- Rate limiting: 60 requests/minute recommended
+- Query parameter validation: start_date, end_date, granularity
+
+**Handoff to PreTester:**
+- Design tests with mocked UsageAggregationService
+- Cover all 4 endpoints + query parameters
+- Test admin-only access enforcement
+- Test rate limiting behavior
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
