@@ -1,339 +1,318 @@
 # TEST-28-5: IndicatorCard Component Tests
 
 ## Overview
-Comprehensive test suite for the IndicatorCard component that displays individual SEO indicators with icon, title, value, status, and hover interactions.
+Tests for the IndicatorCard component - a card displaying individual SEO indicators with icon, title, value, status, and hover interactions. Part of the Indicator Catalog (SPEC-028).
 
-## Component Under Test
-- **File:** `frontend/components/indicators/IndicatorCard.tsx`
-- **Task:** TASK-28-5
-- **Spec:** SPEC-028
+## Test File Location
+`frontend/components/indicators/__tests__/IndicatorCard.test.tsx`
+
+## Test Count: 95 tests
 
 ---
 
 ## Test Categories
 
-### 1. Component Rendering (CR) - 12 tests
-
+### TypeScript Type Definitions (1 test)
 | ID | Test | Description |
 |----|------|-------------|
-| CR-001 | Renders with all required props | Card displays icon, title, value, description |
-| CR-002 | Renders with status good | Green color coding applied |
-| CR-003 | Renders with status warning | Yellow/amber color coding applied |
-| CR-004 | Renders with status critical | Red color coding applied |
-| CR-005 | Renders with status neutral | Default/gray color coding applied |
-| CR-006 | Renders with Lucide icon | Icon component renders correctly |
-| CR-007 | Renders with custom SVG icon | Custom icon renders correctly |
-| CR-008 | Renders with tooltip | Tooltip wrapper present when tooltip prop provided |
-| CR-009 | Renders without tooltip | No tooltip wrapper when tooltip prop omitted |
-| CR-010 | Renders with badge | Status badge displays status |
-| CR-011 | Renders with all 8 indicator types | Keyword Rankings, Visibility Score, Competitor Analysis, Technical Health, Backlink Profile, Content Opportunities, SERP Features, Page Speed |
-| CR-012 | Renders with numeric value | Numbers display correctly |
+| TD-001 | Component props interface exists | Verifies typed props import correctly |
 
-### 2. Loading State (LS) - 5 tests
-
+### Component Rendering (9 tests)
 | ID | Test | Description |
 |----|------|-------------|
-| LS-001 | Shows skeleton when isLoading=true | Skeleton replaces content |
-| LS-002 | Hides content when loading | Title, value, description hidden |
-| LS-003 | Shows content after loading | Content appears when isLoading=false |
-| LS-004 | Skeleton matches card dimensions | Skeleton has same layout as loaded card |
-| LS-005 | Loading state transitions smoothly | No layout shift during transition |
+| CR-001 | Renders without crashing | Basic mount test |
+| CR-002 | Renders all required props | id, icon, title, value, description, status, href |
+| CR-003 | Renders with data-testid attribute | Identifies card element |
+| CR-004 | Renders icon via IndicatorIcon | Icon component used |
+| CR-005 | Renders title text | Title displayed |
+| CR-006 | Renders value text | Value displayed |
+| CR-007 | Renders description text | Description displayed |
+| CR-008 | Applies custom className | Class merging works |
+| CR-009 | Renders as anchor/link | Clickable card |
 
-### 3. Interactions (IN) - 8 tests
-
+### Status Indicator (8 tests)
 | ID | Test | Description |
 |----|------|-------------|
-| IN-001 | Click navigates to href | Router.push called with correct URL |
-| IN-002 | Hover shows tooltip | Tooltip content visible on hover |
-| IN-003 | Hover applies scale animation | Card scales up on hover |
-| IN-004 | Hover applies glow effect | Subtle glow/shadow on hover |
-| IN-005 | Keyboard navigation works | Tab + Enter triggers navigation |
-| IN-006 | Click is keyboard accessible | Enter/Space triggers action |
-| IN-007 | Focus ring is visible | Clear focus indicator for accessibility |
-| IN-008 | Mouse leave removes hover effects | Scale/glow reset on mouse leave |
+| SI-001 | 'good' status renders green badge | Success color |
+| SI-002 | 'warning' status renders amber badge | Warning color |
+| SI-003 | 'critical' status renders red badge | Error color |
+| SI-004 | 'neutral' status renders gray badge | Neutral color |
+| SI-005 | Status badge shows status text | Badge content |
+| SI-006 | data-status attribute on card | DOM attribute |
+| SI-007 | Good status icon (CheckCircle) | Success indicator |
+| SI-008 | Critical status icon (AlertCircle) | Error indicator |
 
-### 4. Responsive Design (RD) - 6 tests
-
+### Hover Interactions (7 tests)
 | ID | Test | Description |
 |----|------|-------------|
-| RD-001 | Mobile layout (< 640px) | Card stacks vertically, full width |
-| RD-002 | Tablet layout (640-1024px) | 2-column grid possible |
-| RD-003 | Desktop layout (> 1024px) | 3-4 column grid, side-by-side |
-| RD-004 | Touch targets are 44x44px min | Mobile tap targets accessible |
-| RD-005 | Text remains readable at all sizes | No text overflow or truncation |
-| RD-006 | Icon scales appropriately | Icon size responsive to container |
+| HI-001 | Hover triggers scale animation | Scale on hover |
+| HI-002 | Hover triggers glow effect | Box-shadow change |
+| HI-003 | Hover shows tooltip | Tooltip component |
+| HI-004 | Tooltip displays tooltip text | Custom tooltip prop |
+| HI-005 | Tooltip displays description | Default tooltip |
+| HI-006 | Mouse leave removes hover state | Animation out |
+| HI-007 | Focus triggers hover styles | Keyboard accessible |
 
-### 5. Status Variants (SV) - 8 tests
-
+### Click Navigation (6 tests)
 | ID | Test | Description |
 |----|------|-------------|
-| SV-001 | good status color | Green badge, success styling |
-| SV-002 | warning status color | Yellow/amber badge, warning styling |
-| SV-003 | critical status color | Red badge, error styling |
-| SV-004 | neutral status color | Gray badge, default styling |
-| SV-005 | Status badge text content | Badge shows status label |
-| SV-006 | Status affects icon color | Icon color matches status |
-| SV-007 | Status affects border/border | Visual status indicator |
-| SV-008 | All statuses have same layout | Consistent card structure |
+| CN-001 | Click navigates to href | Link navigation |
+| CN-002 | href prop sets link target | Correct URL |
+| CN-003 | Keyboard Enter triggers navigation | Accessibility |
+| CN-004 | Link has proper rel attributes | Security (noopener) |
+| CN-005 | Internal link uses Next.js Link | Client-side navigation |
+| CN-006 | Card is focusable | tabindex attribute |
 
-### 6. Accessibility (AC) - 8 tests
-
+### Loading State (Skeleton) (8 tests)
 | ID | Test | Description |
 |----|------|-------------|
-| AC-001 | Has role="button" | Card is interactive element |
-| AC-002 | Has aria-label | Descriptive label for screen readers |
-| AC-003 | Has aria-describedby | Links to description element |
-| AC-004 | Tabindex="0" | Card is focusable |
-| AC-045 | Keyboard Enter triggers click | Enter key activates card |
-| AC-006 | Keyboard Space triggers click | Space key activates card |
-| AC-007 | Focus indicator visible | Clear focus ring |
-| AC-008 | Status badge has aria-label | Status readable by screen readers |
+| LS-001 | isLoading shows skeleton for icon | Icon placeholder |
+| LS-002 | isLoading shows skeleton for title | Title placeholder |
+| LS-003 | isLoading shows skeleton for value | Value placeholder |
+| LS-004 | isLoading shows skeleton for description | Description placeholder |
+| LS-005 | isLoading hides status badge | No badge during loading |
+| LS-006 | isLoading disables click | Non-interactive |
+| LS-007 | isLoading removes hover effects | No animations |
+| LS-008 | data-loading attribute | DOM attribute |
 
-### 7. TypeScript Types (TT) - 5 tests
-
+### Responsive Design (8 tests)
 | ID | Test | Description |
 |----|------|-------------|
-| TT-001 | id prop is required string | TypeScript enforces required prop |
-| TT-002 | icon prop accepts LucideIconName | String icon name accepted |
-| TT-003 | icon prop accepts ReactNode | Custom SVG accepted |
-| TT-004 | status prop is union type | Only valid statuses accepted |
-| TT-005 | Optional props handled | isLoading, tooltip optional |
+| RD-001 | Mobile layout (<640px) | Stacked layout |
+| RD-002 | Tablet layout (640-1024px) | Side-by-side |
+| RD-003 | Desktop layout (>1024px) | Full width |
+| RD-004 | Icon size responsive | Smaller on mobile |
+| RD-005 | Text size responsive | Readable on all sizes |
+| RD-006 | Touch target size (44px min) | Mobile accessibility |
+| RD-007 | Card min-height on mobile | Readable content |
+| RD-008 | Card max-width constraint | Prevents overflow |
 
-### 8. Edge Cases (EC) - 8 tests
-
+### Accessibility (9 tests)
 | ID | Test | Description |
 |----|------|-------------|
-| EC-001 | Long title truncates gracefully | Text overflow handled |
-| EC-002 | Long description truncates | Multi-line description limited |
-| EC-003 | Very long value handled | Large numbers/strings display |
-| EC-004 | Empty string value | Empty value renders without error |
-| EC-005 | null icon renders placeholder | Fallback when icon is null |
-| EC-006 | Special characters in title | Unicode, emoji handled |
-| EC-007 | Rapid hover on/off | No animation stutter |
-| EC-008 | Multiple cards in grid | Layout stable with many cards |
+| AC-001 | Role is link or article | Semantic element |
+| AC-002 | aria-label describes card | Accessible name |
+| AC-003 | Status has aria-label | Status accessible |
+| AC-004 | Keyboard focusable | Tab navigation |
+| AC-005 | Focus visible indicator | Focus ring |
+| AC-006 | High contrast mode support | Forced colors |
+| AC-007 | Screen reader reads status | Status announced |
+| AC-008 | Tooltip accessible | ARIA tooltip |
+| AC-009 | Reduced motion preference | Respects prefers-reduced-motion |
 
-### 9. Integration (IG) - 6 tests
-
+### Badge Component Integration (6 tests)
 | ID | Test | Description |
 |----|------|-------------|
-| IG-001 | Badge component renders | shadcn Badge displays status |
-| IG-002 | Tooltip component renders | shadcn Tooltip shows on hover |
-| IG-003 | Skeleton component renders | shadcn Skeleton in loading state |
-| IG-004 | IndicatorIcon renders | Icon wrapper displays icon |
-| IG-005 | Dark theme applied | Card styles in dark mode |
-| IG-006 | Works in IndicatorGrid | Card integrates with grid layout |
+| BC-001 | Uses Badge component from shadcn | shadcn integration |
+| BC-002 | Badge variant maps to status | Correct variant |
+| BC-003 | Badge has status icon | Icon in badge |
+| BC-004 | Badge is visually distinct | Color contrast |
+| BC-005 | Badge text is readable | Font size |
+| BC-006 | Badge dark mode styling | Dark theme |
 
-### 10. Snapshots (SN) - 4 tests
-
+### Tooltip Component Integration (5 tests)
 | ID | Test | Description |
 |----|------|-------------|
-| SN-001 | Default card snapshot | Baseline for visual regression |
-| SN-002 | Loading card snapshot | Skeleton state snapshot |
-| SN-003 | All status variants snapshot | good/warning/critical/neutral |
-| SN-004 | Dark mode snapshot | Dark theme applied |
+| TC-001 | Uses Tooltip component from shadcn | shadcn integration |
+| TC-002 | Tooltip content is description | Default content |
+| TC-003 | Tooltip content override | Custom tooltip prop |
+| TC-004 | Tooltip delay before show | Reasonable delay |
+| TC-005 | Tooltip dark mode styling | Dark theme |
+
+### Edge Cases (10 tests)
+| ID | Test | Description |
+|----|------|-------------|
+| EC-001 | Empty title | Graceful handling |
+| EC-002 | Empty value | Shows placeholder |
+| EC-003 | Empty description | Graceful handling |
+| EC-004 | Very long title | Truncation |
+| EC-005 | Very long value | Truncation |
+| EC-006 | Very long description | Truncation |
+| EC-007 | Null tooltip | No tooltip rendered |
+| EC-008 | Invalid href | Safe fallback |
+| EC-009 | Invalid status | Default to neutral |
+| EC-010 | Rapid hover enter/leave | No flickering |
+
+### Module Exports (3 tests)
+| ID | Test | Description |
+|----|------|-------------|
+| ME-001 | Exported from indicators/index | Barrel export |
+| ME-002 | Named export available | Direct import |
+| ME-003 | IndicatorCardProps type exported | TypeScript types |
+
+### Integration with Dependencies (8 tests)
+| ID | Test | Description |
+|----|------|-------------|
+| ID-001 | Uses IndicatorIcon for icon | TASK-28-4 integration |
+| ID-002 | Passes icon prop to IndicatorIcon | Correct prop flow |
+| ID-003 | Uses Badge component | TASK-28-3 integration |
+| ID-004 | Uses Tooltip component | TASK-28-3 integration |
+| ID-005 | Uses Skeleton component | TASK-28-3 integration |
+| ID-006 | CSS variables for colors | TASK-28-1 integration |
+| ID-007 | Dark mode toggle works | Theme integration |
+| ID-008 | All 8 indicator types render | Full coverage |
+
+### Snapshots (7 tests)
+| ID | Test | Description |
+|----|------|-------------|
+| SN-001 | Good status card snapshot | Baseline |
+| SN-002 | Warning status card snapshot | Baseline |
+| SN-003 | Critical status card snapshot | Baseline |
+| SN-004 | Neutral status card snapshot | Baseline |
+| SN-005 | Loading state snapshot | Skeleton |
+| SN-006 | Mobile layout snapshot | Responsive |
+| SN-007 | Desktop layout snapshot | Responsive |
 
 ---
 
-## Test Summary
+## Component Interface
 
-| Category | Tests | Priority |
-|----------|-------|----------|
-| Component Rendering | 12 | High |
-| Loading State | 5 | High |
-| Interactions | 8 | High |
-| Responsive Design | 6 | Medium |
-| Status Variants | 8 | High |
-| Accessibility | 8 | High |
-| TypeScript Types | 5 | Medium |
-| Edge Cases | 8 | Medium |
-| Integration | 6 | Medium |
-| Snapshots | 4 | Low |
-| **Total** | **70** | |
-
----
-
-## Mock Dependencies
-
-The following dependencies should be mocked in tests:
-
-### Lucide Icons (Partial Mock)
 ```typescript
-jest.mock('lucide-react', () => ({
-  TrendingUp: () => <svg data-testid="icon-trending-up" />,
-  Eye: () => <svg data-testid="icon-eye" />,
-  Users: () => <svg data-testid="icon-users" />,
-  Wrench: () => <svg data-testid="icon-wrench" />,
-  Link: () => <svg data-testid="icon-link" />,
-  FileText: () => <svg data-testid="icon-file-text" />,
-  Star: () => <svg data-testid="icon-star" />,
-  Zap: () => <svg data-testid="icon-zap" />,
-}));
+interface IndicatorCardProps {
+  id: string;                              // Unique identifier
+  icon: LucideIconName | React.ReactNode;  // Lucide icon name or custom SVG
+  title: string;                           // Indicator title
+  value: string | number;                  // Current value
+  description: string;                     // Description text
+  status: 'good' | 'warning' | 'critical' | 'neutral';  // Status indicator
+  href: string;                            // Link destination
+  tooltip?: string;                        // Optional tooltip override
+  isLoading?: boolean;                     // Loading state
+  className?: string;                      // Additional CSS classes
+}
 ```
 
-### Next.js Router
-```typescript
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-  }),
-}));
-```
+## Status Color Mappings
 
-### shadcn/ui Components (Mock or Real)
-- Badge: Real component if installed, mock otherwise
-- Tooltip: Mock with TooltipProvider wrapper
-- Skeleton: Mock with animated placeholder
+| Status | Badge Color | Icon | Description |
+|--------|-------------|------|-------------|
+| `good` | Green (emerald) | CheckCircle | Positive/healthy indicator |
+| `warning` | Amber | AlertTriangle | Needs attention |
+| `critical` | Red (destructive) | AlertCircle | Urgent issue |
+| `neutral` | Gray | Minus | No data or N/A |
 
-### IndicatorIcon (Mock)
-```typescript
-jest.mock('@/components/indicators/IndicatorIcon', () => ({
-  IndicatorIcon: ({ icon, size, color }) => (
-    <div data-testid="indicator-icon" data-icon={icon} data-size={size} data-color={color} />
-  ),
-}));
-```
+## Indicator Types (Initial Set)
 
----
-
-## Test Data
-
-### Default Props
-```typescript
-const defaultProps: IndicatorCardProps = {
-  id: 'keyword-rankings',
-  icon: 'TrendingUp',
-  title: 'Keyword Rankings',
-  value: '124',
-  description: 'Track SERP positions for your target keywords',
-  status: 'good',
-  href: '/dashboard',
-};
-```
-
-### All Indicator Types
-```typescript
-const indicatorTypes = [
-  { id: 'keyword-rankings', icon: 'TrendingUp', title: 'Keyword Rankings', href: '/dashboard' },
-  { id: 'visibility-score', icon: 'Eye', title: 'Visibility Score', href: '/dashboard' },
-  { id: 'competitor-analysis', icon: 'Users', title: 'Competitor Analysis', href: '/comparison' },
-  { id: 'technical-health', icon: 'Wrench', title: 'Technical Health', href: '/tools' },
-  { id: 'backlink-profile', icon: 'Link', title: 'Backlink Profile', href: '/dashboard' },
-  { id: 'content-opportunities', icon: 'FileText', title: 'Content Opportunities', href: '/dashboard' },
-  { id: 'serp-features', icon: 'Star', title: 'SERP Features', href: '/dashboard' },
-  { id: 'page-speed', icon: 'Zap', title: 'Page Speed', href: '/tools' },
-];
-```
-
-### Status Variants
-```typescript
-const statuses: Array<'good' | 'warning' | 'critical' | 'neutral'> = [
-  'good', 'warning', 'critical', 'neutral'
-];
-```
+| Indicator | Icon | Description | Link |
+|-----------|------|-------------|------|
+| Keyword Rankings | TrendingUp | Track SERP positions | /dashboard |
+| Visibility Score | Eye | Overall SEO visibility | /dashboard |
+| Competitor Analysis | Users | Compare with competitors | /comparison |
+| Technical Health | Wrench | Site audit score | /tools |
+| Backlink Profile | Link | Link analysis | /dashboard |
+| Content Opportunities | FileText | Keyword gaps | /dashboard |
+| SERP Features | Star | Featured snippets, etc. | /dashboard |
+| Page Speed | Zap | Performance metrics | /tools |
 
 ---
 
 ## Acceptance Criteria Coverage
 
-| Criteria | Test IDs |
-|----------|----------|
-| Card displays icon, title, value, description | CR-001, CR-006, CR-007, CR-012 |
-| Status indicator with color coding | SV-001 to SV-008 |
-| Hover animations (scale, glow) | IN-003, IN-004, IN-008 |
-| Click navigates to dashboard section | IN-001, IN-005, IN-006 |
-| Responsive design | RD-001 to RD-006 |
-| Skeleton loading state | LS-001 to LS-005 |
-| Badge component for status | SV-001 to SV-005, IG-001 |
-| Tooltip on hover | IN-002, CR-008, IG-002 |
-| TypeScript types defined | TT-001 to TT-005 |
+| Criteria | Tests |
+|----------|-------|
+| AC-001: Card displays icon, title, value, description | CR-001 to CR-009 |
+| AC-002: Status indicator with color coding | SI-001 to SI-008 |
+| AC-003: Hover animations (scale, glow) | HI-001 to HI-007 |
+| AC-004: Click navigates to href | CN-001 to CN-006 |
+| AC-005: Responsive design | RD-001 to RD-008 |
+| AC-006: Skeleton loading state | LS-001 to LS-008 |
+| AC-007: Badge component for status | BC-001 to BC-006 |
+| AC-008: Tooltip on hover | TC-001 to TC-005 |
+| AC-009: TypeScript types defined | TD-001, ME-003 |
 
 ---
 
-## Implementation Notes for Developer
+## Test Patterns Used
 
-### Component Structure
-```typescript
-interface IndicatorCardProps {
-  id: string;
-  icon: LucideIconName | React.ReactNode;
-  title: string;
-  value: string | number;
-  description: string;
-  status: 'good' | 'warning' | 'critical' | 'neutral';
-  href: string;
-  tooltip?: string;
-  isLoading?: boolean;
-}
-```
-
-### Key Implementation Points
-
-1. **Use class-variance-authority (cva)** for status variants:
-```typescript
-const cardVariants = cva('...', {
-  variants: {
-    status: {
-      good: 'border-green-500/20 bg-green-500/5',
-      warning: 'border-amber-500/20 bg-amber-500/5',
-      critical: 'border-red-500/20 bg-red-500/5',
-      neutral: 'border-slate-500/20 bg-slate-500/5',
-    },
-  },
-});
-```
-
-2. **Hover animations** via Tailwind:
-```typescript
-className="... hover:scale-105 hover:shadow-lg transition-all duration-200"
-```
-
-3. **Skeleton layout** matches content:
-```typescript
-{isLoading ? (
-  <div className="space-y-2">
-    <Skeleton className="h-6 w-6" /> {/* Icon */}
-    <Skeleton className="h-4 w-24" /> {/* Title */}
-    <Skeleton className="h-8 w-16" /> {/* Value */}
-  </div>
-) : (
-  <ActualContent />
-)}
-```
-
-4. **Accessibility** with proper roles:
-```typescript
-<div
-  role="button"
-  tabIndex={0}
-  aria-label={`${title}: ${value}`}
-  onKeyDown={(e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      onClick();
-    }
-  }}
->
-```
-
-5. **Tooltip integration**:
-```typescript
-{tooltip ? (
-  <Tooltip>
-    <TooltipTrigger>{content}</TooltipTrigger>
-    <TooltipContent>{tooltip}</TooltipContent>
-  </Tooltip>
-) : (
-  content
-)}
-```
+1. **Mocked Dependencies**: IndicatorIcon, Badge, Tooltip, Skeleton mocked
+2. **Matrix Testing**: All status variants tested
+3. **Responsive Testing**: Viewport-based tests
+4. **Accessibility First**: ARIA and keyboard navigation tested
+5. **Integration Testing**: Dependency component usage verified
+6. **Snapshot Regression**: Visual baseline for future changes
 
 ---
 
 ## Dependencies
 
-- TASK-28-3 (shadcn/ui Components: badge, tooltip, skeleton)
-- TASK-28-4 (IndicatorIcon Wrapper)
+### Task Dependencies
+- TASK-28-1 (CSS Variables Enhancement) - Color variables
+- TASK-28-3 (shadcn/ui Components) - Badge, Tooltip, Skeleton
+- TASK-28-4 (IndicatorIcon Wrapper) - Icon rendering
+
+### Package Dependencies
+- `lucide-react` - Icon library
+- `next/link` - Client-side navigation
+- `@/lib/utils` - cn() utility
+- `@/components/ui/badge` - Badge component
+- `@/components/ui/tooltip` - Tooltip component
+- `@/components/ui/skeleton` - Skeleton component
+- `@/components/indicators/IndicatorIcon` - Icon wrapper
 
 ---
 
-*Created by PreTester for TASK-28-5*
-*Status: Tests Coverage In Progress*
+## Notes for Developer
+
+1. Create `frontend/components/indicators/IndicatorCard.tsx`
+2. Use `IndicatorIcon` component for icon rendering
+3. Use `Badge` from shadcn for status display
+4. Use `Tooltip` from shadcn for hover info
+5. Use `Skeleton` from shadcn for loading state
+6. Implement hover animations with Tailwind `hover:scale-[1.02]` and `hover:shadow-lg`
+7. Use Next.js `Link` component for internal navigation
+8. Ensure `data-testid`, `data-status`, `data-loading` attributes for testing
+9. Apply `focus-visible:ring-2` for keyboard focus indicator
+10. Respect `prefers-reduced-motion` for animations
+
+---
+
+## Mock Data
+
+```typescript
+const mockIndicatorCard = {
+  id: 'keyword-rankings',
+  icon: 'TrendingUp',
+  title: 'Keyword Rankings',
+  value: '142',
+  description: 'Keywords ranking in top 100',
+  status: 'good' as const,
+  href: '/dashboard',
+  tooltip: 'Track your keyword positions in SERPs',
+};
+
+const allStatusVariants = ['good', 'warning', 'critical', 'neutral'] as const;
+
+const allIndicatorTypes = [
+  { id: 'keyword-rankings', icon: 'TrendingUp', title: 'Keyword Rankings' },
+  { id: 'visibility-score', icon: 'Eye', title: 'Visibility Score' },
+  { id: 'competitor-analysis', icon: 'Users', title: 'Competitor Analysis' },
+  { id: 'technical-health', icon: 'Wrench', title: 'Technical Health' },
+  { id: 'backlink-profile', icon: 'Link', title: 'Backlink Profile' },
+  { id: 'content-opportunities', icon: 'FileText', title: 'Content Opportunities' },
+  { id: 'serp-features', icon: 'Star', title: 'SERP Features' },
+  { id: 'page-speed', icon: 'Zap', title: 'Page Speed' },
+];
+```
+
+---
+
+## Test Execution
+
+```bash
+# Run all IndicatorCard tests
+npm test -- IndicatorCard.test.tsx
+
+# Run with coverage
+npm test -- --coverage IndicatorCard.test.tsx
+
+# Update snapshots
+npm test -- -u IndicatorCard.test.tsx
+
+# Run specific test category
+npm test -- -t "Status Indicator"
+```
+
+---
+
+Created by: PreTester
+Date: 2026-03-03

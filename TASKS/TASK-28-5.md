@@ -1,7 +1,7 @@
 # TASK-28-5: IndicatorCard Component
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -65,6 +65,53 @@ interface IndicatorCardProps {
 
 ## Comments
 _Agent log_
+
+### [2026-03-03 13:15 UTC+2] PreTester
+**Test Design Complete**
+
+**Tests Created:**
+- `TESTS/TEST-28-5.md` - Test documentation (95 test scenarios)
+- `frontend/components/indicators/__tests__/IndicatorCard.test.tsx` - Test file
+
+**Test Categories:**
+- TypeScript Type Definitions (1 test) - Props interface verification
+- Component Rendering (9 tests) - Basic mount, all props, icon, title, value, description
+- Status Indicator (8 tests) - All 4 status variants with color coding
+- Hover Interactions (7 tests) - Scale animation, glow effect, tooltip
+- Click Navigation (6 tests) - Link navigation, keyboard accessibility
+- Loading State (8 tests) - Skeleton for all elements, disabled interactions
+- Responsive Design (8 tests) - Mobile/tablet/desktop, touch targets
+- Accessibility (9 tests) - ARIA labels, keyboard navigation, focus states
+- Badge Component Integration (6 tests) - shadcn Badge usage
+- Tooltip Component Integration (5 tests) - shadcn Tooltip usage
+- Edge Cases (10 tests) - Empty values, long text, invalid inputs
+- Module Exports (3 tests) - Barrel export verification
+- Integration with Dependencies (8 tests) - IndicatorIcon, Badge, Tooltip, Skeleton
+- Snapshots (7 tests) - Visual regression baseline
+
+**Key Test Patterns:**
+- Mocked IndicatorIcon, Badge, Tooltip, Skeleton components
+- Matrix testing for all status variants
+- Accessibility-first approach with ARIA attributes
+- Keyboard navigation testing
+- Loading state with skeleton verification
+
+**Implementation Notes for Developer:**
+1. Use `IndicatorIcon` component for icon rendering (TASK-28-4)
+2. Use `Badge` from shadcn for status display (TASK-28-3)
+3. Use `Tooltip` from shadcn for hover info (TASK-28-3)
+4. Use `Skeleton` from shadcn for loading state (TASK-28-3)
+5. Implement hover animations with Tailwind `hover:scale-[1.02]` and `hover:shadow-lg`
+6. Use Next.js `Link` component for internal navigation
+7. Apply `focus-visible:ring-2` for keyboard focus indicator
+8. Respect `prefers-reduced-motion` for animations
+9. Ensure `data-testid`, `data-status`, `data-loading` attributes for testing
+10. All 8 indicator types should render correctly
+
+**Status Changed:** `To Write Tests` → `To Develop`
+
+---
+*Handed off to Developer for implementation.*
 
 ### [2026-03-03 12:43 UTC+2] ProjectManager
 **Prioritization Complete**
