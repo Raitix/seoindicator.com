@@ -21072,3 +21072,177 @@ interface BacklinkHistoryChartProps {
 - TASK-23-13: Backlinks Dashboard (parent component)
 - SPEC-023: Backlinks Indicator
 - FEAT-023: Backlinks Indicator
+
+---
+## Generate Suggestions Form Component (TASK-5-11)
+
+### Component Description
+React form component for generating new keyword suggestions. Users enter a seed keyword, select suggestion sources, and configure the maximum number of results. Integrates with the Keyword Discovery API (TASK-5-8) to fetch suggestions from Google Suggest and Question Keywords sources. Part of the Keyword Discovery & Suggestions feature (FEAT-005).
+
+### Component Location
+- **Component:** `frontend/components/suggestions/GenerateSuggestionsForm.tsx`
+- **Tests:** `frontend/__tests__/components/suggestions/GenerateSuggestionsForm.test.tsx`
+
+### Component Props
+
+```typescript
+interface GenerateSuggestionsFormProps {
+  siteId: number;                              // Site ID for API calls
+  onSuggestionsGenerated?: (count: number) => void;  // Success callback
+}
+```
+
+### Form Fields
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `seedKeyword` | text | Yes | - | Seed keyword for suggestion generation |
+| `sources.suggest` | checkbox | No | `true` | Enable Google Suggest API |
+| `sources.question` | checkbox | No | `true` | Enable Question Keywords generator |
+| `sources.related` | checkbox | No | `false` | Enable Related Searches (disabled in MVP) |
+| `maxResults` | slider | No | `50` | Maximum suggestions to return (10-100) |
+
+### UI Elements
+
+| Element | Description |
+|---------|-------------|
+| Seed Keyword Input | Text input with placeholder "Enter a seed keyword..." |
+| Source Checkboxes | Toggle for each suggestion source |
+| Max Results Slider | Range slider (10-100) with current value display |
+| Generate Button | Submit button with loading state |
+| Success Message | Displays count of new suggestions generated |
+| Error Alert | Shows user-friendly error messages |
+| Rate Limit Indicator | Displays remaining API requests (X/10) |
+
+### Form Validation
+
+| Validation Rule | Field | Behavior |
+|-----------------|-------|----------|
+| Required | `seedKeyword` | Submit disabled when empty |
+| Min Length | `seedKeyword` | Minimum 2 characters |
+| Max Length | `seedKeyword` | Maximum 100 characters |
+| At Least One Source | `sources` | Submit disabled when no sources selected |
+
+### Default Values
+
+| Field | Default Value |
+|-------|---------------|
+| Google Suggest | `true` (checked) |
+| Question Keywords | `true` (checked) |
+| Related Searches | `false` (disabled in MVP) |
+| Max Results | `50` |
+
+### API Integration
+
+**Endpoint:** `POST /api/v1/sites/{siteId}/suggestions/generate`
+
+**Request Body:**
+```json
+{
+  "seedKeyword": "seo tools",
+  "sources": ["suggest", "question"],
+  "maxResults": 50
+}
+```
+
+**Success Response (202):**
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "suggest-abc123",
+    "status": "queued",
+    "suggestionsGenerated": 37
+  }
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 403 | User does not own site |
+| 422 | Invalid seed keyword or sources |
+| 429 | Rate limit exceeded (10 requests/hour) |
+
+### State Management
+
+| State | Display |
+|-------|---------|
+| `idle` | Form ready for input |
+| `loading` | Button shows "Generating...", disabled |
+| `success` | Success message with suggestion count |
+| `error` | Error alert with retry option |
+
+### User Experience
+
+**Debounce Protection:**
+- Submit button disabled during API call
+- Rapid clicks ignored to prevent duplicate requests
+
+**Form Reset:**
+- Form resets to default values after successful generation
+- Seed keyword input cleared
+- Sources remain selected (user preference preserved)
+
+**Rate Limit Display:**
+- Shows remaining requests in real-time
+- Updates after each successful generation
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | Input sanitized before API call |
+| CSRF Protection | API uses Sanctum token authentication |
+| Input Validation | Client-side validation + server-side validation |
+| Rate Limiting | 10 requests per hour per user |
+| Debounce | Prevents rapid form submissions |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `GenerateSuggestionsForm.test.tsx` | 36 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Rendering | 5 | Form elements, inputs, checkboxes, slider |
+| Default Values | 3 | Google Suggest on, Question on, maxResults=50 |
+| Seed Keyword Input | 3 | Input handling, required validation, clear after submit |
+| Source Checkboxes | 4 | Toggle suggest, toggle question, disable submit when none |
+| Max Results Slider | 3 | Min 10, max 100, value update |
+| Form Submission | 3 | API call, validation, source selection |
+| Loading State | 2 | Loading text, disabled button |
+| Success Message | 3 | Display count, callback trigger |
+| Error Handling | 3 | API failure, network error, ARIA role |
+| Rate Limit | 2 | Display remaining, update after generation |
+| Adversarial | 4 | XSS, long keyword, special chars, rapid clicks |
+| Integration | 1 | Full form workflow |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-03 (GitHub Actions #22616703840) |
+| **Commit** | `24bad50` |
+| **Health Check** | Passing (https://seoindicator.com/api/health → 200 OK) |
+| **Tests** | 36/36 passing |
+| **Status** | Complete |
+
+### Dependencies
+
+| Dependency | Task | Status |
+|------------|------|--------|
+| Generate Suggestions API | TASK-5-8 | Done ✅ |
+| Keyword Suggestions Table | TASK-5-1 | Done ✅ |
+| Suggestion Service | TASK-5-6 | Done ✅ |
+
+### Related Tasks
+
+- TASK-5-8: Generate Suggestions API Endpoint
+- TASK-5-10: Suggestions List Page
+- TASK-5-12: Suggestion Card Component
+- SPEC-005: Keyword Discovery & Suggestions
+- FEAT-005: Keyword Discovery & Suggestions
