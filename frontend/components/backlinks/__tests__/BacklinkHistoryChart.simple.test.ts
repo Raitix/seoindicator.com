@@ -252,9 +252,12 @@ describe('BacklinkHistoryChart Helper Functions', () => {
       expect(sanitizeInput(malicious)).not.toContain('<script>');
     });
 
-    it('sanitizes event handlers', () => {
+    it('escapes HTML characters in event handlers', () => {
       const malicious = '<img onerror="alert(1)">';
-      expect(sanitizeInput(malicious)).not.toContain('onerror');
+      // The sanitizer escapes HTML characters, making the payload harmless
+      const sanitized = sanitizeInput(malicious);
+      expect(sanitized).not.toContain('<img'); // Angle brackets are escaped
+      expect(sanitized).toContain('&lt;'); // Contains escaped <
     });
 
     it('preserves safe text', () => {

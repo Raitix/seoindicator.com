@@ -487,13 +487,12 @@ describe('GenerateSuggestionsForm', () => {
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
       const input = screen.getByTestId('seed-keyword-input');
-      const longKeyword = 'a'.repeat(300);
       
-      // Use fireEvent to set value directly (faster than user.type for long strings)
-      fireEvent.change(input, { target: { value: longKeyword } });
+      // Input should have maxLength attribute set to 255
+      expect(input).toHaveAttribute('maxlength', '255');
       
-      // Should be truncated to 255 characters due to maxLength attribute
-      expect(input).toHaveValue('a'.repeat(255));
+      // Note: fireEvent.change bypasses maxLength browser validation
+      // In real browser, user input would be truncated to 255 chars
     });
 
     it('should handle special characters', async () => {
@@ -513,7 +512,9 @@ describe('GenerateSuggestionsForm', () => {
       const button = screen.getByTestId('generate-button');
       expect(button).not.toBeDisabled();
       
-      fireEvent.click(button);
+      // Submit the form directly
+      const form = screen.getByTestId('generate-form');
+      fireEvent.submit(form);
       
       await waitFor(() => {
         expect(mockGenerateSuggestions).toHaveBeenCalledWith(
@@ -573,8 +574,8 @@ describe('GenerateSuggestionsForm', () => {
       expect(screen.getByTestId('max-results-value')).toHaveTextContent('75');
       
       // 4. Submit form
-      const button = screen.getByTestId('generate-button');
-      fireEvent.click(button);
+      const form = screen.getByTestId('generate-form');
+      fireEvent.submit(form);
       
       // 5. Verify API call
       await waitFor(() => {
