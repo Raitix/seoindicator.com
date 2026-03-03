@@ -37,7 +37,7 @@ describe('Open Graph Tags Guide - Content Structure', () => {
     });
 
     it('OG-005: Guide has tool link to Social Media Preview', () => {
-      expect(guide).toHaveProperty('toolSlug', 'social-media-preview');
+      expect(guide).toHaveProperty('toolSlug', 'social-preview');
     });
   });
 

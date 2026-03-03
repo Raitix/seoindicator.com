@@ -53,8 +53,8 @@ const GUIDES_WITH_TOOLS = [
   { slug: 'meta-title', toolSlug: 'meta-tag-analyzer' },
   { slug: 'meta-description', toolSlug: 'meta-tag-analyzer' },
   { slug: 'mobile-friendly', toolSlug: 'mobile-friendly-checker' },
-  { slug: 'open-graph', toolSlug: 'social-media-preview' },
-  { slug: 'twitter-cards', toolSlug: 'social-media-preview' },
+  { slug: 'open-graph', toolSlug: 'social-preview' },
+  { slug: 'twitter-cards', toolSlug: 'social-preview' },
 ];
 
 // ============================================================================
@@ -316,8 +316,8 @@ describe('getGuidesByToolSlug', () => {
       expect(slugs).toContain('meta-description');
     });
 
-    it('should return guides linked to social-media-preview', () => {
-      const guides = getGuidesByToolSlug('social-media-preview');
+    it('should return guides linked to social-preview', () => {
+      const guides = getGuidesByToolSlug('social-preview');
       expect(guides.length).toBe(2); // open-graph, twitter-cards
       const slugs = guides.map((g) => g.slug);
       expect(slugs).toContain('open-graph');

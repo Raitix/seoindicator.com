@@ -5534,7 +5534,7 @@ Make Card testing part of your publishing workflow:
 
 ## Testing URLs
 - Twitter Card Validator: https://cards-dev.twitter.com/validator
-- SEOIndicator Social Media Preview: /tools/social-media-preview
+- SEOIndicator Social Media Preview: /tools/social-preview
 
 ## Common Fixes
 Issue: Image not found

@@ -61,8 +61,8 @@ const mockGuides = [
   { slug: 'robots-txt', title: 'Robots.txt Configuration', summary: 'Control how search engines crawl', category: 'technical', icon: '🤖', readTime: 4, sections: [], checklist: [], relatedGuides: [] },
   { slug: 'xml-sitemap', title: 'XML Sitemap Creation', summary: 'Help search engines discover pages', category: 'technical', icon: '🗺️', readTime: 4, sections: [], checklist: [], relatedGuides: [] },
   // Content (2)
-  { slug: 'open-graph', title: 'Open Graph Tags', summary: 'Optimize for Facebook sharing', category: 'content', toolSlug: 'social-media-preview', icon: '👍', readTime: 5, sections: [], checklist: [], relatedGuides: [] },
-  { slug: 'twitter-cards', title: 'Twitter Cards', summary: 'Create rich Twitter previews', category: 'content', toolSlug: 'social-media-preview', icon: '🐦', readTime: 4, sections: [], checklist: [], relatedGuides: [] },
+  { slug: 'open-graph', title: 'Open Graph Tags', summary: 'Optimize for Facebook sharing', category: 'content', toolSlug: 'social-preview', icon: '👍', readTime: 5, sections: [], checklist: [], relatedGuides: [] },
+  { slug: 'twitter-cards', title: 'Twitter Cards', summary: 'Create rich Twitter previews', category: 'content', toolSlug: 'social-preview', icon: '🐦', readTime: 4, sections: [], checklist: [], relatedGuides: [] },
 ];
 
 const mockGuidesWithTools = mockGuides.filter(g => g.toolSlug);

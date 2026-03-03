@@ -37,7 +37,7 @@ describe('Twitter Cards Guide - Content Structure', () => {
     });
 
     it('TC-005: Guide has tool link to Social Media Preview', () => {
-      expect(guide).toHaveProperty('toolSlug', 'social-media-preview');
+      expect(guide).toHaveProperty('toolSlug', 'social-preview');
     });
 
     it('TC-006: Guide has appropriate icon', () => {
