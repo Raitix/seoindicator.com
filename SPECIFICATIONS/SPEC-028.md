@@ -1,7 +1,7 @@
 # SPEC-028: Modern UI/UX + Indicator Catalog
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -396,3 +396,41 @@ Created SPEC-028 for Modern UI/UX + Indicator Catalog feature.
 - Mobile responsiveness needs thorough testing
 
 Ready for SpecSystemAnalyst to break down into implementation tasks.
+
+### 2026-03-03 11:45 UTC+2 - SpecSystemAnalyst
+- Created 19 tasks (TASK-28-1 through TASK-28-19)
+- **Phase 1 - Design System (Tasks 1-3):**
+  - CSS variables enhancement (brand colors, semantic colors, surface layers)
+  - Typography and spacing documentation
+  - shadcn/ui components (skeleton, progress, badge, tooltip, avatar, dropdown-menu, sheet, tabs, separator)
+- **Phase 2 - Indicator Catalog (Tasks 4-8):**
+  - IndicatorIcon wrapper component
+  - IndicatorCard with hover interactions
+  - IndicatorGrid responsive layout
+  - IndicatorCatalog main container
+  - Homepage integration
+- **Phase 3 - Loading States (Tasks 9-11):**
+  - Skeleton loader variants (card, table, chart, catalog)
+  - Progress indicators (linear, circular)
+  - Loading state integration with data fetching
+- **Phase 4 - Navigation (Tasks 12-13):**
+  - Desktop navigation enhancement
+  - Mobile navigation (Sheet component)
+- **Phase 5 - Icons (Tasks 14-15):**
+  - Lucide icon mapping for indicators
+  - Custom SVG icons (as needed)
+- **Phase 6 - Accessibility (Tasks 16-17):**
+  - ARIA labels and keyboard navigation
+  - Color contrast and screen reader testing
+- **Phase 7 - Testing & Documentation (Tasks 18-19):**
+  - Unit and feature tests
+  - Documentation update
+- **Key Decisions:**
+  - All changes are frontend-only (no database changes)
+  - Leverage existing shadcn/ui + Tailwind stack
+  - Start with Lucide icons, create custom icons only where needed
+  - Mobile-first responsive approach
+- **Risk Notes:**
+  - All tasks Low/Medium risk (frontend-only)
+  - Homepage integration (Task 8) has Medium risk due to layout changes
+- Status updated: `To Prioritize`
