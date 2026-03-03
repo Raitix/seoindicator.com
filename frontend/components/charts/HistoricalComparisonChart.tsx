@@ -10,6 +10,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LegendPayload,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -146,22 +147,21 @@ const CustomTooltip: React.FC<{
 /**
  * Custom legend component with toggle functionality
  */
-const CustomLegend: React.FC<{
-  payload?: readonly {
-    dataKey?: string;
-    color?: string;
-    value?: string;
-  }[];
+interface CustomLegendProps {
+  payload?: readonly LegendPayload[];
   competitorNames: Record<string, string>;
   visibleSeries: Record<string, boolean>;
   onToggle: (key: string) => void;
-}> = ({ payload, competitorNames, visibleSeries, onToggle }) => {
+}
+
+const CustomLegend: React.FC<CustomLegendProps> = ({ payload, competitorNames, visibleSeries, onToggle }) => {
   if (!payload) return null;
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
       {payload.map((entry, index) => {
-        const dataKey = entry.dataKey ?? "";
+        // Convert dataKey to string (it can be a string, number, or function in Recharts)
+        const dataKey = typeof entry.dataKey === 'function' ? '' : String(entry.dataKey ?? "");
         const isUser = dataKey === "userPosition";
         const displayName = isUser
           ? "You"
@@ -544,7 +544,7 @@ const HistoricalComparisonChart: React.FC<HistoricalComparisonChartProps> = ({
                   <Legend
                     content={(props) => (
                       <CustomLegend
-                        {...props}
+                        payload={props.payload}
                         competitorNames={competitorNames}
                         visibleSeries={visibleSeries}
                         onToggle={handleToggleSeries}
