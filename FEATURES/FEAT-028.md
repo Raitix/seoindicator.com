@@ -1,7 +1,7 @@
 # FEAT-028: Modern UI/UX + Indicator Catalog
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -48,6 +48,19 @@ Created technical specification SPEC-028. Key decisions:
 **Risk reassessed:** Remains Medium (frontend-only, design iteration may be needed).
 
 Status updated to "To Break Into Tasks" for SpecSystemAnalyst.
+
+### 2026-03-03 11:45 UTC+2 - SpecSystemAnalyst
+- Created 19 tasks (TASK-28-1 through TASK-28-19) for SPEC-028
+- Task breakdown across 7 phases:
+  - Phase 1: Design System (Tasks 1-3)
+  - Phase 2: Indicator Catalog (Tasks 4-8)
+  - Phase 3: Loading States (Tasks 9-11)
+  - Phase 4: Navigation (Tasks 12-13)
+  - Phase 5: Icons (Tasks 14-15)
+  - Phase 6: Accessibility (Tasks 16-17)
+  - Phase 7: Testing & Documentation (Tasks 18-19)
+- All tasks are frontend-only (no database changes)
+- Ready for ProjectManager to prioritize
 
 ---
 *Created by Lead from individual user request.*
