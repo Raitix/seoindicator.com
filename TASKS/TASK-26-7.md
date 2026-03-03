@@ -1,7 +1,7 @@
 # TASK-26-7: Create Transaction History API Endpoint
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
@@ -100,4 +100,54 @@ Create REST API endpoint for users to view their transaction history with filter
 - Consider cursor pagination for large datasets
 
 ## Comments
+
+### 2026-03-03 - ProjectManager
+**Prioritization Complete:**
+- **Priority: Medium** (confirmed) - Read-only API endpoint, non-blocking for billing MVP
+- **Risk: Low** (confirmed) - Read-only operation, no financial mutations, easily reversible
+
+**Dependency Status:**
+- TASK-26-5 (CreditService): `Done` ✅ - All methods available including `getTransactionHistory()`
+- TASK-26-6 (CreditController): File exists but empty - PreTester should verify CreditController exists or design tests assuming it will be created
+
+**Test Coverage Requirements for PreTester:**
+1. **Endpoint Tests:**
+   - `GET /api/v1/credits/transactions` returns paginated list
+   - Authentication required (401 for unauthenticated)
+   - User can only see their own transactions
+
+2. **Pagination Tests:**
+   - Default pagination (page=1, per_page=15)
+   - Custom per_page values (1-50)
+   - per_page > 50 should be capped or return validation error
+
+3. **Filtering Tests:**
+   - Filter by `type` (purchase, usage, refund, bonus)
+   - Filter by `from` date
+   - Filter by `to` date
+   - Combined filters (type + date range)
+   - Invalid `type` returns validation error
+   - Invalid date format returns validation error
+   - `from` > `to` returns validation error
+
+4. **Response Format Tests:**
+   - Success response includes `success`, `data`, `meta`
+   - Transaction items include: id, amount, balance_after, type, description, payment_provider, created_at
+   - Meta includes: current_page, per_page, total, last_page
+
+5. **Security Tests:**
+   - User A cannot see User B's transactions
+   - No sensitive payment details exposed (no card numbers, etc.)
+   - Rate limiting (if implemented)
+
+**Implementation Notes:**
+- CreditService already has `getTransactionHistory(User $user, int $perPage = 15): LengthAwarePaginator`
+- Controller needs to add filtering logic on top of the service method
+- Consider adding `created_at` index if not already present
+
+**Enables:**
+- Frontend transaction history page
+- Export functionality (future enhancement)
+
+---
 _Leave notes for the next agent here_
