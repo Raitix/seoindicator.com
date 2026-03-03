@@ -148,9 +148,9 @@ const CustomTooltip: React.FC<{
  */
 const CustomLegend: React.FC<{
   payload?: readonly {
-    dataKey: string;
-    color: string;
-    value: string;
+    dataKey?: string;
+    color?: string;
+    value?: string;
   }[];
   competitorNames: Record<string, string>;
   visibleSeries: Record<string, boolean>;
@@ -160,18 +160,19 @@ const CustomLegend: React.FC<{
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-      {payload.map((entry) => {
-        const isUser = entry.dataKey === "userPosition";
+      {payload.map((entry, index) => {
+        const dataKey = entry.dataKey ?? "";
+        const isUser = dataKey === "userPosition";
         const displayName = isUser
           ? "You"
-          : competitorNames[entry.dataKey] || entry.dataKey;
-        const isVisible = visibleSeries[entry.dataKey] !== false;
+          : competitorNames[dataKey] || dataKey;
+        const isVisible = visibleSeries[dataKey] !== false;
 
         return (
           <button
-            key={entry.dataKey}
+            key={dataKey || index}
             type="button"
-            onClick={() => onToggle(entry.dataKey)}
+            onClick={() => onToggle(dataKey)}
             className={`flex items-center gap-2 px-2 py-1 rounded transition-opacity ${
               isVisible ? "opacity-100" : "opacity-40"
             }`}
