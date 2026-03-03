@@ -8,7 +8,7 @@ use App\Models\Project;
 use App\Models\BacklinkSnapshot;
 use App\Models\ReferringDomain;
 use App\Models\AnchorText;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 
 /**
  * Integration tests for BacklinkProfileScorer
@@ -18,7 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
  */
 class BacklinkProfileScorerIntegrationTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
 
     // =========================================================================
     // PROJECT INTEGRATION TESTS
