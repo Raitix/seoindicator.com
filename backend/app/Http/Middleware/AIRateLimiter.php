@@ -4,33 +4,27 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use App\Services\AI\AIRateLimiter as AIRateLimiterService;
+use Illuminate\Http\Response;
+use App\Services\AI\AIRateLimiter;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
- * AI Rate Limiter Middleware (TASK-21-10).
+ * AI Rate Limiter Middleware.
  *
- * Enforces rate limiting on AI suggestion endpoints.
- * Uses sliding window algorithm for accurate rate limiting.
+ * Handles rate limiting for AI suggestion endpoints.
+ * Applies per-user limits for authenticated users and per-IP limits for anonymous requests.
  *
- * Features:
- * - Per-user rate limiting for authenticated users
- * - Per-IP rate limiting for anonymous requests
- * - Rate limit headers on all responses
- * - 429 response with retry_after when limit exceeded
- * - Admin whitelist support
- *
- * @see \App\Services\AI\AIRateLimiter
+ * @see TASK-21-10: Add Rate Limiting
  */
 class AIRateLimiter
 {
     /**
      * Create a new middleware instance.
      *
-     * @param AIRateLimiterService $rateLimiter
+     * @param AIRateLimiter $rateLimiter
      */
     public function __construct(
-        protected AIRateLimiterService $rateLimiter
+        protected AIRateLimiter $rateLimiter
     ) {}
 
     /**
@@ -38,24 +32,19 @@ class AIRateLimiter
      *
      * @param Request $request
      * @param Closure $next
-     * @return mixed
+     * @return SymfonyResponse
      */
-    public function handle(Request $request, Closure $next): mixed
+    public function handle(Request $request, Closure $next): SymfonyResponse
     {
-        // Skip OPTIONS requests (CORS preflight)
-        if ($request->isMethod('OPTIONS')) {
+        // Skip rate limiting for OPTIONS requests
+        if ($request->method() === 'OPTIONS') {
             return $next($request);
         }
 
-        // Get identifier and type based on authentication status
-        [$identifier, $type] = $this->resolveIdentifier($request);
+        // Determine identifier and type
+        [$identifier, $type] = $this->resolveIdentifierAndType($request);
 
-        // Check if admin whitelist applies
-        if ($this->isAdminWhitelisted($request, $type)) {
-            return $next($request);
-        }
-
-        // Check rate limit
+        // Check if rate limit is exceeded
         if (!$this->rateLimiter->checkLimit($identifier, $type)) {
             return $this->buildLimitExceededResponse($identifier, $type);
         }
@@ -63,57 +52,69 @@ class AIRateLimiter
         // Process request
         $response = $next($request);
 
-        // Increment rate limit after successful processing
-        // Only increment on successful responses (2xx)
-        if ($response->isSuccessful()) {
-            $this->rateLimiter->increment($identifier, $type);
-        }
+        // Increment rate limit on successful processing
+        $this->rateLimiter->increment($identifier, $type);
 
-        // Add rate limit headers to response
+        // Add rate limit headers
         $this->addRateLimitHeaders($response, $identifier, $type);
 
         return $response;
     }
 
     /**
-     * Resolve the rate limit identifier and type from the request.
-     *
-     * Authenticated users are limited by user ID.
-     * Anonymous requests are limited by IP address.
+     * Resolve the identifier and type for rate limiting.
      *
      * @param Request $request
      * @return array{0: string, 1: string} [identifier, type]
      */
-    protected function resolveIdentifier(Request $request): array
+    protected function resolveIdentifierAndType(Request $request): array
     {
-        $user = $request->user();
-
-        if ($user && $user->exists) {
-            // Authenticated user - use user ID
+        // Check for authenticated user
+        if ($user = $request->user()) {
+            // Check admin whitelist
+            if ($this->isAdminWhitelisted($user)) {
+                return ["admin:{$user->id}", 'user'];
+            }
+            
             return ["user:{$user->id}", 'user'];
         }
 
-        // Anonymous - use IP address
-        $ip = $this->resolveIpAddress($request);
+        // Fall back to IP-based limiting
+        $ip = $this->resolveClientIp($request);
+        
         return ["ip:{$ip}", 'ip'];
     }
 
     /**
-     * Resolve the client IP address from the request.
+     * Check if user is whitelisted from rate limiting (admin users).
      *
-     * Checks X-Forwarded-For header first, then falls back to REMOTE_ADDR.
-     * Uses the first IP in X-Forwarded-For (client IP).
+     * @param mixed $user
+     * @return bool
+     */
+    protected function isAdminWhitelisted($user): bool
+    {
+        if (!config('ai.rate_limits.admin_whitelist', true)) {
+            return false;
+        }
+
+        // Check if user has admin role
+        return method_exists($user, 'isAdmin') && $user->isAdmin();
+    }
+
+    /**
+     * Resolve the client IP address.
      *
      * @param Request $request
      * @return string
      */
-    protected function resolveIpAddress(Request $request): string
+    protected function resolveClientIp(Request $request): string
     {
-        // Check X-Forwarded-For header
+        // Check X-Forwarded-For header (for proxied requests)
         $forwarded = $request->header('X-Forwarded-For');
         
         if ($forwarded) {
-            // X-Forwarded-For format: client, proxy1, proxy2
+            // X-Forwarded-For can contain multiple IPs: client, proxy1, proxy2
+            // We want the first one (client)
             $ips = explode(',', $forwarded);
             $clientIp = trim($ips[0]);
             
@@ -123,79 +124,37 @@ class AIRateLimiter
             }
         }
 
-        // Fallback to REMOTE_ADDR or Laravel's ip() method
+        // Fall back to direct connection IP
         return $request->ip() ?? '127.0.0.1';
     }
 
     /**
-     * Check if the request should bypass rate limiting due to admin whitelist.
+     * Build the 429 Too Many Requests response.
      *
-     * @param Request $request
-     * @param string $type The rate limit type ('user' or 'ip')
-     * @return bool
+     * @param string $identifier
+     * @param string $type
+     * @return Response
      */
-    protected function isAdminWhitelisted(Request $request, string $type): bool
+    protected function buildLimitExceededResponse(string $identifier, string $type): Response
     {
-        // Only applies to authenticated users
-        if ($type !== 'user') {
-            return false;
-        }
-
-        // Check if whitelist is enabled
-        if (!$this->rateLimiter->isAdminWhitelistEnabled()) {
-            return false;
-        }
-
-        $user = $request->user();
-        
-        // Check if user has admin role (if applicable)
-        if ($user && method_exists($user, 'isAdmin')) {
-            return $user->isAdmin();
-        }
-
-        // Check for is_admin column/property
-        if ($user && isset($user->is_admin)) {
-            return (bool) $user->is_admin;
-        }
-
-        return false;
-    }
-
-    /**
-     * Build the rate limit exceeded response.
-     *
-     * Returns HTTP 429 with JSON body and appropriate headers.
-     *
-     * @param string $identifier The rate limit identifier
-     * @param string $type The rate limit type
-     * @return JsonResponse
-     */
-    protected function buildLimitExceededResponse(string $identifier, string $type): JsonResponse
-    {
-        $limit = $this->rateLimiter->getLimit($type);
         $resetTime = $this->rateLimiter->getResetTime($identifier, $type);
-        $retryAfter = $this->rateLimiter->getRetryAfter($identifier, $type);
+        $retryAfter = max(1, $resetTime - time());
+        $limit = $this->rateLimiter->getLimit($type);
 
-        // Format friendly message
-        $minutes = (int) ceil($retryAfter / 60);
-        $message = $minutes > 1
-            ? "Rate limit exceeded. Try again in {$minutes} minutes."
-            : "Rate limit exceeded. Try again in {$retryAfter} seconds.";
-
-        $response = new JsonResponse([
+        $response = response()->json([
             'success' => false,
             'error' => [
                 'code' => 'RATE_LIMIT_EXCEEDED',
-                'message' => $message,
+                'message' => "Rate limit exceeded. Try again in {$this->formatRetryAfter($retryAfter)}.",
                 'retry_after' => $retryAfter,
             ],
         ], 429);
 
-        // Add rate limit headers
-        $response->headers->set('X-RateLimit-Limit', (string) $limit);
-        $response->headers->set('X-RateLimit-Remaining', '0');
-        $response->headers->set('X-RateLimit-Reset', (string) $resetTime);
-        $response->headers->set('Retry-After', (string) $retryAfter);
+        // Add headers
+        $response->header('Retry-After', (string) $retryAfter);
+        $response->header('X-RateLimit-Limit', (string) $limit);
+        $response->header('X-RateLimit-Remaining', '0');
+        $response->header('X-RateLimit-Reset', (string) $resetTime);
 
         return $response;
     }
@@ -203,17 +162,12 @@ class AIRateLimiter
     /**
      * Add rate limit headers to the response.
      *
-     * @param mixed $response
+     * @param SymfonyResponse $response
      * @param string $identifier
      * @param string $type
-     * @return void
      */
-    protected function addRateLimitHeaders($response, string $identifier, string $type): void
+    protected function addRateLimitHeaders(SymfonyResponse $response, string $identifier, string $type): void
     {
-        if (!method_exists($response, 'headers')) {
-            return;
-        }
-
         $limit = $this->rateLimiter->getLimit($type);
         $remaining = $this->rateLimiter->getRemaining($identifier, $type);
         $resetTime = $this->rateLimiter->getResetTime($identifier, $type);
@@ -221,5 +175,27 @@ class AIRateLimiter
         $response->headers->set('X-RateLimit-Limit', (string) $limit);
         $response->headers->set('X-RateLimit-Remaining', (string) $remaining);
         $response->headers->set('X-RateLimit-Reset', (string) $resetTime);
+    }
+
+    /**
+     * Format retry after seconds into human-readable string.
+     *
+     * @param int $seconds
+     * @return string
+     */
+    protected function formatRetryAfter(int $seconds): string
+    {
+        if ($seconds < 60) {
+            return "{$seconds} seconds";
+        }
+        
+        $minutes = (int) ($seconds / 60);
+        
+        if ($minutes < 60) {
+            return "{$minutes} minute" . ($minutes > 1 ? 's' : '');
+        }
+        
+        $hours = (int) ($minutes / 60);
+        return "{$hours} hour" . ($hours > 1 ? 's' : '');
     }
 }

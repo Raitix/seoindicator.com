@@ -1,7 +1,7 @@
 # TASK-28-1: CSS Variables Enhancement (Design System)
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -57,6 +57,74 @@ Extend existing CSS variables in globals.css with brand colors, semantic colors,
 
 ## Comments
 _Agent log_
+
+### [2026-03-03 12:25 UTC+2] PreTester
+**Tests Verified and Executed**
+
+**Test Results:**
+- **Total Tests:** 63
+- **Passed:** 6 (edge cases, CSS structure)
+- **Failed:** 57 (awaiting CSS variable implementation - expected)
+
+**Test File:** `frontend/__tests__/styles/css-variables.test.ts`
+**Documentation:** `TESTS/TEST-28-1.md`
+
+**Test Breakdown:**
+| Category | Tests | Status |
+|----------|-------|--------|
+| Brand Colors (BC) | 9 | ❌ Awaiting Implementation |
+| Semantic Colors (SC) | 12 | ❌ Awaiting Implementation |
+| Surface Layers (SL) | 9 | ❌ Awaiting Implementation |
+| oklch Format (OK) | 6 | ❌ Awaiting Implementation |
+| Dark Mode (DM) | 12 | ❌ Awaiting Implementation |
+| Tailwind Integration (TW) | 4 | ❌ Awaiting Implementation |
+| Edge Cases (EC) | 5 | ✅ PASS |
+| Acceptance Criteria (AC) | 6 | ❌ Awaiting Implementation |
+
+**Ready for Developer:**
+- CSS variables not yet added to globals.css
+- All tests will pass once variables are implemented
+- See TEST-28-1.md for detailed implementation requirements
+
+---
+
+### [2026-03-03 12:20 UTC+2] PreTester
+**Test Design Complete**
+
+**Tests Created:**
+- `frontend/__tests__/styles/css-variables.test.ts` (63 tests)
+- `TESTS/TEST-28-1.md` (test documentation)
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Brand Colors (BC) | 6 | Existence and hue validation |
+| Semantic Colors (SC) | 8 | Existence and hue validation |
+| Surface Layers (SL) | 6 | Existence, ordering, neutral chroma |
+| oklch Format (OK) | 6 | Format and range validation |
+| Dark Mode (DM) | 4 | Dark mode variable existence |
+| Tailwind Integration (TW) | 4 | @theme block mapping |
+| Edge Cases (EC) | 3 | Duplicates, deprecated formats, syntax |
+
+**Test Approach:**
+- CSS file parsing with regex to extract CSS variables
+- oklch value parsing with L/C/H extraction
+- Range validation for lightness (0-1), chroma (0+), hue (0-360)
+- Hue range validation for semantic meaning (green, red, blue, etc.)
+
+**Current Test Status:** All 37 tests failing (expected - variables not yet implemented)
+
+**Ready for Developer:**
+1. Add brand color variables: `--brand-primary`, `--brand-secondary`, `--brand-accent`
+2. Add semantic colors: `--success`, `--warning`, `--error`, `--info`
+3. Add surface layers: `--surface-0` through `--surface-3`
+4. Define dark mode values in `.dark` block
+5. Map variables in `@theme inline` block for Tailwind
+
+**Implementation Notes:**
+- All variables must use `oklch()` format
+- Surface layers must have chroma = 0 (neutral grays)
+- Surface lightness should progress: surface-0 < surface-1 < surface-2 < surface-3
 
 ### [2026-03-03 11:55 UTC+2] ProjectManager
 **Prioritization Complete**

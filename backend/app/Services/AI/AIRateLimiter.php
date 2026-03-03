@@ -6,250 +6,195 @@ use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 /**
- * AI Rate Limiter Service (TASK-21-10).
+ * AI Rate Limiter Service.
  *
  * Implements sliding window rate limiting for AI suggestion endpoints.
  * Provides per-user and per-IP rate limiting with configurable thresholds.
  *
- * Features:
- * - Sliding window algorithm for accurate rate limiting
- * - Per-user limits for authenticated users
- * - Per-IP limits for anonymous requests
- * - Configurable limits via config/ai.php
- * - Admin whitelist support
- *
- * @see https://seoindicator.com/docs/rate-limiting
+ * @see TASK-21-10: Add Rate Limiting
  */
 class AIRateLimiter
 {
+    /**
+     * Cache key prefix for rate limit storage.
+     */
+    private const KEY_PREFIX = 'ai_rate_limit:';
+
     /**
      * Default window duration in seconds (1 hour).
      */
     private const DEFAULT_WINDOW_SECONDS = 3600;
 
     /**
-     * Check if the identifier is within the rate limit.
+     * Check if an identifier is within rate limits.
      *
-     * @param string $identifier The unique identifier (e.g., "user:123" or "ip:127.0.0.1")
-     * @param string $type The rate limit type ('user' or 'ip')
-     * @return bool True if within limit, false if exceeded
+     * @param string $identifier The identifier (e.g., "user:123" or "ip:127.0.0.1")
+     * @param string $type The type of limit ('user' or 'ip')
+     * @return bool True if within limits, false if exceeded
      */
     public function checkLimit(string $identifier, string $type): bool
     {
-        $key = $this->getCacheKey($identifier);
-        $timestamps = $this->getValidTimestamps($key, $type);
         $limit = $this->getLimit($type);
-
+        
+        // Zero limit means always blocked
+        if ($limit <= 0) {
+            return false;
+        }
+        
+        $timestamps = $this->getValidTimestamps($identifier, $type);
+        
         return count($timestamps) < $limit;
     }
 
     /**
-     * Get the number of remaining requests for the identifier.
+     * Get the remaining requests for an identifier.
      *
-     * @param string $identifier The unique identifier
-     * @param string $type The rate limit type ('user' or 'ip')
-     * @return int Number of remaining requests (minimum 0)
+     * @param string $identifier The identifier
+     * @param string $type The type of limit ('user' or 'ip')
+     * @return int Number of remaining requests (never negative)
      */
     public function getRemaining(string $identifier, string $type): int
     {
-        $key = $this->getCacheKey($identifier);
-        $timestamps = $this->getValidTimestamps($key, $type);
         $limit = $this->getLimit($type);
-
-        $remaining = $limit - count($timestamps);
-
-        return max(0, $remaining);
+        $timestamps = $this->getValidTimestamps($identifier, $type);
+        $used = count($timestamps);
+        
+        return max(0, $limit - $used);
     }
 
     /**
      * Get the Unix timestamp when the rate limit window resets.
      *
-     * Returns the timestamp of the oldest request + window duration,
-     * or current time + window if no requests exist.
-     *
-     * @param string $identifier The unique identifier
-     * @param string $type The rate limit type ('user' or 'ip')
+     * @param string $identifier The identifier
+     * @param string $type The type of limit ('user' or 'ip')
      * @return int Unix timestamp of reset time
      */
     public function getResetTime(string $identifier, string $type): int
     {
-        $key = $this->getCacheKey($identifier);
-        $timestamps = $this->getValidTimestamps($key, $type);
+        $timestamps = $this->getValidTimestamps($identifier, $type);
         $windowSeconds = $this->getWindowSeconds($type);
-
+        
         if (empty($timestamps)) {
+            // No requests yet, reset is one window from now
             return time() + $windowSeconds;
         }
-
-        // Find the oldest timestamp
-        $oldestTimestamp = null;
-        foreach ($timestamps as $timestamp) {
-            $ts = $this->parseTimestamp($timestamp);
-            if ($ts !== null && ($oldestTimestamp === null || $ts < $oldestTimestamp)) {
-                $oldestTimestamp = $ts;
-            }
-        }
-
-        if ($oldestTimestamp === null) {
-            return time() + $windowSeconds;
-        }
-
-        // Reset time is oldest timestamp + window (convert Carbon to Unix timestamp)
-        return $oldestTimestamp->getTimestamp() + $windowSeconds;
+        
+        // Find the oldest valid timestamp
+        $oldestTimestamp = min(array_map(function ($ts) {
+            return Carbon::parse($ts)->timestamp;
+        }, $timestamps));
+        
+        // Reset is one window after the oldest request
+        return $oldestTimestamp + $windowSeconds;
     }
 
     /**
-     * Increment the request count for the identifier.
+     * Increment the request count for an identifier.
      *
-     * Adds the current timestamp to the sliding window.
-     *
-     * @param string $identifier The unique identifier
-     * @param string $type The rate limit type ('user' or 'ip')
-     * @return void
+     * @param string $identifier The identifier
+     * @param string $type The type of limit ('user' or 'ip')
      */
     public function increment(string $identifier, string $type): void
     {
-        $key = $this->getCacheKey($identifier);
+        $key = $this->getCacheKey($identifier, $type);
         $windowSeconds = $this->getWindowSeconds($type);
-
+        
         // Get existing timestamps
-        $timestamps = $this->getValidTimestamps($key, $type);
-
+        $timestamps = Cache::get($key, []);
+        
         // Add current timestamp
         $timestamps[] = Carbon::now()->toIso8601String();
-
-        // Store updated timestamps with TTL = window + buffer
+        
+        // Store with TTL slightly longer than window
         Cache::put($key, $timestamps, $windowSeconds + 60);
     }
 
     /**
-     * Get the rate limit for the specified type.
+     * Get the configured limit for a type.
      *
-     * @param string $type The rate limit type ('user' or 'ip')
-     * @return int Maximum requests per window
+     * @param string $type The type ('user' or 'ip')
+     * @return int The limit
      */
     public function getLimit(string $type): int
     {
-        $config = config("ai.rate_limits.{$type}");
-
-        if ($config && isset($config['limit'])) {
-            $limit = (int) $config['limit'];
-            // Handle negative limits gracefully
-            return max(0, $limit);
-        }
-
-        // Fallback defaults
-        return $type === 'user' ? 20 : 10;
+        $limit = config("ai.rate_limits.{$type}.limit", $this->getDefaultLimit($type));
+        
+        // Ensure non-negative
+        return max(0, (int) $limit);
     }
 
     /**
-     * Get the window duration in seconds for the specified type.
+     * Get the window duration in seconds for a type.
      *
-     * @param string $type The rate limit type ('user' or 'ip')
+     * @param string $type The type ('user' or 'ip')
      * @return int Window duration in seconds
      */
-    protected function getWindowSeconds(string $type): int
+    public function getWindowSeconds(string $type): int
     {
-        $config = config("ai.rate_limits.{$type}");
-
-        if ($config && isset($config['window_seconds'])) {
-            return (int) $config['window_seconds'];
-        }
-
-        return self::DEFAULT_WINDOW_SECONDS;
+        return (int) config("ai.rate_limits.{$type}.window_seconds", self::DEFAULT_WINDOW_SECONDS);
     }
 
     /**
-     * Get the cache key for the identifier.
+     * Get valid (non-expired) timestamps for an identifier.
      *
-     * @param string $identifier The unique identifier
-     * @return string Cache key
+     * @param string $identifier The identifier
+     * @param string $type The type
+     * @return array Array of valid timestamps
      */
-    protected function getCacheKey(string $identifier): string
+    private function getValidTimestamps(string $identifier, string $type): array
     {
-        return "ai_rate_limit:{$identifier}";
-    }
-
-    /**
-     * Get valid (non-expired) timestamps from cache.
-     *
-     * Filters out timestamps older than the window duration.
-     *
-     * @param string $key The cache key
-     * @param string $type The rate limit type
-     * @return array<string> Array of valid ISO 8601 timestamps
-     */
-    protected function getValidTimestamps(string $key, string $type): array
-    {
+        $key = $this->getCacheKey($identifier, $type);
         $timestamps = Cache::get($key, []);
+        
+        if (empty($timestamps)) {
+            return [];
+        }
+        
         $windowSeconds = $this->getWindowSeconds($type);
         $windowStart = Carbon::now()->subSeconds($windowSeconds);
-
-        return array_filter($timestamps, function ($timestamp) use ($windowStart) {
-            $ts = $this->parseTimestamp($timestamp);
-            return $ts !== null && $ts > $windowStart;
-        });
+        
+        // Filter out expired timestamps and invalid entries
+        return array_values(array_filter($timestamps, function ($timestamp) use ($windowStart) {
+            if (!is_string($timestamp)) {
+                return false;
+            }
+            
+            try {
+                $parsed = Carbon::parse($timestamp);
+                return $parsed->isAfter($windowStart);
+            } catch (\Exception $e) {
+                return false;
+            }
+        }));
     }
 
     /**
-     * Parse a timestamp string to a Carbon instance.
+     * Build the cache key for an identifier.
      *
-     * Handles both ISO 8601 strings and other formats.
-     *
-     * @param mixed $timestamp The timestamp to parse
-     * @return Carbon|null Parsed Carbon instance or null if invalid
+     * @param string $identifier The identifier
+     * @param string $type The type
+     * @return string Cache key
      */
-    protected function parseTimestamp(mixed $timestamp): ?Carbon
+    private function getCacheKey(string $identifier, string $type): string
     {
-        if (!is_string($timestamp)) {
-            return null;
-        }
-
-        try {
-            return Carbon::parse($timestamp);
-        } catch (\Exception $e) {
-            return null;
-        }
+        // Sanitize identifier - remove null bytes and other problematic characters
+        $sanitized = preg_replace('/[\x00-\x1F]/', '', $identifier);
+        
+        return self::KEY_PREFIX . $sanitized;
     }
 
     /**
-     * Clear the rate limit for an identifier (for testing/admin purposes).
+     * Get the default limit for a type when config is missing.
      *
-     * @param string $identifier The unique identifier
-     * @return void
+     * @param string $type The type
+     * @return int Default limit
      */
-    public function clear(string $identifier): void
+    private function getDefaultLimit(string $type): int
     {
-        $key = $this->getCacheKey($identifier);
-        Cache::forget($key);
-    }
-
-    /**
-     * Check if admin whitelist is enabled.
-     *
-     * When enabled, admin users bypass rate limiting.
-     *
-     * @return bool
-     */
-    public function isAdminWhitelistEnabled(): bool
-    {
-        return (bool) config('ai.rate_limits.admin_whitelist', true);
-    }
-
-    /**
-     * Get the retry-after time in seconds.
-     *
-     * Calculates how long until the oldest request expires from the window.
-     *
-     * @param string $identifier The unique identifier
-     * @param string $type The rate limit type ('user' or 'ip')
-     * @return int Seconds until retry is possible
-     */
-    public function getRetryAfter(string $identifier, string $type): int
-    {
-        $resetTime = $this->getResetTime($identifier, $type);
-        $retryAfter = $resetTime - time();
-
-        return max(1, $retryAfter);
+        return match ($type) {
+            'ip' => 10,
+            'user' => 20,
+            default => 20,
+        };
     }
 }

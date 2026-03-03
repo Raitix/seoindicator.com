@@ -58,4 +58,30 @@ Use `TESTS/SPEC-X-Y.md` with sections:
 
 ---
 
-Last updated: 2026-02-26
+## CSS Testing
+
+### CSS Variables Testing (TASK-28-1)
+- Parse CSS files with regex to extract variable definitions
+- Use `fs.readFileSync` to read CSS file content
+- Match `:root` and `.dark` blocks separately
+- Match variable patterns: `/--([\w-]+)\s*:\s*([^;]+);/g`
+- Parse oklch values with: `/oklch\s*\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)/`
+- Test for:
+  - Variable existence in correct scope
+  - Valid oklch format
+  - Lightness range (0-1)
+  - Chroma range (0+)
+  - Hue range (0-360)
+  - Semantic hue ranges (green ≈ 120-160, red ≈ 0-50, blue ≈ 200-260)
+
+### oklch Color Space
+- Format: `oklch(L C H)` where:
+  - L = Lightness (0-1)
+  - C = Chroma (0+, higher = more saturated)
+  - H = Hue (0-360 degrees)
+- Neutral colors have C = 0
+- Modern browsers support oklch (no IE support)
+
+---
+
+Last updated: 2026-03-03
