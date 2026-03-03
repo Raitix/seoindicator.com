@@ -1,7 +1,7 @@
 # TASK-28-3: Add shadcn/ui Components
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -60,6 +60,35 @@ npx shadcn@latest add separator
 
 ## Comments
 _Agent log_
+
+### [2026-03-03 12:45 UTC+2] PreTester
+**Test Design Complete**
+
+**Key Findings:**
+- 3 components already installed: `progress`, `dropdown-menu`, `separator`
+- 6 components need installation: `skeleton`, `badge`, `tooltip`, `avatar`, `sheet`, `tabs`
+- All existing components have dark theme styling
+
+**Tests Created:**
+- `TESTS/TEST-28-3.md` - Test documentation (65 scenarios)
+- `frontend/__tests__/components/ui/shadcn-components.test.tsx` - Test file
+
+**Test Categories:**
+- Component Existence (9 tests) - verify files exist
+- Component Exports (9 tests) - verify exports work
+- Component Rendering (13 tests) - verify components render
+- Dark Theme (7 tests) - verify dark mode classes
+- Tailwind Integration (4 tests) - verify cn() and className
+- Edge Cases (6 tests) - boundary conditions
+- Acceptance Criteria (11 tests) - full coverage
+
+**Implementation Notes:**
+1. Run `npx shadcn@latest add skeleton badge tooltip avatar sheet tabs`
+2. Existing components (progress, dropdown-menu, separator) already pass tests
+3. All components should use `cn()` utility and dark: Tailwind classes
+
+---
+*Handed off to Developer for implementation.*
 
 ### [2026-03-03 12:28 UTC+2] ProjectManager
 **Prioritization Complete**
