@@ -16,15 +16,16 @@ $result = json_decode($response->content, true);
 
 echo "Score: " . $result['score'] . "\n";
 echo "Issues: " . json_encode($result['issues'], JSON_PRETTY_PRINT) . "\n";
-echo "CTA count check:\n";
+echo "CTA count check with word boundaries:\n";
 
 $description = 'Premium widgets starting at $9.99 - Shop now!';
 $ctaPatterns = ['buy', 'shop', 'order', 'get', 'find', 'discover', 'learn', 'try', 'start', 'call', 'visit', 'download', 'sign up', 'contact', 'book', 'save', 'free'];
 $ctaCount = 0;
 foreach ($ctaPatterns as $cta) {
-    if (mb_stripos($description, $cta) !== false) {
+    if (preg_match('/\b' . preg_quote($cta, '/') . '\b/i', $description)) {
         echo "  - Found CTA: '$cta'\n";
         $ctaCount++;
     }
 }
 echo "Total CTA count: $ctaCount\n";
+
