@@ -1,7 +1,7 @@
 # TASK-28-8: Homepage Integration
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -113,6 +113,69 @@ _Agent log_
 - Tests can be designed NOW (TDD with mocks)
 - Development waits for TASK-28-7 → `To Test Locally`
 - Homepage integration is final step of Phase 2
+
+---
+
+### [2026-03-03 14:00 UTC+2] PreTester
+**Test Design Complete**
+
+**Tests Created:**
+- `frontend/__tests__/pages/home-page.test.tsx` - 71 test scenarios
+- `TESTS/TEST-28-8.md` - Test documentation
+
+**Test Coverage:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Rendering (HI-001) | 5 | Component mount, structure, sections |
+| IndicatorCatalog Integration (HI-002) | 5 | Catalog in hero, data flow |
+| Hero Section Design (HI-003) | 6 | h1, subtitle, CTA, gradient |
+| Responsive Layout (HI-004) | 6 | Mobile/tablet/desktop breakpoints |
+| Navigation Links (HI-005) | 6 | Dashboard, tools, comparison links |
+| Entrance Animations (HI-006) | 4 | Animation classes, reduced motion |
+| Performance Optimization (HI-007) | 5 | CLS, hydration, critical CSS |
+| Existing Functionality (HI-008) | 8 | Features grid, status bar, footer |
+| Accessibility (HI-009) | 7 | Heading hierarchy, focus, ARIA |
+| CSS Variables Integration (HI-010) | 3 | Brand colors, surface layers |
+| Error Handling (HI-011) | 2 | Missing data, loading states |
+| Edge Cases (HI-012) | 5 | Long values, unicode, rapid renders |
+| Snapshots (HI-013) | 3 | Visual regression baseline |
+| TypeScript Types (HI-TS) | 2 | Return type, interface compatibility |
+
+**Key Test Patterns:**
+- Mocked IndicatorCatalog, Button, Input, Card components
+- Mocked Next.js Link component for navigation testing
+- Role-based queries for accessibility testing
+- prefers-reduced-motion media query mock for animation testing
+- Snapshot tests for visual regression baseline
+
+**Dependencies Verified:**
+- TASK-28-7 (IndicatorCatalog): ✅ Mocked in tests - interface defined
+- TASK-28-1 (CSS Variables): ✅ Tests verify class usage
+
+**Implementation Notes for Developer:**
+1. Create `frontend/app/page.tsx` (modify existing)
+2. Import IndicatorCatalog from `@/components/indicators`
+3. Place IndicatorCatalog in hero section after h1/description
+4. Apply gradient background using CSS variables or brand colors
+5. Add entrance animations with `animate-*` or CSS transitions
+6. Ensure all existing sections preserved (features, status, footer)
+7. Implement responsive padding: `py-12 md:py-16 lg:py-20`
+8. Test accessibility: one h1, ARIA landmarks, keyboard focus
+
+**Hero Section Structure:**
+```tsx
+<section role="region" aria-label="Hero" className="...">
+  <h1>Track Your SEO Performance</h1>
+  <p>Description text...</p>
+  <IndicatorCatalog indicators={indicators} />
+  <div className="flex gap-4 justify-center">
+    <Input placeholder="Enter your email" />
+    <Button>Get Started</Button>
+  </div>
+</section>
+```
+
+**Status Changed:** `To Write Tests` → `To Develop`
 
 ---
 *Created by SpecSystemAnalyst from SPEC-028*
