@@ -65,6 +65,10 @@ class MobileFriendlyChecker extends SEOTool
         $result = $this->fetchAndParse($url);
 
         if (!$result['success']) {
+            // Handle empty HTML gracefully - return success with low score
+            if (($result['errorCode'] ?? '') === 'PARSE_ERROR' && str_contains($result['error'] ?? '', 'empty')) {
+                return $this->success($this->getEmptyHtmlAnalysis(), $url);
+            }
             $errorCode = $result['errorCode'] ?? 'FETCH_ERROR';
             return $this->error($result['error'], $url, $errorCode);
         }
@@ -77,6 +81,63 @@ class MobileFriendlyChecker extends SEOTool
         $analysis = $this->analyzeMobileFriendliness($parsed, $html, $finalUrl);
 
         return $this->success($analysis, $url);
+    }
+
+    /**
+     * Get analysis result for empty HTML content.
+     *
+     * @return array
+     */
+    private function getEmptyHtmlAnalysis(): array
+    {
+        return [
+            'mobileScore' => 0,
+            'viewport' => [
+                'present' => false,
+                'content' => null,
+                'valid' => false,
+                'hasDeviceWidth' => false,
+                'hasInitialScale' => false,
+                'userScalable' => true,
+                'maxScale' => null,
+                'hasFixedWidth' => false,
+            ],
+            'responsiveIndicators' => [
+                'hasMediaQueries' => false,
+                'hasFlexibleGrid' => false,
+                'hasFlexibleImages' => false,
+                'mediaQueryCount' => 0,
+            ],
+            'readability' => [
+                'fontSizeMin' => null,
+                'fontSizeWarning' => false,
+                'smallFontCount' => 0,
+            ],
+            'tapTargets' => [
+                'links' => 0,
+                'buttons' => 0,
+                'smallTargets' => 0,
+                'warning' => null,
+            ],
+            'horizontalScroll' => [
+                'detected' => false,
+                'cause' => null,
+            ],
+            'issues' => [
+                [
+                    'severity' => 'critical',
+                    'message' => 'The page returned empty content.',
+                    'category' => 'content',
+                ],
+            ],
+            'recommendations' => [
+                [
+                    'type' => 'info',
+                    'message' => 'The page appears to be empty. Please check the URL.',
+                ],
+            ],
+            'previewUrl' => null,
+        ];
     }
 
     /**
@@ -288,13 +349,14 @@ class MobileFriendlyChecker extends SEOTool
             'warning' => null,
         ];
 
-        // Count links (from parsed data or regex)
-        $analysis['links'] = $parsed['linkCount'] ?? preg_match_all('/<a\s[^>]*href/i', $html, $matches);
+        // Find hidden selectors from CSS (classes with display: none)
+        $hiddenSelectors = $this->findHiddenSelectors($html);
+
+        // Count visible links (excluding hidden ones)
+        $analysis['links'] = $this->countVisibleLinks($html, $hiddenSelectors);
 
         // Count buttons
-        preg_match_all('/<button[^>]*>/i', $html, $buttonMatches);
-        preg_match_all('/<input[^>]*type\s*=\s*["\']?(submit|button|reset)["\']?[^>]*>/i', $html, $inputMatches);
-        $analysis['buttons'] = count($buttonMatches[0] ?? []) + count($inputMatches[0] ?? []);
+        $analysis['buttons'] = $this->countVisibleButtons($html, $hiddenSelectors);
 
         // Check for small tap targets in CSS
         // This is a simplified check - real implementation would parse computed styles
@@ -316,6 +378,127 @@ class MobileFriendlyChecker extends SEOTool
         }
 
         return $analysis;
+    }
+
+    /**
+     * Find CSS selectors for hidden elements (display: none).
+     *
+     * @param string $html
+     * @return array Array of hidden class names and IDs
+     */
+    private function findHiddenSelectors(string $html): array
+    {
+        $hiddenSelectors = [];
+
+        // Find classes with display: none in <style> tags
+        // Pattern matches: .classname { ... display: none ... } or .classname{...display:none...}
+        $pattern = '/\.([a-zA-Z_-][a-zA-Z0-9_-]*)\s*\{[^}]*display\s*:\s*none[^}]*\}/is';
+        if (preg_match_all($pattern, $html, $matches)) {
+            $hiddenSelectors['classes'] = $matches[1];
+        }
+
+        // Find IDs with display: none
+        $idPattern = '/#([a-zA-Z_-][a-zA-Z0-9_-]*)\s*\{[^}]*display\s*:\s*none[^}]*\}/is';
+        if (preg_match_all($idPattern, $html, $matches)) {
+            $hiddenSelectors['ids'] = $matches[1];
+        }
+
+        return $hiddenSelectors;
+    }
+
+    /**
+     * Check if an element is hidden based on its attributes.
+     *
+     * @param string $elementTag The full element tag (e.g., '<a href="#" class="hidden">')
+     * @param array $hiddenSelectors Array of hidden classes and IDs
+     * @return bool
+     */
+    private function isElementHidden(string $elementTag, array $hiddenSelectors): bool
+    {
+        // Check for inline style with display: none
+        if (preg_match('/style\s*=\s*["\'][^"\']*display\s*:\s*none[^"\']*["\']/i', $elementTag)) {
+            return true;
+        }
+
+        // Check for hidden attribute
+        if (preg_match('/\bhidden\b/i', $elementTag)) {
+            return true;
+        }
+
+        // Check if element has a class that is hidden
+        if (isset($hiddenSelectors['classes']) && preg_match('/class\s*=\s*["\']([^"\']+)["\']/i', $elementTag, $classMatch)) {
+            $classes = preg_split('/\s+/', $classMatch[1]);
+            foreach ($classes as $class) {
+                if (in_array($class, $hiddenSelectors['classes'])) {
+                    return true;
+                }
+            }
+        }
+
+        // Check if element has an ID that is hidden
+        if (isset($hiddenSelectors['ids']) && preg_match('/id\s*=\s*["\']([^"\']+)["\']/i', $elementTag, $idMatch)) {
+            if (in_array($idMatch[1], $hiddenSelectors['ids'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Count visible links, excluding hidden ones.
+     *
+     * @param string $html
+     * @param array $hiddenSelectors
+     * @return int
+     */
+    private function countVisibleLinks(string $html, array $hiddenSelectors): int
+    {
+        // Find all <a> tags with href
+        if (!preg_match_all('/<a\s[^>]*href[^>]*>/i', $html, $matches)) {
+            return 0;
+        }
+
+        $visibleCount = 0;
+        foreach ($matches[0] as $linkTag) {
+            if (!$this->isElementHidden($linkTag, $hiddenSelectors)) {
+                $visibleCount++;
+            }
+        }
+
+        return $visibleCount;
+    }
+
+    /**
+     * Count visible buttons, excluding hidden ones.
+     *
+     * @param string $html
+     * @param array $hiddenSelectors
+     * @return int
+     */
+    private function countVisibleButtons(string $html, array $hiddenSelectors): int
+    {
+        $count = 0;
+
+        // Find all <button> tags
+        if (preg_match_all('/<button[^>]*>/i', $html, $matches)) {
+            foreach ($matches[0] as $buttonTag) {
+                if (!$this->isElementHidden($buttonTag, $hiddenSelectors)) {
+                    $count++;
+                }
+            }
+        }
+
+        // Find all <input type="submit|button|reset"> tags
+        if (preg_match_all('/<input[^>]*type\s*=\s*["\']?(submit|button|reset)["\']?[^>]*>/i', $html, $matches)) {
+            foreach ($matches[0] as $inputTag) {
+                if (!$this->isElementHidden($inputTag, $hiddenSelectors)) {
+                    $count++;
+                }
+            }
+        }
+
+        return $count;
     }
 
     /**
