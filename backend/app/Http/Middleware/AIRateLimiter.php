@@ -5,7 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use App\Services\AI\AIRateLimiter;
+use App\Services\AI\AIRateLimiter as AIRateLimiterService;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
@@ -21,10 +21,10 @@ class AIRateLimiter
     /**
      * Create a new middleware instance.
      *
-     * @param AIRateLimiter $rateLimiter
+     * @param AIRateLimiterService $rateLimiter
      */
     public function __construct(
-        protected AIRateLimiter $rateLimiter
+        protected AIRateLimiterService $rateLimiter
     ) {}
 
     /**
@@ -133,9 +133,9 @@ class AIRateLimiter
      *
      * @param string $identifier
      * @param string $type
-     * @return Response
+     * @return SymfonyResponse
      */
-    protected function buildLimitExceededResponse(string $identifier, string $type): Response
+    protected function buildLimitExceededResponse(string $identifier, string $type): SymfonyResponse
     {
         $resetTime = $this->rateLimiter->getResetTime($identifier, $type);
         $retryAfter = max(1, $resetTime - time());

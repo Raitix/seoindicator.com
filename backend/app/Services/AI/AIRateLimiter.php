@@ -177,10 +177,14 @@ class AIRateLimiter
      */
     private function getCacheKey(string $identifier, string $type): string
     {
-        // Sanitize identifier - remove null bytes and other problematic characters
-        $sanitized = preg_replace('/[\x00-\x1F]/', '', $identifier);
+        // Handle null bytes - truncate at first null byte (like C strings)
+        // This prevents null byte injection attacks
+        $nullPos = strpos($identifier, "\x00");
+        if ($nullPos !== false) {
+            $identifier = substr($identifier, 0, $nullPos);
+        }
         
-        return self::KEY_PREFIX . $sanitized;
+        return self::KEY_PREFIX . $identifier;
     }
 
     /**
