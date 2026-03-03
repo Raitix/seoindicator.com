@@ -1,7 +1,7 @@
 # TASK-16-7: Mobile-Friendly Checker Tool
 
 ## STATUS
-`To Test Prod`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -197,3 +197,36 @@ All acceptance criteria validated. Ready for DevOps to deploy.
 - Status: To Test Prod
 
 **Handoff:** ProdTester to validate Mobile-Friendly Checker in production.
+
+### [2026-03-03 12:20] Agent: ProdTester
+**PRODUCTION TEST: FAILED**
+
+**Issue:** Tool not registered in API layer - cannot be accessed via API.
+
+**Evidence:**
+1. Health check: ✅ 200 OK
+2. `/api/v1/tools` returns only 3 tools: `meta-tag-analyzer`, `keyword-density-checker`, `social-media-preview`
+3. `mobile-friendly` tool is NOT in the list
+4. POST to `/api/v1/tools/analyze` with `tool=mobile-friendly` returns 422 validation error
+
+**Root Cause:** 
+The MobileFriendlyChecker service exists and unit tests pass (48/48), but the tool was never registered in:
+1. **ProxyAnalyzeRequest.php** - validation `in:` rule doesn't include `mobile-friendly`
+2. **APIProxyController.php** - `tools()` method doesn't list the tool
+
+**Required Fix:**
+1. Update `ProxyAnalyzeRequest.php` validation rule:
+   ```php
+   'tool' => ['nullable', 'string', 'in:meta-tag-analyzer,keyword-density-checker,social-media-preview,mobile-friendly'],
+   ```
+2. Update `APIProxyController.php` `tools()` method to include:
+   ```php
+   [
+       'id' => 'mobile-friendly',
+       'name' => 'Mobile-Friendly Checker',
+       'description' => 'Analyzes mobile readiness including viewport, responsive design, tap targets, and font sizes.',
+       'requiresKeyword' => false,
+   ]
+   ```
+
+**Status:** Returned to `To Develop` for API registration fix.
