@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\SetModelPreferenceRequest;
+use App\Models\UserModelPreference;
+use App\Models\AIModel;
 use App\Services\Billing\ModelPricingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * ModelController - API endpoint for listing available AI models.
@@ -359,6 +363,109 @@ class ModelController extends Controller
         $outputCost = ($outputTokens / 1000) * (float) $model->cost_per_1k_output;
 
         return round($inputCost + $outputCost, 2);
+    }
+
+    /**
+     * Get user's model preferences.
+     *
+     * TASK-26-19: User Model Preferences
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function preferences(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $preferences = UserModelPreference::forUser($user->id)
+            ->with(['aiModel' => function ($query) {
+                $query->where('is_active', true);
+            }])
+            ->ordered()
+            ->get();
+
+        // Filter out preferences for inactive/deleted models
+        $preferences = $preferences->filter(fn ($pref) => $pref->aiModel !== null);
+
+        // Transform to response format
+        $data = $preferences->map(function ($preference) {
+            return [
+                'id' => $preference->id,
+                'model' => [
+                    'id' => $preference->aiModel->id,
+                    'display_name' => $preference->aiModel->display_name,
+                    'provider' => $preference->aiModel->provider,
+                ],
+                'is_default' => $preference->is_default,
+            ];
+        })->values()->toArray();
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
+    /**
+     * Set user's model preference.
+     *
+     * TASK-26-19: User Model Preferences
+     *
+     * @param SetModelPreferenceRequest $request
+     * @return JsonResponse
+     */
+    public function setPreference(SetModelPreferenceRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $modelId = $request->input('model_id');
+        $isDefault = $request->input('is_default', false);
+
+        // Get the model
+        $model = AIModel::findOrFail($modelId);
+
+        // If setting as default, unset any existing default first
+        if ($isDefault) {
+            UserModelPreference::where('user_id', $user->id)
+                ->where('is_default', true)
+                ->update(['is_default' => false]);
+        }
+
+        // Create or update the preference
+        $preference = UserModelPreference::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'model_id' => $modelId,
+            ],
+            [
+                'is_default' => $isDefault,
+            ]
+        );
+
+        // Log the preference change
+        Log::info('User model preference updated', [
+            'user_id' => $user->id,
+            'model_id' => $modelId,
+            'is_default' => $isDefault,
+        ]);
+
+        // Build response
+        $responseData = [
+            'success' => true,
+            'data' => [],
+        ];
+
+        // If this is now the default, include it in the response
+        if ($isDefault) {
+            $responseData['data'] = [
+                'default_model' => [
+                    'id' => $model->id,
+                    'display_name' => $model->display_name,
+                    'provider' => $model->provider,
+                ],
+            ];
+        }
+
+        return response()->json($responseData);
     }
 
     /**
