@@ -1,7 +1,7 @@
 # TASK-23-5: Scheduled Daily Backlink Sync
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium` (Confirmed)
@@ -95,3 +95,38 @@ _Agent communication log_
 - Both tasks depend only on TASK-23-4 (Done)
 
 Handing off to PreTester for test design.
+
+### [2026-03-03 11:16] Agent: PreTester
+**Tests Complete**
+
+- **Test Files Created:**
+  - `backend/tests/Unit/Console/BacklinksScheduleTest.php` — 40 tests covering schedule configuration, environment settings, job dispatch, logging
+  - `backend/tests/Unit/Services/BacklinkSyncSchedulerServiceTest.php` — 32 tests covering service methods, filtering, error handling
+- **Test Documentation:** `TESTS/TASK-23-5.md`
+- **Total:** 72 tests
+
+**Test Coverage:**
+- Schedule registration and timing (daily at configurable time, default 03:00)
+- Schedule constraints (`withoutOverlapping`, `onOneServer`)
+- Environment configuration (`BACKLINKS_SYNC_ENABLED`, `BACKLINKS_SYNC_TIME`)
+- Active GSC connection filtering (active, expired, revoked tokens)
+- Last sync timestamp logic (skip if synced today)
+- Job dispatch with load spreading over 30 minutes
+- Job batching for progress tracking
+- Comprehensive logging (start, complete, errors, skipped count)
+- Edge cases (large project counts, timezone handling, missing data)
+
+**Expected Deliverables for Developer:**
+1. `config/backlinks.php` — Configuration file with `sync_enabled` and `sync_time`
+2. `app/Services/BacklinkSyncSchedulerService.php` — Service class with methods:
+   - `getProjectsNeedingSync(): Collection`
+   - `dispatchSyncJobs(Collection $projects, int $spreadMinutes = 30): array`
+   - `runScheduledSync(): array`
+   - `forceSync(): array`
+   - `getSyncStats(): array`
+3. Console Kernel schedule registration for `backlinks:sync --all`
+4. Migration: Add `backlinks_last_synced_at` column to `projects` table
+
+**Test Status:** All tests fail as expected (TDD) — service class does not exist yet. Tests document expected behavior for Developer implementation.
+
+Handing off to Developer for implementation.
