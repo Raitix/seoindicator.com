@@ -483,38 +483,43 @@ describe('GenerateSuggestionsForm', () => {
       });
     });
 
-    it('should handle very long keywords', async () => {
-      const user = userEvent.setup();
-      const longKeyword = 'a'.repeat(300);
-      
+    it('should handle very long keywords', () => {
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
       const input = screen.getByTestId('seed-keyword-input');
-      // Input has maxLength of 255
-      await user.type(input, longKeyword);
+      const longKeyword = 'a'.repeat(300);
       
-      // Should be truncated to 255 characters
+      // Use fireEvent to set value directly (faster than user.type for long strings)
+      fireEvent.change(input, { target: { value: longKeyword } });
+      
+      // Should be truncated to 255 characters due to maxLength attribute
       expect(input).toHaveValue('a'.repeat(255));
     });
 
     it('should handle special characters', async () => {
-      const user = userEvent.setup();
       mockGenerateSuggestions.mockResolvedValueOnce({ jobId: '123', status: 'queued', count: 10 });
       
       render(<GenerateSuggestionsForm siteId={mockSiteId} />);
       
       const input = screen.getByTestId('seed-keyword-input');
-      await user.type(input, 'seo & tools $100 @gmail.com');
+      const specialKeyword = 'seo & tools $100 @gmail.com';
       
-      expect(input).toHaveValue('seo & tools $100 @gmail.com');
+      // Use fireEvent to set value directly (handles special chars better)
+      fireEvent.change(input, { target: { value: specialKeyword } });
       
-      await user.click(screen.getByTestId('generate-button'));
+      expect(input).toHaveValue(specialKeyword);
+      
+      // Enable the button by having a valid keyword
+      const button = screen.getByTestId('generate-button');
+      expect(button).not.toBeDisabled();
+      
+      fireEvent.click(button);
       
       await waitFor(() => {
         expect(mockGenerateSuggestions).toHaveBeenCalledWith(
           1,
           expect.objectContaining({
-            seedKeyword: 'seo & tools $100 @gmail.com',
+            seedKeyword: specialKeyword,
           })
         );
       });
@@ -548,17 +553,19 @@ describe('GenerateSuggestionsForm', () => {
   
   describe('Integration', () => {
     it('should complete full generation flow', async () => {
-      const user = userEvent.setup();
       mockGenerateSuggestions.mockResolvedValueOnce({ jobId: 'job-123', status: 'queued', count: 42 });
       
       render(<GenerateSuggestionsForm siteId={mockSiteId} onSuccess={mockOnSuccess} />);
       
       // 1. Enter seed keyword
-      await user.type(screen.getByTestId('seed-keyword-input'), 'seo tools');
+      const input = screen.getByTestId('seed-keyword-input');
+      fireEvent.change(input, { target: { value: 'seo tools' } });
+      expect(input).toHaveValue('seo tools');
       
-      // 2. Toggle sources (keep defaults)
-      await user.click(screen.getByTestId('source-question')); // Uncheck
-      expect(screen.getByTestId('source-question')).not.toBeChecked();
+      // 2. Toggle sources - uncheck question (keep suggest checked)
+      const questionCheckbox = screen.getByTestId('source-question');
+      fireEvent.click(questionCheckbox);
+      expect(questionCheckbox).not.toBeChecked();
       
       // 3. Adjust max results
       const slider = screen.getByTestId('max-results-slider');
@@ -566,7 +573,8 @@ describe('GenerateSuggestionsForm', () => {
       expect(screen.getByTestId('max-results-value')).toHaveTextContent('75');
       
       // 4. Submit form
-      await user.click(screen.getByTestId('generate-button'));
+      const button = screen.getByTestId('generate-button');
+      fireEvent.click(button);
       
       // 5. Verify API call
       await waitFor(() => {
