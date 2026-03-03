@@ -9,9 +9,11 @@ import React from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { http, HttpResponse } from 'msw';
-import { setupServer } from 'msw/node';
+import { SWRConfig } from 'swr';
+
+// Mock global fetch
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
 
 // ============================================================================
 // Mock Data
@@ -117,92 +119,14 @@ const mockAnalyzeResponse = {
 };
 
 // ============================================================================
-// MSW Server Setup
-// ============================================================================
-
-const defaultHandlers = [
-  http.get('/api/v1/sites/:siteId/pwa', ({ params }) => {
-    return HttpResponse.json(mockPWAAnalysisFull);
-  }),
-  http.post('/api/v1/sites/:siteId/pwa/analyze', () => {
-    return HttpResponse.json(mockAnalyzeResponse, { status: 202 });
-  }),
-  http.post('/api/v1/sites/:siteId/pwa/refresh', () => {
-    return HttpResponse.json(mockAnalyzeResponse, { status: 202 });
-  }),
-];
-
-const notFoundHandlers = [
-  http.get('/api/v1/sites/:siteId/pwa', () => {
-    return HttpResponse.json(mockAnalysisNotFound, { status: 404 });
-  }),
-  http.post('/api/v1/sites/:siteId/pwa/analyze', () => {
-    return HttpResponse.json(mockAnalyzeResponse, { status: 202 });
-  }),
-];
-
-const noManifestHandlers = [
-  http.get('/api/v1/sites/:siteId/pwa', () => {
-    return HttpResponse.json(mockPWANoManifest);
-  }),
-];
-
-const partialHandlers = [
-  http.get('/api/v1/sites/:siteId/pwa', () => {
-    return HttpResponse.json(mockPWAAnalysisPartial);
-  }),
-];
-
-const errorHandlers = [
-  http.get('/api/v1/sites/:siteId/pwa', () => {
-    return new HttpResponse(null, { status: 500 });
-  }),
-];
-
-const rateLimitHandlers = [
-  http.get('/api/v1/sites/:siteId/pwa', () => {
-    return HttpResponse.json(mockPWAAnalysisFull);
-  }),
-  http.post('/api/v1/sites/:siteId/pwa/analyze', () => {
-    return HttpResponse.json(
-      {
-        success: false,
-        error: {
-          code: 'RATE_LIMIT_EXCEEDED',
-          message: 'Too many requests',
-          retryAfter: 1800,
-        },
-      },
-      { status: 429 }
-    );
-  }),
-];
-
-const server = setupServer(...defaultHandlers);
-
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-
-// ============================================================================
 // Test Utilities
 // ============================================================================
 
-const createTestQueryClient = () =>
-  new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        gcTime: 0,
-        staleTime: 0,
-      },
-    },
-  });
-
-const renderWithQueryClient = (ui: React.ReactElement) => {
-  const queryClient = createTestQueryClient();
+const renderWithSWR = (ui: React.ReactElement) => {
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    <SWRConfig value={{ dedupingInterval: 0, provider: () => new Map() }}>
+      {ui}
+    </SWRConfig>
   );
 };
 
@@ -211,41 +135,80 @@ const defaultProps = {
   siteId: 1,
 };
 
+// Mock the PWA components since we're testing the dashboard container
+jest.mock('./PWAScoreGauge', () => ({
+  PWAScoreGauge: ({ score, readinessLevel }: any) => (
+    <div data-testid="pwa-score-gauge">
+      Score: {score}, Level: {readinessLevel}
+    </div>
+  ),
+  PWAScoreGaugeSkeleton: () => (
+    <div data-testid="pwa-score-gauge-skeleton">Loading gauge...</div>
+  ),
+}));
+
+jest.mock('./ManifestStatusCard', () => ({
+  ManifestStatusCard: ({ hasManifest, manifestUrl, manifestValid, fields }: any) => (
+    <div data-testid="manifest-status-card">
+      Has Manifest: {hasManifest ? 'Yes' : 'No'}, Valid: {manifestValid ? 'Yes' : 'No'}
+    </div>
+  ),
+  ManifestStatusCardSkeleton: () => (
+    <div data-testid="manifest-status-card-skeleton">Loading manifest...</div>
+  ),
+}));
+
 // ============================================================================
 // Tests
 // ============================================================================
 
 describe('PWADashboard Component', () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
   describe('PD-001: Component Rendering', () => {
     it('PD-001a: renders without crashing', async () => {
-      // Component should mount without errors
-      const { container } = renderWithQueryClient(
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
+
+      const { container } = renderWithSWR(
         <div data-testid="pwa-dashboard">Dashboard</div>
       );
       expect(screen.getByTestId('pwa-dashboard')).toBeInTheDocument();
     });
 
     it('PD-001b: shows loading skeleton on mount', async () => {
-      // Skeleton should be visible during initial fetch
-      renderWithQueryClient(
-        <div data-testid="pwa-skeleton" aria-busy="true">
-          Loading...
-        </div>
-      );
-      expect(screen.getByTestId('pwa-skeleton')).toBeInTheDocument();
+      // Create a promise that doesn't resolve immediately
+      let resolvePromise: any;
+      const pendingPromise = new Promise((resolve) => {
+        resolvePromise = resolve;
+      });
+
+      mockFetch.mockImplementationOnce(() => pendingPromise);
+
+      // Will verify skeleton is visible during initial fetch
+      expect(true).toBe(true);
     });
 
     it('PD-001c: renders child components after load', async () => {
-      // After successful load, ManifestStatusCard and PWAScoreGauge should be visible
-      server.use(...defaultHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
 
       // Will verify child components are present
       expect(true).toBe(true);
     });
 
     it('PD-001d: applies custom className', async () => {
-      // Custom className should be applied to container
-      const customClass = 'custom-dashboard-class';
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
+
       // Will verify className is applied
       expect(true).toBe(true);
     });
@@ -253,47 +216,51 @@ describe('PWADashboard Component', () => {
 
   describe('PD-002: Data Fetching', () => {
     it('PD-002a: fetches data on mount', async () => {
-      let fetchCount = 0;
-      server.use(
-        http.get('/api/v1/sites/:siteId/pwa', () => {
-          fetchCount++;
-          return HttpResponse.json(mockPWAAnalysisFull);
-        })
-      );
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
 
       // Will verify fetch is triggered on mount
       expect(true).toBe(true);
     });
 
     it('PD-002b: uses correct siteId in API call', async () => {
-      let capturedSiteId: string | null = null;
-      server.use(
-        http.get('/api/v1/sites/:siteId/pwa', ({ params }) => {
-          capturedSiteId = params.siteId as string;
-          return HttpResponse.json(mockPWAAnalysisFull);
-        })
-      );
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
 
       // Will verify siteId is passed correctly
       expect(true).toBe(true);
     });
 
     it('PD-002c: handles successful response', async () => {
-      server.use(...defaultHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
 
       // Will verify data is displayed after successful fetch
       expect(true).toBe(true);
     });
 
     it('PD-002d: handles 404 response gracefully', async () => {
-      server.use(...notFoundHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => mockAnalysisNotFound,
+      });
 
       // Will verify error state is shown with "Analyze Now" CTA
       expect(true).toBe(true);
     });
 
     it('PD-002e: handles 500 error gracefully', async () => {
-      server.use(...errorHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      });
 
       // Will verify error state is shown with retry option
       expect(true).toBe(true);
@@ -302,7 +269,11 @@ describe('PWADashboard Component', () => {
 
   describe('PD-003: Analyze Button', () => {
     it('PD-003a: shows "Analyze Now" button when no analysis', async () => {
-      server.use(...notFoundHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => mockAnalysisNotFound,
+      });
 
       // Will verify button is visible
       expect(true).toBe(true);
@@ -310,17 +281,18 @@ describe('PWADashboard Component', () => {
 
     it('PD-003b: triggers analyze endpoint on click', async () => {
       const user = userEvent.setup();
-      let analyzeCalled = false;
 
-      server.use(
-        http.get('/api/v1/sites/:siteId/pwa', () => {
-          return HttpResponse.json(mockAnalysisNotFound, { status: 404 });
-        }),
-        http.post('/api/v1/sites/:siteId/pwa/analyze', () => {
-          analyzeCalled = true;
-          return HttpResponse.json(mockAnalyzeResponse, { status: 202 });
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+          json: async () => mockAnalysisNotFound,
         })
-      );
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 202,
+          json: async () => mockAnalyzeResponse,
+        });
 
       // Will verify POST /analyze is called on button click
       expect(true).toBe(true);
@@ -328,10 +300,7 @@ describe('PWADashboard Component', () => {
 
     it('PD-003c: calls onAnalyzeClick callback', async () => {
       const user = userEvent.setup();
-      let callbackCalled = false;
-      const onAnalyzeClick = () => {
-        callbackCalled = true;
-      };
+      const onAnalyzeClick = jest.fn();
 
       // Will verify callback is invoked
       expect(true).toBe(true);
@@ -340,20 +309,6 @@ describe('PWADashboard Component', () => {
     it('PD-003d: shows loading state during analysis', async () => {
       const user = userEvent.setup();
 
-      server.use(
-        http.get('/api/v1/sites/:siteId/pwa', () => {
-          return HttpResponse.json(mockAnalysisNotFound, { status: 404 });
-        }),
-        http.post('/api/v1/sites/:siteId/pwa/analyze', () => {
-          // Delayed response
-          return new Promise((resolve) => {
-            setTimeout(() => {
-              resolve(HttpResponse.json(mockAnalyzeResponse, { status: 202 }));
-            }, 100);
-          });
-        })
-      );
-
       // Will verify loading state is shown
       expect(true).toBe(true);
     });
@@ -361,7 +316,10 @@ describe('PWADashboard Component', () => {
 
   describe('PD-004: Refresh Functionality', () => {
     it('PD-004a: shows refresh button when analysis exists', async () => {
-      server.use(...defaultHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
 
       // Will verify refresh button is visible
       expect(true).toBe(true);
@@ -369,17 +327,17 @@ describe('PWADashboard Component', () => {
 
     it('PD-004b: triggers refresh endpoint on click', async () => {
       const user = userEvent.setup();
-      let refreshCalled = false;
 
-      server.use(
-        http.get('/api/v1/sites/:siteId/pwa', () => {
-          return HttpResponse.json(mockPWAAnalysisFull);
-        }),
-        http.post('/api/v1/sites/:siteId/pwa/refresh', () => {
-          refreshCalled = true;
-          return HttpResponse.json(mockAnalyzeResponse, { status: 202 });
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockPWAAnalysisFull,
         })
-      );
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 202,
+          json: async () => mockAnalyzeResponse,
+        });
 
       // Will verify POST /refresh is called
       expect(true).toBe(true);
@@ -387,17 +345,6 @@ describe('PWADashboard Component', () => {
 
     it('PD-004c: invalidates cache on refresh', async () => {
       const user = userEvent.setup();
-      let fetchCount = 0;
-
-      server.use(
-        http.get('/api/v1/sites/:siteId/pwa', () => {
-          fetchCount++;
-          return HttpResponse.json(mockPWAAnalysisFull);
-        }),
-        http.post('/api/v1/sites/:siteId/pwa/refresh', () => {
-          return HttpResponse.json(mockAnalyzeResponse, { status: 202 });
-        })
-      );
 
       // Will verify new data is fetched after refresh
       expect(true).toBe(true);
@@ -407,7 +354,14 @@ describe('PWADashboard Component', () => {
   describe('PD-005: Rate Limiting', () => {
     it('PD-005a: shows retry message on 429', async () => {
       const user = userEvent.setup();
-      server.use(...rateLimitHandlers);
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        json: async () => ({
+          error: { retryAfter: 60 },
+        }),
+      });
 
       // Will verify rate limit message is shown
       expect(true).toBe(true);
@@ -415,7 +369,6 @@ describe('PWADashboard Component', () => {
 
     it('PD-005b: shows retry after countdown', async () => {
       const user = userEvent.setup();
-      server.use(...rateLimitHandlers);
 
       // Will verify countdown is displayed
       expect(true).toBe(true);
@@ -424,16 +377,10 @@ describe('PWADashboard Component', () => {
 
   describe('PD-006: SiteId Prop Changes', () => {
     it('PD-006a: re-fetches when siteId changes', async () => {
-      let fetchCount = 0;
-      let lastSiteId: string | null = null;
-
-      server.use(
-        http.get('/api/v1/sites/:siteId/pwa', ({ params }) => {
-          fetchCount++;
-          lastSiteId = params.siteId as string;
-          return HttpResponse.json(mockPWAAnalysisFull);
-        })
-      );
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
 
       // Will verify new fetch when siteId prop changes
       expect(true).toBe(true);
@@ -447,35 +394,50 @@ describe('PWADashboard Component', () => {
 
   describe('PD-007: Data Display', () => {
     it('PD-007a: shows PWA score', async () => {
-      server.use(...defaultHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
 
       // Will verify score (92) is displayed
       expect(true).toBe(true);
     });
 
     it('PD-007b: shows readiness level', async () => {
-      server.use(...defaultHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
 
       // Will verify readiness level ("full") is displayed
       expect(true).toBe(true);
     });
 
     it('PD-007c: shows manifest status card', async () => {
-      server.use(...defaultHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
 
       // Will verify ManifestStatusCard is rendered
       expect(true).toBe(true);
     });
 
     it('PD-007d: shows recommendations', async () => {
-      server.use(...partialHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisPartial,
+      });
 
       // Will verify recommendations are displayed
       expect(true).toBe(true);
     });
 
     it('PD-007e: shows analyzed timestamp', async () => {
-      server.use(...defaultHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
 
       // Will verify analyzedAt is displayed
       expect(true).toBe(true);
@@ -501,21 +463,30 @@ describe('PWADashboard Component', () => {
 
   describe('PD-009: No Manifest State', () => {
     it('PD-009a: shows no manifest message', async () => {
-      server.use(...noManifestHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWANoManifest,
+      });
 
       // Will verify "no manifest" message is shown
       expect(true).toBe(true);
     });
 
     it('PD-009b: shows score as 0', async () => {
-      server.use(...noManifestHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWANoManifest,
+      });
 
       // Will verify score is 0
       expect(true).toBe(true);
     });
 
     it('PD-009c: shows recommendations for adding manifest', async () => {
-      server.use(...noManifestHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWANoManifest,
+      });
 
       // Will verify manifest recommendation is shown
       expect(true).toBe(true);
@@ -524,21 +495,30 @@ describe('PWADashboard Component', () => {
 
   describe('PD-010: Partial/Invalid Manifest', () => {
     it('PD-010a: shows warnings for missing fields', async () => {
-      server.use(...partialHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisPartial,
+      });
 
       // Will verify missing field warnings are shown
       expect(true).toBe(true);
     });
 
     it('PD-010b: shows icon errors', async () => {
-      server.use(...partialHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisPartial,
+      });
 
       // Will verify icon errors are displayed
       expect(true).toBe(true);
     });
 
     it('PD-010c: shows partial score', async () => {
-      server.use(...partialHandlers);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisPartial,
+      });
 
       // Will verify partial score (45) is displayed
       expect(true).toBe(true);
@@ -606,11 +586,10 @@ describe('PWADashboard Performance', () => {
       },
     };
 
-    server.use(
-      http.get('/api/v1/sites/:siteId/pwa', () => {
-        return HttpResponse.json(largeManifest);
-      })
-    );
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => largeManifest,
+    });
 
     // Should render without performance issues
     expect(true).toBe(true);
@@ -631,14 +610,17 @@ describe('PWADashboard Integration', () => {
     const user = userEvent.setup();
 
     // Start with no analysis
-    server.use(
-      http.get('/api/v1/sites/:siteId/pwa', () => {
-        return HttpResponse.json(mockAnalysisNotFound, { status: 404 });
-      }),
-      http.post('/api/v1/sites/:siteId/pwa/analyze', () => {
-        return HttpResponse.json(mockAnalyzeResponse, { status: 202 });
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => mockAnalysisNotFound,
       })
-    );
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 202,
+        json: async () => mockAnalyzeResponse,
+      });
 
     // Will verify: error state → click analyze → loading → success
     expect(true).toBe(true);
@@ -646,24 +628,26 @@ describe('PWADashboard Integration', () => {
 
   it('PD-INT-002: error recovery flow', async () => {
     const user = userEvent.setup();
-    let callCount = 0;
 
-    server.use(
-      http.get('/api/v1/sites/:siteId/pwa', () => {
-        callCount++;
-        if (callCount === 1) {
-          return new HttpResponse(null, { status: 500 });
-        }
-        return HttpResponse.json(mockPWAAnalysisFull);
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
       })
-    );
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPWAAnalysisFull,
+      });
 
     // Will verify: error → retry → success
     expect(true).toBe(true);
   });
 
   it('PD-INT-003: child component data flow', async () => {
-    server.use(...defaultHandlers);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPWAAnalysisFull,
+    });
 
     // Will verify correct props passed to ManifestStatusCard
     expect(true).toBe(true);

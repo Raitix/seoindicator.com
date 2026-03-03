@@ -7,13 +7,15 @@
  * @see TASK-24-10 (PWA Dashboard Components)
  */
 
-import {
+"use client";
+
+import useSWR, { mutate } from "swr";
+import type {
   PWAAnalysisData,
   PWAAnalysisResponse,
   PWAAnalysisErrorResponse,
   PWAAnalyzeResponse,
-  pwaKeys,
-} from '@/lib/types/pwa';
+} from "@/lib/types/pwa";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
@@ -129,4 +131,59 @@ export async function refreshPWAAnalysis(siteId: number): Promise<PWAAnalyzeResp
   return json;
 }
 
-export { pwaKeys };
+/**
+ * SWR key for PWA analysis
+ */
+export const pwaKeys = {
+  analysis: (siteId: number) => ['pwa', 'analysis', siteId] as const,
+};
+
+/**
+ * Hook to fetch PWA analysis data using SWR
+ * 
+ * @param siteId - Site ID
+ * @returns PWA analysis data, loading state, error, and actions
+ */
+export function usePWAAnalysis(siteId: number) {
+  const { data, error, isLoading, mutate: revalidate } = useSWR<PWAAnalysisData>(
+    pwaKeys.analysis(siteId),
+    () => fetchPWAAnalysis(siteId),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 5000, // 5 seconds
+      errorRetryCount: 1,
+      shouldRetryOnError: false,
+    }
+  );
+
+  // Trigger new analysis
+  const triggerAnalysis = async () => {
+    const result = await triggerPWAAnalysis(siteId);
+    // Revalidate after a short delay to allow the job to process
+    setTimeout(() => revalidate(), 2000);
+    return result;
+  };
+
+  // Refresh analysis
+  const refreshAnalysis = async () => {
+    const result = await refreshPWAAnalysis(siteId);
+    // Revalidate after a short delay
+    setTimeout(() => revalidate(), 2000);
+    return result;
+  };
+
+  return {
+    data,
+    error,
+    isLoading,
+    revalidate,
+    triggerAnalysis,
+    refreshAnalysis,
+  };
+}
+
+/**
+ * Hook return type for type inference
+ */
+export type UsePWAAnalysisReturn = ReturnType<typeof usePWAAnalysis>;
