@@ -361,6 +361,10 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::get('sites/{siteId}/pwa', [\App\Http\Controllers\Api\V1\PWAController::class, 'show'])->where('siteId', '[0-9]+');
     Route::post('sites/{siteId}/pwa/analyze', [\App\Http\Controllers\Api\V1\PWAController::class, 'analyze'])->where('siteId', '[0-9]+');
     Route::post('sites/{siteId}/pwa/refresh', [\App\Http\Controllers\Api\V1\PWAController::class, 'refresh'])->where('siteId', '[0-9]+');
+
+    // Payment Methods (TASK-26-11, SPEC-026)
+    Route::get('payments/methods', [\App\Http\Controllers\Api\V1\PaymentController::class, 'listMethods']);
+    Route::delete('payments/methods/{id}', [\App\Http\Controllers\Api\V1\PaymentController::class, 'deleteMethod'])->where('id', '[0-9]+');
 });
 
 /*
