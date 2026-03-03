@@ -21246,3 +21246,160 @@ interface GenerateSuggestionsFormProps {
 - TASK-5-12: Suggestion Card Component
 - SPEC-005: Keyword Discovery & Suggestions
 - FEAT-005: Keyword Discovery & Suggestions
+
+---
+## Suggestion Card Component (TASK-5-12)
+
+### Component Description
+React card component for displaying individual keyword suggestions in the suggestions list. Shows keyword text, source badge, opportunity score with progress bar, and action buttons (Track/Dismiss). Supports expanded view with additional details and keyboard accessibility. Part of the Keyword Discovery & Suggestions feature (FEAT-005).
+
+### Component Location
+- **Component:** `frontend/components/suggestions/SuggestionCard.tsx`
+- **Tests:** `frontend/__tests__/components/suggestions/SuggestionCard.test.tsx`
+
+### Component Props
+
+```typescript
+interface SuggestionCardProps {
+  suggestion: KeywordSuggestion;           // Suggestion data object
+  onTrack?: (id: number) => void;          // Track button callback
+  onDismiss?: (id: number) => void;        // Dismiss button callback
+  isLoading?: boolean;                     // Loading state for actions
+}
+```
+
+### KeywordSuggestion Data Structure
+
+```typescript
+interface KeywordSuggestion {
+  id: number;
+  keyword: string;
+  source: 'suggest' | 'question' | 'related';
+  opportunityScore: number;                // 0-100
+  isTracking: boolean;
+  isDismissed: boolean;
+  discoveredAt: string;                    // ISO date string
+}
+```
+
+### Card Elements
+
+| Element | Description |
+|---------|-------------|
+| Keyword Text | Primary display of the suggested keyword |
+| Source Badge | Color-coded badge showing suggestion source |
+| Opportunity Score | Numeric score (0-100) with progress bar |
+| Track Button | Button to add keyword to tracking |
+| Dismiss Button | Button to hide suggestion |
+| Status Indicator | Checkmark if already tracking |
+| Expanded Details | Discovered date, full score breakdown |
+
+### Source Badge Colors
+
+| Source | Color | CSS Class |
+|--------|-------|-----------|
+| `suggest` | Blue | `bg-blue-100 text-blue-800` |
+| `question` | Purple | `bg-purple-100 text-purple-800` |
+| `related` | Green | `bg-green-100 text-green-800` |
+
+### Opportunity Score Display
+
+| Score Range | Progress Bar Color | Visual |
+|-------------|-------------------|--------|
+| 0-33 | Red | Low opportunity |
+| 34-66 | Yellow | Medium opportunity |
+| 67-100 | Green | High opportunity |
+
+### Card States
+
+| State | Display |
+|-------|---------|
+| Default | Collapsed view with keyword, source, score |
+| Expanded | Full details with discovered date |
+| Tracking | Checkmark icon, "Tracking" label |
+| Dismissed | Grayed out, "Dismissed" label |
+| Loading | Spinner on action buttons |
+
+### User Interaction
+
+**Action Buttons:**
+| Button | Action | Result |
+|--------|--------|--------|
+| Track | Click/Enter | Calls `onTrack(id)`, shows loading state |
+| Dismiss | Click/Enter | Calls `onDismiss(id)`, shows loading state |
+| Expand | Click card | Toggles expanded view |
+
+**Keyboard Navigation:**
+| Key | Action |
+|-----|--------|
+| Tab | Focus next card/action |
+| Enter | Activate focused button |
+| Space | Toggle expanded view |
+
+### Loading States
+
+| Loading Type | Display |
+|--------------|---------|
+| Track Loading | Track button shows spinner, disabled |
+| Dismiss Loading | Dismiss button shows spinner, disabled |
+| Action Complete | Button state updates immediately |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | Keyword text escaped before rendering |
+| Script Tag Handling | `<script>` tags displayed as text, not executed |
+| Special Characters | HTML entities properly encoded |
+| URL Injection | No URL rendering in keyword display |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `SuggestionCard.test.tsx` | 40 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Rendering | 4 | Card elements, keyword, source, score |
+| Source Badge Colors | 3 | Blue for suggest, purple for question, green for related |
+| Tracking Status | 3 | Checkmark display, tracking label |
+| Dismissed Status | 2 | Grayed out, dismissed label |
+| Action Buttons | 4 | Track/Dismiss click handlers, callbacks |
+| Loading States | 3 | Button spinner, disabled state |
+| Expanded View | 4 | Toggle expansion, discovered date display |
+| Keyboard Accessibility | 3 | Tab focus, Enter activation, Space toggle |
+| Edge Cases | 4 | Empty keyword, null score, missing callbacks |
+| Adversarial | 3 | XSS handling, special characters, script tags |
+| Visual Feedback | 1 | Hover state styling |
+| Integration | 1 | Full card workflow |
+| Additional Source Types | 2 | Related source badge, all sources |
+| Aria Attributes | 3 | aria-label, role="button", aria-expanded |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-03 (GitHub Actions #22616703840) |
+| **Commit** | `24bad50` |
+| **Health Check** | Passing (https://seoindicator.com/api/health → 200 OK) |
+| **Tests** | 40/40 passing |
+| **Status** | Complete |
+
+### Dependencies
+
+| Dependency | Task | Status |
+|------------|------|--------|
+| Keyword Suggestions API | TASK-5-7 | Done ✅ |
+| Track/Dismiss Endpoints | TASK-5-9 | Done ✅ |
+| Suggestions List Page | TASK-5-10 | Done ✅ |
+
+### Related Tasks
+
+- TASK-5-10: Suggestions List Page (parent component)
+- TASK-5-11: Generate Suggestions Form Component
+- TASK-5-7: Suggestions CRUD API Endpoints
+- TASK-5-9: Track/Dismiss Endpoints
+- SPEC-005: Keyword Discovery & Suggestions
+- FEAT-005: Keyword Discovery & Suggestions
