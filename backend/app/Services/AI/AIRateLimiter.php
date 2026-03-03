@@ -105,8 +105,8 @@ class AIRateLimiter
         // Add current timestamp
         $timestamps[] = Carbon::now()->toIso8601String();
         
-        // Store with TTL slightly longer than window
-        Cache::put($key, $timestamps, $windowSeconds + 60);
+        // Store with TTL equal to window duration
+        Cache::put($key, $timestamps, $windowSeconds);
     }
 
     /**
