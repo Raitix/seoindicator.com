@@ -7,7 +7,7 @@
  * @see TEST-9-10 for full test documentation
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+// Using Jest globals - no import needed
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

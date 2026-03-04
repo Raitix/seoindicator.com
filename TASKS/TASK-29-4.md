@@ -1,7 +1,7 @@
 # TASK-29-4: Download Token System
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -105,3 +105,40 @@ _Agent log_
 **Execution Order:** Fourth and final task in Phase 1 pipeline. Tests can proceed immediately; implementation waits for TASK-29-3 to reach `To Develop`.
 
 Status updated: `To Prioritize` → `To Write Tests` - Ready for PreTester
+
+### [2026-03-04 13:25 GMT+2] Agent: PreTester
+**Test Design Complete**
+
+**Test File Created:**
+- `backend/tests/Unit/Services/Tools/DownloadTokenSystemTest.php` (51 tests, 204 assertions)
+
+**Test Categories:**
+- Token Generation (6 tests) - 64-char length, alphanumeric, cryptographic security, entropy
+- Token Storage (6 tests) - Metadata structure (file, format, user_id, created_at)
+- Token TTL (6 tests) - Default 1 hour, configurable, expiration behavior
+- Token Validation (7 tests) - Existence, user match, expiration, malformed tokens
+- Token Invalidation (5 tests) - One-time use, replay attack prevention
+- IDOR Prevention (5 tests) - User isolation, type coercion, enumeration prevention
+- Security Edge Cases (9 tests) - SQL injection, special chars, concurrent access, brute force
+- Cache Driver (3 tests) - File, Redis compatibility
+- Integration (4 tests) - Full lifecycle, multiple tokens, formats
+
+**Key Security Tests:**
+- `TKN-003`: Cryptographic randomness (Str::random uses random_bytes)
+- `TKN-004`: Sufficient entropy (1000 unique tokens verified)
+- `TKN-124`: Brute force impractical (10^98 years to crack)
+- `TKN-082`: Replay attack prevention
+- `TKN-100-104`: IDOR prevention with strict user_id comparison
+- `TKN-103`: Type coercion attack prevention (string "1" != int 1)
+
+**Implementation Notes for Developer:**
+1. Use `Str::random(64)` for token generation (CSPRNG)
+2. Cache key format: `export:{token}`
+3. Store metadata: file, format, user_id, created_at
+4. TTL: `config('tools.export_token_ttl', 3600)`
+5. Strict comparison (`===`) for user_id validation
+6. Return 404 (not 403) for invalid/wrong-user tokens to prevent enumeration
+
+**Test Documentation:** `TESTS/TEST-29-4.md`
+
+Status updated: `To Write Tests` → `To Develop` - Ready for Developer

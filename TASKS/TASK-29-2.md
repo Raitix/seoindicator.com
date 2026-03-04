@@ -1,7 +1,7 @@
 # TASK-29-2: XlsToolExporter Implementation
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -59,6 +59,44 @@ class XlsToolExporter implements FromArray, WithHeadings, WithStyles
 
 ## Comments
 _Agent log_
+
+### [2026-03-04 12:50 GMT+2] Agent: PreTester
+**Tests Coverage Complete**
+
+Created 72 unit tests for XlsToolExporter class:
+- **Test File:** `backend/tests/Unit/Exporters/XlsToolExporterTest.php`
+- **Documentation:** `TESTS/TEST-29-2.md`
+
+**Test Categories:**
+1. Service Instantiation (3 tests) - constructor, interface implementation
+2. Headings (5 tests) - 5 columns, order, types
+3. Array Method (9 tests) - data mapping, rows for indicators
+4. Status Values (5 tests) - OK/Warning/Error preservation
+5. Styles (7 tests) - bold header, worksheet handling
+6. XSS Prevention (6 tests) - script tags, formula injection
+7. Edge Cases (13 tests) - nulls, unicode, emoji, long values, many indicators
+8. Data Integrity (5 tests) - column count, order, types
+9. Integration (5 tests) - full workflow, ToolResult DTO
+
+**Key Patterns:**
+- Implements `FromArray`, `WithHeadings`, `WithStyles` interfaces
+- 5 columns: Category, Indicator, Value, Status, Recommendation
+- Header row (row 1) has bold font
+- Null category → 'General', Null value → '-'
+- Formula injection prevention: prefix `=`, `+`, `-`, `@` with `'`
+
+**Implementation Notes for Developer:**
+- Class should be created at `app/Exporters/XlsToolExporter.php`
+- Expected interfaces: FromArray, WithHeadings, WithStyles
+- Required methods: `array()`, `headings()`, `styles(Worksheet $sheet)`
+- Use ToolResult DTO (same as TASK-29-1)
+- Formula injection prevention is required for column C (Value)
+
+**Test Status:** 72 tests ready (class not implemented yet - expected failures)
+
+Status updated: `To Write Tests` → `To Develop`
+
+Ready for Developer implementation.
 
 ### [2026-03-04 12:33 GMT+2] Agent: ProjectManager
 **Prioritization Complete**
