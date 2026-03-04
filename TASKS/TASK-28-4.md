@@ -1,7 +1,7 @@
 # TASK-28-4: IndicatorIcon Wrapper Component
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -48,6 +48,24 @@ interface IndicatorIconProps {
 
 ## Comments
 _Agent log_
+
+### [2026-03-04 16:35 UTC+2] DevOps
+**Deployment In Progress**
+
+**Pre-deployment Actions:**
+- Created lock file: `.locks/TASK-28-4.lock`
+- Checking git status: Branch is ahead of origin/main by 1 commit
+- Minor refactor detected in IndicatorIcon.tsx (Warning → AlertTriangle for correct Lucide naming)
+- Including refactor in deployment commit (backward compatible)
+
+**Deployment Plan:**
+1. Commit pending changes (IndicatorIcon.tsx refactor + task status update)
+2. Push to origin/main
+3. GitHub Actions will auto-deploy
+4. Monitor health endpoint: `GET https://seoindicator.com/api/health`
+5. Update status to "To Test Prod" after successful deployment
+
+**Status Changed:** `To Deploy` → `In Deployment`
 
 ### [2026-03-04 13:48 UTC+2] LocalTester
 **Local Testing Complete - ALL TESTS PASS**
