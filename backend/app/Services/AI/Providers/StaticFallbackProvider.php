@@ -1183,7 +1183,7 @@ class StaticFallbackProvider implements AIProviderInterface
         $genericNames = ['image', 'img', 'file', 'document', 'photo', 'picture', 'untitled', 'dsc', 'img_', 'screenshot'];
 
         foreach ($filenames as $filename) {
-            $name = $filename['name'] ?? $filename;
+            $name = $filename['name'] ?? $filename['url'] ?? $filename;
             $name = basename($name);
 
             // Check for spaces
