@@ -49,6 +49,23 @@ interface IndicatorIconProps {
 ## Comments
 _Agent log_
 
+### [2026-03-04 17:25 UTC+2] DevOps
+**Deployment Continuation**
+
+**Current State:**
+- Branch is 4 commits ahead of origin/main
+- Previous deployment attempt left commits unpushed
+- TASK-28-4 IndicatorIcon component is ready for deployment
+
+**Deployment Actions:**
+1. ✅ Created lock file: `.locks/TASK-28-4.lock`
+2. ✅ Updated status to "In Deployment"
+3. Committing status update
+4. Pushing to origin/main to trigger GitHub Actions
+5. Will monitor health endpoint after deployment
+
+**Status Changed:** `To Deploy` → `In Deployment`
+
 ### [2026-03-04 16:43 UTC+2] DevOps
 **Resuming Deployment**
 
