@@ -12,6 +12,7 @@ import {
   Search,
   Star,
   TrendingUp,
+  Warning,
   XCircle,
   Zap,
   LucideIcon,
