@@ -1,0 +1,4386 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`IndicatorCatalog Snapshots SN-001: Default catalog snapshot 1`] = `
+<section
+  aria-labelledby="catalog-title-nrbd3d0"
+  class="flex w-full flex-col gap-4 p-4 sm:p-6"
+  data-slot="indicator-catalog"
+  data-testid="indicator-catalog"
+>
+  <div
+    class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div
+      class="flex flex-col gap-1"
+    >
+      <h2
+        class="text-xl font-semibold tracking-tight sm:text-2xl"
+        data-testid="catalog-title"
+        id="catalog-title-nrbd3d0"
+      >
+        SEO Indicators
+      </h2>
+    </div>
+  </div>
+  <div
+    aria-busy="false"
+    aria-label="SEO Indicators"
+    aria-rowcount="2"
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-all duration-200 ease-out"
+    data-loading="false"
+    data-slot="indicator-grid"
+    data-testid="indicator-grid"
+    role="grid"
+  >
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Keyword Rankings: 142. Keywords ranking in top 100. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-keyword-rankings"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-trending-up"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 7h6v6"
+                />
+                <path
+                  d="m22 7-8.5 8.5-5-5L2 17"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Keyword Rankings"
+          >
+            Keyword Rankings
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="142"
+          >
+            142
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Keywords ranking in top 100"
+        >
+          Keywords ranking in top 100
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Visibility Score: 78%. Overall SEO visibility. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-visibility-score"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          />
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Visibility Score"
+          >
+            Visibility Score
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="78%"
+          >
+            78%
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Overall SEO visibility"
+        >
+          Overall SEO visibility
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Competitor Analysis: 5. Tracked competitors. Status: Neutral"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="neutral"
+        data-testid="indicator-card-competitor-analysis"
+        href="/comparison"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-muted-foreground"
+          />
+          <span
+            aria-label="Status: Neutral"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground gap-1"
+            data-slot="badge"
+            data-status="neutral"
+            data-variant="outline"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-minus size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5 12h14"
+              />
+            </svg>
+            Neutral
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Competitor Analysis"
+          >
+            Competitor Analysis
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="5"
+          >
+            5
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Tracked competitors"
+        >
+          Tracked competitors
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Technical Health: 85/100. Site audit score. Status: Warning"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="warning"
+        data-testid="indicator-card-technical-health"
+        href="/tools"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-amber-500 dark:text-amber-400"
+          />
+          <span
+            aria-label="Status: Warning"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 gap-1"
+            data-slot="badge"
+            data-status="warning"
+            data-variant="secondary"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-triangle-alert size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+              />
+              <path
+                d="M12 9v4"
+              />
+              <path
+                d="M12 17h.01"
+              />
+            </svg>
+            Warning
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Technical Health"
+          >
+            Technical Health
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="85/100"
+          >
+            85/100
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Site audit score"
+        >
+          Site audit score
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Backlink Profile: 1,234. Total backlinks. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-backlink-profile"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          />
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Backlink Profile"
+          >
+            Backlink Profile
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="1,234"
+          >
+            1,234
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Total backlinks"
+        >
+          Total backlinks
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Content Opportunities: 23. Keyword gaps found. Status: Warning"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="warning"
+        data-testid="indicator-card-content-opportunities"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-amber-500 dark:text-amber-400"
+          />
+          <span
+            aria-label="Status: Warning"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 gap-1"
+            data-slot="badge"
+            data-status="warning"
+            data-variant="secondary"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-triangle-alert size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+              />
+              <path
+                d="M12 9v4"
+              />
+              <path
+                d="M12 17h.01"
+              />
+            </svg>
+            Warning
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Content Opportunities"
+          >
+            Content Opportunities
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="23"
+          >
+            23
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Keyword gaps found"
+        >
+          Keyword gaps found
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="SERP Features: 8. Featured snippets won. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-serp-features"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="SERP Features"
+          >
+            SERP Features
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="8"
+          >
+            8
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Featured snippets won"
+        >
+          Featured snippets won
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Page Speed: 92/100. Performance score. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-page-speed"
+        href="/tools"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-zap"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Page Speed"
+          >
+            Page Speed
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="92/100"
+          >
+            92/100
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Performance score"
+        >
+          Performance score
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+  </div>
+</section>
+`;
+
+exports[`IndicatorCatalog Snapshots SN-002: With categories snapshot 1`] = `
+<section
+  aria-labelledby="catalog-title-cyh0yi6"
+  class="flex w-full flex-col gap-4 p-4 sm:p-6"
+  data-slot="indicator-catalog"
+  data-testid="indicator-catalog"
+>
+  <div
+    class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div
+      class="flex flex-col gap-1"
+    >
+      <h2
+        class="text-xl font-semibold tracking-tight sm:text-2xl"
+        data-testid="catalog-title"
+        id="catalog-title-cyh0yi6"
+      >
+        SEO Indicators
+      </h2>
+    </div>
+  </div>
+  <div
+    aria-label="Filter indicators by category"
+    class="group/tabs flex gap-2 data-[orientation=horizontal]:flex-col"
+    data-orientation="horizontal"
+    data-slot="tabs"
+    dir="ltr"
+  >
+    <div
+      aria-label="Categories"
+      aria-orientation="horizontal"
+      class="group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-[orientation=horizontal]/tabs:h-9 group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col data-[variant=line]:rounded-none bg-muted"
+      data-orientation="horizontal"
+      data-slot="tabs-list"
+      data-variant="default"
+      role="tablist"
+      style="outline: none;"
+      tabindex="0"
+    >
+      <button
+        aria-controls="radix-_r_mj_-content-All"
+        aria-selected="true"
+        class="relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 group-data-[variant=default]/tabs-list:data-[state=active]:shadow-sm group-data-[variant=line]/tabs-list:data-[state=active]:shadow-none dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 dark:data-[state=active]:text-foreground after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:bottom-[-5px] group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-1 group-data-[orientation=vertical]/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100"
+        data-orientation="horizontal"
+        data-radix-collection-item=""
+        data-slot="tabs-trigger"
+        data-state="active"
+        data-testid="tab-all"
+        id="radix-_r_mj_-trigger-All"
+        role="tab"
+        tabindex="-1"
+        type="button"
+      >
+        All
+      </button>
+      <button
+        aria-controls="radix-_r_mj_-content-rankings"
+        aria-selected="false"
+        class="relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 group-data-[variant=default]/tabs-list:data-[state=active]:shadow-sm group-data-[variant=line]/tabs-list:data-[state=active]:shadow-none dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 dark:data-[state=active]:text-foreground after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:bottom-[-5px] group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-1 group-data-[orientation=vertical]/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100"
+        data-orientation="horizontal"
+        data-radix-collection-item=""
+        data-slot="tabs-trigger"
+        data-state="inactive"
+        data-testid="tab-rankings"
+        id="radix-_r_mj_-trigger-rankings"
+        role="tab"
+        tabindex="-1"
+        type="button"
+      >
+        rankings
+      </button>
+      <button
+        aria-controls="radix-_r_mj_-content-competition"
+        aria-selected="false"
+        class="relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 group-data-[variant=default]/tabs-list:data-[state=active]:shadow-sm group-data-[variant=line]/tabs-list:data-[state=active]:shadow-none dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 dark:data-[state=active]:text-foreground after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:bottom-[-5px] group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-1 group-data-[orientation=vertical]/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100"
+        data-orientation="horizontal"
+        data-radix-collection-item=""
+        data-slot="tabs-trigger"
+        data-state="inactive"
+        data-testid="tab-competition"
+        id="radix-_r_mj_-trigger-competition"
+        role="tab"
+        tabindex="-1"
+        type="button"
+      >
+        competition
+      </button>
+      <button
+        aria-controls="radix-_r_mj_-content-technical"
+        aria-selected="false"
+        class="relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 group-data-[variant=default]/tabs-list:data-[state=active]:shadow-sm group-data-[variant=line]/tabs-list:data-[state=active]:shadow-none dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 dark:data-[state=active]:text-foreground after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:bottom-[-5px] group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-1 group-data-[orientation=vertical]/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100"
+        data-orientation="horizontal"
+        data-radix-collection-item=""
+        data-slot="tabs-trigger"
+        data-state="inactive"
+        data-testid="tab-technical"
+        id="radix-_r_mj_-trigger-technical"
+        role="tab"
+        tabindex="-1"
+        type="button"
+      >
+        technical
+      </button>
+      <button
+        aria-controls="radix-_r_mj_-content-backlinks"
+        aria-selected="false"
+        class="relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 group-data-[variant=default]/tabs-list:data-[state=active]:shadow-sm group-data-[variant=line]/tabs-list:data-[state=active]:shadow-none dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 dark:data-[state=active]:text-foreground after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:bottom-[-5px] group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-1 group-data-[orientation=vertical]/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100"
+        data-orientation="horizontal"
+        data-radix-collection-item=""
+        data-slot="tabs-trigger"
+        data-state="inactive"
+        data-testid="tab-backlinks"
+        id="radix-_r_mj_-trigger-backlinks"
+        role="tab"
+        tabindex="-1"
+        type="button"
+      >
+        backlinks
+      </button>
+      <button
+        aria-controls="radix-_r_mj_-content-content"
+        aria-selected="false"
+        class="relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 group-data-[variant=default]/tabs-list:data-[state=active]:shadow-sm group-data-[variant=line]/tabs-list:data-[state=active]:shadow-none dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 dark:data-[state=active]:text-foreground after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:bottom-[-5px] group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-1 group-data-[orientation=vertical]/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100"
+        data-orientation="horizontal"
+        data-radix-collection-item=""
+        data-slot="tabs-trigger"
+        data-state="inactive"
+        data-testid="tab-content"
+        id="radix-_r_mj_-trigger-content"
+        role="tab"
+        tabindex="-1"
+        type="button"
+      >
+        content
+      </button>
+    </div>
+    <div
+      aria-labelledby="radix-_r_mj_-trigger-All"
+      class="flex-1 outline-none"
+      data-orientation="horizontal"
+      data-slot="tabs-content"
+      data-state="active"
+      id="radix-_r_mj_-content-All"
+      role="tabpanel"
+      style="animation-duration: 0s;"
+      tabindex="0"
+    />
+  </div>
+  <div
+    class="shrink-0 bg-slate-800 h-[1px] w-full my-2"
+    role="none"
+  />
+  <div
+    aria-busy="false"
+    aria-label="SEO Indicators"
+    aria-rowcount="2"
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-all duration-200 ease-out"
+    data-loading="false"
+    data-slot="indicator-grid"
+    data-testid="indicator-grid"
+    role="grid"
+  >
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Keyword Rankings: 142. Keywords ranking in top 100. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-keyword-rankings"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-trending-up"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 7h6v6"
+                />
+                <path
+                  d="m22 7-8.5 8.5-5-5L2 17"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Keyword Rankings"
+          >
+            Keyword Rankings
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="142"
+          >
+            142
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Keywords ranking in top 100"
+        >
+          Keywords ranking in top 100
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Visibility Score: 78%. Overall SEO visibility. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-visibility-score"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          />
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Visibility Score"
+          >
+            Visibility Score
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="78%"
+          >
+            78%
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Overall SEO visibility"
+        >
+          Overall SEO visibility
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Competitor Analysis: 5. Tracked competitors. Status: Neutral"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="neutral"
+        data-testid="indicator-card-competitor-analysis"
+        href="/comparison"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-muted-foreground"
+          />
+          <span
+            aria-label="Status: Neutral"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground gap-1"
+            data-slot="badge"
+            data-status="neutral"
+            data-variant="outline"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-minus size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5 12h14"
+              />
+            </svg>
+            Neutral
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Competitor Analysis"
+          >
+            Competitor Analysis
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="5"
+          >
+            5
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Tracked competitors"
+        >
+          Tracked competitors
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Technical Health: 85/100. Site audit score. Status: Warning"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="warning"
+        data-testid="indicator-card-technical-health"
+        href="/tools"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-amber-500 dark:text-amber-400"
+          />
+          <span
+            aria-label="Status: Warning"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 gap-1"
+            data-slot="badge"
+            data-status="warning"
+            data-variant="secondary"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-triangle-alert size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+              />
+              <path
+                d="M12 9v4"
+              />
+              <path
+                d="M12 17h.01"
+              />
+            </svg>
+            Warning
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Technical Health"
+          >
+            Technical Health
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="85/100"
+          >
+            85/100
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Site audit score"
+        >
+          Site audit score
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Backlink Profile: 1,234. Total backlinks. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-backlink-profile"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          />
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Backlink Profile"
+          >
+            Backlink Profile
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="1,234"
+          >
+            1,234
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Total backlinks"
+        >
+          Total backlinks
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Content Opportunities: 23. Keyword gaps found. Status: Warning"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="warning"
+        data-testid="indicator-card-content-opportunities"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-amber-500 dark:text-amber-400"
+          />
+          <span
+            aria-label="Status: Warning"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 gap-1"
+            data-slot="badge"
+            data-status="warning"
+            data-variant="secondary"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-triangle-alert size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+              />
+              <path
+                d="M12 9v4"
+              />
+              <path
+                d="M12 17h.01"
+              />
+            </svg>
+            Warning
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Content Opportunities"
+          >
+            Content Opportunities
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="23"
+          >
+            23
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Keyword gaps found"
+        >
+          Keyword gaps found
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="SERP Features: 8. Featured snippets won. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-serp-features"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="SERP Features"
+          >
+            SERP Features
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="8"
+          >
+            8
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Featured snippets won"
+        >
+          Featured snippets won
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Page Speed: 92/100. Performance score. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-page-speed"
+        href="/tools"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-zap"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Page Speed"
+          >
+            Page Speed
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="92/100"
+          >
+            92/100
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Performance score"
+        >
+          Performance score
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+  </div>
+</section>
+`;
+
+exports[`IndicatorCatalog Snapshots SN-003: Loading state snapshot 1`] = `
+<section
+  aria-busy="true"
+  aria-labelledby="catalog-title-35a3k8z"
+  class="flex w-full flex-col gap-4 p-4 sm:p-6"
+  data-loading="true"
+  data-slot="indicator-catalog"
+  data-testid="indicator-catalog"
+>
+  <div
+    class="flex flex-col gap-4"
+  >
+    <div
+      class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div
+        class="flex flex-col gap-2"
+      >
+        <div
+          class="animate-pulse rounded-md bg-accent h-7 w-40"
+          data-slot="skeleton"
+        />
+      </div>
+      <div
+        class="animate-pulse rounded-md bg-accent h-9 w-24"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      data-testid="catalog-skeleton-grid"
+    >
+      <div
+        class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="animate-pulse bg-accent size-10 rounded-lg"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse bg-accent h-5 w-16 rounded-full"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="flex flex-col gap-1.5"
+        >
+          <div
+            class="animate-pulse rounded-md bg-accent h-4 w-24"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse rounded-md bg-accent h-8 w-16"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="animate-pulse rounded-md bg-accent h-4 w-full"
+          data-slot="skeleton"
+        />
+      </div>
+      <div
+        class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="animate-pulse bg-accent size-10 rounded-lg"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse bg-accent h-5 w-16 rounded-full"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="flex flex-col gap-1.5"
+        >
+          <div
+            class="animate-pulse rounded-md bg-accent h-4 w-24"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse rounded-md bg-accent h-8 w-16"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="animate-pulse rounded-md bg-accent h-4 w-full"
+          data-slot="skeleton"
+        />
+      </div>
+      <div
+        class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="animate-pulse bg-accent size-10 rounded-lg"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse bg-accent h-5 w-16 rounded-full"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="flex flex-col gap-1.5"
+        >
+          <div
+            class="animate-pulse rounded-md bg-accent h-4 w-24"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse rounded-md bg-accent h-8 w-16"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="animate-pulse rounded-md bg-accent h-4 w-full"
+          data-slot="skeleton"
+        />
+      </div>
+      <div
+        class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="animate-pulse bg-accent size-10 rounded-lg"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse bg-accent h-5 w-16 rounded-full"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="flex flex-col gap-1.5"
+        >
+          <div
+            class="animate-pulse rounded-md bg-accent h-4 w-24"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse rounded-md bg-accent h-8 w-16"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="animate-pulse rounded-md bg-accent h-4 w-full"
+          data-slot="skeleton"
+        />
+      </div>
+      <div
+        class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="animate-pulse bg-accent size-10 rounded-lg"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse bg-accent h-5 w-16 rounded-full"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="flex flex-col gap-1.5"
+        >
+          <div
+            class="animate-pulse rounded-md bg-accent h-4 w-24"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse rounded-md bg-accent h-8 w-16"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="animate-pulse rounded-md bg-accent h-4 w-full"
+          data-slot="skeleton"
+        />
+      </div>
+      <div
+        class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="animate-pulse bg-accent size-10 rounded-lg"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse bg-accent h-5 w-16 rounded-full"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="flex flex-col gap-1.5"
+        >
+          <div
+            class="animate-pulse rounded-md bg-accent h-4 w-24"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse rounded-md bg-accent h-8 w-16"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="animate-pulse rounded-md bg-accent h-4 w-full"
+          data-slot="skeleton"
+        />
+      </div>
+      <div
+        class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="animate-pulse bg-accent size-10 rounded-lg"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse bg-accent h-5 w-16 rounded-full"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="flex flex-col gap-1.5"
+        >
+          <div
+            class="animate-pulse rounded-md bg-accent h-4 w-24"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse rounded-md bg-accent h-8 w-16"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="animate-pulse rounded-md bg-accent h-4 w-full"
+          data-slot="skeleton"
+        />
+      </div>
+      <div
+        class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="animate-pulse bg-accent size-10 rounded-lg"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse bg-accent h-5 w-16 rounded-full"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="flex flex-col gap-1.5"
+        >
+          <div
+            class="animate-pulse rounded-md bg-accent h-4 w-24"
+            data-slot="skeleton"
+          />
+          <div
+            class="animate-pulse rounded-md bg-accent h-8 w-16"
+            data-slot="skeleton"
+          />
+        </div>
+        <div
+          class="animate-pulse rounded-md bg-accent h-4 w-full"
+          data-slot="skeleton"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+`;
+
+exports[`IndicatorCatalog Snapshots SN-004: Error state snapshot 1`] = `
+<section
+  aria-labelledby="catalog-title-1bihay2"
+  class="flex w-full flex-col gap-4 p-4 sm:p-6"
+  data-error="true"
+  data-slot="indicator-catalog"
+  data-testid="indicator-catalog"
+>
+  <h2
+    class="text-xl font-semibold tracking-tight sm:text-2xl"
+    data-testid="catalog-title"
+    id="catalog-title-1bihay2"
+  >
+    SEO Indicators
+  </h2>
+  <div
+    class="flex flex-col items-center justify-center gap-4 rounded-xl border border-destructive/20 bg-destructive/5 p-8 text-center"
+    data-testid="catalog-error"
+    role="alert"
+  >
+    <div
+      class="flex size-12 items-center justify-center rounded-full bg-destructive/10"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-circle-alert size-6 text-destructive"
+        fill="none"
+        height="24"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+        />
+        <line
+          x1="12"
+          x2="12"
+          y1="8"
+          y2="12"
+        />
+        <line
+          x1="12"
+          x2="12.01"
+          y1="16"
+          y2="16"
+        />
+      </svg>
+    </div>
+    <div
+      class="flex flex-col gap-1"
+    >
+      <h3
+        class="text-lg font-semibold"
+      >
+        Failed to load indicators
+      </h3>
+      <p
+        class="text-sm text-muted-foreground"
+      >
+        Test error
+      </p>
+    </div>
+  </div>
+</section>
+`;
+
+exports[`IndicatorCatalog Snapshots SN-005: Empty state snapshot 1`] = `
+<section
+  aria-labelledby="catalog-title-qjy1nso"
+  class="flex w-full flex-col gap-4 p-4 sm:p-6"
+  data-empty="true"
+  data-slot="indicator-catalog"
+  data-testid="indicator-catalog"
+>
+  <div
+    class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div
+      class="flex flex-col gap-1"
+    >
+      <h2
+        class="text-xl font-semibold tracking-tight sm:text-2xl"
+        data-testid="catalog-title"
+        id="catalog-title-qjy1nso"
+      >
+        SEO Indicators
+      </h2>
+    </div>
+  </div>
+  <div
+    class="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-8 text-center"
+    data-testid="catalog-empty"
+    role="status"
+  >
+    <div
+      class="flex size-12 items-center justify-center rounded-full bg-muted"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-folder-open size-6 text-muted-foreground"
+        fill="none"
+        height="24"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+        />
+      </svg>
+    </div>
+    <div
+      class="flex flex-col gap-1"
+    >
+      <h3
+        class="text-lg font-semibold"
+      >
+        No Indicators
+      </h3>
+      <p
+        class="text-sm text-muted-foreground"
+      >
+        No indicators available
+      </p>
+    </div>
+  </div>
+</section>
+`;
+
+exports[`IndicatorCatalog Snapshots SN-006: Mobile layout snapshot 1`] = `
+<section
+  aria-labelledby="catalog-title-dfch3rt"
+  class="flex w-full flex-col gap-4 p-4 sm:p-6"
+  data-slot="indicator-catalog"
+  data-testid="indicator-catalog"
+>
+  <div
+    class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div
+      class="flex flex-col gap-1"
+    >
+      <h2
+        class="text-xl font-semibold tracking-tight sm:text-2xl"
+        data-testid="catalog-title"
+        id="catalog-title-dfch3rt"
+      >
+        SEO Indicators
+      </h2>
+    </div>
+  </div>
+  <div
+    aria-busy="false"
+    aria-label="SEO Indicators"
+    aria-rowcount="2"
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-all duration-200 ease-out"
+    data-loading="false"
+    data-slot="indicator-grid"
+    data-testid="indicator-grid"
+    role="grid"
+  >
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Keyword Rankings: 142. Keywords ranking in top 100. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-keyword-rankings"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-trending-up"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 7h6v6"
+                />
+                <path
+                  d="m22 7-8.5 8.5-5-5L2 17"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Keyword Rankings"
+          >
+            Keyword Rankings
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="142"
+          >
+            142
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Keywords ranking in top 100"
+        >
+          Keywords ranking in top 100
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Visibility Score: 78%. Overall SEO visibility. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-visibility-score"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          />
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Visibility Score"
+          >
+            Visibility Score
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="78%"
+          >
+            78%
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Overall SEO visibility"
+        >
+          Overall SEO visibility
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Competitor Analysis: 5. Tracked competitors. Status: Neutral"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="neutral"
+        data-testid="indicator-card-competitor-analysis"
+        href="/comparison"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-muted-foreground"
+          />
+          <span
+            aria-label="Status: Neutral"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground gap-1"
+            data-slot="badge"
+            data-status="neutral"
+            data-variant="outline"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-minus size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5 12h14"
+              />
+            </svg>
+            Neutral
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Competitor Analysis"
+          >
+            Competitor Analysis
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="5"
+          >
+            5
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Tracked competitors"
+        >
+          Tracked competitors
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Technical Health: 85/100. Site audit score. Status: Warning"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="warning"
+        data-testid="indicator-card-technical-health"
+        href="/tools"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-amber-500 dark:text-amber-400"
+          />
+          <span
+            aria-label="Status: Warning"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 gap-1"
+            data-slot="badge"
+            data-status="warning"
+            data-variant="secondary"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-triangle-alert size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+              />
+              <path
+                d="M12 9v4"
+              />
+              <path
+                d="M12 17h.01"
+              />
+            </svg>
+            Warning
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Technical Health"
+          >
+            Technical Health
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="85/100"
+          >
+            85/100
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Site audit score"
+        >
+          Site audit score
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Backlink Profile: 1,234. Total backlinks. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-backlink-profile"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          />
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Backlink Profile"
+          >
+            Backlink Profile
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="1,234"
+          >
+            1,234
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Total backlinks"
+        >
+          Total backlinks
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Content Opportunities: 23. Keyword gaps found. Status: Warning"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="warning"
+        data-testid="indicator-card-content-opportunities"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-amber-500 dark:text-amber-400"
+          />
+          <span
+            aria-label="Status: Warning"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 gap-1"
+            data-slot="badge"
+            data-status="warning"
+            data-variant="secondary"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-triangle-alert size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+              />
+              <path
+                d="M12 9v4"
+              />
+              <path
+                d="M12 17h.01"
+              />
+            </svg>
+            Warning
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Content Opportunities"
+          >
+            Content Opportunities
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="23"
+          >
+            23
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Keyword gaps found"
+        >
+          Keyword gaps found
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="SERP Features: 8. Featured snippets won. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-serp-features"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="SERP Features"
+          >
+            SERP Features
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="8"
+          >
+            8
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Featured snippets won"
+        >
+          Featured snippets won
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Page Speed: 92/100. Performance score. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-page-speed"
+        href="/tools"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-zap"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Page Speed"
+          >
+            Page Speed
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="92/100"
+          >
+            92/100
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Performance score"
+        >
+          Performance score
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+  </div>
+</section>
+`;
+
+exports[`IndicatorCatalog Snapshots SN-007: Desktop layout snapshot 1`] = `
+<section
+  aria-labelledby="catalog-title-i8gi8nv"
+  class="flex w-full flex-col gap-4 p-4 sm:p-6"
+  data-slot="indicator-catalog"
+  data-testid="indicator-catalog"
+>
+  <div
+    class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div
+      class="flex flex-col gap-1"
+    >
+      <h2
+        class="text-xl font-semibold tracking-tight sm:text-2xl"
+        data-testid="catalog-title"
+        id="catalog-title-i8gi8nv"
+      >
+        SEO Indicators
+      </h2>
+    </div>
+  </div>
+  <div
+    aria-busy="false"
+    aria-label="SEO Indicators"
+    aria-rowcount="2"
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-all duration-200 ease-out"
+    data-loading="false"
+    data-slot="indicator-grid"
+    data-testid="indicator-grid"
+    role="grid"
+  >
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Keyword Rankings: 142. Keywords ranking in top 100. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-keyword-rankings"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-trending-up"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 7h6v6"
+                />
+                <path
+                  d="m22 7-8.5 8.5-5-5L2 17"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Keyword Rankings"
+          >
+            Keyword Rankings
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="142"
+          >
+            142
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Keywords ranking in top 100"
+        >
+          Keywords ranking in top 100
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Visibility Score: 78%. Overall SEO visibility. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-visibility-score"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          />
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Visibility Score"
+          >
+            Visibility Score
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="78%"
+          >
+            78%
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Overall SEO visibility"
+        >
+          Overall SEO visibility
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Competitor Analysis: 5. Tracked competitors. Status: Neutral"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="neutral"
+        data-testid="indicator-card-competitor-analysis"
+        href="/comparison"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-muted-foreground"
+          />
+          <span
+            aria-label="Status: Neutral"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground gap-1"
+            data-slot="badge"
+            data-status="neutral"
+            data-variant="outline"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-minus size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5 12h14"
+              />
+            </svg>
+            Neutral
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Competitor Analysis"
+          >
+            Competitor Analysis
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="5"
+          >
+            5
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Tracked competitors"
+        >
+          Tracked competitors
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Technical Health: 85/100. Site audit score. Status: Warning"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="warning"
+        data-testid="indicator-card-technical-health"
+        href="/tools"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-amber-500 dark:text-amber-400"
+          />
+          <span
+            aria-label="Status: Warning"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 gap-1"
+            data-slot="badge"
+            data-status="warning"
+            data-variant="secondary"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-triangle-alert size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+              />
+              <path
+                d="M12 9v4"
+              />
+              <path
+                d="M12 17h.01"
+              />
+            </svg>
+            Warning
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Technical Health"
+          >
+            Technical Health
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="85/100"
+          >
+            85/100
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Site audit score"
+        >
+          Site audit score
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Backlink Profile: 1,234. Total backlinks. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-backlink-profile"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          />
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Backlink Profile"
+          >
+            Backlink Profile
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="1,234"
+          >
+            1,234
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Total backlinks"
+        >
+          Total backlinks
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Content Opportunities: 23. Keyword gaps found. Status: Warning"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="warning"
+        data-testid="indicator-card-content-opportunities"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-amber-500 dark:text-amber-400"
+          />
+          <span
+            aria-label="Status: Warning"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 gap-1"
+            data-slot="badge"
+            data-status="warning"
+            data-variant="secondary"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-triangle-alert size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+              />
+              <path
+                d="M12 9v4"
+              />
+              <path
+                d="M12 17h.01"
+              />
+            </svg>
+            Warning
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Content Opportunities"
+          >
+            Content Opportunities
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="23"
+          >
+            23
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Keyword gaps found"
+        >
+          Keyword gaps found
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="SERP Features: 8. Featured snippets won. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-serp-features"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="SERP Features"
+          >
+            SERP Features
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="8"
+          >
+            8
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Featured snippets won"
+        >
+          Featured snippets won
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Page Speed: 92/100. Performance score. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-page-speed"
+        href="/tools"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-zap"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Page Speed"
+          >
+            Page Speed
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="92/100"
+          >
+            92/100
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Performance score"
+        >
+          Performance score
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+  </div>
+</section>
+`;
+
+exports[`IndicatorCatalog Snapshots SN-008: Custom title/description snapshot 1`] = `
+<section
+  aria-labelledby="catalog-title-z6qy9rn"
+  class="flex w-full flex-col gap-4 p-4 sm:p-6"
+  data-slot="indicator-catalog"
+  data-testid="indicator-catalog"
+>
+  <div
+    class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div
+      class="flex flex-col gap-1"
+    >
+      <h2
+        class="text-xl font-semibold tracking-tight sm:text-2xl"
+        data-testid="catalog-title"
+        id="catalog-title-z6qy9rn"
+      >
+        Custom Title
+      </h2>
+      <p
+        class="text-sm text-muted-foreground"
+        data-testid="catalog-description"
+      >
+        Custom description
+      </p>
+    </div>
+  </div>
+  <div
+    aria-busy="false"
+    aria-label="SEO Indicators"
+    aria-rowcount="2"
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-all duration-200 ease-out"
+    data-loading="false"
+    data-slot="indicator-grid"
+    data-testid="indicator-grid"
+    role="grid"
+  >
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Keyword Rankings: 142. Keywords ranking in top 100. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-keyword-rankings"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-trending-up"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 7h6v6"
+                />
+                <path
+                  d="m22 7-8.5 8.5-5-5L2 17"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Keyword Rankings"
+          >
+            Keyword Rankings
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="142"
+          >
+            142
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Keywords ranking in top 100"
+        >
+          Keywords ranking in top 100
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Visibility Score: 78%. Overall SEO visibility. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-visibility-score"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          />
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Visibility Score"
+          >
+            Visibility Score
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="78%"
+          >
+            78%
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Overall SEO visibility"
+        >
+          Overall SEO visibility
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Competitor Analysis: 5. Tracked competitors. Status: Neutral"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="neutral"
+        data-testid="indicator-card-competitor-analysis"
+        href="/comparison"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-muted-foreground"
+          />
+          <span
+            aria-label="Status: Neutral"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground gap-1"
+            data-slot="badge"
+            data-status="neutral"
+            data-variant="outline"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-minus size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5 12h14"
+              />
+            </svg>
+            Neutral
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Competitor Analysis"
+          >
+            Competitor Analysis
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="5"
+          >
+            5
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Tracked competitors"
+        >
+          Tracked competitors
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Technical Health: 85/100. Site audit score. Status: Warning"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="warning"
+        data-testid="indicator-card-technical-health"
+        href="/tools"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-amber-500 dark:text-amber-400"
+          />
+          <span
+            aria-label="Status: Warning"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 gap-1"
+            data-slot="badge"
+            data-status="warning"
+            data-variant="secondary"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-triangle-alert size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+              />
+              <path
+                d="M12 9v4"
+              />
+              <path
+                d="M12 17h.01"
+              />
+            </svg>
+            Warning
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Technical Health"
+          >
+            Technical Health
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="85/100"
+          >
+            85/100
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Site audit score"
+        >
+          Site audit score
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Backlink Profile: 1,234. Total backlinks. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-backlink-profile"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          />
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Backlink Profile"
+          >
+            Backlink Profile
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="1,234"
+          >
+            1,234
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Total backlinks"
+        >
+          Total backlinks
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Content Opportunities: 23. Keyword gaps found. Status: Warning"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="warning"
+        data-testid="indicator-card-content-opportunities"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-amber-500 dark:text-amber-400"
+          />
+          <span
+            aria-label="Status: Warning"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 gap-1"
+            data-slot="badge"
+            data-status="warning"
+            data-variant="secondary"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-triangle-alert size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+              />
+              <path
+                d="M12 9v4"
+              />
+              <path
+                d="M12 17h.01"
+              />
+            </svg>
+            Warning
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Content Opportunities"
+          >
+            Content Opportunities
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="23"
+          >
+            23
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Keyword gaps found"
+        >
+          Keyword gaps found
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="SERP Features: 8. Featured snippets won. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-serp-features"
+        href="/dashboard"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="SERP Features"
+          >
+            SERP Features
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="8"
+          >
+            8
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Featured snippets won"
+        >
+          Featured snippets won
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+    <div
+      class="contents"
+      role="gridcell"
+    >
+      <a
+        aria-label="Page Speed: 92/100. Performance score. Status: Good"
+        class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        data-loading="false"
+        data-slot="indicator-card"
+        data-state="closed"
+        data-status="good"
+        data-testid="indicator-card-page-speed"
+        href="/tools"
+      >
+        <div
+          class="flex items-start justify-between gap-2"
+        >
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+          >
+            <span
+              aria-hidden="true"
+              class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+              data-color="default"
+              data-size="md"
+              data-slot="indicator-icon"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-zap"
+                fill="none"
+                focusable="false"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+                />
+              </svg>
+            </span>
+          </div>
+          <span
+            aria-label="Status: Good"
+            class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+            data-slot="badge"
+            data-status="good"
+            data-variant="default"
+            role="status"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-circle-check-big size-3"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.801 10A10 10 0 1 1 17 3.335"
+              />
+              <path
+                d="m9 11 3 3L22 4"
+              />
+            </svg>
+            Good
+          </span>
+        </div>
+        <div
+          class="flex flex-col gap-0.5"
+        >
+          <span
+            class="text-sm font-medium text-muted-foreground truncate"
+            title="Page Speed"
+          >
+            Page Speed
+          </span>
+          <span
+            class="text-2xl font-bold tracking-tight truncate"
+            title="92/100"
+          >
+            92/100
+          </span>
+        </div>
+        <p
+          class="text-sm text-muted-foreground line-clamp-2"
+          title="Performance score"
+        >
+          Performance score
+        </p>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+        />
+      </a>
+    </div>
+  </div>
+</section>
+`;
