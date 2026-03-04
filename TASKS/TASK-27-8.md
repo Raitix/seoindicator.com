@@ -1,7 +1,7 @@
 # TASK-27-8: Admin Usage API Endpoints
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
