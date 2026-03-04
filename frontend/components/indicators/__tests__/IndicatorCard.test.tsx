@@ -157,6 +157,12 @@ describe('Component Rendering', () => {
       }),
       expect.anything()
     );
+    // Verify the icon was called with correct props
+    const lastCall = (IndicatorIcon as jest.Mock).mock.calls.at(-1);
+    expect(lastCall?.[0]).toMatchObject({
+      icon: 'TrendingUp',
+      size: 'md',
+    });
   });
 
   test('CR-005: Renders title text', () => {
