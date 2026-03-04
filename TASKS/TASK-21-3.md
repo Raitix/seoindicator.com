@@ -1,7 +1,7 @@
 # TASK-21-3: Implement Static Fallback Provider
 
 ## STATUS
-`To Document`
+`Documentation in Progress`
 
 ## PRIORITY
 `High`
