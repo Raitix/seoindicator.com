@@ -107,7 +107,7 @@ const indicatorCategories = ["All", "Rankings", "Traffic", "Technical"];
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-surface-0 via-surface-1 to-surface-2">
+    <main className="min-h-screen bg-gradient-to-b from-surface-0 via-surface-1 to-surface-2 brand-gradient">
       {/* Header */}
       <header className="border-b border-slate-700" role="banner">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -118,8 +118,8 @@ export default function Home() {
             <span className="text-xl font-semibold text-white">SEOIndicator</span>
           </div>
           <nav className="flex items-center gap-4" role="navigation" aria-label="Main navigation">
-            <Button variant="ghost" className="text-slate-300 hover:text-white">
-              Dashboard
+            <Button asChild variant="ghost" className="text-slate-300 hover:text-white">
+              <Link href="/dashboard">Dashboard</Link>
             </Button>
             <Button variant="ghost" className="text-slate-300 hover:text-white">
               Indicators

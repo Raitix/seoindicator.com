@@ -1,13 +1,13 @@
 # TASK-21-9: Implement Vercel AI Provider
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
 
 ## RISK
-`Medium`
+`High`
 
 ## Specification
 [SPEC-021](../SPECIFICATIONS/SPEC-021.md) - AI Suggestions via OpenRouter/Vercel Gateway
@@ -117,6 +117,52 @@ _Agent log_
 Task file created from SPEC-021 specification. Previously empty file (0 bytes).
 This task was never properly created by SpecSystemAnalyst - file existed but had no content.
 Status set to `To Prioritize` for normal workflow processing.
+
+### [2026-03-04 15:12 GMT+2] ProjectManager - Prioritization Complete
+**Priority Confirmed: Medium** ✅
+**Risk Upgraded: Medium → High** ✅
+
+**Rationale for Priority (Medium):**
+- **Phase 3 Enhancement** - Not on critical path for MVP
+- **Alternative Provider** - OpenRouter is primary, Vercel is secondary/fallback
+- **Optional Feature** - System works without Vercel provider
+- **Deferable** - Can be implemented after core functionality is stable
+
+**Rationale for Risk (High):**
+- **External API Dependency** - Vercel AI API availability, rate limits, free tier limits
+- **HTTP Client Implementation** - Same complexity as OpenRouter (marked High risk)
+- **Error Handling** - Rate limiting, timeouts, malformed responses
+- **Free Tier Compliance** - Must handle Vercel free tier limitations gracefully
+
+**Dependency Analysis:**
+| Task | Status | Ready? |
+|------|--------|--------|
+| TASK-21-1 (AI Service Structure) | `Done` | ✅ Complete |
+| TASK-21-2 (OpenRouter Provider) | `Done` | ✅ Reference implementation |
+| TASK-21-5 (AI Suggestion API) | `Done` | ✅ Endpoint ready |
+
+**All Dependencies Complete!** This task can proceed immediately.
+
+**Implementation Notes:**
+- Use OpenRouterProvider (TASK-21-2) as reference implementation
+- Implement `AIProviderInterface` from TASK-21-1
+- Configuration scaffolded in `config/ai.php`
+- Free tier models: `gpt-4o-mini`, `claude-3-haiku`
+
+**Execution Order within SPEC-021:**
+- Phase 1 (TASK-21-1 to 21-4): Done ✅
+- Phase 2 (TASK-21-5 to 21-8): In Progress
+- Phase 3 (TASK-21-9, 21-11): This task
+
+**Handoff to PreTester:** Ready for test design. Focus on:
+- HTTP client mocking for Vercel AI API
+- Configuration validation (`VERCEL_AI_API_KEY`, `VERCEL_AI_MODEL`)
+- Response parsing from Vercel format
+- Error handling (rate limits, timeouts, free tier limits)
+- Availability check logic
+- Free tier limitation handling
+
+Status: `To Prioritize` → `To Write Tests`
 
 ---
 *Created from SPEC-021 on 2026-03-04*

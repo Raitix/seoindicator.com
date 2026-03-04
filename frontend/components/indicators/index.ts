@@ -12,3 +12,6 @@ export { default as IndicatorCardDefault } from './IndicatorCard';
 
 export { IndicatorGrid, type IndicatorGridProps, type IndicatorData, type ColumnConfig } from './IndicatorGrid';
 export { default as IndicatorGridDefault } from './IndicatorGrid';
+
+export { IndicatorCatalog, type IndicatorCatalogProps } from './IndicatorCatalog';
+export type { IndicatorData as IndicatorCatalogData } from './IndicatorGrid';

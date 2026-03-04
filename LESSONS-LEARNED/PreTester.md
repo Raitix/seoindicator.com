@@ -111,4 +111,75 @@ Use `TESTS/SPEC-X-Y.md` with sections:
 
 ---
 
+## AI Suggestion Component Testing (TASK-21-11)
+
+### Component Testing Patterns
+- Mock components for TDD approach - create mock implementation that matches expected interface
+- Test all states: default, loading, error, hasResults
+- Test accessibility attributes on each state
+- Test data attributes for visual regression hooks
+
+### AISuggestionPanel Testing
+- Test score display (null, 0, 100, regular values)
+- Test issue severity rendering (critical, warning, info)
+- Test suggestion type rendering (improve, rewrite, add, remove)
+- Test provider fallback indicator (static_fallback shows indicator)
+- Test debug mode visibility toggle
+- Test loading skeleton with aria-live="polite"
+- Test error state with role="alert"
+
+### AISuggestionButton Testing
+- Test disabled states: no context, loading, rate limit reached
+- Test loading state: spinner, text change, disabled
+- Test rate limit UI: remaining count, reset time tooltip
+- Test hasResults state: "Refresh Suggestions" text, refresh icon
+- Test all 10 indicator types (title, meta_description, robots, sitemap, headings, image_alt, filenames, url, links, 404)
+
+### API Service Testing
+- Mock fetch globally for service tests
+- Test request body structure
+- Test response parsing
+- Test error handling (422, 429, 500, 503)
+- Test rate limit header parsing
+- Test caching behavior
+
+### Tool Integration Testing
+- Test each tool individually plus cross-tool consistency
+- Create toolConfigs array with all tool/indicator mappings
+- Test consistent UX: same button text, aria-labels, positioning
+- Test full flows: click → loading → results
+
+### Test Data Patterns
+```typescript
+// Mock suggestion
+const mockSuggestion = {
+  type: 'rewrite' as const,
+  text: 'New Title',
+  reason: 'Includes keyword'
+};
+
+// Mock issue
+const mockIssue = {
+  severity: 'warning' as const,
+  message: 'Title too short'
+};
+
+// Mock response
+const mockResponse = {
+  success: true,
+  data: {
+    indicator: 'title',
+    score: 75,
+    issues: [mockIssue],
+    suggestions: [mockSuggestion],
+    best_practices: ['Keep under 60 chars'],
+    provider: 'openrouter',
+    model: 'llama-3.1-8b-instruct',
+    generated_at: '2026-03-04T12:00:00Z'
+  }
+};
+```
+
+---
+
 Last updated: 2026-03-04
