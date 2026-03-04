@@ -1,7 +1,7 @@
 # TASK-29-9: Backend Unit Tests
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -95,3 +95,60 @@ class PdfToolExporterTest extends TestCase
 
 ## Comments
 _Agent log_
+
+### ProjectManager Prioritization (2026-03-04)
+
+**Priority: HIGH (confirmed)**
+- Testing task for export feature MVP - essential for code quality and reliability
+- Unit tests validate core export functionality before deployment
+- Low risk category (testing task, no production impact)
+
+**Risk: LOW (confirmed)**
+- Testing task only - no production code changes
+- Standard PHPUnit test patterns
+- No external API dependencies
+
+**Dependency Analysis:**
+| Dependency | Status | Implementation Status |
+|------------|--------|----------------------|
+| TASK-29-1 (PdfToolExporter) | To Develop | NOT IMPLEMENTED |
+| TASK-29-2 (XlsToolExporter) | To Develop | NOT IMPLEMENTED |
+| TASK-29-3 (ToolExportService) | To Develop | NOT IMPLEMENTED |
+| TASK-29-4 (Download Token System) | To Develop | NOT IMPLEMENTED |
+
+**TDD Approach:**
+- PreTester CAN design tests NOW with mocked exporter interfaces
+- Test design does NOT require implementations to exist
+- Tests define expected behavior (contract-first approach)
+- Implementation waits for all dependencies to reach `To Test Locally`
+
+**Test Coverage Scope:**
+1. **PdfToolExporterTest** (8+ test cases)
+   - Valid PDF binary generation
+   - Cover page content verification
+   - Summary section rendering
+   - Indicators table pagination (25+ items)
+   - Recommendations section
+   - Branding options
+   - XSS prevention
+
+2. **XlsToolExporterTest** (5+ test cases)
+   - Valid XLS binary generation
+   - Header row verification
+   - Data row accuracy
+   - Styling application
+   - Empty data handling
+
+3. **ToolExportServiceTest** (6+ test cases)
+   - Export creation with URL generation
+   - Token validation (valid/expired/invalid)
+   - User ID mismatch rejection (IDOR prevention)
+   - Token invalidation after download
+   - Rate limiting enforcement
+
+**Execution Order:**
+- Tests designed now (TDD approach)
+- Implementation waits for: TASK-29-1 → TASK-29-2 → TASK-29-3 → TASK-29-4
+- All dependencies must reach `To Test Locally` before Developer can implement
+
+**Status Update:** Moving to `To Write Tests` for PreTester to design test coverage.
