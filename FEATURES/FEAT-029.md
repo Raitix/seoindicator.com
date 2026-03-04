@@ -1,7 +1,7 @@
 # FEAT-029: Export Results (PDF/XLS)
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -25,6 +25,17 @@ As a user, I want to export my results for reports or client sharing.
 
 ## Comments
 _Agent log_
+
+### [2026-03-04 12:15 GMT+2] Agent: SpecSystemAnalyst
+Created 10 tasks for PDF/XLS export functionality:
+- Phase 1: Backend exporters and service (TASK-29-1 to 29-3)
+- Phase 2: Security - token system and rate limiting (TASK-29-4 to 29-5)
+- Phase 3: Frontend components and integration (TASK-29-6 to 29-8)
+- Phase 4: Testing (TASK-29-9 to 29-10)
+
+**High Risk Task:** TASK-29-4 (Download Token System) - security-sensitive, requires IDOR prevention.
+
+Status: FEAT-029 and SPEC-029 → "To Prioritize"
 
 ### [2026-02-28 11:45 GMT+2] Agent: Architect
 Created SPEC-029 with technical specification for PDF/XLS export functionality.
