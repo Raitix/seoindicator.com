@@ -34,17 +34,39 @@ class AISuggestionService
      */
     public function getSuggestions(string $indicator, array $context = []): SuggestionResult
     {
-        // Stub implementation - actual logic will be implemented in later tasks
-        // For now, return a basic result structure
+        // Build the prompt with indicator and context
+        $promptContext = array_merge(['indicator' => $indicator], $context);
+        $prompt = json_encode($promptContext, JSON_THROW_ON_ERROR);
+
+        // Call the AI provider
+        $response = $this->provider->generate($prompt);
+
+        // Handle error response
+        if (!$response->success) {
+            return new SuggestionResult(
+                indicator: $indicator,
+                score: 0,
+                issues: [$response->errorMessage ?? 'AI provider error'],
+                suggestions: [],
+                bestPractices: [],
+                provider: $this->provider->getName(),
+                model: 'error',
+                generatedAt: new \DateTimeImmutable()
+            );
+        }
+
+        // Parse the response content
+        $data = json_decode($response->content, true, flags: JSON_THROW_ON_ERROR);
+
         return new SuggestionResult(
-            indicator: $indicator,
-            score: 0,
-            issues: [],
-            suggestions: [],
-            bestPractices: [],
-            provider: $this->provider->getName(),
-            model: 'stub',
-            generatedAt: new \DateTimeImmutable()
+            indicator: $data['indicator'] ?? $indicator,
+            score: $data['score'] ?? 0,
+            issues: $data['issues'] ?? [],
+            suggestions: $data['suggestions'] ?? [],
+            bestPractices: $data['best_practices'] ?? [],
+            provider: $data['provider'] ?? $this->provider->getName(),
+            model: $data['model'] ?? 'unknown',
+            generatedAt: new \DateTimeImmutable($data['generated_at'] ?? 'now')
         );
     }
 

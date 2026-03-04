@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\AI\AISuggestionService;
 use App\Services\AI\Contracts\AIProviderInterface;
+use App\Services\AI\Providers\StaticFallbackProvider;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -19,27 +20,11 @@ class AIServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Bind the AIProviderInterface to a closure that returns a mock/null provider
-        // This allows the service to be resolved from the container for testing
-        // Real providers (OpenRouter, Vercel) will be implemented in TASK-21-2, TASK-21-3
+        // Bind the AIProviderInterface to StaticFallbackProvider
+        // This provides rule-based SEO suggestions without external AI dependencies
+        // Real AI providers (OpenRouter, Vercel) will be added in TASK-21-2, TASK-21-4
         $this->app->bind(AIProviderInterface::class, function ($app) {
-            // Return a simple mock provider that satisfies the interface
-            return new class implements AIProviderInterface {
-                public function generate(string $prompt, array $options = []): \App\Services\AI\DTOs\AIResponse
-                {
-                    return \App\Services\AI\DTOs\AIResponse::error('Provider not configured');
-                }
-
-                public function isAvailable(): bool
-                {
-                    return false;
-                }
-
-                public function getName(): string
-                {
-                    return 'null_provider';
-                }
-            };
+            return new StaticFallbackProvider();
         });
 
         // Register the AISuggestionService as a singleton
