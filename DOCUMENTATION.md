@@ -479,6 +479,221 @@ Public REST API endpoint for listing available AI models with pricing informatio
 - TASK-26-22: Model Picker Component (frontend consumer)
 
 ---
+## User Model Preferences API (TASK-26-19)
+
+### Service Description
+REST API endpoints for users to manage their preferred AI models for analyses. Users can set a default model that will be automatically selected when starting a new analysis, with the ability to override per-analysis. Part of the Billing, Credits & Model Selection feature (FEAT-026).
+
+### Component Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/ModelController.php`
+- **Model:** `backend/app/Models/UserModelPreference.php`
+- **Request:** `backend/app/Http/Requests/Api/V1/SetModelPreferenceRequest.php`
+- **Migration:** `backend/database/migrations/2026_03_03_100000_create_user_model_preferences_table.php`
+- **Tests:** `backend/tests/Unit/Models/UserModelPreferenceTest.php`, `backend/tests/Feature/Api/V1/UserModelPreferencesTest.php`
+
+### Database Schema
+
+**user_model_preferences table:**
+```sql
+CREATE TABLE user_model_preferences (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    model_id BIGINT UNSIGNED NOT NULL,
+    is_default TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (model_id) REFERENCES ai_models(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_user_model_unique (user_id, model_id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_model_id (model_id)
+);
+```
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/models/preferences` | List user's saved model preferences |
+| POST | `/api/v1/models/preferences` | Set user's default model preference |
+
+### Get User Preferences
+`GET /api/v1/models/preferences`
+
+**Authentication Required:** Yes (Sanctum)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "preferences": [
+      {
+        "id": 1,
+        "model_id": 5,
+        "is_default": true,
+        "model": {
+          "id": 5,
+          "display_name": "GPT-4 Turbo",
+          "provider": "openrouter"
+        }
+      }
+    ],
+    "default_model": {
+      "id": 5,
+      "display_name": "GPT-4 Turbo",
+      "provider": "openrouter"
+    }
+  }
+}
+```
+
+### Set Model Preference
+`POST /api/v1/models/preferences`
+
+**Authentication Required:** Yes (Sanctum)
+
+**Request Body:**
+```json
+{
+  "model_id": 5,
+  "is_default": true
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Model preference updated successfully",
+  "data": {
+    "default_model": {
+      "id": 5,
+      "display_name": "GPT-4 Turbo",
+      "provider": "openrouter"
+    }
+  }
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `model_id` | Required, exists in ai_models table, must be active |
+| `is_default` | Boolean, optional (default: true) |
+
+**Error Responses:**
+| Status | Condition |
+|--------|-----------|
+| 401 | Unauthenticated request |
+| 422 | Invalid model_id or model is not active |
+
+### UserModelPreference Model
+
+**Properties:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | bigint | Primary key |
+| `user_id` | bigint | FK to users table |
+| `model_id` | bigint | FK to ai_models table |
+| `is_default` | boolean | Whether this is user's default model |
+| `created_at` | timestamp | Record creation time |
+| `updated_at` | timestamp | Last update time |
+
+**Relationships:**
+| Method | Type | Description |
+|--------|------|-------------|
+| `user()` | BelongsTo | User who owns this preference |
+| `model()` | BelongsTo | AIModel this preference references |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `forUser($userId)` | Filter preferences by user |
+| `default()` | Filter only default preferences |
+| `ordered()` | Order by creation date descending |
+
+### Business Logic
+
+| Rule | Implementation |
+|------|----------------|
+| Single Default | Only one model can be default per user |
+| Auto-Unset Previous | Setting new default automatically unsets previous default |
+| Active Models Only | Cannot set preference for inactive models |
+| User Isolation | Each user has separate preferences |
+| Cascade Delete | Preferences removed when user or model is deleted |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication Required | All endpoints require valid Sanctum token |
+| User Isolation | Users can only access their own preferences |
+| SQL Injection Protection | Parameterized queries via Eloquent |
+| XSS Protection | Laravel response encoding |
+| Input Validation | SetModelPreferenceRequest validates all inputs |
+| Active Model Check | Model must exist and be active |
+| Rate Limiting | Standard API rate limits apply |
+
+### HTTP Method Restrictions
+
+| Method | Status | Description |
+|--------|--------|-------------|
+| GET | 200 OK | Allowed - list preferences |
+| POST | 200 OK | Allowed - set preference |
+| PUT | 405 Method Not Allowed | Not allowed |
+| DELETE | 405 Method Not Allowed | Not allowed |
+| PATCH | 405 Method Not Allowed | Not allowed |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `UserModelPreferenceTest.php` | 40 | 56 |
+| `UserModelPreferencesTest.php` | 39 | 98 |
+| `UserModelPreferencesMigrationTest.php` | 27 | 47 |
+
+**Total: 106 tests, 201 assertions**
+
+**Test Categories (Unit):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Model Creation | 6 | Basic creation, casts, timestamps |
+| Relationships | 8 | User and AIModel relationships |
+| Scopes | 12 | forUser, default, ordered scopes |
+| Indexes | 4 | Database index verification |
+| Edge Cases | 5 | Null handling, large IDs |
+| Security | 5 | SQL injection protection |
+
+**Test Categories (Feature):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| GET Endpoint | 6 | List preferences, empty list, unauthenticated |
+| POST Endpoint | 8 | Set preference, update, validation errors |
+| Authentication | 4 | Unauthenticated returns 401 |
+| Business Logic | 6 | Only one default, previous unset |
+| Security | 8 | SQL injection, XSS, user isolation |
+| HTTP Methods | 4 | PUT/DELETE/PATCH return 405 |
+| Performance | 1 | Response time < 500ms |
+| Validation | 4 | Model ID validation, active check |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions auto-deploy)
+- **Commit:** `f882a99`
+- **Endpoint URL:** `https://seoindicator.com/api/v1/models/preferences`
+- **Health Check:** 200 OK
+- **Tests:** 79/79 passing (154 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-26-4 (ai_models table) - Required model reference
+- TASK-26-16 (ModelPricingService) - Model data source
+
+### Related Tasks
+- TASK-26-17: Models List API Endpoint (model list for picker)
+- TASK-26-22: Model Picker Component (frontend consumer)
+
+---
 ## Meta Description SEO Guide (TASK-20-6)
 
 ### Guide Description
