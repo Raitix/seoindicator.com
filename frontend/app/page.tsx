@@ -106,7 +106,7 @@ const indicatorCategories = ["All", "Rankings", "Traffic", "Technical"];
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-surface-0 via-surface-1 to-surface-2 brand-gradient">
+    <div className="min-h-screen bg-gradient-to-b from-surface-0 via-surface-1 to-surface-2 brand-gradient">
       {/* Header */}
       <header className="border-b border-slate-700" role="banner">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -249,6 +249,6 @@ export default function Home() {
           </p>
         </div>
       </footer>
-    </main>
+    </div>
   );
 }

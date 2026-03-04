@@ -85,7 +85,7 @@ const indicatorIconVariants = cva(
 // ============================================================================
 
 export interface IndicatorIconProps
-  extends React.HTMLAttributes<HTMLSpanElement>,
+  extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'color'>,
     VariantProps<typeof indicatorIconVariants> {
   /** Lucide icon name from the registry */
   icon?: LucideIconName;

@@ -1,7 +1,7 @@
 # TASK-28-4: IndicatorIcon Wrapper Component
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -48,6 +48,21 @@ interface IndicatorIconProps {
 
 ## Comments
 _Agent log_
+
+### [2026-03-04 16:43 UTC+2] DevOps
+**Resuming Deployment**
+
+**Pending Changes Detected:**
+- `frontend/components/indicators/IndicatorIcon.tsx` - TypeScript fix: Omit 'color' from HTMLAttributes to prevent prop conflict
+- `frontend/app/page.tsx` - Changed `<main>` to `<div>` for proper HTML semantics
+- `frontend/app/providers.tsx` - Added TooltipProvider wrapper for shadcn tooltip components
+
+**Deployment Actions:**
+1. Created lock file: `.locks/TASK-28-4.lock`
+2. Updated status to "In Deployment"
+3. Committing all pending changes
+4. Pushing to origin/main to trigger GitHub Actions
+5. Monitoring health endpoint
 
 ### [2026-03-04 16:35 UTC+2] DevOps
 **Deployment In Progress**
