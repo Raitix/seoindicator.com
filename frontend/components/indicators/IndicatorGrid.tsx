@@ -30,6 +30,8 @@ export interface IndicatorData {
   href: string;
   /** Optional tooltip override */
   tooltip?: string;
+  /** Optional category for filtering */
+  category?: string;
 }
 
 /**
