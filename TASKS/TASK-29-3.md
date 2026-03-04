@@ -1,7 +1,7 @@
 # TASK-29-3: ToolExportService & Controller
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -75,3 +75,31 @@ class ToolExportService
 
 ## Comments
 _Agent log_
+
+### [2026-03-04 12:48 GMT+2] Agent: ProjectManager
+**Prioritization Complete**
+
+**Priority Assessment:** HIGH (confirmed) - Coordination service essential for export feature. Brings together both exporters (PDF/XLS) and creates API endpoints.
+
+**Risk Assessment:** MEDIUM (confirmed) - Standard Laravel service/controller, delegates to exporters, no external APIs, no security-critical operations (token system is TASK-29-4).
+
+**Dependency Analysis:**
+- TASK-29-1 (PdfToolExporter): `To Develop` - Tests complete, ready for implementation
+- TASK-29-2 (XlsToolExporter): `To Write Tests` - PreTester designing tests
+- Both dependencies progressing but NOT done
+
+**TDD Ready:** PreTester CAN design tests now with:
+- Mocked PdfToolExporter and XlsToolExporter interfaces
+- Well-defined API contract from SPEC-029
+- Request validation rules documented
+- Response structure: `{ success, downloadUrl, expiresAt }`
+
+**Key Implementation Points:**
+- Service methods: `createExport()`, `downloadExport()`
+- Controller endpoints: `POST /api/v1/tools/export`, `GET /api/v1/tools/export/download/{token}`
+- Request validation: tool, url, format (pdf|xls), data array
+- Error responses: 401, 404, 422
+
+**Execution Order:** Third task in Phase 1 pipeline. Tests can proceed with mocked interfaces; implementation waits for TASK-29-1 and TASK-29-2 to reach `To Test Locally`.
+
+Status updated: `To Prioritize` → `To Write Tests` - Ready for PreTester
