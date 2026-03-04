@@ -1,7 +1,7 @@
 # TASK-27-7: Usage Aggregation Service
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`

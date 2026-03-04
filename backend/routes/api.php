@@ -411,6 +411,14 @@ Route::prefix('v1')->middleware(['throttle:60,1'])->group(function () {
         Route::delete('/{id}', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'destroy']);
         Route::post('/{id}/restore', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'restore']);
     });
+
+    // Admin: Usage API (TASK-27-8, SPEC-027)
+    Route::prefix('admin/usage')->middleware('admin')->group(function () {
+        Route::get('/overview', [\App\Http\Controllers\Api\V1\Admin\UsageController::class, 'overview']);
+        Route::get('/requests', [\App\Http\Controllers\Api\V1\Admin\UsageController::class, 'requests']);
+        Route::get('/tokens', [\App\Http\Controllers\Api\V1\Admin\UsageController::class, 'tokens']);
+        Route::get('/trends', [\App\Http\Controllers\Api\V1\Admin\UsageController::class, 'trends']);
+    });
 });
 
 // Alert Unsubscribe (signed URL, no auth required)

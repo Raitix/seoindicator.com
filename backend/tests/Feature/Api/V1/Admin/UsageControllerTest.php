@@ -743,11 +743,14 @@ class UsageControllerTest extends TestCase
         $response = $this->getJson('/api/v1/admin/usage/overview');
         $json = $response->json();
 
-        // Should not contain user emails, passwords, tokens
+        // Should not contain user emails, passwords, or authentication tokens
+        // Note: "tokens" field is legitimate usage metrics, not sensitive data
         $jsonString = json_encode($json);
         $this->assertStringNotContainsString('password', $jsonString);
         $this->assertStringNotContainsString('email', $jsonString);
-        $this->assertStringNotContainsString('token', $jsonString);
+        $this->assertStringNotContainsString('api_key', $jsonString);
+        $this->assertStringNotContainsString('bearer', $jsonString);
+        $this->assertStringNotContainsString('secret', $jsonString);
     }
 
     /** @test */
