@@ -32,8 +32,8 @@ export interface IndicatorCardProps {
   status: IndicatorStatus;
   /** Navigation URL when card is clicked */
   href?: string;
-  /** Icon name from Lucide icons */
-  icon?: string | LucideIcon;
+  /** Icon name from Lucide icons or React component */
+  icon?: string | React.ComponentType<{ className?: string }>;
   /** Tooltip content for additional context */
   tooltip?: string;
   /** Click handler (alternative to href navigation) */
@@ -164,10 +164,6 @@ export function IndicatorCard({
 
   // Common props for the card element
   const cardProps = {
-    "aria-label": ariaLabel,
-    "aria-disabled": disabled ? "true" : undefined,
-    "aria-busy": isLoading ? "true" : undefined,
-    "aria-describedby": tooltip ? tooltipId : error ? errorId : undefined,
     className: cn(
       "group relative rounded-lg border p-4 transition-all duration-200",
       "bg-slate-900/50 backdrop-blur-sm",
@@ -346,6 +342,10 @@ export function IndicatorCard({
         {...cardProps}
         role="button"
         tabIndex={0}
+        aria-label={ariaLabel}
+        aria-disabled={disabled || undefined}
+        aria-busy={!!isLoading}
+        aria-describedby={tooltip ? tooltipId : error ? errorId : undefined}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
       >
@@ -360,6 +360,10 @@ export function IndicatorCard({
       {...cardProps}
       role={isInteractive ? "button" : undefined}
       tabIndex={isInteractive ? 0 : -1}
+      aria-label={isInteractive ? ariaLabel : undefined}
+      aria-disabled={disabled || undefined}
+      aria-busy={!!isLoading}
+      aria-describedby={tooltip ? tooltipId : error ? errorId : undefined}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
     >
