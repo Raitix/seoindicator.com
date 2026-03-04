@@ -50,7 +50,7 @@ class RequestTrackingServiceTest extends TestCase
         $service = new RequestTrackingService();
         
         $this->assertEquals('request_tracking:', $service->getKeyPrefix());
-        $this->assertEquals(3600, $service->getTTL());
+        $this->assertEquals(86400, $service->getTTL());
     }
 
     // =========================================================================
@@ -66,7 +66,8 @@ class RequestTrackingServiceTest extends TestCase
                 return str_contains($key, 'request_tracking:queue');
             });
 
-        Redis::shouldReceive('expire')->once();
+        Redis::shouldReceive('expire')->twice();
+        Redis::shouldReceive('incr')->once();
 
         $service = new RequestTrackingService();
         $service->record('api/v1/users', 'GET', 1, new DateTime());
@@ -81,7 +82,8 @@ class RequestTrackingServiceTest extends TestCase
                 return preg_match('/^request_tracking:queue:\d{8}$/', $key);
             });
 
-        Redis::shouldReceive('expire')->once();
+        Redis::shouldReceive('expire')->twice();
+        Redis::shouldReceive('incr')->once();
 
         $service = new RequestTrackingService();
         $service->record('api/v1/test', 'GET', null, new DateTime());
@@ -99,7 +101,8 @@ class RequestTrackingServiceTest extends TestCase
                 return true;
             });
 
-        Redis::shouldReceive('expire')->once();
+        Redis::shouldReceive('expire')->twice();
+        Redis::shouldReceive('incr')->once();
 
         $service = new RequestTrackingService();
         $service->record('api/v1/users', 'GET', null, new DateTime());
@@ -119,7 +122,8 @@ class RequestTrackingServiceTest extends TestCase
                 return true;
             });
 
-        Redis::shouldReceive('expire')->once();
+        Redis::shouldReceive('expire')->twice();
+        Redis::shouldReceive('incr')->once();
 
         $service = new RequestTrackingService();
         $service->record('api/v1/test', 'POST', null, new DateTime());
