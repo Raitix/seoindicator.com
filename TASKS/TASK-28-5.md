@@ -1,7 +1,7 @@
 # TASK-28-5: IndicatorCard Component
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
