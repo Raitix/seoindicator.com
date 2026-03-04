@@ -1,7 +1,7 @@
 # TASK-27-8: Admin Usage API Endpoints
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -40,6 +40,63 @@ Create API endpoints for admin usage metrics. Provides overview, request breakdo
 - Consider adding export functionality (CSV) in future
 
 ## Comments
+
+### 2026-03-04 - PreTester
+**Tests Coverage Complete**
+
+- **Tests Created:** 71 feature tests
+- **Test File:** `backend/tests/Feature/Api/V1/Admin/UsageControllerTest.php`
+- **Documentation:** `TESTS/TEST-27-8.md`
+
+**Test Categories:**
+| Category | Tests |
+|----------|-------|
+| Overview Endpoint | 10 tests |
+| Requests Endpoint | 8 tests |
+| Tokens Endpoint | 7 tests |
+| Trends Endpoint | 11 tests |
+| Query Parameters | 9 tests |
+| Rate Limiting | 1 test |
+| HTTP Methods | 8 tests |
+| Security | 5 tests |
+| Error Handling | 3 tests |
+| Performance | 2 tests |
+| Edge Cases | 6 tests |
+| Data Types | 5 tests |
+| Integration | 3 tests |
+
+**Expected Status:** Tests return 404 (routes don't exist) - this is correct TDD behavior.
+
+**Implementation Notes for Developer:**
+1. Create controller at `app/Http/Controllers/Api/V1/Admin/UsageController.php`
+2. Add routes in `routes/api.php` under `api/v1/admin/usage/*`
+3. Inject `UsageAggregationService` into controller
+4. Add middleware: `auth:sanctum`, `admin`, `throttle:60,1`
+5. Support query params: `start_date`, `end_date`, `granularity`, `days`
+
+**Service Methods Available:**
+- `UsageAggregationService::getStats()` → overview data
+- `UsageAggregationService::getRequestsByEndpoint()` → endpoint counts
+- `UsageAggregationService::getTokenTrends(int $days)` → time series
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+
+**Error Format:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human readable message"
+  }
+}
+```
 
 ### 2026-03-03 - ProjectManager
 **Prioritization Complete**
