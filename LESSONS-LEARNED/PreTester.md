@@ -84,4 +84,31 @@ Use `TESTS/SPEC-X-Y.md` with sections:
 
 ---
 
-Last updated: 2026-03-03
+## Integration Testing
+
+### Tool Page Integration (TASK-29-8)
+- Mock external components (ExportResultsButton, ExportModal) when testing integration
+- Create mock result components that mirror expected implementation pattern
+- Test each tool individually plus cross-tool consistency
+- Test loading states separately for each tool
+- Verify data mapping for each tool type
+- Test accessibility requirements (aria-labels, regions)
+- Use `within()` to scope queries to specific containers
+- Test consistent UX across all tools (same text, aria-labels, placement)
+
+### Cross-Tool Consistency Testing
+- Create test data for all 4 tools upfront
+- Test same aspect across all tools in single test (e.g., all button texts)
+- Use test IDs consistently across components
+- Test placement patterns (justify-end, mt-4)
+- Verify unique tool names passed correctly
+
+### Loading State Testing
+- Test that button is NOT rendered during loading
+- Test that button IS rendered after loading completes
+- Test transition from loading to ready state
+- Use separate renders/unmounts for loading vs ready tests
+
+---
+
+Last updated: 2026-03-04

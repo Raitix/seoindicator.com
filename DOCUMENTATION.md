@@ -4121,6 +4121,189 @@ Frontend component for the SEO Guides Library index page. Displays a grid of all
 - TASK-20-4: Routing with static params generation
 
 ---
+## Mobile Navigation Sheet Component (TASK-28-13)
+
+### Component Description
+Responsive mobile navigation component implementing a slide-in Sheet drawer with hamburger menu trigger. Provides touch-friendly navigation for authenticated users on mobile devices (< 768px breakpoint). Part of the Modern UI/UX + Indicator Catalog feature (FEAT-028).
+
+### Component Location
+- **Component:** `frontend/components/layout/MobileNav.tsx`
+- **Integration:** `frontend/components/layout/Header.tsx`
+- **Tests:** `frontend/__tests__/components/layout/MobileNav.test.tsx`
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TASK-28-13.md`
+
+### Core Functionalities
+
+**MobileNav Component:**
+| Feature | Description |
+|---------|-------------|
+| Hamburger Menu | Toggle button visible on mobile only (`md:hidden` class) |
+| Sheet Drawer | Slides in from left side with animation |
+| Navigation Items | Full navigation menu with icons and labels |
+| Active State | Visual indicator for current route |
+| Touch Targets | Minimum 44px height for accessibility |
+| Route Change | Auto-closes on navigation |
+| Escape Key | Closes sheet on Escape press |
+| Backdrop Click | Closes sheet when clicking outside |
+
+### Component Interface
+
+```typescript
+interface NavItem {
+  label: string;
+  href: string;
+  icon?: string;      // Lucide icon name
+  badge?: string | number; // Optional badge (notification count)
+}
+
+interface UserInfo {
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
+interface MobileNavProps {
+  navItems: NavItem[];
+  currentPath: string;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  user?: UserInfo | null;
+  side?: 'left' | 'right';
+}
+```
+
+### Responsive Behavior
+
+| Breakpoint | Behavior |
+|------------|----------|
+| < 768px (md) | Hamburger menu visible, Sheet drawer functional |
+| >= 768px | Hamburger menu hidden (`md:hidden`), desktop nav shown |
+
+### Navigation Items Configuration
+
+```typescript
+const navItems: NavItem[] = [
+  { label: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard' },
+  { label: 'Projects', href: '/projects', icon: 'FolderKanban' },
+  { label: 'Keywords', href: '/keywords', icon: 'Key' },
+  { label: 'Reports', href: '/reports', icon: 'FileBarChart' },
+  { label: 'Settings', href: '/settings', icon: 'Settings' },
+];
+```
+
+### Accessibility Implementation
+
+| ARIA Attribute | Value | Purpose |
+|----------------|-------|---------|
+| `aria-label` (hamburger) | "Open navigation menu" | Screen reader announcement |
+| `aria-expanded` | true/false | State indication |
+| `role` (sheet) | "dialog" | Dialog semantics |
+| `aria-modal` | "true" | Focus trap indication |
+| `aria-label` (sheet) | "Navigation menu" | Sheet purpose |
+
+**WCAG 2.1 Compliance:**
+- Touch targets minimum 44x44px (Success Criterion 2.5.5)
+- Focus trap when sheet is open
+- Focus returns to hamburger on close
+- Keyboard navigation support (Tab, Escape)
+- Screen reader state announcements
+
+### Close Triggers
+
+| Trigger | Implementation |
+|---------|---------------|
+| Route change | `useEffect` on `pathname` from `usePathname()` |
+| Backdrop click | Handled by shadcn Sheet component |
+| Escape key | Native Sheet behavior |
+| Nav item click | Calls `onOpenChange(false)` |
+
+### Active State Styling
+
+| State | Styling |
+|-------|---------|
+| Active nav item | Blue indicator bar, highlighted background |
+| Inactive nav item | Default styling, hover effects |
+
+### Integration with Header
+
+The MobileNav component integrates with `Header.tsx`:
+
+```typescript
+// Header.tsx integration
+<header>
+  {/* Desktop navigation - visible on md+ */}
+  <nav className="hidden md:flex">
+    {/* Desktop nav items */}
+  </nav>
+
+  {/* Mobile navigation - visible below md */}
+  <MobileNav
+    navItems={navItems}
+    currentPath={pathname}
+    isOpen={mobileNavOpen}
+    onOpenChange={setMobileNavOpen}
+    user={user}
+    className="md:hidden"
+  />
+</header>
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `MobileNav.test.tsx` | 28 | 28+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering (CR) | 6 | Component mount, props, visibility |
+| Interaction (UI) | 5 | Open/close, backdrop, escape key |
+| Accessibility (A11Y) | 6 | ARIA attributes, focus management |
+| Touch Targets (TT) | 2 | Min 44px height validation |
+| Props/State (PS) | 3 | Controlled state handling |
+| Active State (AS) | 2 | Route highlighting |
+| Edge Cases (EC) | 4 | Unicode, badges, long labels |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React escapes content, no raw HTML |
+| External Links | Would have `rel="noopener noreferrer"` |
+| JS URLs | Navigation blocked for `javascript:` URLs |
+| No Sensitive Data | Tokens/passwords not in DOM |
+
+### Dependencies
+
+| Dependency | Source | Purpose |
+|------------|--------|---------|
+| shadcn/ui Sheet | TASK-28-3 | Slide-in drawer component |
+| Lucide React | Installed | Icon library |
+| Next.js router | Framework | Route detection |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions #22667120062)
+- **Build Time:** 2m8s
+- **Health Check:** Passing (`https://seoindicator.com/api/health`)
+- **Tests:** 28/28 passing
+- **Commit:** `bae5c05`
+- **Status:** Complete
+
+### Scope Notes
+- MobileNav integrated in **authenticated Header.tsx only**
+- Landing page uses separate inline header (not Header.tsx)
+- This is within task scope as specified files: `MobileNav.tsx`, `Header.tsx`
+
+### Dependencies
+- TASK-28-3 (shadcn/ui Components - Sheet) - deployed
+- TASK-28-12 (Desktop Navigation) - integrated in same Header.tsx
+
+### Related Tasks
+- TASK-28-3: shadcn/ui Components (Sheet dependency)
+- TASK-28-12: Desktop Navigation (companion component)
+
+---
 ## ToolEmbed Component for Guide-Tool Integration (TASK-20-22)
 
 ### Service Description
