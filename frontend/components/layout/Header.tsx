@@ -4,17 +4,51 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useUnreadCount } from "@/lib/api/notifications";
+import { MobileNav, NavItem, UserInfo } from "./MobileNav";
+import {
+  LayoutDashboard,
+  FolderKanban,
+  Key,
+  FileBarChart,
+  Settings,
+  Bell,
+} from "lucide-react";
 
 interface HeaderProps {
   userName?: string;
+  userEmail?: string;
+  userAvatar?: string;
   onLogout?: () => void;
 }
 
-export default function Header({ userName, onLogout }: HeaderProps) {
+// Navigation items configuration
+const navItems: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Keywords", href: "/keywords", icon: Key },
+  { label: "Competitors", href: "/competitors", icon: FolderKanban },
+  { label: "Reports", href: "/reports", icon: FileBarChart },
+  { label: "Settings", href: "/settings", icon: Settings },
+];
+
+export default function Header({
+  userName,
+  userEmail,
+  userAvatar,
+  onLogout,
+}: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { count: unreadCount, mutate: refreshCount } = useUnreadCount();
   const [showDropdown, setShowDropdown] = useState(false);
+
+  // Prepare user info for mobile nav
+  const user: UserInfo | null = userName
+    ? {
+        name: userName,
+        email: userEmail || "",
+        avatar: userAvatar,
+      }
+    : null;
 
   // Refresh unread count on navigation
   useEffect(() => {
@@ -26,85 +60,82 @@ export default function Header({ userName, onLogout }: HeaderProps) {
     router.push("/notifications");
   };
 
-  const isActive = (path: string) => pathname?.startsWith(path);
+  const isActive = (path: string) => {
+    if (path === "/dashboard") {
+      return pathname?.startsWith("/dashboard") && !pathname?.startsWith("/keywords");
+    }
+    return pathname?.startsWith(path);
+  };
+
+  // Update nav items with badge for notifications
+  const navItemsWithBadge = navItems.map((item) => {
+    if (item.href === "/notifications" && unreadCount > 0) {
+      return { ...item, badge: unreadCount };
+    }
+    return item;
+  });
 
   return (
     <header className="sticky top-0 z-50 bg-slate-950/95 backdrop-blur border-b border-slate-800">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 rounded"
+            aria-label="SEOIndicator Home"
+          >
             <span className="text-xl font-bold text-white">SEOIndicator</span>
           </Link>
 
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
-            <Link
-              href="/dashboard"
-              className={`text-sm transition-colors ${
-                isActive("/dashboard") && !isActive("/keywords")
-                  ? "text-white"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/keywords"
-              className={`text-sm transition-colors ${
-                isActive("/keywords")
-                  ? "text-white"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Keywords
-            </Link>
-            <Link
-              href="/competitors"
-              className={`text-sm transition-colors ${
-                isActive("/competitors")
-                  ? "text-white"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Competitors
-            </Link>
-            <Link
-              href="/tools"
-              className={`text-sm transition-colors ${
-                isActive("/tools")
-                  ? "text-white"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Tools
-            </Link>
+          {/* Desktop Navigation */}
+          <nav
+            className="hidden md:flex items-center gap-6"
+            aria-label="Main navigation"
+            role="navigation"
+          >
+            <ul role="list" className="flex items-center gap-6">
+              {navItems.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={`text-sm transition-colors relative inline-flex items-center gap-1.5 px-1 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 rounded ${
+                      isActive(item.href)
+                        ? "text-white"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                    aria-current={isActive(item.href) ? "page" : undefined}
+                  >
+                    {item.icon && (
+                      <item.icon
+                        className="w-4 h-4"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {item.label}
+                    {isActive(item.href) && (
+                      <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-blue-500 rounded-full" aria-hidden="true" />
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </nav>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {/* Notification Bell */}
             <div className="relative">
               <button
                 onClick={handleNotificationClick}
-                className="relative p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                className="relative p-2 rounded-lg hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
+                aria-live="polite"
+                aria-atomic="true"
               >
-                <svg
-                  className="w-5 h-5 text-slate-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
+                <Bell className="w-5 h-5 text-slate-400" aria-hidden="true" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse">
+                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse" aria-hidden="true">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
@@ -114,48 +145,43 @@ export default function Header({ userName, onLogout }: HeaderProps) {
             {/* Settings Link */}
             <Link
               href="/settings/alerts"
-              className={`p-2 rounded-lg hover:bg-slate-800 transition-colors ${
+              className={`hidden md:flex p-2 rounded-lg hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
                 isActive("/settings") ? "text-white" : "text-slate-400"
               }`}
               aria-label="Settings"
+              aria-current={isActive("/settings") ? "page" : undefined}
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
+              <Settings className="w-5 h-5" aria-hidden="true" />
             </Link>
 
-            {/* User Menu */}
+            {/* User Menu (Desktop) */}
             {userName && (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+              <div className="hidden md:flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium"
+                  aria-hidden="true"
+                >
                   {userName.charAt(0).toUpperCase()}
                 </div>
+                <span className="sr-only">{userName}</span>
                 {onLogout && (
                   <button
                     onClick={onLogout}
-                    className="text-sm text-slate-400 hover:text-white transition-colors"
+                    className="text-sm text-slate-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 rounded px-2 py-1"
+                    aria-label="Logout"
                   >
                     Logout
                   </button>
                 )}
               </div>
             )}
+
+            {/* Mobile Navigation */}
+            <MobileNav
+              navItems={navItemsWithBadge}
+              user={user}
+              onLogout={onLogout}
+            />
           </div>
         </div>
       </div>
