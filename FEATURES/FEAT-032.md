@@ -1,7 +1,7 @@
 # FEAT-032: Competitor Comparison Landing Pages (Programmatic SEO)
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -100,7 +100,7 @@ As a potential customer researching SEO tools, I want to find detailed compariso
 5. Implement comparison table component with responsive design
 
 ## Related
-- Specification: (To be created by Architect)
+- Specification: SPEC-32 (Created 2026-03-04)
 - Tasks: (To be created by SpecSystemAnalyst)
 - Complements: FEAT-003 (Competitor Rank Comparison), FEAT-020 (SEO Guides)
 
@@ -123,6 +123,25 @@ Each comparison page should:
 ---
 
 ## Comments
+### [2026-03-04 12:25 GMT+2] Agent: Architect
+**Specification SPEC-32 created successfully.**
+
+**Key Technical Decisions:**
+1. Static generation via Next.js `generateStaticParams()` for zero runtime cost
+2. URL structure: `/compare/[competitor-a]-vs-[competitor-b]/`
+3. Modular components: ComparisonTable, PricingComparison, ProsConsCard, UseCaseSection, ComparisonCTA, ComparisonSchema
+4. Schema markup: FAQPage, BreadcrumbList, HowTo schemas
+5. 22 tasks identified across 5 phases
+
+**Risk Level: LOW** (confirmed)
+- No external APIs required
+- Static content only
+- Uses existing infrastructure
+
+**Handoff to SpecSystemAnalyst:** Ready for task breakdown. Prioritize Phase 1-2 for MVP (infrastructure + components + Tier 1 competitors).
+
+---
+
 ### [2026-03-04 12:15 GMT+2] Agent: Innovator
 **Created based on GA analysis revealing:**
 - Critical organic traffic problem (1 session/30 days)
