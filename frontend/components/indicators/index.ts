@@ -9,3 +9,6 @@ export { default as IndicatorIconDefault } from './IndicatorIcon';
 
 export { IndicatorCard, type IndicatorCardProps, type IndicatorStatus, statusConfig } from './IndicatorCard';
 export { default as IndicatorCardDefault } from './IndicatorCard';
+
+export { IndicatorGrid, type IndicatorGridProps, type IndicatorData, type ColumnConfig } from './IndicatorGrid';
+export { default as IndicatorGridDefault } from './IndicatorGrid';
