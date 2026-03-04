@@ -1,7 +1,7 @@
 # TASK-27-8: Admin Usage API Endpoints
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -40,6 +40,38 @@ Create API endpoints for admin usage metrics. Provides overview, request breakdo
 - Consider adding export functionality (CSV) in future
 
 ## Comments
+
+### 2026-03-04 - DevOps
+**Deployment Complete** ✅
+
+**Deployment Verification:**
+- Production health check: OK (database connected)
+- All 4 endpoints verified deployed:
+  | Endpoint | Status |
+  |----------|--------|
+  | `/api/v1/admin/usage/overview` | 401 (auth required) ✅ |
+  | `/api/v1/admin/usage/requests` | 401 (auth required) ✅ |
+  | `/api/v1/admin/usage/tokens` | 401 (auth required) ✅ |
+  | `/api/v1/admin/usage/trends` | 401 (auth required) ✅ |
+
+- Routes properly registered under `api/v1/admin/usage/*`
+- AdminAuthorizationMiddleware enforced (401 for unauthenticated)
+- Rate limiting: 60 req/min configured
+
+**Deployment Notes:**
+- Code already committed and pushed via GitHub Actions CI/CD
+- No migrations required for this task (API endpoints only)
+- Controller: `UsageController.php` (7241 bytes)
+- Routes: `routes/api.php` lines 258-263
+
+**Handoff to ProdTester:**
+- Verify endpoints with admin authentication
+- Test all 4 endpoints with valid admin token
+- Verify response formats match specification
+- Test query parameters (start_date, end_date, granularity, days)
+- Verify rate limiting in production
+
+**Remaining:** API documentation update (acceptance criteria item)
 
 ### 2026-03-04 - LocalTester
 **Local QA Verification Complete** ✅
