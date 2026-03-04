@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import GoogleAnalytics from "./components/GoogleAnalytics";
 import { Providers } from "./providers";
+import { SkipLink, SkipToMain } from "@/components/layout/SkipLink";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -46,8 +47,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <SkipLink />
         <GoogleAnalytics />
-        <Providers>{children}</Providers>
+        <Providers>
+          <SkipToMain>{children}</SkipToMain>
+        </Providers>
       </body>
     </html>
   );

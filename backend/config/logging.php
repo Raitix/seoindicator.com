@@ -145,6 +145,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // AI suggestions log channel (TASK-21-7)
+        'ai' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/ai.log'),
+            'level' => 'debug',
+            'days' => 30, // Keep AI logs for 30 days
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

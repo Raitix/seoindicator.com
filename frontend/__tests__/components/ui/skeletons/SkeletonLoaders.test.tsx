@@ -695,8 +695,9 @@ describe('IndicatorCatalogSkeleton', () => {
 
     it('ICS-005: Has grid layout', async () => {
       const { container } = await renderCatalogSkeleton();
-      const catalog = container.firstChild as HTMLElement;
-      expect(catalog.className).toMatch(/grid|flex/);
+      // Grid is on the inner div with cards, not the container
+      const grid = container.querySelector('.grid');
+      expect(grid).toBeInTheDocument();
     });
   });
 

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { IndicatorCatalog, type IndicatorData } from "@/components/indicators";
-import { TrendingUp, Eye, Users, Wrench, Link2, FileText, Star, Zap } from "lucide-react";
 
 // ============================================================================
 // Indicator Data
@@ -15,7 +14,7 @@ import { TrendingUp, Eye, Users, Wrench, Link2, FileText, Star, Zap } from "luci
 const homepageIndicators: IndicatorData[] = [
   {
     id: "rankings",
-    icon: TrendingUp,
+    icon: "TrendingUp",
     title: "Keyword Rankings",
     value: "42",
     description: "Track SERP positions",
@@ -25,7 +24,7 @@ const homepageIndicators: IndicatorData[] = [
   },
   {
     id: "visibility",
-    icon: Eye,
+    icon: "Eye",
     title: "Visibility Score",
     value: "78%",
     description: "Overall SEO visibility",
@@ -35,7 +34,7 @@ const homepageIndicators: IndicatorData[] = [
   },
   {
     id: "technical",
-    icon: Wrench,
+    icon: "Wrench",
     title: "Technical Health",
     value: "95",
     description: "Site audit score",
@@ -45,7 +44,7 @@ const homepageIndicators: IndicatorData[] = [
   },
   {
     id: "backlinks",
-    icon: Link2,
+    icon: "Link2",
     title: "Backlink Profile",
     value: "1.2K",
     description: "Link analysis",
@@ -55,7 +54,7 @@ const homepageIndicators: IndicatorData[] = [
   },
   {
     id: "content",
-    icon: FileText,
+    icon: "FileText",
     title: "Content Opportunities",
     value: "15",
     description: "Keyword gaps",
@@ -65,7 +64,7 @@ const homepageIndicators: IndicatorData[] = [
   },
   {
     id: "serp",
-    icon: Star,
+    icon: "Star",
     title: "SERP Features",
     value: "8",
     description: "Featured snippets, etc.",
@@ -75,7 +74,7 @@ const homepageIndicators: IndicatorData[] = [
   },
   {
     id: "speed",
-    icon: Zap,
+    icon: "Zap",
     title: "Page Speed",
     value: "89",
     description: "Performance metrics",
@@ -85,7 +84,7 @@ const homepageIndicators: IndicatorData[] = [
   },
   {
     id: "competitors",
-    icon: Users,
+    icon: "Users",
     title: "Competitor Analysis",
     value: "3",
     description: "Compare with competitors",
@@ -159,8 +158,6 @@ export default function Home() {
             description="Real-time metrics for your website's SEO performance"
             categories={indicatorCategories}
             selectedCategory="All"
-            showCategoryTabs={true}
-            showRefreshButton={false}
             className="text-left"
           />
         </div>
