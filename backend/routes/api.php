@@ -36,6 +36,7 @@ use App\Http\Controllers\Api\V1\AnalysisHistoryController;
 use App\Http\Controllers\Api\V1\UserDashboardController;
 use App\Http\Controllers\Api\V1\AISuggestionController;
 use App\Http\Controllers\Api\V1\CrawlController;
+use App\Http\Controllers\Api\V1\ToolExportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -371,6 +372,10 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::get('sites/{siteId}/pwa', [\App\Http\Controllers\Api\V1\PWAController::class, 'show'])->where('siteId', '[0-9]+');
     Route::post('sites/{siteId}/pwa/analyze', [\App\Http\Controllers\Api\V1\PWAController::class, 'analyze'])->where('siteId', '[0-9]+');
     Route::post('sites/{siteId}/pwa/refresh', [\App\Http\Controllers\Api\V1\PWAController::class, 'refresh'])->where('siteId', '[0-9]+');
+
+    // Tool Exports (TASK-29-3, SPEC-029)
+    Route::post('tools/export', [ToolExportController::class, 'export']);
+    Route::get('tools/export/download/{token}', [ToolExportController::class, 'download']);
 
     // Payment Methods (TASK-26-11, SPEC-026)
     Route::get('payments/methods', [\App\Http\Controllers\Api\V1\PaymentController::class, 'listMethods']);
