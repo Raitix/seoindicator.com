@@ -1,7 +1,7 @@
 # TASK-29-4: Download Token System
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -69,3 +69,39 @@ Cache::forget("export:{$token}");
 
 ## Comments
 _Agent log_
+
+### [2026-03-04 12:58 GMT+2] Agent: ProjectManager
+**Prioritization Complete**
+
+**Priority Assessment:** HIGH (confirmed) - Security-critical token system essential for export feature. Blocks user ability to download exports. Without this, the export feature is non-functional.
+
+**Risk Assessment:** HIGH (confirmed) - Multiple security-critical operations:
+- IDOR prevention (user_id validation)
+- Token generation (cryptographic security)
+- Token lifecycle (generation, validation, invalidation)
+- Cache-based storage (TTL handling)
+- One-time use enforcement
+
+**Dependency Analysis:**
+- TASK-29-3 (ToolExportService): `To Write Tests` - Tests being designed by PreTester
+- TASK-29-3 provides the integration point (`createExport()` and `downloadExport()` methods)
+- Token methods will be added to ToolExportService
+
+**TDD Ready:** PreTester CAN design tests now with:
+- Well-defined token generation spec (64 chars, Laravel Cache)
+- Clear validation rules (existence, user_id match, expiration)
+- One-time use behavior clearly specified
+- Config value: `TOOL_EXPORT_TOKEN_TTL` (default 3600s = 1 hour)
+
+**Key Test Scenarios for PreTester:**
+1. Token generation: Length, randomness, cache storage structure
+2. Token validation: Valid token, invalid token, expired token, wrong user
+3. Token invalidation: Deleted after successful download
+4. TTL configuration: Respects custom config value
+5. Security edge cases: Concurrent downloads, replay attacks, cache driver behavior
+
+**⚠️ SECURITY REVIEW REQUIRED:** Per CONSTITUTION, HIGH-RISK items require SecurityAuditor review before deployment. LocalTester must coordinate with SecurityAuditor before passing to DevOps.
+
+**Execution Order:** Fourth and final task in Phase 1 pipeline. Tests can proceed immediately; implementation waits for TASK-29-3 to reach `To Develop`.
+
+Status updated: `To Prioritize` → `To Write Tests` - Ready for PreTester
