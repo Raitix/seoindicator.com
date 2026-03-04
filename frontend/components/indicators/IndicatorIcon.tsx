@@ -12,7 +12,6 @@ import {
   Search,
   Star,
   TrendingUp,
-  Warning,
   XCircle,
   Zap,
   LucideIcon,
@@ -27,6 +26,7 @@ import { cn } from '@/lib/utils';
 const iconRegistry: Record<string, LucideIcon> = {
   Activity,
   AlertCircle,
+  AlertTriangle,
   CheckCircle,
   ChevronDown,
   HelpCircle,
@@ -34,7 +34,7 @@ const iconRegistry: Record<string, LucideIcon> = {
   Search,
   Star,
   TrendingUp,
-  Warning,
+  Warning: AlertTriangle, // Backward compatibility: Warning → AlertTriangle
   XCircle,
   Zap,
 };
