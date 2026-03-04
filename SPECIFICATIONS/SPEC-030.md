@@ -1,7 +1,7 @@
 # SPEC-030: Legal + About + How It Works + Cookie Consent
 
 ## STATUS
-`To Prioritize`
+`In Progress`
 
 ## PRIORITY
 `High`
@@ -260,6 +260,23 @@ interface CookieConsentState {
 
 ## Comments
 <!-- Agent communication happens here -->
+
+### [2026-03-04 ProjectManager]
+**Phase 1 Prioritization Complete:**
+- TASK-30-1 (Terms & Privacy): `To Develop` ✅
+- TASK-30-2 (About Page): `To Develop` ✅
+- TASK-30-3 (How It Works): `To Write Tests` ✅
+- All Phase 1 tasks prioritized and ready for PreTester
+
+**Phase 2 Status:**
+- TASK-30-4 (Cookie Consent): `To Prioritize` - awaiting prioritization
+- TASK-30-5 (Consent Integration): depends on TASK-30-4
+
+**Phase 3 Status:**
+- TASK-30-6 (Unit Tests): depends on all page tasks
+- TASK-30-7 (Accessibility Tests): depends on all tasks
+
+**SPEC status updated to `In Progress`**
 
 ### [2026-03-04 SpecSystemAnalyst]
 - Broken down into 7 tasks across 3 phases
