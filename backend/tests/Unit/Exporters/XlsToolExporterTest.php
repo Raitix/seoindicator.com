@@ -51,14 +51,14 @@ class XlsToolExporterTest extends TestCase
     }
 
     /**
-     * Test XLS-002: Service implements required interface.
+     * Test XLS-002: Service has required methods.
      */
-    public function test_service_implements_required_interface(): void
+    public function test_service_has_required_methods(): void
     {
-        $this->assertInstanceOf(
-            \Maatwebsite\Excel\Concerns\FromArray::class,
-            $this->exporter
-        );
+        $this->assertTrue(method_exists($this->exporter, 'export'));
+        $this->assertTrue(method_exists($this->exporter, 'array'));
+        $this->assertTrue(method_exists($this->exporter, 'headings'));
+        $this->assertTrue(method_exists($this->exporter, 'styles'));
     }
 
     // ============================================
@@ -101,11 +101,6 @@ class XlsToolExporterTest extends TestCase
      */
     public function test_headers_contain_category_column(): void
     {
-        $result = $this->createMockToolResultWithIndicators([
-            ['category' => 'Meta Tags', 'name' => 'Title', 'value' => 'Test', 'status' => 'OK', 'recommendation' => '-'],
-        ]);
-
-        $array = $this->exporter->array();
         $headings = $this->exporter->headings();
 
         $this->assertContains('Category', $headings);
@@ -116,10 +111,6 @@ class XlsToolExporterTest extends TestCase
      */
     public function test_headers_contain_indicator_column(): void
     {
-        $result = $this->createMockToolResultWithIndicators([
-            ['category' => 'Meta', 'name' => 'Title', 'value' => 'Test', 'status' => 'OK', 'recommendation' => '-'],
-        ]);
-
         $headings = $this->exporter->headings();
 
         $this->assertContains('Indicator', $headings);
@@ -188,6 +179,8 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Meta Tags', 'name' => 'Title', 'value' => 'Example Page', 'status' => 'OK', 'recommendation' => '-'],
         ]);
 
+        // Need to call export first to set the result
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertCount(1, $array);
@@ -209,6 +202,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Content', 'name' => 'H1 Count', 'value' => '1', 'status' => 'OK', 'recommendation' => '-'],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertCount(3, $array);
@@ -225,6 +219,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Technical', 'name' => 'SSL', 'value' => '-', 'status' => 'OK', 'recommendation' => '-'],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertEquals('Meta Tags', $array[0][0]);
@@ -243,6 +238,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Meta', 'name' => 'Keywords', 'value' => '-', 'status' => 'Error', 'recommendation' => '-'],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertEquals('OK', $array[0][3]);
@@ -259,6 +255,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Meta', 'name' => 'Description', 'value' => 'Too short', 'status' => 'Warning', 'recommendation' => 'Increase length to 150-160 characters'],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertEquals('Increase length to 150-160 characters', $array[0][4]);
@@ -273,6 +270,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Meta', 'name' => 'Title', 'value' => null, 'status' => 'OK', 'recommendation' => null],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertEquals('-', $array[0][2]);
@@ -288,6 +286,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Meta', 'name' => 'Title', 'value' => '', 'status' => 'OK', 'recommendation' => ''],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertEquals('-', $array[0][2]);
@@ -366,6 +365,7 @@ class XlsToolExporterTest extends TestCase
             'indicators' => [],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertIsArray($array);
@@ -379,6 +379,7 @@ class XlsToolExporterTest extends TestCase
     {
         $result = ToolResult::ok('Test Tool', 'https://example.com', []);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertIsArray($array);
@@ -429,6 +430,7 @@ class XlsToolExporterTest extends TestCase
         }
         $result = $this->createMockToolResultWithIndicators($indicators);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertCount(50, $array);
@@ -462,6 +464,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Meta', 'name' => '<script>alert("XSS")</script>', 'value' => '-', 'status' => 'OK', 'recommendation' => '-'],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         // The XSS attempt should be in the array but will be handled by Excel
@@ -477,6 +480,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Meta', 'name' => 'Title', 'value' => '<strong>Bold</strong>', 'status' => 'OK', 'recommendation' => '-'],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertStringContainsString('<strong>', $array[0][2]);
@@ -491,11 +495,28 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Meta', 'name' => 'Title (with parens)', 'value' => 'Value "quoted"', 'status' => 'OK', 'recommendation' => 'Fix & improve'],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertEquals('Title (with parens)', $array[0][1]);
         $this->assertEquals('Value "quoted"', $array[0][2]);
         $this->assertEquals('Fix & improve', $array[0][4]);
+    }
+
+    /**
+     * Test XLS-073: Formula injection prevented.
+     */
+    public function test_formula_injection_prevented(): void
+    {
+        $result = $this->createMockToolResultWithIndicators([
+            ['category' => 'Meta', 'name' => 'Formula', 'value' => '=1+1', 'status' => 'OK', 'recommendation' => '-'],
+        ]);
+
+        $this->exporter->export($result);
+        $array = $this->exporter->array();
+
+        // Formula should be prefixed with single quote
+        $this->assertEquals("'=1+1", $array[0][2]);
     }
 
     // ============================================
@@ -558,7 +579,10 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Meta', 'name' => 'Title', 'value' => 'Test', 'status' => 'OK', 'recommendation' => '-'],
         ]);
 
+        $this->exporter->export($result);
         $array1 = $this->exporter->array();
+        
+        $this->exporter->export($result);
         $array2 = $this->exporter->array();
 
         $this->assertEquals($array1, $array2);
@@ -577,7 +601,10 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Content', 'name' => 'H1', 'value' => 'Page 2', 'status' => 'Warning', 'recommendation' => 'Add H1'],
         ]);
 
+        $this->exporter->export($result1);
         $array1 = $this->exporter->array();
+        
+        $this->exporter->export($result2);
         $array2 = $this->exporter->array();
 
         $this->assertNotEquals($array1, $array2);
@@ -596,6 +623,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => '', 'name' => '', 'value' => '', 'status' => '', 'recommendation' => ''],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertCount(1, $array);
@@ -611,6 +639,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Performance', 'name' => 'Load Time', 'value' => '2.5', 'status' => 'Warning', 'recommendation' => 'Optimize'],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertEquals('1234', $array[0][2]);
@@ -627,6 +656,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Technical', 'name' => 'Mobile Friendly', 'value' => 'false', 'status' => 'Error', 'recommendation' => 'Fix mobile'],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertEquals('true', $array[0][2]);
@@ -645,6 +675,7 @@ class XlsToolExporterTest extends TestCase
             ['category' => 'Meta', 'name' => 'Robots', 'value' => '-', 'status' => 'Info', 'recommendation' => '-'],
         ]);
 
+        $this->exporter->export($result);
         $array = $this->exporter->array();
 
         $this->assertCount(4, $array);
