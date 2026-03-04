@@ -1,375 +1,352 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import Link from 'next/link';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { AlertCircle, AlertTriangle, CheckCircle, Minus, type LucideIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import {
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  CheckCircle,
-  Minus,
-  Loader2,
-  type LucideIcon,
-} from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Skeleton } from '@/components/ui/skeleton';
+import { IndicatorIcon, type LucideIconName } from './IndicatorIcon';
 
-// ============================================
-// Types
-// ============================================
+// ============================================================================
+// Hooks
+// ============================================================================
 
-export type IndicatorStatus = "good" | "warning" | "critical" | "neutral";
+/**
+ * Hook to check if the user prefers reduced motion.
+ * Returns false during SSR to avoid hydration mismatches.
+ */
+function usePrefersReducedMotion(): boolean {
+  const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
 
-export interface IndicatorCardProps {
-  /** Unique identifier for the indicator */
-  id: string;
-  /** Title displayed on the card */
-  title: string;
-  /** Main value to display */
-  value: string | number;
-  /** Optional description text */
-  description?: string;
-  /** Status indicator for visual styling */
-  status: IndicatorStatus;
-  /** Navigation URL when card is clicked */
-  href?: string;
-  /** Icon name from Lucide icons or React component */
-  icon?: string | React.ComponentType<{ className?: string }>;
-  /** Tooltip content for additional context */
-  tooltip?: string;
-  /** Click handler (alternative to href navigation) */
-  onClick?: () => void;
-  /** Disable the card (non-interactive) */
-  disabled?: boolean;
-  /** Show loading state */
-  isLoading?: boolean;
-  /** Show error state */
-  error?: Error | null;
-  /** Custom aria-label override */
-  "aria-label"?: string;
-  /** Additional CSS classes */
-  className?: string;
-  /** Badge count for notifications */
-  badge?: string | number;
-  /** Trend direction */
-  trend?: "up" | "down" | "stable";
-  /** Trend value */
-  trendValue?: string;
-  /** Category for filtering */
-  category?: string;
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handler = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  return prefersReducedMotion;
 }
 
-// ============================================
-// Status Configurations
-// ============================================
+// ============================================================================
+// Status Configuration
+// ============================================================================
 
-const statusConfig: Record<
-  IndicatorStatus,
-  {
-    color: string;
-    bgColor: string;
-    borderColor: string;
-    icon: LucideIcon;
-    label: string;
-  }
-> = {
+type IndicatorStatus = 'good' | 'warning' | 'critical' | 'neutral';
+
+interface StatusConfig {
+  icon: LucideIcon;
+  label: string;
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
+  colorClass: string;
+}
+
+const statusConfig: Record<IndicatorStatus, StatusConfig> = {
   good: {
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-500/10",
-    borderColor: "border-emerald-500/20",
     icon: CheckCircle,
-    label: "Good",
+    label: 'Good',
+    badgeVariant: 'default',
+    colorClass: 'text-emerald-600 dark:text-emerald-400',
   },
   warning: {
-    color: "text-amber-400",
-    bgColor: "bg-amber-500/10",
-    borderColor: "border-amber-500/20",
     icon: AlertTriangle,
-    label: "Warning",
+    label: 'Warning',
+    badgeVariant: 'secondary',
+    colorClass: 'text-amber-500 dark:text-amber-400',
   },
   critical: {
-    color: "text-red-400",
-    bgColor: "bg-red-500/10",
-    borderColor: "border-red-500/20",
-    icon: AlertTriangle,
-    label: "Critical",
+    icon: AlertCircle,
+    label: 'Critical',
+    badgeVariant: 'destructive',
+    colorClass: 'text-destructive',
   },
   neutral: {
-    color: "text-slate-400",
-    bgColor: "bg-slate-500/10",
-    borderColor: "border-slate-500/20",
     icon: Minus,
-    label: "Neutral",
+    label: 'Neutral',
+    badgeVariant: 'outline',
+    colorClass: 'text-muted-foreground',
   },
 };
 
-// ============================================
-// Component
-// ============================================
+// ============================================================================
+// Variants
+// ============================================================================
 
-/**
- * IndicatorCard Component
- *
- * An interactive card displaying an SEO indicator with full accessibility support.
- * Supports keyboard navigation, ARIA labels, and screen reader compatibility.
- *
- * @example
- * ```tsx
- * <IndicatorCard
- *   id="rankings"
- *   title="Keyword Rankings"
- *   value={42}
- *   status="good"
- *   href="/dashboard/rankings"
- *   tooltip="Track your keyword positions in SERP"
- * />
- * ```
- */
-export function IndicatorCard({
-  id,
-  title,
-  value,
-  description,
-  status,
-  href,
-  icon: IconProp,
-  tooltip,
-  onClick,
-  disabled = false,
-  isLoading = false,
-  error = null,
-  "aria-label": ariaLabelOverride,
-  className,
-  badge,
-  trend,
-  trendValue,
-  category,
-}: IndicatorCardProps) {
+const indicatorCardVariants = cva(
+  // Base styles
+  'group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out',
+  {
+    variants: {
+      loading: {
+        true: 'pointer-events-none cursor-not-allowed opacity-70',
+        false: 'cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5',
+      },
+    },
+    defaultVariants: {
+      loading: false,
+    },
+  }
+);
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface IndicatorCardProps
+  extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>,
+    VariantProps<typeof indicatorCardVariants> {
+  /** Unique identifier for the card */
+  id: string;
+  /** Lucide icon name or custom React node */
+  icon: LucideIconName | React.ReactNode;
+  /** Indicator title */
+  title: string;
+  /** Current value */
+  value: string | number;
+  /** Description text */
+  description: string;
+  /** Status indicator */
+  status: IndicatorStatus;
+  /** Link destination */
+  href: string;
+  /** Optional tooltip override */
+  tooltip?: string;
+  /** Loading state */
+  isLoading?: boolean;
+  /** Additional CSS classes */
+  className?: string;
+}
+
+// ============================================================================
+// Sub-Components
+// ============================================================================
+
+interface StatusBadgeProps {
+  status: IndicatorStatus;
+  className?: string;
+}
+
+function StatusBadge({ status, className }: StatusBadgeProps) {
   const config = statusConfig[status];
   const StatusIcon = config.icon;
 
-  // Generate unique IDs for accessibility
-  const cardId = `indicator-${id}`;
-  const tooltipId = `${cardId}-tooltip`;
-  const errorId = `${cardId}-error`;
-
-  // Build aria-label with full context for screen readers
-  const ariaLabel =
-    ariaLabelOverride ??
-    `${title}: ${value}. Status: ${config.label}.${description ? ` ${description}` : ""}${
-      !disabled && (href || onClick) ? " Click to view details." : ""
-    }`;
-
-  // Determine if card is interactive
-  const isInteractive = !disabled && (href || onClick);
-
-  // Common props for the card element
-  const cardProps = {
-    className: cn(
-      "group relative rounded-lg border p-4 transition-all duration-200",
-      "bg-slate-900/50 backdrop-blur-sm",
-      config.borderColor,
-      disabled && "opacity-50 cursor-not-allowed",
-      isInteractive && [
-        "cursor-pointer",
-        "hover:bg-slate-800/50",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950",
-        "active:scale-[0.98]",
-      ],
-      className
-    ),
-    "data-testid": cardId,
-    "data-status": status,
-    "data-loading": isLoading ? "true" : undefined,
-    "data-error": error ? "true" : undefined,
-    "data-disabled": disabled ? "true" : undefined,
-  };
-
-  // Handle keyboard interactions
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isInteractive) return;
-
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onClick?.();
-    }
-  };
-
-  // Handle click
-  const handleClick = () => {
-    if (!isInteractive) return;
-    onClick?.();
-  };
-
-  // Render content
-  const renderContent = () => (
-    <>
-      {/* Header Row */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          {/* Icon */}
-          {IconProp && (
-            <div
-              className={cn("flex-shrink-0", config.color)}
-              aria-hidden="true"
-            >
-              {typeof IconProp === "string" ? (
-                <span className="text-xl">{IconProp}</span>
-              ) : (
-                <IconProp className="w-5 h-5" />
-              )}
-            </div>
-          )}
-          {/* Title */}
-          <h3 className="text-sm font-medium text-slate-200 truncate">
-            {title}
-          </h3>
-        </div>
-
-        {/* Status & Badge */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {badge !== undefined && badge !== 0 && (
-            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-blue-500 rounded-full">
-              {typeof badge === "number" && badge > 99 ? "99+" : badge}
-            </span>
-          )}
-          <StatusIcon
-            className={cn("w-4 h-4", config.color)}
-            aria-hidden="true"
-          />
-        </div>
-      </div>
-
-      {/* Value Row */}
-      <div className="flex items-end justify-between gap-2">
-        <div className="min-w-0">
-          {/* Main Value */}
-          <div className="flex items-baseline gap-2">
-            <span
-              className={cn(
-                "text-2xl font-bold",
-                isLoading ? "text-slate-500" : "text-white"
-              )}
-            >
-              {isLoading ? "---" : value}
-            </span>
-            {trend && (
-              <span
-                className={cn(
-                  "flex items-center text-xs font-medium",
-                  trend === "up" && "text-emerald-400",
-                  trend === "down" && "text-red-400",
-                  trend === "stable" && "text-slate-400"
-                )}
-              >
-                {trend === "up" && <TrendingUp className="w-3 h-3 mr-0.5" />}
-                {trend === "down" && <TrendingDown className="w-3 h-3 mr-0.5" />}
-                {trendValue}
-              </span>
-            )}
-          </div>
-          {/* Description */}
-          {description && (
-            <p className="text-xs text-slate-400 mt-1 truncate">{description}</p>
-          )}
-        </div>
-
-        {/* Category Tag */}
-        {category && (
-          <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded">
-            {category}
-          </span>
-        )}
-      </div>
-
-      {/* Loading Overlay */}
-      {isLoading && (
-        <div
-          className="absolute inset-0 flex items-center justify-center bg-slate-900/80 rounded-lg"
-          aria-hidden="true"
-        >
-          <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
-        </div>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <div
-          id={errorId}
-          role="alert"
-          className="mt-2 text-xs text-red-400"
-          data-testid={`${cardId}-error-message`}
-        >
-          {error.message}
-        </div>
-      )}
-
-      {/* Tooltip (visually hidden, for screen readers) */}
-      {tooltip && (
-        <span id={tooltipId} className="sr-only">
-          {tooltip}
-        </span>
-      )}
-
-      {/* Interactive indicator (chevron) */}
-      {isInteractive && (
-        <div
-          className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity"
-          aria-hidden="true"
-        >
-          <svg
-            className="w-4 h-4 text-slate-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </div>
-      )}
-    </>
-  );
-
-  // If href is provided, render as Link
-  if (href && !disabled) {
-    return (
-      <Link
-        href={href}
-        {...cardProps}
-        role="button"
-        tabIndex={0}
-        aria-label={ariaLabel}
-        aria-disabled={disabled || undefined}
-        aria-busy={!!isLoading}
-        aria-describedby={tooltip ? tooltipId : error ? errorId : undefined}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-      >
-        {renderContent()}
-      </Link>
-    );
-  }
-
-  // Otherwise, render as interactive div
   return (
-    <div
-      {...cardProps}
-      role={isInteractive ? "button" : undefined}
-      tabIndex={isInteractive ? 0 : -1}
-      aria-label={isInteractive ? ariaLabel : undefined}
-      aria-disabled={disabled || undefined}
-      aria-busy={!!isLoading}
-      aria-describedby={tooltip ? tooltipId : error ? errorId : undefined}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
+    <Badge
+      variant={config.badgeVariant}
+      role="status"
+      className={cn('gap-1', className)}
+      data-status={status}
+      aria-label={`Status: ${config.label}`}
     >
-      {renderContent()}
+      <StatusIcon className="size-3" aria-hidden="true" />
+      {config.label}
+    </Badge>
+  );
+}
+
+interface CardSkeletonProps {
+  className?: string;
+}
+
+function CardSkeleton({ className }: CardSkeletonProps) {
+  return (
+    <div className={cn('flex flex-col gap-3', className)}>
+      <div className="flex items-start justify-between gap-2">
+        <Skeleton className="size-10 rounded-lg" />
+        <Skeleton className="h-5 w-16 rounded-full" />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-8 w-16" />
+      </div>
+      <Skeleton className="h-4 w-full" />
     </div>
   );
 }
 
+// ============================================================================
+// Component
+// ============================================================================
+
+/**
+ * IndicatorCard - A card component for displaying SEO indicators
+ *
+ * Displays an indicator with icon, title, value, status, and description.
+ * Supports hover animations, loading states, and responsive design.
+ *
+ * @example
+ * ```tsx
+ * // Basic usage
+ * <IndicatorCard
+ *   id="keyword-rankings"
+ *   icon="TrendingUp"
+ *   title="Keyword Rankings"
+ *   value="142"
+ *   description="Keywords ranking in top 100"
+ *   status="good"
+ *   href="/dashboard"
+ * />
+ *
+ * // With loading state
+ * <IndicatorCard
+ *   {...props}
+ *   isLoading={true}
+ * />
+ *
+ * // With custom tooltip
+ * <IndicatorCard
+ *   {...props}
+ *   tooltip="Click to view details"
+ * />
+ * ```
+ */
+export const IndicatorCard = React.forwardRef<HTMLAnchorElement, IndicatorCardProps>(
+  (
+    {
+      id,
+      icon,
+      title,
+      value,
+      description,
+      status,
+      href,
+      tooltip,
+      isLoading = false,
+      className,
+      ...props
+    },
+    ref
+  ) => {
+    // Handle invalid status by defaulting to neutral
+    const safeStatus: IndicatorStatus = statusConfig[status] ? status : 'neutral';
+    const config = statusConfig[safeStatus];
+    const StatusIcon = config.icon;
+
+    // Tooltip content - use provided tooltip or fall back to description
+    const tooltipContent = tooltip ?? description;
+
+    // Safe href handling
+    const safeHref = href || '#';
+
+    // Check for reduced motion preference
+    const reducedMotion = usePrefersReducedMotion();
+
+    // Loading state
+    if (isLoading) {
+      return (
+        <div
+          data-testid={`indicator-card-${id}`}
+          data-slot="indicator-card"
+          data-status={safeStatus}
+          data-loading="true"
+          className={cn(indicatorCardVariants({ loading: true }), className)}
+          aria-busy="true"
+          aria-label={`${title} loading`}
+        >
+          <CardSkeleton />
+        </div>
+      );
+    }
+
+    // Render card with tooltip wrapper
+    const cardContent = (
+      <Link
+        ref={ref}
+        href={safeHref}
+        data-testid={`indicator-card-${id}`}
+        data-slot="indicator-card"
+        data-status={safeStatus}
+        data-loading="false"
+        className={cn(
+          indicatorCardVariants({ loading: false }),
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          reducedMotion && 'transition-none',
+          className
+        )}
+        aria-label={`${title}: ${value}. ${description}. Status: ${config.label}`}
+        {...props}
+      >
+        {/* Header: Icon + Status Badge */}
+        <div className="flex items-start justify-between gap-2">
+          {/* Icon */}
+          <div className={cn(
+            'flex size-10 items-center justify-center rounded-lg bg-primary/10',
+            config.colorClass
+          )}>
+            {typeof icon === 'string' ? (
+              <IndicatorIcon icon={icon as LucideIconName} size="md" />
+            ) : (
+              <span className="size-6">{icon}</span>
+            )}
+          </div>
+
+          {/* Status Badge */}
+          <StatusBadge status={safeStatus} />
+        </div>
+
+        {/* Content: Title + Value */}
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-muted-foreground truncate" title={title}>
+            {title || <span className="opacity-50">No title</span>}
+          </span>
+          <span className="text-2xl font-bold tracking-tight truncate" title={String(value)}>
+            {value !== undefined && value !== null && value !== '' 
+              ? value 
+              : <span className="opacity-50">—</span>}
+          </span>
+        </div>
+
+        {/* Footer: Description */}
+        <p className="text-sm text-muted-foreground line-clamp-2" title={description}>
+          {description || <span className="opacity-50">No description</span>}
+        </p>
+
+        {/* Hover glow effect */}
+        <div 
+          className="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style={{
+            background: 'radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%)',
+          }}
+          aria-hidden="true"
+        />
+      </Link>
+    );
+
+    // Wrap with Tooltip if we have content
+    if (tooltipContent) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {cardContent}
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={4}>
+            {tooltipContent}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return cardContent;
+  }
+);
+
+IndicatorCard.displayName = 'IndicatorCard';
+
+// ============================================================================
+// Exports
+// ============================================================================
+
 export default IndicatorCard;
+export { statusConfig, type IndicatorStatus };
