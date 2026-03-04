@@ -1,7 +1,7 @@
 # TASK-21-9: Implement Vercel AI Provider
 
 ## STATUS
-`To Write Tests`
+`Tests Complete`
 
 ## PRIORITY
 `Medium`
@@ -164,5 +164,51 @@ Status set to `To Prioritize` for normal workflow processing.
 
 Status: `To Prioritize` → `To Write Tests`
 
----
-*Created from SPEC-021 on 2026-03-04*
+### [2026-03-04 16:40 GMT+2] Agent: PreTester
+**Test Design Complete.**
+
+Created comprehensive test suite for VercelAIProvider:
+
+**Test File:** `backend/tests/Unit/Services/AI/Providers/VercelAIProviderTest.php`
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| AC-1: Class Creation (VRC) | 8 | Class existence, interface implementation, constructor, DI |
+| AC-2: Configuration (CFG) | 6 | Env variables, model config, timeout config |
+| AC-3: API Integration (API) | 12 | POST requests, headers, body format, options |
+| AC-4: Response Parsing (RES) | 10 | JSON parsing, content extraction, token tracking |
+| AC-5: Error Handling (ERR) | 15 | All HTTP codes, timeout, malformed responses |
+| AC-5: Provider Selection (SEL) | 3 | Config selection, fallback, roles |
+| AC-6: Free Tier (FTC) | 4 | Free tier models, graceful degradation |
+| Availability (AVL) | 6 | API key validation, availability checks |
+| **Total** | **64** | **Comprehensive coverage** |
+
+**Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-21-9.md`
+
+**Key Design Decisions:**
+1. **Follow OpenRouterProvider Pattern** - Same structure, adapted for Vercel AI API
+2. **HTTP Mocking** - All tests use `Http::fake()` for deterministic results
+3. **Vercel API Format** - Same as OpenAI (choices array, usage object)
+4. **Free Tier Focus** - Tests validate gpt-4o-mini and claude-3-haiku models
+5. **Error Coverage** - All HTTP codes from 400 to 503 plus connection failures
+
+**Coverage Targets:**
+- Class Instantiation: 100%
+- Interface Implementation: 100%
+- API Integration: 100%
+- Response Parsing: 100%
+- Error Handling: 100%
+- Availability: 100%
+- Configuration: 100%
+- **Minimum Overall: 80%**
+
+**Next Steps for Developer:**
+1. Implement `VercelAIProvider.php` to pass all tests
+2. Configuration already scaffolded in `config/ai.php`
+3. Add `getMaxTokens()` method (referenced in tests)
+4. Ensure provider name returns 'vercel'
+
+Status: `To Write Tests` → `Tests Complete`
+
+**Handoff to Developer:** All tests ready for implementation.
