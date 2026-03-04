@@ -3,9 +3,8 @@
 namespace App\Exporters;
 
 use App\Services\Tools\ToolResult;
-use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
@@ -20,7 +19,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  *
  * TASK-29-2: XlsToolExporter Implementation
  */
-class XlsToolExporter implements FromArray, WithHeadings, WithStyles
+class XlsToolExporter
 {
     /**
      * The tool result to export.
@@ -58,7 +57,7 @@ class XlsToolExporter implements FromArray, WithHeadings, WithStyles
         $this->extractIndicators($result);
         
         // Create spreadsheet using PhpSpreadsheet directly
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         
         // Apply headings
@@ -75,13 +74,8 @@ class XlsToolExporter implements FromArray, WithHeadings, WithStyles
             }
         }
         
-        // Apply styles
-        $styles = $this->styles($sheet);
-        foreach ($styles as $row => $style) {
-            if (isset($style['font']['bold']) && $style['font']['bold']) {
-                $sheet->getStyle($row . ':' . $row)->getFont()->setBold(true);
-            }
-        }
+        // Apply styles (bold header)
+        $sheet->getStyle('1:1')->getFont()->setBold(true);
         
         // Auto-size columns
         foreach (range('A', 'E') as $col) {
@@ -89,7 +83,7 @@ class XlsToolExporter implements FromArray, WithHeadings, WithStyles
         }
         
         // Write to string
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer = new Xlsx($spreadsheet);
         $tempFile = tempnam(sys_get_temp_dir(), 'xls_export_');
         $writer->save($tempFile);
         
@@ -188,8 +182,14 @@ class XlsToolExporter implements FromArray, WithHeadings, WithStyles
         }
         
         // Prevent formula injection by prefixing dangerous characters
-        // Characters that could start a formula: =, +, -, @
-        if (preg_match('/^[=+\-@]/', $stringValue)) {
+        // Characters that could start a formula: =, +, @
+        // Note: '-' alone is safe (used as placeholder), only prefix if followed by digits/formula-like content
+        if (preg_match('/^[=+@]/', $stringValue)) {
+            return "'" . $stringValue;
+        }
+        
+        // Only prefix '-' if it looks like a formula (followed by digits, cell refs, etc.)
+        if (preg_match('/^-[0-9A-Za-z(]/', $stringValue)) {
             return "'" . $stringValue;
         }
         
