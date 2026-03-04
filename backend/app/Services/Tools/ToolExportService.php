@@ -25,11 +25,6 @@ class ToolExportService
     private const TOKEN_LENGTH = 64;
 
     /**
-     * Token TTL in seconds (1 hour).
-     */
-    private const TOKEN_TTL = 3600;
-
-    /**
      * @param PdfToolExporter $pdfExporter
      * @param XlsToolExporter $xlsExporter
      */
@@ -97,6 +92,9 @@ class ToolExportService
         // Generate download token
         $token = $this->generateToken();
 
+        // Get TTL from config (default: 1 hour)
+        $tokenTtl = config('tools.export_token_ttl', 3600);
+
         // Cache token data
         Cache::put("export:{$token}", [
             'file' => $filePath,
@@ -104,10 +102,47 @@ class ToolExportService
             'tool' => $tool,
             'url' => $url,
             'user_id' => $userId,
-        ], now()->addSeconds(self::TOKEN_TTL));
+            'created_at' => now()->toIso8601String(),
+        ], now()->addSeconds($tokenTtl));
 
         // Return download URL
         return "/api/v1/tools/export/download/{$token}";
+    }
+
+    /**
+     * Validate a download token.
+     *
+     * @param string $token Download token
+     * @param int $userId User ID to validate ownership
+     * @return array|null Token data if valid, null otherwise
+     */
+    public function validateToken(string $token, int $userId): ?array
+    {
+        // Get cached token data
+        $tokenData = Cache::get("export:{$token}");
+
+        // Token doesn't exist or expired
+        if (!$tokenData) {
+            return null;
+        }
+
+        // Verify user ownership (strict comparison to prevent type coercion)
+        if ($tokenData['user_id'] !== $userId) {
+            return null;
+        }
+
+        return $tokenData;
+    }
+
+    /**
+     * Invalidate a download token.
+     *
+     * @param string $token Download token
+     * @return bool True if token was removed, false if it didn't exist
+     */
+    public function invalidateToken(string $token): bool
+    {
+        return Cache::forget("export:{$token}");
     }
 
     /**
@@ -120,15 +155,10 @@ class ToolExportService
      */
     public function downloadExport(string $token, int $userId): Response
     {
-        // Get cached token data
-        $tokenData = Cache::get("export:{$token}");
+        // Validate token and user ownership
+        $tokenData = $this->validateToken($token, $userId);
 
         if (!$tokenData) {
-            throw new NotFoundHttpException('Invalid or expired download token.');
-        }
-
-        // Verify user ownership
-        if ($tokenData['user_id'] !== $userId) {
             throw new NotFoundHttpException('Invalid or expired download token.');
         }
 
@@ -138,7 +168,7 @@ class ToolExportService
 
         // Check if file exists
         if (!Storage::disk('local')->exists($filePath)) {
-            Cache::forget("export:{$token}");
+            $this->invalidateToken($token);
             throw new NotFoundHttpException('Export file not found.');
         }
 
@@ -154,9 +184,9 @@ class ToolExportService
         // Generate filename for download
         $downloadFilename = $this->sanitizeFilename($tool) . '.' . $extension;
 
-        // Delete file and token
+        // Delete file and invalidate token (one-time use)
         Storage::disk('local')->delete($filePath);
-        Cache::forget("export:{$token}");
+        $this->invalidateToken($token);
 
         // Return response
         return response($content)
