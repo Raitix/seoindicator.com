@@ -1,7 +1,7 @@
 # TASK-27-7: Usage Aggregation Service
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -250,6 +250,27 @@ Duration: 12.83s
 - Ready for deployment to production
 - No blocking issues found
 - Optional: Future migration for token tracking columns (input_tokens, output_tokens, model)
+
+### 2026-03-04 - DevOps Session
+**Status Update: To Deploy → In Deployment**
+
+**Pre-Deployment Verification:**
+| Check | Status | Details |
+|-------|--------|---------|
+| Service exists | ✅ PASS | `backend/app/Services/Admin/UsageAggregationService.php` (185 lines) |
+| All tests pass | ✅ PASS | 34 tests, 88 assertions |
+| Code committed | ✅ PASS | Commit 4c7ef37 (status update), 7ba754e (service implementation) |
+| Workflow enabled | ✅ PASS | WORKFLOW-CONTROL.md: `workflowEnabled: true` |
+
+**Deployment Action:**
+- Service already committed and pushed to origin/main
+- GitHub Actions auto-deploy will handle production deployment
+- No additional code changes required
+
+**Handoff to ProdTester:**
+- Verify service works in production environment
+- Test API endpoint: `/api/v1/admin/usage`
+- Verify AdminStatsService integration
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
