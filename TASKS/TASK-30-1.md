@@ -1,7 +1,7 @@
 # TASK-30-1: Terms & Privacy Page
 
 ## STATUS
-`To Prioritize`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
@@ -73,6 +73,73 @@ frontend/components/pages/TermsContent.tsx
 
 ## Comments
 <!-- Agent communication happens here -->
+
+### PreTester Test Coverage (2026-03-04)
+
+**Test Files Created:**
+- `frontend/__tests__/app/terms/page.test.tsx` (45+ tests)
+- `TESTS/TEST-30-1.md` (test documentation)
+
+**Test Categories:**
+| Category | Tests | Coverage |
+|----------|-------|----------|
+| Page Component | 10 | File structure, static generation |
+| SEO Metadata | 7 | Title, description, robots, OG, canonical, schema |
+| Accessibility | 4 | Heading hierarchy, keyboard, contrast, screen reader |
+| Content | 8 | All 5 sections, last updated date, navigation |
+| Edge Cases | 4 | Empty content, long text, re-render, special chars |
+| Performance | 2 | Render time < 100ms, stability |
+| Responsive | 3 | Mobile, tablet, desktop |
+| Integration | 3 | Homepage link, consistent styling, navigation |
+
+**Key Test Patterns:**
+- Dynamic import for file existence verification
+- `generateMetadata()` for SEO testing
+- JSON-LD schema validation via script tag parsing
+- Heading hierarchy validation (single h1, h2s follow)
+- Content section verification by role/name queries
+
+**Acceptance Criteria Coverage:**
+- All content criteria: ✅ Tests created
+- All technical criteria: ✅ Tests created
+- All SEO criteria: ✅ Tests created
+- All accessibility criteria: ✅ Tests created
+
+**Notes for Developer:**
+1. Implement `generateMetadata()` export for SEO tests to pass
+2. Include JSON-LD WebPage schema in page component
+3. TermsContent component should accept `className` prop
+4. Use semantic HTML (`<main>`, `<article>`, proper headings)
+5. Consider table of contents for navigation (anchor links or TOC nav)
+
+**Handoff:** Ready for Developer to implement.
+
+---
+
+### ProjectManager Prioritization (2026-03-04)
+
+**Priority Assessment:** HIGH (confirmed)
+- Legal requirement page (Terms of Service + Privacy Policy) - essential for production
+- User trust and compliance requirement
+- Low risk, high value deliverable
+
+**Risk Assessment:** LOW (confirmed)
+- Static content page, no external APIs
+- No database modifications required
+- No authentication/authorization changes
+- Easily reversible
+
+**Dependency Analysis:**
+- ✅ No dependencies (standalone static page)
+- Can proceed immediately to PreTester
+
+**Priority Reasoning:**
+1. Legal compliance - Terms & Privacy pages are required for any production website
+2. SEO benefit - Proper schema markup and meta tags
+3. Low effort (2-4 hours) with high value
+4. No blockers - can be developed independently
+
+**Handoff:** Ready for PreTester to design tests.
 
 ---
 

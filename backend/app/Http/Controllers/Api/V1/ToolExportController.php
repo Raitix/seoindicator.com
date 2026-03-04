@@ -8,22 +8,18 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 /**
- * Controller for tool export API endpoints.
+ * Controller for tool result exports.
+ *
+ * API endpoints for creating and downloading PDF/XLS exports.
  *
  * TASK-29-3: ToolExportService & Controller
- * SPEC-029: Export Results (PDF/XLS)
- *
- * Endpoints:
- * - POST /api/v1/tools/export - Create export, returns download URL
- * - GET /api/v1/tools/export/download/{token} - Download file
  */
 class ToolExportController extends Controller
 {
     /**
-     * Create a new tool export controller instance.
-     *
      * @param ToolExportService $exportService
      */
     public function __construct(
@@ -31,43 +27,117 @@ class ToolExportController extends Controller
     ) {}
 
     /**
-     * Create a new export and return the download URL.
+     * Create a new export.
+     *
+     * POST /api/v1/tools/export
      *
      * @param Request $request
      * @return JsonResponse
      */
     public function export(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'tool' => 'required|string',
-            'url' => 'required|url',
-            'format' => 'required|in:pdf,xls',
-            'data' => 'required|array',
-        ]);
+        try {
+            $validated = $request->validate([
+                'tool' => 'required|string',
+                'url' => 'required|url',
+                'format' => 'required|string|in:pdf,xls',
+                'data' => 'required|array',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'message' => 'Invalid request data.',
+                    'details' => $e->errors(),
+                ],
+            ], 422);
+        }
 
-        $downloadUrl = $this->exportService->createExport(
-            tool: $validated['tool'],
-            url: $validated['url'],
-            format: $validated['format'],
-            data: $validated['data'],
-            userId: Auth::id()
-        );
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'UNAUTHENTICATED',
+                    'message' => 'You must be logged in to create exports.',
+                ],
+            ], 401);
+        }
 
-        return response()->json([
-            'success' => true,
-            'downloadUrl' => $downloadUrl,
-            'expiresAt' => now()->addHour()->toIso8601String(),
-        ]);
+        try {
+            $downloadUrl = $this->exportService->createExport(
+                tool: $validated['tool'],
+                url: $validated['url'],
+                format: $validated['format'],
+                data: $validated['data'],
+                userId: $user->id
+            );
+
+            return response()->json([
+                'success' => true,
+                'downloadUrl' => $downloadUrl,
+                'expiresAt' => now()->addHour()->toIso8601String(),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'INVALID_FORMAT',
+                    'message' => $e->getMessage(),
+                ],
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'EXPORT_ERROR',
+                    'message' => 'Failed to create export.',
+                ],
+            ], 500);
+        }
     }
 
     /**
      * Download an export by token.
      *
+     * GET /api/v1/tools/export/download/{token}
+     *
      * @param string $token
-     * @return Response
+     * @param Request $request
+     * @return Response|JsonResponse
      */
-    public function download(string $token): Response
+    public function download(string $token, Request $request): Response|JsonResponse
     {
-        return $this->exportService->downloadExport($token, Auth::id());
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'UNAUTHENTICATED',
+                    'message' => 'You must be logged in to download exports.',
+                ],
+            ], 401);
+        }
+
+        try {
+            return $this->exportService->downloadExport($token, $user->id);
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'NOT_FOUND',
+                    'message' => 'Invalid or expired download token.',
+                ],
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'DOWNLOAD_ERROR',
+                    'message' => 'Failed to download export.',
+                ],
+            ], 500);
+        }
     }
 }
