@@ -1,7 +1,7 @@
 # TASK-30-1: Terms & Privacy Page
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
