@@ -7,10 +7,16 @@
  * @see TESTS/TASK-28-16.md for full test documentation
  */
 
-// Using Jest globals - no import needed
+// Using Jest globals
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+
+// Jest globals - vi is not available in Jest
+const vi = {
+  fn: jest.fn,
+  clearAllMocks: jest.clearAllMocks
+};
 
 // ============================================
 // Mock Page with Full Navigation
