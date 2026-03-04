@@ -1,11 +1,92 @@
 'use client';
 
 import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/skeleton';
 import { IndicatorCard, type IndicatorStatus } from './IndicatorCard';
-import type { LucideIconName } from './IndicatorIcon';
+import { type LucideIconName } from './IndicatorIcon';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+/**
+ * Data structure for an indicator card
+ */
+export interface IndicatorData {
+  /** Unique identifier */
+  id: string;
+  /** Lucide icon name or custom React node */
+  icon: LucideIconName | React.ReactNode;
+  /** Indicator title */
+  title: string;
+  /** Current value */
+  value: string | number;
+  /** Description text */
+  description: string;
+  /** Status indicator */
+  status: IndicatorStatus;
+  /** Link destination */
+  href: string;
+  /** Optional tooltip override */
+  tooltip?: string;
+}
+
+/**
+ * Responsive column configuration
+ */
+export interface ColumnConfig {
+  /** Columns on mobile (< 640px) */
+  mobile?: number;
+  /** Columns on sm (>= 640px) */
+  sm?: number;
+  /** Columns on md (>= 768px) */
+  md?: number;
+  /** Columns on lg (>= 1024px) */
+  lg?: number;
+  /** Columns on xl (>= 1280px) */
+  xl?: number;
+}
+
+export interface IndicatorGridProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Array of indicator data */
+  indicators: IndicatorData[];
+  /** Responsive column configuration */
+  columns?: ColumnConfig;
+  /** Gap spacing */
+  gap?: 'sm' | 'md' | 'lg';
+  /** Loading state */
+  isLoading?: boolean;
+  /** Custom aria-label */
+  'aria-label'?: string;
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const DEFAULT_COLUMNS: Required<ColumnConfig> = {
+  mobile: 1,
+  sm: 2,
+  md: 3,
+  lg: 4,
+  xl: 4,
+};
+
+const GAP_CLASSES: Record<'sm' | 'md' | 'lg', string> = {
+  sm: 'gap-2',
+  md: 'gap-4',
+  lg: 'gap-6',
+};
+
+const COLUMN_CLASSES: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-4',
+  5: 'grid-cols-5',
+  6: 'grid-cols-6',
+};
 
 // ============================================================================
 // Hooks
@@ -34,112 +115,34 @@ function usePrefersReducedMotion(): boolean {
 }
 
 // ============================================================================
-// Types
+// Utility Functions
 // ============================================================================
 
 /**
- * Data structure for a single indicator displayed in the grid.
+ * Get the Tailwind grid-cols class for a column count.
+ * Falls back to grid-cols-1 for invalid values.
  */
-export interface IndicatorData {
-  /** Unique identifier for the indicator */
-  id: string;
-  /** Lucide icon name or custom React node */
-  icon: LucideIconName | React.ReactNode;
-  /** Indicator title */
-  title: string;
-  /** Current value */
-  value: string | number;
-  /** Description text */
-  description: string;
-  /** Status indicator */
-  status: IndicatorStatus;
-  /** Link destination */
-  href: string;
-  /** Optional tooltip override */
-  tooltip?: string;
-}
-
-/**
- * Responsive column configuration for different breakpoints.
- */
-export interface ColumnConfig {
-  /** Columns on mobile (< 640px). Default: 1 */
-  mobile?: number;
-  /** Columns on sm breakpoint (>= 640px). Default: 2 */
-  sm?: number;
-  /** Columns on md breakpoint (>= 768px). Default: 3 */
-  md?: number;
-  /** Columns on lg breakpoint (>= 1024px). Default: 4 */
-  lg?: number;
-  /** Columns on xl breakpoint (>= 1280px). Default: 4 */
-  xl?: number;
-}
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const DEFAULT_COLUMNS: Required<ColumnConfig> = {
-  mobile: 1,
-  sm: 2,
-  md: 3,
-  lg: 4,
-  xl: 4,
-};
-
-const SKELETON_COUNT = 8;
-
-// ============================================================================
-// Variants
-// ============================================================================
-
-const gapVariants = {
-  sm: 'gap-2',
-  md: 'gap-4',
-  lg: 'gap-6',
-};
-
-const gridColClasses: Record<number, string> = {
-  1: 'grid-cols-1',
-  2: 'grid-cols-2',
-  3: 'grid-cols-3',
-  4: 'grid-cols-4',
-  5: 'grid-cols-5',
-  6: 'grid-cols-6',
-};
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Validates and returns a safe column count.
- * Invalid values default to 1.
- */
-function safeColumnCount(count: number | undefined): number {
-  if (count === undefined || count === null || count < 1 || count > 6 || !Number.isInteger(count)) {
-    return 1;
+function getColumnClass(columns: number | undefined): string {
+  if (!columns || columns < 1) {
+    return COLUMN_CLASSES[1];
   }
-  return count;
+  return COLUMN_CLASSES[columns] ?? COLUMN_CLASSES[1];
 }
 
 /**
- * Generates responsive grid column classes based on column configuration.
+ * Merge user-provided columns with defaults
  */
-function getGridColumnClasses(columns: Required<ColumnConfig>): string {
-  const mobileClass = gridColClasses[safeColumnCount(columns.mobile)] || 'grid-cols-1';
-  const smClass = gridColClasses[safeColumnCount(columns.sm)] || 'grid-cols-2';
-  const mdClass = gridColClasses[safeColumnCount(columns.md)] || 'grid-cols-3';
-  const lgClass = gridColClasses[safeColumnCount(columns.lg)] || 'grid-cols-4';
-  const xlClass = gridColClasses[safeColumnCount(columns.xl)] || 'grid-cols-4';
-
-  return cn(
-    mobileClass,
-    `sm:${smClass}`,
-    `md:${mdClass}`,
-    `lg:${lgClass}`,
-    `xl:${xlClass}`
-  );
+function mergeColumns(columns: ColumnConfig | undefined): Required<ColumnConfig> {
+  if (!columns) {
+    return DEFAULT_COLUMNS;
+  }
+  return {
+    mobile: columns.mobile ?? DEFAULT_COLUMNS.mobile,
+    sm: columns.sm ?? DEFAULT_COLUMNS.sm,
+    md: columns.md ?? DEFAULT_COLUMNS.md,
+    lg: columns.lg ?? DEFAULT_COLUMNS.lg,
+    xl: columns.xl ?? DEFAULT_COLUMNS.xl,
+  };
 }
 
 // ============================================================================
@@ -147,29 +150,15 @@ function getGridColumnClasses(columns: Required<ColumnConfig>): string {
 // ============================================================================
 
 interface GridSkeletonProps {
-  columns: Required<ColumnConfig>;
-  gap: 'sm' | 'md' | 'lg';
-  className?: string;
+  count: number;
+  columnClass: string;
+  gapClass: string;
 }
 
-/**
- * Skeleton loader for the indicator grid during loading state.
- */
-function GridSkeleton({ columns, gap, className }: GridSkeletonProps) {
-  const gridClasses = cn(
-    'grid',
-    getGridColumnClasses(columns),
-    gapVariants[gap],
-    className
-  );
-
+function GridSkeleton({ count, columnClass, gapClass }: GridSkeletonProps) {
   return (
-    <div
-      className={gridClasses}
-      data-testid="indicator-grid-skeleton"
-      aria-hidden="true"
-    >
-      {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
+    <>
+      {Array.from({ length: count }).map((_, index) => (
         <div
           key={`skeleton-${index}`}
           className="flex flex-col gap-3 rounded-xl border bg-card p-4"
@@ -186,69 +175,44 @@ function GridSkeleton({ columns, gap, className }: GridSkeletonProps) {
           <Skeleton className="h-4 w-full" />
         </div>
       ))}
-    </div>
+    </>
   );
 }
 
 // ============================================================================
-// Main Component
+// Component
 // ============================================================================
 
-export interface IndicatorGridProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'role'>,
-    VariantProps<typeof cva> {
-  /** Array of indicator data to display */
-  indicators: IndicatorData[];
-  /** Responsive column configuration */
-  columns?: ColumnConfig;
-  /** Gap spacing between grid items */
-  gap?: 'sm' | 'md' | 'lg';
-  /** Loading state - shows skeleton grid */
-  isLoading?: boolean;
-  /** Additional CSS classes */
-  className?: string;
-  /** Custom aria-label for the grid */
-  'aria-label'?: string;
-}
-
 /**
- * IndicatorGrid - A responsive grid layout for displaying SEO indicator cards.
+ * IndicatorGrid - A responsive grid layout for displaying indicator cards
  *
- * Features:
- * - CSS Grid with responsive breakpoints (mobile/sm/md/lg/xl)
- * - Configurable gap spacing (sm/md/lg)
- * - Animated layout transitions
- * - Loading state with skeleton placeholders
- * - Full accessibility support (ARIA labels, keyboard navigation)
- * - Respects prefers-reduced-motion for users who prefer less animation
+ * Renders a CSS Grid-based layout with configurable responsive breakpoints,
+ * gap spacing, and loading states. Supports variable numbers of indicators
+ * with animated layout transitions.
  *
  * @example
  * ```tsx
- * // Basic usage with default columns
- * <IndicatorGrid indicators={myIndicators} />
+ * // Basic usage
+ * <IndicatorGrid indicators={indicatorData} />
  *
  * // With custom columns
  * <IndicatorGrid
- *   indicators={myIndicators}
+ *   indicators={indicatorData}
  *   columns={{ mobile: 2, sm: 3, md: 4, lg: 5, xl: 6 }}
  * />
  *
  * // With loading state
  * <IndicatorGrid indicators={[]} isLoading />
  *
- * // With custom gap and aria-label
- * <IndicatorGrid
- *   indicators={myIndicators}
- *   gap="lg"
- *   aria-label="SEO Performance Indicators"
- * />
+ * // With custom gap
+ * <IndicatorGrid indicators={indicatorData} gap="lg" />
  * ```
  */
 export const IndicatorGrid = React.forwardRef<HTMLDivElement, IndicatorGridProps>(
   (
     {
       indicators,
-      columns: customColumns,
+      columns: columnsProp,
       gap = 'md',
       isLoading = false,
       className,
@@ -257,116 +221,76 @@ export const IndicatorGrid = React.forwardRef<HTMLDivElement, IndicatorGridProps
     },
     ref
   ) => {
-    // Merge custom columns with defaults
-    const columns: Required<ColumnConfig> = {
-      mobile: customColumns?.mobile ?? DEFAULT_COLUMNS.mobile,
-      sm: customColumns?.sm ?? DEFAULT_COLUMNS.sm,
-      md: customColumns?.md ?? DEFAULT_COLUMNS.md,
-      lg: customColumns?.lg ?? DEFAULT_COLUMNS.lg,
-      xl: customColumns?.xl ?? DEFAULT_COLUMNS.xl,
-    };
+    // Merge columns with defaults
+    const columns = mergeColumns(columnsProp);
 
     // Check for reduced motion preference
-    const prefersReducedMotion = usePrefersReducedMotion();
+    const reducedMotion = usePrefersReducedMotion();
 
-    // Build grid classes
-    const gridClasses = cn(
-      'grid',
-      getGridColumnClasses(columns),
-      gapVariants[gap],
-      !prefersReducedMotion && 'transition-all duration-200 ease-out',
-      className
-    );
+    // Build responsive grid classes
+    const gridClasses = React.useMemo(() => {
+      const baseClass = 'grid';
+      const mobileClass = getColumnClass(columns.mobile);
+      const smClass = columns.sm !== columns.mobile ? `sm:${getColumnClass(columns.sm)}` : '';
+      const mdClass = columns.md !== columns.sm ? `md:${getColumnClass(columns.md)}` : '';
+      const lgClass = columns.lg !== columns.md ? `lg:${getColumnClass(columns.lg)}` : '';
+      const xlClass = columns.xl !== columns.lg ? `xl:${getColumnClass(columns.xl)}` : '';
 
-    // Loading state - render skeleton
-    if (isLoading) {
-      return (
-        <div
-          ref={ref}
-          data-testid="indicator-grid"
-          data-slot="indicator-grid"
-          data-loading="true"
-          role="grid"
-          aria-label={ariaLabel}
-          aria-busy="true"
-          aria-rowcount={SKELETON_COUNT.toString()}
-          className={gridClasses}
-          {...props}
-        >
-          {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
-            <div
-              key={`skeleton-${index}`}
-              className="flex flex-col gap-3 rounded-xl border bg-card p-4"
-              role="gridcell"
-              aria-hidden="true"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <Skeleton className="size-10 rounded-lg" />
-                <Skeleton className="h-5 w-16 rounded-full" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-8 w-16" />
-              </div>
-              <Skeleton className="h-4 w-full" />
-            </div>
-          ))}
-        </div>
+      return cn(
+        baseClass,
+        mobileClass,
+        smClass,
+        mdClass,
+        lgClass,
+        xlClass,
+        GAP_CLASSES[gap],
+        !reducedMotion && 'transition-all duration-200 ease-out'
       );
-    }
+    }, [columns, gap, reducedMotion]);
 
-    // Empty state - render empty grid with message
-    if (!indicators || indicators.length === 0) {
-      return (
-        <div
-          ref={ref}
-          data-testid="indicator-grid"
-          data-slot="indicator-grid"
-          data-loading="false"
-          role="grid"
-          aria-label={ariaLabel}
-          aria-rowcount="0"
-          className={cn(gridClasses, 'min-h-[200px] items-center justify-center')}
-          {...props}
-        >
-          <div className="col-span-full flex flex-col items-center justify-center gap-2 py-8 text-center">
-            <p className="text-muted-foreground">No indicators available</p>
-          </div>
-        </div>
-      );
-    }
+    // Skeleton count (show 8 skeletons during loading)
+    const skeletonCount = 8;
 
-    // Render indicator grid
     return (
       <div
         ref={ref}
         data-testid="indicator-grid"
         data-slot="indicator-grid"
-        data-loading="false"
+        data-loading={isLoading}
+        className={cn(gridClasses, className)}
         role="grid"
         aria-label={ariaLabel}
-        aria-rowcount={indicators.length.toString()}
-        className={gridClasses}
+        aria-rowcount={isLoading ? 0 : Math.ceil(indicators.length / columns.lg)}
+        aria-busy={isLoading}
         {...props}
       >
-        {indicators.map((indicator) => (
-          <div
-            key={indicator.id}
-            role="gridcell"
-            className="contents"
-          >
-            <IndicatorCard
-              id={indicator.id}
-              icon={indicator.icon}
-              title={indicator.title}
-              value={indicator.value}
-              description={indicator.description}
-              status={indicator.status}
-              href={indicator.href}
-              tooltip={indicator.tooltip}
-            />
-          </div>
-        ))}
+        {isLoading ? (
+          <GridSkeleton
+            count={skeletonCount}
+            columnClass={gridClasses}
+            gapClass={GAP_CLASSES[gap]}
+          />
+        ) : (
+          indicators.map((indicator) => (
+            <div
+              key={indicator.id}
+              role="gridcell"
+              className="contents"
+            >
+              <IndicatorCard
+                id={indicator.id}
+                icon={indicator.icon}
+                title={indicator.title}
+                value={indicator.value}
+                description={indicator.description}
+                status={indicator.status}
+                href={indicator.href}
+                tooltip={indicator.tooltip}
+                isLoading={false}
+              />
+            </div>
+          ))
+        )}
       </div>
     );
   }
