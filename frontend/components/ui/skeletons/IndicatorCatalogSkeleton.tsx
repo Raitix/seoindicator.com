@@ -1,67 +1,67 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
-import { CardSkeleton } from "./CardSkeleton";
+import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
+import { CardSkeleton } from "./CardSkeleton"
+import React from "react"
 
 export interface ResponsiveColumns {
-  default?: number;
-  sm?: number;
-  md?: number;
-  lg?: number;
-  xl?: number;
-  "2xl"?: number;
+  default?: number
+  sm?: number
+  md?: number
+  lg?: number
+  xl?: number
+  '2xl'?: number
 }
 
 export interface IndicatorCatalogSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
-  count?: number;
-  columns?: ResponsiveColumns;
+  count?: number
+  columns?: ResponsiveColumns
 }
 
 /**
- * Converts ResponsiveColumns object to Tailwind grid classes
- */
-function getGridClasses(columns: ResponsiveColumns): string {
-  const classes: string[] = [];
-
-  if (columns.default) {
-    classes.push(`grid-cols-${columns.default}`);
-  } else {
-    classes.push("grid-cols-1");
-  }
-
-  if (columns.sm) classes.push(`sm:grid-cols-${columns.sm}`);
-  if (columns.md) classes.push(`md:grid-cols-${columns.md}`);
-  if (columns.lg) classes.push(`lg:grid-cols-${columns.lg}`);
-  if (columns.xl) classes.push(`xl:grid-cols-${columns.xl}`);
-  if (columns["2xl"]) classes.push(`2xl:grid-cols-${columns["2xl"]}`);
-
-  return classes.join(" ");
-}
-
-/**
- * IndicatorCatalogSkeleton - Loading placeholder for indicator catalog
- * @param count - Number of card skeletons to show (default: 6)
- * @param columns - Responsive grid columns configuration
- * @param className - Additional CSS classes
+ * IndicatorCatalogSkeleton - Loading placeholder for the indicator catalog
+ * Renders a grid of card skeletons with optional header and filter areas
  */
 export function IndicatorCatalogSkeleton({
   count = 6,
-  columns = { default: 1, sm: 2, md: 3, lg: 4 },
+  columns,
   className,
   ...props
 }: IndicatorCatalogSkeletonProps) {
   // Handle edge cases
-  const safeCount = Math.max(0, Math.floor(count ?? 6));
+  const safeCount = Math.max(0, Math.floor(count ?? 6))
 
-  // Default responsive grid if columns not provided or empty
-  const gridClasses = Object.keys(columns).length > 0
-    ? getGridClasses(columns)
-    : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4";
+  // Default responsive columns
+  const defaultColumns: ResponsiveColumns = {
+    default: 1,
+    sm: 2,
+    md: 2,
+    lg: 3,
+    xl: 4,
+  }
+
+  const cols = columns ?? defaultColumns
+
+  // Build grid classes
+  const gridClasses = cn(
+    "grid gap-4",
+    cols.default && `grid-cols-${cols.default}`,
+    cols.sm && `sm:grid-cols-${cols.sm}`,
+    cols.md && `md:grid-cols-${cols.md}`,
+    cols.lg && `lg:grid-cols-${cols.lg}`,
+    cols.xl && `xl:grid-cols-${cols.xl}`,
+    cols['2xl'] && `2xl:grid-cols-${cols['2xl']}`
+  )
 
   return (
     <div
       className={cn(
-        "indicator-catalog-skeleton",
-        "container max-w-7xl space-y-6",
+        "indicator-catalog-skeleton w-full max-w-7xl mx-auto space-y-6 grid gap-4 dark:bg-muted/10",
+        cols.default && `grid-cols-${cols.default}`,
+        cols.sm && `sm:grid-cols-${cols.sm}`,
+        cols.md && `md:grid-cols-${cols.md}`,
+        cols.lg && `lg:grid-cols-${cols.lg}`,
+        cols.xl && `xl:grid-cols-${cols.xl}`,
+        cols['2xl'] && `2xl:grid-cols-${cols['2xl']}`,
         className
       )}
       aria-busy="true"
@@ -69,31 +69,32 @@ export function IndicatorCatalogSkeleton({
       {...props}
     >
       {/* Header skeleton */}
-      <div className="header-skeleton space-y-2">
+      <div className="header-skeleton space-y-2 col-span-full">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-64" />
       </div>
 
       {/* Search/Filter skeleton */}
-      <div className="search-skeleton flex gap-4">
-        <Skeleton className="h-10 w-full max-w-md" />
+      <div className="search-skeleton flex gap-4 col-span-full">
+        <Skeleton className="h-10 w-64" />
         <Skeleton className="h-10 w-32" />
       </div>
 
       {/* Card grid */}
-      <div className={cn("grid gap-4", gridClasses)}>
-        {Array.from({ length: safeCount }).map((_, i) => (
-          <CardSkeleton
-            key={i}
-            className="h-full"
-          />
-        ))}
-      </div>
+      {safeCount > 0 && (
+        <div className={cn(gridClasses, "col-span-full contents")}>
+          {Array.from({ length: safeCount }).map((_, index) => (
+            <CardSkeleton
+              key={index}
+              showIcon={true}
+              lines={3}
+              className="h-full"
+            />
+          ))}
+        </div>
+      )}
     </div>
-  );
+  )
 }
 
-// Import Skeleton for header/search
-import { Skeleton } from "@/components/ui/skeleton";
-
-export default IndicatorCatalogSkeleton;
+export default IndicatorCatalogSkeleton

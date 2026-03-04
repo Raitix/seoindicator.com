@@ -1,17 +1,15 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
+import React from "react"
 
 export interface CardSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
-  showIcon?: boolean;
-  lines?: number;
+  showIcon?: boolean
+  lines?: number
 }
 
 /**
- * CardSkeleton - Loading placeholder for indicator cards
- * @param showIcon - Whether to show icon placeholder (default: true)
- * @param lines - Number of text lines to show (default: 3)
- * @param className - Additional CSS classes
+ * CardSkeleton - Loading placeholder for card components
+ * Used in IndicatorCatalog and other card-based layouts
  */
 export function CardSkeleton({
   showIcon = true,
@@ -20,41 +18,48 @@ export function CardSkeleton({
   ...props
 }: CardSkeletonProps) {
   // Handle edge cases
-  const safeLines = Math.max(0, Math.floor(lines ?? 3));
+  const safeLines = Math.max(0, Math.floor(lines ?? 3))
+
+  // Width variations for visual interest
+  const lineWidths = ['w-full', 'w-5/6', 'w-4/5', 'w-3/4', 'w-2/3']
 
   return (
     <div
       className={cn(
-        "card-skeleton",
-        "rounded-lg border bg-card p-4 shadow-sm",
-        "dark:bg-card dark:border-border",
+        "card-skeleton rounded-lg border bg-card p-4 shadow-sm dark:border-muted dark:bg-muted/20",
+        "flex flex-col gap-3",
         className
       )}
       aria-busy="true"
       aria-label="Loading content"
       {...props}
     >
-      <div className="flex items-start gap-4">
-        {showIcon && (
+      {/* Icon placeholder */}
+      {showIcon && (
+        <div className="flex items-center gap-3">
           <Skeleton
-            className="icon-skeleton h-12 w-12 rounded-md flex-shrink-0"
+            className="icon-skeleton h-10 w-10 rounded-md shrink-0"
           />
-        )}
-        <div className={cn("lines-container flex-1", safeLines > 1 ? "space-y-2" : "")}>
-          {Array.from({ length: safeLines }).map((_, i) => (
+          <Skeleton className="h-5 w-24" />
+        </div>
+      )}
+
+      {/* Content lines */}
+      {safeLines > 0 && (
+        <div className={cn("lines-container flex-1 space-y-2", showIcon && "mt-2")}>
+          {Array.from({ length: safeLines }).map((_, index) => (
             <Skeleton
-              key={i}
+              key={index}
               className={cn(
-                "line-skeleton h-4",
-                // Varying widths for visual interest
-                i === 0 ? "w-full" : i === 1 ? "w-5/6" : i === 2 ? "w-4/6" : i === 3 ? "w-3/4" : "w-2/3"
+                "line-skeleton h-3",
+                lineWidths[index % lineWidths.length]
               )}
             />
           ))}
         </div>
-      </div>
+      )}
     </div>
-  );
+  )
 }
 
-export default CardSkeleton;
+export default CardSkeleton

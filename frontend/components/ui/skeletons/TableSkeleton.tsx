@@ -1,19 +1,16 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
+import React from "react"
 
 export interface TableSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
-  rows?: number;
-  columns?: number;
-  showHeader?: boolean;
+  rows?: number
+  columns?: number
+  showHeader?: boolean
 }
 
 /**
  * TableSkeleton - Loading placeholder for data tables
- * @param rows - Number of body rows (default: 5)
- * @param columns - Number of columns (default: 4)
- * @param showHeader - Whether to show header row (default: true)
- * @param className - Additional CSS classes
+ * Supports configurable rows, columns, and header visibility
  */
 export function TableSkeleton({
   rows = 5,
@@ -23,24 +20,25 @@ export function TableSkeleton({
   ...props
 }: TableSkeletonProps) {
   // Handle edge cases
-  const safeRows = Math.max(0, Math.floor(rows ?? 5));
-  const safeColumns = Math.max(0, Math.floor(columns ?? 4));
+  const safeRows = Math.max(0, Math.floor(rows ?? 5))
+  const safeColumns = Math.max(0, Math.floor(columns ?? 4))
 
   return (
     <div
-      className={cn("overflow-x-auto rounded-lg border", className)}
+      className={cn("overflow-x-auto rounded-lg border dark:border-muted", className)}
       aria-busy="true"
       aria-label="Loading table data"
       {...props}
     >
-      <table className="w-full border-collapse">
-        {showHeader && (
-          <thead className="bg-muted/50 dark:bg-muted/30">
-            <tr>
-              {Array.from({ length: safeColumns }).map((_, i) => (
+      <table className="w-full border-collapse dark:border-muted/50">
+        {/* Header */}
+        {showHeader && safeColumns > 0 && (
+          <thead className="border-b bg-muted/50 dark:bg-muted/30">
+            <tr className="transition-colors hover:bg-muted/40">
+              {Array.from({ length: safeColumns }).map((_, colIndex) => (
                 <th
-                  key={i}
-                  className="border-b p-3 text-left"
+                  key={colIndex}
+                  className="border-r px-4 py-3 last:border-r-0 dark:border-muted/50"
                 >
                   <Skeleton className="h-4 w-20" />
                 </th>
@@ -48,26 +46,22 @@ export function TableSkeleton({
             </tr>
           </thead>
         )}
+
+        {/* Body rows */}
         <tbody>
-          {Array.from({ length: safeRows }).map((_, rowIndex) => (
+          {safeRows > 0 && safeColumns > 0 && Array.from({ length: safeRows }).map((_, rowIndex) => (
             <tr
               key={rowIndex}
               className={cn(
-                "border-b transition-colors hover:bg-muted/50 dark:hover:bg-muted/20",
-                rowIndex % 2 === 1 ? "bg-muted/30 dark:bg-muted/10" : ""
+                "border-b last:border-b-0 transition-colors hover:bg-muted/30 dark:border-muted/50 dark:hover:bg-muted/20"
               )}
             >
               {Array.from({ length: safeColumns }).map((_, colIndex) => (
                 <td
                   key={colIndex}
-                  className="p-3"
+                  className="border-r px-4 py-3 last:border-r-0 dark:border-muted/50"
                 >
-                  <Skeleton
-                    className={cn(
-                      "h-4",
-                      colIndex === 0 ? "w-32" : colIndex === safeColumns - 1 ? "w-16" : "w-24"
-                    )}
-                  />
+                  <Skeleton className="h-4 w-16" />
                 </td>
               ))}
             </tr>
@@ -75,7 +69,7 @@ export function TableSkeleton({
         </tbody>
       </table>
     </div>
-  );
+  )
 }
 
-export default TableSkeleton;
+export default TableSkeleton
