@@ -1,7 +1,7 @@
 # TASK-21-8: Create Database Migrations
 
 ## STATUS
-`Documentation`
+`Done`
 
 ## PRIORITY
 `Medium`
