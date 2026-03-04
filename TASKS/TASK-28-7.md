@@ -1,7 +1,7 @@
 # TASK-28-7: IndicatorCatalog Main Container
 
 ## STATUS
-`To Test Locally`
+`Tests Failed - Return to Developer`
 
 ## PRIORITY
 `High`
@@ -65,6 +65,57 @@ interface IndicatorData {
 
 ## Comments
 _Agent log_
+
+### [2026-03-04 15:32 UTC+2] LocalTester
+**Local Testing Complete - FAILED**
+
+**Test Results:**
+| Metric | Value |
+|--------|-------|
+| Test Suite | 1 failed |
+| Tests Passed | 87 |
+| Tests Failed | 33 |
+| Total Tests | 120 |
+| Snapshots Failed | 8 |
+
+**Bug Fixed During Testing:**
+- `IndicatorIcon.tsx`: Added missing `Warning` icon import from lucide-react
+
+**Failure Categories:**
+
+1. **Missing `data-testid` Attributes (Critical)**
+   - Tests expect `data-testid="tabs"`, `data-testid="tabs-list"`, `data-testid="skeleton"`, `data-testid="separator"`
+   - Implementation uses `data-slot` attributes instead
+   - Affected tests: CT-008, CT-009, CT-010, CT-011, CT-012, LS-003, LS-008, LS-009, RM-007, SC-001, SC-002, SC-003, AC-003, AC-005, AC-008, EC-007
+
+2. **Category Change Callback Not Firing (Critical)**
+   - Tests IG-007, EC-010 expect `onCategoryChange` to be called when clicking tabs
+   - The callback is not being invoked
+
+3. **Missing `data-indicator-count` Attribute**
+   - Tests IG-002, IG-003, IG-008, IG-009 expect `data-indicator-count` on grid
+   - Attribute not present in implementation
+
+4. **Module Export Type Mismatch**
+   - Test ME-002 expects `typeof IndicatorCatalog === 'function'`
+   - forwardRef returns object, not function
+
+5. **Snapshot Updates Required**
+   - 8 snapshots need updating after other fixes
+
+**Test Report:** `TESTS/TEST-28-7.md`
+
+**Recommended Actions for Developer:**
+1. Add `data-testid` attributes to Tabs, TabsList, TabsContent, Separator elements
+2. Wire `onCategoryChange` to Tabs `onValueChange` callback
+3. Add `data-indicator-count` attribute to IndicatorGrid
+4. Update test ME-002 for forwardRef export type
+5. Run `npm test -- -u` to update snapshots
+
+**Status Changed:** `To Test Locally` → `Tests Failed - Return to Developer`
+
+---
+*Returned to Developer for fixes.*
 
 ### [2026-03-04 14:55 UTC+2] Developer
 **Implementation Complete**
