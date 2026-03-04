@@ -1,7 +1,7 @@
 # TASK-30-3: How It Works Page
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -122,6 +122,82 @@ frontend/components/pages/HowItWorksContent.tsx
 - Responsive design tests (mobile, tablet, desktop)
 
 **Status:** `To Write Tests` → Ready for PreTester
+
+---
+
+### [2026-03-04 PreTester]
+**Test Coverage Complete:**
+
+| Test File | Tests | Assertions | Coverage |
+|-----------|-------|------------|----------|
+| `__tests__/app/how-it-works/page.test.tsx` | 45+ | 90+ | Page component, rendering, responsive |
+| `__tests__/components/pages/HowItWorksContent.test.tsx` | 60+ | 120+ | Content, steps, categories, FAQ |
+| `__tests__/app/how-it-works/seo.test.tsx` | 30+ | 60+ | Meta tags, OG, Schema.org |
+| `__tests__/a11y/how-it-works.test.tsx` | 25+ | 50+ | Accessibility, keyboard, ARIA |
+| **Total** | **160+** | **320+** | |
+
+**Test Categories Implemented:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Page Rendering | 5 | Component mounts, route, structure |
+| Content Structure | 5 | Steps, categories, scoring, FAQ sections |
+| Responsive Design | 4 | Mobile, tablet, desktop layouts |
+| User Journey Steps | 8 | 4-5 steps, icons, numbers, descriptions |
+| Indicator Categories | 12 | 4 categories, weights, indicator lists |
+| Scoring Methodology | 5 | Score range, weights, visual representation |
+| FAQ Section | 8 | 5-10 items, accordion, keyboard, ARIA |
+| Visual Elements | 5 | Icons, progress bars, charts, animations |
+| SEO Meta Tags | 7 | Title, description, robots, canonical |
+| Open Graph | 6 | OG tags for social sharing |
+| Schema.org | 18 | WebPage + FAQPage JSON-LD |
+| Accessibility | 25+ | Headings, keyboard, ARIA, contrast |
+| Security | 2 | XSS, sensitive data |
+| Performance | 2 | Render time, re-renders |
+
+**Key Implementation Notes for Developer:**
+
+1. **Route Structure:**
+   - File: `frontend/app/how-it-works/page.tsx`
+   - Component: `frontend/components/pages/HowItWorksContent.tsx`
+
+2. **User Journey Steps (4-5 steps with icons):**
+   - Icons: Search, Settings, BarChart, Lightbulb, RefreshCw (Lucide)
+   - Each step: number, icon, title, description
+   - All icons must have aria-label or aria-hidden
+
+3. **Indicator Categories (exact weights):**
+   - Technical: 30% (robots.txt, sitemap, SSL, mobile-friendly, canonical, hreflang)
+   - Content: 40% (title tag, meta description, H1, keyword density, images)
+   - Performance: 20% (page speed, Core Web Vitals)
+   - UX: 10% (mobile viewport, font readability)
+   - **Must sum to 100%**
+
+4. **FAQ Accordion (5-10 items):**
+   - Use shadcn/ui Accordion component
+   - Required ARIA: aria-expanded, aria-controls
+   - Keyboard: Enter/Space to toggle
+   - Support prefers-reduced-motion
+
+5. **Schema.org (both required):**
+   - WebPage schema (name, description, url)
+   - FAQPage schema (mainEntity with 5-10 Questions)
+   - Script type: `application/ld+json`
+
+6. **SEO Metadata:**
+   - Title: "How It Works | SEOIndicator SEO Analysis" (max 60 chars)
+   - Description: 150-160 characters
+   - Robots: "index, follow"
+
+7. **Accessibility Requirements:**
+   - Single H1: "How It Works"
+   - Heading hierarchy: H1 → H2 → H3 (no skipped levels)
+   - Touch targets: min 44x44px
+   - Color contrast: ≥ 4.5:1 for text
+
+**Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-30-3.md`
+
+**Status:** `To Develop` → Ready for Developer implementation
 
 ---
 
