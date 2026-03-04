@@ -1,15 +1,11 @@
-// Indicator Components
-export { IndicatorCard } from "./IndicatorCard";
-export type {
-  IndicatorCardProps,
-  IndicatorStatus,
-} from "./IndicatorCard";
+/**
+ * Indicators Component Library
+ *
+ * Reusable components for displaying SEO indicators throughout the application.
+ */
 
-export { IndicatorGrid } from "./IndicatorGrid";
-export type {
-  IndicatorGridProps,
-  IndicatorData,
-} from "./IndicatorGrid";
+export { IndicatorIcon, type IndicatorIconProps, type LucideIconName } from './IndicatorIcon';
+export { default as IndicatorIconDefault } from './IndicatorIcon';
 
-export { IndicatorCatalog } from "./IndicatorCatalog";
-export type { IndicatorCatalogProps } from "./IndicatorCatalog";
+export { IndicatorCard, type IndicatorCardProps, type IndicatorStatus, statusConfig } from './IndicatorCard';
+export { default as IndicatorCardDefault } from './IndicatorCard';
