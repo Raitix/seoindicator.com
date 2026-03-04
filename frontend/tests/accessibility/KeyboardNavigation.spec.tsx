@@ -7,7 +7,7 @@
  * @see TESTS/TASK-28-16.md for full test documentation
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+// Using Jest globals - no import needed
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
