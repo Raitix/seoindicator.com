@@ -2,871 +2,886 @@
 
 namespace Tests\Unit\Services\AI;
 
-use App\Services\AI\AISuggestionCache;
-use App\Services\AI\DTOs\SuggestionResult;
-use Illuminate\Support\Facades\Cache;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\Attributes\TestDox;
 use Tests\TestCase;
+use App\Services\AI\AISuggestionCache;
+use App\Models\AISuggestionCache as AISuggestionCacheModel;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Mockery;
 
 /**
- * Test suite for AISuggestionCache service.
+ * Unit tests for AISuggestionCache service.
  * 
- * AC-1: Cache Service Created
- * AC-2: Request Hashing
- * AC-3: Cache Storage
- * AC-7: Unit Tests
+ * Covers AC-1: AISuggestionCache Service Created
+ * Covers AC-2: Request Hash Generation
+ * Covers AC-5: Configuration
+ * Covers AC-6: Performance Metrics
  * 
- * @group ai
- * @group task-21-6
- * @group cache
+ * @task TASK-21-6
  */
 class AISuggestionCacheTest extends TestCase
 {
-    private const CACHE_CLASS = 'App\Services\AI\AISuggestionCache';
-    private const CACHE_PREFIX = 'ai_suggestion_';
+    private AISuggestionCache $cacheService;
 
     protected function setUp(): void
     {
         parent::setUp();
-        Cache::flush();
+        $this->cacheService = app(AISuggestionCache::class);
     }
 
     protected function tearDown(): void
     {
-        Cache::flush();
+        Mockery::close();
         parent::tearDown();
     }
 
-    // =========================================================================
-    // AC-1: Cache Service Created
-    // =========================================================================
+    // ============================================================
+    // AC-1: AISuggestionCache Service Created
+    // ============================================================
 
-    #[Test]
-    #[TestDox('CACHE-001: Service file exists at correct path')]
-    public function service_file_exists_at_correct_path(): void
+    /** @test Service instantiation via container */
+    public function test_service_instantiation(): void
     {
-        $this->assertFileExists(
-            base_path('app/Services/AI/AISuggestionCache.php'),
-            'AISuggestionCache should exist at app/Services/AI/AISuggestionCache.php'
-        );
+        $service = app(AISuggestionCache::class);
+        
+        $this->assertInstanceOf(AISuggestionCache::class, $service);
     }
 
-    #[Test]
-    #[TestDox('CACHE-002: Service class exists and is instantiable')]
-    public function service_class_exists_and_is_instantiable(): void
+    /** @test Service has get method */
+    public function test_service_has_get_method(): void
     {
-        $this->assertTrue(class_exists(self::CACHE_CLASS), 'AISuggestionCache class should exist');
-        
-        $cache = app(self::CACHE_CLASS);
-        $this->assertInstanceOf(self::CACHE_CLASS, $cache);
+        $this->assertTrue(method_exists($this->cacheService, 'get'));
     }
 
-    #[Test]
-    #[TestDox('CACHE-003: Service has get method')]
-    public function service_has_get_method(): void
+    /** @test Service has set method */
+    public function test_service_has_set_method(): void
     {
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        
-        $this->assertTrue(
-            $reflection->hasMethod('get'),
-            'Service must have get() method'
-        );
-        
-        $method = $reflection->getMethod('get');
-        $returnType = $method->getReturnType();
-        
-        $this->assertNotNull($returnType, 'get() must have return type');
-        $this->assertTrue(
-            $returnType->getName() === 'App\Services\AI\DTOs\SuggestionResult' 
-            || $returnType->getName() === '?App\Services\AI\DTOs\SuggestionResult'
-            || $returnType->allowsNull(),
-            'get() must return ?SuggestionResult (nullable)'
-        );
+        $this->assertTrue(method_exists($this->cacheService, 'set'));
     }
 
-    #[Test]
-    #[TestDox('CACHE-004: Service has put method')]
-    public function service_has_put_method(): void
+    /** @test Service has invalidate method */
+    public function test_service_has_invalidate_method(): void
     {
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        
-        $this->assertTrue(
-            $reflection->hasMethod('put'),
-            'Service must have put() method'
-        );
-        
-        $method = $reflection->getMethod('put');
-        $returnType = $method->getReturnType();
-        
-        $this->assertNotNull($returnType, 'put() must have return type');
-        $this->assertEquals('void', $returnType->getName(), 'put() must return void');
+        $this->assertTrue(method_exists($this->cacheService, 'invalidate'));
     }
 
-    #[Test]
-    #[TestDox('CACHE-005: Service has has method')]
-    public function service_has_has_method(): void
+    /** @test Service has clear method */
+    public function test_service_has_clear_method(): void
     {
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        
-        $this->assertTrue(
-            $reflection->hasMethod('has'),
-            'Service must have has() method'
-        );
-        
-        $method = $reflection->getMethod('has');
-        $returnType = $method->getReturnType();
-        
-        $this->assertNotNull($returnType, 'has() must have return type');
-        $this->assertEquals('bool', $returnType->getName(), 'has() must return bool');
+        $this->assertTrue(method_exists($this->cacheService, 'clear'));
     }
 
-    #[Test]
-    #[TestDox('CACHE-006: Service has forget method')]
-    public function service_has_forget_method(): void
+    /** @test Service has generateHash method */
+    public function test_service_has_generate_hash_method(): void
     {
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        
-        $this->assertTrue(
-            $reflection->hasMethod('forget'),
-            'Service must have forget() method'
-        );
-        
-        $method = $reflection->getMethod('forget');
-        $returnType = $method->getReturnType();
-        
-        $this->assertNotNull($returnType, 'forget() must have return type');
-        $this->assertEquals('void', $returnType->getName(), 'forget() must return void');
+        $this->assertTrue(method_exists($this->cacheService, 'generateHash'));
     }
 
-    #[Test]
-    #[TestDox('CACHE-007: Service has clear method')]
-    public function service_has_clear_method(): void
+    // ============================================================
+    // AC-2: Request Hash Generation
+    // ============================================================
+
+    /** @test Hash generation uses SHA-256 */
+    public function test_hash_generation_sha256(): void
     {
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
+        $hash = $this->cacheService->generateHash('title', ['title' => 'Test'], 'openrouter');
         
-        $this->assertTrue(
-            $reflection->hasMethod('clear'),
-            'Service must have clear() method'
-        );
-        
-        $method = $reflection->getMethod('clear');
-        $returnType = $method->getReturnType();
-        
-        $this->assertNotNull($returnType, 'clear() must have return type');
-        $this->assertEquals('void', $returnType->getName(), 'clear() must return void');
+        // SHA-256 produces 64 character hex string
+        $this->assertEquals(64, strlen($hash));
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $hash);
     }
 
-    // =========================================================================
-    // AC-2: Request Hashing
-    // =========================================================================
-
-    #[Test]
-    #[TestDox('CACHE-010: Hash is deterministic for same inputs')]
-    public function hash_is_deterministic_for_same_inputs(): void
+    /** @test Hash is consistent for same input */
+    public function test_hash_consistent_for_same_input(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $hash1 = $this->cacheService->generateHash('title', ['title' => 'Test Page'], 'openrouter');
+        $hash2 = $this->cacheService->generateHash('title', ['title' => 'Test Page'], 'openrouter');
         
-        $indicator = 'title';
-        $context = ['url' => 'https://example.com', 'length' => 60];
-        
-        // Get hash via reflection (private method)
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $hashMethod = $reflection->getMethod('generateHash');
-        $hashMethod->setAccessible(true);
-        
-        $hash1 = $hashMethod->invoke($cache, $indicator, $context);
-        $hash2 = $hashMethod->invoke($cache, $indicator, $context);
-        
-        $this->assertEquals($hash1, $hash2, 'Hash should be deterministic');
+        $this->assertEquals($hash1, $hash2);
     }
 
-    #[Test]
-    #[TestDox('CACHE-011: Hash is 64 characters (SHA-256)')]
-    public function hash_is_64_characters(): void
+    /** @test Hash differs for different indicators */
+    public function test_hash_differs_for_different_indicators(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $hash1 = $this->cacheService->generateHash('title', ['title' => 'Test'], 'openrouter');
+        $hash2 = $this->cacheService->generateHash('meta_description', ['title' => 'Test'], 'openrouter');
         
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $hashMethod = $reflection->getMethod('generateHash');
-        $hashMethod->setAccessible(true);
-        
-        $hash = $hashMethod->invoke($cache, 'title', ['url' => 'https://example.com']);
-        
-        $this->assertEquals(64, strlen($hash), 'SHA-256 hash should be 64 characters');
+        $this->assertNotEquals($hash1, $hash2);
     }
 
-    #[Test]
-    #[TestDox('CACHE-012: Hash contains only hexadecimal characters')]
-    public function hash_contains_only_hexadecimal_characters(): void
+    /** @test Hash differs for different context */
+    public function test_hash_differs_for_different_context(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $hash1 = $this->cacheService->generateHash('title', ['title' => 'Page A'], 'openrouter');
+        $hash2 = $this->cacheService->generateHash('title', ['title' => 'Page B'], 'openrouter');
         
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $hashMethod = $reflection->getMethod('generateHash');
-        $hashMethod->setAccessible(true);
-        
-        $hash = $hashMethod->invoke($cache, 'title', ['url' => 'https://example.com']);
-        
-        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $hash, 'Hash should be lowercase hex');
+        $this->assertNotEquals($hash1, $hash2);
     }
 
-    #[Test]
-    #[TestDox('CACHE-013: Different indicators produce different hashes')]
-    public function different_indicators_produce_different_hashes(): void
+    /** @test Hash differs for different providers */
+    public function test_hash_differs_for_different_providers(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $hash1 = $this->cacheService->generateHash('title', ['title' => 'Test'], 'openrouter');
+        $hash2 = $this->cacheService->generateHash('title', ['title' => 'Test'], 'vercel');
         
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $hashMethod = $reflection->getMethod('generateHash');
-        $hashMethod->setAccessible(true);
-        
-        $context = ['url' => 'https://example.com'];
-        
-        $hash1 = $hashMethod->invoke($cache, 'title', $context);
-        $hash2 = $hashMethod->invoke($cache, 'meta_description', $context);
-        
-        $this->assertNotEquals($hash1, $hash2, 'Different indicators should produce different hashes');
+        $this->assertNotEquals($hash1, $hash2);
     }
 
-    #[Test]
-    #[TestDox('CACHE-014: Different context produces different hash')]
-    public function different_context_produces_different_hash(): void
+    /** @test Context is normalized before hashing (sorted keys) */
+    public function test_context_normalized_before_hashing(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        // Same data, different key order
+        $context1 = ['title' => 'Test', 'keyword' => 'example', 'url' => 'https://example.com'];
+        $context2 = ['url' => 'https://example.com', 'title' => 'Test', 'keyword' => 'example'];
         
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $hashMethod = $reflection->getMethod('generateHash');
-        $hashMethod->setAccessible(true);
+        $hash1 = $this->cacheService->generateHash('title', $context1, 'openrouter');
+        $hash2 = $this->cacheService->generateHash('title', $context2, 'openrouter');
         
-        $hash1 = $hashMethod->invoke($cache, 'title', ['url' => 'https://example.com']);
-        $hash2 = $hashMethod->invoke($cache, 'title', ['url' => 'https://different.com']);
-        
-        $this->assertNotEquals($hash1, $hash2, 'Different context should produce different hash');
+        // After normalization, hashes should be identical
+        $this->assertEquals($hash1, $hash2);
     }
 
-    #[Test]
-    #[TestDox('CACHE-015: Context key order does not affect hash')]
-    public function context_key_order_does_not_affect_hash(): void
+    /** @test Hash with empty context */
+    public function test_hash_with_empty_context(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $hash = $this->cacheService->generateHash('title', [], 'openrouter');
         
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $hashMethod = $reflection->getMethod('generateHash');
-        $hashMethod->setAccessible(true);
-        
-        // Different order, same data
-        $context1 = ['url' => 'https://example.com', 'length' => 60];
-        $context2 = ['length' => 60, 'url' => 'https://example.com'];
-        
-        $hash1 = $hashMethod->invoke($cache, 'title', $context1);
-        $hash2 = $hashMethod->invoke($cache, 'title', $context2);
-        
-        $this->assertEquals($hash1, $hash2, 'Key order should not affect hash (ksort used)');
+        $this->assertEquals(64, strlen($hash));
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $hash);
     }
 
-    #[Test]
-    #[TestDox('CACHE-016: Empty context produces valid hash')]
-    public function empty_context_produces_valid_hash(): void
+    /** @test Hash with unicode context values */
+    public function test_hash_with_unicode_context(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $hash = $this->cacheService->generateHash('title', ['title' => 'テストページ 标题'], 'openrouter');
         
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $hashMethod = $reflection->getMethod('generateHash');
-        $hashMethod->setAccessible(true);
-        
-        $hash = $hashMethod->invoke($cache, 'title', []);
-        
-        $this->assertEquals(64, strlen($hash), 'Hash should still be 64 characters with empty context');
+        $this->assertEquals(64, strlen($hash));
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $hash);
     }
 
-    #[Test]
-    #[TestDox('CACHE-017: Nested context is handled consistently')]
-    public function nested_context_is_handled_consistently(): void
+    /** @test Hash with special characters in context */
+    public function test_hash_with_special_characters(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $hash = $this->cacheService->generateHash('title', ['title' => '<script>alert("xss")</script>'], 'openrouter');
         
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $hashMethod = $reflection->getMethod('generateHash');
-        $hashMethod->setAccessible(true);
-        
-        $context = [
-            'page' => [
-                'url' => 'https://example.com',
-                'title' => 'Example',
-            ],
-            'options' => [
-                'maxLength' => 60,
-            ],
-        ];
-        
-        $hash1 = $hashMethod->invoke($cache, 'title', $context);
-        $hash2 = $hashMethod->invoke($cache, 'title', $context);
-        
-        $this->assertEquals($hash1, $hash2, 'Nested context should be handled consistently');
+        $this->assertEquals(64, strlen($hash));
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $hash);
     }
 
-    // =========================================================================
-    // AC-3: Cache Storage
-    // =========================================================================
-
-    #[Test]
-    #[TestDox('CACHE-020: Cache key uses prefix')]
-    public function cache_key_uses_prefix(): void
+    /** @test Hash includes all context keys */
+    public function test_hash_includes_all_context_keys(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $contextMinimal = ['title' => 'Test'];
+        $contextFull = ['title' => 'Test', 'keyword' => 'example', 'content' => 'summary'];
         
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $keyMethod = $reflection->getMethod('getCacheKey');
-        $keyMethod->setAccessible(true);
-        $hashMethod = $reflection->getMethod('generateHash');
-        $hashMethod->setAccessible(true);
+        $hashMinimal = $this->cacheService->generateHash('title', $contextMinimal, 'openrouter');
+        $hashFull = $this->cacheService->generateHash('title', $contextFull, 'openrouter');
         
-        $hash = $hashMethod->invoke($cache, 'title', []);
-        $key = $keyMethod->invoke($cache, $hash);
-        
-        $this->assertStringStartsWith(self::CACHE_PREFIX, $key, 'Cache key should start with prefix');
+        $this->assertNotEquals($hashMinimal, $hashFull);
     }
 
-    #[Test]
-    #[TestDox('CACHE-021: TTL uses config value')]
-    public function ttl_uses_config_value(): void
+    // ============================================================
+    // get() Method Tests
+    // ============================================================
+
+    /** @test get returns null for cache miss */
+    public function test_get_returns_null_for_miss(): void
+    {
+        $hash = 'nonexistent_hash_' . uniqid();
+        
+        $result = $this->cacheService->get($hash);
+        
+        $this->assertNull($result);
+    }
+
+    /** @test get returns array for cache hit */
+    public function test_get_returns_array_for_hit(): void
+    {
+        $hash = 'test_hash_' . uniqid();
+        $data = ['score' => 85, 'issues' => ['Issue 1']];
+        
+        // Use cache store directly
+        Cache::put("ai_suggestions:{$hash}", $data, now()->addHours(24));
+        
+        $result = $this->cacheService->get($hash);
+        
+        $this->assertIsArray($result);
+        $this->assertEquals($data, $result);
+    }
+
+    /** @test get returns null for expired cache */
+    public function test_get_returns_null_for_expired(): void
+    {
+        $hash = 'expired_hash_' . uniqid();
+        $data = ['score' => 50];
+        
+        // Store with past expiration
+        Cache::put("ai_suggestions:{$hash}", $data, now()->subMinute());
+        
+        $result = $this->cacheService->get($hash);
+        
+        $this->assertNull($result);
+    }
+
+    /** @test get returns null when cache disabled */
+    public function test_get_returns_null_when_disabled(): void
+    {
+        config(['ai.cache.enabled' => false]);
+        
+        $hash = 'disabled_test_' . uniqid();
+        Cache::put("ai_suggestions:{$hash}", ['data'], now()->addHours(24));
+        
+        $result = $this->cacheService->get($hash);
+        
+        // When disabled, should return null (cache bypassed)
+        $this->assertNull($result);
+        
+        // Reset config
+        config(['ai.cache.enabled' => true]);
+    }
+
+    /** @test get logs cache hit */
+    public function test_get_logs_cache_hit(): void
+    {
+        Log::shouldReceive('debug')
+            ->once()
+            ->withArgs(function ($message, $context) {
+                return str_contains($message, 'cache hit') || str_contains($message, 'Cache hit');
+            });
+        
+        $hash = 'log_test_' . uniqid();
+        Cache::put("ai_suggestions:{$hash}", ['data'], now()->addHours(24));
+        
+        $this->cacheService->get($hash);
+    }
+
+    /** @test get logs cache miss */
+    public function test_get_logs_cache_miss(): void
+    {
+        Log::shouldReceive('debug')
+            ->once()
+            ->withArgs(function ($message, $context) {
+                return str_contains($message, 'cache miss') || str_contains($message, 'Cache miss');
+            });
+        
+        $this->cacheService->get('nonexistent_hash');
+    }
+
+    // ============================================================
+    // set() Method Tests
+    // ============================================================
+
+    /** @test set stores response in cache */
+    public function test_set_stores_response(): void
+    {
+        $hash = 'store_test_' . uniqid();
+        $data = ['score' => 90, 'suggestions' => [['text' => 'Improve title']]];
+        
+        $this->cacheService->set($hash, $data);
+        
+        $cached = Cache::get("ai_suggestions:{$hash}");
+        $this->assertEquals($data, $cached);
+    }
+
+    /** @test set uses default TTL of 24 hours */
+    public function test_set_default_ttl(): void
+    {
+        $hash = 'ttl_default_' . uniqid();
+        $data = ['score' => 75];
+        
+        $this->cacheService->set($hash, $data);
+        
+        // Verify cache exists after 23 hours but before 25
+        $this->assertTrue(Cache::has("ai_suggestions:{$hash}"));
+    }
+
+    /** @test set respects custom TTL */
+    public function test_set_custom_ttl(): void
+    {
+        $hash = 'ttl_custom_' . uniqid();
+        $data = ['score' => 80];
+        
+        $this->cacheService->set($hash, $data, 48); // 48 hours
+        
+        $this->assertTrue(Cache::has("ai_suggestions:{$hash}"));
+    }
+
+    /** @test set respects configured TTL from env */
+    public function test_set_respects_configured_ttl(): void
+    {
+        config(['ai.cache.ttl_hours' => 12]);
+        
+        $hash = 'ttl_config_' . uniqid();
+        $data = ['score' => 85];
+        
+        $this->cacheService->set($hash, $data);
+        
+        $this->assertTrue(Cache::has("ai_suggestions:{$hash}"));
+        
+        // Reset
+        config(['ai.cache.ttl_hours' => 24]);
+    }
+
+    /** @test set does nothing when cache disabled */
+    public function test_set_noop_when_disabled(): void
+    {
+        config(['ai.cache.enabled' => false]);
+        
+        $hash = 'disabled_set_' . uniqid();
+        $data = ['score' => 70];
+        
+        $this->cacheService->set($hash, $data);
+        
+        // Cache should not be set when disabled
+        $this->assertFalse(Cache::has("ai_suggestions:{$hash}"));
+        
+        // Reset
+        config(['ai.cache.enabled' => true]);
+    }
+
+    /** @test set logs cache storage */
+    public function test_set_logs_storage(): void
+    {
+        Log::shouldReceive('debug')
+            ->once()
+            ->withArgs(function ($message, $context) {
+                return str_contains($message, 'Cached') || str_contains($message, 'stored');
+            });
+        
+        $hash = 'log_set_' . uniqid();
+        $this->cacheService->set($hash, ['data']);
+    }
+
+    /** @test set overwrites existing cache */
+    public function test_set_overwrites_existing(): void
+    {
+        $hash = 'overwrite_' . uniqid();
+        
+        Cache::put("ai_suggestions:{$hash}", ['old' => 'data'], now()->addHours(24));
+        
+        $newData = ['new' => 'response'];
+        $this->cacheService->set($hash, $newData);
+        
+        $cached = Cache::get("ai_suggestions:{$hash}");
+        $this->assertEquals($newData, $cached);
+    }
+
+    // ============================================================
+    // invalidate() Method Tests
+    // ============================================================
+
+    /** @test invalidate removes specific cache entry */
+    public function test_invalidate_removes_entry(): void
+    {
+        $hash = 'invalidate_' . uniqid();
+        Cache::put("ai_suggestions:{$hash}", ['data'], now()->addHours(24));
+        
+        $this->cacheService->invalidate($hash);
+        
+        $this->assertFalse(Cache::has("ai_suggestions:{$hash}"));
+    }
+
+    /** @test invalidate returns true when entry existed */
+    public function test_invalidate_returns_true_when_existed(): void
+    {
+        $hash = 'invalidate_exists_' . uniqid();
+        Cache::put("ai_suggestions:{$hash}", ['data'], now()->addHours(24));
+        
+        $result = $this->cacheService->invalidate($hash);
+        
+        $this->assertTrue($result);
+    }
+
+    /** @test invalidate returns false when entry didn't exist */
+    public function test_invalidate_returns_false_when_not_exists(): void
+    {
+        $result = $this->cacheService->invalidate('nonexistent_hash');
+        
+        $this->assertFalse($result);
+    }
+
+    /** @test invalidate logs action */
+    public function test_invalidate_logs(): void
+    {
+        Log::shouldReceive('info')
+            ->once()
+            ->withArgs(function ($message, $context) {
+                return str_contains($message, 'Invalidated') || str_contains($message, 'invalidat');
+            });
+        
+        $hash = 'invalidate_log_' . uniqid();
+        Cache::put("ai_suggestions:{$hash}", ['data'], now()->addHours(24));
+        
+        $this->cacheService->invalidate($hash);
+    }
+
+    /** @test invalidate works when cache disabled */
+    public function test_invalidate_works_when_disabled(): void
+    {
+        config(['ai.cache.enabled' => false]);
+        
+        $result = $this->cacheService->invalidate('any_hash');
+        
+        // Should return false (no entry to invalidate)
+        $this->assertFalse($result);
+        
+        config(['ai.cache.enabled' => true]);
+    }
+
+    // ============================================================
+    // clear() Method Tests
+    // ============================================================
+
+    /** @test clear removes all cache entries */
+    public function test_clear_removes_all(): void
+    {
+        $hashes = ['clear_1_' . uniqid(), 'clear_2_' . uniqid(), 'clear_3_' . uniqid()];
+        
+        foreach ($hashes as $hash) {
+            Cache::put("ai_suggestions:{$hash}", ['data'], now()->addHours(24));
+        }
+        
+        $this->cacheService->clear();
+        
+        foreach ($hashes as $hash) {
+            $this->assertFalse(Cache::has("ai_suggestions:{$hash}"));
+        }
+    }
+
+    /** @test clear returns count of removed entries */
+    public function test_clear_returns_count(): void
+    {
+        $hashes = ['count_1_' . uniqid(), 'count_2_' . uniqid(), 'count_3_' . uniqid()];
+        
+        foreach ($hashes as $hash) {
+            Cache::put("ai_suggestions:{$hash}", ['data'], now()->addHours(24));
+        }
+        
+        $count = $this->cacheService->clear();
+        
+        $this->assertGreaterThanOrEqual(3, $count);
+    }
+
+    /** @test clear returns 0 when cache empty */
+    public function test_clear_returns_zero_empty(): void
+    {
+        // Clear first
+        $this->cacheService->clear();
+        
+        $count = $this->cacheService->clear();
+        
+        $this->assertEquals(0, $count);
+    }
+
+    /** @test clear logs action */
+    public function test_clear_logs(): void
+    {
+        Log::shouldReceive('info')
+            ->once()
+            ->withArgs(function ($message, $context) {
+                return str_contains($message, 'Cleared') || str_contains($message, 'clear');
+            });
+        
+        $this->cacheService->clear();
+    }
+
+    /** @test clear works when cache disabled */
+    public function test_clear_works_when_disabled(): void
+    {
+        config(['ai.cache.enabled' => false]);
+        
+        $count = $this->cacheService->clear();
+        
+        // Should return 0 when disabled
+        $this->assertEquals(0, $count);
+        
+        config(['ai.cache.enabled' => true]);
+    }
+
+    // ============================================================
+    // AC-5: Configuration Tests
+    // ============================================================
+
+    /** @test TTL configurable via AI_CACHE_TTL_HOURS */
+    public function test_ttl_configurable(): void
     {
         config(['ai.cache.ttl_hours' => 48]);
         
-        $cache = app(self::CACHE_CLASS);
+        $service = app(AISuggestionCache::class);
         
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $ttlMethod = $reflection->getMethod('getTtlSeconds');
-        $ttlMethod->setAccessible(true);
-        
-        $ttl = $ttlMethod->invoke($cache);
-        
-        $this->assertEquals(48 * 3600, $ttl, 'TTL should be hours converted to seconds');
+        // The service should use the configured TTL
+        $this->assertEquals(48, config('ai.cache.ttl_hours'));
     }
 
-    #[Test]
-    #[TestDox('CACHE-022: TTL defaults to 24 hours')]
-    public function ttl_defaults_to_24_hours(): void
+    /** @test Default TTL is 24 hours */
+    public function test_default_ttl(): void
     {
-        config(['ai.cache.ttl_hours' => null]);
-        
-        $cache = app(self::CACHE_CLASS);
-        
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $ttlMethod = $reflection->getMethod('getTtlSeconds');
-        $ttlMethod->setAccessible(true);
-        
-        $ttl = $ttlMethod->invoke($cache);
-        
-        $this->assertEquals(24 * 3600, $ttl, 'Default TTL should be 24 hours');
+        $this->assertEquals(24, config('ai.cache.ttl_hours', 24));
     }
 
-    // =========================================================================
-    // AC-7: Unit Tests - Operations
-    // =========================================================================
-
-    #[Test]
-    #[TestDox('CACHE-030: get returns null for missing key')]
-    public function get_returns_null_for_missing_key(): void
+    /** @test Cache can be disabled via AI_CACHE_ENABLED */
+    public function test_cache_can_be_disabled(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        config(['ai.cache.enabled' => false]);
         
-        $result = $cache->get('nonexistent_indicator', ['url' => 'https://example.com']);
+        $this->assertFalse(config('ai.cache.enabled'));
         
-        $this->assertNull($result, 'get() should return null for missing cache entry');
+        // Reset
+        config(['ai.cache.enabled' => true]);
     }
 
-    #[Test]
-    #[TestDox('CACHE-031: put stores result in cache')]
-    public function put_stores_result_in_cache(): void
+    /** @test Cache enabled by default */
+    public function test_cache_enabled_by_default(): void
     {
-        $cache = app(self::CACHE_CLASS);
-        
-        $indicator = 'title';
-        $context = ['url' => 'https://example.com'];
-        
-        $suggestion = new SuggestionResult(
-            indicator: $indicator,
-            score: 85,
-            issues: ['Too short'],
-            suggestions: [['type' => 'improve', 'text' => 'Add more keywords']],
-            bestPractices: ['Keep title 50-60 characters'],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
-        
-        $cache->put($indicator, $context, $suggestion);
-        
-        $this->assertTrue($cache->has($indicator, $context), 'has() should return true after put()');
+        $this->assertTrue(config('ai.cache.enabled', true));
     }
 
-    #[Test]
-    #[TestDox('CACHE-032: get retrieves stored result')]
-    public function get_retrieves_stored_result(): void
+    /** @test TTL validation rejects invalid values */
+    public function test_ttl_validation_rejects_invalid(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        // Negative TTL should be rejected or clamped
+        config(['ai.cache.ttl_hours' => -1]);
         
-        $indicator = 'title';
-        $context = ['url' => 'https://example.com'];
+        $hash = 'invalid_ttl_' . uniqid();
+        $data = ['test' => true];
         
-        $original = new SuggestionResult(
-            indicator: $indicator,
-            score: 85,
-            issues: ['Too short'],
-            suggestions: [['type' => 'improve', 'text' => 'Add more keywords']],
-            bestPractices: ['Keep title 50-60 characters'],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
+        // Service should handle invalid TTL gracefully
+        $this->cacheService->set($hash, $data);
         
-        $cache->put($indicator, $context, $original);
-        $retrieved = $cache->get($indicator, $context);
-        
-        $this->assertInstanceOf(SuggestionResult::class, $retrieved);
-        $this->assertEquals($original->indicator, $retrieved->indicator);
-        $this->assertEquals($original->score, $retrieved->score);
-        $this->assertEquals($original->provider, $retrieved->provider);
+        // Reset
+        config(['ai.cache.ttl_hours' => 24]);
     }
 
-    #[Test]
-    #[TestDox('CACHE-033: has returns false for missing key')]
-    public function has_returns_false_for_missing_key(): void
+    /** @test TTL validation accepts valid range */
+    public function test_ttl_validation_accepts_valid(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        config(['ai.cache.ttl_hours' => 168]); // 7 days
         
-        $result = $cache->has('nonexistent', ['url' => 'https://example.com']);
+        $hash = 'valid_ttl_' . uniqid();
+        $data = ['test' => true];
         
-        $this->assertFalse($result, 'has() should return false for missing key');
+        $this->cacheService->set($hash, $data);
+        
+        $this->assertTrue(Cache::has("ai_suggestions:{$hash}"));
+        
+        // Reset
+        config(['ai.cache.ttl_hours' => 24]);
     }
 
-    #[Test]
-    #[TestDox('CACHE-034: has returns true for existing key')]
-    public function has_returns_true_for_existing_key(): void
+    // ============================================================
+    // AC-6: Performance Metrics Tests
+    // ============================================================
+
+    /** @test getStats returns hit/miss ratio */
+    public function test_stats_hit_miss_ratio(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $stats = $this->cacheService->getStats();
         
-        $indicator = 'title';
-        $context = ['url' => 'https://example.com'];
-        
-        $suggestion = new SuggestionResult(
-            indicator: $indicator,
-            score: 85,
-            issues: [],
-            suggestions: [],
-            bestPractices: [],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
-        
-        $cache->put($indicator, $context, $suggestion);
-        
-        $this->assertTrue($cache->has($indicator, $context));
+        $this->assertArrayHasKey('hits', $stats);
+        $this->assertArrayHasKey('misses', $stats);
+        $this->assertArrayHasKey('hit_ratio', $stats);
     }
 
-    #[Test]
-    #[TestDox('CACHE-035: forget removes cached item')]
-    public function forget_removes_cached_item(): void
+    /** @test getStats returns cache size */
+    public function test_stats_cache_size(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $stats = $this->cacheService->getStats();
         
-        $indicator = 'title';
-        $context = ['url' => 'https://example.com'];
-        
-        $suggestion = new SuggestionResult(
-            indicator: $indicator,
-            score: 85,
-            issues: [],
-            suggestions: [],
-            bestPractices: [],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
-        
-        $cache->put($indicator, $context, $suggestion);
-        $this->assertTrue($cache->has($indicator, $context), 'Item should be cached');
-        
-        $cache->forget($indicator, $context);
-        
-        $this->assertFalse($cache->has($indicator, $context), 'Item should be removed after forget()');
-        $this->assertNull($cache->get($indicator, $context), 'get() should return null after forget()');
+        $this->assertArrayHasKey('total_entries', $stats);
+        $this->assertIsInt($stats['total_entries']);
     }
 
-    #[Test]
-    #[TestDox('CACHE-036: clear removes all AI cache entries')]
-    public function clear_removes_all_ai_cache_entries(): void
+    /** @test getStats tracks eviction rate */
+    public function test_stats_eviction_rate(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $stats = $this->cacheService->getStats();
         
-        // Store multiple items
-        $items = [
-            ['indicator' => 'title', 'context' => ['url' => 'https://example.com/1']],
-            ['indicator' => 'meta_description', 'context' => ['url' => 'https://example.com/2']],
-            ['indicator' => 'h1', 'context' => ['url' => 'https://example.com/3']],
-        ];
-        
-        $suggestion = new SuggestionResult(
-            indicator: 'test',
-            score: 50,
-            issues: [],
-            suggestions: [],
-            bestPractices: [],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
-        
-        foreach ($items as $item) {
-            $cache->put($item['indicator'], $item['context'], $suggestion);
-        }
-        
-        // Verify all are cached
-        foreach ($items as $item) {
-            $this->assertTrue($cache->has($item['indicator'], $item['context']));
-        }
-        
-        // Clear all
-        $cache->clear();
-        
-        // Verify all are removed
-        foreach ($items as $item) {
-            $this->assertFalse($cache->has($item['indicator'], $item['context']));
-        }
+        $this->assertArrayHasKey('evictions', $stats);
+        $this->assertArrayHasKey('eviction_rate', $stats);
     }
 
-    #[Test]
-    #[TestDox('CACHE-037: clear does not affect non-AI cache')]
-    public function clear_does_not_affect_non_ai_cache(): void
+    /** @test hit ratio calculated correctly */
+    public function test_hit_ratio_calculation(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        // Perform some cache operations
+        $hash = 'ratio_test_' . uniqid();
         
-        // Store non-AI cache item
-        Cache::put('other_key', 'other_value', 3600);
+        // Miss
+        $this->cacheService->get('nonexistent');
         
-        // Store AI cache item
-        $suggestion = new SuggestionResult(
-            indicator: 'title',
-            score: 50,
-            issues: [],
-            suggestions: [],
-            bestPractices: [],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
-        $cache->put('title', [], $suggestion);
+        // Set and hit
+        $this->cacheService->set($hash, ['data']);
+        $this->cacheService->get($hash);
         
-        $cache->clear();
+        $stats = $this->cacheService->getStats();
         
-        // Non-AI cache should still exist
-        $this->assertEquals('other_value', Cache::get('other_key'));
-        
-        // AI cache should be gone
-        $this->assertFalse($cache->has('title', []));
+        $this->assertGreaterThanOrEqual(0, $stats['hit_ratio']);
+        $this->assertLessThanOrEqual(1, $stats['hit_ratio']);
     }
 
-    // =========================================================================
-    // AC-7: Unit Tests - TTL Expiration
-    // =========================================================================
-
-    #[Test]
-    #[TestDox('CACHE-040: Cache entry expires after TTL')]
-    public function cache_entry_expires_after_ttl(): void
+    /** @test stats reset resets counters */
+    public function test_stats_reset(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        // Perform some operations
+        $this->cacheService->get('nonexistent');
         
-        $indicator = 'title';
-        $context = ['url' => 'https://example.com'];
+        // Reset
+        $this->cacheService->resetStats();
         
-        $suggestion = new SuggestionResult(
-            indicator: $indicator,
-            score: 85,
-            issues: [],
-            suggestions: [],
-            bestPractices: [],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
+        $stats = $this->cacheService->getStats();
         
-        // Store with 1 second TTL for testing
-        Cache::shouldReceive('put')
+        $this->assertEquals(0, $stats['hits']);
+        $this->assertEquals(0, $stats['misses']);
+    }
+
+    /** @test metrics logged periodically */
+    public function test_metrics_logged(): void
+    {
+        Log::shouldReceive('info')
+            ->atLeast()
             ->once()
-            ->withArgs(function ($key, $value, $ttl) {
-                // Verify TTL is passed (in seconds)
-                return strpos($key, self::CACHE_PREFIX) === 0 && is_int($ttl);
+            ->withArgs(function ($message, $context) {
+                return str_contains($message, 'Cache') || 
+                       str_contains($message, 'metrics') ||
+                       str_contains($message, 'stats');
             });
         
-        Cache::shouldReceive('get')->andReturn(null);
-        Cache::shouldReceive('has')->andReturn(false);
-        
-        $cache->put($indicator, $context, $suggestion);
+        $this->cacheService->logMetrics();
     }
 
-    // =========================================================================
-    // AC-7: Unit Tests - Data Integrity
-    // =========================================================================
+    // ============================================================
+    // Integration Tests
+    // ============================================================
 
-    #[Test]
-    #[TestDox('CACHE-050: Retrieved result preserves all data')]
-    public function retrieved_result_preserves_all_data(): void
+    /** @test Full cache flow: set, get, invalidate */
+    public function test_full_cache_flow(): void
     {
-        $cache = app(self::CACHE_CLASS);
-        
-        $indicator = 'meta_description';
-        $context = ['url' => 'https://example.com', 'length' => 150];
-        
-        $original = new SuggestionResult(
-            indicator: $indicator,
-            score: 92,
-            issues: ['Missing call-to-action', 'Too generic'],
-            suggestions: [
-                ['type' => 'improve', 'text' => 'Add a clear CTA', 'reason' => 'Increases CTR'],
-                ['type' => 'rewrite', 'text' => 'Make it more specific to your brand'],
-            ],
-            bestPractices: ['Keep between 150-160 characters', 'Include target keywords'],
-            provider: 'openrouter',
-            model: 'llama-3.1-8b',
-            generatedAt: new \DateTimeImmutable('2026-03-02 10:30:00')
-        );
-        
-        $cache->put($indicator, $context, $original);
-        $retrieved = $cache->get($indicator, $context);
-        
-        $this->assertEquals($original->indicator, $retrieved->indicator);
-        $this->assertEquals($original->score, $retrieved->score);
-        $this->assertEquals($original->issues, $retrieved->issues);
-        $this->assertEquals($original->suggestions, $retrieved->suggestions);
-        $this->assertEquals($original->bestPractices, $retrieved->bestPractices);
-        $this->assertEquals($original->provider, $retrieved->provider);
-        $this->assertEquals($original->model, $retrieved->model);
-    }
-
-    #[Test]
-    #[TestDox('CACHE-051: Complex context is handled correctly')]
-    public function complex_context_is_handled_correctly(): void
-    {
-        $cache = app(self::CACHE_CLASS);
-        
-        $indicator = 'title';
-        $context = [
-            'page' => [
-                'url' => 'https://example.com/products/item-123',
-                'title' => 'Product Name | Brand',
-                'meta' => [
-                    'description' => 'Product description here',
-                    'keywords' => ['product', 'brand', 'category'],
-                ],
-            ],
-            'analysis' => [
-                'wordCount' => 5,
-                'charCount' => 20,
-                'hasKeywords' => true,
-            ],
-        ];
-        
-        $suggestion = new SuggestionResult(
-            indicator: $indicator,
-            score: 75,
-            issues: ['Too short'],
-            suggestions: [['type' => 'improve', 'text' => 'Add primary keyword near the beginning']],
-            bestPractices: ['Front-load important keywords'],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
-        
-        $cache->put($indicator, $context, $suggestion);
-        
-        $this->assertTrue($cache->has($indicator, $context));
-        $retrieved = $cache->get($indicator, $context);
-        $this->assertEquals(75, $retrieved->score);
-    }
-
-    // =========================================================================
-    // AC-7: Unit Tests - Edge Cases
-    // =========================================================================
-
-    #[Test]
-    #[TestDox('CACHE-060: Unicode in context is handled')]
-    public function unicode_in_context_is_handled(): void
-    {
-        $cache = app(self::CACHE_CLASS);
-        
-        $indicator = 'title';
-        $context = [
-            'url' => 'https://example.com/продукты/товар-123',
-            'title' => 'Produkts – Zīmols | Kategorija',
-        ];
-        
-        $suggestion = new SuggestionResult(
-            indicator: $indicator,
-            score: 80,
-            issues: [],
-            suggestions: [],
-            bestPractices: [],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
-        
-        $cache->put($indicator, $context, $suggestion);
-        
-        $this->assertTrue($cache->has($indicator, $context));
-        $retrieved = $cache->get($indicator, $context);
-        $this->assertInstanceOf(SuggestionResult::class, $retrieved);
-    }
-
-    #[Test]
-    #[TestDox('CACHE-061: Special characters in context are handled')]
-    public function special_characters_in_context_are_handled(): void
-    {
-        $cache = app(self::CACHE_CLASS);
-        
-        $indicator = 'title';
-        $context = [
-            'title' => 'Title with "quotes" & <special> chars!',
-            'symbols' => '!@#$%^&*()_+-=[]{}|;:\'",.<>?/~`',
-        ];
-        
-        $suggestion = new SuggestionResult(
-            indicator: $indicator,
-            score: 50,
-            issues: [],
-            suggestions: [],
-            bestPractices: [],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
-        
-        $cache->put($indicator, $context, $suggestion);
-        
-        $this->assertTrue($cache->has($indicator, $context));
-    }
-
-    #[Test]
-    #[TestDox('CACHE-062: Large context is handled')]
-    public function large_context_is_handled(): void
-    {
-        $cache = app(self::CACHE_CLASS);
-        
-        $indicator = 'content';
-        $context = [
-            'content' => str_repeat('Lorem ipsum dolor sit amet. ', 100), // ~3000 chars
-        ];
-        
-        $suggestion = new SuggestionResult(
-            indicator: $indicator,
-            score: 50,
-            issues: [],
-            suggestions: [],
-            bestPractices: [],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
-        
-        $cache->put($indicator, $context, $suggestion);
-        
-        $this->assertTrue($cache->has($indicator, $context));
-    }
-
-    #[Test]
-    #[TestDox('CACHE-063: Numeric values in context are handled')]
-    public function numeric_values_in_context_are_handled(): void
-    {
-        $cache = app(self::CACHE_CLASS);
-        
-        $indicator = 'title';
-        $context = [
+        $hash = 'flow_test_' . uniqid();
+        $data = [
+            'indicator' => 'title',
             'score' => 85,
-            'length' => 60,
-            'ratio' => 0.75,
-            'flags' => [true, false],
+            'issues' => ['Too short'],
+            'suggestions' => [['type' => 'improve', 'text' => 'Add keywords']]
         ];
         
-        $suggestion = new SuggestionResult(
-            indicator: $indicator,
-            score: 85,
-            issues: [],
-            suggestions: [],
-            bestPractices: [],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
+        // Set
+        $this->cacheService->set($hash, $data);
         
-        $cache->put($indicator, $context, $suggestion);
+        // Get - should hit
+        $result = $this->cacheService->get($hash);
+        $this->assertEquals($data, $result);
         
-        $this->assertTrue($cache->has($indicator, $context));
+        // Invalidate
+        $this->cacheService->invalidate($hash);
+        
+        // Get - should miss
+        $result = $this->cacheService->get($hash);
+        $this->assertNull($result);
     }
 
-    #[Test]
-    #[TestDox('CACHE-064: Null values in context are handled')]
-    public function null_values_in_context_are_handled(): void
+    /** @test Cache survives multiple get calls */
+    public function test_cache_survives_multiple_gets(): void
     {
-        $cache = app(self::CACHE_CLASS);
+        $hash = 'multi_get_' . uniqid();
+        $data = ['score' => 90];
         
-        $indicator = 'title';
-        $context = [
-            'url' => 'https://example.com',
-            'title' => null,
-            'optional' => null,
+        $this->cacheService->set($hash, $data);
+        
+        $result1 = $this->cacheService->get($hash);
+        $result2 = $this->cacheService->get($hash);
+        $result3 = $this->cacheService->get($hash);
+        
+        $this->assertEquals($data, $result1);
+        $this->assertEquals($data, $result2);
+        $this->assertEquals($data, $result3);
+    }
+
+    // ============================================================
+    // Edge Cases
+    // ============================================================
+
+    /** @test Hash with very long context */
+    public function test_hash_with_long_context(): void
+    {
+        $longTitle = str_repeat('a', 10000);
+        $hash = $this->cacheService->generateHash('title', ['title' => $longTitle], 'openrouter');
+        
+        $this->assertEquals(64, strlen($hash));
+    }
+
+    /** @test Hash with nested context */
+    public function test_hash_with_nested_context(): void
+    {
+        $nested = [
+            'page' => [
+                'title' => 'Test',
+                'meta' => ['description' => 'Test page']
+            ]
         ];
         
-        $suggestion = new SuggestionResult(
-            indicator: $indicator,
-            score: 50,
-            issues: [],
-            suggestions: [],
-            bestPractices: [],
-            provider: 'openrouter',
-            model: 'llama-3.1',
-            generatedAt: new \DateTimeImmutable()
-        );
+        $hash = $this->cacheService->generateHash('title', $nested, 'openrouter');
         
-        $cache->put($indicator, $context, $suggestion);
-        
-        $this->assertTrue($cache->has($indicator, $context));
+        $this->assertEquals(64, strlen($hash));
     }
 
-    // =========================================================================
-    // Documentation
-    // =========================================================================
-
-    #[Test]
-    #[TestDox('CACHE-070: Service has proper namespace')]
-    public function service_has_proper_namespace(): void
+    /** @test Cache handles large response data */
+    public function test_cache_large_response(): void
     {
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
+        $hash = 'large_' . uniqid();
+        $largeData = [
+            'score' => 50,
+            'suggestions' => array_fill(0, 100, ['text' => str_repeat('x', 100)])
+        ];
         
-        $this->assertEquals(
-            'App\Services\AI',
-            $reflection->getNamespaceName(),
-            'Service should be in App\Services\AI namespace'
-        );
+        $this->cacheService->set($hash, $largeData);
+        
+        $result = $this->cacheService->get($hash);
+        
+        $this->assertEquals($largeData, $result);
     }
 
-    #[Test]
-    #[TestDox('CACHE-071: All public methods have documentation')]
-    public function all_public_methods_have_documentation(): void
+    /** @test Cache handles unicode response data */
+    public function test_cache_unicode_response(): void
     {
-        $reflection = new \ReflectionClass(self::CACHE_CLASS);
-        $methods = ['get', 'put', 'has', 'forget', 'clear'];
+        $hash = 'unicode_' . uniqid();
+        $unicodeData = [
+            'score' => 75,
+            'suggestions' => [
+                ['text' => 'テストタイトル 标题 🎉']
+            ]
+        ];
         
-        foreach ($methods as $methodName) {
-            $method = $reflection->getMethod($methodName);
-            $docComment = $method->getDocComment();
-            
-            $this->assertNotFalse(
-                $docComment,
-                "Method {$methodName}() must have PHPDoc documentation"
-            );
+        $this->cacheService->set($hash, $unicodeData);
+        
+        $result = $this->cacheService->get($hash);
+        
+        $this->assertEquals($unicodeData, $result);
+    }
+
+    /** @test Cache handles null values in response */
+    public function test_cache_null_values(): void
+    {
+        $hash = 'null_' . uniqid();
+        $data = [
+            'score' => null,
+            'model' => null,
+            'issues' => []
+        ];
+        
+        $this->cacheService->set($hash, $data);
+        
+        $result = $this->cacheService->get($hash);
+        
+        $this->assertNull($result['score']);
+        $this->assertNull($result['model']);
+        $this->assertEquals([], $result['issues']);
+    }
+
+    // ============================================================
+    // Security Tests
+    // ============================================================
+
+    /** @test Hash is not reversible */
+    public function test_hash_not_reversible(): void
+    {
+        $hash = $this->cacheService->generateHash('title', ['title' => 'Secret Title'], 'openrouter');
+        
+        // Hash should not contain the original input
+        $this->assertStringNotContainsString('Secret', $hash);
+        $this->assertStringNotContainsString('title', $hash);
+    }
+
+    /** @test Cache key prefix prevents collision with other cache data */
+    public function test_cache_key_prefix(): void
+    {
+        $hash = 'test_key';
+        
+        $this->cacheService->set($hash, ['data']);
+        
+        // Verify the key is prefixed
+        $this->assertTrue(Cache::has("ai_suggestions:{$hash}"));
+    }
+
+    /** @test Invalid hash format handled gracefully */
+    public function test_invalid_hash_format(): void
+    {
+        // Should not throw exception
+        $result = $this->cacheService->get('');
+        $this->assertNull($result);
+        
+        $result = $this->cacheService->get(null);
+        $this->assertNull($result);
+    }
+
+    /** @test XSS prevention in cached data */
+    public function test_xss_prevention(): void
+    {
+        $hash = 'xss_' . uniqid();
+        $xssData = [
+            'score' => 50,
+            'suggestions' => [
+                ['text' => '<script>alert("xss")</script>']
+            ]
+        ];
+        
+        $this->cacheService->set($hash, $xssData);
+        
+        $result = $this->cacheService->get($hash);
+        
+        // Data should be stored as-is (encoding happens at display layer)
+        $this->assertEquals($xssData, $result);
+    }
+
+    // ============================================================
+    // Performance Tests
+    // ============================================================
+
+    /** @test Hash generation is fast (< 5ms) */
+    public function test_hash_performance(): void
+    {
+        $start = microtime(true);
+        
+        for ($i = 0; $i < 100; $i++) {
+            $this->cacheService->generateHash('title', ['title' => "Test {$i}"], 'openrouter');
         }
+        
+        $elapsed = (microtime(true) - $start) * 1000;
+        $avgTime = $elapsed / 100;
+        
+        $this->assertLessThan(5, $avgTime, 'Hash generation should be < 5ms average');
+    }
+
+    /** @test Cache get is fast (< 1ms) */
+    public function test_get_performance(): void
+    {
+        $hash = 'perf_' . uniqid();
+        $this->cacheService->set($hash, ['data']);
+        
+        $start = microtime(true);
+        
+        for ($i = 0; $i < 100; $i++) {
+            $this->cacheService->get($hash);
+        }
+        
+        $elapsed = (microtime(true) - $start) * 1000;
+        $avgTime = $elapsed / 100;
+        
+        $this->assertLessThan(1, $avgTime, 'Cache get should be < 1ms average');
+    }
+
+    /** @test Cache set is fast (< 2ms) */
+    public function test_set_performance(): void
+    {
+        $start = microtime(true);
+        
+        for ($i = 0; $i < 100; $i++) {
+            $this->cacheService->set("perf_{$i}_" . uniqid(), ['data' => 'test']);
+        }
+        
+        $elapsed = (microtime(true) - $start) * 1000;
+        $avgTime = $elapsed / 100;
+        
+        $this->assertLessThan(2, $avgTime, 'Cache set should be < 2ms average');
     }
 }

@@ -150,19 +150,13 @@ describe('Component Rendering', () => {
   test('CR-004: Renders icon via IndicatorIcon', () => {
     renderWithTooltipProvider(<IndicatorCard {...defaultProps} />);
     
-    expect(IndicatorIcon).toHaveBeenCalledWith(
-      expect.objectContaining({
-        icon: 'TrendingUp',
-        size: 'md',
-      }),
-      expect.anything()
-    );
     // Verify the icon was called with correct props
-    const lastCall = (IndicatorIcon as jest.Mock).mock.calls.at(-1);
-    expect(lastCall?.[0]).toMatchObject({
-      icon: 'TrendingUp',
-      size: 'md',
-    });
+    const calls = (IndicatorIcon as jest.Mock).mock.calls;
+    const hasMatchingCall = calls.some(call => 
+      call[0]?.icon === 'TrendingUp' && call[0]?.size === 'md'
+    );
+    expect(hasMatchingCall).toBe(true);
+    expect(screen.getByTestId('indicator-icon')).toBeInTheDocument();
   });
 
   test('CR-005: Renders title text', () => {
@@ -254,8 +248,9 @@ describe('Status Indicator', () => {
     
     const badge = screen.getByRole('status');
     // SVG elements don't have role="img" by default, query by tag name
-    const icon = within(badge).getByRole('status').querySelector('svg');
+    const icon = badge.querySelector('svg');
     expect(icon).toBeInTheDocument();
+    expect(icon).toHaveClass('lucide-circle-check-big');
   });
 
   test('SI-008: Critical status icon (AlertCircle)', () => {
@@ -263,8 +258,9 @@ describe('Status Indicator', () => {
     
     const badge = screen.getByRole('status');
     // SVG elements don't have role="img" by default, query by tag name
-    const icon = within(badge).getByRole('status').querySelector('svg');
+    const icon = badge.querySelector('svg');
     expect(icon).toBeInTheDocument();
+    expect(icon).toHaveClass('lucide-circle-alert');
   });
 });
 
@@ -412,9 +408,7 @@ describe('Loading State (Skeleton)', () => {
     
     const card = screen.getByTestId('indicator-card-keyword-rankings');
     // Skeleton elements have data-slot="skeleton" attribute
-    const skeletons = within(card).getAllByTestId((id, element) => {
-      return element.getAttribute('data-slot') === 'skeleton';
-    });
+    const skeletons = card.querySelectorAll('[data-slot="skeleton"]');
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
@@ -849,12 +843,9 @@ describe('Integration with Dependencies', () => {
     (IndicatorIcon as jest.Mock).mockClear();
     renderWithTooltipProvider(<IndicatorCard {...defaultProps} icon="Star" />);
     
-    expect(IndicatorIcon).toHaveBeenCalledWith(
-      expect.objectContaining({
-        icon: 'Star',
-      }),
-      expect.anything()
-    );
+    // Check that IndicatorIcon was called with the correct icon prop
+    const callArgs = (IndicatorIcon as jest.Mock).mock.calls[0][0];
+    expect(callArgs.icon).toBe('Star');
   });
 
   test('ID-003: Uses Badge component', () => {
@@ -881,9 +872,7 @@ describe('Integration with Dependencies', () => {
     
     const card = screen.getByTestId('indicator-card-keyword-rankings');
     // Skeleton elements have data-slot="skeleton" attribute
-    const skeletons = within(card).getAllByTestId((id, element) => {
-      return element.getAttribute('data-slot') === 'skeleton';
-    });
+    const skeletons = card.querySelectorAll('[data-slot="skeleton"]');
     expect(skeletons.length).toBeGreaterThan(0);
   });
 

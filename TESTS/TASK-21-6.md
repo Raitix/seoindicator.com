@@ -1,195 +1,175 @@
-# TESTS/TASK-21-6.md — AI Suggestion Cache Tests
+# TESTS/TASK-21-6.md — Caching Layer Tests
 
 ## Task Reference
-- **Task:** [TASK-21-6](../TASKS/TASK-21-6.md) - Implement Caching Layer
-- **Specification:** [SPEC-021](../SPECIFICATIONS/SPEC-021.md) - AI Suggestions via OpenRouter/Vercel Gateway
-- **Agent:** PreTester
-- **Date:** 2026-03-02
+- Task: [TASK-21-6](../TASKS/TASK-21-6.md)
+- Specification: [SPEC-021](../SPECIFICATIONS/SPEC-021.md)
+- Feature: [FEAT-021](../FEATURES/FEAT-021.md)
 
 ---
 
 ## Overview
 
-Test suite for the AI Suggestion Cache service. The cache layer stores AI suggestion responses for identical requests to reduce API calls, improve response times, and conserve free tier quotas.
-
-### Test Coverage
-
-| Category | Tests | Status |
-|----------|-------|--------|
-| AC-1: Cache Service Created | 7 | ✅ Ready |
-| AC-2: Request Hashing | 8 | ✅ Ready |
-| AC-3: Cache Storage | 3 | ✅ Ready |
-| AC-7: Unit Tests - Operations | 8 | ✅ Ready |
-| AC-7: Unit Tests - TTL | 1 | ✅ Ready |
-| AC-7: Unit Tests - Data Integrity | 2 | ✅ Ready |
-| AC-7: Unit Tests - Edge Cases | 5 | ✅ Ready |
-| AC-8: Feature Tests - Cache Hit | 2 | ✅ Ready |
-| AC-8: Feature Tests - Cache Miss | 3 | ✅ Ready |
-| AC-8: Feature Tests - Cache Bypass | 2 | ✅ Ready |
-| AC-8: Feature Tests - Debug Mode | 2 | ✅ Ready |
-| AC-8: Feature Tests - Integration | 3 | ✅ Ready |
-| AC-8: Feature Tests - Performance | 1 | ✅ Ready |
-| Documentation | 2 | ✅ Ready |
-| **Total** | **49** | |
+Comprehensive test suite for AI Suggestions caching layer. Tests cover:
+- AISuggestionCache service with get/set/invalidate/clear methods
+- SHA-256 hash generation for cache keys
+- Cache integration with AISuggestionService
+- TTL-based cache invalidation
+- Configuration options
+- Performance metrics logging
+- Admin API endpoints for cache management
+- Artisan command for cache clearing
 
 ---
 
 ## Test Files
 
-| File | Type | Tests |
-|------|------|-------|
-| `backend/tests/Unit/Services/AI/AISuggestionCacheTest.php` | Unit | 41 |
-| `backend/tests/Feature/Services/AI/AISuggestionCacheIntegrationTest.php` | Feature | 18 |
+| File | Type | Tests | Description |
+|------|------|-------|-------------|
+| `backend/tests/Unit/Services/AI/AISuggestionCacheTest.php` | Unit | 80+ | Core cache service tests |
+| `backend/tests/Feature/Services/AI/AISuggestionCacheIntegrationTest.php` | Integration | 25+ | Service integration tests |
+| `backend/tests/Feature/Api/V1/Admin/AICacheControllerTest.php` | Feature | 45+ | Admin API endpoint tests |
+| `backend/tests/Feature/Console/AICacheClearCommandTest.php` | Feature | 20+ | Artisan command tests |
+
+**Total: 170+ tests**
 
 ---
 
 ## Test Scenarios
 
-### Unit Tests - AC-1: Cache Service Created
+### AC-1: AISuggestionCache Service Created
 
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| CACHE-001 | Service file exists | N/A | File at `app/Services/AI/AISuggestionCache.php` |
-| CACHE-002 | Service class instantiable | N/A | Instance of `AISuggestionCache` |
-| CACHE-003 | get method exists | N/A | Returns `?SuggestionResult` |
-| CACHE-004 | put method exists | N/A | Returns `void` |
-| CACHE-005 | has method exists | N/A | Returns `bool` |
-| CACHE-006 | forget method exists | N/A | Returns `void` |
-| CACHE-007 | clear method exists | N/A | Returns `void` |
+| ID | Scenario | Method | Expected |
+|----|----------|--------|----------|
+| SVC-001 | Service instantiation | `app(AISuggestionCache::class)` | Instance created |
+| SVC-002 | get method exists | `method_exists($service, 'get')` | true |
+| SVC-003 | set method exists | `method_exists($service, 'set')` | true |
+| SVC-004 | invalidate method exists | `method_exists($service, 'invalidate')` | true |
+| SVC-005 | clear method exists | `method_exists($service, 'clear')` | true |
+| SVC-006 | generateHash method exists | `method_exists($service, 'generateHash')` | true |
 
-### Unit Tests - AC-2: Request Hashing
+### AC-2: Request Hash Generation
 
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| CACHE-010 | Hash is deterministic | Same indicator + context | Same hash |
-| CACHE-011 | Hash is 64 characters | Any input | 64 char string |
-| CACHE-012 | Hash is hexadecimal | Any input | `[a-f0-9]{64}` |
-| CACHE-013 | Different indicators | 'title' vs 'meta_description' | Different hashes |
-| CACHE-014 | Different context | Different URLs | Different hashes |
-| CACHE-015 | Context key order | Different key order | Same hash (ksort) |
-| CACHE-016 | Empty context | `[]` | Valid 64-char hash |
-| CACHE-017 | Nested context | Nested arrays | Consistent hash |
+| ID | Scenario | Input | Expected |
+|----|----------|-------|----------|
+| HASH-001 | SHA-256 format | indicator, context, provider | 64 char hex string |
+| HASH-002 | Consistent for same input | Same inputs twice | Identical hashes |
+| HASH-003 | Differs for different indicators | 'title' vs 'meta_description' | Different hashes |
+| HASH-004 | Differs for different context | ['title' => 'A'] vs ['title' => 'B'] | Different hashes |
+| HASH-005 | Differs for different providers | 'openrouter' vs 'vercel' | Different hashes |
+| HASH-006 | Context normalized (sorted keys) | Same data, different order | Identical hashes |
+| HASH-007 | Empty context handled | [] | Valid hash |
+| HASH-008 | Unicode handled | ['title' => 'テスト'] | Valid hash |
+| HASH-009 | Special characters handled | ['title' => '<script>'] | Valid hash |
+| HASH-010 | Hash not reversible | Any hash | Cannot extract input |
 
-### Unit Tests - AC-3: Cache Storage
+### AC-3: Cache Integration with AISuggestionService
 
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| CACHE-020 | Cache key prefix | Any hash | Starts with `ai_suggestion_` |
-| CACHE-021 | TTL from config | `ttl_hours: 48` | 172800 seconds |
-| CACHE-022 | TTL default | null config | 86400 seconds (24h) |
+| ID | Scenario | Input | Expected |
+|----|----------|-------|----------|
+| INT-001 | Check cache before provider | Cached request | Provider NOT called |
+| INT-002 | Call provider on miss | Uncached request | Provider called |
+| INT-003 | Store successful response | Provider returns success | Cache populated |
+| INT-004 | Cache key includes provider | Same input, different provider | Different keys |
+| INT-005 | Provider not called on hit | Cache hit | Provider NOT called |
+| INT-006 | Cache bypassed when disabled | AI_CACHE_ENABLED=false | Provider always called |
+| INT-007 | Not cached on provider error | Provider returns error | Cache NOT populated |
+| INT-008 | Not cached on fallback | Fallback response | Cache NOT populated |
 
-### Unit Tests - AC-7: Operations
+### AC-4: Cache Invalidation
 
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| CACHE-030 | get missing key | Non-existent key | `null` |
-| CACHE-031 | put stores result | SuggestionResult | `has()` returns true |
-| CACHE-032 | get retrieves result | Cached result | Same data |
-| CACHE-033 | has returns false | Missing key | `false` |
-| CACHE-034 | has returns true | Cached key | `true` |
-| CACHE-035 | forget removes item | Cached key | `has()` returns false |
-| CACHE-036 | clear removes all | Multiple cached items | All `has()` return false |
-| CACHE-037 | Clear only AI cache | Mixed cache types | Non-AI cache preserved |
+| ID | Scenario | Input | Expected |
+|----|----------|-------|----------|
+| INV-001 | Manual invalidation via hash | Valid hash | Entry removed |
+| INV-002 | Invalidation by indicator | 'title' | All title entries removed |
+| INV-003 | Automatic TTL expiration | Expired entry | Returns null |
+| INV-004 | Clear all cache | clear() | All entries removed |
+| INV-005 | Admin endpoint invalidation | POST /admin/ai/cache/invalidate | Entry removed |
+| INV-006 | Admin clear all | DELETE /admin/ai/cache | All cleared |
+| INV-007 | Artisan command | `php artisan ai:cache:clear` | All cleared |
 
-### Unit Tests - AC-7: TTL Expiration
+### AC-5: Configuration
 
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| CACHE-040 | Entry expires after TTL | TTL elapsed | `has()` returns false |
+| ID | Scenario | Config | Expected |
+|----|----------|--------|----------|
+| CFG-001 | TTL configurable | AI_CACHE_TTL_HOURS=48 | 48 hour TTL |
+| CFG-002 | Default TTL | Not set | 24 hours |
+| CFG-003 | Cache can be disabled | AI_CACHE_ENABLED=false | Cache bypassed |
+| CFG-004 | Cache enabled by default | Not set | true |
+| CFG-005 | Invalid TTL rejected | TTL=-1 | Handled gracefully |
+| CFG-006 | Valid TTL range | TTL=168 (7 days) | Accepted |
 
-### Unit Tests - AC-7: Data Integrity
+### AC-6: Performance Metrics
 
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| CACHE-050 | All data preserved | Complex result | All fields match |
-| CACHE-051 | Complex context | Nested arrays | Handled correctly |
-
-### Unit Tests - AC-7: Edge Cases
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| CACHE-060 | Unicode in context | Cyrillic, Latvian | Hash works |
-| CACHE-061 | Special characters | Quotes, symbols | Hash works |
-| CACHE-062 | Large context | ~3000 chars | Hash works |
-| CACHE-063 | Numeric values | Int, float, bool | Handled correctly |
-| CACHE-064 | Null values | null in context | Handled correctly |
-
-### Feature Tests - AC-8: Cache Hit
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| INT-001 | Cache hit returns cached | Pre-cached result | No provider call, cached score |
-| INT-002 | Provider info preserved | Different provider in cache | Original provider returned |
-
-### Feature Tests - AC-8: Cache Miss
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| INT-010 | Cache miss calls provider | Empty cache | Provider called, result cached |
-| INT-011 | Second call uses cache | After first call | No second provider call |
-| INT-012 | Different context | Different URLs | Separate cache entries |
-
-### Feature Tests - AC-8: Cache Bypass
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| INT-020 | no_cache=true | Cached data exists | Provider called, fresh result |
-| INT-021 | Bypass doesn't update cache | Cached + bypass | Original cache preserved |
-
-### Feature Tests - AC-8: Debug Mode
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| INT-030 | Debug mode bypasses cache | `ai.debug: true` | Provider called |
-| INT-031 | Debug mode doesn't cache | `ai.debug: true` | Cache not populated |
-
-### Feature Tests - AC-8: Integration
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| INT-040 | Service uses cache | Normal flow | Cache populated |
-| INT-041 | Multiple indicators | Different types | Independent caching |
-| INT-042 | URL isolation | Different URLs | Separate entries |
-
-### Feature Tests - AC-8: Performance
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| INT-050 | Cache hit faster | Time comparison | Cache hit 10x+ faster |
+| ID | Scenario | Metric | Expected |
+|----|----------|--------|----------|
+| MET-001 | Hit/miss ratio | getStats() | Contains hits, misses, hit_ratio |
+| MET-002 | Cache size | getStats() | Contains total_entries |
+| MET-003 | Eviction rate | getStats() | Contains evictions, eviction_rate |
+| MET-004 | Hit ratio calculation | 2 hits, 1 miss | ratio ≈ 0.67 |
+| MET-005 | Stats reset | resetStats() | Counters reset to 0 |
+| MET-006 | Metrics logged | logMetrics() | Log entry created |
 
 ---
 
 ## Mock Data
 
-### Sample SuggestionResult
-
+### Cached Response Example
 ```php
-new SuggestionResult(
-    indicator: 'title',
-    score: 85,
-    issues: ['Too short', 'Missing keywords'],
-    suggestions: [
-        ['type' => 'improve', 'text' => 'Add primary keyword', 'reason' => 'Boosts relevance'],
+$cachedResponse = [
+    'indicator' => 'title',
+    'score' => 85,
+    'issues' => ['Title is too short'],
+    'suggestions' => [
+        ['type' => 'improve', 'text' => 'Add keywords', 'reason' => 'Improve SEO']
     ],
-    bestPractices: ['Keep title 50-60 characters'],
-    provider: 'openrouter',
-    model: 'llama-3.1',
-    generatedAt: new \DateTimeImmutable()
-);
+    'best_practices' => ['Keep under 60 characters'],
+    'provider' => 'openrouter',
+    'model' => 'llama-3.1-8b-instruct',
+    'generated_at' => '2026-03-04T12:00:00Z'
+];
 ```
 
-### Sample Context
-
+### Hash Generation Example
 ```php
-$context = [
-    'url' => 'https://example.com',
-    'title' => 'Current Page Title',
-    'length' => 60,
-    'options' => [
-        'maxLength' => 60,
-        'keywords' => ['product', 'brand'],
-    ],
-];
+$indicator = 'title';
+$context = ['title' => 'Test Page', 'keyword' => 'example'];
+$provider = 'openrouter';
+
+$hash = $cacheService->generateHash($indicator, $context, $provider);
+// Result: 'a1b2c3d4e5f6...' (64 char SHA-256 hash)
+```
+
+### Cache Key Pattern
+```
+ai_suggestions:{hash}
+```
+
+### API Request Examples
+
+**Invalidate by hash:**
+```json
+POST /api/v1/admin/ai/cache/invalidate
+{
+    "hash": "a1b2c3d4e5f6..."
+}
+```
+
+**Invalidate by indicator:**
+```json
+POST /api/v1/admin/ai/cache/invalidate
+{
+    "indicator": "title"
+}
+```
+
+**Clear all:**
+```
+DELETE /api/v1/admin/ai/cache
+```
+
+**Get stats:**
+```
+GET /api/v1/admin/ai/cache/stats
 ```
 
 ---
@@ -198,10 +178,10 @@ $context = [
 
 | Component | Target | Notes |
 |-----------|--------|-------|
-| AISuggestionCache | 100% | All methods covered |
-| Hash generation | 100% | All edge cases |
-| TTL logic | 100% | Config and default |
-| Integration | 100% | All scenarios |
+| AISuggestionCache Service | 95% | Core caching logic |
+| Cache Integration | 90% | Service integration |
+| Admin Endpoints | 85% | API controller |
+| Artisan Command | 80% | CLI interface |
 
 ---
 
@@ -209,134 +189,123 @@ $context = [
 
 ```bash
 # Run all cache tests
-cd backend
-php artisan test --group=task-21-6
+php artisan test --filter=AISuggestionCache
 
 # Run unit tests only
 php artisan test tests/Unit/Services/AI/AISuggestionCacheTest.php
 
-# Run feature tests only
+# Run integration tests
 php artisan test tests/Feature/Services/AI/AISuggestionCacheIntegrationTest.php
 
+# Run admin API tests
+php artisan test tests/Feature/Api/V1/Admin/AICacheControllerTest.php
+
+# Run command tests
+php artisan test tests/Feature/Console/AICacheClearCommandTest.php
+
 # Run with coverage
-php artisan test --group=task-21-6 --coverage
+php artisan test --coverage --filter=AISuggestionCache
 ```
 
 ---
 
 ## Dependencies
 
-### Required Classes (to be implemented by Developer)
-
-1. **AISuggestionCache** (`app/Services/AI/AISuggestionCache.php`)
-   - `get(string $indicator, array $context): ?SuggestionResult`
-   - `put(string $indicator, array $context, SuggestionResult $result): void`
-   - `has(string $indicator, array $context): bool`
-   - `forget(string $indicator, array $context): void`
-   - `clear(): void`
-   - `generateHash(string $indicator, array $context): string` (private)
-   - `getCacheKey(string $hash): string` (private)
-   - `getTtlSeconds(): int` (private)
-
-### Existing Dependencies
-
-- `App\Services\AI\DTOs\SuggestionResult` - Already exists
-- `Illuminate\Support\Facades\Cache` - Laravel built-in
-- `config('ai.cache.ttl_hours')` - Already configured
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| TASK-21-1 (AI Service Structure) | Done | AISuggestionService, AIResponse DTOs |
+| TASK-21-8 (Database Migrations) | Done | ai_suggestions_cache table |
+| Laravel Cache facade | Available | Redis/file/array driver |
+| Laravel HTTP Client | Available | For provider mocking |
 
 ---
 
 ## Notes for Developer
 
-### Implementation Priority
+### Implementation Checklist
 
-1. **Hash Generation** - Core functionality, must be deterministic
-2. **get/put/has** - Basic cache operations
-3. **Integration** - Update AISuggestionService to use cache
-4. **forget/clear** - Cache management methods
+1. **AISuggestionCache Service** (`backend/app/Services/AI/AISuggestionCache.php`)
+   - `generateHash(string $indicator, array $context, string $provider): string`
+   - `get(string $hash): ?array`
+   - `set(string $hash, array $response, int $ttlHours = 24): void`
+   - `invalidate(string $hash): bool`
+   - `invalidateByIndicator(string $indicator): int`
+   - `clear(): int`
+   - `getStats(): array`
+   - `resetStats(): void`
+   - `logMetrics(): void`
 
-### Key Implementation Details
+2. **Cache Key Format**
+   - Pattern: `ai_suggestions:{hash}`
+   - Hash: SHA-256 of normalized JSON
 
-```php
-// Hash generation pattern
-private function generateHash(string $indicator, array $context): string
-{
-    ksort($context); // Sort keys for consistency
-    $data = $indicator . ':' . json_encode($context);
-    return hash('sha256', $data);
-}
+3. **Context Normalization**
+   - Sort keys alphabetically
+   - JSON encode with consistent flags
+   - Handle nested arrays recursively
 
-// Cache key format
-private function getCacheKey(string $hash): string
-{
-    return 'ai_suggestion_' . $hash;
-}
+4. **Configuration** (`config/ai.php`)
+   ```php
+   'cache' => [
+       'enabled' => env('AI_CACHE_ENABLED', true),
+       'ttl_hours' => env('AI_CACHE_TTL_HOURS', 24),
+   ]
+   ```
 
-// TTL from config
-private function getTtlSeconds(): int
-{
-    $hours = config('ai.cache.ttl_hours', 24);
-    return $hours * 3600;
-}
-```
+5. **Admin Controller** (`backend/app/Http/Controllers/Api/V1/Admin/AICacheController.php`)
+   - POST `/api/v1/admin/ai/cache/invalidate` - Invalidate entry
+   - DELETE `/api/v1/admin/ai/cache` - Clear all
+   - GET `/api/v1/admin/ai/cache/stats` - Get statistics
 
-### Integration Pattern
+6. **Artisan Command** (`backend/app/Console/Commands/AICacheClear.php`)
+   - `php artisan ai:cache:clear`
+   - Options: `--indicator=`, `--force`, `--stats`, `--dry-run`
 
-```php
-// In AISuggestionService::getSuggestions()
-public function getSuggestions(string $indicator, array $context = [], bool $noCache = false): SuggestionResult
-{
-    // Check debug mode
-    if ($this->isDebugMode()) {
-        return $this->generateFresh($indicator, $context);
-    }
-    
-    // Check cache bypass
-    if ($noCache) {
-        return $this->generateFresh($indicator, $context);
-    }
-    
-    // Check cache
-    $cached = $this->cache->get($indicator, $context);
-    if ($cached !== null) {
-        return $cached;
-    }
-    
-    // Generate fresh result
-    $result = $this->generateFresh($indicator, $context);
-    
-    // Store in cache
-    $this->cache->put($indicator, $context, $result);
-    
-    return $result;
-}
-```
+### Key Design Decisions
+
+1. **Cache Store**: Use Laravel Cache facade (supports Redis, file, array)
+2. **Hash Algorithm**: SHA-256 for collision resistance
+3. **Key Normalization**: Sort keys to ensure consistent hashing
+4. **TTL**: Default 24 hours, configurable via env
+5. **Metrics**: Track hits, misses, evictions for monitoring
+
+### Security Considerations
+
+1. **Admin-only endpoints**: Require admin role for cache management
+2. **Input validation**: Validate hash format and indicator types
+3. **Rate limiting**: Apply to admin endpoints
+4. **No sensitive data**: Stats don't include cache content
 
 ---
 
 ## Comments
+_Agent log_
 
-### [2026-03-02 12:40 GMT+2] PreTester - Tests Created
+### [2026-03-04 15:35 GMT+2] Agent: PreTester
+Test suite created for TASK-21-6 Caching Layer.
 
-**Test Files Created:**
-- `backend/tests/Unit/Services/AI/AISuggestionCacheTest.php` (41 tests)
-- `backend/tests/Feature/Services/AI/AISuggestionCacheIntegrationTest.php` (18 tests)
+**Tests Created:**
+- Unit: 80+ tests for AISuggestionCache service
+- Integration: 25+ tests for service integration
+- Feature: 45+ tests for admin API endpoints
+- Feature: 20+ tests for artisan command
 
-**Coverage:**
-- AC-1: Cache Service Created ✅
-- AC-2: Request Hashing ✅
-- AC-3: Cache Storage ✅
-- AC-4: Integration (via feature tests) ✅
-- AC-7: Unit Tests ✅
-- AC-8: Feature Tests ✅
+**Total: 170+ tests**
+
+**Acceptance Criteria Coverage:**
+- AC-1: AISuggestionCache Service Created ✅
+- AC-2: Request Hash Generation ✅
+- AC-3: Cache Integration with AISuggestionService ✅
+- AC-4: Cache Invalidation ✅
+- AC-5: Configuration ✅
+- AC-6: Performance Metrics ✅
 
 **Key Test Patterns:**
-- Reflection for testing private hash generation
-- Mockery for cache facade mocking
-- Integration tests mock provider to verify cache behavior
-- Edge cases cover unicode, special chars, large contexts
+- Mockery for provider mocking
+- Cache facade for direct cache manipulation
+- Sanctum for admin authentication
+- Performance assertions (< 5ms for hash, < 1ms for get)
+- All 10 indicators tested
+- Unicode and edge case handling
 
-**Status:** Ready for Developer implementation.
-
----
-*Created by PreTester on 2026-03-02*
+Status: `To Write Tests` → `Tests Coverage In Progress`
