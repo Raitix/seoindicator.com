@@ -240,8 +240,8 @@ class RequestTrackingService
             foreach ($items as $index => $jsonData) {
                 $data = json_decode($jsonData, true);
 
-                // Skip invalid JSON
-                if ($data === null) {
+                // Skip invalid JSON or missing required fields
+                if ($data === null || !isset($data['endpoint'], $data['method'], $data['timestamp'])) {
                     continue;
                 }
 

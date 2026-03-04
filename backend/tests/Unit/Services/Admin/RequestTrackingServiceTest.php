@@ -67,7 +67,7 @@ class RequestTrackingServiceTest extends TestCase
             });
 
         Redis::shouldReceive('expire')->twice();
-        Redis::shouldReceive('incr')->once();
+        Redis::shouldReceive('incr')->once()->andReturn(1);
 
         $service = new RequestTrackingService();
         $service->record('api/v1/users', 'GET', 1, new DateTime());
@@ -79,11 +79,12 @@ class RequestTrackingServiceTest extends TestCase
         Redis::shouldReceive('rpush')
             ->once()
             ->withArgs(function ($key) {
-                return preg_match('/^request_tracking:queue:\d{8}$/', $key);
+                // Key should match format: request_tracking:queue:YYYYMMDD
+                return preg_match('/^request_tracking:queue:\d{8}$/', $key) === 1;
             });
 
         Redis::shouldReceive('expire')->twice();
-        Redis::shouldReceive('incr')->once();
+        Redis::shouldReceive('incr')->once()->andReturn(1);
 
         $service = new RequestTrackingService();
         $service->record('api/v1/test', 'GET', null, new DateTime());
@@ -102,7 +103,7 @@ class RequestTrackingServiceTest extends TestCase
             });
 
         Redis::shouldReceive('expire')->twice();
-        Redis::shouldReceive('incr')->once();
+        Redis::shouldReceive('incr')->once()->andReturn(1);
 
         $service = new RequestTrackingService();
         $service->record('api/v1/users', 'GET', null, new DateTime());
@@ -123,7 +124,7 @@ class RequestTrackingServiceTest extends TestCase
             });
 
         Redis::shouldReceive('expire')->twice();
-        Redis::shouldReceive('incr')->once();
+        Redis::shouldReceive('incr')->once()->andReturn(1);
 
         $service = new RequestTrackingService();
         $service->record('api/v1/test', 'POST', null, new DateTime());
@@ -143,7 +144,8 @@ class RequestTrackingServiceTest extends TestCase
                 return true;
             });
 
-        Redis::shouldReceive('expire')->once();
+        Redis::shouldReceive('expire')->twice();
+        Redis::shouldReceive('incr')->once()->andReturn(1);
 
         $service = new RequestTrackingService();
         $service->record('api/v1/test', 'GET', 42, new DateTime());
@@ -163,7 +165,8 @@ class RequestTrackingServiceTest extends TestCase
                 return true;
             });
 
-        Redis::shouldReceive('expire')->once();
+        Redis::shouldReceive('expire')->twice();
+        Redis::shouldReceive('incr')->once()->andReturn(1);
 
         $service = new RequestTrackingService();
         $service->record('api/v1/test', 'GET', null, new DateTime());
@@ -184,7 +187,8 @@ class RequestTrackingServiceTest extends TestCase
                 return true;
             });
 
-        Redis::shouldReceive('expire')->once();
+        Redis::shouldReceive('expire')->twice();
+        Redis::shouldReceive('incr')->once()->andReturn(1);
 
         $service = new RequestTrackingService();
         $service->record('api/v1/test', 'GET', null, $timestamp);
@@ -196,7 +200,8 @@ class RequestTrackingServiceTest extends TestCase
     public function test_record_returns_true_on_success(): void
     {
         Redis::shouldReceive('rpush')->once()->andReturn(1);
-        Redis::shouldReceive('expire')->once();
+        Redis::shouldReceive('expire')->twice();
+        Redis::shouldReceive('incr')->once()->andReturn(1);
 
         $service = new RequestTrackingService();
         $result = $service->record('api/v1/test', 'GET', null, new DateTime());
@@ -209,7 +214,7 @@ class RequestTrackingServiceTest extends TestCase
     {
         Redis::shouldReceive('rpush')
             ->once()
-            ->andThrow(new \RedisException('Connection refused'));
+            ->andThrow(new \Exception('Connection refused'));
 
         $service = new RequestTrackingService();
         $result = $service->record('api/v1/test', 'GET', null, new DateTime());
@@ -222,7 +227,7 @@ class RequestTrackingServiceTest extends TestCase
     {
         Redis::shouldReceive('rpush')
             ->once()
-            ->andThrow(new \RedisException('Connection refused'));
+            ->andThrow(new \Exception('Connection refused'));
 
         \Log::shouldReceive('warning')
             ->once()
@@ -245,7 +250,8 @@ class RequestTrackingServiceTest extends TestCase
             ->once()
             ->withArgs(function ($key) {
                 return str_contains($key, 'endpoint:api/v1/users:GET');
-            });
+            })
+            ->andReturn(1);
 
         Redis::shouldReceive('expire')->once();
 
@@ -259,9 +265,11 @@ class RequestTrackingServiceTest extends TestCase
         Redis::shouldReceive('incr')
             ->once()
             ->withArgs(function ($key) {
-                // Key should contain date-hour format (YYYYMMDDHH)
-                return preg_match('/endpoint:.*:\d{10}$/', $key);
-            });
+                // Key should contain date-hour format (YYYYMMDDHH) at the end
+                // Key format: request_tracking:endpoint:{path}:{method}:{YYYYMMDDHH}
+                return preg_match('/:\d{10}$/', $key) === 1;
+            })
+            ->andReturn(1);
 
         Redis::shouldReceive('expire')->once();
 
@@ -288,11 +296,13 @@ class RequestTrackingServiceTest extends TestCase
     {
         Redis::shouldReceive('incr')
             ->once()
-            ->withArgs(fn($key) => str_contains($key, 'endpoint:api/v1/users:GET'));
+            ->withArgs(fn($key) => str_contains($key, 'endpoint:api/v1/users:GET'))
+            ->andReturn(1);
 
         Redis::shouldReceive('incr')
             ->once()
-            ->withArgs(fn($key) => str_contains($key, 'endpoint:api/v1/users:POST'));
+            ->withArgs(fn($key) => str_contains($key, 'endpoint:api/v1/users:POST'))
+            ->andReturn(1);
 
         Redis::shouldReceive('expire')->twice();
 
@@ -306,7 +316,7 @@ class RequestTrackingServiceTest extends TestCase
     {
         Redis::shouldReceive('incr')
             ->once()
-            ->andThrow(new \RedisException('Connection refused'));
+            ->andThrow(new \Exception('Connection refused'));
 
         $service = new RequestTrackingService();
         $result = $service->incrementEndpoint('api/v1/test', 'GET');
@@ -400,7 +410,7 @@ class RequestTrackingServiceTest extends TestCase
     {
         Redis::shouldReceive('keys')
             ->once()
-            ->andThrow(new \RedisException('Connection refused'));
+            ->andThrow(new \Exception('Connection refused'));
 
         $service = new RequestTrackingService();
         $stats = $service->getEndpointStats();
@@ -500,7 +510,6 @@ class RequestTrackingServiceTest extends TestCase
             ]);
 
         Redis::shouldReceive('ltrim')->once();
-        Redis::shouldReceive('llen')->once()->andReturn(0);
 
         DB::shouldReceive('table')->once()->andReturnSelf();
         DB::shouldReceive('insert')->once()->andReturnTrue();
@@ -598,6 +607,10 @@ class RequestTrackingServiceTest extends TestCase
     /** @test CM-001: clearHour() removes specific hour data */
     public function test_clear_hour_removes_specific_hour_data(): void
     {
+        Redis::shouldReceive('keys')
+            ->once()
+            ->andReturn(['request_tracking:endpoint:api/v1/test:GET:2026030410']);
+
         Redis::shouldReceive('del')
             ->once()
             ->withArgs(function ($keys) {
@@ -613,6 +626,10 @@ class RequestTrackingServiceTest extends TestCase
     /** @test CM-002: clearDay() removes all day data */
     public function test_clear_day_removes_all_day_data(): void
     {
+        Redis::shouldReceive('keys')
+            ->once()
+            ->andReturn(['request_tracking:endpoint:api/v1/test:GET:2026030410']);
+
         Redis::shouldReceive('del')
             ->once()
             ->withArgs(function ($keys) {
@@ -652,7 +669,7 @@ class RequestTrackingServiceTest extends TestCase
     {
         Redis::shouldReceive('rpush')
             ->once()
-            ->andThrow(new \RedisException('Redis not available'));
+            ->andThrow(new \Exception('Redis not available'));
 
         $service = new RequestTrackingService();
         $result = $service->record('api/v1/test', 'GET', null, new DateTime());
@@ -665,7 +682,10 @@ class RequestTrackingServiceTest extends TestCase
     {
         Redis::shouldReceive('lrange')
             ->once()
-            ->andReturn(['not valid json', '{"valid": "json"}']);
+            ->andReturn([
+                'not valid json',
+                json_encode(['endpoint' => 'api/v1/test', 'method' => 'GET', 'user_id' => null, 'timestamp' => '2026-03-04T10:00:00+00:00']),
+            ]);
 
         DB::shouldReceive('table')->once()->andReturnSelf();
         DB::shouldReceive('insert')->once()->andReturnTrue();
@@ -840,7 +860,7 @@ class RequestTrackingServiceTest extends TestCase
     {
         Redis::shouldReceive('rpush')
             ->once()
-            ->andThrow(new \RedisException('Connection refused'));
+            ->andThrow(new \Exception('Connection refused'));
 
         $service = new RequestTrackingService();
         $result = $service->record('api/v1/test', 'GET', null, new DateTime());

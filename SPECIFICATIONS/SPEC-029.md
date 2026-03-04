@@ -1,7 +1,7 @@
 # SPEC-029: Export Results (PDF/XLS) - Technical Specification
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -471,6 +471,37 @@ class ToolExportController extends Controller
 
 ## Comments
 _Agent log_
+
+### [2026-03-04 12:15 GMT+2] Agent: SpecSystemAnalyst
+Broke down SPEC-029 into 10 tasks across 4 phases:
+
+**Phase 1: Backend Export Infrastructure (3 tasks)**
+- TASK-29-1: PdfToolExporter Implementation (High, 4h)
+- TASK-29-2: XlsToolExporter Implementation (High, 4h)
+- TASK-29-3: ToolExportService & Controller (High, 3h)
+
+**Phase 2: API & Security (2 tasks)**
+- TASK-29-4: Download Token System (High, 2h)
+- TASK-29-5: Rate Limiting Integration (Medium, 1h)
+
+**Phase 3: Frontend Integration (3 tasks)**
+- TASK-29-6: ExportResultsButton Component (High, 2h)
+- TASK-29-7: ExportModal Component (Medium, 2h)
+- TASK-29-8: Tool Page Integration (High, 2h)
+
+**Phase 4: Testing & Polish (2 tasks)**
+- TASK-29-9: Backend Unit Tests (High, 3h)
+- TASK-29-10: Frontend Component Tests (Medium, 2h)
+
+**Total: 10 tasks, ~25 hours**
+
+Key decisions preserved:
+- PdfToolExporter reuses PDF infrastructure from PdfReportExporter
+- XlsToolExporter uses PhpSpreadsheet (Laravel Excel)
+- Token-based downloads with 1-hour expiry (TASK-29-4 is High Risk - security)
+- Rate limiting integrated with existing ToolsRateLimitService
+
+Status updated: SPEC-029 and FEAT-029 → "To Prioritize"
 
 ### [2026-02-28 11:45 GMT+2] Agent: Architect
 Created SPEC-029. Key decisions:
