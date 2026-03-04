@@ -1,7 +1,7 @@
 # TASK-27-8: Admin Usage API Endpoints
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -16,15 +16,15 @@ SPEC-027: Admin Dashboard (Ops + Usage)
 Create API endpoints for admin usage metrics. Provides overview, request breakdowns, token statistics, and usage trends.
 
 ## Acceptance Criteria
-- [ ] Controller created at `app/Http/Controllers/Api/V1/Admin/UsageController.php`
-- [ ] GET `/api/v1/admin/usage/overview` returns aggregated usage stats
-- [ ] GET `/api/v1/admin/usage/requests` returns request counts by endpoint
-- [ ] GET `/api/v1/admin/usage/tokens` returns token usage by model
-- [ ] GET `/api/v1/admin/usage/trends` returns usage trends (time series)
-- [ ] All endpoints protected by AdminAuthorizationMiddleware
-- [ ] Rate limiting: 60 requests/minute
-- [ ] Optional query parameters: start_date, end_date, granularity
-- [ ] Feature tests cover all endpoints
+- [x] Controller created at `app/Http/Controllers/Api/V1/Admin/UsageController.php`
+- [x] GET `/api/v1/admin/usage/overview` returns aggregated usage stats
+- [x] GET `/api/v1/admin/usage/requests` returns request counts by endpoint
+- [x] GET `/api/v1/admin/usage/tokens` returns token usage by model
+- [x] GET `/api/v1/admin/usage/trends` returns usage trends (time series)
+- [x] All endpoints protected by AdminAuthorizationMiddleware
+- [x] Rate limiting: 60 requests/minute
+- [x] Optional query parameters: start_date, end_date, granularity
+- [x] Feature tests cover all endpoints
 - [ ] API documentation updated
 
 ## Dependencies
@@ -40,6 +40,51 @@ Create API endpoints for admin usage metrics. Provides overview, request breakdo
 - Consider adding export functionality (CSV) in future
 
 ## Comments
+
+### 2026-03-04 - Developer
+**Implementation Complete**
+
+**Files Created:**
+- `app/Http/Controllers/Api/V1/Admin/UsageController.php` (7241 bytes)
+- Routes added to `routes/api.php`
+
+**Implementation Details:**
+1. Created `UsageController` with 4 endpoints:
+   - `overview()` - Returns aggregated usage stats (requests, tokens, analyses)
+   - `requests()` - Returns request counts by endpoint
+   - `tokens()` - Returns token usage statistics
+   - `trends()` - Returns usage time series
+
+2. Routes added under `api/v1/admin/usage/*`:
+   - GET `/overview` → UsageController::overview
+   - GET `/requests` → UsageController::requests
+   - GET `/tokens` → UsageController::tokens
+   - GET `/trends` → UsageController::trends
+
+3. Middleware stack:
+   - `throttle:60,1` - Rate limiting (60 req/min)
+   - `admin` - AdminAuthorizationMiddleware
+
+4. Query parameter support:
+   - `start_date`, `end_date`, `granularity` for overview/requests/tokens
+   - `days` for trends (capped at 90 max)
+
+5. Error handling:
+   - Validation errors return 422 with proper error format
+   - Service exceptions return 500 with proper error format
+
+**Test Results:**
+- **71 tests passed** (186 assertions)
+- Duration: 7.57s
+
+**Fixes Applied:**
+- `trends_limits_max_days`: Changed validation to cap days at 90 instead of rejecting
+- `endpoints_do_not_expose_sensitive_user_data`: Updated test to check for actual sensitive data (password, email, api_key, bearer, secret) instead of substring "token" which matched legitimate "tokens" field
+
+**Handoff to LocalTester:**
+- All 71 feature tests pass
+- Controller and routes implemented
+- Ready for local QA validation
 
 ### 2026-03-04 - PreTester
 **Tests Coverage Complete**
