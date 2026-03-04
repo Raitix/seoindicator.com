@@ -4,6 +4,7 @@ import * as React from 'react';
 import {
   Activity,
   AlertCircle,
+  AlertTriangle,
   CheckCircle,
   ChevronDown,
   HelpCircle,
@@ -11,7 +12,6 @@ import {
   Search,
   Star,
   TrendingUp,
-  Warning,
   XCircle,
   Zap,
   LucideIcon,
