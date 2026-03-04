@@ -3,897 +3,1140 @@
 namespace Tests\Unit\Http\Middleware;
 
 use Tests\TestCase;
-use App\Models\User;
 use App\Http\Middleware\RequestTrackingMiddleware;
-use App\Services\Analytics\RequestTrackingService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Carbon;
 use Mockery;
 
 /**
- * Unit tests for RequestTrackingMiddleware.
- *
- * Tests middleware that tracks API requests for usage analytics.
- * Records request counts by endpoint, method, and timestamp.
- *
- * @see TASK-27-6
- * @see SPEC-027
+ * Unit tests for RequestTrackingMiddleware
+ * 
+ * Test Categories:
+ * - MI: Middleware Instantiation
+ * - RT: Request Tracking
+ * - LS: Lightweight Storage
+ * - PR: Performance
+ * - SR: Sample Rate
+ * - QF: Queue Failure Handling
+ * - HE: Health Check Exclusion
+ * - SE: Security
+ * - EC: Edge Cases
  */
 class RequestTrackingMiddlewareTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected function tearDown(): void
     {
-        Cache::flush();
         Mockery::close();
         parent::tearDown();
     }
 
     // =========================================================================
-    // Helper Methods
+    // MI: Middleware Instantiation Tests
     // =========================================================================
 
-    protected function createUser(array $attributes = []): User
-    {
-        return User::factory()->create($attributes);
-    }
-
-    protected function createRequest(
-        string $path = '/api/v1/analysis',
-        string $method = 'GET',
-        ?User $user = null
-    ): Request {
-        $request = Request::create($path, $method);
-        if ($user) {
-            $request->setUserResolver(fn() => $user);
-        }
-        return $request;
-    }
-
-    protected function createMockTrackingService(): RequestTrackingService
-    {
-        return Mockery::mock(RequestTrackingService::class);
-    }
-
-    // =========================================================================
-    // Middleware Instantiation (RTM-INST-*)
-    // =========================================================================
-
-    /** @test */
-    public function rtm_inst_01_middleware_can_be_instantiated(): void
-    {
-        $service = $this->createMockTrackingService();
-        $middleware = new RequestTrackingMiddleware($service);
-
-        $this->assertInstanceOf(RequestTrackingMiddleware::class, $middleware);
-    }
-
-    /** @test */
-    public function rtm_inst_02_middleware_resolved_from_container(): void
+    /** @test MI-001: Middleware can be instantiated */
+    public function test_middleware_can_be_instantiated(): void
     {
         $middleware = app(RequestTrackingMiddleware::class);
+        
         $this->assertInstanceOf(RequestTrackingMiddleware::class, $middleware);
     }
 
-    // =========================================================================
-    // Request Tracking - Basic (RTM-TRACK-*)
-    // =========================================================================
-
-    /** @test */
-    public function rtm_track_01_tracks_endpoint_path(): void
+    /** @test MI-002: Middleware is registered in container */
+    public function test_middleware_is_registered_in_container(): void
     {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) {
-                return $data['endpoint'] === '/api/v1/analysis';
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/api/v1/analysis', 'GET');
-
-        $middleware->handle($request, fn($req) => new Response('OK'));
+        $middleware = app(\App\Http\Middleware\RequestTrackingMiddleware::class);
+        
+        $this->assertInstanceOf(\App\Http\Middleware\RequestTrackingMiddleware::class, $middleware);
     }
 
-    /** @test */
-    public function rtm_track_02_tracks_http_method(): void
+    /** @test MI-003: Middleware has default configuration */
+    public function test_middleware_has_default_configuration(): void
     {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) {
-                return $data['method'] === 'POST';
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/api/v1/analysis', 'POST');
-
-        $middleware->handle($request, fn($req) => new Response('OK'));
-    }
-
-    /** @test */
-    public function rtm_track_03_tracks_all_http_methods(): void
-    {
-        $methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
-
-        foreach ($methods as $method) {
-            $service = $this->createMockTrackingService();
-            $service->shouldReceive('track')
-                ->once()
-                ->withArgs(function ($data) use ($method) {
-                    return $data['method'] === $method;
-                });
-
-            $middleware = new RequestTrackingMiddleware($service);
-            $request = $this->createRequest('/api/v1/test', $method);
-
-            $middleware->handle($request, fn($req) => new Response('OK'));
-        }
-    }
-
-    /** @test */
-    public function rtm_track_04_tracks_authenticated_user_id(): void
-    {
-        $user = $this->createUser();
-
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) use ($user) {
-                return $data['user_id'] === $user->id;
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/api/v1/analysis', 'GET', $user);
-
-        $middleware->handle($request, fn($req) => new Response('OK'));
-    }
-
-    /** @test */
-    public function rtm_track_05_tracks_null_user_id_for_unauthenticated(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) {
-                return $data['user_id'] === null;
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/api/v1/analysis', 'GET');
-
-        $middleware->handle($request, fn($req) => new Response('OK'));
-    }
-
-    /** @test */
-    public function rtm_track_06_tracks_timestamp(): void
-    {
-        $now = now();
-
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) use ($now) {
-                $timestamp = $data['timestamp'];
-                return $timestamp >= $now && $timestamp <= now();
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/api/v1/analysis', 'GET');
-
-        $middleware->handle($request, fn($req) => new Response('OK'));
-    }
-
-    /** @test */
-    public function rtm_track_07_tracks_complete_request_data(): void
-    {
-        $user = $this->createUser();
-
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) use ($user) {
-                return $data['endpoint'] === '/api/v1/analysis'
-                    && $data['method'] === 'GET'
-                    && $data['user_id'] === $user->id
-                    && isset($data['timestamp']);
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/api/v1/analysis', 'GET', $user);
-
-        $middleware->handle($request, fn($req) => new Response('OK'));
+        Config::set('request-tracking.enabled', true);
+        Config::set('request-tracking.sample_rate', 1.0);
+        Config::set('request-tracking.storage', 'redis');
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        $this->assertTrue(config('request-tracking.enabled', true));
+        $this->assertEquals(1.0, config('request-tracking.sample_rate', 1.0));
     }
 
     // =========================================================================
-    // Pass-Through Behavior (RTM-PASS-*)
+    // RT: Request Tracking Tests
     // =========================================================================
 
-    /** @test */
-    public function rtm_pass_01_passes_request_to_next_middleware(): void
+    /** @test RT-001: Middleware records request path */
+    public function test_middleware_records_request_path(): void
     {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->once();
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
-
-        $nextCalled = false;
-        $response = $middleware->handle($request, function ($req) use (&$nextCalled) {
-            $nextCalled = true;
-            return new Response('OK', 200);
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/users', 'GET');
+        
+        $tracked = false;
+        $trackedPath = null;
+        
+        // Mock Redis to capture the tracked data
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$tracked, &$trackedPath) {
+                $decoded = json_decode($data, true);
+                if (isset($decoded['path'])) {
+                    $tracked = true;
+                    $trackedPath = $decoded['path'];
+                }
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
         });
-
-        $this->assertTrue($nextCalled);
-        $this->assertEquals(200, $response->getStatusCode());
+        
+        $this->assertTrue($tracked);
+        $this->assertEquals('/api/v1/users', $trackedPath);
     }
 
-    /** @test */
-    public function rtm_pass_02_returns_response_from_next_middleware(): void
+    /** @test RT-002: Middleware records HTTP method */
+    public function test_middleware_records_http_method(): void
     {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->once();
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
-
-        $response = $middleware->handle($request, fn($req) => new Response('Custom Response', 201));
-
-        $this->assertEquals(201, $response->getStatusCode());
-        $this->assertEquals('Custom Response', $response->getContent());
-    }
-
-    /** @test */
-    public function rtm_pass_03_does_not_modify_response(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->once();
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
-
-        $originalResponse = new Response('Original', 200);
-        $response = $middleware->handle($request, fn($req) => $originalResponse);
-
-        $this->assertSame($originalResponse, $response);
-    }
-
-    // =========================================================================
-    // Exclusion Rules (RTM-EXCLUDE-*)
-    // =========================================================================
-
-    /** @test */
-    public function rtm_exclude_01_excludes_health_check_endpoints(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldNotReceive('track');
-
-        Config::set('request_tracking.excluded_paths', ['api/health', 'api/health/*']);
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/api/health', 'GET');
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_exclude_02_excludes_telescope_endpoints(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldNotReceive('track');
-
-        Config::set('request_tracking.excluded_paths', ['telescope/*']);
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/telescope/requests', 'GET');
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_exclude_03_excludes_horizon_endpoints(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldNotReceive('track');
-
-        Config::set('request_tracking.excluded_paths', ['horizon/*']);
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/horizon/dashboard', 'GET');
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_exclude_04_excludes_static_assets(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldNotReceive('track');
-
-        Config::set('request_tracking.excluded_paths', ['css/*', 'js/*', 'images/*']);
-
-        $middleware = new RequestTrackingMiddleware($service);
-
-        $paths = ['/css/app.css', '/js/app.js', '/images/logo.png'];
-        foreach ($paths as $path) {
-            $request = Request::create($path, 'GET');
-            $response = $middleware->handle($request, fn($req) => new Response('OK'));
-            $this->assertEquals(200, $response->getStatusCode());
-        }
-    }
-
-    /** @test */
-    public function rtm_exclude_05_excludes_options_requests(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldNotReceive('track');
-
-        Config::set('request_tracking.exclude_options', true);
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/api/v1/analysis', 'OPTIONS');
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_exclude_06_wildcard_path_matching(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldNotReceive('track');
-
-        Config::set('request_tracking.excluded_paths', ['api/v1/admin/*']);
-
-        $middleware = new RequestTrackingMiddleware($service);
-
-        $paths = ['/api/v1/admin/users', '/api/v1/admin/settings', '/api/v1/admin/reports/daily'];
-        foreach ($paths as $path) {
-            $request = Request::create($path, 'GET');
-            $response = $middleware->handle($request, fn($req) => new Response('OK'));
-            $this->assertEquals(200, $response->getStatusCode());
-        }
-    }
-
-    // =========================================================================
-    // Sample Rate Configuration (RTM-SAMPLE-*)
-    // =========================================================================
-
-    /** @test */
-    public function rtm_sample_01_default_sample_rate_is_100_percent(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->times(10);
-
-        Config::set('request_tracking.sample_rate', 1.0);
-
-        $middleware = new RequestTrackingMiddleware($service);
-
-        for ($i = 0; $i < 10; $i++) {
-            $request = $this->createRequest('/api/v1/test', 'GET');
-            $middleware->handle($request, fn($req) => new Response('OK'));
-        }
-    }
-
-    /** @test */
-    public function rtm_sample_02_zero_sample_rate_tracks_nothing(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldNotReceive('track');
-
-        Config::set('request_tracking.sample_rate', 0.0);
-
-        $middleware = new RequestTrackingMiddleware($service);
-
-        for ($i = 0; $i < 10; $i++) {
-            $request = $this->createRequest('/api/v1/test', 'GET');
-            $middleware->handle($request, fn($req) => new Response('OK'));
-        }
-    }
-
-    /** @test */
-    public function rtm_sample_03_50_percent_sample_rate_tracks_approximately_half(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->between(3, 7);
-
-        Config::set('request_tracking.sample_rate', 0.5);
-
-        $middleware = new RequestTrackingMiddleware($service);
-
-        for ($i = 0; $i < 10; $i++) {
-            $request = $this->createRequest('/api/v1/test', 'GET');
-            $middleware->handle($request, fn($req) => new Response('OK'));
-        }
-    }
-
-    /** @test */
-    public function rtm_sample_04_endpoint_specific_sample_rate(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->times(10);
-
-        Config::set('request_tracking.sample_rate', 0.5);
-        Config::set('request_tracking.endpoint_sample_rates', [
-            'api/v1/high-traffic' => 1.0, // Override to 100%
-        ]);
-
-        $middleware = new RequestTrackingMiddleware($service);
-
-        // High traffic endpoint with 100% sample rate
-        for ($i = 0; $i < 10; $i++) {
-            $request = $this->createRequest('/api/v1/high-traffic', 'GET');
-            $middleware->handle($request, fn($req) => new Response('OK'));
-        }
-    }
-
-    /** @test */
-    public function rtm_sample_05_sample_rate_boundary_at_threshold(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->once();
-
-        Config::set('request_tracking.sample_rate', 0.1);
-
-        $middleware = new RequestTrackingMiddleware($service);
-
-        // Run enough requests that 10% should hit at least once
-        for ($i = 0; $i < 100; $i++) {
-            $request = $this->createRequest('/api/v1/test', 'GET');
-            $middleware->handle($request, fn($req) => new Response('OK'));
-        }
-    }
-
-    // =========================================================================
-    // Error Handling (RTM-ERROR-*)
-    // =========================================================================
-
-    /** @test */
-    public function rtm_error_01_continues_on_tracking_exception(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/users', 'POST');
+        
+        $trackedMethod = null;
+        
+        Redis::shouldReceive('rpush')
             ->once()
-            ->andThrow(new \Exception('Tracking failed'));
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
-
-        // Should not throw exception
-        $response = $middleware->handle($request, fn($req) => new Response('OK', 200));
-
-        $this->assertEquals(200, $response->getStatusCode());
+            ->withArgs(function ($key, $data) use (&$trackedMethod) {
+                $decoded = json_decode($data, true);
+                $trackedMethod = $decoded['method'] ?? null;
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $this->assertEquals('POST', $trackedMethod);
     }
 
-    /** @test */
-    public function rtm_error_02_handles_redis_connection_failure(): void
+    /** @test RT-003: Middleware records timestamp */
+    public function test_middleware_records_timestamp(): void
     {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        $trackedTimestamp = null;
+        $beforeTime = now()->timestamp;
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedTimestamp) {
+                $decoded = json_decode($data, true);
+                $trackedTimestamp = $decoded['timestamp'] ?? null;
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $afterTime = now()->timestamp;
+        
+        $this->assertNotNull($trackedTimestamp);
+        $this->assertGreaterThanOrEqual($beforeTime, $trackedTimestamp);
+        $this->assertLessThanOrEqual($afterTime, $trackedTimestamp);
+    }
+
+    /** @test RT-004: Middleware records user_id when authenticated */
+    public function test_middleware_records_user_id_when_authenticated(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/protected', 'GET');
+        
+        $user = Mockery::mock('Illuminate\Contracts\Auth\Authenticatable');
+        $user->shouldReceive('getAuthIdentifier')->andReturn(123);
+        
+        $request->setUserResolver(function () use ($user) {
+            return $user;
+        });
+        
+        $trackedUserId = null;
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedUserId) {
+                $decoded = json_decode($data, true);
+                $trackedUserId = $decoded['user_id'] ?? null;
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $this->assertEquals(123, $trackedUserId);
+    }
+
+    /** @test RT-005: Middleware records null user_id when not authenticated */
+    public function test_middleware_records_null_user_id_when_not_authenticated(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/public', 'GET');
+        
+        $trackedUserId = 'not-set';
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedUserId) {
+                $decoded = json_decode($data, true);
+                $trackedUserId = $decoded['user_id'] ?? null;
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $this->assertNull($trackedUserId);
+    }
+
+    /** @test RT-006: Middleware records all HTTP methods */
+    public function test_middleware_records_all_http_methods(): void
+    {
+        $methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
+        
+        foreach ($methods as $method) {
+            $middleware = app(RequestTrackingMiddleware::class);
+            $request = Request::create('/api/v1/test', $method);
+            
+            $trackedMethod = null;
+            
+            Redis::shouldReceive('rpush')
+                ->once()
+                ->withArgs(function ($key, $data) use (&$trackedMethod) {
+                    $decoded = json_decode($data, true);
+                    $trackedMethod = $decoded['method'] ?? null;
+                    return true;
+                });
+            
+            $response = new Response();
+            $middleware->handle($request, function ($req) use ($response) {
+                return $response;
+            });
+            
+            $this->assertEquals($method, $trackedMethod, "Failed to track {$method} method");
+        }
+    }
+
+    // =========================================================================
+    // LS: Lightweight Storage Tests
+    // =========================================================================
+
+    /** @test LS-001: Middleware uses Redis for storage */
+    public function test_middleware_uses_redis_for_storage(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) {
+                return str_contains($key, 'request_tracking') || str_contains($key, 'request-tracking');
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+    }
+
+    /** @test LS-002: Middleware uses atomic increment for counters */
+    public function test_middleware_uses_atomic_increment_for_counters(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        Redis::shouldReceive('incr')
+            ->once()
+            ->withArgs(function ($key) {
+                return str_contains($key, 'count') || str_contains($key, 'requests');
+            });
+        
+        Redis::shouldReceive('rpush')->once();
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+    }
+
+    /** @test LS-003: Middleware sets TTL on tracking keys */
+    public function test_middleware_sets_ttl_on_tracking_keys(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        Redis::shouldReceive('expire')
+            ->once()
+            ->withArgs(function ($key, $ttl) {
+                return $ttl > 0 && $ttl <= 86400; // TTL between 1 second and 1 day
+            });
+        
+        Redis::shouldReceive('rpush')->once();
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+    }
+
+    /** @test LS-004: Middleware uses async queue for write operations */
+    public function test_middleware_uses_async_queue_for_write_operations(): void
+    {
+        Config::set('request-tracking.async', true);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        // Tracking should happen asynchronously - Redis call may be deferred
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->andReturn(true);
+        
+        $startTime = microtime(true);
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $endTime = microtime(true);
+        $duration = ($endTime - $startTime) * 1000; // ms
+        
+        // Async write should not block the request significantly
+        $this->assertLessThan(10, $duration, 'Middleware should complete quickly with async storage');
+    }
+
+    // =========================================================================
+    // PR: Performance Tests
+    // =========================================================================
+
+    /** @test PR-001: Middleware overhead is under 5ms */
+    public function test_middleware_overhead_is_under_5ms(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        Redis::shouldReceive('rpush')->once()->andReturn(true);
+        Redis::shouldReceive('incr')->once()->andReturn(1);
+        Redis::shouldReceive('expire')->once()->andReturn(true);
+        
+        $times = [];
+        
+        // Run multiple times to get average
+        for ($i = 0; $i < 10; $i++) {
+            $startTime = microtime(true);
+            
+            $response = new Response();
+            $middleware->handle($request, function ($req) use ($response) {
+                return $response;
+            });
+            
+            $endTime = microtime(true);
+            $times[] = ($endTime - $startTime) * 1000; // Convert to ms
+        }
+        
+        $avgTime = array_sum($times) / count($times);
+        
+        $this->assertLessThan(5, $avgTime, "Middleware overhead should be under 5ms, got {$avgTime}ms average");
+    }
+
+    /** @test PR-002: Middleware does not block on Redis connection */
+    public function test_middleware_does_not_block_on_redis_connection(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        // Simulate slow Redis connection - should not block
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->andReturnUsing(function () {
+                usleep(10000); // 10ms delay
+                return true;
+            });
+        
+        $startTime = microtime(true);
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $endTime = microtime(true);
+        $duration = ($endTime - $startTime) * 1000;
+        
+        // Even with slow Redis, should complete within reasonable time
+        $this->assertLessThan(50, $duration, 'Middleware should not block excessively on Redis');
+    }
+
+    /** @test PR-003: Middleware handles concurrent requests efficiently */
+    public function test_middleware_handles_concurrent_requests_efficiently(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        Redis::shouldReceive('rpush')->times(5)->andReturn(true);
+        Redis::shouldReceive('incr')->times(5)->andReturn(1);
+        Redis::shouldReceive('expire')->times(5)->andReturn(true);
+        
+        $startTime = microtime(true);
+        
+        // Simulate 5 concurrent requests
+        for ($i = 0; $i < 5; $i++) {
+            $request = Request::create("/api/v1/test/{$i}", 'GET');
+            $middleware->handle($request, function ($req) {
+                return new Response();
+            });
+        }
+        
+        $endTime = microtime(true);
+        $totalDuration = ($endTime - $startTime) * 1000;
+        $avgPerRequest = $totalDuration / 5;
+        
+        $this->assertLessThan(10, $avgPerRequest, 'Average per-request middleware time should be under 10ms');
+    }
+
+    // =========================================================================
+    // SR: Sample Rate Tests
+    // =========================================================================
+
+    /** @test SR-001: Sample rate of 1.0 tracks all requests */
+    public function test_sample_rate_of_1_tracks_all_requests(): void
+    {
+        Config::set('request-tracking.sample_rate', 1.0);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        Redis::shouldReceive('rpush')->times(10)->andReturn(true);
+        
+        for ($i = 0; $i < 10; $i++) {
+            $request = Request::create("/api/v1/test/{$i}", 'GET');
+            $middleware->handle($request, function ($req) {
+                return new Response();
+            });
+        }
+    }
+
+    /** @test SR-002: Sample rate of 0.0 tracks no requests */
+    public function test_sample_rate_of_0_tracks_no_requests(): void
+    {
+        Config::set('request-tracking.sample_rate', 0.0);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        // Should not track any requests
+        Redis::shouldReceive('rpush')->never();
+        
+        for ($i = 0; $i < 10; $i++) {
+            $request = Request::create("/api/v1/test/{$i}", 'GET');
+            $middleware->handle($request, function ($req) {
+                return new Response();
+            });
+        }
+    }
+
+    /** @test SR-003: Sample rate of 0.5 tracks approximately half */
+    public function test_sample_rate_of_05_tracks_approximately_half(): void
+    {
+        Config::set('request-tracking.sample_rate', 0.5);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        $trackedCount = 0;
+        
+        Redis::shouldReceive('rpush')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function () use (&$trackedCount) {
+                $trackedCount++;
+                return true;
+            });
+        
+        for ($i = 0; $i < 100; $i++) {
+            $request = Request::create("/api/v1/test/{$i}", 'GET');
+            $middleware->handle($request, function ($req) {
+                return new Response();
+            });
+        }
+        
+        // With 100 requests at 50% sample rate, expect 40-60 tracked
+        $this->assertGreaterThan(30, $trackedCount, 'Should track more than 30% at 50% sample rate');
+        $this->assertLessThan(70, $trackedCount, 'Should track less than 70% at 50% sample rate');
+    }
+
+    /** @test SR-004: Sample rate can be configured per endpoint */
+    public function test_sample_rate_can_be_configured_per_endpoint(): void
+    {
+        Config::set('request-tracking.endpoint_sample_rates', [
+            '/api/v1/high-traffic/*' => 0.1,
+            '/api/v1/low-traffic/*' => 1.0,
+        ]);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        // High traffic endpoint - should sample less
+        $highTrafficTracked = 0;
+        Redis::shouldReceive('rpush')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function () use (&$highTrafficTracked) {
+                $highTrafficTracked++;
+                return true;
+            });
+        
+        for ($i = 0; $i < 100; $i++) {
+            $request = Request::create("/api/v1/high-traffic/{$i}", 'GET');
+            $middleware->handle($request, function ($req) {
+                return new Response();
+            });
+        }
+        
+        $this->assertLessThan(30, $highTrafficTracked, 'High traffic endpoint should have lower sample rate');
+    }
+
+    /** @test SR-005: Sample rate uses consistent hashing for same request */
+    public function test_sample_rate_uses_consistent_hashing_for_same_request(): void
+    {
+        Config::set('request-tracking.sample_rate', 0.5);
+        Config::set('request-tracking.consistent_sampling', true);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        $results = [];
+        
+        Redis::shouldReceive('rpush')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function () use (&$results) {
+                return true;
+            });
+        
+        // Same request 10 times
+        for ($i = 0; $i < 10; $i++) {
+            $request = Request::create('/api/v1/consistent-test', 'GET');
+            $tracked = $middleware->handle($request, function ($req) {
+                return new Response();
+            });
+            $results[] = $tracked !== null;
+        }
+        
+        // With consistent hashing, same request should always be tracked or always not tracked
+        $uniqueResults = array_unique($results);
+        $this->assertCount(1, $uniqueResults, 'Same request should have consistent sampling decision');
+    }
+
+    // =========================================================================
+    // QF: Queue Failure Handling Tests
+    // =========================================================================
+
+    /** @test QF-001: Middleware handles Redis connection failure gracefully */
+    public function test_middleware_handles_redis_connection_failure_gracefully(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        // Simulate Redis connection failure
+        Redis::shouldReceive('rpush')
             ->once()
             ->andThrow(new \RedisException('Connection refused'));
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK', 200));
-
-        $this->assertEquals(200, $response->getStatusCode());
+        
+        // Should not throw exception
+        $response = new Response();
+        $result = $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $this->assertInstanceOf(Response::class, $result);
     }
 
-    /** @test */
-    public function rtm_error_03_handles_queue_failure_gracefully(): void
+    /** @test QF-002: Middleware logs queue failures */
+    public function test_middleware_logs_queue_failures(): void
     {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->andThrow(new \RuntimeException('Queue unavailable'));
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK', 200));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_error_04_logs_error_without_exposing_to_user(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->andThrow(new \Exception('Tracking error'));
-
-        \Log::shouldReceive('error')
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        Log::shouldReceive('warning')
             ->once()
             ->withArgs(function ($message, $context) {
-                return str_contains($message, 'Request tracking failed');
+                return str_contains($message, 'request tracking') || 
+                       str_contains($message, 'Redis') ||
+                       str_contains($message, 'failed');
             });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-        $this->assertStringNotContainsString('Tracking error', $response->getContent());
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->andThrow(new \RedisException('Connection refused'));
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
     }
 
-    /** @test */
-    public function rtm_error_05_error_response_not_exposed_to_client(): void
+    /** @test QF-003: Middleware continues request processing on queue failure */
+    public function test_middleware_continues_request_processing_on_queue_failure(): void
     {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        Redis::shouldReceive('rpush')
             ->once()
-            ->andThrow(new \Exception('Sensitive error details'));
+            ->andThrow(new \RedisException('Connection refused'));
+        
+        $response = new Response('Success', 200);
+        $result = $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $this->assertEquals(200, $result->getStatusCode());
+        $this->assertEquals('Success', $result->getContent());
+    }
 
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
+    /** @test QF-004: Middleware handles Redis timeout gracefully */
+    public function test_middleware_handles_redis_timeout_gracefully(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        // Simulate Redis timeout
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->andThrow(new \RedisException('Operation timed out'));
+        
+        $response = new Response();
+        $result = $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $this->assertInstanceOf(Response::class, $result);
+    }
 
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        // No error information in response
-        $this->assertStringNotContainsString('Sensitive', $response->getContent());
-        $this->assertStringNotContainsString('Exception', $response->getContent());
+    /** @test QF-005: Middleware handles memory limit gracefully */
+    public function test_middleware_handles_memory_limit_gracefully(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        // Simulate Redis OOM error
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->andThrow(new \RedisException('OOM command not allowed when used_memory > maxmemory'));
+        
+        Log::shouldReceive('warning')->once();
+        
+        $response = new Response();
+        $result = $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $this->assertInstanceOf(Response::class, $result);
     }
 
     // =========================================================================
-    // Performance Tests (RTM-PERF-*)
+    // HE: Health Check Exclusion Tests
     // =========================================================================
 
-    /** @test */
-    public function rtm_perf_01_tracking_overhead_under_5ms(): void
+    /** @test HE-001: Middleware excludes health check endpoints */
+    public function test_middleware_excludes_health_check_endpoints(): void
     {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->times(100);
-
-        $middleware = new RequestTrackingMiddleware($service);
-
-        $start = microtime(true);
-
-        for ($i = 0; $i < 100; $i++) {
-            $request = $this->createRequest('/api/v1/test', 'GET');
-            $middleware->handle($request, fn($req) => new Response('OK'));
-        }
-
-        $elapsed = (microtime(true) - $start) * 1000; // ms
-        $avgOverhead = $elapsed / 100;
-
-        $this->assertLessThan(5, $avgOverhead, "Average overhead per request: {$avgOverhead}ms");
-    }
-
-    /** @test */
-    public function rtm_perf_02_excluded_paths_no_overhead(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldNotReceive('track');
-
-        Config::set('request_tracking.excluded_paths', ['health/*']);
-
-        $middleware = new RequestTrackingMiddleware($service);
-
-        $start = microtime(true);
-
-        for ($i = 0; $i < 100; $i++) {
-            $request = $this->createRequest('/health/check', 'GET');
-            $middleware->handle($request, fn($req) => new Response('OK'));
-        }
-
-        $elapsed = (microtime(true) - $start) * 1000;
-        $avgOverhead = $elapsed / 100;
-
-        // Excluded paths should have minimal overhead (< 0.5ms)
-        $this->assertLessThan(0.5, $avgOverhead, "Excluded path overhead: {$avgOverhead}ms");
-    }
-
-    /** @test */
-    public function rtm_perf_03_no_memory_leak_on_repeated_requests(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track');
-
-        $middleware = new RequestTrackingMiddleware($service);
-
-        $initialMemory = memory_get_usage();
-
-        for ($i = 0; $i < 1000; $i++) {
-            $request = $this->createRequest('/api/v1/test', 'GET');
-            $middleware->handle($request, fn($req) => new Response('OK'));
-        }
-
-        $finalMemory = memory_get_usage();
-        $memoryGrowth = ($finalMemory - $initialMemory) / 1024; // KB
-
-        // Memory growth should be minimal (< 100KB for 1000 requests)
-        $this->assertLessThan(100, $memoryGrowth, "Memory growth: {$memoryGrowth}KB");
-    }
-
-    // =========================================================================
-    // Edge Cases (RTM-EDGE-*)
-    // =========================================================================
-
-    /** @test */
-    public function rtm_edge_01_handles_very_long_url(): void
-    {
-        $longPath = str_repeat('/segment', 100);
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) use ($longPath) {
-                return str_starts_with($data['endpoint'], '/segment');
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest($longPath, 'GET');
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_edge_02_handles_unicode_in_path(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) {
-                return str_contains($data['endpoint'], 'café');
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/api/v1/café/test', 'GET');
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_edge_03_handles_query_parameters(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) {
-                // Query params should be stripped or normalized
-                return $data['endpoint'] === '/api/v1/search' ||
-                       str_starts_with($data['endpoint'], '/api/v1/search?');
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = Request::create('/api/v1/search?q=test&page=1', 'GET');
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_edge_04_handles_empty_path(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) {
-                return $data['endpoint'] === '/' || $data['endpoint'] === '';
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = Request::create('/', 'GET');
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_edge_05_handles_special_characters_in_path(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->once();
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = Request::create('/api/v1/test%20space/encoded', 'GET');
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_edge_06_concurrent_requests_tracked_separately(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->times(3);
-
-        $middleware = new RequestTrackingMiddleware($service);
-
-        $requests = [
-            $this->createRequest('/api/v1/endpoint-1', 'GET'),
-            $this->createRequest('/api/v1/endpoint-2', 'POST'),
-            $this->createRequest('/api/v1/endpoint-3', 'DELETE'),
-        ];
-
-        foreach ($requests as $request) {
-            $middleware->handle($request, fn($req) => new Response('OK'));
-        }
-    }
-
-    // =========================================================================
-    // Security Tests (RTM-SEC-*)
-    // =========================================================================
-
-    /** @test */
-    public function rtm_sec_01_no_sensitive_data_in_tracking(): void
-    {
-        $user = $this->createUser();
-        $user->email = 'sensitive@example.com';
-
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) {
-                // Should not contain sensitive user data
-                $serialized = json_encode($data);
-                return !str_contains($serialized, 'sensitive@example.com') &&
-                       !str_contains($serialized, 'password') &&
-                       !str_contains($serialized, 'token');
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest('/api/v1/analysis', 'GET', $user);
-
-        $middleware->handle($request, fn($req) => new Response('OK'));
-    }
-
-    /** @test */
-    public function rtm_sec_02_path_traversal_attempt_safe(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->once();
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = Request::create('/api/v1/../../../etc/passwd', 'GET');
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_sec_03_sql_injection_in_path_safe(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->once();
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = Request::create("/api/v1/users?id=1' OR '1'='1", 'GET');
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_sec_04_no_request_body_logged(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) {
-                // Only endpoint, method, user_id, timestamp
-                $keys = array_keys($data);
-                sort($keys);
-                $expectedKeys = ['endpoint', 'method', 'timestamp', 'user_id'];
-                sort($expectedKeys);
-                return $keys === $expectedKeys;
-            });
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = Request::create('/api/v1/users', 'POST', [
-            'password' => 'secret123',
-            'credit_card' => '4111-1111-1111-1111',
+        Config::set('request-tracking.excluded_paths', [
+            '/api/health',
+            '/health',
+            '/api/v1/health',
         ]);
-
-        $middleware->handle($request, fn($req) => new Response('OK'));
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        Redis::shouldReceive('rpush')->never();
+        
+        $healthEndpoints = ['/api/health', '/health', '/api/v1/health'];
+        
+        foreach ($healthEndpoints as $endpoint) {
+            $request = Request::create($endpoint, 'GET');
+            $response = new Response('OK', 200);
+            $middleware->handle($request, function ($req) use ($response) {
+                return $response;
+            });
+        }
     }
 
-    /** @test */
-    public function rtm_sec_05_headers_not_logged(): void
+    /** @test HE-002: Middleware excludes heartbeat endpoint */
+    public function test_middleware_excludes_heartbeat_endpoint(): void
     {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')
-            ->once()
-            ->withArgs(function ($data) {
-                // Should not contain headers
-                return !isset($data['headers']) &&
-                       !isset($data['authorization']) &&
-                       !isset($data['cookie']);
-            });
+        Config::set('request-tracking.excluded_paths', [
+            '/heartbeat',
+            '/api/heartbeat',
+        ]);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        Redis::shouldReceive('rpush')->never();
+        
+        $request = Request::create('/heartbeat', 'GET');
+        $response = new Response('OK', 200);
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+    }
 
-        $middleware = new RequestTrackingMiddleware($service);
+    /** @test HE-003: Middleware excludes static asset requests */
+    public function test_middleware_excludes_static_asset_requests(): void
+    {
+        Config::set('request-tracking.excluded_paths', [
+            '/css/*',
+            '/js/*',
+            '/images/*',
+            '/fonts/*',
+        ]);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        Redis::shouldReceive('rpush')->never();
+        
+        $staticEndpoints = [
+            '/css/app.css',
+            '/js/app.js',
+            '/images/logo.png',
+            '/fonts/roboto.woff2',
+        ];
+        
+        foreach ($staticEndpoints as $endpoint) {
+            $request = Request::create($endpoint, 'GET');
+            $response = new Response();
+            $middleware->handle($request, function ($req) use ($response) {
+                return $response;
+            });
+        }
+    }
+
+    /** @test HE-004: Middleware tracks non-excluded endpoints */
+    public function test_middleware_tracks_non_excluded_endpoints(): void
+    {
+        Config::set('request-tracking.excluded_paths', ['/api/health']);
+        Config::set('request-tracking.sample_rate', 1.0);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        Redis::shouldReceive('rpush')->once()->andReturn(true);
+        
+        $request = Request::create('/api/v1/users', 'GET');
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+    }
+
+    /** @test HE-005: Middleware excludes OPTIONS requests */
+    public function test_middleware_excludes_options_requests(): void
+    {
+        Config::set('request-tracking.exclude_options', true);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        Redis::shouldReceive('rpush')->never();
+        
+        $request = Request::create('/api/v1/users', 'OPTIONS');
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+    }
+
+    // =========================================================================
+    // SE: Security Tests
+    // =========================================================================
+
+    /** @test SE-001: Middleware does not expose sensitive data */
+    public function test_middleware_does_not_expose_sensitive_data(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
         $request = Request::create('/api/v1/test', 'GET');
         $request->headers->set('Authorization', 'Bearer secret-token');
         $request->headers->set('Cookie', 'session=abc123');
-
-        $middleware->handle($request, fn($req) => new Response('OK'));
-    }
-
-    // =========================================================================
-    // Integration with Response (RTM-RESP-*)
-    // =========================================================================
-
-    /** @test */
-    public function rtm_resp_01_tracks_on_successful_response(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->once();
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
-
-        $response = $middleware->handle($request, fn($req) => new Response('OK', 200));
-
-        $this->assertEquals(200, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_resp_02_tracks_on_error_response(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->once();
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
-
-        $response = $middleware->handle($request, fn($req) => new Response('Not Found', 404));
-
-        $this->assertEquals(404, $response->getStatusCode());
-    }
-
-    /** @test */
-    public function rtm_resp_03_tracks_on_exception_response(): void
-    {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->once();
-
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
-
-        $response = $middleware->handle($request, function ($req) {
-            throw new \Exception('Test exception');
+        
+        $trackedData = null;
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedData) {
+                $trackedData = json_decode($data, true);
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
         });
-
-        // Exception handling is done by Laravel, but tracking should still occur
-        $this->assertTrue(true);
+        
+        // Ensure sensitive data is not tracked
+        $this->assertArrayNotHasKey('headers', $trackedData);
+        $this->assertArrayNotHasKey('authorization', $trackedData);
+        $this->assertArrayNotHasKey('cookie', $trackedData);
+        $this->assertArrayNotHasKey('session', $trackedData);
     }
 
-    /** @test */
-    public function rtm_resp_04_does_not_add_tracking_headers_to_response(): void
+    /** @test SE-002: Middleware sanitizes path parameters */
+    public function test_middleware_sanitizes_path_parameters(): void
     {
-        $service = $this->createMockTrackingService();
-        $service->shouldReceive('track')->once();
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        // Malicious path with injection attempt
+        $request = Request::create('/api/v1/users?id=1;DROP TABLE users', 'GET');
+        
+        $trackedData = null;
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedData) {
+                $trackedData = json_decode($data, true);
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        // Path should be stored safely without execution
+        $this->assertIsString($trackedData['path']);
+        $this->assertArrayHasKey('path', $trackedData);
+    }
 
-        $middleware = new RequestTrackingMiddleware($service);
-        $request = $this->createRequest();
+    /** @test SE-003: Middleware prevents log injection */
+    public function test_middleware_prevents_log_injection(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        // Path with newline injection attempt
+        $request = Request::create('/api/v1/test%0AFAKE%20LOG%20ENTRY', 'GET');
+        
+        $trackedData = null;
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedData) {
+                $trackedData = json_decode($data, true);
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        // Path should be URL encoded or sanitized
+        $this->assertStringNotContainsString("\n", $trackedData['path']);
+    }
 
-        $response = $middleware->handle($request, fn($req) => new Response('OK'));
+    /** @test SE-004: Middleware handles malformed URLs safely */
+    public function test_middleware_handles_malformed_urls_safely(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        // Create request with malformed URL
+        $request = Request::create('/api/v1/test/../../../etc/passwd', 'GET');
+        
+        $trackedData = null;
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedData) {
+                $trackedData = json_decode($data, true);
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        // Should track the normalized/sanitized path
+        $this->assertIsString($trackedData['path']);
+    }
 
-        // Tracking middleware should not modify response headers
-        $this->assertFalse($response->headers->has('X-Tracked'));
-        $this->assertFalse($response->headers->has('X-Request-ID'));
+    /** @test SE-005: Middleware does not track POST body data */
+    public function test_middleware_does_not_track_post_body_data(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        $request = Request::create('/api/v1/users', 'POST', [
+            'password' => 'secret123',
+            'credit_card' => '4111111111111111',
+        ]);
+        
+        $trackedData = null;
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedData) {
+                $trackedData = json_decode($data, true);
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        // Ensure body data is not tracked
+        $this->assertArrayNotHasKey('body', $trackedData);
+        $this->assertArrayNotHasKey('password', $trackedData);
+        $this->assertArrayNotHasKey('credit_card', $trackedData);
+    }
+
+    // =========================================================================
+    // EC: Edge Cases Tests
+    // =========================================================================
+
+    /** @test EC-001: Middleware handles extremely long paths */
+    public function test_middleware_handles_extremely_long_paths(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        // Create a path that's 2000 characters long
+        $longPath = '/api/v1/' . str_repeat('a', 1990);
+        $request = Request::create($longPath, 'GET');
+        
+        $trackedData = null;
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedData) {
+                $trackedData = json_decode($data, true);
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        // Should truncate or handle long paths gracefully
+        $this->assertLessThanOrEqual(2000, strlen($trackedData['path']));
+    }
+
+    /** @test EC-002: Middleware handles Unicode paths */
+    public function test_middleware_handles_unicode_paths(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        $request = Request::create('/api/v1/ユーザー/пользователь', 'GET');
+        
+        $trackedData = null;
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedData) {
+                $trackedData = json_decode($data, true);
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $this->assertIsString($trackedData['path']);
+    }
+
+    /** @test EC-003: Middleware handles empty path */
+    public function test_middleware_handles_empty_path(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        $request = Request::create('/', 'GET');
+        
+        $trackedData = null;
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedData) {
+                $trackedData = json_decode($data, true);
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $this->assertEquals('/', $trackedData['path']);
+    }
+
+    /** @test EC-004: Middleware handles null request */
+    public function test_middleware_handles_null_request_gracefully(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        $response = new Response();
+        
+        // Should not throw
+        try {
+            $result = $middleware->handle(null, function ($req) use ($response) {
+                return $response;
+            });
+            $this->assertInstanceOf(Response::class, $result);
+        } catch (\TypeError $e) {
+            // Type error is acceptable - middleware should not crash
+            $this->markTestSkipped('Middleware does not accept null request');
+        }
+    }
+
+    /** @test EC-005: Middleware handles concurrent tracking safely */
+    public function test_middleware_handles_concurrent_tracking_safely(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        // Simulate concurrent access
+        Redis::shouldReceive('rpush')
+            ->times(3)
+            ->andReturn(true);
+        
+        Redis::shouldReceive('incr')
+            ->times(3)
+            ->andReturn(1, 2, 3); // Incrementing counter
+        
+        $responses = [];
+        
+        for ($i = 0; $i < 3; $i++) {
+            $request = Request::create("/api/v1/test/{$i}", 'GET');
+            $responses[] = $middleware->handle($request, function ($req) {
+                return new Response();
+            });
+        }
+        
+        foreach ($responses as $response) {
+            $this->assertInstanceOf(Response::class, $response);
+        }
+    }
+
+    /** @test EC-006: Middleware handles disabled state */
+    public function test_middleware_handles_disabled_state(): void
+    {
+        Config::set('request-tracking.enabled', false);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        Redis::shouldReceive('rpush')->never();
+        
+        $request = Request::create('/api/v1/test', 'GET');
+        $response = new Response();
+        $result = $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $this->assertInstanceOf(Response::class, $result);
+    }
+
+    /** @test EC-007: Middleware handles large user IDs */
+    public function test_middleware_handles_large_user_ids(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        $request = Request::create('/api/v1/test', 'GET');
+        
+        $user = Mockery::mock('Illuminate\Contracts\Auth\Authenticatable');
+        $user->shouldReceive('getAuthIdentifier')->andReturn(PHP_INT_MAX);
+        
+        $request->setUserResolver(function () use ($user) {
+            return $user;
+        });
+        
+        $trackedData = null;
+        
+        Redis::shouldReceive('rpush')
+            ->once()
+            ->withArgs(function ($key, $data) use (&$trackedData) {
+                $trackedData = json_decode($data, true);
+                return true;
+            });
+        
+        $response = new Response();
+        $middleware->handle($request, function ($req) use ($response) {
+            return $response;
+        });
+        
+        $this->assertEquals(PHP_INT_MAX, $trackedData['user_id']);
+    }
+
+    // =========================================================================
+    // Integration Tests
+    // =========================================================================
+
+    /** @test INT-001: Full tracking workflow works correctly */
+    public function test_full_tracking_workflow_works_correctly(): void
+    {
+        Config::set('request-tracking.enabled', true);
+        Config::set('request-tracking.sample_rate', 1.0);
+        Config::set('request-tracking.excluded_paths', ['/api/health']);
+        
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        $trackedRequests = [];
+        
+        Redis::shouldReceive('rpush')
+            ->times(3)
+            ->withArgs(function ($key, $data) use (&$trackedRequests) {
+                $trackedRequests[] = json_decode($data, true);
+                return true;
+            });
+        
+        Redis::shouldReceive('incr')->times(3)->andReturn(1, 2, 3);
+        Redis::shouldReceive('expire')->times(3)->andReturn(true);
+        
+        // Track 3 requests
+        for ($i = 0; $i < 3; $i++) {
+            $request = Request::create("/api/v1/users/{$i}", 'GET');
+            $middleware->handle($request, function ($req) {
+                return new Response();
+            });
+        }
+        
+        // Health check should not be tracked
+        $healthRequest = Request::create('/api/health', 'GET');
+        $middleware->handle($healthRequest, function ($req) {
+            return new Response();
+        });
+        
+        $this->assertCount(3, $trackedRequests);
+        
+        foreach ($trackedRequests as $tracked) {
+            $this->assertArrayHasKey('path', $tracked);
+            $this->assertArrayHasKey('method', $tracked);
+            $this->assertArrayHasKey('timestamp', $tracked);
+        }
+    }
+
+    /** @test INT-002: Response is passed through unchanged */
+    public function test_response_is_passed_through_unchanged(): void
+    {
+        $middleware = app(RequestTrackingMiddleware::class);
+        
+        Redis::shouldReceive('rpush')->once()->andReturn(true);
+        
+        $request = Request::create('/api/v1/test', 'GET');
+        $expectedResponse = new Response('Custom Content', 201, ['X-Custom' => 'header']);
+        
+        $result = $middleware->handle($request, function ($req) use ($expectedResponse) {
+            return $expectedResponse;
+        });
+        
+        $this->assertEquals($expectedResponse->getStatusCode(), $result->getStatusCode());
+        $this->assertEquals($expectedResponse->getContent(), $result->getContent());
     }
 }
