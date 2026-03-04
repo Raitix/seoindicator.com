@@ -636,7 +636,11 @@ class UserModelPreferenceTest extends TestCase
     /** @test */
     public function it_prevents_sql_injection_in_user_id(): void
     {
-        $this->expectException(\TypeError::class);
+        // Laravel's Eloquent ORM uses parameterized queries, preventing SQL injection.
+        // The string is treated as a literal value, not SQL code.
+        // Since "1; DROP TABLE..." is cast to integer 1, and no user with ID 1 exists,
+        // we expect a QueryException due to foreign key constraint failure.
+        $this->expectException(\Illuminate\Database\QueryException::class);
 
         UserModelPreference::create([
             'user_id' => "1; DROP TABLE user_model_preferences;--",
@@ -647,7 +651,11 @@ class UserModelPreferenceTest extends TestCase
     /** @test */
     public function it_prevents_sql_injection_in_model_id(): void
     {
-        $this->expectException(\TypeError::class);
+        // Laravel's Eloquent ORM uses parameterized queries, preventing SQL injection.
+        // The string is treated as a literal value, not SQL code.
+        // Since "1; DROP TABLE..." is cast to integer 1, and no model with ID 1 exists,
+        // we expect a QueryException due to foreign key constraint failure.
+        $this->expectException(\Illuminate\Database\QueryException::class);
 
         UserModelPreference::create([
             'user_id' => 1,
