@@ -1,7 +1,7 @@
 # TASK-28-4: IndicatorIcon Wrapper Component
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `High`

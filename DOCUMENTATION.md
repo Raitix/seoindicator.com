@@ -4491,6 +4491,156 @@ The ToolEmbed component is ready for use. The following guide integrations are p
 - TASK-20-24: Tool embedding for Social Media Preview guides
 
 ---
+## IndicatorCard Component (TASK-28-5)
+
+### Service Description
+React component for displaying individual SEO indicators with icon, title, value, status, and interactive hover effects. Core display component for the Indicator Catalog on the homepage and dashboard pages. Part of the Modern UI/UX + Indicator Catalog feature (FEAT-028).
+
+### Component Location
+- **File:** `frontend/components/indicators/IndicatorCard.tsx`
+- **Export:** `frontend/components/indicators/index.ts`
+- **Tests:** `frontend/components/indicators/__tests__/IndicatorCard.test.tsx`
+
+### Props Interface
+
+```typescript
+interface IndicatorCardProps {
+  id: string;                              // Unique identifier
+  icon: LucideIconName | React.ReactNode;  // Icon to display
+  title: string;                           // Indicator title
+  value: string | number;                  // Current value
+  description: string;                     // Description text
+  status: 'good' | 'warning' | 'critical' | 'neutral';  // Status variant
+  href: string;                            // Link destination
+  tooltip?: string;                        // Optional tooltip text
+  isLoading?: boolean;                     // Loading state toggle
+}
+```
+
+### Supported Indicator Types
+
+| Indicator | Icon | Description | Default Link |
+|-----------|------|-------------|--------------|
+| Keyword Rankings | `TrendingUp` | Track SERP positions | `/dashboard` |
+| Visibility Score | `Eye` | Overall SEO visibility | `/dashboard` |
+| Competitor Analysis | `Users` | Compare with competitors | `/comparison` |
+| Technical Health | `Wrench` | Site audit score | `/tools` |
+| Backlink Profile | `Link` | Link analysis | `/dashboard` |
+| Content Opportunities | `FileText` | Keyword gaps | `/dashboard` |
+| SERP Features | `Star` | Featured snippets, etc. | `/dashboard` |
+| Page Speed | `Zap` | Performance metrics | `/tools` |
+
+### Status Color Mapping
+
+| Status | Badge Variant | Color | Description |
+|--------|---------------|-------|-------------|
+| `good` | `success` | Green | Healthy performance |
+| `warning` | `warning` | Yellow | Needs attention |
+| `critical` | `destructive` | Red | Immediate action needed |
+| `neutral` | `secondary` | Gray | No status assessment |
+
+### Core Features
+
+**Visual Elements:**
+- Icon (via IndicatorIcon component or custom React node)
+- Title with description
+- Current value display
+- Status badge with color coding
+- Hover animations (scale + subtle glow)
+
+**Interactive Features:**
+- Click navigates to `href` via Next.js Link
+- Tooltip on hover for additional info
+- Keyboard accessible (Tab + Enter)
+- Focus visible indicator
+
+**Loading State:**
+- Skeleton placeholder when `isLoading={true}`
+- All interactive elements disabled during loading
+- ARIA busy attribute for screen readers
+
+### Component Dependencies
+
+| Dependency | Source | Purpose |
+|------------|--------|---------|
+| IndicatorIcon | TASK-28-4 | Icon wrapper component |
+| Badge | TASK-28-3 (shadcn) | Status indicator display |
+| Tooltip | TASK-28-3 (shadcn) | Hover information |
+| Skeleton | TASK-28-3 (shadcn) | Loading state placeholder |
+| Link | Next.js | Client-side navigation |
+
+### Hover Animations
+
+| Animation | Implementation |
+|-----------|----------------|
+| Scale | `hover:scale-[1.02]` transform |
+| Shadow | `hover:shadow-lg` effect |
+| Transition | `transition-all duration-200` |
+| Reduced Motion | Respects `prefers-reduced-motion` |
+
+### Accessibility Implementation
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Label | `aria-label` on card link |
+| Role | `role="article"` on card container |
+| Status | `role="status"` on Badge component |
+| Focus | `focus-visible:ring-2` for keyboard focus |
+| Keyboard | Tab navigation, Enter to activate |
+| Screen Reader | Title, value, and status announced |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| IndicatorCard.test.tsx | 95 | 95+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| TypeScript Types | 1 | Props interface verification |
+| Component Rendering | 9 | Basic mount, all props, icon, title, value, description |
+| Status Indicator | 8 | All 4 status variants with color coding |
+| Hover Interactions | 7 | Scale animation, glow effect, tooltip |
+| Click Navigation | 6 | Link navigation, keyboard accessibility |
+| Loading State | 8 | Skeleton for all elements, disabled interactions |
+| Responsive Design | 8 | Mobile/tablet/desktop, touch targets |
+| Accessibility | 9 | ARIA labels, keyboard navigation, focus states |
+| Badge Integration | 6 | shadcn Badge component usage |
+| Tooltip Integration | 5 | shadcn Tooltip component usage |
+| Edge Cases | 10 | Empty values, long text, invalid inputs |
+| Module Exports | 3 | Barrel export verification |
+| Dependency Integration | 8 | IndicatorIcon, Badge, Tooltip, Skeleton |
+| Snapshots | 7 | Visual regression baseline |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | React's safe rendering, no `dangerouslySetInnerHTML` |
+| Navigation | Internal links only via Next.js Link |
+| No eval() | No dynamic code execution |
+| Safe Props | TypeScript type checking |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions)
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** 111/111 passing (95 component + 16 integration)
+- **Snapshots:** 7 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-28-3 (shadcn/ui Components - Badge, Tooltip, Skeleton)
+- TASK-28-4 (IndicatorIcon Wrapper)
+
+### Related Tasks
+- TASK-28-3: shadcn/ui Components
+- TASK-28-4: IndicatorIcon Wrapper
+- TASK-28-6: IndicatorGrid Responsive Layout
+- TASK-28-7: IndicatorCatalog Main Container
+- TASK-28-8: Homepage Integration
+
+---
 ## SEO Guides Library - Apache .htaccess Configuration (TASK-20-26)
 
 ### Service Description
@@ -4984,6 +5134,124 @@ Route::post('/ai/suggestions', [AISuggestionController::class, 'generate'])
 - TASK-21-1: AI Service Structure and Interfaces
 - TASK-21-5: AI Suggestion API Endpoint
 - TASK-21-11: Frontend Integration with Tools
+
+---
+## AI Suggestions Test Suite (TASK-21-12)
+
+### Test Description
+Comprehensive test suite for the AI Suggestions feature, covering integration flows, security vulnerabilities, performance benchmarks, and end-to-end user interactions. Ensures reliability, security, and performance of all AI suggestion components.
+
+### Component Location
+- **Integration Tests:** `backend/tests/Integration/Services/AI/AISuggestionFlowTest.php`
+- **Security Tests:** `backend/tests/Security/AISuggestionSecurityTest.php`
+- **Performance Tests:** `backend/tests/Performance/AISuggestionPerformanceTest.php`
+- **E2E Tests:** `frontend/e2e/ai-suggestions.spec.ts`
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-21-12.md`
+
+### Test Coverage Summary
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| Integration (AISuggestionFlowTest) | 36 | 135 | ✅ PASS |
+| Security (AISuggestionSecurityTest) | 34 | 67 | ✅ PASS |
+| Performance (AISuggestionPerformanceTest) | 19 | 62 | ✅ PASS |
+| Unit (StaticFallbackProviderTest) | 64 | 153 | ✅ PASS |
+| **Total New Tests** | **153** | **417** | **100% Pass** |
+
+### Integration Tests (AISuggestionFlowTest)
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Complete Flow | 8 | Full request → cache → provider → response |
+| Provider Selection | 6 | OpenRouter, Vercel, Static fallback logic |
+| Cache Behavior | 5 | Hit/miss scenarios, TTL validation |
+| All 10 Indicators | 10 | Title, meta_description, robots, sitemap, headings, image_alt, filenames, url, links, 404 |
+| Error Recovery | 4 | Timeout handling, fallback activation |
+| Debug Mode | 3 | Debug logging, prompt/response capture |
+
+### Security Tests (AISuggestionSecurityTest)
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| SQL Injection | 6 | Input sanitization, parameterized queries |
+| XSS Prevention | 5 | HTML stripping, output encoding |
+| Input Validation | 8 | Context length, indicator validation |
+| Rate Limiting | 5 | Per-user/per-IP limits, retry-after |
+| Authentication | 4 | Public endpoint behavior |
+| SSRF Prevention | 3 | Context URL validation |
+| Data Exposure | 3 | No sensitive data in responses |
+
+### Performance Tests (AISuggestionPerformanceTest)
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Response Time | 6 | Static <100ms, Overall <500ms |
+| Memory Usage | 4 | <5MB per request |
+| Throughput | 3 | Concurrent request handling |
+| Large Inputs | 3 | Sitemap with 50K URLs |
+| Unicode Processing | 3 | UTF-8 handling performance |
+
+### E2E Tests (ai-suggestions.spec.ts)
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| User Flow | 5 | Navigate → Analyze → Request → View → Copy |
+| Loading States | 3 | Skeleton, loading indicator, disabled states |
+| Error Handling | 3 | Retry button, error message display |
+| Rate Limit UI | 3 | Rate limit message, retry countdown |
+| Provider Badge | 2 | AI vs Static fallback display |
+| Accessibility | 4 | ARIA labels, keyboard navigation |
+
+### Performance Benchmarks
+
+| Metric | Target | Actual | Status |
+|--------|--------|--------|--------|
+| Static fallback response | < 100ms | ~50ms | ✅ PASS |
+| AI provider timeout | 30s | 30s | ✅ PASS |
+| Cache hit latency | < 10ms | ~5ms | ✅ PASS |
+| Memory per request | < 5MB | ~2MB | ✅ PASS |
+
+### Security Verification Summary
+
+| Security Measure | Verified | Notes |
+|------------------|----------|-------|
+| SQL Injection Prevention | ✅ | No raw queries, Eloquent used |
+| XSS Prevention | ✅ | HTML stripped, JSON response |
+| Rate Limiting | ✅ | 20/hour per user, 10/hour per IP |
+| Input Validation | ✅ | Max 5000 chars context |
+| No PII Exposure | ✅ | URLs anonymized in logs |
+| SSRF Prevention | ✅ | Context URLs validated |
+
+### Acceptance Criteria Status
+
+| Criteria | Status |
+|----------|--------|
+| AC-1: API Documentation Updated | ✅ Complete |
+| AC-2: Environment Variables Documented | ✅ Complete |
+| AC-3: User Guide Created | ✅ Complete |
+| AC-4: Developer Documentation Created | ✅ Complete |
+| AC-5: Integration Tests Created | ✅ Complete (36 tests) |
+| AC-6: End-to-End Tests Created | ✅ Complete (20 tests) |
+| AC-7: Performance Tests Created | ✅ Complete (19 tests) |
+| AC-8: Security Tests Created | ✅ Complete (34 tests) |
+| AC-9: Test Coverage Summary | ✅ 85%+ coverage achieved |
+| AC-10: Changelog Updated | ✅ Complete |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions)
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** 153/153 passing (417 assertions)
+- **Status:** Complete
+
+### Dependencies
+- All TASK-21-1 through TASK-21-11 tasks
+
+### Related Tasks
+- TASK-21-1: AI Service Structure and Interfaces
+- TASK-21-2: OpenRouter Provider
+- TASK-21-3: Static Fallback Provider
+- TASK-21-5: AI Suggestion API Endpoint
+- TASK-21-10: Rate Limiting
 
 ---
 ## SEO Analyses Table (TASK-18-1)
@@ -23112,3 +23380,209 @@ const mockAdminStats: AdminStats = {
 - TASK-27-16: Usage Charts and Tables
 - SPEC-027: Admin Dashboard (Ops + Usage)
 - FEAT-027: Admin Dashboard
+
+---
+## ARIA Labels and Keyboard Navigation (TASK-28-16)
+
+### Feature Description
+Comprehensive accessibility implementation for all interactive components in the Modern UI/UX + Indicator Catalog feature. Implements WCAG 2.1 AA compliance with proper ARIA labels, focus management, and keyboard navigation support.
+
+### Component Location
+- **SkipLink:** rontend/components/layout/SkipLink.tsx
+- **IndicatorCard:** rontend/components/indicators/IndicatorCard.tsx
+- **IndicatorGrid:** rontend/components/indicators/IndicatorGrid.tsx
+- **IndicatorCatalog:** rontend/components/indicators/IndicatorCatalog.tsx
+- **Header:** rontend/components/layout/Header.tsx
+- **MobileNav:** rontend/components/layout/MobileNav.tsx
+
+### Core Accessibility Features
+
+| Feature | Implementation | WCAG Criterion |
+|---------|---------------|----------------|
+| Skip Link | SkipLink.tsx - links to #main-content | 2.4.1 Bypass Blocks |
+| Focus Indicators | ocus-visible:ring-2 classes | 2.4.7 Focus Visible |
+| ARIA Labels | All interactive elements have descriptive labels | 4.1.2 Name, Role, Value |
+| Keyboard Navigation | Tab, Enter, Space, Escape, Arrow keys | 2.1.1 Keyboard |
+| Touch Targets | Minimum 44x44px for mobile | 2.5.5 Target Size |
+
+### SkipLink Component
+
+`	ypescript
+// SkipLink.tsx - Skip to main content link
+<a
+  class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50..."
+  data-testid="skip-link"
+  aria-label="Skip to main content"
+  href="#main-content"
+>
+  Skip to main content
+</a>
+`
+
+**Behavior:**
+- Hidden by default (sr-only)
+- Becomes visible on focus (ocus:not-sr-only)
+- Links to <main id="main-content">
+- Auto-focuses main content on activation
+
+### Main Content Wrapper
+
+`html
+<main 
+  id="main-content" 
+  tabindex="-1" 
+  class="outline-none" 
+  data-testid="main-content" 
+  role="main" 
+  aria-label="Main content"
+>
+  <!-- Page content -->
+</main>
+`
+
+### Indicator Card Accessibility
+
+**ARIA Label Format:**
+`
+"{title}: {value}. {description}. Status: {status}"
+`
+
+**Example Labels:**
+| Card | aria-label |
+|------|------------|
+| Keyword Rankings | "Keyword Rankings: 42. Track SERP positions. Status: Good" |
+| Visibility Score | "Visibility Score: 78%. Overall SEO visibility. Status: Warning" |
+| Technical Health | "Technical Health: 95. Site audit score. Status: Good" |
+
+**Implementation:**
+`	ypescript
+<a
+  role="link"
+  tabIndex={0}
+  aria-label={${title}: . . Status: }
+  className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+>
+  {/* Card content */}
+</a>
+`
+
+### Category Tabs Keyboard Navigation
+
+| Key | Action |
+|-----|--------|
+| Tab | Move focus to tab list |
+| Arrow Left/Right | Navigate between tabs |
+| Home | Move to first tab |
+| End | Move to last tab |
+| Enter/Space | Activate selected tab |
+
+**ARIA Implementation:**
+`html
+<div role="tablist" aria-orientation="horizontal" aria-label="Filter by category">
+  <button role="tab" aria-selected="true" aria-controls="content-All">All</button>
+  <button role="tab" aria-selected="false" aria-controls="content-Rankings">Rankings</button>
+  <button role="tab" aria-selected="false" aria-controls="content-Traffic">Traffic</button>
+  <button role="tab" aria-selected="false" aria-controls="content-Technical">Technical</button>
+</div>
+`
+
+### Status Badge Accessibility
+
+| Status | aria-label | Icon |
+|--------|------------|------|
+| Good | "Status: Good" | ✓ CircleCheckBig |
+| Warning | "Status: Warning" | ⚠ TriangleAlert |
+| Critical | "Status: Critical" | ✕ CircleX |
+| Neutral | "Status: Neutral" | − Minus |
+
+**Implementation:**
+`html
+<span role="status" aria-label="Status: Good">
+  <svg aria-hidden="true"><!-- Icon --></svg>
+  Good
+</span>
+`
+
+### Focus Management
+
+| Component | Focus Behavior |
+|-----------|---------------|
+| SkipLink | Focus moves to main content on activation |
+| IndicatorCard | Focus visible ring on keyboard focus |
+| MobileNav | Focus trap in sheet, returns to hamburger on close |
+| Tabs | Roving tabindex pattern |
+| Modal/Sheet | Focus trap, Escape to close |
+
+### Landmark Roles
+
+| Element | Role | aria-label |
+|---------|------|------------|
+| <header> | anner | - |
+| <nav> | 
+avigation | "Main navigation" |
+| <main> | main | "Main content" |
+| <footer> | contentinfo | - |
+| <section> | egion | Section-specific label |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| IndicatorCard.a11y.spec.tsx | 16 | 16+ |
+| SkipLink.spec.tsx | 14 | 14+ |
+| MobileNav.test.tsx | 28 | 28+ |
+| **Total** | **58** | **58+** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| ARIA Labels | 20 | All interactive elements have proper labels |
+| Keyboard Navigation | 15 | Tab, Enter, Space, Escape, Arrow keys |
+| Focus Management | 10 | Focus traps, return focus, skip link |
+| Screen Reader | 8 | Role, label, state announcements |
+| Security | 5 | XSS prevention in aria-labels |
+
+### Production Verification
+
+**URL:** https://seoindicator.com
+
+**Verified Elements:**
+| Element | Status | Implementation |
+|---------|--------|----------------|
+| Skip Link | ✅ PASS | data-testid="skip-link", href="#main-content" |
+| Main Content | ✅ PASS | id="main-content", ole="main" |
+| Navigation | ✅ PASS | ole="navigation", ria-label="Main navigation" |
+| Tab List | ✅ PASS | ole="tablist", ria-selected |
+| Indicator Cards | ✅ PASS | Comprehensive aria-labels |
+| Status Badges | ✅ PASS | ole="status", status labels |
+| Focus Indicators | ✅ PASS | ocus-visible:ring-2 |
+| Header | ✅ PASS | ole="banner" |
+| Footer | ✅ PASS | ole="contentinfo" |
+
+### WCAG 2.1 AA Compliance Status
+
+| Criterion | Level | Status |
+|-----------|-------|--------|
+| 2.1.1 Keyboard | A | ✅ PASS |
+| 2.4.1 Bypass Blocks | A | ✅ PASS |
+| 2.4.3 Focus Order | A | ✅ PASS |
+| 2.4.7 Focus Visible | AA | ✅ PASS |
+| 2.5.5 Target Size | AAA | ✅ PASS |
+| 4.1.2 Name, Role, Value | A | ✅ PASS |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions auto-deploy)
+- **Health Check:** Passing (https://seoindicator.com/api/health → 200 OK)
+- **Tests:** 58/58 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-28-7 (IndicatorCatalog)
+- TASK-28-12 (Desktop Navigation)
+- TASK-28-13 (Mobile Navigation)
+
+### Related Tasks
+- TASK-28-7: Indicator Catalog
+- TASK-28-12: Desktop Navigation
+- TASK-28-13: Mobile Navigation
+

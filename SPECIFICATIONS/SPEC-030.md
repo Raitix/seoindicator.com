@@ -1,7 +1,7 @@
 # SPEC-030: Legal + About + How It Works + Cookie Consent
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -213,23 +213,23 @@ interface CookieConsentState {
 ## Tasks Breakdown
 
 ### Phase 1: Core Pages (3 tasks)
-| ID | Task | Description |
-|----|------|-------------|
-| TASK-30-1 | Terms & Privacy Page | Create /terms route with legal content |
-| TASK-30-2 | About Page | Create /about route with mission and features |
-| TASK-30-3 | How It Works Page | Create /how-it-works with indicator explanations |
+| ID | Task | Description | File |
+|----|------|-------------|------|
+| TASK-30-1 | Terms & Privacy Page | Create /terms route with legal content | [TASK-30-1.md](../TASKS/TASK-30-1.md) |
+| TASK-30-2 | About Page | Create /about route with mission and features | [TASK-30-2.md](../TASKS/TASK-30-2.md) |
+| TASK-30-3 | How It Works Page | Create /how-it-works with indicator explanations | [TASK-30-3.md](../TASKS/TASK-30-3.md) |
 
 ### Phase 2: Cookie Consent (2 tasks)
-| ID | Task | Description |
-|----|------|-------------|
-| TASK-30-4 | Cookie Consent Component | Create banner component with state management |
-| TASK-30-5 | Consent Integration | Integrate with layout, add footer consent link |
+| ID | Task | Description | File |
+|----|------|-------------|------|
+| TASK-30-4 | Cookie Consent Component | Create banner component with state management | [TASK-30-4.md](../TASKS/TASK-30-4.md) |
+| TASK-30-5 | Consent Integration | Integrate with layout, add footer consent link | [TASK-30-5.md](../TASKS/TASK-30-5.md) |
 
 ### Phase 3: Testing (2 tasks)
-| ID | Task | Description |
-|----|------|-------------|
-| TASK-30-6 | Unit Tests | Component tests for pages and cookie consent |
-| TASK-30-7 | Accessibility Tests | A11y tests for all pages and banner |
+| ID | Task | Description | File |
+|----|------|-------------|------|
+| TASK-30-6 | Unit Tests | Component tests for pages and cookie consent | [TASK-30-6.md](../TASKS/TASK-30-6.md) |
+| TASK-30-7 | Accessibility Tests | A11y tests for all pages and banner | [TASK-30-7.md](../TASKS/TASK-30-7.md) |
 
 ---
 
@@ -260,6 +260,16 @@ interface CookieConsentState {
 
 ## Comments
 <!-- Agent communication happens here -->
+
+### [2026-03-04 SpecSystemAnalyst]
+- Broken down into 7 tasks across 3 phases
+- All task files created in TASKS/
+- **Phase 1 (Core Pages):** TASK-30-1 to TASK-30-3 (Terms, About, How It Works)
+- **Phase 2 (Cookie Consent):** TASK-30-4 to TASK-30-5 (Component + Integration)
+- **Phase 3 (Testing):** TASK-30-6 to TASK-30-7 (Unit tests + A11y tests)
+- Task dependencies: TASK-30-5 depends on TASK-30-4; TASK-30-6 depends on all page tasks; TASK-30-7 depends on all tasks
+- Risk: TASK-30-4 is Medium (GDPR compliance); all others are Low
+- Status updated to "To Prioritize"
 
 ### [2026-02-28 Architect]
 - Feature analyzed and specification created
