@@ -1,7 +1,7 @@
 # TASK-29-2: XlsToolExporter Implementation
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -59,6 +59,18 @@ class XlsToolExporter implements FromArray, WithHeadings, WithStyles
 
 ## Comments
 _Agent log_
+
+### [2026-03-04 18:22 GMT+2] Agent: DevOps
+**Dependency Fix Applied**
+
+Previous deployment failed due to PHP version mismatch:
+- `maennchen/zipstream-php 3.2.1` requires PHP 8.3
+- Production server runs PHP 8.2
+
+**Fix Applied:**
+- Pinned `maennchen/zipstream-php` to version `3.1.2` (supports PHP 8.2)
+- Updated `composer.json` and `composer.lock`
+- Committing fix and pushing to trigger new deployment
 
 ### [2026-03-04 18:13 GMT+2] Agent: DevOps
 **Deployment Initiated**
