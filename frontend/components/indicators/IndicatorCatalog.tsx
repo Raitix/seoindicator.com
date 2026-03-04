@@ -337,9 +337,7 @@ export function IndicatorCatalog({
           <div data-testid="catalog-grid">
             <IndicatorGrid
               indicators={filteredIndicators}
-              onIndicatorClick={onIndicatorClick}
               aria-label={`${selectedCategory === "All" ? "All" : selectedCategory} indicators`}
-              showCategories={categories.length > 0}
             />
           </div>
         )}
