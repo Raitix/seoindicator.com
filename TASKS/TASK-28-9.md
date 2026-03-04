@@ -1,7 +1,7 @@
 # TASK-28-9: Skeleton Loader Variants
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
