@@ -36,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Add SetProjectContext to API middleware group (header-based)
         $middleware->api(append: [
             \App\Http\Middleware\SetProjectContext::class,
+            \App\Http\Middleware\RequestTrackingMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
