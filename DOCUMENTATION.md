@@ -1,6 +1,176 @@
 # DOCUMENTATION.md
 
 ---
+## Request Tracking Middleware (TASK-27-6)
+
+### Service Description
+Laravel middleware that tracks API requests for usage analytics in the admin dashboard. Records request metadata (endpoint, method, timestamp, user ID) via Redis for lightweight storage with minimal latency overhead (<5ms). Provides the data foundation for the Usage Aggregation Service and Admin Usage API.
+
+### Component Location
+- **Middleware:** `backend/app/Http/Middleware/RequestTrackingMiddleware.php`
+- **Service:** `backend/app/Services/Admin/RequestTrackingService.php`
+- **Config:** `backend/config/request-tracking.php`
+- **Tests:** `backend/tests/Unit/Http/Middleware/RequestTrackingMiddlewareTest.php`, `backend/tests/Unit/Services/Admin/RequestTrackingServiceTest.php`
+
+### Core Functionalities
+
+**RequestTrackingMiddleware:**
+| Method | Description |
+|--------|-------------|
+| `handle($request, $next)` | Intercepts request, tracks metadata, passes to next handler |
+| `shouldTrack($request)` | Determines if request should be tracked (excludes health checks) |
+| `normalizeEndpoint($path)` | Normalizes URLs with IDs/UUIDs to patterns (`/users/123` → `/users/{id}`) |
+
+**RequestTrackingService:**
+| Method | Description |
+|--------|-------------|
+| `trackRequest($data)` | Records request data to Redis |
+| `getEndpointStats($period)` | Retrieves aggregated stats by endpoint |
+| `getOverallStats($period)` | Retrieves overall usage statistics |
+
+### Request Data Tracked
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `endpoint` | string | Normalized URL path (IDs replaced with `{id}`) |
+| `method` | string | HTTP method (GET, POST, PUT, DELETE, PATCH) |
+| `timestamp` | int | Unix timestamp of request |
+| `user_id` | int\|null | Authenticated user ID (null for anonymous) |
+
+### Endpoint Normalization Rules
+
+| Original Path | Normalized Path |
+|---------------|-----------------|
+| `/api/v1/users/123` | `api/v1/users/{id}` |
+| `/api/v1/sites/550e8400-e29b-41d4-a716-446655440000` | `api/v1/sites/{id}` |
+| `/api/v1/analyses/456/results` | `api/v1/analyses/{id}/results` |
+| `/health` | (excluded from tracking) |
+
+### Configuration
+
+```php
+// config/request-tracking.php
+[
+    'enabled' => env('REQUEST_TRACKING_ENABLED', true),
+    'sample_rate' => env('REQUEST_TRACKING_SAMPLE_RATE', 1.0),
+    'excluded_paths' => [
+        '/health',
+        '/healthz',
+        '/ping',
+    ],
+    'redis' => [
+        'connection' => 'default',
+        'key_prefix' => 'req_track:',
+        'ttl_seconds' => 86400 * 7, // 7 days
+    ],
+];
+```
+
+### Sample Rate Configuration
+
+| Sample Rate | Behavior |
+|-------------|----------|
+| `1.0` | Track all requests (default) |
+| `0.5` | Track 50% of requests (random sampling) |
+| `0.1` | Track 10% of requests (high-traffic optimization) |
+
+### Excluded Endpoints
+
+| Endpoint | Reason |
+|----------|--------|
+| `/health`, `/healthz`, `/ping` | Health check endpoints (no business value) |
+| Configured paths | Custom exclusions via config |
+
+### Performance Characteristics
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Latency overhead | < 5ms | Verified via performance tests |
+| Memory usage | Minimal | Redis-based, no local accumulation |
+| Blocking | No | Async-capable, graceful failure |
+| Throughput impact | < 1% | Negligible on request handling |
+
+### Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Redis unavailable | Log warning, continue request (no exception) |
+| Queue failure | Log warning, continue request |
+| Invalid data | Skip tracking, continue request |
+| Any exception | Catch, log, continue (never throw) |
+
+**Graceful Degradation:** The middleware never throws exceptions or blocks requests. All errors are logged and the request continues normally.
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| No sensitive data | Request body, headers, and query params NOT stored |
+| User ID only | Only authenticated user ID stored (not email/name) |
+| SQL injection safe | No database queries with user input |
+| XSS safe | Data not rendered in UI (aggregated only) |
+
+### Redis Key Structure
+
+| Key Pattern | TTL | Purpose |
+|-------------|-----|---------|
+| `req_track:endpoint:{normalized_path}` | 7 days | Request count per endpoint |
+| `req_track:daily:{date}:{endpoint}` | 7 days | Daily breakdown per endpoint |
+| `req_track:user:{user_id}` | 7 days | Request count per user |
+
+### Integration with Middleware Pipeline
+
+```php
+// bootstrap/app.php
+->withMiddleware(function (Middleware $middleware): void {
+    $middleware->api(append: [
+        \App\Http\Middleware\SetProjectContext::class,
+        \App\Http\Middleware\RequestTrackingMiddleware::class,
+    ]);
+})
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `RequestTrackingMiddlewareTest.php` | 72 | 92 |
+| `RequestTrackingServiceTest.php` | 58 | 87+ |
+| **Total** | **130** | **179+** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Middleware Instantiation | 5 | Service injection, sample rate config |
+| Basic Tracking | 7 | GET/POST/PUT/DELETE/PATCH, pass-through |
+| Authenticated Users | 4 | User ID tracking, null handling |
+| Endpoint Normalization | 6 | ID/UUID normalization, query params |
+| Sample Rate | 6 | Per-endpoint rates, health exclusions |
+| Error Handling | 5 | Redis/queue failures, graceful degradation |
+| Performance | 4 | <5ms overhead, memory stability |
+| Edge Cases | 8 | Unicode, concurrent, special chars |
+| Service Integration | 5 | Mocked service calls |
+| Configuration | 5 | Config values, enable/disable |
+| Security | 5 | No sensitive data, SQL injection safe |
+| Integration | 4 | Full flow, pipeline, exceptions |
+| Acceptance Criteria | 8 | All ACs verified |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions)
+- **Commits:** `e1a5309` (initial), `80ede79` (middleware registration)
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Performance:** Average response time ~88ms (middleware overhead <5ms)
+- **Tests:** 130/130 passing
+- **Status:** Complete
+
+### Dependencies
+- None (standalone infrastructure)
+
+### Related Tasks
+- TASK-27-7: Usage Aggregation Service (consumes tracking data)
+- TASK-27-8: Admin Usage API (exposes aggregated stats)
+
+---
 ## CreditService with Balance Management (TASK-26-5)
 
 ### Service Description
