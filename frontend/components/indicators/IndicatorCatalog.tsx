@@ -1,145 +1,141 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { cn } from "@/lib/utils";
-import { IndicatorGrid, type IndicatorData } from "./IndicatorGrid";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, AlertCircle, Inbox } from "lucide-react";
+import * as React from 'react';
+import { RefreshCw, AlertCircle, FolderOpen } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { IndicatorGrid, type IndicatorData } from './IndicatorGrid';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
-// ============================================
+// ============================================================================
 // Types
-// ============================================
+// ============================================================================
 
-export type { IndicatorData } from "./IndicatorGrid";
-
-export interface IndicatorCatalogProps {
-  /** Array of indicator data to display */
+/**
+ * Props for the IndicatorCatalog component
+ */
+export interface IndicatorCatalogProps extends Omit<React.HTMLAttributes<HTMLElement>, 'title'> {
+  /** Array of indicator data */
   indicators: IndicatorData[];
-  /** Catalog title */
+  /** Section title (default: "SEO Indicators") */
   title?: string;
-  /** Catalog description */
+  /** Section description */
   description?: string;
-  /** Available categories for filtering */
+  /** Optional categories for filtering */
   categories?: string[];
   /** Currently selected category */
   selectedCategory?: string;
-  /** Callback when category changes */
+  /** Category change callback */
   onCategoryChange?: (category: string) => void;
-  /** Callback when refresh button is clicked */
+  /** Refresh callback */
   onRefresh?: () => void;
-  /** Show loading state */
+  /** Loading state */
   isLoading?: boolean;
-  /** Show error state */
+  /** Error state */
   error?: Error | null;
-  /** Additional CSS classes */
-  className?: string;
-  /** Show category tabs */
-  showCategoryTabs?: boolean;
-  /** Show refresh button */
-  showRefreshButton?: boolean;
-  /** Empty state message */
+  /** Custom empty state message */
   emptyMessage?: string;
-  /** Callback when indicator is clicked */
-  onIndicatorClick?: (indicator: IndicatorData) => void;
 }
 
-// ============================================
-// Skeleton Grid Component
-// ============================================
+// ============================================================================
+// Constants
+// ============================================================================
 
-function SkeletonGrid() {
+const DEFAULT_TITLE = 'SEO Indicators';
+const SKELETON_COUNT = 8;
+
+// ============================================================================
+// Hooks
+// ============================================================================
+
+/**
+ * Hook to check if the user prefers reduced motion.
+ * Returns false during SSR to avoid hydration mismatches.
+ */
+function usePrefersReducedMotion(): boolean {
+  const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
+
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handler = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  return prefersReducedMotion;
+}
+
+// ============================================================================
+// Sub-Components
+// ============================================================================
+
+interface CatalogSkeletonProps {
+  showTitle?: boolean;
+  showDescription?: boolean;
+}
+
+/**
+ * Skeleton grid for loading state
+ */
+function CatalogSkeleton({ showTitle = true, showDescription = true }: CatalogSkeletonProps) {
   return (
-    <div
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-      aria-hidden="true"
-      data-testid="catalog-skeleton-grid"
-    >
-      {Array.from({ length: 8 }).map((_, i) => (
+    <div data-testid="catalog-skeleton-grid" className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      {showTitle && <Skeleton className="col-span-full h-8 w-48" />}
+      {showDescription && <Skeleton className="col-span-full h-4 w-64" />}
+      {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
         <div
-          key={`skeleton-${i}`}
-          className="rounded-lg border border-slate-700/50 p-4 bg-slate-900/50"
+          key={`skeleton-${index}`}
+          className="flex flex-col gap-3 rounded-xl border bg-card p-4"
+          role="presentation"
         >
-          <div className="flex items-start justify-between gap-2 mb-3">
-            <div className="flex items-center gap-2">
-              <Skeleton className="w-5 h-5 rounded" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-            <Skeleton className="w-4 h-4 rounded" />
+          <div className="flex items-start justify-between gap-2">
+            <Skeleton className="size-10 rounded-lg" />
+            <Skeleton className="h-5 w-16 rounded-full" />
           </div>
-          <div className="flex items-end justify-between">
-            <div>
-              <Skeleton className="h-7 w-16 mb-1" />
-              <Skeleton className="h-3 w-32" />
-            </div>
+          <div className="flex flex-col gap-1.5">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-16" />
           </div>
+          <Skeleton className="h-4 w-full" />
         </div>
       ))}
     </div>
   );
 }
 
-// ============================================
-// Empty State Component
-// ============================================
-
-function EmptyState({
-  message = "No indicators available",
-  category,
-}: {
-  message?: string;
-  category?: string;
-}) {
-  const displayMessage =
-    category && category !== "All"
-      ? `No indicators in "${category}" category`
-      : message;
-
-  return (
-    <div
-      role="status"
-      className="flex flex-col items-center justify-center py-12 text-center"
-      data-testid="catalog-empty"
-    >
-      <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mb-4">
-        <Inbox className="w-6 h-6 text-slate-500" aria-hidden="true" />
-      </div>
-      <p className="text-sm text-slate-400">{displayMessage}</p>
-    </div>
-  );
-}
-
-// ============================================
-// Error State Component
-// ============================================
-
-function ErrorState({
-  error,
-  onRetry,
-}: {
+interface CatalogErrorProps {
   error: Error;
   onRetry?: () => void;
-}) {
+}
+
+/**
+ * Error state with retry button
+ */
+function CatalogError({ error, onRetry }: CatalogErrorProps) {
   return (
     <div
-      role="alert"
-      className="flex flex-col items-center justify-center py-12 text-center"
       data-testid="catalog-error"
+      role="alert"
+      className="flex flex-col items-center justify-center gap-4 rounded-lg border border-destructive/50 bg-destructive/10 p-8 text-center"
     >
-      <div className="w-12 h-12 rounded-full bg-red-900/50 flex items-center justify-center mb-4">
-        <AlertCircle className="w-6 h-6 text-red-400" aria-hidden="true" />
+      <AlertCircle className="size-12 text-destructive" aria-hidden="true" />
+      <div className="flex flex-col gap-2">
+        <h3 className="text-lg font-semibold text-destructive">Failed to load indicators</h3>
+        <p className="text-sm text-muted-foreground">{error.message}</p>
       </div>
-      <p className="text-sm text-red-400 mb-4">{error.message}</p>
       {onRetry && (
         <Button
-          onClick={onRetry}
           variant="outline"
-          size="sm"
-          className="border-red-800 text-red-300 hover:bg-red-900/50"
+          onClick={onRetry}
+          className="mt-2"
         >
-          <RefreshCw className="w-4 h-4 mr-2" />
           Retry
         </Button>
       )}
@@ -147,203 +143,271 @@ function ErrorState({
   );
 }
 
-// ============================================
-// Component
-// ============================================
+interface CatalogEmptyProps {
+  category?: string;
+  message?: string;
+}
 
 /**
- * IndicatorCatalog Component
+ * Empty state with helpful message
+ */
+function CatalogEmpty({ category, message }: CatalogEmptyProps) {
+  const defaultMessage = category
+    ? `No indicators found in the "${category}" category`
+    : 'No indicators available';
+
+  return (
+    <div
+      data-testid="catalog-empty"
+      role="status"
+      className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed bg-muted/50 p-8 text-center"
+    >
+      <FolderOpen className="size-12 text-muted-foreground" aria-hidden="true" />
+      <div className="flex flex-col gap-2">
+        <h3 className="text-lg font-semibold">No indicators</h3>
+        <p className="text-sm text-muted-foreground">{message || defaultMessage}</p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Filter indicators by category
+ */
+function filterIndicators(
+  indicators: IndicatorData[],
+  selectedCategory: string | undefined
+): IndicatorData[] {
+  if (!selectedCategory || selectedCategory === 'All') {
+    return indicators;
+  }
+  return indicators.filter((indicator) => indicator.category === selectedCategory);
+}
+
+/**
+ * Generate a unique ID for the title element
+ */
+function generateTitleId(): string {
+  return `catalog-title-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
+/**
+ * IndicatorCatalog - Main container for displaying SEO indicators
  *
- * Main container component for displaying SEO indicators with filtering,
- * grouping, and refresh capabilities. Fully accessible with ARIA labels,
- * keyboard navigation, and screen reader support.
+ * Orchestrates the display of all indicators with optional filtering,
+ * grouping, and refresh capabilities. Implements state priority:
+ * Loading > Error > Empty > Content
  *
  * @example
  * ```tsx
+ * // Basic usage
+ * <IndicatorCatalog indicators={indicatorData} />
+ *
+ * // With categories and filtering
  * <IndicatorCatalog
- *   title="SEO Indicators"
- *   description="Track your website's SEO performance"
- *   indicators={indicators}
- *   categories={['All', 'Rankings', 'Traffic', 'Technical']}
- *   selectedCategory="All"
- *   onCategoryChange={(cat) => setSelectedCategory(cat)}
- *   onRefresh={() => refetch()}
- *   isLoading={loading}
- *   error={error}
+ *   indicators={indicatorData}
+ *   categories={['All', 'rankings', 'technical']}
+ *   selectedCategory="rankings"
+ *   onCategoryChange={setCategory}
  * />
+ *
+ * // With loading state
+ * <IndicatorCatalog indicators={[]} isLoading />
+ *
+ * // With error state
+ * <IndicatorCatalog indicators={[]} error={new Error('Failed to load')} onRefresh={refetch} />
+ *
+ * // With refresh capability
+ * <IndicatorCatalog indicators={indicatorData} onRefresh={refetch} />
  * ```
  */
-export function IndicatorCatalog({
-  indicators = [],
-  title = "SEO Indicators",
-  description,
-  categories = [],
-  selectedCategory = "All",
-  onCategoryChange,
-  onRefresh,
-  isLoading = false,
-  error = null,
-  className,
-  showCategoryTabs = true,
-  showRefreshButton = true,
-  emptyMessage = "No indicators available",
-  onIndicatorClick,
-}: IndicatorCatalogProps) {
-  // Generate unique IDs for accessibility
-  const catalogId = React.useId();
-  const titleId = `${catalogId}-title`;
-  const descriptionId = `${catalogId}-description`;
+export const IndicatorCatalog = React.forwardRef<HTMLElement, IndicatorCatalogProps>(
+  (
+    {
+      indicators,
+      title = DEFAULT_TITLE,
+      description,
+      categories,
+      selectedCategory: selectedCategoryProp,
+      onCategoryChange,
+      onRefresh,
+      isLoading = false,
+      error = null,
+      emptyMessage,
+      className,
+      ...props
+    },
+    ref
+  ) => {
+    // Generate stable title ID for aria-labelledby
+    const [titleId] = React.useState(generateTitleId);
 
-  // Filter indicators by selected category
-  const filteredIndicators = React.useMemo(() => {
-    if (!categories.length || selectedCategory === "All") {
-      return indicators;
-    }
-    return indicators.filter(
-      (indicator) => indicator.category === selectedCategory
+    // Internal category state if not controlled
+    const [internalCategory, setInternalCategory] = React.useState('All');
+    const selectedCategory = selectedCategoryProp ?? internalCategory;
+
+    // Check for reduced motion preference
+    const reducedMotion = usePrefersReducedMotion();
+
+    // Handle category change
+    const handleCategoryChange = React.useCallback(
+      (value: string) => {
+        if (onCategoryChange) {
+          onCategoryChange(value);
+        } else {
+          setInternalCategory(value);
+        }
+      },
+      [onCategoryChange]
     );
-  }, [indicators, categories, selectedCategory]);
 
-  // Handle tab keyboard navigation
-  const handleTabKeyDown = (e: React.KeyboardEvent) => {
-    if (!categories.length) return;
+    // Filter indicators by selected category
+    const filteredIndicators = React.useMemo(
+      () => filterIndicators(indicators, selectedCategory),
+      [indicators, selectedCategory]
+    );
 
-    const currentIndex = categories.indexOf(selectedCategory);
+    // Determine if we should show tabs
+    const showTabs = categories && categories.length > 0;
 
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-      e.preventDefault();
-      const nextIndex = (currentIndex + 1) % categories.length;
-      onCategoryChange?.(categories[nextIndex]);
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-      e.preventDefault();
-      const prevIndex =
-        (currentIndex - 1 + categories.length) % categories.length;
-      onCategoryChange?.(categories[prevIndex]);
-    } else if (e.key === "Home") {
-      e.preventDefault();
-      onCategoryChange?.(categories[0]);
-    } else if (e.key === "End") {
-      e.preventDefault();
-      onCategoryChange?.(categories[categories.length - 1]);
-    }
-  };
-
-  return (
-    <section
-      aria-labelledby={title ? titleId : undefined}
-      aria-describedby={description ? descriptionId : undefined}
-      aria-busy={isLoading ? "true" : undefined}
-      className={cn("w-full", className)}
-      data-testid="indicator-catalog"
-      data-loading={isLoading ? "true" : "false"}
-      data-error={error ? "true" : "false"}
-      data-empty={
-        !isLoading && !error && filteredIndicators.length === 0 ? "true" : "false"
+    // Determine state to render (priority: Loading > Error > Empty > Content)
+    const renderContent = () => {
+      // Loading state
+      if (isLoading) {
+        return <CatalogSkeleton showTitle={!!title} showDescription={!!description} />;
       }
-    >
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          {title && (
-            <h2
-              id={titleId}
-              className="text-xl font-semibold text-white"
-              data-testid="catalog-title"
-            >
-              {title}
-            </h2>
-          )}
-          {description && (
-            <p
-              id={descriptionId}
-              className="text-sm text-slate-400 mt-1"
-              data-testid="catalog-description"
-            >
-              {description}
-            </p>
-          )}
-        </div>
 
-        {/* Refresh Button */}
-        {showRefreshButton && onRefresh && (
-          <Button
-            onClick={onRefresh}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-            aria-label="Refresh indicators"
-            className="border-slate-700 text-slate-300 hover:bg-slate-800"
-            data-testid="catalog-refresh-button"
-          >
-            <RefreshCw
-              className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")}
-              aria-hidden="true"
-            />
-            Refresh
-          </Button>
+      // Error state
+      if (error) {
+        return <CatalogError error={error} onRetry={onRefresh} />;
+      }
+
+      // Empty state
+      if (filteredIndicators.length === 0) {
+        return <CatalogEmpty category={selectedCategory} message={emptyMessage} />;
+      }
+
+      // Content state - render grid
+      return (
+        <IndicatorGrid
+          indicators={filteredIndicators}
+          aria-label={`${title} - ${selectedCategory === 'All' ? 'All categories' : selectedCategory}`}
+        />
+      );
+    };
+
+    // Compute data attributes
+    const dataAttributes = {
+      'data-loading': isLoading || undefined,
+      'data-error': error ? 'true' : undefined,
+      'data-empty': !isLoading && !error && filteredIndicators.length === 0 ? 'true' : undefined,
+    };
+
+    return (
+      <section
+        ref={ref as React.Ref<HTMLElement>}
+        data-testid="indicator-catalog"
+        data-slot="indicator-catalog"
+        className={cn(
+          'flex w-full flex-col gap-4',
+          'px-4 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6',
+          !reducedMotion && 'transition-all duration-200 ease-out',
+          className
         )}
-      </div>
-
-      {/* Category Tabs */}
-      {showCategoryTabs && categories.length > 0 && (
-        <div className="mb-6" onKeyDown={handleTabKeyDown}>
-          <Tabs
-            value={selectedCategory}
-            onValueChange={onCategoryChange}
-            aria-label="Filter indicators by category"
-          >
-            <TabsList
-              role="tablist"
-              aria-label="Indicator categories"
-              className="bg-slate-900/50 border border-slate-800"
-            >
-              {categories.map((category) => (
-                <TabsTrigger
-                  key={category}
-                  value={category}
-                  role="tab"
-                  aria-selected={selectedCategory === category}
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-                  data-testid={`tab-${category.toLowerCase().replace(/\s+/g, "-")}`}
+        aria-labelledby={title ? titleId : undefined}
+        {...dataAttributes}
+        {...props}
+      >
+        {/* Header Section */}
+        {(title || description || onRefresh) && (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-1">
+              {title && (
+                <h2
+                  id={titleId}
+                  data-testid="catalog-title"
+                  className="text-xl font-semibold tracking-tight sm:text-2xl"
                 >
-                  {category}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-      )}
-
-      {/* Separator */}
-      {(title || (showCategoryTabs && categories.length > 0)) && (
-        <Separator className="mb-6 bg-slate-800" />
-      )}
-
-      {/* Content */}
-      <div role="region" aria-label="Indicators list">
-        {/* Loading State */}
-        {isLoading && <SkeletonGrid />}
-
-        {/* Error State */}
-        {!isLoading && error && <ErrorState error={error} onRetry={onRefresh} />}
-
-        {/* Empty State */}
-        {!isLoading && !error && filteredIndicators.length === 0 && (
-          <EmptyState message={emptyMessage} category={selectedCategory} />
-        )}
-
-        {/* Indicators Grid */}
-        {!isLoading && !error && filteredIndicators.length > 0 && (
-          <div data-testid="catalog-grid">
-            <IndicatorGrid
-              indicators={filteredIndicators}
-              aria-label={`${selectedCategory === "All" ? "All" : selectedCategory} indicators`}
-            />
+                  {title}
+                </h2>
+              )}
+              {description && (
+                <p
+                  data-testid="catalog-description"
+                  className="text-sm text-muted-foreground"
+                >
+                  {description}
+                </p>
+              )}
+            </div>
+            {onRefresh && (
+              <Button
+                data-testid="catalog-refresh-button"
+                variant="outline"
+                size="icon"
+                onClick={onRefresh}
+                disabled={isLoading}
+                aria-label="Refresh indicators"
+                className="self-start sm:self-auto"
+              >
+                <RefreshCw
+                  className={cn(
+                    'size-4',
+                    isLoading && !reducedMotion && 'animate-spin'
+                  )}
+                />
+              </Button>
+            )}
           </div>
         )}
-      </div>
-    </section>
-  );
-}
+
+        {/* Category Tabs */}
+        {showTabs && (
+          <>
+            <Tabs
+              value={selectedCategory}
+              onValueChange={handleCategoryChange}
+              aria-label="Filter by category"
+            >
+              <TabsList role="tablist" className="w-full justify-start overflow-x-auto">
+                {categories.map((category) => (
+                  <TabsTrigger
+                    key={category}
+                    value={category}
+                    data-testid={`tab-${category.toLowerCase().replace(/\s+/g, '-')}`}
+                    role="tab"
+                  >
+                    {category}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <TabsContent value={selectedCategory} className="mt-0">
+                {/* Content rendered below tabs */}
+              </TabsContent>
+            </Tabs>
+            <Separator className="my-2" />
+          </>
+        )}
+
+        {/* Main Content */}
+        {renderContent()}
+      </section>
+    );
+  }
+);
+
+IndicatorCatalog.displayName = 'IndicatorCatalog';
+
+// ============================================================================
+// Exports
+// ============================================================================
 
 export default IndicatorCatalog;

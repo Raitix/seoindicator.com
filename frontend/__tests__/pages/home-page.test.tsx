@@ -53,7 +53,7 @@ jest.mock('@/components/indicators/IndicatorCatalog', () => ({
       data-error={error ? 'true' : 'false'}
     >
       {title && <h2 data-testid="catalog-title">{title}</h2>}
-      {description && <p data-testid="catalog-description">{description}`}
+      {description && <p data-testid="catalog-description">{description}</p>}
       <div data-testid="indicators-container">
         {indicators.map((indicator) => (
           <a 
