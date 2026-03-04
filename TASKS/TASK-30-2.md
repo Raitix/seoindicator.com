@@ -1,7 +1,7 @@
 # TASK-30-2: About Page
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -75,6 +75,30 @@ frontend/components/pages/AboutContent.tsx
 
 ## Comments
 <!-- Agent communication happens here -->
+
+### [2026-03-04 ProjectManager]
+**Prioritization Analysis:**
+
+| Factor | Assessment | Justification |
+|--------|------------|---------------|
+| **Priority** | High (confirmed) | Core site page essential for user trust and SEO |
+| **Risk** | Low (confirmed) | Static content page, no external APIs, no user input |
+| **Dependencies** | None | Standalone page - no blockers |
+| **Effort** | Small (2-4 hours) | Static content with responsive layout |
+
+**Execution Context:**
+- Part of SPEC-030 Phase 1 (Core Pages)
+- Sibling tasks TASK-30-1 (Terms) and TASK-30-3 (How It Works) can proceed in parallel
+- No dependencies - ready for PreTester immediately
+
+**Test Design Notes for PreTester:**
+- Component rendering tests (page.tsx, AboutContent.tsx)
+- SEO metadata validation (title, description, robots, OG tags)
+- Accessibility tests (heading hierarchy, keyboard nav, color contrast)
+- Schema.org markup validation (Organization/WebPage)
+- Responsive design tests (mobile, tablet, desktop)
+
+**Status:** `To Write Tests` → Ready for PreTester
 
 ---
 
