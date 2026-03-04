@@ -28,7 +28,9 @@ return new class extends Migration
             // Unique constraint: user can only have one preference per model
             $table->unique(['user_id', 'model_id']);
 
-            // Index for quick lookups
+            // Indexes for quick lookups
+            $table->index('user_id');
+            $table->index('model_id');
             $table->index('is_default');
         });
     }
