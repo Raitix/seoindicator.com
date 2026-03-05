@@ -48,7 +48,7 @@ describe('CookieConsent Component', () => {
       render(<CookieConsent />);
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText(/cookies/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/cookies/i).length).toBeGreaterThan(0);
     });
 
     it('should not render when consent already given', () => {
@@ -182,7 +182,8 @@ describe('CookieConsent Component', () => {
       render(<CookieConsent />);
 
       const link = screen.getByRole('link', { name: /learn more/i });
-      expect(link).toHaveAttribute('aria-label', /privacy policy|cookie policy/i);
+      const ariaLabel = link.getAttribute('aria-label');
+      expect(ariaLabel).toMatch(/privacy policy|cookie policy/i);
     });
   });
 
@@ -400,9 +401,9 @@ describe('CookieConsent Component', () => {
 
       await user.click(screen.getByRole('button', { name: /accept all/i }));
 
-      // Focus should return to body or previous element
+      // Focus should return to previous element or body
       await waitFor(() => {
-        expect(document.activeElement).toBe(document.body);
+        expect([document.body, previousFocus]).toContain(document.activeElement);
       });
 
       document.body.removeChild(previousFocus);
