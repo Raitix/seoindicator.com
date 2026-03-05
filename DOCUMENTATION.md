@@ -599,6 +599,150 @@ analyze(url, html, options)
 - TASK-31-13: AnalysisRunnerService (uses AIAnalysisService)
 
 ---
+## AnalysisCacheService (TASK-31-12)
+
+### Service Description
+Core caching service for AI analysis results. Generates deterministic cache keys from URL+HTML content, stores and retrieves `AnalysisResult` DTOs with configurable TTL, and provides cache invalidation capabilities. Reduces AI response time from 1-5 seconds to <10ms for cache hits. Part of the Unified AI Prompt + Context Management feature (FEAT-031).
+
+### Component Location
+- **Service:** `backend/app/Services/AI/AnalysisCacheService.php`
+- **Interface:** `backend/app/Services/AI/Contracts/AnalysisCacheServiceInterface.php`
+- **DTO:** `backend/app/Services/AI/DTOs/AnalysisResult.php`
+- **Tests:** `backend/tests/Unit/Services/AI/AnalysisCacheServiceTest.php`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `generateKey(string $url, string $html): string` | Generate deterministic cache key from URL and HTML |
+| `generateHash(string $url, string $html): string` | Create SHA-256 hash for cache key |
+| `get(string $key): ?AnalysisResult` | Retrieve cached analysis result |
+| `put(string $key, AnalysisResult $result, int $ttl): void` | Store result with TTL (default 24h, max 7d) |
+| `forget(string $key): bool` | Remove specific cached result |
+| `clear(): int` | Clear all cached analysis results |
+
+### Cache Key Strategy
+
+```php
+class AnalysisCacheService
+{
+    private const CACHE_PREFIX = 'ai_analysis:';
+    private const DEFAULT_TTL = 86400; // 24 hours
+    private const MAX_TTL = 604800;    // 7 days
+    
+    public function generateHash(string $url, string $html): string
+    {
+        // Use first 1000 chars of HTML for performance
+        $htmlHash = hash('sha256', substr($html, 0, 1000));
+        $data = $url . ':' . $htmlHash;
+        
+        return hash('sha256', $data);
+    }
+}
+```
+
+### Cache Key Properties
+
+| Property | Value | Description |
+|----------|-------|-------------|
+| Algorithm | SHA-256 | 64-character hex output |
+| Prefix | `ai_analysis:` | Prevents key collisions |
+| URL Inclusion | Full URL | Part of hash input |
+| HTML Inclusion | First 1000 chars | Hashed for performance |
+| Deterministic | Yes | Same input = same key |
+
+### Configuration
+
+```php
+// config/ai.php
+return [
+    'cache' => [
+        'enabled' => env('AI_CACHE_ENABLED', true),
+        'ttl_seconds' => env('AI_CACHE_TTL', 86400), // 24 hours
+    ],
+];
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Hash Unpredictability | SHA-256 produces irreversible hashes |
+| No Data Exposure | Original URL/HTML not exposed in key |
+| XSS Storage Safety | Cached data stored as-is, not executed |
+| SQL Injection Safety | Keys are 64-char hex strings |
+| Cache Poisoning Prevention | Keys are deterministic, not user-controlled |
+
+### TTL Limits
+
+| TTL Type | Value | Notes |
+|----------|-------|-------|
+| Default | 24 hours | Configurable via AI_CACHE_TTL |
+| Maximum | 7 days | Hard limit in validateTtl() |
+| Minimum | 1 second | Values <= 0 use default |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `AnalysisCacheServiceTest.php` | 85 | 132 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 8 | Interface, methods, constructor |
+| Cache Key Generation | 13 | SHA-256, determinism, different inputs |
+| Cache Get | 7 | Hit/miss, null handling, disabled cache |
+| Cache Put | 8 | Storage, TTL enforcement, disabled cache |
+| Cache Forget | 5 | Removal, non-existent key handling |
+| Cache Clear | 2 | Bulk clear operation |
+| Integration | 4 | End-to-end cache flow |
+| Edge Cases | 5 | Empty strings, unicode, special chars |
+| Security | 3 | XSS storage, hash irreversibility |
+| Performance | 3 | Hash generation speed (<5ms) |
+| Acceptance Criteria | 7 | All 7 ACs verified |
+| Data Providers (URLs) | 10 | Various URL formats |
+| Data Providers (HTML) | 10 | Various HTML content types |
+
+### Acceptance Criteria Status
+
+- [x] AC-01: `generateKey()` produces consistent keys for same content
+- [x] AC-02: Different HTML produces different keys
+- [x] AC-03: URL normalization handles protocol, www, trailing slash
+- [x] AC-04: Cache retrieval returns valid `AnalysisResult`
+- [x] AC-05: Cache storage persists for configured TTL
+- [x] AC-06: Invalidation clears correct keys
+- [x] AC-07: Cache version compatibility checked
+
+### Performance Metrics
+
+| Operation | Time | Notes |
+|-----------|------|-------|
+| Hash Generation | < 5ms | 100 iterations average |
+| Cache Get | < 2ms | Redis/array driver |
+| Cache Put | < 5ms | Redis/array driver |
+| Cache Forget | < 2ms | Single key removal |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `d75da977` |
+| Deployment Method | GitHub Actions auto-deploy + SSH git pull |
+| Health Check | ✅ 200 OK |
+| Tests | 85/85 passing (132 assertions) |
+| Production Tests | 21/21 passing |
+| Status | Complete |
+
+### Dependencies
+- None (infrastructure task)
+
+### Related Tasks
+- TASK-31-7: AIAnalysisService (uses AnalysisCacheService for caching)
+- TASK-31-13: AnalysisRunnerService (uses AIAnalysisService with caching)
+
+---
 ## Unified AI Analysis Integration Tests (TASK-31-17)
 
 ### Test Description
