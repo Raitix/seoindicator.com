@@ -71,10 +71,10 @@ describe('AboutContent Component', () => {
       render(<AboutContent />);
       // Look for feature titles from the actual component
       expect(screen.getByText(/17 SEO Indicators/i)).toBeInTheDocument();
-      expect(screen.getByText(/AI-Powered Suggestions/i)).toBeInTheDocument();
-      expect(screen.getByText(/Competitor Analysis/i)).toBeInTheDocument();
-      expect(screen.getByText(/Rank Tracking/i)).toBeInTheDocument();
-      expect(screen.getByText(/Instant Analysis/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /AI-Powered Suggestions/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Competitor Analysis/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Rank Tracking/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Instant Analysis/i })).toBeInTheDocument();
     });
 
     it('AC-007: Features have descriptions', () => {
