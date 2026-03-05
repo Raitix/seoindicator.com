@@ -3,7 +3,7 @@
  * Task: TASK-32-19 - Unit Tests for Comparison Components
  * Spec: SPEC-32 (Competitor Comparison Landing Pages)
  *
- * TDD Tests - Component implementation pending
+ * Tests for ComparisonTable component implementation
  */
 
 import React from 'react';
@@ -12,90 +12,15 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import type { FeatureCategory, ComparisonTableProps } from '@/lib/compare/types';
 
+// Import actual component
+import { ComparisonTable } from '@/components/compare/ComparisonTable';
+
 // Mock Lucide React icons
 jest.mock('lucide-react', () => ({
   Check: () => <span data-testid="check-icon">✓</span>,
   X: () => <span data-testid="x-icon">✗</span>,
   HelpCircle: () => <span data-testid="help-icon">?</span>,
 }));
-
-// Mock component - will be replaced with actual implementation
-const ComparisonTable = ({
-  features,
-  highlightWinner = true,
-  showTooltips = true,
-}: ComparisonTableProps) => {
-  // TDD: This is a mock implementation
-  // Developer will implement the actual component
-  if (!features || features.length === 0) {
-    return (
-      <div data-testid="comparison-table-empty" role="table">
-        <p>No features to compare</p>
-      </div>
-    );
-  }
-
-  return (
-    <div data-testid="comparison-table" role="table" aria-label="Feature comparison table">
-      <div role="rowgroup">
-        <div role="row" data-testid="header-row">
-          <div role="columnheader">Feature</div>
-          <div role="columnheader">SEOIndicator</div>
-          <div role="columnheader">Competitor</div>
-        </div>
-      </div>
-      <div role="rowgroup">
-        {features.map((category) => (
-          <div key={category.name} role="rowgroup" data-testid={`category-${category.name.toLowerCase().replace(/\s+/g, '-')}`}>
-            <div role="row" data-testid={`category-header-${category.name.toLowerCase().replace(/\s+/g, '-')}`}>
-              <div role="cell" colSpan={3} className="font-bold">
-                {category.name}
-              </div>
-            </div>
-            {category.features.map((feature, idx) => (
-              <div
-                key={`${category.name}-${feature.name}-${idx}`}
-                role="row"
-                data-testid={`feature-row-${feature.name.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                <div role="cell" data-testid="feature-name">
-                  {feature.name}
-                  {showTooltips && feature.tooltip && (
-                    <span data-testid={`tooltip-trigger-${feature.name.toLowerCase().replace(/\s+/g, '-')}`} title={feature.tooltip}>
-                      ?
-                    </span>
-                  )}
-                </div>
-                <div
-                  role="cell"
-                  data-testid="seoindicator-value"
-                  className={highlightWinner && feature.seoindicator === true && feature.competitor === false ? 'winner-highlight' : ''}
-                >
-                  {typeof feature.seoindicator === 'boolean' ? (
-                    feature.seoindicator ? <span data-testid="check-icon">✓</span> : <span data-testid="x-icon">✗</span>
-                  ) : (
-                    feature.seoindicator
-                  )}
-                </div>
-                <div
-                  role="cell"
-                  data-testid="competitor-value"
-                  className={highlightWinner && feature.competitor === true && feature.seoindicator === false ? 'winner-highlight' : ''}
-                >
-                  {typeof feature.competitor === 'boolean' ? (
-                    feature.competitor ? <span data-testid="check-icon">✓</span> : <span data-testid="x-icon">✗</span>
-                  ) : (
-                    feature.competitor
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 // Test data
 const mockFeatures: FeatureCategory[] = [
