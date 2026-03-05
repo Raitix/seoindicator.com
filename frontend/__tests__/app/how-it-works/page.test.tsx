@@ -7,10 +7,9 @@
 
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
 
 // Mock the HowItWorksContent component
-vi.mock('@/components/pages/HowItWorksContent', () => ({
+jest.mock('@/components/pages/HowItWorksContent', () => ({
   HowItWorksContent: () => (
     <div data-testid="how-it-works-content">
       <h1>How It Works</h1>
@@ -20,14 +19,6 @@ vi.mock('@/components/pages/HowItWorksContent', () => ({
       <section data-testid="faq-section">FAQ</section>
     </div>
   ),
-}));
-
-// Mock Next.js metadata
-vi.mock('next/metadata', () => ({
-  generateMetadata: vi.fn(() => ({
-    title: 'How It Works | SEOIndicator SEO Analysis',
-    description: 'Learn how SEOIndicator analyzes your website',
-  })),
 }));
 
 describe('How It Works Page', () => {
