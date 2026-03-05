@@ -1,7 +1,7 @@
 # TASK-32-6: PricingComparison Component
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -334,3 +334,19 @@ Task created as part of SPEC-32 breakdown. Key conversion component highlighting
 **Decision:** Approved for documentation. All production tests pass.
 
 **Status:** Updated to `To Document`
+
+### [2026-03-05 20:00 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete:**
+- Added PricingComparison Component section to DOCUMENTATION.md (after ComparisonTable section)
+- Component: `frontend/components/compare/PricingComparison.tsx`
+- 4 Sub-components: BillingToggle, PricingCard, FeatureList, PriceDisplay
+- Props: PricingComparisonProps (seoindicator, competitor, showFreeTier)
+- PricingTier interface: name, monthlyPrice, annualPrice, features, highlighted
+- Price types: number, 'Free', 'Custom'
+- Annual savings formula: `((monthly * 12 - annual * 12) / (monthly * 12)) * 100`
+- Test coverage: 53 tests, all passing
+- Production deployed: 2026-03-05, commit a0642afb
+- SPEC-032: In Progress (multiple tasks remaining)
+- Completion marker written, lock removed, active agents cleared
+
+**Status:** Updated to `Done`
