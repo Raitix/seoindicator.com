@@ -1,7 +1,7 @@
 # TASK-30-5: Cookie Consent Integration
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
