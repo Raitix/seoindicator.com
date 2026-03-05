@@ -28065,3 +28065,275 @@ export function isPricingTier(value: unknown): value is PricingTier {
 - TASK-32-11 to TASK-32-14: Competitor Data (uses CompetitorData interface)
 
 ---
+## Unit Tests for Comparison Components (TASK-32-19)
+
+### Service Description
+Comprehensive unit tests for comparison components in the Competitor Comparison Landing Pages feature (FEAT-032). Provides test coverage for all UI components and registry functions using Jest and React Testing Library with accessibility testing via jest-axe.
+
+### Test Files
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `ComparisonTable.test.tsx` | 72 | ✅ PASS |
+| `PricingComparison.test.tsx` | 34 | ✅ PASS |
+| `ProsConsCard.test.tsx` | 30 | ✅ PASS |
+| `UseCaseSection.test.tsx` | 25 | ✅ PASS |
+| `ComparisonCTA.test.tsx` | 41 | ✅ PASS |
+| `ComparisonSchema.test.tsx` | 55 | ✅ PASS |
+| `RelatedComparisons.test.tsx` | 35 | ✅ PASS |
+| `registry.test.ts` | 140 | ✅ PASS |
+| `types.test.ts` | 117 | ✅ PASS |
+| **Total** | **534** | **✅ ALL PASS** |
+
+### Test Categories by Component
+
+**ComparisonTable (72 tests):**
+- Rendering: table structure, categories, rows
+- Icons: check/X icons for boolean values
+- Highlighting: winner highlighting logic
+- Tooltips: tooltip visibility and content
+- Accessibility: ARIA attributes, roles
+- Responsive: horizontal scroll on mobile
+- Edge Cases: empty arrays, unicode, long names, XSS
+
+**PricingComparison (34 tests):**
+- Rendering: pricing tiers, toggle, grid
+- Toggle: monthly/annual switching
+- Free Tier: free tier handling
+- Calculations: annual savings
+- Formatting: price formatting
+- Features: tier features, popular badge
+- Accessibility: toggle accessibility
+- Edge Cases: empty, zero, large prices
+
+**ProsConsCard (30 tests):**
+- Rendering: card structure, sections
+- Pros: pro list with check icons
+- Cons: con list with X icons
+- Rating: star rating display (0-5)
+- Accessibility: ARIA, roles
+- Edge Cases: empty arrays, long text, unicode
+
+**UseCaseSection (25 tests):**
+- Rendering: use case display
+- Badges: audience/budget badges
+- Layout: balanced layout
+- Accessibility: labels, heading hierarchy
+- Edge Cases: empty, unicode, many cases
+
+**ComparisonCTA (41 tests):**
+- Primary Variant: primary button rendering
+- Secondary Variant: secondary button rendering
+- Sticky Variant: sticky mobile CTA
+- Text: custom text support
+- Link: custom href support
+- Tracking: analytics events
+- Accessibility: ARIA labels
+- Edge Cases: XSS, long text, unicode
+
+**ComparisonSchema (55 tests):**
+- BreadcrumbList schema generation
+- FAQPage schema generation
+- HowTo schema generation
+- Special character escaping
+- FAQ inclusion validation
+
+**Registry (140 tests):**
+- Competitor retrieval by ID
+- Comparison retrieval by slug
+- Slug parsing
+- Data validation
+- Related comparison generation
+
+**Types (117 tests):**
+- Type guard functions for runtime validation
+- Interface validation for all data types
+- Constants validation (AUDIENCE_TYPES, BUDGET_TYPES)
+
+### Supporting Modules Created
+
+**Analytics Module (`frontend/lib/analytics.ts`):**
+| Function | Description |
+|----------|-------------|
+| `trackEvent(eventName, properties)` | Generic event tracking |
+| `trackPageView(path)` | Page view tracking |
+| `trackCTAClick(ctaId, href)` | CTA click tracking |
+| `trackComparisonView(slug, competitors)` | Comparison view tracking |
+
+### Test Patterns Used
+
+| Pattern | Description |
+|---------|-------------|
+| Mock Lucide Icons | Consistent icon testing across components |
+| Data Factories | `createMockProps`, `createMockFeature` functions |
+| Jest-axe Integration | Accessibility testing with ARIA rules |
+| User Event Testing | Interactive element testing |
+| TDD Approach | Tests define expected behavior before implementation |
+
+### Acceptance Criteria Status
+
+| Criteria | Status |
+|----------|--------|
+| All components have unit tests | ✅ Complete |
+| Registry functions tested | ✅ Complete |
+| 80%+ code coverage achieved | ✅ Complete |
+| All tests pass in CI | ✅ Complete |
+| Snapshot tests for UI components | ✅ Complete |
+| Accessibility tests included | ✅ Complete |
+
+### Production Status
+- **Deployed:** 2026-03-05 (commits b0052e96, 34bb2dde via GitHub Actions)
+- **Test Duration:** 4.449 seconds
+- **Tests:** 534/534 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-32-1 (Types)
+- TASK-32-2 (Registry)
+- TASK-32-5 through TASK-32-10 (Components)
+
+### Related Tasks
+- TASK-32-1: TypeScript Types
+- TASK-32-2: Registry Functions
+- TASK-32-5: ComparisonTable Component
+- TASK-32-6: PricingComparison Component
+- TASK-32-7: ProsConsCard Component
+- TASK-32-8: UseCaseSection Component
+- TASK-32-9: ComparisonCTA Component
+- TASK-32-10: ComparisonSchema Component
+- FEAT-032: Competitor Comparison Landing Pages
+
+---
+## Internal Linking Implementation (TASK-32-16)
+
+### Service Description
+Internal linking strategy connecting comparison pages with SEO guides, features page, pricing page, and related comparisons. Part of the Competitor Comparison Landing Pages feature (FEAT-032). Implements bidirectional linking for SEO authority distribution and user navigation.
+
+### Component Location
+- **Component:** `frontend/components/compare/RelatedComparisons.tsx`
+- **Footer:** `frontend/components/layout/Footer.tsx` (Compare link added)
+- **Homepage:** `frontend/app/page.tsx` (How We Compare section)
+- **Pricing:** `frontend/app/pricing/page.tsx` (Compare with Alternatives section)
+- **Tests:** `frontend/__tests__/components/compare/RelatedComparisons.test.tsx`
+- **Tests:** `frontend/__tests__/integration/internal-linking-integration.test.tsx`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| RelatedComparisons Component | Displays links to related comparison pages |
+| Footer Link | "Compare SEO Tools" link in Resources column |
+| Homepage Section | "How We Compare" section with key comparison links |
+| Pricing Section | "Compare with Alternatives" section after pricing tiers |
+
+### RelatedComparisons Component Props
+
+```typescript
+interface RelatedComparisonsProps {
+  slugs: string[];        // Array of comparison slugs to display
+  currentSlug?: string;   // Optional current slug to exclude (prevents self-referencing)
+  maxItems?: number;      // Optional max items to display
+  className?: string;     // Optional className for styling
+}
+```
+
+### Links FROM Comparison Pages
+
+| Link Type | Target | Purpose |
+|-----------|--------|---------|
+| SEO Guides Links | `/seo-guides/*` | Feature education context |
+| Features Page Link | `/features` | View all SEOIndicator features |
+| Pricing Page Link | `/pricing` | Full pricing details |
+| Related Comparisons | `/compare/*` | Alternative comparisons |
+
+### Links TO Comparison Pages
+
+| Source Location | Link | Implementation |
+|-----------------|------|----------------|
+| Homepage | "How We Compare" section | Static comparison links |
+| Footer | "Compare SEO Tools" | Resources column link |
+| Pricing Page | "Compare with Alternatives" | Section after pricing tiers |
+| SEO Guides | Comparison callout | Callout box with comparison link |
+
+### Slug Title Formatting
+
+The `formatComparisonTitle` function converts slugs to human-readable titles:
+- `"seoindicator-vs-ahrefs"` → `"SEOIndicator vs Ahrefs"`
+- Uses registry names when available, falls back to capitalization
+
+### Accessibility Implementation
+
+| Feature | Implementation |
+|---------|----------------|
+| ARIA Labels | `aria-label="Related comparisons"` on section |
+| Link Labels | Descriptive aria-label on each comparison link |
+| Empty State | "No related comparisons available" message |
+| Heading Hierarchy | h2 for section heading |
+
+### Security Implementation
+
+| Security Measure | Description |
+|------------------|-------------|
+| Crawlable Links | Next.js Link component (not JavaScript-only) |
+| XSS Prevention | No user-generated content |
+| Valid Slugs | Slugs from registry only |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `RelatedComparisons.test.tsx` | 46 | ✅ PASS |
+| `internal-linking-integration.test.tsx` | 56 | ✅ PASS |
+| **Total** | **102** | **✅ ALL PASS** |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| RC-001 to RC-011 | 46 | RelatedComparisons component unit tests |
+| FL-001 to FL-002 | 5 | Footer integration tests |
+| HP-001 to HP-003 | 10 | Homepage "How We Compare" section |
+| PP-001 to PP-003 | 9 | Pricing page integration tests |
+| CP-001 to CP-003 | 8 | Comparison page integration tests |
+| SG-001 to SG-003 | 6 | SEO Guide callout tests |
+| XC-001 to XC-002 | 4 | Cross-page consistency tests |
+| AC-1 to AC-8 | 14 | Acceptance criteria verification |
+
+### Acceptance Criteria Status
+
+| AC | Description | Status |
+|----|-------------|--------|
+| AC-1 | Comparison pages link to relevant SEO guides | ✅ Verified |
+| AC-2 | "View all features" link present | ✅ Verified |
+| AC-3 | "Related comparisons" section shows | ✅ Verified |
+| AC-4 | Homepage has "How We Compare" section | ✅ Verified |
+| AC-5 | SEO guides have comparison callout | ✅ Verified |
+| AC-6 | Pricing page has comparison section | ✅ Verified |
+| AC-7 | Footer includes compare link | ✅ Verified |
+| AC-8 | All links functional and correct | ✅ Verified |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `50c8cb90` |
+| GitHub Actions | `22726079277` |
+| Build Time | 1m39s |
+| Deploy Time | 25s |
+| Tests | 102/102 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-32-3 (Comparison page route)
+- TASK-32-4 (Comparison index page)
+- FEAT-020 (SEO Guides - for linking targets)
+
+### Related Tasks
+- TASK-32-1: Comparison Types and Interfaces
+- TASK-32-2: Comparison Registry
+- TASK-32-3: Comparison Page Route
+- TASK-32-4: Comparison Index Page
+- FEAT-032: Competitor Comparison Landing Pages
+
+---
