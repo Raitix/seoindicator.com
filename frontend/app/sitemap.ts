@@ -16,6 +16,9 @@ import { COMPARISON_SLUGS } from '@/lib/compare/registry';
  */
 const BASE_URL = 'https://seoindicator.com';
 
+// Required for static export
+export const dynamic = 'force-static';
+
 /**
  * Generate the XML sitemap for SEOIndicator.
  * Includes all pages, comparison pages, and SEO guides.
