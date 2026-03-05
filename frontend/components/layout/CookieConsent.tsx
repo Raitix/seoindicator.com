@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import Link from "next/link";
 import {
   getCookieConsent,
@@ -9,6 +9,7 @@ import {
   type CookieConsentState,
 } from "@/lib/utils/cookieConsent";
 import { cn } from "@/lib/utils";
+import { useConsentContext } from "@/lib/contexts/ConsentContext";
 
 export interface CookieConsentProps {
   /** Additional CSS classes for the banner */
@@ -19,6 +20,10 @@ export interface CookieConsentProps {
   onDecline?: (consent: CookieConsentState) => void;
   /** Show customize button for granular cookie preferences */
   showCustomize?: boolean;
+  /** Control banner visibility externally (overrides internal state) */
+  visible?: boolean;
+  /** Callback when banner visibility changes */
+  onVisibleChange?: (visible: boolean) => void;
 }
 
 /**
@@ -28,7 +33,7 @@ export interface CookieConsentProps {
  * - Fixed position at bottom of viewport
  * - Appears on first visit (no localStorage record)
  * - Disappears after user action
- * - Does not reappear after consent given
+ * - Can be shown again via visible prop (for footer link)
  * - No close button - user must make explicit choice
  * - Full keyboard navigation and screen reader support
  */
@@ -37,8 +42,25 @@ export default function CookieConsent({
   onAccept,
   onDecline,
   showCustomize = false,
+  visible,
+  onVisibleChange,
 }: CookieConsentProps) {
-  const [isVisible, setIsVisible] = useState(false);
+  // Try to use context, fall back to internal state if not available
+  let contextShowBanner: boolean | undefined;
+  let contextSetShowBanner: ((show: boolean) => void) | undefined;
+
+  try {
+    const context = useConsentContext();
+    contextShowBanner = context.showBanner;
+    contextSetShowBanner = context.setShowBanner;
+  } catch {
+    // Context not available, use internal state
+  }
+
+  // Use external control if provided, otherwise context, otherwise internal state
+  const [internalVisible, setInternalVisible] = useState(false);
+  const isVisible = visible !== undefined ? visible : contextShowBanner !== undefined ? contextShowBanner : internalVisible;
+
   const [isExiting, setIsExiting] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [preferences, setPreferences] = useState({
@@ -49,18 +71,32 @@ export default function CookieConsent({
   const acceptButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  // Check if consent already exists on mount
-  useEffect(() => {
-    if (!hasCookieConsent()) {
-      // Store the previously focused element
-      previousFocusRef.current = document.activeElement as HTMLElement;
-      setIsVisible(true);
+  // Set visibility based on consent state
+  const setShowBanner = useCallback((show: boolean) => {
+    if (onVisibleChange) {
+      onVisibleChange(show);
+    } else if (contextSetShowBanner) {
+      contextSetShowBanner(show);
+    } else {
+      setInternalVisible(show);
     }
-  }, []);
+  }, [onVisibleChange, contextSetShowBanner]);
+
+  // Check if consent already exists on mount or when visibility changes
+  useEffect(() => {
+    if (visible === undefined && contextShowBanner === undefined) {
+      // Internal mode: check localStorage on mount
+      if (!hasCookieConsent()) {
+        previousFocusRef.current = document.activeElement as HTMLElement;
+        setInternalVisible(true);
+      }
+    }
+  }, [visible, contextShowBanner]);
 
   // Focus the accept button when banner appears
   useEffect(() => {
     if (isVisible && acceptButtonRef.current) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
       acceptButtonRef.current.focus();
     }
   }, [isVisible]);
@@ -69,15 +105,18 @@ export default function CookieConsent({
     setIsExiting(true);
 
     // Store the element to focus before we start unmounting
-    const elementToFocus = previousFocusRef.current && document.body.contains(previousFocusRef.current)
-      ? previousFocusRef.current
-      : null;
+    const elementToFocus =
+      previousFocusRef.current &&
+      document.body.contains(previousFocusRef.current)
+        ? previousFocusRef.current
+        : null;
 
     // Wait for exit animation before hiding
     setTimeout(() => {
-      setIsVisible(false);
+      setShowBanner(false);
       setIsExiting(false);
       setIsProcessing(false);
+      setShowPreferences(false);
 
       // Restore focus to previous element or body
       // Use RAF to ensure DOM has updated
@@ -89,7 +128,7 @@ export default function CookieConsent({
         }
       });
     }, 300);
-  }, []);
+  }, [setShowBanner]);
 
   const handleAcceptAll = useCallback(() => {
     if (isProcessing) return;
@@ -169,7 +208,7 @@ export default function CookieConsent({
     []
   );
 
-  // Don't render if consent already given or banner not visible
+  // Don't render if not visible
   if (!isVisible) {
     return null;
   }
@@ -189,10 +228,12 @@ export default function CookieConsent({
         className
       )}
       onKeyDown={handleKeyDown}
+      data-testid="cookie-consent-banner"
     >
       {/* Screen reader announcement for consent changes */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
-        {isVisible && "Consent dialog appeared. Please accept or decline to continue."}
+        {isVisible &&
+          "Consent dialog appeared. Please accept or decline to continue."}
       </div>
 
       <div className="container mx-auto max-w-4xl">
@@ -209,9 +250,9 @@ export default function CookieConsent({
               id="cookie-consent-description"
               className="text-sm text-slate-300 mb-4"
             >
-              We use cookies to enhance your experience. Necessary cookies are essential
-              for the site to function. You can choose to accept all cookies or only
-              necessary ones.{" "}
+              We use cookies to enhance your experience. Necessary cookies are
+              essential for the site to function. You can choose to accept all
+              cookies or only necessary ones.{" "}
               <a
                 href="/terms"
                 className="text-blue-400 hover:text-blue-300 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded"
@@ -223,7 +264,11 @@ export default function CookieConsent({
 
             {/* Preferences Panel (optional) */}
             {showCustomize && showPreferences && (
-              <div className="bg-slate-800 rounded-lg p-4 mb-4" role="group" aria-label="Cookie preferences">
+              <div
+                className="bg-slate-800 rounded-lg p-4 mb-4"
+                role="group"
+                aria-label="Cookie preferences"
+              >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
@@ -241,7 +286,10 @@ export default function CookieConsent({
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <label htmlFor="analytics-cookies" className="text-sm font-medium text-white">
+                      <label
+                        htmlFor="analytics-cookies"
+                        className="text-sm font-medium text-white"
+                      >
                         Analytics Cookies
                       </label>
                       <p className="text-xs text-slate-400">
@@ -265,7 +313,9 @@ export default function CookieConsent({
                       <span
                         className={cn(
                           "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                          preferences.analytics ? "translate-x-6" : "translate-x-1"
+                          preferences.analytics
+                            ? "translate-x-6"
+                            : "translate-x-1"
                         )}
                       />
                     </button>
@@ -273,7 +323,10 @@ export default function CookieConsent({
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <label htmlFor="marketing-cookies" className="text-sm font-medium text-white">
+                      <label
+                        htmlFor="marketing-cookies"
+                        className="text-sm font-medium text-white"
+                      >
                         Marketing Cookies
                       </label>
                       <p className="text-xs text-slate-400">
@@ -286,7 +339,10 @@ export default function CookieConsent({
                       role="switch"
                       aria-checked={preferences.marketing}
                       onClick={() =>
-                        setPreferences((p) => ({ ...p, marketing: !p.marketing }))
+                        setPreferences((p) => ({
+                          ...p,
+                          marketing: !p.marketing,
+                        }))
                       }
                       className={cn(
                         "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
@@ -297,7 +353,9 @@ export default function CookieConsent({
                       <span
                         className={cn(
                           "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                          preferences.marketing ? "translate-x-6" : "translate-x-1"
+                          preferences.marketing
+                            ? "translate-x-6"
+                            : "translate-x-1"
                         )}
                       />
                     </button>

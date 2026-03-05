@@ -4393,6 +4393,181 @@ When `isGenerating=true`:
 - TASK-29-7: ExportModal Component (format selection modal)
 
 ---
+## Tool Page Integration (TASK-29-8)
+
+### Description
+Integration of ExportResultsButton component into 4 SEO tool result pages, enabling users to export analysis results as PDF or XLS files. Part of the Export Results (PDF/XLS) feature (FEAT-029).
+
+### Integration Points
+
+| Tool | Component File | Lines | Tool Name Identifier |
+|------|---------------|-------|---------------------|
+| Meta Tag Analyzer | `ToolWidget.tsx` | 227-235 | `meta-tag-analyzer` |
+| Keyword Density Checker | `ToolWidget.tsx` | 377-385 | `keyword-density-checker` |
+| Mobile-Friendly Checker | `MobileFriendlyResults.tsx` | 144-168 | `mobile-friendly-checker` |
+| Social Media Preview | `SocialMediaPreviewResults.tsx` | 109-143 | `social-media-preview` |
+
+### Integration Pattern
+
+Each tool result page integrates ExportResultsButton using a consistent pattern:
+
+```tsx
+{analysisComplete && (
+  <div className="flex justify-end mb-4">
+    <ExportResultsButton
+      toolName="meta-tag-analyzer"
+      url={analyzedUrl}
+      data={resultsData}
+    />
+  </div>
+)}
+```
+
+### Data Structure (ToolResultData)
+
+```typescript
+interface ToolResultData {
+  analyzedAt: string;  // ISO timestamp
+  results: {
+    [indicatorName: string]: {
+      value: string | number | boolean;
+      status: 'ok' | 'warning' | 'error';
+      recommendation?: string;
+    };
+  };
+  summary?: {
+    score?: number;
+    passed: number;
+    warnings: number;
+    failed: number;
+  };
+}
+```
+
+### Data Mapping by Tool
+
+**Meta Tag Analyzer:**
+```tsx
+const exportData = {
+  analyzedAt: result.analyzedAt,
+  results: {
+    title: { value: result.title, status: titleStatus },
+    description: { value: result.description, status: descStatus },
+    // ... additional indicators
+  },
+  summary: { score, passCount, warningCount, failCount },
+};
+```
+
+**Keyword Density Checker:**
+```tsx
+const exportData = {
+  analyzedAt: result.analyzedAt,
+  results: {
+    density: { value: density.toFixed(2), status: densityStatus },
+    occurrences: { value: occurrences, status: 'ok' },
+    // ... additional indicators
+  },
+  summary: { score, passed: passCount, warnings: warnCount, failed: failCount },
+};
+```
+
+**Mobile-Friendly Checker:**
+```tsx
+const exportData = {
+  analyzedAt: result.analyzedAt,
+  results: {
+    viewport: { value: viewportContent, status: viewportStatus },
+    responsive: { value: hasResponsiveGrid, status: responsiveStatus },
+    // ... additional indicators
+  },
+  summary: { score, passed, warnings, failed },
+};
+```
+
+**Social Media Preview:**
+```tsx
+const exportData = {
+  analyzedAt: result.analyzedAt,
+  results: {
+    openGraph: { value: ogTitle, status: ogStatus },
+    twitterCard: { value: cardType, status: twitterStatus },
+    // ... additional indicators
+  },
+  summary: { score, passed, warnings, failed },
+};
+```
+
+### Consistent UX Implementation
+
+| Aspect | Implementation |
+|--------|---------------|
+| Button Positioning | `flex justify-end mb-4` in results header |
+| Button Text | "Export Results" with Download icon |
+| aria-label | "Export analysis results" |
+| Conditional Display | `analysisComplete && !isLoading` |
+| Disabled State | No data or during generation |
+| Mobile Responsive | Standard touch targets, responsive classes |
+
+### Files Modified
+
+| File | Change Description |
+|------|-------------------|
+| `frontend/components/tools/ToolWidget.tsx` | Added ExportResultsButton to Meta Tag Analyzer and Keyword Density Checker result renderers |
+| `frontend/components/tools/MobileFriendlyResults.tsx` | Added ExportResultsButton to mobile-friendly results |
+| `frontend/components/tools/SocialMediaPreviewResults.tsx` | Added ExportResultsButton to social media preview results |
+| `frontend/__tests__/integration/tool-export-integration.test.tsx` | Fixed mock to include disabled logic |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `tool-export-integration.test.tsx` | 72 | 72+ | PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Meta Tag Analyzer Integration | 8 | Button rendering, data mapping, accessibility |
+| Keyword Density Checker Integration | 8 | Button rendering, data mapping, accessibility |
+| Mobile-Friendly Checker Integration | 8 | Button rendering, data mapping, accessibility |
+| Social Media Preview Integration | 8 | Button rendering, data mapping, accessibility |
+| Consistent UX | 5 | Same button style, positioning, aria-label |
+| Mobile Responsive | 5 | Touch targets, visibility, layout adaptation |
+| Data Mapping | 7 | Correct data structure for each tool |
+| Edge Cases | 7 | Long URLs, unicode, large data, rapid changes |
+| Accessibility | 7 | aria-label, keyboard, focus, disabled state |
+| Integration | 5 | Complete export flow per tool |
+| Snapshots | 4 | UI snapshots for each tool |
+
+### Known Issues
+
+| Issue | Impact | Status |
+|-------|--------|--------|
+| `/api/tools/analyze` 404 | Backend API returns 404 for tool analysis | Separate fix required |
+
+**Note:** The frontend integration is complete and tested. A separate backend issue exists where `/api/tools/analyze` returns 404, preventing live tool analysis. This is unrelated to the ExportResultsButton integration.
+
+### Production Status
+- **Deployed:** 2026-03-05 (GitHub Actions)
+- **Commit:** ca21129
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** 72/72 passing (1.79s)
+- **CI Integration:** Tests run automatically in GitHub Actions
+- **Status:** Complete (frontend integration)
+
+### Dependencies
+- TASK-29-6 (ExportResultsButton component)
+- TASK-29-7 (ExportModal component - stub for future)
+- TASK-29-3 (ToolExportService & Controller API)
+
+### Related Tasks
+- TASK-29-1: PdfToolExporter Implementation
+- TASK-29-2: XlsToolExporter Implementation
+- TASK-29-3: ToolExportService & Controller
+- TASK-29-6: ExportResultsButton Component
+- TASK-29-9: Backend Unit Tests
+
+---
 ## Mobile Navigation Sheet Component (TASK-28-13)
 
 ### Component Description
@@ -24641,3 +24816,137 @@ All skeleton components use the `animate-pulse` Tailwind CSS class for consisten
 - TASK-28-10: IndicatorCatalog (uses IndicatorCatalogSkeleton)
 - TASK-28-11: Progress Indicators
 - TASK-28-12: Loading State Integration
+
+---
+## Terms & Privacy Page (TASK-30-1)
+
+### Description
+Static legal page at `/terms` combining Terms of Service and Privacy Policy content. SEO-optimized with WebPage schema markup, accessibility features, and proper semantic HTML structure. Part of the Legal + About + How It Works + Cookie Consent feature (FEAT-030).
+
+### Component Location
+- **Page Component:** `frontend/app/terms/page.tsx`
+- **Content Component:** `frontend/components/pages/TermsContent.tsx`
+- **Test File:** `frontend/__tests__/app/terms/page.test.tsx`
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-30-1.md`
+
+### Core Functionalities
+
+**Page Component (`app/terms/page.tsx`):**
+| Feature | Description |
+|---------|-------------|
+| SEO Metadata | `generateMetadata()` export for title, description, robots, OG, canonical |
+| WebPage Schema | JSON-LD structured data for search engines |
+| Breadcrumb Navigation | Home > Terms & Privacy with aria-current |
+| Responsive Layout | max-w-4xl container with padding |
+
+**Content Component (`TermsContent.tsx`):**
+| Feature | Description |
+|---------|-------------|
+| 5 Content Sections | Introduction, Terms of Use, Privacy Policy, Cookie Policy, Contact |
+| Table of Contents | Anchor links to each section |
+| Section Numbering | Emerald badges (1, 2, 3, 4, 5) |
+| Last Updated Badge | March 5, 2026 date display |
+| Back to Home Link | Navigation aid at page bottom |
+
+### Content Sections
+
+| Section | ID | Content |
+|---------|----|---------|
+| Introduction | `#introduction` | Overview of SEOIndicator services |
+| Terms of Use | `#terms-of-use` | User responsibilities, account terms, service usage |
+| Privacy Policy | `#privacy-policy` | Data collection, usage, sharing, user rights |
+| Cookie Policy | `#cookie-policy` | Cookie types, purposes, management |
+| Contact | `#contact` | Contact emails (legal@, privacy@, support@) |
+
+### SEO Implementation
+
+**Meta Tags:**
+| Meta | Value |
+|------|-------|
+| Title | "Terms & Privacy \| SEOIndicator" |
+| Description | "Read our comprehensive Terms of Service and Privacy Policy to understand how SEOIndicator collects, uses, and protects your personal data and privacy." (157 chars) |
+| Robots | index, follow |
+| Canonical | https://seoindicator.com/terms/ |
+
+**Open Graph Tags:**
+| Property | Value |
+|----------|-------|
+| og:title | Terms & Privacy \| SEOIndicator |
+| og:description | Read our comprehensive Terms of Service... |
+| og:url | https://seoindicator.com/terms/ |
+| og:site_name | SEOIndicator |
+| og:type | website |
+
+**Twitter Cards:**
+| Property | Value |
+|----------|-------|
+| twitter:card | summary |
+| twitter:title | Terms & Privacy \| SEOIndicator |
+| twitter:description | Read our comprehensive Terms of Service... |
+
+### Schema.org JSON-LD
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Terms & Privacy",
+  "description": "Read our comprehensive Terms of Service and Privacy Policy to understand how SEOIndicator collects, uses, and protects your personal data and privacy.",
+  "url": "https://seoindicator.com/terms/",
+  "publisher": {
+    "@type": "Organization",
+    "name": "SEOIndicator"
+  },
+  "dateModified": "2026-03-05"
+}
+```
+
+### Accessibility Implementation
+
+| Feature | Implementation |
+|---------|---------------|
+| Skip Link | "Skip to main content" link at page top |
+| Main Landmark | `<main role="main" aria-label="Terms and Privacy content">` |
+| Heading Hierarchy | Single `<h1>`, followed by `<h2>` sections |
+| ARIA Labels | Navigation elements properly labeled |
+| aria-current | `"page"` on Terms & Privacy breadcrumb |
+| Keyboard Navigation | Tab navigation, anchor links |
+| Color Contrast | ≥ 4.5:1 ratio maintained |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `page.test.tsx` | 37 | 37+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| File Structure | 2 | Page and content component files exist |
+| Static Generation | 1 | Page renders without SSR errors |
+| SEO Metadata | 6 | Title, description, robots, canonical, OG, Twitter |
+| Schema.org | 2 | WebPage JSON-LD presence and structure |
+| Accessibility | 4 | Heading hierarchy, keyboard, landmark, skip link |
+| Content Sections | 8 | All 5 sections, last updated date, table of contents |
+| TermsContent Component | 2 | Props acceptance, className support |
+| Edge Cases | 4 | Empty content, long text, re-render, special chars |
+| Performance | 2 | Render time < 100ms, stability |
+| Responsive Design | 3 | Mobile, tablet, desktop layouts |
+| Integration | 3 | Homepage link, consistent styling, navigation |
+
+### Production Status
+- **Deployed:** 2026-03-05 (GitHub Actions auto-deploy)
+- **Commit:** `51e99d8`
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Production URL:** https://seoindicator.com/terms/
+- **Tests:** 37/37 passing
+- **Status:** Complete
+
+### Dependencies
+- None (standalone static page)
+
+### Related Tasks
+- TASK-30-2: About Page (in progress)
+- TASK-30-3: How It Works Page (pending)
+- TASK-30-4: Cookie Consent Component (pending)
+- TASK-30-5: Consent Integration (pending)
