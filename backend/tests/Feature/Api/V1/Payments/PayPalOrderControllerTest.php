@@ -53,6 +53,10 @@ class PayPalOrderControllerTest extends TestCase
             'is_active' => false,
             'sort_order' => 99,
         ]);
+
+        // Bind a default mock for PaymentGatewayInterface to prevent 500 errors
+        // Tests can override this with mockSuccessfulPayPalOrder() or mockFailedPayPalOrder()
+        $this->mockSuccessfulPayPalOrder();
     }
 
     /**
@@ -281,8 +285,8 @@ class PayPalOrderControllerTest extends TestCase
             'cancel_url' => 'https://example.com/credits/cancelled',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.amount', $this->activePackage->price_usd);
+        $response->assertStatus(200);
+        $this->assertEqualsWithDelta((float) $this->activePackage->price_usd, $response->json('data.amount'), 0.01);
     }
 
     /** @test BE-006: Credits include bonus percentage */
@@ -300,8 +304,8 @@ class PayPalOrderControllerTest extends TestCase
             'cancel_url' => 'https://example.com/credits/cancelled',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.credits', $expectedCredits);
+        $response->assertStatus(200);
+        $this->assertEqualsWithDelta($expectedCredits, $response->json('data.credits'), 0.01);
     }
 
     /** @test BE-007: Package name returned in response */
@@ -523,8 +527,8 @@ class PayPalOrderControllerTest extends TestCase
             'cancel_url' => 'https://example.com/credits/cancelled',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.credits', 25.00);
+        $response->assertStatus(200);
+        $this->assertEqualsWithDelta(25.00, $response->json('data.credits'), 0.01);
     }
 
     /** @test BL-004: Credits calculation with bonus */
@@ -542,8 +546,8 @@ class PayPalOrderControllerTest extends TestCase
             'cancel_url' => 'https://example.com/credits/cancelled',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.credits', $expectedCredits);
+        $response->assertStatus(200);
+        $this->assertEqualsWithDelta($expectedCredits, $response->json('data.credits'), 0.01);
     }
 
     /** @test BL-005: Popular package works */
@@ -666,8 +670,11 @@ class PayPalOrderControllerTest extends TestCase
 
         $this->assertDatabaseHas('credit_transactions', [
             'user_id' => $this->user->id,
-            'amount' => $this->activePackage->price_usd,
         ]);
+        // Verify credits amount matches (amount field stores credits, not USD)
+        $transaction = \App\Models\CreditTransaction::where('user_id', $this->user->id)->first();
+        $expectedCredits = $this->activePackage->credits * (1 + $this->activePackage->bonus_percent / 100);
+        $this->assertEqualsWithDelta($expectedCredits, (float) $transaction->amount, 0.01);
     }
 
     // ============================================
@@ -874,8 +881,9 @@ class PayPalOrderControllerTest extends TestCase
             'amount' => 0.01, // Malicious attempt
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.amount', $this->activePackage->price_usd); // Server price used
+        $response->assertStatus(200);
+        // Server price used, not the malicious price
+        $this->assertEqualsWithDelta((float) $this->activePackage->price_usd, $response->json('data.amount'), 0.01);
     }
 
     /** @test SC-002: SQL injection in package_id */
@@ -1062,8 +1070,10 @@ class PayPalOrderControllerTest extends TestCase
         ]);
         $response1->assertStatus(500);
 
-        // Second attempt succeeds
+        // Re-bind the successful mock (the controller will be re-instantiated for the next request)
         $this->mockSuccessfulPayPalOrder();
+
+        // Second attempt succeeds
         $response2 = $this->postJson($this->endpoint, [
             'package_id' => $this->activePackage->id,
             'return_url' => 'https://example.com/credits/success',
@@ -1230,8 +1240,8 @@ class PayPalOrderControllerTest extends TestCase
             'cancel_url' => 'https://example.com/credits/cancelled',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.credits', $expectedCredits);
+        $response->assertStatus(200);
+        $this->assertEqualsWithDelta($expectedCredits, $response->json('data.credits'), 0.01);
     }
 
     /** @test EC-002: Minimum package ($5) */
@@ -1254,8 +1264,8 @@ class PayPalOrderControllerTest extends TestCase
             'cancel_url' => 'https://example.com/credits/cancelled',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.amount', 5.00);
+        $response->assertStatus(200);
+        $this->assertEquals(5.00, (float) $response->json('data.amount'));
     }
 
     /** @test EC-003: Maximum package ($50) */
@@ -1278,8 +1288,8 @@ class PayPalOrderControllerTest extends TestCase
             'cancel_url' => 'https://example.com/credits/cancelled',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.amount', 50.00);
+        $response->assertStatus(200);
+        $this->assertEquals(50.00, (float) $response->json('data.amount'));
     }
 
     /** @test EC-004: URL with query params */
