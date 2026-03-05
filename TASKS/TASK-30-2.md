@@ -1,7 +1,7 @@
 # TASK-30-2: About Page
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`
