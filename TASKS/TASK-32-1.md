@@ -1,7 +1,7 @@
 # TASK-32-1: Create Comparison Types and Interfaces
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
