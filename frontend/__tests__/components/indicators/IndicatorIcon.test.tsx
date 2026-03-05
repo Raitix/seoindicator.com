@@ -12,13 +12,19 @@ import '@testing-library/jest-dom';
 jest.mock('lucide-react', () => ({
   Activity: (props: any) => <svg data-testid="lucide-activity" viewBox="0 0 24 24" {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>,
   AlertCircle: (props: any) => <svg data-testid="lucide-alert-circle" viewBox="0 0 24 24" {...props}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>,
+  AlertTriangle: (props: any) => <svg data-testid="lucide-alert-triangle" viewBox="0 0 24 24" {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
   CheckCircle: (props: any) => <svg data-testid="lucide-check-circle" viewBox="0 0 24 24" {...props}><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" /></svg>,
   ChevronDown: (props: any) => <svg data-testid="lucide-chevron-down" viewBox="0 0 24 24" {...props}><path d="M6 9l6 6 6-6" /></svg>,
+  Eye: (props: any) => <svg data-testid="lucide-eye" viewBox="0 0 24 24" {...props}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>,
+  FileText: (props: any) => <svg data-testid="lucide-file-text" viewBox="0 0 24 24" {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>,
   HelpCircle: (props: any) => <svg data-testid="lucide-help-circle" viewBox="0 0 24 24" {...props}><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
   Info: (props: any) => <svg data-testid="lucide-info" viewBox="0 0 24 24" {...props}><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>,
+  Link2: (props: any) => <svg data-testid="lucide-link2" viewBox="0 0 24 24" {...props}><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3" /><line x1="8" y1="12" x2="16" y2="12" /></svg>,
   Search: (props: any) => <svg data-testid="lucide-search" viewBox="0 0 24 24" {...props}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
   Star: (props: any) => <svg data-testid="lucide-star" viewBox="0 0 24 24" {...props}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
   TrendingUp: (props: any) => <svg data-testid="lucide-trending-up" viewBox="0 0 24 24" {...props}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>,
+  Users: (props: any) => <svg data-testid="lucide-users" viewBox="0 0 24 24" {...props}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
+  Wrench: (props: any) => <svg data-testid="lucide-wrench" viewBox="0 0 24 24" {...props}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>,
   Warning: (props: any) => <svg data-testid="lucide-warning" viewBox="0 0 24 24" {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
   XCircle: (props: any) => <svg data-testid="lucide-x-circle" viewBox="0 0 24 24" {...props}><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>,
   Zap: (props: any) => <svg data-testid="lucide-zap" viewBox="0 0 24 24" {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>,
@@ -41,13 +47,19 @@ let IndicatorIcon: React.FC<{
 const mockLucideIcons: Record<string, React.FC> = {
   Activity: () => <svg data-testid="lucide-activity" />,
   AlertCircle: () => <svg data-testid="lucide-alert-circle" />,
+  AlertTriangle: () => <svg data-testid="lucide-alert-triangle" />,
   CheckCircle: () => <svg data-testid="lucide-check-circle" />,
   ChevronDown: () => <svg data-testid="lucide-chevron-down" />,
+  Eye: () => <svg data-testid="lucide-eye" />,
+  FileText: () => <svg data-testid="lucide-file-text" />,
   HelpCircle: () => <svg data-testid="lucide-help-circle" />,
   Info: () => <svg data-testid="lucide-info" />,
+  Link2: () => <svg data-testid="lucide-link2" />,
   Search: () => <svg data-testid="lucide-search" />,
   Star: () => <svg data-testid="lucide-star" />,
   TrendingUp: () => <svg data-testid="lucide-trending-up" />,
+  Users: () => <svg data-testid="lucide-users" />,
+  Wrench: () => <svg data-testid="lucide-wrench" />,
   Warning: () => <svg data-testid="lucide-warning" />,
   XCircle: () => <svg data-testid="lucide-x-circle" />,
   Zap: () => <svg data-testid="lucide-zap" />,
@@ -118,16 +130,19 @@ describe('Lucide Icon Rendering', () => {
   const lucideIcons = [
     { id: 'LI-001', name: 'Activity' },
     { id: 'LI-002', name: 'AlertCircle' },
-    { id: 'LI-003', name: 'CheckCircle' },
-    { id: 'LI-004', name: 'ChevronDown' },
-    { id: 'LI-005', name: 'HelpCircle' },
-    { id: 'LI-006', name: 'Info' },
-    { id: 'LI-007', name: 'Search' },
-    { id: 'LI-008', name: 'Star' },
-    { id: 'LI-009', name: 'TrendingUp' },
-    { id: 'LI-010', name: 'Warning' },
-    { id: 'LI-011', name: 'XCircle' },
-    { id: 'LI-012', name: 'Zap' },
+    { id: 'LI-003', name: 'AlertTriangle' },
+    { id: 'LI-004', name: 'CheckCircle' },
+    { id: 'LI-005', name: 'ChevronDown' },
+    { id: 'LI-006', name: 'Eye' },
+    { id: 'LI-007', name: 'HelpCircle' },
+    { id: 'LI-008', name: 'Info' },
+    { id: 'LI-009', name: 'Search' },
+    { id: 'LI-010', name: 'Star' },
+    { id: 'LI-011', name: 'TrendingUp' },
+    { id: 'LI-012', name: 'Users' },
+    { id: 'LI-013', name: 'Wrench' },
+    { id: 'LI-014', name: 'XCircle' },
+    { id: 'LI-015', name: 'Zap' },
   ];
 
   // Convert camelCase to kebab-case for testid matching
@@ -144,7 +159,7 @@ describe('Lucide Icon Rendering', () => {
     });
   });
 
-  it('LI-013: Invalid icon name renders nothing gracefully', () => {
+  it('LI-016: Invalid icon name renders nothing gracefully', () => {
     const { container } = render(<IndicatorIcon icon="NonExistentIcon" />);
     expect(container.firstChild).toBeNull();
   });
