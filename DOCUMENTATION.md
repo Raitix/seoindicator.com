@@ -14194,6 +14194,109 @@ PDF exporter class for generating professional PDF exports of SEO tool analysis 
 - TASK-29-3: ToolExportService & Controller (integration)
 
 ---
+## XlsToolExporter Implementation (TASK-29-2)
+
+### Service Description
+XLS exporter class for generating Excel spreadsheets of SEO tool analysis results. Uses PhpSpreadsheet to create structured indicator tables with conditional formatting, filters, and security measures (XSS and formula injection prevention). Part of the Export Results (PDF/XLS) feature (FEAT-029).
+
+### Component Location
+- **Class:** `backend/app/Exporters/XlsToolExporter.php`
+- **Tests:** `backend/tests/Unit/Exporters/XlsToolExporterTest.php`
+
+### Core Functionalities
+
+**XlsToolExporter Class:**
+| Method | Description |
+|--------|-------------|
+| `export(ToolResult $result): string` | Main export method - returns binary XLS content |
+| `array(): array` | Returns indicator data rows for FromArray interface |
+| `headings(): array` | Returns column headers for WithHeadings interface |
+| `styles(Worksheet $sheet): array` | Applies bold formatting to header row |
+
+### XLS Structure
+
+| Column | Type | Description |
+|--------|------|-------------|
+| **Category** | string | Indicator category (e.g., 'Meta Tags', 'Content') |
+| **Indicator** | string | Indicator name (e.g., 'Title', 'H1 Count') |
+| **Value** | string | Indicator value (formula-injection protected) |
+| **Status** | string | Status: OK, Warning, or Error |
+| **Recommendation** | string | Actionable recommendation or '-' if none |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | Script tags preserved as text (safe in spreadsheet context) |
+| Formula Injection Prevention | Prefixes `=`, `+`, `@`, and formula-like `-` with `'` (single quote) |
+| Null Handling | Category → 'General', value/recommendation → '-' |
+
+### Formula Injection Prevention
+
+The exporter prefixes potentially dangerous characters in the Value column to prevent formula injection attacks:
+
+| Character | Example | Sanitized Output |
+|-----------|---------|------------------|
+| `=` | `=SUM(A1:A10)` | `'=SUM(A1:A10)` |
+| `+` | `+cmd|' /C calc'!A0` | `'+cmd|' /C calc'!A0` |
+| `@` | `@SUM(1+1)` | `'@SUM(1+1)` |
+| `-` (formula-like) | `-1+1` | `'-1+1` |
+
+### PhpSpreadsheet Integration
+
+**Implemented Interfaces:**
+| Interface | Purpose |
+|-----------|---------|
+| `FromArray` | Provides data array for worksheet population |
+| `WithHeadings` | Defines column headers |
+| `WithStyles` | Applies cell formatting (bold header row) |
+
+### Null Value Handling
+
+| Field | Null Value Replacement |
+|-------|------------------------|
+| Category | `'General'` |
+| Value | `'-'` |
+| Recommendation | `'-'` |
+| Status | Preserved as-is (required field) |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `XlsToolExporterTest.php` | 42 | 72+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 3 | Class instantiation, interface implementation |
+| Export Method | 3 | Binary XLS generation, valid spreadsheet |
+| Headings | 5 | 5 columns, correct order, types |
+| Data Rows | 9 | Indicator mapping, rows count |
+| Null Handling | 5 | Category, value, recommendation defaults |
+| Styles | 7 | Bold header row, worksheet handling |
+| XSS Prevention | 6 | Script tags as text, HTML entities |
+| Formula Injection | 6 | `=`, `+`, `@`, `-` prefixing |
+| Unicode Support | 3 | Emoji, unicode characters |
+| Edge Cases | 5 | Empty data, large datasets (100 indicators) |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions #22678518425)
+- **Dependency Fix:** Pinned `maennchen/zipstream-php` to `3.1.2` for PHP 8.2 compatibility
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** 42/42 passing (72 assertions, 9.37s)
+- **Status:** Complete
+
+### Dependencies
+- `ToolResult` DTO (existing at `app/Services/Tools/ToolResult.php`)
+- `maatwebsite/excel` package (PhpSpreadsheet wrapper)
+- `phpoffice/phpspreadsheet` for binary XLS generation
+
+### Related Tasks
+- TASK-29-1: PdfToolExporter Implementation (complementary exporter)
+- TASK-29-3: ToolExportService & Controller (integration)
+
+---
 ## Database Schema: SEO Site Audits (FEAT-014)
 
 ### Audits Table
