@@ -47,7 +47,9 @@ export function generateStaticParams(): Array<{ slug: string }> {
 export async function generateMetadata({
   params,
 }: ComparisonPageProps): Promise<Metadata> {
-  const comparison = getComparisonBySlug(params.slug);
+  // In Next.js 16, params must be awaited
+  const { slug } = await params;
+  const comparison = getComparisonBySlug(slug);
 
   if (!comparison) {
     return {
@@ -86,8 +88,10 @@ export async function generateMetadata({
 // Page Component
 // ============================================================================
 
-export default function ComparisonPage({ params }: ComparisonPageProps) {
-  const comparison = getComparisonBySlug(params.slug);
+export default async function ComparisonPage({ params }: ComparisonPageProps) {
+  // In Next.js 16, params must be awaited
+  const { slug } = await params;
+  const comparison = getComparisonBySlug(slug);
 
   if (!comparison) {
     notFound();

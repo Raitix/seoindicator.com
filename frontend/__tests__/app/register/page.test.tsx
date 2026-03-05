@@ -33,6 +33,8 @@ const mockAuthContext = {
   register: mockRegister,
   resetPassword: jest.fn(),
   resendVerification: jest.fn(),
+  clearError: jest.fn(),
+  refreshUser: jest.fn(),
 };
 
 describe("RegisterPage", () => {
