@@ -6,7 +6,6 @@ use App\Exporters\PdfToolExporter;
 use App\Exporters\XlsToolExporter;
 use App\Services\Tools\ToolExportService;
 use App\Services\Tools\ToolResult;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +15,7 @@ use Tests\TestCase;
 
 class ToolExportServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    // Removed RefreshDatabase - tests use Storage/Cache, not database
 
     private ToolExportService $service;
     private PdfToolExporter|MockInterface $pdfExporter;
@@ -31,6 +30,7 @@ class ToolExportServiceTest extends TestCase
         $this->service = new ToolExportService($this->pdfExporter, $this->xlsExporter);
         
         Storage::fake('local');
+        Cache::flush();
     }
 
     protected function tearDown(): void
@@ -114,12 +114,11 @@ class ToolExportServiceTest extends TestCase
     {
         $toolResult = $this->createMockToolResult();
         
+        // XlsToolExporter uses export() method for binary output
         $this->xlsExporter
-            ->shouldReceive('array')
+            ->shouldReceive('export')
             ->once()
-            ->andReturn([
-                ['Meta Tags', 'Title', 'Example Page', 'OK', '-'],
-            ]);
+            ->andReturn('PK' . str_repeat("\x00", 100)); // XLS binary signature
         
         $this->pdfExporter
             ->shouldNotReceive('export');
@@ -307,9 +306,7 @@ class ToolExportServiceTest extends TestCase
         preg_match('/download\/([a-zA-Z0-9]+)/', $url, $matches);
         $token = $matches[1];
         
-        // Verify TTL is approximately 1 hour (3600 seconds)
-        $ttl = Cache::getStore()->getPrefix() . "export:{$token}";
-        // Note: Actual TTL verification depends on cache driver
+        // Verify token exists (TTL handled by Cache)
         $this->assertTrue(Cache::has("export:{$token}"));
     }
 
@@ -430,11 +427,9 @@ class ToolExportServiceTest extends TestCase
         $toolResult = $this->createMockToolResult();
         
         $this->xlsExporter
-            ->shouldReceive('array')
+            ->shouldReceive('export')
             ->once()
-            ->andReturn([
-                ['Meta Tags', 'Title', 'Example Page', 'OK', '-'],
-            ]);
+            ->andReturn('PK' . str_repeat("\x00", 100)); // XLS binary signature
         
         $url = $this->service->createExport(
             tool: 'meta-tag-analyzer',
@@ -451,12 +446,9 @@ class ToolExportServiceTest extends TestCase
         
         // XLS content type (spreadsheet)
         $contentType = $response->headers->get('Content-Type');
-        $this->assertTrue(
-            in_array($contentType, [
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/vnd.ms-excel;charset=utf-8',
-            ])
+        $this->assertEquals(
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            $contentType
         );
     }
 
@@ -478,6 +470,7 @@ class ToolExportServiceTest extends TestCase
             'user_id' => 1,
         ], now()->subMinute());
         
+        // Expired token should not exist in cache
         $this->expectException(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
         
         $this->service->downloadExport('expired-token', 1);
@@ -662,11 +655,9 @@ class ToolExportServiceTest extends TestCase
         $toolResult = $this->createMockToolResult();
         
         $this->xlsExporter
-            ->shouldReceive('array')
+            ->shouldReceive('export')
             ->once()
-            ->andReturn([
-                ['Meta Tags', 'Title', 'Example Page', 'OK', '-'],
-            ]);
+            ->andReturn('PK' . str_repeat("\x00", 100)); // XLS binary signature
         
         $url = $this->service->createExport(
             tool: 'meta-tag-analyzer',
@@ -743,7 +734,7 @@ class ToolExportServiceTest extends TestCase
             ->once()
             ->andReturn('%PDF-1.4 mock pdf content');
         
-        $url = $this->service->createExport(
+        $this->service->createExport(
             tool: 'meta-tag-analyzer',
             url: 'https://example.com',
             format: 'pdf',
@@ -833,11 +824,15 @@ class ToolExportServiceTest extends TestCase
         );
         
         // Verify file was created in exports directory (not parent)
+        // Path traversal is prevented - no '../' in path
         $files = Storage::disk('local')->files('exports');
+        $this->assertNotEmpty($files, 'File should be created in exports directory');
         foreach ($files as $file) {
+            // Path traversal characters must be removed
             $this->assertStringNotContainsString('../', $file);
-            $this->assertStringNotContainsString('etc', $file);
-            $this->assertStringNotContainsString('passwd', $file);
+            $this->assertStringNotContainsString('..\\', $file);
+            // File must be in exports directory (not outside)
+            $this->assertStringStartsWith('exports/', $file);
         }
     }
 
@@ -1070,11 +1065,9 @@ class ToolExportServiceTest extends TestCase
         
         // XLS export
         $this->xlsExporter
-            ->shouldReceive('array')
+            ->shouldReceive('export')
             ->once()
-            ->andReturn([
-                ['Meta Tags', 'Title', 'Example Page', 'OK', '-'],
-            ]);
+            ->andReturn('PK' . str_repeat("\x00", 100)); // XLS binary signature
         
         $xlsUrl = $this->service->createExport(
             tool: 'meta-tag-analyzer',
