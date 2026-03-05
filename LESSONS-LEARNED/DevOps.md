@@ -117,6 +117,20 @@ _(Document rollback events and causes)_
   - Priority-based sorting (high → medium → low)
 - **Note:** Service and tests were already in origin/main from Developer/LocalTester work. No additional deployment needed.
 
+### TASK-32-2 (Comparison Registry and Data Loading)
+- **Date:** 2026-03-05
+- **Method:** GitHub Actions (automatic)
+- **Run ID:** 22725116735
+- **Result:** Successful
+- **Duration:** ~2 minutes (build: 1m37s, deploy: 30s)
+- **Commit:** 9d3b7d3d
+- **Health Check:** 200 OK, database connected
+- **What was deployed:**
+  - `frontend/lib/compare/registry.ts` - Registry with helper functions (getCompetitorById, getComparisonBySlug, parseSlug, generateComparisonData, validateCompetitorData, validateComparisonData)
+  - `frontend/lib/compare/competitors/seoindicator.ts` - SEOIndicator competitor data with pricing, features, pros/cons, use cases
+  - 200 unit tests (150 for registry, 50 for SEOIndicator data)
+- **Note:** Comparison registry system for programmatic SEO competitor comparison pages. Part of SPEC-32 Phase 1 foundation.
+
 ---
 
 Last updated: 2026-03-05
