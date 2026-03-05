@@ -1,7 +1,7 @@
 # TASK-31-5: AIAnalysisResponseParser
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -191,3 +191,17 @@ class AnalysisResult
 
 ## Comments
 _Agent log_
+
+### ProjectManager Prioritization (2026-03-05)
+- **Priority:** HIGH (confirmed) - Foundation service for unified AI analysis pipeline
+- **Risk:** HIGH (confirmed) - Handles malformed AI responses, JSON parsing errors, schema validation failures
+- **Dependencies:** None - standalone parsing service, can proceed immediately
+- **Downstream:** TASK-31-7 (AIAnalysisService) depends on this parser
+- **TDD Ready:** PreTester can design tests immediately with no blockers
+- **Test Focus Areas:**
+  - JSON extraction from various formats (markdown, raw, with text, multi-block)
+  - Schema validation (required fields, type checking, range validation)
+  - Repair logic for malformed JSON
+  - Error handling (InvalidAIResponseException scenarios)
+  - DTO creation (AnalysisResult from parsed data)
+- **Parallel Development:** Can proceed alongside TASK-31-3, TASK-31-4, TASK-31-6
