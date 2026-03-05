@@ -508,14 +508,14 @@ class TruncationServiceTest extends TestCase
         $html = '<!-- Comment --><script>code</script><style>css</style><p>Content</p>';
         
         // Mock token estimation showing progressive reduction
+        // 4 calls: 1 initial + 3 after each strategy (stops when 50 <= 50)
         $this->tokenManager->shouldReceive('estimateTokens')
-            ->times(5)
+            ->times(4)
             ->andReturn(
                 100,  // Initial
                 90,   // After comments (still over)
                 80,   // After whitespace (still over)
-                50,   // After scripts (at target)
-                50    // Final check
+                50    // After scripts (at target, stops)
             );
         
         $result = $this->service->truncate($html, 50);
@@ -604,14 +604,15 @@ class TruncationServiceTest extends TestCase
     {
         $html = '<p>Test</p>';
         
+        // Return 10 (under target 50) so no strategies are applied
         $this->tokenManager->shouldReceive('estimateTokens')
             ->once()
-            ->andReturn(100);
+            ->andReturn(10);
         
         $result = $this->service->truncate($html, 50);
         
         $this->assertObjectHasProperty('originalTokens', $result);
-        $this->assertEquals(100, $result->originalTokens);
+        $this->assertEquals(10, $result->originalTokens);
     }
 
     #[Test]
