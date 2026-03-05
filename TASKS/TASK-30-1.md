@@ -1,7 +1,7 @@
 # TASK-30-1: Terms & Privacy Page
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -230,3 +230,35 @@ frontend/components/pages/TermsContent.tsx
 - Ready for DevOps deployment
 
 **Handoff:** Ready for DevOps to deploy to production
+
+---
+
+### DevOps Deployment (2026-03-05)
+
+**Deployment Summary:**
+- **Commit:** `51e99d8` (already pushed to origin/main)
+- **Deployment Method:** GitHub Actions auto-deploy
+- **Target:** Hostinger shared hosting (seoindicator.com)
+
+**Deployment Verification:**
+| Check | Status | Details |
+|-------|--------|---------|
+| Health Check | ✅ 200 OK | `https://seoindicator.com/api/health` |
+| Terms Page | ✅ 200 OK | `https://seoindicator.com/terms/` |
+| Static Export | ✅ Complete | Frontend built and deployed |
+
+**Deployment Steps Completed:**
+1. ✅ Code already committed and pushed to main branch
+2. ✅ GitHub Actions workflow triggered automatically
+3. ✅ Frontend static export built successfully
+4. ✅ Files deployed to production via SSH
+5. ✅ Health check passed
+6. ✅ Terms page accessible at production URL
+
+**Production URL:** https://seoindicator.com/terms/
+
+**Files Deployed:**
+- `frontend/app/terms/page.tsx` → `/terms/index.html`
+- `frontend/components/pages/TermsContent.tsx` (bundled)
+
+**Handoff:** Ready for ProdTester to validate in production
