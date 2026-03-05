@@ -1,7 +1,7 @@
 # TASK-32-6: PricingComparison Component
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
