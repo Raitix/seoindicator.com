@@ -1,7 +1,7 @@
 # TASK-32-5: ComparisonTable Component
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -116,3 +116,29 @@ function FeatureTooltip({ content, children }: { content: string; children: Reac
 ## Comments
 ### [2026-03-05 14:55 GMT+2] Agent: SpecSystemAnalyst
 Task created as part of SPEC-32 breakdown. Core comparison visualization component.
+
+### [2026-03-05 16:40 GMT+2] Agent: ProjectManager
+**Priority Assessment:** HIGH (confirmed)
+- Core comparison visualization component - user-facing, SEO-critical
+- Displays feature availability for both tools being compared
+- Central component for comparison landing pages (programmatic SEO)
+
+**Risk Assessment:** LOW (confirmed)
+- Frontend-only React component, no external APIs
+- Uses existing Tailwind CSS and Lucide icons
+- No database changes, no authentication
+
+**Dependency Status:**
+- TASK-32-1 (Types): Done ✅ - All interfaces available (CompetitorData, FeatureCategory, Feature, etc.)
+- Dependency SATISFIED - PreTester can proceed immediately
+
+**TDD Ready:** PreTester CAN design tests immediately using:
+- `ComparisonTableProps` interface from TASK-32-1
+- `FeatureCategory`, `Feature` types with `seoindicator`/`competitor` boolean or string values
+- Mock feature data based on existing type definitions
+
+**Phase Context:** Phase 2 Components - main comparison visualization
+**Deliverables:** ComparisonTable.tsx + 4 sub-components (FeatureCategoryRow, FeatureRow, FeatureCell, FeatureTooltip)
+**Key Features:** Responsive design, check/X icons, category grouping, winner highlighting, tooltips
+
+**Status:** Updated to `To Write Tests`
