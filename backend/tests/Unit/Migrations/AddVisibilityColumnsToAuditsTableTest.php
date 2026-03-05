@@ -232,7 +232,7 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
     {
         // Rollback the visibility migration
         $this->artisan('migrate:rollback', [
-            '--path' => 'database/migrations/*_add_visibility_columns_to_audits_table.php',
+            '--path' => 'database/migrations/2026_03_05_214800_add_visibility_columns_to_audits_table.php',
         ]);
 
         $columns = $this->getColumnListing('audits');
@@ -248,7 +248,7 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
     public function test_mc012_rollback_removes_indexes(): void
     {
         $this->artisan('migrate:rollback', [
-            '--path' => 'database/migrations/*_add_visibility_columns_to_audits_table.php',
+            '--path' => 'database/migrations/2026_03_05_214800_add_visibility_columns_to_audits_table.php',
         ]);
 
         $indexes = $this->getTableIndexes('audits');
@@ -578,7 +578,7 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
     public function test_mr001_rollback_removes_visibility(): void
     {
         $this->artisan('migrate:rollback', [
-            '--path' => 'database/migrations/*_add_visibility_columns_to_audits_table.php',
+            '--path' => 'database/migrations/2026_03_05_214800_add_visibility_columns_to_audits_table.php',
         ]);
 
         $columns = $this->getColumnListing('audits');
@@ -591,7 +591,7 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
     public function test_mr002_rollback_removes_public_hash(): void
     {
         $this->artisan('migrate:rollback', [
-            '--path' => 'database/migrations/*_add_visibility_columns_to_audits_table.php',
+            '--path' => 'database/migrations/2026_03_05_214800_add_visibility_columns_to_audits_table.php',
         ]);
 
         $columns = $this->getColumnListing('audits');
@@ -604,7 +604,7 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
     public function test_mr003_rollback_removes_public_hash_created_at(): void
     {
         $this->artisan('migrate:rollback', [
-            '--path' => 'database/migrations/*_add_visibility_columns_to_audits_table.php',
+            '--path' => 'database/migrations/2026_03_05_214800_add_visibility_columns_to_audits_table.php',
         ]);
 
         $columns = $this->getColumnListing('audits');
@@ -617,7 +617,7 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
     public function test_mr004_rollback_removes_unique_index(): void
     {
         $this->artisan('migrate:rollback', [
-            '--path' => 'database/migrations/*_add_visibility_columns_to_audits_table.php',
+            '--path' => 'database/migrations/2026_03_05_214800_add_visibility_columns_to_audits_table.php',
         ]);
 
         $indexes = $this->getTableIndexes('audits');
@@ -634,7 +634,7 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
     public function test_mr005_rollback_removes_regular_index(): void
     {
         $this->artisan('migrate:rollback', [
-            '--path' => 'database/migrations/*_add_visibility_columns_to_audits_table.php',
+            '--path' => 'database/migrations/2026_03_05_214800_add_visibility_columns_to_audits_table.php',
         ]);
 
         $this->assertTrue(true, 'Index removal verified in MR-004');
@@ -646,7 +646,7 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
     public function test_mr006_rerun_migration_after_rollback(): void
     {
         $this->artisan('migrate:rollback', [
-            '--path' => 'database/migrations/*_add_visibility_columns_to_audits_table.php',
+            '--path' => 'database/migrations/2026_03_05_214800_add_visibility_columns_to_audits_table.php',
         ]);
 
         $this->artisan('migrate');
@@ -674,7 +674,7 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
         ]);
 
         $this->artisan('migrate:rollback', [
-            '--path' => 'database/migrations/*_add_visibility_columns_to_audits_table.php',
+            '--path' => 'database/migrations/2026_03_05_214800_add_visibility_columns_to_audits_table.php',
         ]);
 
         // Core audit data should still exist
@@ -692,7 +692,7 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
     {
         for ($i = 0; $i < 3; $i++) {
             $this->artisan('migrate:rollback', [
-                '--path' => 'database/migrations/*_add_visibility_columns_to_audits_table.php',
+                '--path' => 'database/migrations/2026_03_05_214800_add_visibility_columns_to_audits_table.php',
             ]);
             $this->artisan('migrate');
         }
@@ -720,7 +720,7 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
 
         // Rollback should work
         $this->artisan('migrate:rollback', [
-            '--path' => 'database/migrations/*_add_visibility_columns_to_audits_table.php',
+            '--path' => 'database/migrations/2026_03_05_214800_add_visibility_columns_to_audits_table.php',
         ]);
 
         $columns = $this->getColumnListing('audits');
@@ -1124,13 +1124,31 @@ class AddVisibilityColumnsToAuditsTableTest extends TestCase
     // =========================================================================
 
     /**
+     * Create a test user.
+     */
+    private function createUser(): int
+    {
+        return DB::table('users')->insertGetId([
+            'name' => 'Test User',
+            'email' => 'test-' . uniqid() . '@example.com',
+            'password' => bcrypt('password'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /**
      * Create a test site.
      */
     private function createSite(array $attributes = []): int
     {
+        // Create user if not provided
+        if (!isset($attributes['user_id'])) {
+            $attributes['user_id'] = $this->createUser();
+        }
+
         return DB::table('sites')->insertGetId(array_merge([
-            'user_id' => 1,
-            'domain' => 'test-' . uniqid() . '.com',
+            'url' => 'https://test-' . uniqid() . '.com',
             'name' => 'Test Site',
             'created_at' => now(),
             'updated_at' => now(),
