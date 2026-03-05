@@ -2887,6 +2887,142 @@ The `StripeGatewayService` provides the following methods for payment method man
 - TASK-26-14: PayPal Webhook Handler (future payment method support)
 
 ---
+## PayPalGatewayService (TASK-26-12)
+
+### Service Description
+PayPal payment gateway service implementing `PaymentGatewayInterface` for credit purchases. Uses PayPal Orders API v2 for payment processing with full webhook signature verification, idempotency handling, and security measures. Alternative payment method to Stripe for the Billing, Credits & Model Selection feature (FEAT-026).
+
+### Component Location
+- **Service:** `backend/app/Services/Billing/PayPalGatewayService.php`
+- **Interface:** `backend/app/Services/Billing/Contracts/PaymentGatewayInterface.php`
+- **Exception:** `backend/app/Services/Billing/Exceptions/PayPalPaymentException.php`
+- **Tests:** `backend/tests/Unit/Services/Billing/PayPalGatewayServiceTest.php`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `createPaymentIntent(User $user, float $amount, string $currency, array $metadata)` | Create PayPal order with return/cancel URLs |
+| `capturePayment(string $orderId, array $options)` | Capture approved PayPal order |
+| `refundPayment(string $captureId, float $amount = null)` | Refund captured payment (full or partial) |
+| `handleWebhook(Request $request)` | Process PayPal webhook events with signature verification |
+| `getCustomer(User $user)` | Returns null (PayPal doesn't require customer storage) |
+| `createCustomer(User $user)` | Returns payer_id from approved order |
+| `getPaymentMethods(User $user)` | Returns empty array |
+| `deletePaymentMethod(string $id)` | Returns false |
+
+### PayPal Orders API v2 Integration
+
+| Feature | Implementation |
+|---------|---------------|
+| Order Intent | `CAPTURE` |
+| Amount Format | String ("10.00") per PayPal spec |
+| Custom ID | Format: `user_{id}_package_{package_id}` |
+| Return URL | Configurable via metadata |
+| Cancel URL | Configurable via metadata |
+
+### Webhook Event Handling
+
+| Event Type | Action |
+|------------|--------|
+| `CHECKOUT.ORDER.APPROVED` | Log for monitoring |
+| `PAYMENT.CAPTURE.COMPLETED` | Add credits via CreditService |
+| `PAYMENT.CAPTURE.DENIED` | Mark transaction as failed |
+| `PAYMENT.CAPTURE.REFUNDED` | Handle refund logic |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| **Webhook Signature Verification** | Required before processing any webhook event |
+| Certificate URL Validation | Only accepts PayPal domains (`api.paypal.com`, `api.sandbox.paypal.com`) |
+| Transmission Time Validation | 5-minute tolerance for replay attack prevention |
+| Idempotency | PayPal-Request-Id header for captures and refunds |
+| Duplicate Detection | CreditTransaction lookup by payment_id |
+| API Credentials | Never logged, stored securely in env |
+
+### Webhook Signature Verification Flow
+
+```
+handleWebhook(Request)
+├── 1. Extract headers (PAYPAL-TRANSMISSION-SIG, CERT-URL, etc.)
+├── 2. Validate certificate URL (PayPal domains only)
+├── 3. Call PayPal verify-webhook-signature API
+├── 4. Verify transmission time (5 min tolerance)
+├── 5. If invalid → throw InvalidWebhookSignatureException
+└── 6. If valid → process event
+```
+
+### Environment Configuration
+
+```env
+PAYPAL_CLIENT_ID=<client_id>
+PAYPAL_CLIENT_SECRET=<client_secret>
+PAYPAL_WEBHOOK_ID=<webhook_id>
+PAYPAL_MODE=sandbox|live
+PAYPAL_RETURN_URL=<return_url>
+PAYPAL_CANCEL_URL=<cancel_url>
+```
+
+### Error Handling
+
+| Error Type | Response |
+|------------|----------|
+| Invalid credentials | `RuntimeException` on service instantiation |
+| Invalid webhook signature | `InvalidWebhookSignatureException` |
+| Network timeout | `PayPalPaymentException` with retry suggestion |
+| Already captured | Idempotency check returns existing transaction |
+| Refund failed | `PayPalPaymentException` with error details |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `PayPalGatewayServiceTest.php` | 54 | 76 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Order Creation (OC) | 10 | Amount, currency, URLs, custom_id, metadata |
+| Order Capture (CP) | 7 | Capture flow, amount validation, idempotency |
+| Webhook Handler (WH) | 10 | Signature verification, event types, security |
+| Refund (RF) | 6 | Full/partial refund, error handling |
+| Customer Management (CM) | 5 | No customer storage, payer_id retrieval |
+| Error Handling (EH) | 6 | Network errors, API failures |
+| Security (SC) | 5 | Signature verification, certificate validation |
+| Edge Cases (EC) | 5 | Unicode, large amounts, zero-decimal currencies |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `263ac6cf` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 54/54 passing (76 assertions) |
+| Service File | `backend/app/Services/Billing/PayPalGatewayService.php` |
+| Status | Complete (requires PayPal credentials for live operation) |
+
+### Known Configuration Requirements
+
+| Requirement | Status |
+|-------------|--------|
+| PayPal Sandbox Credentials | Required for development |
+| PayPal Live Credentials | Required for production |
+| Webhook ID | Must be configured for signature verification |
+| Return/Cancel URLs | Must match PayPal app configuration |
+
+### Dependencies
+- TASK-26-1 (Migrations - credits tables)
+- TASK-26-5 (CreditService - for adding credits after webhook)
+
+### Related Tasks
+- TASK-26-8: StripeGatewayService (primary payment gateway)
+- TASK-26-13: PayPal Order Endpoint (uses this service)
+- TASK-26-14: PayPal Webhook Handler (uses this service)
+
+---
 ## PayPal Order Endpoint (TASK-26-13)
 
 ### Endpoint Description
@@ -29596,5 +29732,139 @@ The page is a Server Component with static generation - no client state required
 - TASK-32-3: Comparison Page Route (BLOCKED - Critical Bug)
 - TASK-32-5: ComparisonTable component (Done)
 - TASK-32-6: PricingComparison component (Done)
+
+---
+
+---
+## Audit Visibility Columns (TASK-33-1)
+
+### Service Description
+Database migration adding visibility control columns to the audits table. Enables public sharing of audit reports via unique URLs while maintaining privacy by default. Foundation for the Public Audit Sharing feature (FEAT-033).
+
+### Database Schema Addition
+
+**Migration:** `2026_03_05_201400_add_visibility_columns_to_audits_table.php`
+
+**New Columns:**
+
+| Column | Type | Default | Description |
+|--------|------|---------|-------------|
+| `visibility` | ENUM('private', 'public') | 'private' | Controls audit visibility |
+| `public_hash` | VARCHAR(64) | NULL | Unique hash for public URL (nullable) |
+| `public_hash_created_at` | TIMESTAMP | NULL | When the public link was created |
+
+**Full Audit Schema (with new columns):**
+```sql
+ALTER TABLE audits ADD COLUMN visibility ENUM('private', 'public') DEFAULT 'private';
+ALTER TABLE audits ADD COLUMN public_hash VARCHAR(64) NULL;
+ALTER TABLE audits ADD COLUMN public_hash_created_at TIMESTAMP NULL;
+
+-- Index for fast public lookups
+CREATE INDEX idx_audits_public_hash ON audits(public_hash);
+
+-- Index for visibility filtering
+CREATE INDEX idx_audits_visibility ON audits(visibility);
+```
+
+### Column Details
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `visibility` | ENUM | `private` (default) = only owner can view, `public` = accessible via public URL |
+| `public_hash` | VARCHAR(64) | SHA-256 hash for unique public URL, generated when audit is made public |
+| `public_hash_created_at` | TIMESTAMP | Audit trail for when public link was created |
+
+### Public URL Pattern
+
+When an audit is made public, the accessible URL pattern is:
+````
+/public-audit/{public_hash}
+````
+Example:
+````
+/public-audit/a1b2c3d4e5f6...
+````
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Privacy by Default | `visibility` defaults to `'private'` |
+| Unique Hash | 64-character cryptographic hash (SHA-256) |
+| No Enumeration | Hash is not guessable, prevents enumeration attacks |
+| Audit Trail | `public_hash_created_at` tracks when link was created |
+| Index Optimization | Indexed for O(1) lookup performance |
+
+### Model Changes
+
+**Audit Model Updates:**
+```php
+protected `` = [
+    // ... existing fields
+    'visibility',
+    'public_hash',
+    'public_hash_created_at',
+];
+
+protected `` = [
+    'visibility' => 'string',
+    'public_hash_created_at' => 'datetime',
+];
+
+// Scopes
+public function scopePublic(``) {
+    return ``->where('visibility', 'public');
+}
+
+public function scopePrivate(``) {
+    return ``->where('visibility', 'private');
+}
+
+// Helper Methods
+public function isPublic(): bool {
+    return ``->visibility === 'public';
+}
+
+public function getPublicUrl(): ?string {
+    return ``->public_hash 
+        ? url("/public-audit/{``->public_hash}")
+        : null;
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| AddVisibilityColumnsToAuditsTableTest | 18 | 18 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Schema Validation | 6 | Column presence, types, defaults |
+| Index Verification | 3 | public_hash, visibility indexes |
+| Enum Values | 3 | 'private', 'public' values |
+| Default Value | 2 | visibility defaults to 'private' |
+| Rollback | 2 | Drop columns, re-run migration |
+| Security | 2 | No data exposure on migration |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-05 |
+| **Migration** | `2026_03_05_201400_add_visibility_columns_to_audits_table.php` |
+| **Commit** | `pending` |
+| **Health Check** | ✅ Passing |
+| **Tests** | 18/18 passing |
+| **Status** | Complete |
+
+### Dependencies
+- Existing `audits` table (FEAT-014)
+
+### Related Tasks
+- TASK-33-2: PublicAuditService (make public/private, hash generation)
+- TASK-33-3: Public Audit Page Frontend
+- TASK-33-4: Public Audit API Endpoint
 
 ---
