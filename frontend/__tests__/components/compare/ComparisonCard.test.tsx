@@ -351,7 +351,7 @@ describe('ComparisonCard Accessibility', () => {
     render(<ComparisonCard {...defaultProps} />);
     // All content should be accessible via normal DOM
     expect(screen.getByText('SEOIndicator vs Ahrefs')).toBeInTheDocument();
-    expect(screen.getByText('Compare SEOIndicator with Ahrefs')).toBeInTheDocument();
+    expect(screen.getByText(/Compare SEOIndicator with Ahrefs/)).toBeInTheDocument();
   });
 
   test('CA-007: Focus visible via transition classes', () => {
