@@ -156,3 +156,48 @@ Task created as part of SPEC-32 breakdown. Key conversion component highlighting
 **Phase Context:** Phase 2 Components - builds on Types foundation (TASK-32-1)
 
 **Status:** Updated to `To Write Tests`
+
+### [2026-03-05 18:15 GMT+2] Agent: PreTester
+**Test Design Complete:**
+- Created `TESTS/TEST-32-6.md` with comprehensive test documentation
+- Updated `frontend/__tests__/components/compare/PricingComparison.test.tsx` with 53 tests
+- All tests pass ✅
+
+**Test Coverage Summary:**
+| Category | Tests |
+|----------|-------|
+| Rendering | 5 |
+| Toggle | 4 |
+| Free Tier | 4 |
+| Calculations | 3 |
+| Formatting | 3 |
+| Features | 4 |
+| Accessibility | 3 |
+| Edge Cases | 6 |
+| Props | 2 |
+| Decimal Formatting | 3 |
+| Custom/Enterprise Prices | 4 |
+| Mobile Responsive | 6 |
+| Annual Savings Edge Cases | 3 |
+| Component Integration | 3 |
+| **Total** | **53** |
+
+**Acceptance Criteria Coverage:**
+| AC | Status |
+|----|--------|
+| Toggle switches between monthly/annual pricing | ✅ PC-010 to PC-013 |
+| Free tier prominently displayed with "Free" badge | ✅ PC-020 to PC-023 |
+| All tiers from both tools displayed | ✅ PC-001 to PC-005 |
+| Feature lists show included features | ✅ PC-050 to PC-053 |
+| Annual savings calculated and displayed | ✅ PC-030 to PC-032 |
+| Highlighted tier shows accent styling | ✅ PC-051, PC-052 |
+| Mobile responsive (stacked on mobile) | ✅ PC-090 to PC-095 |
+| Price formatting correct (currency symbol, decimals) | ✅ PC-040 to PC-042, PC-076 to PC-078 |
+
+**Developer Notes:**
+1. Mock component exists in test file - replace with actual implementation
+2. Implement price rounding to 2 decimal places (see PC-078)
+3. Use Tailwind responsive classes for mobile layout
+4. Key calculation: `((monthly * 12 - annual * 12) / (monthly * 12)) * 100` for savings percentage
+
+**Status:** Updated to `To Develop`
