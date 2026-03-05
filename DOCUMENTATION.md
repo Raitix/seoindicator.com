@@ -1,6 +1,125 @@
 # DOCUMENTATION.md
 
 ---
+## TruncationService (TASK-31-3)
+
+### Service Description
+Core service for progressive HTML content truncation when content exceeds AI model context windows. Applies intelligent truncation strategies in priority order, preserving SEO-relevant information while reducing token count. Part of the Unified AI Prompt + Context Management feature (FEAT-031).
+
+### Component Location
+- **Service:** `backend/app/Services/AI/TruncationService.php`
+- **DTO:** `backend/app/Services/AI/DTOs/TruncationResult.php`
+- **Tests:** `backend/tests/Unit/Services/AI/TruncationServiceTest.php`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `truncate(string $html, int $targetTokens): TruncationResult` | Apply truncation strategies to fit target tokens |
+| `getAvailableStrategies(): array` | Return list of truncation strategies |
+| `estimateReduction(string $strategy): int` | Estimated reduction percentage |
+
+### Truncation Strategies (Priority Order)
+
+| Priority | Strategy | Reduction | Data Loss | Reversible |
+|----------|----------|-----------|-----------|------------|
+| 1 | Remove HTML comments | 5-15% | None | Yes |
+| 2 | Collapse whitespace | 3-8% | None | Yes |
+| 3 | Remove `<script>` tags | 10-40% | JS code only | No |
+| 4 | Remove `<style>` tags | 5-20% | CSS only | No |
+| 5 | Remove base64 images | Variable | Image data | No |
+| 6 | Truncate text content | 50-70% | Paraphrased | No |
+| 7 | Keep semantic structure | 70-90% | Significant | No |
+
+### TruncationResult DTO
+
+```php
+class TruncationResult
+{
+    public function __construct(
+        public readonly string $html,
+        public readonly int $originalTokens,
+        public readonly int $finalTokens,
+        public readonly array $strategiesApplied,
+        public readonly float $reductionPercent,
+    ) {}
+}
+```
+
+### Security Implementation
+
+| Security Measure | Description |
+|------------------|-------------|
+| XSS Prevention | Removes script tags, javascript: URLs, SVG onload handlers |
+| iframe/object/embed Removal | Prevents embedded content injection |
+| data: URL Sanitization | Removes potentially malicious data URLs |
+| No eval/innerHTML | Pure string manipulation, no code execution |
+
+### SEO Preservation
+
+The service preserves critical SEO elements during truncation:
+- `<title>` tags
+- `<h1>`-`<h6>` headings
+- `<link rel="canonical">` tags
+- Open Graph meta tags
+- Anchor href attributes
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `TruncationServiceTest.php` | 81 | 200 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 5 | Constructor, method existence |
+| Strategy - Comments | 4 | HTML comment removal |
+| Strategy - Whitespace | 4 | Whitespace collapse |
+| Strategy - Scripts | 4 | Script tag and event handler removal |
+| Strategy - Styles | 4 | Style tag and inline style removal |
+| Strategy - Base64 | 4 | Base64 image removal |
+| Strategy - Summarize | 2 | Key element extraction |
+| Strategy - Structure | 1 | Semantic structure only |
+| Progressive Truncation | 4 | Strategy order, stopping conditions |
+| DTO Properties | 8 | TruncationResult metadata |
+| Edge Cases | 12 | Empty, malformed, unicode, large |
+| Integration | 3 | ContextWindowManager integration |
+| Security | 5 | XSS, JavaScript URLs, data URLs |
+| SEO Preservation | 5 | Headings, meta, canonical, links |
+| Performance | 2 | Speed and memory bounds |
+| Helper Methods | 3 | getAvailableStrategies, estimateReduction |
+| Acceptance Criteria | 6 | All 6 ACs verified |
+
+### Acceptance Criteria Status
+
+- [x] AC-01: `truncate()` reduces content to fit target tokens
+- [x] AC-02: Strategies applied in priority order
+- [x] AC-03: Non-destructive strategies tried first
+- [x] AC-04: `TruncationResult` contains all metadata
+- [x] AC-05: Original HTML never modified (returns new string)
+- [x] AC-06: Handles edge cases (empty HTML, already small, etc.)
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `fd7f2f8` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 81/81 passing (200 assertions) |
+| Status | Complete |
+
+### Dependencies
+- TASK-31-2 (ContextWindowManager for token estimation)
+
+### Related Tasks
+- TASK-31-2: ContextWindowManager (token estimation)
+- TASK-31-7: AIAnalysisService (uses truncation for content reduction)
+- TASK-31-13: AnalysisRunnerService (uses TruncationService)
+
+---
 ## Unified AI Analysis Integration Tests (TASK-31-17)
 
 ### Test Description
