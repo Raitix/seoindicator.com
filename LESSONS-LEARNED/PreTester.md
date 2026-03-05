@@ -280,4 +280,71 @@ const mockComparisonSlugs = [
 
 ---
 
+## Comparison Component Tests (TASK-32-19)
+
+### TDD Test Pattern for Components
+- Include mock component implementation in test file for reference
+- Use data-testid attributes for reliable element selection
+- Test all variants, props, accessibility, and edge cases
+- Mock external dependencies (icons, analytics) with jest.mock
+
+### Test Organization per Component
+| Category | Tests | Purpose |
+|----------|-------|---------|
+| Rendering | 5+ | Component structure, elements |
+| Variants/Props | 5+ | Different configurations |
+| Accessibility | 4+ | ARIA, roles, keyboard |
+| Edge Cases | 5+ | Empty, unicode, boundaries |
+| Integration | 3+ | Full flows |
+
+### Component Test Files Created
+- ComparisonTable.test.tsx: 72 tests
+- PricingComparison.test.tsx: 81 tests
+- ProsConsCard.test.tsx: 62 tests
+- UseCaseSection.test.tsx: 46 tests
+- ComparisonCTA.test.tsx: 84 tests
+
+### Mock Lucide Icons Pattern
+```typescript
+jest.mock('lucide-react', () => ({
+  Check: () => <span data-testid="check-icon">✓</span>,
+  X: () => <span data-testid="x-icon">✗</span>,
+  Star: () => <span data-testid="star-icon">★</span>,
+  ArrowRight: () => <span data-testid="arrow-icon">→</span>,
+  HelpCircle: () => <span data-testid="help-icon">?</span>,
+}));
+```
+
+### Analytics Mock Pattern
+```typescript
+const mockTrackEvent = jest.fn();
+jest.mock('@/lib/analytics', () => ({
+  trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
+}));
+
+// In test
+beforeEach(() => {
+  mockTrackEvent.mockClear();
+});
+
+// Verify tracking
+expect(mockTrackEvent).toHaveBeenCalledWith('event_name', expect.objectContaining({
+  property: 'value',
+}));
+```
+
+### Toggle State Testing
+- Use useState in mock component
+- Test both states (e.g., monthly/annual)
+- Verify aria-pressed attribute changes
+- Test keyboard activation (Enter key)
+
+### Star Rating Testing
+- Test 0-5 range
+- Test decimal values (e.g., 4.5)
+- Verify correct number of filled stars
+- Test boundary values (0, 5)
+
+---
+
 Last updated: 2026-03-05
