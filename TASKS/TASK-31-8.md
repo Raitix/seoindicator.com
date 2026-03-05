@@ -137,3 +137,46 @@ public function canUseModel(User $user, string $model): bool
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 18:55 GMT+2] ProjectManager
+**Prioritization Complete**
+
+**Priority Upgraded:** Medium → HIGH
+**Risk:** LOW (confirmed)
+**Status:** `To Write Tests` - Ready for PreTester
+
+**Dependency Analysis - ALL SATISFIED:**
+| Dependency | Status | Implementation |
+|------------|--------|----------------|
+| TASK-31-2 (ContextWindowManager) | Done ✅ | `app/Services/AI/ContextWindowManager.php` |
+| TASK-26-16 (ModelPricingService) | Done ✅ | `app/Services/Billing/ModelPricingService.php` |
+| TASK-26-19 (UserModelPreference) | Done ✅ | `app/Models/UserModelPreference.php` |
+
+**Note:** TASK-26-16.md is empty (0 bytes) but implementation exists at `app/Services/Billing/ModelPricingService.php`.
+
+**Priority Rationale:**
+1. **Dependencies ALL SATISFIED** - All 3 dependencies are fully implemented and deployed
+2. **Foundation Task for SPEC-031** - Model selection is essential for unified AI analysis
+3. **Cost Optimization** - Selecting optimal model reduces AI API costs
+4. **User Experience Impact** - Automatic model selection improves analysis workflow
+5. **Integration Layer** - Bridges ContextWindowManager with billing (FEAT-026)
+
+**TDD Approach:**
+PreTester can design tests immediately using existing interfaces:
+- `ContextWindowManager` (TASK-31-2) - `fitsInContext()` method available
+- `ModelPricingService` (TASK-26-16) - `getEstimatedCost()` method available
+- `UserModelPreference` (TASK-26-19) - Model with `is_default` scope
+
+**Key Implementation Points:**
+1. User preference respected when content fits context window
+2. Falls back to optimal model when preferred model insufficient
+3. Free-tier models prioritized (cost optimization)
+4. Model availability checked via AIModel active status
+5. Credit balance check for paid models (future enhancement)
+
+**Model Selection Priority:**
+1. User preference (if fits context)
+2. Smallest sufficient model (cost optimization)
+3. Fallback to Gemini 2.0 Flash (largest context)
+
+**Handoff to:** PreTester for test design
