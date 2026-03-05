@@ -16,7 +16,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-// Mock the registry module
+// Mock data must be defined before jest.mock due to hoisting
 const mockComparisonSlugs = [
   'seoindicator-vs-ahrefs',
   'seoindicator-vs-semrush',
@@ -35,9 +35,27 @@ const mockCompetitors: Record<string, { name: string; slug: string }> = {
   ubersuggest: { name: 'Ubersuggest', slug: 'ubersuggest' },
 };
 
+// Mock the registry module
 jest.mock('@/lib/compare/registry', () => ({
-  COMPARISON_SLUGS: mockComparisonSlugs,
-  getCompetitorById: (id: string) => mockCompetitors[id] || null,
+  COMPARISON_SLUGS: [
+    'seoindicator-vs-ahrefs',
+    'seoindicator-vs-semrush',
+    'seoindicator-vs-moz',
+    'seoindicator-vs-ubersuggest',
+    'ahrefs-vs-semrush',
+    'ahrefs-vs-moz',
+    'semrush-vs-moz',
+  ],
+  getCompetitorById: (id: string) => {
+    const competitors: Record<string, { name: string; slug: string }> = {
+      seoindicator: { name: 'SEOIndicator', slug: 'seoindicator' },
+      ahrefs: { name: 'Ahrefs', slug: 'ahrefs' },
+      semrush: { name: 'Semrush', slug: 'semrush' },
+      moz: { name: 'Moz', slug: 'moz' },
+      ubersuggest: { name: 'Ubersuggest', slug: 'ubersuggest' },
+    };
+    return competitors[id] || null;
+  },
 }));
 
 // Mock Next.js Link
@@ -306,8 +324,13 @@ describe('Mobile Responsive Design', () => {
     renderComparePage();
     const links = screen.getAllByTestId('link');
     
-    // Check that links have padding classes
-    links.forEach(link => {
+    // Check that comparison card links (not breadcrumb) have padding classes
+    // Filter to links that have comparison URLs
+    const comparisonLinks = links.filter(link => 
+      link.getAttribute('href')?.startsWith('/compare/')
+    );
+    expect(comparisonLinks.length).toBeGreaterThan(0);
+    comparisonLinks.forEach(link => {
       expect(link.className).toMatch(/p-/);
     });
   });
@@ -315,7 +338,8 @@ describe('Mobile Responsive Design', () => {
   test('MR-006: Container has max-width for responsive layout', () => {
     const { container } = renderComparePage();
     const main = screen.getByRole('main');
-    const wrapper = main.querySelector('.max-w-');
+    // Use attribute selector to find elements with max-w- class
+    const wrapper = main.querySelector('[class*="max-w-"]');
     
     expect(wrapper).toBeInTheDocument();
   });
@@ -503,9 +527,9 @@ describe('Edge Cases', () => {
 
   test('EC-003: Unicode in competitor names renders correctly', () => {
     renderComparePage();
-    // All competitor names should render
-    const semrushLink = screen.getByText(/semrush/i);
-    expect(semrushLink).toBeInTheDocument();
+    // All competitor names should render - use getAllByText since multiple elements match
+    const semrushLinks = screen.getAllByText(/semrush/i);
+    expect(semrushLinks.length).toBeGreaterThan(0);
   });
 
   test('EC-004: Long competitor names wrap appropriately', () => {

@@ -3,12 +3,29 @@
  * Task: TASK-32-4 - Implement Comparison Index Page
  * Spec: SPEC-32 (Competitor Comparison Landing Pages)
  *
- * Displays a card linking to a comparison page with competitor info.
+ * Displays a card linking to a comparison page with competitor logos/names,
+ * title, and description.
  */
 
-import Link from 'next/link';
+import React from 'react';
 import type { ComparisonCardProps } from '@/lib/compare/types';
 
+export interface ComparisonCardComponentProps extends ComparisonCardProps {
+  /** Optional additional CSS classes */
+  className?: string;
+}
+
+/**
+ * ComparisonCard Component
+ *
+ * Renders a card that links to a comparison page. Displays:
+ * - Two competitor logos (or initials if no logo)
+ * - Comparison title
+ * - Description text
+ *
+ * @param props - Component props
+ * @returns React component
+ */
 export function ComparisonCard({
   slug,
   title,
@@ -16,15 +33,16 @@ export function ComparisonCard({
   competitorA,
   competitorB,
   className = '',
-}: ComparisonCardProps & { className?: string }) {
+}: ComparisonCardComponentProps) {
   return (
-    <Link
+    <a
       href={`/compare/${slug}`}
       className={`group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all ${className}`}
       data-testid="comparison-card"
     >
       {/* Competitor logos/names */}
       <div className="flex items-center gap-4 mb-4">
+        {/* Competitor A */}
         <div className="flex items-center gap-2">
           {competitorA.logo ? (
             <img
@@ -48,10 +66,12 @@ export function ComparisonCard({
           </span>
         </div>
 
+        {/* VS separator */}
         <span className="text-slate-400" aria-hidden="true">
           vs
         </span>
 
+        {/* Competitor B */}
         <div className="flex items-center gap-2">
           {competitorB.logo ? (
             <img
@@ -88,6 +108,8 @@ export function ComparisonCard({
       <p className="text-sm text-slate-400 mt-2" data-testid="card-description">
         {description}
       </p>
-    </Link>
+    </a>
   );
 }
+
+export default ComparisonCard;
