@@ -330,8 +330,12 @@ class PWASuggestionServiceTest extends TestCase
             'has_short_name' => false,
             'has_start_url' => false,
             'has_display' => false,
+            'has_theme_color' => true,     // Present - no suggestion
+            'has_background_color' => true, // Present - no suggestion
+            'has_description' => true,      // Present - no suggestion
             'icons_192_present' => false,
             'icons_512_present' => false,
+            'icons_180_present' => true,    // Present - no suggestion
         ]);
 
         $suggestions = $this->service->generateSuggestions($analysis);
