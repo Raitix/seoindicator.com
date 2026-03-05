@@ -290,8 +290,12 @@ class PayPalGatewayServiceTest extends TestCase
     {
         $user = $this->createUserWithCredit();
 
+        // Simulate a connection error using a valid HTTP error response
         Http::fake([
-            '*/v1/oauth2/token' => Http::response(null, 0),
+            '*/v1/oauth2/token' => Http::response([
+                'name' => 'INTERNAL_SERVER_ERROR',
+                'message' => 'Service unavailable',
+            ], 503),
         ]);
 
         $service = new PayPalGatewayService();

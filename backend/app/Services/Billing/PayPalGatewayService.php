@@ -20,13 +20,13 @@ use Illuminate\Support\Str;
  * PayPal Gateway Service
  *
  * Handles all PayPal payment operations using Orders API v2 including:
- * - Order creation with return/cancel URLs
+ * - Order creation
  * - Order capture
  * - Refund processing
- * - Webhook handling with signature verification
+ * - Webhook handling
  * - Customer management (PayPal uses payer_id, no customer storage)
  *
- * SECURITY CRITICAL: All webhook operations verify signatures via PayPal headers.
+ * SECURITY CRITICAL: All webhook operations verify signatures.
  *
  * @see TASK-26-12
  * @see FEAT-026
@@ -64,24 +64,29 @@ class PayPalGatewayService implements PaymentGatewayInterface
     protected string $clientSecret;
 
     /**
-     * PayPal webhook ID.
+     * PayPal webhook ID for signature verification.
      */
     protected string $webhookId;
 
     /**
-     * Return URL for PayPal checkout.
+     * Return URL for PayPal approval flow.
      */
     protected string $returnUrl;
 
     /**
-     * Cancel URL for PayPal checkout.
+     * Cancel URL for PayPal approval flow.
      */
     protected string $cancelUrl;
 
     /**
-     * Access token cache.
+     * Cached access token.
      */
     protected ?string $accessToken = null;
+
+    /**
+     * Access token expiration time.
+     */
+    protected ?int $tokenExpiresAt = null;
 
     /**
      * Create a new PayPalGatewayService instance.
@@ -90,28 +95,25 @@ class PayPalGatewayService implements PaymentGatewayInterface
      */
     public function __construct()
     {
-        $this->clientId = Config::get('services.paypal.client_id', '');
-        $this->clientSecret = Config::get('services.paypal.client_secret', '');
-        $this->webhookId = Config::get('services.paypal.webhook_id', '');
-        
-        $mode = Config::get('services.paypal.mode', 'sandbox');
-        $this->apiBaseUrl = $mode === 'live'
-            ? 'https://api-m.paypal.com'
-            : 'https://api-m.sandbox.paypal.com';
-
-        $this->returnUrl = Config::get('services.paypal.return_url', config('app.url') . '/payments/paypal/return');
-        $this->cancelUrl = Config::get('services.paypal.cancel_url', config('app.url') . '/payments/paypal/cancel');
+        $this->clientId = Config::get('services.paypal.client_id');
+        $this->clientSecret = Config::get('services.paypal.client_secret');
+        $this->webhookId = Config::get('services.paypal.webhook_id');
+        $this->returnUrl = Config::get('services.paypal.return_url');
+        $this->cancelUrl = Config::get('services.paypal.cancel_url');
 
         if (empty($this->clientId) || empty($this->clientSecret)) {
             throw new \RuntimeException('PayPal credentials are not configured.');
         }
+
+        // Set API URL based on mode
+        $mode = Config::get('services.paypal.mode', 'sandbox');
+        $this->apiBaseUrl = $mode === 'live'
+            ? 'https://api-m.paypal.com'
+            : 'https://api-m.sandbox.paypal.com';
     }
 
     /**
      * {@inheritdoc}
-     *
-     * PayPal creates an Order instead of a PaymentIntent.
-     * Returns order_id and approval_url for frontend redirect.
      */
     public function createPaymentIntent(
         User $user,
@@ -130,16 +132,20 @@ class PayPalGatewayService implements PaymentGatewayInterface
         }
 
         try {
+            // Get access token
             $accessToken = $this->getAccessToken();
-            
-            // Generate idempotency key
-            $idempotencyKey = 'order_' . Str::uuid()->toString();
 
-            // Build custom_id from user_id and package_id
+            // Format amount as string
+            $amountString = $this->formatAmount($amount, $currency);
+
+            // Build custom_id for tracking
             $customId = "user_{$user->id}";
             if (isset($metadata['package_id'])) {
                 $customId .= "_package_{$metadata['package_id']}";
             }
+
+            // Generate idempotency key
+            $idempotencyKey = 'order_' . Str::uuid()->toString();
 
             // Build order request
             $orderData = [
@@ -147,20 +153,22 @@ class PayPalGatewayService implements PaymentGatewayInterface
                 'purchase_units' => [
                     [
                         'amount' => [
-                            'currency_code' => strtoupper($currency),
-                            'value' => $this->formatAmount($amount, $currency),
+                            'currency_code' => $currency,
+                            'value' => $amountString,
                         ],
                         'custom_id' => $customId,
                     ],
                 ],
                 'application_context' => [
                     'brand_name' => Config::get('app.name', 'SEOIndicator'),
+                    'locale' => 'en-US',
+                    'user_action' => 'PAY_NOW',
                     'return_url' => $this->returnUrl,
                     'cancel_url' => $this->cancelUrl,
-                    'user_action' => 'PAY_NOW',
                 ],
             ];
 
+            // Create order via PayPal API
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'Authorization' => "Bearer {$accessToken}",
@@ -185,15 +193,15 @@ class PayPalGatewayService implements PaymentGatewayInterface
             Log::info('PayPal order created', [
                 'order_id' => $order['id'],
                 'user_id' => $user->id,
-                'amount' => $amount,
+                'amount' => $amountString,
                 'currency' => $currency,
             ]);
 
             return [
                 'order_id' => $order['id'],
                 'approval_url' => $approvalUrl,
-                'amount' => $this->formatAmount($amount, $currency),
-                'currency' => strtoupper($currency),
+                'amount' => $amountString,
+                'currency' => $currency,
                 'status' => $order['status'],
             ];
         } catch (PayPalPaymentException $e) {
@@ -205,24 +213,19 @@ class PayPalGatewayService implements PaymentGatewayInterface
                 'error' => $e->getMessage(),
             ]);
 
-            if (str_contains($e->getMessage(), 'timeout') || str_contains($e->getMessage(), 'connection')) {
+            // Handle network timeout
+            if (str_contains($e->getMessage(), 'timeout') || str_contains($e->getMessage(), 'Connection')) {
                 throw new PaymentTimeoutException('PayPal service unavailable. Please try again.');
             }
 
-            throw new PayPalPaymentException(
-                $e->getMessage(),
-                'ORDER_CREATION_FAILED',
-                ['user_id' => $user->id]
-            );
+            throw new PayPalPaymentException($e->getMessage());
         }
     }
 
     /**
      * {@inheritdoc}
-     *
-     * Captures an approved PayPal order.
      */
-    public function capturePayment(string $orderId, array $options = []): bool
+    public function capturePayment(string $paymentIntentId, array $options = []): bool
     {
         try {
             $accessToken = $this->getAccessToken();
@@ -234,31 +237,28 @@ class PayPalGatewayService implements PaymentGatewayInterface
                 'Content-Type' => 'application/json',
                 'Authorization' => "Bearer {$accessToken}",
                 'PayPal-Request-Id' => $idempotencyKey,
-            ])->post("{$this->apiBaseUrl}/v2/checkout/orders/{$orderId}/capture");
+            ])->post("{$this->apiBaseUrl}/v2/checkout/orders/{$paymentIntentId}/capture");
 
             if (!$response->successful()) {
                 Log::error('PayPal capture failed', [
-                    'order_id' => $orderId,
+                    'order_id' => $paymentIntentId,
                     'status' => $response->status(),
-                    'body' => $response->body(),
+                    'error' => $response->body(),
                 ]);
                 return false;
             }
 
             $capture = $response->json();
 
-            // Check if capture was successful
-            $status = $capture['status'] ?? 'UNKNOWN';
-            
             Log::info('PayPal order captured', [
-                'order_id' => $orderId,
-                'status' => $status,
+                'order_id' => $paymentIntentId,
+                'status' => $capture['status'] ?? 'unknown',
             ]);
 
-            return $status === 'COMPLETED';
+            return ($capture['status'] ?? '') === 'COMPLETED';
         } catch (\Exception $e) {
             Log::error('PayPal capture error', [
-                'order_id' => $orderId,
+                'order_id' => $paymentIntentId,
                 'error' => $e->getMessage(),
             ]);
 
@@ -268,38 +268,44 @@ class PayPalGatewayService implements PaymentGatewayInterface
 
     /**
      * {@inheritdoc}
-     *
-     * Refunds a captured PayPal payment.
      */
-    public function refundPayment(string $captureId, ?float $amount = null): array
+    public function refundPayment(string $paymentIntentId, ?float $amount = null): array
     {
         try {
             $accessToken = $this->getAccessToken();
 
-            // Generate idempotency key
-            $idempotencyKey = 'refund_' . Str::uuid()->toString();
-
+            // Build refund request
             $refundData = [];
             if ($amount !== null) {
-                // Get currency from the capture (assume USD if not known)
                 $refundData['amount'] = [
                     'value' => number_format($amount, 2, '.', ''),
                     'currency_code' => 'USD',
                 ];
             }
 
+            // Generate idempotency key
+            $idempotencyKey = 'refund_' . Str::uuid()->toString();
+
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'Authorization' => "Bearer {$accessToken}",
                 'PayPal-Request-Id' => $idempotencyKey,
-            ])->post("{$this->apiBaseUrl}/v2/payments/captures/{$captureId}/refund", $refundData);
+            ])->post("{$this->apiBaseUrl}/v2/payments/captures/{$paymentIntentId}/refund", $refundData);
 
             if (!$response->successful()) {
-                $errorData = $response->json();
+                $error = $response->json();
+                $errorCode = $error['name'] ?? 'REFUND_FAILED';
+                $errorMessage = $error['message'] ?? 'Refund failed';
+
+                Log::error('PayPal refund failed', [
+                    'capture_id' => $paymentIntentId,
+                    'error' => $errorMessage,
+                ]);
+
                 throw new PayPalPaymentException(
-                    $errorData['message'] ?? 'Refund failed',
-                    $errorData['name'] ?? 'REFUND_FAILED',
-                    ['capture_id' => $captureId]
+                    $errorMessage,
+                    $errorCode,
+                    ['capture_id' => $paymentIntentId]
                 );
             }
 
@@ -307,80 +313,62 @@ class PayPalGatewayService implements PaymentGatewayInterface
 
             Log::info('PayPal refund processed', [
                 'refund_id' => $refund['id'],
-                'capture_id' => $captureId,
-                'amount' => $refund['amount']['value'] ?? $amount,
+                'capture_id' => $paymentIntentId,
+                'amount' => $refund['amount']['value'] ?? 'unknown',
             ]);
 
             return [
                 'refund_id' => $refund['id'],
-                'amount' => $refund['amount']['value'] ?? number_format($amount ?? 0, 2, '.', ''),
-                'status' => strtoupper($refund['status'] ?? 'COMPLETED'),
+                'amount' => $refund['amount']['value'] ?? '0.00',
+                'status' => $refund['status'] ?? 'PENDING',
             ];
         } catch (PayPalPaymentException $e) {
             throw $e;
         } catch (\Exception $e) {
             Log::error('PayPal refund error', [
-                'capture_id' => $captureId,
+                'capture_id' => $paymentIntentId,
                 'error' => $e->getMessage(),
             ]);
 
             throw new PayPalPaymentException(
                 'Failed to process refund.',
-                'REFUND_ERROR',
-                ['capture_id' => $captureId]
+                'REFUND_ERROR'
             );
         }
     }
 
     /**
      * {@inheritdoc}
-     *
-     * SECURITY CRITICAL: Verifies webhook signature using PayPal headers.
      */
     public function handleWebhook(Request $request): PaymentResult
     {
         $payload = $request->getContent();
-        $signature = $request->header('PAYPAL-TRANSMISSION-SIG');
-        $certUrl = $request->header('PAYPAL-CERT-URL');
-        $transmissionId = $request->header('PAYPAL-TRANSMISSION-ID');
-        $transmissionTime = $request->header('PAYPAL-TRANSMISSION-TIME');
 
-        // Verify required headers exist
-        if (!$signature || !$certUrl || !$transmissionId || !$transmissionTime) {
-            Log::warning('PayPal webhook missing required headers');
-            throw new InvalidWebhookSignatureException('Missing PayPal webhook verification headers.');
-        }
-
-        // Verify webhook signature
-        if (!$this->verifyWebhookSignature($payload, $signature, $certUrl, $transmissionId, $transmissionTime)) {
-            Log::warning('PayPal webhook signature verification failed');
-            throw new InvalidWebhookSignatureException('Invalid webhook signature.');
+        // Verify webhook signature - SECURITY CRITICAL
+        if (!$this->verifyWebhookSignature($request)) {
+            Log::warning('Invalid PayPal webhook signature');
+            throw new InvalidWebhookSignatureException('Invalid PayPal webhook signature.');
         }
 
         $event = json_decode($payload, true);
-        $eventType = $event['event_type'] ?? 'UNKNOWN';
-        $eventId = $event['id'] ?? 'unknown';
 
         Log::info('PayPal webhook received', [
-            'event_id' => $eventId,
-            'event_type' => $eventType,
+            'event_id' => $event['id'] ?? 'unknown',
+            'event_type' => $event['event_type'] ?? 'unknown',
         ]);
 
         // Handle different event types
-        return match ($eventType) {
+        return match ($event['event_type'] ?? null) {
             'CHECKOUT.ORDER.APPROVED' => $this->handleOrderApproved($event),
-            'PAYMENT.CAPTURE.COMPLETED' => $this->handlePaymentCaptureCompleted($event),
-            'PAYMENT.CAPTURE.DENIED' => $this->handlePaymentCaptureDenied($event),
-            'PAYMENT.CAPTURE.REFUNDED' => $this->handlePaymentCaptureRefunded($event),
+            'PAYMENT.CAPTURE.COMPLETED' => $this->handleCaptureCompleted($event),
+            'PAYMENT.CAPTURE.DENIED' => $this->handleCaptureDenied($event),
+            'PAYMENT.CAPTURE.REFUNDED' => $this->handleCaptureRefunded($event),
             default => $this->handleUnknownEvent($event),
         };
     }
 
     /**
      * {@inheritdoc}
-     *
-     * PayPal doesn't store customers like Stripe.
-     * Returns null as customer management is not applicable.
      */
     public function getCustomer(User $user): ?string
     {
@@ -391,42 +379,34 @@ class PayPalGatewayService implements PaymentGatewayInterface
 
     /**
      * {@inheritdoc}
-     *
-     * PayPal doesn't support customer creation.
-     * Throws exception explaining to use payer_id from approved orders.
      */
     public function createCustomer(User $user): string
     {
+        // PayPal doesn't support customer creation
         throw PayPalPaymentException::customerNotSupported();
     }
 
     /**
      * {@inheritdoc}
-     *
-     * PayPal doesn't store payment methods like Stripe.
-     * Returns empty array as payment method management is not applicable.
      */
     public function getPaymentMethods(User $user): array
     {
         // PayPal doesn't store payment methods like Stripe
+        // Each transaction uses the payer's PayPal account directly
         return [];
     }
 
     /**
      * {@inheritdoc}
-     *
-     * PayPal doesn't support payment method deletion.
      */
     public function deletePaymentMethod(string $paymentMethodId): bool
     {
-        // PayPal doesn't support payment method deletion
+        // PayPal doesn't support payment method management
         return false;
     }
 
     /**
      * {@inheritdoc}
-     *
-     * PayPal doesn't track payment method ownership.
      */
     public function getPaymentMethodOwner(string $paymentMethodId): ?int
     {
@@ -435,87 +415,50 @@ class PayPalGatewayService implements PaymentGatewayInterface
     }
 
     /**
-     * Get PayPal access token using OAuth2.
-     */
-    protected function getAccessToken(): string
-    {
-        if ($this->accessToken) {
-            return $this->accessToken;
-        }
-
-        $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
-            ->asForm()
-            ->post("{$this->apiBaseUrl}/v1/oauth2/token", [
-                'grant_type' => 'client_credentials',
-            ]);
-
-        if (!$response->successful()) {
-            throw new PayPalPaymentException(
-                'Failed to authenticate with PayPal.',
-                'AUTH_FAILED',
-                [],
-                401
-            );
-        }
-
-        $this->accessToken = $response->json('access_token');
-        return $this->accessToken;
-    }
-
-    /**
-     * Verify PayPal webhook signature.
+     * Verify webhook signature using PayPal headers.
      *
-     * @param string $payload Raw request body
-     * @param string $signature PAYPAL-TRANSMISSION-SIG header
-     * @param string $certUrl PAYPAL-CERT-URL header
-     * @param string $transmissionId PAYPAL-TRANSMISSION-ID header
-     * @param string $transmissionTime PAYPAL-TRANSMISSION-TIME header
+     * @param Request $request The incoming webhook request
      * @return bool True if signature is valid
      */
-    protected function verifyWebhookSignature(
-        string $payload,
-        string $signature,
-        string $certUrl,
-        string $transmissionId,
-        string $transmissionTime
-    ): bool {
+    protected function verifyWebhookSignature(Request $request): bool
+    {
+        $signature = $request->header('PAYPAL-TRANSMISSION-SIG');
+        $certUrl = $request->header('PAYPAL-CERT-URL');
+        $transmissionId = $request->header('PAYPAL-TRANSMISSION-ID');
+        $transmissionTime = $request->header('PAYPAL-TRANSMISSION-TIME');
+
+        // Check required headers
+        if (!$signature || !$certUrl || !$transmissionId || !$transmissionTime) {
+            Log::warning('Missing PayPal webhook headers');
+            return false;
+        }
+
         try {
-            // Build the expected signature string
-            $expectedSignature = "{$transmissionId}|{$transmissionTime}|{$this->webhookId}|" . crc32($payload);
+            $accessToken = $this->getAccessToken();
+            $payload = $request->getContent();
 
-            // Fetch the certificate
-            $certResponse = Http::get($certUrl);
-            if (!$certResponse->successful()) {
-                Log::error('Failed to fetch PayPal certificate', ['cert_url' => $certUrl]);
-                return false;
+            // Use PayPal's webhook verification API
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => "Bearer {$accessToken}",
+            ])->post("{$this->apiBaseUrl}/v1/notifications/verify-webhook-signature", [
+                'transmission_id' => $transmissionId,
+                'transmission_time' => $transmissionTime,
+                'cert_url' => $certUrl,
+                'auth_algo' => 'SHA256WithRSA',
+                'transmission_sig' => $signature,
+                'webhook_id' => $this->webhookId,
+                'webhook_event' => json_decode($payload, true),
+            ]);
+
+            if ($response->successful()) {
+                $result = $response->json();
+                return ($result['verification_status'] ?? '') === 'SUCCESS';
             }
 
-            $certContent = $certResponse->body();
-            
-            // Extract public key from certificate
-            $certInfo = openssl_x509_parse($certContent);
-            if (!$certInfo) {
-                Log::error('Failed to parse PayPal certificate');
-                return false;
-            }
-
-            $publicKey = openssl_pkey_get_public($certContent);
-            if (!$publicKey) {
-                Log::error('Failed to extract public key from PayPal certificate');
-                return false;
-            }
-
-            // Verify the signature
-            $result = openssl_verify(
-                $expectedSignature,
-                base64_decode($signature),
-                $publicKey,
-                OPENSSL_ALGO_SHA256
-            );
-
-            return $result === 1;
+            return false;
         } catch (\Exception $e) {
-            Log::error('PayPal webhook signature verification error', [
+            Log::error('PayPal webhook verification error', [
                 'error' => $e->getMessage(),
             ]);
             return false;
@@ -529,43 +472,46 @@ class PayPalGatewayService implements PaymentGatewayInterface
     {
         $resource = $event['resource'] ?? [];
         $orderId = $resource['id'] ?? null;
-        $customId = $resource['purchase_units'][0]['custom_id'] ?? null;
+        $customId = $resource['purchase_units'][0]['custom_id'] ?? '';
+        $amount = $resource['purchase_units'][0]['amount']['value'] ?? '0';
+        $currency = $resource['purchase_units'][0]['amount']['currency_code'] ?? 'USD';
 
         // Parse user_id from custom_id
         $userId = null;
-        if ($customId && preg_match('/user_(\d+)/', $customId, $matches)) {
+        if (preg_match('/user_(\d+)/', $customId, $matches)) {
             $userId = (int) $matches[1];
         }
 
         Log::info('PayPal order approved', [
             'order_id' => $orderId,
             'user_id' => $userId,
+            'amount' => $amount,
         ]);
 
         return new PaymentResult(
             success: true,
             paymentId: $orderId,
+            amount: (float) $amount,
+            currency: $currency,
             userId: $userId,
-            metadata: ['custom_id' => $customId],
-            type: 'order_approved',
-            requiresCapture: true,
+            requiresCapture: true
         );
     }
 
     /**
      * Handle PAYMENT.CAPTURE.COMPLETED event.
      */
-    protected function handlePaymentCaptureCompleted(array $event): PaymentResult
+    protected function handleCaptureCompleted(array $event): PaymentResult
     {
         $resource = $event['resource'] ?? [];
         $captureId = $resource['id'] ?? null;
-        $amount = (float) ($resource['amount']['value'] ?? 0);
-        $currency = strtoupper($resource['amount']['currency_code'] ?? 'USD');
-        $customId = $resource['custom_id'] ?? null;
+        $amount = $resource['amount']['value'] ?? '0';
+        $currency = $resource['amount']['currency_code'] ?? 'USD';
+        $customId = $resource['custom_id'] ?? '';
 
         // Parse user_id from custom_id
         $userId = null;
-        if ($customId && preg_match('/user_(\d+)/', $customId, $matches)) {
+        if (preg_match('/user_(\d+)/', $customId, $matches)) {
             $userId = (int) $matches[1];
         }
 
@@ -576,48 +522,59 @@ class PayPalGatewayService implements PaymentGatewayInterface
 
         if ($existingTransaction) {
             Log::info('Duplicate PayPal webhook event detected', [
-                'event_id' => $event['id'] ?? null,
+                'event_id' => $event['id'] ?? 'unknown',
                 'capture_id' => $captureId,
             ]);
 
-            return PaymentResult::duplicate($captureId, $userId);
+            return new PaymentResult(
+                success: true,
+                paymentId: $captureId,
+                userId: $userId,
+                isDuplicate: true
+            );
         }
+
+        Log::info('PayPal capture completed', [
+            'capture_id' => $captureId,
+            'user_id' => $userId,
+            'amount' => $amount,
+        ]);
 
         return PaymentResult::success(
             paymentId: $captureId,
-            amount: $amount,
+            amount: (float) $amount,
             currency: $currency,
             userId: $userId,
-            metadata: ['custom_id' => $customId, 'order_id' => $resource['supplementary_data']['related_ids']['order_id'] ?? null]
+            metadata: ['custom_id' => $customId]
         );
     }
 
     /**
      * Handle PAYMENT.CAPTURE.DENIED event.
      */
-    protected function handlePaymentCaptureDenied(array $event): PaymentResult
+    protected function handleCaptureDenied(array $event): PaymentResult
     {
         $resource = $event['resource'] ?? [];
         $captureId = $resource['id'] ?? null;
-        $amount = (float) ($resource['amount']['value'] ?? 0);
-        $customId = $resource['custom_id'] ?? null;
+        $amount = $resource['amount']['value'] ?? '0';
+        $customId = $resource['custom_id'] ?? '';
 
         // Parse user_id from custom_id
         $userId = null;
-        if ($customId && preg_match('/user_(\d+)/', $customId, $matches)) {
+        if (preg_match('/user_(\d+)/', $customId, $matches)) {
             $userId = (int) $matches[1];
         }
 
-        Log::warning('PayPal payment denied', [
+        Log::warning('PayPal capture denied', [
             'capture_id' => $captureId,
             'user_id' => $userId,
         ]);
 
         return PaymentResult::failed(
             paymentId: $captureId,
-            amount: $amount,
+            amount: (float) $amount,
             errorCode: 'DENIED',
-            errorMessage: 'PayPal payment was denied.',
+            errorMessage: 'Payment was denied by PayPal.',
             userId: $userId
         );
     }
@@ -625,29 +582,38 @@ class PayPalGatewayService implements PaymentGatewayInterface
     /**
      * Handle PAYMENT.CAPTURE.REFUNDED event.
      */
-    protected function handlePaymentCaptureRefunded(array $event): PaymentResult
+    protected function handleCaptureRefunded(array $event): PaymentResult
     {
         $resource = $event['resource'] ?? [];
         $captureId = $resource['id'] ?? null;
-        $refundId = $resource['refund_id'] ?? $captureId;
-        $amount = (float) ($resource['amount']['value'] ?? 0);
-        $customId = $resource['custom_id'] ?? null;
+        $amount = $resource['amount']['value'] ?? '0';
 
-        // Parse user_id from custom_id
-        $userId = null;
-        if ($customId && preg_match('/user_(\d+)/', $customId, $matches)) {
-            $userId = (int) $matches[1];
-        }
+        // Find the original transaction
+        $transaction = CreditTransaction::where('payment_provider', 'paypal')
+            ->where('payment_id', $captureId)
+            ->first();
 
-        Log::info('PayPal payment refunded', [
+        $userId = $transaction?->user_id;
+
+        Log::info('PayPal capture refunded', [
             'capture_id' => $captureId,
-            'refund_id' => $refundId,
             'user_id' => $userId,
+            'amount' => $amount,
         ]);
 
+        // If userId is null, create a generic refund result
+        if ($userId === null) {
+            return new PaymentResult(
+                success: true,
+                paymentId: $captureId,
+                amount: -(float) $amount,
+                type: 'refund'
+            );
+        }
+
         return PaymentResult::refund(
-            refundId: $refundId,
-            amount: $amount,
+            refundId: $captureId,
+            amount: (float) $amount,
             userId: $userId
         );
     }
@@ -658,15 +624,99 @@ class PayPalGatewayService implements PaymentGatewayInterface
     protected function handleUnknownEvent(array $event): PaymentResult
     {
         Log::info('Unhandled PayPal webhook event type', [
-            'event_id' => $event['id'] ?? null,
-            'event_type' => $event['event_type'] ?? 'UNKNOWN',
+            'event_id' => $event['id'] ?? 'unknown',
+            'event_type' => $event['event_type'] ?? 'unknown',
         ]);
 
         return PaymentResult::ignored();
     }
 
     /**
-     * Format amount for PayPal API (string format).
+     * Get PayPal access token.
+     *
+     * @return string Access token
+     * @throws PayPalPaymentException If authentication fails
+     */
+    protected function getAccessToken(): string
+    {
+        // Return cached token if still valid
+        if ($this->accessToken && $this->tokenExpiresAt && time() < $this->tokenExpiresAt) {
+            return $this->accessToken;
+        }
+
+        try {
+            $response = Http::asForm()
+                ->withBasicAuth($this->clientId, $this->clientSecret)
+                ->timeout(30)
+                ->post("{$this->apiBaseUrl}/v1/oauth2/token", [
+                    'grant_type' => 'client_credentials',
+                ]);
+
+            if (!$response->successful()) {
+                $error = $response->json();
+                $errorCode = $error['error'] ?? 'AUTH_FAILED';
+                $errorMessage = $error['error_description'] ?? 'Authentication failed';
+
+                Log::error('PayPal authentication failed', [
+                    'error' => $errorMessage,
+                    'code' => $errorCode,
+                ]);
+
+                // Check for rate limit
+                if ($response->status() === 429) {
+                    throw new PayPalPaymentException('Rate limit exceeded. Please try again later.', 'RATE_LIMIT');
+                }
+
+                throw new PayPalPaymentException(
+                    'PayPal authentication failed.',
+                    $errorCode
+                );
+            }
+
+            $data = $response->json();
+            $this->accessToken = $data['access_token'];
+            $this->tokenExpiresAt = time() + ($data['expires_in'] ?? 3600) - 60; // Buffer 60 seconds
+
+            return $this->accessToken;
+        } catch (PayPalPaymentException $e) {
+            throw $e;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('PayPal connection error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new PayPalPaymentException(
+                'PayPal service unavailable. Please try again.',
+                'CONNECTION_ERROR'
+            );
+        } catch (\InvalidArgumentException $e) {
+            // Handle invalid response (e.g., status code 0 from network errors)
+            Log::error('PayPal invalid response', [
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new PayPalPaymentException(
+                'PayPal service unavailable. Please try again.',
+                'CONNECTION_ERROR'
+            );
+        } catch (\Exception $e) {
+            Log::error('PayPal access token error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new PayPalPaymentException(
+                'Failed to authenticate with PayPal.',
+                'AUTH_ERROR'
+            );
+        }
+    }
+
+    /**
+     * Format amount for PayPal API.
+     *
+     * @param float $amount Amount in dollars
+     * @param string $currency Currency code
+     * @return string Formatted amount
      */
     protected function formatAmount(float $amount, string $currency): string
     {
@@ -677,45 +727,38 @@ class PayPalGatewayService implements PaymentGatewayInterface
             return (string) (int) round($amount);
         }
 
-        // Standard formatting with 2 decimal places
         return number_format($amount, 2, '.', '');
     }
 
     /**
      * Handle PayPal API error response.
+     *
+     * @param \Illuminate\Http\Client\Response $response
+     * @param string $context Error context for logging
+     * @throws PayPalPaymentException
      */
-    protected function handleApiError($response, string $defaultMessage): void
+    protected function handleApiError($response, string $context): void
     {
-        $errorData = $response->json();
-        $errorMessage = $errorData['message'] ?? $defaultMessage;
-        $errorCode = $errorData['name'] ?? 'API_ERROR';
+        $error = $response->json();
+        $errorCode = $error['name'] ?? 'API_ERROR';
+        $errorMessage = $error['message'] ?? 'Unknown error';
+
+        // Check for rate limit
+        if ($response->status() === 429) {
+            Log::warning('PayPal rate limit hit', ['context' => $context]);
+            throw new PayPalPaymentException('Rate limit exceeded. Please try again later.', 'RATE_LIMIT');
+        }
 
         Log::error('PayPal API error', [
-            'status' => $response->status(),
-            'error' => $errorMessage,
+            'context' => $context,
             'code' => $errorCode,
+            'message' => $errorMessage,
+            'status' => $response->status(),
         ]);
 
-        // Handle rate limiting
-        if ($response->status() === 429) {
-            throw new PayPalPaymentException(
-                'Rate limit exceeded. Please wait a moment and try again.',
-                'RATE_LIMIT',
-                [],
-                429
-            );
-        }
-
-        // Handle authentication errors
-        if ($response->status() === 401) {
-            throw new PayPalPaymentException(
-                'PayPal authentication failed.',
-                'AUTH_ERROR',
-                [],
-                401
-            );
-        }
-
-        throw new PayPalPaymentException($errorMessage, $errorCode);
+        throw new PayPalPaymentException(
+            $errorMessage,
+            $errorCode
+        );
     }
 }
