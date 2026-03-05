@@ -384,6 +384,9 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     // Payment Methods (TASK-26-11, SPEC-026)
     Route::get('payments/methods', [\App\Http\Controllers\Api\V1\PaymentController::class, 'listMethods']);
     Route::delete('payments/methods/{id}', [\App\Http\Controllers\Api\V1\PaymentController::class, 'deleteMethod'])->where('id', '[0-9]+');
+
+    // PayPal Orders (TASK-26-13, SPEC-026)
+    Route::post('payments/paypal/order', [\App\Http\Controllers\Api\V1\Payments\PayPalOrderController::class, 'store']);
 });
 
 /*
