@@ -387,6 +387,9 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
     // PayPal Orders (TASK-26-13, SPEC-026)
     Route::post('payments/paypal/order', [\App\Http\Controllers\Api\V1\Payments\PayPalOrderController::class, 'store']);
+
+    // PayPal Capture (TASK-26-15, SPEC-026)
+    Route::post('payments/paypal/capture', [\App\Http\Controllers\Api\V1\Payments\PayPalCaptureController::class, 'store']);
 });
 
 /*
