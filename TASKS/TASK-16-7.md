@@ -1,7 +1,7 @@
 # TASK-16-7: Mobile-Friendly Checker Tool
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -331,3 +331,35 @@ The service is registered in the API layer but there's likely an unhandled excep
 **Status:** Returned to `To Develop` for server-side error investigation.
 
 **Recommendation:** Developer should check production logs or add more verbose error handling to identify the exact failure point.
+
+### [2026-03-05 12:43] Agent: Developer
+**ROOT CAUSE FOUND AND FIXED**
+
+**Root Cause:**
+The production database had `user_id` column as NOT NULL in the `analysis_history` table, despite the migration file specifying `->nullable()`. This was because the migration was modified after it was already run in production.
+
+When the public API endpoint (no authentication required) called the tool, it tried to create an analysis history record with a null `user_id`, which violated the NOT NULL constraint.
+
+**Error from production logs:**
+```
+SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+```
+
+**Fix Applied:**
+Created new migration `2026_03_05_104746_make_user_id_nullable_in_analysis_history_table.php` using raw SQL:
+```sql
+ALTER TABLE analysis_history MODIFY COLUMN user_id BIGINT UNSIGNED NULL
+```
+
+**Verification:**
+1. Deployed migration to production
+2. Verified `user_id` column is now nullable (`Null: YES`)
+3. Tested API endpoint with real URL:
+   - Request: `POST /api/v1/tools/analyze`
+   - Body: `url=https://github.com&tool=mobile-friendly`
+   - Response: `success=true` with mobile score 62
+
+**Files Modified:**
+- `backend/database/migrations/2026_03_05_104746_make_user_id_nullable_in_analysis_history_table.php`
+
+**Status:** Ready for LocalTester to verify
