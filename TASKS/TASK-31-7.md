@@ -1,7 +1,7 @@
 # TASK-31-7: AIAnalysisService (Unified Caller)
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
