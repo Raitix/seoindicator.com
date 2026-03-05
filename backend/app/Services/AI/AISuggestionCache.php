@@ -211,15 +211,12 @@ class AISuggestionCache
         
         // Get all registered hashes
         $registry = $this->getRegistry();
-        $count = 0;
+        $count = count($registry);
         
-        // Clear each cache entry
+        // Clear each cache entry (don't check has() first - just forget)
         foreach (array_keys($registry) as $hash) {
             $key = $this->getCacheKey($hash);
-            if (Cache::has($key)) {
-                Cache::forget($key);
-                $count++;
-            }
+            Cache::forget($key);
         }
         
         // Also scan for any entries not in registry (direct cache sets)
@@ -503,16 +500,26 @@ class AISuggestionCache
                         $prefix = self::CACHE_PREFIX;
                         $registry = $this->getRegistry();
                         
+                        // Get all keys that match our prefix
+                        $keysToClear = [];
                         foreach (array_keys($storage) as $key) {
-                            if (str_starts_with($key, $prefix) && 
-                                $key !== self::REGISTRY_KEY && 
-                                $key !== self::STATS_KEY) {
-                                // Extract hash from key
-                                $hash = substr($key, strlen($prefix));
-                                if (!isset($registry[$hash])) {
-                                    Cache::forget($key);
-                                    $count++;
-                                }
+                            if (str_starts_with($key, $prefix)) {
+                                $keysToClear[] = $key;
+                            }
+                        }
+                        
+                        // Clear all matching keys except registry (which we handle separately)
+                        foreach ($keysToClear as $key) {
+                            // Skip registry and stats keys - they're handled separately
+                            if ($key === self::REGISTRY_KEY || $key === self::STATS_KEY) {
+                                continue;
+                            }
+                            
+                            // Check if this hash was in the registry
+                            $hash = substr($key, strlen($prefix));
+                            if (!isset($registry[$hash])) {
+                                Cache::forget($key);
+                                $count++;
                             }
                         }
                         
