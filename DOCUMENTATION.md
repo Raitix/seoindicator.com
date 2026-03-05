@@ -28843,3 +28843,132 @@ The `formatComparisonTitle` function converts slugs to human-readable titles:
 - FEAT-032: Competitor Comparison Landing Pages
 
 ---
+## PricingComparison Component (TASK-32-6)
+
+### Component Description
+Pricing comparison component for the Competitor Comparison Landing Pages (FEAT-032). Displays tier-by-tier pricing for both tools with free tier highlighting, annual/monthly billing toggle, feature breakdown per tier, and annual savings indicator. Key conversion component highlighting SEOIndicator's free tier advantage.
+
+### Component Location
+- **Component:** `frontend/components/compare/PricingComparison.tsx`
+- **Types:** `frontend/lib/compare/types.ts` (PricingComparisonProps, PricingTier)
+- **Tests:** `frontend/__tests__/components/compare/PricingComparison.test.tsx`
+- **Test Documentation:** `TESTS/TEST-32-6.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Tier Comparison | Side-by-side pricing tiers for both tools |
+| Free Tier Highlight | SEOIndicator free tier prominently displayed with "Free Forever" badge |
+| Billing Toggle | Switch between monthly and annual pricing |
+| Feature Breakdown | Show features included in each tier |
+| Annual Savings | Calculate and display savings percentage for annual plans |
+| Mobile Responsive | Grid stacks to single column on mobile devices |
+| Highlighted Tier | "Popular" badge with emerald accent styling |
+
+### Sub-components
+
+| Component | Description |
+|-----------|-------------|
+| `BillingToggle` | Monthly/Annual switch with accessible aria-pressed states |
+| `PriceDisplay` | Formatted price with decimal rounding (2 places) |
+| `FeatureList` | Feature list with check icons |
+| `PricingCard` | Individual tier card with features and pricing |
+
+### Component Props
+
+```typescript
+interface PricingComparisonProps {
+  seoindicator: PricingTier[];      // SEOIndicator pricing tiers
+  competitor: PricingTier[];        // Competitor pricing tiers
+  showFreeTier?: boolean;           // Show free tier highlight (default: true)
+}
+
+interface PricingTier {
+  name: string;                     // Tier name (Free, Pro, Enterprise)
+  monthlyPrice: number | 'Free' | 'Custom';  // Monthly price
+  annualPrice: number | 'Free' | 'Custom';   // Annual price (per month)
+  features: string[];               // Features included in tier
+  highlighted?: boolean;            // Highlight as "Popular" tier
+}
+```
+
+### Price Formatting
+
+| Price Type | Display Format |
+|------------|----------------|
+| `Free` | "Free Forever" badge |
+| `Custom` | "Custom" text (no savings badge) |
+| Integer (e.g., 29) | "$29" |
+| Decimal (e.g., 19.99) | "$19.99" |
+
+### Annual Savings Calculation
+
+```typescript
+// Formula: ((monthly * 12 - annual * 12) / (monthly * 12)) * 100
+const savingsPercent = ((monthlyPrice * 12 - annualPrice * 12) / (monthlyPrice * 12)) * 100;
+```
+
+### Styling
+
+- Uses Tailwind CSS for styling
+- Mobile: `grid-cols-1` (stacked layout)
+- Desktop: `grid-cols-2` (side-by-side)
+- Highlighted tier: "Popular" badge with emerald accent
+- Free tier: "Free Forever" badge with distinct styling
+- Savings badge: Shows percentage saved with annual billing
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| PricingComparison.test.tsx | 53 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 5 | Component structure, columns, headers |
+| Toggle | 4 | Monthly/Annual switching, aria-pressed |
+| Free Tier | 4 | Free tier display, "Free Forever" badge |
+| Calculations | 3 | Annual savings percentage |
+| Formatting | 3 | Price formatting, decimals, currency |
+| Features | 4 | Feature list, check icons |
+| Accessibility | 3 | ARIA labels, keyboard navigation |
+| Edge Cases | 6 | Empty arrays, zero prices, custom prices |
+| Props | 2 | Default values, prop handling |
+| Decimal Formatting | 3 | Integer vs decimal display |
+| Custom/Enterprise Prices | 4 | Custom price handling, no savings badge |
+| Mobile Responsive | 6 | Grid layout, breakpoints |
+| Annual Savings Edge Cases | 3 | Same price, zero, negative handling |
+| Component Integration | 3 | Full component integration |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Labels | Toggle buttons with aria-pressed states |
+| Keyboard Navigation | Tab cycles through toggle buttons |
+| Screen Reader | Announces billing cycle changes |
+| Semantic HTML | Proper button and label elements |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `a0642afb` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Component Status | ✅ Deployed |
+| Tests | 53/53 passing |
+
+### Dependencies
+- TASK-32-1 (Types) - Done
+
+### Related Tasks
+- TASK-32-5: ComparisonTable component
+- TASK-32-7: ProsConsCard component
+- TASK-32-2: Registry (data loading)
+- TASK-32-3: Page route
+
+---

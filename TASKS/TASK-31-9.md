@@ -1,7 +1,7 @@
 # TASK-31-9: Retry Policy Implementation
 
 ## STATUS
-`To Develop`
+`Ready for Local Testing`
 
 ## PRIORITY
 `High`
@@ -247,3 +247,41 @@ PreTester can design tests immediately using the defined interface:
 
 **Status:** `To Develop` - Ready for Developer
 **Next Agent:** Developer for implementation
+
+### [2026-03-05 19:45 GMT+2] Developer
+**Implementation Complete**
+
+**Files Created:**
+| File | Description |
+|------|-------------|
+| `backend/app/Exceptions/AI/RateLimitException.php` | HTTP 429 rate limit exception with Retry-After header support |
+| `backend/app/Exceptions/AI/TimeoutException.php` | Request timeout exception |
+| `backend/app/Exceptions/AI/ServiceUnavailableException.php` | Service unavailable exception |
+| `backend/app/Services/AI/RetryPolicy.php` | Main retry policy service with all methods |
+| `backend/app/Services/AI/DTOs/RetryDecision.php` | DTO for retry decisions |
+| `backend/app/Services/AI/DTOs/RetryStrategy.php` | DTO for retry strategies |
+
+**Test Results:** 84/84 tests passing (148 assertions)
+
+**Implementation Highlights:**
+1. **Exponential Backoff:** `BASE_DELAY * 2^(attempt-1)` with 10% jitter
+2. **Max Delay Cap:** 10 seconds max wait between retries
+3. **Rate Limit Handling:** Respects Retry-After header up to 60 seconds max
+4. **Content-Aware Retry:** Uses ContextWindowManager for token estimation, triggers truncation at 50K+ tokens on retry (attempt 2+)
+5. **Retryable Errors:** 429, 500, 502, 503, 504 + TimeoutException, ServiceUnavailableException, ConnectionException
+6. **Non-Retryable Errors:** 400, 401, 403, 404, 422 (client errors fail fast)
+7. **Logging:** All retry attempts logged with context (attempt, exception class, is_retryable)
+
+**Configuration Constants:**
+- `MAX_RETRIES = 3`
+- `BASE_DELAY_MS = 1000` (1 second)
+- `MAX_DELAY_MS = 10000` (10 seconds)
+- `JITTER_PERCENT = 0.1` (10%)
+- `MAX_RATE_LIMIT_WAIT_SECONDS = 60`
+- `LARGE_CONTENT_THRESHOLD = 50000` tokens
+- `TRUNCATION_RATIO = 0.7` (70% = 30% reduction)
+
+**Performance:** All performance tests pass (<100ms for 1000 calls)
+
+**Status:** `Ready for Local Testing` - Ready for LocalTester
+**Next Agent:** LocalTester for validation
