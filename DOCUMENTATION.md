@@ -4058,6 +4058,177 @@ Integration of the ToolEmbed component into Open Graph and Twitter Cards SEO gui
 - TASK-20-23: Tool embedding for Mobile-Friendly guide
 
 ---
+## ModelSelectionService (TASK-31-8)
+
+### Service Description
+Core service for selecting the optimal AI model based on content size, user preferences, and availability. Implements intelligent model selection logic that balances cost optimization (smaller models for smaller content) with context window requirements. Part of the Unified AI Prompt + Context Management feature (FEAT-031).
+
+### Component Location
+- **Service:** `backend/app/Services/AI/ModelSelectionService.php`
+- **Tests:** `backend/tests/Unit/Services/AI/ModelSelectionServiceTest.php`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `selectModel(int $estimatedTokens, ?User $user = null): string` | Choose optimal model for content size |
+| `getUserPreference(User $user): ?string` | Get user's preferred model from preferences |
+| `getFallbackModel(): string` | Return default fallback model (Gemini 2.0 Flash) |
+| `isModelAvailable(string $modelId): bool` | Check if model is active in database |
+| `getAvailableModels(): Collection` | Return free-tier models sorted by context window |
+
+### Model Selection Priority
+
+The service follows a priority order for model selection:
+
+| Priority | Condition | Model Selection |
+|----------|-----------|-----------------|
+| 1 | User has preference + fits context | User's preferred model |
+| 2 | Content < 4K tokens | Llama 3 8B (smallest, fastest) |
+| 3 | Content < 26K tokens | Qwen 2 / Mistral 7B (medium context) |
+| 4 | Default fallback | Gemini 2.0 Flash (large context) |
+
+### Model Priority Matrix
+
+| Content Size | Primary Model | Fallback | Notes |
+|--------------|---------------|----------|-------|
+| < 4K tokens | Llama 3 8B | Qwen 2 | Fastest, smallest context |
+| 4K - 26K tokens | Qwen 2 / Mistral 7B | Gemini 2.0 | Medium context |
+| 26K - 900K tokens | Gemini 2.0 Flash | N/A | Large context |
+| > 900K tokens | Gemini + Truncation | - | Requires content truncation |
+
+### Effective Context Limits
+
+The service uses safety margins to ensure content fits:
+
+| Model | Raw Context Window | Safety Margin | Effective Limit |
+|-------|-------------------|---------------|-----------------|
+| Llama 3 8B | 8,192 tokens | 90% - 3,400 overhead | ~3,972 tokens |
+| Qwen 2 / Mistral 7B | 32,768 tokens | 90% - 3,400 overhead | ~26,091 tokens |
+| Gemini 2.0 Flash | 1,000,000 tokens | 90% - 3,400 overhead | ~896,600 tokens |
+
+### Integration with FEAT-026
+
+The service integrates with the existing billing/model system:
+
+| Integration | Description |
+|-------------|-------------|
+| `UserModelPreference` | Checks user's default model preference |
+| `AIModel` | Queries active models from database |
+| `ModelPricingService` | Future: credit balance checks for paid models |
+
+### User Preference Handling
+
+```php
+public function getUserPreference(User $user): ?string
+{
+    $cacheKey = "user_preferred_model:{$user->id}";
+    
+    return Cache::remember($cacheKey, 300, function () use ($user) {
+        $preference = UserModelPreference::where('user_id', $user->id)
+            ->where('is_default', true)
+            ->first();
+        
+        if (!$preference?->model?->model_id) {
+            return null;
+        }
+        
+        // Verify model is still active
+        if (!$this->isModelAvailable($preference->model->model_id)) {
+            return null;
+        }
+        
+        return $preference->model->model_id;
+    });
+}
+```
+
+### Selection Algorithm
+
+```php
+public function selectModel(int $estimatedTokens, ?User $user = null): string
+{
+    // 1. Check user preference (if set and fits context)
+    if ($user) {
+        $preferred = $this->getUserPreference($user);
+        if ($preferred && $this->contextManager->fitsInContext($preferred, $estimatedTokens)) {
+            return $preferred;
+        }
+    }
+    
+    // 2. Select smallest sufficient model (cost optimization)
+    foreach (self::MODEL_PRIORITY as $model) {
+        if ($this->contextManager->fitsInContext($model, $estimatedTokens)) {
+            return $model;
+        }
+    }
+    
+    // 3. Fallback to largest context model
+    return self::DEFAULT_MODEL;
+}
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Cache Key Safety | User ID scoped cache keys |
+| SQL Injection Prevention | Eloquent ORM with parameterized queries |
+| No Sensitive Data | Only model IDs stored/retrieved |
+| Input Validation | Token count validated as positive integer |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `ModelSelectionServiceTest.php` | 55 | 81 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Model Selection (MS) | 9 | Content-based model selection |
+| User Preference (UP) | 10 | User preference handling |
+| Model Availability (MA) | 5 | Availability checks |
+| Fallback Model (FM) | 2 | Default fallback behavior |
+| Context Integration (CI) | 2 | ContextWindowManager integration |
+| Model Priority (MP) | 4 | Priority matrix validation |
+| Edge Cases (EC) | 5 | Boundary and error handling |
+| Acceptance Criteria (AC) | 6 | All ACs tested |
+| Performance | 2 | Speed benchmarks |
+| Data Providers | 10 | Boundary/selection tests |
+
+### Acceptance Criteria Status
+
+- [x] AC-001: `selectModel()` returns optimal model for content size
+- [x] AC-002: User preferences respected when content fits
+- [x] AC-003: Falls back gracefully when preferred model too small
+- [x] AC-004: Free-tier models prioritized
+- [x] AC-005: Integration with existing model pricing (FEAT-026)
+- [x] AC-006: Model availability checked
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `49409028` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 55/55 passing (81 assertions) |
+| Duration | 9.81s |
+| Status | Complete |
+
+### Dependencies
+- TASK-31-2 (ContextWindowManager) - Done
+- TASK-26-16 (ModelPricingService) - Done (optional)
+- TASK-26-19 (UserModelPreference) - Done (optional)
+
+### Related Tasks
+- TASK-31-2: ContextWindowManager (token estimation)
+- TASK-31-7: AIAnalysisService (uses ModelSelectionService)
+- TASK-31-13: AnalysisRunnerService (uses AIAnalysisService)
+
+---
 ## Open Graph Tags SEO Guide (TASK-20-18)
 
 ### Guide Description
