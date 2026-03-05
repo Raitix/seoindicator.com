@@ -1,7 +1,7 @@
 # TASK-24-9: PWA Guide API Endpoint
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Medium`
@@ -125,3 +125,10 @@ Created task for guide API. Low-risk content delivery endpoint. Can be implement
 **Verdict:** Implementation meets all acceptance criteria. Ready for deployment.
 
 **Handoff:** DevOps to deploy to production.
+
+### [2026-03-05] Agent: DevOps
+**Deployment Started:**
+- All code already committed in previous commits
+- Implementation verified: PWAGuideController and 4 markdown guide files exist
+- Local tests passed: 73 feature tests, 169 assertions
+- Proceeding with git push to origin and SSH deployment
