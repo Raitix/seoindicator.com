@@ -243,6 +243,30 @@ export default async function GuidePage({ params }: GuidePageProps) {
           </div>
         )}
 
+        {/* Compare with Alternatives Callout */}
+        <aside
+          data-testid="comparison-callout"
+          role="complementary"
+          className="my-12 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-6"
+        >
+          <h4 className="text-lg font-semibold text-white mb-2">
+            Compare with Alternatives
+          </h4>
+          <p className="text-slate-400 mb-4">
+            See how SEOIndicator compares to other SEO tools and find the best fit for your needs.
+          </p>
+          <Link
+            href="/compare"
+            className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors font-medium"
+            data-testid="callout-compare-link"
+          >
+            View comparisons
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </aside>
+
         {/* Related Guides */}
         {relatedGuides.length > 0 && (
           <section className="mt-12 border-t border-slate-800 pt-8">
