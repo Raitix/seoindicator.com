@@ -1,7 +1,7 @@
 # TASK-31-8: ModelSelectionService
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -407,3 +407,20 @@ The service correctly implements:
 
 **Status:** `To Document` - Ready for DocSystemAnalyst
 **Handoff to:** DocSystemAnalyst for documentation update
+
+### [2026-03-05 20:08 GMT+2] DocSystemAnalyst
+**Documentation Complete ✅**
+
+**Documentation Updated:**
+- Added comprehensive `ModelSelectionService` section to `DOCUMENTATION.md`
+- Includes: Service description, core functionalities, model selection priority, effective context limits, integration with FEAT-026, test coverage, and production status
+
+**Key Documentation Points:**
+1. Model selection algorithm with priority order
+2. Effective context limits with safety margins (Llama: 3,972 tokens, Qwen/Mistral: 26,091 tokens, Gemini: 896,600 tokens)
+3. Integration with UserModelPreference and AIModel
+4. All 6 acceptance criteria documented as verified
+5. Test coverage: 55 tests, 81 assertions
+
+**Status:** `Done`
+**Task Complete:** Documentation updated, all acceptance criteria met.
