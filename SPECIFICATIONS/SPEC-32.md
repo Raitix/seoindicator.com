@@ -1,7 +1,7 @@
 # SPEC-32: Competitor Comparison Landing Pages (Programmatic SEO)
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -573,3 +573,97 @@ interface ComparisonData {
 - Prioritize Phase 1-2 for MVP
 - Phase 3-4 for full rollout
 - Phase 5 for optimization
+
+### [2026-03-05 14:55 GMT+2] Agent: SpecSystemAnalyst
+**Task breakdown completed.**
+
+**Created 22 tasks across 5 phases:**
+
+| Phase | Tasks | Description |
+|-------|-------|-------------|
+| 1 | TASK-32-1 to TASK-32-4 | Infrastructure (types, registry, routes, index page) |
+| 2 | TASK-32-5 to TASK-32-10 | Components (table, pricing, pros/cons, use-cases, CTA, schema) |
+| 3 | TASK-32-11 to TASK-32-14 | Competitor Data (Tier 1-3 + free alternatives) |
+| 4 | TASK-32-15 to TASK-32-18 | SEO & Integration (sitemap, linking, OG images, A/B tests) |
+| 5 | TASK-32-19 to TASK-32-22 | Testing & Launch (unit, integration, E2E, performance) |
+
+**Key Dependencies:**
+- All tasks depend on TASK-32-1 (Types) as foundation
+- Phase 2 components depend on Phase 1 infrastructure
+- Phase 5 testing depends on all implementation tasks
+
+**Priority Distribution:**
+- High: 13 tasks (infrastructure + core components + Tier 1 data + testing)
+- Medium: 6 tasks (UI components + Tier 2 data + SEO integration)
+- Low: 3 tasks (Tier 3 data + A/B tests + E2E tests)
+
+**Risk Assessment: LOW (confirmed)**
+- No backend changes required
+- No external API dependencies
+- Static generation only
+- Uses existing frontend stack (Next.js, shadcn/ui, Tailwind)
+
+**Handoff to ProjectManager:**
+- Ready for prioritization
+- Recommend starting with TASK-32-1 (Types) as it blocks all other work
+- Phase 1-2 sufficient for MVP (infrastructure + components + Tier 1 data)
+
+---
+
+## Comments
+
+### [2026-03-05 14:55 GMT+2] Agent: SpecSystemAnalyst
+**Task breakdown completed.**
+
+**Tasks Created:** 22 tasks across 5 phases
+
+**Phase 1: Infrastructure (4 tasks)**
+- TASK-32-1: Create comparison types and interfaces (HIGH priority, foundation)
+- TASK-32-2: Implement comparison registry and data loading
+- TASK-32-3: Create comparison page route with static generation
+- TASK-32-4: Implement comparison index page
+
+**Phase 2: Components (6 tasks)**
+- TASK-32-5: ComparisonTable component (HIGH priority)
+- TASK-32-6: PricingComparison component (HIGH priority - conversion)
+- TASK-32-7: ProsConsCard component
+- TASK-32-8: UseCaseSection component
+- TASK-32-9: ComparisonCTA component (HIGH priority - conversion)
+- TASK-32-10: ComparisonSchema component (HIGH priority - SEO)
+
+**Phase 3: Competitor Data (4 tasks)**
+- TASK-32-11: Tier 1 competitor data - Ahrefs, SEMrush, Moz, Ubersuggest (HIGH priority)
+- TASK-32-12: Tier 2 competitor data - Mangools, Serpstat, SpyFu, SE Ranking
+- TASK-32-13: Tier 3 competitor data - Raven, BrightEdge, Conductor, Wincher
+- TASK-32-14: Free alternatives data - GSC, GA, AnswerThePublic
+
+**Phase 4: SEO & Integration (4 tasks)**
+- TASK-32-15: Sitemap integration (HIGH priority)
+- TASK-32-16: Internal linking implementation (HIGH priority)
+- TASK-32-17: OG image generation for comparisons
+- TASK-32-18: A/B test infrastructure for CTAs
+
+**Phase 5: Testing & Launch (4 tasks)**
+- TASK-32-19: Unit tests for comparison components (HIGH priority)
+- TASK-32-20: Integration tests for page generation (HIGH priority)
+- TASK-32-21: E2E tests for comparison pages
+- TASK-32-22: Performance optimization and launch (HIGH priority)
+
+**Key Dependencies:**
+- TASK-32-1 (Types) is foundation for all other tasks
+- TASK-32-2 (Registry) depends on TASK-32-1
+- TASK-32-3 (Page) depends on TASK-32-1, TASK-32-2
+- Components (TASK-32-5 to TASK-32-10) depend on TASK-32-1
+- Testing tasks (TASK-32-19 to TASK-32-21) depend on implementation
+
+**Effort Summary:**
+- Phase 1: ~10 hours
+- Phase 2: ~18 hours
+- Phase 3: ~10 hours
+- Phase 4: ~10 hours
+- Phase 5: ~14 hours
+- **Total: ~62 hours**
+
+**Status:** SPEC-32 and FEAT-032 → `To Prioritize`
+
+**Handoff to ProjectManager:** All tasks ready for prioritization. Recommend prioritizing TASK-32-1, TASK-32-2, TASK-32-3 as MVP core.
