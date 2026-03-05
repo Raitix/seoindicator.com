@@ -12897,6 +12897,161 @@ CREATE TABLE project_members (
 - TASK-11-4: Permission validator
 
 ---
+## CategoryBreakdown Component (TASK-33-10)
+
+### Service Description
+React component for displaying SEO scores by category in public SEO audit reports. Part of the Public SEO Audit Reports feature (FEAT-033/SPEC-33). Shows visual progress bars for each SEO category with score labels, descriptions, and expandable issue counts.
+
+### Component Location
+- **File:** `frontend/components/report/CategoryBreakdown.tsx`
+- **Export:** `frontend/components/report/index.ts`
+- **Tests:** `frontend/components/report/__tests__/CategoryBreakdown.test.tsx`
+
+### Props Interface
+
+```typescript
+interface CategoryBreakdownProps {
+  categories: CategoryScore[];
+  className?: string;
+  defaultExpanded?: boolean;
+}
+
+interface CategoryScore {
+  id: string;
+  name: string;
+  score: number;           // 0-100
+  maxScore: number;        // Always 100
+  issueCount: number;
+  description: string;
+  color: 'success' | 'warning' | 'error' | 'neutral';
+}
+```
+
+### Supported Categories
+
+| Category ID | Display Name | Description |
+|-------------|--------------|-------------|
+| `technical` | Technical SEO | Site structure, indexing, and crawlability |
+| `onpage` | On-Page SEO | Meta tags, headings, and content optimization |
+| `content` | Content Quality | Content relevance, keyword usage, and readability |
+| `mobile` | Mobile & Performance | Mobile responsiveness and page speed |
+
+### Score Color Mapping
+
+| Score Range | Color | Badge Variant |
+|-------------|-------|---------------|
+| 80-100 | `success` | Green |
+| 60-79 | `warning` | Yellow |
+| 0-59 | `error` | Red |
+| N/A | `neutral` | Gray |
+
+### Core Features
+
+**Visual Elements:**
+- Category name with description
+- Score badge (colored by score range)
+- Progress bar with gradient fill
+- Issue count indicator
+- Expandable details section
+
+**Interactive Features:**
+- Click category row to expand/collapse
+- Keyboard accessible (Enter/Space to toggle)
+- Animated progress bar fill
+- Hover effects on category rows
+
+**Responsive Design:**
+- Full width on mobile
+- Grid layout on desktop (2 columns)
+- Touch-friendly expansion toggles
+
+### Progress Bar Implementation
+
+```tsx
+<div className="h-2 bg-muted rounded-full overflow-hidden">
+  <div
+    className="h-full rounded-full transition-all duration-500"
+    style={{
+      width: `${score}%`,
+      background: getGradient(color)
+    }}
+  />
+</div>
+```
+
+**Gradient Colors:**
+| Color | Gradient |
+|-------|----------|
+| success | `from-emerald-500 to-emerald-400` |
+| warning | `from-amber-500 to-amber-400` |
+| error | `from-red-500 to-red-400` |
+| neutral | `from-gray-400 to-gray-300` |
+
+### Component Dependencies
+
+| Dependency | Source | Purpose |
+|------------|--------|---------|
+| Badge | shadcn/ui | Score display |
+| Progress | shadcn/ui | Progress bar base |
+| ChevronDown | lucide-react | Expand/collapse icon |
+| cn utility | @/lib/utils | Class name merging |
+
+### Accessibility Implementation
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Label | `aria-label` on category rows |
+| Role | `role="region"` on component container |
+| Expanded State | `aria-expanded` on toggle buttons |
+| Keyboard | Tab navigation, Enter/Space to toggle |
+| Screen Reader | Score, issues, and status announced |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| CategoryBreakdown.test.tsx | 48 | 72+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Component Rendering | 8 | Basic mount, all props, categories |
+| Score Display | 6 | Score badge, color mapping |
+| Progress Bar | 6 | Width calculation, gradient colors |
+| Issue Count | 4 | Issue count display, zero handling |
+| Expand/Collapse | 8 | Toggle behavior, keyboard interaction |
+| Responsive Design | 6 | Mobile/desktop layouts |
+| Accessibility | 8 | ARIA labels, keyboard navigation |
+| Edge Cases | 8 | Empty categories, invalid scores, long names |
+| Module Exports | 2 | Barrel export verification |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | React's safe rendering, no dangerouslySetInnerHTML |
+| No eval() | No dynamic code execution |
+| Safe Props | TypeScript type checking |
+| Input Validation | Score clamped to 0-100 range |
+
+### Production Status
+- **Deployed:** 2026-03-05 (GitHub Actions)
+- **Health Check:** Passing
+- **Tests:** 48/48 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-33-1 (Audit Results Table - for data structure)
+- TASK-33-5 (AuditResultDisplay Component - parent component)
+
+### Related Tasks
+- TASK-33-5: AuditResultDisplay Component
+- TASK-33-6: IndicatorList Component
+- TASK-33-7: IndicatorCard Component
+- TASK-33-8: ScoreHero Component
+- TASK-33-9: IssueSummary Component
+
+---
 ## Database Schema: Keyword Suggestions Tables (TASK-5-1)
 
 ### Keyword Suggestions Table
