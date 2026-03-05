@@ -1,7 +1,7 @@
 # TASK-28-9: Skeleton Loader Variants
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`

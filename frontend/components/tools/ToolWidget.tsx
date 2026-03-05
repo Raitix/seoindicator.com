@@ -4,6 +4,7 @@
  * ToolWidget Component
  * TASK-16-4: Tool Embedding System
  * TASK-21-11: AI Suggestion Integration
+ * TASK-29-8: Tool Page Integration - ExportResultsButton
  * 
  * Reusable widget for embedding SEO tools in guide pages.
  * Supports meta-tag-analyzer, keyword-density, mobile-friendly, and social-preview tools.
@@ -20,6 +21,7 @@ import { useToolAnalysis, type ToolType, type ErrorCode, ERROR_MESSAGES } from '
 import { validateUrl } from '@/lib/utils/urlValidation';
 import { AISuggestionButton } from '@/components/tools/AISuggestionButton';
 import { AISuggestionPanel } from '@/components/tools/AISuggestionPanel';
+import { ExportResultsButton } from '@/components/tools/ExportResultsButton';
 import type { SuggestionResult, AIIndicatorType } from '@/lib/types/ai-suggestions';
 
 // Tool configuration
@@ -191,8 +193,47 @@ function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
       content_summary: result.content_summary,
     };
 
+    // Build export data structure
+    const exportData = {
+      analyzedAt: result.analyzedAt || new Date().toISOString(),
+      title: title?.value,
+      titleLength: title?.length,
+      description: description?.value,
+      descriptionLength: description?.length,
+      canonical: result.canonical,
+      warnings: warnings,
+      results: {
+        title: { 
+          content: title?.value, 
+          length: title?.length, 
+          status: title?.value ? 'ok' as const : 'error' as const 
+        },
+        description: { 
+          content: description?.value, 
+          length: description?.length, 
+          status: description?.value ? 'ok' as const : 'warning' as const 
+        },
+      },
+      summary: {
+        score: warnings?.length === 0 ? 100 : 80,
+        passCount: (title?.value ? 1 : 0) + (description?.value ? 1 : 0),
+        warningCount: warnings?.filter(w => w.severity === 'warning').length || 0,
+        failCount: warnings?.filter(w => w.severity === 'critical').length || 0,
+      },
+    };
+
     return (
       <div className="space-y-4">
+        {/* Export Button */}
+        {url && (
+          <div className="flex justify-end mb-4">
+            <ExportResultsButton
+              toolName="meta-tag-analyzer"
+              url={url}
+              data={exportData}
+            />
+          </div>
+        )}
         {/* Title with AI Suggestion */}
         <div className="bg-slate-800/50 rounded-lg p-4">
           <div className="flex items-start justify-between gap-4 mb-2">
@@ -305,9 +346,45 @@ function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
     const totalWords = result.totalWords as number | undefined;
     const keyword = result.keyword as string | undefined;
     const warnings = result.warnings as Array<{ type: string; message: string }> | undefined;
+    const status = result.status as string | undefined;
+    const url = result.url as string | undefined;
+    const analyzedAt = result.analyzedAt as string | undefined;
+
+    // Build export data structure
+    const exportData = {
+      analyzedAt: analyzedAt || new Date().toISOString(),
+      keyword,
+      density,
+      occurrences,
+      totalWords,
+      status,
+      warnings,
+      results: {
+        keyword: { value: keyword, status: 'ok' as const },
+        density: { value: density, status: status === 'good' ? 'ok' as const : 'warning' as const },
+        occurrences: { value: occurrences, status: 'ok' as const },
+      },
+      summary: {
+        score: status === 'good' ? 90 : 70,
+        passCount: status === 'good' ? 3 : 2,
+        warningCount: warnings?.filter(w => w.type === 'warning').length || 0,
+        failCount: warnings?.filter(w => w.type === 'error').length || 0,
+      },
+    };
 
     return (
       <div className="space-y-4">
+        {/* Export Button */}
+        {url && (
+          <div className="flex justify-end mb-4">
+            <ExportResultsButton
+              toolName="keyword-density-checker"
+              url={url}
+              data={exportData}
+            />
+          </div>
+        )}
+
         {/* Density meter */}
         <div className="bg-slate-800/50 rounded-lg p-4">
           <h4 className="text-sm font-medium text-slate-400 mb-2">Keyword Density</h4>
@@ -363,7 +440,7 @@ function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
 
         {/* Timestamp */}
         <p className="text-xs text-slate-500 text-right">
-          Analyzed at: {new Date(analyzedAt).toLocaleString()}
+          Analyzed at: {new Date(analyzedAt || Date.now()).toLocaleString()}
         </p>
       </div>
     );
