@@ -1,6 +1,129 @@
 # DOCUMENTATION.md
 
 ---
+## Export Results Unit Tests (TASK-29-9)
+
+### Description
+Comprehensive unit test suite for the Export Results (PDF/XLS) feature, validating PdfToolExporter, XlsToolExporter, and ToolExportService functionality. Ensures reliable export generation with proper security boundaries, pagination, and error handling. Part of the Export Results (PDF/XLS) feature (FEAT-029).
+
+### Component Location
+- **PdfToolExporter Tests:** `backend/tests/Unit/Exporters/PdfToolExporterTest.php`
+- **XlsToolExporter Tests:** `backend/tests/Unit/Exporters/XlsToolExporterTest.php`
+- **ToolExportService Tests:** `backend/tests/Unit/Services/Tools/ToolExportServiceTest.php`
+
+### Test Coverage Summary
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| PdfToolExporterTest | 58 | 85 | PASS |
+| XlsToolExporterTest | 40 | 72 | PASS |
+| ToolExportServiceTest | 42 | 54 | PASS (2 risky) |
+| **Total** | **140** | **211** | **PASS** |
+
+### PdfToolExporter Test Categories
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| PDF Generation | 8 | Valid binary, structure verification |
+| Cover Page | 10 | Tool name, URL, date rendering |
+| Summary Section | 8 | Score display, pass/fail counts |
+| Indicators Table | 12 | Pagination (25+ items), formatting |
+| Recommendations | 6 | Prioritized action items |
+| Branding Options | 5 | Logo, colors, fonts |
+| XSS Prevention | 9 | Script tags, special chars, HTML entities |
+
+### XlsToolExporter Test Categories
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| XLS Generation | 6 | Valid binary, structure |
+| Headers | 8 | Column names, order |
+| Data Rows | 10 | Value matching, type validation |
+| Styling | 8 | Header formatting, conditional |
+| Empty Data | 4 | Graceful handling |
+| Formula Injection | 4 | Prevention of malicious formulas |
+
+### ToolExportService Test Categories
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Export Creation | 6 | URL generation, file creation |
+| Token Validation | 10 | Valid/expired/invalid tokens |
+| IDOR Prevention | 8 | User mismatch rejection |
+| Token Invalidation | 6 | One-time use enforcement |
+| Rate Limiting | 6 | 10 exports/hour limit |
+| Path Traversal | 6 | `../` prevention |
+
+### Security Testing
+
+| Security Test | Coverage |
+|---------------|---------|
+| XSS Prevention | Script tags, HTML entities, special characters escaped in PDF/XLS |
+| Path Traversal | `../` sequences rejected in file paths |
+| Formula Injection | Malicious Excel formulas neutralized |
+| IDOR Prevention | User cannot access other users' exports |
+| Token Security | One-time use, 1-hour expiry, secure random generation |
+
+### Risky Tests (Non-Blocking)
+
+| Test | Reason |
+|------|--------|
+| `create export uses pdf exporter for pdf format` | Mock verification without assertions |
+| `create export uses xls exporter for xls format` | Mock verification without assertions |
+
+These tests verify mock interactions for service container resolution but don't assert output. Tests pass and are non-blocking for production.
+
+### Test Patterns Used
+
+**Mock Tool Result Creation:**
+```php
+protected function createMockToolResult(array $overrides = []): ToolResult
+{
+    return new ToolResult(
+        toolName: $overrides['toolName'] ?? 'Meta Tag Analyzer',
+        url: $overrides['url'] ?? 'https://example.com',
+        analyzedAt: $overrides['analyzedAt'] ?? now(),
+        indicators: $overrides['indicators'] ?? [],
+        summary: $overrides['summary'] ?? [],
+        recommendations: $overrides['recommendations'] ?? []
+    );
+}
+```
+
+**XSS Test Example:**
+```php
+public function test_xss_prevention_in_pdf()
+{
+    $result = $this->createMockToolResult([
+        'toolName' => '<script>alert("xss")</script>Analyzer',
+    ]);
+    
+    $pdf = $this->exporter->export($result);
+    
+    $this->assertStringNotContainsString('<script>', $pdf);
+    $this->assertStringContainsString('&lt;script&gt;', $pdf);
+}
+```
+
+### Production Status
+- **Deployed:** 2026-03-05 (GitHub Actions)
+- **Commit:** e3ea0c1
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** 140/140 passing (211 assertions)
+- **CI Integration:** Tests run automatically in GitHub Actions for all PRs
+- **Status:** Complete
+
+### Dependencies
+- TASK-29-1 (PdfToolExporter Implementation)
+- TASK-29-2 (XlsToolExporter Implementation)
+- TASK-29-3 (ToolExportService Implementation)
+- TASK-29-4 (Download Token System)
+
+### Related Tasks
+- TASK-29-10: Frontend Component Tests (pending)
+- TASK-29-1 to TASK-29-8: Export Results feature implementation
+
+---
 ## Request Tracking Middleware (TASK-27-6)
 
 ### Service Description
