@@ -1,7 +1,7 @@
 # TASK-31-5: AIAnalysisResponseParser
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
