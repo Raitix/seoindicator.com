@@ -70,6 +70,15 @@ class Audit extends Model
     }
 
     /**
+     * The model's default values for attributes.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'visibility' => 'private',
+    ];
+
+    /**
      * Get the site that owns this audit.
      */
     public function site(): BelongsTo
