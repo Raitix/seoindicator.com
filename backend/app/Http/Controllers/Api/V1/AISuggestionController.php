@@ -67,9 +67,37 @@ class AISuggestionController extends Controller
                 $validated['indicator'],
                 $validated['context']
             );
-
+            
             $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
-
+            
+            // Check if the result indicates an error (model === 'error')
+            if ($result->model === 'error') {
+                $errorMessage = $result->issues[0] ?? 'AI provider error';
+                
+                // Log the error
+                $this->logger->logError(
+                    $validated['indicator'],
+                    $errorMessage,
+                    ['latency_ms' => $latencyMs]
+                );
+                
+                $response = [
+                    'success' => false,
+                    'error' => $errorMessage,
+                ];
+                
+                // Include debug info on error if debug mode enabled
+                if ($debugMode) {
+                    $response['debug'] = [
+                        'error' => $errorMessage,
+                        'latency_ms' => $latencyMs,
+                        'provider' => $result->provider,
+                    ];
+                }
+                
+                return response()->json($response, 500);
+            }
+            
             // Log the response
             $this->logger->logResponse(
                 $validated['indicator'],
@@ -138,7 +166,7 @@ class AISuggestionController extends Controller
                 'success' => false,
                 'error' => $e->getMessage(),
             ];
-            
+
             // Include debug info on error if debug mode enabled
             if ($debugMode) {
                 $response['debug'] = [
@@ -147,7 +175,7 @@ class AISuggestionController extends Controller
                     'provider' => $validated['provider'],
                 ];
             }
-            
+
             return response()->json($response, 500);
         }
     }
