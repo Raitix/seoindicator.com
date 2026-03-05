@@ -76,6 +76,7 @@ return [
     */
 
     'cache' => [
+        'enabled' => env('AI_CACHE_ENABLED', true),
         'ttl_hours' => env('AI_CACHE_TTL_HOURS', 24),
     ],
 

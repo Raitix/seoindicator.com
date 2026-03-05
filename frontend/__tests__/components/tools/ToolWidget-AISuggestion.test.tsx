@@ -424,9 +424,9 @@ describe('ToolWidget AI Suggestion Integration', () => {
         expect(screen.getByText('75')).toBeInTheDocument();
       });
 
-      // Find copy button
-      const copyButtons = screen.getAllByRole('button', { name: /copy/i });
-      fireEvent.click(copyButtons[0]);
+      // Find suggestion copy button (not the title copy button)
+      const suggestionCopyButton = screen.getByRole('button', { name: /copy suggestion/i });
+      fireEvent.click(suggestionCopyButton);
 
       await waitFor(() => {
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
@@ -453,8 +453,9 @@ describe('ToolWidget AI Suggestion Integration', () => {
         expect(screen.getByText('75')).toBeInTheDocument();
       });
 
-      const copyButtons = screen.getAllByRole('button', { name: /copy/i });
-      fireEvent.click(copyButtons[0]);
+      // Find suggestion copy button (not the title copy button)
+      const suggestionCopyButton = screen.getByRole('button', { name: /copy suggestion/i });
+      fireEvent.click(suggestionCopyButton);
 
       await waitFor(() => {
         expect(screen.getByText(/copied/i)).toBeInTheDocument();

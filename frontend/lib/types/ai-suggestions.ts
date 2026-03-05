@@ -157,6 +157,8 @@ export interface AISuggestionButtonProps {
   showProvider?: boolean;
   /** Additional CSS classes */
   className?: string;
+  /** Key that triggers regeneration when changed */
+  regenerateKey?: number;
   /** Disable the button */
   disabled?: boolean;
 }

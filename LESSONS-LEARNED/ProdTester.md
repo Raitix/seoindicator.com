@@ -136,3 +136,40 @@ Last updated: 2026-03-01
 3. **ProxyAnalyzeRequest.php** validation includes tool slug in `in:` rule
 4. **APIProxyController.php** `tools()` method lists the tool
 5. Frontend uses correct tool slug (match controller case)
+
+---
+
+## 2026-03-05: TASK-30-5 Cookie Consent Integration
+- Context-based state requires proper connection between components
+- Footer component with callback prop must receive the callback from context
+- Optional props silently fail - no error if callback is undefined
+- GDPR compliance requires working consent withdrawal mechanism
+
+**Context Integration Bug Pattern:**
+1. Component has optional callback prop (`onShowCookieSettings?`)
+2. Parent renders component without passing prop
+3. Button click does nothing (callback is undefined)
+4. No console errors (graceful but silent failure)
+
+**Fix Options:**
+1. Component uses `useContext()` directly instead of prop
+2. Parent passes callback from context to prop
+3. Create wrapper component that bridges context to prop
+
+**GDPR/CCPA Critical Tests:**
+1. Banner shows on fresh visit (localStorage cleared)
+2. Banner hides after consent
+3. **Footer link shows banner again** (CRITICAL - withdrawal mechanism)
+4. Consent persists across page refresh
+5. New consent overwrites previous with new timestamp
+
+**Production Test Process:**
+1. Clear localStorage, verify banner appears
+2. Accept consent, verify banner disappears
+3. Click footer "Cookie Settings", verify banner reappears
+4. Check localStorage for consent state
+5. Navigate to another page, verify consent persists
+
+---
+
+Last updated: 2026-03-05

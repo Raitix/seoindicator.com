@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -31,6 +32,16 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // SQLite requires dropping indexes before dropping columns
+        $driver = DB::connection()->getDriverName();
+        
+        if ($driver === 'sqlite') {
+            Schema::table('seo_analyses', function (Blueprint $table) {
+                $table->dropIndex(['ai_model']);
+                $table->dropIndex(['ai_request_id']);
+            });
+        }
+        
         Schema::table('seo_analyses', function (Blueprint $table) {
             $table->dropColumn([
                 'ai_model',

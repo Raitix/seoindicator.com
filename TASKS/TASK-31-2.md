@@ -1,7 +1,7 @@
 # TASK-31-2: ContextWindowManager Service
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -322,3 +322,35 @@ Duration: ~10s
 
 **Status:** `To Document` - Approved for DocSystemAnalyst
 **Next Agent:** DocSystemAnalyst for documentation update
+
+### [2026-03-05 12:03 GMT+2] DocSystemAnalyst
+**Documentation Complete**
+
+**Documentation Added:**
+- Added comprehensive ContextWindowManager Service section to DOCUMENTATION.md
+- Location: After AI Suggestion API Endpoint section (TASK-21-5)
+- Documented: Core functionalities, model limits, implementation details, test coverage, security
+
+**Documentation Highlights:**
+- 4 core methods: `estimateTokens()`, `fitsInContext()`, `selectOptimalModel()`, `getEffectiveLimit()`
+- 4 supported models with effective limit calculations
+- Token estimation formula: `ceil(strlen($content) / 4)`
+- Effective limit formula: `(rawLimit * 0.9) - 3400`
+- Model selection priority: Llama → Qwen → Mistral → Gemini (smallest sufficient)
+- Test coverage: 57 tests, 128 assertions
+
+**All 6 Acceptance Criteria Documented:**
+- [x] AC-01: `estimateTokens()` returns ±20% accuracy
+- [x] AC-02: `fitsInContext()` validates correctly against model limits
+- [x] AC-03: `selectOptimalModel()` returns smallest sufficient model
+- [x] AC-04: Safety margin applied to all model limits
+- [x] AC-05: Base prompt overhead accounted for
+- [x] AC-06: All 4 free-tier models supported
+
+**Production Status:** Complete
+- Deployed: 2026-03-05 (GitHub Actions, commit 6418946)
+- Tests: 57/57 passing (128 assertions)
+- Health Check: Passing
+
+**Status:** `Done` - Task complete
+**SPEC-031:** In Progress (remaining tasks pending)

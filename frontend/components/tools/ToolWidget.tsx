@@ -157,6 +157,9 @@ function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
   // AI suggestion state for meta tag analyzer
   const [titleSuggestion, setTitleSuggestion] = React.useState<SuggestionResult | null>(null);
   const [descriptionSuggestion, setDescriptionSuggestion] = React.useState<SuggestionResult | null>(null);
+  // Regenerate counters to trigger new fetches
+  const [titleRegenerateKey, setTitleRegenerateKey] = React.useState(0);
+  const [descriptionRegenerateKey, setDescriptionRegenerateKey] = React.useState(0);
   
   // Copy to clipboard helper
   const copyToClipboard = async (text: string): Promise<boolean> => {
@@ -245,6 +248,7 @@ function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
                 onSuggestion={setTitleSuggestion}
                 buttonText="✨ AI Suggest"
                 className="text-xs px-2 py-1"
+                regenerateKey={titleRegenerateKey}
               />
             )}
           </div>
@@ -268,7 +272,10 @@ function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
           <AISuggestionPanel
             result={titleSuggestion}
             showRegenerate={true}
-            onRegenerate={() => setTitleSuggestion(null)}
+            onRegenerate={() => {
+              setTitleSuggestion(null);
+              setTitleRegenerateKey(k => k + 1);
+            }}
             className="mt-2"
           />
         )}
@@ -284,6 +291,7 @@ function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
                 onSuggestion={setDescriptionSuggestion}
                 buttonText="✨ AI Suggest"
                 className="text-xs px-2 py-1"
+                regenerateKey={descriptionRegenerateKey}
               />
             )}
           </div>
@@ -307,7 +315,10 @@ function ResultsDisplay({ tool, data, analyzedAt }: ResultsDisplayProps) {
           <AISuggestionPanel
             result={descriptionSuggestion}
             showRegenerate={true}
-            onRegenerate={() => setDescriptionSuggestion(null)}
+            onRegenerate={() => {
+              setDescriptionSuggestion(null);
+              setDescriptionRegenerateKey(k => k + 1);
+            }}
             className="mt-2"
           />
         )}
