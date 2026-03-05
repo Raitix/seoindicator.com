@@ -424,6 +424,14 @@ Route::prefix('v1')->middleware(['throttle:60,1'])->group(function () {
         Route::get('/tokens', [\App\Http\Controllers\Api\V1\Admin\UsageController::class, 'tokens']);
         Route::get('/trends', [\App\Http\Controllers\Api\V1\Admin\UsageController::class, 'trends']);
     });
+
+    // Admin: AI Cache Management (TASK-21-6, SPEC-021)
+    Route::prefix('admin/ai/cache')->middleware('admin')->group(function () {
+        Route::post('/invalidate', [\App\Http\Controllers\Api\V1\Admin\AICacheController::class, 'invalidate']);
+        Route::delete('/', [\App\Http\Controllers\Api\V1\Admin\AICacheController::class, 'clear']);
+        Route::get('/stats', [\App\Http\Controllers\Api\V1\Admin\AICacheController::class, 'stats']);
+        Route::post('/stats/reset', [\App\Http\Controllers\Api\V1\Admin\AICacheController::class, 'resetStats']);
+    });
 });
 
 // Alert Unsubscribe (signed URL, no auth required)

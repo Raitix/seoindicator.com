@@ -37,7 +37,7 @@ const AISuggestionButton: React.FC<AISuggestionButtonProps> = ({
   remainingRequests,
   className = '',
 }) => {
-  const isDisabled = disabled || isLoading || rateLimitReached || !context;
+  const isDisabled = disabled || isLoading || rateLimitReached || !context || Object.keys(context || {}).length === 0;
 
   const getTooltipText = () => {
     if (rateLimitReached && rateLimitResetAt) {
