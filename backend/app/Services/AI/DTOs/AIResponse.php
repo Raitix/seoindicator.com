@@ -15,6 +15,9 @@ use JsonSerializable;
  * @property-read int|null $tokensUsed Number of tokens used (null if not tracked)
  * @property-read int|null $latencyMs Response latency in milliseconds (null if not tracked)
  * @property-read string|null $errorMessage Error message (null on success)
+ * @property-read string|null $model The model used for generation
+ * @property-read int|null $promptTokens Number of prompt tokens used
+ * @property-read int|null $responseTokens Number of response/completion tokens used
  */
 readonly class AIResponse implements JsonSerializable
 {
@@ -26,14 +29,20 @@ readonly class AIResponse implements JsonSerializable
      * @param int|null $tokensUsed Number of tokens used
      * @param int|null $latencyMs Response latency in milliseconds
      * @param string|null $errorMessage Error message
-     * @throws \InvalidArgumentException If tokensUsed or latencyMs are negative
+     * @param string|null $model The model used for generation
+     * @param int|null $promptTokens Number of prompt tokens used
+     * @param int|null $responseTokens Number of response/completion tokens used
+     * @throws \InvalidArgumentException If tokensUsed, latencyMs, promptTokens, or responseTokens are negative
      */
     public function __construct(
         public bool $success,
         public ?string $content,
         public ?int $tokensUsed,
         public ?int $latencyMs,
-        public ?string $errorMessage
+        public ?string $errorMessage,
+        public ?string $model = null,
+        public ?int $promptTokens = null,
+        public ?int $responseTokens = null
     ) {
         if ($tokensUsed !== null && $tokensUsed < 0) {
             throw new \InvalidArgumentException('tokensUsed must be non-negative');
@@ -41,6 +50,14 @@ readonly class AIResponse implements JsonSerializable
 
         if ($latencyMs !== null && $latencyMs < 0) {
             throw new \InvalidArgumentException('latencyMs must be non-negative');
+        }
+
+        if ($promptTokens !== null && $promptTokens < 0) {
+            throw new \InvalidArgumentException('promptTokens must be non-negative');
+        }
+
+        if ($responseTokens !== null && $responseTokens < 0) {
+            throw new \InvalidArgumentException('responseTokens must be non-negative');
         }
     }
 
