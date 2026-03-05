@@ -9,6 +9,7 @@ use App\Services\AI\ContextWindowManager;
 use App\Services\AI\ModelSelectionService;
 use App\Services\Billing\ModelPricingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -308,15 +309,37 @@ class ModelSelectionServiceTest extends TestCase
     public function up_007_preference_for_nonexistent_model_uses_optimal(): void
     {
         // User preference points to non-existent model
+        // This is tested by having the preference point to a model that doesn't exist in the DB
+        // Since we can't bypass FK constraints in SQLite, we test this via getUserPreference
         $user = User::factory()->create();
+        
+        // Test that getUserPreference returns null for non-existent model
+        // by mocking the scenario where preference exists but model doesn't
+        // We can simulate this by deleting the model after creating a preference
+        
+        $tempModel = AIModel::create([
+            'provider' => 'temp',
+            'model_id' => 'temp/model-to-delete',
+            'display_name' => 'Temp Model',
+            'context_window' => 8192,
+            'is_free_tier' => true,
+            'is_active' => true,
+        ]);
         
         UserModelPreference::create([
             'user_id' => $user->id,
-            'model_id' => 99999, // Non-existent
+            'model_id' => $tempModel->id,
             'is_default' => true,
         ]);
+        
+        // Delete the model to simulate non-existent reference
+        $tempModel->delete();
+        
+        // Clear the cache to ensure fresh lookup
+        $this->service->invalidateCache();
+        Cache::forget("user_preferred_model:{$user->id}");
 
-        // Should select optimal model
+        // Should return null for preference, then select optimal model
         $model = $this->service->selectModel(3000, $user);
 
         $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
@@ -475,17 +498,21 @@ class ModelSelectionServiceTest extends TestCase
 
     #[Test]
     #[Group('priority')]
-    public function mp_001_under_8k_tokens_selects_llama(): void
+    public function mp_001_under_4k_tokens_selects_llama(): void
     {
-        $model = $this->service->selectModel(5000);
+        // Llama's effective limit is 3972 tokens (8192 * 0.9 - 3400)
+        // Content under this limit should select Llama
+        $model = $this->service->selectModel(3000);
 
         $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
     }
 
     #[Test]
     #[Group('priority')]
-    public function mp_002_8k_to_32k_tokens_selects_qwen(): void
+    public function mp_002_4k_to_26k_tokens_selects_qwen(): void
     {
+        // Qwen's effective limit is ~26091 tokens (32768 * 0.9 - 3400)
+        // Content between Llama limit (3972) and Qwen limit should select Qwen
         $model = $this->service->selectModel(15000);
 
         $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
@@ -493,8 +520,10 @@ class ModelSelectionServiceTest extends TestCase
 
     #[Test]
     #[Group('priority')]
-    public function mp_003_32k_to_1m_tokens_selects_gemini(): void
+    public function mp_003_26k_to_896k_tokens_selects_gemini(): void
     {
+        // Gemini's effective limit is ~896600 tokens (1000000 * 0.9 - 3400)
+        // Content between Qwen limit (26091) and Gemini limit should select Gemini
         $model = $this->service->selectModel(100000);
 
         $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
