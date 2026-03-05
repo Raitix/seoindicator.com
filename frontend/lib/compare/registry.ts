@@ -43,16 +43,16 @@ export const COMPETITOR_REGISTRY: Record<string, CompetitorData> = {
 export const COMPARISON_SLUGS: string[] = [
   // SEOIndicator vs competitors (primary comparisons)
   'seoindicator-vs-ahrefs',
-  'seoindicator-vs-semrush',
   'seoindicator-vs-moz',
+  'seoindicator-vs-semrush',
   'seoindicator-vs-ubersuggest',
   // Cross-competitor comparisons
-  'ahrefs-vs-semrush',
   'ahrefs-vs-moz',
+  'ahrefs-vs-semrush',
   'ahrefs-vs-ubersuggest',
-  'semrush-vs-moz',
-  'semrush-vs-ubersuggest',
+  'moz-vs-semrush',
   'moz-vs-ubersuggest',
+  'semrush-vs-ubersuggest',
 ];
 
 // ============================================================================
