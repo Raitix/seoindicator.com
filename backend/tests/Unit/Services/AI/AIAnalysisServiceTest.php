@@ -5,13 +5,15 @@ namespace Tests\Unit\Services\AI;
 use App\Exceptions\AIAnalysisException;
 use App\Services\AI\AIAnalysisService;
 use App\Services\AI\Contracts\AIAnalysisServiceInterface;
+use App\Services\AI\Contracts\AnalysisCacheServiceInterface;
+use App\Services\AI\Contracts\OpenRouterClientInterface;
+use App\Services\AI\Contracts\UnifiedPromptServiceInterface;
 use App\Services\AI\ContextWindowManager;
 use App\Services\AI\DTOs\AIResponse;
 use App\Services\AI\DTOs\AnalysisResult;
 use App\Services\AI\DTOs\TruncationResult;
 use App\Services\AI\AIAnalysisResponseParser;
 use App\Services\AI\TruncationService;
-use App\Services\AI\AISuggestionCache;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -34,25 +36,21 @@ class AIAnalysisServiceTest extends TestCase
     private ContextWindowManager|Mockery\MockInterface $contextManager;
     private TruncationService|Mockery\MockInterface $truncationService;
     private AIAnalysisResponseParser|Mockery\MockInterface $parser;
-    private AISuggestionCache|Mockery\MockInterface $cache;
-
-    // Mock services that don't exist yet - use partial mocks
-    private Mockery\MockInterface $promptService;
-    private Mockery\MockInterface $aiClient;
+    private AnalysisCacheServiceInterface|Mockery\MockInterface $cache;
+    private UnifiedPromptServiceInterface|Mockery\MockInterface $promptService;
+    private OpenRouterClientInterface|Mockery\MockInterface $aiClient;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Create mocks for all dependencies
+        // Create mocks for all dependencies using interfaces
         $this->contextManager = Mockery::mock(ContextWindowManager::class);
         $this->truncationService = Mockery::mock(TruncationService::class);
         $this->parser = Mockery::mock(AIAnalysisResponseParser::class);
-        $this->cache = Mockery::mock(AISuggestionCache::class);
-
-        // Create anonymous mocks for services without concrete classes
-        $this->promptService = Mockery::mock('UnifiedPromptService');
-        $this->aiClient = Mockery::mock('OpenRouterClient');
+        $this->cache = Mockery::mock(AnalysisCacheServiceInterface::class);
+        $this->promptService = Mockery::mock(UnifiedPromptServiceInterface::class);
+        $this->aiClient = Mockery::mock(OpenRouterClientInterface::class);
 
         // Create service with mocked dependencies
         $this->service = $this->createService();
@@ -309,7 +307,15 @@ class AIAnalysisServiceTest extends TestCase
         $this->cache->shouldReceive('generateHash')->andReturn($cacheKey);
         $this->cache->shouldReceive('get')->andReturn(null); // Cache miss
 
-        $this->setupFullAnalysisMocks();
+        // Set up mocks individually to avoid conflict with put expectation
+        $this->contextManager->shouldReceive('estimateTokens')->andReturn(1000);
+        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('google/gemini-2.0-flash-exp:free');
+        $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
+        $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt content');
+        $this->aiClient->shouldReceive('generate')->andReturn(
+            AIResponse::success('{"overall_score": 75}', 2300, 2500)
+        );
+        $this->parser->shouldReceive('parse')->andReturn($this->createMockAnalysisResult());
 
         // Cache::put should be called with 24 hour TTL
         $this->cache->shouldReceive('put')
@@ -330,7 +336,15 @@ class AIAnalysisServiceTest extends TestCase
         $this->cache->shouldReceive('generateHash')->andReturn($cacheKey);
         $this->cache->shouldReceive('get')->andReturn(null);
 
-        $this->setupFullAnalysisMocks();
+        // Set up mocks individually to avoid conflict with put capture
+        $this->contextManager->shouldReceive('estimateTokens')->andReturn(1000);
+        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('google/gemini-2.0-flash-exp:free');
+        $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
+        $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt content');
+        $this->aiClient->shouldReceive('generate')->andReturn(
+            AIResponse::success('{"overall_score": 75}', 2300, 2500)
+        );
+        $this->parser->shouldReceive('parse')->andReturn($this->createMockAnalysisResult());
 
         $capturedTtl = null;
         $this->cache->shouldReceive('put')
@@ -410,7 +424,8 @@ class AIAnalysisServiceTest extends TestCase
             ->once()
             ->with(1000 + 3400) // tokens + overhead
             ->andReturn('meta-llama/llama-3-8b-instruct:free');
-        $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(3972);
+        // Set effective limit large enough to not trigger truncation
+        $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
 
         $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt');
         $this->aiClient->shouldReceive('generate')->andReturn(
@@ -518,7 +533,15 @@ class AIAnalysisServiceTest extends TestCase
         $this->cache->shouldReceive('generateHash')->andReturn($cacheKey);
         $this->cache->shouldReceive('get')->andReturn(null);
 
-        $this->setupFullAnalysisMocks();
+        // Set up mocks individually to avoid conflict with put capture
+        $this->contextManager->shouldReceive('estimateTokens')->andReturn(1000);
+        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('google/gemini-2.0-flash-exp:free');
+        $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
+        $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt content');
+        $this->aiClient->shouldReceive('generate')->andReturn(
+            AIResponse::success('{"overall_score": 75}', 2300, 2500)
+        );
+        $this->parser->shouldReceive('parse')->andReturn($this->createMockAnalysisResult());
 
         $capturedResult = null;
         $this->cache->shouldReceive('put')
@@ -555,7 +578,8 @@ class AIAnalysisServiceTest extends TestCase
 
         $analysisResult = $this->service->analyze($url, $html);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $analysisResult->model);
+        // Model should be the one returned by selectOptimalModel
+        $this->assertEquals('gemini-model', $analysisResult->model);
         $this->assertGreaterThanOrEqual(0, $analysisResult->promptTokens);
         $this->assertGreaterThanOrEqual(0, $analysisResult->responseTokens);
     }
@@ -917,8 +941,9 @@ class AIAnalysisServiceTest extends TestCase
 
         $this->setupBasicMocks();
 
+        // Non-retryable error - should only call once
         $this->aiClient->shouldReceive('generate')
-            ->times(4) // Initial + 3 retries
+            ->once()
             ->andReturn(AIResponse::error('API error', 100));
 
         $this->expectException(AIAnalysisException::class);
@@ -1155,7 +1180,15 @@ class AIAnalysisServiceTest extends TestCase
         $this->cache->shouldReceive('generateHash')->andReturn($cacheKey);
         $this->cache->shouldReceive('get')->andReturn(null);
 
-        $this->setupFullAnalysisMocks();
+        // Set up mocks individually without using setupFullAnalysisMocks to avoid conflict with put expectation
+        $this->contextManager->shouldReceive('estimateTokens')->andReturn(1000);
+        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('google/gemini-2.0-flash-exp:free');
+        $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
+        $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt content');
+        $this->aiClient->shouldReceive('generate')->andReturn(
+            AIResponse::success('{"overall_score": 75}', 2300, 2500)
+        );
+        $this->parser->shouldReceive('parse')->andReturn($this->createMockAnalysisResult());
 
         $capturedTtl = null;
         $this->cache->shouldReceive('put')

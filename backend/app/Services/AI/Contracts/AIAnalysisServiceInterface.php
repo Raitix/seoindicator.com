@@ -57,4 +57,11 @@ interface AIAnalysisServiceInterface
      * @return string The default model identifier
      */
     public function getDefaultModel(): string;
+
+    /**
+     * Get analysis metadata.
+     *
+     * @return array<string, mixed> Metadata about the analysis service
+     */
+    public function getAnalysisMetadata(): array;
 }
