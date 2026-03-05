@@ -347,4 +347,74 @@ expect(mockTrackEvent).toHaveBeenCalledWith('event_name', expect.objectContainin
 
 ---
 
+## SVG Badge Route Testing (TASK-33-15)
+
+### Route Handler Testing Pattern
+- Test route structure separately from business logic
+- Mock service layer interfaces (BadgeService, PublicAudit)
+- Test parameter validation (hash, size, theme)
+- Test response headers (Content-Type, Cache-Control, ETag)
+- Test error responses with correct status codes and JSON format
+
+### Hash Validation Testing
+- Test 32-char alphanumeric regex: `/^[a-zA-Z0-9]{32}$/`
+- Test boundary cases: too short, too long, special chars, unicode
+- Test case sensitivity (uppercase, lowercase, mixed all valid)
+- Test non-existent hashes (return null from mock)
+- Test non-public audits (is_public: false)
+
+### Size Validation Testing
+- Valid sizes: `small` (120x40), `medium` (150x100), `large` (300x150)
+- Invalid sizes return 400 Bad Request
+- Size is case-sensitive (SMALL is invalid)
+- Test dimension values match size parameter
+
+### Theme Parameter Testing
+- Valid themes: `light`, `dark`
+- Default theme: `light` (when missing or empty)
+- Invalid theme falls back to `light`
+- Theme is case-sensitive (DARK is invalid)
+
+### SVG Response Testing
+- Content-Type: `image/svg+xml`
+- Cache-Control: `public, max-age=3600` (1 hour)
+- ETag format: `"{score}-{size}-{theme}"`
+- SVG must have valid XML structure with xmlns attribute
+- Test score display in SVG content
+- Test accessibility attributes (aria-label, role="img")
+
+### Error Response Testing
+- 404 for invalid/non-existent/non-public hash
+- 400 for invalid size
+- Error Content-Type: `application/json`
+- Error format: `{ error: "message" }`
+
+### Security Testing for Routes
+- Test SQL injection prevention in parameters
+- Test path traversal prevention
+- Test XSS prevention (no scripts in SVG output)
+- Verify no sensitive data in responses (no URLs, IDs in badge)
+
+### Mock Service Pattern
+```typescript
+const mockBadgeService = {
+  generate: jest.fn((options: BadgeGenerateOptions): BadgeGenerateResult => {
+    const { score, size, theme } = options;
+    // Return mock SVG with dimensions based on size
+    return { svg: '<svg>...</svg>', width: 150, height: 100 };
+  }),
+};
+
+const mockPublicAudit = {
+  findByHash: jest.fn((hash: string): PublicAuditData | null => {
+    // Return valid audit, null, or non-public audit based on hash
+    if (hash === 'nonexistent') return null;
+    if (hash === 'private') return { ...audit, is_public: false };
+    return { ...audit, is_public: true };
+  }),
+};
+```
+
+---
+
 Last updated: 2026-03-05
