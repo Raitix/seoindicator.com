@@ -113,7 +113,7 @@ describe('PublicAuditCTA Component', () => {
     it('REND-010: displays correct audit URL in embed code', () => {
       render(<PublicAuditCTA {...defaultProps} />);
       const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode).toHaveValue(expect.stringContaining('/audit/abc123def456'));
+      expect(embedCode.getAttribute('value') || (embedCode as HTMLTextAreaElement).value).toContain('/audit/abc123def456');
     });
   });
 
@@ -183,12 +183,14 @@ describe('PublicAuditCTA Component', () => {
         render(<PublicAuditCTA {...defaultProps} />);
         
         const longEmail = 'a'.repeat(250) + '@example.com'; // > 255 chars
-        const emailInput = screen.getByTestId('email-input');
-        await user.type(emailInput, longEmail);
+        const emailInput = screen.getByTestId('email-input') as HTMLInputElement;
+        // Use paste for long input to avoid timeout
+        await user.click(emailInput);
+        await user.paste(longEmail);
         await user.click(screen.getByTestId('submit-button'));
         
         expect(screen.getByTestId('validation-error')).toHaveTextContent('Email too long');
-      });
+      }, 10000);
 
       it('FORM-006: shows validation error on blur', async () => {
         const user = userEvent.setup();
@@ -395,7 +397,10 @@ describe('PublicAuditCTA Component', () => {
       await user.click(screen.getByTestId('submit-button'));
       
       await waitFor(() => {
-        expect(screen.getByText(/Your SEO score: 85\/100/i)).toBeInTheDocument();
+        // Text is split across elements, use a more flexible matcher
+        expect(screen.getByText((content, element) => {
+          return element?.textContent?.includes('Your SEO score:') && element?.textContent?.includes('85/100') ?? false;
+        })).toBeInTheDocument();
       });
     });
 
@@ -632,22 +637,22 @@ describe('PublicAuditCTA Component', () => {
     it('EMBED-001: generates SVG embed code with hash', () => {
       render(<PublicAuditCTA {...defaultProps} />);
       
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode).toHaveValue(expect.stringContaining('/badge/abc123def456/small.svg'));
+      const embedCode = screen.getByTestId('embed-code') as HTMLTextAreaElement;
+      expect(embedCode.value).toContain('/badge/abc123def456/small.svg');
     });
 
     it('EMBED-002: includes site URL in alt text', () => {
       render(<PublicAuditCTA {...defaultProps} />);
       
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode).toHaveValue(expect.stringContaining('example.com'));
+      const embedCode = screen.getByTestId('embed-code') as HTMLTextAreaElement;
+      expect(embedCode.value).toContain('example.com');
     });
 
     it('EMBED-003: includes score in alt text', () => {
       render(<PublicAuditCTA {...defaultProps} />);
       
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode).toHaveValue(expect.stringContaining('85/100'));
+      const embedCode = screen.getByTestId('embed-code') as HTMLTextAreaElement;
+      expect(embedCode.value).toContain('85/100');
     });
 
     it('EMBED-004: copy button copies to clipboard', async () => {
@@ -696,15 +701,15 @@ describe('PublicAuditCTA Component', () => {
     it('EMBED-009: includes link wrapper', () => {
       render(<PublicAuditCTA {...defaultProps} />);
       
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode).toHaveValue(expect.stringContaining('<a href='));
+      const embedCode = screen.getByTestId('embed-code') as HTMLTextAreaElement;
+      expect(embedCode.value).toContain('<a href=');
     });
 
     it('EMBED-010: generates correct badge URL', () => {
       render(<PublicAuditCTA {...defaultProps} />);
       
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode).toHaveValue(expect.stringMatching(/badge\/abc123def456\/small\.svg/));
+      const embedCode = screen.getByTestId('embed-code') as HTMLTextAreaElement;
+      expect(embedCode.value).toMatch(/badge\/abc123def456\/small\.svg/);
     });
   });
 
