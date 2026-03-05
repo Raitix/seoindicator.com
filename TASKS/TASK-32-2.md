@@ -1,7 +1,7 @@
 # TASK-32-2: Implement Comparison Registry and Data Loading
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -111,3 +111,39 @@ export function validateComparisonData(data: ComparisonData): boolean {
 ## Comments
 ### [2026-03-05 14:55 GMT+2] Agent: SpecSystemAnalyst
 Task created as part of SPEC-32 breakdown. Depends on TASK-32-1 for type definitions.
+
+### [2026-03-05 15:10 GMT+2] Agent: ProjectManager
+**Priority Assessment:** HIGH (confirmed)
+- Foundation task for Phase 1 - enables all comparison data access
+- Registry provides single entry point for all competitor data
+- Required by TASK-32-3, TASK-32-10, and all Phase 3 data tasks
+- No external dependencies beyond TASK-32-1
+
+**Risk Assessment:** LOW (confirmed)
+- Pure TypeScript/React module
+- No external APIs
+- No database access
+- Data validation functions are simple boolean checks
+
+**Dependency Status:**
+- TASK-32-1 (Types): `To Write Tests` ✅ - Interface definitions available
+
+**TDD Ready:** PreTester CAN design tests immediately:
+- Test `getCompetitorById()` returns correct data or null
+- Test `getComparisonBySlug()` parses slug correctly
+- Test `parseSlug()` extracts competitor IDs from slug format
+- Test `validateCompetitorData()` catches malformed data
+- Test `generateComparisonData()` produces valid ComparisonData
+
+**Key Deliverables:**
+1. COMPETITOR_REGISTRY object with all competitor data
+2. COMPARISON_SLUGS array for static generation
+3. 6 helper functions for data access and validation
+4. SEOIndicator canonical data file
+
+**Execution Notes:**
+- Can proceed in parallel with TASK-32-1 tests
+- SEOIndicator data should be accurate and up-to-date
+- Lazy loading for competitor data recommended for bundle optimization
+
+**Status updated to:** `To Write Tests` for PreTester pickup
