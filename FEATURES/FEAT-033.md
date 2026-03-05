@@ -1,7 +1,7 @@
 # FEAT-033: Public SEO Audit Reports & Embeddable Score Widget
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
