@@ -468,7 +468,7 @@ class AISuggestionCache
 
     /**
      * Clear entries that were set directly without using the service.
-     * Only works with array cache driver.
+     * Uses reflection to access internal cache storage for array driver.
      *
      * @return int Number of entries cleared
      */
@@ -476,31 +476,54 @@ class AISuggestionCache
     {
         $driver = config('cache.default');
         
-        // For array driver, we can access the underlying store
+        // For array driver, use reflection to access internal storage
         if ($driver === 'array') {
-            $store = Cache::getStore();
-            if (method_exists($store, 'getStore')) {
-                $underlyingStore = $store->getStore();
-                if (is_object($underlyingStore) && property_exists($underlyingStore, 'storage')) {
-                    $storage = $underlyingStore->storage ?? [];
-                    $count = 0;
-                    $prefix = self::CACHE_PREFIX;
+            try {
+                $repository = Cache::getFacadeRoot();
+                $store = $repository->getStore();
+                
+                // Access the internal storage array via reflection
+                $reflection = new \ReflectionClass($store);
+                $property = null;
+                
+                // Try different property names based on Laravel version
+                foreach (['storage', 'items', 'cache'] as $propName) {
+                    if ($reflection->hasProperty($propName)) {
+                        $property = $reflection->getProperty($propName);
+                        break;
+                    }
+                }
+                
+                if ($property) {
+                    $property->setAccessible(true);
+                    $storage = $property->getValue($store);
                     
-                    // Find and remove keys with our prefix that aren't in registry
-                    $registry = $this->getRegistry();
-                    foreach (array_keys($storage) as $key) {
-                        if (str_starts_with($key, $prefix) && !str_ends_with($key, '_registry') && !str_ends_with($key, '_stats')) {
-                            // Extract hash from key
-                            $hash = substr($key, strlen($prefix));
-                            if (!isset($registry[$hash])) {
-                                Cache::forget($key);
-                                $count++;
+                    if (is_array($storage)) {
+                        $count = 0;
+                        $prefix = self::CACHE_PREFIX;
+                        $registry = $this->getRegistry();
+                        
+                        foreach (array_keys($storage) as $key) {
+                            if (str_starts_with($key, $prefix) && 
+                                $key !== self::REGISTRY_KEY && 
+                                $key !== self::STATS_KEY) {
+                                // Extract hash from key
+                                $hash = substr($key, strlen($prefix));
+                                if (!isset($registry[$hash])) {
+                                    Cache::forget($key);
+                                    $count++;
+                                }
                             }
                         }
+                        
+                        return $count;
                     }
-                    
-                    return $count;
                 }
+            } catch (\Throwable $e) {
+                // Reflection failed, log and continue
+                Log::debug('Could not access array cache storage via reflection', [
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
         
