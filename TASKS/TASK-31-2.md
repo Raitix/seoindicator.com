@@ -1,7 +1,7 @@
 # TASK-31-2: ContextWindowManager Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -10,7 +10,7 @@
 `Medium`
 
 ## Specification
-SPEC-31: Unified AI Prompt + Context Management
+SPEC-031: Unified AI Prompt + Context Management
 
 ## Description
 Create the `ContextWindowManager` service that estimates token counts, checks context window limits for different AI models, and selects the optimal model based on content size.
@@ -107,3 +107,33 @@ class ContextWindowManager
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 10:48 GMT+2] ProjectManager
+**Prioritization Complete**
+
+**Priority:** HIGH (confirmed) - Foundation task for SPEC-031 Unified AI Prompt architecture
+**Risk:** MEDIUM (confirmed) - Standard Laravel service, no external APIs, character-based estimation
+**Status:** `To Write Tests` - Ready for PreTester
+
+**Dependency Analysis:**
+- **Dependencies:** NONE - Foundation task, can start immediately
+- **Enables:** 3 downstream tasks:
+  - TASK-31-3 (TruncationService) - requires token estimation
+  - TASK-31-7 (AIAnalysisService) - requires context checking
+  - TASK-31-8 (ModelSelectionService) - requires model limit validation
+
+**TDD Approach:**
+PreTester can design tests immediately using the defined interface:
+- `estimateTokens(string $content): int` - ±20% accuracy target
+- `fitsInContext(string $model, int $estimatedTokens): bool`
+- `selectOptimalModel(int $estimatedTokens): string`
+- `getEffectiveLimit(string $model): int`
+
+**Key Design Points:**
+1. Character-based estimation (1 token ≈ 4 chars) - fast, good enough for free-tier models
+2. 10% safety margin on all context limits
+3. 3400 token base prompt overhead (system prompt + schema)
+4. 4 free-tier models supported (Gemini 2.0 Flash, Llama 3 8B, Mistral 7B, Qwen 2 7B)
+
+**Execution Order:** First task in Phase 1 Core Services pipeline
+**Handoff to:** PreTester for test design
