@@ -1,7 +1,7 @@
 # TASK-29-7: ExportModal Component
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -135,6 +135,15 @@ _Agent log_
 **Execution Order:** All dependencies satisfied - tests can proceed immediately. Implementation follows test design.
 
 Status updated: `To Prioritize` → `To Write Tests` - Ready for PreTester
+
+### [2026-03-05 15:40 GMT+2] Agent: DevOps
+**Deployment Initiated**
+
+- ExportModal component committed at 15:29:50 but not yet deployed
+- Last deployment was at 15:22:50 for fix(ai) commit
+- Triggering deployment via push to main
+
+Status updated: `To Deploy` → `In Deployment`
 
 ### [2026-03-05 14:55 GMT+2] Agent: PreTester
 **Test Design Complete**
