@@ -68,6 +68,7 @@ exports[`HowItWorksContent Snapshots SNAP-001: Component matches snapshot 1`] = 
         >
           <div
             class="relative flex flex-col md:flex-row items-center gap-6 md:flex-row"
+            data-testid="step-item"
           >
             <div
               class="flex-1 md:text-right"
@@ -138,6 +139,7 @@ exports[`HowItWorksContent Snapshots SNAP-001: Component matches snapshot 1`] = 
           </div>
           <div
             class="relative flex flex-col md:flex-row items-center gap-6 md:flex-row-reverse"
+            data-testid="step-item"
           >
             <div
               class="flex-1 md:text-left"
@@ -208,6 +210,7 @@ exports[`HowItWorksContent Snapshots SNAP-001: Component matches snapshot 1`] = 
           </div>
           <div
             class="relative flex flex-col md:flex-row items-center gap-6 md:flex-row"
+            data-testid="step-item"
           >
             <div
               class="flex-1 md:text-right"
@@ -282,6 +285,7 @@ exports[`HowItWorksContent Snapshots SNAP-001: Component matches snapshot 1`] = 
           </div>
           <div
             class="relative flex flex-col md:flex-row items-center gap-6 md:flex-row-reverse"
+            data-testid="step-item"
           >
             <div
               class="flex-1 md:text-left"
@@ -353,6 +357,7 @@ exports[`HowItWorksContent Snapshots SNAP-001: Component matches snapshot 1`] = 
           </div>
           <div
             class="relative flex flex-col md:flex-row items-center gap-6 md:flex-row"
+            data-testid="step-item"
           >
             <div
               class="flex-1 md:text-right"
