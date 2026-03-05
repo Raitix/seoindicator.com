@@ -1,7 +1,7 @@
 # TASK-32-6: PricingComparison Component
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
