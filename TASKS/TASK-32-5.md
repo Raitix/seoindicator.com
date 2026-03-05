@@ -1,7 +1,7 @@
 # TASK-32-5: ComparisonTable Component
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -169,3 +169,37 @@ Task created as part of SPEC-32 breakdown. Core comparison visualization compone
 - TASK-32-1 (Types): Done ✅
 
 **Status:** Updated to `To Develop`
+
+### [2026-03-05 18:25 GMT+2] Agent: Developer
+**Implementation Complete:**
+
+Created `frontend/components/compare/ComparisonTable.tsx` with:
+
+**Sub-components:**
+- `FeatureCell` - Renders boolean values as Check/X icons from Lucide, string values as text
+- `FeatureTooltip` - Wrapper with title attribute for tooltip content
+- `FeatureRow` - Individual feature row with name and values
+- `FeatureCategoryRow` - Category header + feature rows
+
+**Key Features:**
+- Responsive design with horizontal scroll on mobile (`overflow-x-auto`, `min-w-[600px]`)
+- Winner highlighting with `winner-highlight` class and emerald-500/10 background
+- Check/X icons from Lucide React for boolean values
+- String value support (e.g., "Partial", "50/day", "Unlimited")
+- Tooltips with native title attribute
+- Full ARIA accessibility (role="table", role="row", role="cell", role="columnheader", role="rowgroup")
+- Memo optimization for performance
+
+**All 34 tests passing:**
+| Category | Tests | Status |
+|----------|-------|--------|
+| Rendering | 5 | ✅ |
+| Icons | 4 | ✅ |
+| Highlighting | 5 | ✅ |
+| Tooltips | 4 | ✅ |
+| Accessibility | 5 | ✅ |
+| Responsive | 2 | ✅ |
+| Edge Cases | 6 | ✅ |
+| Props | 3 | ✅ |
+
+**Status:** Updated to `To Test Locally`
