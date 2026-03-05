@@ -1,7 +1,7 @@
 # TASK-31-3: TruncationService Implementation
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
