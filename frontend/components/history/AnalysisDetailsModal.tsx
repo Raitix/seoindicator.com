@@ -177,7 +177,9 @@ export function AnalysisDetailsModal({
                   Total Cost
                 </div>
                 <p className="text-white font-medium">
-                  {formatCost(analysis.cost.total, analysis.cost.currency)}
+                  {analysis.cost?.total !== undefined
+                    ? formatCost(analysis.cost.total, analysis.cost?.currency || "USD")
+                    : "—"}
                 </p>
               </div>
 
@@ -216,14 +218,16 @@ export function AnalysisDetailsModal({
                               {item.type.replace(/_/g, " ")}
                             </td>
                             <td className="p-3 text-slate-200 text-right">
-                              {formatCost(item.amount, analysis.cost.currency)}
+                              {formatCost(item.amount, analysis.cost?.currency || "USD")}
                             </td>
                           </tr>
                         ))}
                         <tr className="bg-slate-800/50">
                           <td className="p-3 text-white font-medium">Total</td>
                           <td className="p-3 text-white font-medium text-right">
-                            {formatCost(analysis.cost.total, analysis.cost.currency)}
+                            {analysis.cost?.total !== undefined
+                              ? formatCost(analysis.cost.total, analysis.cost?.currency || "USD")
+                              : "—"}
                           </td>
                         </tr>
                       </tbody>
