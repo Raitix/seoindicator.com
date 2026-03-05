@@ -1,7 +1,7 @@
 # TASK-29-7: ExportModal Component
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -128,3 +128,41 @@ _Agent log_
 **Execution Order:** All dependencies satisfied - tests can proceed immediately. Implementation follows test design.
 
 Status updated: `To Prioritize` → `To Write Tests` - Ready for PreTester
+
+### [2026-03-05 14:55 GMT+2] Agent: PreTester
+**Test Design Complete**
+
+Created comprehensive test suite for ExportModal component with 80+ test cases covering:
+
+**Test Categories:**
+1. **Rendering Tests (EM-001 to EM-010):** Modal visibility, title, format options, buttons, preview
+2. **Format Selection Tests (EM-011 to EM-020):** PDF/XLS radio selection, descriptions, keyboard navigation
+3. **Export Functionality Tests (EM-021 to EM-035):** API calls, loading states, success/error handling, rate limits
+4. **Modal Interaction Tests (EM-036 to EM-045):** Close behaviors, focus management, keyboard support
+5. **Props Validation Tests (EM-046 to EM-055):** Required props, missing data, complex structures, edge cases
+6. **Accessibility Tests (EM-056 to EM-065):** ARIA attributes, focus visibility, keyboard-only navigation
+7. **Edge Cases Tests (EM-066 to EM-075):** Rapid clicks, network timeout, large data, unicode/emoji
+8. **Preview Section Tests (EM-076 to EM-080):** Export preview, indicator count, empty state
+9. **Snapshot Tests (EM-100 to EM-102):** Default, loading, and error states
+
+**Files Created:**
+- `TESTS/TASK-29-7.md` - Test documentation with 80 test cases
+- `frontend/__tests__/components/tools/__tests__/ExportModal.test.tsx` - Full test implementation
+
+**Key Test Implementations:**
+- Mocked `fetch` for API calls to `/api/v1/tools/export`
+- Mocked `window.location.href` for file download verification
+- Mocked lucide-react icons (X, FileText, FileSpreadsheet, Loader2, Download, AlertCircle, Clock)
+- Tests verify proper handling of: success, errors (5xx, 429 rate limit), network failures, timeouts
+- Focus trapping and keyboard navigation tested
+- Accessibility verified via ARIA attribute checks
+
+**Test Patterns Used:**
+- Follows existing ExportResultsButton.test.tsx patterns
+- User interactions via `@testing-library/user-event`
+- Async operations with `waitFor()`
+- Controlled promise resolution for loading state tests
+
+**Coverage Target:** 80%+ statements, 75%+ branches
+
+Status updated: `To Write Tests` → `To Develop` - Ready for Developer implementation
