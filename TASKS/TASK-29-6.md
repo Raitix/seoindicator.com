@@ -1,7 +1,7 @@
 # TASK-29-6: ExportResultsButton Component
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -236,3 +236,29 @@ Status updated: `To Develop` → `To Test Locally` - Ready for LocalTester
 **Decision:** PASS - Ready for deployment
 
 Status updated: `To Test Locally` → `To Deploy` - Ready for DevOps
+
+### [2026-03-04 22:15 GMT+2] Agent: DevOps
+**Deployment Complete**
+
+**Pre-Deployment Verification:**
+- All 60 ExportResultsButton tests passing
+- Frontend build successful (Next.js 16.1.6 with Turbopack)
+- 54 static pages generated
+
+**Deployment Actions:**
+1. Updated task status to `In Deployment`
+2. Committed status change
+3. Pushed to origin/main (commit 44f336b)
+4. GitHub Actions CI/CD pipeline triggered automatically
+
+**Deployment Method:**
+- GitHub Actions workflow: `.github/workflows/deploy.yml`
+- Frontend: Static export → Hostinger shared hosting
+- Backend: SSH + git pull + composer install
+
+**Post-Deployment Verification Needed:**
+- ProdTester to verify component renders correctly on production
+- Test export button functionality with real data
+- Verify modal integration with ExportModal (TASK-29-7)
+
+Status updated: `In Deployment` → `To Test Prod` - Ready for ProdTester
