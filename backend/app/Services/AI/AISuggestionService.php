@@ -54,8 +54,22 @@ class AISuggestionService
         $promptContext = array_merge(['indicator' => $indicator], $context);
         $prompt = json_encode($promptContext, JSON_THROW_ON_ERROR);
 
-        // Call the AI provider
-        $response = $this->provider->generate($prompt);
+        // Call the AI provider with error handling
+        try {
+            $response = $this->provider->generate($prompt);
+        } catch (\Throwable $e) {
+            // Provider threw an exception - return error result without caching
+            return new SuggestionResult(
+                indicator: $indicator,
+                score: 0,
+                issues: [$e->getMessage() ?? 'AI provider error'],
+                suggestions: [],
+                bestPractices: [],
+                provider: $this->provider->getName(),
+                model: 'error',
+                generatedAt: new \DateTimeImmutable()
+            );
+        }
 
         // Handle error response
         if (!$response->success) {
