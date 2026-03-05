@@ -1,7 +1,7 @@
 # TASK-30-1: Terms & Privacy Page
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
