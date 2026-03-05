@@ -14,6 +14,9 @@ import { MetadataRoute } from 'next';
  */
 const BASE_URL = 'https://seoindicator.com';
 
+// Required for static export
+export const dynamic = 'force-static';
+
 /**
  * Generate the robots.txt file.
  * Allows all paths and specifies sitemap location.
@@ -22,8 +25,7 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: '*',
-      allow: '/',
-      allow: '/compare/',
+      allow: ['/', '/compare/'],
     },
     sitemap: `${BASE_URL}/sitemap.xml`,
   };
