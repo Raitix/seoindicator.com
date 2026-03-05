@@ -8,45 +8,28 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+
+// Import the actual component
+import { PublicAuditCTA } from '@/components/audit/PublicAuditCTA';
 
 // Mock fetch for API calls
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
 // Mock clipboard API
-const mockClipboardWrite = jest.fn();
+const mockClipboardWrite = jest.fn().mockResolvedValue(undefined);
 Object.assign(navigator, {
   clipboard: {
     writeText: mockClipboardWrite,
   },
 });
 
-// Mock navigator.share
-const mockShare = jest.fn();
-Object.assign(navigator, {
-  share: mockShare,
-  canShare: jest.fn(() => true),
-});
-
 // Mock window.open
 const mockWindowOpen = jest.fn();
 window.open = mockWindowOpen;
-
-// Mock Lucide icons
-jest.mock('lucide-react', () => ({
-  Mail: () => <span data-testid="mail-icon">Mail</span>,
-  Share2: () => <span data-testid="share-icon">Share</span>,
-  Copy: () => <span data-testid="copy-icon">Copy</span>,
-  Check: () => <span data-testid="check-icon">Check</span>,
-  AlertCircle: () => <span data-testid="alert-icon">Alert</span>,
-  Loader2: () => <span data-testid="loader-icon" className="animate-spin">Loading</span>,
-  Twitter: () => <span data-testid="twitter-icon">Twitter</span>,
-  Linkedin: () => <span data-testid="linkedin-icon">LinkedIn</span>,
-  Facebook: () => <span data-testid="facebook-icon">Facebook</span>,
-}));
 
 // Mock analytics
 const mockTrackEvent = jest.fn();
@@ -54,304 +37,12 @@ jest.mock('@/lib/analytics', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
 }));
 
-/**
- * Mock PublicAuditCTA Component
- * This represents the expected interface for TDD
- */
-interface PublicAuditCTAProps {
-  auditHash: string;
-  siteUrl: string;
-  score: number;
-}
-
-interface LeadFormData {
-  email: string;
-}
-
-const PublicAuditCTA: React.FC<PublicAuditCTAProps> = ({ auditHash, siteUrl, score }) => {
-  const [email, setEmail] = React.useState('');
-  const [error, setError] = React.useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [isSuccess, setIsSuccess] = React.useState(false);
-  const [submitError, setSubmitError] = React.useState<string | null>(null);
-  const [copied, setCopied] = React.useState(false);
-
-  const validateEmail = (value: string): boolean => {
-    if (!value.trim()) {
-      setError('Email is required');
-      return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      setError('Invalid email format');
-      return false;
-    }
-    if (value.length > 255) {
-      setError('Email too long');
-      return false;
-    }
-    setError(null);
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateEmail(email)) return;
-    
-    setIsSubmitting(true);
-    setSubmitError(null);
-    
-    try {
-      const response = await fetch(`/api/v1/public-audit/${auditHash}/lead`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      
-      if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error('Too many requests, try later');
-        }
-        if (response.status === 404) {
-          throw new Error('Audit not found');
-        }
-        throw new Error('Failed to submit');
-      }
-      
-      setIsSuccess(true);
-      mockTrackEvent('public_audit_lead_submit', { hash: auditHash, score });
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleShare = async (platform: 'twitter' | 'linkedin' | 'facebook') => {
-    const shareUrl = `https://seoindicator.com/audit/${auditHash}`;
-    const shareText = `Check out this SEO score: ${score}/100 for ${siteUrl}`;
-    
-    if (platform === 'twitter') {
-      window.open(
-        `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`,
-        '_blank',
-        'width=550,height=420'
-      );
-    } else if (platform === 'linkedin') {
-      window.open(
-        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
-        '_blank',
-        'width=550,height=420'
-      );
-    } else if (platform === 'facebook') {
-      window.open(
-        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
-        '_blank',
-        'width=550,height=420'
-      );
-    }
-    
-    mockTrackEvent('public_audit_share', { hash: auditHash, platform });
-  };
-
-  const handleCopyEmbed = async () => {
-    const embedCode = `<a href="https://seoindicator.com/audit/${auditHash}">
-  <img src="https://seoindicator.com/badge/${auditHash}/small.svg" alt="SEO Score for ${siteUrl}: ${score}/100" />
-</a>`;
-    
-    try {
-      await navigator.clipboard.writeText(embedCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      mockTrackEvent('public_audit_embed_copy', { hash: auditHash });
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
-
-  const embedCode = `<a href="https://seoindicator.com/audit/${auditHash}">
-  <img src="https://seoindicator.com/badge/${auditHash}/small.svg" alt="SEO Score for ${siteUrl}: ${score}/100" />
-</a>`;
-
-  if (isSuccess) {
-    return (
-      <div 
-        data-testid="success-state" 
-        role="status" 
-        aria-live="polite"
-        className="p-6 bg-green-50 rounded-lg text-center"
-      >
-        <span data-testid="check-icon" className="text-green-600 text-4xl">✓</span>
-        <h3 className="text-lg font-semibold mt-2">Thank you!</h3>
-        <p className="text-gray-600">Check your email for the full report.</p>
-        <p className="text-sm text-gray-500 mt-2">Your SEO score: {score}/100</p>
-        <a 
-          href={`https://seoindicator.com/audit/${auditHash}`}
-          className="text-blue-600 hover:underline mt-2 block"
-        >
-          View your audit
-        </a>
-      </div>
-    );
-  }
-
-  return (
-    <div data-testid="public-audit-cta" className="space-y-6">
-      {/* Email Capture Form */}
-      <form 
-        onSubmit={handleSubmit} 
-        role="form"
-        aria-label="Get your free audit"
-        data-testid="lead-form"
-      >
-        <h2 className="text-xl font-semibold mb-4">
-          Get your free SEO audit for {siteUrl}
-        </h2>
-        
-        <div className="space-y-2">
-          <label htmlFor="email" className="block text-sm font-medium">
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            name="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (error) validateEmail(e.target.value);
-            }}
-            onBlur={() => validateEmail(email)}
-            placeholder="Enter your email"
-            aria-invalid={!!error}
-            aria-describedby={error ? 'email-error' : undefined}
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            data-testid="email-input"
-          />
-          {error && (
-            <p 
-              id="email-error" 
-              role="alert" 
-              className="text-red-600 text-sm"
-              data-testid="validation-error"
-            >
-              {error}
-            </p>
-          )}
-        </div>
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          aria-busy={isSubmitting}
-          aria-label={`Get your free audit - Score: ${score}/100`}
-          className="w-full mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          data-testid="submit-button"
-        >
-          {isSubmitting ? (
-            <>
-              <span data-testid="loader-icon" className="inline-block animate-spin mr-2">⏳</span>
-              Submitting...
-            </>
-          ) : (
-            `Get your free audit (Score: ${score}/100)`
-          )}
-        </button>
-
-        {submitError && (
-          <div 
-            role="alert" 
-            className="mt-4 p-4 bg-red-50 rounded-lg"
-            data-testid="submit-error"
-          >
-            <p className="text-red-600">{submitError}</p>
-            <button
-              type="button"
-              onClick={() => setSubmitError(null)}
-              className="mt-2 text-sm text-blue-600 hover:underline"
-              data-testid="retry-button"
-            >
-              Try again
-            </button>
-          </div>
-        )}
-
-        <p className="mt-4 text-xs text-gray-500" data-testid="privacy-notice">
-          We respect your privacy. Your email will only be used to send your audit report.
-        </p>
-      </form>
-
-      {/* Social Sharing */}
-      <div data-testid="social-sharing" className="border-t pt-6">
-        <h3 className="text-sm font-medium mb-3">Share this audit</h3>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleShare('twitter')}
-            aria-label="Share on Twitter"
-            className="px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600"
-            data-testid="twitter-share"
-          >
-            <span data-testid="twitter-icon">Twitter</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleShare('linkedin')}
-            aria-label="Share on LinkedIn"
-            className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
-            data-testid="linkedin-share"
-          >
-            <span data-testid="linkedin-icon">LinkedIn</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleShare('facebook')}
-            aria-label="Share on Facebook"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            data-testid="facebook-share"
-          >
-            <span data-testid="facebook-icon">Facebook</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Embed Code */}
-      <div data-testid="embed-code-section" className="border-t pt-6">
-        <h3 className="text-sm font-medium mb-3">Embed this badge</h3>
-        <div className="relative">
-          <textarea
-            readOnly
-            value={embedCode}
-            aria-label="Badge embed code"
-            className="w-full p-3 bg-gray-50 border rounded-lg text-sm font-mono"
-            data-testid="embed-code"
-            rows={4}
-          />
-          <button
-            type="button"
-            onClick={handleCopyEmbed}
-            aria-label="Copy embed code"
-            className="absolute top-2 right-2 px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-            data-testid="copy-button"
-          >
-            {copied ? (
-              <span data-testid="check-icon">Copied!</span>
-            ) : (
-              <span data-testid="copy-icon">Copy</span>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // ============================================
 // TEST SUITE
 // ============================================
 
 describe('PublicAuditCTA Component', () => {
-  const defaultProps: PublicAuditCTAProps = {
+  const defaultProps = {
     auditHash: 'abc123def456',
     siteUrl: 'example.com',
     score: 85,
@@ -362,7 +53,6 @@ describe('PublicAuditCTA Component', () => {
     mockFetch.mockReset();
     mockClipboardWrite.mockReset();
     mockWindowOpen.mockReset();
-    mockShare.mockReset();
   });
 
   // ============================================
@@ -377,7 +67,8 @@ describe('PublicAuditCTA Component', () => {
 
     it('REND-002: displays site URL in heading', () => {
       render(<PublicAuditCTA {...defaultProps} />);
-      expect(screen.getByText(/Get your free SEO audit for example.com/i)).toBeInTheDocument();
+      expect(screen.getByText(/Get your free SEO audit for/i)).toBeInTheDocument();
+      expect(screen.getByText('example.com')).toBeInTheDocument();
     });
 
     it('REND-003: displays score in CTA button', () => {
@@ -454,6 +145,8 @@ describe('PublicAuditCTA Component', () => {
       });
 
       it('FORM-003: accepts valid email', async () => {
+        mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) });
+        
         const user = userEvent.setup();
         render(<PublicAuditCTA {...defaultProps} />);
         
