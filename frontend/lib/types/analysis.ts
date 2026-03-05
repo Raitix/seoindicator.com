@@ -136,7 +136,7 @@ export interface StatusOption {
 // ==================== Constants ====================
 
 export const STATUS_OPTIONS: StatusOption[] = [
-  { value: '', label: 'All Statuses' },
+  { value: 'all', label: 'All Statuses' },
   { value: 'completed', label: 'Completed', color: 'green' },
   { value: 'failed', label: 'Failed', color: 'red' },
   { value: 'pending', label: 'Pending', color: 'yellow' },
@@ -144,7 +144,7 @@ export const STATUS_OPTIONS: StatusOption[] = [
 ];
 
 export const DEFAULT_TOOLS: ToolOption[] = [
-  { value: '', label: 'All Tools' },
+  { value: 'all', label: 'All Tools' },
   { value: 'meta-tag-analyzer', label: 'Meta Tag Analyzer' },
   { value: 'keyword-density', label: 'Keyword Density Checker' },
   { value: 'mobile-friendly', label: 'Mobile-Friendly Checker' },

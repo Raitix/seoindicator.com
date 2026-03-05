@@ -43,6 +43,12 @@ jest.mock("@/lib/api/analyses", () => ({
   fetchAnalyses: jest.fn(),
   fetchAnalysisById: jest.fn(),
   deleteAnalysis: jest.fn(),
+  parseFilterUrl: jest.fn(() => ({ tool: "", status: "", from: "", to: "", page: 1, perPage: 15 })),
+  buildFilterUrl: jest.fn(() => ""),
+  analysisKeys: {
+    list: jest.fn(() => "analyses-list"),
+    detail: jest.fn(() => "analyses-detail"),
+  },
 }));
 
 import { fetchAnalyses, fetchAnalysisById, deleteAnalysis } from "@/lib/api/analyses";
@@ -149,6 +155,8 @@ const mockAuthContext = {
   register: jest.fn(),
   resetPassword: jest.fn(),
   resendVerification: jest.fn(),
+  clearError: jest.fn(),
+  refreshUser: jest.fn(),
 };
 
 // Helper to setup SWR mock

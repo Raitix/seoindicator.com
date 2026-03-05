@@ -1,7 +1,7 @@
 # TASK-31-8: ModelSelectionService
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -180,3 +180,40 @@ PreTester can design tests immediately using existing interfaces:
 3. Fallback to Gemini 2.0 Flash (largest context)
 
 **Handoff to:** PreTester for test design
+
+### [2026-03-05 19:15 GMT+2] PreTester
+**Test Design Complete**
+
+Created comprehensive test suite in:
+- `backend/tests/Unit/Services/AI/ModelSelectionServiceTest.php`
+- `TESTS/TEST-31-8.md` (documentation)
+
+**Test Coverage:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Model Selection (MS) | 9 | Content-based model selection |
+| User Preference (UP) | 7 | User preference handling |
+| Model Availability (MA) | 5 | Availability checks |
+| Fallback Model (FM) | 2 | Default fallback behavior |
+| Context Integration (CI) | 2 | ContextWindowManager integration |
+| Model Priority (MP) | 4 | Priority matrix validation |
+| Edge Cases (EC) | 5 | Boundary and error handling |
+| Acceptance Criteria (AC) | 6 | All ACs tested |
+| Performance | 2 | Speed benchmarks |
+| Data Providers | 10 | Boundary/selection tests |
+
+**Total: 52 test cases**
+
+**Key Implementation Notes:**
+1. `selectModel()` uses ContextWindowManager for context validation
+2. User preferences checked via UserModelPreference → AIModel relationship
+3. Only active models returned from `isModelAvailable()`
+4. All models are free-tier (no credit balance checks needed)
+5. Selection priority: User preference → Smallest sufficient → Gemini fallback
+
+**Context Limits (effective, with safety margin):**
+- Llama: 3,972 tokens
+- Qwen/Mistral: 26,091 tokens
+- Gemini: 896,600 tokens
+
+**Handoff to:** Developer for implementation

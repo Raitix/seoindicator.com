@@ -38,7 +38,7 @@ export function HistoryFilters({
   
   // Default tools if not provided
   const toolOptions: ToolOption[] = tools.length > 0 ? tools : [
-    { value: '', label: 'All Tools' },
+    { value: 'all', label: 'All Tools' },
     { value: 'meta-tag-analyzer', label: 'Meta Tag Analyzer' },
     { value: 'keyword-density', label: 'Keyword Density Checker' },
     { value: 'mobile-friendly', label: 'Mobile-Friendly Checker' },
@@ -50,12 +50,12 @@ export function HistoryFilters({
 
   // Handle tool change
   const handleToolChange = (value: string) => {
-    onFiltersChange({ ...filters, tool: value || undefined });
+    onFiltersChange({ ...filters, tool: value === 'all' ? undefined : value || undefined });
   };
 
   // Handle status change
   const handleStatusChange = (value: string) => {
-    onFiltersChange({ ...filters, status: (value || undefined) as AnalysisFilters['status'] });
+    onFiltersChange({ ...filters, status: value === 'all' ? undefined : (value || undefined) as AnalysisFilters['status'] });
   };
 
   // Handle date from change
@@ -79,7 +79,7 @@ export function HistoryFilters({
       {/* Tool Filter */}
       <div className="w-48">
         <Select
-          value={filters.tool || ''}
+          value={filters.tool || 'all'}
           onValueChange={handleToolChange}
         >
           <SelectTrigger
@@ -105,7 +105,7 @@ export function HistoryFilters({
       {/* Status Filter */}
       <div className="w-40">
         <Select
-          value={filters.status || ''}
+          value={filters.status || 'all'}
           onValueChange={handleStatusChange}
         >
           <SelectTrigger

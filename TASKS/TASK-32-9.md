@@ -1,7 +1,7 @@
 # TASK-32-9: ComparisonCTA Component
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`

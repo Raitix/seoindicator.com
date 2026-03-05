@@ -230,7 +230,9 @@ export function HistoryTable({
 
               {/* Cost */}
               <TableCell className="text-slate-200">
-                {formatCost(analysis.cost.total, analysis.cost.currency)}
+                {analysis.cost?.total !== undefined
+                  ? formatCost(analysis.cost.total, analysis.cost?.currency || "USD")
+                  : "—"}
               </TableCell>
 
               {/* Duration */}
