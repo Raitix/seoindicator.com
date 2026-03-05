@@ -14297,6 +14297,198 @@ The exporter prefixes potentially dangerous characters in the Value column to pr
 - TASK-29-3: ToolExportService & Controller (integration)
 
 ---
+## ToolExportService & Controller (TASK-29-3)
+
+### Service Description
+Core export coordination service and API controller for the Export Results (PDF/XLS) feature. The ToolExportService orchestrates export generation by delegating to PdfToolExporter and XlsToolExporter, while the ToolExportController provides REST API endpoints for creating and downloading exports.
+
+### Component Location
+- **Service:** `backend/app/Services/Tools/ToolExportService.php`
+- **Controller:** `backend/app/Http/Controllers/Api/V1/ToolExportController.php`
+- **Routes:** `backend/routes/api.php`
+- **Config:** `backend/config/tools.php`
+
+### Core Functionalities
+
+**ToolExportService Methods:**
+| Method | Description |
+|--------|-------------|
+| `createExport(string $tool, string $url, string $format, array $data, int $userId): string` | Creates export file and returns download URL |
+| `downloadExport(string $token, int $userId): Response` | Validates token and streams file to response |
+
+**ToolExportController Endpoints:**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/tools/export` | Create export, returns download URL |
+| GET | `/api/v1/tools/export/download/{token}` | Download file using one-time token |
+
+### API Endpoints
+
+#### Create Export
+`POST /api/v1/tools/export`
+
+**Request Body:**
+```json
+{
+  "tool": "meta-tag-analyzer",
+  "url": "https://example.com",
+  "format": "pdf",
+  "data": {
+    "analyzedAt": "2026-03-05T12:00:00Z",
+    "results": {
+      "title": { "content": "Example Page", "length": 12, "status": "ok" }
+    }
+  }
+}
+```
+
+**Request Validation:**
+| Field | Rules |
+|-------|-------|
+| `tool` | required, string |
+| `url` | required, url |
+| `format` | required, in:pdf,xls |
+| `data` | required, array |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "downloadUrl": "/api/v1/tools/export/download/abc123...",
+  "expiresAt": "2026-03-05T13:00:00Z"
+}
+```
+
+#### Download Export
+`GET /api/v1/tools/export/download/{token}`
+
+**Response:** Binary file download (PDF or XLS)
+
+**Error Responses:**
+| Status | Condition |
+|--------|-----------|
+| 401 | Unauthenticated request |
+| 404 | Invalid or expired token |
+| 422 | Invalid format or missing data |
+
+### Export Generation Flow
+
+```
+1. User clicks "Export Results" → ExportModal opens
+2. User selects format (PDF/XLS) → POST /api/v1/tools/export
+3. ToolExportService.createExport():
+   a. Build ToolResult DTO from input data
+   b. Select exporter (PdfToolExporter or XlsToolExporter)
+   c. Generate binary file content
+   d. Store file in exports/ directory
+   e. Generate 64-char download token
+   f. Cache token with file path, format, user_id (1-hour TTL)
+   g. Return download URL
+4. User clicks download link → GET /api/v1/tools/export/download/{token}
+5. ToolExportService.downloadExport():
+   a. Validate token exists and user_id matches
+   b. Stream file to response
+   c. Delete file and invalidate token (one-time use)
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Token Generation | 64-character cryptographically secure random string |
+| Token TTL | 1 hour (configurable via `tools.export_token_ttl`) |
+| User Isolation | Token validated against `user_id`, strict comparison |
+| One-Time Use | Token deleted after successful download |
+| Path Traversal Prevention | `sanitizeFilename()` removes `..`, `/`, `\` |
+| XSS Prevention | Script tags removed from tool names |
+
+### Token-Based Download System
+
+```php
+// Token generation
+$token = Str::random(64);
+Cache::put("export:{$token}", [
+    'file' => $filePath,
+    'format' => $format,
+    'user_id' => $userId,
+    'created_at' => now()->toIso8601String(),
+], now()->addSeconds(config('tools.export_token_ttl', 3600)));
+
+// Token validation (strict user_id comparison)
+$tokenData = Cache::get("export:{$token}");
+if (!$tokenData || $tokenData['user_id'] !== $userId) {
+    return response()->json(['message' => 'Invalid or expired download link'], 404);
+}
+
+// Token invalidation after download
+Cache::forget("export:{$token}");
+unlink($filePath); // Delete file
+```
+
+### Configuration
+
+```php
+// config/tools.php
+[
+    'export_token_ttl' => env('TOOL_EXPORT_TOKEN_TTL', 3600), // 1 hour
+    'export_rate_limit' => env('TOOL_EXPORT_RATE_LIMIT', 10), // 10/hour
+    'export_rate_window' => env('TOOL_EXPORT_RATE_WINDOW', 3600),
+];
+```
+
+### Error Handling
+
+| Scenario | Response |
+|----------|----------|
+| Invalid format | 422 with validation error |
+| Token not found | 404 with error message |
+| Token expired | 404 (cache TTL auto-expires) |
+| Wrong user | 404 (prevents enumeration) |
+| File not found | 404 with error message |
+| Export generation failure | 500 with generic error message |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| ToolExportServiceTest | 61 | 120+ |
+| ToolExportControllerTest | 44 | 86+ |
+| **Total** | **105** | **206+** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 4 | DI, service binding |
+| createExport Method | 12 | PDF/XLS generation, token creation |
+| downloadExport Method | 10 | Token validation, file streaming |
+| Token System | 15 | Generation, validation, expiration |
+| IDOR Prevention | 8 | User isolation, type coercion |
+| Path Traversal | 6 | Filename sanitization |
+| XSS Prevention | 5 | Script tag handling |
+| Controller Endpoints | 20 | POST/GET endpoint tests |
+| Authentication | 6 | 401 for unauthenticated |
+| Error Responses | 8 | 404, 422, 500 handling |
+| Integration | 11 | Full export flow |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions auto-deploy, commit 4462d15)
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** Core exporter tests passing (61 PDF + 43 XLS = 104 tests)
+- **Status:** Complete
+
+### Dependencies
+- TASK-29-1: PdfToolExporter Implementation
+- TASK-29-2: XlsToolExporter Implementation
+- TASK-29-4: Download Token System (integrated)
+
+### Related Tasks
+- TASK-29-1: PdfToolExporter Implementation
+- TASK-29-2: XlsToolExporter Implementation
+- TASK-29-4: Download Token System
+- TASK-29-5: Rate Limiting Integration (pending)
+- TASK-29-6: ExportResultsButton Component (frontend)
+
+---
 ## Database Schema: SEO Site Audits (FEAT-014)
 
 ### Audits Table

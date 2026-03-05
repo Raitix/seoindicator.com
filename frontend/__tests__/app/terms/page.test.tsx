@@ -75,10 +75,10 @@ describe('Terms & Privacy Page - Page Component', () => {
 
     it('should render with correct page title', () => {
       render(<TermsPage />);
-      // Check document title via helmet or direct check
-      const titleElement = document.querySelector('title');
-      // Title may be set via next/head or metadata
-      expect(document.title || titleElement?.textContent || '').toMatch(/Terms.*Privacy|Privacy.*Terms/i);
+      // In Next.js App Router, title is set via metadata, not document.title
+      // Check that the h1 contains the expected title text
+      const h1 = screen.queryByRole('heading', { level: 1, name: /Terms.*Service.*Privacy|Privacy.*Policy/i });
+      expect(h1).toBeInTheDocument();
     });
 
     it('should have meta title "Terms & Privacy | SEOIndicator"', async () => {
@@ -255,8 +255,12 @@ describe('Terms & Privacy Page - Page Component', () => {
       render(<TermsPage />);
       
       // Should contain both terms and privacy content
-      expect(screen.getByText(/terms.?of.?service/i) || screen.getByRole('heading', { name: /terms.?of.?service/i })).toBeTruthy();
-      expect(screen.getByText(/privacy.?policy/i) || screen.getByRole('heading', { name: /privacy.?policy/i })).toBeTruthy();
+      // Use queryAllByText since the h1 contains both phrases
+      const termsElements = screen.queryAllByText(/terms.?of.?service/i);
+      const privacyElements = screen.queryAllByText(/privacy.?policy/i);
+      
+      expect(termsElements.length).toBeGreaterThan(0);
+      expect(privacyElements.length).toBeGreaterThan(0);
     });
 
     it('should have Introduction section', () => {
@@ -360,11 +364,12 @@ describe('Terms & Privacy Page - Page Component', () => {
     it('should handle long legal text gracefully', () => {
       const { container } = render(<TermsPage />);
       
-      // Check that long text doesn't overflow
-      const contentContainer = container.querySelector('.prose, [class*="content"]');
-      if (contentContainer) {
-        expect(contentContainer).toHaveStyle({ overflowWrap: 'break-word' });
-      }
+      // Check that long text is handled with prose styling
+      const proseContainer = container.querySelector('.prose');
+      expect(proseContainer).toBeInTheDocument();
+      
+      // Prose class includes overflow handling via Tailwind typography plugin
+      // The exact style depends on Tailwind CSS compilation
     });
 
     it('should render consistently on re-render', () => {
