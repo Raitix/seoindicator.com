@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useConsentContext } from "@/lib/contexts/ConsentContext";
 
 /**
  * Footer component with Cookie Settings link
@@ -13,16 +14,27 @@ import Link from "next/link";
  * Note: This component must be rendered inside a ConsentProvider
  */
 interface FooterProps {
-  /** Callback to show the cookie consent banner */
+  /** Optional callback to show the cookie consent banner (deprecated - uses context directly) */
   onShowCookieSettings?: () => void;
 }
 
 export default function Footer({ onShowCookieSettings }: FooterProps) {
+  // Try to use context directly for banner control
+  // Falls back to prop callback if context is unavailable (for backward compatibility)
+  let setShowBanner: (show: boolean) => void = () => {};
+  try {
+    const context = useConsentContext();
+    setShowBanner = context.setShowBanner;
+  } catch {
+    // Context not available, rely on prop callback
+  }
+
   const handleCookieSettingsClick = (
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
     e.preventDefault();
-    // Use callback if provided, otherwise the banner is controlled by ConsentProvider
+    // Prefer context, fall back to prop callback
+    setShowBanner(true);
     if (onShowCookieSettings) {
       onShowCookieSettings();
     }
