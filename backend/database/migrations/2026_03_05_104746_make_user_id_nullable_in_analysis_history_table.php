@@ -26,30 +26,24 @@ return new class extends Migration
                 CREATE TABLE analysis_history_new (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id BIGINT UNSIGNED NULL,
-                    url VARCHAR(2048) NOT NULL,
-                    indicator VARCHAR(50) NOT NULL,
-                    score INTEGER DEFAULT 0,
-                    status VARCHAR(20) DEFAULT \'pending\',
+                    site_id BIGINT UNSIGNED NULL,
+                    tool_name VARCHAR(100) NOT NULL,
+                    input_url VARCHAR(2083) NOT NULL,
+                    status VARCHAR(20) DEFAULT \'completed\',
+                    results JSON NULL,
                     error_message TEXT NULL,
+                    analysis_duration_ms INTEGER NULL,
+                    analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     created_at TIMESTAMP NULL,
-                    updated_at TIMESTAMP NULL,
-                    completed_at TIMESTAMP NULL,
-                    input_data JSON NULL,
-                    output_data JSON NULL,
-                    model VARCHAR(100) NULL,
-                    provider VARCHAR(50) NULL,
-                    tokens_used INTEGER DEFAULT 0,
-                    cost_usd DECIMAL(10, 6) DEFAULT 0,
-                    analysis_duration_ms INTEGER DEFAULT 0
+                    updated_at TIMESTAMP NULL
                 )
             ');
             
             // Copy data
             DB::statement('
                 INSERT INTO analysis_history_new 
-                SELECT id, user_id, url, indicator, score, status, error_message, 
-                       created_at, updated_at, completed_at, input_data, output_data, 
-                       model, provider, tokens_used, cost_usd, analysis_duration_ms
+                SELECT id, user_id, site_id, tool_name, input_url, status, results, 
+                       error_message, analysis_duration_ms, analyzed_at, created_at, updated_at
                 FROM analysis_history
             ');
             
@@ -58,6 +52,11 @@ return new class extends Migration
             
             // Rename new table
             DB::statement('ALTER TABLE analysis_history_new RENAME TO analysis_history');
+            
+            // Recreate indexes
+            DB::statement('CREATE INDEX idx_user_analyzed ON analysis_history(user_id, analyzed_at)');
+            DB::statement('CREATE INDEX idx_tool_name ON analysis_history(tool_name)');
+            DB::statement('CREATE INDEX idx_status ON analysis_history(status)');
         } else {
             // MySQL syntax
             DB::statement('ALTER TABLE analysis_history MODIFY COLUMN user_id BIGINT UNSIGNED NULL');
@@ -77,21 +76,16 @@ return new class extends Migration
                 CREATE TABLE analysis_history_new (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                    url VARCHAR(2048) NOT NULL,
-                    indicator VARCHAR(50) NOT NULL,
-                    score INTEGER DEFAULT 0,
-                    status VARCHAR(20) DEFAULT \'pending\',
+                    site_id BIGINT UNSIGNED NULL,
+                    tool_name VARCHAR(100) NOT NULL,
+                    input_url VARCHAR(2083) NOT NULL,
+                    status VARCHAR(20) DEFAULT \'completed\',
+                    results JSON NULL,
                     error_message TEXT NULL,
+                    analysis_duration_ms INTEGER NULL,
+                    analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     created_at TIMESTAMP NULL,
-                    updated_at TIMESTAMP NULL,
-                    completed_at TIMESTAMP NULL,
-                    input_data JSON NULL,
-                    output_data JSON NULL,
-                    model VARCHAR(100) NULL,
-                    provider VARCHAR(50) NULL,
-                    tokens_used INTEGER DEFAULT 0,
-                    cost_usd DECIMAL(10, 6) DEFAULT 0,
-                    analysis_duration_ms INTEGER DEFAULT 0
+                    updated_at TIMESTAMP NULL
                 )
             ');
             
@@ -101,9 +95,8 @@ return new class extends Migration
             // Copy data
             DB::statement('
                 INSERT INTO analysis_history_new 
-                SELECT id, user_id, url, indicator, score, status, error_message, 
-                       created_at, updated_at, completed_at, input_data, output_data, 
-                       model, provider, tokens_used, cost_usd, analysis_duration_ms
+                SELECT id, user_id, site_id, tool_name, input_url, status, results, 
+                       error_message, analysis_duration_ms, analyzed_at, created_at, updated_at
                 FROM analysis_history
             ');
             
@@ -112,6 +105,11 @@ return new class extends Migration
             
             // Rename new table
             DB::statement('ALTER TABLE analysis_history_new RENAME TO analysis_history');
+            
+            // Recreate indexes
+            DB::statement('CREATE INDEX idx_user_analyzed ON analysis_history(user_id, analyzed_at)');
+            DB::statement('CREATE INDEX idx_tool_name ON analysis_history(tool_name)');
+            DB::statement('CREATE INDEX idx_status ON analysis_history(status)');
         } else {
             // MySQL syntax
             DB::statement('UPDATE analysis_history SET user_id = 0 WHERE user_id IS NULL');

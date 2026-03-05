@@ -1,7 +1,7 @@
 # TASK-21-7: Add Debug Mode and Logging
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `Medium`

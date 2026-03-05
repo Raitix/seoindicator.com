@@ -80,35 +80,12 @@ class AILogger
     {
         $sanitizedResponse = $this->sanitizeContext($response);
 
-        // Build structured log entry
-        $logData = [
+        // Include all sanitized response data, plus standard fields
+        $logData = array_merge($sanitizedResponse, [
             'indicator' => $indicator,
             'latency_ms' => $latencyMs,
             'timestamp' => now()->toIso8601String(),
-        ];
-
-        // Include success status
-        if (isset($response['success'])) {
-            $logData['success'] = $response['success'];
-        }
-
-        // Include token usage if available
-        if (isset($response['tokens_used'])) {
-            $logData['tokens_used'] = $response['tokens_used'];
-        }
-
-        // Include provider and model if available
-        if (isset($response['provider'])) {
-            $logData['provider'] = $response['provider'];
-        }
-        if (isset($response['model'])) {
-            $logData['model'] = $response['model'];
-        }
-
-        // Include error message if failed
-        if (isset($response['error_message'])) {
-            $logData['error_message'] = $response['error_message'];
-        }
+        ]);
 
         Log::channel($this->channel)->info('AI Response', $logData);
     }
@@ -124,9 +101,10 @@ class AILogger
     {
         $sanitizedContext = $this->sanitizeContext($context);
 
-        // Truncate stack trace if present
+        // Truncate stack trace if present (max 5000 chars total including suffix)
         if (isset($sanitizedContext['stack_trace']) && strlen($sanitizedContext['stack_trace']) > 5000) {
-            $sanitizedContext['stack_trace'] = substr($sanitizedContext['stack_trace'], 0, 5000) . '... [truncated]';
+            $truncationSuffix = '... [truncated]';
+            $sanitizedContext['stack_trace'] = substr($sanitizedContext['stack_trace'], 0, 5000 - strlen($truncationSuffix)) . $truncationSuffix;
         }
 
         Log::channel($this->channel)->error('AI Error', array_merge($sanitizedContext, [
