@@ -964,6 +964,261 @@ public function test_xss_prevention_in_pdf()
 - TASK-29-1 to TASK-29-8: Export Results feature implementation
 
 ---
+## Admin Dashboard (FEAT-027)
+
+### Feature Overview
+Centralized admin dashboard providing platform operations monitoring, user metrics, usage statistics, credit/billing tracking, and system health status. Enables administrators to monitor platform performance, track resource consumption, and identify potential issues in real-time.
+
+### Component Locations
+- **Frontend Pages:** `frontend/app/admin/` (overview, users, usage, billing, system)
+- **Frontend Components:** `frontend/components/admin/` (MetricCard, MetricGrid, TrendIndicator, HealthBadge)
+- **Backend Controllers:** `backend/app/Http/Controllers/Api/Admin/`
+- **Backend Services:** `backend/app/Services/Admin/` (AdminStatsService, UsageAggregator, HealthAggregator)
+- **Backend Middleware:** `backend/app/Http/Middleware/AdminAuthorizationMiddleware.php`
+- **API Types:** `frontend/lib/types/admin-stats.ts`
+- **API Helpers:** `frontend/lib/api/admin-stats.ts`
+
+### Authorization Requirements
+
+**Role Hierarchy:**
+| Role | Access Level | Permissions |
+|------|--------------|-------------|
+| Super Admin | Full access | All admin features, user management, system config |
+| Admin | Read-write | All read endpoints + user management |
+| Moderator | Read-only | Dashboard viewing only |
+
+**Authorization Implementation:**
+- `AdminAuthorizationMiddleware` checks `isAdmin()` method on User model
+- All admin routes prefixed with `/api/v1/admin/*`
+- Session-based authentication with Sanctum tokens
+- Unauthorized access returns 403 Forbidden
+
+**Frontend Route Protection:**
+- `AdminGuard` component checks authentication + admin role
+- Unauthenticated users redirected to `/login`
+- Non-admin users redirected to `/dashboard`
+
+### API Endpoints
+
+All admin endpoints require authentication and admin role. Rate limited to 60 requests/minute per admin user.
+
+#### User Statistics Endpoints
+
+| Method | Endpoint | Description | Response Fields |
+|--------|----------|-------------|-----------------|
+| GET | `/api/v1/admin/users/stats` | User counts and growth metrics | `total`, `active`, `newThisMonth`, `newThisWeek`, `newToday`, `growthRate`, `byPlan` |
+| GET | `/api/v1/admin/users/recent` | Recently registered users | `users[]` (id, email, created_at, plan) |
+| GET | `/api/v1/admin/users/active` | Active users (logged in last 30 days) | `users[]` (id, email, last_login_at) |
+
+**Users Stats Response Example:**
+```json
+{
+  "total": 1250,
+  "active": 890,
+  "newThisMonth": 156,
+  "newThisWeek": 42,
+  "newToday": 8,
+  "growthRate": {
+    "monthly": 14.2,
+    "weekly": 5.8,
+    "daily": 1.2
+  },
+  "byPlan": {
+    "free": 1000,
+    "pro": 200,
+    "enterprise": 50
+  }
+}
+```
+
+#### Usage Metrics Endpoints
+
+| Method | Endpoint | Description | Response Fields |
+|--------|----------|-------------|-----------------|
+| GET | `/api/v1/admin/usage/overview` | Aggregated usage statistics | `requests`, `tokens`, `analyses` |
+| GET | `/api/v1/admin/usage/requests` | Request counts by endpoint | `byEndpoint[]`, `total`, `trends` |
+| GET | `/api/v1/admin/usage/tokens` | Token usage statistics | `total`, `byModel`, `trends` |
+| GET | `/api/v1/admin/usage/trends` | Usage trends over time | `daily[]`, `weekly[]`, `monthly[]` |
+
+**Usage Overview Response Example:**
+```json
+{
+  "requests": {
+    "total": 156789,
+    "today": 2340,
+    "thisWeek": 15680,
+    "thisMonth": 48920
+  },
+  "tokens": {
+    "total": 12500000,
+    "today": 156000,
+    "byModel": {
+      "gpt-4": 5000000,
+      "gpt-3.5-turbo": 6000000,
+      "claude-3": 1500000
+    }
+  },
+  "analyses": {
+    "total": 12340,
+    "today": 156,
+    "thisWeek": 890
+  }
+}
+```
+
+#### Credit & Billing Endpoints
+
+| Method | Endpoint | Description | Response Fields |
+|--------|----------|-------------|-----------------|
+| GET | `/api/v1/admin/credits/overview` | Credit balances and spend | `balances`, `spend`, `revenue` |
+| GET | `/api/v1/admin/credits/transactions` | Recent transactions | `transactions[]` (paginated) |
+| GET | `/api/v1/admin/credits/revenue` | Revenue metrics | `total`, `thisMonth`, `thisWeek`, `today` |
+
+**Credits Overview Response Example:**
+```json
+{
+  "balances": {
+    "totalHeld": 15678.50,
+    "averagePerUser": 12.54,
+    "usersWithBalance": 890,
+    "lowBalanceCount": 234
+  },
+  "spend": {
+    "total": 45678.90,
+    "today": 567.80,
+    "thisMonth": 12345.60
+  },
+  "revenue": {
+    "total": 78900.00,
+    "thisMonth": 15600.00
+  }
+}
+```
+
+#### System Health Endpoints
+
+| Method | Endpoint | Description | Response Fields |
+|--------|----------|-------------|-----------------|
+| GET | `/api/v1/admin/health/overview` | System health summary | `status`, `uptime`, `services`, `alerts` |
+| GET | `/api/v1/admin/health/queues` | Queue status and backlog | `pending`, `failed`, `workers`, `queues[]` |
+| GET | `/api/v1/admin/health/database` | Database metrics | `latencyMs`, `connections`, `size`, `tables` |
+| GET | `/api/v1/admin/health/alerts` | Active alerts and warnings | `alerts[]` (level, message, since) |
+
+**Health Overview Response Example:**
+```json
+{
+  "status": "healthy",
+  "uptime": 99.98,
+  "lastChecked": "2026-03-05T10:00:00Z",
+  "services": {
+    "database": { "status": "healthy", "latencyMs": 12, "connections": 45 },
+    "queue": { "status": "healthy", "pending": 23, "failed": 2, "workers": 5 },
+    "cache": { "status": "healthy", "hitRate": 94.5 },
+    "storage": { "status": "healthy", "usedPercent": 34 }
+  },
+  "alerts": [
+    { "level": "warning", "message": "Queue processing delayed", "since": "2026-03-05T09:45:00Z" }
+  ]
+}
+```
+
+### Configuration Options
+
+**Environment Variables:**
+```env
+# Admin Dashboard Cache Settings
+ADMIN_CACHE_TTL=300           # Cache TTL in seconds (default: 5 minutes)
+ADMIN_RATE_LIMIT=60           # Requests per minute per admin user
+ADMIN_ACTIVITY_LOG_ENABLED=true  # Enable admin action logging
+
+# Request Tracking (for usage metrics)
+REQUEST_TRACKING_ENABLED=true
+REQUEST_TRACKING_SAMPLE_RATE=1.0
+```
+
+**Cache TTL by Data Type:**
+| Data Type | Default TTL | Refresh Strategy |
+|-----------|-------------|------------------|
+| User counts | 5 minutes | Background refresh |
+| Usage totals | 5 minutes | Background refresh |
+| Credit totals | 1 minute | Background refresh |
+| Health status | 30 seconds | Real-time check |
+
+### Frontend Routes
+
+| Route | Description | Auth Required |
+|-------|-------------|---------------|
+| `/admin/overview` | Dashboard overview with metric cards | Admin |
+| `/admin/users` | User management and statistics | Admin |
+| `/admin/usage` | Usage analytics and charts | Admin |
+| `/admin/billing` | Credit and revenue tracking | Admin |
+| `/admin/system` | System health monitoring | Admin |
+| `/admin/logs` | Admin activity logs | Super Admin |
+| `/admin/settings` | System configuration | Super Admin |
+
+### Troubleshooting
+
+#### Common Issues
+
+| Issue | Symptoms | Resolution |
+|-------|----------|------------|
+| Metrics not updating | Stale data in dashboard | Clear cache: `php artisan cache:clear --tags=admin-stats` |
+| 403 Forbidden errors | Admin can't access endpoints | Verify user role: `User::find($id)->isAdmin()` |
+| High latency on dashboard | Slow page load | Check Redis connection, reduce cache TTL |
+| Queue alerts not clearing | Stale queue warnings | Restart workers: `php artisan queue:restart` |
+| Request tracking missing | Usage stats show zeros | Check `REQUEST_TRACKING_ENABLED=true` in .env |
+
+#### Health Check Endpoints
+
+| Endpoint | Purpose | Expected Response |
+|----------|---------|-------------------|
+| `/api/health` | Basic health check | `200 OK` with `{"status":"ok"}` |
+| `/api/v1/admin/health/overview` | Admin dashboard health | `200 OK` with service statuses |
+
+#### Debug Commands
+
+```bash
+# Check admin cache status
+php artisan cache:get admin:stats:users
+
+# Clear all admin caches
+php artisan cache:clear --tags=admin-stats
+
+# Check queue status
+php artisan queue:monitor
+
+# View recent admin activity logs
+php artisan tinker
+>>> \App\Models\AdminActivityLog::latest()->take(10)->get();
+```
+
+#### Error Response Format
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Admin access required",
+  "code": "ADMIN_ACCESS_DENIED"
+}
+```
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-04 |
+| **Health Check** | Passing (https://seoindicator.com/api/health → 200 OK) |
+| **Tests** | 303/303 passing |
+| **Routes** | `/admin/*` (auth + admin role required) |
+| **Status** | Partial - Frontend complete, some backend APIs use mock fallback |
+
+### Related Task Documentation
+
+- TASK-27-6: Request Tracking Middleware (request tracking for usage analytics)
+- TASK-27-14: Admin Dashboard Layout (frontend layout and routing)
+- TASK-27-15: Metric Cards and Overview Section (frontend metric components)
+
+---
 ## Request Tracking Middleware (TASK-27-6)
 
 ### Service Description
