@@ -1,7 +1,7 @@
 # TASK-32-2: Implement Comparison Registry and Data Loading
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
