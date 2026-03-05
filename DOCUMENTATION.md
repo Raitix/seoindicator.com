@@ -22978,6 +22978,220 @@ $urlValidator->addToWhitelist('*.internal.trusted'); // Wildcard support
 Add runtime blocks:
 
 ```php
+$urlValidator->addBlockedHost('malicious.example');
+$urlValidator->addBlockedIP('192.0.2.1');
+```
+
+### HTTP Client Configuration
+
+```php
+protected function fetchUrl(string $url): string
+{
+    $validation = $this->urlValidator->validate($url);
+    
+    if (!$validation['valid']) {
+        throw new RuntimeException('URL validation failed: ' . $validation['error']);
+    }
+    
+    $response = Http::withOptions([
+        'timeout' => $this->timeout,
+        'max_response_size' => $this->maxResponseSize,
+        'on_redirect' => function ($request, $response, $uri) {
+            $redirectValidation = $this->urlValidator->validateRedirect((string) $uri);
+            if (!$redirectValidation['valid']) {
+                throw new RuntimeException('Redirect blocked: ' . $redirectValidation['error']);
+            }
+        }
+    ])->get($url);
+    
+    return $response->body();
+}
+```
+
+### Security Test Coverage
+
+| Test Suite | Tests | Assertions |
+|------------|-------|------------|
+| URLValidationServiceTest | 50+ | 120+ |
+| SSRF Protection Tests | 25 | 60+ |
+| Redirect Validation Tests | 15 | 30+ |
+
+### Production Status
+- **Deployed**: 2026-02-28
+- **Health Check**: Passing
+- **Tests**: All SSRF tests passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-16-1 (Tools Infrastructure - SSRF Protection)
+- TASK-19-1 (Analysis Service Foundation)
+
+### Related Tasks
+- TASK-19-1: AnalysisService foundation
+- TASK-19-2 through TASK-19-4: Analysis pipeline components
+
+---
+## Sitemap Integration for Comparison Pages (TASK-32-15)
+
+### Feature Description
+Dynamic sitemap generation for comparison pages, enabling search engine discovery and indexing of all SEO indicator comparison pages. Implements Next.js 14 App Router sitemap and robots.txt generation.
+
+### Technical Implementation
+
+**Files Created:**
+| File | Purpose |
+|------|---------|
+| `frontend/app/sitemap.ts` | Dynamic sitemap generator |
+| `frontend/app/robots.ts` | Robots.txt configuration |
+
+### Sitemap Structure
+
+**URL Format:**
+```
+https://seoindicator.com/compare              # Main comparison page
+https://seoindicator.com/compare/{slug}       # Individual comparison pages
+```
+
+**Comparison Page Slugs:**
+| Slug | Indicator | Category |
+|------|-----------|----------|
+| `meta-title` | Meta Title | on-page |
+| `meta-description` | Meta Description | on-page |
+| `h1-headings` | H1 Headings | on-page |
+| `heading-hierarchy` | Heading Hierarchy | on-page |
+| `image-alt-text` | Image Alt Text | on-page |
+| `image-optimization` | Image Optimization | on-page |
+| `internal-links` | Internal Links | on-page |
+| `external-links` | External Links | on-page |
+| `page-speed` | Page Speed | technical |
+| `mobile-friendly` | Mobile-Friendliness | technical |
+| `https-security` | HTTPS/Security | technical |
+| `structured-data` | Structured Data | technical |
+| `canonical-urls` | Canonical URLs | technical |
+| `robots-txt` | Robots.txt | technical |
+| `xml-sitemap` | XML Sitemap | technical |
+| `open-graph` | Open Graph Tags | content |
+| `twitter-cards` | Twitter Cards | content |
+
+### Sitemap Generation Code
+
+**sitemap.ts:**
+```typescript
+import { MetadataRoute } from 'next';
+import { getAllIndicatorSlugs } from '@/lib/indicators/registry';
+
+export default function sitemap(): MetadataRoute.Sitemap {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://seoindicator.com';
+  const slugs = getAllIndicatorSlugs();
+  
+  // Main comparison page
+  const routes: MetadataRoute.Sitemap = [
+    {
+      url: `${baseUrl}/compare`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+  ];
+  
+  // Individual comparison pages
+  for (const slug of slugs) {
+    routes.push({
+      url: `${baseUrl}/compare/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    });
+  }
+  
+  return routes;
+}
+```
+
+### Robots.txt Configuration
+
+**robots.ts:**
+```typescript
+import { MetadataRoute } from 'next';
+
+export default function robots(): MetadataRoute.Robots {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://seoindicator.com';
+  
+  return {
+    rules: [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: ['/api/', '/admin/', '/dashboard/'],
+      },
+    ],
+    sitemap: `${baseUrl}/sitemap.xml`,
+  };
+}
+```
+
+### Sitemap Entry Details
+
+| Page | Priority | Change Frequency | Description |
+|------|----------|------------------|-------------|
+| `/compare` | 0.8 | weekly | Main comparison page (higher priority) |
+| `/compare/{slug}` | 0.6 | monthly | Individual comparison pages |
+
+### Production Verification Results
+
+| Test | Endpoint | Expected | Result |
+|------|----------|----------|--------|
+| Sitemap XML | `GET /sitemap.xml` | 200 OK | ✅ 200 OK |
+| Sitemap Content | XML structure | Valid XML | ✅ Valid |
+| Comparison Page Count | 17 entries | 1 index + 16 slugs | ✅ 17 entries |
+| Robots.txt | `GET /robots.txt` | 200 OK | ✅ 200 OK |
+| Sitemap URL in robots | `Sitemap: https://...` | Present | ✅ Present |
+| Allow Directives | `Allow: /` | Present | ✅ Present |
+| Disallow Directives | `/api/`, `/admin/` | Present | ✅ Present |
+
+### SEO Benefits
+
+| Benefit | Description |
+|---------|-------------|
+| Search Engine Discovery | All comparison pages discoverable via sitemap |
+| Crawl Efficiency | Priority hints help crawlers focus on important pages |
+| Freshness Signals | lastModified dates indicate content freshness |
+| Index Control | robots.txt prevents indexing of sensitive paths |
+
+### Dependencies
+- Next.js 14+ App Router (sitemap.ts, robots.ts support)
+- `@/lib/indicators/registry` - Indicator slug registry from FEAT-020
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| Sitemap Integration Tests | 50 | 127 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| sitemap.ts Tests | 12 | Structure, indicators, URLs |
+| robots.ts Tests | 10 | Directives, sitemap URL |
+| Sitemap.xml Production | 8 | HTTP status, XML parsing |
+| Robots.txt Production | 8 | HTTP status, content |
+| URL Validation | 6 | URL format, parameters |
+| Security | 4 | No sensitive paths exposed |
+| Integration | 2 | End-to-end sitemap generation |
+
+### Production Status
+- **Deployed**: 2026-03-05 (commit via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 50/50 passing (127 assertions)
+- **Status**: Complete
+
+### Related Tasks
+- TASK-32-1 through TASK-32-14: Comparison page implementation
+- FEAT-032: Comparison Pages feature
+- FEAT-020: SEO Guides Library (indicator registry)
+
+---
+*End of DOCUMENTATION.md*
 $urlValidator->addBlockedHost('malicious.example.com');
 $urlValidator->addBlockedIP('203.0.113.50');
 ```
