@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import GoogleAnalytics from "./components/GoogleAnalytics";
 import { Providers } from "./providers";
 import { SkipLink, SkipToMain } from "@/components/layout/SkipLink";
+import { CookieConsent, Footer } from "@/components/layout";
+import { ConsentProvider } from "@/lib/contexts/ConsentContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,12 +19,21 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "SEOIndicator.com - AI Powered SEO Analysis",
-  description: "Free AI-powered SEO analysis tool. Get instant scores and suggestions for 17 SEO indicators including title, meta, mobile-friendly, and more.",
-  keywords: ["SEO", "SEO analysis", "SEO tool", "AI SEO", "website analysis", "SEO indicators"],
+  description:
+    "Free AI-powered SEO analysis tool. Get instant scores and suggestions for 17 SEO indicators including title, meta, mobile-friendly, and more.",
+  keywords: [
+    "SEO",
+    "SEO analysis",
+    "SEO tool",
+    "AI SEO",
+    "website analysis",
+    "SEO indicators",
+  ],
   authors: [{ name: "SEOIndicator.com" }],
   openGraph: {
     title: "SEOIndicator.com - AI Powered SEO Analysis",
-    description: "Free AI-powered SEO analysis tool. Get instant scores and suggestions for 17 SEO indicators.",
+    description:
+      "Free AI-powered SEO analysis tool. Get instant scores and suggestions for 17 SEO indicators.",
     url: "https://seoindicator.com",
     siteName: "SEOIndicator.com",
     type: "website",
@@ -30,7 +41,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "SEOIndicator.com - AI Powered SEO Analysis",
-    description: "Free AI-powered SEO analysis tool. Get instant scores and suggestions for 17 SEO indicators.",
+    description:
+      "Free AI-powered SEO analysis tool. Get instant scores and suggestions for 17 SEO indicators.",
   },
 };
 
@@ -50,7 +62,15 @@ export default function RootLayout({
         <SkipLink />
         <GoogleAnalytics />
         <Providers>
-          <SkipToMain>{children}</SkipToMain>
+          <ConsentProvider>
+            <div className="flex flex-col min-h-screen">
+              <main className="flex-1">
+                <SkipToMain>{children}</SkipToMain>
+              </main>
+              <Footer />
+            </div>
+            <CookieConsent showCustomize />
+          </ConsentProvider>
         </Providers>
       </body>
     </html>
