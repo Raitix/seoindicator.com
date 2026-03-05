@@ -50,7 +50,7 @@ class AICacheClearCommandTest extends TestCase
             $this->cacheService->set($hash, ['data' => $i]);
         }
         
-        $exitCode = Artisan::call('ai:cache:clear');
+        $exitCode = Artisan::call('ai:cache:clear', ['--force' => true]);
         
         $this->assertEquals(0, $exitCode);
         
@@ -65,7 +65,7 @@ class AICacheClearCommandTest extends TestCase
         $hash = 'msg_test_' . uniqid();
         $this->cacheService->set($hash, ['data' => true]);
         
-        Artisan::call('ai:cache:clear');
+        Artisan::call('ai:cache:clear', ['--force' => true]);
         
         $output = Artisan::output();
         
@@ -81,7 +81,7 @@ class AICacheClearCommandTest extends TestCase
             $this->cacheService->set($hash, ['data' => $i]);
         }
         
-        Artisan::call('ai:cache:clear');
+        Artisan::call('ai:cache:clear', ['--force' => true]);
         
         $output = Artisan::output();
         
@@ -93,7 +93,7 @@ class AICacheClearCommandTest extends TestCase
     {
         $this->cacheService->clear();
         
-        $exitCode = Artisan::call('ai:cache:clear');
+        $exitCode = Artisan::call('ai:cache:clear', ['--force' => true]);
         
         $this->assertEquals(0, $exitCode);
         
@@ -115,7 +115,7 @@ class AICacheClearCommandTest extends TestCase
         $this->cacheService->set($titleHash, ['indicator' => 'title']);
         $this->cacheService->set($metaHash, ['indicator' => 'meta_description']);
         
-        Artisan::call('ai:cache:clear', ['--indicator' => 'title']);
+        Artisan::call('ai:cache:clear', ['--indicator' => 'title', '--force' => true]);
         
         // Title should be cleared
         $this->assertNull($this->cacheService->get($titleHash));
@@ -149,7 +149,7 @@ class AICacheClearCommandTest extends TestCase
         $this->cacheService->get('stats_test_0'); // Hit
         $this->cacheService->get('nonexistent'); // Miss
         
-        Artisan::call('ai:cache:clear', ['--stats' => true]);
+        Artisan::call('ai:cache:clear', ['--stats' => true, '--force' => true]);
         
         $output = Artisan::output();
         
@@ -181,7 +181,7 @@ class AICacheClearCommandTest extends TestCase
         }
         
         foreach ($validIndicators as $indicator) {
-            Artisan::call('ai:cache:clear', ['--indicator' => $indicator]);
+            Artisan::call('ai:cache:clear', ['--indicator' => $indicator, '--force' => true]);
             
             $output = Artisan::output();
             $this->assertStringContainsString('cleared', strtolower($output));
@@ -198,7 +198,7 @@ class AICacheClearCommandTest extends TestCase
         // This test would require mocking the cache driver to throw an exception
         // For now, we test that the command doesn't crash
         
-        $exitCode = Artisan::call('ai:cache:clear');
+        $exitCode = Artisan::call('ai:cache:clear', ['--force' => true]);
         
         $this->assertEquals(0, $exitCode);
     }
@@ -209,7 +209,7 @@ class AICacheClearCommandTest extends TestCase
         // In production, if cache driver fails, command should return non-zero
         // This is a placeholder for that scenario
         
-        $exitCode = Artisan::call('ai:cache:clear');
+        $exitCode = Artisan::call('ai:cache:clear', ['--force' => true]);
         
         // Should succeed in normal conditions
         $this->assertEquals(0, $exitCode);
@@ -228,7 +228,7 @@ class AICacheClearCommandTest extends TestCase
         }
         
         $start = microtime(true);
-        Artisan::call('ai:cache:clear');
+        Artisan::call('ai:cache:clear', ['--force' => true]);
         $elapsed = (microtime(true) - $start) * 1000;
         
         $this->assertLessThan(500, $elapsed, 'Command should complete in < 500ms for small cache');
@@ -243,7 +243,7 @@ class AICacheClearCommandTest extends TestCase
         }
         
         $start = microtime(true);
-        Artisan::call('ai:cache:clear');
+        Artisan::call('ai:cache:clear', ['--force' => true]);
         $elapsed = (microtime(true) - $start) * 1000;
         
         $this->assertLessThan(2000, $elapsed, 'Command should complete in < 2s for large cache');
@@ -261,7 +261,7 @@ class AICacheClearCommandTest extends TestCase
             $this->cacheService->set($hash, ['data' => $i]);
         }
         
-        Artisan::call('ai:cache:clear', ['-v' => true]);
+        Artisan::call('ai:cache:clear', ['-v' => true, '--force' => true]);
         
         $output = Artisan::output();
         
@@ -296,6 +296,10 @@ class AICacheClearCommandTest extends TestCase
     /** @test Command integration with cache service */
     public function test_command_integration_with_service(): void
     {
+        // Clear any existing cache state first
+        $this->cacheService->clear();
+        $this->cacheService->resetStats();
+        
         // Use service directly
         $hash = 'integration_' . uniqid();
         $this->cacheService->set($hash, ['test' => true]);
@@ -303,7 +307,7 @@ class AICacheClearCommandTest extends TestCase
         $this->assertNotNull($this->cacheService->get($hash));
         
         // Clear via command
-        Artisan::call('ai:cache:clear');
+        Artisan::call('ai:cache:clear', ['--force' => true]);
         
         // Verify via service
         $this->assertNull($this->cacheService->get($hash));
@@ -312,6 +316,10 @@ class AICacheClearCommandTest extends TestCase
     /** @test Command resets stats after clear */
     public function test_command_resets_stats(): void
     {
+        // Clear any existing cache state first
+        $this->cacheService->clear();
+        $this->cacheService->resetStats();
+        
         // Generate hits and misses
         $hash = 'stats_reset_' . uniqid();
         $this->cacheService->set($hash, ['data' => true]);
@@ -321,9 +329,11 @@ class AICacheClearCommandTest extends TestCase
         $beforeStats = $this->cacheService->getStats();
         $this->assertGreaterThan(0, $beforeStats['hits']);
         
-        Artisan::call('ai:cache:clear', ['--reset-stats' => true]);
+        Artisan::call('ai:cache:clear', ['--reset-stats' => true, '--force' => true]);
         
-        $afterStats = $this->cacheService->getStats();
+        // Get fresh instance to avoid in-memory stats from this test instance
+        $freshCacheService = app(AISuggestionCache::class);
+        $afterStats = $freshCacheService->getStats();
         $this->assertEquals(0, $afterStats['hits']);
         $this->assertEquals(0, $afterStats['misses']);
     }
