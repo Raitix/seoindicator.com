@@ -343,14 +343,20 @@ class PayPalGatewayService implements PaymentGatewayInterface
     public function handleWebhook(Request $request): PaymentResult
     {
         $payload = $request->getContent();
-
-        // Verify webhook signature - SECURITY CRITICAL
-        if (!$this->verifyWebhookSignature($request)) {
-            Log::warning('Invalid PayPal webhook signature');
-            throw new InvalidWebhookSignatureException('Invalid PayPal webhook signature.');
-        }
-
         $event = json_decode($payload, true);
+
+        // Validate JSON payload
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::warning('Invalid PayPal webhook payload', [
+                'error' => json_last_error_msg(),
+            ]);
+            return PaymentResult::failed(
+                paymentId: null,
+                amount: 0,
+                errorCode: 'INVALID_PAYLOAD',
+                errorMessage: 'Invalid JSON payload'
+            );
+        }
 
         Log::info('PayPal webhook received', [
             'event_id' => $event['id'] ?? 'unknown',
@@ -417,10 +423,12 @@ class PayPalGatewayService implements PaymentGatewayInterface
     /**
      * Verify webhook signature using PayPal headers.
      *
+     * SECURITY CRITICAL: This method validates the authenticity of webhook requests.
+     *
      * @param Request $request The incoming webhook request
      * @return bool True if signature is valid
      */
-    protected function verifyWebhookSignature(Request $request): bool
+    public function verifyWebhookSignature(Request $request): bool
     {
         $signature = $request->header('PAYPAL-TRANSMISSION-SIG');
         $certUrl = $request->header('PAYPAL-CERT-URL');
@@ -430,6 +438,18 @@ class PayPalGatewayService implements PaymentGatewayInterface
         // Check required headers
         if (!$signature || !$certUrl || !$transmissionId || !$transmissionTime) {
             Log::warning('Missing PayPal webhook headers');
+            return false;
+        }
+
+        // Validate certificate URL is from PayPal domains only (security)
+        if (!$this->isValidCertificateUrl($certUrl)) {
+            Log::warning('Invalid PayPal certificate URL', ['cert_url' => $certUrl]);
+            return false;
+        }
+
+        // Validate transmission time is within tolerance
+        if (!$this->isValidTransmissionTime($transmissionTime)) {
+            Log::warning('PayPal webhook transmission time outside tolerance');
             return false;
         }
 
@@ -461,6 +481,66 @@ class PayPalGatewayService implements PaymentGatewayInterface
             Log::error('PayPal webhook verification error', [
                 'error' => $e->getMessage(),
             ]);
+            return false;
+        }
+    }
+
+    /**
+     * Validate certificate URL is from PayPal domains only.
+     *
+     * SECURITY CRITICAL: Prevents malicious certificate injection.
+     *
+     * @param string $url The certificate URL to validate
+     * @return bool True if URL is valid
+     */
+    public function isValidCertificateUrl(string $url): bool
+    {
+        // Must be HTTPS
+        if (!str_starts_with($url, 'https://')) {
+            return false;
+        }
+
+        // Must be from api.paypal.com or api.sandbox.paypal.com
+        $validDomains = [
+            'https://api.paypal.com/',
+            'https://api.sandbox.paypal.com/',
+        ];
+
+        foreach ($validDomains as $domain) {
+            if (str_starts_with($url, $domain)) {
+                // Must have correct path
+                if (str_contains($url, '/v1/notifications/certs/')) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Validate transmission time is within tolerance.
+     *
+     * Prevents replay attacks by rejecting old timestamps.
+     *
+     * @param string|null $time The transmission time (ISO 8601)
+     * @param int $toleranceSeconds Tolerance in seconds (default 5 minutes)
+     * @return bool True if time is valid
+     */
+    public function isValidTransmissionTime(?string $time, int $toleranceSeconds = 300): bool
+    {
+        if (!$time) {
+            return false;
+        }
+
+        try {
+            $transmissionTime = \Carbon\Carbon::parse($time);
+            $now = now();
+
+            $diff = abs($now->diffInSeconds($transmissionTime));
+
+            return $diff <= $toleranceSeconds;
+        } catch (\Exception $e) {
             return false;
         }
     }

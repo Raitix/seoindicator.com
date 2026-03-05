@@ -391,6 +391,17 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| PayPal Webhook Route (TASK-26-14, SPEC-026)
+|--------------------------------------------------------------------------
+|
+| PayPal webhook endpoint - NO authentication required.
+| Security is provided via PayPal webhook signature verification.
+|
+*/
+Route::post('/v1/payments/paypal/webhook', [\App\Http\Controllers\Api\V1\Payments\PayPalWebhookController::class, 'handle']);
+
+/*
+|--------------------------------------------------------------------------
 | Admin Routes (TASK-27-2, SPEC-027)
 |--------------------------------------------------------------------------
 |
