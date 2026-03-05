@@ -1,7 +1,7 @@
 # TASK-31-8: ModelSelectionService
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
