@@ -74,6 +74,30 @@ const mockUser: User = {
 function TestComponent() {
   const { user, isAuthenticated, isLoading, error, login, logout, register } = useAuth();
 
+  const handleLogin = async () => {
+    try {
+      await login("test@example.com", "password", false);
+    } catch {
+      // Error is set in state, no need to handle here
+    }
+  };
+
+  const handleRegister = async () => {
+    try {
+      await register({ name: "Test", email: "test@example.com", password: "Password123!", password_confirmation: "Password123!" });
+    } catch {
+      // Error is set in state, no need to handle here
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // Logout errors are handled internally
+    }
+  };
+
   return (
     <div>
       <span data-testid="loading">{isLoading.toString()}</span>
@@ -81,9 +105,9 @@ function TestComponent() {
       <span data-testid="user-name">{user?.name ?? "null"}</span>
       <span data-testid="user-email">{user?.email ?? "null"}</span>
       <span data-testid="error">{error?.message ?? "null"}</span>
-      <button onClick={() => login("test@example.com", "password", false)}>Login</button>
-      <button onClick={() => register({ name: "Test", email: "test@example.com", password: "Password123!", password_confirmation: "Password123!" })}>Register</button>
-      <button onClick={() => logout()}>Logout</button>
+      <button onClick={handleLogin}>Login</button>
+      <button onClick={handleRegister}>Register</button>
+      <button onClick={handleLogout}>Logout</button>
     </div>
   );
 }
@@ -703,12 +727,11 @@ describe("AuthContext", () => {
       return <button onClick={() => loginWithGoogle()}>Google</button>;
     }
 
-    // Mock window.location
+    // Mock window.location.href using delete and redefine
     const originalLocation = window.location;
-    Object.defineProperty(window, "location", {
-      value: { href: "" },
-      writable: true,
-    });
+    // @ts-expect-error - deleting location for test
+    delete window.location;
+    window.location = { href: "" } as Location;
 
     render(
       <AuthProvider>
@@ -723,10 +746,7 @@ describe("AuthContext", () => {
     expect(window.location.href).toBe("https://accounts.google.com/oauth");
 
     // Restore
-    Object.defineProperty(window, "location", {
-      value: originalLocation,
-      writable: true,
-    });
+    window.location = originalLocation;
   });
 
   // ==================== AC-031: Network error handling ====================
@@ -874,10 +894,19 @@ describe("AuthContext", () => {
 
       function ClearErrorTestComponent() {
         const { error, login, clearError } = useAuth();
+        
+        const handleLogin = async () => {
+          try {
+            await login("test", "pass");
+          } catch {
+            // Error is set in state
+          }
+        };
+        
         return (
           <div>
             <span data-testid="error">{error?.message ?? "null"}</span>
-            <button onClick={() => login("test", "pass")}>Login</button>
+            <button onClick={handleLogin}>Login</button>
             <button onClick={() => clearError()}>Clear</button>
           </div>
         );
@@ -896,11 +925,7 @@ describe("AuthContext", () => {
       });
 
       await act(async () => {
-        try {
-          await user.click(screen.getByText("Login"));
-        } catch {
-          // Expected
-        }
+        await user.click(screen.getByText("Login"));
       });
 
       await waitFor(() => {
