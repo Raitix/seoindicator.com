@@ -1,7 +1,7 @@
 # TASK-21-6: Implement Caching Layer
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `Medium`
