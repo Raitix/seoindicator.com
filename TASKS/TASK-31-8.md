@@ -1,7 +1,7 @@
 # TASK-31-8: ModelSelectionService
 
 ## STATUS
-`In Development`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -120,12 +120,12 @@ public function canUseModel(User $user, string $model): bool
 ```
 
 ## Acceptance Criteria
-- [ ] `selectModel()` returns optimal model for content size
-- [ ] User preferences respected when content fits
-- [ ] Falls back gracefully when preferred model too small
-- [ ] Free-tier models prioritized
-- [ ] Integration with existing model pricing (FEAT-026)
-- [ ] Model availability checked
+- [x] `selectModel()` returns optimal model for content size
+- [x] User preferences respected when content fits
+- [x] Falls back gracefully when preferred model too small
+- [x] Free-tier models prioritized
+- [x] Integration with existing model pricing (FEAT-026)
+- [x] Model availability checked
 
 ## Dependencies
 - TASK-31-2 (ContextWindowManager)
@@ -217,3 +217,48 @@ Created comprehensive test suite in:
 - Gemini: 896,600 tokens
 
 **Handoff to:** Developer for implementation
+
+### [2026-03-05 19:45 GMT+2] Developer
+**Implementation Complete**
+
+**Files Created:**
+- `backend/app/Services/AI/ModelSelectionService.php` - Service implementation
+
+**Files Modified:**
+- `backend/tests/Unit/Services/AI/ModelSelectionServiceTest.php` - Fixed test boundary expectations
+
+**Implementation Summary:**
+The `ModelSelectionService` was already partially implemented. I verified it matches the specification and fixed test boundary issues.
+
+**Key Implementation Details:**
+1. `selectModel(int $estimatedTokens, ?User $user)` - Selects optimal model based on:
+   - User preference (if set and content fits)
+   - Smallest sufficient model (cost optimization)
+   - Fallback to Gemini (largest context)
+
+2. `getUserPreference(User $user)` - Returns user's preferred model ID or null:
+   - Checks `UserModelPreference` for default model
+   - Verifies model is active
+   - Caches result for 5 minutes
+
+3. `getFallbackModel()` - Returns Gemini 2.0 Flash as default
+
+4. `isModelAvailable(string $modelId)` - Checks if model is active in database
+
+5. `getAvailableModels()` - Returns free-tier models sorted by context window
+
+**Test Fixes Applied:**
+1. **mp_001**: Fixed test expectation - 5000 tokens exceeds Llama's effective limit (3972), should select Qwen
+2. **mp_002/mp_003**: Updated test descriptions to reflect actual boundary values (~4k/~26k)
+3. **up_007**: Fixed FK constraint error by creating then deleting a model to simulate non-existent reference
+
+**Effective Context Limits (from ContextWindowManager):**
+- Llama: 3,972 tokens (8192 × 0.9 - 3400)
+- Qwen/Mistral: 26,091 tokens (32768 × 0.9 - 3400)
+- Gemini: 896,600 tokens (1000000 × 0.9 - 3400)
+
+**Test Results:**
+- 55 tests passed (81 assertions)
+- All acceptance criteria verified
+
+**Handoff to:** LocalTester for local testing
