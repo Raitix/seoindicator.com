@@ -218,7 +218,8 @@ describe('PricingComparison', () => {
         />
       );
       
-      expect(screen.getByText('Free')).toBeInTheDocument();
+      // Use getAllByText since "Free" appears as both tier name and price
+      expect(screen.getAllByText('Free').length).toBeGreaterThan(0);
       expect(screen.getByText('Pro')).toBeInTheDocument();
       expect(screen.getByText('Business')).toBeInTheDocument();
     });
@@ -506,7 +507,8 @@ describe('PricingComparison', () => {
       
       // Pro tier (index 1) is highlighted
       expect(screen.getByTestId('popular-badge-1')).toBeInTheDocument();
-      expect(screen.getByText('Popular')).toBeInTheDocument();
+      // Use getAllByText since "Popular" appears for both seoindicator and competitor
+      expect(screen.getAllByText('Popular').length).toBeGreaterThan(0);
     });
 
     it('PC-052: applies highlighted class to popular tier', () => {
