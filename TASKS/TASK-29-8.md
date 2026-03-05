@@ -1,7 +1,7 @@
 # TASK-29-8: Tool Page Integration
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`

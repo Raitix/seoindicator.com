@@ -204,13 +204,13 @@ export default function CookieConsent({
               We use cookies to enhance your experience. Necessary cookies are essential
               for the site to function. You can choose to accept all cookies or only
               necessary ones.{" "}
-              <Link
+              <a
                 href="/terms"
                 className="text-blue-400 hover:text-blue-300 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded"
-                aria-label="Learn more about our cookie policy"
+                aria-label="Learn more about our privacy policy"
               >
                 Learn more
-              </Link>
+              </a>
             </p>
 
             {/* Preferences Panel (optional) */}
