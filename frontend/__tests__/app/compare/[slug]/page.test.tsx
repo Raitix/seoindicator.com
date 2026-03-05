@@ -157,13 +157,14 @@ jest.mock('@/lib/compare/registry', () => ({
 }));
 
 // ============================================================================
-// Mock Components
+// Mock Components (Virtual Modules for TDD)
 // ============================================================================
 
+// Use virtual: true for components that don't exist yet
 jest.mock('@/components/compare/ComparisonTable', () => ({
   ComparisonTable: ({ features }: { features: ComparisonData['featureComparison'] }) => (
-    <div data-testid="comparison-table" data-categories={features.length}>
-      {features.map((category) => (
+    <div data-testid="comparison-table" data-categories={features?.length || 0}>
+      {features?.map((category) => (
         <div key={category.name} data-testid={`category-${category.name}`}>
           <h3>{category.name}</h3>
           {category.features.map((feature) => (
@@ -177,20 +178,20 @@ jest.mock('@/components/compare/ComparisonTable', () => ({
       ))}
     </div>
   ),
-}));
+}), { virtual: true });
 
 jest.mock('@/components/compare/PricingComparison', () => ({
   PricingComparison: ({ seoindicator, competitor }: { seoindicator: ComparisonData['pricingComparison']['seoindicator']; competitor: ComparisonData['pricingComparison']['competitor'] }) => (
     <div data-testid="pricing-comparison">
-      <div data-testid="seoindicator-pricing" data-tiers={seoindicator.length}>
-        {seoindicator.map((tier) => (
+      <div data-testid="seoindicator-pricing" data-tiers={seoindicator?.length || 0}>
+        {seoindicator?.map((tier) => (
           <div key={tier.name} data-testid={`tier-seoindicator-${tier.name}`}>
             {tier.name}: {String(tier.monthlyPrice)}
           </div>
         ))}
       </div>
-      <div data-testid="competitor-pricing" data-tiers={competitor.length}>
-        {competitor.map((tier) => (
+      <div data-testid="competitor-pricing" data-tiers={competitor?.length || 0}>
+        {competitor?.map((tier) => (
           <div key={tier.name} data-testid={`tier-competitor-${tier.name}`}>
             {tier.name}: {String(tier.monthlyPrice)}
           </div>
@@ -198,30 +199,30 @@ jest.mock('@/components/compare/PricingComparison', () => ({
       </div>
     </div>
   ),
-}));
+}), { virtual: true });
 
 jest.mock('@/components/compare/ProsConsCard', () => ({
   ProsConsCard: ({ tool, pros, cons }: { tool: string; pros: string[]; cons: string[] }) => (
     <div data-testid={`pros-cons-card-${tool}`}>
       <h3>{tool}</h3>
       <ul data-testid="pros-list">
-        {pros.map((pro) => <li key={pro}>{pro}</li>)}
+        {pros?.map((pro) => <li key={pro}>{pro}</li>)}
       </ul>
       <ul data-testid="cons-list">
-        {cons.map((con) => <li key={con}>{con}</li>)}
+        {cons?.map((con) => <li key={con}>{con}</li>)}
       </ul>
     </div>
   ),
-}));
+}), { virtual: true });
 
 jest.mock('@/components/compare/UseCaseSection', () => ({
   UseCaseSection: ({ seoindicator, competitor }: { seoindicator: ComparisonData['useCases']['seoindicator']; competitor: ComparisonData['useCases']['competitor'] }) => (
     <div data-testid="use-cases-section">
-      <div data-testid="seoindicator-use-cases">{seoindicator.length} use cases</div>
-      <div data-testid="competitor-use-cases">{competitor.length} use cases</div>
+      <div data-testid="seoindicator-use-cases">{seoindicator?.length || 0} use cases</div>
+      <div data-testid="competitor-use-cases">{competitor?.length || 0} use cases</div>
     </div>
   ),
-}));
+}), { virtual: true });
 
 jest.mock('@/components/compare/ComparisonCTA', () => ({
   ComparisonCTA: ({ variant, text }: { variant?: string; text?: string }) => (
@@ -229,7 +230,7 @@ jest.mock('@/components/compare/ComparisonCTA', () => ({
       {text || 'Get Started Free'}
     </button>
   ),
-}));
+}), { virtual: true });
 
 jest.mock('@/components/compare/ComparisonSchema', () => ({
   ComparisonSchema: ({ comparison }: { comparison: ComparisonData }) => (
@@ -237,12 +238,12 @@ jest.mock('@/components/compare/ComparisonSchema', () => ({
       {JSON.stringify({ '@type': 'CompareSideBySide', name: comparison.title })}
     </script>
   ),
-}));
+}), { virtual: true });
 
 jest.mock('@/components/compare/FAQSection', () => ({
   FAQSection: ({ faqs }: { faqs: FAQ[] }) => (
-    <div data-testid="faq-section" data-count={faqs.length}>
-      {faqs.map((faq, index) => (
+    <div data-testid="faq-section" data-count={faqs?.length || 0}>
+      {faqs?.map((faq, index) => (
         <div key={index} data-testid={`faq-${index}`}>
           <h4>{faq.question}</h4>
           <p>{faq.answer}</p>
@@ -250,19 +251,19 @@ jest.mock('@/components/compare/FAQSection', () => ({
       ))}
     </div>
   ),
-}));
+}), { virtual: true });
 
 jest.mock('@/components/compare/RelatedComparisons', () => ({
   RelatedComparisons: ({ slugs }: { slugs: string[] }) => (
-    <div data-testid="related-comparisons" data-count={slugs.length}>
-      {slugs.map((slug) => (
+    <div data-testid="related-comparisons" data-count={slugs?.length || 0}>
+      {slugs?.map((slug) => (
         <a key={slug} href={`/compare/${slug}`} data-testid={`related-link-${slug}`}>
           {slug}
         </a>
       ))}
     </div>
   ),
-}));
+}), { virtual: true });
 
 // ============================================================================
 // Mock Next.js notFound
