@@ -1,10 +1,10 @@
 # TASK-31-8: ModelSelectionService
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
-`Medium`
+`High`
 
 ## RISK
 `Low`
