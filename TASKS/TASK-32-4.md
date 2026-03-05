@@ -1,10 +1,10 @@
 # TASK-32-4: Implement Comparison Index Page
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
-`Medium`
+`High`
 
 ## RISK
 `Low`
@@ -125,3 +125,53 @@ export function ComparisonCard({ slug, title, description, competitorA, competit
 ## Comments
 ### [2026-03-05 14:55 GMT+2] Agent: SpecSystemAnalyst
 Task created as part of SPEC-32 breakdown. Entry point for comparison pages.
+
+### [2026-03-05 20:40 GMT+2] Agent: ProjectManager
+**Priority Assessment:** HIGH (upgraded from Medium)
+- Entry point for comparison pages - critical for user discovery
+- Part of Phase 1 Infrastructure
+- Enables SEO landing page for comparison traffic
+- No blockers - TASK-32-2 (Registry) is Done ✅
+
+**Risk Assessment:** LOW (confirmed)
+- Standard Next.js page component
+- No external API calls
+- No database access
+- Uses existing shadcn/ui Card component
+- Static content (no user input)
+
+**Dependency Status:**
+- TASK-32-2 (Registry): `Done` ✅ - Registry available for competitor data
+- TASK-32-1 (Types): `Done` ✅ - Interfaces defined
+- TASK-32-3 (Page Route): `BLOCKED - Critical Bug` ⚠️ - Individual comparison pages broken
+
+**Note on TASK-32-3 Blocker:**
+- Individual comparison pages (/compare/[slug]) currently show 404 in production
+- This task creates the index page that links to those pages
+- Index page can proceed independently - provides SEO value
+- Broken links are a known issue tracked in TASK-32-3
+- Once TASK-32-3 is fixed, index page links will work
+
+**TDD Ready:** PreTester CAN design tests immediately:
+- Test page renders at `/compare` route
+- Test ComparisonCard component renders correctly
+- Test cards display Tier 1 + Tier 2 + Cross-competitor sections
+- Test links point to correct comparison slugs
+- Test mobile responsive grid layout
+- Test SEO metadata (title, description)
+- Test FAQ schema implementation
+
+**Key Deliverables:**
+1. `/compare` index page with organized sections
+2. ComparisonCard component for comparison links
+3. Hero section + CTA section
+4. FAQ schema for SEO
+5. Mobile responsive grid
+
+**Execution Notes:**
+- Use existing Card component from shadcn/ui
+- Follow existing page layout patterns
+- ComparisonCard can be simple - just link + title + description
+- Consider adding filtering/sorting for future (out of scope for MVP)
+
+**Status updated to:** `To Write Tests` for PreTester pickup
