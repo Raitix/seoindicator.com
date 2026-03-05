@@ -1,7 +1,7 @@
 # TASK-29-9: Backend Unit Tests
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -288,3 +288,22 @@ Status updated: `To Test Prod` → `To Document`
 - All dependencies must reach `To Test Locally` before Developer can implement
 
 **Status Update:** Moving to `To Write Tests` for PreTester to design test coverage.
+
+### [2026-03-05 10:14 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete - Task Closed**
+
+**Documentation Updated:**
+- Added "Export Results Unit Tests (TASK-29-9)" section to `DOCUMENTATION.md`
+- Documented test coverage summary (140 tests, 211 assertions)
+- Listed test categories for PdfToolExporter, XlsToolExporter, ToolExportService
+- Documented security testing coverage (XSS, path traversal, formula injection, IDOR)
+- Noted risky tests as non-blocking
+
+**Production Verification:**
+- All 140 tests pass in production
+- Tests integrated into CI pipeline (GitHub Actions)
+- Health check passing
+
+**Task Status:** `To Document` → `Done`
+
+**Note:** Not all tasks in SPEC-029 are complete (TASK-29-5, TASK-29-7, TASK-29-8, TASK-29-10 still in progress). Spec and Feature status remain unchanged.
