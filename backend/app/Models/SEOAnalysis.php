@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -22,15 +23,26 @@ use Illuminate\Database\Eloquent\Builder;
  * @property string $status
  * @property string|null $error_message
  * @property array $analysis_data
+ * @property string|null $ai_model
+ * @property int|null $prompt_tokens
+ * @property int|null $response_tokens
+ * @property int|null $total_tokens
+ * @property array|null $truncation_applied
+ * @property string|null $overall_summary
+ * @property array|null $category_scores
+ * @property int|null $ai_request_id
  * @property \Illuminate\Support\Carbon|null $checked_at
  * @property \Illuminate\Support\Carbon|null $expires_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  *
  * @property-read \App\Models\User|null $user
+ * @property-read \App\Models\AIAnalysisRequest|null $aiRequest
  *
  * @see TASK-18-2
+ * @see TASK-31-11
  * @see SPEC-018
+ * @see SPEC-031
  */
 class SEOAnalysis extends Model
 {
@@ -71,6 +83,15 @@ class SEOAnalysis extends Model
         'analysis_data',
         'checked_at',
         'expires_at',
+        // AI Unified Analysis fields (TASK-31-11)
+        'ai_model',
+        'prompt_tokens',
+        'response_tokens',
+        'total_tokens',
+        'truncation_applied',
+        'overall_summary',
+        'category_scores',
+        'ai_request_id',
     ];
 
     /**
@@ -85,6 +106,12 @@ class SEOAnalysis extends Model
         'expires_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        // AI Unified Analysis casts (TASK-31-11)
+        'truncation_applied' => 'array',
+        'category_scores' => 'array',
+        'prompt_tokens' => 'integer',
+        'response_tokens' => 'integer',
+        'total_tokens' => 'integer',
     ];
 
     /**
@@ -93,6 +120,14 @@ class SEOAnalysis extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Relationship to AI analysis request.
+     */
+    public function aiRequest(): HasOne
+    {
+        return $this->hasOne(AIAnalysisRequest::class, 'analysis_id');
     }
 
     /**
@@ -179,6 +214,22 @@ class SEOAnalysis extends Model
     }
 
     /**
+     * Scope unified analyses (with AI model set).
+     */
+    public function scopeUnified(Builder $query): Builder
+    {
+        return $query->whereNotNull('ai_model');
+    }
+
+    /**
+     * Scope legacy analyses (without AI model).
+     */
+    public function scopeLegacy(Builder $query): Builder
+    {
+        return $query->whereNull('ai_model');
+    }
+
+    /**
      * Mark the analysis as running.
      */
     public function markAsRunning(): void
@@ -195,6 +246,27 @@ class SEOAnalysis extends Model
             'status' => self::STATUS_COMPLETED,
             'overall_score' => $score,
             'analysis_data' => $data,
+            'checked_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mark the analysis as completed with unified AI data.
+     */
+    public function markAsCompletedUnified(array $data): void
+    {
+        $this->update([
+            'status' => self::STATUS_COMPLETED,
+            'overall_score' => $data['overall_score'] ?? 0,
+            'overall_summary' => $data['overall_summary'] ?? null,
+            'category_scores' => $data['category_scores'] ?? null,
+            'analysis_data' => $data['analysis_data'] ?? [],
+            'ai_model' => $data['ai_model'] ?? null,
+            'prompt_tokens' => $data['prompt_tokens'] ?? null,
+            'response_tokens' => $data['response_tokens'] ?? null,
+            'total_tokens' => $data['total_tokens'] ?? null,
+            'truncation_applied' => $data['truncation_applied'] ?? null,
+            'ai_request_id' => $data['ai_request_id'] ?? null,
             'checked_at' => now(),
         ]);
     }
@@ -252,6 +324,64 @@ class SEOAnalysis extends Model
     public function isFailed(): bool
     {
         return $this->status === self::STATUS_FAILED;
+    }
+
+    /**
+     * Check if analysis was performed with unified AI.
+     */
+    public function wasUnifiedAnalysis(): bool
+    {
+        return !is_null($this->ai_model);
+    }
+
+    /**
+     * Get category score by name.
+     */
+    public function getCategoryScore(string $category): ?int
+    {
+        return $this->category_scores[$category] ?? null;
+    }
+
+    /**
+     * Get truncation strategies applied.
+     */
+    public function getTruncationStrategies(): array
+    {
+        return $this->truncation_applied ?? [];
+    }
+
+    /**
+     * Check if content was truncated.
+     */
+    public function wasTruncated(): bool
+    {
+        return !empty($this->truncation_applied);
+    }
+
+    /**
+     * Get token usage summary.
+     */
+    public function getTokenUsage(): array
+    {
+        return [
+            'prompt' => $this->prompt_tokens,
+            'response' => $this->response_tokens,
+            'total' => $this->total_tokens,
+        ];
+    }
+
+    /**
+     * Get AI model display name.
+     */
+    public function getAiModelDisplayName(): string
+    {
+        return match ($this->ai_model) {
+            'google/gemini-2.0-flash-exp:free' => 'Gemini 2.0 Flash',
+            'meta-llama/llama-3-8b-instruct:free' => 'Llama 3 8B',
+            'mistralai/mistral-7b-instruct:free' => 'Mistral 7B',
+            'qwen/qwen-2-7b-instruct:free' => 'Qwen 2 7B',
+            default => $this->ai_model ?? 'Unknown',
+        };
     }
 
     /**

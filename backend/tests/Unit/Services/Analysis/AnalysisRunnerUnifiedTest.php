@@ -170,7 +170,8 @@ class AnalysisRunnerUnifiedTest extends TestCase
             ->once()
             ->andReturn($this->createMockAnalysisResult());
 
-        $this->service->run($url, $html);
+        $result = $this->service->run($url, $html);
+        $this->assertNotNull($result);
     }
 
     /**
@@ -187,7 +188,8 @@ class AnalysisRunnerUnifiedTest extends TestCase
             ->once()
             ->andReturn($this->createMockAnalysisResult());
 
-        $this->service->run($url, $html);
+        $result = $this->service->run($url, $html);
+        $this->assertNotNull($result);
     }
 
     /**
@@ -207,7 +209,8 @@ class AnalysisRunnerUnifiedTest extends TestCase
             ->once()
             ->andReturn($this->createMockAnalysisResult());
 
-        $this->service->run($url, $html, $options);
+        $result = $this->service->run($url, $html, $options);
+        $this->assertNotNull($result);
     }
 
     /**
@@ -942,7 +945,8 @@ class AnalysisRunnerUnifiedTest extends TestCase
             ->once()
             ->andReturn($this->createMockAnalysisResult());
 
-        $this->service->run($url, $html);
+        $result = $this->service->run($url, $html);
+        $this->assertNotNull($result);
     }
 
     // =========================================================================

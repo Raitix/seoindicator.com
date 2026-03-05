@@ -1,6 +1,119 @@
 # DOCUMENTATION.md
 
 ---
+## AI Analysis Database Schema (TASK-31-10)
+
+### Schema Description
+Database migrations for unified AI prompt and context management. Creates a new `ai_analysis_requests` table for tracking AI analysis requests with token usage and latency metrics, and extends the `seo_analyses` table with AI model tracking, token consumption, truncation metadata, and AI-generated content fields. Part of the Unified AI Prompt + Context Management feature (FEAT-031).
+
+### Component Location
+- **Migration 1:** `backend/database/migrations/2026_03_05_100000_create_ai_analysis_requests_table.php`
+- **Migration 2:** `backend/database/migrations/2026_03_05_100001_add_ai_columns_to_seo_analyses_table.php`
+- **Tests:** `backend/tests/Unit/Migrations/CreateAIAnalysisRequestsMigrationTest.php`
+
+### Database Schema
+
+**ai_analysis_requests table:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `analysis_id` | BIGINT UNSIGNED | FK to seo_analyses (CASCADE DELETE) |
+| `model` | VARCHAR(100) | AI model identifier (e.g., 'openrouter/meta-llama/llama-3.1-8b-instruct:free') |
+| `prompt_tokens` | INT UNSIGNED NULL | Tokens sent to AI |
+| `response_tokens` | INT UNSIGNED NULL | Tokens received from AI |
+| `total_tokens` | INT UNSIGNED NULL | Total tokens consumed |
+| `latency_ms` | INT UNSIGNED NULL | Response latency in milliseconds |
+| `truncation_strategies` | JSON NULL | Truncation strategies applied if content was truncated |
+| `request_hash` | VARCHAR(64) NULL | SHA-256 hash for deduplication |
+| `status` | ENUM | 'pending', 'completed', 'failed' |
+| `error_message` | TEXT NULL | Error details if status is 'failed' |
+| `created_at` | TIMESTAMP | Request creation time |
+| `updated_at` | TIMESTAMP | Last update time |
+
+**seo_analyses table (new columns):**
+| Column | Type | Description |
+|--------|------|-------------|
+| `ai_model` | VARCHAR(100) NULL | AI model used for analysis |
+| `prompt_tokens` | INT UNSIGNED NULL | Tokens sent to AI |
+| `response_tokens` | INT UNSIGNED NULL | Tokens received from AI |
+| `total_tokens` | INT UNSIGNED NULL | Total tokens used |
+| `truncation_applied` | JSON NULL | Truncation strategies applied during context building |
+| `overall_summary` | TEXT NULL | AI-generated overall summary of the analysis |
+| `category_scores` | JSON NULL | Category-level scores from AI analysis |
+| `ai_request_id` | BIGINT UNSIGNED NULL | FK to ai_analysis_requests |
+
+### Indexes Created
+
+**ai_analysis_requests:**
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `idx_analysis_status` | `analysis_id, status` | Fast status queries by analysis |
+| `idx_model` | `model` | Filter by AI model |
+| `idx_request_hash` | `request_hash` | Deduplication lookups |
+| `idx_created_at` | `created_at` | Time-based queries |
+
+**seo_analyses (new indexes):**
+| Index Name | Column | Purpose |
+|------------|--------|---------|
+| `idx_ai_model` | `ai_model` | Filter by AI model |
+| `idx_ai_request` | `ai_request_id` | Join optimization |
+
+### Foreign Key Constraints
+
+| Constraint | Parent Table | Delete Action |
+|------------|--------------|---------------|
+| `ai_analysis_requests.analysis_id` | `seo_analyses.id` | CASCADE |
+
+### Migration Reversibility
+
+Both migrations include `down()` methods that reverse all changes:
+- `ai_analysis_requests` table is dropped entirely
+- All 8 new columns removed from `seo_analyses`
+- All indexes removed
+
+### Backward Compatibility
+
+| Aspect | Status |
+|--------|--------|
+| Existing data preserved | ✅ Yes |
+| New columns nullable | ✅ Yes |
+| Old analyses valid | ✅ Yes |
+| Re-analysis possible | ✅ Yes |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `CreateAIAnalysisRequestsMigrationTest.php` | 75 | 120 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| AR (ai_analysis_requests structure) | 23 | Columns, types, constraints |
+| SA (seo_analyses new columns) | 20 | Existence, nullability, JSON storage |
+| MR (Migration reversibility) | 13 | Rollback, re-migrate, data preservation |
+| DI (Data integrity) | 10 | Queries, relationships, aggregations |
+| SE (Security & edge cases) | 9 | SQL injection, XSS, Unicode |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Deployment Method | GitHub Actions auto-deploy |
+| Migration Batch | 40 |
+| Health Check | ✅ 200 OK |
+| Tests | 75/75 passing (120 assertions) |
+| Status | Complete |
+
+### Dependencies
+- None (database foundation)
+
+### Related Tasks
+- TASK-31-11: Update SEOAnalysis Model (uses new columns)
+- TASK-31-7: AIAnalysisService (uses ai_analysis_requests table)
+
+---
 ## Cookie Consent Component (TASK-30-4)
 
 ### Component Description
