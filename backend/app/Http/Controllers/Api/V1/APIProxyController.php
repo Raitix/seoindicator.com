@@ -462,6 +462,12 @@ class APIProxyController extends Controller
                         'requiresKeyword' => true,
                     ],
                     [
+                        'id' => 'mobile-friendly',
+                        'name' => 'Mobile-Friendly Checker',
+                        'description' => 'Analyzes mobile readiness including viewport, responsive design, tap targets, and font sizes.',
+                        'requiresKeyword' => false,
+                    ],
+                    [
                         'id' => 'social-media-preview',
                         'name' => 'Social Media Preview',
                         'description' => 'Analyzes Open Graph and Twitter Card tags and generates social media share previews for Facebook, Twitter, and LinkedIn.',

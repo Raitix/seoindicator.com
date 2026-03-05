@@ -1,7 +1,7 @@
 # TASK-30-3: How It Works Page
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`

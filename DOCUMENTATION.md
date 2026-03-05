@@ -25080,7 +25080,206 @@ Static legal page at `/terms` combining Terms of Service and Privacy Policy cont
 - None (standalone static page)
 
 ### Related Tasks
-- TASK-30-2: About Page (in progress)
-- TASK-30-3: How It Works Page (pending)
+- TASK-30-2: About Page (Done)
+- TASK-30-3: How It Works Page (Done)
+- TASK-30-4: Cookie Consent Component (pending)
+- TASK-30-5: Consent Integration (pending)
+
+---
+
+## How It Works Page (TASK-30-3)
+
+### Description
+Static educational page at `/how-it-works` explaining the SEOIndicator analysis methodology, including step-by-step user journey, 17 SEO indicator breakdown with weight distribution, scoring methodology, and FAQ section. SEO-optimized with WebPage + FAQPage schema markup, accessibility features, and interactive accordion component. Part of the Legal + About + How It Works + Cookie Consent feature (FEAT-030).
+
+### Component Location
+- **Page Component:** `frontend/app/how-it-works/page.tsx`
+- **Content Component:** `frontend/components/pages/HowItWorksContent.tsx`
+- **Test Files:** `frontend/__tests__/app/how-it-works/page.test.tsx`, `frontend/__tests__/components/pages/HowItWorksContent.test.tsx`, `frontend/__tests__/app/how-it-works/seo.test.tsx`, `frontend/__tests__/a11y/how-it-works.test.tsx`
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-30-3.md`
+
+### Core Functionalities
+
+**Page Component (`app/how-it-works/page.tsx`):**
+| Feature | Description |
+|---------|-------------|
+| SEO Metadata | `generateMetadata()` export for title, description, robots, OG, canonical |
+| WebPage + FAQPage Schema | JSON-LD structured data for search engines |
+| Breadcrumb Navigation | Home > How It Works with aria-current |
+| Responsive Layout | max-w-5xl container with padding |
+
+**Content Component (`HowItWorksContent.tsx`):**
+| Feature | Description |
+|---------|-------------|
+| User Journey Steps | 5 steps with Lucide icons (Search, Settings, BarChart3, Lightbulb, RefreshCw) |
+| Indicator Categories | 4 categories with weight distribution and progress bars |
+| Scoring Methodology | Score range 0-100, thresholds, weight system breakdown |
+| FAQ Section | 10 questions with shadcn/ui Accordion (keyboard navigable) |
+| CTA Section | "Ready to Analyze Your Website?" with action button |
+
+### User Journey Steps
+
+| Step | Icon | Title | Description |
+|------|------|-------|-------------|
+| 1 | Search | Enter Your URL | Enter the URL of any website you want to analyze |
+| 2 | Settings | Configure Analysis | Select specific indicators or run a comprehensive scan |
+| 3 | BarChart3 | Get Results | Receive a detailed SEO score with breakdown by category |
+| 4 | Lightbulb | Implement Fixes | Follow actionable suggestions to improve your score |
+| 5 | RefreshCw | Track Progress | Monitor improvements over time with historical tracking |
+
+### Indicator Categories & Weights
+
+| Category | Weight | Indicators | Color |
+|----------|--------|------------|-------|
+| **Technical** | 30% | robots.txt, sitemap, SSL, mobile-friendly, canonical, hreflang | Blue |
+| **Content** | 40% | title tag, meta description, H1, keyword density, images | Green |
+| **Performance** | 20% | page speed, Core Web Vitals | Orange |
+| **UX** | 10% | mobile viewport, font readability | Purple |
+
+**Weight Distribution:** Total = 100%
+
+### Scoring Methodology
+
+| Score Range | Status | Color |
+|-------------|--------|-------|
+| 0-39 | Poor | Red |
+| 40-69 | Needs Improvement | Yellow |
+| 70-89 | Good | Blue |
+| 90-100 | Excellent | Green |
+
+**Scoring Formula:**
+```
+Final Score = Σ (Indicator Score × Weight) for all 17 indicators
+```
+
+### FAQ Questions
+
+| # | Question | Category |
+|---|----------|----------|
+| 1 | How does SEOIndicator analyze my website? | General |
+| 2 | What SEO indicators do you check? | Technical |
+| 3 | How is the SEO score calculated? | Scoring |
+| 4 | How often should I run an SEO analysis? | Best Practices |
+| 5 | Is my data secure? | Security |
+| 6 | Do I need to create an account? | Account |
+| 7 | What's the difference between free and paid analyses? | Pricing |
+| 8 | How accurate are the SEO suggestions? | Accuracy |
+| 9 | Can I analyze competitor websites? | Features |
+| 10 | How do I improve my SEO score? | Improvement |
+
+### SEO Implementation
+
+**Meta Tags:**
+| Meta | Value |
+|------|-------|
+| Title | "How It Works \| SEOIndicator SEO Analysis" |
+| Description | "Understand how SEOIndicator analyzes your website using 17 SEO indicators across 4 categories with weighted scoring to improve your search visibility." (154 chars) |
+| Robots | index, follow |
+| Canonical | https://seoindicator.com/how-it-works/ |
+
+**Open Graph Tags:**
+| Property | Value |
+|----------|-------|
+| og:title | How It Works \| SEOIndicator SEO Analysis |
+| og:description | Understand how SEOIndicator analyzes your website... |
+| og:url | https://seoindicator.com/how-it-works/ |
+| og:site_name | SEOIndicator |
+| og:type | website |
+| og:image | https://seoindicator.com/og-how-it-works.png |
+| og:image:width | 1200 |
+| og:image:height | 630 |
+
+### Schema.org JSON-LD
+
+**WebPage Schema:**
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "How It Works",
+  "description": "Understand how SEOIndicator analyzes your website...",
+  "url": "https://seoindicator.com/how-it-works/",
+  "publisher": {
+    "@type": "Organization",
+    "name": "SEOIndicator"
+  }
+}
+```
+
+**FAQPage Schema:**
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How does SEOIndicator analyze my website?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "..."
+      }
+    }
+    // ... 10 total questions
+  ]
+}
+```
+
+### Accessibility Implementation
+
+| Feature | Implementation |
+|---------|---------------|
+| Skip Link | "Skip to main content" link at page top |
+| Main Landmark | `<main role="main">` with aria-label |
+| Heading Hierarchy | Single `<h1>` → 5 `<h2>` → 25 `<h3>` |
+| ARIA Attributes | 135 total (accordion controls, labels) |
+| Role Attributes | 17 total (navigation, regions) |
+| Keyboard Navigation | Tab, Enter/Space for accordion toggle |
+| Focus Management | Accordion maintains focus on toggle |
+| Touch Targets | Minimum 44x44px for interactive elements |
+| Color Contrast | ≥ 4.5:1 ratio maintained |
+| Reduced Motion | `prefers-reduced-motion` support |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `page.test.tsx` | 28 | 56+ | ✅ PASS |
+| `HowItWorksContent.test.tsx` | 60+ | 120+ | ✅ PASS |
+| `seo.test.tsx` | 46 | 92+ | ✅ ALL PASS |
+| `a11y/how-it-works.test.tsx` | 42 | 84+ | ✅ PASS |
+| **Total** | **176+** | **352+** | **✅ PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Page Rendering | 5 | Component mounts, route accessibility, structure |
+| SEO Metadata | 7 | Title, description, robots, canonical, OG tags |
+| Schema.org Markup | 18 | WebPage + FAQPage JSON-LD validation (10 questions) |
+| User Journey Steps | 8 | 5 steps, icons, numbers, descriptions |
+| Indicator Categories | 12 | 4 categories, weights (30%, 40%, 20%, 10%), indicators |
+| Scoring Methodology | 5 | Score range, thresholds, visual representation |
+| FAQ Section | 8 | 10 questions, accordion behavior, keyboard nav |
+| Accessibility | 25+ | Heading hierarchy, ARIA, keyboard, contrast |
+| Security | 2 | XSS prevention, sensitive data exposure |
+| Performance | 2 | Render time, re-renders |
+
+### Production Status
+- **Deployed:** 2026-03-05 (GitHub Actions auto-deploy)
+- **Commit:** `4612bb4`
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Production URL:** https://seoindicator.com/how-it-works/
+- **Page Size:** 113.23 KB
+- **Tests:** 176+ passing
+- **Status:** Complete
+
+### Dependencies
+- FEAT-018 (SEO Analysis Engine) - Indicator descriptions (informational)
+- Lucide React icons (Search, Settings, BarChart3, Lightbulb, RefreshCw)
+- shadcn/ui Accordion component
+
+### Related Tasks
+- TASK-30-1: Terms & Privacy Page (Done)
+- TASK-30-2: About Page (Done)
 - TASK-30-4: Cookie Consent Component (pending)
 - TASK-30-5: Consent Integration (pending)
