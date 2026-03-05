@@ -1,7 +1,7 @@
 # TASK-31-7: AIAnalysisService (Unified Caller)
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -179,3 +179,57 @@ class AIAnalysisRetryPolicy
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 13:58 GMT+2] ProjectManager - Prioritization In Progress
+**Priority Analysis:** HIGH (confirmed) ✅
+**Risk Analysis:** HIGH (confirmed) ✅
+
+**Rationale for HIGH Priority:**
+- **Main Orchestrator Service** - This is the central service that coordinates the entire unified AI analysis flow
+- **Feature Critical Path** - SPEC-31 cannot be completed without this service
+- **Business Value** - Enables the single AI call architecture that replaces 17 separate API calls (cost/speed optimization)
+- **Enables MVP** - Without AIAnalysisService, the unified prompt feature has no entry point
+
+**Rationale for HIGH Risk:**
+- **Orchestrator Complexity** - Coordinates 6 different services with complex error handling
+- **External API Dependency** - Makes OpenRouter API calls with potential rate limits, timeouts
+- **Retry Logic** - Complex retry policy with backoff for transient errors
+- **Cache Strategy** - Caching logic with 24-hour TTL affects data freshness
+- **Error Propagation** - Errors from multiple downstream services bubble up here
+
+**Dependency Status:**
+| Dependency | Status | Ready for Integration |
+|------------|--------|----------------------|
+| TASK-31-2 (ContextWindowManager) | Done ✅ | YES |
+| TASK-31-3 (TruncationService) | To Develop | NO |
+| TASK-31-4 (UnifiedPromptService) | Tests Written | NO |
+| TASK-31-5 (AIAnalysisResponseParser) | To Write Tests | NO |
+| TASK-31-6 (OpenRouterClient) | To Write Tests | NO |
+
+**TDD Ready:** YES - PreTester can design tests immediately
+- Interface fully specified with 3 methods: `analyze()`, `analyzeWithModel()`, `getAnalysisMetadata()`
+- All dependency interfaces defined in their respective tasks
+- Mocking strategy: Mock all 6 dependency services
+- Test scenarios: Cache hit, token overflow, truncation, AI call success/failure, retry logic
+
+**Implementation Flow (for Developer reference):**
+```
+analyze(url, html)
+├── 1. Check cache → return if hit
+├── 2. Estimate tokens (ContextWindowManager)
+├── 3. Select model (ContextWindowManager)
+├── 4. Truncate if needed (TruncationService)
+├── 5. Build prompt (UnifiedPromptService)
+├── 6. Call AI (OpenRouterClient)
+├── 7. Parse response (AIAnalysisResponseParser)
+├── 8. Enrich metadata
+└── 9. Cache result (24h TTL)
+```
+
+**Recommendation:** 
+- Tests can be designed NOW (PreTester phase)
+- Implementation should WAIT until all dependencies are `Done` to avoid interface changes
+- Developer should coordinate with other agents if interfaces change
+
+**Status:** Moving to `To Write Tests`
+**Next Agent:** PreTester for test design
