@@ -169,6 +169,23 @@ export interface ComparisonData {
 // ============================================================================
 
 /**
+ * Props for the ComparisonCard component.
+ * Displays a card linking to a comparison page.
+ */
+export interface ComparisonCardProps {
+  /** URL slug for the comparison (e.g., 'seoindicator-vs-ahrefs') */
+  slug: string;
+  /** Title to display on the card */
+  title: string;
+  /** Description text for the card */
+  description: string;
+  /** First competitor in the comparison */
+  competitorA: { name: string; logo?: string };
+  /** Second competitor in the comparison */
+  competitorB: { name: string; logo?: string };
+}
+
+/**
  * Props for the ComparisonTable component.
  * Displays a feature comparison table between SEOIndicator and a competitor.
  */
