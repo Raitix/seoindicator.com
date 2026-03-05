@@ -3,7 +3,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   getAISuggestion,
   isRateLimitError,
@@ -25,13 +25,24 @@ export function AISuggestionButton({
   showProvider = false,
   className = '',
   disabled = false,
+  regenerateKey = 0,
 }: AISuggestionButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rateLimitRemaining, setRateLimitRemaining] = useState<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const prevRegenerateKeyRef = useRef(regenerateKey);
 
-  const isDisabled = disabled || context === null || isLoading || rateLimitRemaining !== null;
+  const isEmptyContext = context === null || Object.keys(context || {}).length === 0;
+  const isDisabled = disabled || isEmptyContext || isLoading || rateLimitRemaining !== null;
+
+  // Trigger fetch when regenerateKey changes
+  React.useEffect(() => {
+    if (regenerateKey > 0 && regenerateKey !== prevRegenerateKeyRef.current && !isEmptyContext) {
+      prevRegenerateKeyRef.current = regenerateKey;
+      handleClick();
+    }
+  }, [regenerateKey]);
 
   const handleClick = useCallback(async () => {
     if (isLoading || context === null) return;

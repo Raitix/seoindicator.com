@@ -325,6 +325,36 @@ export function KeywordDensityResults({
         </Card>
       )}
 
+      {/* AI Suggestion Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>AI Suggestions</CardTitle>
+              <CardDescription>
+                Get AI-powered recommendations to improve keyword optimization
+              </CardDescription>
+            </div>
+            <AISuggestionButton
+              indicator="headings"
+              context={aiContext}
+              onSuggestion={setAiSuggestion}
+              buttonText="✨ Get Suggestions"
+              className="text-sm"
+            />
+          </div>
+        </CardHeader>
+        {aiSuggestion && (
+          <CardContent>
+            <AISuggestionPanel
+              result={aiSuggestion}
+              showRegenerate={true}
+              onRegenerate={handleRegenerateAiSuggestion}
+            />
+          </CardContent>
+        )}
+      </Card>
+
       {/* Export Button */}
       {url && (
         <div className="flex justify-end mb-4">

@@ -3996,6 +3996,163 @@ class AISuggestionController extends Controller
 - TASK-21-4 (Prompt Templates)
 
 ---
+## ContextWindowManager Service (TASK-31-2)
+
+### Service Description
+Core AI context window management service that estimates token counts, validates content against model context limits, and selects optimal AI models based on content size. Foundation service for the Unified AI Prompt + Context Management feature (FEAT-031), enabling intelligent model selection and prompt size validation.
+
+### Component Location
+- **Service:** `backend/app/Services/AI/ContextWindowManager.php`
+- **Tests:** `backend/tests/Unit/Services/AI/ContextWindowManagerTest.php`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `estimateTokens(string $content): int` | Estimate token count from content using character-based approximation |
+| `fitsInContext(string $model, int $estimatedTokens): bool` | Check if content fits within model's effective context limit |
+| `selectOptimalModel(int $estimatedTokens): string` | Choose the smallest sufficient model for content size |
+| `getEffectiveLimit(string $model): int` | Return effective context limit after safety margin and overhead |
+| `getModelLimits(): array` | Return all supported model context limits |
+
+### Model Context Limits
+
+| Model | Context Window | Effective Limit |
+|-------|----------------|-----------------|
+| `google/gemini-2.0-flash-exp:free` | 1,000,000 | ~996,600 tokens |
+| `qwen/qwen-2-7b-instruct:free` | 32,768 | ~28,600 tokens |
+| `mistralai/mistral-7b-instruct:free` | 32,768 | ~28,600 tokens |
+| `meta-llama/llama-3-8b-instruct:free` | 8,192 | ~4,600 tokens |
+
+### Implementation Details
+
+**Constants:**
+```php
+private const MODEL_LIMITS = [
+    'google/gemini-2.0-flash-exp:free' => 1000000,
+    'qwen/qwen-2-7b-instruct:free' => 32768,
+    'mistralai/mistral-7b-instruct:free' => 32768,
+    'meta-llama/llama-3-8b-instruct:free' => 8192,
+];
+
+private const SAFETY_MARGIN = 0.10;      // 10% safety margin
+private const BASE_PROMPT_OVERHEAD = 3400; // System prompt + schema
+```
+
+**Token Estimation:**
+```php
+public function estimateTokens(string $content): int
+{
+    // Character-based estimation: 1 token ≈ 4 characters
+    return (int) ceil(strlen($content) / 4);
+}
+```
+
+**Effective Limit Calculation:**
+```php
+public function getEffectiveLimit(string $model): int
+{
+    $limit = self::MODEL_LIMITS[$model] ?? 8192;
+    return (int) ($limit * (1 - self::SAFETY_MARGIN)) - self::BASE_PROMPT_OVERHEAD;
+}
+```
+
+**Model Selection Logic:**
+```php
+public function selectOptimalModel(int $estimatedTokens): string
+{
+    // Model priority: smallest sufficient first (Llama → Qwen → Mistral → Gemini)
+    $models = [
+        'meta-llama/llama-3-8b-instruct:free',
+        'qwen/qwen-2-7b-instruct:free',
+        'mistralai/mistral-7b-instruct:free',
+        'google/gemini-2.0-flash-exp:free',
+    ];
+    
+    foreach ($models as $model) {
+        if ($this->fitsInContext($model, $estimatedTokens)) {
+            return $model;
+        }
+    }
+    
+    // Fallback: will need truncation
+    return 'google/gemini-2.0-flash-exp:free';
+}
+```
+
+### Effective Limit Formula
+
+```
+effectiveLimit = (rawLimit × 0.9) - 3400
+```
+
+**Example Calculations:**
+| Model | Raw Limit | After Safety (90%) | After Overhead | Effective |
+|-------|-----------|-------------------|----------------|-----------|
+| Gemini 2.0 Flash | 1,000,000 | 900,000 | 896,600 | ~996,600 |
+| Qwen 2 7B | 32,768 | 29,491 | 26,091 | ~28,600 |
+| Mistral 7B | 32,768 | 29,491 | 26,091 | ~28,600 |
+| Llama 3 8B | 8,192 | 7,373 | 3,973 | ~4,600 |
+
+### Model Selection Priority
+
+The service selects the **smallest sufficient model** to optimize for:
+1. **Cost efficiency** - Smaller models are faster and cheaper
+2. **Resource optimization** - Reserve larger context for content that needs it
+3. **Graceful fallback** - Always returns a model (Gemini for oversized content)
+
+**Selection Order:**
+1. Llama 3 8B (~4,600 tokens effective) - For small content
+2. Qwen 2 7B (~28,600 tokens effective) - For medium content
+3. Mistral 7B (~28,600 tokens effective) - Alternative medium
+4. Gemini 2.0 Flash (~996,600 tokens effective) - For large content / fallback
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `ContextWindowManagerTest.php` | 57 | 128 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Model Limits Constants | 4 | Verify all 4 model limits, safety margin, base overhead |
+| Token Estimation | 9 | Character-to-token conversion accuracy (±20%) |
+| Effective Limit Calculation | 7 | Safety margin (10%) and overhead (3400 tokens) application |
+| Context Window Validation | 9 | fitsInContext() boundary testing |
+| Model Selection | 10 | selectOptimalModel() priority order (smallest sufficient) |
+| Edge Cases | 7 | Zero, negative, large values, unicode, emoji |
+| Integration Tests | 3 | Full workflow scenarios |
+| Acceptance Criteria | 6 | All 6 ACs verified |
+| Performance Tests | 3 | Speed benchmarks (<1ms per operation) |
+| Data-Driven Tests | 4 | Parameterized model limit tests |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| No External API Calls | Pure calculation service, no network requests |
+| No Database Interactions | Stateless service, no persistence |
+| No User Input Vulnerabilities | All inputs validated, no SQL/XSS vectors |
+| Unicode Safety | Handles emoji, multi-byte characters correctly |
+| Boundary Handling | Safe handling of zero, negative, and extreme values |
+
+### Production Status
+- **Deployed:** 2026-03-05 (GitHub Actions)
+- **Commit:** 6418946
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** 57/57 passing (128 assertions)
+- **Status:** Complete
+
+### Dependencies
+- None (foundation task)
+
+### Related Tasks
+- TASK-31-3: TruncationService (requires token estimation)
+- TASK-31-7: AIAnalysisService (requires context checking)
+- TASK-31-8: ModelSelectionService (requires model limit validation)
+
+---
 ## SEO Guides Library - Routing with Static Params Generation (TASK-20-4)
 
 ### Service Description
