@@ -1,7 +1,7 @@
 # TASK-31-6: OpenRouter Client Service
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
@@ -191,6 +191,33 @@ return [
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 14:03 GMT+2] PreTester - Starting Test Design
+Starting comprehensive test design for OpenRouterClient service.
+
+**Analysis of Task Requirements:**
+- OpenRouterClient is a NEW service (extends patterns from TASK-21-2 OpenRouterProvider)
+- Core methods: `generate()`, `stream()`, `getAvailableModels()`, `getModelInfo()`
+- Returns enhanced AIResponse DTO with model, promptTokens, responseTokens fields
+- Error handling for all HTTP codes (400, 401, 403, 429, 500-503)
+- Support for free-tier models configuration
+- Configurable timeout via environment
+
+**Test Design Approach:**
+- Unit tests with HTTP mocking (following OpenRouterProviderTest patterns)
+- Test categories: Class structure, API integration, response handling, error handling, configuration
+- Reference existing tests: `backend/tests/Unit/Services/AI/Providers/OpenRouterProviderTest.php`
+
+**Test Files to Create:**
+- `backend/tests/Unit/Services/AI/OpenRouterClientTest.php`
+
+**DTO Consideration:**
+The existing AIResponse DTO may need extension for additional fields:
+- `model` (string|null)
+- `promptTokens` (int)
+- `responseTokens` (int)
+
+Starting test implementation...
 
 ### [2026-03-05 13:55 GMT+2] ProjectManager - Prioritization Complete
 **Priority Confirmed: High** ✅

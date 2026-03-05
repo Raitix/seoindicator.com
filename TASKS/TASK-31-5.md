@@ -1,13 +1,36 @@
 # TASK-31-5: AIAnalysisResponseParser
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
 
 ## RISK
 `High`
+
+## Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `backend/tests/Unit/Services/AI/AIAnalysisResponseParserTest.php` | 140+ | 200+ | TDD Ready |
+| `backend/tests/Unit/Services/AI/DTOs/AnalysisResultTest.php` | 45 | 70+ | TDD Ready |
+| `TESTS/TEST-31-5.md` | Documentation | - | Complete |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation (SI) | 5 | Service creation, method existence |
+| JSON Extraction (JE-MD, JE-RJ, JE-MX, JE-IV) | 18 | Markdown, raw, mixed content, invalid |
+| Schema Validation (SV-RF, SV-TC, SV-RC, SV-IN, SV-CS, SV-TP) | 26 | Required fields, types, ranges, indicators |
+| Repair Logic (RP) | 8 | Score clamping, partial JSON repair |
+| Parse Method (PS, PE) | 10 | Success and error cases |
+| AnalysisResult DTO (DTO) | 5 | Creation, properties, serialization |
+| Edge Cases (EC) | 7 | Unicode, special chars, large data |
+| Performance (PF) | 3 | < 50ms parse time |
+| Security (SC) | 4 | XSS, SQL injection, code execution |
+| Logging (LG) | 3 | Warning logging for repairs |
+| Acceptance Criteria (AC) | 7 | All ACs verified |
 
 ## Specification
 SPEC-31: Unified AI Prompt + Context Management
