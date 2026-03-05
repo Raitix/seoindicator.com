@@ -1,6 +1,145 @@
 # DOCUMENTATION.md
 
 ---
+## Cookie Consent Component (TASK-30-4)
+
+### Component Description
+GDPR/CCPA compliant cookie consent banner component that manages user consent preferences for analytics and marketing cookies. Standalone component with localStorage-based state persistence, full keyboard navigation, and accessibility support. Part of the Legal + About + How It Works + Cookie Consent feature (FEAT-030).
+
+### Component Location
+- **Component:** `frontend/components/layout/CookieConsent.tsx`
+- **Utilities:** `frontend/lib/utils/cookieConsent.ts`
+- **Tests:** `frontend/__tests__/components/layout/CookieConsent.test.tsx`, `frontend/__tests__/lib/utils/cookieConsent.test.ts`
+
+### UI Behavior
+
+| Behavior | Implementation |
+|----------|---------------|
+| Fixed Position | Bottom of viewport, z-index: 9999 |
+| First Visit Detection | Shows when no localStorage record exists |
+| Dismissal | Hides after user action (Accept All / Necessary Only) |
+| Persistence | Does not reappear after consent given |
+| Learn More | Link to `/terms` privacy policy |
+
+### State Management
+
+**CookieConsentState Interface:**
+```typescript
+interface CookieConsentState {
+  necessary: boolean;      // Always true
+  analytics: boolean;      // User choice
+  marketing: boolean;      // User choice
+  timestamp: string;       // ISO 8601 when consent was given
+}
+```
+
+**localStorage Key:** `seoindicator_cookie_consent`
+
+### Consent Options
+
+| Button | Behavior | State Set |
+|--------|----------|-----------|
+| Accept All | Primary style, accepts all cookies | `{ necessary: true, analytics: true, marketing: true }` |
+| Necessary Only | Secondary style, essential cookies only | `{ necessary: true, analytics: false, marketing: false }` |
+| Customize | Optional expandable preferences panel | User selects each category |
+
+### GDPR/CCPA Compliance
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Freely given | No pre-checked boxes |
+| Specific | Clear separation between cookie categories |
+| Informed | Cookie explanation text before choice |
+| Explicit action required | No close button, user must choose |
+| No tracking before consent | Consent checked before any tracking |
+| Consent withdrawal | Footer link "Cookie Settings" triggers banner |
+| Timestamp stored | ISO 8601 format in consent record |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Labels | All buttons have aria-label |
+| Focus Management | Focus trapped in banner until choice made |
+| Screen Reader | aria-live announcements for consent changes |
+| Keyboard Navigation | Tab (cycle), Enter (select), Escape (no action - GDPR) |
+| Focus Restoration | Focus returns to previously focused element after dismiss |
+
+### Utility Functions
+
+**cookieConsent.ts:**
+| Function | Description |
+|----------|-------------|
+| `getCookieConsent()` | Retrieve consent state from localStorage |
+| `setCookieConsent(state)` | Save consent state with timestamp |
+| `hasCookieConsent()` | Boolean check for existing consent |
+| `clearCookieConsent()` | Remove consent (for testing/withdrawal) |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `CookieConsent.test.tsx` | 59 | 59+ | ✅ PASS |
+| `cookieConsent.test.ts` | 40 | 40+ | ✅ PASS |
+| **Total** | **99** | **99+** | **✅ ALL PASS** |
+
+**Test Categories (Component):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Rendering | 4 | Visibility, positioning, z-index |
+| Buttons | 8 | Accept All, Necessary Only, callbacks |
+| Learn More Link | 3 | Link to /terms, accessibility |
+| Banner Visibility | 4 | Show/hide behavior |
+| Accessibility | 10 | ARIA, focus, keyboard, announcements |
+| Keyboard Navigation | 4 | Tab, Enter, Escape handling |
+| Focus Management | 2 | Focus on mount, restore on dismiss |
+| GDPR/CCPA Compliance | 6 | No pre-checked, explicit action required |
+| Responsive Design | 3 | Mobile layout, padding, button stacking |
+| State Management | 3 | hasCookieConsent, persistence |
+| Animation | 2 | Entrance/exit animations |
+| Edge Cases | 3 | Rapid clicks, errors, custom className |
+| Customize Feature | 3 | Optional preferences panel |
+
+**Test Categories (Utilities):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| getCookieConsent | 6 | Read, null handling, validation |
+| setCookieConsent | 5 | Write, timestamp, necessary=true |
+| hasCookieConsent | 3 | Boolean check |
+| clearCookieConsent | 2 | Remove consent |
+| GDPR Compliance | 6 | No pre-checked, withdraw, categories |
+| Timestamp Handling | 3 | ISO 8601 format |
+| Edge Cases | 5 | localStorage errors, corrupted data |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | No dangerouslySetInnerHTML, no eval |
+| localStorage Namespacing | Key prefixed: `seoindicator_cookie_consent` |
+| No Sensitive Data | Consent preferences only, no PII |
+| Input Validation | State validated before storage |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Component Status | ✅ Deployed (standalone) |
+| Integration | Pending (TASK-30-5) |
+
+### Dependencies
+- None (standalone component)
+
+### Related Tasks
+- TASK-30-1: Terms & Privacy Page (Done)
+- TASK-30-2: About Page (Done)
+- TASK-30-3: How It Works Page (Done)
+- TASK-30-5: Consent Integration (To Test Prod)
+
+---
 ## About Page (TASK-30-2)
 
 ### Page Description
