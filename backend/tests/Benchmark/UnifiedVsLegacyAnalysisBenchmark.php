@@ -6,7 +6,7 @@ use Tests\TestCase;
 use App\Services\AI\AIAnalysisServiceInterface;
 use App\Services\AI\DTOs\AnalysisResult;
 use App\Models\SEOAnalysis;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Config;
 use Mockery;
 
@@ -14,13 +14,14 @@ use Mockery;
  * Performance benchmarks comparing unified vs legacy AI analysis approaches.
  *
  * Measures latency, token usage, and memory consumption for different content sizes.
+ * Uses DatabaseMigrations instead of RefreshDatabase to avoid SQLite nested transaction issues.
  *
  * @see TASK-31-17
  * @see TEST-31-17
  */
 class UnifiedVsLegacyAnalysisBenchmark extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
 
     protected string $fixturesPath;
     protected array $benchmarkResults = [];

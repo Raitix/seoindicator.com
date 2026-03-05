@@ -46,13 +46,15 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('projects', function (Blueprint $table) {
-            // Drop foreign key and column
-            $table->dropForeign(['user_id']);
-            $table->dropColumn(['user_id', 'notes', 'is_default', 'archived_at']);
-
-            // Drop indexes
-            $table->dropIndex('idx_projects_user_id');
+            // Drop indexes FIRST (SQLite requires this before dropping columns)
             $table->dropIndex('idx_projects_archived');
+            $table->dropIndex('idx_projects_user_id');
+
+            // Drop foreign key constraint
+            $table->dropForeign(['user_id']);
+
+            // Then drop columns
+            $table->dropColumn(['user_id', 'notes', 'is_default', 'archived_at']);
         });
     }
 };
