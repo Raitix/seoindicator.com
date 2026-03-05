@@ -9,7 +9,7 @@ use App\Services\AI\DTOs\SuggestionResult;
  * Core AI Suggestion Service.
  *
  * Orchestrates AI suggestion generation for SEO indicators,
- * managing provider selection, timeouts, and fallback logic.
+ * managing provider selection, caching, timeouts, and fallback logic.
  */
 class AISuggestionService
 {
@@ -17,9 +17,11 @@ class AISuggestionService
      * Create a new AISuggestionService instance.
      *
      * @param AIProviderInterface $provider The AI provider to use
+     * @param AISuggestionCache|null $cache The cache service (optional for backwards compatibility)
      */
     public function __construct(
-        protected AIProviderInterface $provider
+        protected AIProviderInterface $provider,
+        protected ?AISuggestionCache $cache = null
     ) {}
 
     /**
@@ -27,13 +29,27 @@ class AISuggestionService
      *
      * This method generates AI-powered suggestions for improving
      * a specific SEO indicator based on the provided context.
+     * Results are cached to reduce API calls.
      *
      * @param string $indicator The indicator type (e.g., 'title', 'meta_description')
      * @param array<string, mixed> $context Context data for the indicator (page data, content, etc.)
+     * @param string|null $providerName Optional provider name override
      * @return SuggestionResult The structured suggestion result
      */
-    public function getSuggestions(string $indicator, array $context = []): SuggestionResult
+    public function getSuggestions(string $indicator, array $context = [], ?string $providerName = null): SuggestionResult
     {
+        $providerName = $providerName ?? $this->provider->getName();
+        
+        // Check cache first
+        if ($this->cache) {
+            $hash = $this->cache->generateHash($indicator, $context, $providerName);
+            $cached = $this->cache->get($hash);
+            
+            if ($cached !== null) {
+                return $this->arrayToSuggestionResult($cached, 'cached');
+            }
+        }
+        
         // Build the prompt with indicator and context
         $promptContext = array_merge(['indicator' => $indicator], $context);
         $prompt = json_encode($promptContext, JSON_THROW_ON_ERROR);
@@ -58,7 +74,7 @@ class AISuggestionService
         // Parse the response content
         $data = json_decode($response->content, true, flags: JSON_THROW_ON_ERROR);
 
-        return new SuggestionResult(
+        $result = new SuggestionResult(
             indicator: $data['indicator'] ?? $indicator,
             score: $data['score'] ?? 0,
             issues: $data['issues'] ?? [],
@@ -68,6 +84,14 @@ class AISuggestionService
             model: $data['model'] ?? 'unknown',
             generatedAt: new \DateTimeImmutable($data['generated_at'] ?? 'now')
         );
+        
+        // Cache the successful response
+        if ($this->cache && $response->success) {
+            $hash = $this->cache->generateHash($indicator, $context, $providerName);
+            $this->cache->set($hash, $this->suggestionResultToArray($result));
+        }
+        
+        return $result;
     }
 
     /**
@@ -96,5 +120,46 @@ class AISuggestionService
     public function isDebugMode(): bool
     {
         return (bool) config('ai.debug', false);
+    }
+    
+    /**
+     * Convert a SuggestionResult to an array for caching.
+     *
+     * @param SuggestionResult $result
+     * @return array<string, mixed>
+     */
+    private function suggestionResultToArray(SuggestionResult $result): array
+    {
+        return [
+            'indicator' => $result->indicator,
+            'score' => $result->score,
+            'issues' => $result->issues,
+            'suggestions' => $result->suggestions,
+            'best_practices' => $result->bestPractices,
+            'provider' => $result->provider,
+            'model' => $result->model,
+            'generated_at' => $result->generatedAt->format('c'),
+        ];
+    }
+    
+    /**
+     * Convert a cached array back to a SuggestionResult.
+     *
+     * @param array<string, mixed> $data
+     * @param string $providerMarker Marker to indicate cached source
+     * @return SuggestionResult
+     */
+    private function arrayToSuggestionResult(array $data, string $providerMarker): SuggestionResult
+    {
+        return new SuggestionResult(
+            indicator: $data['indicator'],
+            score: $data['score'],
+            issues: $data['issues'] ?? [],
+            suggestions: $data['suggestions'] ?? [],
+            bestPractices: $data['best_practices'] ?? [],
+            provider: $providerMarker,
+            model: $data['model'] ?? 'cached',
+            generatedAt: new \DateTimeImmutable($data['generated_at'] ?? 'now')
+        );
     }
 }
