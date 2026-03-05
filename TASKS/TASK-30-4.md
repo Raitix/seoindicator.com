@@ -1,7 +1,7 @@
 # TASK-30-4: Cookie Consent Component
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`

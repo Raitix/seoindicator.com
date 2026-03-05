@@ -36,6 +36,7 @@ export function KeywordDensityChecker({
   const [isLoading, setIsLoading] = React.useState(false);
   const [result, setResult] = React.useState<KeywordDensityResult | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [analyzedUrl, setAnalyzedUrl] = React.useState<string | null>(null);
 
   const handleAnalyze = async (data: KeywordDensityFormData) => {
     setIsLoading(true);
@@ -134,6 +135,7 @@ export function KeywordDensityChecker({
       };
 
       setResult(finalResult);
+      setAnalyzedUrl(data.url || null);
       onAnalysisComplete?.(finalResult);
     } catch (err) {
       setError(
@@ -168,6 +170,7 @@ export function KeywordDensityChecker({
   const handleReset = () => {
     setResult(null);
     setError(null);
+    setAnalyzedUrl(null);
   };
 
   return (
@@ -211,7 +214,11 @@ export function KeywordDensityChecker({
               Start New Analysis
             </button>
           </div>
-          <KeywordDensityResults result={result} onExport={handleExport} />
+          <KeywordDensityResults 
+            result={result} 
+            url={analyzedUrl || undefined}
+            onExport={handleExport} 
+          />
         </>
       )}
     </div>

@@ -33,6 +33,8 @@ export function SocialMediaPreview({
   const [isLoading, setIsLoading] = React.useState(false);
   const [result, setResult] = React.useState<SocialMediaPreviewData | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [analyzedUrl, setAnalyzedUrl] = React.useState<string | null>(null);
+  const [analyzedAt, setAnalyzedAt] = React.useState<string | null>(null);
 
   const handleAnalyze = async (data: SocialMediaPreviewFormData) => {
     setIsLoading(true);
@@ -108,6 +110,8 @@ export function SocialMediaPreview({
       };
 
       setResult(previewData);
+      setAnalyzedUrl(data.url);
+      setAnalyzedAt(new Date().toISOString());
       onAnalysisComplete?.(previewData);
     } catch (err) {
       setError(
@@ -121,6 +125,8 @@ export function SocialMediaPreview({
   const handleReset = () => {
     setResult(null);
     setError(null);
+    setAnalyzedUrl(null);
+    setAnalyzedAt(null);
   };
 
   return (
@@ -157,7 +163,12 @@ export function SocialMediaPreview({
               Start New Analysis
             </button>
           </div>
-          <SocialMediaPreviewResults data={result} error={error ?? undefined} />
+          <SocialMediaPreviewResults 
+            data={result} 
+            url={analyzedUrl || undefined}
+            analyzedAt={analyzedAt || undefined}
+            error={error ?? undefined} 
+          />
         </>
       )}
 

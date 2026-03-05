@@ -3,6 +3,7 @@
 /**
  * SocialMediaPreviewResults Component
  * TASK-16-8: Social Media Preview Tool
+ * TASK-29-8: Tool Page Integration - ExportResultsButton
  *
  * Displays the social media preview analysis results with platform tabs.
  */
@@ -13,6 +14,7 @@ import { PlatformTabs, type Platform } from "./PlatformTabs";
 import { PreviewCard, type PlatformPreview } from "./PreviewCard";
 import { MissingTagsList } from "./MissingTagsList";
 import { WarningsList, type SocialWarning } from "./WarningsList";
+import { ExportResultsButton } from "@/components/tools/ExportResultsButton";
 
 export interface SocialMediaPreviewData {
   openGraph: {
@@ -48,12 +50,16 @@ export interface SocialMediaPreviewData {
 
 interface SocialMediaPreviewResultsProps {
   data: SocialMediaPreviewData | null;
+  url?: string;
+  analyzedAt?: string;
   error?: string;
   className?: string;
 }
 
 export function SocialMediaPreviewResults({
   data,
+  url,
+  analyzedAt,
   error,
   className,
 }: SocialMediaPreviewResultsProps) {
@@ -97,6 +103,43 @@ export function SocialMediaPreviewResults({
 
   return (
     <div data-testid="social-media-results" className={cn("space-y-6", className)}>
+      {/* Export Button */}
+      {url && (
+        <div className="flex justify-end mb-4">
+          <ExportResultsButton
+            toolName="social-media-preview"
+            url={url}
+            data={{
+              analyzedAt: analyzedAt || new Date().toISOString(),
+              openGraph: data.openGraph,
+              twitterCard: data.twitterCard,
+              previews: data.previews,
+              missing: data.missing,
+              warnings: data.warnings,
+              results: {
+                openGraph: { 
+                  status: data.openGraph.title ? 'ok' : 'warning',
+                  title: data.openGraph.title,
+                  description: data.openGraph.description,
+                  image: data.openGraph.image,
+                },
+                twitterCard: { 
+                  status: data.twitterCard.card ? 'ok' : 'warning',
+                  card: data.twitterCard.card,
+                  title: data.twitterCard.title,
+                },
+              },
+              summary: {
+                score: data.missing.length === 0 ? 100 : 80,
+                passCount: data.missing.length === 0 ? 2 : 1,
+                warningCount: data.missing.length,
+                failCount: 0,
+              },
+            }}
+          />
+        </div>
+      )}
+
       {/* Platform Tabs */}
       <PlatformTabs activeTab={activeTab} onTabChange={setActiveTab} />
 

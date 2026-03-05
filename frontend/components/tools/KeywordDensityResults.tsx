@@ -19,6 +19,7 @@ import type { Heading } from "@/lib/utils/headingAnalyzer";
 import { AISuggestionButton } from "@/components/tools/AISuggestionButton";
 import { AISuggestionPanel } from "@/components/tools/AISuggestionPanel";
 import type { SuggestionResult } from "@/lib/types/ai-suggestions";
+import { ExportResultsButton } from "@/components/tools/ExportResultsButton";
 
 export interface KeywordWarning {
   type: "error" | "warning" | "info" | "success";
@@ -39,12 +40,14 @@ export interface KeywordDensityResult {
 
 interface KeywordDensityResultsProps {
   result: KeywordDensityResult;
+  url?: string;
   onExport?: () => void;
   className?: string;
 }
 
 export function KeywordDensityResults({
   result,
+  url,
   onExport,
   className,
 }: KeywordDensityResultsProps) {
@@ -323,7 +326,41 @@ export function KeywordDensityResults({
       )}
 
       {/* Export Button */}
-      {onExport && (
+      {url && (
+        <div className="flex justify-end mb-4">
+          <ExportResultsButton
+            toolName="keyword-density-checker"
+            url={url}
+            data={{
+              analyzedAt: result.analyzedAt,
+              keyword: result.keyword,
+              density: result.density,
+              occurrences: result.occurrences,
+              totalWords: result.totalWords,
+              status: result.status,
+              headings: result.headings.map(h => ({
+                tag: h.tag,
+                text: h.text,
+                keywordFound: h.keywordFound
+              })),
+              warnings: result.warnings,
+              results: {
+                density: { value: result.density, status: result.status === 'good' ? 'ok' : 'warning' },
+                occurrences: { value: result.occurrences, status: 'ok' },
+              },
+              summary: {
+                score: result.status === 'good' ? 90 : 70,
+                passCount: result.status === 'good' ? 3 : 2,
+                warningCount: result.warnings.filter(w => w.type === 'warning').length,
+                failCount: result.warnings.filter(w => w.type === 'error').length,
+              },
+            }}
+          />
+        </div>
+      )}
+
+      {/* Legacy Export Button (fallback if no URL) */}
+      {onExport && !url && (
         <div className="flex justify-end">
           <Button
             onClick={onExport}
