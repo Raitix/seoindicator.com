@@ -1,7 +1,7 @@
 # TASK-32-3: Create Comparison Page Route with Static Generation
 
 ## STATUS
-`Testing Prod`
+`BLOCKED - Critical Bug`
 
 ## PRIORITY
 `High`
@@ -97,13 +97,13 @@ Implement the complete page layout:
 8. Related comparisons links
 
 ## Acceptance Criteria
-- [x] `generateStaticParams()` returns all valid comparison slugs
-- [x] `generateMetadata()` generates correct title and description
-- [x] Invalid slugs trigger 404 page
-- [x] Page renders correctly for all comparison slugs
-- [x] Static pages generated at build time (no SSR)
-- [ ] Lighthouse score > 90 (requires browser testing)
-- [x] Mobile responsive layout
+- [x] `generateStaticParams()` returns all valid comparison slugs (✅ local)
+- [ ] `generateMetadata()` generates correct title and description (❌ FAIL - prod shows "Comparison Not Found")
+- [ ] Invalid slugs trigger 404 page (❌ FAIL - returns home page)
+- [ ] Page renders correctly for all comparison slugs (❌ FAIL - all show 404)
+- [ ] Static pages generated at build time (no SSR) (❌ FAIL - pages broken)
+- [ ] Lighthouse score > 90 (⏸️ SKIPPED - pages broken)
+- [ ] Mobile responsive layout (⏸️ SKIPPED - pages broken)
 
 ## Dependencies
 - TASK-32-1 (Types) - Done
@@ -242,3 +242,53 @@ Task created as part of SPEC-32 breakdown. Core routing infrastructure for compa
 **Note:** GitHub Actions workflow did not trigger on push to main. Manual deployment via SSH was used as fallback.
 
 **Status:** Updated to `To Test Prod` for ProdTester pickup
+
+### [2026-03-05 19:10 GMT+2] Agent: ProdTester
+🚨 **CRITICAL PRODUCTION BUG DETECTED** 🚨
+
+**Production Testing Result:** ❌ FAIL
+
+**Issue:** ALL comparison pages return HTTP 200 but render "Comparison Not Found" error content with `NEXT_HTTP_ERROR_FALLBACK;404` in the page template.
+
+**Production Test Results:**
+| URL | HTTP Status | Content | Expected | Result |
+|-----|-------------|---------|----------|--------|
+| `/compare/` | 200 | Compare index page | Index page | ✅ PASS |
+| `/compare/ahrefs-vs-semrush/` | 200 | **"Comparison Not Found"** | Comparison content | ❌ FAIL |
+| `/compare/ahrefs-vs-moz/` | 200 | **"Comparison Not Found"** | Comparison content | ❌ FAIL |
+| `/compare/moz-vs-semrush/` | 200 | **"Comparison Not Found"** | Comparison content | ❌ FAIL |
+| `/compare/seoindicator-vs-ahrefs/` | 200 | **"Comparison Not Found"** | Comparison content | ❌ FAIL |
+| `/compare/seoindicator-vs-semrush/` | 200 | **"Comparison Not Found"** | Comparison content | ❌ FAIL |
+| `/compare/seoindicator-vs-moz/` | 200 | **"Comparison Not Found"** | Comparison content | ❌ FAIL |
+| `/compare/seoindicator-vs-ubersuggest/` | 200 | **"Comparison Not Found"** | Comparison content | ❌ FAIL |
+| `/compare/invalid-fake-slug/` | 200 | Home page redirect | 404 page | ❌ FAIL |
+
+**Evidence:**
+- Page title: `<title>Comparison Not Found</title>`
+- Meta robots: `<meta name="robots" content="noindex"/>`
+- Error indicator: `NEXT_HTTP_ERROR_FALLBACK;404` in template
+- Content: 404 error skeleton with "Comparison Not Found" heading
+
+**Acceptance Criteria Status:**
+| Criteria | Status |
+|----------|--------|
+| `generateStaticParams()` returns all valid slugs | ✅ PASS (local) |
+| `generateMetadata()` generates correct title/description | ❌ FAIL (prod shows "Comparison Not Found") |
+| Invalid slugs trigger 404 page | ❌ FAIL (returns home page redirect) |
+| Page renders correctly for all comparison slugs | ❌ FAIL (all show 404) |
+| Static pages generated at build time (no SSR) | ❌ FAIL (pages not generated correctly) |
+| Lighthouse score > 90 | ⏸️ SKIPPED (pages broken) |
+| Mobile responsive layout | ⏸️ SKIPPED (pages broken) |
+
+**Root Cause Analysis:**
+The static pages were likely built with incorrect or missing comparison data. The `getComparisonBySlug()` function is returning `null` for all slugs in production, causing the `notFound()` to be triggered.
+
+**Possible Causes:**
+1. `COMPARISON_SLUGS` array is empty or incorrect in production build
+2. `getComparisonBySlug()` function has a bug in production
+3. Registry data not bundled correctly during build
+4. Static generation happened before registry was fully populated
+
+**Decision:** TASK RETURNED TO DEVELOPER FOR CRITICAL FIX
+
+**Status:** Updated to `BLOCKED - Critical Bug`
