@@ -68,6 +68,11 @@ export default function CookieConsent({
   const handleDismiss = useCallback(() => {
     setIsExiting(true);
 
+    // Store the element to focus before we start unmounting
+    const elementToFocus = previousFocusRef.current && document.body.contains(previousFocusRef.current)
+      ? previousFocusRef.current
+      : null;
+
     // Wait for exit animation before hiding
     setTimeout(() => {
       setIsVisible(false);
@@ -75,11 +80,14 @@ export default function CookieConsent({
       setIsProcessing(false);
 
       // Restore focus to previous element or body
-      if (previousFocusRef.current && document.body.contains(previousFocusRef.current)) {
-        previousFocusRef.current.focus();
-      } else {
-        document.body.focus();
-      }
+      // Use RAF to ensure DOM has updated
+      requestAnimationFrame(() => {
+        if (elementToFocus && document.body.contains(elementToFocus)) {
+          elementToFocus.focus();
+        } else {
+          document.body.focus();
+        }
+      });
     }, 300);
   }, []);
 
