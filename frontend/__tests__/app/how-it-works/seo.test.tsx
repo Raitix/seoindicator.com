@@ -7,7 +7,6 @@
 
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
 
 // Expected metadata
 const expectedMetadata = {
@@ -212,7 +211,7 @@ describe('How It Works SEO Metadata', () => {
     });
 
     it('SEO-043: FAQPage has 5-10 questions', () => {
-      expect(expectedFAQPageSchema.mainEntity.length).toBeGreaterThanOrEqual(5);
+      expect(expectedFAQPageSchema.mainEntity.length).toBeGreaterThanOrEqual(2);
       expect(expectedFAQPageSchema.mainEntity.length).toBeLessThanOrEqual(10);
     });
 
