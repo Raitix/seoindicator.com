@@ -63,6 +63,7 @@ export interface PWARecommendation {
   field?: string;
   message: string;
   priority: 'high' | 'medium' | 'low';
+  guide?: string; // Optional anchor link to guide section
 }
 
 /**
