@@ -3,7 +3,18 @@
 namespace App\Providers;
 
 use App\Services\AI\AISuggestionService;
+use App\Services\AI\AIAnalysisService;
+use App\Services\AI\AnalysisCacheService;
+use App\Services\AI\OpenRouterClient;
+use App\Services\AI\UnifiedPromptService;
+use App\Services\AI\AIAnalysisResponseParser;
+use App\Services\AI\ContextWindowManager;
+use App\Services\AI\TruncationService;
 use App\Services\AI\Contracts\AIProviderInterface;
+use App\Services\AI\Contracts\AIAnalysisServiceInterface;
+use App\Services\AI\Contracts\AnalysisCacheServiceInterface;
+use App\Services\AI\Contracts\OpenRouterClientInterface;
+use App\Services\AI\Contracts\UnifiedPromptServiceInterface;
 use App\Services\AI\Providers\StaticFallbackProvider;
 use Illuminate\Support\ServiceProvider;
 
@@ -33,6 +44,19 @@ class AIServiceProvider extends ServiceProvider
                 $app->make(AIProviderInterface::class)
             );
         });
+
+        // TASK-31-7: AIAnalysisService bindings
+        $this->app->singleton(UnifiedPromptServiceInterface::class, UnifiedPromptService::class);
+        $this->app->singleton(OpenRouterClientInterface::class, OpenRouterClient::class);
+        $this->app->singleton(AnalysisCacheServiceInterface::class, AnalysisCacheService::class);
+        
+        // Helper services
+        $this->app->singleton(AIAnalysisResponseParser::class);
+        $this->app->singleton(ContextWindowManager::class);
+        $this->app->singleton(TruncationService::class);
+        
+        // Main AIAnalysisService
+        $this->app->singleton(AIAnalysisServiceInterface::class, AIAnalysisService::class);
     }
 
     /**
