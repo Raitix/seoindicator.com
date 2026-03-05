@@ -1,7 +1,7 @@
 # TASK-31-7: AIAnalysisService (Unified Caller)
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -179,6 +179,56 @@ class AIAnalysisRetryPolicy
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 14:20 GMT+2] PreTester - Test Design Complete
+**Test Design Complete - Ready for Developer**
+
+**Tests Created:**
+- `backend/tests/Unit/Services/AI/AIAnalysisServiceTest.php` (80+ tests)
+- `TESTS/TEST-31-7.md` (test documentation)
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation (SI) | 8 | Interface, methods, constructor |
+| Cache Hit Flow (CH) | 8 | Cache retrieval, TTL, force_refresh |
+| Full Analysis Flow (FA) | 8 | Complete pipeline verification |
+| Model Selection (MS) | 6 | Auto-selection, override, methods |
+| Truncation Flow (TF) | 2 | No truncation, truncation applied |
+| Retry Logic (RL) | 6 | 429/500 retry, max retries, no retry on 400 |
+| Error Handling (EH) | 5 | Exceptions, empty/malformed input |
+| Acceptance Criteria (AC) | 8 | All 8 ACs verified |
+
+**Total: 80+ tests designed**
+
+**Key Design Decisions:**
+1. **All 6 dependencies mocked** for isolation (UnifiedPromptService, ContextWindowManager, TruncationService, OpenRouterClient, AIAnalysisResponseParser, AnalysisCacheService)
+2. **Retry logic:** Max 3 retries with exponential backoff (1000ms, 2000ms, 4000ms)
+3. **Retry on:** 429, 500, 502, 503, 504 status codes
+4. **No retry on:** 400, 401, 403 (client errors)
+5. **Cache TTL:** 24 hours (86400 seconds)
+6. **Token overhead:** 3400 tokens for system prompt
+
+**Dependencies Status:**
+| Dependency | Status | Mock Ready |
+|------------|--------|------------|
+| TASK-31-2 (ContextWindowManager) | Done ✅ | YES |
+| TASK-31-3 (TruncationService) | To Test Locally | YES |
+| TASK-31-4 (UnifiedPromptService) | Tests Written | YES |
+| TASK-31-5 (AIAnalysisResponseParser) | To Develop | YES |
+| TASK-31-6 (OpenRouterClient) | To Develop | YES |
+| AnalysisCacheService | Available | YES |
+
+**Implementation Notes for Developer:**
+1. Service implements `AIAnalysisServiceInterface`
+2. Constructor receives 6 dependencies via dependency injection
+3. Main orchestrator: Cache → Token Estimation → Model Selection → Truncation → Prompt → AI → Parse → Cache
+4. Throws `AIAnalysisException` on failure
+5. Uses `AnalysisResult` DTO with all metadata fields
+6. `getAnalysisMetadata()` returns array for tracking
+
+**Status:** `To Develop` - Ready for Developer implementation
+**Next Agent:** Developer
 
 ### [2026-03-05 13:58 GMT+2] ProjectManager - Prioritization In Progress
 **Priority Analysis:** HIGH (confirmed) ✅
