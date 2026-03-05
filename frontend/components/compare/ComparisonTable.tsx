@@ -17,17 +17,20 @@ import type { ComparisonTableProps, FeatureCategory, Feature } from '@/lib/compa
 const FeatureCell = memo(function FeatureCell({
   value,
   isWinner = false,
+  columnType,
 }: {
   value: boolean | string;
   isWinner?: boolean;
+  columnType: 'seoindicator' | 'competitor';
 }) {
   const className = `text-center ${isWinner ? 'winner-highlight bg-emerald-500/10 rounded px-2 py-1' : ''}`;
+  const testId = columnType === 'seoindicator' ? 'seoindicator-value' : 'competitor-value';
 
   if (value === true) {
     return (
-      <div role="cell" data-testid={isWinner ? 'seoindicator-value' : 'competitor-value'} className={className}>
-        <span data-testid="check-icon" className="inline-flex items-center justify-center text-emerald-400">
-          <Check className="h-5 w-5" aria-label="Yes" />
+      <div role="cell" data-testid={testId} className={className}>
+        <span className="inline-flex items-center justify-center text-emerald-400">
+          <Check className="h-5 w-5" aria-label="Yes" data-testid="check-icon" />
         </span>
       </div>
     );
@@ -35,9 +38,9 @@ const FeatureCell = memo(function FeatureCell({
 
   if (value === false) {
     return (
-      <div role="cell" data-testid={isWinner ? 'seoindicator-value' : 'competitor-value'} className={className}>
-        <span data-testid="x-icon" className="inline-flex items-center justify-center text-red-400">
-          <X className="h-5 w-5" aria-label="No" />
+      <div role="cell" data-testid={testId} className={className}>
+        <span className="inline-flex items-center justify-center text-red-400">
+          <X className="h-5 w-5" aria-label="No" data-testid="x-icon" />
         </span>
       </div>
     );
@@ -48,7 +51,7 @@ const FeatureCell = memo(function FeatureCell({
   const isPartial = value.toLowerCase() === 'partial';
 
   return (
-    <div role="cell" data-testid={isWinner ? 'seoindicator-value' : 'competitor-value'} className={className}>
+    <div role="cell" data-testid={testId} className={className}>
       <span
         className={`${
           isPositive
@@ -69,17 +72,18 @@ const FeatureCell = memo(function FeatureCell({
  */
 const FeatureTooltip = memo(function FeatureTooltip({
   content,
+  featureId,
   children,
 }: {
   content: string;
+  featureId: string;
   children: React.ReactNode;
 }) {
   return (
-    <span
-      className="inline-flex items-center gap-1 cursor-help"
-      title={content}
-    >
-      {children}
+    <span className="inline-flex items-center gap-1 cursor-help">
+      <span title={content} data-testid={`tooltip-trigger-${featureId}`}>
+        {children}
+      </span>
       <HelpCircle className="h-4 w-4 text-slate-500" data-testid={`help-icon`} />
     </span>
   );
@@ -112,8 +116,8 @@ const FeatureRow = memo(function FeatureRow({
       {/* Feature Name */}
       <div role="cell" data-testid="feature-name" className="text-slate-300 flex items-center gap-2">
         {showTooltips && feature.tooltip ? (
-          <FeatureTooltip content={feature.tooltip}>
-            <span data-testid={`tooltip-trigger-${featureId}`}>{feature.name}</span>
+          <FeatureTooltip content={feature.tooltip} featureId={featureId}>
+            {feature.name}
           </FeatureTooltip>
         ) : (
           <span>{feature.name}</span>
@@ -124,12 +128,14 @@ const FeatureRow = memo(function FeatureRow({
       <FeatureCell
         value={feature.seoindicator}
         isWinner={seoindicatorWins}
+        columnType="seoindicator"
       />
 
       {/* Competitor Value */}
       <FeatureCell
         value={feature.competitor}
         isWinner={competitorWins}
+        columnType="competitor"
       />
     </div>
   );
