@@ -18,7 +18,7 @@ import {
   type PricingTier,
   type FeatureCategory,
   type UseCase,
-} from '../../../lib/compare/types';
+} from '../../../../lib/compare/types';
 
 // ============================================================================
 // Test Data Constants
@@ -137,7 +137,7 @@ describe('Ahrefs Competitor Data', () => {
   beforeAll(() => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const ahrefsModule = require('../../../lib/compare/competitors/ahrefs');
+      const ahrefsModule = require('../../../../lib/compare/competitors/ahrefs');
       ahrefs = ahrefsModule.ahrefs || ahrefsModule.default;
     } catch {
       ahrefs = null; // File doesn't exist yet (TDD)
@@ -545,7 +545,7 @@ describe('SEMrush Competitor Data', () => {
   beforeAll(() => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const semrushModule = require('../../../lib/compare/competitors/semrush');
+      const semrushModule = require('../../../../lib/compare/competitors/semrush');
       semrush = semrushModule.semrush || semrushModule.default;
     } catch {
       semrush = null;
@@ -993,7 +993,7 @@ describe('Moz Competitor Data', () => {
   beforeAll(() => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mozModule = require('../../../lib/compare/competitors/moz');
+      const mozModule = require('../../../../lib/compare/competitors/moz');
       moz = mozModule.moz || mozModule.default;
     } catch {
       moz = null;
@@ -1405,7 +1405,7 @@ describe('Ubersuggest Competitor Data', () => {
   beforeAll(() => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const ubersuggestModule = require('../../../lib/compare/competitors/ubersuggest');
+      const ubersuggestModule = require('../../../../lib/compare/competitors/ubersuggest');
       ubersuggest = ubersuggestModule.ubersuggest || ubersuggestModule.default;
     } catch {
       ubersuggest = null;
@@ -1858,7 +1858,7 @@ describe('Cross-Competitor Consistency', () => {
     for (const id of EXPECTED_COMPETITOR_IDS) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const mod = require(`../../../lib/compare/competitors/${id}`);
+        const mod = require(`../../../../lib/compare/competitors/${id}`);
         competitors.set(id, mod[id] || mod.default);
       } catch {
         competitors.set(id, null);
@@ -2327,7 +2327,7 @@ describe('Acceptance Criteria', () => {
     for (const id of EXPECTED_COMPETITOR_IDS) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const mod = require(`../../../lib/compare/competitors/${id}`);
+        const mod = require(`../../../../lib/compare/competitors/${id}`);
         competitors.set(id, mod[id] || mod.default);
       } catch {
         competitors.set(id, null);
