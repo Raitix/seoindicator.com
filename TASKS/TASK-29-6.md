@@ -1,7 +1,7 @@
 # TASK-29-6: ExportResultsButton Component
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -306,3 +306,34 @@ Status updated: `In Deployment` → `To Test Prod` - Ready for ProdTester
 **Decision:** PASS - Component deployed and functional
 
 Status updated: `To Test Prod` → `To Document` - Ready for DocSystemAnalyst
+
+### [2026-03-05 10:12 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+**Documentation Updates:**
+- Added ExportResultsButton component documentation to `DOCUMENTATION.md`
+- Documented component interface, props, and state management
+- Documented accessibility implementation (aria-label, keyboard navigation)
+- Documented disabled and loading state logic
+- Documented integration with ExportModal and tool results components
+- Documented test coverage (60 tests, 92.3% coverage)
+
+**Key Documentation Points:**
+1. Props interface: `toolName`, `url`, `data`, `className?`, `isGenerating?`
+2. Disabled logic: `!hasResults || isGenerating`
+3. hasResults check: `data && Object.keys(data).length > 0`
+4. Dynamic aria-label based on component state
+5. Keyboard support: Enter and Space keys
+6. Integration with ExportModal (TASK-29-7 will implement full modal)
+
+**Production Status:**
+- Deployed to production (commit 211460a)
+- Health check passing
+- All 60 tests passing
+
+**Note:** Other SPEC-029 tasks still in progress:
+- TASK-29-5, 29-7, 29-10: To Prioritize
+- TASK-29-8: To Test Prod
+- TASK-29-9: To Document
+
+Status updated: `To Document` → `Done` - Documentation complete

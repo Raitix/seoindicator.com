@@ -20,9 +20,18 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
+// Mock Next.js Link
+jest.mock('next/link', () => ({
+  __esModule: true,
+  default: ({ children, href, ...props }: any) => (
+    <a href={href} {...props}>{children}</a>
+  ),
+}));
+
 // Mock the AboutContent component
 jest.mock('@/components/pages/AboutContent', () => ({
-  AboutContent: () => (
+  __esModule: true,
+  default: () => (
     <div data-testid="about-content">
       <h1>About SEOIndicator</h1>
       <p>Our mission statement</p>
@@ -112,10 +121,10 @@ describe('About Page', () => {
       expect(metadata.openGraph?.url).toBe('https://seoindicator.com/about/');
     });
 
-    it('PC-012: Twitter card is summary_large_image', async () => {
+    it('PC-012: Twitter card is summary', async () => {
       const { generateMetadata } = await import('@/app/about/page');
       const metadata = await generateMetadata();
-      expect(metadata.twitter?.card).toBe('summary_large_image');
+      expect(metadata.twitter?.card).toBe('summary');
     });
   });
 

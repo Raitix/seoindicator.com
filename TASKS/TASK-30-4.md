@@ -1,7 +1,7 @@
 # TASK-30-4: Cookie Consent Component
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`

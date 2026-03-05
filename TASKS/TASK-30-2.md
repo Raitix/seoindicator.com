@@ -1,7 +1,7 @@
 # TASK-30-2: About Page
 
 ## STATUS
-`Testing Locally`
+`To Test Locally`
 
 ## PRIORITY
 `High`
