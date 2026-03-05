@@ -28,6 +28,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Queue\JobQueueInterface::class,
             \App\Services\Queue\JobQueue::class
         );
+
+        // Payment gateway binding (TASK-26-13)
+        $this->app->bind(
+            \App\Services\Billing\Contracts\PaymentGatewayInterface::class,
+            \App\Services\Billing\PayPalGatewayService::class
+        );
     }
 
     /**
