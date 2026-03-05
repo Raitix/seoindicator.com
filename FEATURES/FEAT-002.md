@@ -441,7 +441,7 @@ Actions:
 
 Feature fully closed and documented.
 
-### [2026-03-04 18:58 GMT+2] Agent: DocSystemAnalyst
+### [2026-03-05 09:45 GMT+2] Agent: DocSystemAnalyst
 **Re-verification Pass** - Orchestrator triggered re-processing.
 
 Verification:
@@ -452,7 +452,9 @@ Verification:
 
 Actions:
 - Removed stale lock file `FEAT-2.lock`
-- Written completion markers: `FEAT-2.json` + `FEAT-002.json` (alias)
+- Written completion markers: `FEAT-002.json` + `FEAT-2.json` (alias)
 - Cleared active-agents entry
 
 Feature fully closed and documented.
+
+**ORCHESTRATOR BUG NOTE:** Task file uses "FEAT-2" but actual feature ID is "FEAT-002" (with leading zero). This naming mismatch causes repeated spawns. Feature is complete - no further action required.
