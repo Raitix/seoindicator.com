@@ -13,6 +13,7 @@ export interface User {
   role?: "user" | "admin";
   created_at?: string;
   updated_at?: string;
+  lastLoginAt?: string;
 }
 
 // ==================== Auth Data Types ====================
