@@ -1,7 +1,7 @@
 # TASK-32-9: ComparisonCTA Component
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -165,3 +165,40 @@ Task created as part of SPEC-32 breakdown. Key conversion component with A/B tes
 5. Custom text and href supported
 6. Responsive design (different layouts for mobile/desktop)
 7. Accessibility (proper button/link roles)
+
+### [2026-03-05 18:20 GMT+2] Agent: PreTester
+**Test Design Complete ✅**
+
+**Files Created:**
+- `TESTS/TEST-32-9.md` - Test documentation with 50+ test scenarios
+- `frontend/__tests__/components/compare/ComparisonCTA.test.tsx` - Updated test file
+
+**Test Coverage:**
+| Category | Tests | IDs |
+|----------|-------|-----|
+| Primary Variant | 9 tests | CTA-PRI-001 to CTA-PRI-009 |
+| Secondary Variant | 6 tests | CTA-SEC-001 to CTA-SEC-006 |
+| Sticky Variant | 8 tests | CTA-STK-001 to CTA-STK-008 |
+| Text & Link | 6 tests | CTA-TXT-001 to CTA-TXT-006 |
+| A/B Test Tracking | 9 tests | CTA-TRK-001 to CTA-TRK-009 |
+| Accessibility | 7 tests | CTA-ACC-001 to CTA-ACC-007 |
+| Responsive Design | 5 tests | CTA-RES-001 to CTA-RES-005 |
+| Edge Cases | 7 tests | CTA-EDG-001 to CTA-EDG-007 |
+| Acceptance Criteria | 7 tests | AC-1 to AC-7 |
+
+**Total:** 64+ test scenarios covering all acceptance criteria
+
+**Key Differences from TASK-32-19 Tests:**
+1. Primary variant now tests TWO buttons (main CTA + View Features)
+2. Sticky variant tests scroll behavior (500px threshold with scroll event simulation)
+3. Added responsive design tests for button layout (flex-col on mobile, flex-row on desktop)
+4. Added cleanup tests for scroll listener on unmount
+
+**Implementation Notes for Developer:**
+1. Primary variant: Use `<section>` with `aria-labelledby` for accessibility
+2. Sticky variant: Use `window.scrollY > 500` for visibility logic
+3. Cleanup: Remove scroll listener in `useEffect` return
+4. Two buttons in primary: Main CTA + "View Features" (secondary button does NOT track CTA event)
+5. Use existing Button component from shadcn/ui
+
+**Status:** Ready for Developer implementation

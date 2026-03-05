@@ -4,148 +4,245 @@
  * Spec: SPEC-32 (Competitor Comparison Landing Pages)
  *
  * Displays a feature comparison table between SEOIndicator and a competitor.
+ * Supports responsive design, winner highlighting, and tooltips.
  */
 
-import React from 'react';
-import type { ComparisonTableProps, FeatureCategory } from '@/lib/compare/types';
+import React, { memo } from 'react';
+import { Check, X, HelpCircle } from 'lucide-react';
+import type { ComparisonTableProps, FeatureCategory, Feature } from '@/lib/compare/types';
 
 /**
- * Renders a single feature value with appropriate styling.
+ * Renders a feature value cell with check/X icon or text.
  */
-function FeatureValue({
+const FeatureCell = memo(function FeatureCell({
   value,
-  highlightWinner,
+  isWinner = false,
 }: {
   value: boolean | string;
-  highlightWinner?: boolean;
+  isWinner?: boolean;
 }) {
+  const className = `text-center ${isWinner ? 'winner-highlight bg-emerald-500/10 rounded px-2 py-1' : ''}`;
+
   if (value === true) {
     return (
-      <span className="text-emerald-400 font-medium" aria-label="Yes">
-        ✓
-      </span>
+      <div role="cell" data-testid={isWinner ? 'seoindicator-value' : 'competitor-value'} className={className}>
+        <span data-testid="check-icon" className="inline-flex items-center justify-center text-emerald-400">
+          <Check className="h-5 w-5" aria-label="Yes" />
+        </span>
+      </div>
     );
   }
 
   if (value === false) {
     return (
-      <span className="text-red-400" aria-label="No">
-        ✗
-      </span>
+      <div role="cell" data-testid={isWinner ? 'seoindicator-value' : 'competitor-value'} className={className}>
+        <span data-testid="x-icon" className="inline-flex items-center justify-center text-red-400">
+          <X className="h-5 w-5" aria-label="No" />
+        </span>
+      </div>
     );
   }
 
-  // String value (e.g., "Partial", "Yes", "N/A")
+  // String value (e.g., "Partial", "Yes", "N/A", "50/day", "Unlimited")
   const isPositive = value.toLowerCase() === 'yes' || value.toLowerCase() === 'full';
   const isPartial = value.toLowerCase() === 'partial';
 
   return (
-    <span
-      className={`${
-        isPositive
-          ? 'text-emerald-400'
-          : isPartial
-          ? 'text-amber-400'
-          : 'text-slate-400'
-      }`}
-    >
-      {value}
-    </span>
+    <div role="cell" data-testid={isWinner ? 'seoindicator-value' : 'competitor-value'} className={className}>
+      <span
+        className={`${
+          isPositive
+            ? 'text-emerald-400'
+            : isPartial
+            ? 'text-amber-400'
+            : 'text-slate-300'
+        }`}
+      >
+        {value}
+      </span>
+    </div>
   );
-}
+});
 
 /**
- * Renders a feature category with its features.
+ * Tooltip wrapper for feature names.
  */
-function FeatureCategoryRow({
+const FeatureTooltip = memo(function FeatureTooltip({
+  content,
+  children,
+}: {
+  content: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 cursor-help"
+      title={content}
+    >
+      {children}
+      <HelpCircle className="h-4 w-4 text-slate-500" data-testid={`help-icon`} />
+    </span>
+  );
+});
+
+/**
+ * Individual feature row with name and values for both tools.
+ */
+const FeatureRow = memo(function FeatureRow({
+  feature,
+  highlightWinner,
+  showTooltips,
+}: {
+  feature: Feature;
+  highlightWinner: boolean;
+  showTooltips: boolean;
+}) {
+  const featureId = feature.name.toLowerCase().replace(/\s+/g, '-');
+  
+  // Determine winner highlighting (only for boolean values)
+  const seoindicatorWins = highlightWinner && feature.seoindicator === true && feature.competitor === false;
+  const competitorWins = highlightWinner && feature.competitor === true && feature.seoindicator === false;
+
+  return (
+    <div
+      role="row"
+      data-testid={`feature-row-${featureId}`}
+      className="grid grid-cols-3 gap-4 py-3 border-b border-slate-800/50 hover:bg-slate-900/30 transition-colors"
+    >
+      {/* Feature Name */}
+      <div role="cell" data-testid="feature-name" className="text-slate-300 flex items-center gap-2">
+        {showTooltips && feature.tooltip ? (
+          <FeatureTooltip content={feature.tooltip}>
+            <span data-testid={`tooltip-trigger-${featureId}`}>{feature.name}</span>
+          </FeatureTooltip>
+        ) : (
+          <span>{feature.name}</span>
+        )}
+      </div>
+
+      {/* SEOIndicator Value */}
+      <FeatureCell
+        value={feature.seoindicator}
+        isWinner={seoindicatorWins}
+      />
+
+      {/* Competitor Value */}
+      <FeatureCell
+        value={feature.competitor}
+        isWinner={competitorWins}
+      />
+    </div>
+  );
+});
+
+/**
+ * Feature category row with collapsible features.
+ */
+const FeatureCategoryRow = memo(function FeatureCategoryRow({
   category,
   highlightWinner,
   showTooltips,
 }: {
   category: FeatureCategory;
-  highlightWinner?: boolean;
-  showTooltips?: boolean;
+  highlightWinner: boolean;
+  showTooltips: boolean;
 }) {
-  return (
-    <div className="mb-6">
-      <h3 className="text-lg font-semibold text-white mb-3 border-b border-slate-700 pb-2">
-        {category.name}
-      </h3>
-      <div className="space-y-2">
-        {category.features.map((feature) => (
-          <div
-            key={feature.name}
-            className="grid grid-cols-3 gap-4 py-2 border-b border-slate-800/50"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-slate-300">{feature.name}</span>
-              {feature.tooltip && showTooltips && (
-                <span
-                  className="text-slate-500 text-xs cursor-help"
-                  title={feature.tooltip}
-                >
-                  ⓘ
-                </span>
-              )}
-            </div>
-            <div className="text-center">
-              <FeatureValue
-                value={feature.seoindicator}
-                highlightWinner={highlightWinner}
-              />
-            </div>
-            <div className="text-center">
-              <FeatureValue
-                value={feature.competitor}
-                highlightWinner={highlightWinner}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function ComparisonTable({
-  features,
-  highlightWinner = true,
-  showTooltips = true,
-}: ComparisonTableProps) {
-  if (!features || features.length === 0) {
-    return (
-      <div
-        className="text-slate-400 text-center py-8"
-        data-testid="empty-features"
-      >
-        No feature data available.
-      </div>
-    );
-  }
+  const categoryId = category.name.toLowerCase().replace(/\s+/g, '-');
 
   return (
     <div
-      className="bg-slate-900/50 rounded-xl border border-slate-800 p-6"
-      data-testid="comparison-table"
+      role="rowgroup"
+      data-testid={`category-${categoryId}`}
+      className="mb-4 last:mb-0"
     >
-      {/* Header */}
-      <div className="grid grid-cols-3 gap-4 mb-4 text-sm font-semibold text-slate-400 border-b border-slate-700 pb-3">
-        <div>Feature</div>
-        <div className="text-center text-emerald-400">SEOIndicator</div>
-        <div className="text-center text-blue-400">Competitor</div>
+      {/* Category Header */}
+      <div
+        role="row"
+        data-testid={`category-header-${categoryId}`}
+        className="grid grid-cols-3 gap-4 py-2 bg-slate-800/50 rounded-t-lg"
+      >
+        <div role="cell" className="col-span-3 font-semibold text-white px-4 py-2">
+          {category.name}
+        </div>
       </div>
 
-      {/* Categories */}
-      {features.map((category) => (
-        <FeatureCategoryRow
-          key={category.name}
-          category={category}
+      {/* Feature Rows */}
+      {category.features.map((feature, idx) => (
+        <FeatureRow
+          key={`${category.name}-${feature.name}-${idx}`}
+          feature={feature}
           highlightWinner={highlightWinner}
           showTooltips={showTooltips}
         />
       ))}
     </div>
   );
+});
+
+/**
+ * Main ComparisonTable component.
+ * Displays a responsive feature comparison table between SEOIndicator and a competitor.
+ */
+export function ComparisonTable({
+  features,
+  highlightWinner = true,
+  showTooltips = true,
+}: ComparisonTableProps) {
+  // Handle empty or undefined features
+  if (!features || features.length === 0) {
+    return (
+      <div
+        data-testid="comparison-table-empty"
+        role="table"
+        aria-label="Feature comparison table"
+        className="text-slate-400 text-center py-8 bg-slate-900/50 rounded-xl border border-slate-800"
+      >
+        <p>No features to compare</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div
+        data-testid="comparison-table"
+        role="table"
+        aria-label="Feature comparison table"
+        className="w-full bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-6 min-w-[600px]"
+      >
+        {/* Header Row */}
+        <div role="rowgroup">
+          <div
+            role="row"
+            data-testid="header-row"
+            className="grid grid-cols-3 gap-4 pb-3 border-b border-slate-700 text-sm font-semibold"
+          >
+            <div role="columnheader" className="text-slate-400">
+              Feature
+            </div>
+            <div role="columnheader" className="text-center text-emerald-400">
+              SEOIndicator
+            </div>
+            <div role="columnheader" className="text-center text-blue-400">
+              Competitor
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Categories */}
+        <div role="rowgroup">
+          {features.map((category) => (
+            <FeatureCategoryRow
+              key={category.name}
+              category={category}
+              highlightWinner={highlightWinner}
+              showTooltips={showTooltips}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export default ComparisonTable;
+export default memo(ComparisonTable);
