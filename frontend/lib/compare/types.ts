@@ -27,15 +27,15 @@ export const BUDGET_TYPES = ['free', 'budget', 'mid-range', 'premium'] as const;
 
 /**
  * Represents a pricing tier for a competitor or SEOIndicator.
- * Prices can be numeric or 'Free' string.
+ * Prices can be numeric or 'Free' or 'Custom' (for enterprise tiers).
  */
 export interface PricingTier {
   /** Name of the pricing tier (e.g., 'Lite', 'Pro', 'Enterprise') */
   name: string;
-  /** Monthly price - either a number or 'Free' */
-  monthlyPrice: number | 'Free';
-  /** Annual price - either a number or 'Free' */
-  annualPrice: number | 'Free';
+  /** Monthly price - either a number, 'Free', or 'Custom' (enterprise) */
+  monthlyPrice: number | 'Free' | 'Custom';
+  /** Annual price - either a number, 'Free', or 'Custom' (enterprise) */
+  annualPrice: number | 'Free' | 'Custom';
   /** List of features included in this tier */
   features: string[];
   /** Whether this tier should be highlighted in the UI */
@@ -270,10 +270,10 @@ export function isPricingTier(value: unknown): value is PricingTier {
   if (typeof obj.name !== 'string') return false;
   
   const monthlyPrice = obj.monthlyPrice;
-  if (typeof monthlyPrice !== 'number' && monthlyPrice !== 'Free') return false;
+  if (typeof monthlyPrice !== 'number' && monthlyPrice !== 'Free' && monthlyPrice !== 'Custom') return false;
   
   const annualPrice = obj.annualPrice;
-  if (typeof annualPrice !== 'number' && annualPrice !== 'Free') return false;
+  if (typeof annualPrice !== 'number' && annualPrice !== 'Free' && annualPrice !== 'Custom') return false;
   
   if (!Array.isArray(obj.features)) return false;
   if (!obj.features.every((f: unknown) => typeof f === 'string')) return false;

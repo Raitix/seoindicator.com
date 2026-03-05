@@ -240,6 +240,50 @@ export default function Home() {
         </Card>
       </section>
 
+      {/* How We Compare Section */}
+      <section
+        className="container mx-auto px-4 py-16"
+        aria-label="How We Compare"
+        data-testid="how-we-compare-section"
+      >
+        <h2 className="text-3xl font-bold text-white text-center mb-12">
+          How We Compare
+        </h2>
+        <div
+          className="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto"
+          data-testid="comparison-links"
+        >
+          <Link
+            href="/compare/seoindicator-vs-ahrefs"
+            className="p-6 bg-surface-2 border border-slate-700 rounded-lg hover:border-brand-primary/50 transition-colors text-center"
+            data-testid="compare-ahrefs"
+          >
+            <span className="text-white font-semibold">vs Ahrefs</span>
+          </Link>
+          <Link
+            href="/compare/seoindicator-vs-semrush"
+            className="p-6 bg-surface-2 border border-slate-700 rounded-lg hover:border-brand-primary/50 transition-colors text-center"
+            data-testid="compare-semrush"
+          >
+            <span className="text-white font-semibold">vs SEMrush</span>
+          </Link>
+          <Link
+            href="/compare/seoindicator-vs-moz"
+            className="p-6 bg-surface-2 border border-slate-700 rounded-lg hover:border-brand-primary/50 transition-colors text-center"
+            data-testid="compare-moz"
+          >
+            <span className="text-white font-semibold">vs Moz</span>
+          </Link>
+          <Link
+            href="/compare"
+            className="p-6 bg-brand-primary/10 border border-brand-primary/30 rounded-lg hover:bg-brand-primary/20 transition-colors text-center"
+            data-testid="view-all-comparisons"
+          >
+            <span className="text-brand-primary font-semibold">View all comparisons</span>
+          </Link>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-slate-700 mt-20" role="contentinfo">
         <div className="container mx-auto px-4 py-8 text-center text-slate-500">

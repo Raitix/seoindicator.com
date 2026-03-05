@@ -123,6 +123,15 @@ export default function Footer({ onShowCookieSettings }: FooterProps) {
               </li>
               <li>
                 <Link
+                  href="/compare"
+                  className="text-sm text-slate-400 hover:text-white transition-colors"
+                  data-testid="footer-compare-link"
+                >
+                  Compare SEO Tools
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/blog/"
                   className="text-sm text-slate-400 hover:text-white transition-colors"
                 >
