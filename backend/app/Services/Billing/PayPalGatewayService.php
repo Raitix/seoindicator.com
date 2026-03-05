@@ -342,6 +342,12 @@ class PayPalGatewayService implements PaymentGatewayInterface
      */
     public function handleWebhook(Request $request): PaymentResult
     {
+        // SECURITY CRITICAL: Verify webhook signature BEFORE processing
+        // This prevents fraudulent webhook requests (fake payments, refunds, etc.)
+        if (!$this->verifyWebhookSignature($request)) {
+            throw new InvalidWebhookSignatureException('Invalid PayPal webhook signature.');
+        }
+
         $payload = $request->getContent();
         $event = json_decode($payload, true);
 
