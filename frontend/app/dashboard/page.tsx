@@ -128,6 +128,7 @@ export default function DashboardPage() {
           {/* Welcome Card */}
           <WelcomeCard
             user={dashboardUser}
+            lastLoginAt={user?.lastLoginAt}
           />
 
           {/* Stats Grid */}
