@@ -1,7 +1,7 @@
 # TASK-33-1: Add Visibility Columns to Audits Table
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
