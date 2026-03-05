@@ -74,12 +74,22 @@ export function getCompetitorById(id: string): CompetitorData | null {
  * @returns Tuple of competitor IDs or null if invalid format
  */
 export function parseSlug(slug: string): [string, string] | null {
+  // Handle null, undefined, and non-string inputs
+  if (slug === null || slug === undefined || typeof slug !== 'string') {
+    return null;
+  }
+
   const parts = slug.split('-vs-');
   if (parts.length !== 2) {
     return null;
   }
 
   const [competitorA, competitorB] = parts;
+
+  // Validate both parts are non-empty
+  if (!competitorA || !competitorB) {
+    return null;
+  }
 
   // Validate both competitors exist
   if (!COMPETITOR_REGISTRY[competitorA] || !COMPETITOR_REGISTRY[competitorB]) {
@@ -113,44 +123,63 @@ export function getComparisonBySlug(slug: string): ComparisonData | null {
 
 /**
  * Generate comparison data between two competitors.
- * @param competitorA - First competitor data
- * @param competitorB - Second competitor data
- * @returns ComparisonData structure
+ * @param competitorA - First competitor ID (string) or CompetitorData
+ * @param competitorB - Second competitor ID (string) or CompetitorData
+ * @returns ComparisonData structure or null if invalid inputs
  */
 export function generateComparisonData(
-  competitorA: CompetitorData,
-  competitorB: CompetitorData
-): ComparisonData {
-  const slug = `${competitorA.slug}-vs-${competitorB.slug}`;
+  competitorA: string | CompetitorData,
+  competitorB: string | CompetitorData
+): ComparisonData | null {
+  // Handle null/undefined inputs
+  if (competitorA === null || competitorA === undefined || 
+      competitorB === null || competitorB === undefined) {
+    return null;
+  }
+
+  // Resolve competitor data from string ID or use provided object
+  const compA: CompetitorData | null = typeof competitorA === 'string' 
+    ? getCompetitorById(competitorA) 
+    : competitorA;
+  const compB: CompetitorData | null = typeof competitorB === 'string' 
+    ? getCompetitorById(competitorB) 
+    : competitorB;
+
+  // Validate both competitors exist
+  if (!compA || !compB) {
+    return null;
+  }
+
+  const slug = `${compA.slug}-vs-${compB.slug}`;
 
   return {
     slug,
-    title: `${competitorA.name} vs ${competitorB.name}: Which SEO Tool Is Better?`,
-    metaDescription: `Compare ${competitorA.name} vs ${competitorB.name}. Detailed analysis of features, pricing, pros and cons to help you choose the best SEO tool for your needs.`,
-    competitors: [competitorA.id, competitorB.id],
-    summary: `Find out how ${competitorA.name} compares to ${competitorB.name} in this comprehensive comparison. We analyze features, pricing, and performance to help you make an informed decision.`,
-    featureComparison: mergeFeatures(competitorA.features, competitorB.features),
+    title: `${compA.name} vs ${compB.name}: Which SEO Tool Is Better?`,
+    metaDescription: `Compare ${compA.name} vs ${compB.name}. Detailed analysis of features, pricing, pros and cons to help you choose the best SEO tool for your needs.`,
+    competitors: [compA.id, compB.id],
+    summary: `Find out how ${compA.name} compares to ${compB.name} in this comprehensive comparison. We analyze features, pricing, and performance to help you make an informed decision.`,
+    featureComparison: mergeFeatures(compA.features, compB.features),
     pricingComparison: {
-      seoindicator: competitorA.id === 'seoindicator' ? competitorA.pricing : competitorB.pricing,
-      competitor: competitorA.id === 'seoindicator' ? competitorB.pricing : competitorA.pricing,
+      seoindicator: compA.id === 'seoindicator' ? compA.pricing : compB.pricing,
+      competitor: compA.id === 'seoindicator' ? compB.pricing : compA.pricing,
     },
     prosCons: {
       seoindicator: {
-        pros: competitorA.id === 'seoindicator' ? competitorA.pros : competitorB.pros,
-        cons: competitorA.id === 'seoindicator' ? competitorA.cons : competitorB.cons,
+        pros: compA.id === 'seoindicator' ? compA.pros : compB.pros,
+        cons: compA.id === 'seoindicator' ? compA.cons : compB.cons,
       },
       competitor: {
-        pros: competitorA.id === 'seoindicator' ? competitorB.pros : competitorA.pros,
-        cons: competitorA.id === 'seoindicator' ? competitorB.cons : competitorA.cons,
+        pros: compA.id === 'seoindicator' ? compB.pros : compA.pros,
+        cons: compA.id === 'seoindicator' ? compB.cons : compA.cons,
       },
     },
     useCases: {
-      seoindicator: competitorA.id === 'seoindicator' ? competitorA.useCases : competitorB.useCases,
-      competitor: competitorA.id === 'seoindicator' ? competitorB.useCases : competitorA.useCases,
+      seoindicator: compA.id === 'seoindicator' ? compA.useCases : compB.useCases,
+      competitor: compA.id === 'seoindicator' ? compB.useCases : compA.useCases,
     },
-    verdict: generateVerdict(competitorA, competitorB),
-    faqs: generateFAQs(competitorA, competitorB),
-    relatedComparisons: getRelatedComparisons(competitorA.id, competitorB.id),
+    verdict: generateVerdict(compA, compB),
+    faqs: generateFAQs(compA, compB),
+    relatedComparisons: getRelatedComparisons(compA.id, compB.id),
   };
 }
 
@@ -251,6 +280,30 @@ export function validateCompetitorData(data: unknown): data is CompetitorData {
   if (!Array.isArray(obj.cons)) return false;
   if (!Array.isArray(obj.useCases)) return false;
 
+  // Validate pricing array is not empty
+  if (obj.pricing.length === 0) return false;
+
+  // Validate pricing items have required fields
+  for (const tier of obj.pricing) {
+    if (typeof tier !== 'object' || tier === null) return false;
+    const t = tier as Record<string, unknown>;
+    if (typeof t.name !== 'string') return false;
+    // Check for negative prices
+    if (typeof t.monthlyPrice === 'number' && t.monthlyPrice < 0) return false;
+    if (typeof t.annualPrice === 'number' && t.annualPrice < 0) return false;
+  }
+
+  // Validate lastUpdated format (ISO date or YYYY-MM-DD)
+  if (!/^\d{4}-\d{2}-\d{2}/.test(obj.lastUpdated as string)) return false;
+
+  // Validate use case audience values
+  const validAudiences = ['solo', 'small-team', 'agency', 'enterprise'];
+  for (const uc of obj.useCases) {
+    if (typeof uc !== 'object' || uc === null) return false;
+    const u = uc as Record<string, unknown>;
+    if (typeof u.audience === 'string' && !validAudiences.includes(u.audience)) return false;
+  }
+
   return true;
 }
 
@@ -273,6 +326,34 @@ export function validateComparisonData(data: unknown): data is ComparisonData {
   // Check competitors array has exactly 2 items
   if (!Array.isArray(obj.competitors) || obj.competitors.length !== 2) return false;
   if (!obj.competitors.every((c: unknown) => typeof c === 'string')) return false;
+
+  // Check featureComparison is an array
+  if (!Array.isArray(obj.featureComparison)) return false;
+
+  // Check pricingComparison is an object with valid structure
+  if (typeof obj.pricingComparison !== 'object' || obj.pricingComparison === null) return false;
+  const pricing = obj.pricingComparison as Record<string, unknown>;
+  if (!Array.isArray(pricing.seoindicator) || !Array.isArray(pricing.competitor)) return false;
+  
+  // Validate pricing tier items in pricingComparison
+  const validatePricingTier = (tier: unknown): boolean => {
+    if (typeof tier !== 'object' || tier === null) return false;
+    const t = tier as Record<string, unknown>;
+    return typeof t.name === 'string';
+  };
+  if (!pricing.seoindicator.every(validatePricingTier)) return false;
+  if (!pricing.competitor.every(validatePricingTier)) return false;
+
+  // Check prosCons is an object with valid structure
+  if (typeof obj.prosCons !== 'object' || obj.prosCons === null) return false;
+  const prosCons = obj.prosCons as Record<string, unknown>;
+  if (typeof prosCons.seoindicator !== 'object' || typeof prosCons.competitor !== 'object') return false;
+
+  // Check faqs is an array
+  if (!Array.isArray(obj.faqs)) return false;
+
+  // Validate slug format (tool-a-vs-tool-b)
+  if (!/^[a-z0-9-]+-vs-[a-z0-9-]+$/.test(obj.slug as string)) return false;
 
   return true;
 }
