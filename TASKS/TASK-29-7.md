@@ -1,7 +1,7 @@
 # TASK-29-7: ExportModal Component
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## PRIORITY
 `High`
