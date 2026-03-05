@@ -1,7 +1,7 @@
 # SPEC-028: Modern UI/UX + Indicator Catalog
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## PRIORITY
 `High`
