@@ -1,7 +1,7 @@
 # TASK-32-3: Create Comparison Page Route with Static Generation
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -172,3 +172,69 @@ Implement the complete page layout:
 
 ### [2026-03-05 14:55 GMT+2] Agent: SpecSystemAnalyst
 Task created as part of SPEC-32 breakdown. Core routing infrastructure for comparison pages.
+
+### [2026-03-05 17:30 GMT+2] Agent: PreTester
+**Test Design Complete:**
+
+**Files Created:**
+| File | Tests | Purpose |
+|------|-------|---------|
+| `TESTS/TEST-32-3.md` | 172 scenarios | Test documentation |
+| `frontend/__tests__/app/compare/[slug]/page.test.tsx` | 120+ | Page component tests |
+| `frontend/__tests__/app/compare/[slug]/performance.test.tsx` | 40+ | Performance & mobile tests |
+| `frontend/__tests__/app/compare/[slug]/not-found.test.tsx` | 35+ | 404 handling tests |
+
+**Test Categories:**
+| Category | Tests |
+|----------|-------|
+| generateStaticParams (CP-GEN) | 30 |
+| generateMetadata (CP-META) | 25 |
+| Page Rendering (CP-RENDER) | 40 |
+| 404 Handling (CP-404) | 15 |
+| Performance (CP-PERF) | 20 |
+| Mobile Responsiveness (CP-MOBILE) | 20 |
+| Integration (CP-INT) | 15 |
+| Acceptance Criteria (AC) | 7 |
+| **Total** | **172** |
+
+**Key Test Patterns:**
+- Mock registry module with `jest.mock('@/lib/compare/registry')`
+- Mock Next.js components (Link, Image, navigation)
+- Mock page component structure matches expected implementation
+- Static generation tested via SSR simulation
+- Mobile responsiveness tested via Tailwind class assertions
+- Performance tested via render timing and DOM structure
+
+**Developer Notes:**
+1. Create `frontend/app/compare/[slug]/page.tsx` with:
+   - `generateStaticParams()` returning `COMPARISON_SLUGS.map(slug => ({ slug }))`
+   - `generateMetadata()` using `getComparisonBySlug(params.slug)`
+   - Default export page component calling `notFound()` for invalid slugs
+
+2. Create `frontend/app/compare/[slug]/not-found.tsx` with:
+   - 404 heading and message
+   - Link to `/compare` index
+   - Link to homepage
+   - Popular comparisons suggestions
+
+3. Page sections (8 total):
+   - Hero (H1 + summary)
+   - Feature comparison table
+   - Pricing comparison grid
+   - Pros/cons cards (2 columns)
+   - Use cases
+   - FAQ accordion
+   - CTA section
+   - Related comparisons
+
+4. Performance requirements:
+   - Images with `loading="lazy"`
+   - JSON-LD schema for SEO
+   - Responsive Tailwind classes (grid-cols-1 md:grid-cols-2)
+   - Touch targets min 48px
+
+**Dependencies Status:**
+- TASK-32-1 (Types): Done ✅
+- TASK-32-2 (Registry): To Test Locally (usable for implementation)
+
+**Status:** Updated to `To Develop`
