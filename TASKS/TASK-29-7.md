@@ -1,7 +1,7 @@
 # TASK-29-7: ExportModal Component
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `High`

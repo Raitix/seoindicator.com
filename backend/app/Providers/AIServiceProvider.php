@@ -47,7 +47,17 @@ class AIServiceProvider extends ServiceProvider
 
         // TASK-31-7: AIAnalysisService bindings
         $this->app->singleton(UnifiedPromptServiceInterface::class, UnifiedPromptService::class);
-        $this->app->singleton(OpenRouterClientInterface::class, OpenRouterClient::class);
+        $this->app->singleton(OpenRouterClientInterface::class, function ($app) {
+            $apiKey = config('openrouter.api_key');
+            // Allow empty API key for testing - the service will handle it gracefully
+            return new OpenRouterClient([
+                'api_key' => $apiKey ?: 'not-configured',
+                'base_url' => config('openrouter.base_url'),
+                'model' => config('openrouter.default_model'),
+                'timeout' => config('openrouter.timeout'),
+                'max_tokens' => config('openrouter.max_tokens'),
+            ]);
+        });
         $this->app->singleton(AnalysisCacheServiceInterface::class, AnalysisCacheService::class);
         
         // Helper services

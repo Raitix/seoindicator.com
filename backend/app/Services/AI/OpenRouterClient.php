@@ -2,6 +2,7 @@
 
 namespace App\Services\AI;
 
+use App\Services\AI\Contracts\OpenRouterClientInterface;
 use App\Services\AI\DTOs\AIResponse;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -17,7 +18,7 @@ use InvalidArgumentException;
  * @see https://openrouter.ai/docs
  * @see TASK-31-6
  */
-class OpenRouterClient
+class OpenRouterClient implements OpenRouterClientInterface
 {
     /**
      * The base URL for the OpenRouter API.

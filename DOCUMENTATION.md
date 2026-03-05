@@ -120,6 +120,362 @@ The service preserves critical SEO elements during truncation:
 - TASK-31-13: AnalysisRunnerService (uses TruncationService)
 
 ---
+## AIAnalysisResponseParser (TASK-31-5)
+
+### Service Description
+Core service for parsing AI responses, extracting JSON from various formats (markdown code blocks, raw JSON, mixed content), validating against schema, and returning structured `AnalysisResult` DTOs. Handles malformed responses with repair logic and comprehensive error handling. Part of the Unified AI Prompt + Context Management feature (FEAT-031).
+
+### Component Location
+- **Service:** `backend/app/Services/AI/AIAnalysisResponseParser.php`
+- **DTO:** `backend/app/Services/AI/DTOs/AnalysisResult.php`
+- **Exception:** `backend/app/Exceptions/InvalidAIResponseException.php`
+- **Tests:** `backend/tests/Unit/Services/AI/AIAnalysisResponseParserTest.php`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `parse(string $rawResponse): AnalysisResult` | Parse raw AI response to structured result |
+| `extractJson(string $response): ?array` | Extract JSON from various response formats |
+| `validateSchema(array $data): array` | Validate against JSON schema, return errors |
+| `repairPartialJson(string $json): ?array` | Attempt to repair malformed JSON |
+
+### Response Formats Handled
+
+| Format | Example | Extraction Method |
+|--------|---------|-------------------|
+| Markdown code block | ` ```json\n{...}\n``` ` | Regex extract between markers |
+| Raw JSON | `{...}` | Direct decode |
+| JSON with surrounding text | `Here's the analysis: {...}` | Regex find JSON object |
+| Multi-block | Multiple ` ```json ` blocks | Extract first valid |
+
+### JSON Schema Validation
+
+```php
+class AIAnalysisResponseParser
+{
+    private const SCHEMA = [
+        'type' => 'object',
+        'required' => ['overall_score', 'overall_summary', 'indicators'],
+        'properties' => [
+            'overall_score' => [
+                'type' => 'integer',
+                'minimum' => 0,
+                'maximum' => 100,
+            ],
+            'overall_summary' => [
+                'type' => 'string',
+                'minLength' => 50,
+                'maxLength' => 500,
+            ],
+            'category_scores' => [
+                'type' => 'object',
+                'properties' => [
+                    'content' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100],
+                    'technical' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100],
+                    'accessibility' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100],
+                    'performance' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100],
+                ],
+            ],
+            'indicators' => [
+                'type' => 'array',
+                'minItems' => 17,
+                'maxItems' => 17,
+                'items' => [
+                    'type' => 'object',
+                    'required' => ['id', 'name', 'score', 'passed'],
+                    'properties' => [
+                        'id' => ['type' => 'string'],
+                        'name' => ['type' => 'string'],
+                        'score' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 3],
+                        'passed' => ['type' => 'boolean'],
+                        'details' => ['type' => 'object'],
+                        'suggestions' => ['type' => 'array', 'items' => ['type' => 'string']],
+                    ],
+                ],
+            ],
+            'top_priorities' => [
+                'type' => 'array',
+                'maxItems' => 5,
+            ],
+        ],
+    ];
+}
+```
+
+### AnalysisResult DTO
+
+```php
+class AnalysisResult
+{
+    public function __construct(
+        public readonly int $overallScore,
+        public readonly string $overallSummary,
+        public readonly array $categoryScores,
+        public readonly array $indicators,
+        public readonly array $topPriorities,
+        public readonly string $model,
+        public readonly int $promptTokens,
+        public readonly int $responseTokens,
+    ) {}
+    
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            overallScore: $data['overall_score'],
+            overallSummary: $data['overall_summary'],
+            categoryScores: $data['category_scores'] ?? [],
+            indicators: $data['indicators'],
+            topPriorities: $data['top_priorities'] ?? [],
+            model: $data['model'] ?? 'unknown',
+            promptTokens: $data['prompt_tokens'] ?? 0,
+            responseTokens: $data['response_tokens'] ?? 0,
+        );
+    }
+}
+```
+
+### Error Handling
+
+| Error | Response |
+|-------|----------|
+| No JSON found | `InvalidAIResponseException` with raw response logged |
+| Schema validation fails | Attempt repair, log warning |
+| Missing required field | Use defaults, log warning |
+| Invalid indicator ID | Skip indicator, log warning |
+| Score out of range | Clamp to valid range (0-3 for indicators, 0-100 for overall) |
+
+### Repair Logic
+
+| Issue | Repair Strategy |
+|-------|-----------------|
+| Score > 100 | Clamp to 100 |
+| Score < 0 | Clamp to 0 |
+| Indicator score > 3 | Clamp to 3 |
+| Missing `passed` field | Calculate from score (score >= 2 = passed) |
+| Missing `suggestions` array | Default to empty array |
+| Missing `category_scores` | Default to empty object |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | All string data sanitized, no script execution |
+| JSON Injection | Strict JSON decoding with error handling |
+| Malicious Content | Preserved as string data (no interpretation) |
+| Null Byte Handling | Safe string operations |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `AIAnalysisResponseParserTest.php` | 106 | 152 | ✅ PASS |
+| `AnalysisResultTest.php` | 37 | 65 | ✅ PASS |
+| **Total** | **143** | **217** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation (SI) | 5 | Service creation, method existence |
+| JSON Extraction - Markdown (JE-MD) | 5 | Extract from code blocks |
+| JSON Extraction - Raw (JE-RJ) | 3 | Direct JSON decode |
+| JSON Extraction - Mixed (JE-MX) | 4 | JSON with surrounding text |
+| JSON Extraction - Invalid (JE-IV) | 6 | Malformed responses |
+| Schema Validation - Required Fields (SV-RF) | 5 | Missing required fields |
+| Schema Validation - Type Checking (SV-TC) | 5 | Wrong data types |
+| Schema Validation - Range Checking (SV-RC) | 8 | Out-of-range values |
+| Schema Validation - Indicators (SV-IN) | 11 | Indicator array validation |
+| Schema Validation - Category Scores (SV-CS) | 3 | Category score validation |
+| Schema Validation - Top Priorities (SV-TP) | 4 | Top priorities validation |
+| Repair Logic (RP) | 8 | Score clamping, partial repair |
+| Parse Method - Success (PS) | 5 | Successful parse scenarios |
+| Parse Method - Errors (PE) | 5 | Error handling scenarios |
+| AnalysisResult DTO (DTO) | 5 | DTO creation and properties |
+| Edge Cases (EC) | 7 | Unicode, special chars, large data |
+| Performance (PF) | 3 | < 50ms parse time |
+| Security (SC) | 4 | XSS, SQL injection, code execution |
+| Logging (LG) | 3 | Warning logging for repairs |
+| Acceptance Criteria (AC) | 7 | All ACs verified |
+
+### Acceptance Criteria Status
+
+- [x] AC-01: Extracts JSON from markdown code blocks
+- [x] AC-02: Extracts JSON from raw response
+- [x] AC-03: Validates against JSON schema
+- [x] AC-04: Attempts repair for common issues
+- [x] AC-05: Returns structured `AnalysisResult` DTO
+- [x] AC-06: Logs warnings for repair attempts
+- [x] AC-07: Throws `InvalidAIResponseException` for unparseable responses
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `1ff54c9` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 143/143 passing (217 assertions) |
+| Avg Parse Time | 0.02ms |
+| Status | Complete |
+
+### Dependencies
+- None (standalone parsing service)
+
+### Related Tasks
+- TASK-31-3: TruncationService (content reduction before AI)
+- TASK-31-7: AIAnalysisService (uses parser for response handling)
+- TASK-31-13: AnalysisRunnerService (uses parser in analysis flow)
+
+---
+## AIAnalysisService (TASK-31-7)
+
+### Service Description
+Core orchestrator service for the unified AI analysis flow. Coordinates prompt building, context window management, truncation, AI API calls, and response parsing into a single streamlined analysis pipeline. Part of the Unified AI Prompt + Context Management feature (FEAT-031).
+
+### Component Location
+- **Service:** `backend/app/Services/AI/AIAnalysisService.php`
+- **Interface:** `backend/app/Services/AI/Contracts/AIAnalysisServiceInterface.php`
+- **Tests:** `backend/tests/Unit/Services/AI/AIAnalysisServiceTest.php`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `analyze(string $url, string $html, array $options = []): AnalysisResult` | Execute complete unified analysis flow |
+| `analyzeWithModel(string $url, string $html, string $model): AnalysisResult` | Analyze with specific model override |
+| `getAnalysisMetadata(): array` | Return analysis metadata (tokens, model, etc.) |
+
+### Service Dependencies
+
+| Service | Purpose |
+|---------|---------|
+| `UnifiedPromptService` | Build consolidated prompt with all 17 indicators |
+| `ContextWindowManager` | Estimate tokens, select optimal model |
+| `TruncationService` | Truncate content if exceeds context window |
+| `OpenRouterClient` | Make AI API call via OpenRouter |
+| `AIAnalysisResponseParser` | Parse and validate JSON response |
+| `AnalysisCacheService` | Cache results for 24 hours |
+
+### Implementation Flow
+
+```
+analyze(url, html, options)
+├── 1. Check cache → return if hit
+├── 2. Estimate tokens (ContextWindowManager)
+├── 3. Select model (auto or override)
+├── 4. Truncate if needed (TruncationService)
+├── 5. Build prompt (UnifiedPromptService)
+├── 6. Call AI (OpenRouterClient)
+├── 7. Parse response (AIAnalysisResponseParser)
+├── 8. Enrich metadata
+└── 9. Cache result (24h TTL)
+```
+
+### Token Overhead
+
+| Component | Tokens |
+|-----------|--------|
+| System prompt | ~3400 |
+| Response buffer | Reserved from effective limit |
+
+### Retry Policy
+
+| Parameter | Value |
+|-----------|-------|
+| Max Retries | 3 |
+| Backoff Delays | 1000ms, 2000ms, 4000ms (exponential) |
+| Retry on Status Codes | 429, 500, 502, 503, 504 |
+| No Retry on Status Codes | 400, 401, 403 (client errors) |
+
+### Cache Strategy
+
+| Parameter | Value |
+|-----------|-------|
+| TTL | 24 hours (86400 seconds) |
+| Key Generation | SHA-256 hash of URL + HTML |
+| Invalidation | Manual or TTL expiry |
+
+### Error Handling Flow
+
+| Error Type | Handling |
+|------------|----------|
+| Cache hit | Return cached result immediately |
+| Token overflow | Truncate and retry |
+| Rate limited (429) | Retry with exponential backoff |
+| Server error (5xx) | Retry with exponential backoff |
+| Client error (4xx) | Throw AIAnalysisException immediately |
+| Max retries exceeded | Throw AIAnalysisException |
+| Parse failure | Attempt repair, throw if unrepairable |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `AIAnalysisServiceTest.php` | 48 | 32+ | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation (SI) | 8 | Interface, methods, constructor, dependency injection |
+| Cache Hit Flow (CH) | 8 | Cache retrieval, TTL, force_refresh |
+| Full Analysis Flow (FA) | 8 | Complete pipeline verification |
+| Model Selection (MS) | 6 | Auto-selection, override, fallback |
+| Truncation Flow (TF) | 2 | No truncation needed, truncation applied |
+| Retry Logic (RL) | 6 | 429/500 retry, max retries, no retry on 400 |
+| Error Handling (EH) | 5 | Exceptions, empty/malformed input |
+| Acceptance Criteria (AC) | 8 | All 8 ACs verified |
+
+**Risky Tests Explanation:**
+16 tests use Mockery's `shouldNotReceive()` to verify certain methods are NOT called during specific flows (e.g., cache hit should skip AI call). These tests pass correctly but don't have explicit PHPUnit assertions.
+
+### Acceptance Criteria Status
+
+- [x] AC-001: `analyze()` orchestrates complete flow
+- [x] AC-002: Cache checked before AI call
+- [x] AC-003: Model selection automatic based on content size
+- [x] AC-004: Truncation applied when needed
+- [x] AC-005: Response parsed and validated
+- [x] AC-006: Result cached for 24 hours
+- [x] AC-007: Retry policy for transient errors
+- [x] AC-008: All metadata stored (tokens, model, latency)
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | URL/HTML sanitized before processing |
+| SSRF Protection | URL validation in dependencies |
+| API Key Protection | Never exposed in exceptions or logs |
+| Input Validation | Empty/null values throw exceptions |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 48/48 passing (32 passed, 16 risky) |
+| Duration | 19.46s |
+| Status | Complete |
+
+### Dependencies
+- TASK-31-2 (ContextWindowManager) - Done
+- TASK-31-3 (TruncationService) - Done
+- TASK-31-4 (UnifiedPromptService) - Tests Written
+- TASK-31-5 (AIAnalysisResponseParser) - Done
+- TASK-31-6 (OpenRouterClient) - Done
+
+### Related Tasks
+- TASK-31-2: ContextWindowManager (token estimation)
+- TASK-31-3: TruncationService (content reduction)
+- TASK-31-4: UnifiedPromptService (prompt building)
+- TASK-31-5: AIAnalysisResponseParser (response parsing)
+- TASK-31-6: OpenRouterClient (AI API calls)
+- TASK-31-13: AnalysisRunnerService (uses AIAnalysisService)
+
+---
 ## Unified AI Analysis Integration Tests (TASK-31-17)
 
 ### Test Description
