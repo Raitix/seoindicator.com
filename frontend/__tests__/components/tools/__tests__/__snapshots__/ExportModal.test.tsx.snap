@@ -1,0 +1,7 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ExportModal Snapshots EM-100: matches snapshot for default state 1`] = `null`;
+
+exports[`ExportModal Snapshots EM-101: matches snapshot for loading state 1`] = `null`;
+
+exports[`ExportModal Snapshots EM-102: matches snapshot for error state 1`] = `null`;

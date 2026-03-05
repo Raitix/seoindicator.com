@@ -63,14 +63,21 @@ describe('ExportModal', () => {
     data: mockData,
   };
 
+  let originalLocation: Location;
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockFetch.mockReset();
     // Mock window.location for download tests
-    Object.defineProperty(window, 'location', {
-      value: { href: '' },
-      writable: true,
-    });
+    originalLocation = window.location;
+    // @ts-expect-error - intentionally deleting for test mocking
+    delete window.location;
+    window.location = { href: '' } as Location;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    window.location = originalLocation;
   });
 
   afterEach(() => {
@@ -1052,8 +1059,9 @@ describe('ExportModal', () => {
     it('EM-076: shows what will be exported', () => {
       render(<ExportModal {...defaultProps} />);
 
-      // Should show tool name or URL
-      expect(screen.getByText(/meta-tag-analyzer|example.com/i)).toBeInTheDocument();
+      // Should show tool name and URL in preview
+      expect(screen.getByText('meta-tag-analyzer')).toBeInTheDocument();
+      expect(screen.getByText('example.com')).toBeInTheDocument();
     });
 
     it('EM-077: shows indicator count', () => {
@@ -1109,7 +1117,7 @@ describe('ExportModal', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
-        json: async () => ({ message: 'Server error' }),
+        json: async () => ({}), // No message to trigger fallback
       });
 
       const { container } = render(<ExportModal {...defaultProps} />);
