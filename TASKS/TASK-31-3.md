@@ -1,7 +1,7 @@
 # TASK-31-3: TruncationService Implementation
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -152,3 +152,41 @@ class TruncationResult
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 13:15 GMT+2] ProjectManager
+**Prioritization Complete**
+
+**Priority:** HIGH (confirmed) - Core service in SPEC-031 Unified AI Prompt architecture
+**Risk:** MEDIUM (confirmed) - Standard Laravel service, pure string manipulation, no external APIs
+**Status:** `To Write Tests` - Ready for PreTester
+
+**Dependency Analysis:**
+- **Dependency:** TASK-31-2 (ContextWindowManager) - ✅ DONE
+- **Can Proceed:** YES - dependency satisfied
+- **Enables:** TASK-31-7 (AIAnalysisService) requires truncation for content reduction
+
+**TDD Approach:**
+PreTester can design tests immediately using the defined interface:
+- `truncate(string $html, int $targetTokens): TruncationResult`
+- `getAvailableStrategies(): array`
+- `estimateReduction(string $strategy): int`
+
+**7 Truncation Strategies (Priority Order):**
+| Priority | Strategy | Reduction | Reversible |
+|----------|----------|-----------|------------|
+| 1 | Remove HTML comments | 5-15% | Yes |
+| 2 | Collapse whitespace | 3-8% | Yes |
+| 3 | Remove `<script>` tags | 10-40% | No |
+| 4 | Remove `<style>` tags | 5-20% | No |
+| 5 | Remove base64 images | Variable | No |
+| 6 | Truncate text content | 50-70% | No |
+| 7 | Keep semantic structure | 70-90% | No |
+
+**Key Design Points:**
+1. Uses ContextWindowManager for token estimation
+2. Progressive strategy application (non-destructive first)
+3. TruncationResult DTO contains: html, originalTokens, finalTokens, strategiesApplied, reductionPercent
+4. Original HTML never modified (returns new string)
+
+**Execution Order:** Second task in Phase 1 Core Services pipeline (after TASK-31-2)
+**Handoff to:** PreTester for test design
