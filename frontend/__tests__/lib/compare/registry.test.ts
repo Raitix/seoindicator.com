@@ -464,7 +464,7 @@ describe('Registry Module', () => {
     });
 
     test('RG-PARSE-011: Returns tuple of strings', () => {
-      const result = registry.parseSlug('a-vs-b');
+      const result = registry.parseSlug('seoindicator-vs-ahrefs');
       expect(Array.isArray(result)).toBe(true);
       expect(result?.length).toBe(2);
       expect(typeof result?.[0]).toBe('string');
