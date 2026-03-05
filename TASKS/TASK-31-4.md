@@ -1,7 +1,7 @@
 # TASK-31-4: UnifiedPromptService for Prompt Building
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -165,3 +165,40 @@ class UnifiedPromptService
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 13:20 GMT+2] ProjectManager
+**Prioritization In Progress**
+
+**Priority:** HIGH (confirmed) - Foundation service for SPEC-031 Unified AI Prompt architecture
+**Risk:** MEDIUM (confirmed) - Standard Laravel service, no external APIs, pure string manipulation
+
+**Dependency Analysis:**
+- **Dependencies:** NONE - Foundation task, can proceed immediately
+- **Parallel Tasks:** TASK-31-2 (ContextWindowManager - DONE ✅), TASK-31-3 (TruncationService - `To Write Tests`)
+- **Enables:** TASK-31-7 (AIAnalysisService) requires unified prompt for single AI call
+- **Phase Context:** Phase 1 Core Services - fourth task (after ContextWindowManager, TruncationService)
+
+**TDD Approach:**
+PreTester can design tests immediately using the defined interface:
+- `buildPrompt(string $url, string $html, array $options): string`
+- `getPromptTemplate(): string`
+- `getIndicatorDefinitions(): array`
+- `getJsonSchema(): array`
+
+**Key Design Points:**
+1. Builds consolidated prompt with all 17 SEO indicators
+2. Uses DOM crawler to extract page info (title, meta description)
+3. Configurable prompt template (`config/ai-prompts.php`)
+4. Indicator weights match specification (total = 1.00)
+5. JSON schema included for AI response validation
+
+**17 Indicators with Weights:**
+| Category | Indicators | Weight Range |
+|----------|------------|--------------|
+| Content | title_tag, meta_description, h1_headings, filenames, links, social_meta | 0.04-0.10 |
+| Technical | url, robots_txt, sitemap_xml, 404_page, mobile_friendly, language, favicon, canonical | 0.02-0.08 |
+| Accessibility | image_alt, aria | 0.05-0.08 |
+| Performance | page_speed | 0.02 |
+
+**Execution Order:** Phase 1 Core Services (parallel with TASK-31-3)
+**Handoff to:** PreTester for test design
