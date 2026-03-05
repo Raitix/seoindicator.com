@@ -21,6 +21,7 @@ use JsonSerializable;
  * @property-read array $truncationStrategies Truncation strategies applied
  * @property-read array $topPriorities Top priority recommendations
  *
+ * @see TASK-31-5
  * @see TASK-31-7
  * @see TASK-31-13
  */
@@ -48,7 +49,7 @@ readonly class AnalysisResult implements JsonSerializable
         public readonly string $model,
         public readonly int $promptTokens,
         public readonly int $responseTokens,
-        public readonly int $latencyMs,
+        public readonly int $latencyMs = 0,
         public readonly array $truncationStrategies = [],
         public readonly array $topPriorities = [],
     ) {
@@ -118,30 +119,54 @@ readonly class AnalysisResult implements JsonSerializable
     /**
      * Create an instance from array data.
      *
+     * Supports both snake_case (from AI responses) and camelCase keys.
+     *
      * @param array $data The data array
      * @return self
      * @throws \InvalidArgumentException If required fields are missing
      */
     public static function fromArray(array $data): self
     {
-        $required = ['overallScore', 'overallSummary', 'indicators'];
-        foreach ($required as $field) {
-            if (!isset($data[$field])) {
-                throw new \InvalidArgumentException("Missing required field: {$field}");
-            }
+        // Support both snake_case and camelCase keys
+        $overallScore = $data['overallScore'] ?? $data['overall_score'] ?? null;
+        $overallSummary = $data['overallSummary'] ?? $data['overall_summary'] ?? null;
+        $indicators = $data['indicators'] ?? null;
+
+        // Validate required fields
+        if ($overallScore === null) {
+            throw new \InvalidArgumentException('Missing required field: overallScore');
+        }
+        if ($overallSummary === null) {
+            throw new \InvalidArgumentException('Missing required field: overallSummary');
+        }
+        if ($indicators === null) {
+            throw new \InvalidArgumentException('Missing required field: indicators');
         }
 
+        // Get optional fields with both naming conventions
+        $categoryScores = $data['categoryScores'] ?? $data['category_scores'] ?? [];
+        $topPriorities = $data['topPriorities'] ?? $data['top_priorities'] ?? [];
+        $model = $data['model'] ?? 'unknown';
+        $promptTokens = $data['promptTokens'] ?? $data['prompt_tokens'] ?? 0;
+        $responseTokens = $data['responseTokens'] ?? $data['response_tokens'] ?? 0;
+        $latencyMs = $data['latencyMs'] ?? $data['latency_ms'] ?? 0;
+        $truncationStrategies = $data['truncationStrategies'] ?? $data['truncation_strategies'] ?? [];
+
+        // Handle null values for optional fields
+        $categoryScores = $categoryScores ?? [];
+        $topPriorities = $topPriorities ?? [];
+
         return new self(
-            overallScore: (int) $data['overallScore'],
-            overallSummary: (string) $data['overallSummary'],
-            categoryScores: $data['categoryScores'] ?? [],
-            indicators: $data['indicators'],
-            model: $data['model'] ?? 'unknown',
-            promptTokens: (int) ($data['promptTokens'] ?? 0),
-            responseTokens: (int) ($data['responseTokens'] ?? 0),
-            latencyMs: (int) ($data['latencyMs'] ?? 0),
-            truncationStrategies: $data['truncationStrategies'] ?? [],
-            topPriorities: $data['topPriorities'] ?? [],
+            overallScore: (int) $overallScore,
+            overallSummary: (string) $overallSummary,
+            categoryScores: (array) $categoryScores,
+            indicators: (array) $indicators,
+            model: (string) $model,
+            promptTokens: (int) $promptTokens,
+            responseTokens: (int) $responseTokens,
+            latencyMs: (int) $latencyMs,
+            truncationStrategies: (array) $truncationStrategies,
+            topPriorities: (array) $topPriorities,
         );
     }
 
@@ -179,22 +204,24 @@ readonly class AnalysisResult implements JsonSerializable
     /**
      * Convert to array for JSON serialization.
      *
+     * Uses snake_case keys for API compatibility.
+     *
      * @return array<string, mixed>
      */
     public function jsonSerialize(): array
     {
         return [
-            'overallScore' => $this->overallScore,
-            'overallSummary' => $this->overallSummary,
-            'categoryScores' => $this->categoryScores,
+            'overall_score' => $this->overallScore,
+            'overall_summary' => $this->overallSummary,
+            'category_scores' => $this->categoryScores,
             'indicators' => $this->indicators,
             'model' => $this->model,
-            'promptTokens' => $this->promptTokens,
-            'responseTokens' => $this->responseTokens,
-            'totalTokens' => $this->getTotalTokens(),
-            'latencyMs' => $this->latencyMs,
-            'truncationStrategies' => $this->truncationStrategies,
-            'topPriorities' => $this->topPriorities,
+            'prompt_tokens' => $this->promptTokens,
+            'response_tokens' => $this->responseTokens,
+            'total_tokens' => $this->getTotalTokens(),
+            'latency_ms' => $this->latencyMs,
+            'truncation_strategies' => $this->truncationStrategies,
+            'top_priorities' => $this->topPriorities,
         ];
     }
 
