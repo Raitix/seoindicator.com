@@ -11,7 +11,7 @@ import { render, screen, within } from '@testing-library/react';
 // Expected metadata
 const expectedMetadata = {
   title: 'How It Works | SEOIndicator SEO Analysis',
-  description: 'Learn how SEOIndicator analyzes your website with our comprehensive SEO scoring system. Discover our 17 indicators and improve your search rankings.',
+  description: 'Learn how SEOIndicator analyzes your website with 17 SEO indicators. Understand our scoring methodology to improve your search visibility today.',
   robots: 'index, follow',
   canonical: '/how-it-works',
   ogType: 'website',
