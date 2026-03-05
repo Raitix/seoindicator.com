@@ -1,7 +1,7 @@
 # TASK-32-9: ComparisonCTA Component
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -128,3 +128,40 @@ function trackCTAClick(ctaId: string, abTestGroup?: string) {
 ## Comments
 ### [2026-03-05 14:55 GMT+2] Agent: SpecSystemAnalyst
 Task created as part of SPEC-32 breakdown. Key conversion component with A/B test support.
+
+### [2026-03-05 17:35 GMT+2] Agent: ProjectManager
+**Priority Assessment:** HIGH (confirmed)
+- Key conversion component for comparison landing pages
+- Directly impacts user conversion and signup flow
+- A/B test integration essential for optimizing conversion rates
+- Sticky mobile CTA is critical for mobile user experience (majority of traffic)
+
+**Risk Assessment:** LOW (confirmed)
+- Frontend-only React component, no external APIs
+- Uses existing Button component pattern
+- Standard intersection observer for sticky behavior
+- No database changes, no authentication changes
+
+**Dependency Status:**
+- TASK-32-1 (Types): Done ✅ - `ComparisonCTAProps` interface available
+- All interfaces defined and tested (117 tests pass)
+
+**Phase Context:**
+- Phase 2 Component - after foundation infrastructure
+- Enables: Full comparison page conversion flow
+- Related: TASK-32-7 (ComparisonPage) will use this component
+
+**TDD Ready:** PreTester can design tests immediately
+- Component props interface defined in TASK-32-1
+- 3 variants to test: primary, secondary, sticky
+- A/B test tracking can be mocked
+- Intersection observer can be mocked for sticky tests
+
+**Key Features to Test:**
+1. Primary variant renders with both buttons
+2. Secondary variant renders as inline CTA
+3. Sticky variant appears on mobile after scroll (500px)
+4. A/B test group prop tracked in analytics
+5. Custom text and href supported
+6. Responsive design (different layouts for mobile/desktop)
+7. Accessibility (proper button/link roles)
