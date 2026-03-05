@@ -85,6 +85,26 @@ _(Document rollback events and causes)_
   - 179 tests passing
 - **Note:** Frontend code for AI suggestions was already in origin/main from earlier commits. This deployment triggered the final status update.
 
+### TASK-21-6 (AI Caching Layer)
+- **Date:** 2026-03-05
+- **Method:** GitHub Actions (automatic)
+- **Run ID:** 22715459300
+- **Result:** Successful
+- **Duration:** ~3 minutes (build: 1m42s, deploy: 35s)
+- **Commit:** 8666edd
+- **Health Check:** 200 OK, database connected
+- **What was deployed:**
+  - AISuggestionCache service (SHA-256 hashing, TTL management)
+  - AICacheController (admin endpoints)
+  - AICacheClear artisan command
+  - Cache configuration in config/ai.php
+- **Cache Features:**
+  - Hash generation: SHA-256 of normalized JSON
+  - Default TTL: 24 hours (configurable)
+  - Admin endpoints: stats, invalidate, clear
+  - Performance: <5ms hash, <1ms get, <2ms set
+- **Note:** Implementation already committed by Developer. Deployment triggered via push to origin/main.
+
 ---
 
 Last updated: 2026-03-05
