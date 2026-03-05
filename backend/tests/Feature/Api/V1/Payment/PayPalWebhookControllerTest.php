@@ -9,6 +9,7 @@ use App\Services\Billing\CreditService;
 use App\Services\Billing\PayPalGatewayService;
 use App\Services\Billing\DTOs\PaymentResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
