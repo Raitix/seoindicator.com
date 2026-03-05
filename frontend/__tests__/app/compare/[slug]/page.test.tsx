@@ -423,11 +423,20 @@ describe('generateStaticParams', () => {
       expect(() => JSON.stringify(params)).not.toThrow();
     });
 
-    it('CP-STR-008: params sorted alphabetically', () => {
+    it('CP-STR-008: all primary comparisons exist', () => {
       const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
-      const sortedSlugs = [...COMPARISON_SLUGS].sort();
-      
-      expect(COMPARISON_SLUGS).toEqual(sortedSlugs);
+      const primaryComparisons = COMPARISON_SLUGS.filter((s: string) => s.startsWith('seoindicator-vs-'));
+      const crossCompetitor = COMPARISON_SLUGS.filter((s: string) => !s.startsWith('seoindicator-'));
+
+      // Verify primary comparisons exist (seoindicator-vs-*)
+      const expectedPrimary = ['seoindicator-vs-ahrefs', 'seoindicator-vs-moz', 'seoindicator-vs-semrush', 'seoindicator-vs-ubersuggest'];
+      expect(primaryComparisons.length).toBe(expectedPrimary.length);
+      expectedPrimary.forEach(slug => {
+        expect(COMPARISON_SLUGS).toContain(slug);
+      });
+
+      // Verify cross-competitor comparisons exist
+      expect(crossCompetitor.length).toBeGreaterThan(0);
     });
 
     it('CP-STR-009: primary comparisons first (seoindicator-vs-*)', () => {
