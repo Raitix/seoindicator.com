@@ -408,15 +408,17 @@ class PayPalWebhookControllerTest extends TestCase
 
         $this->payPalGatewayMock
             ->shouldReceive('verifyWebhookSignature')
+            ->times(2)
             ->andReturn(true);
 
         $this->payPalGatewayMock
             ->shouldReceive('handleWebhook')
+            ->times(2)
             ->andReturn(new PaymentResult(
                 success: true,
                 paymentId: '8XN12345AB678901C',
                 amount: 50.00,
-                userId: 1
+                userId: null // Use null to avoid credit operations with non-existent user
             ));
 
         // Simulate concurrent requests
@@ -654,7 +656,7 @@ class PayPalWebhookControllerTest extends TestCase
                 success: true,
                 paymentId: 'capture_tampered',
                 amount: 999.00,
-                userId: 1
+                userId: null // Use null to avoid credit operations with non-existent user
             ));
 
         $response = $this->postJson(
@@ -901,11 +903,13 @@ class PayPalWebhookControllerTest extends TestCase
         // 200 for valid webhook
         $this->payPalGatewayMock
             ->shouldReceive('verifyWebhookSignature')
+            ->once()
             ->andReturn(true);
 
         $this->payPalGatewayMock
             ->shouldReceive('handleWebhook')
-            ->andReturn(new PaymentResult(success: true, paymentId: 'test', amount: 50.00));
+            ->once()
+            ->andReturn(new PaymentResult(success: true, paymentId: 'test', amount: 50.00, userId: null));
 
         $response = $this->postJson(
             '/api/v1/payments/paypal/webhook',
@@ -913,13 +917,17 @@ class PayPalWebhookControllerTest extends TestCase
             $this->getValidPayPalHeaders()
         );
         $response->assertOk();
+    }
 
+    /**
+     * Test response codes for invalid signature.
+     */
+    public function test_response_codes_are_correct_invalid_signature(): void
+    {
         // 401 for invalid signature
-        $this->payPalGatewayMock = Mockery::mock(PayPalGatewayService::class);
-        $this->app->instance(PayPalGatewayService::class, $this->payPalGatewayMock);
-
         $this->payPalGatewayMock
             ->shouldReceive('verifyWebhookSignature')
+            ->once()
             ->andReturn(false);
 
         $response = $this->postJson(
