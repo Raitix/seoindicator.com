@@ -1,10 +1,10 @@
 # TASK-29-7: ExportModal Component
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
-`Medium`
+`High`
 
 ## RISK
 `Low`
@@ -97,3 +97,34 @@ export function ExportModal({
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 14:45 GMT+2] Agent: ProjectManager
+**Prioritization Complete**
+
+**Priority Assessment:** HIGH (upgraded from Medium) - User-facing modal essential for complete export UX flow. The ExportResultsButton (TASK-29-6) is Done and opens this modal, but current stub is non-functional. This is the actual export functionality.
+
+**Risk Assessment:** LOW (confirmed) - Frontend-only React component, no external APIs, uses existing export endpoint from TASK-29-3.
+
+**Dependency Analysis:**
+- TASK-29-6 (ExportResultsButton): Done ✅ - Button triggers this modal
+- TASK-29-3 (ToolExportService API): Done ✅ - Endpoint ready
+- ExportModal stub exists from TASK-29-6 TDD phase
+
+**TDD Ready:** PreTester CAN design tests immediately:
+- Mocked `POST /api/v1/tools/export` response
+- Mocked file download behavior
+- Well-defined props interface from task spec
+- Existing stub component for reference
+
+**Component Structure:**
+- Props: `isOpen`, `onClose`, `toolName`, `url`, `data`
+- Format selection: PDF/XLS radio buttons with descriptions
+- Preview section showing what will be exported
+- Cancel and Export buttons
+- Loading spinner during generation
+- Error handling with retry option
+- Rate limit error display with time until next available
+
+**Execution Order:** All dependencies satisfied - tests can proceed immediately. Implementation follows test design.
+
+Status updated: `To Prioritize` → `To Write Tests` - Ready for PreTester
