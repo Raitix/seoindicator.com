@@ -1,7 +1,7 @@
 # TASK-31-9: Retry Policy Implementation
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -197,3 +197,53 @@ PreTester can design tests immediately using the defined interface:
 
 **Status:** `To Write Tests` - Ready for PreTester
 **Next Agent:** PreTester for test design
+
+### [2026-03-05 19:30 GMT+2] PreTester
+**Test Design Complete**
+
+**Tests Created:** 85+ unit tests in `backend/tests/Unit/Services/AI/RetryPolicyTest.php`
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation (SI) | 7 | Method existence, instantiation |
+| shouldRetry() (SR) | 18 | All retryable/non-retryable scenarios |
+| getDelayMs() (GD) | 8 | Exponential backoff with jitter |
+| getMaxRetries() (MR) | 3 | Max retry configuration |
+| isRetryableError() (IR) | 15 | Error classification |
+| handleRateLimit() (HR) | 5 | Rate limit with Retry-After header |
+| getRetryStrategy() (GR) | 5 | Content-aware retry strategy |
+| Integration (IT) | 4 | Full retry flows |
+| Edge Cases (EC) | 7 | Null, empty, unicode, boundary |
+| Security (SC) | 3 | Input validation, malformed data |
+| Performance (PF) | 3 | Speed benchmarks (<100ms for 1000 calls) |
+| Acceptance Criteria (AC) | 6 | All 6 ACs verified |
+
+**Key Implementation Notes for Developer:**
+1. **Exception Classes Needed:**
+   - `App\Exceptions\AI\RateLimitException` - HTTP 429 rate limit errors
+   - `App\Exceptions\AI\TimeoutException` - Request timeout errors
+   - `App\Exceptions\AI\ServiceUnavailableException` - Service unavailable errors
+
+2. **DTOs Needed:**
+   - `RetryDecision` - { shouldRetry: bool, delayMs: int, reason: ?string }
+   - `RetryStrategy` - { type: string, targetTokens: ?int }
+
+3. **Retry Configuration:**
+   - MAX_RETRIES = 3
+   - BASE_DELAY_MS = 1000
+   - MAX_DELAY_MS = 10000
+   - JITTER_PERCENT = 0.1 (10%)
+
+4. **Retryable HTTP Codes:** 429, 500, 502, 503, 504
+5. **Non-Retryable HTTP Codes:** 400, 401, 403, 404, 422
+6. **Backoff Formula:** `min(BASE_DELAY * 2^(attempt-1), MAX_DELAY) ± jitter`
+7. **Rate Limit Handling:** Respect Retry-After header up to 60s max wait
+8. **Content-Aware Retry:** Truncate 30% for content >50K tokens on retry (attempt 2+)
+
+**TDD Pattern:** Tests will fail until service is implemented
+
+**Documentation:** `TESTS/TEST-31-9.md`
+
+**Status:** `To Develop` - Ready for Developer
+**Next Agent:** Developer for implementation
