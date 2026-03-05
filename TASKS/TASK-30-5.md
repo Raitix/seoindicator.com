@@ -1,7 +1,7 @@
 # TASK-30-5: Cookie Consent Integration
 
 ## STATUS
-`To Test Prod`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -302,6 +302,97 @@ Starting deployment of Cookie Consent Integration to production.
 - Risk: Low ✅
 
 **Deployment method:** GitHub Actions auto-deploy on push to main
+
+---
+
+### [2026-03-05 ProdTester]
+**Production Test Results: FAIL - Critical Bug Found**
+
+**Test Environment:**
+- URL: https://seoindicator.com/
+- Health Check: ✅ 200 OK
+- Database: ✅ Connected
+
+**Acceptance Criteria Testing:**
+
+| Criteria | Status | Notes |
+|----------|--------|-------|
+| Layout Integration | ✅ PASS | CookieConsent renders at root level |
+| Banner on Fresh Visit | ✅ PASS | Shows when no localStorage consent |
+| Accept All Button | ✅ PASS | Stores consent, hides banner |
+| Necessary Only Button | ✅ PASS | Stores consent (analytics: false, marketing: false) |
+| Customize Option | ✅ PASS | Shows preferences panel |
+| Consent Persistence | ✅ PASS | localStorage: `seoindicator_cookie_consent` |
+| Footer Cookie Settings Link | ❌ **FAIL** | **BUG: Does NOT show banner** |
+| Consent Withdrawal | ❌ **FAIL** | **Cannot change preferences** |
+
+**BUG IDENTIFIED:**
+
+**Issue:** "Cookie Settings" and "Cookies" buttons in footer do NOT show the consent banner.
+
+**Root Cause:**
+The Footer component expects an `onShowCookieSettings` prop to trigger the banner:
+
+```tsx
+// Footer.tsx line 20-25
+const handleCookieSettingsClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  e.preventDefault();
+  if (onShowCookieSettings) {
+    onShowCookieSettings();  // <-- This callback is never provided!
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+```
+
+But layout.tsx renders Footer without passing the prop:
+
+```tsx
+// layout.tsx
+<Footer />  // <-- Missing: onShowCookieSettings={() => setShowBanner(true)}
+```
+
+**Fix Required:**
+Either:
+1. Update layout.tsx to create a client wrapper that passes `onShowCookieSettings` from ConsentProvider context, OR
+2. Update Footer.tsx to use `useConsentContext()` directly to call `setShowBanner(true)`
+
+**GDPR/CCPA Compliance Impact:**
+- Users cannot withdraw consent after initial choice
+- Violates GDPR requirement for easy consent withdrawal
+- Users must clear localStorage manually to change preferences
+
+**Test Evidence:**
+- Verified localStorage shows consent: `{"necessary":true,"analytics":true,"marketing":true,"timestamp":"2026-03-05T09:50:41.838Z"}`
+- Clicking "Cookie Settings" scrolls to top but banner does NOT appear
+- No JavaScript errors in console related to consent
+
+**Status:** FAILED production test - returning to `To Deploy` for bug fix
+
+**Recommended Priority:** HIGH (GDPR compliance issue)
+
+---
+
+### [2026-03-05 DevOps - Bug Fix]
+**Fix Applied: Footer now uses ConsentContext directly**
+
+**Root Cause:** Footer component relied on `onShowCookieSettings` prop which was never passed from layout.tsx (server component cannot use hooks).
+
+**Fix:** Updated Footer.tsx to import and use `useConsentContext()` directly:
+- Added import: `import { useConsentContext } from "@/lib/contexts/ConsentContext"`
+- Used try/catch to safely access context (backward compatible)
+- Calls `setShowBanner(true)` directly from context when Cookie Settings is clicked
+- No longer depends on prop callback (though prop is still supported for backward compatibility)
+
+**Test Results:**
+```
+PASS __tests__/components/layout/Footer.test.tsx (27 tests)
+PASS __tests__/integration/cookie-consent-flow.test.tsx (19 tests)
+```
+
+**Files Modified:**
+- `frontend/components/layout/Footer.tsx` - Added context-based banner control
+
+**Status:** Bug fixed, ready for deployment
 
 ---
 
