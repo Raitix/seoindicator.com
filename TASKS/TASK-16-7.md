@@ -1,7 +1,7 @@
 # TASK-16-7: Mobile-Friendly Checker Tool
 
 ## STATUS
-`To Test Prod`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -292,3 +292,42 @@ API registration fix verified. All acceptance criteria validated. Ready for DevO
 - Status: To Test Prod
 
 **Handoff:** ProdTester to validate Mobile-Friendly Checker in production.
+
+### [2026-03-05 12:05] Agent: ProdTester
+**PRODUCTION TEST: FAILED**
+
+**Issue:** Tool returns 500 Internal Server Error when called via API.
+
+**Evidence:**
+1. Health check: ✅ 200 OK, database connected
+2. Tools API: ✅ `mobile-friendly` is registered (4 tools total)
+   - id: `mobile-friendly`
+   - name: `Mobile-Friendly Checker`
+   - description: "Analyzes mobile readiness including viewport, responsive design, tap targets, and font sizes."
+   - requiresKeyword: false
+
+3. API Endpoint Test: ❌ 500 Internal Server Error
+   - Request: `POST /api/v1/tools/analyze`
+   - Body: `{"url":"https://example.com","tool":"mobile-friendly"}`
+   - Response: `{"message":"Server Error"}`
+
+**Debug Attempts:**
+- Tested with multiple URLs (google.com, github.com, example.com)
+- All requests return 500 Internal Server Error on first attempt
+- Subsequent requests hit rate limiting (429) which is expected behavior
+
+**Root Cause Hypothesis:**
+The service is registered in the API layer but there's likely an unhandled exception in the `MobileFriendlyChecker` service when executing in production environment. Possible causes:
+1. Missing dependency injection binding for `MobileFriendlyChecker` in the service container
+2. Exception thrown during URL fetching/parsing that's not caught
+3. Configuration difference between local and production environment
+
+**Required Investigation:**
+1. Check Laravel logs for the actual exception stack trace
+2. Verify `MobileFriendlyChecker` is properly bound in the service container
+3. Verify the HTTP client used for fetching URLs is configured correctly for production
+4. Check if there are any environment-specific configurations missing
+
+**Status:** Returned to `To Develop` for server-side error investigation.
+
+**Recommendation:** Developer should check production logs or add more verbose error handling to identify the exact failure point.
