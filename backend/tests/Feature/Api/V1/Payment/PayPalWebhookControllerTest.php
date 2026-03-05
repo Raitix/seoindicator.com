@@ -6,7 +6,8 @@ use App\Models\Credit;
 use App\Models\CreditTransaction;
 use App\Models\User;
 use App\Services\Billing\CreditService;
-use App\Services\Gateway\PayPalGatewayService;
+use App\Services\Billing\PayPalGatewayService;
+use App\Services\Billing\DTOs\PaymentResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Mockery;
@@ -38,6 +39,15 @@ class PayPalWebhookControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Set PayPal config values so the service can be resolved
+        Config::set('services.paypal.client_id', 'test-client-id');
+        Config::set('services.paypal.client_secret', 'test-client-secret');
+        Config::set('services.paypal.webhook_id', 'test-webhook-id');
+        Config::set('services.paypal.mode', 'sandbox');
+        Config::set('services.paypal.return_url', 'https://example.com/return');
+        Config::set('services.paypal.cancel_url', 'https://example.com/cancel');
+
         $this->user = User::factory()->create();
 
         // Mock PayPalGatewayService

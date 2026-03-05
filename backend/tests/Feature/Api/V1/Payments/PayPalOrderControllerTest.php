@@ -351,7 +351,9 @@ class PayPalOrderControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['package_id']);
+            ->assertJsonPath('error.details.package_id', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test VA-002: Non-existent package_id */
@@ -366,7 +368,9 @@ class PayPalOrderControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['package_id']);
+            ->assertJsonPath('error.details.package_id', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test VA-003: Invalid package_id type */
@@ -381,7 +385,9 @@ class PayPalOrderControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['package_id']);
+            ->assertJsonPath('error.details.package_id', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test VA-004: Missing return_url */
@@ -395,7 +401,9 @@ class PayPalOrderControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['return_url']);
+            ->assertJsonPath('error.details.return_url', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test VA-005: Invalid return_url format */
@@ -410,7 +418,9 @@ class PayPalOrderControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['return_url']);
+            ->assertJsonPath('error.details.return_url', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test VA-006: Missing cancel_url */
@@ -424,7 +434,9 @@ class PayPalOrderControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['cancel_url']);
+            ->assertJsonPath('error.details.cancel_url', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test VA-007: Invalid cancel_url format */
@@ -439,7 +451,9 @@ class PayPalOrderControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['cancel_url']);
+            ->assertJsonPath('error.details.cancel_url', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test VA-008: Return URL must be HTTPS */
@@ -454,7 +468,9 @@ class PayPalOrderControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['return_url']);
+            ->assertJsonPath('error.details.return_url', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test VA-009: Cancel URL must be HTTPS */
@@ -469,7 +485,9 @@ class PayPalOrderControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['cancel_url']);
+            ->assertJsonPath('error.details.cancel_url', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     // ============================================
@@ -502,8 +520,11 @@ class PayPalOrderControllerTest extends TestCase
             'cancel_url' => 'https://example.com/credits/cancelled',
         ]);
 
-        // Inactive package should return 400 or 422
-        $response->assertStatus(400);
+        // Inactive package should return 422 (validation error)
+        $response->assertStatus(422)
+            ->assertJsonPath('error.details.package_id', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test BL-003: Credits calculation base (no bonus) */
@@ -1061,17 +1082,50 @@ class PayPalOrderControllerTest extends TestCase
     {
         Sanctum::actingAs($this->user);
 
+        // Create a configurable mock that can fail then succeed
+        $callCount = 0;
+        $this->app->instance(
+            PaymentGatewayInterface::class,
+            new class($callCount) implements PaymentGatewayInterface {
+                private static int $calls = 0;
+
+                public function __construct(?int $calls = null)
+                {
+                    if ($calls !== null) {
+                        self::$calls = $calls;
+                    }
+                }
+
+                public function createPaymentIntent($user, float $amount, string $currency = 'USD', array $metadata = []): array
+                {
+                    self::$calls++;
+                    if (self::$calls === 1) {
+                        throw new \Exception('PayPal API error', 500);
+                    }
+                    return [
+                        'order_id' => '5O190127TN364715T',
+                        'approval_url' => 'https://www.paypal.com/checkoutnow?token=5O190127TN364715T',
+                    ];
+                }
+
+                public function capturePayment(string $paymentIntentId, array $options = []): bool { return true; }
+                public function refundPayment(string $paymentIntentId, ?float $amount = null): array { return []; }
+                public function handleWebhook($request): \App\Services\Billing\DTOs\PaymentResult { return \App\Services\Billing\DTOs\PaymentResult::success('test', 10.00, 'USD', 1); }
+                public function getCustomer($user): ?string { return null; }
+                public function createCustomer($user): string { return 'payer_' . $user->id; }
+                public function getPaymentMethods($user): array { return []; }
+                public function deletePaymentMethod(string $id): bool { return false; }
+                public function getPaymentMethodOwner(string $id): ?int { return null; }
+            }
+        );
+
         // First attempt fails
-        $this->mockFailedPayPalOrder();
         $response1 = $this->postJson($this->endpoint, [
             'package_id' => $this->activePackage->id,
             'return_url' => 'https://example.com/credits/success',
             'cancel_url' => 'https://example.com/credits/cancelled',
         ]);
         $response1->assertStatus(500);
-
-        // Re-bind the successful mock (the controller will be re-instantiated for the next request)
-        $this->mockSuccessfulPayPalOrder();
 
         // Second attempt succeeds
         $response2 = $this->postJson($this->endpoint, [
