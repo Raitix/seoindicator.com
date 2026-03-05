@@ -1,7 +1,7 @@
 # TASK-31-6: OpenRouter Client Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -191,3 +191,64 @@ return [
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 13:55 GMT+2] ProjectManager - Prioritization Complete
+**Priority Confirmed: High** ✅
+**Risk Confirmed: Medium** ✅
+
+**Rationale for Priority:**
+- Foundation service for SPEC-31 unified AI analysis feature
+- Dependency for TASK-31-7 (AIAnalysisService - the main orchestrator)
+- Extends existing TASK-21-2 OpenRouterProvider with focused client functionality
+- Phase 1 critical path - enables downstream integration tasks
+
+**Rationale for Risk:**
+- External API dependency (OpenRouter availability, rate limits)
+- Standard Laravel HTTP client patterns
+- Error handling well-defined in task specification
+- Existing OpenRouterProvider serves as proven reference implementation
+
+**Dependency Analysis:**
+- TASK-21-2 (OpenRouter Provider): `Done` ✅
+  - Existing implementation at `backend/app/Services/AI/Providers/OpenRouterProvider.php`
+  - 72 tests passing (unit + feature)
+  - Deployed to production
+  - Can extend or reuse patterns from this implementation
+
+**Downstream Dependencies:**
+- TASK-31-7 (AIAnalysisService): `To Prioritize` - blocked by this task
+  - AIAnalysisService will use OpenRouterClient for unified AI calls
+
+**SPEC-31 Phase Context:**
+| Task | Status | Dependencies |
+|------|--------|--------------|
+| TASK-31-2 (ContextWindowManager) | Done ✅ | None |
+| TASK-31-3 (TruncationService) | To Develop | TASK-31-2 ✅ |
+| TASK-31-4 (UnifiedPromptService) | Tests Written | TASK-31-2 ✅ |
+| TASK-31-5 (ResponseParser) | To Write Tests | None |
+| TASK-31-6 (OpenRouterClient) | To Write Tests | TASK-21-2 ✅ |
+| TASK-31-7 (AIAnalysisService) | To Prioritize | TASK-31-2, 31-3, 31-4, 31-5, 31-6 |
+
+**TDD Ready:** PreTester can design tests immediately:
+- Mock HTTP responses for OpenRouter API (`/api/v1/chat/completions`)
+- Test `AIResponse` DTO with all metadata fields
+- Test error handling for all HTTP codes (400, 401, 403, 429, 500-503)
+- Test streaming vs non-streaming (non-streaming for MVP)
+- Test free models configuration
+- Reference existing tests: `backend/tests/Unit/Services/AI/Providers/OpenRouterProviderTest.php`
+
+**Execution Order within SPEC-31:**
+1. TASK-31-2, 31-5, 31-6: Can run in parallel (foundation services)
+2. TASK-31-3, 31-4: In progress
+3. TASK-31-7: After all foundation services ready
+
+**Handoff to PreTester:** Ready for test design. Focus on:
+- `generate()` method with prompt and options
+- `stream()` method for chunked responses
+- `getAvailableModels()` and `getModelInfo()` helpers
+- `AIResponse` DTO with success/error states
+- Free models configuration validation
+- Error handling for rate limiting (429) with retry-after
+- Timeout configuration via environment
+
+Status: `To Prioritize` → `To Write Tests`
