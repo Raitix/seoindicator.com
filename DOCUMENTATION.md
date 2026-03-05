@@ -27506,3 +27506,178 @@ When no recommendations exist:
 - TASK-24-14: PWA Guide Page (guide destination)
 
 ---
+## Comparison Types and Interfaces (TASK-32-1)
+
+### Description
+TypeScript interfaces and type guards for the competitor comparison system. Foundation module that defines all data structures used in programmatic SEO comparison landing pages targeting keywords like "SEOIndicator vs [competitor]". Part of the Competitor Comparison Landing Pages feature (FEAT-032).
+
+### Component Location
+- **Types File:** `frontend/lib/compare/types.ts`
+- **Tests:** `frontend/__tests__/lib/compare/types.test.ts`
+
+### Core Interfaces
+
+| Interface | Purpose | Required Properties |
+|-----------|---------|-------------------|
+| `CompetitorData` | Complete competitor data structure | id, name, slug, website, tagline, pricing, features, pros, cons, useCases, lastUpdated, source |
+| `PricingTier` | Pricing tier with monthly/annual options | name, monthlyPrice, annualPrice, features |
+| `FeatureCategory` | Feature grouping for comparison tables | name, features[] |
+| `Feature` | Individual feature comparison | name, seoindicator, competitor |
+| `UseCase` | Target audience use case | title, description, audience, budget |
+| `ComparisonData` | Full comparison page data | slug, title, metaDescription, competitors, summary, featureComparison, pricingComparison, prosCons, useCases, verdict, faqs, relatedComparisons |
+| `FAQ` | Frequently asked question | question, answer |
+
+### Component Props Interfaces
+
+| Interface | Purpose | Props |
+|-----------|---------|-------|
+| `ComparisonTableProps` | Feature comparison table | features, highlightWinner?, showTooltips? |
+| `PricingComparisonProps` | Pricing tier comparison | seoindicator, competitor, showFreeTier? |
+| `ProsConsCardProps` | Pros/cons display card | tool, pros, cons, overallRating? |
+| `UseCaseSectionProps` | Use case recommendations | seoindicator, competitor |
+| `ComparisonCTAProps` | Call-to-action component | variant?, text?, href?, abTestGroup? |
+| `ComparisonSchemaProps` | JSON-LD schema injection | comparison, faqs |
+| `ComparisonPageProps` | Next.js dynamic route | params: { slug } |
+
+### Type Guards
+
+| Function | Validates | Returns |
+|----------|-----------|---------|
+| `isPricingTier(value)` | PricingTier interface | boolean |
+| `isFeature(value)` | Feature interface | boolean |
+| `isFeatureCategory(value)` | FeatureCategory interface | boolean |
+| `isUseCase(value)` | UseCase interface | boolean |
+| `isCompetitorData(value)` | CompetitorData interface | boolean |
+| `isFAQ(value)` | FAQ interface | boolean |
+| `isComparisonData(value)` | ComparisonData interface | boolean |
+
+### Constants
+
+| Constant | Type | Values |
+|----------|------|--------|
+| `AUDIENCE_TYPES` | readonly tuple | 'solo', 'small-team', 'enterprise', 'agency' |
+| `BUDGET_TYPES` | readonly tuple | 'free', 'budget', 'mid-range', 'premium' |
+
+### PricingTier Interface Details
+
+```typescript
+interface PricingTier {
+  name: string;                      // 'Lite', 'Pro', 'Enterprise'
+  monthlyPrice: number | 'Free';     // Monthly cost or 'Free'
+  annualPrice: number | 'Free';      // Annual cost or 'Free'
+  features: string[];                // Features included in tier
+  highlighted?: boolean;             // UI highlight flag
+}
+```
+
+### Feature Interface Details
+
+```typescript
+interface Feature {
+  name: string;                      // Feature name
+  seoindicator: boolean | string;    // true, false, 'Yes', 'Partial', 'N/A'
+  competitor: boolean | string;      // Competitor's support level
+  tooltip?: string;                  // Optional explanation
+}
+```
+
+### ComparisonData Interface Details
+
+```typescript
+interface ComparisonData {
+  slug: string;                      // 'seoindicator-vs-ahrefs'
+  title: string;                     // Page title for SEO
+  metaDescription: string;           // SEO meta description
+  competitors: [string, string];     // Exactly 2 competitor IDs
+  summary: string;                   // Executive summary
+  featureComparison: FeatureCategory[];
+  pricingComparison: {
+    seoindicator: PricingTier[];
+    competitor: PricingTier[];
+  };
+  prosCons: {
+    seoindicator: { pros: string[]; cons: string[] };
+    competitor: { pros: string[]; cons: string[] };
+  };
+  useCases: {
+    seoindicator: UseCase[];
+    competitor: UseCase[];
+  };
+  verdict: string;                   // Honest recommendation
+  faqs: FAQ[];
+  relatedComparisons: string[];      // Slugs of related pages
+}
+```
+
+### Type Guard Implementation Pattern
+
+```typescript
+export function isPricingTier(value: unknown): value is PricingTier {
+  if (typeof value !== 'object' || value === null) return false;
+  
+  const obj = value as Record<string, unknown>;
+  
+  if (typeof obj.name !== 'string') return false;
+  
+  const monthlyPrice = obj.monthlyPrice;
+  if (typeof monthlyPrice !== 'number' && monthlyPrice !== 'Free') return false;
+  
+  // ... additional validation
+  
+  return true;
+}
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| No `any` Types | All interfaces use strict typing |
+| Runtime Validation | Type guards validate unknown data |
+| Input Sanitization | Type guards reject invalid types |
+| Constants | readonly tuples prevent mutation |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `types.test.ts` | 117 | 117+ | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| CompetitorData Interface | 17 | All properties, arrays, nested structures |
+| PricingTier Interface | 10 | Number/Free types, features array |
+| FeatureCategory Interface | 5 | Category structure, feature validation |
+| Feature Interface | 8 | Boolean/string values, optional tooltip |
+| UseCase Interface | 9 | Audience/budget enums, required fields |
+| ComparisonData Interface | 15 | Full structure, competitors tuple |
+| FAQ Interface | 5 | Question/answer strings |
+| Component Props | 10 | All prop interfaces |
+| TypeScript Compilation | 4 | No errors, strict mode |
+| Edge Cases | 8 | Null, undefined, empty objects, wrong types |
+| Integration Tests | 3 | Type guard usage patterns |
+| Adversarial Tests | 23 | Invalid data rejection |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `9d3fe8b6` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 117/117 passing |
+| TypeScript | Compiles without errors |
+| Status | Complete |
+
+### Dependencies
+- None (foundation task)
+
+### Related Tasks
+- TASK-32-2: Comparison Registry (uses types)
+- TASK-32-3: Comparison Page Route (uses types)
+- TASK-32-5 to TASK-32-10: Components (use component props)
+- TASK-32-11 to TASK-32-14: Competitor Data (uses CompetitorData interface)
+
+---
