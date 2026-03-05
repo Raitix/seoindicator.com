@@ -1,7 +1,7 @@
 # TASK-29-5: Rate Limiting Integration
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -71,6 +71,43 @@ public function export(Request $request): JsonResponse
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 20:55 GMT+2] Agent: PreTester
+**Tests Coverage Complete**
+
+**Test Files Created:**
+- `backend/tests/Feature/Api/V1/Tools/RateLimitIntegrationTest.php` - 52 tests
+- `TESTS/TEST-29-5.md` - Test documentation updated
+
+**Config Updated:**
+- Added `export_rate_window` to `backend/config/tools.php`
+
+**Implementation Approach for Developer:**
+1. Rate limiting should be checked FIRST in `ToolExportController::export()`
+2. Use Laravel's `RateLimiter` facade or Cache-based implementation
+3. Key pattern: `export_rate_limit:{user_id}`
+4. Return 429 with proper headers when limit exceeded
+5. Include rate limit headers on ALL responses (success and error)
+
+**Key Service Integration Options:**
+- Option A: Extend `ToolsRateLimitService` with user-based methods
+- Option B: Use Laravel's built-in `RateLimiter::attempt()` directly
+- Option C: Use Cache facade with atomic increment
+
+**Acceptance Criteria Mapping:**
+- [x] Rate limiting applied to POST /api/v1/tools/export → Tests RL-001 to RL-010
+- [x] Limit: 10 exports per hour per user → Tests RL-005, RL-006
+- [x] Rate limit headers returned → Tests RH-001 to RH-008
+- [x] 429 Too Many Requests response → Tests RE-001 to RE-006
+- [x] Error message with retry time → Tests RE-002
+- [x] Config in tools.php → Tests RC-001 to RC-005
+
+**Tests will fail until implementation is complete.** Run tests with:
+```bash
+php artisan test tests/Feature/Api/V1/Tools/RateLimitIntegrationTest.php
+```
+
+Status updated: `Tests Coverage In Progress` → `To Develop`
 
 ### [2026-03-05 14:42 GMT+2] Agent: ProjectManager
 **Prioritization Complete**

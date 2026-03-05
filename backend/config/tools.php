@@ -45,4 +45,16 @@ return [
     */
     'export_rate_limit' => env('TOOL_EXPORT_RATE_LIMIT', 10),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Export Rate Window
+    |--------------------------------------------------------------------------
+    |
+    | Time window in seconds for the export rate limit.
+    |
+    | Default: 3600 (1 hour)
+    |
+    */
+    'export_rate_window' => env('TOOL_EXPORT_RATE_WINDOW', 3600),
+
 ];
