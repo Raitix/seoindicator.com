@@ -172,4 +172,24 @@ Last updated: 2026-03-01
 
 ---
 
+## 2026-03-05: TASK-21-11 AI Suggestions Frontend Integration
+- AI Suggestions API returns structured data: score, issues, suggestions, best_practices
+- Provider field indicates whether AI or static fallback was used
+- Rate limiting headers: X-RateLimit-Limit (10), X-RateLimit-Remaining, X-RateLimit-Reset
+- XSS in context fields is sanitized (script tags not rendered in response)
+- Invalid indicator validation returns 422 with list of valid options
+- Frontend components (AISuggestionButton, AISuggestionPanel) are client-side React - won't appear in SSR HTML
+- ToolWidget component is loaded in JS bundle - verify via script data or browser console
+
+**AI API Test Pattern:**
+```powershell
+$body = @{
+    indicator = "title"
+    context = @{ title = "Test"; keyword = "test" }
+} | ConvertTo-Json -Depth 3
+Invoke-RestMethod -Uri "https://seoindicator.com/api/v1/ai/suggestions" -Method POST -ContentType "application/json" -Body $body
+```
+
+---
+
 Last updated: 2026-03-05

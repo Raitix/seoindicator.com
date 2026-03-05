@@ -82,6 +82,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Unified AI Prompt (TASK-31-13)
+    |--------------------------------------------------------------------------
+    |
+    | Enable unified AI prompt for SEO analysis. When enabled, a single AI call
+    | analyzes all 17 indicators instead of making 17+ individual calls.
+    | This improves performance, reduces costs, and provides better context.
+    |
+    | Set to false to fall back to legacy multi-call analysis.
+    |
+    */
+
+    'unified_prompt_enabled' => env('AI_UNIFIED_PROMPT_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Debug Mode
     |--------------------------------------------------------------------------
     |
