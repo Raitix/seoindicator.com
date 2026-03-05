@@ -197,6 +197,10 @@ Route::prefix('v1')->group(function () {
     Route::get('tools/rate-limit-status', [APIProxyController::class, 'rateLimitStatus']);
     Route::get('tools', [APIProxyController::class, 'tools']);
 
+    // PWA Guide (TASK-24-9, SPEC-024) - Public endpoint
+    Route::get('pwa/guide', [\App\Http\Controllers\Api\V1\PWAGuideController::class, 'index']);
+    Route::get('pwa/guide/{id}', [\App\Http\Controllers\Api\V1\PWAGuideController::class, 'section']);
+
     // Lead Capture (TASK-16-5)
     Route::post('tools/capture-email', [\App\Http\Controllers\Api\V1\LeadCaptureController::class, 'store']);
 
