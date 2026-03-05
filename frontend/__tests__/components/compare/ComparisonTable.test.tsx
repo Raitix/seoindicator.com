@@ -427,4 +427,123 @@ describe('ComparisonTable', () => {
       expect(screen.queryByTestId('tooltip-trigger-daily-updates')).not.toBeInTheDocument();
     });
   });
+
+  // ============================================================================
+  // Security / Adversarial Tests
+  // ============================================================================
+
+  describe('Security', () => {
+    it('CT-SEC-001: handles XSS attempt in feature name safely', () => {
+      const xssFeatures: FeatureCategory[] = [
+        {
+          name: 'Security',
+          features: [
+            { 
+              name: '<script>alert("xss")</script>', 
+              seoindicator: true, 
+              competitor: false 
+            },
+          ],
+        },
+      ];
+      
+      render(<ComparisonTable features={xssFeatures} />);
+      
+      // React should escape the script tag as text, not execute it
+      expect(screen.getByText('<script>alert("xss")</script>')).toBeInTheDocument();
+      
+      // Verify no script tag exists in the document
+      const scripts = document.querySelectorAll('script');
+      const injectedScript = Array.from(scripts).find(s => s.textContent?.includes('alert'));
+      expect(injectedScript).toBeUndefined();
+    });
+
+    it('CT-SEC-002: handles XSS attempt in tooltip content safely', () => {
+      const xssFeatures: FeatureCategory[] = [
+        {
+          name: 'Security',
+          features: [
+            { 
+              name: 'Test Feature', 
+              seoindicator: true, 
+              competitor: false,
+              tooltip: '<img src=x onerror=alert(1)>'
+            },
+          ],
+        },
+      ];
+      
+      render(<ComparisonTable features={xssFeatures} showTooltips={true} />);
+      
+      // Tooltip should be escaped, not executed
+      const tooltipTrigger = screen.getByTestId('tooltip-trigger-test-feature');
+      expect(tooltipTrigger).toHaveAttribute('title', '<img src=x onerror=alert(1)>');
+    });
+
+    it('CT-SEC-003: handles XSS attempt in string value safely', () => {
+      const xssFeatures: FeatureCategory[] = [
+        {
+          name: 'Security',
+          features: [
+            { 
+              name: 'Test', 
+              seoindicator: '<script>alert(1)</script>', 
+              competitor: true 
+            },
+          ],
+        },
+      ];
+      
+      render(<ComparisonTable features={xssFeatures} />);
+      
+      // String value should be escaped
+      expect(screen.getByText('<script>alert(1)</script>')).toBeInTheDocument();
+    });
+
+    it('CT-SEC-004: handles prototype pollution attempt safely', () => {
+      const maliciousFeatures: FeatureCategory[] = [
+        {
+          name: '__proto__',
+          features: [
+            { 
+              name: 'constructor', 
+              seoindicator: true, 
+              competitor: false 
+            },
+          ],
+        },
+      ];
+      
+      // Should not throw and should render safely
+      expect(() => render(<ComparisonTable features={maliciousFeatures} />)).not.toThrow();
+    });
+
+    it('CT-SEC-005: handles extremely long strings without crashing', () => {
+      const longString = 'A'.repeat(10000);
+      const longFeatures: FeatureCategory[] = [
+        {
+          name: longString,
+          features: [
+            { 
+              name: longString, 
+              seoindicator: longString, 
+              competitor: true 
+            },
+          ],
+        },
+      ];
+      
+      // Should handle long strings without crashing
+      expect(() => render(<ComparisonTable features={longFeatures} />)).not.toThrow();
+    });
+
+    it('CT-SEC-006: handles null prototype safely', () => {
+      const nullProto = Object.create(null);
+      nullProto.name = 'Test';
+      nullProto.features = [{ name: 'Feature', seoindicator: true, competitor: false }];
+      
+      // Should not throw with null prototype object
+      expect(() => render(<ComparisonTable features={[nullProto as FeatureCategory]} />)).not.toThrow();
+    });
+  });
 });
