@@ -1,7 +1,7 @@
 # TASK-32-2: Implement Comparison Registry and Data Loading
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
