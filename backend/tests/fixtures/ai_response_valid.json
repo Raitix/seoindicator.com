@@ -1,0 +1,233 @@
+{
+    "success": true,
+    "data": {
+        "overall_score": 85,
+        "overall_summary": "This page has good SEO fundamentals with proper meta tags, heading structure, and semantic HTML. Key improvements could be made to internal linking and image optimization.",
+        "category_scores": {
+            "technical": 90,
+            "content": 82,
+            "accessibility": 85,
+            "performance": 78
+        },
+        "indicators": [
+            {
+                "id": "url",
+                "name": "URL Structure",
+                "score": 3,
+                "passed": true,
+                "details": {
+                    "is_https": true,
+                    "length": 32,
+                    "has_keywords": true,
+                    "has_trailing_slash": false
+                },
+                "suggestions": []
+            },
+            {
+                "id": "title_tag",
+                "name": "Title Tag",
+                "score": 2,
+                "passed": true,
+                "details": {
+                    "length": 32,
+                    "has_keywords": true,
+                    "starts_with_keyword": false
+                },
+                "suggestions": ["Consider placing the primary keyword at the beginning of the title"]
+            },
+            {
+                "id": "meta_description",
+                "name": "Meta Description",
+                "score": 2,
+                "passed": true,
+                "details": {
+                    "length": 65,
+                    "has_keywords": true,
+                    "is_unique": true
+                },
+                "suggestions": []
+            },
+            {
+                "id": "h1_headings",
+                "name": "H1 Headings",
+                "score": 3,
+                "passed": true,
+                "details": {
+                    "count": 1,
+                    "content": "Small Test Page for SEO Analysis",
+                    "has_keywords": true
+                },
+                "suggestions": []
+            },
+            {
+                "id": "h2_headings",
+                "name": "H2 Headings",
+                "score": 2,
+                "passed": true,
+                "details": {
+                    "count": 4,
+                    "has_keywords": true,
+                    "hierarchy_valid": true
+                },
+                "suggestions": []
+            },
+            {
+                "id": "robots_txt",
+                "name": "Robots.txt",
+                "score": 3,
+                "passed": true,
+                "details": {
+                    "exists": true,
+                    "allows_all": true,
+                    "has_sitemap": true
+                },
+                "suggestions": []
+            },
+            {
+                "id": "sitemap_xml",
+                "name": "Sitemap.xml",
+                "score": 2,
+                "passed": true,
+                "details": {
+                    "exists": true,
+                    "is_valid": true,
+                    "url_count": 15
+                },
+                "suggestions": []
+            },
+            {
+                "id": "image_alt",
+                "name": "Image Alt Text",
+                "score": 3,
+                "passed": true,
+                "details": {
+                    "total_images": 2,
+                    "with_alt": 2,
+                    "missing_alt": 0
+                },
+                "suggestions": []
+            },
+            {
+                "id": "links",
+                "name": "Links",
+                "score": 2,
+                "passed": true,
+                "details": {
+                    "internal": 8,
+                    "external": 0,
+                    "broken": 0,
+                    "nofollow": 0
+                },
+                "suggestions": ["Consider adding external links to authoritative sources"]
+            },
+            {
+                "id": "canonical",
+                "name": "Canonical URL",
+                "score": 3,
+                "passed": true,
+                "details": {
+                    "exists": true,
+                    "is_valid": true,
+                    "matches_url": true
+                },
+                "suggestions": []
+            },
+            {
+                "id": "viewport",
+                "name": "Mobile Viewport",
+                "score": 3,
+                "passed": true,
+                "details": {
+                    "exists": true,
+                    "is_responsive": true
+                },
+                "suggestions": []
+            },
+            {
+                "id": "semantic_html",
+                "name": "Semantic HTML",
+                "score": 2,
+                "passed": true,
+                "details": {
+                    "has_header": true,
+                    "has_main": true,
+                    "has_footer": true,
+                    "has_nav": true
+                },
+                "suggestions": []
+            },
+            {
+                "id": "https",
+                "name": "HTTPS",
+                "score": 3,
+                "passed": true,
+                "details": {
+                    "is_https": true,
+                    "has_ssl": true
+                },
+                "suggestions": []
+            },
+            {
+                "id": "language",
+                "name": "Language Attribute",
+                "score": 3,
+                "passed": true,
+                "details": {
+                    "exists": true,
+                    "value": "en"
+                },
+                "suggestions": []
+            },
+            {
+                "id": "charset",
+                "name": "Character Encoding",
+                "score": 3,
+                "passed": true,
+                "details": {
+                    "exists": true,
+                    "value": "UTF-8"
+                },
+                "suggestions": []
+            },
+            {
+                "id": "social_meta",
+                "name": "Social Meta Tags",
+                "score": 1,
+                "passed": false,
+                "details": {
+                    "has_og_tags": false,
+                    "has_twitter_cards": false
+                },
+                "suggestions": ["Add Open Graph meta tags for better social sharing", "Add Twitter Card meta tags"]
+            },
+            {
+                "id": "structured_data",
+                "name": "Structured Data",
+                "score": 1,
+                "passed": false,
+                "details": {
+                    "has_schema": false,
+                    "types": []
+                },
+                "suggestions": ["Add JSON-LD structured data for better search visibility"]
+            }
+        ],
+        "top_priorities": [
+            {
+                "indicator": "social_meta",
+                "message": "Add Open Graph and Twitter Card meta tags for better social media presence"
+            },
+            {
+                "indicator": "structured_data",
+                "message": "Implement JSON-LD structured data to improve search result appearance"
+            }
+        ],
+        "model": "google/gemini-2.0-flash-exp:free",
+        "tokens_used": {
+            "prompt": 15234,
+            "response": 2847,
+            "total": 18081
+        },
+        "generated_at": "2026-03-05T12:00:00Z"
+    }
+}

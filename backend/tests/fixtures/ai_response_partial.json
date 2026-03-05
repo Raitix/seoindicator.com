@@ -1,0 +1,32 @@
+{
+    "success": true,
+    "data": {
+        "overall_score": 45,
+        "overall_summary": "Partial analysis completed due to timeout.",
+        "category_scores": {
+            "technical": 50,
+            "content": 40
+        },
+        "indicators": [
+            {
+                "id": "url",
+                "name": "URL Structure",
+                "score": 2,
+                "passed": true,
+                "details": {
+                    "is_https": true
+                },
+                "suggestions": []
+            }
+        ],
+        "model": "google/gemini-2.0-flash-exp:free",
+        "tokens_used": {
+            "prompt": 8500,
+            "response": 450,
+            "total": 8950
+        },
+        "generated_at": "2026-03-05T12:00:00Z",
+        "partial": true,
+        "missing_indicators": ["title_tag", "meta_description", "h1_headings", "robots_txt", "sitemap_xml", "image_alt", "links", "canonical", "viewport", "semantic_html", "https", "language", "charset", "social_meta", "structured_data"]
+    }
+}
