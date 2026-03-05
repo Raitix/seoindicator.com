@@ -234,4 +234,50 @@ const mockResponse = {
 
 ---
 
+## Internal Linking Tests (TASK-32-16)
+
+### Component Testing Patterns
+- Mock components in integration tests to demonstrate expected interfaces
+- Test link presence, href attributes, and accessible text separately
+- Use `data-testid` attributes for reliable element selection
+- Test empty states and edge cases (empty arrays, duplicates)
+
+### RelatedComparisons Component
+- Props: `slugs` (required), `currentSlug` (optional), `maxItems` (optional), `className` (optional)
+- Filter out current slug to prevent self-referencing
+- Apply max items limit for display control
+- Handle empty array with friendly message
+- Generate URLs in `/compare/[slug]` format
+
+### Cross-Page Integration Testing
+- Create mock components for each page (Homepage, Footer, Pricing, Comparison)
+- Test link presence on each page independently
+- Test cross-page consistency (URL patterns, link text)
+- Verify all acceptance criteria across multiple components
+
+### Link Testing Checklist
+- [ ] Link renders correctly
+- [ ] Correct href attribute
+- [ ] Accessible link text
+- [ ] aria-label for screen readers
+- [ ] Keyboard navigable
+- [ ] Valid URL pattern
+
+### Test Data for Comparisons
+```typescript
+const mockComparisonSlugs = [
+  'seoindicator-vs-ahrefs',
+  'seoindicator-vs-semrush',
+  'seoindicator-vs-moz',
+  'seoindicator-vs-ubersuggest',
+];
+```
+
+### URL Pattern Tests
+- Comparison index: `/compare`
+- Specific comparison: `/compare/[slug]` where slug contains `-vs-`
+- Use regex `/^\/compare(\/[\w-]+)?$/` for validation
+
+---
+
 Last updated: 2026-03-05
