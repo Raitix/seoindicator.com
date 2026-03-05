@@ -1,7 +1,7 @@
 # TASK-24-9: PWA Guide API Endpoint
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `Medium`
@@ -180,3 +180,22 @@ Created task for guide API. Low-risk content delivery endpoint. Can be implement
 **Verdict:** Implementation meets all acceptance criteria. Production deployment successful.
 
 **Handoff:** DocSystemAnalyst to update documentation.
+
+### [2026-03-05] Agent: DocSystemAnalyst
+**Documentation Updated:**
+
+**DOCUMENTATION.md Updated:**
+- Added "PWA Guide API Endpoint (TASK-24-9)" section with:
+  - Endpoint description and API specification
+  - Request/response formats for index and section endpoints
+  - Content files listing with word counts
+  - Cache strategy (1-hour TTL)
+  - Security implementation details
+  - Test coverage summary (73 tests, 169 assertions)
+  - Production status with deployment metrics
+
+**Task Status:**
+- Status changed from `To Document` to `Done`
+- All acceptance criteria verified and documented
+
+**Note:** Other tasks in SPEC-024 are still in progress. Spec and Feature status remain unchanged.

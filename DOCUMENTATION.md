@@ -3941,6 +3941,133 @@ Comprehensive SEO guide content for the Structured Data indicator, covering Sche
 - TASK-20-17: Canonical URLs Guide (related topic)
 
 ---
+## PWA Guide API Endpoint (TASK-24-9)
+
+### Endpoint Description
+REST API endpoint for PWA implementation guide content, providing educational content for users improving their Progressive Web App. Returns comprehensive markdown content covering manifest basics, icon requirements, iOS support considerations, and service worker overview. Part of the PWA / Web App Manifest Indicator feature (FEAT-024).
+
+### Component Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/PWAGuideController.php`
+- **Content Files:** `backend/resources/guides/pwa/*.md` (4 markdown files)
+- **Tests:** `backend/tests/Feature/Api/V1/PWAGuideControllerTest.php`
+
+### API Endpoints
+
+| Method | Endpoint | Authentication |
+|--------|----------|----------------|
+| GET | `/api/v1/pwa/guide` | Public (no auth required) |
+| GET | `/api/v1/pwa/guide/{id}` | Public (no auth required) |
+
+### Index Endpoint
+`GET /api/v1/pwa/guide`
+
+**Response (200):**
+```json
+{
+  "content": "# PWA Implementation Guide\n\n...",
+  "sections": [
+    { "id": "manifest-basics", "title": "Manifest Basics", "content": "..." },
+    { "id": "icon-requirements", "title": "Icon Requirements", "content": "..." },
+    { "id": "ios-support", "title": "iOS Support", "content": "..." },
+    { "id": "service-worker", "title": "Service Worker Overview", "content": "..." }
+  ]
+}
+```
+
+### Section Endpoint
+`GET /api/v1/pwa/guide/{id}`
+
+**Valid Section IDs:**
+- `manifest-basics` - What is a manifest, required fields
+- `icon-requirements` - Icon sizes, formats, purposes
+- `ios-support` - iOS-specific considerations (apple-touch-icon)
+- `service-worker` - Brief overview (not full implementation)
+
+**Response (200):**
+```json
+{
+  "id": "manifest-basics",
+  "title": "Manifest Basics",
+  "content": "# Manifest Basics\n\n..."
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "error": "Section not found",
+  "message": "The requested guide section does not exist."
+}
+```
+
+### Content Files
+
+| File | Description | Word Count |
+|------|-------------|------------|
+| `manifest-basics.md` | Web app manifest fundamentals, required fields | ~450 |
+| `icon-requirements.md` | Icon sizes, formats, purposes, best practices | ~400 |
+| `ios-support.md` | iOS-specific PWA considerations, apple-touch-icon | ~400 |
+| `service-worker.md` | Service worker overview and benefits | ~380 |
+
+### Cache Strategy
+
+| Parameter | Value |
+|-----------|-------|
+| TTL | 1 hour (3600 seconds) |
+| Cache-Control | `max-age=3600, public` |
+| Key | `pwa_guide:{section_id}` |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Section ID Validation | Alphanumeric + hyphens only (regex: `/^[a-z0-9-]+$/`) |
+| Path Traversal Prevention | Validated against allowed section list |
+| XSS Prevention | Content served as JSON, not rendered |
+| SQL Injection | No database queries with user input |
+| Public Access | No authentication required |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `PWAGuideControllerTest.php` | 73 | 169 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Endpoint | 10 | Index structure, public access, markdown content |
+| Table of Contents | 5 | TOC structure, section matching |
+| Section Endpoint | 9 | Individual section access |
+| Content Validation | 8 | Section-specific content requirements |
+| Error Handling | 6 | 404 for invalid sections, error structure |
+| HTTP Methods | 5 | GET-only restriction |
+| Security | 6 | SQL injection, XSS, path traversal |
+| Caching | 6 | Cache headers, consistency |
+| Edge Cases | 6 | Unicode, long IDs, trailing slash |
+| Performance | 6 | Response time, memory usage |
+| Data Types | 6 | Type validation |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `20c3c7b` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 73/73 passing (169 assertions) |
+| Avg Response Time | 65.2ms |
+| Status | Complete |
+
+### Dependencies
+- None (standalone content endpoint)
+
+### Related Tasks
+- TASK-24-8: PWA Analysis API Endpoints (analysis functionality)
+- TASK-24-14: PWA Guide Page (Frontend consumer)
+
+---
 ## Mobile-Friendliness SEO Guide (TASK-20-14)
 
 ### Guide Description
