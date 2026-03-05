@@ -71,19 +71,19 @@ class PayPalOrderControllerTest extends TestCase
                     ];
                 }
 
-                public function capturePayment(string $orderId, array $options = []): array
+                public function capturePayment(string $paymentIntentId, array $options = []): bool
                 {
-                    return ['success' => true];
+                    return true;
                 }
 
-                public function refundPayment(string $captureId, ?float $amount = null): array
+                public function refundPayment(string $paymentIntentId, ?float $amount = null): array
                 {
-                    return ['success' => true];
+                    return ['refund_id' => 'REFUND123', 'amount' => $amount ?? 0, 'status' => 'COMPLETED'];
                 }
 
-                public function handleWebhook($request): array
+                public function handleWebhook($request): \App\Services\Billing\DTOs\PaymentResult
                 {
-                    return ['success' => true];
+                    return \App\Services\Billing\DTOs\PaymentResult::success('test', 10.00, 'USD', 1);
                 }
 
                 public function getCustomer($user): ?string
@@ -127,19 +127,19 @@ class PayPalOrderControllerTest extends TestCase
                     throw new \Exception('PayPal API error', 500);
                 }
 
-                public function capturePayment(string $orderId, array $options = []): array
+                public function capturePayment(string $paymentIntentId, array $options = []): bool
                 {
-                    return ['success' => false];
+                    return false;
                 }
 
-                public function refundPayment(string $captureId, ?float $amount = null): array
+                public function refundPayment(string $paymentIntentId, ?float $amount = null): array
                 {
-                    return ['success' => false];
+                    return ['refund_id' => null, 'amount' => 0, 'status' => 'FAILED'];
                 }
 
-                public function handleWebhook($request): array
+                public function handleWebhook($request): \App\Services\Billing\DTOs\PaymentResult
                 {
-                    return ['success' => false];
+                    return \App\Services\Billing\DTOs\PaymentResult::failed('test', 0, 'ERROR', 'Failed');
                 }
 
                 public function getCustomer($user): ?string
@@ -700,9 +700,9 @@ class PayPalOrderControllerTest extends TestCase
                     throw new \Exception('Connection timeout', 504);
                 }
 
-                public function capturePayment(string $orderId, array $options = []): array { return []; }
-                public function refundPayment(string $captureId, ?float $amount = null): array { return []; }
-                public function handleWebhook($request): array { return []; }
+                public function capturePayment(string $paymentIntentId, array $options = []): bool { return false; }
+                public function refundPayment(string $paymentIntentId, ?float $amount = null): array { return []; }
+                public function handleWebhook($request): \App\Services\Billing\DTOs\PaymentResult { return \App\Services\Billing\DTOs\PaymentResult::ignored(); }
                 public function getCustomer($user): ?string { return null; }
                 public function createCustomer($user): string { return ''; }
                 public function getPaymentMethods($user): array { return []; }
@@ -733,9 +733,9 @@ class PayPalOrderControllerTest extends TestCase
                     throw new \Exception('Network error', 503);
                 }
 
-                public function capturePayment(string $orderId, array $options = []): array { return []; }
-                public function refundPayment(string $captureId, ?float $amount = null): array { return []; }
-                public function handleWebhook($request): array { return []; }
+                public function capturePayment(string $paymentIntentId, array $options = []): bool { return false; }
+                public function refundPayment(string $paymentIntentId, ?float $amount = null): array { return []; }
+                public function handleWebhook($request): \App\Services\Billing\DTOs\PaymentResult { return \App\Services\Billing\DTOs\PaymentResult::ignored(); }
                 public function getCustomer($user): ?string { return null; }
                 public function createCustomer($user): string { return ''; }
                 public function getPaymentMethods($user): array { return []; }
@@ -766,9 +766,9 @@ class PayPalOrderControllerTest extends TestCase
                     throw new \Exception('Invalid credentials', 401);
                 }
 
-                public function capturePayment(string $orderId, array $options = []): array { return []; }
-                public function refundPayment(string $captureId, ?float $amount = null): array { return []; }
-                public function handleWebhook($request): array { return []; }
+                public function capturePayment(string $paymentIntentId, array $options = []): bool { return false; }
+                public function refundPayment(string $paymentIntentId, ?float $amount = null): array { return []; }
+                public function handleWebhook($request): \App\Services\Billing\DTOs\PaymentResult { return \App\Services\Billing\DTOs\PaymentResult::ignored(); }
                 public function getCustomer($user): ?string { return null; }
                 public function createCustomer($user): string { return ''; }
                 public function getPaymentMethods($user): array { return []; }
@@ -799,9 +799,9 @@ class PayPalOrderControllerTest extends TestCase
                     throw new \Exception('Rate limit exceeded', 429);
                 }
 
-                public function capturePayment(string $orderId, array $options = []): array { return []; }
-                public function refundPayment(string $captureId, ?float $amount = null): array { return []; }
-                public function handleWebhook($request): array { return []; }
+                public function capturePayment(string $paymentIntentId, array $options = []): bool { return false; }
+                public function refundPayment(string $paymentIntentId, ?float $amount = null): array { return []; }
+                public function handleWebhook($request): \App\Services\Billing\DTOs\PaymentResult { return \App\Services\Billing\DTOs\PaymentResult::ignored(); }
                 public function getCustomer($user): ?string { return null; }
                 public function createCustomer($user): string { return ''; }
                 public function getPaymentMethods($user): array { return []; }
@@ -832,9 +832,9 @@ class PayPalOrderControllerTest extends TestCase
                     return []; // Empty response
                 }
 
-                public function capturePayment(string $orderId, array $options = []): array { return []; }
-                public function refundPayment(string $captureId, ?float $amount = null): array { return []; }
-                public function handleWebhook($request): array { return []; }
+                public function capturePayment(string $paymentIntentId, array $options = []): bool { return false; }
+                public function refundPayment(string $paymentIntentId, ?float $amount = null): array { return []; }
+                public function handleWebhook($request): \App\Services\Billing\DTOs\PaymentResult { return \App\Services\Billing\DTOs\PaymentResult::ignored(); }
                 public function getCustomer($user): ?string { return null; }
                 public function createCustomer($user): string { return ''; }
                 public function getPaymentMethods($user): array { return []; }

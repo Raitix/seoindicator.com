@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $amount
  * @property float $balance_after
  * @property string $type
+ * @property string $status
  * @property string $description
  * @property string|null $reference_type
  * @property int|null $reference_id
@@ -37,6 +38,13 @@ class CreditTransaction extends Model
     public const TYPE_REFUND = 'refund';
     public const TYPE_BONUS = 'bonus';
 
+    // Status constants
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_FAILED = 'failed';
+    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_REFUNDED = 'refunded';
+
     /**
      * Indicates if the model should be timestamped.
      *
@@ -57,6 +65,15 @@ class CreditTransaction extends Model
     ];
 
     /**
+     * The model's default values for attributes.
+     *
+     * @var array
+     */
+    protected $attributes = [
+        'status' => self::STATUS_COMPLETED,
+    ];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -66,6 +83,7 @@ class CreditTransaction extends Model
         'amount',
         'balance_after',
         'type',
+        'status',
         'description',
         'reference_type',
         'reference_id',
