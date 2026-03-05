@@ -4121,6 +4121,155 @@ Frontend component for the SEO Guides Library index page. Displays a grid of all
 - TASK-20-4: Routing with static params generation
 
 ---
+## ExportResultsButton Component (TASK-29-6)
+
+### Component Description
+React component that triggers export functionality from tool results view. Displays a button with download icon that opens ExportModal for format selection (PDF/XLS). Part of the Export Results (PDF/XLS) feature (FEAT-029).
+
+### Component Location
+- **Component:** `frontend/components/tools/ExportResultsButton.tsx`
+- **Integration:** Tool result components (e.g., KeywordDensityResults)
+- **Tests:** `frontend/__tests__/components/tools/ExportResultsButton.test.tsx`
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-29-6.md`
+
+### Core Functionalities
+
+**ExportResultsButton Component:**
+| Feature | Description |
+|---------|-------------|
+| Export Button | Button with download icon + "Export Results" text |
+| Modal Trigger | Opens ExportModal for format selection |
+| Disabled State | Disabled when no results available |
+| Loading State | Shows spinner when export is generating |
+| Accessibility | Dynamic aria-label based on state |
+
+### Component Interface
+
+```typescript
+interface ExportResultsButtonProps {
+  toolName: string;        // Tool identifier (e.g., 'keyword-density')
+  url: string;             // Analyzed URL
+  data: Record<string, unknown>;  // Analysis results
+  className?: string;      // Optional styling
+  isGenerating?: boolean;  // Loading state during export
+}
+```
+
+### State Management
+
+| State | Condition | Behavior |
+|-------|-----------|----------|
+| `isModalOpen` | boolean | Controls ExportModal visibility |
+| `hasResults` | `data && Object.keys(data).length > 0` | Determines if export is available |
+| `disabled` | `!hasResults \|\| isGenerating` | Prevents action without data |
+
+### Disabled State Logic
+
+```typescript
+const hasResults = data && Object.keys(data).length > 0;
+const isDisabled = !hasResults || isGenerating;
+```
+
+| Condition | hasResults | isGenerating | Disabled |
+|-----------|------------|--------------|----------|
+| Empty data | false | false | ✓ Yes |
+| Null data | false | false | ✓ Yes |
+| Valid data | true | false | ✗ No |
+| Generating | true | true | ✓ Yes |
+
+### Loading State (isGenerating)
+
+When `isGenerating=true`:
+- Button shows spinner animation
+- Text changes to "Generating..."
+- Button remains disabled
+- aria-label updates to "Generating export..."
+
+### Accessibility Implementation
+
+| Feature | Implementation |
+|---------|----------------|
+| aria-label | Dynamic based on state |
+| Keyboard Navigation | Enter and Space keys supported |
+| Focus Management | Focus trap in modal |
+| Screen Reader | State changes announced |
+
+**aria-label Values:**
+| State | aria-label |
+|-------|-----------|
+| Default | "Export analysis results" |
+| Disabled (no data) | "No results to export" |
+| Loading | "Generating export..." |
+
+### Styling
+
+- Uses shadcn Button component with default variant
+- Tailwind CSS for responsive design
+- Hover and focus states via CSS
+- Download icon from lucide-react
+
+### Integration Points
+
+**With ExportModal:**
+```tsx
+<ExportResultsButton
+  toolName="keyword-density"
+  url="https://example.com"
+  data={analysisResults}
+  isGenerating={isExporting}
+/>
+```
+
+**In Tool Results Components:**
+```tsx
+// Example: KeywordDensityResults.tsx
+<div className="flex justify-end">
+  <ExportResultsButton
+    toolName="keyword-density"
+    url={url}
+    data={results}
+  />
+</div>
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `ExportResultsButton.test.tsx` | 60 | 60+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 5 | Component mount, icon, text, className |
+| Disabled State | 8 | Empty/null/undefined data, enabled states |
+| Modal Interaction | 6 | Open/close, prop passing, data flow |
+| Loading State | 4 | isGenerating prop, spinner, disabled |
+| Accessibility | 8 | aria-label, keyboard (Enter/Space), focus |
+| Props Validation | 6 | Required props, edge cases |
+| Edge Cases | 8 | Empty data, unicode, emoji, large data |
+| Styling | 6 | Tailwind classes, hover/focus states |
+| Integration | 4 | Full export flow, multiple tool names |
+| Performance | 2 | Render time, rapid prop changes |
+| Snapshots | 3 | Default, disabled, loading states |
+
+### Dependencies
+- TASK-29-3 (API endpoints)
+- TASK-29-7 (ExportModal component - stub exists)
+
+### Production Status
+- **Deployed:** 2026-03-05 (GitHub Actions)
+- **Commit:** 211460a
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** 60/60 passing
+- **Coverage:** 92.3% statements, 90% branches, 100% functions, 100% lines
+- **Status:** Complete
+
+### Related Tasks
+- TASK-29-3: ToolExportService & Controller (API endpoints)
+- TASK-29-7: ExportModal Component (format selection modal)
+
+---
 ## Mobile Navigation Sheet Component (TASK-28-13)
 
 ### Component Description

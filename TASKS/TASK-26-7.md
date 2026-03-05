@@ -1,7 +1,7 @@
 # TASK-26-7: Create Transaction History API Endpoint
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `Medium`

@@ -12,3 +12,6 @@ export type {
   SkipLinkProps,
   SkipToMainProps,
 } from "./SkipLink";
+
+export { default as CookieConsent } from "./CookieConsent";
+export type { CookieConsentProps } from "./CookieConsent";
