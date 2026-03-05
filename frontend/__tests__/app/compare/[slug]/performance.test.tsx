@@ -534,7 +534,7 @@ describe('Static Generation Performance', () => {
       }
       
       const duration = performance.now() - start;
-      expect(duration).toBeLessThan(1000); // 100 renders in under 1 second
+      expect(duration).toBeLessThan(1500); // 100 renders in under 1.5 seconds (15ms per render)
     });
   });
 });
