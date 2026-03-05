@@ -6,6 +6,7 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Services\AI\AISuggestionCache;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
 
@@ -18,6 +19,8 @@ use Mockery;
  */
 class AICacheControllerTest extends TestCase
 {
+    use RefreshDatabase;
+    
     private AISuggestionCache $cacheService;
     private User $adminUser;
     private User $regularUser;
