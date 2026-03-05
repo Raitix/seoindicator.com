@@ -163,8 +163,8 @@ class PayPalGatewayService implements PaymentGatewayInterface
                     'brand_name' => Config::get('app.name', 'SEOIndicator'),
                     'locale' => 'en-US',
                     'user_action' => 'PAY_NOW',
-                    'return_url' => $this->returnUrl,
-                    'cancel_url' => $this->cancelUrl,
+                    'return_url' => $metadata['return_url'] ?? $this->returnUrl,
+                    'cancel_url' => $metadata['cancel_url'] ?? $this->cancelUrl,
                 ],
             ];
 
