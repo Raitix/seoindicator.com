@@ -1,7 +1,7 @@
 # FEAT-005: Keyword Discovery & Suggestions
 
 ## STATUS
-`To Write Tests`
+`Done`
 
 ## PRIORITY
 `Low`
@@ -98,6 +98,20 @@ Example:
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-05 19:45] Agent: DocSystemAnalyst
+**Feature Complete**
+
+SPEC-005 (Keyword Discovery & Suggestions) is now Done. All 14 implementation tasks completed:
+- Database schema for keyword suggestions ✓
+- Backend services (Google Suggest fetcher, Question generator, Opportunity scorer) ✓
+- API endpoints (CRUD, generate, track/dismiss) ✓
+- Frontend components (Suggestions list page, Generate form, Suggestion card) ✓
+- Testing (Unit tests, Integration tests) ✓
+
+DOCUMENTATION.md updated with feature documentation.
+
+Status: To Write Tests → Done
 
 ### [2026-02-19 19:09] Agent: Innovator
 Created as fifth feature. Keyword discovery expands platform usage by helping users find more keywords to track. While valuable, it's not essential for core functionality (tracking existing keywords) so priority is Low.

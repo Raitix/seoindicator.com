@@ -1,6 +1,121 @@
 # DOCUMENTATION.md
 
 ---
+## Suggestions List Page (TASK-5-10)
+
+### Page Description
+Frontend page component for viewing and managing keyword suggestions. Displays a sortable, filterable table of keyword opportunities with bulk actions for tracking or dismissing suggestions. Part of the Keyword Discovery & Suggestions feature (FEAT-005).
+
+### Component Location
+- **Page Component:** `frontend/app/sites/[siteId]/suggestions/page.tsx`
+- **API Integration:** `frontend/lib/api/suggestions.ts`
+- **Tests:** `frontend/__tests__/app/sites/[siteId]/suggestions/SuggestionsPage.test.tsx`, `frontend/__tests__/app/sites/[siteId]/suggestions/SuggestionsListPage.test.tsx`
+- **Test Documentation:** `TESTS/TEST-5-10.md`
+
+### Route
+- **URL:** `/sites/:siteId/suggestions`
+- **File:** `frontend/app/sites/[siteId]/suggestions/page.tsx` (Next.js App Router)
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Suggestions Table | Displays keyword, source, opportunity score, tracking status |
+| Sorting | Sort by opportunity score, keyword, source (ascending/descending) |
+| Filtering | Filter by source (Google Suggest, Question, Related, Competitor) and status (New, Tracking, Dismissed) |
+| Bulk Actions | Track Selected, Dismiss Selected buttons for batch operations |
+| Individual Actions | Track, Dismiss buttons per suggestion row |
+| Pagination | 20 items per page with Previous/Next navigation |
+| Empty State | Helpful messaging when no suggestions available |
+| Loading State | Spinner overlay during API calls |
+| Error State | Error message with retry button |
+
+### UI Components
+
+| Component | Source | Purpose |
+|-----------|--------|---------|
+| Card, CardContent | shadcn/ui | Container styling |
+| Button | shadcn/ui | Action buttons |
+| Lucide Icons | lucide-react | Visual feedback (ArrowUpDown, ChevronLeft, ChevronRight, Loader2, TrendingUp, X) |
+
+### State Management
+
+| State | Type | Purpose |
+|-------|------|---------|
+| `suggestions` | array | List of suggestion objects from API |
+| `isLoading` | boolean | Loading state for API calls |
+| `error` | string \| null | Error message display |
+| `selectedIds` | Set<number> | Selected suggestion IDs for bulk actions |
+| `sortBy` | string | Current sort column |
+| `sortOrder` | 'asc' \| 'desc' | Sort direction |
+| `sourceFilter` | string | Active source filter |
+| `statusFilter` | string | Active status filter |
+| `page` | number | Current pagination page |
+
+### API Integration
+
+**Hook:** `useSuggestions(siteId)` from `lib/api/suggestions.ts`
+
+**API Functions:**
+| Function | Endpoint | Method |
+|----------|----------|--------|
+| `useSuggestions(siteId)` | `/api/v1/sites/:siteId/suggestions` | GET |
+| `trackSuggestion(id)` | `/api/v1/sites/:siteId/suggestions/:id/track` | POST |
+| `bulkTrackSuggestions(ids)` | `/api/v1/sites/:siteId/suggestions/bulk-track` | POST |
+| `dismissSuggestion(id)` | `/api/v1/sites/:siteId/suggestions/:id/dismiss` | POST |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| SuggestionsPage.test.tsx | 38 | ✅ PASS |
+| SuggestionsListPage.test.tsx | 41 | ✅ PASS |
+| **Total** | **79** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Rendering | 5 | Page header, table, filters, pagination |
+| Table Content | 4 | Keyword, source, score, status display |
+| Filtering | 3 | By source, by tracking status |
+| Sorting | 2 | Opportunity score, keyword columns |
+| Selection | 3 | Individual, select all, deselect all |
+| Bulk Actions | 4 | Track selected, dismiss selected |
+| Individual Actions | 3 | Track, dismiss, hidden for tracked items |
+| Empty State | 1 | No suggestions display |
+| Pagination | 3 | Controls, disabled prev, navigation |
+| Loading State | 2 | Show/hide overlay |
+| Error State | 2 | Error message, retry button |
+| Accessibility | 3 | Table ARIA, dropdowns, checkboxes |
+| Adversarial | 3 | XSS prevention, rapid changes, selection stress |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| No Sensitive Data | No API keys or credentials exposed |
+| Authentication | Page protected by Next.js middleware |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-03 |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Page URL | `/sites/1/suggestions/` |
+| Tests | 79/79 passing |
+
+### Dependencies
+- TASK-5-7 (Suggestions CRUD API) - Done
+- TASK-5-9 (Track/Dismiss endpoints) - Done
+
+### Related Tasks
+- TASK-5-11: Generate Suggestions Form
+- TASK-5-12: Suggestion Card Component
+
+---
 ## ComparisonTable Component (TASK-32-5)
 
 ### Component Description
