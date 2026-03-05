@@ -128,7 +128,7 @@ export interface ToolOption {
 // ==================== Status Option ====================
 
 export interface StatusOption {
-  value: AnalysisStatus | '';
+  value: AnalysisStatus | '' | 'all';
   label: string;
   color?: string;
 }
