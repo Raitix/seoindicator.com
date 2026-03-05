@@ -14076,6 +14076,124 @@ Generates professional PDF reports from SEO data using native PHP PDF generation
 - Production verified: 2026-02-25
 
 ---
+## PdfToolExporter Implementation (TASK-29-1)
+
+### Service Description
+PDF exporter class for generating professional PDF exports of SEO tool analysis results. Supports multi-page PDFs with branded cover page, summary section, indicators table, and recommendations. Part of the Export Results (PDF/XLS) feature (FEAT-029).
+
+### Component Location
+- **Class:** `backend/app/Exporters/PdfToolExporter.php`
+- **Tests:** `backend/tests/Unit/Exporters/PdfToolExporterTest.php`
+
+### Core Functionalities
+
+**PdfToolExporter Class:**
+| Method | Description |
+|--------|-------------|
+| `export(ToolResult $result, ?array $branding = null): string` | Main export method - returns PDF binary content |
+| `renderCoverPage(ToolResult $result, ?array $branding): array` | Generates cover page with logo, tool name, URL, date |
+| `renderSummary(ToolResult $result): array` | Creates summary section with score and pass/warning/fail counts |
+| `renderIndicators(ToolResult $result): array` | Renders indicators table grouped by category |
+| `renderIndicatorTable(array $indicators): array` | Builds paginated indicator table rows |
+| `renderRecommendations(ToolResult $result): array` | Generates prioritized recommendations section |
+| `assemblePdf(array $pages, ?array $branding): string` | Assembles final PDF from page components |
+
+### PDF Structure
+
+| Section | Content |
+|---------|---------|
+| **Cover Page** | Logo placeholder/company name, tool name, URL analyzed, analysis date, error state handling |
+| **Summary Section** | Overall score, pass/warning/fail counts, total indicators |
+| **Indicators Table** | Grouped by category, paginated at 25 rows per page, status icons (OK/WARN/FAIL/ERR) |
+| **Recommendations** | Sorted by priority (high→medium→low), action items |
+
+### Class Constants
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `PAGE_WIDTH` | 595 | A4 page width in points |
+| `PAGE_HEIGHT` | 842 | A4 page height in points |
+| `MARGIN` | 40 | Page margin in points |
+| `ROWS_PER_PAGE` | 25 | Maximum indicator rows per page |
+
+### Branding Support
+
+**Optional branding array parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `primaryColor` | string | Primary brand color (hex) |
+| `secondaryColor` | string | Secondary brand color (hex) |
+| `fontFamily` | string | Font family name |
+| `companyName` | string | Company name for cover page |
+| `logo` | string | Logo URL or path |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | `strip_tags()` + `escapePdfText()` for all user input |
+| PDF Special Character Escaping | Escapes `\`, `(`, `)` characters |
+| Non-ASCII Handling | ISO-8859-1 encoding for unicode/emoji characters |
+| No External Dependencies | Native PHP PDF generation |
+
+### A4 Page Format
+
+| Property | Value |
+|----------|-------|
+| Page Size | 595 × 842 points (A4) |
+| Margins | 40 points all sides |
+| MediaBox | `[0 0 595 842]` |
+| Page Breaks | Automatic at 25 rows |
+
+### PDF Structure Objects
+
+| Object | Description |
+|--------|-------------|
+| Catalog | Root object referencing Pages |
+| Pages | Page tree with all page objects |
+| Font | Helvetica base font |
+| Content Streams | PDF drawing commands per page |
+| XRef Table | Cross-reference table for object locations |
+| Trailer | Document trailer with root reference |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `PdfToolExporterTest.php` | 58 | 85 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 2 | Class instantiation, constants verification |
+| Export Method | 4 | Valid PDF generation, branding support, defaults |
+| Cover Page | 5 | Tool name, URL, date, logo, error state |
+| Summary Section | 6 | Score display, pass/warning/fail counts |
+| Indicators Table | 6 | Categories, names, values, status icons |
+| Page Breaks | 3 | 25 rows per page, multi-page handling |
+| Recommendations | 4 | Priority sorting, action items |
+| A4 Format | 2 | Dimensions verification, margins |
+| XSS Prevention | 5 | Text escaping, injection prevention |
+| Branding | 6 | Colors, font, company name, logo |
+| PDF Structure | 6 | Catalog, pages, font, xref, trailer |
+| Edge Cases | 6 | Unicode, empty results, failed results |
+| Integration | 3 | Full export, consistency checks |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions auto-deploy)
+- **Commit:** `9744858`
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** 58/58 passing (85 assertions, 10.35s)
+- **Status:** Complete
+
+### Dependencies
+- `ToolResult` DTO (existing at `app/Services/Tools/ToolResult.php`)
+
+### Related Tasks
+- TASK-29-2: XlsToolExporter Implementation (complementary exporter)
+- TASK-29-3: ToolExportService & Controller (integration)
+
+---
 ## Database Schema: SEO Site Audits (FEAT-014)
 
 ### Audits Table
@@ -23783,3 +23901,176 @@ ole="contentinfo" |
 - TASK-28-12: Desktop Navigation
 - TASK-28-13: Mobile Navigation
 
+---
+## Skeleton Loader Variants (TASK-28-9)
+
+### Component Description
+Specialized skeleton loader components for different content types: cards, tables, charts, and the indicator catalog. Provides visual placeholders during data loading with pulse animations for improved perceived performance. Part of the Modern UI/UX + Indicator Catalog feature (FEAT-028).
+
+### Component Location
+- **CardSkeleton:** `frontend/components/ui/skeletons/CardSkeleton.tsx`
+- **TableSkeleton:** `frontend/components/ui/skeletons/TableSkeleton.tsx`
+- **ChartSkeleton:** `frontend/components/ui/skeletons/ChartSkeleton.tsx`
+- **IndicatorCatalogSkeleton:** `frontend/components/ui/skeletons/IndicatorCatalogSkeleton.tsx`
+- **Barrel Export:** `frontend/components/ui/skeletons/index.ts`
+- **Tests:** `frontend/__tests__/components/ui/skeletons/SkeletonLoaders.test.tsx`
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-28-9.md`
+
+### Core Functionalities
+
+**Skeleton Components:**
+| Component | Purpose | Key Props |
+|-----------|---------|-----------|
+| `CardSkeleton` | Loading placeholder for indicator cards | `showIcon`, `lines`, `className` |
+| `TableSkeleton` | Loading placeholder for data tables | `rows`, `columns`, `showHeader`, `className` |
+| `ChartSkeleton` | Loading placeholder for charts | `type` ('line' | 'bar' | 'pie'), `className` |
+| `IndicatorCatalogSkeleton` | Full catalog loading state | `count`, `columns`, `className` |
+
+### CardSkeleton Component
+
+**Props Interface:**
+``typescript
+interface CardSkeletonProps {
+  showIcon?: boolean;    // Default: true
+  lines?: number;        // Default: 3
+  className?: string;
+}
+``
+
+**Features:**
+- Configurable icon placeholder (default: visible)
+- Variable line count (default: 3)
+- Varying line widths for visual interest (75%, 100%, 50%)
+- Dark mode support with `dark:` classes
+- Accessibility: `aria-busy="true"`, `aria-label="Loading content"`
+
+### TableSkeleton Component
+
+**Props Interface:**
+``typescript
+interface TableSkeletonProps {
+  rows?: number;         // Default: 5
+  columns?: number;      // Default: 4
+  showHeader?: boolean;  // Default: true
+  className?: string;
+}
+``
+
+**Features:**
+- Semantic HTML structure (`<table>`, `<thead>`, `<tbody>`)
+- Configurable row/column counts
+- Toggle header row visibility
+- Hover effects and striped rows styling
+- Responsive column handling
+
+### ChartSkeleton Component
+
+**Props Interface:**
+``typescript
+interface ChartSkeletonProps {
+  type?: 'line' | 'bar' | 'pie';  // Default: 'line'
+  className?: string;
+}
+``
+
+**Chart Type Visualizations:**
+| Type | Visual Placeholder |
+|------|-------------------|
+| `line` | SVG path with data points, axis placeholders, grid lines |
+| `bar` | Vertical bars with varying heights, axis placeholders |
+| `pie` | Circular segments with legend placeholders |
+
+**Features:**
+- Unique visual for each chart type
+- Axis and grid line placeholders for data charts
+- Legend area for pie charts
+- Dark mode compatible
+
+### IndicatorCatalogSkeleton Component
+
+**Props Interface:**
+``typescript
+interface ResponsiveColumns {
+  default?: number;  // Default: 1
+  sm?: number;       // Small screens
+  md?: number;       // Medium screens
+  lg?: number;       // Large screens
+  xl?: number;       // Extra large screens
+  '2xl'?: number;    // 2X large screens
+}
+
+interface IndicatorCatalogSkeletonProps {
+  count?: number;           // Number of card skeletons, default: 6
+  columns?: ResponsiveColumns;
+  className?: string;
+}
+``
+
+**Features:**
+- Configurable count of card skeletons
+- Responsive grid layout with breakpoint support
+- Header and search/filter skeleton areas
+- Uses CardSkeleton components internally
+- Responsive columns: default(1), sm, md, lg, xl, 2xl breakpoints
+
+### Pulse Animation
+
+All skeleton components use the `animate-pulse` Tailwind CSS class for consistent loading animation:
+
+``css
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+``
+
+### Accessibility Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| ARIA Busy State | `aria-busy="true"` on all skeleton containers |
+| ARIA Labels | `aria-label="Loading..."` for screen readers |
+| Semantic Structure | Proper HTML elements (table, thead, tbody) |
+| Reduced Motion | Respects `prefers-reduced-motion` media query |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| No User Input | Components render static placeholder content only |
+| XSS Prevention | No dynamic content rendering |
+| No Sensitive Data | No data exposure risk |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `SkeletonLoaders.test.tsx` | 144 | 144+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| CardSkeleton | 25 | Basic rendering, showIcon, lines, styling, dark mode, edge cases |
+| TableSkeleton | 30 | Basic rendering, rows/columns, showHeader, styling, edge cases |
+| ChartSkeleton | 30 | Basic rendering, line/bar/pie types, styling, edge cases |
+| IndicatorCatalogSkeleton | 30 | Basic rendering, count, columns, card integration, edge cases |
+| Barrel Exports | 6 | Module structure verification |
+| TypeScript Types | 8 | Interface validation |
+| Accessibility | 10 | ARIA attributes, semantic structure, reduced motion |
+| Integration | 5 | Composition, performance (< 1s for 100+ items) |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions #22677101149)
+- **Commit:** `a6481e9`
+- **Build Time:** 1m43s
+- **Deploy Time:** 43s
+- **Health Check:** Passing (`https://seoindicator.com/api/health` -> 200 OK)
+- **Tests:** 144/144 passing (100% pass rate)
+- **Status:** Complete
+
+### Dependencies
+- TASK-28-3 (shadcn/ui Components - skeleton base component)
+
+### Related Tasks
+- TASK-28-10: IndicatorCatalog (uses IndicatorCatalogSkeleton)
+- TASK-28-11: Progress Indicators
+- TASK-28-12: Loading State Integration

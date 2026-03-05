@@ -1,7 +1,7 @@
 # TASK-29-1: PdfToolExporter Implementation
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -242,3 +242,22 @@ PdfToolExporter is a pure PHP class with no external API surface (ToolExportCont
 **Deployment Status:** ✅ APPROVED FOR DOCUMENTATION
 
 Status updated: `To Test Prod` → `To Document`
+
+### [2026-03-04 21:15 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+Added comprehensive PdfToolExporter documentation to DOCUMENTATION.md:
+- **Location:** After PdfReportExporter section (line ~14080)
+- **Sections documented:** Service description, core functionalities, PDF structure, class constants, branding support, security implementation, A4 format, PDF structure objects, test coverage
+
+**Documentation Highlights:**
+- Class methods: export(), renderCoverPage(), renderSummary(), renderIndicators(), renderRecommendations(), assemblePdf()
+- Class constants: PAGE_WIDTH=595, PAGE_HEIGHT=842, MARGIN=40, ROWS_PER_PAGE=25
+- Security: XSS prevention via strip_tags() + escapePdfText(), PDF special character escaping
+- Test coverage: 58 tests, 85 assertions
+- Production status: Deployed 2026-03-04, commit 9744858
+
+**SPEC-029 Status:** In Progress (TASK-29-4 Done, other tasks still in progress)
+**FEAT-029 Status:** In Progress
+
+Status updated: `To Document` → `Done`
