@@ -1,7 +1,7 @@
 # TASK-30-3: How It Works Page
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
