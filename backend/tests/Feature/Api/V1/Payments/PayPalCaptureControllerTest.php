@@ -92,6 +92,7 @@ class PayPalCaptureControllerTest extends TestCase
             'amount' => $this->expectedCredits,
             'balance_after' => 25.00 + $this->expectedCredits,
             'type' => 'purchase',
+            'status' => CreditTransaction::STATUS_PENDING,
             'description' => 'PayPal Order: ' . $this->orderId,
             'payment_provider' => 'paypal',
             'payment_id' => $this->orderId,
@@ -99,7 +100,9 @@ class PayPalCaptureControllerTest extends TestCase
                 'order_id' => $this->orderId,
                 'package_id' => $this->package->id,
                 'status' => 'approved',
+                'price_usd' => $this->orderAmount,
             ],
+            'created_at' => now(),
         ], $overrides));
     }
 

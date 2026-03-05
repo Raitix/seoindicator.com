@@ -2887,6 +2887,177 @@ The `StripeGatewayService` provides the following methods for payment method man
 - TASK-26-14: PayPal Webhook Handler (future payment method support)
 
 ---
+## PayPal Order Endpoint (TASK-26-13)
+
+### Endpoint Description
+REST API endpoint for creating PayPal orders for credit purchase. Validates credit packages, calculates credits with bonuses, creates pending transactions, and returns PayPal order details for frontend integration. Part of the Billing, Credits & Model Selection feature (FEAT-026).
+
+### Component Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/Payments/PayPalOrderController.php`
+- **Form Request:** `backend/app/Http/Requests/Api/V1/Payments/CreatePayPalOrderRequest.php`
+- **Service:** `backend/app/Services/Billing/PayPalGatewayService.php`
+- **Interface:** `backend/app/Services/Billing/Contracts/PaymentGatewayInterface.php`
+- **Model:** `backend/app/Models/CreditTransaction.php`
+- **Tests:** `backend/tests/Feature/Api/V1/Payments/PayPalOrderControllerTest.php`
+
+### API Specification
+
+| Method | Endpoint | Authentication |
+|--------|----------|----------------|
+| POST | `/api/v1/payments/paypal/order` | Required (Bearer token) |
+
+### Request Body
+
+```json
+{
+  "package_id": 2,
+  "return_url": "https://example.com/credits/success",
+  "cancel_url": "https://example.com/credits/cancelled"
+}
+```
+
+### Request Validation
+
+| Field | Type | Required | Validation Rules |
+|-------|------|----------|------------------|
+| `package_id` | integer | Yes | Exists in `credit_packages` table, must be active |
+| `return_url` | string | Yes | Valid URL format |
+| `cancel_url` | string | Yes | Valid URL format |
+
+### Response Format (Success)
+
+```json
+{
+  "success": true,
+  "data": {
+    "order_id": "5O190127TN364715T",
+    "approval_url": "https://www.paypal.com/checkoutnow?token=5O190127TN364715T",
+    "amount": 10.00,
+    "credits": 10.50,
+    "package_name": "Basic"
+  }
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `order_id` | string | PayPal order ID for SDK integration |
+| `approval_url` | string | URL to redirect user for PayPal approval |
+| `amount` | numeric | Package price in USD |
+| `credits` | numeric | Credits to be awarded (base + bonus) |
+| `package_name` | string | Display name of credit package |
+
+### Error Responses
+
+| Status | Condition | Response |
+|--------|-----------|----------|
+| 401 | Unauthenticated request | `{"success": false, "error": "Unauthenticated"}` |
+| 422 | Validation error | `{"success": false, "error": {...}, "details": {...}}` |
+| 422 | Inactive package | `{"success": false, "error": "Invalid package"}` |
+| 500 | PayPal API failure | `{"success": false, "error": "Failed to create order"}` |
+
+### Controller Implementation
+
+**PayPalOrderController@store():**
+1. Validates request via `CreatePayPalOrderRequest`
+2. Fetches package from database (active check included)
+3. Calculates credits: `base_credits × (1 + bonus_percent/100)`
+4. Creates PayPal order via `PaymentGatewayInterface`
+5. Stores pending transaction with `order_id` in `payment_id` field
+6. Returns order details for frontend
+
+### Business Logic
+
+**Credits Calculation:**
+```
+credits = base_credits × (1 + bonus_percent / 100)
+```
+
+**Transaction Status Flow:**
+| Status | Description |
+|--------|-------------|
+| `pending` | Order created, awaiting user approval |
+| `completed` | Order captured, credits added (TASK-26-14) |
+| `failed` | Payment failed |
+| `cancelled` | User cancelled |
+
+### Database Schema
+
+**credit_transactions table (status column added):**
+```sql
+ALTER TABLE credit_transactions 
+ADD COLUMN status ENUM('pending', 'completed', 'failed', 'cancelled') 
+DEFAULT 'pending' AFTER type;
+```
+
+### PaymentGatewayInterface Integration
+
+The endpoint uses `PaymentGatewayInterface` for dependency injection:
+
+```php
+interface PaymentGatewayInterface
+{
+    public function createOrder(float $amount, array $metadata = []): array;
+    public function capturePayment(string $paymentId): bool;
+    public function handleWebhook(Request $request): PaymentResult;
+}
+```
+
+**PayPalGatewayService Implementation:**
+- `createOrder()` returns `order_id` and `approval_url`
+- Accepts `return_url` and `cancel_url` from metadata
+- Creates order with `CAPTURE` intent
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Bearer token required (Sanctum) |
+| Amount Validation | Price read from database, not request body |
+| Package Validation | Server-side check for active status |
+| Order Tracking | Order ID stored for webhook verification |
+| URL Validation | Return/cancel URLs validated via FormRequest |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `PayPalOrderControllerTest.php` | 59 | 131 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Endpoint (BE) | 8 | Route registration, authentication, response structure |
+| Validation (VA) | 9 | Required fields, package_id existence, URL format |
+| Business Logic (BL) | 10 | Credits calculation, package bonus, transaction creation |
+| Error Handling (EH) | 6 | PayPal failures, inactive packages |
+| Security (SC) | 6 | SQL injection, XSS, amount validation |
+| Integration (IN) | 4 | Service container binding, interface mocking |
+| HTTP Methods (HM) | 4 | POST only, GET rejected |
+| Rate Limiting (RL) | 2 | Rate limit headers |
+| Performance (PF) | 2 | Response time |
+| Edge Cases (EC) | 8 | Concurrent orders, stateful mocks |
+
+### Production Status
+- **Deployed:** 2026-03-05 (GitHub Actions #22731312299)
+- **Commit:** `1220b706`
+- **Health Check:** Passing
+- **Tests:** 59/59 passing (131 assertions)
+- **Route:** `POST /api/v1/payments/paypal/order` ✅
+- **Configuration Required:** PayPal credentials (PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_MODE)
+
+### Dependencies
+- TASK-26-3 (credit_packages table) - Done ✅
+- TASK-26-12 (PayPalGatewayService) - To Test Prod
+
+### Related Tasks
+- TASK-26-12: PayPalGatewayService (provides PayPal integration)
+- TASK-26-14: PayPal Webhook Handler (captures approved orders)
+- TASK-26-5: CreditService (used after capture)
+
+---
 ## Models List API Endpoint (TASK-26-17)
 
 ### Endpoint Description

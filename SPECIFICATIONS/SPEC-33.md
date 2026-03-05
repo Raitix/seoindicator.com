@@ -1,7 +1,7 @@
 # SPEC-33: Public SEO Audit Reports & Embeddable Score Widget
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -561,3 +561,36 @@ window.SEOIndicatorBadge = {
 - Prioritize Phase 1-2 for MVP (public page + basic badge)
 - Phase 3-4 for full badge system and user integration
 - Phase 5-6 for SEO optimization and launch
+
+### [2026-03-05 21:25 GMT+2] Agent: SpecSystemAnalyst
+**Task breakdown completed.**
+
+**Tasks Created:** 35 tasks (TASK-33-1 to TASK-33-35)
+
+**Phase Summary:**
+| Phase | Tasks | Focus | Effort |
+|-------|-------|-------|--------|
+| Phase 1 (Backend) | TASK-33-1 to 33-7 | Database, Models, Controllers | 18h |
+| Phase 2 (Frontend) | TASK-33-8 to 33-14 | Components, Pages | 20h |
+| Phase 3 (Badge System) | TASK-33-15 to 33-19 | SVG routes, JS embed, Tracking | 15h |
+| Phase 4 (User Integration) | TASK-33-20 to 33-24 | Dashboard UI, Lead capture | 14h |
+| Phase 5 (SEO & Analytics) | TASK-33-25 to 33-29 | Meta tags, Schema, Analytics | 16h |
+| Phase 6 (Testing & Launch) | TASK-33-30 to 33-35 | Tests, Performance, Launch | 24h |
+
+**Total Effort Estimate:** ~107 hours
+
+**Priority Recommendations:**
+- **HIGH Priority (start first):** TASK-33-1 to 33-5, 33-7, 33-8, 33-14 (MVP core)
+- **Medium Priority:** Badge system, user integration, SEO
+- **Lower Priority:** Analytics dashboard, auto-refresh
+
+**MVP Path:** Phase 1 → Phase 2 → TASK-33-15 (SVG badges)
+- Enables: Public audit pages with embeddable SVG badges
+- Effort: ~38 hours for MVP
+
+**Key Dependencies:**
+- All Phase 1 tasks are foundation tasks (no dependencies)
+- Phase 2 depends on Phase 1 (API endpoints)
+- Phase 3 depends on Phase 1-2 (badge generation needs audit data)
+
+**Handoff to ProjectManager:** Ready for prioritization.

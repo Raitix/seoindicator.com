@@ -177,24 +177,22 @@ class PayPalWebhookController extends Controller
             $packageId = $matches[1];
         }
 
-        // Add credits via CreditService
-        DB::transaction(function () use ($user, $result, $event, $packageId) {
-            $this->creditService->addCredits(
-                $user,
-                $result->amount,
-                'purchase',
-                [
-                    'payment_provider' => 'paypal',
-                    'payment_id' => $result->paymentId,
-                    'description' => 'PayPal credit purchase',
-                    'metadata' => [
-                        'event_id' => $event['id'] ?? null,
-                        'package_id' => $packageId,
-                        'currency' => $result->currency,
-                    ],
-                ]
-            );
-        });
+        // Add credits via CreditService (transaction handled by CreditService)
+        $this->creditService->addCredits(
+            $user,
+            $result->amount,
+            'purchase',
+            [
+                'payment_provider' => 'paypal',
+                'payment_id' => $result->paymentId,
+                'description' => 'PayPal credit purchase',
+                'metadata' => [
+                    'event_id' => $event['id'] ?? null,
+                    'package_id' => $packageId,
+                    'currency' => $result->currency,
+                ],
+            ]
+        );
 
         Log::info('PayPal credits added', [
             'user_id' => $result->userId,
