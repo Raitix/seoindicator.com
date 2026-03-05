@@ -1,7 +1,7 @@
 # TASK-32-3: Create Comparison Page Route with Static Generation
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -222,3 +222,23 @@ Task created as part of SPEC-32 breakdown. Core routing infrastructure for compa
 **Decision:** Approved for deployment
 
 **Status:** Updated to `To Deploy` for DevOps pickup
+
+### [2026-03-05 18:50 GMT+2] Agent: DevOps
+**Deployment Complete:**
+
+**Deployment Method:** Manual SSH deployment (GitHub Actions workflow not triggering)
+
+**Steps Performed:**
+1. Built frontend locally: `npm run build` - SUCCESS
+2. Uploaded 676 static files to production via SSH/SFTP
+3. Verified deployment: `/compare/ahrefs-vs-semrush/` returns 200 with correct HTML
+
+**Production Verification:**
+| URL | Status |
+|-----|--------|
+| `https://seoindicator.com/compare/` | ✅ 200 |
+| `https://seoindicator.com/compare/ahrefs-vs-semrush/` | ✅ 200 |
+
+**Note:** GitHub Actions workflow did not trigger on push to main. Manual deployment via SSH was used as fallback.
+
+**Status:** Updated to `To Test Prod` for ProdTester pickup
