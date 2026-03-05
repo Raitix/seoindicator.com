@@ -1,7 +1,7 @@
 # TASK-31-6: OpenRouter Client Service
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -191,6 +191,43 @@ return [
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 14:10 GMT+2] PreTester - Tests Coverage Complete ✅
+**Test Design Complete - Ready for Developer**
+
+**Test File Created:**
+- `backend/tests/Unit/Services/AI/OpenRouterClientTest.php` (77 tests)
+
+**Test Documentation:**
+- `TESTS/TEST-31-6.md`
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Class Structure | 9 | Constructor, config, DI support |
+| API Integration | 14 | HTTP requests, headers, body format |
+| Response Handling | 12 | Content, tokens, latency, model |
+| Error Handling | 14 | All HTTP codes, timeout, malformed |
+| Timeout Config | 5 | Default/custom, validation |
+| Free Models | 10 | getAvailableModels, getModelInfo |
+| Stream Method | 3 | Callable, callback invocation |
+| Security | 5 | API key protection, XSS, injection |
+| Configuration | 5 | Config values, base URL |
+
+**Total: 77 tests designed**
+
+**Test Execution Status:**
+- All tests fail as expected (class not implemented)
+- Tests will pass when OpenRouterClient is properly implemented
+- Reference: OpenRouterProviderTest patterns (72 tests passing)
+
+**Developer Notes:**
+1. Create `backend/app/Services/AI/OpenRouterClient.php`
+2. Implement `generate()`, `stream()`, `getAvailableModels()`, `getModelInfo()`
+3. Create `backend/config/openrouter.php` with free_models config
+4. Consider extending AIResponse DTO for model/promptTokens/responseTokens fields
+
+**Status:** `To Write Tests` → `To Develop`
 
 ### [2026-03-05 14:03 GMT+2] PreTester - Starting Test Design
 Starting comprehensive test design for OpenRouterClient service.
