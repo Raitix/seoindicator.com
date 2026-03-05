@@ -4,6 +4,7 @@
  * Tests: Icon registry structure, indicator-to-icon mapping, tree-shaking, exports
  */
 
+import * as React from 'react';
 import * as LucideReact from 'lucide-react';
 
 // Type for the expected registry structure
