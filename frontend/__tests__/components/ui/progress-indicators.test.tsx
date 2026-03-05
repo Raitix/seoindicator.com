@@ -841,11 +841,11 @@ describe('Integration', () => {
   it('INT-003: Multiple progress indicators on same page', () => {
     render(
       <>
-        <LinearProgress data-testid="page-load" />
-        <CircularProgress data-testid="button-load" size="sm" />
+        <LinearProgress />
+        <CircularProgress size="sm" />
       </>
     );
-    expect(screen.getByTestId('page-load')).toBeInTheDocument();
-    expect(screen.getByTestId('button-load')).toBeInTheDocument();
+    expect(screen.getByTestId('linear-progress')).toBeInTheDocument();
+    expect(screen.getByTestId('circular-progress')).toBeInTheDocument();
   });
 });
