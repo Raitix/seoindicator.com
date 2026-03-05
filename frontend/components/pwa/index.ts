@@ -13,6 +13,7 @@ export { PWADashboard, type PWADashboardProps } from "./PWADashboard";
 // Individual components
 export { PWAScoreGauge, PWAScoreGaugeSkeleton, type PWAScoreGaugeProps } from "./PWAScoreGauge";
 export { ManifestStatusCard, ManifestStatusCardSkeleton, type ManifestStatusCardProps } from "./ManifestStatusCard";
+export { PWARecommendations, PWARecommendationsSkeleton, type PWARecommendationsProps } from "./PWARecommendations";
 
 // Loading and error states
 export { PWASkeleton, PWAErrorSkeleton, PWANoAnalysisSkeleton } from "./PWASkeleton";

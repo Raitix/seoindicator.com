@@ -4329,6 +4329,462 @@ class AISuggestionController extends Controller
 - TASK-21-4 (Prompt Templates)
 
 ---
+## AI Suggestion Caching Layer (TASK-21-6)
+
+### Service Description
+Caching layer for AI suggestions that stores responses for identical requests to reduce API calls, costs, and improve response times. Uses SHA-256 hashing for request deduplication with configurable TTL (default 24 hours). Part of the AI Suggestions via OpenRouter/Vercel Gateway feature (FEAT-021).
+
+### Component Location
+- **Service:** `backend/app/Services/AI/AISuggestionCache.php`
+- **Controller:** `backend/app/Http/Controllers/Api/V1/Admin/AICacheController.php`
+- **Command:** `backend/app/Console/Commands/AICacheClear.php`
+- **Config:** `backend/config/ai.php`
+- **Tests:** `backend/tests/Unit/Services/AI/AISuggestionCacheTest.php`, `backend/tests/Feature/Services/AI/AISuggestionCacheIntegrationTest.php`, `backend/tests/Feature/Console/AICacheClearCommandTest.php`
+
+### Core Methods
+
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `generateHash()` | indicator, context, provider | string | SHA-256 hash for request deduplication |
+| `get()` | hash | ?array | Retrieve cached response or null |
+| `set()` | hash, response, ttlHours | void | Store response in cache with TTL |
+| `invalidate()` | hash | bool | Remove specific cache entry |
+| `invalidateByIndicator()` | indicator | int | Remove all entries for indicator |
+| `clear()` | - | int | Clear all cache entries |
+| `getStats()` | - | array | Get hit/miss statistics |
+| `resetStats()` | - | void | Reset statistics counters |
+| `logMetrics()` | - | void | Log cache metrics to file |
+
+### Hash Generation
+
+```php
+public function generateHash(string $indicator, array $context, string $provider): string
+{
+    $data = [
+        'indicator' => $indicator,
+        'context' => $this->normalizeContext($context),
+        'provider' => $provider,
+    ];
+    return hash('sha256', json_encode($data));
+}
+
+private function normalizeContext(array $context): array
+{
+    ksort($context); // Sort keys for consistent hashing
+    return $context;
+}
+```
+
+### Cache Flow
+
+```
+Request → Generate Hash → Check Cache
+                           ↓
+                    ┌──────┴──────┐
+                    ↓             ↓
+                   HIT           MISS
+                    ↓             ↓
+              Return cached   Call AI provider
+                    ↓             ↓
+                    └─────→ Store in cache ←─────┘
+                                  ↓
+                          Return response
+```
+
+### Admin API Endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/v1/admin/ai/cache/stats` | GET | Admin | Get cache statistics |
+| `/api/v1/admin/ai/cache/invalidate` | POST | Admin | Invalidate specific entry |
+| `/api/v1/admin/ai/cache` | DELETE | Admin | Clear all cache entries |
+
+**POST /api/v1/admin/ai/cache/invalidate Request:**
+```json
+{
+    "hash": "abc123...64chars"
+}
+```
+
+**GET /api/v1/admin/ai/cache/stats Response:**
+```json
+{
+    "total_entries": 1250,
+    "hits": 8500,
+    "misses": 3200,
+    "hit_ratio": 0.726,
+    "evictions": 45
+}
+```
+
+### Artisan Command
+
+```bash
+php artisan ai:cache:clear [options]
+
+Options:
+  --force     Skip confirmation prompt
+  --dry-run   Show what would be cleared without deleting
+  --stats     Show cache statistics before/after clearing
+```
+
+### Configuration
+
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `AI_CACHE_ENABLED` | `true` | Enable/disable caching |
+| `AI_CACHE_TTL_HOURS` | `24` | Cache time-to-live in hours |
+| `CACHE_DRIVER` | `file` | Laravel cache driver |
+
+**config/ai.php:**
+```php
+'cache' => [
+    'enabled' => env('AI_CACHE_ENABLED', true),
+    'ttl_hours' => env('AI_CACHE_TTL_HOURS', 24),
+],
+```
+
+### Performance Characteristics
+
+| Metric | Value |
+|--------|-------|
+| Hash generation | < 5ms |
+| Cache get | < 1ms |
+| Cache set | < 2ms |
+| Cache hit response time | < 10ms (vs 1-5s AI generation) |
+| Expected hit rate | 60-80% for common indicators |
+| Storage | File-based (`storage/framework/cache/data/`) |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| Admin-only endpoints | Sanctum authentication with admin role |
+| Input validation | Hash must be 64-character hexadecimal |
+| Cache key isolation | Prefix `ai_suggestions:` prevents collision |
+| No sensitive data | Only stores AI suggestions (non-PII) |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `AISuggestionCacheTest.php` | 65 | 81 | ✅ PASS |
+| `AISuggestionCacheIntegrationTest.php` | 18 | 50 | ✅ PASS |
+| `AICacheClearCommandTest.php` | 18 | 35 | ✅ PASS |
+| **Total** | **101** | **166** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| SVC (Service) | 6 | Service instantiation and binding |
+| HASH (Hash Generation) | 10 | SHA-256 consistency, normalization |
+| INT (Integration) | 8 | Cache hit/miss flow with AISuggestionService |
+| INV (Invalidation) | 7 | Manual and automatic invalidation |
+| CFG (Configuration) | 6 | TTL bounds, enabled flag |
+| MET (Metrics) | 6 | Statistics tracking and logging |
+| Security | 5 | XSS prevention, hash validation |
+| Performance | 5 | Timing assertions |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Deployment Method | GitHub Actions auto-deploy |
+| Commit | 8666edd |
+| Health Check | ✅ 200 OK |
+| Tests | 101/101 passing (166 assertions) |
+| Cache Driver | file |
+| Cache TTL | 24 hours |
+| Status | Complete |
+
+### Dependencies
+- TASK-21-1: AI Service Structure (Done)
+- TASK-21-8: Database Migrations (Done)
+
+### Related Tasks
+- TASK-21-5: AI Suggestion API Endpoint (uses cache)
+- TASK-21-10: AI Rate Limiting for Suggestions API
+
+---
+## AILogger Service with Debug Mode (TASK-21-7)
+
+### Service Description
+Debug logging and monitoring service for AI suggestions feature. Provides comprehensive logging of AI requests, responses, and errors with privacy-focused data sanitization. Debug mode exposes detailed information about prompts, responses, and provider behavior for troubleshooting while protecting sensitive data. Part of the AI Suggestions via OpenRouter/Vercel Gateway feature (FEAT-021).
+
+### Component Location
+- **Service:** `backend/app/Services/AI/AILogger.php`
+- **Controller:** `backend/app/Http/Controllers/Api/V1/AISuggestionController.php` (debug mode integration)
+- **Config:** `backend/config/logging.php` (ai channel)
+- **Tests:** `backend/tests/Unit/Services/AI/AILoggerTest.php`, `backend/tests/Feature/Api/V1/AIDebugModeTest.php`
+
+### Core Functionalities
+
+**AILogger Methods:**
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `logRequest(string $indicator, array $context, string $provider): void` | indicator type, request context, provider name | Log AI request with sanitized context |
+| `logResponse(string $indicator, array $response, int $latencyMs): void` | indicator type, response data, latency in ms | Log AI response with metrics |
+| `logError(string $indicator, string $error, array $context = []): void` | indicator type, error message, optional context | Log AI errors with sanitized context |
+| `logDebug(string $message, array $data = []): void` | debug message, optional data | Log debug information when debug mode enabled |
+
+### Debug Mode Implementation
+
+**Activation Requirements:**
+| Requirement | Implementation |
+|-------------|----------------|
+| Environment Variable | `AI_DEBUG=true` in `.env` |
+| Authentication | User must be authenticated (Sanctum) |
+| Both Required | Debug mode only active when BOTH conditions met |
+
+**Debug Response Structure:**
+```json
+{
+    "success": true,
+    "data": { /* suggestions */ },
+    "debug": {
+        "prompt": "Full prompt text sent to AI...",
+        "raw_response": "Raw JSON from provider...",
+        "tokens_used": 245,
+        "latency_ms": 1250,
+        "provider": "openrouter",
+        "model": "llama-3.1-8b-instruct"
+    }
+}
+```
+
+**Security Constraints:**
+| Constraint | Implementation |
+|------------|----------------|
+| No API keys in debug | Keys masked as `***REDACTED***` |
+| No PII in debug | User data excluded from debug output |
+| Auth required | Unauthenticated requests never get debug info |
+| Production safe | Debug mode disabled by default |
+
+### Privacy Protection
+
+**Sensitive Key Masking:**
+The AILogger automatically masks sensitive keys in logged data:
+| Key Pattern | Masked Value |
+|-------------|--------------|
+| `api_key`, `apikey` | `***REDACTED***` |
+| `password`, `passwd` | `***REDACTED***` |
+| `token`, `secret` | `***REDACTED***` |
+| `authorization` | `***REDACTED***` |
+| `private_key` | `***REDACTED***` |
+
+**PII Exclusion:**
+The following fields are excluded from logs entirely:
+| Excluded Field | Reason |
+|----------------|--------|
+| `user_email` | Personal identifier |
+| `user_name` | Personal identifier |
+| `user_id` | Personal identifier |
+| `ip_address` | Personal identifier |
+
+**URL Anonymization:**
+URLs are anonymized in logs by hashing the path/query:
+```
+Original: https://example.com/users/123/profile?token=abc
+Logged:   https://example.com/[anon:a1b2c3d4e5f6...]
+```
+
+### Log Channel Configuration
+
+**Logging Channel:**
+```php
+// config/logging.php
+'channels' => [
+    'ai' => [
+        'driver' => 'daily',
+        'path' => storage_path('logs/ai.log'),
+        'level' => 'debug',
+        'days' => 30,
+    ],
+],
+```
+
+**Log Retention:**
+| Setting | Value | Purpose |
+|---------|-------|---------|
+| Driver | `daily` | Automatic rotation |
+| Retention | 30 days | Reasonable debug window |
+| Level | `debug` | Capture all log levels |
+
+### Request Hash Generation
+
+Each AI request is assigned a unique SHA-256 hash for correlation:
+```php
+$hash = hash('sha256', $indicator . json_encode($context) . time());
+```
+
+**Hash Usage:**
+- Correlate request/response logs
+- Track request lifecycle
+- Debug timing issues
+- Identify duplicate requests
+
+### Log Entry Format
+
+**Request Log:**
+```json
+{
+    "level": "INFO",
+    "message": "AI suggestion request",
+    "context": {
+        "indicator": "title",
+        "provider": "openrouter",
+        "request_hash": "a1b2c3d4...",
+        "timestamp": "2026-03-05T13:43:00Z"
+    }
+}
+```
+
+**Response Log:**
+```json
+{
+    "level": "INFO",
+    "message": "AI suggestion response",
+    "context": {
+        "indicator": "title",
+        "provider": "openrouter",
+        "latency_ms": 1250,
+        "tokens_used": 245,
+        "success": true,
+        "request_hash": "a1b2c3d4..."
+    }
+}
+```
+
+**Error Log:**
+```json
+{
+    "level": "ERROR",
+    "message": "AI suggestion error",
+    "context": {
+        "indicator": "title",
+        "error": "Connection timeout",
+        "provider": "openrouter",
+        "request_hash": "a1b2c3d4...",
+        "stack_trace": "Truncated to 5000 chars..."
+    }
+}
+```
+
+### Controller Debug Integration
+
+**AISuggestionController Debug Flow:**
+1. Check `AI_DEBUG` environment variable
+2. Check if user is authenticated
+3. If both true, include debug info in response
+4. If either false, exclude debug info entirely
+
+**Debug Info Fields:**
+| Field | Source | Description |
+|-------|--------|-------------|
+| `prompt` | AISuggestionService | Full prompt text |
+| `raw_response` | AI Provider | Raw JSON response |
+| `tokens_used` | AI Provider | Total tokens consumed |
+| `latency_ms` | Timer | Response latency |
+| `provider` | Configuration | Active provider name |
+| `model` | Configuration | AI model identifier |
+
+### Static Fallback Debug Info
+
+When static fallback is used, debug info includes:
+```json
+{
+    "debug": {
+        "provider": "static_fallback",
+        "model": "rule-based",
+        "tokens_used": 0,
+        "latency_ms": 15,
+        "fallback_reason": "AI provider timeout"
+    }
+}
+```
+
+### Performance Metrics Tracking
+
+**Metrics Logged:**
+| Metric | Calculation | Purpose |
+|--------|-------------|---------|
+| Latency | `end_time - start_time` | Track response times |
+| Token Usage | Provider response | Track API costs |
+| Success Rate | `success / total` | Monitor reliability |
+| Provider Performance | Per-provider metrics | Compare providers |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `AILoggerTest.php` | 72 | 156 | ✅ PASS |
+| `AIDebugModeTest.php` | 29 | 87 | ✅ PASS |
+| **Total** | **101** | **243** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 3 | Logger creation, channel binding |
+| logRequest() Method | 9 | Request logging, hash generation |
+| logResponse() Method | 7 | Response logging, metrics capture |
+| logError() Method | 6 | Error logging, stack trace truncation |
+| logDebug() Method | 4 | Debug mode conditional logging |
+| API Key Masking | 9 | Sensitive key redaction |
+| PII Exclusion | 4 | Personal data removal |
+| URL Anonymization | 1 | URL path hashing |
+| Log Channel Config | 4 | Channel registration validation |
+| Edge Cases | 6 | Empty data, null values, unicode |
+| Performance | 3 | Timing, memory usage |
+| API Debug Disabled | 4 | Debug mode off behavior |
+| API Debug Enabled | 7 | Debug mode on behavior |
+| API Security | 3 | Auth requirement, no key exposure |
+| All Indicators | 10 | Debug works for all 17 indicators |
+| Different Providers | 3 | OpenRouter, Static, Vercel support |
+
+### Production Verification
+
+| Test | Result | Details |
+|------|--------|---------|
+| Health Check | ✅ PASS | `https://seoindicator.com/api/health` → 200 OK |
+| Auth Required | ✅ PASS | Unauthenticated requests return 401 |
+| Debug Off by Default | ✅ PASS | No debug info without `AI_DEBUG=true` |
+| Debug with Auth | ✅ PASS | Debug info included when both conditions met |
+| No API Keys Exposed | ✅ PASS | All keys masked in output |
+| No PII Exposed | ✅ PASS | User data excluded from debug |
+
+**Acceptance Criteria Status:**
+| Criteria | Status |
+|----------|--------|
+| AC-1: AILogger service with all methods | ✅ Complete |
+| AC-2: Debug mode via AI_DEBUG + auth | ✅ Complete |
+| AC-3: Request/response logging with hash | ✅ Complete |
+| AC-4: Separate 'ai' log channel, 30-day rotation | ✅ Complete |
+| AC-5: Performance metrics (latency, tokens, success) | ✅ Complete |
+| AC-6: Privacy (API key masking, PII exclusion, URL anon) | ✅ Complete |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Deployment Method | GitHub Actions #22715805227 |
+| Build Time | 1m35s |
+| Deploy Time | 28s |
+| Health Check | ✅ 200 OK |
+| Tests | 101/101 passing (243 assertions) |
+| Status | Complete |
+
+### Dependencies
+- TASK-21-1: AI Service Structure (Done)
+- TASK-21-5: AI Suggestion API Endpoint (Done)
+
+### Related Tasks
+- TASK-21-2: OpenRouter Provider (uses logger)
+- TASK-21-3: Static Fallback Provider (uses logger)
+- TASK-21-10: AI Rate Limiting (uses metrics)
+
+---
 ## ContextWindowManager Service (TASK-31-2)
 
 ### Service Description

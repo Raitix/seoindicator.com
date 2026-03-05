@@ -271,4 +271,39 @@ Ranking::whereIn('keyword_id', $ids)
 
 ---
 
-Last updated: 2026-03-04
+## 2026-03-05: Performance Audit
+
+### GA Metrics Trend (9-day comparison)
+
+| Metric | 02-24 | 03-05 | Change |
+|--------|-------|-------|--------|
+| Bounce Rate | 68.2% | 35.0% | ✅ -33.2% |
+| Engagement Rate | 31.8% | 65.0% | ✅ +33.2% |
+| Homepage Bounce | 75.7% | 63.6% | ✅ -12.1% |
+| Avg Session | 200s | 1026s | ✅ +826s |
+
+### Page Performance
+
+| Page | Bounce | Duration | Status |
+|------|--------|----------|--------|
+| `/` | 63.6% | 237s | ✅ IMPROVED |
+| `/dashboard/` | 0% | 54s | ✅ Excellent |
+| `/competitors/` | 20% | 43s | ✅ Excellent |
+| `/comparison/` | 50% | 246s | ✅ Good |
+| `/seo-guides/` | 0% | 1057s | ✅ Excellent |
+| `/admin/overview/` | 0% | 44s | ✅ Good |
+| `/seo-guides/*` | 57-67% | 1.1-3.0s | Poor |
+
+### Backend Status
+
+**N+1 Query (KeywordController::index):** Still present at lines 106-108
+- `getLatestRankings()` called inside map loop
+- Impact: 501 queries for 500 keywords
+
+**DashboardController:** 5-minute cache mitigates memory issue
+
+**MILESTONE:** Session duration exceeded 1000s for first time. Bounce rate at all-time low (35%).
+
+---
+
+Last updated: 2026-03-05
