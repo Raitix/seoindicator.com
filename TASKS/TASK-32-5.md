@@ -1,7 +1,7 @@
 # TASK-32-5: ComparisonTable Component
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -307,3 +307,26 @@ Created `frontend/components/compare/ComparisonTable.tsx` with:
 - Recommend investigating TASK-32-2 or TASK-32-3 for the 404 issue
 
 **Status:** Updated to `To Document`
+
+### [2026-03-05 19:33 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete:**
+
+Updated `DOCUMENTATION.md` with ComparisonTable component documentation:
+
+| Section | Content |
+|---------|---------|
+| Component Description | Responsive feature comparison table with check/X icons |
+| Component Location | `frontend/components/compare/ComparisonTable.tsx` |
+| Core Functionalities | 7 features (responsive, categories, icons, highlighting, tooltips, accessibility, performance) |
+| Sub-components | FeatureCell, FeatureTooltip, FeatureRow, FeatureCategoryRow |
+| Component Props | ComparisonTableProps interface with types |
+| Styling | Tailwind CSS, responsive design details |
+| Test Coverage | 44 tests, all categories documented |
+| Accessibility Features | ARIA roles, keyboard navigation, screen reader support |
+| Security Implementation | XSS prevention, input validation |
+| Production Status | Deployed 2026-03-05, 44/44 tests passing |
+| Known Issues | 404 on comparison pages (out of scope - data loading issue) |
+| Dependencies | TASK-32-1 (Types) |
+| Related Tasks | TASK-32-2, TASK-32-3, TASK-32-6, TASK-32-7 |
+
+**Status:** Updated to `Done`

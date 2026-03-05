@@ -1,6 +1,130 @@
 # DOCUMENTATION.md
 
 ---
+## ComparisonTable Component (TASK-32-5)
+
+### Component Description
+Responsive feature comparison table component for the Competitor Comparison Landing Pages (FEAT-032). Displays feature availability for both tools being compared with check/X icons, category grouping, winner highlighting, tooltips, and full accessibility support.
+
+### Component Location
+- **Component:** `frontend/components/compare/ComparisonTable.tsx`
+- **Types:** `frontend/lib/compare/types.ts` (ComparisonTableProps, FeatureCategory, Feature)
+- **Tests:** `frontend/__tests__/components/compare/ComparisonTable.test.tsx`
+- **Test Documentation:** `TESTS/TEST-32-5.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Responsive Table | Horizontal scroll on mobile, full width on desktop |
+| Feature Categories | Grouped by category (On-Page, Technical, Backlinks, etc.) |
+| Check/X Icons | Visual indicators for feature availability (Lucide icons) |
+| Highlighted Cells | Competitive advantages highlighted with emerald-500/10 background |
+| Tooltips | Hover for additional information (title attribute) |
+| Accessibility | Full ARIA support (role="table", role="row", role="cell") |
+| Performance | Memo optimization for render efficiency |
+
+### Sub-components
+
+| Component | Description |
+|-----------|-------------|
+| `FeatureCell` | Renders boolean values as Check/X icons, string values as text |
+| `FeatureTooltip` | Wrapper with title attribute for tooltip content |
+| `FeatureRow` | Individual feature row with name and values for both tools |
+| `FeatureCategoryRow` | Category header + collapsible feature rows |
+
+### Component Props
+
+```typescript
+interface ComparisonTableProps {
+  features: FeatureCategory[];      // Array of feature categories with features
+  highlightWinner?: boolean;         // Enable winner highlighting (default: true)
+  showTooltips?: boolean;            // Enable tooltips (default: true)
+}
+
+interface FeatureCategory {
+  name: string;                      // Category name (e.g., "On-Page SEO")
+  features: Feature[];               // Features in this category
+}
+
+interface Feature {
+  name: string;                      // Feature name
+  seoindicator: boolean | string;    // SEOIndicator's value (true/false or text)
+  competitor: boolean | string;      // Competitor's value (true/false or text)
+  tooltip?: string;                  // Optional tooltip text
+}
+```
+
+### Styling
+
+- Uses Tailwind CSS for styling
+- Mobile: Stacked cards with horizontal scroll (overflow-x-auto, min-w-[600px])
+- Desktop: Traditional table layout
+- Winner highlighting: emerald-500/10 background with winner-highlight class
+- Striped rows for readability
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| ComparisonTable.test.tsx | 44 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 5 | Table structure, categories, rows, headers |
+| Icons | 4 | Check/X icons, text values |
+| Highlighting | 5 | Winner highlighting, disabled state |
+| Tooltips | 4 | Show/hide, title attribute |
+| Accessibility | 5 | ARIA roles, keyboard navigation |
+| Responsive | 2 | Horizontal scroll structure |
+| Edge Cases | 6 | Empty, undefined, unicode, long names |
+| Props | 3 | Default values, prop handling |
+| Security | 6 | XSS, prototype pollution, long strings |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Roles | role="table", role="rowgroup", role="row", role="cell", role="columnheader" |
+| Keyboard Navigation | Tab navigation supported |
+| Screen Reader | ARIA labels on interactive elements |
+| Semantic HTML | Proper table structure with thead/tbody |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| Input Validation | Feature names and tooltips validated before rendering |
+| No Code Execution | Pure display component, no eval or dynamic code |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Component Status | ✅ Deployed |
+| Tests | 44/44 passing |
+
+### Known Issues
+
+| Issue | Status | Notes |
+|-------|--------|-------|
+| Comparison pages 404 | Out of Scope | Data loading issue in TASK-32-2 or TASK-32-3, not component issue |
+
+### Dependencies
+- TASK-32-1 (Types) - Done
+
+### Related Tasks
+- TASK-32-6: PricingComparison component
+- TASK-32-7: ProsConsCard component
+- TASK-32-2: Registry (data loading)
+- TASK-32-3: Page route
+
+---
 ## Integration Tests for Page Generation (TASK-32-20)
 
 ### Test Description
