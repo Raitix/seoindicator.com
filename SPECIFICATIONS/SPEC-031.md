@@ -1,7 +1,7 @@
 # SPEC-031: Unified AI Prompt + Context Management
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -822,6 +822,27 @@ GET /api/v1/ai/models
 ---
 
 ## Comments
+
+### [2026-03-05 10:50 GMT+2] SpecSystemAnalyst
+**Task Breakdown Complete:** Created 17 tasks (TASK-31-1 to TASK-31-17) for Unified AI Prompt + Context Management.
+
+**Task Summary:**
+- **Phase 1 - Core Services (TASK-31-2 to 31-5):** ContextWindowManager, TruncationService, UnifiedPromptService, AIAnalysisResponseParser
+- **Phase 2 - AI Integration (TASK-31-6 to 31-9):** OpenRouterClient, AIAnalysisService, ModelSelectionService, RetryPolicy
+- **Phase 3 - Database & Infrastructure (TASK-31-10 to 31-12):** Migrations, Model updates, Cache service
+- **Phase 4 - Integration (TASK-31-13 to 31-15):** AnalysisRunnerService update, Model API endpoint, Frontend picker
+- **Phase 5 - Testing (TASK-31-16 to 31-17):** Unit tests, Integration tests & benchmarks
+
+**Note:** TASK-31-1 was pre-existing (API 404 bug fix - unrelated to this spec). Tasks created starting from TASK-31-2.
+
+**Key Dependencies:**
+- FEAT-018 (SEO Analysis Core Engine)
+- FEAT-026 (Model pricing - optional)
+- TASK-21-2 (OpenRouter provider - extend)
+
+**Risk Level: Confirmed HIGH** - AI integration complexity, response validation, error handling.
+
+**Handoff to ProjectManager:** Ready for prioritization. All tasks have effort estimates and acceptance criteria.
 
 ### [2026-02-28] Architect
 **Specification Created:** Unified AI prompt architecture with context window management.

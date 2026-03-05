@@ -1,7 +1,7 @@
 # FEAT-031: Unified AI Prompt + Context Management
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -25,6 +25,20 @@ As a user, I want faster AI analysis and a clear overall SEO summary without err
 - Source: user ToDo (unified prompt + context handling).
 
 ## Comments
+
+### SpecSystemAnalyst (2026-03-05)
+**Task Breakdown Complete:** 17 tasks created across 5 phases.
+
+**Summary:**
+- Phase 1 (Core Services): 4 tasks - ContextWindowManager, TruncationService, UnifiedPromptService, ResponseParser
+- Phase 2 (AI Integration): 4 tasks - OpenRouterClient, AIAnalysisService, ModelSelectionService, RetryPolicy
+- Phase 3 (Infrastructure): 3 tasks - Migrations, Model updates, Cache service
+- Phase 4 (Integration): 3 tasks - AnalysisRunnerService, Model API, Frontend picker
+- Phase 5 (Testing): 3 tasks - Unit tests, Integration tests, Benchmarks
+
+**Total Estimated Effort:** ~48 hours
+
+**Status:** SPEC-031 and FEAT-031 updated to "To Prioritize"
 
 ### Architect (2026-02-28)
 **Specification Complete:** Created SPEC-031.md with full technical design.
