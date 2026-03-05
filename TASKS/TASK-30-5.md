@@ -1,7 +1,7 @@
 # TASK-30-5: Cookie Consent Integration
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -123,6 +123,59 @@ PreTester can design tests NOW with mocked CookieConsent component interface:
 - Tests can be designed in parallel with TASK-30-4 development
 
 **Status:** Moving to `To Write Tests` with TDD approach
+
+---
+
+### [2026-03-05 PreTester]
+**Tests Coverage In Progress**
+
+Created comprehensive test suite for Cookie Consent Integration (90+ tests):
+
+**Test Files Created:**
+1. `frontend/__tests__/app/layout-integration.test.tsx` - Layout integration tests (20+ tests)
+2. `frontend/__tests__/components/layout/Footer.test.tsx` - Footer component tests (25+ tests)
+3. `frontend/__tests__/lib/hooks/useConsent.test.ts` - Consent hook tests (30+ tests)
+4. `frontend/__tests__/integration/cookie-consent-flow.test.tsx` - Full flow tests (15+ tests)
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Layout Rendering | 6 | CookieConsent in layout, root level, all routes |
+| No Layout Shift | 4 | Fixed positioning, z-index |
+| Provider Integration | 3 | Context, theme, hydration |
+| Conditional Rendering | 4 | Show/hide based on consent state |
+| Footer Basic | 5 | Rendering, role, links, responsive |
+| Cookie Settings Link | 10 | Link behavior, visibility, accessibility |
+| Footer Structure | 5 | Layout, columns, separators |
+| Hook Basic Behavior | 6 | Return values, state management |
+| hasConsent Function | 10 | Analytics/marketing consent checks |
+| Consent Update | 6 | Update logic, localStorage, timestamp |
+| Show Banner State | 4 | Banner visibility control |
+| Clear Consent | 2 | Consent removal |
+| Full Flow | 7 | Complete user journeys |
+| Withdrawal Flow | 5 | Consent changes |
+| Analytics Integration | 5 | Consent-based analytics gating |
+| Cross-Page | 4 | Consistency across routes |
+| Error Recovery | 3 | Invalid data handling |
+
+**Key Test Insights:**
+- CookieConsent should be placed at root level in layout.tsx
+- Footer needs `Cookie Settings` link with `setShowBanner(true)` call
+- `useConsent` hook provides `hasConsent('analytics' | 'marketing')` function
+- Consent state syncs across tabs via storage events
+- Timestamp updates on every consent change
+
+**Implementation Notes for Developer:**
+1. Create `frontend/components/layout/Footer.tsx` - Footer with Cookie Settings link
+2. Create `frontend/lib/hooks/useConsent.ts` - Consent state management hook
+3. Modify `frontend/app/layout.tsx` - Add CookieConsent at root level
+4. Ensure Footer is client component (uses useConsent hook)
+
+**Dependencies:**
+- TASK-30-4 (CookieConsent component) must be completed first
+- Tests use mocked component interface matching TASK-30-4 spec
+
+**Status:** Ready for Developer implementation once TASK-30-4 is complete
 
 ---
 
