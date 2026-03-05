@@ -1,7 +1,7 @@
 # TASK-31-6: OpenRouter Client Service
 
 ## STATUS
-`In Development`
+`To Test Locally`
 
 ## PRIORITY
 `High`
