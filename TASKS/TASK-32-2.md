@@ -267,3 +267,141 @@ Task created as part of SPEC-32 breakdown. Depends on TASK-32-1 for type definit
 - [x] Module exports correctly
 
 **Status:** Updated to `To Test Locally`
+
+### [2026-03-05 17:05 GMT+2] Agent: LocalTester
+**Local Testing Complete - FAILURES FOUND**
+
+**Test Execution Summary:**
+| Test Suite | Tests Passed | Tests Failed |
+|------------|--------------|--------------|
+| `__tests__/lib/compare/competitors/seoindicator.test.ts` | 169 | 0 ✅ |
+| `__tests__/lib/compare/registry.test.ts` | 138 | 31 ❌ |
+| **Total** | **307** | **31** |
+
+**Status:** Returned to Developer for bug fixes
+
+---
+
+## Bug Report
+
+### BUG-1: parseSlug() doesn't handle null input
+**Severity:** High
+**Tests Affected:** RG-PARSE-006, RG-SLUG-005, AC-004
+**Current Behavior:**
+```
+TypeError: Cannot read properties of null (reading 'split')
+at split (lib/compare/registry.ts:77:22)
+```
+**Expected Behavior:** Should return `null` gracefully
+**Fix Required:**
+```typescript
+export function parseSlug(slug: string): [string, string] | null {
+  if (slug === null || slug === undefined || typeof slug !== 'string') {
+    return null;
+  }
+  const parts = slug.split('-vs-');
+  // ... rest of function
+}
+```
+
+### BUG-2: generateComparisonData() doesn't validate inputs
+**Severity:** High
+**Tests Affected:** RG-GEN-001 through RG-GEN-015, RG-TS-004
+**Current Behavior:**
+```
+TypeError: Cannot read properties of undefined (reading 'map')
+at mergeFeatures (lib/compare/registry.ts:166:20)
+```
+**Root Cause:** Function signature accepts `CompetitorData` but doesn't validate inputs before accessing properties
+**Fix Required:**
+1. Add null checks for both parameters
+2. Return `null` for invalid inputs instead of throwing
+3. Validate that features array exists before calling mergeFeatures()
+
+### BUG-3: validateCompetitorData() validation too lenient
+**Severity:** Medium
+**Tests Affected:** RG-VAL-010, RG-VAL-015, RG-VAL-017, RG-VAL-018, RG-VAL-019
+**Missing Validations:**
+1. Empty pricing array should return `false`
+2. Invalid pricing items (empty objects) should return `false`
+3. Invalid lastUpdated format should return `false`
+4. Negative prices should return `false`
+5. Invalid use case audiences should return `false`
+
+**Current Implementation:**
+```typescript
+export function validateCompetitorData(data: unknown): data is CompetitorData {
+  // ... basic checks only
+  if (!Array.isArray(obj.pricing)) return false;  // Doesn't check length
+  // ... no deep validation of pricing items
+  // ... no date format validation
+  // ... no price range validation
+  // ... no use case audience validation
+}
+```
+
+**Required Fixes:**
+```typescript
+// After array checks, add:
+if (obj.pricing.length === 0) return false;
+if (!obj.pricing.every(p => typeof p.name === 'string')) return false;
+
+// Add date validation:
+if (!/^\d{4}-\d{2}-\d{2}/.test(obj.lastUpdated)) return false;
+
+// Add pricing validation:
+if (obj.pricing.some(p => typeof p.monthlyPrice === 'number' && p.monthlyPrice < 0)) return false;
+
+// Add use case audience validation:
+const validAudiences = ['solo', 'small-team', 'agency', 'enterprise'];
+if (!obj.useCases.every(uc => validAudiences.includes(uc.audience))) return false;
+```
+
+### BUG-4: validateComparisonData() validation too lenient
+**Severity:** Medium
+**Tests Affected:** RG-VCD-009 through RG-VCD-015
+**Missing Validations:**
+1. Missing featureComparison should return `false`
+2. Missing pricingComparison should return `false`
+3. Missing prosCons should return `false`
+4. Missing verdict should return `false`
+5. Missing faqs should return `false`
+6. Invalid slug format should return `false`
+
+**Current Implementation:**
+```typescript
+export function validateComparisonData(data: unknown): data is ComparisonData {
+  // Only checks slug, title, metaDescription, summary, verdict, competitors
+  // Missing: featureComparison, pricingComparison, prosCons, faqs, slug format
+}
+```
+
+**Required Fixes:**
+```typescript
+// Add after existing checks:
+if (!Array.isArray(obj.featureComparison)) return false;
+if (typeof obj.pricingComparison !== 'object') return false;
+if (typeof obj.prosCons !== 'object') return false;
+if (!Array.isArray(obj.faqs)) return false;
+if (!/^[a-z0-9-]+-vs-[a-z0-9-]+$/.test(obj.slug)) return false;
+```
+
+---
+
+## Acceptance Criteria Status After Testing
+- [x] Registry exports all competitors from single entry point
+- [ ] `getComparisonBySlug()` returns valid `ComparisonData` for all slugs **(FAILS for null input)**
+- [ ] `parseSlug()` correctly extracts competitor IDs **(FAILS for null input)**
+- [ ] Invalid slugs return `null` (not throw errors) **(FAILS - throws TypeError)**
+- [ ] Validation functions catch malformed data **(FAILS - too lenient)**
+- [x] SEOIndicator data file created with accurate info
+- [ ] Unit tests for all helper functions **(31 tests failing)**
+
+---
+
+## Files Requiring Fixes
+| File | Bugs to Fix |
+|------|-------------|
+| `frontend/lib/compare/registry.ts` | BUG-1, BUG-2, BUG-3, BUG-4 |
+
+**Status:** Updated to `To Develop` for bug fixes
