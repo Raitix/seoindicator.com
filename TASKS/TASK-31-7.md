@@ -1,7 +1,7 @@
 # TASK-31-7: AIAnalysisService (Unified Caller)
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
