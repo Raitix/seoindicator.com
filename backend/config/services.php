@@ -103,4 +103,24 @@ return [
         'api_key' => env('OPENROUTER_API_KEY'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | PayPal API
+    |--------------------------------------------------------------------------
+    |
+    | Credentials for PayPal REST API (Orders API v2).
+    | Get your credentials at: https://developer.paypal.com/developer/applications/
+    |
+    | Sandbox mode for development, live for production.
+    |
+    */
+    'paypal' => [
+        'client_id' => env('PAYPAL_CLIENT_ID'),
+        'client_secret' => env('PAYPAL_CLIENT_SECRET'),
+        'webhook_id' => env('PAYPAL_WEBHOOK_ID'),
+        'mode' => env('PAYPAL_MODE', 'sandbox'),
+        'return_url' => env('PAYPAL_RETURN_URL'),
+        'cancel_url' => env('PAYPAL_CANCEL_URL'),
+    ],
+
 ];
