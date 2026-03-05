@@ -1,7 +1,7 @@
 # TASK-29-6: ExportResultsButton Component
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
