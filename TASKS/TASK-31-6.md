@@ -1,0 +1,193 @@
+# TASK-31-6: OpenRouter Client Service
+
+## STATUS
+`To Prioritize`
+
+## PRIORITY
+`High`
+
+## RISK
+`Medium`
+
+## Specification
+SPEC-31: Unified AI Prompt + Context Management
+
+## Description
+Create an OpenRouter API client service that handles unified AI requests with proper authentication, error handling, timeouts, and response parsing. Extends the existing OpenRouter provider from TASK-21-2.
+
+## Component Location
+- **Service:** `backend/app/Services/AI/OpenRouterClient.php`
+- **Config:** `backend/config/openrouter.php`
+- **Tests:** `backend/tests/Unit/Services/AI/OpenRouterClientTest.php`
+
+## Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `generate(string $prompt, array $options = []): AIResponse` | Send unified prompt to OpenRouter |
+| `stream(string $prompt, callable $onChunk): void` | Stream response chunks |
+| `getAvailableModels(): array` | Return list of available models |
+| `getModelInfo(string $modelId): ?array` | Get model metadata |
+
+## Request Configuration
+
+```php
+class OpenRouterClient
+{
+    private const BASE_URL = 'https://openrouter.ai/api/v1';
+    private const DEFAULT_TIMEOUT = 120; // 2 minutes for large responses
+    private const DEFAULT_MODEL = 'google/gemini-2.0-flash-exp:free';
+    
+    public function generate(string $prompt, array $options = []): AIResponse
+    {
+        $model = $options['model'] ?? self::DEFAULT_MODEL;
+        $startTime = microtime(true);
+        
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . config('openrouter.api_key'),
+            'HTTP-Referer' => config('app.url'),
+            'X-Title' => 'SEOIndicator',
+            'Content-Type' => 'application/json',
+        ])
+        ->timeout($options['timeout'] ?? self::DEFAULT_TIMEOUT)
+        ->post(self::BASE_URL . '/chat/completions', [
+            'model' => $model,
+            'messages' => [
+                ['role' => 'user', 'content' => $prompt],
+            ],
+            'max_tokens' => $options['max_tokens'] ?? 4000,
+            'temperature' => $options['temperature'] ?? 0.3,
+            'response_format' => ['type' => 'json_object'],
+        ]);
+        
+        $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+        
+        if (!$response->successful()) {
+            return AIResponse::error(
+                $this->formatError($response),
+                $latencyMs
+            );
+        }
+        
+        $data = $response->json();
+        
+        return AIResponse::success(
+            content: $data['choices'][0]['message']['content'] ?? '',
+            tokensUsed: $data['usage']['total_tokens'] ?? 0,
+            latencyMs: $latencyMs,
+            model: $model,
+            promptTokens: $data['usage']['prompt_tokens'] ?? 0,
+            responseTokens: $data['usage']['completion_tokens'] ?? 0,
+        );
+    }
+}
+```
+
+## AIResponse DTO
+
+```php
+class AIResponse
+{
+    public function __construct(
+        public readonly bool $success,
+        public readonly ?string $content,
+        public readonly int $tokensUsed,
+        public readonly int $latencyMs,
+        public readonly ?string $errorMessage = null,
+        public readonly ?string $model = null,
+        public readonly int $promptTokens = 0,
+        public readonly int $responseTokens = 0,
+    ) {}
+    
+    public static function success(
+        string $content,
+        int $tokensUsed,
+        int $latencyMs,
+        string $model = null,
+        int $promptTokens = 0,
+        int $responseTokens = 0,
+    ): self {
+        return new self(
+            success: true,
+            content: $content,
+            tokensUsed: $tokensUsed,
+            latencyMs: $latencyMs,
+            model: $model,
+            promptTokens: $promptTokens,
+            responseTokens: $responseTokens,
+        );
+    }
+    
+    public static function error(string $message, int $latencyMs): self
+    {
+        return new self(
+            success: false,
+            content: null,
+            tokensUsed: 0,
+            latencyMs: $latencyMs,
+            errorMessage: $message,
+        );
+    }
+}
+```
+
+## Error Handling
+
+| HTTP Code | Error Type | Recovery |
+|-----------|------------|----------|
+| 400 | Bad Request | Log and throw `InvalidRequestException` |
+| 401 | Unauthorized | Check API key configuration |
+| 403 | Forbidden | Log and throw `AccessDeniedException` |
+| 429 | Rate Limited | Return with retry-after header |
+| 500-503 | Server Error | Retry with exponential backoff |
+| Timeout | Timeout | Retry with smaller content |
+
+## Free Models Configuration
+
+```php
+// config/openrouter.php
+return [
+    'api_key' => env('OPENROUTER_API_KEY'),
+    'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+    'default_model' => env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-exp:free'),
+    'timeout' => env('OPENROUTER_TIMEOUT', 120),
+    'max_tokens' => env('OPENROUTER_MAX_TOKENS', 4000),
+    
+    'free_models' => [
+        'google/gemini-2.0-flash-exp:free' => [
+            'name' => 'Gemini 2.0 Flash',
+            'context_window' => 1000000,
+        ],
+        'qwen/qwen-2-7b-instruct:free' => [
+            'name' => 'Qwen 2 7B',
+            'context_window' => 32768,
+        ],
+        'mistralai/mistral-7b-instruct:free' => [
+            'name' => 'Mistral 7B',
+            'context_window' => 32768,
+        ],
+        'meta-llama/llama-3-8b-instruct:free' => [
+            'name' => 'Llama 3 8B',
+            'context_window' => 8192,
+        ],
+    ],
+];
+```
+
+## Acceptance Criteria
+- [ ] `generate()` sends prompt to OpenRouter API
+- [ ] Handles authentication via API key
+- [ ] Returns `AIResponse` DTO with all metadata
+- [ ] Proper error handling for all HTTP codes
+- [ ] Timeout configurable via environment
+- [ ] Supports all free-tier models
+- [ ] Logs request/response for debugging
+
+## Dependencies
+- TASK-21-2 (existing OpenRouter provider - extend or reuse)
+
+## Effort Estimate
+3 hours
+
+## Comments
+_Agent log_
