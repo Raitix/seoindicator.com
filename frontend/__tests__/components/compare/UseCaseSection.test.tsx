@@ -242,7 +242,8 @@ describe('UseCaseSection', () => {
       );
       
       expect(screen.getByTestId('seoindicator-audience-badge-0')).toBeInTheDocument();
-      expect(screen.getByText('Solo')).toBeInTheDocument();
+      // Use getAllByText since "Solo" appears in multiple use cases
+      expect(screen.getAllByText('Solo').length).toBeGreaterThan(0);
     });
 
     it('UC-011: displays budget badge', () => {
@@ -254,7 +255,8 @@ describe('UseCaseSection', () => {
       );
       
       expect(screen.getByTestId('seoindicator-budget-badge-0')).toBeInTheDocument();
-      expect(screen.getByText('Budget')).toBeInTheDocument();
+      // Use getAllByText since "Budget" appears in multiple use cases
+      expect(screen.getAllByText('Budget').length).toBeGreaterThan(0);
     });
 
     it('UC-012: displays all audience types correctly', () => {
@@ -267,10 +269,13 @@ describe('UseCaseSection', () => {
       
       render(<UseCaseSection seoindicator={allAudiences} competitor={[]} />);
       
-      expect(screen.getByText('Solo')).toBeInTheDocument();
+      // Use getAllByText since some text may appear multiple times
+      expect(screen.getAllByText('Solo').length).toBeGreaterThan(0);
       expect(screen.getByText('Small Team')).toBeInTheDocument();
-      expect(screen.getByText('Enterprise')).toBeInTheDocument();
-      expect(screen.getByText('Agency')).toBeInTheDocument();
+      // Enterprise appears as both title and badge
+      expect(screen.getAllByText('Enterprise').length).toBeGreaterThan(0);
+      // Agency appears as both title and badge
+      expect(screen.getAllByText('Agency').length).toBeGreaterThan(0);
     });
 
     it('UC-013: displays all budget types correctly', () => {
@@ -283,10 +288,12 @@ describe('UseCaseSection', () => {
       
       render(<UseCaseSection seoindicator={allBudgets} competitor={[]} />);
       
-      expect(screen.getByText('Free')).toBeInTheDocument();
-      expect(screen.getByText('Budget')).toBeInTheDocument();
+      // Use getAllByText since "Free" appears as both title and badge
+      expect(screen.getAllByText('Free').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Budget').length).toBeGreaterThan(0);
       expect(screen.getByText('Mid Range')).toBeInTheDocument();
-      expect(screen.getByText('Premium')).toBeInTheDocument();
+      // Premium appears as both title and badge
+      expect(screen.getAllByText('Premium').length).toBeGreaterThan(0);
     });
 
     it('UC-014: applies correct audience badge colors', () => {
@@ -422,7 +429,8 @@ describe('UseCaseSection', () => {
         />
       );
       
-      const cards = screen.getAllByTestId(/-case-/);
+      // Match only article elements with use-case-card class (not section containers)
+      const cards = screen.getAllByTestId(/seoindicator-case-\d|competitor-case-\d/);
       cards.forEach(card => {
         expect(card).toHaveClass('use-case-card');
       });
@@ -475,7 +483,8 @@ describe('UseCaseSection', () => {
       
       render(<UseCaseSection seoindicator={singleCase} competitor={singleCase} />);
       
-      expect(screen.getAllByTestId(/-case-/)).toHaveLength(2);
+      // Match only article elements (not section containers)
+      expect(screen.getAllByTestId(/seoindicator-case-\d|competitor-case-\d/)).toHaveLength(2);
     });
 
     it('UC-045: handles many use cases', () => {

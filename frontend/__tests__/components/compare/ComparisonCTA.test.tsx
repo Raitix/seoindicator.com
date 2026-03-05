@@ -404,7 +404,8 @@ describe('ComparisonCTA', () => {
       render(<ComparisonCTA abTestGroup={undefined} />);
       
       const link = screen.getByTestId('cta-link');
-      expect(link).toHaveAttribute('data-ab-test-group', 'undefined');
+      // When abTestGroup is undefined, the attribute should not be set
+      expect(link).not.toHaveAttribute('data-ab-test-group');
     });
 
     it('CTA-073: handles empty text with default', () => {
