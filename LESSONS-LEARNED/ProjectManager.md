@@ -37,4 +37,18 @@ _(Track common blockers and resolutions)_
 
 ---
 
-Last updated: 2026-03-02
+Last updated: 2026-03-05
+
+---
+
+## Documentation Task Patterns
+
+### TASK-26-27 Documentation for Billing (2026-03-05)
+- **Pattern:** Documentation tasks for large features should be assessed early for blocker status
+- **Key Insight:** Check file sizes of dependency tasks - empty files (0 bytes) indicate incomplete pipeline
+- **Discovery:** 12 of 27 FEAT-026 tasks (44.4%) have empty files - they were never populated by SpecSystemAnalyst
+- **Impact:** Documentation task correctly remains blocked until:
+  1. Empty task files are populated with proper specifications
+  2. ≥80% of tasks reach `Done` status
+  3. All frontend and testing phases complete
+- **Lesson:** Always verify dependency claims by checking actual file sizes, not just task file status. Empty files (0 bytes) indicate workflow integrity issues requiring SpecSystemAnalyst attention.
