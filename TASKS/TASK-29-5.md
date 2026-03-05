@@ -1,7 +1,7 @@
 # TASK-29-5: Rate Limiting Integration
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
@@ -71,3 +71,44 @@ public function export(Request $request): JsonResponse
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 14:42 GMT+2] Agent: ProjectManager
+**Prioritization Complete**
+
+**Priority Assessment:** Medium (confirmed)
+- Security/enhancement feature, not foundation infrastructure
+- Export endpoint already functional (TASK-29-3 Done)
+- Protects against abuse but doesn't add new user functionality
+- Should be implemented before heavy usage, but not blocking
+
+**Risk Assessment:** Low (confirmed)
+- Standard Laravel service integration
+- Uses existing ToolsRateLimitService
+- No external APIs or complex logic
+- Configuration already exists in `config/tools.php`
+
+**Dependency Analysis:**
+- TASK-29-3 (ToolExportController): Done ✅ - Controller exists and functional
+- ToolsRateLimitService: Exists ✅ with methods `checkLimit()`, `increment()`, `getHeaders()`
+- Config `export_rate_limit`: Already set to 10 in `config/tools.php`
+
+**Implementation Notes:**
+- Task requires **user-based** rate limiting (not IP-based like existing service)
+- Need to add user-specific method to ToolsRateLimitService OR use different key pattern
+- Current service is IP-based; task specifies `auth()->id()` for key generation
+- Options:
+  1. Add `checkUserLimit(int $userId)` method to ToolsRateLimitService
+  2. Use Cache facade directly in controller with user-based key
+- Rate limit: 10 exports per hour per user (configurable)
+- Headers required: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+- 429 response with "Try again in X minutes" message
+
+**TDD Ready:** PreTester CAN design tests with:
+- Mocked ToolsRateLimitService interface
+- Well-defined response structure (429 with retry message)
+- Rate limit headers specification
+- Config values documented
+
+**Execution Order:** Phase 2 Backend Polish - Can proceed immediately since TASK-29-3 is complete.
+
+Status updated: `To Prioritize` → `To Write Tests` - Ready for PreTester
