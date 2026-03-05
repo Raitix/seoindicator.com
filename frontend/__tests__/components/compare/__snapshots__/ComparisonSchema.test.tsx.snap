@@ -1,0 +1,21 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ComparisonSchema Component Integration SCHEMA-010-003: matches snapshot 1`] = `
+<div>
+  <script
+    type="application/ld+json"
+  >
+    {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seoindicator.com/"},{"@type":"ListItem","position":2,"name":"Compare","item":"https://seoindicator.com/compare/"},{"@type":"ListItem","position":3,"name":"SEOIndicator vs Ahrefs: Complete Comparison","item":"https://seoindicator.com/compare/seoindicator-vs-ahrefs/"}]}
+  </script>
+  <script
+    type="application/ld+json"
+  >
+    {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between SEOIndicator and Ahrefs?","acceptedAnswer":{"@type":"Answer","text":"SEOIndicator focuses on free tools while Ahrefs offers comprehensive paid features."}},{"@type":"Question","name":"Is SEOIndicator completely free?","acceptedAnswer":{"@type":"Answer","text":"SEOIndicator offers a free tier with 5 analyses per day."}},{"@type":"Question","name":"Which tool is better for beginners?","acceptedAnswer":{"@type":"Answer","text":"SEOIndicator is better for beginners due to its simple interface."}}]}
+  </script>
+  <script
+    type="application/ld+json"
+  >
+    {"@context":"https://schema.org","@type":"HowTo","name":"How to Choose Between SEOIndicator vs Ahrefs: Complete Comparison","step":[{"@type":"HowToStep","name":"Compare Features","text":"Review the feature comparison to see which tool offers what you need."},{"@type":"HowToStep","name":"Compare Pricing","text":"Evaluate pricing tiers to find the best fit for your budget."},{"@type":"HowToStep","name":"Consider Your Use Case","text":"Match your specific needs (solo, team, agency) to the recommended use cases."},{"@type":"HowToStep","name":"Try Free Tier","text":"Start with the free tier to test the tool before committing."}]}
+  </script>
+</div>
+`;
