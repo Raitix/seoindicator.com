@@ -182,4 +182,56 @@ const mockResponse = {
 
 ---
 
-Last updated: 2026-03-04
+## Icon Registry Testing (TASK-28-14)
+
+### Registry Structure Testing
+- Test constant exists and has expected key count
+- Use `as const` for TypeScript type inference
+- Test kebab-case naming convention for keys
+- Verify all values are valid Lucide components (check displayName)
+- Test type export matches registry keys
+
+### Indicator-to-Icon Mapping
+- Test each indicator maps to correct Lucide icon (by displayName)
+- Test invalid indicator returns undefined
+- Verify semantic alignment between indicator purpose and icon meaning
+
+### Tree-Shaking Verification
+- Test icons are individually importable from lucide-react
+- Verify direct Lucide references (Icon === lucide-react[name])
+- Test named exports support destructuring
+- Ensure module has no side effects (pure exports only)
+
+### Integration Testing
+- Test registry icons work with IndicatorIcon component via customIcon prop
+- Render all registry icons to verify they're valid React components
+- Test barrel export maintains existing exports
+
+### Icon Mapping Table
+| Indicator | Lucide Icon | Reason |
+|-----------|-------------|--------|
+| keyword-rankings | TrendingUp | Growth/position tracking |
+| visibility-score | Eye | Visibility |
+| competitor-analysis | Users | Multiple people/competitors |
+| technical-health | Wrench | Tools/fixing |
+| backlink-profile | Link | Links |
+| content-opportunities | FileText | Content/documents |
+| serp-features | Star | Featured/highlighted |
+| page-speed | Zap | Performance/fast |
+
+### Test Categories for Icon Registry
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Registry Structure | 5 | Constant, count, naming, types |
+| Indicator Mapping | 9 | Each indicator + invalid |
+| Type Export | 4 | Type exists, matches registry |
+| Tree-Shaking | 4 | Import patterns |
+| Naming Convention | 5 | Kebab-case, semantic alignment |
+| Barrel Exports | 4 | Export verification |
+| Acceptance Criteria | 6 | All ACs tested |
+| Edge Cases | 7 | Non-existent, immutability |
+| Integration | 2 | Component compatibility |
+
+---
+
+Last updated: 2026-03-05

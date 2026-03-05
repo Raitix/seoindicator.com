@@ -26878,3 +26878,148 @@ Final Score = Σ (Indicator Score × Weight) for all 17 indicators
 - TASK-30-2: About Page (Done)
 - TASK-30-4: Cookie Consent Component (pending)
 - TASK-30-5: Consent Integration (pending)
+---
+## PWA Recommendations Component (TASK-24-12)
+
+### Component Description
+React component that displays actionable PWA improvement suggestions from the PWASuggestionService. Provides a user-friendly interface for understanding and addressing PWA deficiencies with priority badges, expandable sections, and links to relevant guide sections. Part of the PWA / Web App Manifest Indicator feature (FEAT-024).
+
+### Component Location
+- **Component:** `frontend/components/pwa/PWARecommendations.tsx`
+- **Skeleton:** `frontend/components/pwa/PWARecommendationsSkeleton.tsx`
+- **Types:** `frontend/lib/types/pwa.ts`
+- **Styles:** `frontend/app/globals.css` (custom animations)
+- **Tests:** `frontend/components/pwa/__tests__/PWARecommendations.test.tsx`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Priority Badges | Color-coded badges (high=red, medium=yellow, low=emerald) |
+| Sorted Display | Recommendations sorted by priority (high → medium → low) |
+| Expandable Sections | Collapsible sections when > 3 items per priority |
+| Empty State | Success message with checkmark when no suggestions |
+| Guide Links | External link icon for recommendations with guide anchors |
+| View Guide Button | Links to `/guides/pwa` for full PWA guide |
+| maxVisible Prop | Truncation with "show more" button |
+
+### Component API
+
+``typescript
+interface PWARecommendation {
+  type: string;
+  field?: string;
+  message: string;
+  priority: 'high' | 'medium' | 'low';
+  guide?: string;  // Optional anchor link
+}
+
+interface PWARecommendationsProps {
+  recommendations: PWARecommendation[];
+  className?: string;
+  onGuideClick?: (guide: string) => void;
+  maxVisible?: number;
+}
+``
+
+### Priority Badge Styling
+
+| Priority | Text Color | Background |
+|----------|------------|------------|
+| High | `text-red-400` | `bg-red-500/10` |
+| Medium | `text-yellow-400` | `bg-yellow-500/10` |
+| Low | `text-emerald-400` | `bg-emerald-500/10` |
+
+### Layout Behavior
+
+| Item Count | Layout |
+|------------|--------|
+| ≤ 3 items | Flat list (no sections) |
+| > 3 items | Expandable/collapsible sections by priority |
+| High priority section | Expanded by default |
+| Medium/Low sections | Collapsed by default |
+
+### Empty State
+
+When no recommendations exist:
+- Success message: "Perfect PWA! Your web app manifest is fully optimized."
+- Checkmark icon (animated pulse)
+- Green/emerald color scheme
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Roles | `role="list"` and `role="listitem"` |
+| Keyboard Navigation | Tab, Enter, Space for section toggle |
+| aria-expanded | Tracks expand/collapse state |
+| Focus Management | Visible focus indicators |
+| Screen Reader | Descriptive aria-labels for links |
+
+### Responsive Design
+
+| Breakpoint | Behavior |
+|------------|----------|
+| Mobile (< 640px) | Full width, stacked buttons |
+| Tablet (640px - 1024px) | Optimal padding, touch targets |
+| Desktop (> 1024px) | Maximum readability |
+
+**Touch Targets:** Minimum 44x44px for all interactive elements
+
+### Animation
+
+| Animation | Duration | Trigger |
+|-----------|----------|---------|
+| Fade In | 300ms | Component mount |
+| Expand/Collapse | 200ms | Section toggle |
+| Pulse | 2s infinite | Empty state checkmark |
+| Reduced Motion | Disabled | `prefers-reduced-motion: reduce` |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `PWARecommendations.test.tsx` | 83 | 83+ | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Component Rendering | 5 | Basic render, custom className |
+| Priority Badge Display | 5 | Color coding, positioning |
+| Message Display | 5 | Content, truncation, special chars |
+| Guide Links | 5 | Link presence, click handler |
+| View Guide Button | 5 | Button visibility, navigation |
+| Sorting by Priority | 5 | High → Medium → Low order |
+| Empty State | 5 | Success message, checkmark |
+| Expandable/Collapsible Sections | 8 | Toggle, default states |
+| maxVisible Prop | 5 | Truncation, show more |
+| Responsive Design | 5 | Mobile, touch targets |
+| Accessibility | 8 | ARIA, keyboard navigation |
+| Edge Cases | 8 | Empty array, undefined, unicode |
+| Animation | 4 | Transitions, reduced motion |
+| Integration Tests | 5 | Full component flow |
+| Snapshot Tests | 3 | Visual regression |
+| Skeleton Component | 2 | Loading state |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `f864e46` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 83/83 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-24-7 (PWASuggestionService) - Provides suggestion data
+- TASK-24-8 (PWA Analysis API Endpoints) - API integration
+- TASK-24-9 (PWA Guide API Endpoint) - Guide content
+
+### Related Tasks
+- TASK-24-10: PWA Dashboard Components (parent component)
+- TASK-24-11: PWA Score Gauge and Icon Validation Table (sibling component)
+- TASK-24-14: PWA Guide Page (guide destination)
+
+---
