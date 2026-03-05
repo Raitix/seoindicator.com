@@ -29458,3 +29458,143 @@ const savingsPercent = ((monthlyPrice * 12 - annualPrice * 12) / (monthlyPrice *
 - TASK-32-3: Page route
 
 ---
+## Comparison Index Page (TASK-32-4)
+
+### Page Description
+Frontend index page component for the `/compare` route that lists all available competitor comparisons organized by category (Tier 1, Tier 2, cross-competitor). Entry point for programmatic SEO comparison pages targeting high-intent users researching SEO tools. Part of the Competitor Comparison Landing Pages feature (FEAT-032).
+
+### Component Location
+- **Page Component:** `frontend/app/compare/page.tsx`
+- **Card Component:** `frontend/components/compare/ComparisonCard.tsx`
+- **Types:** `frontend/lib/compare/types.ts` (ComparisonCardProps interface)
+- **Tests:** `frontend/__tests__/app/compare/page.test.tsx`, `frontend/__tests__/components/compare/ComparisonCard.test.tsx`
+- **Test Documentation:** `TESTS/TEST-32-4.md`
+
+### Route
+- **URL:** `/compare`
+- **File:** `frontend/app/compare/page.tsx` (Next.js App Router)
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Hero Section | "Compare SEO Tools" heading with descriptive subtitle |
+| Primary Comparisons | Tier 1 competitors (Ahrefs, SEMrush, Moz, Ubersuggest) |
+| Cross-Competitor Comparisons | Ahrefs vs SEMrush, Moz vs Ahrefs, SEMrush vs Moz |
+| Comparison Cards | Links to individual comparison pages with competitor info |
+| Mobile Responsive Grid | 1 column mobile, 2 columns tablet, 3+ columns desktop |
+| SEO Metadata | Title, description, OpenGraph tags |
+
+### Page Sections
+
+| Section | Content |
+|---------|---------|
+| Hero | Title "Compare SEO Tools", subtitle "Find the right SEO tool for your needs" |
+| Primary Comparisons | SEOIndicator vs Tier 1 competitors |
+| Cross-Competitor | Competitor vs Competitor comparisons |
+| CTA | "Try SEOIndicator Free" button |
+
+### ComparisonCard Component
+
+**Props Interface:**
+```typescript
+interface ComparisonCardProps {
+  slug: string;                    // URL slug for comparison page
+  title: string;                   // Card display title
+  description: string;             // Short description
+  competitorA: { name: string; logo?: string };
+  competitorB: { name: string; logo?: string };
+}
+```
+
+**Features:**
+| Feature | Description |
+|---------|-------------|
+| Competitor Logos | Displays placeholder initials or logos |
+| Title & Description | Comparison name and brief summary |
+| Hover Effects | Dark theme hover states with border highlight |
+| Responsive Layout | Adapts to grid container |
+
+### State Management
+
+The page is a Server Component with static generation - no client state required.
+
+### SEO Metadata
+
+| Element | Value |
+|---------|-------|
+| Title | "SEO Tool Comparisons \| Find the Right SEO Tool" |
+| Description | "Compare SEOIndicator with Ahrefs, SEMrush, Moz, and other SEO tools. Find the right tool for your needs." |
+| OpenGraph | Title, description, URL |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| page.test.tsx | 60 | ✅ PASS |
+| ComparisonCard.test.tsx | 38 | ✅ PASS |
+| **Total** | **98** | **✅ ALL PASS** |
+
+**Test Categories (Page):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Page Rendering | 10 | Hero, sections, cards display |
+| Comparison Grouping | 8 | Tier 1, cross-competitor sections |
+| SEO Metadata | 8 | Title, description, OpenGraph |
+| Mobile Responsive | 6 | Grid layout, breakpoints |
+| Accessibility | 10 | ARIA, headings, links |
+| Link Behavior | 6 | Navigation to comparison pages |
+| Edge Cases | 8 | Empty arrays, missing data |
+
+**Test Categories (ComparisonCard):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 8 | Card structure, props display |
+| Props Handling | 6 | Title, description, competitors |
+| Styling | 6 | Hover states, responsive |
+| Accessibility | 8 | ARIA labels, alt text |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Heading Hierarchy | H1 hero → H2 sections → Card titles |
+| Link Labels | aria-label on comparison links |
+| Alt Text | Logo placeholders with descriptive alt |
+| Keyboard Navigation | Tab through all comparison cards |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| No User Input | Static content, no form submissions |
+| Safe Navigation | Next.js Link component for internal routing |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `68bb11aa` |
+| Deployment Method | GitHub Actions auto-deploy |
+| CI/CD Run | 22735364936 |
+| Health Check | ✅ 200 OK |
+| Page Status | ✅ Deployed |
+| Tests | 98/98 passing |
+
+### Known Issues
+
+| Issue | Status | Notes |
+|-------|--------|-------|
+| Individual comparison pages 404 | Tracked in TASK-32-3 | Index page links work, target pages have bug |
+
+### Dependencies
+- TASK-32-2 (Registry) - Done ✅
+
+### Related Tasks
+- TASK-32-3: Comparison Page Route (BLOCKED - Critical Bug)
+- TASK-32-5: ComparisonTable component (Done)
+- TASK-32-6: PricingComparison component (Done)
+
+---
