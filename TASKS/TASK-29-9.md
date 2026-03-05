@@ -1,7 +1,7 @@
 # TASK-29-9: Backend Unit Tests
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -165,6 +165,32 @@ These tests verify mock interactions but don't assert anything. Non-blocking for
 **Decision: PASS → Approve for Deployment**
 
 Status updated: `Testing Locally` → `To Deploy`
+
+### [2026-03-05 09:55 GMT+2] Agent: DevOps
+**Deployment Complete - CI/CD Pipeline Passed**
+
+**Deployment Summary:**
+- Pushed to `origin/main` (commit d98de31)
+- GitHub Actions workflow completed successfully
+- Build & Test: ✓ (1m40s)
+- Deploy: ✓ (34s)
+- Notify: ✓ (4s)
+
+**Commits Pushed:**
+1. `bffc651` - ProdTester: TASK-29-6 production testing complete
+2. `599b244` - LocalTester: TASK-29-9 tests verified - all 140 tests pass
+3. `522df8e` - doc: FEAT-002 verification pass
+4. `b638ca1` - fix(test): Improve ToolExportServiceTest
+5. `d98de31` - DevOps: TASK-29-9 status updated to In Deployment
+
+**Test Files Deployed:**
+- `backend/tests/Unit/Exporters/PdfToolExporterTest.php`
+- `backend/tests/Unit/Exporters/XlsToolExporterTest.php`
+- `backend/tests/Unit/Services/Tools/ToolExportServiceTest.php`
+
+**Note:** Unit tests are now in production repository and will run in CI for all future PRs.
+
+Status updated: `In Deployment` → `To Test Prod`
 
 ### ProjectManager Prioritization (2026-03-04)
 
