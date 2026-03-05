@@ -18,7 +18,7 @@ import HowItWorksContent from '@/components/pages/HowItWorksContent';
 export async function generateMetadata(): Promise<Metadata> {
   const title = 'How It Works | SEOIndicator SEO Analysis';
   const description =
-    'Learn how SEOIndicator analyzes your website across 17 SEO indicators. Understand our scoring methodology, indicator categories, and get actionable insights to improve your search visibility.';
+    'Learn how SEOIndicator analyzes your website with 17 SEO indicators. Understand our scoring methodology to improve your search visibility today.';
   const url = 'https://seoindicator.com/how-it-works/';
 
   return {

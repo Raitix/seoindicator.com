@@ -175,7 +175,7 @@ describe('How It Works Page', () => {
 
     it('META-002: Page has meta description', () => {
       // Description should be 150-160 characters
-      const expectedDescription = 'Learn how SEOIndicator analyzes your website with our comprehensive SEO scoring system. Discover our 17 indicators and improve your search rankings.';
+      const expectedDescription = 'Learn how SEOIndicator analyzes your website with 17 SEO indicators. Understand our scoring methodology to improve your search visibility today.';
       expect(expectedDescription.length).toBeGreaterThanOrEqual(150);
       expect(expectedDescription.length).toBeLessThanOrEqual(160);
     });

@@ -220,11 +220,11 @@ const faqItems: FAQItem[] = [
  * HowItWorksContent Component
  * Renders How It Works page content with steps, categories, scoring, and FAQ
  */
-function HowItWorksContent({
+export default function HowItWorksContent({
   className = '',
 }: HowItWorksContentProps) {
   return (
-    <div className={className}>
+    <article className={className}>
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-slate-900/50" />
@@ -249,6 +249,7 @@ function HowItWorksContent({
       <section
         className="mx-auto max-w-5xl px-4 py-16"
         aria-labelledby="steps-heading"
+        data-testid="steps-section"
       >
         <div className="text-center mb-12">
           <h2 id="steps-heading" className="text-3xl font-bold text-white mb-4">
@@ -271,6 +272,7 @@ function HowItWorksContent({
             {steps.map((step, index) => (
               <div
                 key={step.number}
+                data-testid="step-item"
                 className={`relative flex flex-col md:flex-row items-center gap-6 ${
                   index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
                 }`}
@@ -332,6 +334,7 @@ function HowItWorksContent({
       <section
         className="bg-slate-900/30 border-y border-slate-800"
         aria-labelledby="categories-heading"
+        data-testid="categories-section"
       >
         <div className="mx-auto max-w-5xl px-4 py-16">
           <div className="text-center mb-12">
@@ -400,6 +403,7 @@ function HowItWorksContent({
       <section
         className="mx-auto max-w-5xl px-4 py-16"
         aria-labelledby="scoring-heading"
+        data-testid="scoring-section"
       >
         <div className="text-center mb-12">
           <h2 id="scoring-heading" className="text-3xl font-bold text-white mb-4">
@@ -521,6 +525,7 @@ function HowItWorksContent({
       <section
         className="bg-slate-900/30 border-y border-slate-800"
         aria-labelledby="faq-heading"
+        data-testid="faq-section"
       >
         <div className="mx-auto max-w-3xl px-4 py-16">
           <div className="text-center mb-12">
@@ -605,12 +610,9 @@ function HowItWorksContent({
           </Link>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 
 // Named export for testing convenience
 export { HowItWorksContent };
-
-// Default export
-export default HowItWorksContent;
