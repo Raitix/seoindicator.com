@@ -1,7 +1,7 @@
 # TASK-32-2: Implement Comparison Registry and Data Loading
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -147,3 +147,86 @@ Task created as part of SPEC-32 breakdown. Depends on TASK-32-1 for type definit
 - Lazy loading for competitor data recommended for bundle optimization
 
 **Status updated to:** `To Write Tests` for PreTester pickup
+
+### [2026-03-05 16:10 GMT+2] Agent: PreTester
+**Test Design Complete:**
+
+**Files Created:**
+| File | Tests | Purpose |
+|------|-------|---------|
+| `TESTS/TEST-32-2.md` | - | Test documentation (140 scenarios) |
+| `frontend/__tests__/lib/compare/registry.test.ts` | 140 | Registry structure and helper functions |
+| `frontend/__tests__/lib/compare/competitors/seoindicator.test.ts` | 50 | SEOIndicator data validation |
+
+**Test Categories:**
+| Category | Tests |
+|----------|-------|
+| Registry Structure (RG-STR) | 15 |
+| getCompetitorById (RG-GET) | 12 |
+| getComparisonBySlug (RG-SLUG) | 15 |
+| parseSlug (RG-PARSE) | 14 |
+| generateComparisonData (RG-GEN) | 15 |
+| getRelatedComparisons (RG-REL) | 12 |
+| validateCompetitorData (RG-VAL) | 20 |
+| validateComparisonData (RG-VCD) | 15 |
+| Edge Cases (RG-EDGE) | 10 |
+| TypeScript Types (RG-TS) | 5 |
+| Acceptance Criteria (AC) | 7 |
+
+**SEOIndicator Data Tests:**
+| Category | Tests |
+|----------|-------|
+| Data Structure (SEO-STR) | 7 |
+| Pricing (SEO-PRI) | 10 |
+| Features (SEO-FEA) | 9 |
+| Pros and Cons (SEO-PROS) | 8 |
+| Use Cases (SEO-USE) | 9 |
+| Metadata (SEO-MET) | 5 |
+| Data Accuracy (SEO-ACC) | 6 |
+| Module Export (SEO-EXP) | 3 |
+| Integration (SEO-INT) | 3 |
+
+**Key Test Patterns:**
+- Mock competitor data modules with virtual mocks
+- Use type guards from types.ts for validation
+- Test all null/undefined/invalid input cases
+- Verify immutability attempts on registry
+- Test concurrent access for thread safety
+- Memory efficiency tests with repeated calls
+
+**Developer Notes:**
+1. Create `frontend/lib/compare/registry.ts` with:
+   - `COMPETITOR_REGISTRY`: Record<string, CompetitorData>
+   - `COMPARISON_SLUGS`: string[]
+   - `getCompetitorById(id)`: CompetitorData | null
+   - `getComparisonBySlug(slug)`: ComparisonData | null
+   - `parseSlug(slug)`: [string, string] | null
+   - `generateComparisonData(a, b)`: ComparisonData | null
+   - `getRelatedComparisons(id)`: string[]
+   - `validateCompetitorData(data)`: boolean
+   - `validateComparisonData(data)`: boolean
+
+2. Create `frontend/lib/compare/competitors/seoindicator.ts` with:
+   - Export `seoindicator: CompetitorData`
+   - Include accurate pricing (Free + Pro tiers)
+   - Feature categories with comparison values
+   - Honest pros/cons
+   - Target audience use cases
+
+3. Import competitor files in registry:
+   ```typescript
+   import { seoindicator } from './competitors/seoindicator';
+   import { ahrefs } from './competitors/ahrefs';
+   // etc.
+   ```
+
+4. Consider lazy loading for bundle optimization:
+   ```typescript
+   // Optional: Dynamic imports for competitors
+   export const COMPETITOR_REGISTRY = {
+     seoindicator: () => import('./competitors/seoindicator'),
+     // ...
+   };
+   ```
+
+**Status:** Updated to `To Develop`
