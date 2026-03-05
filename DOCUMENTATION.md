@@ -30023,3 +30023,148 @@ public function getPublicUrl(): ?string {
 - TASK-33-4: Public Audit API Endpoint
 
 ---
+## TopIssues Component (TASK-33-11)
+
+### Component Description
+React component that displays a prioritized list of SEO issues found during the audit, with severity indicators and "View full report" prompt for anonymous users. Shows top 5 issues for anonymous users (isPartial=true) and the full issue list for logged-in owners (isPartial=false). Part of the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033).
+
+### Component Location
+- **Component:** `frontend/components/audit/TopIssues.tsx`
+- **Exports:** `frontend/components/audit/index.ts` (TopIssues, TopIssuesProps, Issue)
+- **Tests:** `frontend/__tests__/components/audit/TopIssues.test.tsx`
+- **Test Documentation:** `TESTS/TEST-33-11.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Limited View | Top 5 issues for anonymous users (isPartial=true) |
+| Full View | All issues for logged-in owners (isPartial=false) |
+| Severity Indicators | Critical (red), Warning (yellow), Info (blue) icons |
+| Category Badges | Technical, On-Page, Content, Mobile category labels |
+| Issue Expansion | Click to expand/collapse issue details |
+| View Full Report | CTA prompt with remaining count for anonymous users |
+| Empty State | Checkmark icon when no issues found |
+| Accessibility | Full ARIA support with keyboard navigation |
+
+### Component Props
+
+```typescript
+interface TopIssuesProps {
+  issues: Issue[];          // Array of SEO issues to display
+  isPartial: boolean;       // true = show only 5 issues (anonymous user)
+  auditHash?: string;       // Optional hash for "View full report" link
+}
+
+interface Issue {
+  id: string;               // Unique issue identifier
+  title: string;            // Issue title/heading
+  description: string;      // Detailed issue description
+  severity: 'critical' | 'warning' | 'info';  // Severity level
+  category: string;         // Issue category (Technical, On-Page, etc.)
+  impact: string;           // Impact description
+}
+```
+
+### Severity Indicators
+
+| Severity | Icon | Color | Description |
+|----------|------|-------|-------------|
+| `critical` | AlertTriangle | Red (text-red-500) | Critical issues requiring immediate attention |
+| `warning` | AlertCircle | Yellow (text-yellow-500) | Warnings that should be addressed |
+| `info` | Info | Blue (text-blue-500) | Informational suggestions |
+
+### Category Badges
+
+| Category | Badge Style |
+|----------|-------------|
+| Technical | Default badge |
+| On-Page | Default badge |
+| Content | Default badge |
+| Mobile | Default badge |
+
+### Sorting Logic
+
+Issues are sorted by:
+1. **Severity** (Critical → Warning → Info)
+2. **Category** (alphabetical within same severity)
+
+### UI Behavior
+
+**Anonymous User (isPartial=true):**
+- Shows top 5 issues (sorted by severity)
+- Displays "View full report" prompt with remaining issue count
+- Links to `/audit/{auditHash}` for full access
+
+**Logged-in Owner (isPartial=false):**
+- Shows all issues
+- No "View full report" prompt
+- Full expandable details for each issue
+
+**Empty State:**
+- Displays checkmark icon with "No issues found" message
+
+### Styling
+
+- Uses Tailwind CSS for styling
+- Card-based layout for issue items
+- Lucide icons for severity indicators
+- shadcn/ui Badge component for category labels
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `TopIssues.test.tsx` | 63 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 8 | Basic render, partial/full view, empty state |
+| Severity Indicators | 6 | Critical, Warning, Info icons and colors |
+| Category Badges | 7 | Badge display for each category |
+| Issue Details | 8 | Expansion, description truncation, impact display |
+| View Full Report Prompt | 7 | CTA visibility, link, remaining count |
+| Accessibility | 11 | ARIA attributes, keyboard navigation, screen reader |
+| Edge Cases | 10 | XSS, Unicode, null props, malformed data |
+| Props Validation | 6 | Required props, type validation |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Semantic Structure | List items with proper hierarchy |
+| ARIA Expanded | `aria-expanded` on expandable sections |
+| ARIA Labeledby | `aria-labelledby` linking issues to their IDs |
+| Keyboard Navigation | Tab to focus, Enter/Space to expand |
+| Screen Reader | Descriptive labels for all interactive elements |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| Input Validation | Issue data validated before rendering |
+| No Code Execution | Pure display component |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Commit | `6d220c4d` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Component Status | ✅ Deployed |
+| Tests | 63/63 passing |
+
+### Dependencies
+- None (standalone UI component)
+
+### Related Tasks
+- TASK-33-8: PublicAuditPage (uses TopIssues component)
+- TASK-33-9: ScoreOverview component
+- TASK-33-10: CategoryBreakdown component
+- TASK-33-12: PublicAuditCTA component
+
+---
