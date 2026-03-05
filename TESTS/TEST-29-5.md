@@ -12,8 +12,8 @@ Tests for rate limiting integration on the export endpoint. Validates per-user r
 
 | File | Location | Tests |
 |------|----------|-------|
-| RateLimitIntegrationTest.php | backend/tests/Feature/Api/V1/Tools/RateLimitIntegrationTest.php | 60+ |
-| ToolsRateLimitServiceTest.php | backend/tests/Unit/Services/Tools/ToolsRateLimitServiceTest.php | 35+ (if service updates needed) |
+| RateLimitIntegrationTest.php | backend/tests/Feature/Api/V1/Tools/RateLimitIntegrationTest.php | 52 |
+| ToolsRateLimitServiceTest.php | backend/tests/Unit/Services/Tools/ToolsRateLimitServiceTest.php | Existing (IP-based) |
 
 ## Test Scenarios
 
@@ -227,6 +227,33 @@ return [
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 20:50 GMT+2] Agent: PreTester
+**Test Implementation Complete**
+
+Created full test implementation with 52 tests:
+- RL-BASIC (10 tests): Basic rate limiting scenarios
+- RL-HEADERS (8 tests): Rate limit header validation
+- RL-USER (6 tests): User-based rate limiting
+- RL-CONFIG (5 tests): Configuration integration
+- RL-ERROR (6 tests): Error handling
+- RL-EDGE (8 tests): Edge cases
+- RL-SECURITY (5 tests): Security tests
+- RL-PERFORMANCE (4 tests): Performance tests
+
+**Implementation Notes for Developer:**
+1. Tests use `actingAs($user)` for authentication
+2. Rate limit key pattern: `export_rate_limit:{user_id}`
+3. Config values: `tools.export_rate_limit` (default: 10), `tools.export_rate_window` (default: 3600)
+4. Tests verify all acceptance criteria from TASK-29-5
+5. Tests assume Laravel's Cache facade for rate limit storage
+6. Rate limiting should be checked BEFORE any export processing
+
+**Test File Created:**
+- `backend/tests/Feature/Api/V1/Tools/RateLimitIntegrationTest.php`
+
+**Config Updated:**
+- Added `export_rate_window` to `backend/config/tools.php`
 
 ### [2026-03-05 20:30 GMT+2] Agent: PreTester
 Created TEST-29-5.md with 52 test scenarios covering:
