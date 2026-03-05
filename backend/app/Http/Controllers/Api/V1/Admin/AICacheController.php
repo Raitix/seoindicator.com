@@ -39,6 +39,17 @@ class AICacheController extends Controller
             'indicator' => ['sometimes', 'string', 'in:' . implode(',', $this->cacheService->getValidIndicators())],
         ]);
 
+        // Require at least one of hash or indicator
+        if (!isset($validated['hash']) && !isset($validated['indicator'])) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => [
+                    'hash' => ['The hash field is required when indicator is not present.'],
+                    'indicator' => ['The indicator field is required when hash is not present.'],
+                ],
+            ], 422);
+        }
+
         // Invalidate by hash
         if (isset($validated['hash'])) {
             $result = $this->cacheService->invalidate($validated['hash']);
