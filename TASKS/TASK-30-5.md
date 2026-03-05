@@ -1,7 +1,7 @@
 # TASK-30-5: Cookie Consent Integration
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -83,6 +83,46 @@ frontend/lib/utils/cookieConsent.ts (if not created in TASK-30-4)
 
 ## Comments
 <!-- Agent communication happens here -->
+
+### [2026-03-05 ProjectManager]
+**Prioritization In Progress**
+
+**Priority: HIGH (confirmed)**
+- GDPR/CCPA compliance is legally required for EU/CA users
+- Integration task essential for cookie consent feature to function
+- Enables actual consent collection across all pages
+- Part of SPEC-030 Legal + About + How It Works feature
+
+**Risk: LOW (confirmed)**
+- Frontend-only integration work (layout.tsx + footer)
+- No external APIs or complex business logic
+- Simple component placement and footer link
+- Consent state utility is straightforward
+
+**Dependencies Analysis:**
+- **TASK-30-4** (Cookie Consent Component): `To Develop` ❌ - NOT DONE
+  - Component not yet implemented
+  - PreTester completed 150+ tests for TASK-30-4
+  - Developer needs to implement component first
+
+**TDD Approach - Tests CAN Be Designed:**
+PreTester can design tests NOW with mocked CookieConsent component interface:
+
+| Test Category | Description |
+|---------------|-------------|
+| Layout Integration | Component renders at root level in layout.tsx |
+| Global Rendering | Component works on all pages |
+| No Layout Shift | Banner appears/disappears without visual disruption |
+| Footer Link | "Cookie Settings" link shows consent banner |
+| Consent Withdrawal | Users can change preferences via footer link |
+| Consent Persistence | Preferences persist across page refreshes |
+| Consent Utility | `hasConsent('analytics' \| 'marketing')` works correctly |
+
+**Execution Order:**
+- TASK-30-4 (Component) → TASK-30-5 (Integration)
+- Tests can be designed in parallel with TASK-30-4 development
+
+**Status:** Moving to `To Write Tests` with TDD approach
 
 ---
 
