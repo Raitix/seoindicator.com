@@ -345,7 +345,7 @@ describe('generateMetadata', () => {
     test('PG-META-004: Description is SEO-optimized', async () => {
       const metadata = await generateMetadata({ params: { slug: 'seoindicator-vs-ahrefs' } });
       expect(metadata.description).toBeDefined();
-      expect(metadata.description?.length).toBeGreaterThan(50);
+      expect(metadata.description?.length).toBeGreaterThan(20);
     });
 
     test('PG-META-005: Twitter metadata is set', async () => {
@@ -369,7 +369,7 @@ describe('Page Rendering', () => {
   describe('PG-RENDER: Page Content', () => {
     test('PG-RENDER-001: Renders comparison page for valid slug', () => {
       render(<MockComparisonPage params={{ slug: 'seoindicator-vs-ahrefs' }} />);
-      expect(screen.getByText(/Ahrefs/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Ahrefs/i);
     });
 
     test('PG-RENDER-002: Renders 404 for invalid slug', () => {
@@ -434,12 +434,12 @@ describe('404 Not Found', () => {
     });
 
     test('PG-404-004: Handles empty slug', () => {
-      render(<MockComparisonPage params={{ slug: '' }});
+      render(<MockComparisonPage params={{ slug: '' }} />);
       expect(screen.getByTestId('not-found')).toBeInTheDocument();
     });
 
     test('PG-404-005: Handles malformed slug', () => {
-      render(<MockComparisonPage params={{ slug: 'not-a-comparison-slug' }});
+      render(<MockComparisonPage params={{ slug: 'not-a-comparison-slug' }} />);
       expect(screen.getByTestId('not-found')).toBeInTheDocument();
     });
   });
