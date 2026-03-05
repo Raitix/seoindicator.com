@@ -1,7 +1,7 @@
 # TASK-33-1: Add Visibility Columns to Audits Table
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -69,3 +69,48 @@ Add visibility, public_hash, and public_hash_created_at columns to the audits ta
 - Test index exists on public_hash
 
 **Handoff to PreTester:** Ready for test design. All acceptance criteria are testable.
+
+### [2026-03-05 21:45 GMT+2] PreTester - Tests Coverage Complete
+
+**Status:** Tests designed and ready for implementation ✅
+
+**Test Files Created:**
+- `backend/tests/Unit/Migrations/AddVisibilityColumnsToAuditsTableTest.php` (60+ tests)
+- `backend/tests/Unit/Models/AuditVisibilityTest.php` (45+ tests)
+- `backend/database/factories/AuditFactory.php` (factory with states)
+- `TESTS/TEST-33-1.md` (test documentation)
+
+**Test Categories:**
+| Category | Tests | Coverage |
+|----------|-------|----------|
+| Migration Columns (MC) | 15 | Column structure, defaults, types |
+| Migration Data (MD) | 10 | Insert, update, query operations |
+| Migration Reversibility (MR) | 10 | Rollback, re-migrate cycles |
+| Model Fillable/Casts (MF) | 15 | Mass assignment, type casting |
+| Model Scopes/Methods (MS) | 10 | Public/private scopes, helper methods |
+| Edge Cases/Security (ES) | 15 | SQL injection, XSS, unicode, boundaries |
+| **Total** | **75** | **Full coverage** |
+
+**Factory States:**
+- `pending()`, `running()`, `completed()`, `failed()` - audit status states
+- `public()`, `private()` - visibility states
+- `withPublicHash($hash)` - custom public hash
+- `withManyIssues()`, `withNoIssues()`, `withManyPages()` - data variations
+
+**Key Test Patterns:**
+- MySQL/MariaDB column inspection with Doctrine
+- SQLite fallback for basic column checks
+- UNIQUE constraint testing with NULL values
+- Index verification via INFORMATION_SCHEMA
+- Rollback/remigrate cycle testing
+
+**TDD Pattern:** Tests will fail until:
+1. Migration file created at `database/migrations/*_add_visibility_columns_to_audits_table.php`
+2. Audit model updated with fillable: `visibility`, `public_hash`, `public_hash_created_at`
+3. Audit model updated with casts for `visibility` (enum) and `public_hash_created_at` (datetime)
+
+**Handoff to Developer:** Ready for implementation. Run tests with:
+```bash
+php artisan test --filter=AddVisibilityColumnsToAuditsTableTest
+php artisan test --filter=AuditVisibilityTest
+```
