@@ -18,18 +18,23 @@ import '@testing-library/jest-dom';
 
 // Mock ExportResultsButton component
 jest.mock('@/components/tools/ExportResultsButton', () => ({
-  ExportResultsButton: ({ toolName, url, data, className }: any) => (
-    <button
-      data-testid="export-results-button"
-      data-tool={toolName}
-      data-url={url}
-      data-has-results={data && Object.keys(data).length > 0 ? 'true' : 'false'}
-      className={className}
-      aria-label="Export analysis results"
-    >
-      Export Results
-    </button>
-  ),
+  ExportResultsButton: ({ toolName, url, data, className, isGenerating }: any) => {
+    const hasResults = data && Object.keys(data).length > 0;
+    const isDisabled = !hasResults || isGenerating;
+    return (
+      <button
+        data-testid="export-results-button"
+        data-tool={toolName}
+        data-url={url}
+        data-has-results={hasResults ? 'true' : 'false'}
+        className={className}
+        aria-label="Export analysis results"
+        disabled={isDisabled}
+      >
+        Export Results
+      </button>
+    );
+  },
 }));
 
 // Mock ExportModal component
