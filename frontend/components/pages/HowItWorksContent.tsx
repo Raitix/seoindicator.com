@@ -220,7 +220,7 @@ const faqItems: FAQItem[] = [
  * HowItWorksContent Component
  * Renders How It Works page content with steps, categories, scoring, and FAQ
  */
-export default function HowItWorksContent({
+function HowItWorksContent({
   className = '',
 }: HowItWorksContentProps) {
   return (
@@ -608,3 +608,9 @@ export default function HowItWorksContent({
     </div>
   );
 }
+
+// Named export for testing convenience
+export { HowItWorksContent };
+
+// Default export
+export default HowItWorksContent;
