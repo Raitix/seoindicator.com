@@ -1,7 +1,7 @@
 # TASK-32-4: Implement Comparison Index Page
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
@@ -175,6 +175,11 @@ Task created as part of SPEC-32 breakdown. Entry point for comparison pages.
 - Consider adding filtering/sorting for future (out of scope for MVP)
 
 **Status updated to:** `To Write Tests` for PreTester pickup
+
+### [2026-03-05 21:43 GMT+2] Agent: Developer
+**Status:** In Development
+**Action:** Creating ComparisonCard component
+**Note:** Page already exists at `frontend/app/compare/page.tsx`. Creating `ComparisonCard.tsx` component.
 
 ### [2026-03-05 21:35 GMT+2] Agent: PreTester
 **Tests Complete - Ready for Development**
