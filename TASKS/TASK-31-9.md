@@ -1,10 +1,10 @@
 # TASK-31-9: Retry Policy Implementation
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
-`Medium`
+`High`
 
 ## RISK
 `Low`
@@ -159,3 +159,41 @@ public function getRetryStrategy(string $content, int $attempt): RetryStrategy
 
 ## Comments
 _Agent log_
+
+### [2026-03-05 19:15 GMT+2] ProjectManager
+**Prioritization Complete**
+
+**Priority Upgrade:** Medium → HIGH
+
+**Rationale:**
+1. **Critical for AI Reliability:** Retry policy is essential for production AI operations - without it, transient errors (rate limits, timeouts, 5xx errors) would cause complete analysis failures
+2. **Low Risk, High Impact:** Standard Laravel service (no external APIs), but directly affects user-facing reliability
+3. **Dependency Satisfied:** TASK-31-2 (ContextWindowManager) is Done ✅ - content-aware retry can use token estimation
+4. **Phase Context:** Phase 2 AI Integration - AIAnalysisService (TASK-31-7) is Done, OpenRouter client (TASK-31-6) is Done - both need retry logic
+
+**Dependency Analysis:**
+- **TASK-31-2 (ContextWindowManager):** Done ✅ - provides token estimation for content-aware retry
+- **No other dependencies** - Infrastructure service with clear interface
+
+**TDD Approach:**
+PreTester can design tests immediately using the defined interface:
+- `shouldRetry(Exception $e, int $attempt): bool` - Identify retryable errors
+- `getDelayMs(int $attempt): int` - Exponential backoff with jitter
+- `getMaxRetries(): int` - Return max retry count (default 3)
+- `isRetryableError(Exception $e): bool` - Check if error is retryable
+
+**Key Test Scenarios:**
+1. Retryable errors (429, 500, 502, 503, 504, timeout) → shouldRetry = true
+2. Non-retryable errors (400, 401, 403, 404, 422) → shouldRetry = false
+3. Max retries exceeded → shouldRetry = false
+4. Exponential backoff: 1s → 2s → 4s with jitter
+5. Rate limit handling: respect Retry-After header
+6. Content-aware retry: truncation for large content
+
+**Risk Assessment:** LOW (confirmed)
+- Standard Laravel service implementation
+- Pure business logic, no external APIs
+- Well-defined error categories and retry strategies
+
+**Status:** `To Write Tests` - Ready for PreTester
+**Next Agent:** PreTester for test design
