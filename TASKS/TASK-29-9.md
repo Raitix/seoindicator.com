@@ -1,7 +1,7 @@
 # TASK-29-9: Backend Unit Tests
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
