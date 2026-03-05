@@ -119,6 +119,17 @@ class OAuthService
 ---
 
 ## Comments
+### [2026-03-05 23:18 GMT+2] Agent: DocSystemAnalyst - Verification (Session 8)
+**Status Verification:**
+- Task in `Done` status - verification only
+- Production tests passed (2026-02-28)
+- Documentation verified: Line 13806+ in DOCUMENTATION.md (GSC OAuth Service section)
+- Stale lock removed
+- Completion marker written: logs/completed/task/TASK-12-4.json
+- Active agents entry cleared
+- Parent items (SPEC-012, FEAT-012) remain at `In Progress`
+- Remaining tasks under SPEC-012: TASK-12-10 (Blocked), TASK-12-11 (Tested Locally - Passed)
+
 ### [2026-03-05 17:18 GMT+2] Agent: DocSystemAnalyst - Verification (Session 7)
 **Status Verification:**
 - Task in `Done` status - verification only
