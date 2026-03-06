@@ -70,5 +70,35 @@ class AppServiceProvider extends ServiceProvider
                     ]);
                 });
         });
+
+        // Rate limiter for public audit routes (TASK-33-7, SPEC-33)
+        // 100 requests per hour per IP - allows reasonable sharing/embedding
+        RateLimiter::for('public-audit', function (Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perHour(100)
+                ->by($request->ip())
+                ->response(function () {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Too many requests. Please try again later.',
+                    ], 429, [
+                        'Retry-After' => 3600, // 1 hour in seconds
+                    ]);
+                });
+        });
+
+        // Rate limiter for badge tracking routes (TASK-33-7, TASK-33-17, TASK-33-18, SPEC-33)
+        // 60 requests per minute per IP - supports high-volume widget impressions
+        RateLimiter::for('badge-tracking', function (Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(60)
+                ->by($request->ip())
+                ->response(function () {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Too many requests. Please try again later.',
+                    ], 429, [
+                        'Retry-After' => 60, // 1 minute in seconds
+                    ]);
+                });
+        });
     }
 }

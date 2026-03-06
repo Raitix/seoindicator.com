@@ -1,7 +1,7 @@
 # TASK-33-7: Create Public Audit API Routes
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -16,19 +16,19 @@
 Define all API routes for public audit functionality in the Laravel routes file. This includes public endpoints (no auth) and authenticated audit management endpoints.
 
 ## Acceptance Criteria
-- [ ] Public routes (no authentication):
+- [x] Public routes (no authentication):
   - GET `/api/v1/public-audit/{hash}`
   - POST `/api/v1/public-audit/{hash}/lead`
   - GET `/api/v1/public-audit/{hash}/badge`
   - POST `/api/v1/badge/impression`
   - POST `/api/v1/badge/click`
-- [ ] Authenticated routes (require auth:sanctum):
+- [x] Authenticated routes (require auth:sanctum):
   - POST `/api/v1/audits/{id}/publish`
   - DELETE `/api/v1/audits/{id}/unpublish`
   - GET `/api/v1/audits/{id}/embed-code`
-- [ ] Rate limiting middleware applied
-- [ ] Routes documented with route:list command
-- [ ] Integration test verifies route accessibility
+- [x] Rate limiting middleware applied
+- [x] Routes documented with route:list command
+- [x] Integration test verifies route accessibility
 
 ## Dependencies
 - TASK-33-5 (PublicAuditController)
@@ -44,8 +44,64 @@ Define all API routes for public audit functionality in the Laravel routes file.
 - Publish/unpublish endpoints check user ownership
 
 ## Files to Modify
-- `backend/routes/api.php`
-- `backend/app/Providers/RouteServiceProvider.php` (rate limiter)
+- `backend/routes/api.php` ✅
+- `backend/app/Providers/RouteServiceProvider.php` (rate limiter) → `backend/app/Providers/AppServiceProvider.php` ✅
+
+## Comments
+
+### [2026-03-06 18:25 GMT+2] Developer - Implementation Complete
+
+**Routes Implemented:**
+
+1. **Public Audit Routes** (no auth):
+   - GET `/api/v1/public-audit/{hash}` → `api.v1.public-audit.show`
+   - POST `/api/v1/public-audit/{hash}/lead` → `api.v1.public-audit.lead`
+   - GET `/api/v1/public-audit/{hash}/badge` → `api.v1.public-audit.badge`
+   - All with `throttle:public-audit` middleware (100/hour per IP)
+
+2. **Badge Tracking Routes** (no auth):
+   - POST `/api/v1/badge/impression` → `api.v1.badge.impression`
+   - POST `/api/v1/badge/click` → `api.v1.badge.click`
+   - All with `throttle:badge-tracking` middleware (60/minute per IP)
+
+3. **Authenticated Audit Routes** (auth:sanctum):
+   - POST `/api/v1/audits/{id}/publish` → `api.v1.audits.publish`
+   - DELETE `/api/v1/audits/{id}/unpublish` → `api.v1.audits.unpublish`
+   - GET `/api/v1/audits/{id}/embed-code` → `api.v1.audits.embed-code`
+   - All with `throttle:60,1` middleware (60/minute per user)
+
+**Rate Limiters Added** (`AppServiceProvider.php`):
+- `public-audit`: 100 requests/hour per IP
+- `badge-tracking`: 60 requests/minute per IP
+
+**Controller Stubs Created:**
+- `BadgeTrackingController.php` - impression/click methods (returns success for now)
+- `AuditVisibilityController.php` - publish/unpublish/embedCode methods (returns 404 for now)
+
+**Test Suite:**
+- Created `PublicAuditRoutesTest.php` with 73 tests covering:
+  - Route registration (8 tests)
+  - Route paths (8 tests)
+  - HTTP methods (8 tests)
+  - Middleware - public routes (5 tests)
+  - Middleware - authenticated routes (3 tests)
+  - Rate limiting (3 tests)
+  - HTTP requests - public (6 tests)
+  - HTTP requests - authenticated (6 tests)
+  - HTTP method restrictions (8 tests)
+  - Route model binding (3 tests)
+  - API prefix (1 test)
+  - Security (5 tests)
+  - Edge cases (4 tests)
+  - Acceptance criteria (5 tests)
+
+**Test Results:** ✅ 73 passed (181 assertions)
+
+**Handoff to LocalTester:**
+- All routes registered and accessible
+- Rate limiting configured
+- Controller stubs return appropriate responses
+- Ready for integration testing with full controller implementations (TASK-33-5, TASK-33-17, TASK-33-18)
 
 ## Comments
 
