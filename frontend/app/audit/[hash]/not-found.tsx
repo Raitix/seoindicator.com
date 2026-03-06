@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
  * Displayed when an audit is not found or is private
  * @returns JSX element
  */
-export default function NotFound(): JSX.Element {
+export default function NotFound() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-16">
       <div className="max-w-md text-center">

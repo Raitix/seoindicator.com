@@ -22,6 +22,15 @@ class CreatePublicAuditViewsTableTest extends TestCase
      */
     private const TABLE_NAME = 'public_audit_views';
 
+    /**
+     * Set up test environment.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->artisan('migrate:fresh');
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Migration Structure Tests (MS)

@@ -19,7 +19,7 @@ interface LayoutProps {
  * @param props - Layout props
  * @returns JSX element
  */
-export default function AuditLayout({ children }: LayoutProps): JSX.Element {
+export default function AuditLayout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-slate-950">
       {children}
