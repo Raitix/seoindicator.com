@@ -1,7 +1,7 @@
 # SPEC-014: Technical SEO Site Audit - Technical Specification
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `Low`
@@ -204,3 +204,64 @@ Created specification SPEC-014 for Technical SEO Site Audit (FEAT-014). Key deci
 - MVP focuses on core checks; schema validation deferred.
 - Issue severity system enables prioritized fixes.
 Ready for SpecSystemAnalyst breakdown.
+
+### [2026-03-06 21:20] Agent: SpecSystemAnalyst
+**Task Breakdown Complete**
+
+Broke down SPEC-014 into 22 tasks (TASK-14-1 through TASK-14-22):
+
+**Database Schema (Already Done):**
+- TASK-14-1: Audits table (Done)
+- TASK-14-2: Audit Issues table (Done)
+- TASK-14-3: Issue Types table (Done)
+- TASK-14-4: Documentation update (Done)
+
+**Phase 1: Core Crawler Infrastructure**
+- TASK-14-5: SiteCrawler Service (High priority, Medium risk)
+- TASK-14-6: RobotsParser Service (High priority, Low risk)
+- TASK-14-7: CrawlJob Queue Worker (High priority, Medium risk)
+
+**Phase 2: Issue Detection Engine**
+- TASK-14-8: IssueDetector Service (High priority, Medium risk)
+- TASK-14-9: HTML Analysis Checkers (High priority, Low risk)
+- TASK-14-10: Link Checker (High priority, Medium risk)
+- TASK-14-11: Performance Checker (Medium priority, Low risk)
+- TASK-14-12: Image Checker (Medium priority, Low risk)
+
+**Phase 3: API Endpoints**
+- TASK-14-13: AuditController (High priority, Medium risk)
+- TASK-14-14: AuditIssueController (High priority, Low risk)
+
+**Phase 4: Frontend UI**
+- TASK-14-15: Audit List Page (Medium priority, Low risk)
+- TASK-14-16: Audit Detail Page (High priority, Low risk)
+- TASK-14-17: Audit Dashboard Widget (Medium priority, Low risk)
+
+**Phase 5: Integration**
+- TASK-14-18: PDF Report Integration (Medium priority, Low risk)
+
+**Phase 6: Testing**
+- TASK-14-19: Backend Unit Tests (Medium priority, Low risk)
+- TASK-14-20: Backend Feature Tests (Medium priority, Low risk)
+- TASK-14-21: Frontend Component Tests (Medium priority, Low risk)
+- TASK-14-22: E2E Tests (Medium priority, Low risk)
+
+**Key Design Decisions:**
+- Custom crawler (no external API dependencies - FREE)
+- Queue-based processing for scalability
+- 9 MVP issue checks (title, meta, H1, viewport, broken links, performance, images)
+- Severity system: Critical, Warning, Notice
+- Issue status: Open, Fixed, Ignored
+- Bulk actions for efficient issue management
+- PDF report integration for client deliverables
+
+**Dependencies:**
+- Tasks 14-5 to 14-7 (crawler infrastructure) can run in parallel
+- Tasks 14-8 to 14-12 (detectors) depend on IssueDetector (TASK-14-8)
+- Tasks 14-13 to 14-14 (APIs) depend on crawler infrastructure
+- Tasks 14-15 to 14-17 (frontend) depend on APIs
+- Tasks 14-19 to 14-22 (testing) should run after implementation
+
+**Total Effort Estimate:** ~85 hours
+
+Status updated: SPEC-014 and FEAT-014 → "To Prioritize"
