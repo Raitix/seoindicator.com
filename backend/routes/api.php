@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\V1\UserDashboardController;
 use App\Http\Controllers\Api\V1\AISuggestionController;
 use App\Http\Controllers\Api\V1\CrawlController;
 use App\Http\Controllers\Api\V1\ToolExportController;
+use App\Http\Controllers\Api\V1\PublicAuditController;
 
 /*
 |--------------------------------------------------------------------------
@@ -123,6 +124,25 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Email verification resend (TASK-25-5)
     Route::post('/v1/auth/resend-verification', [EmailVerificationController::class, 'resend']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Public Audit Routes (TASK-33-5, SPEC-33)
+|--------------------------------------------------------------------------
+|
+| Public SEO audit endpoints for sharing audit results.
+| No authentication required - access controlled via unique hash.
+| Rate limited to prevent abuse.
+|
+*/
+Route::prefix('v1/public-audit')->middleware(['throttle:100,60'])->group(function () {
+    Route::get('/{hash}', [PublicAuditController::class, 'show'])
+        ->where('hash', '[a-zA-Z0-9]+');
+    Route::post('/{hash}/lead', [PublicAuditController::class, 'lead'])
+        ->where('hash', '[a-zA-Z0-9]+');
+    Route::get('/{hash}/badge', [PublicAuditController::class, 'badge'])
+        ->where('hash', '[a-zA-Z0-9]+');
 });
 
 /*

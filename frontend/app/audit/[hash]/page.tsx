@@ -6,12 +6,18 @@
 
 import AuditPageClient from './AuditPageClient';
 
+// Enable dynamic params for static export
+export const dynamicParams = true;
+
 /**
- * Generate static params - single fallback for all audit hashes
- * Returns empty array since all audits are dynamically rendered client-side
+ * Generate static params for static export compatibility.
+ * Returns a placeholder hash to satisfy Next.js static export requirement.
+ * The actual hash lookup is done client-side via AuditPageClient.
  */
 export function generateStaticParams() {
-  return [];
+  // Return a placeholder to satisfy Next.js static export
+  // The client-side component handles actual hash routing
+  return [{ hash: '_' }];
 }
 
 /**
