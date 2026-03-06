@@ -70,11 +70,11 @@ class TransactionHistoryRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Convert empty strings to null
+        // Trim whitespace and convert empty strings to null
         $this->merge([
-            'type' => $this->type ?: null,
-            'from' => $this->from ?: null,
-            'to' => $this->to ?: null,
+            'type' => $this->type ? trim($this->type) : null,
+            'from' => $this->from ? trim($this->from) : null,
+            'to' => $this->to ? trim($this->to) : null,
         ]);
     }
 
