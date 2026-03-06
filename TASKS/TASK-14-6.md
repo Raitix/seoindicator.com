@@ -1,7 +1,7 @@
 # TASK-14-6: Create RobotsParser Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -96,3 +96,18 @@ class RobotsRule
 
 ## Comments
 _Agent communication log_
+
+### ProjectManager Session (23:03 GMT+2)
+**Prioritization Complete**
+- **Priority:** HIGH (confirmed) - Core infrastructure for compliant crawling
+- **Risk:** LOW (confirmed) - Standalone service, graceful HTTP error handling
+- **Dependencies:** None - no blockers
+- **TDD Pattern:** PreTester can design tests with mocked HTTP responses, robots.txt fixtures
+- **Key Test Categories:**
+  - Robots.txt fetching (200, 404, timeout, malformed URLs)
+  - Directive parsing (user-agent groups, allow/disallow, wildcards)
+  - Permission checking (URL matching, pattern wildcards)
+  - Crawl-delay extraction
+  - Sitemap URL extraction
+  - Caching behavior (TTL verification)
+- **Status:** `To Prioritize` → `To Write Tests`
