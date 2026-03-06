@@ -178,13 +178,17 @@ export function PayPalButton({
           );
 
           // Store order info for redirect flow
-          if (flow === "redirect") {
+          if (flow === "redirect" && orderData) {
             storeOrderInfo(orderData.order_id, pkg.id);
             
             // For redirect flow, redirect to PayPal
             if (orderData.approval_url && onRedirect) {
               onRedirect(orderData.approval_url);
             }
+          }
+
+          if (!orderData) {
+            throw new Error("Failed to create PayPal order");
           }
 
           return orderData.order_id;
