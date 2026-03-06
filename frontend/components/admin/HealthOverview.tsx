@@ -104,6 +104,7 @@ export function countServicesByStatus(
     healthy: 0,
     degraded: 0,
     unhealthy: 0,
+    unknown: 0,
   };
   services.forEach((s) => counts[s.status]++);
   return counts;
