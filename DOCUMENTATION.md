@@ -3382,7 +3382,162 @@ interface PaymentGatewayInterface
 ### Related Tasks
 - TASK-26-12: PayPalGatewayService (provides PayPal integration)
 - TASK-26-14: PayPal Webhook Handler (captures approved orders)
+- TASK-26-15: PayPal Smart Buttons Support (capture endpoint)
 - TASK-26-5: CreditService (used after capture)
+
+---
+## PayPal Smart Buttons Support (TASK-26-15)
+
+### Endpoint Description
+REST API endpoint for capturing approved PayPal orders via Smart Buttons. Called by frontend after user approves payment in PayPal popup. Verifies order ownership, prevents double capture, and adds credits to user balance. Part of the Billing, Credits & Model Selection feature (FEAT-026).
+
+### Component Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/Payments/PayPalCaptureController.php`
+- **Service:** `backend/app/Services/Billing/PayPalGatewayService.php`
+- **Interface:** `backend/app/Services/Billing/Contracts/PaymentGatewayInterface.php`
+- **Model:** `backend/app/Models/CreditTransaction.php`
+- **Tests:** `backend/tests/Feature/Api/V1/Payments/PayPalCaptureControllerTest.php`
+
+### API Specification
+
+| Method | Endpoint | Authentication |
+|--------|----------|----------------|
+| POST | `/api/v1/payments/paypal/capture` | Required (Bearer token) |
+
+### Request Body
+
+```json
+{
+  "order_id": "5O190127TN364715T"
+}
+```
+
+### Request Validation
+
+| Field | Type | Required | Validation Rules |
+|-------|------|----------|------------------|
+| `order_id` | string | Yes | PayPal order ID format, must exist in pending transactions |
+
+### Response Format (Success)
+
+```json
+{
+  "success": true,
+  "data": {
+    "transaction_id": "TXN-123456",
+    "amount": 10.00,
+    "credits": 10.50,
+    "new_balance": 35.50
+  }
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `transaction_id` | string | Internal transaction reference |
+| `amount` | numeric | Payment amount in USD |
+| `credits` | numeric | Credits awarded (base + bonus) |
+| `new_balance` | numeric | User's updated credit balance |
+
+### Error Responses
+
+| Status | Condition | Response |
+|--------|-----------|----------|
+| 400 | Order already captured | `{"success": false, "error": "Order already captured"}` |
+| 400 | Order expired (3 hour window) | `{"success": false, "error": "Order expired"}` |
+| 401 | Unauthenticated request | `{"success": false, "error": "Unauthenticated"}` |
+| 401 | Order belongs to different user | `{"success": false, "error": "Unauthorized"}` |
+| 404 | Order not found | `{"success": false, "error": "Order not found"}` |
+| 422 | Validation error | `{"success": false, "error": {...}}` |
+
+### Controller Implementation
+
+**PayPalCaptureController@store():**
+1. Validates `order_id` via FormRequest
+2. Finds pending transaction by `order_id` with `lockForUpdate()`
+3. Verifies order ownership (IDOR prevention)
+4. Checks order status (must be 'approved')
+5. Validates order expiration (3 hour window)
+6. Calls `PayPalGatewayService->capturePayment()`
+7. Updates Credit balance directly within DB transaction
+8. Updates transaction metadata with 'completed' status
+9. Returns transaction details with new balance
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Order Ownership Verification | IDOR prevention - only order owner can capture |
+| Double Capture Prevention | Status check + `lockForUpdate()` for race conditions |
+| Order Expiration | 3 hour capture window enforced |
+| Authentication | Bearer token required (Sanctum) |
+| Audit Logging | All capture attempts logged |
+
+### Business Logic
+
+**Capture Flow:**
+1. Frontend calls TASK-26-13 endpoint to create order
+2. PayPal popup handles authentication
+3. User approves in popup
+4. Frontend calls THIS endpoint (capture)
+5. Credits added to user balance
+
+**Transaction States:**
+| Status | Description |
+|--------|-------------|
+| `pending` | Order created (TASK-26-13) |
+| `approved` | User approved in PayPal popup |
+| `completed` | Capture successful, credits added |
+| `failed` | Capture failed |
+| `cancelled` | User cancelled |
+
+**Credit Balance Update:**
+- Direct Credit model update within DB transaction
+- Creates Credit record if missing (for new users)
+- Updates `balance` and `total_purchased` fields
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `PayPalCaptureControllerTest.php` | 71 | 115 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Endpoint (BE) | 8 | Route registration, authentication, response structure |
+| Validation (VA) | 9 | Required fields, order_id format |
+| Security (SC) | 8 | IDOR prevention, audit logging |
+| Double Capture Prevention (DC) | 5 | Race conditions, idempotency |
+| Order State Validation (OS) | 6 | Approved, created, completed, cancelled, expired, denied |
+| Error Handling (EH) | 7 | Various error scenarios |
+| Business Logic (BL) | 8 | Credit calculation, balance updates |
+| Integration (IN) | 5 | Service calls, DB transactions |
+| HTTP Methods (HM) | 4 | POST only, GET rejected |
+| Rate Limiting (RL) | 2 | Rate limit headers |
+| Performance (PF) | 2 | Response time |
+| Edge Cases (EC) | 8 | Concurrent captures, missing credits record |
+
+### Production Status
+- **Deployed:** 2026-03-06 (GitHub Actions auto-deploy)
+- **Commit:** `d41c22a4`
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** 71/71 passing (115 assertions, 1 skipped webhook test)
+- **Route:** `POST /api/v1/payments/paypal/capture` ✅
+- **Status:** Complete
+
+### Dependencies
+- TASK-26-12 (PayPalGatewayService) - Done
+- TASK-26-13 (PayPal Order Endpoint) - Done
+- TASK-26-5 (CreditService) - Done (not used directly - credit balance updated via model)
+
+### Related Tasks
+- TASK-26-12: PayPalGatewayService (provides capture method)
+- TASK-26-13: PayPal Order Endpoint (creates pending orders)
+- TASK-26-14: PayPal Webhook Handler (handles payment events)
+- TASK-26-5: CreditService (credit management)
 
 ---
 ## Models List API Endpoint (TASK-26-17)
