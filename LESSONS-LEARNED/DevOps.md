@@ -131,6 +131,26 @@ _(Document rollback events and causes)_
   - 200 unit tests (150 for registry, 50 for SEOIndicator data)
 - **Note:** Comparison registry system for programmatic SEO competitor comparison pages. Part of SPEC-32 Phase 1 foundation.
 
+### TASK-14-10 (BrokenLinkChecker Service)
+- **Date:** 2026-03-06
+- **Method:** GitHub Actions (automatic)
+- **Run ID:** 22780786659
+- **Result:** Successful
+- **Duration:** ~2m20s (build: 1m46s, deploy: 34s)
+- **Commit:** 96986bc2
+- **Health Check:** 200 OK, database connected
+- **What was deployed:**
+  - `BrokenLinkChecker.php` - Main service for detecting broken links in HTML
+  - `BrokenLinkResult.php` - Result DTO with factory methods
+  - `CheckSummary.php` - Summary DTO for aggregated results
+  - `audit.php` config - Audit configuration
+  - 2 migrations for audit options and cancelled status
+  - 141 tests (275 assertions)
+- **Pre-Deployment Fixes:**
+  - Added missing factory methods to BrokenLinkResult (valid, broken, redirect)
+  - Fixed test helper default for elementType
+- **Note:** DevOps had to fix test failures before deployment. The Developer had implemented the core logic but tests expected factory methods that were missing. Always verify tests pass before deployment.
+
 ---
 
-Last updated: 2026-03-05
+Last updated: 2026-03-06
