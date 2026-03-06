@@ -1,7 +1,7 @@
 # TASK-26-7: Create Transaction History API Endpoint
 
 ## STATUS
-`In Development`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
