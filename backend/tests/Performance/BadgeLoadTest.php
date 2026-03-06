@@ -12,11 +12,13 @@ namespace Tests\Performance;
 
 use Tests\TestCase;
 use App\Models\Audit;
+use App\Models\Site;
 use App\Models\PublicAuditView;
 use App\Models\BadgeImpression;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
+use Illuminate\Support\Str;
 
 class BadgeLoadTest extends TestCase
 {
@@ -32,13 +34,24 @@ class BadgeLoadTest extends TestCase
     {
         parent::setUp();
         
+        // Run migrations to ensure tables exist
+        $this->artisan('migrate:fresh', ['--seed' => false]);
+        
+        // Create a site for the audits
+        $site = Site::create([
+            'url' => 'https://loadtest.example.com',
+            'name' => 'Load Test Site',
+        ]);
+        
         // Create test audits for load testing
         $this->testHashes = [];
         for ($i = 0; $i < 10; $i++) {
-            $audit = Audit::factory()->create([
+            $audit = Audit::create([
+                'site_id' => $site->id,
                 'public_hash' => 'loadtest' . str_pad($i, 26, 'x') . $i,
                 'visibility' => 'public',
-                'overall_score' => rand(50, 95),
+                'status' => 'completed',
+                'public_hash_created_at' => now(),
             ]);
             $this->testHashes[] = $audit->public_hash;
         }
@@ -72,6 +85,31 @@ class BadgeLoadTest extends TestCase
     }
 
     /**
+     * Create a test audit with unique hash.
+     */
+    private function createTestAudit(string $hashPrefix): Audit
+    {
+        static $site = null;
+        if (!$site) {
+            $site = Site::first();
+            if (!$site) {
+                $site = Site::create([
+                    'url' => 'https://loadtest.example.com',
+                    'name' => 'Load Test Site',
+                ]);
+            }
+        }
+        
+        return Audit::create([
+            'site_id' => $site->id,
+            'public_hash' => $hashPrefix,
+            'visibility' => 'public',
+            'status' => 'completed',
+            'public_hash_created_at' => now(),
+        ]);
+    }
+
+    /**
      * LOAD-002: 50 concurrent audit page requests.
      */
     public function test_50_concurrent_audit_pages(): void
@@ -79,11 +117,8 @@ class BadgeLoadTest extends TestCase
         // Create more test data
         $hashes = [];
         for ($i = 0; $i < 50; $i++) {
-            $audit = Audit::factory()->create([
-                'public_hash' => 'load50' . str_pad($i, 25, 'x') . $i,
-                'visibility' => 'public',
-                'overall_score' => rand(50, 95),
-            ]);
+            $hash = 'load50' . str_pad($i, 25, 'x') . $i;
+            $audit = $this->createTestAudit($hash);
             $hashes[] = $audit->public_hash;
         }
 
@@ -117,11 +152,8 @@ class BadgeLoadTest extends TestCase
         // Create 100 test audits
         $hashes = [];
         for ($i = 0; $i < 100; $i++) {
-            $audit = Audit::factory()->create([
-                'public_hash' => 'load100' . str_pad($i, 24, 'x') . $i,
-                'visibility' => 'public',
-                'overall_score' => rand(50, 95),
-            ]);
+            $hash = 'load100' . str_pad($i, 24, 'x') . $i;
+            $audit = $this->createTestAudit($hash);
             $hashes[] = $audit->public_hash;
         }
 
@@ -266,10 +298,7 @@ class BadgeLoadTest extends TestCase
      */
     public function test_mixed_read_write_operations(): void
     {
-        $audit = Audit::factory()->create([
-            'public_hash' => 'mixedtest123456789012345678901234uv',
-            'visibility' => 'public',
-        ]);
+        $audit = $this->createTestAudit('mixedtest123456789012345678901234uv');
 
         $start = microtime(true);
         $results = ['reads' => 0, 'writes' => 0];

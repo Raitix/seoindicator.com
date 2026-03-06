@@ -2891,6 +2891,170 @@ CREATE TABLE credit_transactions (
 - TASK-26-14: PayPal Webhook Handler (uses addCredits)
 
 ---
+## Transaction History API Endpoint (TASK-26-7)
+
+### Endpoint Description
+REST API endpoint for users to view their transaction history with filtering and pagination. Provides a comprehensive view of all credit purchases, usage, refunds, and bonus transactions. Read-only endpoint with user isolation and security protections. Part of the Billing, Credits & Model Selection feature (FEAT-026).
+
+### Component Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/CreditController.php`
+- **Request:** `backend/app/Http/Requests/Api/V1/Credits/TransactionHistoryRequest.php`
+- **Service:** `backend/app/Services/CreditService.php`
+- **Model:** `backend/app/Models/CreditTransaction.php`
+- **Tests:** `backend/tests/Feature/Api/V1/Credits/TransactionHistoryControllerTest.php`
+
+### API Specification
+
+| Method | Endpoint | Authentication |
+|--------|----------|----------------|
+| GET | `/api/v1/credits/transactions` | Required (Bearer token via Sanctum) |
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | integer | 1 | Page number for pagination |
+| `per_page` | integer | 15 | Items per page (max: 50) |
+| `type` | string | null | Filter by transaction type: `purchase`, `usage`, `refund`, `bonus` |
+| `from` | date | null | Filter from date (YYYY-MM-DD format) |
+| `to` | date | null | Filter to date (YYYY-MM-DD format) |
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 123,
+      "amount": 10.00,
+      "balance_after": 35.50,
+      "type": "purchase",
+      "description": "Purchased $10.00 credits via Stripe",
+      "payment_provider": "stripe",
+      "created_at": "2026-03-02T12:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 45,
+    "last_page": 3
+  }
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Transaction ID |
+| `amount` | numeric | Transaction amount in USD |
+| `balance_after` | numeric | User's balance after this transaction |
+| `type` | string | Transaction type (`purchase`, `usage`, `refund`, `bonus`) |
+| `description` | string | Human-readable transaction description |
+| `payment_provider` | string\|null | Payment provider (`stripe`, `paypal`) or null |
+| `created_at` | string | ISO 8601 timestamp |
+
+### Validation Rules
+
+| Field | Rules |
+|-------|-------|
+| `per_page` | Integer between 1 and 50 |
+| `type` | Enum: `purchase`, `usage`, `refund`, `bonus` (if provided) |
+| `from` | Valid date format (YYYY-MM-DD), must be before or equal to `to` |
+| `to` | Valid date format (YYYY-MM-DD), must be after or equal to `from` |
+
+**Whitespace Handling:** `type`, `from`, and `to` parameters are automatically trimmed before validation.
+
+### Error Responses
+
+| Status | Condition | Response |
+|--------|-----------|----------|
+| 401 | Unauthenticated request | `{"success": false, "error": "Unauthenticated"}` |
+| 422 | Invalid parameters | `{"success": false, "error": {...}, "details": {...}}` |
+| 422 | `from` date after `to` date | Error on `to` field |
+
+### Transaction Types
+
+| Type | Description | Typical Amount |
+|------|-------------|----------------|
+| `purchase` | Credits bought via Stripe/PayPal | Positive (e.g., $10.00) |
+| `bonus` | Promotional or bonus credits | Positive (varies) |
+| `usage` | Credits deducted for analysis | Negative (e.g., -$0.05) |
+| `refund` | Credits returned to user | Positive (varies) |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| User Isolation | Users can only view their own transactions |
+| Authentication Required | Bearer token required (Sanctum) |
+| No Sensitive Data | No payment card details exposed |
+| Read-Only | No modification operations allowed |
+| SQL Injection Protection | Parameterized queries via Eloquent |
+| XSS Protection | Laravel response encoding |
+
+### HTTP Method Restrictions
+
+| Method | Status | Description |
+|--------|--------|-------------|
+| GET | 200 OK | Allowed - list transactions |
+| POST | 405 Method Not Allowed | Not allowed |
+| PUT | 405 Method Not Allowed | Not allowed |
+| DELETE | 405 Method Not Allowed | Not allowed |
+| PATCH | 405 Method Not Allowed | Not allowed |
+
+### Performance Considerations
+
+| Optimization | Implementation |
+|--------------|----------------|
+| Pagination | Default 15 items, max 50 per page |
+| Database Index | `created_at` index for date filtering |
+| Query Scopes | `forUser`, `byType`, `dateRange` scopes in model |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `TransactionHistoryControllerTest.php` | 55 | 143 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authentication | 3 | Unauthenticated returns 401, invalid token blocked |
+| Pagination | 8 | Default pagination, custom per_page, max 50, navigation |
+| Type Filtering | 6 | Valid types, invalid type, all types individually |
+| Date Range Filtering | 8 | From only, to only, range, invalid formats |
+| Combined Filters | 3 | Type + date range combinations |
+| Security | 5 | User isolation, no sensitive data, SQL injection, XSS |
+| Response Format | 6 | JSON structure, success flag, meta fields |
+| HTTP Methods | 5 | GET allowed, POST/PUT/DELETE/PATCH rejected |
+| Edge Cases | 9 | Empty history, whitespace trimming, from > to |
+| Performance | 2 | Response time < 500ms, large dataset pagination |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Deployment Method | GitHub Actions auto-deploy (run #22769650733) |
+| Health Check | ✅ 200 OK |
+| Tests | 55/55 passing (143 assertions) |
+| Route | `GET /api/v1/credits/transactions` ✅ |
+| Status | Complete |
+
+### Dependencies
+- TASK-26-5 (CreditService) - Provides `getTransactionHistory()` method
+- TASK-26-6 (CreditController) - Controller exists
+
+### Related Tasks
+- TASK-26-5: CreditService (core credit operations)
+- TASK-26-6: Credit Balance API Endpoint (balance display)
+- TASK-26-10: Stripe Webhook Handler (creates purchase transactions)
+- TASK-26-14: PayPal Webhook Handler (creates purchase transactions)
+
+---
 ## Payment Methods Management API (TASK-26-11)
 
 ### Service Description
