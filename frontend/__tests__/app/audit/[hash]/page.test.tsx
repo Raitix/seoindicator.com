@@ -4,22 +4,23 @@
  * @module __tests__/app/audit/[hash]/page.test
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock next/navigation
-const mockUseParams = vi.fn();
-vi.mock('next/navigation', () => ({
+const mockUseParams = jest.fn();
+jest.mock('next/navigation', () => ({
   useParams: () => mockUseParams(),
 }));
 
 // Mock fetch
-const mockFetch = vi.fn();
+const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
 // Mock PublicAuditPage component
-vi.mock('@/components/audit/PublicAuditPage', () => ({
+jest.mock('@/components/audit/PublicAuditPage', () => ({
+  __esModule: true,
   default: ({ audit, hash }: { audit: { siteUrl: string; overallScore: number }; hash: string }) => (
     <div data-testid="public-audit-page">
       <span data-testid="audit-site">{audit.siteUrl}</span>
@@ -54,14 +55,14 @@ const mockFetchResponse = (data: unknown, success = true) => ({
 
 describe('Public Audit Route - Client-Side Rendering', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     mockUseParams.mockReturnValue({ hash: 'testhash123' });
     // Reset document state
     document.title = '';
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    jest.restoreAllMocks();
   });
 
   // ============================================================================
