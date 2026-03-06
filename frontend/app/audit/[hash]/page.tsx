@@ -23,10 +23,20 @@ interface PageProps {
 // ============================================================
 
 /**
+ * Static params type for generateStaticParams
+ */
+type StaticParams = {
+  hash: string;
+};
+
+/**
  * Required for static export with dynamic routes
  * Returns empty array - all audit pages are client-side rendered
+ * The page will be generated on-demand when accessed
  */
-export function generateStaticParams() {
+export async function generateStaticParams(): Promise<StaticParams[]> {
+  // Return empty array for fully dynamic client-side rendering
+  // All audit pages are generated on-demand
   return [];
 }
 
