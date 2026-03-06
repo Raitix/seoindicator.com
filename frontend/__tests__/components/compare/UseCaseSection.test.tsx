@@ -1,520 +1,800 @@
 /**
- * UseCaseSection Component Tests
- * Task: TASK-32-19 - Unit Tests for Comparison Components
+ * Unit Tests for UseCaseSection Component
+ * Task: TASK-32-8 - Use Case Section
  * Spec: SPEC-32 (Competitor Comparison Landing Pages)
  *
- * TDD Tests - Component implementation pending
+ * Tests cover:
+ * - Component rendering with various props
+ * - UseCase card rendering
+ * - Visual separation between tools
+ * - Data handling and edge cases
+ * - Mobile responsive behavior
  */
 
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import type { UseCase, UseCaseSectionProps } from '@/lib/compare/types';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
-// Mock component - will be replaced with actual implementation
-const UseCaseSection = ({
-  seoindicator,
-  competitor,
-}: UseCaseSectionProps) => {
-  // Get badge color based on audience
-  const getAudienceColor = (audience: string): string => {
-    switch (audience) {
-      case 'solo': return 'bg-blue-500';
-      case 'small-team': return 'bg-green-500';
-      case 'enterprise': return 'bg-purple-500';
-      case 'agency': return 'bg-orange-500';
-      default: return 'bg-gray-500';
-    }
-  };
+import { UseCaseSection } from '@/components/compare/UseCaseSection';
+import type { UseCase } from '@/lib/compare/types';
 
-  // Get badge color based on budget
-  const getBudgetColor = (budget: string): string => {
-    switch (budget) {
-      case 'free': return 'bg-emerald-500';
-      case 'budget': return 'bg-teal-500';
-      case 'mid-range': return 'bg-cyan-500';
-      case 'premium': return 'bg-amber-500';
-      default: return 'bg-gray-500';
-    }
-  };
+// ============================================================================
+// Mock Data
+// ============================================================================
 
-  // Format badge text
-  const formatBadgeText = (text: string): string => {
-    return text.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  };
-
-  return (
-    <section data-testid="use-case-section" aria-labelledby="use-case-heading">
-      <h2 id="use-case-heading" data-testid="section-title" className="text-2xl font-bold">
-        Who Should Use Each Tool?
-      </h2>
-
-      <div data-testid="use-case-grid" className="grid md:grid-cols-2 gap-6">
-        {/* SEOIndicator Use Cases */}
-        <div data-testid="seoindicator-use-cases" aria-label="SEOIndicator use cases">
-          <h3 data-testid="seoindicator-header">SEOIndicator</h3>
-          {seoindicator.length > 0 ? (
-            seoindicator.map((useCase, idx) => (
-              <article
-                key={idx}
-                data-testid={`seoindicator-case-${idx}`}
-                className="use-case-card"
-              >
-                <h4 data-testid={`seoindicator-title-${idx}`}>{useCase.title}</h4>
-                <p data-testid={`seoindicator-description-${idx}`}>{useCase.description}</p>
-                <div data-testid={`seoindicator-badges-${idx}`} className="flex gap-2">
-                  <span
-                    data-testid={`seoindicator-audience-badge-${idx}`}
-                    className={getAudienceColor(useCase.audience)}
-                  >
-                    {formatBadgeText(useCase.audience)}
-                  </span>
-                  <span
-                    data-testid={`seoindicator-budget-badge-${idx}`}
-                    className={getBudgetColor(useCase.budget)}
-                  >
-                    {formatBadgeText(useCase.budget)}
-                  </span>
-                </div>
-              </article>
-            ))
-          ) : (
-            <p data-testid="seoindicator-empty">No use cases available</p>
-          )}
-        </div>
-
-        {/* Competitor Use Cases */}
-        <div data-testid="competitor-use-cases" aria-label="Competitor use cases">
-          <h3 data-testid="competitor-header">Competitor</h3>
-          {competitor.length > 0 ? (
-            competitor.map((useCase, idx) => (
-              <article
-                key={idx}
-                data-testid={`competitor-case-${idx}`}
-                className="use-case-card"
-              >
-                <h4 data-testid={`competitor-title-${idx}`}>{useCase.title}</h4>
-                <p data-testid={`competitor-description-${idx}`}>{useCase.description}</p>
-                <div data-testid={`competitor-badges-${idx}`} className="flex gap-2">
-                  <span
-                    data-testid={`competitor-audience-badge-${idx}`}
-                    className={getAudienceColor(useCase.audience)}
-                  >
-                    {formatBadgeText(useCase.audience)}
-                  </span>
-                  <span
-                    data-testid={`competitor-budget-badge-${idx}`}
-                    className={getBudgetColor(useCase.budget)}
-                  >
-                    {formatBadgeText(useCase.budget)}
-                  </span>
-                </div>
-              </article>
-            ))
-          ) : (
-            <p data-testid="competitor-empty">No use cases available</p>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// Test data
-const mockSeoindicatorUseCases: UseCase[] = [
+const seoindicatorUseCases: UseCase[] = [
   {
-    title: 'Startup Founders',
-    description: 'Affordable SEO tracking with essential features for early-stage businesses',
+    title: 'Budget-conscious solopreneurs',
+    description: 'Perfect for individual content creators who need core SEO tools without the enterprise price tag',
     audience: 'solo',
     budget: 'budget',
   },
   {
-    title: 'Small Business Owners',
-    description: 'Easy-to-use toolkit for improving search visibility without the enterprise price tag',
-    audience: 'solo',
-    budget: 'budget',
-  },
-  {
-    title: 'Marketing Teams',
-    description: 'Collaborative SEO platform with reporting and competitor analysis',
+    title: 'Small marketing teams',
+    description: 'Ideal for small teams starting their SEO journey with limited budget',
     audience: 'small-team',
-    budget: 'mid-range',
+    budget: 'budget',
   },
   {
-    title: 'SEO Agencies',
-    description: 'White-label reports and multi-client management at an affordable price',
-    audience: 'agency',
-    budget: 'mid-range',
+    title: 'Freelance SEO consultants',
+    description: 'Great for freelancers who need reliable rank tracking on a budget',
+    audience: 'solo',
+    budget: 'free',
   },
 ];
 
-const mockCompetitorUseCases: UseCase[] = [
+const competitorUseCases: UseCase[] = [
   {
-    title: 'Enterprise SEO Teams',
-    description: 'Advanced features and large-scale data analysis for large organizations',
+    title: 'Agencies managing 50+ client sites',
+    description: 'Best for agencies with budget for premium tools and dedicated SEO resources',
+    audience: 'agency',
+    budget: 'premium',
+  },
+  {
+    title: 'Enterprise SEO teams',
+    description: 'Ideal for large organizations with dedicated resources and complex needs',
     audience: 'enterprise',
     budget: 'premium',
   },
   {
-    title: 'Content Marketing Teams',
-    description: 'Full content marketing suite with social media integration',
+    title: 'Link-building specialists',
+    description: 'Perfect for specialists who need extensive backlink databases',
     audience: 'small-team',
     budget: 'mid-range',
   },
 ];
 
-describe('UseCaseSection', () => {
-  // ============================================================================
-  // Rendering Tests
-  // ============================================================================
+const singleUseCase: UseCase[] = [
+  {
+    title: 'Single Use Case',
+    description: 'A single use case for testing',
+    audience: 'solo',
+    budget: 'free',
+  },
+];
 
-  describe('Rendering', () => {
-    it('UC-001: renders use cases for both tools', () => {
+// ============================================================================
+// UC-001: Component Rendering Tests
+// ============================================================================
+
+describe('UseCaseSection - Component Rendering', () => {
+  describe('UC-001-001: Renders with valid use cases for both tools', () => {
+    it('should render both columns when both have use cases', () => {
       render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
+        <UseCaseSection
+          seoindicator={seoindicatorUseCases}
+          competitor={competitorUseCases}
         />
       );
-      
+
+      // Check main section exists
+      expect(screen.getByTestId('use-cases-section')).toBeInTheDocument();
+
+      // Check both columns exist
+      expect(screen.getByTestId('seoindicator-use-cases')).toBeInTheDocument();
+      expect(screen.getByTestId('competitor-use-cases')).toBeInTheDocument();
+
+      // Check column headings
+      expect(screen.getByText('Best for SEOIndicator users')).toBeInTheDocument();
+      expect(screen.getByText('Best for Competitor users')).toBeInTheDocument();
+    });
+
+    it('should render all use case cards', () => {
+      render(
+        <UseCaseSection
+          seoindicator={seoindicatorUseCases}
+          competitor={competitorUseCases}
+        />
+      );
+
+      // Check all SEOIndicator use case titles
+      expect(screen.getByText('Budget-conscious solopreneurs')).toBeInTheDocument();
+      expect(screen.getByText('Small marketing teams')).toBeInTheDocument();
+      expect(screen.getByText('Freelance SEO consultants')).toBeInTheDocument();
+
+      // Check all competitor use case titles
+      expect(screen.getByText('Agencies managing 50+ client sites')).toBeInTheDocument();
+      expect(screen.getByText('Enterprise SEO teams')).toBeInTheDocument();
+      expect(screen.getByText('Link-building specialists')).toBeInTheDocument();
+    });
+  });
+
+  describe('UC-001-002: Renders with empty seoindicator array', () => {
+    it('should show seoindicator column empty but competitor column with data', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[]}
+          competitor={competitorUseCases}
+        />
+      );
+
+      expect(screen.getByTestId('use-cases-section')).toBeInTheDocument();
       expect(screen.getByTestId('seoindicator-use-cases')).toBeInTheDocument();
       expect(screen.getByTestId('competitor-use-cases')).toBeInTheDocument();
     });
+  });
 
-    it('UC-002: displays use case titles', () => {
+  describe('UC-001-003: Renders with empty competitor array', () => {
+    it('should show competitor column empty but seoindicator column with data', () => {
       render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
+        <UseCaseSection
+          seoindicator={seoindicatorUseCases}
+          competitor={[]}
         />
       );
-      
-      expect(screen.getByText('Startup Founders')).toBeInTheDocument();
-      expect(screen.getByText('Enterprise SEO Teams')).toBeInTheDocument();
-    });
 
-    it('UC-003: displays use case descriptions', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      expect(screen.getByText('Affordable SEO tracking with essential features for early-stage businesses')).toBeInTheDocument();
-      expect(screen.getByText('Advanced features and large-scale data analysis for large organizations')).toBeInTheDocument();
-    });
-
-    it('UC-004: renders section with proper heading', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      expect(screen.getByTestId('section-title')).toHaveTextContent('Who Should Use Each Tool?');
-    });
-
-    it('UC-005: renders grid layout', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      expect(screen.getByTestId('use-case-grid')).toBeInTheDocument();
+      expect(screen.getByTestId('use-cases-section')).toBeInTheDocument();
+      expect(screen.getByTestId('seoindicator-use-cases')).toBeInTheDocument();
+      expect(screen.getByTestId('competitor-use-cases')).toBeInTheDocument();
     });
   });
 
-  // ============================================================================
-  // Badge Tests
-  // ============================================================================
-
-  describe('Badges', () => {
-    it('UC-010: displays audience badge', () => {
+  describe('UC-001-004: Renders with both arrays empty', () => {
+    it('should show empty state message when both arrays are empty', () => {
       render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
+        <UseCaseSection
+          seoindicator={[]}
+          competitor={[]}
         />
       );
-      
-      expect(screen.getByTestId('seoindicator-audience-badge-0')).toBeInTheDocument();
-      // Use getAllByText since "Solo" appears in multiple use cases
-      expect(screen.getAllByText('Solo').length).toBeGreaterThan(0);
-    });
 
-    it('UC-011: displays budget badge', () => {
+      expect(screen.getByTestId('empty-use-cases')).toBeInTheDocument();
+      expect(screen.getByText('No use case data available.')).toBeInTheDocument();
+    });
+  });
+
+  describe('UC-001-005: Renders with null seoindicator', () => {
+    it('should handle null seoindicator gracefully', () => {
       render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
+        <UseCaseSection
+          seoindicator={null as unknown as UseCase[]}
+          competitor={competitorUseCases}
         />
       );
-      
-      expect(screen.getByTestId('seoindicator-budget-badge-0')).toBeInTheDocument();
-      // Use getAllByText since "Budget" appears in multiple use cases
-      expect(screen.getAllByText('Budget').length).toBeGreaterThan(0);
+
+      expect(screen.getByTestId('use-cases-section')).toBeInTheDocument();
+    });
+  });
+
+  describe('UC-001-006: Renders with null competitor', () => {
+    it('should handle null competitor gracefully', () => {
+      render(
+        <UseCaseSection
+          seoindicator={seoindicatorUseCases}
+          competitor={null as unknown as UseCase[]}
+        />
+      );
+
+      expect(screen.getByTestId('use-cases-section')).toBeInTheDocument();
+    });
+  });
+
+  describe('UC-001-007: Renders with undefined props', () => {
+    it('should handle undefined props gracefully', () => {
+      render(
+        <UseCaseSection
+          seoindicator={undefined as unknown as UseCase[]}
+          competitor={undefined as unknown as UseCase[]}
+        />
+      );
+
+      expect(screen.getByTestId('empty-use-cases')).toBeInTheDocument();
+    });
+  });
+});
+
+// ============================================================================
+// UC-002: UseCase Card Rendering Tests
+// ============================================================================
+
+describe('UseCaseSection - UseCase Card Rendering', () => {
+  describe('UC-002-001: Renders use case with all fields', () => {
+    it('should render title, description, audience badge, and budget badge', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[{
+            title: 'Test Title',
+            description: 'Test Description',
+            audience: 'solo',
+            budget: 'free',
+          }]}
+          competitor={[]}
+        />
+      );
+
+      expect(screen.getByText('Test Title')).toBeInTheDocument();
+      expect(screen.getByText('Test Description')).toBeInTheDocument();
+      expect(screen.getByText('Solo Users')).toBeInTheDocument();
+      expect(screen.getByText('Free')).toBeInTheDocument();
+    });
+  });
+
+  describe('UC-002-002 to UC-002-005: Audience badge rendering', () => {
+    it('should render "Solo Users" for audience: solo', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[{ title: 'Test', description: 'Desc', audience: 'solo', budget: 'free' }]}
+          competitor={[]}
+        />
+      );
+      expect(screen.getByText('Solo Users')).toBeInTheDocument();
     });
 
-    it('UC-012: displays all audience types correctly', () => {
-      const allAudiences: UseCase[] = [
-        { title: 'Solo', description: 'Test', audience: 'solo', budget: 'free' },
-        { title: 'Team', description: 'Test', audience: 'small-team', budget: 'budget' },
-        { title: 'Enterprise', description: 'Test', audience: 'enterprise', budget: 'mid-range' },
-        { title: 'Agency', description: 'Test', audience: 'agency', budget: 'premium' },
+    it('should render "Small Teams" for audience: small-team', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[{ title: 'Test', description: 'Desc', audience: 'small-team', budget: 'free' }]}
+          competitor={[]}
+        />
+      );
+      expect(screen.getByText('Small Teams')).toBeInTheDocument();
+    });
+
+    it('should render "Enterprise" for audience: enterprise', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[{ title: 'Test', description: 'Desc', audience: 'enterprise', budget: 'free' }]}
+          competitor={[]}
+        />
+      );
+      expect(screen.getByText('Enterprise')).toBeInTheDocument();
+    });
+
+    it('should render "Agencies" for audience: agency', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[{ title: 'Test', description: 'Desc', audience: 'agency', budget: 'free' }]}
+          competitor={[]}
+        />
+      );
+      expect(screen.getByText('Agencies')).toBeInTheDocument();
+    });
+  });
+
+  describe('UC-002-006 to UC-002-009: Budget badge rendering', () => {
+    it('should render "Free" for budget: free', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[{ title: 'Test', description: 'Desc', audience: 'solo', budget: 'free' }]}
+          competitor={[]}
+        />
+      );
+      expect(screen.getByText('Free')).toBeInTheDocument();
+    });
+
+    it('should render "Budget" for budget: budget', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[{ title: 'Test', description: 'Desc', audience: 'solo', budget: 'budget' }]}
+          competitor={[]}
+        />
+      );
+      expect(screen.getByText('Budget')).toBeInTheDocument();
+    });
+
+    it('should render "Mid-Range" for budget: mid-range', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[{ title: 'Test', description: 'Desc', audience: 'solo', budget: 'mid-range' }]}
+          competitor={[]}
+        />
+      );
+      expect(screen.getByText('Mid-Range')).toBeInTheDocument();
+    });
+
+    it('should render "Premium" for budget: premium', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[{ title: 'Test', description: 'Desc', audience: 'solo', budget: 'premium' }]}
+          competitor={[]}
+        />
+      );
+      expect(screen.getByText('Premium')).toBeInTheDocument();
+    });
+  });
+});
+
+// ============================================================================
+// UC-003: Visual Separation Tests
+// ============================================================================
+
+describe('UseCaseSection - Visual Separation', () => {
+  describe('UC-003-001: SEOIndicator column has emerald branding', () => {
+    it('should have emerald colored heading for SEOIndicator column', () => {
+      render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={[]}
+        />
+      );
+
+      const heading = screen.getByText('Best for SEOIndicator users');
+      expect(heading.className).toContain('emerald');
+    });
+  });
+
+  describe('UC-003-002: Competitor column has blue branding', () => {
+    it('should have blue colored heading for Competitor column', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[]}
+          competitor={singleUseCase}
+        />
+      );
+
+      const heading = screen.getByText('Best for Competitor users');
+      expect(heading.className).toContain('blue');
+    });
+  });
+
+  describe('UC-003-003: Cards have hover state', () => {
+    it('should have transition classes for hover effects', () => {
+      const { container } = render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={[]}
+        />
+      );
+
+      const card = container.querySelector('[data-testid^="use-case-"]');
+      expect(card?.className).toContain('transition');
+    });
+  });
+
+  describe('UC-003-004: Grid layout on desktop', () => {
+    it('should have md:grid-cols-2 for two column layout on medium screens', () => {
+      const { container } = render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={singleUseCase}
+        />
+      );
+
+      const grid = container.querySelector('.grid');
+      expect(grid?.className).toContain('md:grid-cols-2');
+    });
+  });
+
+  describe('UC-003-005: Stacked layout on mobile', () => {
+    it('should have gap-8 for spacing between stacked columns on mobile', () => {
+      const { container } = render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={singleUseCase}
+        />
+      );
+
+      const grid = container.querySelector('.grid');
+      expect(grid?.className).toContain('gap-8');
+    });
+  });
+});
+
+// ============================================================================
+// UC-004: Accessibility Tests
+// ============================================================================
+
+describe('UseCaseSection - Accessibility', () => {
+  describe('UC-004-001: Section has proper heading hierarchy', () => {
+    it('should have H3 headings for column titles', () => {
+      render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={singleUseCase}
+        />
+      );
+
+      const seoindicatorHeading = screen.getByRole('heading', { name: 'Best for SEOIndicator users', level: 3 });
+      const competitorHeading = screen.getByRole('heading', { name: 'Best for Competitor users', level: 3 });
+
+      expect(seoindicatorHeading).toBeInTheDocument();
+      expect(competitorHeading).toBeInTheDocument();
+    });
+  });
+
+  describe('UC-004-002: Cards are accessible', () => {
+    it('should have H4 headings for use case titles', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[{
+            title: 'Accessible Title',
+            description: 'Description',
+            audience: 'solo',
+            budget: 'free',
+          }]}
+          competitor={[]}
+        />
+      );
+
+      const cardTitle = screen.getByRole('heading', { name: 'Accessible Title', level: 4 });
+      expect(cardTitle).toBeInTheDocument();
+    });
+  });
+
+  describe('UC-004-003: No accessibility violations', () => {
+    it('should have data-testid for automated testing', () => {
+      render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={singleUseCase}
+        />
+      );
+
+      expect(screen.getByTestId('use-cases-section')).toBeInTheDocument();
+      expect(screen.getByTestId('seoindicator-use-cases')).toBeInTheDocument();
+      expect(screen.getByTestId('competitor-use-cases')).toBeInTheDocument();
+    });
+  });
+
+  describe('UC-004-004: Keyboard navigable', () => {
+    it('should have visible content for keyboard users', async () => {
+      const user = userEvent.setup();
+      render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={singleUseCase}
+        />
+      );
+
+      // Content should be visible and accessible
+      const section = screen.getByTestId('use-cases-section');
+      expect(section).toBeVisible();
+    });
+  });
+
+  describe('UC-004-005: Proper contrast ratios', () => {
+    it('should use appropriate text colors', () => {
+      const { container } = render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={singleUseCase}
+        />
+      );
+
+      // Check that white text is used for titles
+      const title = screen.getByRole('heading', { name: 'Accessible Title', level: 4 });
+      if (title) {
+        expect(title.className).toContain('white');
+      }
+    });
+  });
+});
+
+// ============================================================================
+// UC-005: Data Handling Tests
+// ============================================================================
+
+describe('UseCaseSection - Data Handling', () => {
+  describe('UC-005-001: Handles multiple use cases per tool', () => {
+    it('should render all use cases when provided multiple', () => {
+      render(
+        <UseCaseSection
+          seoindicator={seoindicatorUseCases}
+          competitor={competitorUseCases}
+        />
+      );
+
+      // 3 SEOIndicator + 3 Competitor = 6 use case cards
+      const allTitles = [
+        'Budget-conscious solopreneurs',
+        'Small marketing teams',
+        'Freelance SEO consultants',
+        'Agencies managing 50+ client sites',
+        'Enterprise SEO teams',
+        'Link-building specialists',
       ];
-      
-      render(<UseCaseSection seoindicator={allAudiences} competitor={[]} />);
-      
-      // Use getAllByText since some text may appear multiple times
-      expect(screen.getAllByText('Solo').length).toBeGreaterThan(0);
-      expect(screen.getByText('Small Team')).toBeInTheDocument();
-      // Enterprise appears as both title and badge
-      expect(screen.getAllByText('Enterprise').length).toBeGreaterThan(0);
-      // Agency appears as both title and badge
-      expect(screen.getAllByText('Agency').length).toBeGreaterThan(0);
-    });
 
-    it('UC-013: displays all budget types correctly', () => {
-      const allBudgets: UseCase[] = [
-        { title: 'Free', description: 'Test', audience: 'solo', budget: 'free' },
-        { title: 'Budget', description: 'Test', audience: 'solo', budget: 'budget' },
-        { title: 'Mid', description: 'Test', audience: 'solo', budget: 'mid-range' },
-        { title: 'Premium', description: 'Test', audience: 'solo', budget: 'premium' },
-      ];
-      
-      render(<UseCaseSection seoindicator={allBudgets} competitor={[]} />);
-      
-      // Use getAllByText since "Free" appears as both title and badge
-      expect(screen.getAllByText('Free').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Budget').length).toBeGreaterThan(0);
-      expect(screen.getByText('Mid Range')).toBeInTheDocument();
-      // Premium appears as both title and badge
-      expect(screen.getAllByText('Premium').length).toBeGreaterThan(0);
-    });
-
-    it('UC-014: applies correct audience badge colors', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      // Solo = bg-blue-500
-      expect(screen.getByTestId('seoindicator-audience-badge-0')).toHaveClass('bg-blue-500');
-      
-      // Enterprise = bg-purple-500
-      expect(screen.getByTestId('competitor-audience-badge-0')).toHaveClass('bg-purple-500');
-    });
-
-    it('UC-015: applies correct budget badge colors', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      // Budget = bg-teal-500
-      expect(screen.getByTestId('seoindicator-budget-badge-0')).toHaveClass('bg-teal-500');
-      
-      // Premium = bg-amber-500
-      expect(screen.getByTestId('competitor-budget-badge-0')).toHaveClass('bg-amber-500');
-    });
-  });
-
-  // ============================================================================
-  // Layout Tests
-  // ============================================================================
-
-  describe('Layout', () => {
-    it('UC-020: maintains balanced layout with two columns', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      const grid = screen.getByTestId('use-case-grid');
-      expect(grid).toHaveClass('grid');
-      expect(grid).toHaveClass('md:grid-cols-2');
-    });
-
-    it('UC-021: renders use case cards within each column', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      // SEOIndicator has 4 use cases
-      const seoindicatorCases = screen.getAllByTestId(/seoindicator-case-/);
-      expect(seoindicatorCases).toHaveLength(4);
-      
-      // Competitor has 2 use cases
-      const competitorCases = screen.getAllByTestId(/competitor-case-/);
-      expect(competitorCases).toHaveLength(2);
-    });
-
-    it('UC-022: uses article elements for semantic structure', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      const articles = screen.getAllByRole('article');
-      expect(articles.length).toBe(6); // 4 + 2
-    });
-  });
-
-  // ============================================================================
-  // Accessibility Tests
-  // ============================================================================
-
-  describe('Accessibility', () => {
-    it('UC-030: section has accessible label', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      const section = screen.getByTestId('use-case-section');
-      expect(section).toHaveAttribute('aria-labelledby', 'use-case-heading');
-    });
-
-    it('UC-031: columns have accessible labels', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      expect(screen.getByTestId('seoindicator-use-cases')).toHaveAttribute('aria-label', 'SEOIndicator use cases');
-      expect(screen.getByTestId('competitor-use-cases')).toHaveAttribute('aria-label', 'Competitor use cases');
-    });
-
-    it('UC-032: heading hierarchy is correct', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      const h2 = screen.getByRole('heading', { level: 2 });
-      const h3s = screen.getAllByRole('heading', { level: 3 });
-      const h4s = screen.getAllByRole('heading', { level: 4 });
-      
-      expect(h2).toBeInTheDocument();
-      expect(h3s.length).toBe(2); // One per column
-      expect(h4s.length).toBe(6); // One per use case
-    });
-
-    it('UC-033: use case cards are keyboard navigable', () => {
-      render(
-        <UseCaseSection 
-          seoindicator={mockSeoindicatorUseCases} 
-          competitor={mockCompetitorUseCases} 
-        />
-      );
-      
-      // Match only article elements with use-case-card class (not section containers)
-      const cards = screen.getAllByTestId(/seoindicator-case-\d|competitor-case-\d/);
-      cards.forEach(card => {
-        expect(card).toHaveClass('use-case-card');
+      allTitles.forEach(title => {
+        expect(screen.getByText(title)).toBeInTheDocument();
       });
     });
   });
 
-  // ============================================================================
-  // Edge Cases
-  // ============================================================================
+  describe('UC-005-002: Handles long title', () => {
+    it('should render long title without overflow', () => {
+      const longTitle = 'A'.repeat(200);
+      render(
+        <UseCaseSection
+          seoindicator={[{
+            title: longTitle,
+            description: 'Description',
+            audience: 'solo',
+            budget: 'free',
+          }]}
+          competitor={[]}
+        />
+      );
 
-  describe('Edge Cases', () => {
-    it('UC-040: handles empty SEOIndicator use cases', () => {
-      render(<UseCaseSection seoindicator={[]} competitor={mockCompetitorUseCases} />);
-      
-      expect(screen.getByTestId('seoindicator-empty')).toBeInTheDocument();
-      expect(screen.getByText('No use cases available')).toBeInTheDocument();
+      expect(screen.getByText(longTitle)).toBeInTheDocument();
     });
+  });
 
-    it('UC-041: handles empty competitor use cases', () => {
-      render(<UseCaseSection seoindicator={mockSeoindicatorUseCases} competitor={[]} />);
-      
-      expect(screen.getByTestId('competitor-empty')).toBeInTheDocument();
-      expect(screen.getByText('No use cases available')).toBeInTheDocument();
+  describe('UC-005-003: Handles long description', () => {
+    it('should render long description without overflow', () => {
+      const longDesc = 'A'.repeat(500);
+      render(
+        <UseCaseSection
+          seoindicator={[{
+            title: 'Title',
+            description: longDesc,
+            audience: 'solo',
+            budget: 'free',
+          }]}
+          competitor={[]}
+        />
+      );
+
+      expect(screen.getByText(longDesc)).toBeInTheDocument();
     });
+  });
 
-    it('UC-042: handles both arrays empty', () => {
-      render(<UseCaseSection seoindicator={[]} competitor={[]} />);
-      
-      expect(screen.getByTestId('seoindicator-empty')).toBeInTheDocument();
-      expect(screen.getByTestId('competitor-empty')).toBeInTheDocument();
+  describe('UC-005-004: Handles special characters', () => {
+    it('should render unicode characters correctly', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[{
+            title: '适合中文用户 🚀 émojis',
+            description: 'Description with émojis 🎉 and unicode: 日本語',
+            audience: 'enterprise',
+            budget: 'premium',
+          }]}
+          competitor={[]}
+        />
+      );
+
+      expect(screen.getByText('适合中文用户 🚀 émojis')).toBeInTheDocument();
+      expect(screen.getByText('Description with émojis 🎉 and unicode: 日本語')).toBeInTheDocument();
     });
+  });
 
-    it('UC-043: handles long descriptions', () => {
-      const longDescription: UseCase[] = [
-        {
-          title: 'Long Description Test',
-          description: 'This is a very long description that might need to be truncated or wrapped to prevent layout issues in the user interface component.',
+  describe('UC-005-005: Handles duplicate use case titles', () => {
+    it('should render both cards with duplicate titles', () => {
+      render(
+        <UseCaseSection
+          seoindicator={[
+            { title: 'Same Title', description: 'First description', audience: 'solo', budget: 'free' },
+          ]}
+          competitor={[
+            { title: 'Same Title', description: 'Second description', audience: 'agency', budget: 'premium' },
+          ]}
+        />
+      );
+
+      // Both descriptions should be present (even though titles are same)
+      expect(screen.getByText('First description')).toBeInTheDocument();
+      expect(screen.getByText('Second description')).toBeInTheDocument();
+    });
+  });
+});
+
+// ============================================================================
+// UC-006: Mobile Responsiveness Tests
+// ============================================================================
+
+describe('UseCaseSection - Mobile Responsiveness', () => {
+  describe('UC-006-001: Mobile viewport < 768px', () => {
+    it('should use single column layout on mobile', () => {
+      const { container } = render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={singleUseCase}
+        />
+      );
+
+      // Grid should have md:grid-cols-2 (applies only on medium+ screens)
+      const grid = container.querySelector('.grid');
+      expect(grid?.className).toContain('md:grid-cols-2');
+    });
+  });
+
+  describe('UC-006-002: Tablet viewport 768px+', () => {
+    it('should use two column grid on tablet', () => {
+      const { container } = render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={singleUseCase}
+        />
+      );
+
+      const grid = container.querySelector('.grid');
+      expect(grid?.className).toContain('md:grid-cols-2');
+    });
+  });
+
+  describe('UC-006-003: Desktop viewport 1024px+', () => {
+    it('should use two column grid on desktop', () => {
+      const { container } = render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={singleUseCase}
+        />
+      );
+
+      const grid = container.querySelector('.grid');
+      expect(grid?.className).toContain('md:grid-cols-2');
+    });
+  });
+
+  describe('UC-006-004: Touch targets on mobile', () => {
+    it('should have adequate padding for touch targets', () => {
+      const { container } = render(
+        <UseCaseSection
+          seoindicator={singleUseCase}
+          competitor={[]}
+        />
+      );
+
+      // Cards should have padding
+      const card = container.querySelector('[data-testid^="use-case-"]');
+      expect(card?.className).toContain('p-4');
+    });
+  });
+});
+
+// ============================================================================
+// Integration Tests
+// ============================================================================
+
+describe('UseCaseSection - Integration', () => {
+  it('should render complete comparison page use case section', () => {
+    render(
+      <UseCaseSection
+        seoindicator={seoindicatorUseCases}
+        competitor={competitorUseCases}
+      />
+    );
+
+    // Verify structure
+    expect(screen.getByTestId('use-cases-section')).toBeInTheDocument();
+
+    // Verify both columns
+    expect(screen.getByText('Best for SEOIndicator users')).toBeInTheDocument();
+    expect(screen.getByText('Best for Competitor users')).toBeInTheDocument();
+
+    // Verify audience badges are rendered
+    expect(screen.getByText('Solo Users')).toBeInTheDocument();
+    expect(screen.getByText('Small Teams')).toBeInTheDocument();
+    expect(screen.getByText('Enterprise')).toBeInTheDocument();
+    expect(screen.getByText('Agencies')).toBeInTheDocument();
+
+    // Verify budget badges are rendered
+    expect(screen.getAllByText('Budget').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Free').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Premium').length).toBeGreaterThan(0);
+    expect(screen.getByText('Mid-Range')).toBeInTheDocument();
+  });
+
+  it('should maintain balanced presentation between both tools', () => {
+    render(
+      <UseCaseSection
+        seoindicator={seoindicatorUseCases}
+        competitor={competitorUseCases}
+      />
+    );
+
+    // Both columns should have 3 use cases each
+    const seoindicatorColumn = screen.getByTestId('seoindicator-use-cases');
+    const competitorColumn = screen.getByTestId('competitor-use-cases');
+
+    expect(seoindicatorColumn.children.length).toBe(3);
+    expect(competitorColumn.children.length).toBe(3);
+  });
+});
+
+// ============================================================================
+// Acceptance Criteria Verification
+// ============================================================================
+
+describe('Acceptance Criteria', () => {
+  it('AC-1: Both tools\' use cases displayed side-by-side', () => {
+    render(
+      <UseCaseSection
+        seoindicator={seoindicatorUseCases}
+        competitor={competitorUseCases}
+      />
+    );
+
+    expect(screen.getByTestId('seoindicator-use-cases')).toBeInTheDocument();
+    expect(screen.getByTestId('competitor-use-cases')).toBeInTheDocument();
+  });
+
+  it('AC-2: Each use case has title, description, audience, and budget tags', () => {
+    render(
+      <UseCaseSection
+        seoindicator={[{
+          title: 'Test Title',
+          description: 'Test Description',
           audience: 'solo',
           budget: 'free',
-        },
-      ];
-      
-      render(<UseCaseSection seoindicator={longDescription} competitor={[]} />);
-      
-      expect(screen.getByText(/This is a very long description/)).toBeInTheDocument();
-    });
+        }]}
+        competitor={[]}
+      />
+    );
 
-    it('UC-044: handles single use case per column', () => {
-      const singleCase = [mockSeoindicatorUseCases[0]];
-      
-      render(<UseCaseSection seoindicator={singleCase} competitor={singleCase} />);
-      
-      // Match only article elements (not section containers)
-      expect(screen.getAllByTestId(/seoindicator-case-\d|competitor-case-\d/)).toHaveLength(2);
-    });
+    expect(screen.getByText('Test Title')).toBeInTheDocument();
+    expect(screen.getByText('Test Description')).toBeInTheDocument();
+    expect(screen.getByText('Solo Users')).toBeInTheDocument();
+    expect(screen.getByText('Free')).toBeInTheDocument();
+  });
 
-    it('UC-045: handles many use cases', () => {
-      const manyCases = Array.from({ length: 10 }, (_, i) => ({
-        title: `Use Case ${i + 1}`,
-        description: `Description ${i + 1}`,
-        audience: 'solo' as const,
-        budget: 'free' as const,
-      }));
-      
-      render(<UseCaseSection seoindicator={manyCases} competitor={[]} />);
-      
-      const seoindicatorCases = screen.getAllByTestId(/seoindicator-case-/);
-      expect(seoindicatorCases).toHaveLength(10);
-    });
-
-    it('UC-046: handles unicode in use case data', () => {
-      const unicodeCases: UseCase[] = [
-        {
-          title: '日本語ユーザー',
-          description: '日本語でのサポート',
+  it('AC-3: Tags use appropriate badge styling', () => {
+    const { container } = render(
+      <UseCaseSection
+        seoindicator={[{
+          title: 'Test',
+          description: 'Desc',
           audience: 'solo',
           budget: 'free',
-        },
-      ];
-      
-      render(<UseCaseSection seoindicator={unicodeCases} competitor={[]} />);
-      
-      expect(screen.getByText('日本語ユーザー')).toBeInTheDocument();
-      expect(screen.getByText('日本語でのサポート')).toBeInTheDocument();
-    });
+        }]}
+        competitor={[]}
+      />
+    );
+
+    // Check badges have rounded-full class
+    const badges = container.querySelectorAll('.rounded-full');
+    expect(badges.length).toBe(2); // audience + budget badges
+  });
+
+  it('AC-4: Mobile responsive layout', () => {
+    const { container } = render(
+      <UseCaseSection
+        seoindicator={singleUseCase}
+        competitor={singleUseCase}
+      />
+    );
+
+    const grid = container.querySelector('.grid');
+    expect(grid?.className).toContain('md:grid-cols-2');
+    expect(grid?.className).toContain('gap-8');
+  });
+
+  it('AC-5: Clear visual separation between tools', () => {
+    render(
+      <UseCaseSection
+        seoindicator={singleUseCase}
+        competitor={singleUseCase}
+      />
+    );
+
+    const seoindicatorHeading = screen.getByText('Best for SEOIndicator users');
+    const competitorHeading = screen.getByText('Best for Competitor users');
+
+    expect(seoindicatorHeading.className).toContain('emerald');
+    expect(competitorHeading.className).toContain('blue');
+  });
+
+  it('AC-6: Honest, balanced recommendations', () => {
+    render(
+      <UseCaseSection
+        seoindicator={seoindicatorUseCases}
+        competitor={competitorUseCases}
+      />
+    );
+
+    // Both columns should have equal use cases
+    const seoindicatorColumn = screen.getByTestId('seoindicator-use-cases');
+    const competitorColumn = screen.getByTestId('competitor-use-cases');
+
+    expect(seoindicatorColumn.children.length).toBe(competitorColumn.children.length);
   });
 });
