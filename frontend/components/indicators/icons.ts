@@ -29,6 +29,24 @@ import {
 } from 'lucide-react';
 
 // ============================================================================
+// Type Exports
+// ============================================================================
+
+/**
+ * Type representing valid indicator icon names.
+ * This is the canonical list of all indicator types that have icons.
+ */
+export type IndicatorIconName =
+  | 'keyword-rankings'
+  | 'visibility-score'
+  | 'competitor-analysis'
+  | 'technical-health'
+  | 'backlink-profile'
+  | 'content-opportunities'
+  | 'serp-features'
+  | 'page-speed';
+
+// ============================================================================
 // Indicator Icon Registry
 // ============================================================================
 
@@ -44,8 +62,10 @@ import {
  * - content-opportunities → FileText: Content/documents
  * - serp-features → Star: Featured/highlighted
  * - page-speed → Zap: Performance/fast
+ *
+ * The registry is frozen to prevent runtime mutations.
  */
-export const INDICATOR_ICONS = {
+export const INDICATOR_ICONS: Readonly<Record<IndicatorIconName, typeof TrendingUp>> = Object.freeze({
   'keyword-rankings': TrendingUp,
   'visibility-score': Eye,
   'competitor-analysis': Users,
@@ -54,17 +74,7 @@ export const INDICATOR_ICONS = {
   'content-opportunities': FileText,
   'serp-features': Star,
   'page-speed': Zap,
-} as const;
-
-// ============================================================================
-// Type Exports
-// ============================================================================
-
-/**
- * Type representing valid indicator icon names.
- * Derived from INDICATOR_ICONS registry keys for type safety.
- */
-export type IndicatorIconName = keyof typeof INDICATOR_ICONS;
+});
 
 /**
  * Array of all valid indicator icon names.
