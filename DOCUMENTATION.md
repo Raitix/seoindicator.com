@@ -31437,8 +31437,270 @@ All skeleton components use the `animate-pulse` Tailwind CSS class for consisten
 
 ### Related Tasks
 - TASK-28-10: IndicatorCatalog (uses IndicatorCatalogSkeleton)
-- TASK-28-11: Progress Indicators
-- TASK-28-12: Loading State Integration
+- TASK-28-11: Loading State Integration
+
+---
+## Loading State Integration (TASK-28-11)
+
+### Component Description
+Comprehensive loading state system integrating skeleton loaders, progress indicators, and optimistic update patterns throughout the application. Provides unified loading UX with error boundaries, empty states, and retry functionality. Part of the Modern UI/UX + Indicator Catalog feature (FEAT-028).
+
+### Component Locations
+- **useLoadingState Hook:** `frontend/lib/hooks/useLoadingState.ts`
+- **useOptimisticUpdate Hook:** `frontend/lib/hooks/useOptimisticUpdate.ts`
+- **Hooks Index:** `frontend/lib/hooks/index.ts`
+- **LoadingContext:** `frontend/lib/contexts/LoadingContext.tsx`
+- **ErrorBoundary:** `frontend/components/ui/ErrorBoundary.tsx`
+- **EmptyState:** `frontend/components/ui/EmptyState.tsx`
+- **LoadingWrapper:** `frontend/components/ui/LoadingWrapper.tsx`
+- **ButtonLoading:** `frontend/components/ui/ButtonLoading.tsx`
+- **Tests:** `frontend/__tests__/integration/loading-state-integration.test.tsx` (54 tests)
+- **Tests:** `frontend/__tests__/integration/loading-state-actual-components.test.tsx` (44 tests)
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-28-11.md`
+
+### Core Functionalities
+
+| Component | Purpose |
+|-----------|---------|
+| `useLoadingState` | Hook for managing loading state with retry logic |
+| `useOptimisticUpdate` | Hook for optimistic updates with rollback |
+| `LoadingContext` | Context provider for global loading state |
+| `ErrorBoundary` | Error catching with retry functionality |
+| `EmptyState` | Helpful messaging when no data available |
+| `LoadingWrapper` | Unified loading/error/empty state wrapper |
+| `ButtonLoading` | Button with CircularProgress integration |
+
+### useLoadingState Hook
+
+**Interface:**
+```typescript
+interface UseLoadingStateOptions {
+  initialLoading?: boolean;
+  maxRetries?: number;
+}
+
+interface UseLoadingStateReturn {
+  isLoading: boolean;
+  error: Error | null;
+  retryCount: number;
+  setLoading: (loading: boolean) => void;
+  setError: (error: Error | null) => void;
+  retry: () => void;
+  reset: () => void;
+}
+```
+
+**Features:**
+- Configurable initial loading state
+- Maximum retry count tracking
+- Error state management
+- Reset functionality for clean state
+
+### useOptimisticUpdate Hook
+
+**Interface:**
+```typescript
+interface UseOptimisticUpdateOptions<T> {
+  data: T;
+  onUpdate: (newData: T) => Promise<void>;
+}
+
+interface UseOptimisticUpdateReturn<T> {
+  optimisticData: T;
+  isPending: boolean;
+  update: (newData: T) => Promise<void>;
+  rollback: () => void;
+}
+```
+
+**Features:**
+- Shows expected result before API response
+- Automatic rollback on API failure
+- Confirms state on API success
+- Tracks pending state during operation
+
+### ErrorBoundary Component
+
+**Props:**
+```typescript
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+  onRetry?: () => void;
+  maxRetries?: number;
+}
+```
+
+**Features:**
+- Class component for error catching (React requirement)
+- Retry functionality with count tracking
+- Custom fallback support
+- ARIA-compliant error display
+
+**Error Display:**
+- Clear error message with icon
+- Retry button with attempt count
+- Graceful degradation UI
+
+### EmptyState Component
+
+**Props:**
+```typescript
+interface EmptyStateProps {
+  type?: 'keywords' | 'competitors' | 'reports' | 'analyses' | 'projects' | 'default';
+  title?: string;
+  description?: string;
+  icon?: React.ReactNode;
+  ctaText?: string;
+  onCtaClick?: () => void;
+  className?: string;
+}
+```
+
+**Pre-defined Types:**
+| Type | Title | Description | CTA |
+|------|-------|-------------|-----|
+| `keywords` | No keywords yet | Start tracking your first keyword | Add Keyword |
+| `competitors` | No competitors configured | Add competitors to track | Add Competitor |
+| `reports` | No reports generated | Create your first report | Create Report |
+| `analyses` | No analyses yet | Run your first SEO analysis | Start Analysis |
+| `projects` | No projects created | Create your first project | Create Project |
+| `default` | No data available | Get started by adding items | Get Started |
+
+### LoadingWrapper Component
+
+**Props:**
+```typescript
+interface LoadingWrapperProps {
+  isLoading: boolean;
+  error?: Error | null;
+  isEmpty?: boolean;
+  onRetry?: () => void;
+  skeleton?: React.ReactNode;
+  emptyState?: EmptyStateProps;
+  children: React.ReactNode;
+  showLinearProgress?: boolean;
+  progress?: number;
+  className?: string;
+}
+```
+
+**Features:**
+- Unified loading state wrapper
+- Shows skeleton during loading
+- Shows error with retry option
+- Shows empty state when no data
+- Optional LinearProgress integration
+- Determinate progress support (0-100)
+
+### ButtonLoading Component
+
+**Props:**
+```typescript
+interface ButtonLoadingProps {
+  children: React.ReactNode;
+  isLoading?: boolean;
+  loadingText?: string;
+  progress?: number;
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  disabled?: boolean;
+  onClick?: () => void;
+  className?: string;
+}
+```
+
+**Features:**
+- CircularProgress integration for buttons
+- Loading text support (replaces children during loading)
+- Determinate progress support (0-100)
+- Multiple variants and sizes
+- Automatic disable during loading
+
+### Loading UX Patterns
+
+| Pattern | Implementation | Use Case |
+|---------|---------------|----------|
+| **Optimistic Updates** | useOptimisticUpdate hook | Keyword status changes, project updates |
+| **Progressive Loading** | LoadingWrapper with skeleton | Page-level data loading |
+| **Error Boundaries** | ErrorBoundary component | Component-level error catching |
+| **Empty States** | EmptyState component | No data scenarios |
+| **Button Loading** | ButtonLoading component | Form submissions, API actions |
+| **Page Loading** | LoadingWrapper + LinearProgress | Route transitions |
+
+### Integration Points
+
+| Page | Components Used | Purpose |
+|------|-----------------|---------|
+| Homepage | IndicatorCatalogSkeleton, LoadingWrapper | Indicator catalog loading |
+| Dashboard | TableSkeleton, ChartSkeleton, LoadingWrapper | Data table/chart loading |
+| Tool Analysis | ButtonLoading, CircularProgress | Analysis button loading |
+| Settings | LoadingWrapper, LinearProgress | Settings page loading |
+
+### Accessibility Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| ARIA Busy State | `aria-busy="true"` on loading containers |
+| ARIA Labels | Descriptive labels for screen readers |
+| Error Announcements | `role="alert"` on error messages |
+| Retry Button | Accessible label with attempt count |
+| Reduced Motion | Respects `prefers-reduced-motion` |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| No Stack Traces | Error messages sanitized before display |
+| No Sensitive Data | Loading states expose no user data |
+| XSS Prevention | All content properly escaped |
+| Error Boundaries | Catch and handle component errors gracefully |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `loading-state-integration.test.tsx` | 54 | 54+ |
+| `loading-state-actual-components.test.tsx` | 44 | 44+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Homepage Loading | 6 | Skeleton, progress, error states |
+| Dashboard Loading | 7 | Table/chart skeletons, empty states |
+| Tool Analysis Loading | 7 | Button loading, progressive loading |
+| Settings Loading | 2 | Linear progress, form loading |
+| Optimistic Updates | 6 | Update, rollback, confirm, disable |
+| Error Boundaries | 6 | Display, retry, max attempts |
+| Accessibility | 6 | ARIA attributes, reduced motion |
+| Integration | 3 | Full loading flows |
+| TypeScript Types | 4 | Interface validation |
+| Acceptance Criteria | 7 | All ACs verified |
+
+### Acceptance Criteria Status
+
+- [x] Skeleton loaders shown during data fetch
+- [x] Linear progress for page-level loading
+- [x] Circular progress for button loading states
+- [x] Optimistic updates where appropriate
+- [x] Error boundaries with retry option
+- [x] Empty states with helpful messaging
+- [x] Loading UX patterns documented
+
+### Production Status
+- **Deployed:** 2026-03-06 (GitHub Actions)
+- **Commit:** `1fff77bf`
+- **Health Check:** Passing (`https://seoindicator.com/api/health` -> 200 OK)
+- **Tests:** 98/98 passing (100% pass rate)
+- **Status:** Complete
+
+### Dependencies
+- TASK-28-9 (Skeleton Loader Variants) - uses CardSkeleton, TableSkeleton, ChartSkeleton
+- TASK-28-10 (Progress Indicators) - uses LinearProgress, CircularProgress
+
+### Related Tasks
+- TASK-28-9: Skeleton Loader Variants (prerequisite)
+- TASK-28-10: Progress Indicators (prerequisite)
 
 ---
 ## Terms & Privacy Page (TASK-30-1)

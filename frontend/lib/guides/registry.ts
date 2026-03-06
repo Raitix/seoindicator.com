@@ -2606,6 +2606,383 @@ Regular testing—ideally after any design or content change—keeps your site m
     relatedGuides: ['page-speed', 'https-security'],
   },
   {
+    slug: 'backlinks',
+    title: 'Backlinks Guide',
+    summary: 'Learn how to build quality backlinks that boost your search rankings and domain authority through ethical link building strategies.',
+    category: 'technical',
+    icon: '🔗',
+    readTime: 6,
+    sections: [
+      {
+        title: 'What are Backlinks?',
+        content: `**Backlinks** (also called inbound links or incoming links) are links from one website to another. When an external website links to your site, that link is considered a backlink. Search engines like Google view backlinks as votes of confidence—each link signals that another site finds your content valuable enough to reference.
+
+Backlinks are one of the most important ranking factors in SEO. Google's original algorithm, PageRank, was built on the principle that pages with more backlinks tend to be more important and authoritative. While algorithms have evolved significantly, backlinks remain a core signal of trust and authority.
+
+### How Backlinks Work
+
+When Website A links to Website B, several things happen:
+
+1. **Referral traffic** — Users can click the link to visit your site
+2. **Crawl discovery** — Search engine bots follow the link to discover your content
+3. **Authority transfer** — Some of the linking page's authority passes to your page
+4. **Trust signal** — Search engines interpret the link as an endorsement
+
+### Backlinks vs Internal Links
+
+**Backlinks** (external links) come from other websites and are votes of confidence from third parties.
+
+**Internal links** connect pages within your own website, helping users navigate and distributing page authority.
+
+Both are important for SEO, but backlinks from high-quality external sites carry more weight because they represent independent endorsements.
+
+### The Quality Over Quantity Principle
+
+Not all backlinks are created equal. One high-quality backlink from an authoritative, relevant website can be worth more than hundreds of low-quality links. Modern SEO focuses on earning quality links rather than accumulating quantity.
+
+**Key quality factors:**
+- **Domain authority** of the linking site
+- **Relevance** to your niche or industry
+- **Editorial context** (naturally placed vs. paid/spammy)
+- **Anchor text** used in the link
+- **Link position** on the page`,
+        codeExamples: [],
+      },
+      {
+        title: 'Types of Backlinks',
+        content: `Understanding the different types of backlinks helps you evaluate link quality and build a diverse, natural link profile.
+
+### Dofollow vs Nofollow Links
+
+**Dofollow links** pass link equity (authority) to the linked page. These are the default link type and the most valuable for SEO. When a site links to you without adding any special attributes, it's a dofollow link.
+
+**Nofollow links** include the \`rel="nofollow"\` attribute, telling search engines not to pass authority. These links can still drive traffic but don't directly contribute to rankings. Common sources of nofollow links include:
+
+- User-generated content (forums, comments)
+- Social media platforms
+- Press releases
+- Paid advertisements
+- Wikipedia and similar user-edited sites
+
+**Pro tip:** A natural link profile includes both dofollow and nofollow links. An entirely dofollow profile looks suspicious to search engines.
+
+### Editorial vs Acquired Links
+
+**Editorial links** are naturally earned because your content is valuable. A blogger links to your guide because it helps their readers. These are the highest-quality links.
+
+**Acquired links** are actively sought through outreach, partnerships, or link building campaigns. When done ethically (not paid or manipulative), these can be valuable.
+
+### High-Quality vs Low-Quality Backlinks
+
+**High-quality backlinks** come from:
+- Authoritative domains (high Domain Authority, trusted sites)
+- Relevant websites in your niche
+- Pages with strong content and traffic
+- Natural editorial placement
+
+**Low-quality backlinks** come from:
+- Spammy directories or link farms
+- Irrelevant websites
+- Pages with little content or many outbound links
+- Paid link schemes or Private Blog Networks (PBNs)
+
+### Link Context and Placement
+
+Where a link appears on a page affects its value:
+
+- **Editorial content** — Links within relevant articles carry the most weight
+- **Navigation or footer** — Often discounted by search engines
+- **Author bio** — Moderate value, common for guest posts
+- **Sidebar** — Often overlooked, less editorial value`,
+        codeExamples: [
+          {
+            language: 'html',
+            code: `<!-- Dofollow link (default) -->
+<a href="https://yoursite.com/page">Your Keyword</a>
+
+<!-- Nofollow link (doesn't pass authority) -->
+<a href="https://yoursite.com/page" rel="nofollow">Your Keyword</a>
+
+<!-- Sponsored link (paid/affiliate) -->
+<a href="https://yoursite.com/page" rel="sponsored">Sponsored Link</a>
+
+<!-- UGC link (user-generated content) -->
+<a href="https://yoursite.com/page" rel="ugc">User Comment Link</a>`,
+            description: 'Different link types: dofollow, nofollow, sponsored, and user-generated content',
+          },
+        ],
+      },
+      {
+        title: 'Why Backlinks Matter for SEO',
+        content: `Backlinks remain one of the strongest ranking factors in Google's algorithm. Understanding their impact helps you prioritize link building as part of your SEO strategy.
+
+### Search Engine Ranking Signal
+
+Google has confirmed that backlinks are among the top three ranking factors, alongside content and RankBrain. Pages with more high-quality backlinks tend to rank higher in search results for relevant queries.
+
+**Why backlinks matter to search engines:**
+- They signal trust and authority
+- They help discover new content through crawling
+- They indicate content value through external validation
+- They contribute to topical relevance
+
+### Domain Authority and Trust
+
+Backlinks contribute to your site's overall **domain authority**—a measure of how likely your site is to rank in search results. Sites with strong backlink profiles from authoritative sources tend to perform better across all their pages.
+
+**Domain trust signals:**
+- Quality and diversity of linking domains
+- Relevance of linking sites to your niche
+- Natural growth pattern over time
+- Absence of spammy or manipulative links
+
+### Referring Domains vs Total Backlinks
+
+**Referring domains** (unique websites linking to you) matter more than total backlink count. One link from each of 100 different domains is typically more valuable than 100 links from a single domain.
+
+**Key metrics to track:**
+- Number of referring domains
+- Quality of referring domains
+- Anchor text distribution
+- Ratio of dofollow to nofollow links
+
+### Referral Traffic Benefits
+
+Beyond SEO, backlinks drive direct referral traffic. When users click a link from a relevant, high-traffic website, you gain potential customers who are already interested in your niche.
+
+**Traffic benefits:**
+- Highly targeted visitors from relevant sites
+- Potential for conversions from interested audiences
+- Brand exposure to new audiences
+- Diversified traffic sources beyond search`,
+        codeExamples: [],
+      },
+      {
+        title: 'Backlink Quality Signals',
+        content: `Not all backlinks help your SEO. Learning to evaluate link quality helps you focus on earning links that actually improve your rankings.
+
+### Domain Trust and Authority
+
+The most important quality signal is the authority of the linking domain. Links from trusted, established websites pass more value than links from new or unknown sites.
+
+**Authority indicators:**
+- **Domain Authority (DA)** — Moz metric predicting ranking potential
+- **Domain Rating (DR)** — Ahrefs metric based on backlink profile
+- **Trust Flow** — Majestic metric measuring trustworthiness
+- **Organic traffic** — Real traffic indicates real authority
+
+### Relevance and Context
+
+A link from a relevant website in your niche carries more weight than a random link from an unrelated site. Search engines evaluate topical relevance when assessing link value.
+
+**Relevance factors:**
+- Industry or niche alignment
+- Content topic overlap
+- Audience similarity
+- Geographic relevance (for local SEO)
+
+### Anchor Text
+
+The clickable text in a link (anchor text) helps search engines understand what the linked page is about. Natural, varied anchor text is ideal.
+
+**Anchor text types:**
+- **Exact match** — "backlinks guide" linking to a backlinks guide
+- **Partial match** — "learn about backlinks" linking to a backlinks guide
+- **Branded** — "SEOIndicator" linking to the site
+- **Generic** — "click here" or "read more"
+- **Naked URLs** — "https://seoindicator.com/guides/backlinks/"
+
+**Warning:** Over-optimized exact-match anchor text can trigger penalties. Aim for natural variety.
+
+### Link Position and Placement
+
+Where a link appears on the page affects its value:
+
+- **Within editorial content** — Highest value, most natural
+- **Near the top of the page** — More visible, passes more authority
+- **In navigation or footer** — Often discounted by search engines
+- **Surrounded by relevant text** — Context reinforces relevance`,
+        codeExamples: [],
+      },
+      {
+        title: 'Link Building Strategies',
+        content: `Building quality backlinks requires a strategic approach. Focus on ethical, sustainable tactics that earn genuine editorial links.
+
+### Content Creation and Promotion
+
+The most sustainable link building strategy is creating content worth linking to. High-quality, original content naturally attracts links over time.
+
+**Link-worthy content types:**
+- **Original research and data** — Statistics, surveys, industry reports
+- **Comprehensive guides** — Ultimate guides, complete tutorials
+- **Visual content** — Infographics, data visualizations, interactive tools
+- **Tools and calculators** — Free resources that solve specific problems
+- **Expert roundups** — Curated insights from industry leaders
+
+### Guest Posting and Outreach
+
+Writing guest articles for relevant websites in your niche can earn quality backlinks while building relationships.
+
+**Best practices for guest posting:**
+- Target relevant, authoritative sites in your niche
+- Pitch unique, valuable content ideas
+- Focus on providing value to their audience
+- Avoid overly promotional content
+- Build genuine relationships with editors
+
+**Warning:** Avoid low-quality guest posting at scale. Google has penalized sites for "guest posting schemes" designed solely for link building.
+
+### Broken Link Building
+
+Find broken links on relevant websites and offer your content as a replacement. This helps the site owner fix issues while earning you a link.
+
+**Process:**
+1. Find relevant sites with resource pages
+2. Check for broken links using tools
+3. Create or identify relevant replacement content
+4. Contact the site owner with a helpful suggestion
+
+### Link Reclamation
+
+Reclaim links you've earned but lost due to site changes, content moves, or errors.
+
+**Common reclamation opportunities:**
+- Mentions without links (brand mentions)
+- Broken pages on your site that had backlinks
+- Redirects that have broken over time
+- Changed URLs without proper redirects
+
+### Competitor Analysis
+
+Analyze where your competitors get their backlinks and identify opportunities for your own site.
+
+**Steps:**
+1. Identify top-ranking competitors
+2. Analyze their backlink profiles
+3. Find linking sites that could also link to you
+4. Create better content and reach out`,
+        codeExamples: [],
+      },
+      {
+        title: 'Tips for Improving Your Backlink Profile',
+        content: `Follow these actionable tips to build and maintain a healthy backlink profile that improves your search rankings.
+
+### Focus on Quality Over Quantity
+
+One link from an authoritative, relevant site is worth more than dozens of low-quality links. Invest time in earning high-quality links rather than accumulating many poor ones.
+
+### Diversify Your Anchor Text
+
+Avoid over-optimization by using varied, natural anchor text. Mix branded terms, partial matches, and generic phrases rather than always using exact-match keywords.
+
+### Build Relationships in Your Niche
+
+Connect with other website owners, bloggers, and influencers in your industry. Genuine relationships lead to natural link opportunities over time.
+
+### Create Link-Worthy Content
+
+Publish original research, comprehensive guides, free tools, and other content that provides unique value. Great content naturally attracts links.
+
+### Monitor Your Backlink Profile
+
+Use Google Search Console, Ahrefs, or Moz to regularly monitor your backlinks. Watch for:
+- New linking domains
+- Lost backlinks
+- Potentially harmful links
+- Competitor backlink growth
+
+### Disavow Toxic Links
+
+If you identify spammy or harmful backlinks, use Google's Disavow Tool to tell Google to ignore them. This protects your site from potential penalties.
+
+**When to disavow:**
+- Links from spammy or irrelevant sites
+- Links from link farms or PBNs
+- Negative SEO attacks
+- Unnatural link patterns
+
+### Leverage Internal Linking
+
+While building external backlinks, don't neglect internal linking. Strong internal link structure helps distribute authority across your site and improves user navigation.
+
+### Track Referring Domain Growth
+
+Aim for steady growth in referring domains over time. Sudden spikes might trigger algorithmic scrutiny, while steady growth signals natural link acquisition.`,
+        codeExamples: [],
+      },
+      {
+        title: 'Common Backlink Mistakes to Avoid',
+        content: `Avoid these common link building mistakes that can harm your SEO or even trigger penalties.
+
+### Buying Backlinks
+
+Purchasing backlinks violates Google's guidelines and can result in severe penalties, including removal from search results entirely. Focus on earning links through quality content and outreach.
+
+**Risks of buying links:**
+- Manual penalties from Google
+- Algorithmic devaluation
+- Wasted money on ineffective links
+- Potential link scheme exposure
+
+### Participating in Link Schemes
+
+Any attempt to manipulate PageRank or search rankings through links is considered a link scheme. This includes:
+
+- Excessive link exchanges
+- Private Blog Networks (PBNs)
+- Automated link building services
+- Forum and comment spam
+- Widget links with keyword-rich anchor text
+
+### Over-Optimized Anchor Text
+
+Using exact-match keywords as anchor text too frequently looks unnatural and can trigger penalties. Aim for diverse, natural anchor text distribution.
+
+**Healthy anchor text distribution:**
+- **Branded terms:** 20-40%
+- **Naked URLs:** 15-25%
+- **Generic terms:** 10-20%
+- **Partial match:** 10-15%
+- **Exact match:** Under 5%
+
+### Ignoring Nofollow Links
+
+While nofollow links don't pass authority, they still provide value through traffic and brand exposure. A natural link profile includes both dofollow and nofollow links.
+
+### Focusing Only on Homepage Links
+
+Building links only to your homepage creates an unnatural profile. Deep links to relevant internal pages appear more natural and pass authority directly to important content.
+
+### Neglecting Link Relevance
+
+A link from a relevant website in your niche is more valuable than a random link from an unrelated site, even if the unrelated site has higher authority.
+
+### Ignoring Toxic Backlinks
+
+Failing to monitor your backlink profile can allow harmful links to accumulate. Regular audits help identify and disavow problematic links before they cause damage.
+
+### Relying on a Single Strategy
+
+Diversify your link building approaches. Relying solely on one tactic (like guest posting) creates risk if that strategy becomes less effective or is penalized.`,
+        codeExamples: [],
+      },
+    ],
+    checklist: [
+      { text: 'Focus on earning quality backlinks from authoritative, relevant websites in your niche', priority: 'critical' },
+      { text: 'Avoid buying backlinks or participating in link schemes that violate search engine guidelines', priority: 'critical' },
+      { text: 'Monitor your backlink profile regularly using Google Search Console or other SEO tools', priority: 'critical' },
+      { text: 'Diversify anchor text naturally—avoid over-optimized exact-match keywords', priority: 'important' },
+      { text: 'Create link-worthy content like original research, guides, and tools that naturally attract links', priority: 'important' },
+      { text: 'Build relationships with other websites and influencers in your industry', priority: 'important' },
+      { text: 'Disavow toxic or spammy backlinks using Google\'s Disavow Tool when necessary', priority: 'important' },
+      { text: 'Track referring domain growth and aim for steady, natural link acquisition over time', priority: 'important' },
+      { text: 'Include both dofollow and nofollow links in a natural backlink profile', priority: 'recommended' },
+      { text: 'Build deep links to internal pages, not just your homepage', priority: 'recommended' },
+      { text: 'Leverage broken link building and link reclamation opportunities', priority: 'recommended' },
+    ],
+    relatedGuides: ['internal-links', 'page-speed'],
+  },
+  {
     slug: 'https-security',
     title: 'HTTPS & Security Headers',
     summary: 'Secure your site with SSL/TLS encryption and implement security headers to protect users, improve SEO rankings, and build trust with visitors.',
