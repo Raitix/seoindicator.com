@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PayPalSuccess } from "@/components/payments/PayPalSuccess";
 import { PayPalCancel } from "@/components/payments/PayPalCancel";
@@ -30,9 +31,9 @@ interface CaptureState {
   };
 }
 
-// ==================== Main Component ====================
+// ==================== Main Content Component ====================
 
-export default function PayPalSuccessPage() {
+function PayPalSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { refresh: refreshBalance } = useBalance();
@@ -194,5 +195,26 @@ export default function PayPalSuccessPage() {
         />
       </div>
     </div>
+  );
+}
+
+// ==================== Page with Suspense ====================
+
+export default function PayPalSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-950">
+          <div className="max-w-md w-full p-8 text-center">
+            <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Loading...
+            </h1>
+          </div>
+        </div>
+      }
+    >
+      <PayPalSuccessContent />
+    </Suspense>
   );
 }
