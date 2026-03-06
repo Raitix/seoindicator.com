@@ -12949,6 +12949,107 @@ try {
 - TASK-22-17: Job timeout and cancellation
 
 ---
+## Integration Tests for Public Audit Flow (TASK-33-33)
+
+### Test Description
+Comprehensive end-to-end integration tests verifying the complete public audit flow from publish to view to lead capture. Tests run against real database with proper cleanup, ensuring the Public SEO Audit Reports feature (FEAT-033) works correctly in production.
+
+### Component Location
+- **Tests:** `backend/tests/Integration/PublicAuditFlowTest.php`, `backend/tests/Integration/BadgeFlowTest.php`
+- **Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-33-33.md`
+
+### Test Coverage Summary
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| PublicAuditFlowTest.php | 32 | 78 | ✅ PASS |
+| BadgeFlowTest.php | 29 | 75 | ✅ PASS |
+| **Total** | **61** | **153** | ✅ PASS |
+
+### Test Categories
+
+#### PublicAuditFlowTest (32 tests)
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Publish Flow | 4 | Audit becomes public, unique hash generation, private audit inaccessible |
+| View Tracking | 4 | Anonymous views tracked, IP hashed for privacy, referrer captured |
+| Lead Capture | 5 | Email validation, sanitization, storage |
+| Unpublish Flow | 3 | Audit inaccessible after unpublish, views preserved |
+| Owner vs Anonymous | 3 | Limited issues for anonymous, full for owner |
+| Score Calculation | 3 | Perfect score, score from issues, minimum is zero |
+| Analytics | 3 | Aggregation, date filtering, referrer tracking |
+| Security | 5 | SQL injection, XSS, hash validation, no sensitive data exposed |
+| Cleanup | 2 | Cascade delete verification, RefreshDatabase |
+
+#### BadgeFlowTest (29 tests)
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Badge Configuration | 7 | SVG generation, score labels (Excellent/Good/Needs Work/Poor/Critical) |
+| Badge Impression Tracking | 7 | Impression recording, IP hashing, domain extraction |
+| Badge Click Tracking | 7 | Click recording, target validation (audit/home) |
+| Badge Analytics | 3 | Aggregation, date filtering, referrer grouping |
+| Security | 5 | SQL injection, XSS, path traversal, invalid hash format |
+
+### Acceptance Criteria Verified
+
+| Criteria | Status |
+|----------|--------|
+| User publishes audit → public URL accessible | ✅ |
+| Anonymous user views public audit → view tracked | ✅ |
+| Anonymous user submits email → lead captured | ✅ |
+| User unpublishes audit → 404 on public URL | ✅ |
+| Badge renders with correct score | ✅ |
+| Badge click tracked correctly | ✅ |
+| Analytics aggregated correctly | ✅ |
+| Tests run against real database | ✅ |
+| Tests clean up after themselves | ✅ |
+
+### Security Tests (Adversarial)
+
+| Test | Result |
+|------|--------|
+| SQL Injection in hash | ✅ 404 (blocked) |
+| XSS in lead email | ✅ 404/422 (blocked) |
+| Path traversal attempt | ✅ 404 (blocked) |
+| Invalid hash format | ✅ 404 (expected) |
+
+### Test Infrastructure
+
+**Database:**
+- Uses Laravel's `RefreshDatabase` trait
+- Each test runs in isolated transaction
+- Automatic rollback after each test
+
+**Factories:**
+- `AuditFactory` with `published()` state
+- `AuditIssueFactory` for issue creation
+- `PublicAuditViewFactory` for view simulation
+- `BadgeImpressionFactory` for impression simulation
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-06 (GitHub Actions #22766791085) |
+| **Commit** | `312e4326` |
+| **Duration** | 16.68s |
+| **Health Check** | Passing |
+| **Tests** | 61/61 passing (153 assertions) |
+| **Status** | Complete |
+
+### Dependencies
+- TASK-33-1 through TASK-33-32 (complete implementation)
+
+### Related Tasks
+- TASK-33-1: Audit visibility columns
+- TASK-33-2: Public audit views table
+- TASK-33-3: Badge impressions table
+- TASK-33-17: Badge impression tracking API
+- TASK-33-18: Badge click tracking API
+
+---
 ## Crawler API Feature Tests (TASK-22-19)
 
 ### Test Description
