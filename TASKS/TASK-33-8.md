@@ -1,7 +1,7 @@
 # TASK-33-8: Create PublicAuditPage Component
 
 ## STATUS
-`Testing Prod`
+`To Document`
 
 ## PRIORITY
 `High`
