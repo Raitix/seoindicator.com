@@ -156,6 +156,10 @@ export function loadPayPalSDK(clientId: string): Promise<void> {
   });
 }
 
+// Non-nullable types for successful responses
+export type PayPalOrderData = NonNullable<PayPalOrderResponse["data"]>;
+export type PayPalCaptureData = NonNullable<PayPalCaptureResponse["data"]>;
+
 // ==================== API Functions ====================
 
 /**
@@ -165,7 +169,7 @@ export async function createPayPalOrder(
   packageId: number,
   returnUrl?: string,
   cancelUrl?: string
-): Promise<PayPalOrderResponse["data"]> {
+): Promise<PayPalOrderData> {
   const payload: PayPalOrderRequest = {
     package_id: packageId,
   };
@@ -209,7 +213,7 @@ export async function createPayPalOrder(
  */
 export async function capturePayPalOrder(
   orderId: string
-): Promise<PayPalCaptureResponse["data"]> {
+): Promise<PayPalCaptureData> {
   const payload: PayPalCaptureRequest = {
     order_id: orderId,
   };
