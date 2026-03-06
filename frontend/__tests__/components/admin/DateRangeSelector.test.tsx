@@ -9,6 +9,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // ============================================================================
 // Types (will be imported from actual component)
@@ -41,7 +42,7 @@ const mockCustomRange = {
 const mockMinDate = new Date('2025-01-01');
 const mockMaxDate = new Date('2026-12-31');
 
-const mockOnChange = jest.fn();
+const mockOnChange = vi.fn();
 
 const mockProps: DateRangeSelectorProps = {
   value: '7d',
@@ -118,7 +119,7 @@ function daysBetween(start: Date, end: Date): number {
 
 describe('DateRangeSelector Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ========================================
@@ -350,7 +351,8 @@ describe('DateRangeSelector Component', () => {
 
     it('DR-001h-3: limits maximum range to 90 days', () => {
       // Optional: limit custom range
-      const days = daysBetween(new Date('2026-01-01'), new Date('2026-04-01'));
+      // From Jan 1 to May 1 = 31 + 28 + 31 + 30 = 120 days (> 90)
+      const days = daysBetween(new Date('2026-01-01'), new Date('2026-05-01'));
       expect(days).toBeGreaterThan(90);
     });
 

@@ -106,8 +106,14 @@ const mockProps: UsagePageProps = {
 // ============================================================================
 
 function formatNumber(value: number): string {
-  if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-  if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+  if (value >= 1000000) {
+    const millions = value / 1000000;
+    return (millions % 1 === 0 ? millions.toString() : millions.toFixed(1)) + 'M';
+  }
+  if (value >= 1000) {
+    const thousands = value / 1000;
+    return (thousands % 1 === 0 ? thousands.toString() : thousands.toFixed(1)) + 'K';
+  }
   return value.toString();
 }
 

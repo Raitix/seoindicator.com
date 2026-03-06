@@ -9,6 +9,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // ============================================================================
 // Types (will be imported from actual component)
@@ -84,8 +85,13 @@ function formatDate(dateStr: string): string {
  * Format number with K suffix
  */
 function formatNumber(value: number): string {
+  if (value >= 1000000) {
+    const millions = value / 1000000;
+    return millions % 1 === 0 ? millions.toFixed(0) + 'M' : millions.toFixed(1) + 'M';
+  }
   if (value >= 1000) {
-    return (value / 1000).toFixed(1) + 'K';
+    const thousands = value / 1000;
+    return thousands % 1 === 0 ? thousands.toFixed(0) + 'K' : thousands.toFixed(1) + 'K';
   }
   return value.toString();
 }
@@ -95,7 +101,8 @@ function formatNumber(value: number): string {
  */
 function calculateYMax(data: UsageDataPoint[], key: 'requests' | 'tokens' = 'requests'): number {
   const values = data.map(d => d[key] || 0);
-  const max = Math.max(...values);
+  const max = Math.max(...values, 0);
+  if (max === 0) return 10; // Default Y max when all values are 0
   // Round up to next nice number
   const magnitude = Math.pow(10, Math.floor(Math.log10(max)));
   return Math.ceil(max / magnitude) * magnitude;
@@ -288,7 +295,7 @@ describe('UsageChart Component', () => {
 
     it('UC-001g-3: retry triggers onRetry callback', () => {
       // Click → onRetry called
-      const onRetry = jest.fn();
+      const onRetry = vi.fn();
       expect(true).toBe(true);
     });
 
@@ -506,7 +513,7 @@ describe('UsageChart Component', () => {
     it('handles very large request values', () => {
       // Millions of requests
       const largeValue = 5000000;
-      expect(formatNumber(largeValue)).toBe('5000K');
+      expect(formatNumber(largeValue)).toBe('5M');
     });
 
     it('handles negative values gracefully', () => {

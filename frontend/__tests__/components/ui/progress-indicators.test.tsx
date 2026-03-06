@@ -20,119 +20,21 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // ============================================================================
-// TYPE DEFINITIONS
+// IMPORT ACTUAL COMPONENTS
 // ============================================================================
 
-/**
- * LinearProgress Props Interface
- * Value: 0-100 for determinate, undefined for indeterminate
- */
-interface LinearProgressProps {
-  value?: number;
-  color?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
-  className?: string;
-}
+import {
+  LinearProgress,
+  LinearProgressProps,
+} from '@/components/ui/LinearProgress';
+import {
+  CircularProgress,
+  CircularProgressProps,
+} from '@/components/ui/CircularProgress';
 
-/**
- * CircularProgress Props Interface
- * Value: 0-100 for determinate, undefined for indeterminate
- * Size: sm (24px), md (40px), lg (56px)
- */
-interface CircularProgressProps {
-  value?: number;
-  size?: 'sm' | 'md' | 'lg';
-  color?: 'primary' | 'secondary' | 'white';
-  className?: string;
-}
-
-// ============================================================================
-// MOCK COMPONENTS (TDD - will fail until implemented)
-// ============================================================================
-
-// Mock LinearProgress for TDD testing
-const LinearProgress: React.FC<LinearProgressProps> = ({
-  value,
-  color = 'primary',
-  className,
-}) => {
-  const isDeterminate = value !== undefined;
-  const clampedValue = isDeterminate ? Math.min(100, Math.max(0, value)) : 0;
-
-  return (
-    <div
-      data-testid="linear-progress"
-      role="progressbar"
-      aria-valuenow={isDeterminate ? clampedValue : undefined}
-      aria-valuemin={isDeterminate ? 0 : undefined}
-      aria-valuemax={isDeterminate ? 100 : undefined}
-      className={`linear-progress ${color} ${isDeterminate ? 'determinate' : 'indeterminate'} ${className || ''}`}
-    >
-      <div
-        data-testid="linear-progress-bar"
-        className="linear-progress-bar"
-        style={isDeterminate ? { width: `${clampedValue}%` } : undefined}
-      />
-    </div>
-  );
-};
-
-// Mock CircularProgress for TDD testing
-const CircularProgress: React.FC<CircularProgressProps> = ({
-  value,
-  size = 'md',
-  color = 'primary',
-  className,
-}) => {
-  const isDeterminate = value !== undefined;
-  const clampedValue = isDeterminate ? Math.min(100, Math.max(0, value)) : 0;
-  
-  const sizeMap = {
-    sm: 24,
-    md: 40,
-    lg: 56,
-  };
-  
-  const px = sizeMap[size];
-  const strokeWidth = 4;
-  const radius = (px - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = isDeterminate ? circumference - (clampedValue / 100) * circumference : 0;
-
-  return (
-    <div
-      data-testid="circular-progress"
-      role="progressbar"
-      aria-valuenow={isDeterminate ? clampedValue : undefined}
-      aria-valuemin={isDeterminate ? 0 : undefined}
-      aria-valuemax={isDeterminate ? 100 : undefined}
-      className={`circular-progress ${size} ${color} ${isDeterminate ? 'determinate' : 'indeterminate'} ${className || ''}`}
-    >
-      <svg width={px} height={px} viewBox={`0 0 ${px} ${px}`}>
-        <circle
-          data-testid="circular-progress-track"
-          className="circular-progress-track"
-          cx={px / 2}
-          cy={px / 2}
-          r={radius}
-          fill="none"
-          strokeWidth={strokeWidth}
-        />
-        <circle
-          data-testid="circular-progress-bar"
-          className="circular-progress-bar"
-          cx={px / 2}
-          cy={px / 2}
-          r={radius}
-          fill="none"
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          transform={`rotate(-90 ${px / 2} ${px / 2})`}
-        />
-      </svg>
-    </div>
-  );
-};
+// Re-export types for test usage
+type LinearProgressPropsType = LinearProgressProps;
+type CircularProgressPropsType = CircularProgressProps;
 
 // ============================================================================
 // LINEAR PROGRESS TESTS

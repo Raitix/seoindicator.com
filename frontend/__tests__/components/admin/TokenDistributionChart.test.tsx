@@ -79,10 +79,12 @@ const mockProps: TokenDistributionChartProps = {
  */
 function formatTokens(value: number): string {
   if (value >= 1000000) {
-    return (value / 1000000).toFixed(1) + 'M';
+    const millions = value / 1000000;
+    return millions % 1 === 0 ? millions.toFixed(0) + 'M' : millions.toFixed(1) + 'M';
   }
   if (value >= 1000) {
-    return (value / 1000).toFixed(0) + 'K';
+    const thousands = value / 1000;
+    return thousands % 1 === 0 ? thousands.toFixed(0) + 'K' : thousands.toFixed(0) + 'K';
   }
   return value.toString();
 }
