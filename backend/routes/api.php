@@ -129,7 +129,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Public Audit Routes (TASK-33-5, SPEC-33)
+| Public Audit Routes (TASK-33-5, TASK-33-7, SPEC-33)
 |--------------------------------------------------------------------------
 |
 | Public SEO audit endpoints for sharing audit results.
@@ -137,13 +137,35 @@ Route::middleware(['auth:sanctum'])->group(function () {
 | Rate limited to prevent abuse.
 |
 */
-Route::prefix('v1/public-audit')->middleware(['throttle:100,60'])->group(function () {
+
+// Public audit routes (no authentication)
+Route::prefix('v1/public-audit')->middleware(['throttle:public-audit'])->group(function () {
     Route::get('/{hash}', [PublicAuditController::class, 'show'])
+        ->name('api.v1.public-audit.show')
         ->where('hash', '[a-zA-Z0-9]+');
     Route::post('/{hash}/lead', [PublicAuditController::class, 'lead'])
+        ->name('api.v1.public-audit.lead')
         ->where('hash', '[a-zA-Z0-9]+');
     Route::get('/{hash}/badge', [PublicAuditController::class, 'badge'])
+        ->name('api.v1.public-audit.badge')
         ->where('hash', '[a-zA-Z0-9]+');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Badge Tracking Routes (TASK-33-7, TASK-33-17, TASK-33-18, SPEC-33)
+|--------------------------------------------------------------------------
+|
+| Badge impression and click tracking endpoints.
+| No authentication required - publicly embeddable widgets.
+| Rate limited to prevent abuse.
+|
+*/
+Route::prefix('v1/badge')->middleware(['throttle:badge-tracking'])->group(function () {
+    Route::post('/impression', [\App\Http\Controllers\Api\V1\BadgeTrackingController::class, 'impression'])
+        ->name('api.v1.badge.impression');
+    Route::post('/click', [\App\Http\Controllers\Api\V1\BadgeTrackingController::class, 'click'])
+        ->name('api.v1.badge.click');
 });
 
 /*
@@ -232,6 +254,19 @@ Route::prefix('v1')->group(function () {
 
 // Authenticated V1 API Routes
 Route::prefix('v1')->middleware(['auth'])->group(function () {
+    // Audit Visibility Routes (TASK-33-7, SPEC-33)
+    Route::middleware(['throttle:60,1'])->group(function () {
+        Route::post('audits/{id}/publish', [\App\Http\Controllers\Api\V1\AuditVisibilityController::class, 'publish'])
+            ->name('api.v1.audits.publish')
+            ->where('id', '[0-9]+');
+        Route::delete('audits/{id}/unpublish', [\App\Http\Controllers\Api\V1\AuditVisibilityController::class, 'unpublish'])
+            ->name('api.v1.audits.unpublish')
+            ->where('id', '[0-9]+');
+        Route::get('audits/{id}/embed-code', [\App\Http\Controllers\Api\V1\AuditVisibilityController::class, 'embedCode'])
+            ->name('api.v1.audits.embed-code')
+            ->where('id', '[0-9]+');
+    });
+
     // Projects (SPEC-008-7) - CRUD with archive/restore
     Route::post('projects/{project}/archive', [ProjectController::class, 'archive']);
     Route::post('projects/{project}/restore', [ProjectController::class, 'restore']);
