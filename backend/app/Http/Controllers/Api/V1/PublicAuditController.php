@@ -7,7 +7,7 @@ use App\Models\Audit;
 use App\Models\PublicAuditView;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * PublicAuditController - Public SEO Audit API endpoints.
@@ -41,7 +41,8 @@ class PublicAuditController extends Controller
 
         if (!$audit) {
             return response()->json([
-                'message' => 'Audit not found',
+                'success' => false,
+                'error' => 'Audit not found',
             ], 404);
         }
 
@@ -57,26 +58,25 @@ class PublicAuditController extends Controller
             $issues = $issues->take(5);
         }
 
-        // Build response data
+        // Build response data with snake_case keys (Laravel convention)
         $data = [
             'hash' => $hash,
-            'siteUrl' => $audit->site->url,
-            'auditedAt' => $audit->completed_at?->toIso8601String(),
-            'overallScore' => $this->calculateOverallScore($audit),
-            'categoryScores' => $this->getCategoryScores($audit),
-            'topIssues' => $issues->map(function ($issue) {
+            'site_url' => $audit->site->url,
+            'audited_at' => $audit->completed_at?->toIso8601String(),
+            'overall_score' => $this->calculateOverallScore($audit),
+            'category_scores' => $this->getCategoryScores($audit),
+            'top_issues' => $issues->map(function ($issue) {
                 return [
-                    'id' => $issue->id,
-                    'url' => $issue->url,
+                    'category' => $this->getCategoryFromIssue($issue),
+                    'issue' => $issue->description,
                     'severity' => $issue->severity,
-                    'description' => $issue->description,
-                    'recommendation' => $issue->recommendation,
                 ];
             })->values()->toArray(),
-            'isPartial' => !$isOwner,
+            'is_partial' => !$isOwner,
         ];
 
         return response()->json([
+            'success' => true,
             'data' => $data,
         ]);
     }
@@ -97,13 +97,14 @@ class PublicAuditController extends Controller
             'email' => ['required', 'email', 'max:255'],
         ]);
 
-        // Sanitize email (prevent XSS)
-        $email = filter_var($validated['email'], FILTER_SANITIZE_EMAIL);
+        // Sanitize and normalize email
+        $email = strtolower(trim(filter_var($validated['email'], FILTER_SANITIZE_EMAIL)));
 
         // Validate email format again after sanitization
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return response()->json([
-                'message' => 'Invalid email format',
+                'success' => false,
+                'error' => 'Invalid email format',
                 'errors' => [
                     'email' => ['The email format is invalid.'],
                 ],
@@ -118,7 +119,8 @@ class PublicAuditController extends Controller
 
         if (!$audit) {
             return response()->json([
-                'message' => 'Audit not found',
+                'success' => false,
+                'error' => 'Audit not found',
             ], 404);
         }
 
@@ -135,6 +137,7 @@ class PublicAuditController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Email captured successfully',
         ], 201);
     }
@@ -153,23 +156,29 @@ class PublicAuditController extends Controller
         $audit = Audit::where('public_hash', $hash)
             ->where('visibility', 'public')
             ->where('status', 'completed')
+            ->with('site')
             ->first();
 
         if (!$audit) {
             return response()->json([
-                'message' => 'Audit not found',
+                'success' => false,
+                'error' => 'Audit not found',
             ], 404);
         }
 
         $score = $this->calculateOverallScore($audit);
+        $siteUrl = parse_url($audit->site->url, PHP_URL_HOST) ?? $audit->site->url;
 
         return response()->json([
+            'success' => true,
             'data' => [
                 'hash' => $hash,
                 'score' => $score,
-                'label' => $this->getScoreLabel($score),
-                'size' => 'medium', // Default size
-                'theme' => 'light', // Default theme
+                'site_url' => $siteUrl,
+                'badge_url' => url("/badge/{$hash}/large"),
+                'sizes' => ['small', 'medium', 'large'],
+                'themes' => ['light', 'dark'],
+                'embed_code' => $this->generateEmbedCode($hash),
             ],
         ]);
     }
@@ -225,11 +234,6 @@ class PublicAuditController extends Controller
      */
     protected function calculateOverallScore(Audit $audit): int
     {
-        // If the audit has a stored score, use it
-        if (isset($audit->score)) {
-            return max(0, min(100, (int) $audit->score));
-        }
-
         // Calculate based on issues
         $issues = $audit->issues;
 
@@ -279,7 +283,7 @@ class PublicAuditController extends Controller
         // In a real implementation, these would be calculated from actual issues
         return [
             'technical' => max(0, min(100, $overallScore + rand(-10, 10))),
-            'onPage' => max(0, min(100, $overallScore + rand(-10, 10))),
+            'on_page' => max(0, min(100, $overallScore + rand(-10, 10))),
             'content' => max(0, min(100, $overallScore + rand(-10, 10))),
             'mobile' => max(0, min(100, $overallScore + rand(-10, 10))),
         ];
@@ -300,5 +304,38 @@ class PublicAuditController extends Controller
             $score >= 30 => 'Poor',
             default => 'Critical Issues',
         };
+    }
+
+    /**
+     * Get category from issue for grouping.
+     *
+     * @param mixed $issue
+     * @return string
+     */
+    protected function getCategoryFromIssue($issue): string
+    {
+        // Map issue types to categories
+        // For now, return a default category based on issue type
+        return match ($issue->issueType->category ?? null) {
+            'technical' => 'technical',
+            'on_page', 'onpage' => 'on_page',
+            'content' => 'content',
+            'mobile' => 'mobile',
+            default => 'technical',
+        };
+    }
+
+    /**
+     * Generate embed code for the badge.
+     *
+     * @param string $hash
+     * @return string
+     */
+    protected function generateEmbedCode(string $hash): string
+    {
+        $badgeUrl = url("/badge/{$hash}/medium");
+        $auditUrl = url("/audit/public/{$hash}");
+
+        return '<a href="' . $auditUrl . '"><img src="' . $badgeUrl . '" alt="SEO Score" /></a>';
     }
 }
