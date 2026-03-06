@@ -531,8 +531,9 @@ class PublicAuditViewTest extends TestCase
         ]);
 
         // If accessor exists, test it
+        // testuser = 8 chars: t + 6 middle chars + r = t******r
         if (method_exists($view, 'getMaskedEmailAttribute')) {
-            $this->assertEquals('t*******r@example.com', $view->masked_email);
+            $this->assertEquals('t******r@example.com', $view->masked_email);
         } else {
             $this->markTestSkipped('masked_email accessor not implemented');
         }
