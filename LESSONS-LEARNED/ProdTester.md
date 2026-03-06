@@ -212,4 +212,35 @@ Invoke-RestMethod -Uri "https://seoindicator.com/api/v1/ai/suggestions" -Method 
 
 ---
 
+## 2026-03-06: TASK-33-4 PublicAudit Model
+- Backend models without direct API endpoints verified via: test suite + smoke tests + health check
+- Hash generation tests for randomness must account for probabilistic assertions
+- `assertStringNotContainsString()` on random data can fail by coincidence - NOT a bug
+
+**Flaky Test Pattern - Random Output Assertions:**
+- Test: `generate_hash_is_not_derived_from_audit_id`
+- Assertion: Hash string doesn't contain audit ID
+- Problem: Random 32-char alphanumeric has non-zero probability of containing "1", "2", etc.
+- Root Cause: Test checks output content, not generation source
+- Fix Options:
+  1. Mark test as flaky (acceptable)
+  2. Modify to verify source (hash uses Str::random, not audit_id)
+  3. Increase hash length to reduce collision probability
+
+**Model Smoke Test Pattern:**
+```php
+// Check table exists
+$count = Model::count();
+
+// Check methods exist
+method_exists(Model::class, 'methodName');
+
+// Test functionality
+$hash = Model::generateHash();
+preg_match('/^[a-zA-Z0-9]+$/', $hash); // alphanumeric
+strlen($hash) === 32; // correct length
+```
+
+---
+
 Last updated: 2026-03-06

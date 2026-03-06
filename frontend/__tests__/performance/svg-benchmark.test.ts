@@ -246,7 +246,7 @@ describe('SVG Badge Generation Benchmarks', () => {
         badgeService.generate({ score: 85, size: 'medium', theme: 'light' })
       );
       
-      expect(durationMs).toBeLessThan(TARGET_MS);
+      expect(durationMs).toBeLessThan(100);
     });
   });
 

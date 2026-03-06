@@ -33,7 +33,7 @@ class PublicAuditLeadRequest extends FormRequest
         return [
             'email' => [
                 'required',
-                'email:rfc,dns',
+                'email:rfc',
                 'max:254',
                 // Optionally block disposable email domains
                 // Rule::notIn($this->getDisposableDomains()),

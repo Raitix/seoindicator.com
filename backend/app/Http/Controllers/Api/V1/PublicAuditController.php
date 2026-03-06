@@ -3,42 +3,36 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\PublicAuditLeadRequest;
 use App\Models\Audit;
+use App\Models\AuditIssue;
 use App\Models\PublicAuditView;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 /**
- * PublicAuditController - Public SEO Audit API endpoints.
+ * Public Audit Controller for public-facing audit pages.
  *
- * TASK-33-5: PublicAuditController implementation
- * SPEC-33: Public SEO Audit Reports & Embeddable Score Widget
+ * Provides endpoints for:
+ * - Retrieving public audit data
+ * - Lead capture for anonymous users
+ * - Badge configuration for embeds
  *
- * Provides public access to audit data via unique hash URLs.
- * Supports lead capture and embeddable badge configuration.
+ * TASK-33-5, SPEC-33
  */
 class PublicAuditController extends Controller
 {
     /**
-     * GET /api/v1/public-audit/{hash}
+     * Get public audit data by hash.
      *
-     * Retrieve public audit data by hash.
-     * Returns partial data for anonymous users (top 5 issues).
-     * Returns full data for authenticated owners.
-     *
-     * @param string $hash
+     * @param string $hash The public hash identifier
      * @return JsonResponse
      */
     public function show(string $hash): JsonResponse
     {
         // Find the audit by public hash
-        $audit = Audit::where('public_hash', $hash)
-            ->where('visibility', 'public')
-            ->where('status', 'completed')
-            ->with(['site'])
-            ->first();
+        $audit = Audit::findByPublicHash($hash);
 
         if (!$audit) {
             return response()->json([
@@ -50,74 +44,41 @@ class PublicAuditController extends Controller
         // Track the view
         $this->trackView($audit, $hash);
 
-        // Check if user is authenticated and owns the site
-        $isOwner = auth()->check() && auth()->id() === $audit->site->user_id;
+        // Check if user has full access (authenticated and owns the audit)
+        $isPartial = $this->isPartialAccess($audit);
 
-        // Get issues (limited for anonymous users)
-        // Load issues with issueType relationship
+        // Get audit issues for score calculation
         $issues = $audit->issues()->with('issueType')->get();
-        if (!$isOwner) {
-            $issues = $issues->take(5);
-        }
 
-        // Build response data with snake_case keys (Laravel convention)
-        $data = [
-            'hash' => $hash,
-            'site_url' => $audit->site->url,
-            'audited_at' => $audit->completed_at?->toIso8601String(),
-            'overall_score' => $this->calculateOverallScore($audit),
-            'category_scores' => $this->getCategoryScores($audit),
-            'top_issues' => $issues->map(function ($issue) {
-                return [
-                    'category' => $this->getCategoryFromIssue($issue),
-                    'issue' => $issue->description,
-                    'severity' => $issue->severity,
-                ];
-            })->values()->toArray(),
-            'is_partial' => !$isOwner,
-        ];
+        // Calculate scores
+        $overallScore = $this->calculateOverallScore($issues);
+        $categoryScores = $this->calculateCategoryScores($issues);
+        $topIssues = $this->getTopIssues($issues);
 
         return response()->json([
             'success' => true,
-            'data' => $data,
+            'data' => [
+                'site_url' => $audit->site->url ?? '',
+                'audited_at' => $audit->completed_at?->toIso8601String(),
+                'overall_score' => $overallScore,
+                'category_scores' => $categoryScores,
+                'top_issues' => $topIssues,
+                'is_partial' => $isPartial,
+            ],
         ]);
     }
 
     /**
-     * POST /api/v1/public-audit/{hash}/lead
+     * Capture lead email for a public audit.
      *
-     * Capture lead email from public audit page.
-     *
-     * @param Request $request
-     * @param string $hash
+     * @param string $hash The public hash identifier
+     * @param PublicAuditLeadRequest $request The validated request
      * @return JsonResponse
      */
-    public function lead(Request $request, string $hash): JsonResponse
+    public function lead(string $hash, PublicAuditLeadRequest $request): JsonResponse
     {
-        // Validate the request
-        $validated = $request->validate([
-            'email' => ['required', 'email', 'max:255'],
-        ]);
-
-        // Sanitize and normalize email
-        $email = strtolower(trim(filter_var($validated['email'], FILTER_SANITIZE_EMAIL)));
-
-        // Validate email format again after sanitization
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Invalid email format',
-                'errors' => [
-                    'email' => ['The email format is invalid.'],
-                ],
-            ], 422);
-        }
-
-        // Find the audit
-        $audit = Audit::where('public_hash', $hash)
-            ->where('visibility', 'public')
-            ->where('status', 'completed')
-            ->first();
+        // Find the audit by public hash
+        $audit = Audit::findByPublicHash($hash);
 
         if (!$audit) {
             return response()->json([
@@ -126,14 +87,15 @@ class PublicAuditController extends Controller
             ], 404);
         }
 
-        // Store the lead
+        $email = strtolower(trim($request->email));
+
+        // Store the lead capture
         PublicAuditView::create([
             'audit_id' => $audit->id,
             'public_hash' => $hash,
             'viewed_at' => now(),
-            'referrer' => $request->header('referer'),
-            'ip_hash' => $this->hashIp($request->ip()),
-            'user_agent' => substr($request->userAgent() ?? '', 0, 500),
+            'ip_hash' => $this->hashIp($request),
+            'user_agent' => $request->userAgent(),
             'is_lead_capture' => true,
             'lead_email' => $email,
         ]);
@@ -145,21 +107,15 @@ class PublicAuditController extends Controller
     }
 
     /**
-     * GET /api/v1/public-audit/{hash}/badge
+     * Get badge configuration for a public audit.
      *
-     * Get badge configuration for embeddable widgets.
-     *
-     * @param string $hash
+     * @param string $hash The public hash identifier
      * @return JsonResponse
      */
     public function badge(string $hash): JsonResponse
     {
-        // Find the audit
-        $audit = Audit::where('public_hash', $hash)
-            ->where('visibility', 'public')
-            ->where('status', 'completed')
-            ->with('site')
-            ->first();
+        // Find the audit by public hash
+        $audit = Audit::findByPublicHash($hash);
 
         if (!$audit) {
             return response()->json([
@@ -168,33 +124,35 @@ class PublicAuditController extends Controller
             ], 404);
         }
 
-        $score = $this->calculateOverallScore($audit);
-        $siteUrl = parse_url($audit->site->url, PHP_URL_HOST) ?? $audit->site->url;
+        // Calculate score
+        $issues = $audit->issues()->with('issueType')->get();
+        $score = $this->calculateOverallScore($issues);
+
+        // Get site URL without protocol for display
+        $siteUrl = $audit->site->url ?? '';
+        $displayUrl = preg_replace('#^https?://#', '', $siteUrl);
+
+        $badgeUrl = url("/api/v1/public-audit/{$hash}/badge/image");
 
         return response()->json([
             'success' => true,
             'data' => [
                 'hash' => $hash,
                 'score' => $score,
-                'site_url' => $siteUrl,
-                'badge_url' => url("/badge/{$hash}/large"),
+                'site_url' => $displayUrl,
+                'badge_url' => $badgeUrl,
                 'sizes' => ['small', 'medium', 'large'],
                 'themes' => ['light', 'dark'],
-                'embed_code' => $this->generateEmbedCode($hash),
+                'embed_code' => $this->generateEmbedCode($hash, $score, $badgeUrl),
             ],
         ]);
     }
-
-    // =========================================================================
-    // Protected Helper Methods
-    // =========================================================================
 
     /**
      * Track a view for analytics.
      *
      * @param Audit $audit
      * @param string $hash
-     * @return void
      */
     protected function trackView(Audit $audit, string $hash): void
     {
@@ -202,142 +160,177 @@ class PublicAuditController extends Controller
             'audit_id' => $audit->id,
             'public_hash' => $hash,
             'viewed_at' => now(),
-            'referrer' => request()->header('referer'),
-            'ip_hash' => $this->hashIp(request()->ip()),
-            'user_agent' => substr(request()->userAgent() ?? '', 0, 500),
+            'ip_hash' => $this->hashIp(request()),
+            'user_agent' => request()->userAgent(),
             'is_lead_capture' => false,
         ]);
     }
 
     /**
-     * Hash an IP address for privacy.
-     * Uses SHA-256 with a salt for one-way hashing.
+     * Check if the current user has partial access (anonymous).
      *
-     * @param string|null $ip
-     * @return string|null
+     * @param Audit $audit
+     * @return bool
      */
-    protected function hashIp(?string $ip): ?string
+    protected function isPartialAccess(Audit $audit): bool
     {
-        if (!$ip) {
-            return null;
+        $user = Auth::user();
+
+        // If not authenticated, access is partial
+        if (!$user) {
+            return true;
         }
 
-        // Use a fixed salt for consistent hashing (allows tracking unique IPs without storing them)
-        $salt = config('app.key', 'default-salt');
+        // If authenticated but doesn't own the audit, access is partial
+        if ($audit->site && $audit->site->user_id !== $user->id) {
+            return true;
+        }
 
-        return hash('sha256', $ip . $salt);
+        // Owner has full access
+        return false;
     }
 
     /**
-     * Calculate the overall SEO score for an audit.
+     * Calculate overall score from issues.
      *
-     * @param Audit $audit
-     * @return int Score between 0-100
+     * Score starts at 100 and is reduced based on issue severity:
+     * - Critical: -10 points
+     * - Warning: -5 points
+     * - Notice: -2 points
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $issues
+     * @return int
      */
-    protected function calculateOverallScore(Audit $audit): int
+    protected function calculateOverallScore($issues): int
     {
-        // Calculate based on issues
-        $issues = $audit->issues;
+        $score = 100;
 
-        if ($issues->isEmpty()) {
-            return 100; // No issues = perfect score
-        }
-
-        // Weight issues by severity
-        $penalty = 0;
         foreach ($issues as $issue) {
-            switch ($issue->severity) {
-                case 'critical':
-                    $penalty += 10;
-                    break;
-                case 'warning':
-                    $penalty += 5;
-                    break;
-                case 'notice':
-                    $penalty += 2;
-                    break;
-            }
-        }
+            $severity = $issue->severity ?? 'notice';
 
-        // Calculate score (minimum 0)
-        $score = 100 - $penalty;
+            match ($severity) {
+                'critical' => $score -= 10,
+                'warning' => $score -= 5,
+                'notice' => $score -= 2,
+                default => $score -= 0,
+            };
+        }
 
         return max(0, min(100, $score));
     }
 
     /**
-     * Get category scores for an audit.
+     * Calculate category scores from issues.
      *
-     * @param Audit $audit
+     * @param \Illuminate\Database\Eloquent\Collection $issues
      * @return array
      */
-    protected function getCategoryScores(Audit $audit): array
+    protected function calculateCategoryScores($issues): array
     {
-        // Default category scores based on overall calculation
-        $overallScore = $this->calculateOverallScore($audit);
+        $categories = [
+            'technical' => 100,
+            'on_page' => 100,
+            'content' => 100,
+            'mobile' => 100,
+        ];
 
-        // If the audit has stored category scores, use them
-        if (isset($audit->category_scores) && is_array($audit->category_scores)) {
-            return $audit->category_scores;
+        $categoryPenalties = [
+            'technical' => 0,
+            'on_page' => 0,
+            'content' => 0,
+            'mobile' => 0,
+        ];
+
+        foreach ($issues as $issue) {
+            $severity = $issue->severity ?? 'notice';
+            $category = $issue->issueType?->category ?? 'technical';
+
+            // Map category names
+            $mappedCategory = match ($category) {
+                'meta' => 'on_page',
+                'content' => 'content',
+                'backlink' => 'technical',
+                'performance' => 'technical',
+                default => $category,
+            };
+
+            if (!isset($categoryPenalties[$mappedCategory])) {
+                $mappedCategory = 'technical';
+            }
+
+            $penalty = match ($severity) {
+                'critical' => 10,
+                'warning' => 5,
+                'notice' => 2,
+                default => 0,
+            };
+
+            $categoryPenalties[$mappedCategory] += $penalty;
         }
 
-        // Calculate approximate category scores
-        // In a real implementation, these would be calculated from actual issues
-        return [
-            'technical' => max(0, min(100, $overallScore + rand(-10, 10))),
-            'on_page' => max(0, min(100, $overallScore + rand(-10, 10))),
-            'content' => max(0, min(100, $overallScore + rand(-10, 10))),
-            'mobile' => max(0, min(100, $overallScore + rand(-10, 10))),
-        ];
+        foreach ($categories as $category => $score) {
+            $categories[$category] = max(0, 100 - $categoryPenalties[$category]);
+        }
+
+        return $categories;
     }
 
     /**
-     * Get the score label based on the score value.
+     * Get top issues sorted by severity.
      *
-     * @param int $score
-     * @return string
+     * @param \Illuminate\Database\Eloquent\Collection $issues
+     * @return array
      */
-    protected function getScoreLabel(int $score): string
+    protected function getTopIssues($issues): array
     {
-        return match (true) {
-            $score >= 90 => 'Excellent',
-            $score >= 70 => 'Good',
-            $score >= 50 => 'Needs Work',
-            $score >= 30 => 'Poor',
-            default => 'Critical Issues',
-        };
+        $severityOrder = ['critical' => 1, 'warning' => 2, 'notice' => 3];
+
+        $sortedIssues = $issues->sortBy(function ($issue) use ($severityOrder) {
+            return $severityOrder[$issue->severity ?? 'notice'] ?? 4;
+        })->take(10);
+
+        return $sortedIssues->map(function ($issue) {
+            return [
+                'category' => $issue->issueType?->category ?? 'technical',
+                'issue' => $issue->description ?? $issue->issueType?->name ?? 'Unknown issue',
+                'severity' => $issue->severity ?? 'notice',
+            ];
+        })->values()->toArray();
     }
 
     /**
-     * Get category from issue for grouping.
+     * Hash the IP address for privacy.
      *
-     * @param mixed $issue
-     * @return string
+     * @param Request $request
+     * @return string|null
      */
-    protected function getCategoryFromIssue($issue): string
+    protected function hashIp(Request $request): ?string
     {
-        // Map issue types to categories
-        // For now, return a default category based on issue type
-        return match ($issue->issueType->category ?? null) {
-            'technical' => 'technical',
-            'on_page', 'onpage' => 'on_page',
-            'content' => 'content',
-            'mobile' => 'mobile',
-            default => 'technical',
-        };
+        $ip = $request->ip();
+
+        if (!$ip) {
+            return null;
+        }
+
+        return hash('sha256', $ip . config('app.key'));
     }
 
     /**
      * Generate embed code for the badge.
      *
      * @param string $hash
+     * @param int $score
+     * @param string $badgeUrl
      * @return string
      */
-    protected function generateEmbedCode(string $hash): string
+    protected function generateEmbedCode(string $hash, int $score, string $badgeUrl): string
     {
-        $badgeUrl = url("/badge/{$hash}/medium");
         $auditUrl = url("/audit/public/{$hash}");
 
-        return '<a href="' . $auditUrl . '"><img src="' . $badgeUrl . '" alt="SEO Score" /></a>';
+        return <<<HTML
+<a href="{$auditUrl}" target="_blank" rel="noopener">
+  <img src="{$badgeUrl}" alt="SEO Score: {$score}" />
+</a>
+HTML;
     }
 }
