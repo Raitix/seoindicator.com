@@ -16,6 +16,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // ============================================================================
 // MOCK COMPONENTS (TDD - these will be created by Developer)
@@ -176,10 +177,10 @@ const MockCircularProgress = ({ value, size = 'md', color = 'primary', className
 
 const mockLoadingState = {
   isLoading: false,
-  setIsLoading: jest.fn(),
+  setIsLoading: vi.fn(),
   error: null,
-  setError: jest.fn(),
-  retry: jest.fn(),
+  setError: vi.fn(),
+  retry: vi.fn(),
   retryCount: 0,
 };
 
@@ -188,9 +189,9 @@ const mockOptimisticState = {
   optimisticData: null,
   isPending: false,
   error: null,
-  update: jest.fn(),
-  rollback: jest.fn(),
-  confirm: jest.fn(),
+  update: vi.fn(),
+  rollback: vi.fn(),
+  confirm: vi.fn(),
 };
 
 // ============================================================================
@@ -659,7 +660,7 @@ describe('Error Boundaries with Retry', () => {
     });
 
     it('shows retry button for recoverable errors', () => {
-      const mockRetry = jest.fn();
+      const mockRetry = vi.fn();
 
       render(
         <div data-testid="error-boundary">
@@ -675,7 +676,7 @@ describe('Error Boundaries with Retry', () => {
     });
 
     it('retry button triggers re-fetch', async () => {
-      const mockRetry = jest.fn();
+      const mockRetry = vi.fn();
 
       render(
         <div data-testid="error-boundary">
@@ -770,15 +771,15 @@ describe('Loading State Accessibility', () => {
       // Mock matchMedia
       Object.defineProperty(window, 'matchMedia', {
         writable: true,
-        value: jest.fn().mockImplementation((query: string) => ({
+        value: vi.fn().mockImplementation((query: string) => ({
           matches: query === '(prefers-reduced-motion: reduce)',
           media: query,
           onchange: null,
-          addListener: jest.fn(),
-          removeListener: jest.fn(),
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn(),
-          dispatchEvent: jest.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
         })),
       });
 
@@ -824,7 +825,7 @@ describe('Loading State Integration', () => {
     });
 
     it('transitions through loading → error → retry → success', async () => {
-      const mockRetry = jest.fn();
+      const mockRetry = vi.fn();
 
       // Loading state
       const { rerender } = render(
@@ -933,10 +934,10 @@ describe('TypeScript Types', () => {
 
     const state: LoadingState = {
       isLoading: true,
-      setIsLoading: jest.fn(),
+      setIsLoading: vi.fn(),
       error: null,
-      setError: jest.fn(),
-      retry: jest.fn(),
+      setError: vi.fn(),
+      retry: vi.fn(),
       retryCount: 0,
     };
 
@@ -965,9 +966,9 @@ describe('TypeScript Types', () => {
       optimisticData: { keyword: 'seo', position: 3 },
       isPending: true,
       error: null,
-      update: jest.fn(),
-      rollback: jest.fn(),
-      confirm: jest.fn(),
+      update: vi.fn(),
+      rollback: vi.fn(),
+      confirm: vi.fn(),
     };
 
     expect(state.optimisticData?.position).toBe(3);
@@ -1025,7 +1026,7 @@ describe('Acceptance Criteria', () => {
   });
 
   it('AC-5: Error boundaries with retry option', () => {
-    const mockRetry = jest.fn();
+    const mockRetry = vi.fn();
 
     render(
       <div data-testid="error-boundary" role="alert">
@@ -1059,3 +1060,4 @@ describe('Acceptance Criteria', () => {
     expect(true).toBe(true);
   });
 });
+
