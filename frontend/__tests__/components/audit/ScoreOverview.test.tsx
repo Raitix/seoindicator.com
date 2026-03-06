@@ -48,135 +48,8 @@ vi.mock('next/link', () => ({
   ),
 }));
 
-// Types
-interface ScoreOverviewProps {
-  score: number;
-  siteUrl: string;
-  auditDate: string;
-  className?: string;
-  animate?: boolean;
-  showCta?: boolean;
-  size?: 'sm' | 'md' | 'lg';
-}
-
-// Mock component for TDD - Developer will implement
-const ScoreOverview = ({
-  score,
-  siteUrl,
-  auditDate,
-  className,
-  animate = true,
-  showCta = true,
-  size = 'md',
-}: ScoreOverviewProps) => {
-  // Score clamping
-  const clampedScore = Math.max(0, Math.min(100, score));
-
-  // Color mapping based on score range
-  const getScoreColor = (s: number): { color: string; hex: string; status: string } => {
-    if (s >= 90) return { color: 'green', hex: '#22c55e', status: 'Excellent' };
-    if (s >= 70) return { color: 'blue', hex: '#3b82f6', status: 'Good' };
-    if (s >= 50) return { color: 'yellow', hex: '#eab308', status: 'Needs Work' };
-    if (s >= 30) return { color: 'orange', hex: '#f97316', status: 'Poor' };
-    return { color: 'red', hex: '#ef4444', status: 'Critical Issues' };
-  };
-
-  const { color, hex, status } = getScoreColor(clampedScore);
-
-  // Size mapping
-  const sizeMap = {
-    sm: { width: 120, height: 120, fontSize: 'text-2xl' },
-    md: { width: 180, height: 180, fontSize: 'text-4xl' },
-    lg: { width: 240, height: 240, fontSize: 'text-5xl' },
-  };
-
-  const { width, height, fontSize } = sizeMap[size];
-
-  // SVG circle calculations
-  const radius = (Math.min(width, height) / 2) - 10;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (clampedScore / 100) * circumference;
-
-  return (
-    <div data-testid="score-overview" className={className}>
-      {/* Circular Progress Indicator */}
-      <div data-testid="circular-progress" data-score={clampedScore}>
-        <svg
-          width={width}
-          height={height}
-          viewBox={`0 0 ${width} ${height}`}
-          data-testid="score-svg"
-          role="img"
-          aria-label={`SEO Score: ${clampedScore} out of 100`}
-        >
-          {/* Background circle */}
-          <circle
-            cx={width / 2}
-            cy={height / 2}
-            r={radius}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="8"
-            className="text-gray-200"
-            data-testid="background-circle"
-          />
-          {/* Progress circle */}
-          <circle
-            cx={width / 2}
-            cy={height / 2}
-            r={radius}
-            fill="none"
-            stroke={hex}
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            transform={`rotate(-90 ${width / 2} ${height / 2})`}
-            data-testid="progress-circle"
-            data-color={color}
-            data-animate={animate}
-          />
-        </svg>
-
-        {/* Score Display */}
-        <div data-testid="score-display" className={fontSize}>
-          <span data-testid="score-number">{clampedScore}</span>
-        </div>
-      </div>
-
-      {/* Status Text */}
-      <div data-testid="status-container">
-        <span data-testid="status-text" data-status={status} style={{ color: hex }}>
-          {status}
-        </span>
-      </div>
-
-      {/* Site URL */}
-      <div data-testid="site-url-container">
-        <svg data-testid="globe-icon" className="inline w-4 h-4" />
-        <span data-testid="site-url">{siteUrl}</span>
-      </div>
-
-      {/* Audit Date */}
-      <div data-testid="audit-date-container">
-        <svg data-testid="calendar-icon" className="inline w-4 h-4" />
-        <span data-testid="audit-date">{auditDate}</span>
-      </div>
-
-      {/* CTA Button */}
-      {showCta && (
-        <a
-          href="/audit"
-          data-testid="cta-button"
-          className="inline-flex items-center gap-2"
-        >
-          Get your free audit
-          <svg data-testid="external-link-icon" className="w-4 h-4" />
-        </a>
-      )}
-    </div>
-  );
-};
+// Import the actual component
+import ScoreOverview from '@/components/audit/ScoreOverview';
 
 // Helper functions
 const createMockProps = (overrides: Partial<ScoreOverviewProps> = {}): ScoreOverviewProps => ({
@@ -664,8 +537,9 @@ describe('ScoreOverview', () => {
       // strokeDashoffset = circumference - (score / 100) * circumference
       // For 180x180: radius = 80, circumference = ~502.65
       // 75% = ~125.66 offset
-      expect(progressCircle).toHaveAttribute('strokeDasharray');
-      expect(progressCircle).toHaveAttribute('strokeDashoffset');
+      // Note: React converts camelCase to kebab-case in DOM
+      expect(progressCircle).toHaveAttribute('stroke-dasharray');
+      expect(progressCircle).toHaveAttribute('stroke-dashoffset');
     });
   });
 

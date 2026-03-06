@@ -1,6 +1,223 @@
 # DOCUMENTATION.md
 
 ---
+## Badge.js Embed Script (TASK-33-16)
+
+### Component Description
+JavaScript embed script for displaying interactive SEO score badges on third-party websites. Enables users to embed badges on their sites via a simple script tag with data attributes, providing viral distribution and brand visibility for SEOIndicator. Part of the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033).
+
+### Component Location
+- **TypeScript Source:** `frontend/lib/scripts/badge.ts`
+- **Build Script:** `frontend/scripts/build-badge.mjs`
+- **Production Files:**
+  - `https://seoindicator.com/badge.js` (unminified, 16,626 bytes)
+  - `https://seoindicator.com/badge.min.js` (minified, 9,256 bytes, 3.52KB gzip)
+  - `https://seoindicator.com/badge.min.js.map` (source map)
+- **Tests:** `frontend/__tests__/scripts/badge.test.ts`, `frontend/__tests__/scripts/badge-umd.test.ts`, `frontend/__tests__/scripts/badge-build.test.ts`
+- **Test Documentation:** `TESTS/TEST-33-16.md`
+
+### Usage
+
+#### Auto-Initialization (Recommended)
+```html
+<div data-seoindicator-badge="abc123" data-size="medium" data-theme="light"></div>
+<script src="https://seoindicator.com/badge.min.js" async></script>
+```
+
+#### Manual Initialization
+```html
+<div id="badge-container"></div>
+<script src="https://seoindicator.com/badge.min.js"></script>
+<script>
+  SEOIndicatorBadge.init({
+    auditId: 'abc123',
+    size: 'medium',
+    theme: 'light',
+    container: '#badge-container'
+  });
+</script>
+```
+
+### Embed Attributes
+
+| Attribute | Type | Values | Default | Description |
+|-----------|------|--------|---------|-------------|
+| `data-seoindicator-badge` | string | 32-char hash | (required) | Public audit hash |
+| `data-size` | string | `small`, `medium`, `large` | `medium` | Badge dimensions |
+| `data-theme` | string | `light`, `dark` | `light` | Color theme |
+| `data-no-tracking` | boolean | `true`, `false` | `false` | Disable impression/click tracking |
+
+### Badge Sizes
+
+| Size | Dimensions | Use Case |
+|------|------------|----------|
+| `small` | 120x40px | Inline in blog posts, footer links |
+| `medium` | 150x100px | Sidebar widgets, about pages |
+| `large` | 300x150px | Footer widgets, partner pages |
+
+### Theme Colors
+
+| Theme | Background | Text | Use Case |
+|-------|------------|------|----------|
+| `light` | #ffffff | #1a1a1a | Light-themed websites |
+| `dark` | #1a1a1a | #ffffff | Dark-themed websites |
+
+### Score Color Coding
+
+| Score Range | Color | Status |
+|-------------|-------|--------|
+| 90-100 | #22c55e (green) | Excellent |
+| 70-89 | #3b82f6 (blue) | Good |
+| 50-69 | #eab308 (yellow) | Needs Work |
+| 30-49 | #f97316 (orange) | Poor |
+| 0-29 | #ef4444 (red) | Critical Issues |
+
+### JavaScript API
+
+```javascript
+// Initialize a badge
+SEOIndicatorBadge.init({
+  auditId: 'abc123',      // Required: public audit hash
+  size: 'medium',         // Optional: 'small' | 'medium' | 'large'
+  theme: 'light',         // Optional: 'light' | 'dark'
+  container: '#my-badge', // Optional: CSS selector or element
+  refreshInterval: 86400, // Optional: Auto-refresh interval (seconds)
+  noTracking: false       // Optional: Disable tracking
+});
+
+// Refresh a specific badge (or all if no ID)
+SEOIndicatorBadge.refresh('abc123');
+
+// Change theme dynamically
+SEOIndicatorBadge.setTheme('dark', 'abc123'); // Specific badge
+SEOIndicatorBadge.setTheme('dark');           // All badges
+
+// Destroy all badges and clean up
+SEOIndicatorBadge.destroy();
+
+// Restore previous global variable (UMD compatibility)
+var myBadge = SEOIndicatorBadge.noConflict();
+```
+
+### API Version
+
+```javascript
+SEOIndicatorBadge.VERSION; // "1.0.0"
+```
+
+### Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Auto-init on DOMContentLoaded | Scans DOM for `data-seoindicator-badge` attributes |
+| Lazy impression tracking | IntersectionObserver for visibility detection |
+| Auto-refresh | Configurable interval (default: 24 hours) |
+| Error handling | "Badge unavailable" state with retry |
+| XSS prevention | HTML entity escaping for all dynamic content |
+| CORS handling | `credentials: 'omit'` for cross-origin requests |
+| Retry logic | Exponential backoff (3 attempts, 10s timeout) |
+| UMD compatibility | Works with AMD, CommonJS, and browser globals |
+
+### Loading States
+
+1. **Loading**: Spinner animation while fetching badge config
+2. **Success**: Score display with color-coded background
+3. **Error**: "Badge unavailable" message with retry option
+
+### Tracking
+
+| Event | Trigger | Endpoint |
+|-------|---------|----------|
+| Impression | Badge enters viewport (IntersectionObserver) | `POST /api/v1/badge/impression` |
+| Click | User clicks badge | `POST /api/v1/badge/click` |
+
+**Privacy-Friendly:**
+- IP addresses hashed before storage
+- No cookies set
+- No personal data collected
+
+### Build Configuration
+
+**Build Command:**
+```bash
+npm run build:badge
+```
+
+**Build Output:**
+| File | Size | Purpose |
+|------|------|---------|
+| `badge.js` | 16,626 bytes | Unminified (development) |
+| `badge.min.js` | 9,256 bytes | Minified (production) |
+| `badge.min.js.map` | - | Source map |
+
+**Build Tool:** esbuild with UMD wrapper
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `badge.test.ts` | 27 | ✅ PASS |
+| `badge-umd.test.ts` | 4 | ✅ PASS |
+| `badge-build.test.ts` | 12 | ✅ PASS |
+| **Total** | **43** | **✅ ALL PASS** |
+
+### Production Verification
+
+| Check | Result |
+|-------|--------|
+| `badge.min.js` HTTP 200 | ✅ 9,256 bytes |
+| `badge.js` HTTP 200 | ✅ 16,626 bytes |
+| Source map HTTP 200 | ✅ Present |
+| UMD global `SEOIndicatorBadge` | ✅ Available |
+| API methods | ✅ VERSION, init, refresh, setTheme, destroy, noConflict |
+| Gzip size | ✅ 3.52KB (< 10KB target) |
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Badge not loading | Check audit hash is valid and audit is published |
+| CORS errors | Badge uses `credentials: 'omit'`, should work cross-origin |
+| Score not updating | Auto-refresh runs every 24h; call `refresh()` manually |
+| XSS concerns | All dynamic content is HTML-escaped; no user content rendered |
+| Performance | Script is < 4KB gzip, loads async, no blocking |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | HTML entity escaping via `escapeHtml()` function |
+| No Cookies | Privacy-friendly, no tracking cookies |
+| CORS Safe | `credentials: 'omit'` prevents credential leakage |
+| No External Dependencies | Pure vanilla JS, no third-party libs |
+| Content Security Policy | Compatible with strict CSP |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `e0687e12` |
+| Deployment Method | GitHub Actions auto-deploy (run #22773218732) |
+| Health Check | ✅ 200 OK |
+| Tests | 43/43 passing |
+| Gzip Size | 3.52KB |
+| Status | Complete |
+
+### Dependencies
+
+- TASK-33-5 (Badge config endpoint) - Done ✅
+- TASK-33-17 (Impression tracking) - API available
+- TASK-33-18 (Click tracking) - API available
+
+### Related Tasks
+
+- TASK-33-15: SVG Badge Route (alternative embed method)
+- TASK-33-17: Badge Impression Controller (tracking)
+- TASK-33-18: Badge Click Controller (tracking)
+- TASK-33-20: Publish Audit UI Component (generates embed code)
+
+---
 ## Public Audit API Routes (TASK-33-7)
 
 ### Route Description
