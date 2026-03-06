@@ -1,6 +1,303 @@
 # DOCUMENTATION.md
 
 ---
+## QueueMonitoringService (TASK-27-12)
+
+### Service Description
+Queue monitoring service for the Admin Dashboard (FEAT-027) that provides detailed queue health monitoring with per-queue breakdown, 24-hour failure tracking, and configurable alert thresholds. Integrates with the existing job queue system (FEAT-019) to provide real-time queue status for administrators.
+
+### Component Location
+- **Service:** `backend/app/Services/Admin/QueueMonitoringService.php`
+- **Config:** `backend/config/queue.php` (monitoring.thresholds section)
+- **Tests:** `backend/tests/Unit/Services/Admin/QueueMonitoringServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-27-12.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `getQueueStats()` | Get all queue statistics (cached 30s) |
+| `getPendingByQueue()` | Get pending job counts grouped by queue |
+| `getFailedJobsLast24h()` | Get failed jobs count from last 24 hours |
+| `getWorkerCount()` | Get active worker count from cache |
+| `getAverageProcessingTime()` | Get average job processing time in milliseconds |
+| `getAlertThresholds()` | Get configurable alert thresholds from config |
+
+### Response Format
+
+```json
+{
+  "status": "healthy",
+  "pending": 23,
+  "failed": 2,
+  "failed_24h": 1,
+  "workers": 5,
+  "avgProcessingTimeMs": 150,
+  "queues": {
+    "default": {"pending": 15, "status": "healthy"},
+    "crawler": {"pending": 8, "status": "healthy"}
+  }
+}
+```
+
+### Status Determination Logic
+
+| Condition | Status |
+|-----------|--------|
+| Pending > `pending_critical` (500) | `unhealthy` |
+| Failed > `failed_critical` (50) | `unhealthy` |
+| Processing time > `processing_time_critical` (5000ms) | `unhealthy` |
+| Pending > `pending_warning` (100) | `warning` |
+| Failed > `failed_warning` (10) | `warning` |
+| Processing time > `processing_time_warning` (1000ms) | `warning` |
+| Pending > 0 AND workers === 0 | `warning` |
+| Failed 24h > `failed_warning` (10) | `warning` |
+| All checks pass | `healthy` |
+
+### Alert Thresholds Configuration
+
+```php
+// config/queue.php → monitoring.thresholds
+[
+    'pending_warning' => 100,           // env: QUEUE_PENDING_WARNING
+    'pending_critical' => 500,          // env: QUEUE_PENDING_CRITICAL
+    'failed_warning' => 10,             // env: QUEUE_FAILED_WARNING
+    'failed_critical' => 50,            // env: QUEUE_FAILED_CRITICAL
+    'processing_time_warning' => 1000,  // env: QUEUE_TIME_WARNING
+    'processing_time_critical' => 5000, // env: QUEUE_TIME_CRITICAL
+]
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `QUEUE_PENDING_WARNING` | 100 | Pending jobs count for warning status |
+| `QUEUE_PENDING_CRITICAL` | 500 | Pending jobs count for unhealthy status |
+| `QUEUE_FAILED_WARNING` | 10 | Failed jobs count for warning status |
+| `QUEUE_FAILED_CRITICAL` | 50 | Failed jobs count for unhealthy status |
+| `QUEUE_TIME_WARNING` | 1000 | Processing time (ms) for warning status |
+| `QUEUE_TIME_CRITICAL` | 5000 | Processing time (ms) for unhealthy status |
+
+### Cache Keys
+
+| Cache Key | TTL | Purpose |
+|-----------|-----|---------|
+| `admin.queue.stats` | 30s | Cached queue statistics |
+| `queue:workers:count` | Updated by workers | Active worker count |
+| `queue:avg_processing_time` | Updated by workers | Average processing time |
+| `queue:completed_stats` | Updated by workers | Completed job statistics |
+
+### Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `jobs` | Pending queue jobs (read for counts) |
+| `failed_jobs` | Failed job records (read for failure counts) |
+
+### HealthCheckService Integration
+
+QueueMonitoringService integrates with HealthCheckService:
+- `HealthCheckService::checkQueue()` uses `QueueMonitoringService::getQueueStats()`
+- Queue metrics included in overall health check response
+- Graceful handling if queue system unavailable
+
+### Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Database unavailable | Returns safe defaults, status: `unhealthy` |
+| Missing tables in testing | Returns zeros without marking unhealthy |
+| Cache unavailable | Direct database queries |
+| Worker cache missing | Returns 0 workers |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `QueueMonitoringServiceTest.php` | 83 | 191 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 5 | Container binding, method existence |
+| Overall Structure | 4 | Response format validation |
+| Per-Queue Pending Counts | 10 | Queue breakdown tests |
+| Failed Jobs Last 24h | 10 | Time-filtered failure counts |
+| Active Workers Count | 8 | Worker monitoring tests |
+| Average Processing Time | 10 | Performance metric tests |
+| Configurable Thresholds | 10 | Alert threshold tests |
+| Status Determination | 10 | Health status logic tests |
+| Graceful Error Handling | 10 | Error recovery tests |
+| Performance | 5 | Speed/memory tests |
+| HealthCheck Integration | 5 | Integration tests |
+| Edge Cases | 10 | Boundary condition tests |
+
+### Acceptance Criteria Status
+
+- [x] Service methods for pending jobs count by queue
+- [x] Failed jobs count (last 24 hours)
+- [x] Active workers count
+- [x] Average job processing time
+- [x] Integrates with existing queues table from FEAT-019
+- [ ] Integrates with Laravel Horizon if available (optional)
+- [x] Results exposed via HealthCheckService
+- [x] Alert thresholds configurable
+- [x] Unit tests verify queue status retrieval
+- [x] Graceful handling if queue system unavailable
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `cdc2fc7a` |
+| Deployment Method | GitHub Actions auto-deploy (run #22774900733) |
+| Health Check | ✅ 200 OK |
+| Tests | 83/83 passing (191 assertions) |
+| Status | Complete |
+
+### Dependencies
+- FEAT-019 (Job Queue system) - queues table
+- TASK-27-11 (HealthCheckService) - integration
+
+### Related Tasks
+- TASK-27-11: HealthCheckService (uses QueueMonitoringService)
+- TASK-27-13: Admin Health API (exposes queue metrics)
+- TASK-27-6: Request Tracking Middleware (usage metrics)
+
+---
+## ScoreOverview Component (TASK-33-9)
+
+### Component Description
+Hero visual component for public audit pages that displays a large circular score indicator with color coding and status text. This is the primary visual element that immediately communicates the SEO score to visitors viewing public audit reports. Part of the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033).
+
+### Component Location
+- **Component:** `frontend/components/audit/ScoreOverview.tsx`
+- **Export Index:** `frontend/components/audit/index.ts`
+- **Tests:** `frontend/__tests__/components/audit/ScoreOverview.test.tsx`
+- **Test Documentation:** `TESTS/TEST-33-9.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Circular Progress Indicator | SVG-based circular progress (0-100) using stroke-dasharray/stroke-dashoffset |
+| Score Color Coding | 5 distinct color ranges (Green/Blue/Yellow/Orange/Red) |
+| Status Text | Dynamic status labels (Excellent/Good/Needs Work/Poor/Critical Issues) |
+| Site URL Display | Shows audited site URL with icon |
+| Audit Date Display | Shows when the audit was performed with icon |
+| CTA Button | "Get your free audit" button linking to /audit |
+| Animation | Optional animated progress fill |
+| Responsive Sizing | Three size variants (sm/md/lg) |
+| Accessibility | Full ARIA support with screen reader labels |
+
+### Component Props
+
+```typescript
+interface ScoreOverviewProps {
+  score: number;              // 0-100, automatically clamped
+  siteUrl: string;            // URL of audited site
+  auditDate: string;          // Date string for display
+  className?: string;         // Optional CSS classes
+  animate?: boolean;          // Default: true
+  showCta?: boolean;          // Default: true
+  size?: 'sm' | 'md' | 'lg';  // Default: 'md'
+}
+```
+
+### Score Color Mapping
+
+| Score Range | Color | Hex | Status Text |
+|-------------|-------|-----|-------------|
+| 90-100 | Green | #22c55e | Excellent |
+| 70-89 | Blue | #3b82f6 | Good |
+| 50-69 | Yellow | #eab308 | Needs Work |
+| 30-49 | Orange | #f97316 | Poor |
+| 0-29 | Red | #ef4444 | Critical Issues |
+
+### Responsive Sizing
+
+| Size | Dimensions | Stroke Width | Font Size |
+|------|------------|--------------|-----------|
+| `sm` | 120x120px | 8px | Small |
+| `md` | 180x180px | 12px | Base |
+| `lg` | 240x240px | 16px | Large |
+
+### SVG Implementation Details
+
+The circular progress uses SVG circles with stroke-dasharray and stroke-dashoffset:
+
+```typescript
+// Progress calculation
+const circumference = 2 * Math.PI * radius;
+const progress = Math.max(0, Math.min(100, score)) / 100;
+const strokeDashoffset = circumference * (1 - progress);
+```
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `ScoreOverview.test.tsx` | 79 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Circular Progress Structure | 5 | SVG structure, viewBox, circles |
+| Score Range 0-100 | 6 | Boundary handling, clamping |
+| Color Ranges | 20 | All 5 color ranges tested |
+| Status Text | 3 | Status display and color matching |
+| Site URL | 4 | URL display with icon |
+| Audit Date | 3 | Date display with icon |
+| CTA Button | 6 | Button rendering, link, keyboard |
+| Animation | 3 | Animation toggle, SVG math |
+| Responsive Sizing | 4 | sm/md/lg sizes |
+| Accessibility | 6 | ARIA, screen readers, keyboard |
+| Edge Cases | 7 | Empty values, unicode, boundaries |
+| Custom className | 2 | Class forwarding |
+| Card Container | 1 | shadcn/ui Card |
+| Acceptance Criteria | 9 | All 9 ACs verified |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Role | `role="img"` on SVG container |
+| ARIA Label | `aria-label="SEO Score: X out of 100"` |
+| Screen Reader | Score value read via sr-only text |
+| Keyboard Navigation | CTA button keyboard accessible |
+| Color Contrast | Score text readable against all backgrounds |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| Score Clamping | Prevents invalid values (0-100 only) |
+| No Sensitive Data | Only score, URL, date displayed |
+| Safe SVG | Static SVG elements, no user content |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `cdc2fc7a` |
+| Deployment Method | GitHub Actions auto-deploy (run #22774316978) |
+| Health Check | ✅ 200 OK |
+| Tests | 79/79 passing |
+| Status | Complete |
+
+### Dependencies
+- None (standalone UI component)
+
+### Related Tasks
+- TASK-33-8: PublicAuditPage Component (uses ScoreOverview)
+- TASK-33-10: CategoryBreakdown Component (related visual component)
+- TASK-33-11: TopIssues Component (related visual component)
+
+---
 ## Badge.js Embed Script (TASK-33-16)
 
 ### Component Description
