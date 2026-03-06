@@ -413,19 +413,16 @@ class CreateBadgeImpressionsTableTest extends TestCase
     /** @test MS-033: Insert with click_target > 10 chars */
     public function test_click_target_too_long(): void
     {
-        // This test verifies that values longer than the column size are handled
-        // SQLite may truncate or throw depending on configuration
-        try {
-            $impression = BadgeImpression::factory()->create([
-                'click_target' => 'verylongtarget', // 14 chars
-            ]);
-            
-            // If no error, value may be truncated
-            $this->assertLessThanOrEqual(10, strlen($impression->fresh()->click_target));
-        } catch (\Exception $e) {
-            // Strict mode throws error
-            $this->assertStringContainsString('too long', strtolower($e->getMessage()));
-        }
+        // MySQL in non-strict mode truncates values that exceed column length
+        // The value 'verylongtarget' (14 chars) will be truncated to 'verylongta' (10 chars)
+        // This test verifies the column size constraint is enforced
+        $impression = BadgeImpression::factory()->create([
+            'click_target' => 'verylongtarget', // 14 chars
+        ]);
+        
+        // Value should be truncated to 10 characters by MySQL
+        $storedValue = $impression->fresh()->click_target;
+        $this->assertLessThanOrEqual(10, strlen($storedValue), 'Click target should be truncated to 10 characters');
     }
 
     /*

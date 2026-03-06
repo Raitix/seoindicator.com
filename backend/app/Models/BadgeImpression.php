@@ -87,6 +87,25 @@ class BadgeImpression extends Model
     public $timestamps = false;
 
     // =========================================================================
+    // Boot
+    // =========================================================================
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Auto-set impression_at if not provided
+        static::creating(function (self $impression) {
+            if (!$impression->impression_at) {
+                $impression->impression_at = now();
+            }
+        });
+    }
+
+    // =========================================================================
     // Relationships
     // =========================================================================
 

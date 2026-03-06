@@ -1,7 +1,7 @@
 # SPEC-33: Public SEO Audit Reports & Embeddable Score Widget
 
 ## STATUS
-`Prioritization In Progress`
+`To Prioritize`
 
 ## PRIORITY
 `High`
