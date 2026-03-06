@@ -1,6 +1,213 @@
 # DOCUMENTATION.md
 
 ---
+## Public Audit API Routes (TASK-33-7)
+
+### Route Description
+REST API routes for public audit functionality, enabling SEO audit sharing and embeddable score widgets. Includes public endpoints (no authentication) for viewing audits and badges, and authenticated endpoints for audit visibility management. Part of the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033).
+
+### Route Locations
+- **Routes File:** `backend/routes/api.php`
+- **Rate Limiters:** `backend/app/Providers/AppServiceProvider.php`
+- **Controller Stubs:** 
+  - `backend/app/Http/Controllers/Api/V1/PublicAuditController.php`
+  - `backend/app/Http/Controllers/Api/V1/BadgeTrackingController.php`
+  - `backend/app/Http/Controllers/Api/V1/AuditVisibilityController.php`
+- **Tests:** `backend/tests/Feature/Api/V1/PublicAuditRoutesTest.php`
+- **Test Documentation:** `TESTS/TEST-33-7.md`
+
+### API Endpoints
+
+#### Public Routes (No Authentication Required)
+
+| Method | Endpoint | Name | Rate Limit | Purpose |
+|--------|----------|------|------------|---------|
+| GET | `/api/v1/public-audit/{hash}` | `api.v1.public-audit.show` | 100/hour per IP | Retrieve public audit data by hash |
+| POST | `/api/v1/public-audit/{hash}/lead` | `api.v1.public-audit.lead` | 100/hour per IP | Submit lead capture email |
+| GET | `/api/v1/public-audit/{hash}/badge` | `api.v1.public-audit.badge` | 100/hour per IP | Get badge configuration |
+| POST | `/api/v1/badge/impression` | `api.v1.badge.impression` | 60/minute per IP | Track badge impression |
+| POST | `/api/v1/badge/click` | `api.v1.badge.click` | 60/minute per IP | Track badge click |
+
+#### Authenticated Routes (Require `auth:sanctum`)
+
+| Method | Endpoint | Name | Rate Limit | Purpose |
+|--------|----------|------|------------|---------|
+| POST | `/api/v1/audits/{id}/publish` | `api.v1.audits.publish` | 60/minute per user | Generate public hash for audit |
+| DELETE | `/api/v1/audits/{id}/unpublish` | `api.v1.audits.unpublish` | 60/minute per user | Remove public access |
+| GET | `/api/v1/audits/{id}/embed-code` | `api.v1.audits.embed-code` | 60/minute per user | Get embed code snippets |
+
+### Rate Limiters Configuration
+
+| Limiter Name | Limit | Window | Purpose |
+|--------------|-------|--------|---------|
+| `public-audit` | 100 requests | 60 minutes | Public audit endpoints |
+| `badge-tracking` | 60 requests | 1 minute | Badge impression/click tracking |
+| `throttle:60,1` | 60 requests | 1 minute | Authenticated audit management |
+
+### Route Model Binding
+
+| Parameter | Model | Resolution |
+|-----------|-------|------------|
+| `{hash}` | `Audit` | Resolved via `public_hash` column |
+| `{id}` | `Audit` | Standard ID resolution |
+
+### Request/Response Examples
+
+**GET /api/v1/public-audit/{hash}**
+```json
+// Success (200)
+{
+  "success": true,
+  "data": {
+    "hash": "abc123...",
+    "site_url": "https://example.com",
+    "audited_at": "2026-03-06T12:00:00Z",
+    "overall_score": 85,
+    "category_scores": {
+      "technical": 90,
+      "on_page": 85,
+      "content": 80,
+      "performance": 88
+    },
+    "top_issues": [...]
+  }
+}
+
+// Invalid hash (404)
+{
+  "success": false,
+  "error": "Audit not found"
+}
+```
+
+**POST /api/v1/public-audit/{hash}/lead**
+```json
+// Request
+{
+  "email": "user@example.com"
+}
+
+// Success (200)
+{
+  "success": true,
+  "message": "Lead captured successfully"
+}
+
+// Validation error (422)
+{
+  "success": false,
+  "error": "Invalid email format"
+}
+```
+
+**POST /api/v1/audits/{id}/publish**
+```json
+// Success (200)
+{
+  "success": true,
+  "data": {
+    "public_hash": "abc123...",
+    "public_url": "https://seoindicator.com/audit/abc123/",
+    "badge_url": "https://seoindicator.com/badge/abc123/small.svg"
+  }
+}
+
+// Unauthorized (401)
+{
+  "success": false,
+  "error": "Unauthenticated"
+}
+```
+
+### HTTP Method Restrictions
+
+| Endpoint | Allowed Methods | Rejected Methods |
+|----------|-----------------|------------------|
+| `public-audit.show` | GET | POST, PUT, DELETE, PATCH → 405 |
+| `public-audit.lead` | POST | GET, PUT, DELETE, PATCH → 405 |
+| `badge.impression` | POST | GET, PUT, DELETE, PATCH → 405 |
+| `badge.click` | POST | GET, PUT, DELETE, PATCH → 405 |
+| `audits.publish` | POST | GET, PUT, DELETE, PATCH → 405 |
+| `audits.unpublish` | DELETE | GET, POST, PUT, PATCH → 405 |
+| `audits.embed-code` | GET | POST, PUT, DELETE, PATCH → 405 |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SQL Injection Prevention | Parameterized queries via Eloquent |
+| XSS Prevention | Input sanitization, output encoding |
+| Path Traversal Protection | Hash validation (alphanumeric only) |
+| Authentication Enforcement | `auth:sanctum` middleware on protected routes |
+| Rate Limiting | Throttle middleware on all routes |
+| Ownership Verification | Controller checks `user_id` matches authenticated user |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `PublicAuditRoutesTest.php` | 73 | 181 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Route Registration (RR) | 8 | All 8 routes registered |
+| Route Paths (RP) | 8 | Correct path patterns |
+| HTTP Methods (HM) | 8 | Correct verbs for each route |
+| Middleware - Public (MW-PUB) | 5 | Rate limiting applied |
+| Middleware - Auth (MW-AUTH) | 3 | Auth middleware on protected routes |
+| Rate Limiting (RL) | 3 | Limiter configuration verified |
+| HTTP Requests - Public (HTTP-PUB) | 6 | Public endpoint responses |
+| HTTP Requests - Auth (HTTP-AUTH) | 6 | Authenticated endpoint responses |
+| HTTP Method Restrictions (HMR) | 8 | Wrong methods return 405 |
+| Route Model Binding (RMB) | 3 | Hash/ID resolution |
+| API Prefix (API) | 1 | `/api/v1/` prefix enforced |
+| Security (SEC) | 5 | SQL injection, XSS, path traversal |
+| Edge Cases (EC) | 4 | Malformed inputs, unicode |
+| Acceptance Criteria (AC) | 5 | All ACs verified |
+
+### Acceptance Criteria Status
+
+- [x] Public routes (no authentication):
+  - GET `/api/v1/public-audit/{hash}` ✅
+  - POST `/api/v1/public-audit/{hash}/lead` ✅
+  - GET `/api/v1/public-audit/{hash}/badge` ✅
+  - POST `/api/v1/badge/impression` ✅
+  - POST `/api/v1/badge/click` ✅
+- [x] Authenticated routes (require auth:sanctum):
+  - POST `/api/v1/audits/{id}/publish` ✅
+  - DELETE `/api/v1/audits/{id}/unpublish` ✅
+  - GET `/api/v1/audits/{id}/embed-code` ✅
+- [x] Rate limiting middleware applied ✅
+- [x] Routes documented with route:list command ✅
+- [x] Integration test verifies route accessibility ✅
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `3ecc4823` |
+| Deployment Method | GitHub Actions auto-deploy (run #22772468095) |
+| Health Check | ✅ 200 OK |
+| Tests | 73/73 passing (181 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+- TASK-33-5 (PublicAuditController) - Controller implementation
+- TASK-33-17 (Badge Impression Controller) - Impression tracking
+- TASK-33-18 (Badge Click Controller) - Click tracking
+
+### Related Tasks
+
+- TASK-33-5: PublicAuditController (uses routes)
+- TASK-33-8: PublicAuditPage Component (frontend consumer)
+- TASK-33-15: SVG Badge Route (badge generation)
+- TASK-33-17: Badge Impression Controller (tracking endpoint)
+- TASK-33-18: Badge Click Controller (tracking endpoint)
+
+---
 ## PublicAuditController Unit Tests (TASK-33-31)
 
 ### Test Description
@@ -9470,6 +9677,249 @@ WHERE audit_id = ?;
 - TASK-33-2: Public audit views table
 - TASK-33-17: Badge impression tracking API
 - TASK-33-18: Badge click tracking API
+
+---
+## PublicAuditController (TASK-33-5)
+
+### Controller Description
+REST API controller for public-facing SEO audit sharing functionality. Provides endpoints for retrieving public audit data, lead capture via email submission, and badge configuration retrieval. Enables anonymous users to view shared audit results and captures leads for conversion. Part of the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033).
+
+### Component Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/PublicAuditController.php`
+- **Form Request:** `backend/app/Http/Requests/Api/V1/PublicAuditLeadRequest.php`
+- **Routes:** `backend/routes/api.php`
+- **Tests:** `backend/tests/Feature/Api/V1/PublicAuditControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-33-5.md`
+
+### API Endpoints
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/api/v1/public-audit/{hash}` | Retrieve public audit data | None (public) |
+| POST | `/api/v1/public-audit/{hash}/lead` | Submit lead capture email | None (public) |
+| GET | `/api/v1/public-audit/{hash}/badge` | Get badge configuration | None (public) |
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `show($hash)` | Retrieve public audit data by hash, track view |
+| `lead($hash, Request)` | Capture lead email for audit access |
+| `badge($hash)` | Generate badge configuration for embedding |
+
+### Endpoint: GET /api/v1/public-audit/{hash}
+
+**Purpose:** Retrieve public audit data for display on public audit page.
+
+**Request Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `hash` | string | Yes | 32-character public audit hash |
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "hash": "abc123def456...",
+    "site_url": "https://example.com",
+    "audited_at": "2026-03-06T12:00:00Z",
+    "overall_score": 85,
+    "category_scores": {
+      "technical": 90,
+      "on_page": 85,
+      "content": 80,
+      "performance": 88
+    },
+    "top_issues": [
+      { "id": 1, "name": "Missing meta description", "severity": "medium" },
+      { "id": 2, "name": "H1 tag missing", "severity": "high" }
+    ],
+    "is_partial": true
+  }
+}
+```
+
+**Response Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `hash` | string | 32-character public audit hash |
+| `site_url` | string | Audited site URL |
+| `audited_at` | string | ISO 8601 timestamp of audit |
+| `overall_score` | integer | Overall SEO score (0-100) |
+| `category_scores` | object | Scores by category (technical, on_page, content, performance) |
+| `top_issues` | array | Top issues found in audit |
+| `is_partial` | boolean | true for anonymous users, false for audit owners |
+
+**Error Responses:**
+| Status | Condition |
+|--------|-----------|
+| 404 | Invalid hash, non-existent audit, or private audit |
+
+### Endpoint: POST /api/v1/public-audit/{hash}/lead
+
+**Purpose:** Capture lead email for users requesting full audit access.
+
+**Request Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `hash` | string | Yes | 32-character public audit hash |
+| `email` | string | Yes | User email address (validated) |
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Email captured successfully"
+}
+```
+
+**Email Validation:**
+- RFC-compliant email format validation
+- Maximum 254 characters
+- Normalized to lowercase
+- Whitespace trimmed
+
+**Error Responses:**
+| Status | Condition |
+|--------|-----------|
+| 404 | Invalid hash or non-public audit |
+| 422 | Invalid email format |
+
+### Endpoint: GET /api/v1/public-audit/{hash}/badge
+
+**Purpose:** Retrieve badge configuration for embedding on third-party sites.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "hash": "abc123def456...",
+    "score": 85,
+    "site_url": "https://example.com",
+    "badge_url": "https://seoindicator.com/badge/abc123def456",
+    "sizes": ["small", "medium", "large"],
+    "themes": ["light", "dark"],
+    "embed_code": {
+      "svg": "<a href=\"https://seoindicator.com/audit/abc123/\"><img src=\"https://seoindicator.com/badge/abc123/small.svg\" /></a>",
+      "js": "<div data-seoindicator-badge=\"abc123\"></div><script src=\"https://seoindicator.com/badge.js\"></script>"
+    }
+  }
+}
+```
+
+**Error Responses:**
+| Status | Condition |
+|--------|-----------|
+| 404 | Invalid hash or non-public audit |
+
+### Score Calculation Logic
+
+The controller calculates overall SEO score from audit issues:
+
+```php
+$score = 100;
+foreach ($issues as $issue) {
+    match ($issue->severity) {
+        'critical' => $score -= 10,
+        'warning' => $score -= 5,
+        'notice' => $score -= 2,
+        default => null
+    };
+}
+return max(0, min(100, $score)); // Clamp to 0-100
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Hash Enumeration Protection | Same 404 response for non-existent and non-public audits |
+| SQL Injection Prevention | Parameterized queries via Eloquent, hash validation |
+| XSS Prevention | Email sanitized, no raw user content in responses |
+| Path Traversal Prevention | Hash validated as 32-char alphanumeric |
+| Rate Limiting | 100 requests/hour per hash (IP + hash key) |
+| No Sensitive Data | Only technical SEO data exposed, no PII |
+| Private Audit Isolation | visibility='private' audits return 404 |
+
+### Rate Limiting Configuration
+
+| Endpoint | Limit | Window | Key |
+|----------|-------|--------|-----|
+| All public endpoints | 100 requests | 60 minutes | IP + hash combination |
+
+### View Tracking
+
+Each GET request to the audit endpoint creates a record in `public_audit_views`:
+- Records view timestamp, referrer, IP hash
+- Used for analytics on public audit reach
+- Privacy-conscious: IP hashed with SHA-256 + salt
+
+### Lead Capture Storage
+
+Lead emails are stored in `public_audit_views` table:
+- `is_lead_capture` = true
+- `lead_email` = captured email address
+- Linked to audit via `audit_id`
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `PublicAuditControllerTest.php` | 85 | 225 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| PA-GET (GET endpoint) | 17 | Audit data retrieval, 404 handling, view tracking |
+| PA-POST (Lead capture) | 13 | Email validation, storage, error handling |
+| PA-BADGE (Badge config) | 10 | Badge configuration retrieval |
+| PA-RATE (Rate limiting) | 7 | 100/hr limit enforcement |
+| PA-SEC (Security) | 7 | SQL injection, XSS, path traversal, enumeration |
+| PA-EDGE (Edge cases) | 11 | Boundary conditions, unicode, malformed input |
+| PA-HTTP (HTTP methods) | 6 | Method restrictions |
+| PA-PERF (Performance) | 3 | Response time thresholds |
+| PA-AC (Acceptance) | 11 | All acceptance criteria verified |
+
+### Performance Characteristics
+
+| Operation | Target | Actual |
+|-----------|--------|--------|
+| GET audit endpoint | < 500ms | 47ms |
+| POST lead capture | < 500ms | ~50ms |
+| GET badge config | < 200ms | ~30ms |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `36f74317` |
+| Deployment Method | GitHub Actions auto-deploy (#22771779707) |
+| Health Check | ✅ 200 OK |
+| Tests | 85/85 passing (225 assertions) |
+| Status | Complete |
+
+### Dependencies
+- TASK-33-1 (visibility columns in audits table) - Done
+- TASK-33-2 (public_audit_views table) - Done
+- TASK-33-3 (badge_impressions table) - Done
+- TASK-33-4 (PublicAudit model) - Done
+
+### Related Tasks
+- TASK-33-6: BadgeService (used for badge configuration)
+- TASK-33-7: API routes (route registration)
+- TASK-33-8: PublicAuditPage component (frontend consumer)
+- TASK-33-15: SVG badge route (badge generation)
+- TASK-33-31: Unit tests (test documentation)
 
 ---
 ## IndicatorIcon Wrapper Component (TASK-28-4)
