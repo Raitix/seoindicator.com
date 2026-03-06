@@ -20,7 +20,7 @@ interface AuditLayoutProps {
  * @param props - Layout props with children
  * @returns JSX element
  */
-export default function AuditLayout({ children }: AuditLayoutProps): JSX.Element {
+export default function AuditLayout({ children }: AuditLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {children}
