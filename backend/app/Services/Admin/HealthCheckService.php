@@ -105,35 +105,40 @@ class HealthCheckService
     /**
      * Check queue health.
      *
+     * Uses QueueMonitoringService for enhanced queue metrics including
+     * per-queue pending counts, 24-hour failed job tracking, and
+     * configurable alert thresholds.
+     *
      * @return array
      */
     public function checkQueue(): array
     {
         try {
-            $pending = DB::table('jobs')->count();
-            $failed = DB::table('failed_jobs')->count();
-            $workers = $this->getWorkerCount();
-
-            // Determine status based on queue state
-            $status = 'healthy';
-            if ($failed > 10) {
-                $status = 'unhealthy';
-            } elseif ($pending > 100 || $failed > 0) {
-                $status = 'warning';
-            }
+            $queueStats = $this->getQueueMonitoringService()->getQueueStats();
 
             return [
-                'status' => $status,
-                'pending' => $pending,
-                'failed' => $failed,
-                'workers' => $workers,
+                'status' => $queueStats['status'],
+                'pending' => $queueStats['pending'],
+                'failed' => $queueStats['failed'],
+                'failed_24h' => $queueStats['failed_24h'],
+                'workers' => $queueStats['workers'],
+                'avgProcessingTimeMs' => $queueStats['avgProcessingTimeMs'],
+                'queues' => $queueStats['queues'],
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'unhealthy',
                 'pending' => 0,
                 'failed' => 0,
+                'failed_24h' => 0,
                 'workers' => 0,
+                'avgProcessingTimeMs' => 0,
+                'queues' => [
+                    'default' => [
+                        'pending' => 0,
+                        'status' => 'healthy',
+                    ],
+                ],
             ];
         }
     }
