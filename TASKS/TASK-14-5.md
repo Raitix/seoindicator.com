@@ -1,7 +1,7 @@
 # TASK-14-5: Create SiteCrawler Service
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -141,3 +141,41 @@ return [
   3. Well-defined interfaces allow TDD with mocks
   4. Downstream tasks are blocked without this service
 - Status: To Write Tests
+
+### [2026-03-06 23:03] PreTester: Test Design Complete
+- **Status:** To Develop ✅
+- **Tests:** 260+ test scenarios across 17 categories
+- **Files Created:**
+  - `PROJECT-SEOINDICATOR/TESTS/TEST-14-5.md` - Test documentation (166 test scenarios)
+  - `backend/tests/Unit/Services/Audit/SiteCrawlerTest.php` - Main service tests (120+ tests)
+  - `backend/tests/Unit/Services/Audit/DTOs/CrawlResultTest.php` - DTO tests (45+ tests)
+  - `backend/tests/Unit/Services/Audit/CrawlQueueTest.php` - Queue tests (55+ tests)
+  - `backend/tests/Feature/Services/SiteCrawlerIntegrationTest.php` - Integration tests (40+ tests)
+- **Test Categories:**
+  - SI: Service Instantiation (5 tests)
+  - METHODS: Core Methods (8 tests)
+  - ROBOTS: Robots.txt Compliance (14 tests)
+  - RATE: Rate Limiting (11 tests)
+  - QUEUE: URL Queue Management (10 tests)
+  - DEDUP: URL Deduplication (10 tests)
+  - REDIRECT: Redirect Handling (10 tests)
+  - CONTENT: Content Extraction (12 tests)
+  - RESULT: CrawlResult Structure (12 tests)
+  - LIMITS: Max Limits (8 tests)
+  - ERROR: Error Handling (10 tests)
+  - SEC: Security - SSRF Protection (13 tests)
+  - CONFIG: Configuration (8 tests)
+  - QUEUE-SYS: Queue Integration (8 tests)
+  - EDGE: Edge Cases (15 tests)
+  - PERF: Performance (6 tests)
+  - INT: Integration (6 tests)
+- **Key Patterns:**
+  - HTTP mocking with `Http::fake()` for request simulation
+  - RobotsParser mocked via Mockery interface
+  - SSRF protection tests cover localhost, private IPs, cloud metadata, IPv6
+  - Generator testing for processQueue() method
+  - Queue::fake() for queue integration tests
+- **Dependencies:**
+  - TASK-14-6 (RobotsParser) - Mocked in tests
+  - TASK-14-8 (IssueDetector) - Mocked in tests
+- **TDD Pattern:** Tests will fail until SiteCrawler, CrawlResult, CrawlQueue classes are created

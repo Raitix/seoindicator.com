@@ -21898,6 +21898,262 @@ RateLimiter::for('audit-trigger', function (Request $request) {
 - TASK-14-16: Audit Detail Page (Frontend)
 
 ---
+## AuditIssueController (TASK-14-14)
+
+### Service Description
+The AuditIssueController provides REST API endpoints for managing SEO audit issues. It handles listing issues with filtering and pagination, retrieving single issue details, updating issue status (open/fixed/ignored), and bulk status updates for efficient issue management. Part of the Technical SEO Site Audit feature (FEAT-014).
+
+### Component Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/AuditIssueController.php`
+- **Requests:** 
+  - `backend/app/Http/Requests/Api/V1/UpdateIssueStatusRequest.php`
+  - `backend/app/Http/Requests/Api/V1/BulkUpdateIssuesRequest.php`
+- **Routes:** `routes/api.php`
+- **Tests:** `backend/tests/Feature/Api/V1/AuditIssueControllerTest.php`
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/audits/{auditId}/issues` | List issues for audit with filtering |
+| `GET` | `/api/v1/issues/{issueId}` | Get single issue detail |
+| `PATCH` | `/api/v1/issues/{issueId}` | Update issue status |
+| `PATCH` | `/api/v1/audits/{auditId}/issues/bulk` | Bulk update issue status |
+
+### List Issues for Audit
+
+**Request:**
+```
+GET /api/v1/audits/{auditId}/issues?severity=critical&status=open&per_page=25&page=1
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `severity` | string | Filter by severity: `critical`, `warning`, `notice` |
+| `status` | string | Filter by status: `open`, `fixed`, `ignored` |
+| `category` | string | Filter by issue category |
+| `search` | string | Search in URL or description |
+| `sort_by` | string | Sort field: `created_at`, `severity`, `url` |
+| `sort_order` | string | Sort direction: `asc`, `desc` |
+| `per_page` | int | Items per page (default: 25, max: 100) |
+| `page` | int | Page number |
+
+**Response (200 OK):**
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "url": "https://example.com/page",
+            "issue_type": {
+                "id": 1,
+                "name": "Missing title tag",
+                "category": "meta"
+            },
+            "severity": "critical",
+            "description": "This page is missing a title tag",
+            "recommendation": "Add a unique, descriptive title tag to this page.",
+            "status": "open",
+            "created_at": "2026-03-06T15:05:00Z"
+        }
+    ],
+    "meta": {
+        "current_page": 1,
+        "per_page": 25,
+        "total": 50,
+        "severity_counts": {
+            "critical": 10,
+            "warning": 25,
+            "notice": 15
+        },
+        "status_counts": {
+            "open": 45,
+            "fixed": 3,
+            "ignored": 2
+        }
+    }
+}
+```
+
+**Error Responses:**
+- `401 Unauthorized` - Invalid or missing API token
+- `403 Forbidden` - User does not own the site associated with the audit
+- `404 Not Found` - Audit not found
+
+### Get Single Issue
+
+**Request:**
+```
+GET /api/v1/issues/{issueId}
+Authorization: Bearer {token}
+```
+
+**Response (200 OK):**
+```json
+{
+    "id": 1,
+    "url": "https://example.com/page",
+    "issue_type": {
+        "id": 1,
+        "name": "Missing title tag",
+        "category": "meta",
+        "category_label": "Meta Tags"
+    },
+    "severity": "critical",
+    "description": "This page is missing a title tag",
+    "recommendation": "Add a unique, descriptive title tag to this page.",
+    "status": "open",
+    "created_at": "2026-03-06T15:05:00Z",
+    "audit": {
+        "id": 123,
+        "status": "completed",
+        "pages_crawled": 100
+    }
+}
+```
+
+**Error Responses:**
+- `401 Unauthorized` - Invalid or missing API token
+- `403 Forbidden` - User does not own the site associated with the issue
+- `404 Not Found` - Issue not found
+
+### Update Issue Status
+
+**Request:**
+```
+PATCH /api/v1/issues/{issueId}
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+    "status": "fixed"
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `status` | `required`, `in:open,fixed,ignored` |
+
+**Response (200 OK):**
+```json
+{
+    "id": 1,
+    "status": "fixed",
+    "updated_at": "2026-03-06T16:00:00Z"
+}
+```
+
+**Error Responses:**
+- `401 Unauthorized` - Invalid or missing API token
+- `403 Forbidden` - User does not own the site OR audit is not completed
+- `404 Not Found` - Issue not found
+- `422 Unprocessable Entity` - Validation failed
+
+### Bulk Update Issues
+
+**Request:**
+```
+PATCH /api/v1/audits/{auditId}/issues/bulk
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+    "issue_ids": [1, 2, 3, 4, 5],
+    "status": "ignored"
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `issue_ids` | `required`, `array`, `max:100` |
+| `issue_ids.*` | `integer`, `exists:audit_issues,id` |
+| `status` | `required`, `in:open,fixed,ignored` |
+
+**Response (200 OK):**
+```json
+{
+    "updated_count": 5,
+    "message": "5 issues marked as ignored"
+}
+```
+
+**Error Responses:**
+- `401 Unauthorized` - Invalid or missing API token
+- `403 Forbidden` - User does not own the site OR audit is not completed
+- `404 Not Found` - Audit not found
+- `422 Unprocessable Entity` - Validation failed
+
+### Authorization
+
+**Site Ownership Check:**
+```php
+// Authorization via site ownership
+$audit = Audit::findOrFail($auditId);
+$site = $audit->site;
+if ($site->user_id !== $request->user()->id) {
+    return response()->json(['message' => 'Forbidden'], 403);
+}
+```
+
+**Completed Audit Enforcement:**
+- Issues can only be updated for audits with status `completed`
+- Attempting to update issues for pending/running audits returns `403 Forbidden`
+
+### Business Rules
+
+| Rule | Implementation |
+|------|----------------|
+| Single Audit Scope | Bulk updates only affect issues within the specified audit |
+| Status Transitions | Issues can transition between `open`, `fixed`, `ignored` freely |
+| Severity Sorting | Custom sort order: `critical`=1, `warning`=2, `notice`=3 |
+| Meta Counts | Response includes `severity_counts` and `status_counts` for UI badges |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum Bearer token required |
+| Authorization | Site ownership via `$site->user_id === $user->id` |
+| User Isolation | Users can only access issues from their own audits |
+| IDOR Protection | Issue ownership verified via audit → site → user chain |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Protection | Input sanitization and output escaping |
+| Bulk Update Scope | Only issues belonging to specified audit are affected |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `AuditIssueControllerTest.php` | 69 | 215 | ✓ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| INDEX | 19 | List issues with filtering, search, sorting, pagination, meta counts |
+| SHOW | 6 | Get single issue with issue_type and audit details |
+| UPDATE | 9 | Status updates, validation, authorization, completed-audit enforcement |
+| BULK UPDATE | 10 | Bulk status updates, validation (max 100), security (audit scope) |
+| AUTH | 4 | Unauthenticated access denied |
+| SECURITY | 4 | SQL injection, XSS, IDOR protection |
+| EDGE | 6 | Large pages, unicode, boundaries |
+| HTTP | 3 | Method restrictions |
+| AC | 8 | All acceptance criteria verified |
+
+### Production Status
+- **Deployed**: 2026-03-06 (commit ff38ed7c)
+- **Health Check**: Passing
+- **Tests**: 69/69 passing (215 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-14-2: Audit Issues Table (Done)
+- TASK-14-13: AuditController (Done)
+
+---
 ## BrokenLinkChecker Service (TASK-14-10)
 
 ### Service Description
