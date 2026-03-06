@@ -7,6 +7,7 @@ use App\Models\Audit;
 use App\Models\PublicAuditView;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -36,7 +37,7 @@ class PublicAuditController extends Controller
         $audit = Audit::where('public_hash', $hash)
             ->where('visibility', 'public')
             ->where('status', 'completed')
-            ->with(['site', 'issues'])
+            ->with(['site'])
             ->first();
 
         if (!$audit) {
@@ -53,7 +54,8 @@ class PublicAuditController extends Controller
         $isOwner = auth()->check() && auth()->id() === $audit->site->user_id;
 
         // Get issues (limited for anonymous users)
-        $issues = $audit->issues;
+        // Load issues with issueType relationship
+        $issues = $audit->issues()->with('issueType')->get();
         if (!$isOwner) {
             $issues = $issues->take(5);
         }
