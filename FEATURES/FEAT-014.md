@@ -1,7 +1,7 @@
 # FEAT-014: Technical SEO Site Audit
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `Low`
