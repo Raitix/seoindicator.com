@@ -390,8 +390,9 @@ class TransactionHistoryControllerTest extends TestCase
 
         $response = $this->getJson($this->endpoint . '?from=2026-03-10&to=2026-03-01');
 
+        // The 'after_or_equal:from' rule on 'to' field catches this error
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['from']);
+            ->assertJsonValidationErrors(['to']);
     }
 
     /** @test TH-DATE-07: from equals to */
@@ -869,15 +870,15 @@ class TransactionHistoryControllerTest extends TestCase
     }
 
     /** @test TH-EDGE-09: Whitespace in params */
-    public function whitespace_in_params_returns_validation_error(): void
+    public function whitespace_in_params_is_trimmed(): void
     {
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
         $response = $this->getJson($this->endpoint . '?type=%20purchase%20');
 
-        // Whitespace-padded type should fail validation
-        $response->assertUnprocessable();
+        // Whitespace-padded type is trimmed and validated (per spec: "422 validation error OR trimmed")
+        $response->assertOk();
     }
 
     // ============================================
