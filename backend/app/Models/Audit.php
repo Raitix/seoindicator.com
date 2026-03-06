@@ -94,6 +94,14 @@ class Audit extends Model
         return $this->hasMany(AuditIssue::class);
     }
 
+    /**
+     * Get the public audit views for this audit.
+     */
+    public function publicAuditViews(): HasMany
+    {
+        return $this->hasMany(PublicAuditView::class);
+    }
+
     // =========================================================================
     // Scopes
     // =========================================================================
