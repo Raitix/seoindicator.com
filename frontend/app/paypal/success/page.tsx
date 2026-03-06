@@ -73,6 +73,10 @@ export default function PayPalSuccessPage() {
         // Capture the order
         const captureData = await capturePayPalOrder(token);
 
+        if (!captureData) {
+          throw new PayPalError("Capture returned no data", undefined, "CAPTURE_FAILED");
+        }
+
         // Clear stored order info
         clearStoredOrderInfo();
 
