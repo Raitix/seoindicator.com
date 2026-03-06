@@ -123,7 +123,7 @@ export default function AdminUsagePage() {
           <div className="grid gap-6 lg:grid-cols-2">
             <UsageChart
               data={mockUsageData}
-              days={dateRange === "custom" ? 30 : parseInt(dateRange)}
+              days={dateRange === "custom" ? 30 : (parseInt(dateRange) as 7 | 14 | 30 | 90)}
               showTokens={true}
             />
             <TokenDistributionChart
