@@ -129,8 +129,8 @@ const MockScoreOverview: React.FC<ScoreOverviewProps> = ({
             stroke={color}
             strokeWidth="8"
             strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={animate ? strokeDashoffset : 0}
+            strokeDasharray={circumference.toString()}
+            strokeDashoffset={animate ? strokeDashoffset.toString() : '0'}
             transform="rotate(-90 75 75)"
           />
         </svg>
@@ -386,29 +386,30 @@ describe('ScoreOverview Component', () => {
   // ------------------------------------------------------------------------
 
   describe('PROGRESS: Circular Progress', () => {
-    it('PROGRESS-001: should calculate correct strokeDashoffset for score 0', () => {
+    it('PROGRESS-001: should calculate correct stroke-dashoffset for score 0', () => {
       render(<MockScoreOverview {...defaultProps} score={0} />);
 
       const progressCircle = screen.getByTestId('score-progress-circle');
-      const dashoffset = parseFloat(progressCircle.getAttribute('strokeDashoffset') || '0');
+      // React SVG attributes use kebab-case in DOM
+      const dashoffset = parseFloat(progressCircle.getAttribute('stroke-dashoffset') || '0');
       // Full circumference = 2 * PI * 60 ≈ 377
       expect(dashoffset).toBeCloseTo(377, 0);
     });
 
-    it('PROGRESS-002: should calculate correct strokeDashoffset for score 50', () => {
+    it('PROGRESS-002: should calculate correct stroke-dashoffset for score 50', () => {
       render(<MockScoreOverview {...defaultProps} score={50} />);
 
       const progressCircle = screen.getByTestId('score-progress-circle');
-      const dashoffset = parseFloat(progressCircle.getAttribute('strokeDashoffset') || '0');
+      const dashoffset = parseFloat(progressCircle.getAttribute('stroke-dashoffset') || '0');
       // Half of circumference
       expect(dashoffset).toBeCloseTo(188, 0);
     });
 
-    it('PROGRESS-003: should calculate correct strokeDashoffset for score 100', () => {
+    it('PROGRESS-003: should calculate correct stroke-dashoffset for score 100', () => {
       render(<MockScoreOverview {...defaultProps} score={100} />);
 
       const progressCircle = screen.getByTestId('score-progress-circle');
-      const dashoffset = parseFloat(progressCircle.getAttribute('strokeDashoffset') || '0');
+      const dashoffset = parseFloat(progressCircle.getAttribute('stroke-dashoffset') || '0');
       expect(dashoffset).toBeCloseTo(0, 0);
     });
 
@@ -416,14 +417,14 @@ describe('ScoreOverview Component', () => {
       render(<MockScoreOverview {...defaultProps} score={75} />);
 
       const progressCircle = screen.getByTestId('score-progress-circle');
-      expect(progressCircle).toHaveAttribute('stroke-linecap', 'round');
+      expect(progressCircle.getAttribute('stroke-linecap')).toBe('round');
     });
 
     it('PROGRESS-005: should rotate circle -90 degrees to start from top', () => {
       render(<MockScoreOverview {...defaultProps} score={50} />);
 
       const progressCircle = screen.getByTestId('score-progress-circle');
-      expect(progressCircle).toHaveAttribute('transform', 'rotate(-90 75 75)');
+      expect(progressCircle.getAttribute('transform')).toBe('rotate(-90 75 75)');
     });
   });
 
@@ -437,7 +438,7 @@ describe('ScoreOverview Component', () => {
 
       const progressCircle = screen.getByTestId('score-progress-circle');
       // strokeDashoffset should be calculated based on score
-      expect(progressCircle).toHaveAttribute('strokeDashoffset');
+      expect(progressCircle.getAttribute('stroke-dashoffset')).not.toBeNull();
     });
 
     it('ANIM-002: should not animate when animate prop is false', () => {
@@ -445,7 +446,7 @@ describe('ScoreOverview Component', () => {
 
       const progressCircle = screen.getByTestId('score-progress-circle');
       // When animate is false, strokeDashoffset should be 0 (no progress shown)
-      expect(progressCircle).toHaveAttribute('strokeDashoffset', '0');
+      expect(progressCircle.getAttribute('stroke-dashoffset')).toBe('0');
     });
 
     it('ANIM-003: should respect prefers-reduced-motion', () => {
@@ -720,7 +721,7 @@ describe('ScoreOverview Component', () => {
 
       const progressCircle = screen.getByTestId('score-progress-circle');
       // If animate=true, strokeDashoffset should be calculated
-      expect(progressCircle).toHaveAttribute('strokeDashoffset');
+      expect(progressCircle.getAttribute('stroke-dashoffset')).not.toBeNull();
     });
   });
 
@@ -790,8 +791,8 @@ describe('ScoreOverview Component', () => {
     it('AC-006: animated progress fill (optional)', () => {
       render(<MockScoreOverview {...defaultProps} score={75} animate={true} />);
 
-      // SVG should have strokeDashoffset calculated based on score
-      expect(screen.getByTestId('score-progress-circle')).toHaveAttribute('strokeDashoffset');
+      // SVG should have stroke-dashoffset calculated based on score
+      expect(screen.getByTestId('score-progress-circle').getAttribute('stroke-dashoffset')).not.toBeNull();
     });
 
     it('AC-007: responsive sizing', () => {
