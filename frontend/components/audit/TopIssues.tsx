@@ -340,7 +340,7 @@ export function TopIssues({
           </span>
           {auditHash && (
             <a
-              href={`/audit/${auditHash}`}
+              href={`/audit/?h=${auditHash}`}
               data-testid="view-full-link"
               className="inline-flex items-center gap-2 text-sm font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
             >
