@@ -13,9 +13,13 @@ use Illuminate\Support\Str;
  *
  * @property int $id
  * @property int $site_id
+ * @property int $max_pages
+ * @property int $max_depth
+ * @property string|null $user_agent
  * @property string $status
  * @property int $pages_crawled
  * @property int $issues_found
+ * @property string|null $error_message
  * @property string $visibility
  * @property string|null $public_hash
  * @property \Illuminate\Support\Carbon|null $public_hash_created_at
@@ -42,9 +46,13 @@ class Audit extends Model
      */
     protected $fillable = [
         'site_id',
+        'max_pages',
+        'max_depth',
+        'user_agent',
         'status',
         'pages_crawled',
         'issues_found',
+        'error_message',
         'visibility',
         'public_hash',
         'public_hash_created_at',
@@ -76,6 +84,9 @@ class Audit extends Model
      */
     protected $attributes = [
         'visibility' => 'private',
+        'status' => 'pending',
+        'max_pages' => 500,
+        'max_depth' => 3,
     ];
 
     /**
@@ -147,6 +158,14 @@ class Audit extends Model
     }
 
     /**
+     * Scope for cancelled audits.
+     */
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', 'cancelled');
+    }
+
+    /**
      * Scope for public audits.
      */
     public function scopePublic($query)
@@ -202,6 +221,26 @@ class Audit extends Model
         $this->save();
 
         return $this;
+    }
+
+    /**
+     * Mark the audit as cancelled.
+     */
+    public function markAsCancelled(): self
+    {
+        $this->status = 'cancelled';
+        $this->completed_at = now();
+        $this->save();
+
+        return $this;
+    }
+
+    /**
+     * Check if the audit can be cancelled.
+     */
+    public function canBeCancelled(): bool
+    {
+        return in_array($this->status, ['pending', 'running']);
     }
 
     // =========================================================================

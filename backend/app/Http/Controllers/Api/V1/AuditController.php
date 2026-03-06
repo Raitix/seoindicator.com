@@ -122,7 +122,8 @@ class AuditController extends Controller
 
             // Calculate estimated completion
             if ($audit->started_at) {
-                $elapsed = now()->diffInSeconds($audit->started_at);
+                // Use elapsed_seconds from cache if available, otherwise calculate from started_at
+                $elapsed = $progress['elapsed_seconds'] ?? abs(now()->diffInSeconds($audit->started_at));
                 $estimatedPages = $audit->max_pages;
                 $pagesCrawled = $response['pages_crawled'] ?? $audit->pages_crawled;
                 

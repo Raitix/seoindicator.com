@@ -39,6 +39,7 @@ use App\Http\Controllers\Api\V1\CrawlController;
 use App\Http\Controllers\Api\V1\ToolExportController;
 use App\Http\Controllers\Api\V1\PublicAuditController;
 use App\Http\Controllers\Api\V1\CreditController;
+use App\Http\Controllers\Api\V1\AuditController;
 
 /*
 |--------------------------------------------------------------------------
@@ -266,6 +267,17 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
             ->name('api.v1.audits.embed-code')
             ->where('id', '[0-9]+');
     });
+
+    // Audit API Routes (TASK-14-13, SPEC-014)
+    Route::post('sites/{site}/audits', [AuditController::class, 'store'])
+        ->middleware('throttle:audit-trigger')
+        ->where('site', '[0-9]+');
+    Route::get('audits/{audit}', [AuditController::class, 'show'])
+        ->where('audit', '[0-9]+');
+    Route::get('sites/{site}/audits', [AuditController::class, 'index'])
+        ->where('site', '[0-9]+');
+    Route::delete('audits/{audit}', [AuditController::class, 'destroy'])
+        ->where('audit', '[0-9]+');
 
     // Projects (SPEC-008-7) - CRUD with archive/restore
     Route::post('projects/{project}/archive', [ProjectController::class, 'archive']);
