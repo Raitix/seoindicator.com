@@ -27,7 +27,7 @@ return new class extends Migration
             $table->string('country_code', 2)->nullable();
             $table->boolean('is_lead_capture')->default(false);
             $table->string('lead_email', 255)->nullable();
-            $table->timestamp('created_at')->useCurrent();
+            $table->timestamps();
 
             // Indexes for query performance
             $table->index('audit_id');
