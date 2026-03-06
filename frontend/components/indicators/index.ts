@@ -15,3 +15,6 @@ export { default as IndicatorGridDefault } from './IndicatorGrid';
 
 export { IndicatorCatalog, type IndicatorCatalogProps } from './IndicatorCatalog';
 export type { IndicatorData as IndicatorCatalogData } from './IndicatorGrid';
+
+// Icon Registry
+export { INDICATOR_ICONS, IndicatorIconName, type IndicatorIconName as IndicatorIconNameType } from './icons';
