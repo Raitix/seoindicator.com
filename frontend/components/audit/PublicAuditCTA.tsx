@@ -154,7 +154,7 @@ export function PublicAuditCTA({
    * Handle social share button click
    */
   const handleShare = (platform: "twitter" | "linkedin" | "facebook") => {
-    const shareUrl = `https://seoindicator.com/audit/${auditHash}`;
+    const shareUrl = `https://seoindicator.com/audit/?h=${auditHash}`;
     const shareText = `Check out this SEO score: ${score}/100 for ${siteUrl}`;
     
     let shareLink: string;
@@ -195,7 +195,7 @@ export function PublicAuditCTA({
    * Generate embed code for badge
    */
   const getEmbedCode = (): string => {
-    return `<a href="https://seoindicator.com/audit/${auditHash}">
+    return `<a href="https://seoindicator.com/audit/?h=${auditHash}">
   <img src="https://seoindicator.com/badge/${auditHash}/small.svg" alt="SEO Score for ${siteUrl}: ${score}/100" />
 </a>`;
   };
@@ -223,7 +223,7 @@ export function PublicAuditCTA({
           Your SEO score: <span className="font-medium text-white">{score}/100</span>
         </p>
         <a
-          href={`https://seoindicator.com/audit/${auditHash}`}
+          href={`https://seoindicator.com/audit/?h=${auditHash}`}
           className="mt-4 inline-block text-emerald-400 hover:text-emerald-300 hover:underline"
         >
           View your audit
