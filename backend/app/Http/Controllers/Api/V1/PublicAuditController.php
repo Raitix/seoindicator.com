@@ -59,6 +59,7 @@ class PublicAuditController extends Controller
 
         // Build response data
         $data = [
+            'hash' => $hash,
             'siteUrl' => $audit->site->url,
             'auditedAt' => $audit->completed_at?->toIso8601String(),
             'overallScore' => $this->calculateOverallScore($audit),

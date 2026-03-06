@@ -179,6 +179,19 @@ class CreditService
     }
 
     /**
+     * Get paginated transaction history for a user with filtering.
+     *
+     * @param User $user
+     * @param int $perPage
+     * @param array{type?: string|null, from?: string|null, to?: string|null} $filters
+     * @return LengthAwarePaginator
+     */
+    public function getTransactionHistoryWithFilters(User $user, int $perPage = 15, array $filters = []): LengthAwarePaginator
+    {
+        return $this->repository->getTransactionsWithFilters($user, $perPage, $filters);
+    }
+
+    /**
      * Refund credits to a user's balance.
      *
      * @param User $user

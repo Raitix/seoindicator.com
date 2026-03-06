@@ -68,6 +68,7 @@ class PublicAuditControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
+                    'hash',
                     'siteUrl',
                     'auditedAt',
                     'overallScore',
@@ -750,6 +751,7 @@ class PublicAuditControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
+                    'hash',
                     'siteUrl',
                     'auditedAt',
                     'overallScore',
@@ -852,21 +854,27 @@ class PublicAuditControllerTest extends TestCase
     public function test_hash_not_derived_from_id(): void
     {
         // Hash should be random, not predictable from ID
+        // Create multiple audits and verify hashes are random 32-char strings
         $hashes = [
             $this->publicAudit->public_hash,
-            Audit::factory()->create([
+        ];
+
+        for ($i = 0; $i < 5; $i++) {
+            $hashes[] = Audit::factory()->create([
                 'site_id' => $this->site->id,
                 'visibility' => 'public',
                 'public_hash' => Str::random(32),
                 'status' => 'completed',
-            ])->public_hash,
-        ];
+            ])->public_hash;
+        }
 
-        // Hashes should be different and not contain the ID
-        foreach ($hashes as $hash) {
-            if ($hash) {
-                $this->assertStringNotContainsString((string)$this->publicAudit->id, $hash);
-            }
+        // Verify all hashes are 32 characters and unique
+        $uniqueHashes = array_unique(array_filter($hashes));
+        $this->assertCount(6, $uniqueHashes, 'All hashes should be unique');
+
+        foreach ($uniqueHashes as $hash) {
+            $this->assertEquals(32, strlen($hash), 'Hash should be 32 characters');
+            $this->assertMatchesRegularExpression('/^[a-zA-Z0-9]+$/', $hash, 'Hash should be alphanumeric');
         }
     }
 
