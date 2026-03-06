@@ -1,7 +1,7 @@
 # TASK-33-5: Create PublicAuditController with Endpoints
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## PRIORITY
 `High`
