@@ -1,12 +1,17 @@
+'use client';
+
 /**
  * Public Audit Page Route
- * Next.js App Router route for public SEO audit pages with ISR
+ * Client-side rendered public SEO audit page
  * @module app/audit/[hash]/page
  */
 
+import * as React from 'react';
+import { use } from 'react';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import PublicAuditPage from '@/components/audit/PublicAuditPage';
+import { PublicAuditPage, PublicAuditData } from '@/components/audit/PublicAuditPage';
+import { Loader2 } from 'lucide-react';
 
 // ============================================================
 // Types
@@ -19,139 +24,96 @@ interface PageProps {
   params: Promise<{ hash: string }>;
 }
 
-/**
- * Public audit data structure
- */
-interface PublicAuditData {
-  siteUrl: string;
-  auditedAt: string;
-  overallScore: number;
-  categoryScores: CategoryScore[];
-  topIssues: Issue[];
-  recommendations: string[];
-  isPartial: boolean;
-}
+// ============================================================
+// Static Export Configuration
+// ============================================================
 
 /**
- * Category score structure
+ * Required for static export with dynamic routes
+ * Returns empty array - all audit pages are client-side rendered
  */
-interface CategoryScore {
-  name: string;
-  score: number;
-  maxScore: number;
-  issues: number;
-}
-
-/**
- * Issue structure
- */
-interface Issue {
-  id: string;
-  title: string;
-  severity: 'critical' | 'warning' | 'info';
-  description: string;
+export function generateStaticParams() {
+  return [];
 }
 
 // ============================================================
-// ISR Configuration
+// Metadata (static for all audit pages)
 // ============================================================
 
 /**
- * Revalidation time in seconds (1 hour)
- * Enables ISR (Incremental Static Regeneration)
+ * Static metadata for the audit page shell
+ * Dynamic metadata is set via useEffect in the component
  */
-export const revalidate = 3600;
+export const metadata: Metadata = {
+  title: 'SEO Audit Report | SEOIndicator',
+  description: 'View detailed SEO audit results and recommendations.',
+  robots: 'index, follow',
+};
 
 // ============================================================
-// Data Fetching
+// Data Fetching Hook
 // ============================================================
 
 /**
- * Fetches audit data from the public API
- * @param hash - The public audit hash
- * @returns Audit data or null if not found/private
+ * Hook to fetch audit data from the public API
  */
-async function getAuditData(hash: string): Promise<PublicAuditData | null> {
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.seoindicator.com';
-    
-    const res = await fetch(
-      `${apiUrl}/api/v1/public-audit/${hash}`,
-      {
-        next: { revalidate: 3600 },
+function useAuditData(hash: string) {
+  const [data, setData] = React.useState<PublicAuditData | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    async function fetchData() {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.seoindicator.com';
+        
+        const res = await fetch(
+          `${apiUrl}/api/v1/public-audit/${hash}`,
+          {
+            headers: {
+              'Accept': 'application/json',
+            },
+          }
+        );
+
+        if (!mounted) return;
+
+        if (!res.ok) {
+          if (res.status === 404) {
+            setData(null);
+            setLoading(false);
+            return;
+          }
+          throw new Error(`Failed to fetch audit: ${res.status}`);
+        }
+
+        const json = await res.json();
+        
+        if (!json.success || !json.data) {
+          setData(null);
+          setLoading(false);
+          return;
+        }
+
+        setData(json.data as PublicAuditData);
+        setLoading(false);
+      } catch (err) {
+        if (!mounted) return;
+        setError(err instanceof Error ? err.message : 'Failed to load audit');
+        setLoading(false);
       }
-    );
-
-    if (!res.ok) {
-      return null;
     }
 
-    const data = await res.json();
-    
-    // Check if the response indicates success
-    if (!data.success || !data.data) {
-      return null;
-    }
+    fetchData();
 
-    return data.data as PublicAuditData;
-  } catch {
-    // Handle network errors or JSON parsing errors
-    return null;
-  }
-}
-
-// ============================================================
-// Metadata Generation
-// ============================================================
-
-/**
- * Generates metadata for SEO optimization
- * @param props - Page props with params
- * @returns Metadata object for the page
- */
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { hash } = await params;
-  const audit = await getAuditData(hash);
-
-  // Return noindex metadata for invalid/not found audits
-  if (!audit) {
-    return {
-      title: 'Audit Not Found | SEOIndicator',
-      robots: 'noindex',
+    return () => {
+      mounted = false;
     };
-  }
+  }, [hash]);
 
-  const canonicalUrl = `https://seoindicator.com/audit/${hash}/`;
-  const ogImageUrl = `https://seoindicator.com/badge/${hash}/og.png`;
-
-  return {
-    title: `${audit.siteUrl} SEO Audit Report | SEOIndicator`,
-    description: `SEO audit for ${audit.siteUrl} - Score: ${audit.overallScore}/100. View technical SEO analysis and recommendations.`,
-    robots: 'index, follow',
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    openGraph: {
-      title: `${audit.siteUrl} SEO Score: ${audit.overallScore}/100`,
-      description: `SEO audit results for ${audit.siteUrl} - Score: ${audit.overallScore}/100`,
-      url: canonicalUrl,
-      type: 'website',
-      images: [
-        {
-          url: ogImageUrl,
-          width: 1200,
-          height: 630,
-          alt: `SEO Score: ${audit.overallScore}/100`,
-        },
-      ],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `${audit.siteUrl} SEO Score: ${audit.overallScore}/100`,
-      description: `SEO audit results for ${audit.siteUrl} - Score: ${audit.overallScore}/100`,
-      images: [ogImageUrl],
-    },
-  };
+  return { data, loading, error };
 }
 
 // ============================================================
@@ -159,19 +121,52 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // ============================================================
 
 /**
- * Public Audit Page Component
- * Renders the public audit page with audit data
- * @param props - Page props with params
- * @returns JSX element or calls notFound()
+ * Loading Component
  */
-export default async function Page({ params }: PageProps) {
-  const { hash } = await params;
-  const audit = await getAuditData(hash);
+function LoadingState() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950">
+      <div className="text-center">
+        <Loader2 className="mx-auto h-12 w-12 animate-spin text-emerald-500" />
+        <p className="mt-4 text-lg text-slate-400">Loading audit...</p>
+      </div>
+    </div>
+  );
+}
 
-  // Return 404 for invalid, not found, or private audits
-  if (!audit) {
+/**
+ * Error Component
+ */
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-red-400">Error</h1>
+        <p className="mt-2 text-slate-400">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Public Audit Page Component
+ * Client-side rendered page that fetches audit data
+ */
+export default function Page({ params }: PageProps) {
+  const { hash } = use(params);
+  const { data, loading, error } = useAuditData(hash);
+
+  if (loading) {
+    return <LoadingState />;
+  }
+
+  if (error) {
+    return <ErrorState message={error} />;
+  }
+
+  if (!data) {
     notFound();
   }
 
-  return <PublicAuditPage audit={audit} />;
+  return <PublicAuditPage audit={data} hash={hash} />;
 }
