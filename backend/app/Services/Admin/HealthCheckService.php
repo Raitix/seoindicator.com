@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
  * Designed for 30-second polling with caching support.
  *
  * @see TASK-27-18
+ * @see TASK-27-12
  * @see SPEC-027
  */
 class HealthCheckService
@@ -21,6 +22,31 @@ class HealthCheckService
      * Cache TTL for health stats (30 seconds).
      */
     private const CACHE_TTL = 30;
+
+    /**
+     * Queue monitoring service instance.
+     */
+    protected ?QueueMonitoringService $queueMonitoring = null;
+
+    /**
+     * Set the queue monitoring service (for dependency injection).
+     */
+    public function setQueueMonitoringService(QueueMonitoringService $service): void
+    {
+        $this->queueMonitoring = $service;
+    }
+
+    /**
+     * Get the queue monitoring service.
+     */
+    protected function getQueueMonitoringService(): QueueMonitoringService
+    {
+        if ($this->queueMonitoring === null) {
+            $this->queueMonitoring = app(QueueMonitoringService::class);
+        }
+
+        return $this->queueMonitoring;
+    }
 
     /**
      * Get all health statistics.
