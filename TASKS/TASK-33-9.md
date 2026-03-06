@@ -1,7 +1,7 @@
 # TASK-33-9: Create ScoreOverview Component
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
