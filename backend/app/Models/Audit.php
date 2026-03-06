@@ -102,6 +102,14 @@ class Audit extends Model
         return $this->hasMany(PublicAuditView::class);
     }
 
+    /**
+     * Get the public audit record for this audit.
+     */
+    public function publicAudit(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\PublicAudit::class);
+    }
+
     // =========================================================================
     // Scopes
     // =========================================================================
