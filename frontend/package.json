@@ -5,10 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:badge": "node scripts/build-badge.mjs",
     "export": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "test": "jest",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:badge": "vitest run --testPathPattern=badge",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
@@ -50,6 +53,7 @@
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.27.3",
     "eslint": "^9.32.0",
     "eslint-config-next": "^16.1.6",
     "jest": "^30.1.2",
@@ -59,6 +63,7 @@
     "tailwindcss": "^4.1.18",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5.9.3",
-    "undici": "^7.22.0"
+    "undici": "^7.22.0",
+    "vitest": "^3.2.4"
   }
 }
