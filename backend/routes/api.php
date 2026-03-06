@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\V1\AISuggestionController;
 use App\Http\Controllers\Api\V1\CrawlController;
 use App\Http\Controllers\Api\V1\ToolExportController;
 use App\Http\Controllers\Api\V1\PublicAuditController;
+use App\Http\Controllers\Api\V1\CreditController;
 
 /*
 |--------------------------------------------------------------------------
@@ -410,6 +411,9 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
     // PayPal Capture (TASK-26-15, SPEC-026)
     Route::post('payments/paypal/capture', [\App\Http\Controllers\Api\V1\Payments\PayPalCaptureController::class, 'store']);
+
+    // Credit Transaction History (TASK-26-7, SPEC-026)
+    Route::get('credits/transactions', [CreditController::class, 'transactions']);
 });
 
 /*

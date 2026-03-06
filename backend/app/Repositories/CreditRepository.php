@@ -65,6 +65,35 @@ class CreditRepository
     }
 
     /**
+     * Get paginated transactions for a user with filtering.
+     *
+     * @param User $user
+     * @param int $perPage
+     * @param array{type?: string|null, from?: string|null, to?: string|null} $filters
+     * @return LengthAwarePaginator
+     */
+    public function getTransactionsWithFilters(User $user, int $perPage = 15, array $filters = []): LengthAwarePaginator
+    {
+        $query = CreditTransaction::where('user_id', $user->id);
+
+        // Apply type filter
+        if (!empty($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+
+        // Apply date range filters
+        if (!empty($filters['from'])) {
+            $query->whereDate('created_at', '>=', $filters['from']);
+        }
+
+        if (!empty($filters['to'])) {
+            $query->whereDate('created_at', '<=', $filters['to']);
+        }
+
+        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+    }
+
+    /**
      * Add credits to a user's balance.
      *
      * Creates a transaction record and updates the balance atomically.
