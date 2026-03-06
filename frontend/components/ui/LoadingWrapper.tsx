@@ -161,10 +161,21 @@ export function LoadingWrapper({
       );
     }
 
-    if (typeof emptyState === "object" && emptyState !== null) {
+    if (emptyState && typeof emptyState === "object" && !React.isValidElement(emptyState)) {
+      const emptyStateConfig = emptyState as {
+        type?: "keywords" | "competitors" | "reports" | "analyses" | "projects" | "custom";
+        title?: string;
+        description?: string;
+        onCtaClick?: () => void;
+      };
       return (
         <div data-testid="loading-wrapper-empty" className={className}>
-          <EmptyState {...emptyState} />
+          <EmptyState
+            type={emptyStateConfig.type}
+            title={emptyStateConfig.title}
+            description={emptyStateConfig.description}
+            onCtaClick={emptyStateConfig.onCtaClick}
+          />
         </div>
       );
     }
