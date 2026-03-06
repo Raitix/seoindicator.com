@@ -6,8 +6,9 @@
 
 import AuditPageClient from './AuditPageClient';
 
-// Enable dynamic params for static export
-export const dynamicParams = true;
+// Disable dynamic params for static export compatibility
+// The placeholder hash is generated statically, actual routing is client-side
+export const dynamicParams = false;
 
 /**
  * Generate static params for static export compatibility.
