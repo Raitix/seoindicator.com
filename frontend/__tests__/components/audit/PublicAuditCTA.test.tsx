@@ -113,7 +113,7 @@ describe('PublicAuditCTA Component', () => {
     it('REND-010: displays correct audit URL in embed code', () => {
       render(<PublicAuditCTA {...defaultProps} />);
       const embedCode = screen.getByTestId('embed-code') as HTMLTextAreaElement;
-      expect(embedCode.value).toContain('/audit/abc123def456');
+      expect(embedCode.value).toContain('h=abc123def456');
     });
   });
 
@@ -413,7 +413,7 @@ describe('PublicAuditCTA Component', () => {
       await user.click(screen.getByTestId('submit-button'));
       
       await waitFor(() => {
-        const viewLink = screen.getByText('View your audit');
+        const viewLink = screen.getByText('View your full audit');
         expect(viewLink).toHaveAttribute('href', expect.stringContaining('abc123def456'));
       });
     });

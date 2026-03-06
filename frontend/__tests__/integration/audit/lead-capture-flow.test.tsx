@@ -69,15 +69,8 @@ jest.mock('@/lib/analytics', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
 }));
 
-// Mock window.location - delete first to allow redefinition
-const originalLocation = window.location;
-// @ts-expect-error - deleting for mock
-delete window.location;
-const mockLocation = {
-  href: '',
-  assign: jest.fn(),
-};
-window.location = mockLocation as Location;
+// Note: Redirect tests use local variables instead of window.location
+// since jsdom doesn't support actual navigation
 
 // ============================================
 // TEST SUITE
@@ -113,9 +106,6 @@ describe('Lead Capture Flow', () => {
     mockTrackEvent.mockReset();
     // Clear cookies
     Object.keys(mockCookies).forEach(key => delete mockCookies[key]);
-    // Reset location
-    mockLocation.href = '';
-    window.location.href = '';
   });
 
   // ============================================
@@ -679,14 +669,18 @@ describe('Lead Capture Flow', () => {
       // Given: redirect param is set
       const redirectUrl = '/audit?h=abc123';
 
-      // When: After successful submission
+      // When: Flow executes redirect logic
+      let redirectedTo = '';
       const handleSuccess = () => {
-        window.location.href = redirectUrl;
+        // Set cookie first
+        mockCookies['audit_unlocks'] = JSON.stringify(['abc123']);
+        // Then set redirect
+        redirectedTo = redirectUrl;
       };
       handleSuccess();
 
-      // Then: Should redirect
-      expect(window.location.href).toBe(redirectUrl);
+      // Then: Should have redirect URL set
+      expect(redirectedTo).toBe(redirectUrl);
     });
 
     it('REDIRECT-002: success redirect to signup page', async () => {
@@ -699,10 +693,11 @@ describe('Lead Capture Flow', () => {
       const redirectUrl = '/signup?from=audit';
 
       // When: After successful submission
-      window.location.href = redirectUrl;
+      let redirectedTo = '';
+      redirectedTo = redirectUrl;
 
       // Then: Should redirect to signup
-      expect(window.location.href).toBe(redirectUrl);
+      expect(redirectedTo).toBe(redirectUrl);
     });
 
     it('REDIRECT-003: no redirect if param missing', async () => {
@@ -712,13 +707,13 @@ describe('Lead Capture Flow', () => {
       });
 
       // Given: No redirect param
-      const initialHref = window.location.href;
+      let redirectedTo = '';
 
       // When: After successful submission with no redirect
-      // (no redirect logic executed)
+      // (no redirect logic executed - redirectedTo stays empty)
 
-      // Then: Should stay on page
-      expect(window.location.href).toBe(initialHref);
+      // Then: Should stay on page (no redirect)
+      expect(redirectedTo).toBe('');
     });
 
     it('REDIRECT-004: redirect after cookie set', async () => {
@@ -728,19 +723,24 @@ describe('Lead Capture Flow', () => {
       });
 
       // Given: Successful submission
+      let cookieSet = false;
+      let redirectedTo = '';
+
       const flow = () => {
         // 1. Set cookie first
         mockCookies['audit_unlocks'] = JSON.stringify(['abc123']);
+        cookieSet = true;
         // 2. Then redirect
-        window.location.href = '/audit?h=abc123';
+        redirectedTo = '/audit?h=abc123';
       };
 
       // When: Flow executes
       flow();
 
       // Then: Cookie should be set before redirect
+      expect(cookieSet).toBe(true);
       expect(mockCookies['audit_unlocks']).toBeDefined();
-      expect(window.location.href).toContain('/audit');
+      expect(redirectedTo).toContain('/audit');
     });
   });
 

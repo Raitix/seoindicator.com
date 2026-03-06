@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Mail, Loader2, Check, AlertCircle, Twitter, Linkedin, Facebook, Copy } from "lucide-react";
+import { Mail, Loader2, Check, AlertCircle, Twitter, Linkedin, Facebook, Copy, ArrowRight, Eye } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { trackEvent } from "@/lib/analytics";
+import {
+  setUnlockedAudit,
+  storeEmailCaptured,
+  generateSignupRedirectUrl,
+} from "@/lib/audit/public-audit";
 
 /**
  * PublicAuditCTA Component Props
@@ -133,7 +138,12 @@ export function PublicAuditCTA({
         throw new Error("Failed to submit");
       }
       
-      // Success
+      // Success - set unlock cookie for full access
+      setUnlockedAudit(auditHash, email.trim());
+      
+      // Store email for deduplication (session-level)
+      storeEmailCaptured(email.trim());
+      
       setFormState("success");
       trackEvent("public_audit_lead_submit", { hash: auditHash, score });
     } catch (error) {
@@ -204,6 +214,8 @@ export function PublicAuditCTA({
    * Render success state
    */
   if (formState === "success") {
+    const signupUrl = generateSignupRedirectUrl(email.trim(), auditHash);
+    
     return (
       <div
         data-testid="success-state"
@@ -222,12 +234,25 @@ export function PublicAuditCTA({
         <p className="mt-2 text-sm text-slate-400">
           Your SEO score: <span className="font-medium text-white">{score}/100</span>
         </p>
-        <a
-          href={`https://seoindicator.com/audit/?h=${auditHash}`}
-          className="mt-4 inline-block text-emerald-400 hover:text-emerald-300 hover:underline"
-        >
-          View your audit
-        </a>
+        
+        {/* Action buttons */}
+        <div className="mt-6 space-y-3">
+          <a
+            href={`https://seoindicator.com/audit/?h=${auditHash}`}
+            className="block w-full rounded-lg bg-emerald-600 px-4 py-3 text-center font-medium text-white transition-colors hover:bg-emerald-700"
+            data-testid="view-audit-link"
+          >
+            View your full audit
+          </a>
+          <a
+            href={signupUrl}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-center font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+            data-testid="signup-redirect-link"
+          >
+            Create free account
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        </div>
       </div>
     );
   }
@@ -301,6 +326,18 @@ export function PublicAuditCTA({
             </>
           )}
         </Button>
+
+        {/* Skip option - view limited report */}
+        <div className="text-center">
+          <a
+            href={`https://seoindicator.com/audit/?h=${auditHash}&partial=true`}
+            className="inline-flex items-center gap-1.5 text-sm text-slate-400 transition-colors hover:text-slate-300"
+            data-testid="skip-link"
+          >
+            <Eye className="h-4 w-4" />
+            Skip and view limited report
+          </a>
+        </div>
 
         {/* Submit Error */}
         {formState === "error" && submitError && (
