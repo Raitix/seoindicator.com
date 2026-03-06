@@ -1,7 +1,7 @@
 # TASK-33-3: Create Badge Impressions Table
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -89,3 +89,73 @@ Create the badge_impressions table to track analytics for embedded badge views a
 - TDD pattern applicable: tests can be designed immediately
 
 **Next Agent:** PreTester - Design test coverage for migration, model, and factory
+
+### [2026-03-06 12:50 GMT+2] PreTester - Test Design Complete ✅
+
+**Tests Designed:** 106+ test scenarios across 3 files
+- Migration Tests: 54 scenarios (CreateBadgeImpressionsTableTest.php)
+- Model Tests: 52 scenarios (BadgeImpressionTest.php)
+- Factory: 11 states (BadgeImpressionFactory.php)
+
+**Files Created:**
+- `PROJECT-SEOINDICATOR/TESTS/TEST-33-3.md` (test documentation)
+- `backend/tests/Unit/Migrations/CreateBadgeImpressionsTableTest.php` (54 tests)
+- `backend/tests/Unit/Models/BadgeImpressionTest.php` (52 tests)
+- `backend/database/factories/BadgeImpressionFactory.php` (11 factory states)
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Table Structure (MS) | 9 | All 8 columns verified with types |
+| Indexes (MS) | 3 | audit_id, public_hash, impression_at |
+| Foreign Keys (MS) | 2 | CASCADE delete verified |
+| Constraints (MS) | 1 | No unique on public_hash |
+| Data Operations (MS) | 8 | Insert, NULL handling, errors |
+| Cascade Delete (MS) | 1 | Orphan removal verified |
+| Reversibility (MS) | 2 | Rollback, re-migrate |
+| Max Lengths (MS) | 4 | Field boundary tests |
+| Click Target Values (MS) | 3 | audit/home/invalid tests |
+| Index Usage (MS) | 3 | Query performance |
+| Bulk Operations (MS) | 6 | Insert, update, aggregation |
+| Edge Cases (MS) | 12 | Unicode, timestamps, FK violations |
+| Model Instantiation (MO) | 4 | Table, PK, timestamps |
+| Model Fillable (MO) | 7 | All 7 fields |
+| Model Casts (MO) | 2 | datetime casts |
+| Relationships (MO) | 2 | belongsTo Audit |
+| Model Scopes (MO) | 6 | forAudit, forHash, clicked, notClicked, withClickTarget, recent |
+| Accessors (MO) | 1 | is_clicked |
+| CRUD (MO) | 4 | Create, query, delete, update |
+| Analytics (MO) | 4 | Count, CTR, unique impressions |
+| Validation (MO) | 3 | click_target values |
+| Serialization (MO) | 4 | Update, JSON, hidden, guarded |
+| Bulk Operations (MO) | 2 | Delete, cascade |
+| Factory States (MO) | 6 | clicked, notClicked, forAudit, fromDomain, clickAudit, clickHome |
+| Performance (MO) | 2 | Large dataset, indexed queries |
+| Security (MO) | 1 | IP hashed, not plain |
+
+**Factory States:** 11 states for testing flexibility
+- `clicked()` - Impression with click event
+- `notClicked()` - Impression without click
+- `forAudit($audit)` - Link to specific audit
+- `fromDomain($domain)` - Set referrer domain
+- `clickAudit()` - Click target = 'audit'
+- `clickHome()` - Click target = 'home'
+- `recent($days)` - Within X days
+- `withIpHash($ip)` - Set IP hash
+- `fromGoogle()` - Referrer = google.com
+- `directVisit()` - No referrer
+- `withHash($hash)` - Specific public hash
+
+**Key Test Patterns:**
+- No unique constraint on `public_hash` (multiple impressions per hash allowed)
+- `clicked_at` initially NULL, set when click event received
+- `click_target` enum-like values: 'audit' or 'home'
+- IP hashed with SHA-256 + app.key salt for privacy
+- CASCADE delete foreign key on `audit_id`
+- Timestamp precision tests for impression_at
+
+**TDD Pattern:** Tests will fail until migration and model are created by Developer.
+
+**Handoff to Developer:** Ready for implementation. All test scenarios documented.
+
+**Status Update:** `To Write Tests` → `To Develop`
