@@ -28,6 +28,10 @@ class PublicAuditControllerTest extends TestCase
         // Disable rate limiting for most tests
         RateLimiter::shouldReceive('tooManyAttempts')->andReturn(false);
         RateLimiter::shouldReceive('hit')->andReturn(true);
+        RateLimiter::shouldReceive('retriesLeft')->andReturn(60);
+        RateLimiter::shouldReceive('availableIn')->andReturn(60);
+        RateLimiter::shouldReceive('attempts')->andReturn(0);
+        RateLimiter::shouldReceive('clear')->andReturn(true);
     }
 
     protected function tearDown(): void
