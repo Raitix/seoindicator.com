@@ -26,7 +26,7 @@ export type { HealthBadgeProps, HealthStatus } from "./HealthBadge";
 export {
   getStatusColorClass,
   getDefaultLabel,
-  getStatusIcon,
+  getStatusIcon as getHealthStatusIcon,
 } from "./HealthBadge";
 
 export { MetricCard } from "./MetricCard";
@@ -76,7 +76,7 @@ export {
 export { ServiceStatusIndicator } from "./ServiceStatusIndicator";
 export type { ServiceStatusIndicatorProps, ServiceStatus } from "./ServiceStatusIndicator";
 export {
-  getStatusIcon,
+  getStatusIcon as getServiceStatusIcon,
   getStatusLabel,
   formatLatency as formatServiceLatency,
   getRelativeTime,
