@@ -1,12 +1,13 @@
 'use client';
 
 /**
- * Public Audit Page Client Component
- * Client-side rendered public SEO audit page
- * @module app/audit/[hash]/AuditPageClient
+ * Public Audit Page - Static Export Compatible
+ * Uses query parameter for audit hash: /audit/?h=abc123
+ * @module app/audit/page
  */
 
 import * as React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import { PublicAuditPage, PublicAuditData } from '@/components/audit/PublicAuditPage';
 import { Loader2 } from 'lucide-react';
@@ -15,10 +16,6 @@ import { Loader2 } from 'lucide-react';
 // Types
 // ============================================================
 
-interface AuditPageClientProps {
-  hash: string;
-}
-
 // ============================================================
 // Data Fetching Hook
 // ============================================================
@@ -26,12 +23,17 @@ interface AuditPageClientProps {
 /**
  * Hook to fetch audit data from the public API
  */
-function useAuditData(hash: string) {
+function useAuditData(hash: string | null) {
   const [data, setData] = React.useState<PublicAuditData | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    if (!hash) {
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     async function fetchData() {
@@ -117,16 +119,37 @@ function ErrorState({ message }: { message: string }) {
   );
 }
 
+/**
+ * No Hash State
+ */
+function NoHashState() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-slate-200">No Audit Specified</h1>
+        <p className="mt-2 text-slate-400">Please provide a valid audit hash in the URL.</p>
+      </div>
+    </div>
+  );
+}
+
 // ============================================================
 // Main Component
 // ============================================================
 
 /**
- * Audit Page Client Component
- * Client-side rendered page that fetches audit data
+ * Audit Page Component
+ * Static export compatible - reads hash from query parameter
+ * URL format: /audit/?h=abc123
  */
-export default function AuditPageClient({ hash }: AuditPageClientProps) {
+export default function AuditPage() {
+  const searchParams = useSearchParams();
+  const hash = searchParams.get('h');
   const { data, loading, error } = useAuditData(hash);
+
+  if (!hash) {
+    return <NoHashState />;
+  }
 
   if (loading) {
     return <LoadingState />;

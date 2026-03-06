@@ -17,6 +17,26 @@ jest.mock('next/navigation', () => ({
   notFound: () => mockNotFound(),
 }));
 
+// Mock next/link
+jest.mock('next/link', () => {
+  return function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
+    return React.createElement('a', { href }, children);
+  };
+});
+
+// Mock lucide-react icons
+jest.mock('lucide-react', () => ({
+  FileQuestion: function MockIcon() {
+    return React.createElement('svg', { 'data-testid': 'file-question-icon' });
+  },
+  Home: function MockIcon() {
+    return React.createElement('svg', { 'data-testid': 'home-icon' });
+  },
+  Search: function MockIcon() {
+    return React.createElement('svg', { 'data-testid': 'search-icon' });
+  },
+}));
+
 // Mock next module for metadata
 jest.mock('next', () => ({
   Metadata: {},
