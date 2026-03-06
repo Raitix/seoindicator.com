@@ -1,27 +1,26 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock next/navigation
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
-  useSearchParams: jest.fn(),
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(),
+  useSearchParams: vi.fn(),
 }));
 
 // Mock the keywords API
-jest.mock("@/lib/api/keywords", () => ({
-  useKeywords: jest.fn(),
-  bulkDeleteKeywords: jest.fn(),
-  bulkUpdateKeywordStatus: jest.fn(),
+vi.mock("@/lib/api/keywords", () => ({
+  useKeywords: vi.fn(),
+  bulkDeleteKeywords: vi.fn(),
+  bulkUpdateKeywordStatus: vi.fn(),
   defaultKeywordMeta: { total: 0, page: 1, perPage: 20 },
 }));
 
 // Mock the metadata API
-jest.mock("@/lib/api/metadata", () => ({
-  useSERPFeatureOptions: jest.fn(() => ({
+vi.mock("@/lib/api/metadata", () => ({
+  useSERPFeatureOptions: vi.fn(() => ({
     options: {
-      success: true,
-      data: [
+      serpFeatures: [
         { value: "featured_snippet", label: "Featured Snippet", icon: "trophy", description: "Answer box", ctrImpact: "+30-50%" },
         { value: "local_pack", label: "Local Pack", icon: "map-pin", description: "Map listings", ctrImpact: "High" },
       ],
@@ -37,14 +36,15 @@ jest.mock("@/lib/api/metadata", () => ({
 // Import after mocks
 import KeywordList from "@/components/keywords/KeywordList";
 import { useKeywords } from "@/lib/api/keywords";
+import { useRouter, useSearchParams } from "next/navigation";
 
-const mockUseKeywords = useKeywords as jest.Mock;
-const mockUseRouter = useRouter as jest.Mock;
-const mockUseSearchParams = useSearchParams as jest.Mock;
+const mockUseKeywords = vi.mocked(useKeywords);
+const mockUseRouter = vi.mocked(useRouter);
+const mockUseSearchParams = vi.mocked(useSearchParams);
 
 describe("Keyword Filter Integration", () => {
-  const mockPush = jest.fn();
-  const mockReplace = jest.fn();
+  const mockPush = vi.fn();
+  const mockReplace = vi.fn();
 
   const mockKeywords = [
     {
@@ -83,23 +83,23 @@ describe("Keyword Filter Integration", () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     mockUseRouter.mockReturnValue({
       push: mockPush,
       replace: mockReplace,
-    });
+    } as any);
     
     mockUseSearchParams.mockReturnValue({
-      get: jest.fn(() => null),
-    });
+      get: vi.fn(() => null),
+    } as any);
     
     mockUseKeywords.mockReturnValue({
       keywords: mockKeywords,
       meta: { total: 3, page: 1, perPage: 20 },
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
   });
 
@@ -220,7 +220,7 @@ describe("Keyword Filter Integration", () => {
         if (param === "status") return "active";
         return null;
       },
-    });
+    } as any);
     
     render(<KeywordList siteId="1" />);
     
@@ -240,7 +240,7 @@ describe("Keyword Filter Integration", () => {
       meta: { total: 0, page: 1, perPage: 20 },
       isLoading: true,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     
     render(<KeywordList siteId="1" />);
@@ -255,7 +255,7 @@ describe("Keyword Filter Integration", () => {
       meta: { total: 0, page: 1, perPage: 20 },
       isLoading: false,
       error: new Error("Failed to fetch"),
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     
     render(<KeywordList siteId="1" />);
@@ -270,7 +270,7 @@ describe("Keyword Filter Integration", () => {
       meta: { total: 0, page: 1, perPage: 20 },
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     
     render(<KeywordList siteId="1" />);
@@ -338,7 +338,7 @@ describe("Keyword Filter Integration", () => {
         if (param === "serpFeature") return "featured_snippet";
         return null;
       },
-    });
+    } as any);
     
     render(<KeywordList siteId="1" />);
     
@@ -360,7 +360,7 @@ describe("Keyword Filter Integration", () => {
 
   // Pagination with filters
   it("resets to page 1 when filter changes", async () => {
-    const mockMutate = jest.fn();
+    const mockMutate = vi.fn();
     mockUseKeywords.mockReturnValue({
       keywords: mockKeywords,
       meta: { total: 50, page: 2, perPage: 20 },
