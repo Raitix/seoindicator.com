@@ -159,5 +159,5 @@ export default function AuditPageClient() {
     notFound();
   }
 
-  return <PublicAuditPage audit={data} hash={hash} />;
+  return <PublicAuditPage hash={hash} initialData={data} />;
 }

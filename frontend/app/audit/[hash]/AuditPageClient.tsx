@@ -176,5 +176,5 @@ export default function AuditPageClient() {
   }
 
   // Render audit page
-  return <PublicAuditPage audit={audit} hash={hash} />;
+  return <PublicAuditPage hash={hash} initialData={audit} />;
 }
