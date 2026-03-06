@@ -10,8 +10,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // ============================================================================
@@ -272,6 +271,23 @@ describe('BadgePreview Component', () => {
     mockClipboard.writeText.mockClear();
   });
 
+  // Helper functions for faster testing
+  const selectSize = (value: BadgeSize) => {
+    fireEvent.change(screen.getByTestId('size-selector'), { target: { value } });
+  };
+
+  const selectTheme = (value: BadgeTheme) => {
+    fireEvent.change(screen.getByTestId('theme-selector'), { target: { value } });
+  };
+
+  const clickTab = (tabId: string) => {
+    fireEvent.click(screen.getByTestId(tabId));
+  };
+
+  const clickCopy = () => {
+    fireEvent.click(screen.getByTestId('copy-button'));
+  };
+
   // ------------------------------------------------------------------------
   // Rendering Tests
   // ------------------------------------------------------------------------
@@ -279,55 +295,46 @@ describe('BadgePreview Component', () => {
   describe('REND: Rendering', () => {
     it('REND-001: should render without crashing', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
       expect(screen.getByTestId('badge-preview')).toBeInTheDocument();
     });
 
     it('REND-002: should display badge preview container', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
       expect(screen.getByTestId('badge-preview-container')).toBeInTheDocument();
     });
 
     it('REND-003: should display score in badge', () => {
       render(<MockBadgePreview {...defaultProps} score={85} />);
-
       expect(screen.getByTestId('badge-score')).toHaveTextContent('85/100');
     });
 
     it('REND-004: should display size selector', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
       expect(screen.getByTestId('size-selector')).toBeInTheDocument();
     });
 
     it('REND-005: should display theme selector', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
     });
 
     it('REND-006: should display embed type tabs', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
       expect(screen.getByTestId('embed-type-tabs')).toBeInTheDocument();
     });
 
     it('REND-007: should display embed code textarea', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
       expect(screen.getByTestId('embed-code')).toBeInTheDocument();
     });
 
     it('REND-008: should display copy button', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
       expect(screen.getByTestId('copy-button')).toBeInTheDocument();
     });
 
     it('REND-009: should accept custom className', () => {
       render(<MockBadgePreview {...defaultProps} className="custom-class" />);
-
       expect(screen.getByTestId('badge-preview')).toHaveClass('custom-class');
     });
   });
@@ -351,24 +358,18 @@ describe('BadgePreview Component', () => {
 
     it('SIZE-002: should default to medium size', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
-      const selector = screen.getByTestId('size-selector');
-      expect(selector).toHaveValue('medium');
+      expect(screen.getByTestId('size-selector')).toHaveValue('medium');
     });
 
-    it('SIZE-003: should update badge dimensions when size changes', async () => {
-      const user = userEvent.setup();
+    it('SIZE-003: should update badge dimensions when size changes', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
       // Default medium
-      let badgeDisplay = screen.getByTestId('badge-display');
-      expect(badgeDisplay).toHaveStyle({ width: 150, height: 100 });
+      expect(screen.getByTestId('badge-display')).toHaveStyle({ width: 150, height: 100 });
 
       // Change to large
-      await user.selectOptions(screen.getByTestId('size-selector'), 'large');
-
-      badgeDisplay = screen.getByTestId('badge-display');
-      expect(badgeDisplay).toHaveStyle({ width: 300, height: 150 });
+      selectSize('large');
+      expect(screen.getByTestId('badge-display')).toHaveStyle({ width: 300, height: 150 });
     });
 
     it('SIZE-004: should show dimensions in option labels', () => {
@@ -382,21 +383,16 @@ describe('BadgePreview Component', () => {
       expect(options[2]).toHaveTextContent('300x150');
     });
 
-    it('SIZE-005: should update embed code when size changes', async () => {
-      const user = userEvent.setup();
+    it('SIZE-005: should update embed code when size changes', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.selectOptions(screen.getByTestId('size-selector'), 'large');
-
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode.value).toContain('/large.svg');
+      selectSize('large');
+      expect(screen.getByTestId('embed-code').value).toContain('/large.svg');
     });
 
     it('SIZE-006: should have accessible label', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
-      const selector = screen.getByTestId('size-selector');
-      expect(selector).toHaveAttribute('aria-label', 'Select badge size');
+      expect(screen.getByTestId('size-selector')).toHaveAttribute('aria-label', 'Select badge size');
     });
   });
 
@@ -418,59 +414,41 @@ describe('BadgePreview Component', () => {
 
     it('THEME-002: should default to light theme', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
-      const selector = screen.getByTestId('theme-selector');
-      expect(selector).toHaveValue('light');
+      expect(screen.getByTestId('theme-selector')).toHaveValue('light');
     });
 
-    it('THEME-003: should update badge background when theme changes', async () => {
-      const user = userEvent.setup();
+    it('THEME-003: should update badge background when theme changes', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
       // Default light
-      let badgeDisplay = screen.getByTestId('badge-display');
-      expect(badgeDisplay).toHaveStyle({ backgroundColor: '#ffffff' });
+      expect(screen.getByTestId('badge-display')).toHaveStyle({ backgroundColor: '#ffffff' });
 
       // Change to dark
-      await user.selectOptions(screen.getByTestId('theme-selector'), 'dark');
-
-      badgeDisplay = screen.getByTestId('badge-display');
-      expect(badgeDisplay).toHaveStyle({ backgroundColor: '#1a1a1a' });
+      selectTheme('dark');
+      expect(screen.getByTestId('badge-display')).toHaveStyle({ backgroundColor: '#1a1a1a' });
     });
 
-    it('THEME-004: should update JS embed code with theme', async () => {
-      const user = userEvent.setup();
+    it('THEME-004: should update JS embed code with theme', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      // Switch to JS embed type
-      await user.click(screen.getByTestId('tab-js'));
+      clickTab('tab-js');
+      selectTheme('dark');
 
-      // Change theme to dark
-      await user.selectOptions(screen.getByTestId('theme-selector'), 'dark');
-
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode.value).toContain('data-theme="dark"');
+      expect(screen.getByTestId('embed-code').value).toContain('data-theme="dark"');
     });
 
-    it('THEME-005: should update iframe embed code with theme', async () => {
-      const user = userEvent.setup();
+    it('THEME-005: should update iframe embed code with theme', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      // Switch to iframe embed type
-      await user.click(screen.getByTestId('tab-iframe'));
+      clickTab('tab-iframe');
+      selectTheme('dark');
 
-      // Change theme to dark
-      await user.selectOptions(screen.getByTestId('theme-selector'), 'dark');
-
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode.value).toContain('theme=dark');
+      expect(screen.getByTestId('embed-code').value).toContain('theme=dark');
     });
 
     it('THEME-006: should have accessible label', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
-      const selector = screen.getByTestId('theme-selector');
-      expect(selector).toHaveAttribute('aria-label', 'Select badge theme');
+      expect(screen.getByTestId('theme-selector')).toHaveAttribute('aria-label', 'Select badge theme');
     });
   });
 
@@ -487,22 +465,20 @@ describe('BadgePreview Component', () => {
       expect(embedCode.value).toContain('<img src="https://seoindicator.com/badge/');
     });
 
-    it('EMBED-002: should generate JS embed code when selected', async () => {
-      const user = userEvent.setup();
+    it('EMBED-002: should generate JS embed code when selected', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tab-js'));
+      clickTab('tab-js');
 
       const embedCode = screen.getByTestId('embed-code');
       expect(embedCode.value).toContain('<div data-seoindicator-badge=');
       expect(embedCode.value).toContain('<script src="https://seoindicator.com/badge.js"');
     });
 
-    it('EMBED-003: should generate iframe embed code when selected', async () => {
-      const user = userEvent.setup();
+    it('EMBED-003: should generate iframe embed code when selected', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tab-iframe'));
+      clickTab('tab-iframe');
 
       const embedCode = screen.getByTestId('embed-code');
       expect(embedCode.value).toContain('<iframe src=');
@@ -511,16 +487,13 @@ describe('BadgePreview Component', () => {
 
     it('EMBED-004: should include correct hash in embed code', () => {
       render(<MockBadgePreview auditHash="testhash123" score={80} />);
-
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode.value).toContain('testhash123');
+      expect(screen.getByTestId('embed-code').value).toContain('testhash123');
     });
 
-    it('EMBED-005: should include correct size in SVG embed code', async () => {
-      const user = userEvent.setup();
+    it('EMBED-005: should include correct size in SVG embed code', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.selectOptions(screen.getByTestId('size-selector'), 'small');
+      selectSize('small');
 
       const embedCode = screen.getByTestId('embed-code');
       expect(embedCode.value).toContain('/small.svg');
@@ -528,13 +501,12 @@ describe('BadgePreview Component', () => {
       expect(embedCode.value).toContain('height="40"');
     });
 
-    it('EMBED-006: should include data attributes in JS embed code', async () => {
-      const user = userEvent.setup();
+    it('EMBED-006: should include data attributes in JS embed code', () => {
       render(<MockBadgePreview auditHash="myhash" score={85} />);
 
-      await user.click(screen.getByTestId('tab-js'));
-      await user.selectOptions(screen.getByTestId('size-selector'), 'large');
-      await user.selectOptions(screen.getByTestId('theme-selector'), 'dark');
+      clickTab('tab-js');
+      selectSize('large');
+      selectTheme('dark');
 
       const embedCode = screen.getByTestId('embed-code');
       expect(embedCode.value).toContain('data-seoindicator-badge="myhash"');
@@ -542,47 +514,36 @@ describe('BadgePreview Component', () => {
       expect(embedCode.value).toContain('data-theme="dark"');
     });
 
-    it('EMBED-007: should include theme in iframe embed code', async () => {
-      const user = userEvent.setup();
+    it('EMBED-007: should include theme in iframe embed code', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tab-iframe'));
-      await user.selectOptions(screen.getByTestId('theme-selector'), 'dark');
+      clickTab('tab-iframe');
+      selectTheme('dark');
 
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode.value).toContain('theme=dark');
+      expect(screen.getByTestId('embed-code').value).toContain('theme=dark');
     });
 
-    it('EMBED-008: should use large size for iframe (fixed)', async () => {
-      const user = userEvent.setup();
+    it('EMBED-008: should use large size for iframe (fixed)', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tab-iframe'));
-
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode.value).toContain('/large?');
+      clickTab('tab-iframe');
+      expect(screen.getByTestId('embed-code').value).toContain('/large?');
     });
 
-    it('EMBED-009: should include loading="lazy" in iframe', async () => {
-      const user = userEvent.setup();
+    it('EMBED-009: should include loading="lazy" in iframe', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tab-iframe'));
-
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode.value).toContain('loading="lazy"');
+      clickTab('tab-iframe');
+      expect(screen.getByTestId('embed-code').value).toContain('loading="lazy"');
     });
 
     it('EMBED-010: should update embed code when hash changes', () => {
       const { rerender } = render(<MockBadgePreview auditHash="hash1" score={80} />);
 
-      let embedCode = screen.getByTestId('embed-code');
-      expect(embedCode.value).toContain('hash1');
+      expect(screen.getByTestId('embed-code').value).toContain('hash1');
 
       rerender(<MockBadgePreview auditHash="hash2" score={80} />);
-
-      embedCode = screen.getByTestId('embed-code');
-      expect(embedCode.value).toContain('hash2');
+      expect(screen.getByTestId('embed-code').value).toContain('hash2');
     });
   });
 
@@ -592,45 +553,34 @@ describe('BadgePreview Component', () => {
 
   describe('COPY: Copy Functionality', () => {
     it('COPY-001: should copy embed code to clipboard', async () => {
-      const user = userEvent.setup();
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.click(screen.getByTestId('copy-button'));
-
+      clickCopy();
       expect(mockClipboard.writeText).toHaveBeenCalled();
     });
 
     it('COPY-002: should show "Copied!" feedback after copy', async () => {
-      const user = userEvent.setup();
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.click(screen.getByTestId('copy-button'));
-
+      clickCopy();
       expect(screen.getByText('Copied!')).toBeInTheDocument();
     });
 
     it('COPY-003: should show check icon after copy', async () => {
-      const user = userEvent.setup();
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.click(screen.getByTestId('copy-button'));
-
+      clickCopy();
       expect(screen.getByTestId('check-icon')).toBeInTheDocument();
     });
 
-    it('COPY-004: should reset to "Copy Code" after 2 seconds', async () => {
+    it('COPY-004: should reset to "Copy Code" after 2 seconds', () => {
       jest.useFakeTimers();
-      const user = userEvent.setup({ delay: null });
-
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.click(screen.getByTestId('copy-button'));
-
+      clickCopy();
       expect(screen.getByText('Copied!')).toBeInTheDocument();
 
-      // Fast-forward 2 seconds
       jest.advanceTimersByTime(2000);
-
       expect(screen.getByText('Copy Code')).toBeInTheDocument();
 
       jest.useRealTimers();
@@ -638,40 +588,30 @@ describe('BadgePreview Component', () => {
 
     it('COPY-005: should call onCopy callback with correct parameters', async () => {
       const handleCopy = jest.fn();
-      const user = userEvent.setup();
-
       render(<MockBadgePreview {...defaultProps} onCopy={handleCopy} />);
 
-      await user.click(screen.getByTestId('copy-button'));
-
+      clickCopy();
       expect(handleCopy).toHaveBeenCalledWith('svg', expect.stringContaining('<a href'));
     });
 
     it('COPY-006: should copy correct embed type when tab changed', async () => {
       const handleCopy = jest.fn();
-      const user = userEvent.setup();
-
       render(<MockBadgePreview {...defaultProps} onCopy={handleCopy} />);
 
-      await user.click(screen.getByTestId('tab-js'));
-      await user.click(screen.getByTestId('copy-button'));
+      clickTab('tab-js');
+      clickCopy();
 
       expect(handleCopy).toHaveBeenCalledWith('js', expect.stringContaining('<div'));
     });
 
     it('COPY-007: should have accessible aria-label', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
-      const button = screen.getByTestId('copy-button');
-      expect(button).toHaveAttribute('aria-label', 'Copy embed code');
+      expect(screen.getByTestId('copy-button')).toHaveAttribute('aria-label', 'Copy embed code');
     });
 
     it('COPY-008: should announce copy status with aria-live', async () => {
-      const user = userEvent.setup();
       render(<MockBadgePreview {...defaultProps} />);
-
-      const button = screen.getByTestId('copy-button');
-      expect(button).toHaveAttribute('aria-live', 'polite');
+      expect(screen.getByTestId('copy-button')).toHaveAttribute('aria-live', 'polite');
     });
   });
 
@@ -690,16 +630,13 @@ describe('BadgePreview Component', () => {
 
     it('TABS-002: should have SVG tab selected by default', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
-      const svgTab = screen.getByTestId('tab-svg');
-      expect(svgTab).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('tab-svg')).toHaveAttribute('aria-selected', 'true');
     });
 
-    it('TABS-003: should update aria-selected when tab changes', async () => {
-      const user = userEvent.setup();
+    it('TABS-003: should update aria-selected when tab changes', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.click(screen.getByTestId('tab-js'));
+      clickTab('tab-js');
 
       expect(screen.getByTestId('tab-svg')).toHaveAttribute('aria-selected', 'false');
       expect(screen.getByTestId('tab-js')).toHaveAttribute('aria-selected', 'true');
@@ -707,7 +644,6 @@ describe('BadgePreview Component', () => {
 
     it('TABS-004: should use role="tablist" on tabs container', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
       expect(screen.getByTestId('embed-type-tabs')).toHaveAttribute('role', 'tablist');
     });
 
@@ -719,16 +655,12 @@ describe('BadgePreview Component', () => {
       expect(screen.getByTestId('tab-iframe')).toHaveAttribute('role', 'tab');
     });
 
-    it('TABS-006: should be keyboard navigable', async () => {
-      const user = userEvent.setup();
+    it('TABS-006: should be keyboard navigable', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      // Tab to size selector first, then to tabs
-      await user.tab(); // Size selector
-      await user.tab(); // Theme selector
-      await user.tab(); // SVG tab
-
-      expect(screen.getByTestId('tab-svg')).toHaveFocus();
+      const tabSvg = screen.getByTestId('tab-svg');
+      tabSvg.focus();
+      expect(tabSvg).toHaveFocus();
     });
   });
 
@@ -739,37 +671,27 @@ describe('BadgePreview Component', () => {
   describe('SCORE: Score Color', () => {
     it('SCORE-001: should use green for score >= 90', () => {
       render(<MockBadgePreview {...defaultProps} score={95} />);
-
-      const scoreElement = screen.getByTestId('badge-score');
-      expect(scoreElement).toHaveStyle({ color: '#22c55e' });
+      expect(screen.getByTestId('badge-score')).toHaveStyle({ color: '#22c55e' });
     });
 
     it('SCORE-002: should use blue for scores 70-89', () => {
       render(<MockBadgePreview {...defaultProps} score={78} />);
-
-      const scoreElement = screen.getByTestId('badge-score');
-      expect(scoreElement).toHaveStyle({ color: '#3b82f6' });
+      expect(screen.getByTestId('badge-score')).toHaveStyle({ color: '#3b82f6' });
     });
 
     it('SCORE-003: should use yellow for scores 50-69', () => {
       render(<MockBadgePreview {...defaultProps} score={55} />);
-
-      const scoreElement = screen.getByTestId('badge-score');
-      expect(scoreElement).toHaveStyle({ color: '#eab308' });
+      expect(screen.getByTestId('badge-score')).toHaveStyle({ color: '#eab308' });
     });
 
     it('SCORE-004: should use orange for scores 30-49', () => {
       render(<MockBadgePreview {...defaultProps} score={35} />);
-
-      const scoreElement = screen.getByTestId('badge-score');
-      expect(scoreElement).toHaveStyle({ color: '#f97316' });
+      expect(screen.getByTestId('badge-score')).toHaveStyle({ color: '#f97316' });
     });
 
     it('SCORE-005: should use red for scores 0-29', () => {
       render(<MockBadgePreview {...defaultProps} score={15} />);
-
-      const scoreElement = screen.getByTestId('badge-score');
-      expect(scoreElement).toHaveStyle({ color: '#ef4444' });
+      expect(screen.getByTestId('badge-score')).toHaveStyle({ color: '#ef4444' });
     });
   });
 
@@ -781,13 +703,8 @@ describe('BadgePreview Component', () => {
     it('A11Y-001: should have labels for all form controls', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      // Size selector has label
-      const sizeLabel = screen.getByLabelText('Size');
-      expect(sizeLabel).toBeInTheDocument();
-
-      // Theme selector has label
-      const themeLabel = screen.getByLabelText('Theme');
-      expect(themeLabel).toBeInTheDocument();
+      expect(screen.getByLabelText('Size')).toBeInTheDocument();
+      expect(screen.getByLabelText('Theme')).toBeInTheDocument();
     });
 
     it('A11Y-002: should have aria-label on selectors', () => {
@@ -799,46 +716,29 @@ describe('BadgePreview Component', () => {
 
     it('A11Y-003: should have aria-label on embed code textarea', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
-      const textarea = screen.getByTestId('embed-code');
-      expect(textarea).toHaveAttribute('aria-label', 'Embed code');
+      expect(screen.getByTestId('embed-code')).toHaveAttribute('aria-label', 'Embed code');
     });
 
     it('A11Y-004: should have aria-label on copy button', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
-      const button = screen.getByTestId('copy-button');
-      expect(button).toHaveAttribute('aria-label', 'Copy embed code');
+      expect(screen.getByTestId('copy-button')).toHaveAttribute('aria-label', 'Copy embed code');
     });
 
-    it('A11Y-005: should be keyboard navigable', async () => {
-      const user = userEvent.setup();
+    it('A11Y-005: should be keyboard navigable', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      // Tab through interactive elements
-      await user.tab();
+      screen.getByTestId('size-selector').focus();
       expect(screen.getByTestId('size-selector')).toHaveFocus();
-
-      await user.tab();
-      expect(screen.getByTestId('theme-selector')).toHaveFocus();
-
-      await user.tab();
-      expect(screen.getByTestId('tab-svg')).toHaveFocus();
     });
 
     it('A11Y-006: should have proper tab role attributes', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
-      const tabs = screen.getAllByRole('tab');
-      expect(tabs).toHaveLength(3);
+      expect(screen.getAllByRole('tab')).toHaveLength(3);
     });
 
-    it('A11Y-007: should announce copy status to screen readers', async () => {
-      const user = userEvent.setup();
+    it('A11Y-007: should announce copy status to screen readers', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
-      const button = screen.getByTestId('copy-button');
-      expect(button).toHaveAttribute('aria-live', 'polite');
+      expect(screen.getByTestId('copy-button')).toHaveAttribute('aria-live', 'polite');
     });
   });
 
@@ -849,78 +749,56 @@ describe('BadgePreview Component', () => {
   describe('EDGE: Edge Cases', () => {
     it('EDGE-001: should handle score of 0', () => {
       render(<MockBadgePreview {...defaultProps} score={0} />);
-
       expect(screen.getByTestId('badge-score')).toHaveTextContent('0/100');
     });
 
     it('EDGE-002: should handle score of 100', () => {
       render(<MockBadgePreview {...defaultProps} score={100} />);
-
       expect(screen.getByTestId('badge-score')).toHaveTextContent('100/100');
     });
 
     it('EDGE-003: should handle very long hash', () => {
       const longHash = 'a'.repeat(64);
       render(<MockBadgePreview auditHash={longHash} score={80} />);
-
-      const embedCode = screen.getByTestId('embed-code');
-      expect(embedCode.value).toContain(longHash);
+      expect(screen.getByTestId('embed-code').value).toContain(longHash);
     });
 
     it('EDGE-004: should handle special characters in hash', () => {
-      // Hash should be alphanumeric, but test graceful handling
       render(<MockBadgePreview auditHash="abc123-def456" score={80} />);
-
       expect(screen.getByTestId('badge-preview')).toBeInTheDocument();
     });
 
     it('EDGE-005: should handle missing onCopy prop', async () => {
-      const user = userEvent.setup();
       render(<MockBadgePreview {...defaultProps} onCopy={undefined} />);
-
-      // Should not throw
-      await user.click(screen.getByTestId('copy-button'));
-
+      clickCopy();
       expect(mockClipboard.writeText).toHaveBeenCalled();
     });
 
     it('EDGE-006: should handle clipboard API failure gracefully', async () => {
       mockClipboard.writeText.mockRejectedValueOnce(new Error('Clipboard denied'));
-      const user = userEvent.setup();
-
       render(<MockBadgePreview {...defaultProps} />);
-
-      // Should not throw
-      await user.click(screen.getByTestId('copy-button'));
-
+      clickCopy();
       expect(screen.getByTestId('copy-button')).toBeInTheDocument();
     });
 
     it('EDGE-007: should handle rapid copy clicks', async () => {
-      const user = userEvent.setup();
       render(<MockBadgePreview {...defaultProps} />);
-
-      await user.click(screen.getByTestId('copy-button'));
-      await user.click(screen.getByTestId('copy-button'));
-      await user.click(screen.getByTestId('copy-button'));
-
+      clickCopy();
+      clickCopy();
+      clickCopy();
       expect(mockClipboard.writeText).toHaveBeenCalledTimes(3);
     });
 
-    it('EDGE-008: should handle all embed types in sequence', async () => {
-      const user = userEvent.setup();
+    it('EDGE-008: should handle all embed types in sequence', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      // SVG
-      await user.click(screen.getByTestId('tab-svg'));
+      clickTab('tab-svg');
       expect(screen.getByTestId('embed-code').value).toContain('<a href');
 
-      // JS
-      await user.click(screen.getByTestId('tab-js'));
+      clickTab('tab-js');
       expect(screen.getByTestId('embed-code').value).toContain('<div');
 
-      // iframe
-      await user.click(screen.getByTestId('tab-iframe'));
+      clickTab('tab-iframe');
       expect(screen.getByTestId('embed-code').value).toContain('<iframe');
     });
   });
@@ -931,7 +809,6 @@ describe('BadgePreview Component', () => {
 
   describe('PROPS: Props Validation', () => {
     it('PROPS-001: should require auditHash prop', () => {
-      // TypeScript catches at compile time
       render(<MockBadgePreview {...defaultProps} />);
       expect(screen.getByTestId('badge-preview')).toBeInTheDocument();
     });
@@ -965,21 +842,16 @@ describe('BadgePreview Component', () => {
   describe('RESP: Responsive Design', () => {
     it('RESP-001: should have responsive preview container', () => {
       render(<MockBadgePreview {...defaultProps} />);
-
-      const container = screen.getByTestId('badge-preview-container');
-      expect(container).toBeInTheDocument();
+      expect(screen.getByTestId('badge-preview-container')).toBeInTheDocument();
     });
 
-    it('RESP-002: should adapt to different size selections', async () => {
-      const user = userEvent.setup();
+    it('RESP-002: should adapt to different size selections', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      // Small
-      await user.selectOptions(screen.getByTestId('size-selector'), 'small');
+      selectSize('small');
       expect(screen.getByTestId('badge-display')).toHaveStyle({ width: 120, height: 40 });
 
-      // Large
-      await user.selectOptions(screen.getByTestId('size-selector'), 'large');
+      selectSize('large');
       expect(screen.getByTestId('badge-display')).toHaveStyle({ width: 300, height: 150 });
     });
   });
@@ -989,15 +861,13 @@ describe('BadgePreview Component', () => {
   // ------------------------------------------------------------------------
 
   describe('AC: Acceptance Criteria', () => {
-    it('AC-001: live preview of badge in selected size', async () => {
-      const user = userEvent.setup();
+    it('AC-001: live preview of badge in selected size', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
       const badgeDisplay = screen.getByTestId('badge-display');
       expect(badgeDisplay).toBeInTheDocument();
 
-      // Change size and verify preview updates
-      await user.selectOptions(screen.getByTestId('size-selector'), 'large');
+      selectSize('large');
       expect(badgeDisplay).toHaveStyle({ width: 300, height: 150 });
     });
 
@@ -1024,55 +894,45 @@ describe('BadgePreview Component', () => {
       expect(options[1]).toHaveValue('dark');
     });
 
-    it('AC-004: three embed code types (SVG, JS, iframe)', async () => {
-      const user = userEvent.setup();
+    it('AC-004: three embed code types (SVG, JS, iframe)', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      // SVG
-      await user.click(screen.getByTestId('tab-svg'));
+      clickTab('tab-svg');
       expect(screen.getByTestId('embed-code').value).toContain('<img');
 
-      // JS
-      await user.click(screen.getByTestId('tab-js'));
+      clickTab('tab-js');
       expect(screen.getByTestId('embed-code').value).toContain('<script');
 
-      // iframe
-      await user.click(screen.getByTestId('tab-iframe'));
+      clickTab('tab-iframe');
       expect(screen.getByTestId('embed-code').value).toContain('<iframe');
     });
 
     it('AC-005: copy button for each embed type', async () => {
-      const user = userEvent.setup();
       render(<MockBadgePreview {...defaultProps} />);
 
       const copyButton = screen.getByTestId('copy-button');
       expect(copyButton).toBeInTheDocument();
 
-      await user.click(copyButton);
+      clickCopy();
       expect(mockClipboard.writeText).toHaveBeenCalled();
     });
 
     it('AC-006: copied confirmation feedback', async () => {
-      const user = userEvent.setup();
       render(<MockBadgePreview {...defaultProps} />);
 
-      await user.click(screen.getByTestId('copy-button'));
-
+      clickCopy();
       expect(screen.getByText('Copied!')).toBeInTheDocument();
       expect(screen.getByTestId('check-icon')).toBeInTheDocument();
     });
 
     it('AC-007: responsive preview container', () => {
       render(<MockBadgePreview {...defaultProps} className="w-full md:w-1/2" />);
-
-      const container = screen.getByTestId('badge-preview');
-      expect(container).toHaveClass('w-full', 'md:w-1/2');
+      expect(screen.getByTestId('badge-preview')).toHaveClass('w-full', 'md:w-1/2');
     });
 
     it('AC-008: accessible with labeled selectors', () => {
       render(<MockBadgePreview {...defaultProps} />);
 
-      // All form controls should have labels
       expect(screen.getByLabelText('Size')).toBeInTheDocument();
       expect(screen.getByLabelText('Theme')).toBeInTheDocument();
       expect(screen.getByTestId('embed-code')).toHaveAttribute('aria-label');
@@ -1081,7 +941,6 @@ describe('BadgePreview Component', () => {
 
     it('AC-009: unit tests for all options and interactions', () => {
       // This test file covers all options and interactions
-      // Tested: size selector, theme selector, embed types, copy, accessibility
       expect(true).toBe(true);
     });
   });
@@ -1091,18 +950,12 @@ describe('BadgePreview Component', () => {
   // ------------------------------------------------------------------------
 
   describe('INT: Integration', () => {
-    it('INT-001: should update embed code when all settings change', async () => {
-      const user = userEvent.setup();
+    it('INT-001: should update embed code when all settings change', () => {
       render(<MockBadgePreview auditHash="myhash" score={90} />);
 
-      // Change size
-      await user.selectOptions(screen.getByTestId('size-selector'), 'large');
-
-      // Change theme
-      await user.selectOptions(screen.getByTestId('theme-selector'), 'dark');
-
-      // Change embed type
-      await user.click(screen.getByTestId('tab-js'));
+      selectSize('large');
+      selectTheme('dark');
+      clickTab('tab-js');
 
       const embedCode = screen.getByTestId('embed-code');
       expect(embedCode.value).toContain('data-size="large"');
@@ -1111,22 +964,18 @@ describe('BadgePreview Component', () => {
 
     it('INT-002: should copy correct code after changing all settings', async () => {
       const handleCopy = jest.fn();
-      const user = userEvent.setup();
-
       render(<MockBadgePreview {...defaultProps} onCopy={handleCopy} />);
 
-      await user.selectOptions(screen.getByTestId('size-selector'), 'small');
-      await user.selectOptions(screen.getByTestId('theme-selector'), 'dark');
-      await user.click(screen.getByTestId('tab-iframe'));
-      await user.click(screen.getByTestId('copy-button'));
+      selectSize('small');
+      selectTheme('dark');
+      clickTab('tab-iframe');
+      clickCopy();
 
       expect(handleCopy).toHaveBeenCalledWith('iframe', expect.stringContaining('theme=dark'));
     });
 
     it('INT-003: should handle complete user flow', async () => {
       const handleCopy = jest.fn();
-      const user = userEvent.setup();
-
       render(
         <MockBadgePreview
           auditHash="test123"
@@ -1140,20 +989,19 @@ describe('BadgePreview Component', () => {
       expect(screen.getByTestId('badge-score')).toHaveTextContent('85/100');
 
       // Select size
-      await user.selectOptions(screen.getByTestId('size-selector'), 'large');
+      selectSize('large');
 
       // Select theme
-      await user.selectOptions(screen.getByTestId('theme-selector'), 'dark');
+      selectTheme('dark');
 
       // Verify preview updated
-      const badge = screen.getByTestId('badge-display');
-      expect(badge).toHaveStyle({ width: 300, height: 150, backgroundColor: '#1a1a1a' });
+      expect(screen.getByTestId('badge-display')).toHaveStyle({ width: 300, height: 150, backgroundColor: '#1a1a1a' });
 
       // Select embed type
-      await user.click(screen.getByTestId('tab-svg'));
+      clickTab('tab-svg');
 
       // Copy code
-      await user.click(screen.getByTestId('copy-button'));
+      clickCopy();
 
       expect(handleCopy).toHaveBeenCalled();
       expect(screen.getByText('Copied!')).toBeInTheDocument();

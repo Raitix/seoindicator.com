@@ -1,7 +1,7 @@
 # TASK-33-5: Create PublicAuditController with Endpoints
 
 ## STATUS
-`To Prioritize`
+`Prioritization In Progress`
 
 ## PRIORITY
 `High`
