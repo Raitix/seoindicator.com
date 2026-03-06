@@ -469,7 +469,8 @@ describe('TopIssues', () => {
       render(<TopIssues issues={mockIssues} isPartial={true} auditHash="abc123" />);
       
       const link = screen.getByTestId('view-full-link');
-      expect(link).toHaveAttribute('href', '/audit/abc123');
+      // Component uses query parameter format: /audit/?h=abc123
+      expect(link).toHaveAttribute('href', '/audit/?h=abc123');
     });
 
     it('TI-043: prompt has CTA text', () => {

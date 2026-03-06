@@ -25,10 +25,26 @@ import { ShareAuditModal } from '@/components/audit/ShareAuditModal';
 
 // Mock clipboard API
 const mockClipboardWrite = jest.fn().mockResolvedValue(undefined);
-Object.assign(navigator, {
-  clipboard: {
-    writeText: mockClipboardWrite,
-  },
+
+// Store original clipboard
+const originalClipboard = navigator.clipboard;
+
+beforeAll(() => {
+  Object.defineProperty(navigator, 'clipboard', {
+    value: {
+      writeText: mockClipboardWrite,
+    },
+    writable: true,
+    configurable: true,
+  });
+});
+
+afterAll(() => {
+  Object.defineProperty(navigator, 'clipboard', {
+    value: originalClipboard,
+    writable: true,
+    configurable: true,
+  });
 });
 
 // Mock analytics
@@ -123,13 +139,15 @@ describe('ShareAuditModal Component', () => {
     it('TOGGLE-001: toggle is checked when public', () => {
       render(<ShareAuditModal {...defaultProps} isPublic={true} />);
       const toggle = screen.getByTestId('visibility-toggle');
-      expect(toggle).toHaveAttribute('data-state', 'checked');
+      // Switch uses aria-checked, not data-state
+      expect(toggle).toHaveAttribute('aria-checked', 'true');
     });
 
     it('TOGGLE-002: toggle is unchecked when private', () => {
       render(<ShareAuditModal {...defaultProps} isPublic={false} />);
       const toggle = screen.getByTestId('visibility-toggle');
-      expect(toggle).toHaveAttribute('data-state', 'unchecked');
+      // Switch uses aria-checked, not data-state
+      expect(toggle).toHaveAttribute('aria-checked', 'false');
     });
 
     it('TOGGLE-003: toggle click triggers publish when private', async () => {
@@ -408,11 +426,15 @@ describe('ShareAuditModal Component', () => {
     it('URL-003: copy button copies URL to clipboard', async () => {
       const user = userEvent.setup();
       
+      // Use jest.spyOn for clipboard mock
+      const writeTextSpy = jest.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
+      
       render(<ShareAuditModal {...defaultProps} isPublic={true} />);
       
       await user.click(screen.getByTestId('copy-url-button'));
       
-      expect(mockClipboardWrite).toHaveBeenCalled();
+      expect(writeTextSpy).toHaveBeenCalled();
+      writeTextSpy.mockRestore();
     });
 
     it('URL-004: copy shows feedback', async () => {

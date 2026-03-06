@@ -163,4 +163,25 @@ return [
         'table' => 'failed_jobs',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Queue Monitoring Thresholds
+    |--------------------------------------------------------------------------
+    |
+    | These thresholds are used by QueueMonitoringService to determine
+    | queue health status (healthy, warning, unhealthy).
+    |
+    */
+
+    'monitoring' => [
+        'thresholds' => [
+            'pending_warning' => (int) env('QUEUE_PENDING_WARNING', 100),
+            'pending_critical' => (int) env('QUEUE_PENDING_CRITICAL', 500),
+            'failed_warning' => (int) env('QUEUE_FAILED_WARNING', 10),
+            'failed_critical' => (int) env('QUEUE_FAILED_CRITICAL', 50),
+            'processing_time_warning' => (int) env('QUEUE_TIME_WARNING', 1000),
+            'processing_time_critical' => (int) env('QUEUE_TIME_CRITICAL', 5000),
+        ],
+    ],
+
 ];
