@@ -151,6 +151,25 @@ _(Document rollback events and causes)_
   - Fixed test helper default for elementType
 - **Note:** DevOps had to fix test failures before deployment. The Developer had implemented the core logic but tests expected factory methods that were missing. Always verify tests pass before deployment.
 
+### TASK-14-13 (AuditController - API Endpoints)
+- **Date:** 2026-03-06
+- **Method:** GitHub Actions (automatic)
+- **Commit:** 90227c59
+- **Result:** Successful (code was already in origin/main)
+- **Health Check:** 200 OK, database connected
+- **What was deployed:**
+  - `AuditController.php` - 4 endpoints for audit management
+  - `StoreAuditRequest.php` - Request validation
+  - Rate limiter `audit-trigger` (5/hour per user)
+  - Routes in `routes/api.php`
+- **API Endpoints:**
+  - `POST /api/v1/sites/{siteId}/audits` - Trigger new audit
+  - `GET /api/v1/audits/{auditId}` - Get audit status
+  - `GET /api/v1/sites/{siteId}/audits` - List audits for site
+  - `DELETE /api/v1/audits/{auditId}` - Cancel running audit
+- **Tests:** 71 tests, 164 assertions - all passing
+- **Note:** Code was already committed and pushed by Developer. DevOps verified deployment status and updated task to "To Test Prod".
+
 ---
 
 Last updated: 2026-03-06
