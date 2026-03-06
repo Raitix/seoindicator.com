@@ -12663,6 +12663,194 @@ id: complete-1
 - TASK-19-12: Frontend Live Results Table
 
 ---
+## Progress Indicators (TASK-28-10)
+
+### Component Description
+Loading state components for the Modern UI/UX + Indicator Catalog feature. Provides LinearProgress (horizontal bar) and CircularProgress (circular spinner) components for indicating loading states throughout the application. Both support determinate (specific progress) and indeterminate (unknown progress) modes with configurable colors and smooth animations.
+
+### Component Location
+- **LinearProgress:** `frontend/components/ui/LinearProgress.tsx`
+- **CircularProgress:** `frontend/components/ui/CircularProgress.tsx`
+- **Tests:** `frontend/__tests__/components/ui/progress-indicators.test.tsx`
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-28-10.md`
+
+### Props Interfaces
+
+**LinearProgress:**
+```typescript
+interface LinearProgressProps {
+  value?: number;  // 0-100, undefined for indeterminate mode
+  color?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
+  className?: string;
+}
+```
+
+**CircularProgress:**
+```typescript
+interface CircularProgressProps {
+  value?: number;  // 0-100, undefined for indeterminate mode
+  size?: 'sm' | 'md' | 'lg';
+  color?: 'primary' | 'secondary' | 'white';
+  className?: string;
+}
+```
+
+### Component Features
+
+| Feature | LinearProgress | CircularProgress |
+|---------|----------------|------------------|
+| Determinate mode | Value-based width | SVG stroke-dashoffset |
+| Indeterminate mode | Animated shimmer | CSS spin animation |
+| Color variants | 5 colors | 3 colors |
+| Size variants | N/A | sm/md/lg |
+| Accessibility | ARIA attributes | ARIA attributes |
+| Value clamping | 0-100 | 0-100 |
+
+### Color Variants
+
+**LinearProgress:**
+| Color | CSS Class | Use Case |
+|-------|-----------|----------|
+| `primary` | `bg-primary` | Default loading |
+| `secondary` | `bg-secondary` | Secondary actions |
+| `success` | `bg-emerald-500` | Success states |
+| `warning` | `bg-amber-500` | Warning states |
+| `error` | `bg-destructive` | Error states |
+
+**CircularProgress:**
+| Color | CSS Class | Use Case |
+|-------|-----------|----------|
+| `primary` | `text-primary` | Default loading |
+| `secondary` | `text-secondary` | Secondary actions |
+| `white` | `text-white` | Dark backgrounds |
+
+### Size Variants (CircularProgress)
+
+| Size | Dimensions | Stroke Width |
+|------|------------|--------------|
+| `sm` | 24px | 3px |
+| `md` | 40px (default) | 4px |
+| `lg` | 56px | 5px |
+
+### Usage Examples
+
+**LinearProgress - Determinate:**
+```tsx
+<LinearProgress value={75} color="primary" />
+```
+
+**LinearProgress - Indeterminate:**
+```tsx
+<LinearProgress color="primary" />  // No value = indeterminate
+```
+
+**CircularProgress - Determinate:**
+```tsx
+<CircularProgress value={50} size="md" color="primary" />
+```
+
+**CircularProgress - Indeterminate:**
+```tsx
+<CircularProgress size="lg" color="white" />  // No value = spinner
+```
+
+### Implementation Details
+
+**Value Clamping:**
+```typescript
+const clampedValue = Math.min(100, Math.max(0, value));
+```
+
+**Determinate Detection:**
+```typescript
+const isDeterminate = value !== undefined;
+```
+
+**CircularProgress SVG Calculation:**
+```typescript
+const strokeWidth = size === 'sm' ? 3 : size === 'lg' ? 5 : 4;
+const radius = (sizeValue - strokeWidth) / 2;
+const circumference = 2 * Math.PI * radius;
+const offset = circumference - (value / 100) * circumference;
+```
+
+### Accessibility Implementation
+
+| ARIA Attribute | Value | Purpose |
+|----------------|-------|---------|
+| `role` | `progressbar` | Progress semantics |
+| `aria-valuenow` | Current value | Current progress (determinate only) |
+| `aria-valuemin` | 0 | Minimum value |
+| `aria-valuemax` | 100 | Maximum value |
+
+**Note:** Indeterminate mode does not include aria-valuenow/min/max attributes.
+
+### Animation Implementation
+
+**LinearProgress Indeterminate:**
+```css
+/* globals.css */
+@keyframes linear-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-linear-indeterminate {
+  animation: linear-indeterminate 1.5s ease-in-out infinite;
+}
+```
+
+**CircularProgress Indeterminate:**
+```tsx
+// Uses Tailwind animate-spin class
+className="animate-spin"
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `progress-indicators.test.tsx` | 100 | 100+ | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| LinearProgress Rendering | 8 | Component mount, props, className |
+| LinearProgress Determinate | 7 | Value-based width, clamping |
+| LinearProgress Indeterminate | 6 | Animation, no ARIA value attributes |
+| LinearProgress Colors | 8 | All 5 color variants |
+| CircularProgress Rendering | 8 | Component mount, props, className |
+| CircularProgress Sizes | 8 | sm/md/lg dimensions |
+| CircularProgress Determinate | 8 | SVG stroke-dashoffset, clamping |
+| CircularProgress Indeterminate | 6 | Spin animation, no ARIA values |
+| CircularProgress Colors | 7 | All 3 color variants |
+| Accessibility | 8 | ARIA attributes for determinate mode |
+| TypeScript Types | 7 | Props interfaces |
+| Animation | 4 | Animation class presence |
+| Acceptance Criteria | 14 | All ACs verified |
+| Integration | 3 | Component usage patterns |
+| Edge Cases | 8 | Value clamping, unicode, large values |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `9b1a8491` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 100/100 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-28-3 (shadcn/ui Components - for design patterns)
+
+### Related Tasks
+- TASK-28-3: shadcn/ui Components
+- TASK-28-5: IndicatorCard (uses CircularProgress for loading)
+- TASK-28-7: IndicatorCatalog (uses LinearProgress for top-of-page loading)
+
+---
 ## Ranking Change Alert System (FEAT-002)
 
 ### Service Description

@@ -87,9 +87,12 @@ describe('INDICATOR_ICONS Registry Structure', () => {
 
   it('RS-005: All values are Lucide icon components', () => {
     Object.entries(INDICATOR_ICONS).forEach(([indicator, IconComponent]) => {
-      expect(typeof IconComponent).toBe('function');
-      // Lucide icons are React components with a displayName
+      // Lucide icons are React elements (objects with $$typeof and render)
+      expect(typeof IconComponent).toBe('object');
+      // Lucide icons have a displayName property
       expect(IconComponent.displayName).toBeDefined();
+      // Lucide icons have a render method
+      expect(typeof IconComponent.render).toBe('function');
     });
   });
 });
@@ -441,7 +444,9 @@ describe('Acceptance Criteria', () => {
     requiredIndicators.forEach(indicator => {
       const Icon = INDICATOR_ICONS[indicator];
       expect(Icon).toBeDefined();
-      expect(typeof Icon).toBe('function');
+      // Lucide icons are objects with render method
+      expect(typeof Icon).toBe('object');
+      expect(Icon.displayName).toBeDefined();
     });
   });
 
@@ -534,7 +539,8 @@ describe('Edge Cases', () => {
     expect(entries).toHaveLength(8);
     entries.forEach(([key, Icon]) => {
       expect(typeof key).toBe('string');
-      expect(typeof Icon).toBe('function');
+      // Lucide icons are objects with render method
+      expect(typeof Icon).toBe('object');
     });
   });
 
@@ -542,7 +548,8 @@ describe('Edge Cases', () => {
     const icons = Object.values(INDICATOR_ICONS);
     expect(icons).toHaveLength(8);
     icons.forEach(Icon => {
-      expect(typeof Icon).toBe('function');
+      // Lucide icons are objects with render method
+      expect(typeof Icon).toBe('object');
     });
   });
 });
