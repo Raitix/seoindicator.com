@@ -1,7 +1,7 @@
 # TASK-33-8: Create PublicAuditPage Component
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
