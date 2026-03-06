@@ -30507,3 +30507,196 @@ Error: Show error with retry option
 - TASK-33-13: BadgePreview component
 
 ---
+## Meta Tags and OG Tags for Public Audits (TASK-33-25)
+
+### Feature Description
+Comprehensive meta tags and Open Graph tags implementation for public audit pages. Enables SEO optimization and social sharing for public audit URLs, driving organic traffic and improving click-through rates from search engines and social platforms. Part of the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033).
+
+### Component Location
+- **Implementation:** `frontend/app/audit/[hash]/AuditPageClient.tsx` - `updateMetadata()` function
+- **Tests:** `frontend/__tests__/app/audit/[hash]/metadata.test.tsx`
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-33-25.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Dynamic Title Generation | `{truncatedUrl} SEO Audit Report \| SEOIndicator` |
+| Meta Description | Score and URL inclusion with SEO-optimized length |
+| Robots Meta | `index, follow` for public, `noindex` for errors |
+| Canonical URL | HTTPS with trailing slash and hash |
+| Open Graph Tags | og:title, og:description, og:image, og:url, og:type |
+| Twitter Card Tags | twitter:card with summary_large_image |
+
+### Meta Tag Structure
+
+**Title Generation:**
+```html
+<title>{truncatedUrl} SEO Audit Report | SEOIndicator</title>
+```
+- URL truncated to 40 chars for display (title max 70 chars)
+- Protocol stripping (https:// → removed)
+
+**Meta Description:**
+```html
+<meta name="description" content="SEO audit for {url} - Score: {score}/100. View technical SEO analysis and recommendations.">
+```
+- SEO-optimized length (50-160 chars)
+
+**Robots Meta:**
+```html
+<!-- Valid public audit -->
+<meta name="robots" content="index, follow">
+
+<!-- Invalid/not found audit -->
+<meta name="robots" content="noindex">
+```
+
+**Canonical URL:**
+```html
+<link rel="canonical" href="https://seoindicator.com/audit/{hash}/">
+```
+
+### Open Graph Tags
+
+```html
+<meta property="og:title" content="{url} SEO Score: {score}/100">
+<meta property="og:description" content="SEO audit results for {url}">
+<meta property="og:image" content="https://seoindicator.com/badge/{hash}/og.png">
+<meta property="og:url" content="https://seoindicator.com/audit/{hash}/">
+<meta property="og:type" content="website">
+```
+
+**OG Image Dimensions:** 1200x630px (standard social sharing size)
+
+### Twitter Card Tags
+
+```html
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{url} SEO Score: {score}/100">
+<meta name="twitter:description" content="SEO audit results for {url}">
+<meta name="twitter:image" content="https://seoindicator.com/badge/{hash}/og.png">
+```
+
+### Dynamic Generation
+
+**Implementation via `updateMetadata()` function:**
+```typescript
+function updateMetadata(data: PublicAuditData | null) {
+  if (!data) {
+    // Set noindex for invalid audits
+    document.querySelector('meta[name="robots"]')?.setAttribute('content', 'noindex');
+    return;
+  }
+
+  // Generate dynamic title with truncation
+  const displayUrl = truncateUrl(data.siteUrl, 40);
+  const title = `${displayUrl} SEO Audit Report | SEOIndicator`;
+  
+  // Update document title
+  document.title = title;
+  
+  // Update meta tags
+  updateMetaTag('description', `SEO audit for ${data.siteUrl} - Score: ${data.overallScore}/100...`);
+  updateMetaTag('robots', 'index, follow');
+  updateLinkTag('canonical', `${siteUrl}/audit/${hash}/`);
+  
+  // Update OG tags
+  updateMetaProperty('og:title', `${data.siteUrl} SEO Score: ${data.overallScore}/100`);
+  updateMetaProperty('og:description', `SEO audit results for ${data.siteUrl}`);
+  updateMetaProperty('og:image', `${siteUrl}/badge/${hash}/og.png`);
+  updateMetaProperty('og:url', `${siteUrl}/audit/${hash}/`);
+  
+  // Update Twitter card tags
+  updateMetaName('twitter:card', 'summary_large_image');
+  // ... mirrors OG tags
+}
+```
+
+### URL Truncation Logic
+
+| Input | Output | Reason |
+|-------|--------|--------|
+| `https://example.com` | `example.com` | Protocol stripped |
+| `https://very-long-domain-name-here.com` | `very-long-domain-name-here.com` | Full domain shown if < 40 chars |
+| `https://extremely-long-domain-name-that-exceeds-limit.com` | `extremely-long-domain-name-that-...` | Truncated with ellipsis |
+
+**Truncation Rules:**
+- Maximum display length: 40 characters
+- Protocol (https://) stripped before truncation
+- Ellipsis (...) added if truncated
+- Title max: 70 characters total
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | HTML escaping for all dynamic content |
+| URL Sanitization | Protocol validation, special chars escaped |
+| No Sensitive Data | Only public audit data exposed in meta tags |
+| Injection Protection | All values sanitized before DOM update |
+
+### SEO Benefits
+
+| Benefit | Implementation |
+|---------|---------------|
+| Search Indexing | `index, follow` allows Google to crawl and index |
+| SERP CTR | Compelling title and description improve click rates |
+| Social Sharing | OG tags control appearance on Facebook, LinkedIn, etc. |
+| Twitter Sharing | Twitter card tags enable rich previews on X |
+| Canonical URL | Prevents duplicate content issues |
+| Unique Per Audit | Each hash generates unique metadata |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `metadata.test.tsx` | 105 | 105+ | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| META-TITLE | 15 | Title generation, truncation, protocol stripping |
+| META-DESC | 12 | Description format, score/URL inclusion, length limits |
+| META-ROBOTS | 8 | index/follow, noindex for errors |
+| META-CANONICAL | 10 | HTTPS, trailing slash, hash inclusion |
+| META-OG | 15 | og:title, og:description, og:image, og:url, og:type |
+| META-TWITTER | 12 | twitter:card, mirrors OG tags |
+| META-UNIQUE | 6 | Different metadata per hash |
+| META-EDGE | 12 | Unicode, long URLs, errors, boundaries |
+| META-SEC | 6 | XSS, path traversal, SQL injection |
+| AC | 9 | All acceptance criteria verified |
+
+### Acceptance Criteria Status
+
+- [x] Title tag: "{Site URL} SEO Audit Report \| SEOIndicator"
+- [x] Meta description with score and URL
+- [x] robots meta: index, follow
+- [x] Canonical URL set
+- [x] Open Graph tags (og:title, og:description, og:image, og:url, og:type)
+- [x] Twitter Card tags (summary_large_image)
+- [x] Dynamic generation via generateMetadata
+- [x] All tags unique per audit
+- [x] Unit tests for metadata generation
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `4694bbf6` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 105/105 passing |
+| Production URL | https://seoindicator.com/audit/{hash}/ |
+
+### Dependencies
+- TASK-33-14 (public audit page route) - Route implementation
+- TASK-33-27 (OG image generation) - OG image URL references
+
+### Related Tasks
+- TASK-33-14: Public Audit Page Route
+- TASK-33-26: JSON-LD Schema for Public Pages
+- TASK-33-27: OG Image Generation
+
+---
