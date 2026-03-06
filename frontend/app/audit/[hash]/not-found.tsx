@@ -12,7 +12,7 @@ import { FileQuestion, Home, Search } from 'lucide-react';
  * Renders a user-friendly 404 page for public audits
  * @returns JSX element
  */
-export default function NotFound(): JSX.Element {
+export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="text-center max-w-md">
