@@ -4,16 +4,13 @@ namespace App\Services\Admin;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Queue Monitoring Service for Admin Dashboard.
  *
- * Provides comprehensive queue monitoring with per-queue pending counts,
- * failed jobs tracking (last 24 hours), worker count, and average processing time.
- *
- * Integrates with existing HealthCheckService for unified health reporting.
+ * Provides detailed queue health monitoring with per-queue breakdown,
+ * 24-hour failure tracking, and configurable alert thresholds.
  *
  * @see TASK-27-12
  * @see SPEC-027
@@ -26,51 +23,71 @@ class QueueMonitoringService
     private const CACHE_TTL = 30;
 
     /**
-     * Default alert thresholds.
+     * Cache key for queue stats.
      */
-    private const DEFAULT_THRESHOLDS = [
-        'pending_warning' => 100,
-        'pending_critical' => 500,
-        'failed_warning' => 10,
-        'failed_critical' => 50,
-        'processing_time_warning' => 1000,
-        'processing_time_critical' => 5000,
-    ];
+    private const CACHE_KEY = 'admin.queue.stats';
 
     /**
-     * Get comprehensive queue statistics.
+     * Get all queue statistics.
      *
-     * @return array
+     * @return array{
+     *     status: string,
+     *     pending: int,
+     *     failed: int,
+     *     failed_24h: int,
+     *     workers: int,
+     *     avgProcessingTimeMs: int,
+     *     queues: array<string, array{pending: int, status: string}>
+     * }
      */
     public function getQueueStats(): array
     {
         try {
-            $pending = $this->getTotalPending();
-            $failed = $this->getTotalFailed();
-            $failed24h = $this->getFailedJobsLast24h();
-            $workers = $this->getWorkerCount();
-            $avgProcessingTime = $this->getAverageProcessingTime();
-            $queues = $this->getQueuesWithStatus();
-            $status = $this->determineStatus($pending, $failed, $failed24h, $workers, $avgProcessingTime);
+            return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
+                $pendingByQueue = $this->getPendingByQueue();
+                $totalPending = array_sum($pendingByQueue);
+                $failed = $this->getTotalFailedCount();
+                $failed24h = $this->getFailedJobsLast24h();
+                $workers = $this->getWorkerCount();
+                $avgProcessingTime = $this->getAverageProcessingTime();
+                $thresholds = $this->getAlertThresholds();
 
-            return [
-                'status' => $status,
-                'pending' => $pending,
-                'failed' => $failed,
-                'failed_24h' => $failed24h,
-                'workers' => $workers,
-                'avgProcessingTimeMs' => $avgProcessingTime,
-                'queues' => $queues,
-            ];
+                $queues = [];
+                foreach ($pendingByQueue as $queueName => $count) {
+                    $queues[$queueName] = [
+                        'pending' => $count,
+                        'status' => $this->determineQueueStatus($count, 0, $thresholds),
+                    ];
+                }
+
+                $status = $this->determineOverallStatus(
+                    $totalPending,
+                    $failed,
+                    $failed24h,
+                    $workers,
+                    $avgProcessingTime,
+                    $thresholds
+                );
+
+                return [
+                    'status' => $status,
+                    'pending' => $totalPending,
+                    'failed' => $failed,
+                    'failed_24h' => $failed24h,
+                    'workers' => $workers,
+                    'avgProcessingTimeMs' => $avgProcessingTime,
+                    'queues' => $queues,
+                ];
+            });
         } catch (\Exception $e) {
-            Log::warning('QueueMonitoringService error: ' . $e->getMessage());
-            
+            Log::error('QueueMonitoringService error: ' . $e->getMessage());
+
             return $this->getSafeDefaults();
         }
     }
 
     /**
-     * Get pending jobs count grouped by queue (simple counts).
+     * Get pending job counts grouped by queue.
      *
      * @return array<string, int>
      */
@@ -80,68 +97,45 @@ class QueueMonitoringService
             $results = DB::table('jobs')
                 ->select('queue', DB::raw('COUNT(*) as count'))
                 ->groupBy('queue')
-                ->get();
+                ->pluck('count', 'queue')
+                ->map(fn ($count) => (int) $count)
+                ->toArray();
 
-            $queueCounts = ['default' => 0];
-
-            foreach ($results as $row) {
-                $queueName = $row->queue ?? 'default';
-                $queueCounts[$queueName] = (int) $row->count;
+            // Ensure default queue is always present
+            if (!isset($results['default'])) {
+                $results['default'] = 0;
             }
 
-            return $queueCounts;
+            return $results;
         } catch (\Exception $e) {
             Log::warning('Failed to get pending by queue: ' . $e->getMessage());
+
             return ['default' => 0];
         }
     }
 
     /**
-     * Get queues with status information.
-     *
-     * @return array<string, array{pending: int, status: string}>
-     */
-    protected function getQueuesWithStatus(): array
-    {
-        try {
-            $queueCounts = $this->getPendingByQueue();
-            $thresholds = $this->getAlertThresholds();
-            
-            $queuesWithStatus = [];
-            foreach ($queueCounts as $queue => $count) {
-                $queuesWithStatus[$queue] = [
-                    'pending' => $count,
-                    'status' => $this->determineQueueStatus($count, $thresholds),
-                ];
-            }
-
-            return $queuesWithStatus;
-        } catch (\Exception $e) {
-            return ['default' => ['pending' => 0, 'status' => 'healthy']];
-        }
-    }
-
-    /**
-     * Get failed jobs count from last 24 hours.
-     *
-     * @return int
+     * Get failed jobs count from the last 24 hours.
      */
     public function getFailedJobsLast24h(): int
     {
         try {
-            return DB::table('failed_jobs')
+            $count = DB::table('failed_jobs')
                 ->where('failed_at', '>=', now()->subDay())
                 ->count();
+
+            return (int) $count;
         } catch (\Exception $e) {
             Log::warning('Failed to get failed jobs 24h: ' . $e->getMessage());
+
             return 0;
         }
     }
 
     /**
-     * Get active worker count.
+     * Get active worker count from cache.
      *
-     * @return int
+     * Workers should update this cache key when they start/stop.
      */
     public function getWorkerCount(): int
     {
@@ -149,6 +143,7 @@ class QueueMonitoringService
             return (int) Cache::get('queue:workers:count', 0);
         } catch (\Exception $e) {
             Log::warning('Failed to get worker count: ' . $e->getMessage());
+
             return 0;
         }
     }
@@ -156,107 +151,112 @@ class QueueMonitoringService
     /**
      * Get average job processing time in milliseconds.
      *
-     * @return int
+     * This is calculated by workers and cached.
+     * Workers should update 'queue:avg_processing_time' after completing jobs.
      */
     public function getAverageProcessingTime(): int
     {
         try {
-            // Try to get cached value first
-            $cached = Cache::get('queue:avg_processing_time');
-            if ($cached !== null) {
-                return (int) $cached;
+            // Try to get cached average from workers
+            $avgTime = Cache::get('queue:avg_processing_time');
+
+            if ($avgTime !== null) {
+                return (int) $avgTime;
             }
 
-            // Calculate from completed jobs if available
-            // This assumes a job_metrics table or similar tracking
-            // For now, return 0 if no metrics available
-            $avgTime = 0;
+            // Fallback: try to calculate from completed jobs tracking
+            // This requires a completed_jobs table or similar tracking
+            $completedStats = Cache::get('queue:completed_stats');
 
-            // Cache the result for 5 minutes
-            Cache::put('queue:avg_processing_time', $avgTime, 300);
+            if ($completedStats && isset($completedStats['avg_time_ms'])) {
+                return (int) $completedStats['avg_time_ms'];
+            }
 
-            return $avgTime;
+            // No data available
+            return 0;
         } catch (\Exception $e) {
             Log::warning('Failed to get average processing time: ' . $e->getMessage());
+
             return 0;
         }
     }
 
     /**
-     * Get configurable alert thresholds.
+     * Get alert thresholds from configuration.
      *
-     * @return array
+     * @return array{
+     *     pending_warning: int,
+     *     pending_critical: int,
+     *     failed_warning: int,
+     *     failed_critical: int,
+     *     processing_time_warning: int,
+     *     processing_time_critical: int
+     * }
      */
     public function getAlertThresholds(): array
     {
-        $configured = Config::get('queue.monitoring.thresholds', []);
+        $defaults = [
+            'pending_warning' => 100,
+            'pending_critical' => 500,
+            'failed_warning' => 10,
+            'failed_critical' => 50,
+            'processing_time_warning' => 1000,
+            'processing_time_critical' => 5000,
+        ];
 
-        return array_merge(self::DEFAULT_THRESHOLDS, $configured);
-    }
-
-    /**
-     * Get total pending jobs count.
-     *
-     * @return int
-     */
-    protected function getTotalPending(): int
-    {
         try {
-            return DB::table('jobs')->count();
+            $configured = config('queue.monitoring.thresholds', []);
+
+            return array_merge($defaults, $configured);
         } catch (\Exception $e) {
-            return 0;
+            return $defaults;
         }
     }
 
     /**
-     * Get total failed jobs count.
-     *
-     * @return int
+     * Determine overall queue health status.
      */
-    protected function getTotalFailed(): int
-    {
-        try {
-            return DB::table('failed_jobs')->count();
-        } catch (\Exception $e) {
-            return 0;
-        }
-    }
-
-    /**
-     * Determine overall queue status based on metrics.
-     *
-     * @param int $pending
-     * @param int $failed
-     * @param int $failed24h
-     * @param int $workers
-     * @param int $avgProcessingTime
-     * @return string
-     */
-    protected function determineStatus(
+    protected function determineOverallStatus(
         int $pending,
         int $failed,
         int $failed24h,
         int $workers,
-        int $avgProcessingTime
+        int $avgProcessingTime,
+        array $thresholds
     ): string {
-        $thresholds = $this->getAlertThresholds();
-
         // Critical conditions
-        if (
-            $pending > $thresholds['pending_critical'] ||
-            $failed > $thresholds['failed_critical'] ||
-            $avgProcessingTime > $thresholds['processing_time_critical']
-        ) {
+        if ($pending > $thresholds['pending_critical']) {
+            return 'unhealthy';
+        }
+
+        if ($failed > $thresholds['failed_critical']) {
+            return 'unhealthy';
+        }
+
+        if ($avgProcessingTime > $thresholds['processing_time_critical']) {
             return 'unhealthy';
         }
 
         // Warning conditions
-        if (
-            $pending > $thresholds['pending_warning'] ||
-            $failed > $thresholds['failed_warning'] ||
-            ($pending > 0 && $workers === 0) ||
-            $avgProcessingTime > $thresholds['processing_time_warning']
-        ) {
+        if ($pending > $thresholds['pending_warning']) {
+            return 'warning';
+        }
+
+        if ($failed > $thresholds['failed_warning']) {
+            return 'warning';
+        }
+
+        if ($avgProcessingTime > $thresholds['processing_time_warning']) {
+            return 'warning';
+        }
+
+        // No workers with pending jobs is a warning
+        if ($pending > 0 && $workers === 0) {
+            return 'warning';
+        }
+
+        // Recent failures are concerning
+        if ($failed24h > $thresholds['failed_warning']) {
             return 'warning';
         }
 
@@ -264,13 +264,9 @@ class QueueMonitoringService
     }
 
     /**
-     * Determine status for individual queue.
-     *
-     * @param int $pending
-     * @param array $thresholds
-     * @return string
+     * Determine status for a specific queue.
      */
-    protected function determineQueueStatus(int $pending, array $thresholds): string
+    protected function determineQueueStatus(int $pending, int $failed, array $thresholds): string
     {
         if ($pending > $thresholds['pending_critical']) {
             return 'unhealthy';
@@ -284,9 +280,29 @@ class QueueMonitoringService
     }
 
     /**
-     * Get safe default values for error cases.
+     * Get total failed jobs count (all time).
+     */
+    protected function getTotalFailedCount(): int
+    {
+        try {
+            return (int) DB::table('failed_jobs')->count();
+        } catch (\Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Get safe default values when errors occur.
      *
-     * @return array
+     * @return array{
+     *     status: string,
+     *     pending: int,
+     *     failed: int,
+     *     failed_24h: int,
+     *     workers: int,
+     *     avgProcessingTimeMs: int,
+     *     queues: array<string, array{pending: int, status: string}>
+     * }
      */
     protected function getSafeDefaults(): array
     {
@@ -297,7 +313,12 @@ class QueueMonitoringService
             'failed_24h' => 0,
             'workers' => 0,
             'avgProcessingTimeMs' => 0,
-            'queues' => ['default' => ['pending' => 0, 'status' => 'healthy']],
+            'queues' => [
+                'default' => [
+                    'pending' => 0,
+                    'status' => 'healthy',
+                ],
+            ],
         ];
     }
 }
