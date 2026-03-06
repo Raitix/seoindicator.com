@@ -92,6 +92,18 @@ class AuditFactory extends Factory
     }
 
     /**
+     * Indicate that the audit is cancelled.
+     */
+    public function cancelled(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'cancelled',
+            'started_at' => now()->subHours(2),
+            'completed_at' => now()->subHour(),
+        ]);
+    }
+
+    /**
      * Indicate that the audit is public.
      */
     public function public(): static

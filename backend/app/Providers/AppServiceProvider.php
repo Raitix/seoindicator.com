@@ -100,5 +100,19 @@ class AppServiceProvider extends ServiceProvider
                     ]);
                 });
         });
+
+        // Rate limiter for audit trigger endpoint (TASK-14-13, SPEC-014)
+        // 5 requests per hour per user
+        RateLimiter::for('audit-trigger', function (Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perHour(config('audit.rate_limits.trigger_per_hour', 5))
+                ->by($request->user()?->id ?: $request->ip())
+                ->response(function () {
+                    return response()->json([
+                        'error' => 'Too many audit requests. Please try again later.',
+                    ], 429, [
+                        'Retry-After' => 3600, // 1 hour in seconds
+                    ]);
+                });
+        });
     }
 }
