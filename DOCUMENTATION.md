@@ -1,6 +1,197 @@
 # DOCUMENTATION.md
 
 ---
+## shadcn/ui Components Library (TASK-28-3)
+
+### Component Description
+Core UI component library built on shadcn/ui primitives for the Modern UI/UX + Indicator Catalog feature (FEAT-028). Provides 9 essential UI components with dark theme styling, Tailwind CSS integration, and full accessibility support. These components serve as building blocks for the indicator catalog, loading states, and navigation elements throughout the application.
+
+### Component Locations
+- **Components Directory:** `frontend/components/ui/`
+- **Individual Components:**
+  - `skeleton.tsx` - Loading placeholder component
+  - `progress.tsx` - Linear/circular progress indicator
+  - `badge.tsx` - Status label and notification badge
+  - `tooltip.tsx` - Hover information display
+  - `avatar.tsx` - User profile image component
+  - `dropdown-menu.tsx` - Navigation and action menu
+  - `sheet.tsx` - Mobile navigation drawer
+  - `tabs.tsx` - Content organization component
+  - `separator.tsx` - Visual division component
+- **Tests:** `frontend/__tests__/components/ui/shadcn-components.test.tsx`
+- **Test Documentation:** `TESTS/TEST-28-3.md`
+
+### Core Functionalities
+
+| Component | Purpose | Key Features |
+|-----------|---------|--------------|
+| Skeleton | Loading placeholders | Animated pulse, customizable dimensions |
+| Progress | Progress indicators | Linear bar, value clamping (0-100), indeterminate state |
+| Badge | Status labels | Variants (default, secondary, destructive, outline), dot indicator |
+| Tooltip | Hover information | Delay configuration, side positioning, accessible |
+| Avatar | User images | Image + fallback, size variants, status indicator |
+| Dropdown-Menu | Action menus | Submenus, checkboxes, radio groups, keyboard navigation |
+| Sheet | Slide-in drawer | Left/right/top/bottom positioning, responsive |
+| Tabs | Content tabs | Controlled/uncontrolled, keyboard navigation |
+| Separator | Visual division | Horizontal/vertical orientation |
+
+### Component Props
+
+**Skeleton:**
+```typescript
+interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;  // Additional Tailwind classes
+}
+```
+
+**Progress:**
+```typescript
+interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
+  value?: number;  // Progress value (0-100, clamped automatically)
+}
+```
+
+**Badge:**
+```typescript
+interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'default' | 'secondary' | 'destructive' | 'outline';
+}
+```
+
+**Tooltip:**
+```typescript
+interface TooltipProps {
+  children: React.ReactNode;
+  content: React.ReactNode;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  delayDuration?: number;
+}
+```
+
+**Avatar:**
+```typescript
+interface AvatarProps {
+  src?: string;
+  alt?: string;
+  fallback?: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg';
+}
+```
+
+**Sheet:**
+```typescript
+interface SheetProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+  side?: 'left' | 'right' | 'top' | 'bottom';
+}
+```
+
+**Tabs:**
+```typescript
+interface TabsProps {
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  children: React.ReactNode;
+}
+```
+
+**Separator:**
+```typescript
+interface SeparatorProps extends React.HTMLAttributes<HTMLDivElement> {
+  orientation?: 'horizontal' | 'vertical';
+  decorative?: boolean;
+}
+```
+
+### Styling
+
+All components use Tailwind CSS with dark theme styling:
+
+| Component | Base Classes | Dark Theme |
+|-----------|--------------|------------|
+| Skeleton | `animate-pulse bg-muted rounded-md` | `bg-slate-800` |
+| Progress | `bg-primary/20 h-2 rounded-full` | Track: `bg-slate-700` |
+| Badge | `px-2.5 py-0.5 rounded-full text-xs font-semibold` | Variant-dependent |
+| Tooltip | `bg-popover text-popover-foreground` | `bg-slate-800 text-slate-100` |
+| Avatar | `relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full` | Ring: `ring-slate-700` |
+| Dropdown-Menu | `bg-popover border-border` | `bg-slate-800 border-slate-700` |
+| Sheet | `bg-background border-l border-r` | `bg-slate-900 border-slate-700` |
+| Tabs | `border-b border-border` | `border-slate-700` |
+| Separator | `shrink-0 bg-border` | `bg-slate-700` |
+
+### Utility Functions
+
+**cn() Utility:**
+```typescript
+import { cn } from '@/lib/utils';
+
+// Merges Tailwind classes with clsx and tailwind-merge
+className={cn('base-class', conditionalClass, props.className)}
+```
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `shadcn-components.test.tsx` | 59 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Component Existence | 9 | Verify all 9 component files exist |
+| Component Exports | 9 | Verify correct exports |
+| Component Rendering | 13 | Render without errors |
+| Dark Theme Styling | 7 | Dark mode classes present |
+| Tailwind Integration | 4 | cn() utility, className prop |
+| Edge Cases | 6 | Progress clamping, empty Badge, Avatar fallback |
+| Acceptance Criteria | 11 | Full AC coverage |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Roles | Proper roles for all interactive components |
+| Keyboard Navigation | Tab, Enter, Escape support where applicable |
+| Focus Management | Focus visible indicators, focus trap in Sheet |
+| Screen Reader | Accessible labels, descriptions |
+| Color Contrast | ≥ 4.5:1 ratio for text |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| No Sensitive Data | Components are UI-only, no data storage |
+| Safe Defaults | All props have safe default values |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-04 |
+| Commit | `27e3c55` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Component Count | 9 components |
+| Tests | 59/59 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-28-1 (CSS Variables Enhancement) - recommended but not required
+
+### Related Tasks
+- TASK-28-4: IndicatorIcon Component (uses Badge)
+- TASK-28-5: IndicatorCard Component (uses Card, Badge, Tooltip)
+- TASK-28-9: Skeleton Loader Variants (uses Skeleton)
+- TASK-28-10: Progress Indicators (uses Progress)
+- TASK-28-12: Desktop Navigation Enhancement (uses Dropdown-Menu)
+- TASK-28-13: Mobile Navigation (uses Sheet)
+- TASK-28-14: Lucide Icon Mapping (icons for UI)
+
+---
 ## Suggestions List Page (TASK-5-10)
 
 ### Page Description
@@ -8599,6 +8790,186 @@ CREATE TABLE public_audit_views (
 - TASK-33-3: PublicAuditController
 - TASK-33-4: PublicAudit model
 - TASK-33-5: PublicAuditService
+
+---
+## Badge Impressions Table (TASK-33-3)
+
+### Service Description
+Database migration for tracking analytics on embedded badge impressions and clicks. Measures the reach of embedded SEO score widgets on third-party sites, storing impression and click events with privacy-conscious data collection (IP hashing, referrer domain extraction). Part of the Public SEO Audit Reports feature (FEAT-033).
+
+### Database Schema
+
+```sql
+CREATE TABLE badge_impressions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    audit_id BIGINT UNSIGNED NOT NULL,
+    public_hash VARCHAR(32) NOT NULL,
+    referrer_domain VARCHAR(255) NULL,
+    impression_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    clicked_at TIMESTAMP NULL,
+    click_target VARCHAR(10) NULL,
+    ip_hash VARCHAR(64) NULL,
+    
+    FOREIGN KEY (audit_id) REFERENCES audits(id) ON DELETE CASCADE,
+    INDEX idx_badge_impressions_audit_id (audit_id),
+    INDEX idx_badge_impressions_public_hash (public_hash),
+    INDEX idx_badge_impressions_impression_at (impression_at)
+);
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `audit_id` | BIGINT UNSIGNED | FK to audits.id (CASCADE delete) |
+| `public_hash` | VARCHAR(32) | Public sharing hash for the audit |
+| `referrer_domain` | VARCHAR(255) | Domain extracted from HTTP Referer (domain only, no path) |
+| `impression_at` | TIMESTAMP | When the impression occurred (auto-set on create) |
+| `clicked_at` | TIMESTAMP NULL | When the user clicked the badge (initially NULL) |
+| `click_target` | VARCHAR(10) NULL | Where the click led: 'audit' or 'home' |
+| `ip_hash` | VARCHAR(64) | SHA-256 hash of IP + app.key salt (privacy) |
+
+### Indexes
+
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `idx_badge_impressions_audit_id` | audit_id | Query impressions by audit |
+| `idx_badge_impressions_public_hash` | public_hash | Query impressions by public hash |
+| `idx_badge_impressions_impression_at` | impression_at | Date range queries |
+
+### Foreign Keys
+
+| Constraint | Columns | References | On Delete |
+|------------|---------|------------|-----------|
+| `badge_impressions_audit_id_foreign` | audit_id | audits.id | CASCADE |
+
+### Model Relationships
+
+**BadgeImpression Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `audit()` | belongsTo | The audit this impression belongs to |
+
+### Model Scopes
+
+| Scope | Description |
+|-------|-------------|
+| `forAudit($id)` | Filter impressions by audit_id |
+| `forHash($hash)` | Filter impressions by public_hash |
+| `clicked()` | Filter where clicked_at is not null |
+| `notClicked()` | Filter where clicked_at is null |
+| `withClickTarget($target)` | Filter by click_target ('audit' or 'home') |
+| `recent($days)` | Filter impressions from last N days |
+
+### Model Accessors
+
+| Accessor | Description |
+|----------|-------------|
+| `is_clicked` | Boolean check if clicked_at is not null |
+
+### Model Static Helpers
+
+| Method | Description |
+|--------|-------------|
+| `hashIp($ip)` | Generate SHA-256 hash of IP with app.key salt |
+| `extractDomain($url)` | Extract domain from URL (strips path/query) |
+| `recordImpression($auditId, $hash, $ip, $referrer)` | Create new impression record |
+
+### Factory States
+
+| State | Description |
+|-------|-------------|
+| `clicked()` | Impression with click event (clicked_at set) |
+| `notClicked()` | Impression without click (clicked_at null) |
+| `forAudit($audit)` | Associate with specific audit |
+| `fromDomain($domain)` | Set referrer_domain |
+| `clickAudit()` | Set click_target to 'audit' |
+| `clickHome()` | Set click_target to 'home' |
+| `recent($days)` | Set impression_at to N days ago |
+| `withIpHash($ip)` | Set custom IP hash |
+| `fromGoogle()` | Set referrer_domain to 'google.com' |
+| `directVisit()` | No referrer (direct traffic) |
+| `withHash($hash)` | Set specific public_hash |
+
+### Privacy Features
+
+| Feature | Implementation |
+|---------|----------------|
+| IP Hashing | SHA-256 hash with app.key salt |
+| No PII Storage | Original IP never stored, only hash |
+| Domain Extraction | Only domain stored, no full URL or path |
+| Hidden Attribute | `ip_hash` hidden from JSON serialization |
+
+### Click Tracking
+
+| Click Target | Description |
+|--------------|-------------|
+| `audit` | User clicked to view full audit report |
+| `home` | User clicked to visit SEOIndicator homepage |
+| NULL | No click yet (impression only) |
+
+### CTR Calculation
+
+```sql
+-- Click-Through Rate formula
+SELECT 
+    COUNT(*) as total_impressions,
+    SUM(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE 0 END) as clicks,
+    (SUM(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE 0 END) / COUNT(*)) * 100 as ctr_percent
+FROM badge_impressions
+WHERE audit_id = ?;
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| CreateBadgeImpressionsTableTest | 53 | - |
+| BadgeImpressionTest | 53 | - |
+| BadgeFlowTest (Integration) | 1 | - |
+| PublicAuditQueryPerformanceTest | 1 | - |
+| **Total** | **108** | **163** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Migration Structure | 13 | Table columns and types |
+| Indexes | 3 | audit_id, public_hash, impression_at indexes |
+| Foreign Keys | 3 | CASCADE delete verification |
+| Click Target Values | 3 | Valid values (audit/home) and invalid rejection |
+| Model Instantiation | 6 | Model creation and configuration |
+| Model Fillable | 7 | Mass assignment |
+| Model Casts | 2 | datetime casts for timestamps |
+| Relationships | 2 | BelongsTo Audit |
+| Model Scopes | 6 | All scope methods |
+| Model Accessors | 1 | is_clicked accessor |
+| Factory States | 11 | All factory states |
+| CRUD Operations | 4 | Create, read, update, delete |
+| Analytics | 4 | Count, CTR, unique impressions |
+| Performance | 2 | Large dataset, indexed queries |
+| Security | 1 | IP hashed, not plain storage |
+| Adversarial | 6 | SQL injection, XSS, invalid targets |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-06 (GitHub Actions #22765919603) |
+| **Commit** | `8a58952a` |
+| **Migration** | `2026_03_06_130000_create_badge_impressions_table.php` |
+| **Health Check** | Passing (https://seoindicator.com/api/health → 200 OK) |
+| **Tests** | 108 tests, 163 assertions - all passing (2 marginal) |
+| **Status** | Complete |
+
+### Dependencies
+- TASK-33-1 (visibility columns on audits table)
+
+### Related Tasks
+- TASK-33-1: Audit visibility columns
+- TASK-33-2: Public audit views table
+- TASK-33-17: Badge impression tracking API
+- TASK-33-18: Badge click tracking API
 
 ---
 ## IndicatorIcon Wrapper Component (TASK-28-4)
