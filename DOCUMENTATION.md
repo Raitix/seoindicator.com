@@ -30168,3 +30168,189 @@ Issues are sorted by:
 - TASK-33-12: PublicAuditCTA component
 
 ---
+## PublicAuditCTA Component (TASK-33-12)
+
+### Component Description
+Conversion-focused call-to-action component for public audit pages. Provides email capture for anonymous users, social sharing buttons (Twitter, LinkedIn, Facebook), and badge embed code snippet preview. Key component for lead generation from public SEO audit reports. Part of the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033).
+
+### Component Location
+- **Component:** `frontend/components/audit/PublicAuditCTA.tsx`
+- **Tests:** `frontend/__tests__/components/audit/PublicAuditCTA.test.tsx`
+- **Test Documentation:** `TESTS/TEST-33-12.md`
+
+### Route
+- **Usage:** Embedded in public audit page (`/audit/?h={hash}`)
+- **Parent Component:** PublicAuditPage
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Email Capture Form | Inline validation, submits to lead capture API |
+| Primary CTA Button | "Get your free audit" for conversion |
+| Social Sharing | Twitter, LinkedIn, Facebook buttons with share URLs |
+| Badge Embed Code | Textarea with copy-to-clipboard functionality |
+| Privacy Notice | Compliance text below form |
+| Keyboard Accessibility | Full tab navigation, aria attributes |
+
+### Component Props
+
+```typescript
+interface PublicAuditCTAProps {
+  auditHash: string;    // 32-char hash for API calls
+  siteUrl: string;      // Site URL for display and sharing
+  score: number;        // SEO score for badge generation
+}
+
+interface LeadFormData {
+  email: string;
+}
+```
+
+### Form Submission Flow
+
+```
+User enters email
+      ↓
+Inline validation (required, email format)
+      ↓
+POST /api/v1/public-audit/{hash}/lead
+Body: { email: string }
+      ↓
+Success: Show confirmation message
+Error: Show error with retry option
+```
+
+### Social Sharing Implementation
+
+| Platform | Share URL Format |
+|----------|------------------|
+| Twitter | `https://twitter.com/intent/tweet?url={encodedUrl}&text={encodedText}` |
+| LinkedIn | `https://www.linkedin.com/sharing/share-offsite/?url={encodedUrl}` |
+| Facebook | `https://www.facebook.com/sharer/sharer.php?u={encodedUrl}` |
+
+**Share Text:** "Check out this SEO audit for {siteUrl} - Score: {score}/100 via SEOIndicator"
+
+### Badge Embed Code
+
+**Generated Code:**
+```html
+<a href="https://seoindicator.com/audit/?h={hash}" target="_blank" rel="noopener">
+  <img src="https://seoindicator.com/badge/{hash}/small.svg" alt="SEO Score: {score}/100" />
+</a>
+```
+
+**Copy Functionality:**
+- Uses `navigator.clipboard.writeText()` API
+- Fallback for older browsers
+- Visual feedback on copy success
+
+### State Management
+
+| State | Type | Purpose |
+|-------|------|---------|
+| `email` | string | Email input value |
+| `isSubmitting` | boolean | Form submission loading state |
+| `isSubmitted` | boolean | Success state toggle |
+| `error` | string \| null | Error message display |
+| `copied` | boolean | Copy button feedback |
+
+### UI Structure
+
+```
+┌─────────────────────────────────────────┐
+│           Get Your Free Audit           │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │ Enter your email                │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│        [Get your free audit]            │
+│                                         │
+│  ┌─ Share This Audit ──────────────┐    │
+│  │ [Twitter] [LinkedIn] [Facebook] │    │
+│  └──────────────────────────────────┘    │
+│                                         │
+│  ┌─ Embed Badge ─────────────────────┐  │
+│  │ <a href="..."><img src="..."/></a>│  │
+│  │                        [Copy]     │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+│  We respect your privacy. Your email   │
+│  will only be used to send you your    │
+│  SEO audit results.                    │
+└─────────────────────────────────────────┘
+```
+
+### Validation Rules
+
+| Field | Rules |
+|-------|-------|
+| Email | Required, valid email format |
+| Maximum Length | 254 characters (RFC 5321) |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Form Labels | `htmlFor` + `id` association |
+| Input Types | `type="email"` for keyboard |
+| Error Announcements | `aria-live="polite"` |
+| Button States | `aria-disabled` during submit |
+| Focus Management | Focus on success message |
+| Keyboard Navigation | Tab cycles through all interactive elements |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| Email Validation | Server-side validation required |
+| No Sensitive Data | No API keys exposed in component |
+| URL Encoding | share URLs properly encoded |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `PublicAuditCTA.test.tsx` | 74 | ✅ 73 PASS, 1 SKIP |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Component Rendering | 10 | Visibility, structure, text content |
+| Email Form Validation | 8 | Required, format, length validation |
+| Form Submission | 6 | Submit, loading, success states |
+| Success State | 6 | Confirmation, reset functionality |
+| Error State | 7 | Error display, retry option |
+| Social Sharing | 8 | Twitter, LinkedIn, Facebook URLs |
+| Badge Embed Code | 10 | Code generation, copy functionality |
+| Accessibility | 12 | Labels, roles, keyboard navigation |
+| Edge Cases | 10 | Empty props, boundaries, unicode |
+
+**Skipped Test:**
+- EMBED-004: Clipboard mock not captured in jsdom (functionality verified by EMBED-005)
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `40683368` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Component Status | ✅ Deployed |
+| Tests | 73/73 active tests passing |
+| Production URL | https://seoindicator.com/audit/ |
+
+### Dependencies
+- TASK-33-5 (lead capture API endpoint) - API integration
+
+### Related Tasks
+- TASK-33-8: PublicAuditPage (parent component)
+- TASK-33-9: ScoreOverview component
+- TASK-33-10: CategoryBreakdown component
+- TASK-33-11: TopIssues component
+- TASK-33-13: BadgePreview component
+
+---
