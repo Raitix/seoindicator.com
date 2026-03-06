@@ -1,7 +1,7 @@
 # TASK-33-3: Create Badge Impressions Table
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
