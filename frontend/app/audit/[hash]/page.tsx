@@ -164,7 +164,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  * @param props - Page props with params
  * @returns JSX element or calls notFound()
  */
-export default async function Page({ params }: PageProps): Promise<JSX.Element> {
+export default async function Page({ params }: PageProps) {
   const { hash } = await params;
   const audit = await getAuditData(hash);
 
