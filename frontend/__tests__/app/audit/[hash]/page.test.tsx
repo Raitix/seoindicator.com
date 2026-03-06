@@ -3,26 +3,28 @@
  * @module __tests__/app/audit/[hash]/page.test
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
+import React from 'react';
 
 // ============================================================
 // Mocks
 // ============================================================
 
 // Mock next/navigation
-const mockNotFound = vi.fn();
-vi.mock('next/navigation', () => ({
+const mockNotFound = jest.fn();
+jest.mock('next/navigation', () => ({
   notFound: () => mockNotFound(),
 }));
 
 // Mock next module for metadata
-vi.mock('next', () => ({
+jest.mock('next', () => ({
   Metadata: {},
 }));
 
 // Mock PublicAuditPage component
-vi.mock('@/components/audit/PublicAuditPage', () => ({
+jest.mock('@/components/audit/PublicAuditPage', () => ({
+  __esModule: true,
   default: function MockPublicAuditPage({ audit }: { audit: { siteUrl: string; overallScore: number } }) {
     return (
       <div data-testid="public-audit-page" data-site-url={audit.siteUrl}>
@@ -33,11 +35,11 @@ vi.mock('@/components/audit/PublicAuditPage', () => ({
 }));
 
 // Mock fetch
-const mockFetch = vi.fn();
+const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 global.fetch = mockFetch;
 
 // Mock environment variable
-vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.seoindicator.com');
+process.env.NEXT_PUBLIC_API_URL = 'https://api.seoindicator.com';
 
 // ============================================================
 // Test Data
@@ -67,11 +69,11 @@ const mockPublicAuditData = {
 
 describe('Public Audit Route - Route Structure', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
-    vi.resetModules();
+    jest.resetModules();
   });
 
   it('PR-ROUTE-001: Page component exists', async () => {
@@ -108,9 +110,9 @@ describe('Public Audit Route - Route Structure', () => {
   it('PR-ROUTE-006: Layout wraps children', async () => {
     const { default: Layout } = await import('@/app/audit/[hash]/layout');
     const { container } = render(
-      <Layout>
-        <div data-testid="child">Test Child</div>
-      </Layout>
+      React.createElement(Layout, null,
+        React.createElement('div', { 'data-testid': 'child' }, 'Test Child')
+      )
     );
     expect(screen.getByTestId('child')).toBeDefined();
     expect(container.querySelector('.min-h-screen')).toBeDefined();
@@ -119,9 +121,9 @@ describe('Public Audit Route - Route Structure', () => {
   it('PR-ROUTE-007: Layout no auth required', async () => {
     const { default: Layout } = await import('@/app/audit/[hash]/layout');
     const { container } = render(
-      <Layout>
-        <div>Content</div>
-      </Layout>
+      React.createElement(Layout, null,
+        React.createElement('div', null, 'Content')
+      )
     );
     // Layout should render children directly without auth wrapper
     expect(container.textContent).toBe('Content');
@@ -129,7 +131,7 @@ describe('Public Audit Route - Route Structure', () => {
 
   it('PR-ROUTE-008: NotFound has proper styling', async () => {
     const { default: NotFound } = await import('@/app/audit/[hash]/not-found');
-    render(<NotFound />);
+    render(React.createElement(NotFound));
     expect(screen.getByText('Audit Not Found')).toBeDefined();
   });
 
@@ -143,7 +145,7 @@ describe('Public Audit Route - Route Structure', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'abc123' }) });
@@ -158,40 +160,40 @@ describe('Public Audit Route - Route Structure', () => {
 describe('Public Audit Route - ISR Configuration', () => {
   it('PR-ISR-001: Revalidate export exists', async () => {
     const module = await import('@/app/audit/[hash]/page');
-    expect(module.revalidate).toBeDefined();
+    expect((module as any).revalidate).toBeDefined();
   });
 
   it('PR-ISR-002: Revalidate value 3600', async () => {
     const module = await import('@/app/audit/[hash]/page');
-    expect(module.revalidate).toBe(3600);
+    expect((module as any).revalidate).toBe(3600);
   });
 
   it('PR-ISR-003: Numeric revalidate', async () => {
     const module = await import('@/app/audit/[hash]/page');
-    expect(typeof module.revalidate).toBe('number');
+    expect(typeof (module as any).revalidate).toBe('number');
   });
 
   it('PR-ISR-004: Revalidate in valid range', async () => {
     const module = await import('@/app/audit/[hash]/page');
-    expect(module.revalidate).toBeGreaterThan(0);
-    expect(module.revalidate).toBeLessThanOrEqual(31536000);
+    expect((module as any).revalidate).toBeGreaterThan(0);
+    expect((module as any).revalidate).toBeLessThanOrEqual(31536000);
   });
 
   it('PR-ISR-005: ISR not SSG', async () => {
     const module = await import('@/app/audit/[hash]/page');
-    expect(module.revalidate).not.toBe(Infinity);
+    expect((module as any).revalidate).not.toBe(Infinity);
   });
 
   it('PR-ISR-006: ISR not dynamic', async () => {
     const module = await import('@/app/audit/[hash]/page');
-    expect(module.revalidate).toBeGreaterThan(0);
+    expect((module as any).revalidate).toBeGreaterThan(0);
   });
 
   it('PR-ISR-007: Cache policy correct', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'test' }) });
@@ -207,20 +209,20 @@ describe('Public Audit Route - ISR Configuration', () => {
   it('PR-ISR-008: Stale-while-revalidate behavior', async () => {
     const module = await import('@/app/audit/[hash]/page');
     // ISR with revalidate = 3600 enables SWR behavior
-    expect(module.revalidate).toBe(3600);
+    expect((module as any).revalidate).toBe(3600);
   });
 });
 
 describe('Public Audit Route - Server-Side Data Fetching', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it('PR-FETCH-001: Fetches from public API', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'test-hash' }) });
@@ -235,7 +237,7 @@ describe('Public Audit Route - Server-Side Data Fetching', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'abc123xyz' }) });
@@ -250,7 +252,7 @@ describe('Public Audit Route - Server-Side Data Fetching', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     const result = await Page({ params: Promise.resolve({ hash: 'test' }) });
@@ -263,7 +265,7 @@ describe('Public Audit Route - Server-Side Data Fetching', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'invalid' }) });
@@ -275,7 +277,7 @@ describe('Public Audit Route - Server-Side Data Fetching', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'test' }) });
@@ -296,7 +298,7 @@ describe('Public Audit Route - Server-Side Data Fetching', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'test' }) });
@@ -313,7 +315,7 @@ describe('Public Audit Route - Server-Side Data Fetching', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     const result = await Page({ params: Promise.resolve({ hash: 'test' }) });
@@ -326,7 +328,7 @@ describe('Public Audit Route - Server-Side Data Fetching', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: false, error: 'Audit not public' }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'test' }) });
@@ -338,7 +340,7 @@ describe('Public Audit Route - Server-Side Data Fetching', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'expired' }) });
@@ -356,7 +358,7 @@ describe('Public Audit Route - Server-Side Data Fetching', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     const result = await Page({ params: Promise.resolve({ hash: 'test' }) });
@@ -368,23 +370,23 @@ describe('Public Audit Route - Server-Side Data Fetching', () => {
 
 describe('Public Audit Route - Metadata Generation', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it('PR-META-001: generateMetadata exists', async () => {
     const module = await import('@/app/audit/[hash]/page');
-    expect(module.generateMetadata).toBeDefined();
-    expect(typeof module.generateMetadata).toBe('function');
+    expect((module as any).generateMetadata).toBeDefined();
+    expect(typeof (module as any).generateMetadata).toBe('function');
   });
 
   it('PR-META-002: Returns Metadata object', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata).toBeDefined();
     expect(typeof metadata).toBe('object');
@@ -394,10 +396,10 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata.title).toContain('example.com');
   });
@@ -406,10 +408,10 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata.description).toContain('85');
     expect(metadata.description).toContain('Score');
@@ -419,10 +421,10 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'testhash' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'testhash' }) });
 
     expect(metadata.alternates?.canonical).toContain('testhash');
   });
@@ -431,10 +433,10 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata.openGraph?.title).toBeDefined();
     expect(metadata.openGraph?.title).toContain('85');
@@ -444,10 +446,10 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata.openGraph?.description).toBeDefined();
     expect(metadata.openGraph?.description).toContain('example.com');
@@ -457,10 +459,10 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata.openGraph?.images).toBeDefined();
     expect(Array.isArray(metadata.openGraph?.images)).toBe(true);
@@ -470,10 +472,10 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata.openGraph?.url).toBe(metadata.alternates?.canonical);
   });
@@ -482,10 +484,10 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata.openGraph?.type).toBe('website');
   });
@@ -494,10 +496,10 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata.robots).toBe('index, follow');
   });
@@ -506,10 +508,10 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata.twitter?.card).toBe('summary_large_image');
   });
@@ -518,10 +520,10 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'invalid' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'invalid' }) });
 
     expect(metadata.title).toContain('Not Found');
     expect(metadata.robots).toBe('noindex');
@@ -531,7 +533,7 @@ describe('Public Audit Route - Metadata Generation', () => {
     mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata.title).toContain('Not Found');
     expect(metadata.robots).toBe('noindex');
@@ -540,12 +542,12 @@ describe('Public Audit Route - Metadata Generation', () => {
 
 describe('Public Audit Route - 404 Handling', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it('PR-NF-001: NotFound component renders', async () => {
     const { default: NotFound } = await import('@/app/audit/[hash]/not-found');
-    render(<NotFound />);
+    render(React.createElement(NotFound));
     expect(screen.getByText('Audit Not Found')).toBeDefined();
   });
 
@@ -553,7 +555,7 @@ describe('Public Audit Route - 404 Handling', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'invalid!@#' }) });
@@ -565,7 +567,7 @@ describe('Public Audit Route - 404 Handling', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'nonexistent123' }) });
@@ -577,7 +579,7 @@ describe('Public Audit Route - 404 Handling', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: false, error: 'Audit is private' }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'private' }) });
@@ -589,7 +591,7 @@ describe('Public Audit Route - 404 Handling', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: false, error: 'Audit not public' }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'unpublished' }) });
@@ -599,20 +601,20 @@ describe('Public Audit Route - 404 Handling', () => {
 
   it('PR-NF-006: 404 page has message', async () => {
     const { default: NotFound } = await import('@/app/audit/[hash]/not-found');
-    render(<NotFound />);
+    render(React.createElement(NotFound));
     expect(screen.getByText('Audit Not Found')).toBeDefined();
   });
 
   it('PR-NF-007: 404 page has link home', async () => {
     const { default: NotFound } = await import('@/app/audit/[hash]/not-found');
-    const { container } = render(<NotFound />);
+    const { container } = render(React.createElement(NotFound));
     const homeLink = container.querySelector('a[href="/"]');
     expect(homeLink).toBeDefined();
   });
 
   it('PR-NF-008: 404 page has CTA', async () => {
     const { default: NotFound } = await import('@/app/audit/[hash]/not-found');
-    const { container } = render(<NotFound />);
+    const { container } = render(React.createElement(NotFound));
     const ctaLink = container.querySelector('a[href="/tools"]');
     expect(ctaLink).toBeDefined();
     expect(screen.getByText(/Get Your Free Audit/i)).toBeDefined();
@@ -628,10 +630,10 @@ describe('Public Audit Route - 404 Handling', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'invalid' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'invalid' }) });
 
     expect(metadata.robots).toBe('noindex');
   });
@@ -639,7 +641,7 @@ describe('Public Audit Route - 404 Handling', () => {
 
 describe('Public Audit Route - Security Tests', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it('PR-SEC-001: Hash validation prevents injection', async () => {
@@ -647,7 +649,7 @@ describe('Public Audit Route - Security Tests', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: "'; DROP TABLE audits; --" }) });
@@ -660,7 +662,7 @@ describe('Public Audit Route - Security Tests', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: '<script>alert(1)</script>' }) });
@@ -673,7 +675,7 @@ describe('Public Audit Route - Security Tests', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: '../../../etc/passwd' }) });
@@ -686,7 +688,7 @@ describe('Public Audit Route - Security Tests', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const longHash = 'a'.repeat(100);
     const { default: Page } = await import('@/app/audit/[hash]/page');
@@ -700,7 +702,7 @@ describe('Public Audit Route - Security Tests', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'invalid-hash-format!' }) });
@@ -711,7 +713,7 @@ describe('Public Audit Route - Security Tests', () => {
 
   it('PR-SEC-006: No sensitive data exposed', async () => {
     const { default: NotFound } = await import('@/app/audit/[hash]/not-found');
-    const { container } = render(<NotFound />);
+    const { container } = render(React.createElement(NotFound));
     const html = container.innerHTML;
 
     // No API keys, tokens, or sensitive data should be in the 404 page
@@ -724,7 +726,7 @@ describe('Public Audit Route - Security Tests', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     
@@ -745,14 +747,14 @@ describe('Public Audit Route - Security Tests', () => {
 
 describe('Public Audit Route - Edge Cases', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it('PR-EDGE-001: Empty hash param', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: '' }) });
@@ -764,7 +766,7 @@ describe('Public Audit Route - Edge Cases', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const longHash = 'a'.repeat(64);
     const { default: Page } = await import('@/app/audit/[hash]/page');
@@ -780,7 +782,7 @@ describe('Public Audit Route - Edge Cases', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'test日本語' }) });
@@ -792,7 +794,7 @@ describe('Public Audit Route - Edge Cases', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'abc 123' }) });
@@ -804,7 +806,7 @@ describe('Public Audit Route - Edge Cases', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'ABC123' }) });
@@ -819,7 +821,7 @@ describe('Public Audit Route - Edge Cases', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     
@@ -835,7 +837,7 @@ describe('Public Audit Route - Edge Cases', () => {
   it('PR-EDGE-007: Cache invalidation after TTL', async () => {
     // ISR with revalidate = 3600 handles cache invalidation
     const module = await import('@/app/audit/[hash]/page');
-    expect(module.revalidate).toBe(3600);
+    expect((module as any).revalidate).toBe(3600);
   });
 
   it('PR-EDGE-008: Zero score audit', async () => {
@@ -845,7 +847,7 @@ describe('Public Audit Route - Edge Cases', () => {
         success: true,
         data: { ...mockPublicAuditData, overallScore: 0 },
       }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     const result = await Page({ params: Promise.resolve({ hash: 'zero-score' }) });
@@ -860,7 +862,7 @@ describe('Public Audit Route - Edge Cases', () => {
         success: true,
         data: { ...mockPublicAuditData, overallScore: 100 },
       }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     const result = await Page({ params: Promise.resolve({ hash: 'perfect-score' }) });
@@ -883,7 +885,7 @@ describe('Public Audit Route - Edge Cases', () => {
           isPartial: false,
         },
       }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     const result = await Page({ params: Promise.resolve({ hash: 'test' }) });
@@ -895,7 +897,7 @@ describe('Public Audit Route - Edge Cases', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: null }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'null-data' }) });
@@ -906,7 +908,7 @@ describe('Public Audit Route - Edge Cases', () => {
 
 describe('Public Audit Route - Acceptance Criteria', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it('AC-1: Route at /audit/[hash]/page.tsx', async () => {
@@ -922,9 +924,9 @@ describe('Public Audit Route - Acceptance Criteria', () => {
 
     // Verify no auth required
     const { container } = render(
-      <Layout>
-        <div>Test</div>
-      </Layout>
+      React.createElement(Layout, null,
+        React.createElement('div', null, 'Test')
+      )
     );
     expect(container.textContent).toBe('Test');
   });
@@ -934,7 +936,7 @@ describe('Public Audit Route - Acceptance Criteria', () => {
     expect(NotFound).toBeDefined();
     expect(typeof NotFound).toBe('function');
 
-    render(<NotFound />);
+    render(React.createElement(NotFound));
     expect(screen.getByText('Audit Not Found')).toBeDefined();
   });
 
@@ -942,7 +944,7 @@ describe('Public Audit Route - Acceptance Criteria', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'test' }) });
@@ -955,19 +957,19 @@ describe('Public Audit Route - Acceptance Criteria', () => {
 
   it('AC-5: ISR with 1-hour revalidation', async () => {
     const module = await import('@/app/audit/[hash]/page');
-    expect(module.revalidate).toBe(3600);
+    expect((module as any).revalidate).toBe(3600);
   });
 
   it('AC-6: generateMetadata for SEO tags', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
     expect(generateMetadata).toBeDefined();
 
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
     expect(metadata.title).toBeDefined();
     expect(metadata.description).toBeDefined();
   });
@@ -976,10 +978,10 @@ describe('Public Audit Route - Acceptance Criteria', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'test' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'test' }) });
 
     expect(metadata.openGraph?.images).toBeDefined();
     expect(Array.isArray(metadata.openGraph?.images)).toBe(true);
@@ -992,10 +994,10 @@ describe('Public Audit Route - Acceptance Criteria', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: mockPublicAuditData }),
-    });
+    } as Response);
 
     const { generateMetadata } = await import('@/app/audit/[hash]/page');
-    const metadata = await generateMetadata({ params: Promise.resolve({ hash: 'testhash' }) });
+    const metadata = await (generateMetadata as any)({ params: Promise.resolve({ hash: 'testhash' }) });
 
     expect(metadata.alternates?.canonical).toBe('https://seoindicator.com/audit/testhash/');
   });
@@ -1004,7 +1006,7 @@ describe('Public Audit Route - Acceptance Criteria', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: false, error: 'Audit not public' }),
-    });
+    } as Response);
 
     const { default: Page } = await import('@/app/audit/[hash]/page');
     await Page({ params: Promise.resolve({ hash: 'unpublished' }) });
