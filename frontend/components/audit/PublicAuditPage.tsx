@@ -127,7 +127,7 @@ function transformIssues(issues: IssueData[]): Issue[] {
  * @param props - Component props
  * @returns JSX element
  */
-export function PublicAuditPage({ audit, hash, className }: PublicAuditPageProps): JSX.Element {
+export function PublicAuditPage({ audit, hash, className }: PublicAuditPageProps) {
   const categoryScores = transformCategoryScores(audit.categoryScores || []);
   const issues = transformIssues(audit.topIssues || []);
   const auditHash = hash || '';
