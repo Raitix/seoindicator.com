@@ -1,7 +1,7 @@
 # TASK-33-9: Create ScoreOverview Component
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
