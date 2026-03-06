@@ -1,17 +1,11 @@
-'use client';
-
 /**
  * Public Audit Page Route
- * Client-side rendered public SEO audit page
+ * Next.js App Router route for public SEO audit pages
  * @module app/audit/[hash]/page
  */
 
-import * as React from 'react';
-import { use } from 'react';
-import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { PublicAuditPage, PublicAuditData } from '@/components/audit/PublicAuditPage';
-import { Loader2 } from 'lucide-react';
+import AuditPageClient from './AuditPageClient';
 
 // ============================================================
 // Types
@@ -42,7 +36,6 @@ export function generateStaticParams() {
 
 /**
  * Static metadata for the audit page shell
- * Dynamic metadata is set via useEffect in the component
  */
 export const metadata: Metadata = {
   title: 'SEO Audit Report | SEOIndicator',
@@ -51,122 +44,22 @@ export const metadata: Metadata = {
 };
 
 // ============================================================
-// Data Fetching Hook
-// ============================================================
-
-/**
- * Hook to fetch audit data from the public API
- */
-function useAuditData(hash: string) {
-  const [data, setData] = React.useState<PublicAuditData | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    let mounted = true;
-
-    async function fetchData() {
-      try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.seoindicator.com';
-        
-        const res = await fetch(
-          `${apiUrl}/api/v1/public-audit/${hash}`,
-          {
-            headers: {
-              'Accept': 'application/json',
-            },
-          }
-        );
-
-        if (!mounted) return;
-
-        if (!res.ok) {
-          if (res.status === 404) {
-            setData(null);
-            setLoading(false);
-            return;
-          }
-          throw new Error(`Failed to fetch audit: ${res.status}`);
-        }
-
-        const json = await res.json();
-        
-        if (!json.success || !json.data) {
-          setData(null);
-          setLoading(false);
-          return;
-        }
-
-        setData(json.data as PublicAuditData);
-        setLoading(false);
-      } catch (err) {
-        if (!mounted) return;
-        setError(err instanceof Error ? err.message : 'Failed to load audit');
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-
-    return () => {
-      mounted = false;
-    };
-  }, [hash]);
-
-  return { data, loading, error };
-}
-
-// ============================================================
 // Page Component
 // ============================================================
 
 /**
- * Loading Component
- */
-function LoadingState() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950">
-      <div className="text-center">
-        <Loader2 className="mx-auto h-12 w-12 animate-spin text-emerald-500" />
-        <p className="mt-4 text-lg text-slate-400">Loading audit...</p>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Error Component
- */
-function ErrorState({ message }: { message: string }) {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-red-400">Error</h1>
-        <p className="mt-2 text-slate-400">{message}</p>
-      </div>
-    </div>
-  );
-}
-
-/**
  * Public Audit Page Component
- * Client-side rendered page that fetches audit data
+ * Server component wrapper that renders the client component
  */
 export default function Page({ params }: PageProps) {
-  const { hash } = use(params);
-  const { data, loading, error } = useAuditData(hash);
+  // Unwrap params promise
+  return <AuditPageClientWrapper params={params} />;
+}
 
-  if (loading) {
-    return <LoadingState />;
-  }
-
-  if (error) {
-    return <ErrorState message={error} />;
-  }
-
-  if (!data) {
-    notFound();
-  }
-
-  return <PublicAuditPage audit={data} hash={hash} />;
+/**
+ * Async wrapper to unwrap params
+ */
+async function AuditPageClientWrapper({ params }: { params: Promise<{ hash: string }> }) {
+  const { hash } = await params;
+  return <AuditPageClient hash={hash} />;
 }
