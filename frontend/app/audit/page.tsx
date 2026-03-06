@@ -1,11 +1,100 @@
-import { Suspense } from 'react';
-import AuditPageClient from './AuditPageClient';
-import { Loader2 } from 'lucide-react';
+'use client';
 
 /**
- * Loading fallback for Suspense boundary
+ * Public Audit Page - Static Export Compatible
+ * Uses query parameter for audit hash: /audit/?h=abc123
+ * @module app/audit/page
  */
-function LoadingFallback() {
+
+import * as React from 'react';
+import { useSearchParams } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { PublicAuditPage, PublicAuditData } from '@/components/audit/PublicAuditPage';
+import { Loader2 } from 'lucide-react';
+
+// ============================================================
+// Types
+// ============================================================
+
+// ============================================================
+// Data Fetching Hook
+// ============================================================
+
+/**
+ * Hook to fetch audit data from the public API
+ */
+function useAuditData(hash: string | null) {
+  const [data, setData] = React.useState<PublicAuditData | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!hash) {
+      setLoading(false);
+      return;
+    }
+
+    let mounted = true;
+
+    async function fetchData() {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.seoindicator.com';
+        
+        const res = await fetch(
+          `${apiUrl}/api/v1/public-audit/${hash}`,
+          {
+            headers: {
+              'Accept': 'application/json',
+            },
+          }
+        );
+
+        if (!mounted) return;
+
+        if (!res.ok) {
+          if (res.status === 404) {
+            setData(null);
+            setLoading(false);
+            return;
+          }
+          throw new Error(`Failed to fetch audit: ${res.status}`);
+        }
+
+        const json = await res.json();
+        
+        if (!json.success || !json.data) {
+          setData(null);
+          setLoading(false);
+          return;
+        }
+
+        setData(json.data as PublicAuditData);
+        setLoading(false);
+      } catch (err) {
+        if (!mounted) return;
+        setError(err instanceof Error ? err.message : 'Failed to load audit');
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [hash]);
+
+  return { data, loading, error };
+}
+
+// ============================================================
+// Components
+// ============================================================
+
+/**
+ * Loading Component
+ */
+function LoadingState() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950">
       <div className="text-center">
@@ -17,18 +106,62 @@ function LoadingFallback() {
 }
 
 /**
- * Public Audit Page - Static Export Compatible
- * Uses query parameter for audit hash: /audit/?h=abc123
- *
- * The page wraps the client component in a Suspense boundary
- * because useSearchParams() requires it in Next.js 16+ static exports.
- *
- * @module app/audit/page
+ * Error Component
+ */
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-red-400">Error</h1>
+        <p className="mt-2 text-slate-400">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * No Hash State
+ */
+function NoHashState() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-slate-200">No Audit Specified</h1>
+        <p className="mt-2 text-slate-400">Please provide a valid audit hash in the URL.</p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Main Component
+// ============================================================
+
+/**
+ * Audit Page Component
+ * Static export compatible - reads hash from query parameter
+ * URL format: /audit/?h=abc123
  */
 export default function AuditPage() {
-  return (
-    <Suspense fallback={<LoadingFallback />}>
-      <AuditPageClient />
-    </Suspense>
-  );
+  const searchParams = useSearchParams();
+  const hash = searchParams.get('h');
+  const { data, loading, error } = useAuditData(hash);
+
+  if (!hash) {
+    return <NoHashState />;
+  }
+
+  if (loading) {
+    return <LoadingState />;
+  }
+
+  if (error) {
+    return <ErrorState message={error} />;
+  }
+
+  if (!data) {
+    notFound();
+  }
+
+  return <PublicAuditPage audit={data} hash={hash} />;
 }

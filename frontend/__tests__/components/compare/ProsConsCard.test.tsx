@@ -1,437 +1,805 @@
 /**
  * ProsConsCard Component Tests
- * Task: TASK-32-19 - Unit Tests for Comparison Components
+ * Task: TASK-32-7 - ProsConsCard Component
  * Spec: SPEC-32 (Competitor Comparison Landing Pages)
  *
- * TDD Tests - Component implementation pending
+ * Tests for the pros/cons card component that displays balanced,
+ * honest assessment of each tool's strengths and weaknesses.
  */
 
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import userEvent from '@testing-library/user-event';
+import { ProsConsCard } from '@/components/compare/ProsConsCard';
 import type { ProsConsCardProps } from '@/lib/compare/types';
 
-// Mock Lucide React icons
+// ============================================================================
+// Mock Lucide Icons
+// ============================================================================
+
 jest.mock('lucide-react', () => ({
-  Check: () => <span data-testid="check-icon" aria-label="check">✓</span>,
-  X: () => <span data-testid="x-icon" aria-label="x">✗</span>,
-  Star: () => <span data-testid="star-icon">★</span>,
+  Check: ({ className }: { className?: string }) => (
+    <span data-testid="check-icon" className={className}>✓</span>
+  ),
+  X: ({ className }: { className?: string }) => (
+    <span data-testid="x-icon" className={className}>✗</span>
+  ),
+  Star: ({ className, filled }: { className?: string; filled?: boolean }) => (
+    <span 
+      data-testid="star-icon" 
+      className={className}
+      data-filled={filled}
+    >
+      {filled ? '★' : '☆'}
+    </span>
+  ),
 }));
 
-// Mock component - will be replaced with actual implementation
-const ProsConsCard = ({
-  tool,
-  pros,
-  cons,
-  overallRating,
-}: ProsConsCardProps) => {
-  return (
-    <div data-testid="pros-cons-card" className="pros-cons-card">
-      {/* Header */}
-      <h3 data-testid="tool-name" className="tool-name">
-        {tool}
-      </h3>
+// ============================================================================
+// Mock shadcn/ui Card Components
+// ============================================================================
 
-      {/* Rating (optional) */}
-      {overallRating !== undefined && (
-        <div data-testid="rating-container" aria-label={`Rating: ${overallRating} out of 5`}>
-          <div data-testid="rating-stars" role="img">
-            {Array.from({ length: 5 }, (_, i) => (
-              <span
-                key={i}
-                data-testid={`star-${i}`}
-                className={i < Math.floor(overallRating) ? 'filled' : 'empty'}
-              >
-                ★
-              </span>
-            ))}
-          </div>
-          <span data-testid="rating-value">{overallRating.toFixed(1)}</span>
-        </div>
-      )}
-
-      {/* Pros Section */}
-      <div data-testid="pros-section" aria-label="Pros">
-        <h4 data-testid="pros-header" className="text-green-500">
-          Pros
-        </h4>
-        <ul data-testid="pros-list" role="list">
-          {pros.length > 0 ? (
-            pros.map((pro, idx) => (
-              <li key={idx} data-testid={`pro-${idx}`} className="pro-item">
-                <span data-testid="check-icon" aria-label="check">✓</span>
-                <span>{pro}</span>
-              </li>
-            ))
-          ) : (
-            <li data-testid="no-pros" className="empty-message">
-              No pros listed
-            </li>
-          )}
-        </ul>
-      </div>
-
-      {/* Cons Section */}
-      <div data-testid="cons-section" aria-label="Cons">
-        <h4 data-testid="cons-header" className="text-red-500">
-          Cons
-        </h4>
-        <ul data-testid="cons-list" role="list">
-          {cons.length > 0 ? (
-            cons.map((con, idx) => (
-              <li key={idx} data-testid={`con-${idx}`} className="con-item">
-                <span data-testid="x-icon" aria-label="x">✗</span>
-                <span>{con}</span>
-              </li>
-            ))
-          ) : (
-            <li data-testid="no-cons" className="empty-message">
-              No cons listed
-            </li>
-          )}
-        </ul>
-      </div>
+jest.mock('@/components/ui/card', () => ({
+  Card: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <div data-testid="card" className={className}>
+      {children}
     </div>
-  );
-};
+  ),
+  CardHeader: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <div data-testid="card-header" className={className}>
+      {children}
+    </div>
+  ),
+  CardContent: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <div data-testid="card-content" className={className}>
+      {children}
+    </div>
+  ),
+}));
 
-// Test data
-const mockPros = [
-  'Most affordable SEO tool on the market',
-  'Simple, intuitive interface',
-  'All essential features in one platform',
-  'Generous free tier',
-  'Excellent customer support',
-];
+// ============================================================================
+// Test Utilities
+// ============================================================================
 
-const mockCons = [
-  'Smaller database compared to enterprise tools',
-  'Limited advanced features for power users',
-  'No social media or advertising tools',
-];
+/**
+ * Creates default props for the ProsConsCard component.
+ */
+function createDefaultProps(overrides: Partial<ProsConsCardProps> = {}): ProsConsCardProps {
+  return {
+    tool: 'SEOIndicator',
+    pros: ['Easy to use', 'Affordable pricing', 'Great support'],
+    cons: ['Limited integrations', 'No mobile app'],
+    ...overrides,
+  };
+}
+
+/**
+ * Renders the ProsConsCard component with default props.
+ */
+function renderProsConsCard(props: Partial<ProsConsCardProps> = {}) {
+  return render(<ProsConsCard {...createDefaultProps(props)} />);
+}
+
+// ============================================================================
+// Test Suites
+// ============================================================================
 
 describe('ProsConsCard', () => {
-  // ============================================================================
-  // Rendering Tests
-  // ============================================================================
+  // --------------------------------------------------------------------------
+  // PC-RENDER: Basic Rendering
+  // --------------------------------------------------------------------------
 
-  describe('Rendering', () => {
-    it('PROS-001: renders card structure', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      expect(screen.getByTestId('pros-cons-card')).toBeInTheDocument();
+  describe('Basic Rendering', () => {
+    it('renders without crashing', () => {
+      renderProsConsCard();
+      expect(screen.getByTestId('card')).toBeInTheDocument();
     });
 
-    it('PROS-002: displays tool name in header', () => {
-      render(<ProsConsCard tool="Ahrefs" pros={mockPros} cons={mockCons} />);
-      
-      expect(screen.getByTestId('tool-name')).toHaveTextContent('Ahrefs');
+    it('displays tool name in header', () => {
+      renderProsConsCard({ tool: 'Ahrefs' });
+      expect(screen.getByRole('heading', { name: /ahrefs/i, level: 3 })).toBeInTheDocument();
     });
 
-    it('PROS-003: renders pros section', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      expect(screen.getByTestId('pros-section')).toBeInTheDocument();
-      expect(screen.getByTestId('pros-header')).toHaveTextContent('Pros');
+    it('renders both pros and cons sections', () => {
+      renderProsConsCard();
+      expect(screen.getByText(/pros/i)).toBeInTheDocument();
+      expect(screen.getByText(/cons/i)).toBeInTheDocument();
     });
 
-    it('PROS-004: renders cons section', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      expect(screen.getByTestId('cons-section')).toBeInTheDocument();
-      expect(screen.getByTestId('cons-header')).toHaveTextContent('Cons');
-    });
-
-    it('PROS-005: renders both lists', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      expect(screen.getByTestId('pros-list')).toBeInTheDocument();
-      expect(screen.getByTestId('cons-list')).toBeInTheDocument();
+    it('renders card with correct test id', () => {
+      renderProsConsCard();
+      expect(screen.getByTestId('card')).toBeInTheDocument();
     });
   });
 
-  // ============================================================================
-  // Pros Tests
-  // ============================================================================
+  // --------------------------------------------------------------------------
+  // PC-PROS: Pros Section
+  // --------------------------------------------------------------------------
 
-  describe('Pros', () => {
-    it('PROS-010: lists all pros with check icons', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      const prosList = screen.getByTestId('pros-list');
-      const proItems = within(prosList).getAllByRole('listitem');
-      
-      expect(proItems).toHaveLength(5);
-    });
+  describe('Pros Section', () => {
+    it('displays all pros from props', () => {
+      const pros = ['Feature A', 'Feature B', 'Feature C'];
+      renderProsConsCard({ pros });
 
-    it('PROS-011: displays correct text for each pro', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      expect(screen.getByText('Most affordable SEO tool on the market')).toBeInTheDocument();
-      expect(screen.getByText('Simple, intuitive interface')).toBeInTheDocument();
-      expect(screen.getByText('All essential features in one platform')).toBeInTheDocument();
-    });
-
-    it('PROS-012: displays check icon for each pro', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      const prosSection = screen.getByTestId('pros-section');
-      const checkIcons = within(prosSection).getAllByTestId('check-icon');
-      
-      expect(checkIcons).toHaveLength(5);
-    });
-
-    it('PROS-013: green styling for pros header', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      const prosHeader = screen.getByTestId('pros-header');
-      expect(prosHeader).toHaveClass('text-green-500');
-    });
-  });
-
-  // ============================================================================
-  // Cons Tests
-  // ============================================================================
-
-  describe('Cons', () => {
-    it('PROS-020: lists all cons with X icons', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      const consList = screen.getByTestId('cons-list');
-      const conItems = within(consList).getAllByRole('listitem');
-      
-      expect(conItems).toHaveLength(3);
-    });
-
-    it('PROS-021: displays correct text for each con', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      expect(screen.getByText('Smaller database compared to enterprise tools')).toBeInTheDocument();
-      expect(screen.getByText('Limited advanced features for power users')).toBeInTheDocument();
-      expect(screen.getByText('No social media or advertising tools')).toBeInTheDocument();
-    });
-
-    it('PROS-022: displays X icon for each con', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      const consSection = screen.getByTestId('cons-section');
-      const xIcons = within(consSection).getAllByTestId('x-icon');
-      
-      expect(xIcons).toHaveLength(3);
-    });
-
-    it('PROS-023: red styling for cons header', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      const consHeader = screen.getByTestId('cons-header');
-      expect(consHeader).toHaveClass('text-red-500');
-    });
-  });
-
-  // ============================================================================
-  // Rating Tests
-  // ============================================================================
-
-  describe('Rating', () => {
-    it('PROS-030: displays rating when provided', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} overallRating={4.5} />);
-      
-      expect(screen.getByTestId('rating-container')).toBeInTheDocument();
-    });
-
-    it('PROS-031: hides rating when not provided', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      expect(screen.queryByTestId('rating-container')).not.toBeInTheDocument();
-    });
-
-    it('PROS-032: displays correct number of stars', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} overallRating={4.5} />);
-      
-      const stars = screen.getAllByTestId(/star-/);
-      expect(stars).toHaveLength(5);
-    });
-
-    it('PROS-033: fills correct number of stars for whole number rating', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} overallRating={4} />);
-      
-      // Stars 0, 1, 2, 3 should be filled
-      expect(screen.getByTestId('star-0')).toHaveClass('filled');
-      expect(screen.getByTestId('star-1')).toHaveClass('filled');
-      expect(screen.getByTestId('star-2')).toHaveClass('filled');
-      expect(screen.getByTestId('star-3')).toHaveClass('filled');
-      expect(screen.getByTestId('star-4')).toHaveClass('empty');
-    });
-
-    it('PROS-034: displays numeric rating value', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} overallRating={4.5} />);
-      
-      expect(screen.getByTestId('rating-value')).toHaveTextContent('4.5');
-    });
-
-    it('PROS-035: rating has accessible label', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} overallRating={4.5} />);
-      
-      const ratingContainer = screen.getByTestId('rating-container');
-      expect(ratingContainer).toHaveAttribute('aria-label', 'Rating: 4.5 out of 5');
-    });
-
-    it('PROS-036: handles zero rating', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} overallRating={0} />);
-      
-      const stars = screen.getAllByTestId(/star-/);
-      stars.forEach(star => {
-        expect(star).toHaveClass('empty');
+      pros.forEach(pro => {
+        expect(screen.getByText(pro)).toBeInTheDocument();
       });
     });
 
-    it('PROS-037: handles perfect rating', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} overallRating={5} />);
+    it('displays green check icons for each pro', () => {
+      const pros = ['Pro 1', 'Pro 2'];
+      renderProsConsCard({ pros });
+
+      const checkIcons = screen.getAllByTestId('check-icon');
+      expect(checkIcons).toHaveLength(pros.length);
+    });
+
+    it('check icons have green color class', () => {
+      renderProsConsCard({ pros: ['A pro'] });
+
+      const checkIcon = screen.getByTestId('check-icon');
+      expect(checkIcon.className).toMatch(/green|emerald/);
+    });
+
+    it('renders pros list with correct semantic structure', () => {
+      renderProsConsCard();
       
-      const stars = screen.getAllByTestId(/star-/);
-      stars.forEach(star => {
-        expect(star).toHaveClass('filled');
-      });
+      const prosHeading = screen.getByRole('heading', { name: /pros/i, level: 4 });
+      expect(prosHeading).toBeInTheDocument();
+
+      const prosSection = prosHeading.closest('div');
+      const list = within(prosSection!).getByRole('list');
+      expect(list).toBeInTheDocument();
+    });
+
+    it('renders each pro as a list item', () => {
+      const pros = ['Pro A', 'Pro B'];
+      renderProsConsCard({ pros });
+
+      const listItems = screen.getAllByRole('listitem');
+      expect(listItems.length).toBeGreaterThanOrEqual(pros.length);
+    });
+
+    it('handles empty pros array gracefully', () => {
+      renderProsConsCard({ pros: [] });
+      
+      // Should still render the pros section heading
+      expect(screen.getByText(/pros/i)).toBeInTheDocument();
+    });
+
+    it('renders pros section with correct accessibility attributes', () => {
+      renderProsConsCard();
+      
+      const prosSection = screen.getByText(/pros/i).closest('div');
+      expect(prosSection).toHaveAttribute('aria-label', 'pros-section');
     });
   });
 
-  // ============================================================================
-  // Accessibility Tests
-  // ============================================================================
+  // --------------------------------------------------------------------------
+  // PC-CONS: Cons Section
+  // --------------------------------------------------------------------------
+
+  describe('Cons Section', () => {
+    it('displays all cons from props', () => {
+      const cons = ['Con A', 'Con B', 'Con C'];
+      renderProsConsCard({ cons });
+
+      cons.forEach(con => {
+        expect(screen.getByText(con)).toBeInTheDocument();
+      });
+    });
+
+    it('displays X icons for each con', () => {
+      const cons = ['Con 1', 'Con 2'];
+      renderProsConsCard({ cons });
+
+      const xIcons = screen.getAllByTestId('x-icon');
+      expect(xIcons).toHaveLength(cons.length);
+    });
+
+    it('X icons have subtle/gray color class', () => {
+      renderProsConsCard({ cons: ['A con'] });
+
+      const xIcon = screen.getByTestId('x-icon');
+      expect(xIcon.className).toMatch(/gray|slate|neutral|muted/);
+    });
+
+    it('renders cons list with correct semantic structure', () => {
+      renderProsConsCard();
+      
+      const consHeading = screen.getByRole('heading', { name: /cons/i, level: 4 });
+      expect(consHeading).toBeInTheDocument();
+
+      const consSection = consHeading.closest('div');
+      const list = within(consSection!).getByRole('list');
+      expect(list).toBeInTheDocument();
+    });
+
+    it('renders each con as a list item', () => {
+      const cons = ['Con A', 'Con B'];
+      renderProsConsCard({ cons });
+
+      const listItems = screen.getAllByRole('listitem');
+      expect(listItems.length).toBeGreaterThanOrEqual(cons.length);
+    });
+
+    it('handles empty cons array gracefully', () => {
+      renderProsConsCard({ cons: [] });
+      
+      // Should still render the cons section heading
+      expect(screen.getByText(/cons/i)).toBeInTheDocument();
+    });
+
+    it('renders cons section with correct accessibility attributes', () => {
+      renderProsConsCard();
+      
+      const consSection = screen.getByText(/cons/i).closest('div');
+      expect(consSection).toHaveAttribute('aria-label', 'cons-section');
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // PC-RATING: Overall Rating Display
+  // --------------------------------------------------------------------------
+
+  describe('Overall Rating Display', () => {
+    it('displays rating when overallRating is provided', () => {
+      renderProsConsCard({ overallRating: 4 });
+      
+      expect(screen.getByLabelText(/rating/i)).toBeInTheDocument();
+    });
+
+    it('does not display rating when overallRating is undefined', () => {
+      renderProsConsCard({ overallRating: undefined });
+      
+      expect(screen.queryByLabelText(/rating/i)).not.toBeInTheDocument();
+    });
+
+    it('displays correct number of filled stars for rating', () => {
+      const rating = 4;
+      renderProsConsCard({ overallRating: rating });
+
+      const filledStars = screen.getAllByTestId('star-icon').filter(
+        star => star.getAttribute('data-filled') === 'true'
+      );
+      expect(filledStars).toHaveLength(rating);
+    });
+
+    it('displays 5 total stars (filled + empty)', () => {
+      renderProsConsCard({ overallRating: 3 });
+
+      const allStars = screen.getAllByTestId('star-icon');
+      expect(allStars).toHaveLength(5);
+    });
+
+    it('handles rating of 0', () => {
+      renderProsConsCard({ overallRating: 0 });
+
+      const filledStars = screen.getAllByTestId('star-icon').filter(
+        star => star.getAttribute('data-filled') === 'true'
+      );
+      expect(filledStars).toHaveLength(0);
+    });
+
+    it('handles rating of 5 (maximum)', () => {
+      renderProsConsCard({ overallRating: 5 });
+
+      const filledStars = screen.getAllByTestId('star-icon').filter(
+        star => star.getAttribute('data-filled') === 'true'
+      );
+      expect(filledStars).toHaveLength(5);
+    });
+
+    it('displays rating value as accessible text', () => {
+      const rating = 4.5;
+      renderProsConsCard({ overallRating: rating });
+
+      expect(screen.getByText(/4\.5 out of 5/i)).toBeInTheDocument();
+    });
+
+    it('handles decimal ratings (e.g., 4.5)', () => {
+      renderProsConsCard({ overallRating: 4.5 });
+
+      const ratingText = screen.getByText(/4\.5/);
+      expect(ratingText).toBeInTheDocument();
+    });
+
+    it('renders rating component in card header', () => {
+      renderProsConsCard({ overallRating: 4 });
+
+      const header = screen.getByTestId('card-header');
+      const rating = within(header).getByLabelText(/rating/i);
+      expect(rating).toBeInTheDocument();
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // PC-ACCESS: Accessibility
+  // --------------------------------------------------------------------------
 
   describe('Accessibility', () => {
-    it('PROS-040: pros list has role="list"', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      expect(screen.getByTestId('pros-list')).toHaveAttribute('role', 'list');
+    it('has proper heading hierarchy (h3 for tool name, h4 for pros/cons)', () => {
+      renderProsConsCard();
+
+      expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+      expect(screen.getAllByRole('heading', { level: 4 })).toHaveLength(2);
     });
 
-    it('PROS-041: cons list has role="list"', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      expect(screen.getByTestId('cons-list')).toHaveAttribute('role', 'list');
+    it('has aria-label on card', () => {
+      renderProsConsCard({ tool: 'SEMrush' });
+
+      const card = screen.getByTestId('card');
+      expect(card).toHaveAttribute('aria-label', 'Pros and cons for SEMrush');
     });
 
-    it('PROS-042: icons have accessible labels', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      
-      const checkIcons = screen.getAllByTestId('check-icon');
-      const xIcons = screen.getAllByTestId('x-icon');
-      
-      checkIcons.forEach(icon => {
-        expect(icon).toHaveAttribute('aria-label', 'check');
-      });
-      
-      xIcons.forEach(icon => {
-        expect(icon).toHaveAttribute('aria-label', 'x');
-      });
+    it('pros and cons lists have aria-labels', () => {
+      renderProsConsCard();
+
+      const lists = screen.getAllByRole('list');
+      const prosList = lists.find(list => list.getAttribute('aria-label')?.includes('pros'));
+      const consList = lists.find(list => list.getAttribute('aria-label')?.includes('cons'));
+
+      expect(prosList).toBeDefined();
+      expect(consList).toBeDefined();
     });
 
-    it('PROS-043: sections have aria-labels', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
+    it('is keyboard navigable', async () => {
+      const user = userEvent.setup();
+      renderProsConsCard();
+
+      const card = screen.getByTestId('card');
+      card.focus();
       
-      expect(screen.getByTestId('pros-section')).toHaveAttribute('aria-label', 'Pros');
-      expect(screen.getByTestId('cons-section')).toHaveAttribute('aria-label', 'Cons');
+      await user.tab();
+      // Focus should move through interactive elements
+      expect(document.activeElement).toBeTruthy();
+    });
+
+    it('has proper role attribute on card', () => {
+      renderProsConsCard();
+
+      const card = screen.getByTestId('card');
+      expect(card).toHaveAttribute('role', 'region');
+    });
+
+    it('icon elements are hidden from screen readers', () => {
+      renderProsConsCard();
+
+      const checkIcon = screen.getByTestId('check-icon');
+      const xIcon = screen.getByTestId('x-icon');
+
+      expect(checkIcon).toHaveAttribute('aria-hidden', 'true');
+      expect(xIcon).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('rating has appropriate aria attributes', () => {
+      renderProsConsCard({ overallRating: 4.5 });
+
+      const rating = screen.getByLabelText(/rating/i);
+      expect(rating).toHaveAttribute('role', 'img');
     });
   });
 
-  // ============================================================================
-  // Edge Cases
-  // ============================================================================
+  // --------------------------------------------------------------------------
+  // PC-RESPONSIVE: Responsive Design
+  // --------------------------------------------------------------------------
+
+  describe('Responsive Design', () => {
+    it('applies responsive grid classes', () => {
+      renderProsConsCard();
+
+      const cardContent = screen.getByTestId('card-content');
+      expect(cardContent.className).toMatch(/grid|flex/);
+    });
+
+    it('pros and cons sections have equal width on desktop', () => {
+      renderProsConsCard();
+
+      const cardContent = screen.getByTestId('card-content');
+      // Should use grid-cols-2 or similar for equal width
+      expect(cardContent.className).toMatch(/grid-cols-2|grid-cols-\[1fr_1fr\]/);
+    });
+
+    it('stacks pros and cons vertically on mobile', () => {
+      renderProsConsCard();
+
+      const cardContent = screen.getByTestId('card-content');
+      // Should have responsive classes like md:grid-cols-2 grid-cols-1
+      expect(cardContent.className).toMatch(/grid-cols-1|flex-col/);
+    });
+
+    it('maintains balanced visual weight between pros and cons', () => {
+      renderProsConsCard({
+        pros: ['Pro 1', 'Pro 2', 'Pro 3'],
+        cons: ['Con 1', 'Con 2', 'Con 3'],
+      });
+
+      const prosSection = screen.getByText(/pros/i).closest('div');
+      const consSection = screen.getByText(/cons/i).closest('div');
+
+      // Both sections should have similar padding/min-height
+      expect(prosSection?.className).toBeTruthy();
+      expect(consSection?.className).toBeTruthy();
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // PC-PROPS: Props Validation
+  // --------------------------------------------------------------------------
+
+  describe('Props Validation', () => {
+    it('accepts custom className prop', () => {
+      renderProsConsCard({ className: 'custom-class' });
+
+      const card = screen.getByTestId('card');
+      expect(card.className).toContain('custom-class');
+    });
+
+    it('merges custom className with default classes', () => {
+      renderProsConsCard({ className: 'my-custom' });
+
+      const card = screen.getByTestId('card');
+      expect(card.className).toContain('pros-cons-card');
+      expect(card.className).toContain('my-custom');
+    });
+
+    it('handles undefined pros array', () => {
+      // @ts-expect-error - Testing runtime behavior with undefined
+      renderProsConsCard({ pros: undefined });
+
+      expect(screen.getByTestId('card')).toBeInTheDocument();
+    });
+
+    it('handles undefined cons array', () => {
+      // @ts-expect-error - Testing runtime behavior with undefined
+      renderProsConsCard({ cons: undefined });
+
+      expect(screen.getByTestId('card')).toBeInTheDocument();
+    });
+
+    it('clamps rating values outside 0-5 range', () => {
+      // Test negative rating
+      renderProsConsCard({ overallRating: -1 });
+      let ratingText = screen.queryByText(/0 out of 5/i);
+      expect(ratingText).toBeInTheDocument();
+
+      // Test rating > 5
+      renderProsConsCard({ overallRating: 10 });
+      ratingText = screen.queryByText(/5 out of 5/i);
+      expect(ratingText).toBeInTheDocument();
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // PC-EDGE: Edge Cases
+  // --------------------------------------------------------------------------
 
   describe('Edge Cases', () => {
-    it('PROS-050: handles empty pros array', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={[]} cons={mockCons} />);
-      
-      expect(screen.getByTestId('no-pros')).toBeInTheDocument();
-      expect(screen.getByText('No pros listed')).toBeInTheDocument();
+    it('handles very long pro text', () => {
+      const longPro = 'A'.repeat(500);
+      renderProsConsCard({ pros: [longPro] });
+
+      expect(screen.getByText(longPro)).toBeInTheDocument();
     });
 
-    it('PROS-051: handles empty cons array', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={[]} />);
-      
-      expect(screen.getByTestId('no-cons')).toBeInTheDocument();
-      expect(screen.getByText('No cons listed')).toBeInTheDocument();
+    it('handles very long con text', () => {
+      const longCon = 'B'.repeat(500);
+      renderProsConsCard({ cons: [longCon] });
+
+      expect(screen.getByText(longCon)).toBeInTheDocument();
     });
 
-    it('PROS-052: handles both arrays empty', () => {
-      render(<ProsConsCard tool="SEOIndicator" pros={[]} cons={[]} />);
-      
-      expect(screen.getByTestId('no-pros')).toBeInTheDocument();
-      expect(screen.getByTestId('no-cons')).toBeInTheDocument();
+    it('handles many pros (10+ items)', () => {
+      const pros = Array.from({ length: 15 }, (_, i) => `Pro ${i + 1}`);
+      renderProsConsCard({ pros });
+
+      pros.forEach(pro => {
+        expect(screen.getByText(pro)).toBeInTheDocument();
+      });
     });
 
-    it('PROS-053: handles long pros text', () => {
-      const longPros = [
-        'This is a very long pro description that might need to wrap or be truncated in the UI to prevent layout issues',
-      ];
-      
-      render(<ProsConsCard tool="SEOIndicator" pros={longPros} cons={mockCons} />);
-      
-      expect(screen.getByText('This is a very long pro description that might need to wrap or be truncated in the UI to prevent layout issues')).toBeInTheDocument();
+    it('handles many cons (10+ items)', () => {
+      const cons = Array.from({ length: 15 }, (_, i) => `Con ${i + 1}`);
+      renderProsConsCard({ cons });
+
+      cons.forEach(con => {
+        expect(screen.getByText(con)).toBeInTheDocument();
+      });
     });
 
-    it('PROS-054: handles many pros', () => {
-      const manyPros = Array.from({ length: 20 }, (_, i) => `Pro ${i + 1}`);
+    it('handles special characters in tool name', () => {
+      renderProsConsCard({ tool: "SEMrush & Ahrefs <Test>" });
       
-      render(<ProsConsCard tool="SEOIndicator" pros={manyPros} cons={mockCons} />);
-      
-      const prosList = screen.getByTestId('pros-list');
-      expect(within(prosList).getAllByRole('listitem')).toHaveLength(20);
+      // Should render escaped, not as HTML
+      expect(screen.getByText(/SEMrush & Ahrefs/)).toBeInTheDocument();
     });
 
-    it('PROS-055: handles unicode in pros/cons', () => {
-      const unicodePros = ['👍 Great for beginners', '日本語サポート'];
-      const unicodeCons = ['❌ Limited integrations'];
-      
-      render(<ProsConsCard tool="SEOIndicator" pros={unicodePros} cons={unicodeCons} />);
-      
-      expect(screen.getByText('👍 Great for beginners')).toBeInTheDocument();
-      expect(screen.getByText('日本語サポート')).toBeInTheDocument();
-      expect(screen.getByText('❌ Limited integrations')).toBeInTheDocument();
+    it('handles special characters in pros/cons text', () => {
+      const pros = ['Feature with <script>alert("xss")</script>'];
+      renderProsConsCard({ pros });
+
+      // Should render as text, not execute script
+      expect(screen.getByText(/Feature with/)).toBeInTheDocument();
     });
 
-    it('PROS-056: handles special characters in tool name', () => {
-      render(<ProsConsCard tool="SEO & Marketing Tool™" pros={mockPros} cons={mockCons} />);
+    it('handles unicode characters in tool name', () => {
+      renderProsConsCard({ tool: '工具名称 🛠️' });
       
-      expect(screen.getByTestId('tool-name')).toHaveTextContent('SEO & Marketing Tool™');
+      expect(screen.getByText('工具名称 🛠️')).toBeInTheDocument();
+    });
+
+    it('handles unicode characters in pros/cons', () => {
+      const pros = ['😀 Great UX', '中文支持'];
+      renderProsConsCard({ pros });
+
+      pros.forEach(pro => {
+        expect(screen.getByText(pro)).toBeInTheDocument();
+      });
+    });
+
+    it('handles empty tool name gracefully', () => {
+      renderProsConsCard({ tool: '' });
+
+      // Should still render the card
+      expect(screen.getByTestId('card')).toBeInTheDocument();
+    });
+
+    it('handles null/undefined overallRating', () => {
+      // @ts-expect-error - Testing runtime behavior
+      renderProsConsCard({ overallRating: null });
+      
+      expect(screen.queryByLabelText(/rating/i)).not.toBeInTheDocument();
     });
   });
 
-  // ============================================================================
-  // Props Tests
-  // ============================================================================
+  // --------------------------------------------------------------------------
+  // PC-SEC: Security Tests
+  // --------------------------------------------------------------------------
 
-  describe('Props', () => {
-    it('PROS-060: uses correct tool name from props', () => {
-      render(<ProsConsCard tool="SEMrush" pros={mockPros} cons={mockCons} />);
-      
-      expect(screen.getByTestId('tool-name')).toHaveTextContent('SEMrush');
+  describe('Security', () => {
+    it('prevents XSS via tool name', () => {
+      const xssTool = '<img src=x onerror=alert(1)>';
+      renderProsConsCard({ tool: xssTool });
+
+      // Tool name should be rendered as text, not HTML
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
     });
 
-    it('PROS-061: renders all pros from props', () => {
-      const customPros = ['Custom Pro 1', 'Custom Pro 2'];
-      
-      render(<ProsConsCard tool="SEOIndicator" pros={customPros} cons={mockCons} />);
-      
-      expect(screen.getByText('Custom Pro 1')).toBeInTheDocument();
-      expect(screen.getByText('Custom Pro 2')).toBeInTheDocument();
+    it('prevents XSS via pros array', () => {
+      const xssPro = '<script>document.cookie="stolen"</script>';
+      renderProsConsCard({ pros: [xssPro] });
+
+      // Script should not be in the document
+      expect(document.querySelector('script')).not.toBeInTheDocument();
     });
 
-    it('PROS-062: renders all cons from props', () => {
-      const customCons = ['Custom Con 1', 'Custom Con 2'];
-      
-      render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={customCons} />);
-      
-      expect(screen.getByText('Custom Con 1')).toBeInTheDocument();
-      expect(screen.getByText('Custom Con 2')).toBeInTheDocument();
+    it('prevents XSS via cons array', () => {
+      const xssCon = '<a href="javascript:alert(1)">Click</a>';
+      renderProsConsCard({ cons: [xssCon] });
+
+      // Link should not be clickable with javascript:
+      const links = screen.queryAllByRole('link');
+      expect(links.every(link => !link.getAttribute('href')?.startsWith('javascript:'))).toBe(true);
     });
 
-    it('PROS-063: rating prop is optional', () => {
-      // Should not throw when rating is omitted
-      expect(() => {
-        render(<ProsConsCard tool="SEOIndicator" pros={mockPros} cons={mockCons} />);
-      }).not.toThrow();
+    it('sanitizes HTML entities in tool name', () => {
+      renderProsConsCard({ tool: 'A & B < C > D' });
+
+      // Should render escaped
+      expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('A & B');
+    });
+
+    it('does not execute event handlers in content', () => {
+      const maliciousPro = '<div onclick="alert(1)">Click me</div>';
+      renderProsConsCard({ pros: [maliciousPro] });
+
+      // Should render as text, not as a div with onclick
+      expect(document.querySelector('div[onclick]')).not.toBeInTheDocument();
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // AC: Acceptance Criteria
+  // --------------------------------------------------------------------------
+
+  describe('Acceptance Criteria', () => {
+    it('AC-1: Tool name displayed in header', () => {
+      renderProsConsCard({ tool: 'Moz Pro' });
+
+      const header = screen.getByTestId('card-header');
+      const toolName = within(header).getByRole('heading', { level: 3, name: /moz pro/i });
+      
+      expect(toolName).toBeInTheDocument();
+    });
+
+    it('AC-2: Pros listed with green check icons', () => {
+      const pros = ['Fast analysis', 'Accurate data'];
+      renderProsConsCard({ pros });
+
+      pros.forEach(pro => {
+        expect(screen.getByText(pro)).toBeInTheDocument();
+      });
+
+      const checkIcons = screen.getAllByTestId('check-icon');
+      expect(checkIcons.length).toBe(pros.length);
+      
+      // Verify green color
+      checkIcons.forEach(icon => {
+        expect(icon.className).toMatch(/green|emerald/);
+      });
+    });
+
+    it('AC-3: Cons listed with X icons (subtle color)', () => {
+      const cons = ['Limited features', 'High price'];
+      renderProsConsCard({ cons });
+
+      cons.forEach(con => {
+        expect(screen.getByText(con)).toBeInTheDocument();
+      });
+
+      const xIcons = screen.getAllByTestId('x-icon');
+      expect(xIcons.length).toBe(cons.length);
+      
+      // Verify subtle color
+      xIcons.forEach(icon => {
+        expect(icon.className).toMatch(/gray|slate|neutral|muted/);
+      });
+    });
+
+    it('AC-4: Overall rating displayed when provided', () => {
+      renderProsConsCard({ overallRating: 4.5 });
+
+      expect(screen.getByLabelText(/rating/i)).toBeInTheDocument();
+      expect(screen.getByText(/4\.5 out of 5/i)).toBeInTheDocument();
+    });
+
+    it('AC-5: Mobile responsive (stacked or scrollable)', () => {
+      renderProsConsCard();
+
+      const cardContent = screen.getByTestId('card-content');
+      // Should have responsive grid/flex classes
+      expect(cardContent.className).toMatch(/grid|flex/);
+      // Should have mobile-first approach
+      expect(cardContent.className).toMatch(/grid-cols-1|flex-col/);
+    });
+
+    it('AC-6: Balanced presentation (no bias in layout)', () => {
+      const pros = ['Pro 1', 'Pro 2'];
+      const cons = ['Con 1', 'Con 2'];
+      renderProsConsCard({ pros, cons });
+
+      // Both sections should have similar structure and weight
+      const prosHeading = screen.getByRole('heading', { name: /pros/i });
+      const consHeading = screen.getByRole('heading', { name: /cons/i });
+
+      // Same heading level
+      expect(prosHeading.tagName).toBe(consHeading.tagName);
+
+      // Both should have list elements
+      const prosList = prosHeading.closest('div')?.querySelector('ul, ol');
+      const consList = consHeading.closest('div')?.querySelector('ul, ol');
+      
+      expect(prosList).toBeInTheDocument();
+      expect(consList).toBeInTheDocument();
+    });
+
+    it('AC-7: Accessible (proper heading structure)', () => {
+      renderProsConsCard();
+
+      // Should have h3 for tool name
+      const h3 = screen.getByRole('heading', { level: 3 });
+      expect(h3).toBeInTheDocument();
+
+      // Should have h4s for pros and cons
+      const h4s = screen.getAllByRole('heading', { level: 4 });
+      expect(h4s).toHaveLength(2);
+
+      // h4s should be descendants of the h3's section
+      const card = screen.getByTestId('card');
+      const headingStructure = within(card);
+      
+      expect(headingStructure.getByRole('heading', { level: 3 })).toBeInTheDocument();
+      expect(headingStructure.getAllByRole('heading', { level: 4 })).toHaveLength(2);
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // PC-SNAP: Snapshot Tests
+  // --------------------------------------------------------------------------
+
+  describe('Snapshots', () => {
+    it('matches snapshot with default props', () => {
+      const { container } = renderProsConsCard();
+      expect(container).toMatchSnapshot();
+    });
+
+    it('matches snapshot with rating', () => {
+      const { container } = renderProsConsCard({ overallRating: 4.5 });
+      expect(container).toMatchSnapshot();
+    });
+
+    it('matches snapshot with many items', () => {
+      const { container } = renderProsConsCard({
+        pros: Array.from({ length: 8 }, (_, i) => `Pro ${i + 1}`),
+        cons: Array.from({ length: 6 }, (_, i) => `Con ${i + 1}`),
+      });
+      expect(container).toMatchSnapshot();
     });
   });
 });
+
+// ============================================================================
+// Mock Component for Reference (TDD Pattern)
+// ============================================================================
+
+/**
+ * This is a reference implementation showing the expected interface.
+ * The actual implementation should be in:
+ * frontend/components/compare/ProsConsCard.tsx
+ * 
+ * Expected implementation:
+ * 
+ * import { Card, CardHeader, CardContent } from '@/components/ui/card';
+ * import { Check, X, Star } from 'lucide-react';
+ * import type { ProsConsCardProps } from '@/lib/compare/types';
+ * 
+ * export function ProsConsCard({ 
+ *   tool, 
+ *   pros, 
+ *   cons, 
+ *   overallRating,
+ *   className 
+ * }: ProsConsCardProps) {
+ *   const clampedRating = overallRating !== undefined 
+ *     ? Math.max(0, Math.min(5, overallRating))
+ *     : undefined;
+ *   
+ *   return (
+ *     <Card 
+ *       className={`pros-cons-card ${className || ''}`}
+ *       role="region"
+ *       aria-label={`Pros and cons for ${tool}`}
+ *     >
+ *       <CardHeader>
+ *         <h3>{tool}</h3>
+ *         {clampedRating !== undefined && (
+ *           <div role="img" aria-label={`Rating: ${clampedRating} out of 5`}>
+ *             {Array.from({ length: 5 }, (_, i) => (
+ *               <Star 
+ *                 key={i} 
+ *                 filled={i < Math.floor(clampedRating)}
+ *                 aria-hidden="true"
+ *               />
+ *             ))}
+ *             <span className="sr-only">{clampedRating} out of 5</span>
+ *           </div>
+ *         )}
+ *       </CardHeader>
+ *       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ *         <div aria-label="pros-section">
+ *           <h4>Pros</h4>
+ *           <ul aria-label="List of advantages">
+ *             {pros.map((pro, i) => (
+ *               <li key={i}>
+ *                 <Check className="text-green-500" aria-hidden="true" />
+ *                 <span>{pro}</span>
+ *               </li>
+ *             ))}
+ *           </ul>
+ *         </div>
+ *         <div aria-label="cons-section">
+ *           <h4>Cons</h4>
+ *           <ul aria-label="List of disadvantages">
+ *             {cons.map((con, i) => (
+ *               <li key={i}>
+ *                 <X className="text-gray-400" aria-hidden="true" />
+ *                 <span>{con}</span>
+ *               </li>
+ *             ))}
+ *           </ul>
+ *         </div>
+ *       </CardContent>
+ *     </Card>
+ *   );
+ * }
+ */

@@ -1,7 +1,7 @@
 # TASK-32-7: ProsConsCard Component
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`

@@ -8448,6 +8448,159 @@ The ToolEmbed component is ready for use. The following guide integrations are p
 - TASK-20-24: Tool embedding for Social Media Preview guides
 
 ---
+## Public Audit Views Table (TASK-33-2)
+
+### Service Description
+Database migration for tracking analytics on public audit page views. Stores view events with privacy-conscious data collection (IP hashing, referrer tracking) to measure the reach and effectiveness of shared SEO audits. Part of the Public SEO Audit Reports feature (FEAT-033).
+
+### Database Schema
+
+```sql
+CREATE TABLE public_audit_views (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    audit_id BIGINT UNSIGNED NOT NULL,
+    public_hash VARCHAR(64) NOT NULL,
+    viewed_at TIMESTAMP NOT NULL,
+    referrer VARCHAR(500) NULL,
+    ip_hash VARCHAR(64) NULL,
+    user_agent VARCHAR(500) NULL,
+    country_code CHAR(2) NULL,
+    is_lead_capture BOOLEAN DEFAULT FALSE,
+    lead_email VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (audit_id) REFERENCES audits(id) ON DELETE CASCADE,
+    INDEX public_audit_views_audit_id_index (audit_id),
+    INDEX public_audit_views_public_hash_index (public_hash),
+    INDEX public_audit_views_viewed_at_index (viewed_at)
+);
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `audit_id` | BIGINT UNSIGNED | FK to audits.id (CASCADE delete) |
+| `public_hash` | VARCHAR(64) | Public sharing hash for the audit |
+| `viewed_at` | TIMESTAMP | When the view occurred |
+| `referrer` | VARCHAR(500) | HTTP Referrer header (truncated to 500 chars) |
+| `ip_hash` | VARCHAR(64) | SHA-256 hash of IP + app.key salt (privacy) |
+| `user_agent` | VARCHAR(500) | Browser user agent (truncated to 500 chars) |
+| `country_code` | CHAR(2) | ISO 3166-1 alpha-2 country code |
+| `is_lead_capture` | BOOLEAN | Whether visitor submitted email |
+| `lead_email` | VARCHAR(255) | Email if lead capture submitted |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+
+### Indexes
+
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `public_audit_views_audit_id_index` | audit_id | Query views by audit |
+| `public_audit_views_public_hash_index` | public_hash | Query views by public hash |
+| `public_audit_views_viewed_at_index` | viewed_at | Date range queries |
+
+### Foreign Keys
+
+| Constraint | Columns | References | On Delete |
+|------------|---------|------------|-----------|
+| `public_audit_views_audit_id_foreign` | audit_id | audits.id | CASCADE |
+
+### Model Relationships
+
+**PublicAuditView Model:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `audit()` | belongsTo | The audit this view belongs to |
+
+### Model Scopes
+
+| Scope | Description |
+|-------|-------------|
+| `forAudit($id)` | Filter views by audit_id |
+| `forHash($hash)` | Filter views by public_hash |
+| `leadCaptures()` | Filter where is_lead_capture = true |
+| `withLeadEmail()` | Filter where lead_email is not null |
+| `viewedBetween($start, $end)` | Filter by date range |
+| `fromCountry($code)` | Filter by country_code |
+| `recent($days)` | Filter views from last N days |
+
+### Factory States
+
+| State | Description |
+|-------|-------------|
+| `forAudit($audit)` | Associate with specific audit |
+| `withHash($hash)` | Set specific public_hash |
+| `withReferrer()` | Include referrer URL |
+| `withCountry($code)` | Set country code |
+| `leadCapture($email)` | Mark as lead capture with email |
+| `viewedAt($timestamp)` | Set specific viewed_at time |
+| `viewedDaysAgo($days)` | Set viewed_at to N days ago |
+| `fromGoogle()` | Set referrer to Google |
+| `directVisit()` | No referrer (direct traffic) |
+| `chromeBrowser()` | Chrome user agent |
+| `safariBrowser()` | Safari user agent |
+| `mobileDevice()` | Mobile user agent |
+| `withFullAnalytics()` | All analytics fields populated |
+| `withIpHash($ip)` | Custom IP hash |
+
+### Privacy Features
+
+| Feature | Implementation |
+|---------|----------------|
+| IP Hashing | SHA-256 hash with app.key salt |
+| No PII Storage | Original IP never stored |
+| Referrer Truncation | Limited to 500 chars |
+| User Agent Truncation | Limited to 500 chars |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| CreatePublicAuditViewsTableTest | 41 | 61 |
+| PublicAuditViewTest | 48 | 69 |
+| **Total** | **89** | **130** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Migration Structure | 13 | Table columns and types |
+| Indexes | 3 | audit_id, public_hash, viewed_at indexes |
+| Foreign Keys | 3 | CASCADE delete verification |
+| Migration Data | 5 | Data insertion and constraints |
+| Reversibility | 2 | Migration rollback |
+| Edge Cases | 7 | Null handling, unicode |
+| Performance | 3 | Query performance < 100ms |
+| Security | 5 | SQL injection, XSS prevention |
+| Model Instantiation | 6 | Model creation and configuration |
+| Model Fillable | 10 | Mass assignment |
+| Model Casts | 3 | Type casting |
+| Relationships | 3 | BelongsTo Audit |
+| Model Scopes | 7 | All scope methods |
+| Factory | 5 | Factory states |
+| Model Edge Cases | 8 | Null handling, unicode |
+| Integration | 4 | Cascade delete, view counts |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-06 (migration #17) |
+| **Migration** | `2026_03_06_080000_create_public_audit_views_table.php` |
+| **Health Check** | Passing |
+| **Tests** | 89 tests, 130 assertions - all passing |
+| **Status** | Complete |
+
+### Dependencies
+- TASK-33-1 (visibility columns on audits table)
+
+### Related Tasks
+- TASK-33-1: Audit visibility columns
+- TASK-33-3: PublicAuditController
+- TASK-33-4: PublicAudit model
+- TASK-33-5: PublicAuditService
+
+---
 ## IndicatorIcon Wrapper Component (TASK-28-4)
 
 ### Service Description
