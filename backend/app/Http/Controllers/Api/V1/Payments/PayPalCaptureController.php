@@ -3,19 +3,20 @@
 namespace App\Http\Controllers\Api\V1\Payments;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\V1\Payments\CapturePayPalOrderRequest;
 use App\Models\Credit;
 use App\Models\CreditTransaction;
+use App\Repositories\CreditRepository;
 use App\Services\Billing\Contracts\PaymentGatewayInterface;
 use App\Services\Billing\CreditService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
  * PayPal Capture Controller.
  *
- * Handles PayPal order capture for credit purchases.
+ * Handles PayPal Smart Button order capture for credit purchases.
  * Called by frontend after user approves payment in PayPal popup.
  *
  * @see TASK-26-15
@@ -28,211 +29,205 @@ class PayPalCaptureController extends Controller
      */
     public function __construct(
         protected PaymentGatewayInterface $paymentGateway,
-        protected CreditService $creditService
+        protected CreditService $creditService,
+        protected CreditRepository $creditRepository
     ) {}
 
     /**
-     * Capture an approved PayPal order.
+     * Capture an approved PayPal order and credit the user.
      *
-     * @param CapturePayPalOrderRequest $request
+     * @param Request $request
      * @return JsonResponse
      */
-    public function store(CapturePayPalOrderRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
+        $request->validate([
+            'order_id' => 'required|string|max:255',
+        ]);
+
         $user = $request->user();
-        $orderId = $request->validated('order_id');
+        $orderId = $request->input('order_id');
 
-        // Find the pending transaction
-        $transaction = CreditTransaction::where('payment_provider', 'paypal')
-            ->where('payment_id', $orderId)
-            ->first();
-
-        // Transaction not found
-        if (!$transaction) {
-            Log::warning('PayPal capture: Order not found', [
-                'order_id' => $orderId,
-                'user_id' => $user->id,
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Order not found',
-            ], 404);
-        }
-
-        // Verify ownership (IDOR prevention)
-        if ($transaction->user_id !== $user->id) {
-            Log::warning('PayPal capture: Unauthorized order access attempt', [
-                'order_id' => $orderId,
-                'transaction_user_id' => $transaction->user_id,
-                'request_user_id' => $user->id,
-            ]);
-
-            // Return 401 to not leak order existence
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized',
-            ], 401);
-        }
-
-        // Check transaction status
-        if ($transaction->status !== CreditTransaction::STATUS_PENDING) {
-            $statusMessage = match ($transaction->status) {
-                CreditTransaction::STATUS_COMPLETED => 'Order already captured',
-                CreditTransaction::STATUS_CANCELLED => 'Order cancelled',
-                CreditTransaction::STATUS_FAILED => 'Order failed',
-                default => "Order cannot be captured (status: {$transaction->status})",
-            };
-
-            Log::info('PayPal capture: Invalid transaction status', [
-                'order_id' => $orderId,
-                'status' => $transaction->status,
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => $statusMessage,
-            ], 400);
-        }
-
-        // Check for order state in metadata
-        $orderState = $transaction->metadata['status'] ?? 'unknown';
-        if (!in_array($orderState, ['approved', 'pending', 'unknown'])) {
-            $statusMessage = match ($orderState) {
-                'created' => 'Order not approved',
-                'completed' => 'Order already captured',
-                'cancelled' => 'Order cancelled',
-                'expired' => 'Order expired',
-                'denied' => 'Order denied',
-                default => "Invalid order state: {$orderState}",
-            };
-
-            Log::info('PayPal capture: Invalid order state', [
-                'order_id' => $orderId,
-                'order_state' => $orderState,
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => $statusMessage,
-            ], 400);
-        }
-
-        // Check for order expiration (3 hour window)
-        $createdAt = $transaction->created_at;
-        if ($createdAt && $createdAt->diffInHours(now()) > 3) {
-            Log::info('PayPal capture: Order expired', [
-                'order_id' => $orderId,
-                'created_at' => $createdAt,
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Order expired',
-            ], 400);
-        }
+        Log::info('PayPal capture initiated', [
+            'user_id' => $user->id,
+            'order_id' => $orderId,
+        ]);
 
         try {
-            // Use database transaction for atomicity
-            $result = DB::transaction(function () use ($transaction, $user, $orderId) {
-                // Lock the transaction for update (prevent concurrent captures)
-                $lockedTransaction = CreditTransaction::where('id', $transaction->id)
+            return DB::transaction(function () use ($user, $orderId) {
+                // Find pending transaction with this order_id
+                $transaction = CreditTransaction::where('payment_provider', 'paypal')
+                    ->where('payment_id', $orderId)
                     ->lockForUpdate()
                     ->first();
 
-                // Double-check status after lock
-                if ($lockedTransaction->status !== CreditTransaction::STATUS_PENDING) {
-                    throw new \RuntimeException('Order already captured');
+                // Order not found
+                if (!$transaction) {
+                    Log::warning('PayPal capture: Order not found', [
+                        'user_id' => $user->id,
+                        'order_id' => $orderId,
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'ORDER_NOT_FOUND',
+                            'message' => 'Order not found.',
+                        ],
+                    ], 404);
                 }
 
-                // Capture via PayPal gateway
+                // Verify ownership (IDOR prevention)
+                if ($transaction->user_id !== $user->id) {
+                    Log::warning('PayPal capture: Unauthorized access attempt', [
+                        'user_id' => $user->id,
+                        'transaction_user_id' => $transaction->user_id,
+                        'order_id' => $orderId,
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'UNAUTHORIZED',
+                            'message' => 'Unauthorized.',
+                        ],
+                    ], 401);
+                }
+
+                // Check order state
+                $orderStatus = $transaction->metadata['status'] ?? 'unknown';
+
+                // Already captured
+                if ($orderStatus === 'completed') {
+                    Log::info('PayPal capture: Order already captured', [
+                        'user_id' => $user->id,
+                        'order_id' => $orderId,
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'ORDER_ALREADY_CAPTURED',
+                            'message' => 'Order already captured.',
+                        ],
+                    ], 400);
+                }
+
+                // Order not approved yet
+                if ($orderStatus !== 'approved') {
+                    Log::warning('PayPal capture: Order not approved', [
+                        'user_id' => $user->id,
+                        'order_id' => $orderId,
+                        'status' => $orderStatus,
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'ORDER_NOT_APPROVED',
+                            'message' => "Order not approved. Current status: {$orderStatus}",
+                        ],
+                    ], 400);
+                }
+
+                // Check if order expired (3 hour window)
+                $createdAt = $transaction->created_at;
+                if ($createdAt && $createdAt->diffInHours(now()) >= 3) {
+                    Log::warning('PayPal capture: Order expired', [
+                        'user_id' => $user->id,
+                        'order_id' => $orderId,
+                        'created_at' => $createdAt->toIso8601String(),
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'ORDER_EXPIRED',
+                            'message' => 'Order expired.',
+                        ],
+                    ], 400);
+                }
+
+                // Capture payment via PayPal gateway
                 $captureSuccess = $this->paymentGateway->capturePayment($orderId);
 
                 if (!$captureSuccess) {
-                    throw new \RuntimeException('PayPal capture failed');
+                    Log::error('PayPal capture: Gateway capture failed', [
+                        'user_id' => $user->id,
+                        'order_id' => $orderId,
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'CAPTURE_FAILED',
+                            'message' => 'Payment capture failed.',
+                        ],
+                    ], 500);
                 }
 
-                // Get credit amount from transaction
-                $credits = (float) $lockedTransaction->amount;
+                // Get credits amount from transaction
+                $credits = (float) $transaction->amount;
 
-                // Add credits to user
-                $this->creditService->addCredits(
-                    $user,
-                    $credits,
-                    CreditTransaction::TYPE_PURCHASE,
-                    [
-                        'payment_provider' => 'paypal',
-                        'payment_id' => $orderId,
-                        'description' => $lockedTransaction->description,
-                        'reference_type' => $lockedTransaction->reference_type,
-                        'reference_id' => $lockedTransaction->reference_id,
-                    ]
-                );
+                // Get or create credit record for user
+                $credit = Credit::where('user_id', $user->id)->lockForUpdate()->first();
+                
+                if (!$credit) {
+                    $credit = Credit::create([
+                        'user_id' => $user->id,
+                        'balance' => 0,
+                        'total_purchased' => 0,
+                        'total_spent' => 0,
+                    ]);
+                }
 
-                // Update transaction status
-                $lockedTransaction->status = CreditTransaction::STATUS_COMPLETED;
-                $lockedTransaction->metadata = array_merge(
-                    $lockedTransaction->metadata ?? [],
-                    ['status' => 'completed', 'captured_at' => now()->toIso8601String()]
-                );
-                $lockedTransaction->save();
+                // Update balance
+                $newBalance = (float) $credit->balance + $credits;
+                $credit->balance = $newBalance;
+                $credit->total_purchased = (float) $credit->total_purchased + $credits;
+                $credit->save();
 
-                // Get new balance
-                $newBalance = $this->creditService->getBalance($user);
+                // Update transaction metadata
+                $transaction->update([
+                    'metadata' => array_merge($transaction->metadata ?? [], [
+                        'status' => 'completed',
+                        'captured_at' => now()->toIso8601String(),
+                    ]),
+                    'balance_after' => $newBalance,
+                ]);
 
-                // Get the price from metadata
-                $amount = (float) ($lockedTransaction->metadata['price_usd'] ?? $lockedTransaction->amount);
-
-                return [
-                    'transaction_id' => $lockedTransaction->id,
-                    'amount' => $amount,
+                Log::info('PayPal capture successful', [
+                    'user_id' => $user->id,
+                    'order_id' => $orderId,
+                    'transaction_id' => $transaction->id,
                     'credits' => $credits,
                     'new_balance' => $newBalance,
-                ];
-            }, 3); // 3 retries for deadlock
+                ]);
 
-            Log::info('PayPal capture successful', [
-                'order_id' => $orderId,
-                'user_id' => $user->id,
-                'credits' => $result['credits'],
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'data' => $result,
-            ]);
-        } catch (\RuntimeException $e) {
-            $errorMessage = $e->getMessage();
-
-            Log::error('PayPal capture failed', [
-                'order_id' => $orderId,
-                'user_id' => $user->id,
-                'error' => $errorMessage,
-            ]);
-
-            // Check for specific error types
-            if (str_contains($errorMessage, 'already captured')) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Order already captured',
-                ], 400);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment processing failed',
-            ], 500);
+                    'success' => true,
+                    'data' => [
+                        'transaction_id' => $transaction->id,
+                        'amount' => (float) ($transaction->metadata['price_usd'] ?? $credits),
+                        'credits' => $credits,
+                        'new_balance' => $newBalance,
+                    ],
+                ]);
+            }, 3); // 3 retries for deadlock
         } catch (\Exception $e) {
-            Log::error('PayPal capture unexpected error', [
-                'order_id' => $orderId,
+            Log::error('PayPal capture error', [
                 'user_id' => $user->id,
+                'order_id' => $orderId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'An unexpected error occurred',
+                'error' => [
+                    'code' => 'INTERNAL_ERROR',
+                    'message' => 'An unexpected error occurred. Please try again.',
+                ],
             ], 500);
         }
     }

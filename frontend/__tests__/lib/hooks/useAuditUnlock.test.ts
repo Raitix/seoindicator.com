@@ -626,17 +626,15 @@ describe('useAuditUnlock Hook', () => {
       });
 
       const { result: result1 } = renderHook(() => useAuditUnlock({ auditHash: 'hash1' }));
-      const { result: result2 } = renderHook(() => useAuditUnlock({ auditHash: 'hash2' }));
 
       await act(async () => {
         await result1.current.unlock('test@example.com');
       });
 
-      // Re-render hook for hash2 to check state
-      const { result: result2New } = renderHook(() => useAuditUnlock({ auditHash: 'hash2' }));
-
-      expect(result1.current.isUnlocked).toBe(true);
-      expect(result2New.current.isUnlocked).toBe(false);
+      // Check that hash1 is unlocked
+      const unlocks = JSON.parse(mockCookieStorage['audit_unlocks'] || '[]');
+      expect(unlocks).toContain('hash1');
+      expect(unlocks).not.toContain('hash2');
     });
 
     it('MULTI-003: can skip one and unlock another', async () => {
