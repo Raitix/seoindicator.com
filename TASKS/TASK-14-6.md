@@ -1,7 +1,7 @@
 # TASK-14-6: Create RobotsParser Service
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
