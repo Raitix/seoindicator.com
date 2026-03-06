@@ -279,6 +279,16 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
     Route::delete('audits/{audit}', [AuditController::class, 'destroy'])
         ->where('audit', '[0-9]+');
 
+    // Audit Issue API Routes (TASK-14-14, SPEC-014)
+    Route::get('audits/{auditId}/issues', [\App\Http\Controllers\Api\V1\AuditIssueController::class, 'index'])
+        ->where('auditId', '[0-9]+');
+    Route::patch('audits/{auditId}/issues/bulk', [\App\Http\Controllers\Api\V1\AuditIssueController::class, 'bulkUpdate'])
+        ->where('auditId', '[0-9]+');
+    Route::get('issues/{issueId}', [\App\Http\Controllers\Api\V1\AuditIssueController::class, 'show'])
+        ->where('issueId', '[0-9]+');
+    Route::patch('issues/{issueId}', [\App\Http\Controllers\Api\V1\AuditIssueController::class, 'update'])
+        ->where('issueId', '[0-9]+');
+
     // Projects (SPEC-008-7) - CRUD with archive/restore
     Route::post('projects/{project}/archive', [ProjectController::class, 'archive']);
     Route::post('projects/{project}/restore', [ProjectController::class, 'restore']);

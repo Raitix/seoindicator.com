@@ -1433,12 +1433,14 @@ class AuditIssueControllerTest extends TestCase
      */
     public function test_ac_counts_in_meta(): void
     {
+        // Create 5 critical + open issues
         AuditIssue::factory()->critical()->count(5)->create([
             'audit_id' => $this->audit->id,
             'issue_type_id' => $this->issueType->id,
             'status' => 'open',
         ]);
-        AuditIssue::factory()->fixed()->count(3)->create([
+        // Create 3 warning + fixed issues (warning to avoid affecting critical count)
+        AuditIssue::factory()->warning()->fixed()->count(3)->create([
             'audit_id' => $this->audit->id,
             'issue_type_id' => $this->issueType->id,
         ]);
@@ -1448,6 +1450,7 @@ class AuditIssueControllerTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('meta.severity_counts.critical', 5);
+        $response->assertJsonPath('meta.severity_counts.warning', 3);
         $response->assertJsonPath('meta.status_counts.open', 5);
         $response->assertJsonPath('meta.status_counts.fixed', 3);
     }
