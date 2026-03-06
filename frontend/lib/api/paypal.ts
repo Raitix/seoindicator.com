@@ -26,13 +26,18 @@ export interface PayPalOrderRequest {
 
 export interface PayPalOrderResponse {
   success: boolean;
-  data: {
+  data?: {
     order_id: string;
     approval_url: string;
     amount: number;
     credits: number;
     package_id: number;
     package_name: string;
+  };
+  error?: {
+    message: string;
+    code?: string;
+    status?: number;
   };
 }
 
@@ -42,12 +47,17 @@ export interface PayPalCaptureRequest {
 
 export interface PayPalCaptureResponse {
   success: boolean;
-  data: {
+  data?: {
     capture_id: string;
     credits: number;
     new_balance: number;
     transaction_id: string;
     order_id: string;
+  };
+  error?: {
+    message: string;
+    code?: string;
+    status?: number;
   };
 }
 
@@ -183,7 +193,7 @@ export async function createPayPalOrder(
 
   const data: PayPalOrderResponse = await response.json();
 
-  if (!data.success) {
+  if (!data.success || !data.data) {
     throw new PayPalError(
       data.error?.message || "Failed to create order",
       data.error?.status,
@@ -219,11 +229,11 @@ export async function capturePayPalOrder(
 
   const data: PayPalCaptureResponse = await response.json();
 
-  if (!data.success) {
+  if (!data.success || !data.data) {
     throw new PayPalError(
-      "Capture failed",
-      undefined,
-      "CAPTURE_FAILED"
+      data.error?.message || "Capture failed",
+      data.error?.status,
+      data.error?.code || "CAPTURE_FAILED"
     );
   }
 
