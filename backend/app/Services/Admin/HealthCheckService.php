@@ -55,24 +55,39 @@ class HealthCheckService
      */
     public function getStats(): array
     {
+        // Bypass cache in testing environment for accurate test results
+        if (app()->environment('testing')) {
+            return $this->calculateStats();
+        }
+
         return Cache::remember('admin.health.stats', self::CACHE_TTL, function () {
-            $services = [
-                'database' => $this->checkDatabase(),
-                'queue' => $this->checkQueue(),
-                'cache' => $this->checkCache(),
-                'storage' => $this->checkStorage(),
-            ];
-
-            $alerts = $this->generateAlerts($services);
-
-            return [
-                'status' => $this->determineOverallStatus($services),
-                'uptime' => $this->calculateUptime(),
-                'lastChecked' => now()->toIso8601String(),
-                'services' => $services,
-                'alerts' => $alerts,
-            ];
+            return $this->calculateStats();
         });
+    }
+
+    /**
+     * Calculate health statistics (extracted for testability).
+     *
+     * @return array
+     */
+    protected function calculateStats(): array
+    {
+        $services = [
+            'database' => $this->checkDatabase(),
+            'queue' => $this->checkQueue(),
+            'cache' => $this->checkCache(),
+            'storage' => $this->checkStorage(),
+        ];
+
+        $alerts = $this->generateAlerts($services);
+
+        return [
+            'status' => $this->determineOverallStatus($services),
+            'uptime' => $this->calculateUptime(),
+            'lastChecked' => now()->toIso8601String(),
+            'services' => $services,
+            'alerts' => $alerts,
+        ];
     }
 
     /**

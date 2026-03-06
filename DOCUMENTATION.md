@@ -10139,6 +10139,213 @@ Lead emails are stored in `public_audit_views` table:
 - TASK-33-31: Unit tests (test documentation)
 
 ---
+## PublicAuditPage Component (TASK-33-8)
+
+### Component Description
+Main React component for the public-facing SEO audit results page. Displays shared audit results at `/audit/[hash]` URL route with loading, error, and not-found states. Integrates child components (CategoryBreakdown, TopIssues, PublicAuditCTA) for a complete user experience. Server-side rendered for SEO optimization with ISR revalidation. Part of the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033).
+
+### Component Location
+- **Page Route:** `frontend/app/audit/[hash]/page.tsx` (Next.js App Router)
+- **Client Wrapper:** `frontend/app/audit/[hash]/AuditPageClient.tsx`
+- **Main Component:** `frontend/components/audit/PublicAuditPage.tsx`
+- **Tests:** `frontend/__tests__/components/audit/PublicAuditPage.test.tsx`
+- **Test Documentation:** `TESTS/TEST-33-8.md`
+
+### Props Interface
+
+```typescript
+interface PublicAuditPageProps {
+  /** 32-character public audit hash */
+  hash: string;
+  /** Pre-fetched audit data for SSR */
+  initialData?: PublicAuditData | null;
+}
+
+interface PublicAuditData {
+  /** Audited site URL */
+  siteUrl: string;
+  /** ISO 8601 timestamp of audit */
+  auditedAt: string;
+  /** Overall SEO score (0-100) */
+  overallScore: number;
+  /** Scores by category */
+  categoryScores: CategoryScore[];
+  /** Top issues found in audit */
+  topIssues: Issue[];
+  /** True for anonymous users (limited data) */
+  isPartial: boolean;
+}
+
+interface CategoryScore {
+  name: string;
+  score: number;
+}
+
+interface Issue {
+  id: number;
+  name: string;
+  severity: 'critical' | 'warning' | 'notice';
+}
+```
+
+### Component States
+
+| State | Test ID | Description |
+|-------|---------|-------------|
+| Loading | `loading-state` | Spinner while fetching audit data |
+| Error | `error-state` | Error message with retry button |
+| Not Found | `not-found-state` | 404 for invalid/non-public audits |
+| Success | `audit-page` | Full audit display with score, categories, issues |
+
+### Score Color Coding
+
+| Score Range | Color | CSS Class | Status |
+|-------------|-------|-----------|--------|
+| 90-100 | Green | `bg-green-500` | Excellent |
+| 70-89 | Blue | `bg-blue-500` | Good |
+| 50-69 | Yellow | `bg-yellow-500` | Needs Work |
+| 30-49 | Orange | `bg-orange-500` | Poor |
+| 0-29 | Red | `bg-red-500` | Critical Issues |
+
+### Core Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Server-Side Rendering | `initialData` prop for SSR/ISR |
+| ISR Revalidation | 1-hour TTL via Next.js generateStaticParams |
+| Loading State | Spinner with ARIA `role="status"` |
+| Error State | Retry button with `role="alert"` |
+| 404 State | Home link navigation |
+| Responsive Design | Mobile-first Tailwind CSS grid |
+| SEO Optimization | Semantic HTML, proper heading hierarchy |
+| Accessibility | ARIA labels, keyboard navigation |
+
+### Child Components Integration
+
+| Component | Purpose | Status |
+|-----------|---------|--------|
+| CategoryBreakdown | Displays score breakdown by category | Done |
+| TopIssues | Shows top SEO issues found | Done |
+| PublicAuditCTA | Call-to-action for new users | Done |
+
+### API Integration
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/public-audit/{hash}` | GET | Fetch public audit data |
+
+**Error Handling:**
+- `NOT_FOUND` API code → 404 state
+- `NOT_PUBLIC` API code → 404 state
+- Network error → Error state with retry
+
+### SSR Implementation
+
+**Page Component (`page.tsx`):**
+```typescript
+// Server Component - fetches data for SEO
+export default async function AuditPage({ params }: { params: { hash: string } }) {
+  const data = await fetchAuditData(params.hash);
+  return <AuditPageClient hash={params.hash} initialData={data} />;
+}
+
+// ISR: Revalidate every 1 hour
+export const revalidate = 3600;
+```
+
+**Client Component (`AuditPageClient.tsx`):**
+```typescript
+// Client Component - handles interactivity
+'use client';
+export default function AuditPageClient({ hash, initialData }) {
+  return <PublicAuditPage hash={hash} initialData={initialData} />;
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `PublicAuditPage.test.tsx` | 60 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| REND | 10 | Component rendering |
+| LOAD | 5 | Loading state |
+| ERR | 5 | Error state |
+| NOTFOUND | 4 | 404 state |
+| API | 4 | API integration |
+| A11Y | 6 | Accessibility |
+| RESP | 2 | Responsive design |
+| EDGE | 8 | Edge cases |
+| PROPS | 3 | Props validation |
+| INT | 3 | Integration |
+| AC | 10 | Acceptance criteria |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Status | `role="status"` on loading spinner |
+| ARIA Alerts | `role="alert"` on error messages |
+| Section Labels | `aria-labelledby` for content sections |
+| Time Element | `datetime` attribute on audit date |
+| Semantic HTML | `main`, `header`, `section`, `footer` |
+| Heading Hierarchy | h1 → h2 → h3 proper nesting |
+
+### SEO Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Server-Side Rendering | Full HTML delivered to crawlers |
+| Semantic HTML | Proper document structure |
+| Heading Hierarchy | h1 for site URL, h2 for sections |
+| Meta Tags | Title, description via Metadata API |
+| ISR | 1-hour revalidation for fresh content |
+
+### Partial Data Warning
+
+When `isPartial` is `true` (anonymous user viewing):
+- Warning banner displayed
+- "Limited preview" message
+- CTA to get full audit
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | No raw HTML rendering, React auto-escapes |
+| Hash Validation | 32-char alphanumeric validated client-side |
+| No Sensitive Data | Only technical SEO data displayed |
+| Error Masking | Generic error messages, no stack traces |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `5b02b205` |
+| Deployment Method | GitHub Actions auto-deploy (#22773967781) |
+| Health Check | ✅ 200 OK |
+| Tests | 60/60 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-33-5 (PublicAuditController API) - Done
+- TASK-33-9 (ScoreOverview Component) - Done
+- TASK-33-10 (CategoryBreakdown) - Done
+- TASK-33-11 (TopIssues) - Done
+- TASK-33-12 (PublicAuditCTA) - Done
+
+### Related Tasks
+- TASK-33-5: PublicAuditController (API endpoint)
+- TASK-33-9: ScoreOverview (score display component)
+- TASK-33-10: CategoryBreakdown (category scores)
+- TASK-33-11: TopIssues (issues display)
+- TASK-33-12: PublicAuditCTA (conversion CTA)
+
+---
 ## IndicatorIcon Wrapper Component (TASK-28-4)
 
 ### Service Description
