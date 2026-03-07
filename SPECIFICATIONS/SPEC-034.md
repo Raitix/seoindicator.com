@@ -1,7 +1,7 @@
 # SPEC-034: AI Visibility Tracking (Generative Engine Optimization)
 
 ## STATUS
-`Specification In Progress`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
