@@ -655,4 +655,73 @@ $this->mock(AIVisibilityServiceInterface::class, function ($mock) use ($project)
 
 ---
 
+## Frontend Comparison Page Testing (TASK-34-17)
+
+### TDD Pattern for Complex Pages
+- Create test files for each sub-component separately
+- Mock API hooks (useComparisonData) before implementation
+- Mock charting libraries (Recharts) for deterministic output
+- Mock icon libraries (Lucide) for consistent assertions
+- Use data-testid attributes for element selection
+- Use data-* attributes for state verification (data-trend, data-is-brand, data-fill)
+
+### Test Organization for Multi-Component Pages
+| Test File | Tests | Description |
+|-----------|-------|-------------|
+| `page.test.tsx` | 48 | Main page, states, navigation |
+| `ComparisonRankingTable.test.tsx` | 62 | Table component |
+| `HeadToHeadComparison.test.tsx` | 71 | Comparison cards |
+| `CompetitiveAdvantages.test.tsx` | 54 | Category analysis |
+| `PlatformBreakdown.test.tsx` | 48 | Platform charts |
+| `CompetitorDetailPanel.test.tsx` | 56 | Accordion panel |
+| `ComparisonActions.test.tsx` | 41 | Action buttons |
+| **Total** | **380** | Full coverage |
+
+### Mock Data Patterns for Comparison Pages
+```typescript
+const mockComparisonData = {
+  projectId: '1',
+  brandName: 'SEOIndicator',
+  competitors: [
+    { id: 'comp-1', name: 'Ahrefs', keywords: ['ahrefs'] },
+  ],
+  rankings: {
+    rankings: [
+      { position: 1, name: 'Ahrefs', rate: 38.5, trend: 'up' },
+      { position: 2, name: 'SEOIndicator', rate: 23.5, trend: 'up', isBrand: true },
+    ],
+    brand_position: 2,
+  },
+  headToHead: {
+    brand: { mentions: 15, rate: 23.5, sentiment: 0.45 },
+    competitor: { mentions: 25, rate: 38.5, sentiment: 0.30 },
+    co_mentions: 5,
+  },
+};
+```
+
+### Color Coding via Data Attributes
+- Brand: `data-fill="#3b82f6"` (blue)
+- Trend Up: `data-trend="up"` with green icon
+- Trend Down: `data-trend="down"` with red icon
+- Brand Row: `data-is-brand="true"`
+
+### Responsive Testing Breakpoints
+- Mobile: 375px (stacked layout)
+- Tablet: 768px (2-column cards)
+- Desktop: 1024px+ (full comparison view)
+
+### Chart Mocking Pattern
+```typescript
+vi.mock('recharts', () => ({
+  ResponsiveContainer: ({ children }) => <div data-testid="responsive-container">{children}</div>,
+  RadarChart: ({ children, data }) => <div data-testid="radar-chart" data-points={data?.length}>{children}</div>,
+  BarChart: ({ children, data }) => <div data-testid="bar-chart" data-items={data?.length}>{children}</div>,
+  Radar: ({ data, fill }) => <div data-testid="radar" data-points={data?.length} data-fill={fill} />,
+  Bar: ({ fill, dataKey }) => <div data-testid="bar" data-fill={fill} data-key={dataKey} />,
+}));
+```
+
+---
+
 Last updated: 2026-03-07
