@@ -1,7 +1,33 @@
 # TASK-34-5: AIVisibilityService
 
 ## STATUS
-`To Test Locally`
+`Tested Locally`
+
+## COMMENTS
+### LocalTester - 2026-03-07
+
+**Test Results:**
+- **Tests:** 120
+- **Assertions:** 144
+- **Status:** All tests passing ✓
+
+**Fixes Applied:**
+
+1. **AIVisibilityServiceInterface.php** - Removed `createAlert` method from interface (it's an internal helper, not a public API method).
+
+2. **AIVisibilityService.php:**
+   - Fixed `deleteProject()` to use `withTrashed()` when finding projects, allowing proper handling of already-deleted projects (returns `false` instead of throwing `ModelNotFoundException`).
+   - Fixed `getQueryLimit()` to properly handle `null` limits (unlimited tier) by using `array_key_exists()` instead of `??` operator.
+
+3. **AIVisibilityServiceTest.php:**
+   - Fixed risky tests (`test_create_project_logs_creation`, `test_update_project_logs_update`, `test_delete_project_logs_deletion`) by adding explicit assertions.
+   - Fixed `test_create_project_dispatches_event` to properly verify event dispatch using Laravel's Event facade.
+   - Fixed `test_delete_project_already_deleted` test expectation (now works correctly with service fix).
+
+**Config:**
+- `ai-visibility.php` already had `unlimited` tier set to `null` (correct).
+
+**Duration:** ~10 minutes for test execution.
 
 ## PRIORITY
 `High`
