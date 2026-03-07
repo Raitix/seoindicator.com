@@ -591,9 +591,15 @@ class AIVisibilityService implements AIVisibilityServiceInterface
             'free' => 5,
             'pro' => 50,
             'business' => 200,
+            'unlimited' => null,
         ]);
 
-        $limit = $limits[$tier] ?? $limits['free'];
+        // Check if tier exists in config
+        if (!array_key_exists($tier, $limits)) {
+            return $limits['free'];
+        }
+
+        $limit = $limits[$tier];
 
         // null means unlimited
         if ($limit === null) {
@@ -690,6 +696,7 @@ class AIVisibilityService implements AIVisibilityServiceInterface
             'free' => 5,
             'pro' => 50,
             'business' => 200,
+            'unlimited' => null,
         ]);
     }
 
