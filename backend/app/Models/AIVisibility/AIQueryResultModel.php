@@ -35,6 +35,14 @@ class AIQueryResult extends Model
     use HasFactory;
 
     /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\AIVisibility\AIQueryResultFactory::new();
+    }
+
+    /**
      * The table associated with the model.
      */
     protected $table = 'ai_query_results';
