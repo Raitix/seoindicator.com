@@ -64,3 +64,7 @@ export type { AuditDetailPageProps } from './AuditDetailPage';
 
 // Error Boundary
 export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
+
+// Visibility Settings (TASK-33-22)
+export { VisibilitySettings } from './VisibilitySettings';
+export type { VisibilitySettingsProps } from './VisibilitySettings';

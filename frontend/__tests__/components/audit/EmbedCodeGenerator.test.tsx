@@ -6,15 +6,18 @@
  *
  * Component: EmbedCodeGenerator
  * Task: TASK-33-21
- * Status: TDD (component not yet implemented)
  */
 
 import React from 'react';
 import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
+// Import actual component
+import { EmbedCodeGenerator } from '@/components/audit/EmbedCodeGenerator';
+import type { EmbedCodeGeneratorProps, BadgeSize, BadgeTheme, EmbedType } from '@/components/audit/EmbedCodeGenerator';
+
 // ============================================================================
-// MOCK IMPLEMENTATION (TDD Reference - will be replaced by actual component)
+// MOCKS
 // ============================================================================
 
 // Mock clipboard API
@@ -23,40 +26,13 @@ const mockClipboard = {
 };
 Object.assign(navigator, { clipboard: mockClipboard });
 
-// Mock Lucide icons
-jest.mock('lucide-react', () => ({
-  Copy: () => <span data-testid="copy-icon">📋</span>,
-  Check: () => <span data-testid="check-icon">✓</span>,
-  Code: () => <span data-testid="code-icon">{}</span>,
-  Image: () => <span data-testid="image-icon">🖼️</span>,
-  Monitor: () => <span data-testid="monitor-icon">🖥️</span>,
-  Smartphone: () => <span data-testid="smartphone-icon">📱</span>,
-  Sun: () => <span data-testid="sun-icon">☀️</span>,
-  Moon: () => <span data-testid="moon-icon">🌙</span>,
-  ExternalLink: () => <span data-testid="external-link-icon">↗</span>,
-  Info: () => <span data-testid="info-icon">ℹ️</span>,
-  Lightbulb: () => <span data-testid="lightbulb-icon">💡</span>,
+// Mock analytics
+jest.mock('@/lib/analytics', () => ({
+  trackEvent: jest.fn(),
 }));
 
 // ============================================================================
-// TYPES
-// ============================================================================
-
-type BadgeSize = 'small' | 'medium' | 'large';
-type BadgeTheme = 'light' | 'dark';
-type EmbedType = 'svg' | 'js' | 'iframe';
-
-interface EmbedCodeGeneratorProps {
-  auditHash: string;
-  score: number;
-  siteUrl?: string;
-  onCopy?: (type: EmbedType, code: string) => void;
-  className?: string;
-  showInstructions?: boolean;
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
+// HELPER FUNCTIONS (for test assertions)
 // ============================================================================
 
 const getBadgeDimensions = (size: BadgeSize): { width: number; height: number } => {
@@ -78,202 +54,8 @@ const getScoreColor = (score: number): string => {
   return '#ef4444';
 };
 
-const generateSvgEmbedCode = (hash: string, size: BadgeSize, score: number): string => {
-  const { width, height } = getBadgeDimensions(size);
-  return `<a href="https://seoindicator.com/audit/${hash}/">
-  <img src="https://seoindicator.com/badge/${hash}/${size}.svg" alt="SEO Score: ${score}/100" width="${width}" height="${height}" />
-</a>`;
-};
-
-const generateJsEmbedCode = (hash: string, size: BadgeSize, theme: BadgeTheme): string => {
-  return `<div data-seoindicator-badge="${hash}" data-size="${size}" data-theme="${theme}"></div>
-<script src="https://seoindicator.com/badge.js" async></script>`;
-};
-
-const generateIframeEmbedCode = (hash: string, theme: BadgeTheme): string => {
-  return `<iframe src="https://seoindicator.com/badge/${hash}/large?theme=${theme}" 
-        width="300" height="150" frameborder="0" loading="lazy"></iframe>`;
-};
-
-// ============================================================================
-// MOCK COMPONENT FOR TESTING
-// ============================================================================
-
-const MockEmbedCodeGenerator: React.FC<EmbedCodeGeneratorProps> = ({
-  auditHash,
-  score,
-  siteUrl,
-  onCopy,
-  className,
-  showInstructions = true,
-}) => {
-  const [selectedSize, setSelectedSize] = React.useState<BadgeSize>('medium');
-  const [selectedTheme, setSelectedTheme] = React.useState<BadgeTheme>('light');
-  const [selectedEmbedType, setSelectedEmbedType] = React.useState<EmbedType>('svg');
-  const [copied, setCopied] = React.useState(false);
-
-  const dimensions = getBadgeDimensions(selectedSize);
-  const scoreColor = getScoreColor(score);
-
-  const getEmbedCode = (): string => {
-    switch (selectedEmbedType) {
-      case 'svg':
-        return generateSvgEmbedCode(auditHash, selectedSize, score);
-      case 'js':
-        return generateJsEmbedCode(auditHash, selectedSize, selectedTheme);
-      case 'iframe':
-        return generateIframeEmbedCode(auditHash, selectedTheme);
-    }
-  };
-
-  const handleCopy = async () => {
-    const code = getEmbedCode();
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    onCopy?.(selectedEmbedType, code);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const embedCode = getEmbedCode();
-
-  const getInstructions = (): string => {
-    switch (selectedEmbedType) {
-      case 'svg':
-        return 'Copy this HTML and paste it into your website. The badge will display as a static image.';
-      case 'js':
-        return 'Copy this code to your website. The badge will auto-update when your SEO score changes.';
-      case 'iframe':
-        return 'Copy this iframe code to embed an interactive badge on your website.';
-    }
-  };
-
-  return (
-    <div data-testid="embed-code-generator" className={className}>
-      {/* Badge Preview */}
-      <div data-testid="preview-section">
-        <h3>Badge Preview</h3>
-        <div
-          data-testid="badge-preview"
-          style={{
-            width: dimensions.width,
-            height: dimensions.height,
-            backgroundColor: selectedTheme === 'dark' ? '#1a1a1a' : '#ffffff',
-          }}
-        >
-          <span data-testid="preview-score" style={{ color: scoreColor }}>
-            {score}/100
-          </span>
-        </div>
-      </div>
-
-      {/* Size Selector */}
-      <div data-testid="size-section">
-        <label htmlFor="size-select">Size</label>
-        <select
-          id="size-select"
-          data-testid="size-selector"
-          value={selectedSize}
-          onChange={(e) => setSelectedSize(e.target.value as BadgeSize)}
-          aria-label="Select badge size"
-        >
-          <option value="small">Small (120x40)</option>
-          <option value="medium">Medium (150x100)</option>
-          <option value="large">Large (300x150)</option>
-        </select>
-      </div>
-
-      {/* Theme Selector */}
-      <div data-testid="theme-section">
-        <label htmlFor="theme-select">Theme</label>
-        <select
-          id="theme-select"
-          data-testid="theme-selector"
-          value={selectedTheme}
-          onChange={(e) => setSelectedTheme(e.target.value as BadgeTheme)}
-          aria-label="Select badge theme"
-        >
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-        </select>
-      </div>
-
-      {/* Embed Type Tabs */}
-      <div data-testid="embed-type-tabs" role="tablist">
-        <button
-          role="tab"
-          aria-selected={selectedEmbedType === 'svg'}
-          data-testid="tab-svg"
-          onClick={() => setSelectedEmbedType('svg')}
-        >
-          SVG Image
-        </button>
-        <button
-          role="tab"
-          aria-selected={selectedEmbedType === 'js'}
-          data-testid="tab-js"
-          onClick={() => setSelectedEmbedType('js')}
-        >
-          JavaScript
-        </button>
-        <button
-          role="tab"
-          aria-selected={selectedEmbedType === 'iframe'}
-          data-testid="tab-iframe"
-          onClick={() => setSelectedEmbedType('iframe')}
-        >
-          iframe
-        </button>
-      </div>
-
-      {/* Embed Code Display */}
-      <div data-testid="code-section">
-        <label htmlFor="embed-code">Embed Code</label>
-        <textarea
-          id="embed-code"
-          data-testid="embed-code"
-          value={embedCode}
-          readOnly
-          aria-label="Embed code"
-        />
-      </div>
-
-      {/* Copy Button */}
-      <button
-        data-testid="copy-button"
-        onClick={handleCopy}
-        aria-label="Copy embed code"
-        aria-live="polite"
-      >
-        {copied ? (
-          <>
-            <span data-testid="check-icon">✓</span>
-            Copied!
-          </>
-        ) : (
-          <>
-            <span data-testid="copy-icon">📋</span>
-            Copy Code
-          </>
-        )}
-      </button>
-
-      {/* Instructions */}
-      {showInstructions && (
-        <div data-testid="instructions-section">
-          <h4>Instructions</h4>
-          <p data-testid="instructions-text">{getInstructions()}</p>
-        </div>
-      )}
-
-      {/* Current Settings Display */}
-      <div data-testid="current-settings" aria-hidden="true">
-        <span data-testid="current-size">{selectedSize}</span>
-        <span data-testid="current-theme">{selectedTheme}</span>
-        <span data-testid="current-embed">{selectedEmbedType}</span>
-      </div>
-    </div>
-  );
-};
+// Use the actual component as the test component
+const MockEmbedCodeGenerator = EmbedCodeGenerator as React.FC<EmbedCodeGeneratorProps>;
 
 // ============================================================================
 // TEST DATA
@@ -392,12 +174,12 @@ describe('EmbedCodeGenerator Component', () => {
     it('SIZE-003: should update preview dimensions when size changes', () => {
       render(<MockEmbedCodeGenerator {...defaultProps} />);
 
-      // Default medium
-      expect(screen.getByTestId('badge-preview')).toHaveStyle({ width: 150, height: 100 });
+      // Default medium - styles are applied as '150px' strings
+      expect(screen.getByTestId('badge-preview')).toHaveStyle({ width: '150px', height: '100px' });
 
       // Change to large
       selectSize('large');
-      expect(screen.getByTestId('badge-preview')).toHaveStyle({ width: 300, height: 150 });
+      expect(screen.getByTestId('badge-preview')).toHaveStyle({ width: '300px', height: '150px' });
     });
 
     it('SIZE-004: should show dimensions in option labels', () => {
@@ -645,25 +427,33 @@ describe('EmbedCodeGenerator Component', () => {
       render(<MockEmbedCodeGenerator {...defaultProps} />);
 
       clickCopy();
-      expect(screen.getByText('Copied!')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Copied!')).toBeInTheDocument();
+      });
     });
 
     it('COPY-003: should show check icon after copy', async () => {
       render(<MockEmbedCodeGenerator {...defaultProps} />);
 
       clickCopy();
-      expect(screen.getByTestId('check-icon')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByTestId('check-icon')).toBeInTheDocument();
+      });
     });
 
-    it('COPY-004: should reset to "Copy Code" after 2 seconds', () => {
+    it('COPY-004: should reset to "Copy Code" after 2 seconds', async () => {
       jest.useFakeTimers();
       render(<MockEmbedCodeGenerator {...defaultProps} />);
 
       clickCopy();
-      expect(screen.getByText('Copied!')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Copied!')).toBeInTheDocument();
+      });
 
       jest.advanceTimersByTime(2000);
-      expect(screen.getByText('Copy Code')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Copy Code')).toBeInTheDocument();
+      });
 
       jest.useRealTimers();
     });
@@ -673,7 +463,9 @@ describe('EmbedCodeGenerator Component', () => {
       render(<MockEmbedCodeGenerator {...defaultProps} onCopy={handleCopy} />);
 
       clickCopy();
-      expect(handleCopy).toHaveBeenCalledWith('svg', expect.stringContaining('<a href'));
+      await waitFor(() => {
+        expect(handleCopy).toHaveBeenCalledWith('svg', expect.stringContaining('<a href'));
+      });
     });
 
     it('COPY-006: should copy correct embed type when tab changed', async () => {
@@ -683,7 +475,9 @@ describe('EmbedCodeGenerator Component', () => {
       clickTab('tab-js');
       clickCopy();
 
-      expect(handleCopy).toHaveBeenCalledWith('js', expect.stringContaining('<div'));
+      await waitFor(() => {
+        expect(handleCopy).toHaveBeenCalledWith('js', expect.stringContaining('<div'));
+      });
     });
 
     it('COPY-007: should have accessible aria-label', () => {
@@ -904,7 +698,9 @@ describe('EmbedCodeGenerator Component', () => {
       clickTab('tab-iframe');
       clickCopy();
 
-      expect(handleCopy).toHaveBeenCalledWith('iframe', expect.stringContaining('theme=dark'));
+      await waitFor(() => {
+        expect(handleCopy).toHaveBeenCalledWith('iframe', expect.stringContaining('theme=dark'));
+      });
     });
 
     it('INT-003: should handle complete user flow', async () => {
@@ -927,8 +723,8 @@ describe('EmbedCodeGenerator Component', () => {
       // Select theme
       selectTheme('dark');
 
-      // Verify preview updated
-      expect(screen.getByTestId('badge-preview')).toHaveStyle({ width: 300, height: 150, backgroundColor: '#1a1a1a' });
+      // Verify preview updated - styles are applied as strings
+      expect(screen.getByTestId('badge-preview')).toHaveStyle({ width: '300px', height: '150px', backgroundColor: 'rgb(26, 26, 26)' });
 
       // Select embed type
       clickTab('tab-svg');
@@ -936,8 +732,12 @@ describe('EmbedCodeGenerator Component', () => {
       // Copy code
       clickCopy();
 
-      expect(handleCopy).toHaveBeenCalled();
-      expect(screen.getByText('Copied!')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(handleCopy).toHaveBeenCalled();
+      });
+      await waitFor(() => {
+        expect(screen.getByText('Copied!')).toBeInTheDocument();
+      });
     });
   });
 
@@ -953,7 +753,7 @@ describe('EmbedCodeGenerator Component', () => {
       expect(preview).toBeInTheDocument();
 
       selectSize('large');
-      expect(preview).toHaveStyle({ width: 300, height: 150 });
+      expect(preview).toHaveStyle({ width: '300px', height: '150px' });
     });
 
     it('AC-002: size selector with small, medium, large options', () => {
@@ -1006,8 +806,12 @@ describe('EmbedCodeGenerator Component', () => {
       render(<MockEmbedCodeGenerator {...defaultProps} />);
 
       clickCopy();
-      expect(screen.getByText('Copied!')).toBeInTheDocument();
-      expect(screen.getByTestId('check-icon')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Copied!')).toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(screen.getByTestId('check-icon')).toBeInTheDocument();
+      });
     });
 
     it('AC-007: instructions/tips for embedding', () => {
