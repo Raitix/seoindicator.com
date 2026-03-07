@@ -2,26 +2,31 @@
 
 namespace App\Services\Audit\DTOs;
 
-use Illuminate\Contracts\Support\Arrayable;
-use JsonSerializable;
-
 /**
  * Data Transfer Object for crawl results.
- *
- * Represents the result of crawling a single URL during a site audit.
- *
- * @see TASK-14-5
+ * 
+ * Represents the result of crawling a single URL,
+ * including the HTML content, extracted links, and metadata.
  */
-class CrawlResult implements Arrayable, JsonSerializable
+class CrawlResult implements \JsonSerializable
 {
     /**
-     * Create a new CrawlResult instance.
+     * @param string $url The crawled URL
+     * @param int $statusCode HTTP status code
+     * @param float $responseTimeMs Response time in milliseconds
+     * @param string|null $html HTML content (null on error)
+     * @param array $links Extracted links ['internal' => [...], 'external' => [...]]
+     * @param array $metadata Page metadata (title, description, h1, etc.)
+     * @param string|null $errorMessage Error details if failed
+     * @param array $headers Response headers
+     * @param int $depth Crawl depth (0 = homepage)
+     * @param array $redirectChain Redirect history
      */
     public function __construct(
         public readonly string $url,
         public readonly int $statusCode,
         public readonly float $responseTimeMs,
-        public readonly ?string $html = null,
+        public readonly ?string $html,
         public readonly array $links = [],
         public readonly array $metadata = [],
         public readonly ?string $errorMessage = null,
@@ -31,72 +36,23 @@ class CrawlResult implements Arrayable, JsonSerializable
     ) {}
 
     /**
-     * Create a successful crawl result.
-     */
-    public static function success(
-        string $url,
-        int $statusCode,
-        float $responseTimeMs,
-        string $html,
-        array $links = [],
-        array $metadata = [],
-        array $headers = [],
-        int $depth = 0,
-        array $redirectChain = [],
-    ): self {
-        return new self(
-            url: $url,
-            statusCode: $statusCode,
-            responseTimeMs: $responseTimeMs,
-            html: $html,
-            links: $links,
-            metadata: $metadata,
-            headers: $headers,
-            depth: $depth,
-            redirectChain: $redirectChain,
-        );
-    }
-
-    /**
-     * Create a failed crawl result.
-     */
-    public static function failure(
-        string $url,
-        string $errorMessage,
-        int $statusCode = 0,
-        float $responseTimeMs = 0.0,
-        int $depth = 0,
-    ): self {
-        return new self(
-            url: $url,
-            statusCode: $statusCode,
-            responseTimeMs: $responseTimeMs,
-            html: null,
-            links: [],
-            metadata: [],
-            errorMessage: $errorMessage,
-            depth: $depth,
-        );
-    }
-
-    /**
      * Check if the crawl was successful.
      */
     public function isSuccess(): bool
     {
-        return $this->errorMessage === null && $this->statusCode >= 200 && $this->statusCode < 400;
+        return $this->statusCode >= 200 && $this->statusCode < 300 && $this->errorMessage === null;
     }
 
     /**
-     * Check if the crawl failed.
+     * Check if the crawl resulted in an error.
      */
-    public function isFailure(): bool
+    public function isError(): bool
     {
-        return !$this->isSuccess();
+        return $this->errorMessage !== null || $this->statusCode >= 400;
     }
 
     /**
-     * Check if the page is a redirect.
+     * Check if this is a redirect.
      */
     public function isRedirect(): bool
     {
@@ -104,23 +60,7 @@ class CrawlResult implements Arrayable, JsonSerializable
     }
 
     /**
-     * Check if the page is a client error.
-     */
-    public function isClientError(): bool
-    {
-        return $this->statusCode >= 400 && $this->statusCode < 500;
-    }
-
-    /**
-     * Check if the page is a server error.
-     */
-    public function isServerError(): bool
-    {
-        return $this->statusCode >= 500;
-    }
-
-    /**
-     * Get internal links from the result.
+     * Get internal links.
      */
     public function getInternalLinks(): array
     {
@@ -128,7 +68,7 @@ class CrawlResult implements Arrayable, JsonSerializable
     }
 
     /**
-     * Get external links from the result.
+     * Get external links.
      */
     public function getExternalLinks(): array
     {
@@ -136,57 +76,11 @@ class CrawlResult implements Arrayable, JsonSerializable
     }
 
     /**
-     * Get a metadata value.
+     * Get a specific metadata value.
      */
     public function getMetadata(string $key, mixed $default = null): mixed
     {
         return $this->metadata[$key] ?? $default;
-    }
-
-    /**
-     * Get the page title.
-     */
-    public function getTitle(): ?string
-    {
-        return $this->getMetadata('title');
-    }
-
-    /**
-     * Get the meta description.
-     */
-    public function getDescription(): ?string
-    {
-        return $this->getMetadata('description');
-    }
-
-    /**
-     * Get the canonical URL.
-     */
-    public function getCanonical(): ?string
-    {
-        return $this->getMetadata('canonical');
-    }
-
-    /**
-     * Get the H1 tags.
-     */
-    public function getH1Tags(): array
-    {
-        return $this->getMetadata('h1', []);
-    }
-
-    /**
-     * Get the response header value.
-     */
-    public function getHeader(string $name): ?string
-    {
-        $name = strtolower($name);
-        foreach ($this->headers as $key => $value) {
-            if (strtolower($key) === $name) {
-                return is_array($value) ? $value[0] : $value;
-            }
-        }
-        return null;
     }
 
     /**
@@ -196,24 +90,16 @@ class CrawlResult implements Arrayable, JsonSerializable
     {
         return [
             'url' => $this->url,
-            'statusCode' => $this->statusCode,
-            'responseTimeMs' => $this->responseTimeMs,
+            'status_code' => $this->statusCode,
+            'response_time_ms' => $this->responseTimeMs,
             'html' => $this->html,
             'links' => $this->links,
             'metadata' => $this->metadata,
-            'errorMessage' => $this->errorMessage,
+            'error_message' => $this->errorMessage,
             'headers' => $this->headers,
             'depth' => $this->depth,
-            'redirectChain' => $this->redirectChain,
+            'redirect_chain' => $this->redirectChain,
         ];
-    }
-
-    /**
-     * Specify data which should be serialized to JSON.
-     */
-    public function jsonSerialize(): array
-    {
-        return $this->toArray();
     }
 
     /**
@@ -223,15 +109,23 @@ class CrawlResult implements Arrayable, JsonSerializable
     {
         return new self(
             url: $data['url'],
-            statusCode: $data['statusCode'] ?? 0,
-            responseTimeMs: $data['responseTimeMs'] ?? 0.0,
+            statusCode: $data['status_code'] ?? $data['statusCode'] ?? 0,
+            responseTimeMs: $data['response_time_ms'] ?? $data['responseTimeMs'] ?? 0.0,
             html: $data['html'] ?? null,
             links: $data['links'] ?? [],
             metadata: $data['metadata'] ?? [],
-            errorMessage: $data['errorMessage'] ?? null,
+            errorMessage: $data['error_message'] ?? $data['errorMessage'] ?? null,
             headers: $data['headers'] ?? [],
             depth: $data['depth'] ?? 0,
-            redirectChain: $data['redirectChain'] ?? [],
+            redirectChain: $data['redirect_chain'] ?? $data['redirectChain'] ?? [],
         );
+    }
+
+    /**
+     * JSON serialize.
+     */
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
     }
 }
