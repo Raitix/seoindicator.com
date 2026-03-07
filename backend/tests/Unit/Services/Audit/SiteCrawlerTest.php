@@ -175,9 +175,10 @@ class SiteCrawlerTest extends TestCase
         $robotsTxt = "User-agent: *\nDisallow: /private/\nAllow: /public/";
 
         $parser = new RobotsParser();
-        $rules = $parser->isAllowed('/public/page', ['user_agents' => ['*' => ['disallow' => ['/private/'], 'allow' => ['/public/']]]]);
+        $parsed = $parser->parse($robotsTxt);
+        $allowed = $parser->isAllowed('/public/page', $parsed);
 
-        $this->assertTrue($rules);
+        $this->assertTrue($allowed);
     }
 
     /** @test ROB-002: Respect User-agent wildcard */
