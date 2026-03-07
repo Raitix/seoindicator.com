@@ -1,7 +1,7 @@
 # TASK-14-9: Implement HTML Analysis Checkers
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -147,3 +147,33 @@ abstract class BaseChecker implements CheckerInterface
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-07 09:45] Agent: ProjectManager
+**Prioritization Analysis:**
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Priority | High | HTML checkers detect CRITICAL SEO issues (missing title/meta/H1) |
+| Risk | Low | Pure PHP with symfony/dom-crawler, no external APIs |
+| Dependency | TASK-14-8 (IssueDetector) | `To Write Tests` - progressing |
+
+**TDD Pattern Applied:**
+- PreTester CAN design tests with mocked `CheckerInterface` before TASK-14-8 completes
+- Tests use mocked `CrawlResult` with sample HTML containing various issue scenarios
+- Similar pattern to TASK-14-10 (Link Checker - Done)
+
+**Detection Rules Summary:**
+| Checker | Critical Issues | Warning Issues | Notice Issues |
+|---------|----------------|----------------|---------------|
+| TitleTagChecker | Missing/empty title | Title > 60 chars | Title < 30 chars |
+| MetaDescriptionChecker | - | Missing/empty description | Description length issues |
+| H1Checker | - | No H1, empty H1 | Multiple H1s |
+| ViewportChecker | - | Missing viewport, wrong settings | - |
+
+**Recommendation for PreTester:**
+- Use TDD approach with sample HTML fixtures
+- Test edge cases: malformed HTML, empty pages, special characters
+- Each checker: 10+ tests covering all detection rules
+- Use symfony/dom-crawler for HTML parsing (Laravel built-in)
+
+**Status changed:** `To Prioritize` → `To Write Tests`

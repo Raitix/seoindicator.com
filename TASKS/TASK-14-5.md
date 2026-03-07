@@ -1,7 +1,7 @@
 # TASK-14-5: Create SiteCrawler Service
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`

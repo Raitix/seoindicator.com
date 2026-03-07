@@ -40,6 +40,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Audit\Contracts\SiteCrawlerInterface::class,
             \App\Services\Audit\SiteCrawler::class
         );
+
+        // RobotsParser singleton binding (TASK-14-6)
+        $this->app->singleton(
+            \App\Services\Audit\RobotsParser::class,
+            \App\Services\Audit\RobotsParser::class
+        );
     }
 
     /**

@@ -8,15 +8,41 @@ namespace App\Services\Audit\DTOs;
  * @property array $userAgents List of user-agents defined in robots.txt
  * @property array $rules Array of RobotsRule objects
  * @property array $sitemaps List of sitemap URLs
- * @property int|null $crawlDelay Crawl delay in seconds
+ * @property int|float|null $crawlDelay Crawl delay in seconds (for wildcard)
+ * @property array $crawlDelays Per-user-agent crawl delays
  * @property bool $isEmpty Whether the robots.txt is empty or invalid
  */
 class ParsedRobots
 {
+    /**
+     * List of user-agents defined in robots.txt.
+     */
     public array $userAgents = [];
+
+    /**
+     * Array of RobotsRule objects.
+     */
     public array $rules = [];
+
+    /**
+     * List of sitemap URLs.
+     */
     public array $sitemaps = [];
-    public ?int $crawlDelay = null;
+
+    /**
+     * Crawl delay in seconds (for wildcard user-agent).
+     * @deprecated Use $crawlDelays instead
+     */
+    public int|float|null $crawlDelay = null;
+
+    /**
+     * Per-user-agent crawl delays.
+     */
+    public array $crawlDelays = [];
+
+    /**
+     * Whether the robots.txt is empty or invalid.
+     */
     public bool $isEmpty = false;
 
     /**
@@ -28,10 +54,15 @@ class ParsedRobots
     public function getDisallowedPaths(string $userAgent = '*'): array
     {
         $rules = $this->getRules($userAgent);
-        return array_values(array_filter(
-            array_map(fn($r) => $r->allow ? null : $r->path, $rules),
-            fn($p) => $p !== null
-        ));
+        $paths = [];
+        
+        foreach ($rules as $rule) {
+            if (!$rule->allow && $rule->path !== '') {
+                $paths[] = $rule->path;
+            }
+        }
+        
+        return array_values(array_unique($paths));
     }
 
     /**
@@ -42,9 +73,19 @@ class ParsedRobots
      */
     public function getRules(string $userAgent = '*'): array
     {
-        return array_values(array_filter(
-            $this->rules,
-            fn($r) => $r->userAgent === $userAgent || $r->userAgent === '*'
-        ));
+        // Get rules that match the specific user-agent OR wildcard
+        $specificRules = [];
+        $wildcardRules = [];
+        
+        foreach ($this->rules as $rule) {
+            if ($rule->userAgent === $userAgent) {
+                $specificRules[] = $rule;
+            } elseif ($rule->userAgent === '*') {
+                $wildcardRules[] = $rule;
+            }
+        }
+        
+        // Merge: specific rules first, then wildcard
+        return array_merge($specificRules, $wildcardRules);
     }
 }
