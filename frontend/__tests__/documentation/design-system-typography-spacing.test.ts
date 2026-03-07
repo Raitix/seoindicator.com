@@ -7,7 +7,7 @@
  * @see PROJECT-SEOINDICATOR/TESTS/TEST-28-2.md
  */
 
-import { describe, it, expect, beforeAll } from '@jest/globals';
+import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
@@ -119,12 +119,12 @@ describe('Design System Documentation - Typography & Spacing', () => {
   // ============================================
   describe('Tailwind Class Mappings (TC)', () => {
     it('TC-01: Typography Tailwind classes mapped', () => {
-      const typographySection = content.match(/##\s*Typography[\s\S]*?(?=##|$)/i)?.[0] || '';
+      const typographySection = content.match(/##\s*Typography[\s\S]*?(?=\n##\s|$)/i)?.[0] || '';
       expect(typographySection).toMatch(/text-(4xl|3xl|2xl|xl|base|sm)/);
     });
 
     it('TC-02: Spacing Tailwind classes mapped', () => {
-      const spacingSection = content.match(/##\s*Spacing[\s\S]*?(?=##|$)/i)?.[0] || '';
+      const spacingSection = content.match(/##\s*Spacing[\s\S]*?(?=\n##\s|$)/i)?.[0] || '';
       expect(spacingSection).toMatch(/(p|m|gap)-\d/);
     });
 
@@ -138,12 +138,12 @@ describe('Design System Documentation - Typography & Spacing', () => {
   // ============================================
   describe('Examples and Usage (EU)', () => {
     it('EU-01: Typography examples provided', () => {
-      const typographySection = content.match(/##\s*Typography[\s\S]*?(?=##|$)/i)?.[0] || '';
+      const typographySection = content.match(/##\s*Typography[\s\S]*?(?=\n##\s|$)/i)?.[0] || '';
       expect(typographySection).toMatch(/```(jsx?|html|tsx?)/);
     });
 
     it('EU-02: Spacing examples provided', () => {
-      const spacingSection = content.match(/##\s*Spacing[\s\S]*?(?=##|$)/i)?.[0] || '';
+      const spacingSection = content.match(/##\s*Spacing[\s\S]*?(?=\n##\s|$)/i)?.[0] || '';
       expect(spacingSection).toMatch(/```(jsx?|html|tsx?)/);
     });
 
