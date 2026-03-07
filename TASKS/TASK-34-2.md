@@ -1,7 +1,7 @@
 # TASK-34-2: AIVisibilityProject Model
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -70,6 +70,49 @@ Create Eloquent models for all AI Visibility entities: `AIVisibilityProject`, `A
 - Add PHPDoc type hints for IDE support
 - Consider using Laravel's `AsArrayObject` cast for complex JSON fields
 - Add `getCompetitorListAttribute()` accessor for easy competitor access
+
+---
+
+## Comments
+
+### ProjectManager Prioritization (2026-03-07 18:35 UTC)
+
+**Priority: HIGH (confirmed)**
+- Foundation model task for SPEC-034 - creates all 4 Eloquent models
+- Enables entire downstream pipeline: services → API → frontend
+- Model tasks are essential infrastructure for feature MVP
+
+**Risk: LOW (confirmed)**
+- Standard Eloquent models with relationships and scopes
+- No external APIs, no complex business logic
+- JSON casts for flexible data structures (keywords, competitors, citations)
+- Well-documented Laravel patterns
+
+**Dependency Analysis:**
+- TASK-34-1 (Database Migrations): `To Write Tests` - NOT YET IMPLEMENTED
+- TDD Pattern: PreTester CAN design model tests with mocked interfaces
+- Tests verify: fillable, casts, relationships, scopes, accessors
+- PreTester doesn't need actual database tables - uses mocks
+
+**Downstream Impact:**
+- Enables: TASK-34-3 (AIQueryEngine), TASK-34-4 (MentionParser), TASK-34-5 (AIVisibilityService)
+- Enables: TASK-34-6+ (API endpoints, frontend components)
+- All SPEC-034 services depend on these models
+
+**TDD Pattern Applied:**
+- PreTester can design tests NOW with expected model interfaces:
+  - Mock `AIVisibilityProject` with fillable/cast expectations
+  - Mock relationship methods (belongsTo, hasMany)
+  - Mock scope methods (active(), dueForQuery())
+  - Test property access without database
+- Implementation waits for TASK-34-1 to reach `To Test Locally`
+
+**Execution Order:** TASK-34-1 → TASK-34-2 (sequential Phase 1 foundation)
+
+**Phase Context:** Phase 1 MVP - Core Tracking
+- Model task follows migrations (TASK-34-1)
+- Enables all service tasks (TASK-34-3, 34-4, 34-5)
+- Sequential dependency chain: Migrations → Models → Services
 
 ---
 
