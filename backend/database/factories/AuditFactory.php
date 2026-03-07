@@ -28,9 +28,13 @@ class AuditFactory extends Factory
     {
         return [
             'site_id' => Site::factory(),
+            'max_pages' => 500,
+            'max_depth' => 3,
+            'user_agent' => null,
             'status' => 'completed',
             'pages_crawled' => fake()->numberBetween(1, 100),
             'issues_found' => fake()->numberBetween(0, 50),
+            'error_message' => null,
             'visibility' => 'private',
             'public_hash' => null,
             'public_hash_created_at' => null,
