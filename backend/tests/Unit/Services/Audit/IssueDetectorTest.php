@@ -299,7 +299,7 @@ class IssueDetectorTest extends TestCase
         
         $this->issuesRepo->shouldReceive('create')
             ->once()
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('title_checker', $checker);
         $result = $this->service->analyze($crawlResult, 1);
@@ -345,7 +345,7 @@ class IssueDetectorTest extends TestCase
         $checker->shouldReceive('getPriority')->andReturn(0);
         
         $this->issueTypesRepo->shouldReceive('findByType')->andReturn((object)['id' => 1, 'severity' => 'critical']);
-        $this->issuesRepo->shouldReceive('create')->andReturn(new AuditIssue(['id' => 123]));
+        $this->issuesRepo->shouldReceive('create')->andReturn($this->createMockAuditIssue(123));
         
         $this->service->registerChecker('title_checker', $checker);
         $result = $this->service->analyze($crawlResult, 1);
@@ -397,7 +397,7 @@ class IssueDetectorTest extends TestCase
             ->withArgs(function ($data) {
                 return isset($data['audit_id']) && $data['audit_id'] === 42;
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('test', $checker);
         $this->service->analyze($crawlResult, 42);
@@ -459,7 +459,7 @@ class IssueDetectorTest extends TestCase
             ->withArgs(function ($data) use ($context) {
                 return $data['context'] === $context;
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('test', $checker);
         $this->service->analyze($crawlResult, 1);
@@ -599,7 +599,7 @@ class IssueDetectorTest extends TestCase
             ->withArgs(function ($data) {
                 return $data['issue_type'] === 'duplicate_title';
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $result = $this->service->analyze($crawlResult, 1);
         
@@ -618,7 +618,7 @@ class IssueDetectorTest extends TestCase
         $crawlResult = $this->createMockCrawlResult('https://example.com/second', 'Same Title');
         
         $this->issueTypesRepo->shouldReceive('findByType')->andReturn((object)['id' => 2, 'severity' => 'warning']);
-        $this->issuesRepo->shouldReceive('create')->andReturn(new AuditIssue(['id' => 1]));
+        $this->issuesRepo->shouldReceive('create')->andReturn($this->createMockAuditIssue(1));
         
         $result = $this->service->analyze($crawlResult, 1);
         
@@ -637,7 +637,7 @@ class IssueDetectorTest extends TestCase
         $crawlResult = $this->createMockCrawlResult('https://example.com/page2', 'TEST TITLE');
         
         $this->issueTypesRepo->shouldReceive('findByType')->andReturn((object)['id' => 2, 'severity' => 'warning']);
-        $this->issuesRepo->shouldReceive('create')->andReturn(new AuditIssue(['id' => 1]));
+        $this->issuesRepo->shouldReceive('create')->andReturn($this->createMockAuditIssue(1));
         
         $result = $this->service->analyze($crawlResult, 1);
         
@@ -656,7 +656,7 @@ class IssueDetectorTest extends TestCase
         $crawlResult = $this->createMockCrawlResult('https://example.com/page2', 'Test   Title');
         
         $this->issueTypesRepo->shouldReceive('findByType')->andReturn((object)['id' => 2, 'severity' => 'warning']);
-        $this->issuesRepo->shouldReceive('create')->andReturn(new AuditIssue(['id' => 1]));
+        $this->issuesRepo->shouldReceive('create')->andReturn($this->createMockAuditIssue(1));
         
         $result = $this->service->analyze($crawlResult, 1);
         
@@ -666,8 +666,10 @@ class IssueDetectorTest extends TestCase
     #[Test]
     public function dup_006_empty_title_handled(): void
     {
+        // Empty title should not be cached
         Cache::shouldReceive('get')->with('audit:titles:1')->andReturn([]);
-        Cache::shouldReceive('put')->once();
+        // No Cache::put should be called for empty titles
+        Cache::shouldNotReceive('put');
         
         $crawlResult = $this->createMockCrawlResult('https://example.com/page', '');
         
@@ -695,7 +697,7 @@ class IssueDetectorTest extends TestCase
                 return isset($data['context']['original_url']) 
                     && $data['context']['original_url'] === 'https://example.com/original';
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->analyze($crawlResult, 1);
     }
@@ -747,7 +749,7 @@ class IssueDetectorTest extends TestCase
             ->withArgs(function ($data) {
                 return $data['severity'] === 'critical';
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('test', $checker);
         $this->service->analyze($crawlResult, 1);
@@ -779,7 +781,7 @@ class IssueDetectorTest extends TestCase
             ->withArgs(function ($data) {
                 return $data['severity'] === 'warning';
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('test', $checker);
         $this->service->analyze($crawlResult, 1);
@@ -811,7 +813,7 @@ class IssueDetectorTest extends TestCase
             ->withArgs(function ($data) {
                 return $data['severity'] === 'notice';
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('test', $checker);
         $this->service->analyze($crawlResult, 1);
@@ -843,7 +845,7 @@ class IssueDetectorTest extends TestCase
             ->withArgs(function ($data) {
                 return $data['severity'] === 'notice';
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('test', $checker);
         $this->service->analyze($crawlResult, 1);
@@ -876,7 +878,7 @@ class IssueDetectorTest extends TestCase
             ->withArgs(function ($data) {
                 return $data['severity'] === 'critical';
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('test', $checker);
         $this->service->analyze($crawlResult, 1);
@@ -908,7 +910,7 @@ class IssueDetectorTest extends TestCase
             ->withArgs(function ($data) {
                 return $data['severity'] === 'critical'; // lowercase
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('test', $checker);
         $this->service->analyze($crawlResult, 1);
@@ -1018,7 +1020,7 @@ class IssueDetectorTest extends TestCase
         $checker->shouldReceive('getPriority')->andReturn(0);
         
         $this->issueTypesRepo->shouldReceive('findByType')->andReturn((object)['id' => 1, 'severity' => 'warning']);
-        $this->issuesRepo->shouldReceive('create')->andReturn(new AuditIssue(['id' => 1]));
+        $this->issuesRepo->shouldReceive('create')->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('test', $checker);
         $result = $this->service->analyze($crawlResult, 1);
@@ -1047,8 +1049,10 @@ class IssueDetectorTest extends TestCase
     #[Test]
     public function edge_008_title_with_only_whitespace(): void
     {
+        // Whitespace-only title should not be cached (normalizes to empty)
         Cache::shouldReceive('get')->andReturn([]);
-        Cache::shouldReceive('put')->once();
+        // No Cache::put should be called for whitespace-only titles
+        Cache::shouldNotReceive('put');
         
         $crawlResult = $this->createMockCrawlResult('https://example.com', '   ');
         
@@ -1105,7 +1109,7 @@ class IssueDetectorTest extends TestCase
                 $this->assertStringNotContainsString('<script>', $data['description']);
                 return true;
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('test', $checker);
         $this->service->analyze($crawlResult, 1);
@@ -1137,7 +1141,7 @@ class IssueDetectorTest extends TestCase
                 $this->assertIsArray($data['context']);
                 return true;
             })
-            ->andReturn(new AuditIssue(['id' => 1]));
+            ->andReturn($this->createMockAuditIssue(1));
         
         $this->service->registerChecker('test', $checker);
         $this->service->analyze($crawlResult, 1);
@@ -1218,5 +1222,18 @@ class IssueDetectorTest extends TestCase
             depth: 0,
             redirectChain: []
         );
+    }
+
+    /**
+     * Create a mock AuditIssue with the ID properly set.
+     * 
+     * Note: We use setAttribute() because 'id' is not in the $fillable array
+     * of the AuditIssue model, so passing it in the constructor won't work.
+     */
+    private function createMockAuditIssue(int $id): AuditIssue
+    {
+        $issue = new AuditIssue();
+        $issue->setAttribute('id', $id);
+        return $issue;
     }
 }

@@ -297,7 +297,7 @@ class ProcessCrawlJob implements ShouldQueue
 
             // Store issues in database
             if (!empty($issues)) {
-                $this->storeIssues($audit, $issues);
+                $this->storeIssues($audit, $issues, $crawlResult->url);
                 $this->progress['issues_found'] += count($issues);
             }
 
@@ -323,23 +323,39 @@ class ProcessCrawlJob implements ShouldQueue
     /**
      * Store issues in the database.
      */
-    protected function storeIssues(Audit $audit, array $issues): void
+    protected function storeIssues(Audit $audit, array $issues, string $url): void
     {
         foreach ($issues as $issue) {
             if (!$issue instanceof IssueFinding) {
                 continue;
             }
 
+            // Get issue type ID from detector
+            $issueTypeId = $this->getIssueTypeId($issue->issueType);
+
+            // Get URL from context if available, otherwise use the page URL
+            $issueUrl = $issue->getContextValue('url', $url);
+
             AuditIssue::create([
                 'audit_id' => $audit->id,
-                'url' => $issue->url,
-                'issue_type_id' => $issue->issueTypeId,
-                'severity' => $issue->severity,
-                'description' => $issue->message,
-                'recommendation' => $issue->suggestion,
+                'url' => $issueUrl,
+                'issue_type' => $issue->issueType,
+                'issue_type_id' => $issueTypeId,
+                'severity' => $issue->getNormalizedSeverity(),
+                'description' => $issue->description,
+                'recommendation' => $issue->recommendation,
+                'context' => $issue->context,
                 'status' => 'open',
             ]);
         }
+    }
+
+    /**
+     * Get issue type ID from the issue type name.
+     */
+    protected function getIssueTypeId(string $issueType): ?int
+    {
+        return \App\Models\IssueType::where('type', $issueType)->value('id');
     }
 
     /**
