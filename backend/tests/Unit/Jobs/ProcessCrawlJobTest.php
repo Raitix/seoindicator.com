@@ -16,13 +16,13 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Mockery;
 use Tests\TestCase;
 
 class ProcessCrawlJobTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
     protected function tearDown(): void
     {
         Mockery::close();
@@ -1128,12 +1128,11 @@ class ProcessCrawlJobTest extends TestCase
     private function createMockIssueFinding(): IssueFinding
     {
         return new IssueFinding(
-            issueTypeId: 1,
-            severity: 'high',
-            message: 'Missing meta description',
-            url: 'https://example.com',
-            details: ['element' => 'head'],
-            suggestion: 'Add a meta description tag'
+            issueType: 'missing_meta_description',
+            severity: 'warning',
+            description: 'Missing meta description',
+            recommendation: 'Add a meta description tag',
+            context: ['element' => 'head', 'url' => 'https://example.com']
         );
     }
 }

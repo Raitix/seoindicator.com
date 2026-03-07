@@ -407,12 +407,11 @@ class ProcessCrawlJobIntegrationTest extends TestCase
         );
         
         $issueFinding = new IssueFinding(
-            issueTypeId: 1,
-            severity: 'high',
-            message: 'Missing page title',
-            url: 'https://example.com/',
-            details: ['element' => 'head'],
-            suggestion: 'Add a descriptive title tag'
+            issueType: 'missing_page_title',
+            severity: 'critical',
+            description: 'Missing page title',
+            recommendation: 'Add a descriptive title tag',
+            context: ['element' => 'head', 'url' => 'https://example.com/']
         );
         
         $mockCrawler = Mockery::mock(SiteCrawler::class);
@@ -512,28 +511,25 @@ class ProcessCrawlJobIntegrationTest extends TestCase
         
         $issues = [
             new IssueFinding(
-                issueTypeId: 1,
-                severity: 'high',
-                message: 'Missing page title',
-                url: 'https://example.com/',
-                details: [],
-                suggestion: 'Add title'
+                issueType: 'missing_page_title',
+                severity: 'critical',
+                description: 'Missing page title',
+                recommendation: 'Add title',
+                context: ['url' => 'https://example.com/']
             ),
             new IssueFinding(
-                issueTypeId: 2,
-                severity: 'medium',
-                message: 'Missing meta description',
-                url: 'https://example.com/',
-                details: [],
-                suggestion: 'Add meta description'
+                issueType: 'missing_meta_description',
+                severity: 'warning',
+                description: 'Missing meta description',
+                recommendation: 'Add meta description',
+                context: ['url' => 'https://example.com/']
             ),
             new IssueFinding(
-                issueTypeId: 3,
-                severity: 'low',
-                message: 'No H1 heading',
-                url: 'https://example.com/',
-                details: [],
-                suggestion: 'Add H1'
+                issueType: 'no_h1_heading',
+                severity: 'notice',
+                description: 'No H1 heading',
+                recommendation: 'Add H1',
+                context: ['url' => 'https://example.com/']
             ),
         ];
         
