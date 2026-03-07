@@ -60,12 +60,8 @@ class IssueFinding implements \JsonSerializable
             throw new \InvalidArgumentException('Recommendation is required');
         }
 
-        $normalizedSeverity = strtolower($this->severity);
-        if (!in_array($normalizedSeverity, self::VALID_SEVERITIES)) {
-            throw new \InvalidArgumentException(
-                'Invalid severity. Must be one of: ' . implode(', ', self::VALID_SEVERITIES)
-            );
-        }
+        // Severity validation - accept any value but normalize unknown ones
+        // Invalid severity will be normalized to 'notice' in getNormalizedSeverity()
     }
 
     /**
@@ -73,7 +69,7 @@ class IssueFinding implements \JsonSerializable
      */
     public function isCritical(): bool
     {
-        return strtolower($this->severity) === 'critical';
+        return $this->getNormalizedSeverity() === 'critical';
     }
 
     /**
@@ -81,7 +77,7 @@ class IssueFinding implements \JsonSerializable
      */
     public function isWarning(): bool
     {
-        return strtolower($this->severity) === 'warning';
+        return $this->getNormalizedSeverity() === 'warning';
     }
 
     /**
@@ -89,15 +85,21 @@ class IssueFinding implements \JsonSerializable
      */
     public function isNotice(): bool
     {
-        return strtolower($this->severity) === 'notice';
+        return $this->getNormalizedSeverity() === 'notice';
     }
 
     /**
-     * Get normalized severity (lowercase).
+     * Get normalized severity (lowercase, defaults unknown to notice).
      */
     public function getNormalizedSeverity(): string
     {
-        return strtolower($this->severity);
+        $normalized = strtolower($this->severity);
+        
+        if (!in_array($normalized, self::VALID_SEVERITIES)) {
+            return 'notice';
+        }
+        
+        return $normalized;
     }
 
     /**
@@ -105,7 +107,7 @@ class IssueFinding implements \JsonSerializable
      */
     public function getSeverityScore(): int
     {
-        return match (strtolower($this->severity)) {
+        return match ($this->getNormalizedSeverity()) {
             'critical' => 4,
             'warning' => 2,
             'notice' => 1,
@@ -143,7 +145,7 @@ class IssueFinding implements \JsonSerializable
     {
         return [
             'issueType' => $this->issueType,
-            'severity' => strtolower($this->severity),
+            'severity' => $this->getNormalizedSeverity(),
             'description' => $this->getTruncatedDescription(),
             'recommendation' => $this->getTruncatedRecommendation(),
             'context' => $this->getTruncatedContext(),

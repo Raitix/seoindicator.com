@@ -38,11 +38,11 @@ interface IssueDetectorInterface
     /**
      * Analyze a crawl result and create audit issues.
      *
-     * @param CrawlResult $crawlResult The crawl result to analyze
-     * @param int $auditId The audit ID to associate issues with
+     * @param CrawlResult|null $crawlResult The crawl result to analyze
+     * @param int|null $auditId The audit ID to associate issues with
      * @return array<int> Array of created issue IDs
      */
-    public function analyze(CrawlResult $crawlResult, int $auditId): array;
+    public function analyze(?CrawlResult $crawlResult, ?int $auditId): array;
 
     /**
      * Run a single checker by name.
