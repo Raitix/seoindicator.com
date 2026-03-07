@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import React from 'react';
 
 // Mock React Query
 const mockUseQuery = vi.fn();
@@ -136,10 +137,13 @@ interface ProjectListProps {
 
 const ProjectList = ({ className, onCreateProject, onViewDashboard }: ProjectListProps) => {
   const { data, isLoading, error } = mockUseQuery();
-  const [statusFilter, setStatusFilter] = vi.importActual<any>('react').useState('all');
-  const [searchQuery, setSearchQuery] = vi.importActual<any>('react').useState('');
-  const [sortBy, setSortBy] = vi.importActual<any>('react').useState('created_at');
-  const [page, setPage] = vi.importActual<any>('react').useState(1);
+  const [statusFilter, setStatusFilter] = React.useState('all');
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [sortBy, setSortBy] = React.useState('created_at');
+  const [page, setPage] = React.useState(1);
+  
+  // Use API's current_page for display, fallback to local state
+  const currentPage = data?.meta?.current_page || page;
 
   if (isLoading) {
     return (
@@ -225,18 +229,18 @@ const ProjectList = ({ className, onCreateProject, onViewDashboard }: ProjectLis
         <div data-testid="pagination" aria-label="Pagination">
           <button
             onClick={() => setPage(p => p - 1)}
-            disabled={page === 1}
+            disabled={currentPage === 1}
             data-testid="prev-page"
             aria-label="Previous page"
           >
             Previous
           </button>
           <span data-testid="page-info">
-            Page {page} of {data.meta.last_page}
+            Page {currentPage} of {data.meta.last_page}
           </span>
           <button
             onClick={() => setPage(p => p + 1)}
-            disabled={page === data.meta.last_page}
+            disabled={currentPage === data.meta.last_page}
             data-testid="next-page"
             aria-label="Next page"
           >
