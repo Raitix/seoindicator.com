@@ -63,6 +63,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Repositories\AuditIssueRepository::class,
             \App\Repositories\AuditIssueRepository::class
         );
+
+        // AI Visibility Service binding (TASK-34-6, SPEC-034)
+        $this->app->bind(
+            \App\Services\AIVisibility\Contracts\AIVisibilityServiceInterface::class,
+            \App\Services\AIVisibility\AIVisibilityService::class
+        );
     }
 
     /**
