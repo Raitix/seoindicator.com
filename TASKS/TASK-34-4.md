@@ -92,7 +92,55 @@ Create the `MentionParser` service for extracting brand mentions from AI respons
 
 ## Comments
 
-### ProjectManager Prioritization (2026-03-07 18:45 UTC)
+### PreTester Test Design (2026-03-07 19:30 UTC)
+
+**Status:** Tests Complete ✅
+
+**Test Coverage:** 86 unit tests across 7 categories
+
+**Files Created:**
+- `backend/tests/Unit/Services/AIVisibility/MentionParserTest.php` (86 tests)
+- `TESTS/TEST-34-4.md` (test documentation)
+
+**Test Categories:**
+| Category | Tests | Purpose |
+|----------|-------|---------|
+| Class Structure | 2 | Namespace, instantiation |
+| extractMentions() | 25 | Brand extraction, position, word boundaries, unicode |
+| extractContext() | 14 | Context extraction, radius, edge cases |
+| detectMentionType() | 16 | Type detection (list/comparison/recommendation/neutral) |
+| extractCompetitorMentions() | 9 | Competitor mention extraction |
+| Edge Cases | 15 | Special characters, unicode, large responses |
+| Integration | 5 | Full flows, performance |
+
+**Key Test Patterns:**
+1. **Word boundary matching:** Tests verify `\b` regex behavior
+2. **Case-insensitive matching:** Multiple case variants tested
+3. **Special character escaping:** Brands with `$`, `+`, `.`, `/`, `(`, `[`, etc.
+4. **Unicode support:** Japanese, Cyrillic, emoji in text and brand names
+5. **Performance:** 100 brands in <1s, 50KB response handling
+
+**Mention Type Detection Patterns:**
+- `list`: "top 10", "best", "including"
+- `comparison`: "vs", "compared to", "better than"
+- `recommendation`: "I recommend", "you should use", "I suggest"
+- `neutral`: default fallback
+
+**TDD Pattern:** All 86 tests will fail until `MentionParser` class is implemented.
+
+**Expected Interface:**
+```php
+class MentionParser {
+    public function extractMentions(string $response, array $targetBrands): array;
+    public function extractContext(string $text, int $position, int $radius = 100): string;
+    public function detectMentionType(string $context): string;
+    public function extractCompetitorMentions(string $response, array $competitors): array;
+}
+```
+
+**Dependencies:** None - Pure PHP regex/string manipulation, no external services.
+
+**Status:** To Develop → Hand off to Developer
 
 **Priority: HIGH (confirmed)** ✅
 
