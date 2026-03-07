@@ -248,8 +248,10 @@ export interface ComparisonCTAProps {
   text?: string;
   /** Link destination */
   href?: string;
-  /** A/B test group identifier */
+  /** A/B test group identifier (manually set) */
   abTestGroup?: string;
+  /** A/B test ID to automatically fetch variant and text */
+  abTestId?: string;
 }
 
 /**
