@@ -1,7 +1,7 @@
 # TASK-30-7: Accessibility Tests
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `Medium`

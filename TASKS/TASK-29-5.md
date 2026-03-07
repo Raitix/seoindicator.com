@@ -1,7 +1,7 @@
 # TASK-29-5: Rate Limiting Integration
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Medium`
