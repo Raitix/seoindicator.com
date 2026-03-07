@@ -1,5 +1,8 @@
 import { ImageResponse } from 'next/og';
 
+// Force skip this route during static export - OG images are pre-generated
+export const dynamic = 'error';
+
 // Helper to sanitize input - strip HTML tags and truncate
 function sanitizeInput(input: string | null, maxLength: number = 50): string {
   if (!input) return '';
