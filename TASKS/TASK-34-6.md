@@ -1,7 +1,7 @@
 # TASK-34-6: Project CRUD API Endpoints
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## LocalTester Bug Report (2026-03-07 23:50 UTC)
 
