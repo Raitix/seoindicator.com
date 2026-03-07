@@ -34,6 +34,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Billing\Contracts\PaymentGatewayInterface::class,
             \App\Services\Billing\PayPalGatewayService::class
         );
+
+        // SiteCrawler service binding (TASK-14-5)
+        $this->app->bind(
+            \App\Services\Audit\Contracts\SiteCrawlerInterface::class,
+            \App\Services\Audit\SiteCrawler::class
+        );
     }
 
     /**
