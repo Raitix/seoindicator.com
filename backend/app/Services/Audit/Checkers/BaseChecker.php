@@ -58,7 +58,7 @@ abstract class BaseChecker implements CheckerInterface
      * Extract the page title from HTML.
      *
      * @param Crawler $crawler The DOM crawler
-     * @return string|null The title text or null if not found
+     * @return string|null The title text, empty string if empty, or null if not found
      */
     protected function extractTitle(Crawler $crawler): ?string
     {
@@ -68,9 +68,7 @@ abstract class BaseChecker implements CheckerInterface
             return null;
         }
 
-        $title = trim($titleNode->text(null, true));
-
-        return $title === '' ? null : $title;
+        return trim($titleNode->text(null, true));
     }
 
     /**
@@ -124,7 +122,9 @@ abstract class BaseChecker implements CheckerInterface
      */
     protected function hasViewport(Crawler $crawler): bool
     {
-        return $crawler->filter('head > meta[name="viewport"], head > meta[NAME="Viewport"], head > meta[name="Viewport"]')->count() > 0;
+        // Use XPath for case-insensitive matching
+        $viewportNodes = $crawler->filterXPath('//head/meta[translate(@name, "VIEWPORT", "viewport") = "viewport"]');
+        return $viewportNodes->count() > 0;
     }
 
     /**

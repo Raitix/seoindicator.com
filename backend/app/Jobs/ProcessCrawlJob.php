@@ -100,7 +100,11 @@ class ProcessCrawlJob implements ShouldQueue
             }
 
             // Check if audit can be processed
-            if (in_array($audit->status, ['running', 'completed'])) {
+            // Allow resuming if audit is running but has cached progress (interrupted job)
+            $cachedProgress = $this->getProgress();
+            $canResume = $audit->status === 'running' && $cachedProgress !== null;
+            
+            if (in_array($audit->status, ['running', 'completed']) && !$canResume) {
                 Log::info('ProcessCrawlJob: Audit already processed, skipping', [
                     'auditId' => $this->auditId,
                     'status' => $audit->status,
@@ -108,7 +112,7 @@ class ProcessCrawlJob implements ShouldQueue
                 return;
             }
 
-            // Initialize progress tracking
+            // Initialize progress tracking (restores from cache if available)
             $progress = $this->getInitialProgress();
             $this->saveProgress($progress);
 
@@ -128,11 +132,11 @@ class ProcessCrawlJob implements ShouldQueue
             // Start crawling
             $crawler->startCrawl($this->auditId, $this->baseUrl);
 
-            // Track statistics
-            $pagesCrawled = 0;
-            $issuesFound = 0;
-            $errorCount = 0;
-            $errors = [];
+            // Track statistics (restore from cached progress if resuming)
+            $pagesCrawled = $progress['pages_crawled'] ?? 0;
+            $issuesFound = $progress['issues_found'] ?? 0;
+            $errorCount = $progress['error_count'] ?? 0;
+            $errors = $progress['errors'] ?? [];
 
             // Process crawl results
             foreach ($crawler->processQueue() as $crawlResult) {
@@ -298,10 +302,20 @@ class ProcessCrawlJob implements ShouldQueue
     // =========================================================================
 
     /**
-     * Get initial progress data.
+     * Get initial progress data, restoring from cache if available.
      */
     protected function getInitialProgress(): array
     {
+        // Try to restore from cache first (for resume support)
+        $cached = $this->getProgress();
+        if ($cached !== null && isset($cached['audit_id']) && $cached['audit_id'] === $this->auditId) {
+            Log::info('ProcessCrawlJob: Resuming from cached progress', [
+                'auditId' => $this->auditId,
+                'cachedPagesCrawled' => $cached['pages_crawled'] ?? 0,
+            ]);
+            return $cached;
+        }
+
         return [
             'audit_id' => $this->auditId,
             'pages_crawled' => 0,

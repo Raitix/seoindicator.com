@@ -119,7 +119,8 @@ class ViewportChecker extends BaseChecker
      */
     private function extractViewportContent(Crawler $crawler): ?string
     {
-        $viewportNode = $crawler->filter('head > meta[name="viewport"], head > meta[NAME="Viewport"], head > meta[name="Viewport"]')->first();
+        // Use XPath for case-insensitive matching
+        $viewportNode = $crawler->filterXPath('//head/meta[translate(@name, "VIEWPORT", "viewport") = "viewport"]')->first();
 
         if ($viewportNode->count() === 0) {
             return null;

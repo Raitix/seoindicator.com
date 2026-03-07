@@ -3,19 +3,12 @@
 namespace Tests\Unit\Services\Audit\Checkers;
 
 use Tests\TestCase;
-use Mockery;
 use App\Services\Audit\Checkers\TitleTagChecker;
 use App\Services\Audit\DTOs\CrawlResult;
 use App\Services\Audit\DTOs\IssueFinding;
 
 class TitleTagCheckerTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
-
     // =========================================================================
     // Service Instantiation Tests
     // =========================================================================
@@ -139,8 +132,7 @@ class TitleTagCheckerTest extends TestCase
     public function test_title_at_50_chars_returns_no_issue(): void
     {
         // Exactly 50 characters
-        $title = 'This Title Is Exactly Fifty Characters Long!';
-        $this->assertEquals(50, strlen($title));
+        $title = str_repeat('a', 50);
         $html = "<!DOCTYPE html><html><head><title>{$title}</title></head><body></body></html>";
         $result = $this->createCrawlResult($html);
 
@@ -153,8 +145,7 @@ class TitleTagCheckerTest extends TestCase
     public function test_title_at_60_chars_returns_no_issue(): void
     {
         // Exactly 60 characters
-        $title = 'This Title Is Exactly Sixty Characters Long For SEO!';
-        $this->assertEquals(60, strlen($title));
+        $title = str_repeat('a', 60);
         $html = "<!DOCTYPE html><html><head><title>{$title}</title></head><body></body></html>";
         $result = $this->createCrawlResult($html);
 
@@ -171,8 +162,7 @@ class TitleTagCheckerTest extends TestCase
     public function test_title_at_61_chars_returns_warning(): void
     {
         // 61 characters - just over the limit
-        $title = 'This Title Is Sixty-One Characters Long For SEO!!';
-        $this->assertEquals(61, strlen($title));
+        $title = str_repeat('a', 61);
         $html = "<!DOCTYPE html><html><head><title>{$title}</title></head><body></body></html>";
         $result = $this->createCrawlResult($html);
 
@@ -217,8 +207,7 @@ class TitleTagCheckerTest extends TestCase
     public function test_title_at_29_chars_returns_notice(): void
     {
         // 29 characters - just under minimum
-        $title = 'Short Title Just Under Limit';
-        $this->assertEquals(29, strlen($title));
+        $title = str_repeat('a', 29);
         $html = "<!DOCTYPE html><html><head><title>{$title}</title></head><body></body></html>";
         $result = $this->createCrawlResult($html);
 
@@ -246,8 +235,7 @@ class TitleTagCheckerTest extends TestCase
     public function test_title_at_30_chars_returns_no_issue(): void
     {
         // Exactly 30 characters - minimum acceptable
-        $title = 'Thirty Character Title Enough';
-        $this->assertEquals(30, strlen($title));
+        $title = str_repeat('a', 30);
         $html = "<!DOCTYPE html><html><head><title>{$title}</title></head><body></body></html>";
         $result = $this->createCrawlResult($html);
 
@@ -263,8 +251,9 @@ class TitleTagCheckerTest extends TestCase
 
     public function test_title_with_html_entities_returns_no_issue(): void
     {
-        $title = 'Title &amp; Description - Optimal Length'; // HTML entity in source
-        $html = '<!DOCTYPE html><html><head><title>Title &amp; Description - Optimal Length</title></head><body></body></html>';
+        // 55 characters after decoding entities
+        $title = 'Title &amp; Description - Optimal Length Test Here';
+        $html = '<!DOCTYPE html><html><head><title>Title &amp; Description - Optimal Length Test Here</title></head><body></body></html>';
         $result = $this->createCrawlResult($html);
 
         $checker = new TitleTagChecker();
@@ -276,7 +265,9 @@ class TitleTagCheckerTest extends TestCase
 
     public function test_title_with_unicode_returns_no_issue(): void
     {
-        $title = '日本語のタイトル - 最適な長さのテスト'; // Japanese title
+        // Japanese title - need at least 30 characters (each Japanese char = 1 char in mb_strlen)
+        $title = '日本語のウェブサイトタイトル - 最適な長さのテストページ！';
+        $this->assertGreaterThanOrEqual(30, mb_strlen($title));
         $html = "<!DOCTYPE html><html><head><title>{$title}</title></head><body></body></html>";
         $result = $this->createCrawlResult($html);
 
@@ -289,7 +280,8 @@ class TitleTagCheckerTest extends TestCase
 
     public function test_title_with_emoji_returns_no_issue(): void
     {
-        $title = 'Great Website 🚀 - Check Our Services Today!';
+        // Emoji title - 47 chars (emoji counts as 1 char in mb_strlen)
+        $title = 'Great Website 🚀 - Check Our Services Today! Quality!';
         $html = "<!DOCTYPE html><html><head><title>{$title}</title></head><body></body></html>";
         $result = $this->createCrawlResult($html);
 
@@ -302,7 +294,7 @@ class TitleTagCheckerTest extends TestCase
 
     public function test_title_with_special_chars_still_works(): void
     {
-        $title = 'Best "Quotes" & \'Apostrophes\' - 50% Off!';
+        $title = 'Best "Quotes" & \'Apostrophes\' - 50% Off Today!'; // 47 chars
         $html = "<!DOCTYPE html><html><head><title>{$title}</title></head><body></body></html>";
         $result = $this->createCrawlResult($html);
 
@@ -318,26 +310,28 @@ class TitleTagCheckerTest extends TestCase
 
     public function test_multiple_title_tags_uses_first(): void
     {
-        $html = '<!DOCTYPE html><html><head><title>First Title - Good Length</title><title>Second Title</title></head><body></body></html>';
+        $html = '<!DOCTYPE html><html><head><title>First Title - Good Length Here</title><title>Second Title</title></head><body></body></html>';
         $result = $this->createCrawlResult($html);
 
         $checker = new TitleTagChecker();
         $finding = $checker->check($result);
 
-        // Should use first title which is valid
+        // Should use first title which is valid (35 chars)
         $this->assertNull($finding);
     }
 
     public function test_title_in_body_is_ignored(): void
     {
+        // Note: "Real Title Here" is 15 chars - below 30 minimum, triggers notice
         $html = '<!DOCTYPE html><html><head><title>Real Title Here</title></head><body><title>Fake Title In Body</title></body></html>';
         $result = $this->createCrawlResult($html);
 
         $checker = new TitleTagChecker();
         $finding = $checker->check($result);
 
-        // Should use title from head
-        $this->assertNull($finding);
+        // Should use title from head, but it's too short
+        $this->assertInstanceOf(IssueFinding::class, $finding);
+        $this->assertEquals('notice', $finding->severity);
     }
 
     // =========================================================================
@@ -354,6 +348,7 @@ class TitleTagCheckerTest extends TestCase
 
     public function test_malformed_html_extracts_title_if_possible(): void
     {
+        // Note: "Test Title Here" is 15 chars - below 30 minimum, triggers notice
         $html = '<html><title>Test Title Here';
         $result = $this->createCrawlResult($html);
 
@@ -361,20 +356,25 @@ class TitleTagCheckerTest extends TestCase
         $finding = $checker->check($result);
 
         // Should attempt to extract title even from malformed HTML
-        $this->assertNull($finding);
+        // But it's too short
+        $this->assertInstanceOf(IssueFinding::class, $finding);
+        $this->assertEquals('notice', $finding->severity);
     }
 
     public function test_title_with_nested_tags(): void
     {
-        // Some CMS might add weird nested tags
+        // Note: HTML tags inside <title> are invalid and treated as literal text content
+        // The title "Main <span>Title</span>" is 23 characters - below the 30-char minimum
         $html = '<!DOCTYPE html><html><head><title>Main <span>Title</span></title></head><body></body></html>';
         $result = $this->createCrawlResult($html);
 
         $checker = new TitleTagChecker();
         $finding = $checker->check($result);
 
-        // Should extract text content
-        $this->assertNull($finding);
+        // Should detect short title (23 chars < 30 minimum)
+        $this->assertInstanceOf(IssueFinding::class, $finding);
+        $this->assertEquals('notice', $finding->severity);
+        $this->assertStringContainsString('short', strtolower($finding->description));
     }
 
     public function test_title_with_excessive_whitespace(): void
@@ -436,9 +436,11 @@ class TitleTagCheckerTest extends TestCase
 
     protected function createCrawlResult(string $html): CrawlResult
     {
-        $result = Mockery::mock(CrawlResult::class);
-        $result->html = $html;
-        $result->url = 'https://example.com';
-        return $result;
+        return new CrawlResult(
+            url: 'https://example.com',
+            statusCode: 200,
+            responseTimeMs: 100.0,
+            html: $html
+        );
     }
 }

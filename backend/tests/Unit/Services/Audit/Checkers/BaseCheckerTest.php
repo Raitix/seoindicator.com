@@ -93,12 +93,15 @@ class BaseCheckerTest extends TestCase
 
     public function test_extract_title_with_nested_elements(): void
     {
+        // Note: <span> inside <title> is invalid HTML - browsers treat it as literal text
+        // The Crawler correctly returns the raw text content including the <span> tags
         $html = '<!DOCTYPE html><html><head><title>Main <span>Title</span></title></head><body></body></html>';
         $crawler = new Crawler($html);
 
         $title = $this->checker->testExtractTitle($crawler);
 
-        $this->assertEquals('Main Title', $title);
+        // This is the correct behavior - HTML tags inside <title> are treated as text
+        $this->assertEquals('Main <span>Title</span>', $title);
     }
 
     public function test_extract_title_uses_first_title(): void

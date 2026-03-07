@@ -3,19 +3,12 @@
 namespace Tests\Unit\Services\Audit\Checkers;
 
 use Tests\TestCase;
-use Mockery;
 use App\Services\Audit\Checkers\ViewportChecker;
 use App\Services\Audit\DTOs\CrawlResult;
 use App\Services\Audit\DTOs\IssueFinding;
 
 class ViewportCheckerTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
-
     // =========================================================================
     // Service Instantiation Tests
     // =========================================================================
@@ -364,9 +357,11 @@ class ViewportCheckerTest extends TestCase
 
     protected function createCrawlResult(string $html): CrawlResult
     {
-        $result = Mockery::mock(CrawlResult::class);
-        $result->html = $html;
-        $result->url = 'https://example.com';
-        return $result;
+        return new CrawlResult(
+            url: 'https://example.com',
+            statusCode: 200,
+            responseTimeMs: 100.0,
+            html: $html
+        );
     }
 }
