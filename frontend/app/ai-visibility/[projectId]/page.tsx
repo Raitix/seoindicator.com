@@ -9,6 +9,11 @@
 
 'use client';
 
+// Required for static export with dynamic routes
+// This page is client-side rendered, so no static paths are needed
+export function generateStaticParams() {
+  return [];
+
 import * as React from 'react';
 import { useParams, useRouter, notFound } from 'next/navigation';
 import {
