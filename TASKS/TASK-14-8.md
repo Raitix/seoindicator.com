@@ -1,7 +1,7 @@
 # TASK-14-8: Create IssueDetector Service
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
