@@ -1,12 +1,11 @@
 /**
  * VisibilitySettings Component
- * 
+ *
  * Task: TASK-33-22 - Add Visibility Toggle to Audit Settings
  * Spec: SPEC-33 - Public SEO Audit Reports & Embeddable Score Widget
  *
- * Component that provides visibility toggle for publishing/unpublishing audits
- * from the settings page. Includes public URL display, warning messages,
- * and confirmation dialogs.
+ * Component that provides a visibility toggle for publishing/unpublishing
+ * audits from the settings page.
  *
  * @module components/audit/VisibilitySettings
  */
@@ -48,13 +47,13 @@ export interface VisibilitySettingsProps {
 
 /**
  * VisibilitySettings Component
- * 
+ *
  * Provides UI for:
  * - Viewing current visibility status (Public/Private)
  * - Toggling visibility with confirmation for unpublish
  * - Copying public URL when published
  * - Loading states and error handling
- * 
+ *
  * @param props - Component props
  * @returns JSX element
  */
@@ -67,7 +66,7 @@ export function VisibilitySettings({
   className,
 }: VisibilitySettingsProps) {
   // State management
-  const [isPublic, setIsPublic] = React.useState(initialIsPublic);
+  const [localIsPublic, setLocalIsPublic] = React.useState(initialIsPublic);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [showConfirmUnpublish, setShowConfirmUnpublish] = React.useState(false);
@@ -79,12 +78,19 @@ export function VisibilitySettings({
 
   // Generate unique ID for accessibility
   const headingId = React.useId();
-  const sectionId = React.useId();
+  const statusId = React.useId();
 
   // Sync with prop changes
   React.useEffect(() => {
-    setIsPublic(initialIsPublic);
+    setLocalIsPublic(initialIsPublic);
   }, [initialIsPublic]);
+
+  // Focus confirm button when dialog opens
+  React.useEffect(() => {
+    if (showConfirmUnpublish && confirmButtonRef.current) {
+      confirmButtonRef.current.focus();
+    }
+  }, [showConfirmUnpublish]);
 
   // Generate public URL
   const publicUrl = typeof window !== 'undefined'
@@ -95,13 +101,11 @@ export function VisibilitySettings({
    * Handle toggle switch click
    */
   const handleToggle = async () => {
-    if (isPublic) {
+    if (isLoading) return;
+
+    if (localIsPublic) {
       // Show confirmation dialog before unpublishing
       setShowConfirmUnpublish(true);
-      // Focus the confirm button after dialog opens
-      setTimeout(() => {
-        confirmButtonRef.current?.focus();
-      }, 50);
     } else {
       // Publish immediately
       await performPublish();
@@ -117,7 +121,7 @@ export function VisibilitySettings({
 
     try {
       await onPublish();
-      setIsPublic(true);
+      setLocalIsPublic(true);
       toast.success('Audit published successfully');
       trackEvent('audit_published', { auditId, auditHash });
     } catch (err) {
@@ -139,10 +143,14 @@ export function VisibilitySettings({
 
     try {
       await onUnpublish();
-      setIsPublic(false);
+      setLocalIsPublic(false);
       setShowConfirmUnpublish(false);
       toast.success('Audit is now private');
       trackEvent('audit_unpublished', { auditId, auditHash });
+      // Return focus to toggle
+      if (toggleRef.current) {
+        toggleRef.current.focus();
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to unpublish audit';
       setError(message);
@@ -160,7 +168,6 @@ export function VisibilitySettings({
     try {
       await navigator.clipboard.writeText(publicUrl);
       setCopied(true);
-      toast.success('Copied to clipboard!');
       trackEvent('audit_url_copy', { auditId, auditHash });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -169,24 +176,26 @@ export function VisibilitySettings({
   };
 
   /**
-   * Handle retry after error
-   */
-  const handleRetry = async () => {
-    setError(null);
-    if (showConfirmUnpublish) {
-      await performUnpublish();
-    } else {
-      await performPublish();
-    }
-  };
-
-  /**
-   * Cancel unpublish confirmation
+   * Handle cancel unpublish
    */
   const handleCancelUnpublish = () => {
     setShowConfirmUnpublish(false);
     // Return focus to toggle
-    toggleRef.current?.focus();
+    if (toggleRef.current) {
+      toggleRef.current.focus();
+    }
+  };
+
+  /**
+   * Handle retry after error
+   */
+  const handleRetry = async () => {
+    setError(null);
+    if (localIsPublic) {
+      await performUnpublish();
+    } else {
+      await performPublish();
+    }
   };
 
   return (
@@ -194,60 +203,52 @@ export function VisibilitySettings({
       className={cn('space-y-4', className)}
       data-testid="visibility-settings"
       aria-labelledby={headingId}
-      id={sectionId}
     >
-      {/* Section Header */}
+      {/* Visibility Toggle Section */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {isPublic ? (
-            <Globe className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+          {localIsPublic ? (
+            <Globe className="h-5 w-5 text-emerald-400" data-testid="globe-icon" aria-hidden="true" />
           ) : (
-            <Lock className="h-5 w-5 text-slate-400" aria-hidden="true" />
+            <Lock className="h-5 w-5 text-slate-400" data-testid="lock-icon" aria-hidden="true" />
           )}
           <div>
-            <h3 id={headingId} className="text-base font-semibold text-white">
-              Visibility
-            </h3>
+            <p className="text-sm font-medium text-white">Visibility</p>
             <p
-              className="text-sm text-slate-400"
-              data-testid="visibility-status-text"
+              className="text-xs text-slate-400"
+              id={statusId}
+              aria-live="polite"
             >
-              Control who can view this audit
+              {localIsPublic ? 'Public - Anyone with the link can view' : 'Private - Only you can view'}
             </p>
           </div>
         </div>
-        <Switch
-          ref={toggleRef}
-          checked={isPublic}
-          onCheckedChange={handleToggle}
-          disabled={isLoading}
-          aria-label="Toggle public visibility"
-          data-testid="visibility-toggle"
-        />
-      </div>
-
-      {/* Status Badge */}
-      <div className="flex items-center gap-2" role="status" aria-live="polite">
-        <span
-          className={cn(
-            'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-            isPublic
-              ? 'bg-emerald-500/10 text-emerald-400'
-              : 'bg-slate-500/10 text-slate-400'
-          )}
-          data-testid="visibility-badge"
-        >
-          {isPublic ? 'Public' : 'Private'}
-        </span>
-        <span className="text-sm text-slate-400">
-          {isPublic
-            ? 'Anyone with the link can view'
-            : 'Only you can view'}
-        </span>
+        <div className="flex items-center gap-3">
+          {/* Status Badge */}
+          <span
+            className={cn(
+              'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+              localIsPublic
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : 'bg-slate-700 text-slate-300'
+            )}
+            data-testid="visibility-badge"
+          >
+            {localIsPublic ? 'Public' : 'Private'}
+          </span>
+          {/* Toggle Switch */}
+          <Switch
+            ref={toggleRef}
+            checked={localIsPublic}
+            onCheckedChange={handleToggle}
+            disabled={isLoading}
+            aria-label="Toggle public visibility"
+          />
+        </div>
       </div>
 
       {/* Public URL Section */}
-      {isPublic && (
+      {localIsPublic && (
         <div className="space-y-2" data-testid="public-url-section">
           <label className="text-sm font-medium text-slate-300">
             Public URL
@@ -278,9 +279,7 @@ export function VisibilitySettings({
             </Button>
           </div>
           {copied && (
-            <p className="text-xs text-emerald-400" role="status">
-              Copied to clipboard!
-            </p>
+            <p className="text-xs text-emerald-400">Copied to clipboard!</p>
           )}
         </div>
       )}
@@ -288,7 +287,7 @@ export function VisibilitySettings({
       {/* Loading Indicator */}
       {isLoading && (
         <div
-          className="flex items-center justify-center gap-2 py-2 text-sm text-slate-400"
+          className="flex items-center gap-2 py-2 text-sm text-slate-400"
           data-testid="loading-indicator"
         >
           <Loader2 className="h-4 w-4 animate-spin" data-testid="loader-icon" />
@@ -303,7 +302,7 @@ export function VisibilitySettings({
           role="alert"
           data-testid="error-message"
         >
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" data-testid="alert-icon" />
           <div className="flex-1">
             <p>{error}</p>
             <Button
@@ -319,6 +318,11 @@ export function VisibilitySettings({
           </div>
         </div>
       )}
+
+      {/* Status Live Region */}
+      <div role="status" className="sr-only">
+        {localIsPublic ? 'Audit is public' : 'Audit is private'}
+      </div>
 
       {/* Confirmation Dialog for Unpublish */}
       {showConfirmUnpublish && (
@@ -337,27 +341,26 @@ export function VisibilitySettings({
             <p id="unpublish-description" className="mt-2 text-sm text-slate-400">
               This will make the audit private. Anyone with the link will no longer be able to access it.
             </p>
-            
-            {/* Warning Alert */}
+
+            {/* Warning about embedded badges */}
             <div
-              className="mt-4 flex items-start gap-2 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-400"
+              className="mt-3 flex items-start gap-2 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-400"
               role="alert"
             >
-              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" data-testid="alert-icon" />
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
               <p>
-                <strong>Warning:</strong> This will break any embedded badges on external websites.
+                <strong>Warning:</strong> Any embedded badges will no longer work after unpublishing.
               </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="mt-6 flex justify-end gap-2">
+            <div className="mt-4 flex justify-end gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCancelUnpublish}
                 disabled={isLoading}
+                className="border-slate-700 text-slate-200 hover:bg-slate-800"
                 data-testid="cancel-unpublish-button"
-                className="border-slate-700 hover:bg-slate-800"
               >
                 Cancel
               </Button>
@@ -371,7 +374,7 @@ export function VisibilitySettings({
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" data-testid="loader-icon" />
                     Unpublishing...
                   </>
                 ) : (
@@ -379,6 +382,17 @@ export function VisibilitySettings({
                 )}
               </Button>
             </div>
+
+            {/* Error in dialog */}
+            {error && showConfirmUnpublish && (
+              <div
+                className="mt-3 flex items-start gap-2 rounded-lg border border-rose-800 bg-rose-900/20 p-3 text-sm text-rose-400"
+                role="alert"
+              >
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <p>Failed to unpublish. Please try again.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
