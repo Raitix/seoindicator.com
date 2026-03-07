@@ -1,7 +1,7 @@
 # TASK-14-8: Create IssueDetector Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -104,3 +104,27 @@ class IssueFinding
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-07 08:55] Agent: ProjectManager
+**Prioritization Analysis:**
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Priority | High | Foundation service for issue detection pipeline |
+| Risk | Medium | Standard service implementation, no external APIs |
+| Declared Dependencies | ✅ Satisfied | TASK-14-2 (Done), TASK-14-3 (Done) |
+| Indirect Dependency | TASK-14-5 (To Develop) | CrawlResult data structure |
+
+**Downstream Impact:**
+- TASK-14-9 (HTML Analysis Checkers) - High Priority
+- TASK-14-10 (Broken Link Checker) - Done (mocked)
+- TASK-14-11 (Performance Checker) - Medium Priority
+- TASK-14-12 (Image Checker) - Medium Priority
+
+**Recommendation for PreTester:**
+- Use TDD approach with mocked `CrawlResult` objects
+- Define `CheckerInterface` and `IssueFinding` DTO in tests first
+- SiteCrawler (TASK-14-5) provides real `CrawlResult` at runtime but is not a blocker for test design
+- Tests can verify orchestrator behavior with mock checkers
+
+**Status changed:** `To Prioritize` → `To Write Tests`
