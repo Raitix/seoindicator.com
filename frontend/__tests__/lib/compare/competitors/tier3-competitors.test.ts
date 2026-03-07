@@ -23,7 +23,13 @@ import {
   type FeatureCategory,
   type Feature,
   type UseCase,
-} from '../../../lib/compare/types';
+} from '@/lib/compare/types';
+
+// Import actual competitor data
+import { raven as ravenActual } from '@/lib/compare/competitors/raven';
+import { brightedge as brightedgeActual } from '@/lib/compare/competitors/brightedge';
+import { conductor as conductorActual } from '@/lib/compare/competitors/conductor';
+import { wincher as wincherActual } from '@/lib/compare/competitors/wincher';
 
 // ============================================================================
 // Mock Competitor Data (for TDD reference)
@@ -361,9 +367,7 @@ describe('Raven Tools Competitor Data', () => {
   let raven: CompetitorData;
 
   beforeAll(() => {
-    // Import the actual competitor data when implemented
-    // For now, use mock data for TDD
-    raven = mockRavenData;
+    raven = ravenActual;
   });
 
   // RV-001 to RV-007: Basic Structure
