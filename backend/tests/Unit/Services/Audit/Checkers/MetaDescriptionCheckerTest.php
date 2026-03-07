@@ -3,19 +3,12 @@
 namespace Tests\Unit\Services\Audit\Checkers;
 
 use Tests\TestCase;
-use Mockery;
 use App\Services\Audit\Checkers\MetaDescriptionChecker;
 use App\Services\Audit\DTOs\CrawlResult;
 use App\Services\Audit\DTOs\IssueFinding;
 
 class MetaDescriptionCheckerTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
-
     // =========================================================================
     // Service Instantiation Tests
     // =========================================================================
@@ -142,8 +135,7 @@ class MetaDescriptionCheckerTest extends TestCase
     public function test_description_at_50_chars_returns_no_issue(): void
     {
         // Exactly 50 characters - minimum acceptable
-        $description = 'This description is exactly fifty characters!';
-        $this->assertEquals(50, strlen($description));
+        $description = str_repeat('a', 50);
         
         $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $result = $this->createCrawlResult($html);
@@ -157,8 +149,7 @@ class MetaDescriptionCheckerTest extends TestCase
     public function test_description_at_160_chars_returns_no_issue(): void
     {
         // Exactly 160 characters - maximum acceptable
-        $description = 'This meta description is exactly one hundred sixty characters long which is the maximum recommended length for search engine results pages display purposes!';
-        $this->assertEquals(160, strlen($description));
+        $description = str_repeat('a', 160);
         
         $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $result = $this->createCrawlResult($html);
@@ -176,8 +167,7 @@ class MetaDescriptionCheckerTest extends TestCase
     public function test_description_at_161_chars_returns_notice(): void
     {
         // 161 characters - just over the limit
-        $description = 'This meta description is exactly one hundred sixty one characters long which exceeds the maximum recommended length for search engine results pages display!';
-        $this->assertEquals(161, strlen($description));
+        $description = str_repeat('a', 161);
         
         $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $result = $this->createCrawlResult($html);
@@ -225,8 +215,7 @@ class MetaDescriptionCheckerTest extends TestCase
     public function test_description_at_49_chars_returns_notice(): void
     {
         // 49 characters - just under minimum
-        $description = 'This description is exactly forty-nine char';
-        $this->assertEquals(49, strlen($description));
+        $description = str_repeat('a', 49);
         
         $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $result = $this->createCrawlResult($html);
@@ -444,9 +433,11 @@ class MetaDescriptionCheckerTest extends TestCase
 
     protected function createCrawlResult(string $html): CrawlResult
     {
-        $result = Mockery::mock(CrawlResult::class);
-        $result->html = $html;
-        $result->url = 'https://example.com';
-        return $result;
+        return new CrawlResult(
+            url: 'https://example.com',
+            statusCode: 200,
+            responseTimeMs: 100.0,
+            html: $html
+        );
     }
 }

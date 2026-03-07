@@ -20,6 +20,22 @@ export { default as PublicAuditPage } from './PublicAuditPage';
 export { default as ShareAuditModal } from './ShareAuditModal';
 export { default as TopIssues } from './TopIssues';
 
+// New TASK-14-15 components
+export { AuditStatusBadge } from './AuditStatusBadge';
+export type { AuditStatusBadgeProps } from './AuditStatusBadge';
+
+export { IssueSummary } from './IssueSummary';
+export type { IssueSummaryProps } from './IssueSummary';
+
+export { StartAuditModal } from './StartAuditModal';
+export type { StartAuditModalProps } from './StartAuditModal';
+
+export { AuditListCard } from './AuditListCard';
+export type { AuditListCardProps } from './AuditListCard';
+
+export { AuditList } from './AuditList';
+export type { AuditListProps } from './AuditList';
+
 // New TASK-14-16 components
 export { AuditSummary } from './AuditSummary';
 export type { AuditSummaryProps } from './AuditSummary';

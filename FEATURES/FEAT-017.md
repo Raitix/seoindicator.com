@@ -7,6 +7,13 @@
 - **SPEC-017**: User Onboarding & Activation Flow - [View Specification](../SPECIFICATIONS/SPEC-017.md)
 
 ## Comments
+### 2026-03-07 - DocSystemAnalyst
+**Duplicate Trigger (13:18 GMT+2)**
+- Orchestrator triggered "FEAT-17" again - naming mismatch with zero-padded filename
+- Feature already documented and complete
+- Stale lock removed: FEAT-17.lock
+- Completion marker re-written: logs/completed/feature/FEAT-17.json
+
 ### 2026-03-06 - DocSystemAnalyst
 **Re-verification Complete (21:45 GMT+2)**
 - Feature status: Done (Phase 1 MVP complete, Phases 2-4 planned)
