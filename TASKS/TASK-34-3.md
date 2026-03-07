@@ -1,7 +1,7 @@
 # TASK-34-3: AIQueryEngine Service
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
