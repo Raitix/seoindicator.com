@@ -201,7 +201,7 @@ class ReportControllerAuditTest extends TestCase
 
         // No audit for the target site
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Test Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -224,7 +224,7 @@ class ReportControllerAuditTest extends TestCase
         $otherUser = User::factory()->create();
         
         $response = $this->actingAs($otherUser)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Test Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -262,7 +262,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Audit Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -315,7 +315,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'My SEO Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -356,7 +356,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Audit Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -393,7 +393,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Audit Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -425,7 +425,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Audit Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -457,7 +457,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Audit Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -483,7 +483,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Audit Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -526,7 +526,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Large Audit Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -553,7 +553,7 @@ class ReportControllerAuditTest extends TestCase
     public function test_site_not_found(): void
     {
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/99999/reports", [
+            ->postJson("/api/v1/sites/99999/reports/generate", [
                 'name' => 'Test Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -575,7 +575,7 @@ class ReportControllerAuditTest extends TestCase
         $otherUser = User::factory()->create();
         
         $response = $this->actingAs($otherUser)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Test Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -594,7 +594,7 @@ class ReportControllerAuditTest extends TestCase
      */
     public function test_unauthenticated_request(): void
     {
-        $response = $this->postJson("/api/v1/sites/{$this->site->id}/reports", [
+        $response = $this->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
             'name' => 'Test Report',
             'type' => 'one-time',
             'format' => 'pdf',
@@ -615,7 +615,7 @@ class ReportControllerAuditTest extends TestCase
     {
         // No audit exists, PDF should still generate
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Test Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -636,7 +636,7 @@ class ReportControllerAuditTest extends TestCase
     {
         // Invalid date range should cause validation error
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Test Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -663,7 +663,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Test Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -703,7 +703,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Full Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -731,7 +731,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'CSV Report',
                 'type' => 'one-time',
                 'format' => 'csv',
@@ -773,7 +773,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Limited Issues Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -816,7 +816,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Open Issues Report',
                 'type' => 'one-time',
                 'format' => 'pdf',

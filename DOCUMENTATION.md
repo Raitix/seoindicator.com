@@ -35814,3 +35814,120 @@ function updateMetadata(data: PublicAuditData | null) {
 - TASK-33-27: OG Image Generation
 
 ---
+## Backlinks Guide Page (TASK-23-16)
+
+### Page Description
+Educational guide page explaining backlinks, their importance for SEO, and strategies for improving backlink profile. Part of the SEO Guides Library (FEAT-020) and supports the Backlinks Indicator feature (FEAT-023).
+
+### Component Location
+- **Guide Registry:** `frontend/lib/guides/registry.ts`
+- **Dynamic Route:** `frontend/app/seo-guides/[slug]/page.tsx`
+- **Tests:** `frontend/__tests__/lib/guides/backlinks.test.ts`, `frontend/__tests__/app/guides/backlinks/page.test.tsx`
+- **Test Documentation:** `TESTS/TASK-23-16.md`
+
+### Route
+- **URL:** `/seo-guides/backlinks/`
+- **File:** Dynamic route via `frontend/app/seo-guides/[slug]/page.tsx` (Next.js App Router)
+
+### Guide Content Structure
+
+| Section | Description |
+|---------|-------------|
+| What are Backlinks? | Definition and how they work |
+| Types of Backlinks | Dofollow/nofollow, editorial vs acquired |
+| Why Backlinks Matter for SEO | Ranking signals, domain authority |
+| Backlink Quality Signals | Domain trust, relevance, anchor text |
+| Link Building Strategies | Content creation, guest posting, broken link building |
+| Tips for Improving Your Backlink Profile | Actionable improvement tips |
+| Common Backlink Mistakes to Avoid | Buying links, link schemes, over-optimization |
+
+### Guide Metadata
+
+| Property | Value |
+|----------|-------|
+| Slug | `backlinks` |
+| Title | "Backlinks Guide" |
+| Category | `technical` |
+| Icon | 🔗 |
+| Read Time | 6 minutes |
+| Related Guides | internal-links, page-speed |
+
+### Code Examples
+
+**HTML Link Types:**
+```html
+<!-- Dofollow link (default) -->
+<a href="https://example.com">Anchor Text</a>
+
+<!-- Nofollow link -->
+<a href="https://example.com" rel="nofollow">Sponsored Content</a>
+
+<!-- Sponsored link -->
+<a href="https://example.com" rel="sponsored">Paid Link</a>
+
+<!-- User-generated content link -->
+<a href="https://example.com" rel="ugc">Forum Post</a>
+```
+
+### Checklist Items (11 total)
+
+| Priority | Checklist Item |
+|----------|----------------|
+| Critical | Audit existing backlinks using Google Search Console |
+| Critical | Disavow toxic/spammy backlinks |
+| Critical | Create link-worthy content (guides, tools, research) |
+| Important | Guest post on relevant industry sites |
+| Important | Build relationships with industry influencers |
+| Important | Monitor competitor backlinks for opportunities |
+| Important | Diversify anchor text naturally |
+| Important | Claim unlinked brand mentions |
+| Recommended | Participate in industry forums and communities |
+| Recommended | Create shareable infographics |
+| Recommended | Submit to relevant directories |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `backlinks.test.ts` | 55 | ✅ PASS |
+| `page.test.tsx` | 35 | ✅ PASS |
+| **Total** | **90** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Guide Existence | 4 | Slug exists, retrievable, valid structure |
+| Metadata | 7 | Title, summary, category, icon, readTime, toolSlug, relatedGuides |
+| Required Sections | 9 | Content sections for all required topics |
+| Content Quality | 12 | Backlink types, anchor text, quality signals |
+| Tips Section | 6 | Actionable improvement tips |
+| Code Examples | 6 | HTML link examples |
+| Checklist | 9 | 8-15 items with proper priorities |
+| Related Guides | 5 | Integration with registry |
+| Page Rendering | 12 | Component structure, sections, checklist |
+| Accessibility | 8 | ARIA, landmarks, keyboard navigation |
+| SEO Integration | 6 | Meta tags, OpenGraph, canonical |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Implementation | Guide added to registry |
+| Route | Dynamic `/seo-guides/[slug]/` |
+| Total Guides | 18 (increased from 17) |
+| Tests | 90/90 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-20-1 (Guide Page Types) - Done
+- TASK-20-2 (Guide Page Components) - Done
+
+### Related Tasks
+- TASK-23-13: Backlinks Dashboard Component
+- TASK-23-14: Backlinks Charts Components
+- TASK-23-15: Visibility Score Integration
+- FEAT-020: SEO Guides Library
+- FEAT-023: Backlinks Indicator
+
+---
