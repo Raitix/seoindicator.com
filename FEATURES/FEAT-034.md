@@ -1,7 +1,7 @@
 # FEAT-034: AI Visibility Tracking (Generative Engine Optimization)
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -235,6 +235,47 @@ LLMs are non-deterministic - same question yields different answers. This means:
 - Track mention frequency across multiple queries
 - Report averages, not single data points
 - Focus on trends, not snapshots
+
+---
+
+## Comments
+
+### [2026-03-07 16:10 UTC] Architect: Specification Created
+
+**Action**: Created technical specification SPEC-034.md
+
+**Key Decisions**:
+
+1. **Free Tools Compliance**: Using OpenRouter free-tier models (`google/gemini-2.0-flash-exp:free`, `meta-llama/llama-3.1-8b-instruct:free`) to comply with the free tools constraint. No paid API calls required.
+
+2. **Database Schema**: Created 4 tables:
+   - `ai_visibility_projects` - Tracking configuration
+   - `ai_query_results` - Individual query results with mention data
+   - `ai_mention_analytics` - Aggregated analytics
+   - `ai_visibility_alerts` - Alert management
+
+3. **Caching Strategy**: 7-day cache for query results to minimize API calls (~85% reduction in API usage).
+
+4. **Rate Limiting by Tier**:
+   - Free: 5 queries/month
+   - Pro: 50 queries/month
+   - Business: 200 queries/month
+
+5. **MVP Scope**: ChatGPT and Perplexity tracking only (Claude and Google AI Overview deferred to Phase 4).
+
+6. **Integration**: Reuses existing AI infrastructure from FEAT-031 (OpenRouter client, queue system).
+
+**Risk Reassessment**: Risk level remains `Medium`:
+- API rate limits mitigated by aggressive caching
+- Cost mitigated by free-tier models only
+- Non-deterministic LLM results addressed by multiple query variations
+
+**Task Breakdown**: 23 tasks across 3 phases (~69 hours total)
+- Phase 1 (MVP): 12 tasks, ~38 hours
+- Phase 2 (Analytics): 6 tasks, ~18 hours
+- Phase 3 (Alerts/Export): 5 tasks, ~13 hours
+
+**Handoff**: Ready for SpecSystemAnalyst to break into tasks.
 
 ---
 
