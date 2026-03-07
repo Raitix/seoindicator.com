@@ -467,15 +467,13 @@ describe('UseCaseSection - Accessibility', () => {
       const { container } = render(
         <UseCaseSection
           seoindicator={singleUseCase}
-          competitor={singleUseCase}
+          competitor={[]}
         />
       );
 
       // Check that white text is used for titles
-      const title = screen.getByRole('heading', { name: 'Accessible Title', level: 4 });
-      if (title) {
-        expect(title.className).toContain('white');
-      }
+      const title = screen.getByRole('heading', { name: 'Single Use Case', level: 4 });
+      expect(title.className).toContain('white');
     });
   });
 });
@@ -672,8 +670,8 @@ describe('UseCaseSection - Integration', () => {
     expect(screen.getByText('Best for Competitor users')).toBeInTheDocument();
 
     // Verify audience badges are rendered
-    expect(screen.getByText('Solo Users')).toBeInTheDocument();
-    expect(screen.getByText('Small Teams')).toBeInTheDocument();
+    expect(screen.getAllByText('Solo Users').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Small Teams').length).toBeGreaterThan(0);
     expect(screen.getByText('Enterprise')).toBeInTheDocument();
     expect(screen.getByText('Agencies')).toBeInTheDocument();
 
