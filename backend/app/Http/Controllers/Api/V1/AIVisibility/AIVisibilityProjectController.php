@@ -47,25 +47,14 @@ class AIVisibilityProjectController extends Controller
     {
         $user = $request->user();
 
-        $query = AIVisibilityProject::where('user_id', $user->id);
+        $filters = [
+            'is_active' => $request->input('is_active'),
+            'sort_by' => $request->input('sort_by', 'created_at'),
+            'sort_order' => $request->input('sort_order', 'desc'),
+            'per_page' => min($request->input('per_page', 15), 100),
+        ];
 
-        // Filter by is_active
-        if ($request->has('is_active')) {
-            $isActive = filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN);
-            $query->where('is_active', $isActive);
-        }
-
-        // Sorting
-        $sortBy = $request->input('sort_by', 'created_at');
-        $sortOrder = $request->input('sort_order', 'desc');
-
-        if (in_array($sortBy, ['created_at', 'last_queried_at', 'brand_name'])) {
-            $query->orderBy($sortBy, $sortOrder === 'asc' ? 'asc' : 'desc');
-        }
-
-        // Pagination
-        $perPage = min($request->input('per_page', 15), 100);
-        $projects = $query->paginate($perPage);
+        $projects = $this->service->getUserProjects($user->id, $filters);
 
         // Add mention_rate from latest analytics
         $projectsWithMentionRate = $projects->getCollection()->map(function ($project) {
@@ -143,7 +132,7 @@ class AIVisibilityProjectController extends Controller
      */
     public function show(Request $request, int $id): JsonResponse
     {
-        $project = AIVisibilityProject::find($id);
+        $project = $this->service->getProject($id, $request->user()->id);
 
         if (!$project) {
             return response()->json([
@@ -153,17 +142,6 @@ class AIVisibilityProjectController extends Controller
                     'message' => 'Project not found.',
                 ],
             ], 404);
-        }
-
-        // Authorization check
-        if (Gate::denies('view', $project)) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'FORBIDDEN',
-                    'message' => 'You do not have permission to access this project.',
-                ],
-            ], 403);
         }
 
         // Get latest analytics summary

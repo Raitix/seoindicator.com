@@ -9,6 +9,7 @@ use App\Models\AIVisibility\AIQueryResult;
 use App\Models\AIVisibility\AIMentionAnalytics;
 use App\Models\AIVisibility\AIVisibilityAlert;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -50,6 +51,52 @@ class AIVisibilityService implements AIVisibilityServiceInterface
         $this->queryEngine = $queryEngine;
         $this->mentionParser = $mentionParser;
         $this->logger = $logger;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getUserProjects(int $userId, array $filters = []): LengthAwarePaginator
+    {
+        $query = AIVisibilityProject::where('user_id', $userId);
+
+        // Filter by is_active
+        if (isset($filters['is_active']) && $filters['is_active'] !== null) {
+            $isActive = filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN);
+            $query->where('is_active', $isActive);
+        }
+
+        // Sorting
+        $sortBy = $filters['sort_by'] ?? 'created_at';
+        $sortOrder = $filters['sort_order'] ?? 'desc';
+
+        if (in_array($sortBy, ['created_at', 'last_queried_at', 'brand_name'])) {
+            $query->orderBy($sortBy, $sortOrder === 'asc' ? 'asc' : 'desc');
+        }
+
+        // Pagination
+        $perPage = min($filters['per_page'] ?? 15, 100);
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getProject(int $projectId, int $userId): ?AIVisibilityProject
+    {
+        $project = AIVisibilityProject::find($projectId);
+
+        if (!$project) {
+            return null;
+        }
+
+        // Validate ownership
+        if ($project->user_id !== $userId) {
+            return null;
+        }
+
+        return $project;
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Services\AIVisibility\Contracts;
 
 use App\Models\AIVisibility\AIVisibilityProject;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * Interface for AI Visibility Service
@@ -15,6 +16,24 @@ use App\Models\AIVisibility\AIVisibilityProject;
  */
 interface AIVisibilityServiceInterface
 {
+    /**
+     * Get paginated list of user's projects with optional filters.
+     *
+     * @param int $userId The user ID
+     * @param array $filters Optional filters (is_active, sort_by, sort_order, per_page)
+     * @return LengthAwarePaginator
+     */
+    public function getUserProjects(int $userId, array $filters = []): LengthAwarePaginator;
+
+    /**
+     * Get a single project by ID for a specific user.
+     *
+     * @param int $projectId The project ID
+     * @param int $userId The user ID (for ownership validation)
+     * @return AIVisibilityProject|null
+     */
+    public function getProject(int $projectId, int $userId): ?AIVisibilityProject;
+
     /**
      * Create a new AI visibility project.
      *
