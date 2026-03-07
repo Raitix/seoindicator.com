@@ -34,7 +34,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -126,7 +126,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => 'ABC123DEF45678901234567890123456',
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -164,7 +164,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => '12345678901234567890123456789012',
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -184,7 +184,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -200,7 +200,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -279,12 +279,18 @@ class BadgeClickControllerTest extends TestCase
     /** @test */
     public function bc_target_09_target_with_whitespace(): void
     {
+        // Whitespace is trimmed during validation, so ' audit ' becomes 'audit' which is valid
+        $audit = Audit::factory()->create([
+            'public_hash' => self::VALID_HASH,
+            'visibility' => 'public',
+        ]);
+
         $response = $this->postJson('/api/v1/badge/click', [
             'hash' => self::VALID_HASH,
             'click_target' => ' audit ',
         ]);
 
-        $response->assertStatus(422);
+        $response->assertNoContent();
     }
 
     /** @test */
@@ -314,7 +320,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->postJson('/api/v1/badge/click', [
@@ -335,7 +341,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $existingImpression = BadgeImpression::create([
@@ -363,7 +369,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -384,7 +390,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         BadgeImpression::create([
@@ -409,7 +415,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $ipHash = BadgeImpression::hashIp('127.0.0.1');
@@ -445,7 +451,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         BadgeImpression::create([
@@ -470,12 +476,12 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit1 = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $audit2 = Audit::factory()->create([
             'public_hash' => 'xyz987def45678901234567890123456',
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         BadgeImpression::create([
@@ -500,7 +506,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $impression = BadgeImpression::create([
@@ -526,7 +532,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         BadgeImpression::create([
@@ -551,7 +557,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         BadgeImpression::create([
@@ -576,7 +582,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         BadgeImpression::create([
@@ -600,7 +606,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $ipv6 = '2001:0db8:85a3:0000:0000:8a2e:0370:7334';
@@ -627,7 +633,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         BadgeImpression::create([
@@ -652,7 +658,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->assertEquals(0, BadgeImpression::count());
@@ -674,7 +680,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         BadgeImpression::create([
@@ -686,7 +692,7 @@ class BadgeClickControllerTest extends TestCase
 
         $audit2 = Audit::factory()->create([
             'public_hash' => 'xyz987def45678901234567890123456',
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -704,7 +710,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         BadgeImpression::create([
@@ -736,7 +742,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->postJson('/api/v1/badge/click', [
@@ -754,7 +760,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->postJson('/api/v1/badge/click', [
@@ -771,7 +777,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->postJson('/api/v1/badge/click', [
@@ -788,7 +794,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->postJson('/api/v1/badge/click', [
@@ -806,7 +812,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->postJson('/api/v1/badge/click', [
@@ -823,7 +829,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->postJson('/api/v1/badge/click', [
@@ -840,7 +846,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->postJson('/api/v1/badge/click', [
@@ -858,7 +864,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->postJson('/api/v1/badge/click', [
@@ -882,7 +888,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $impression = BadgeImpression::create([
@@ -907,7 +913,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -924,7 +930,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $initialCount = BadgeImpression::count();
@@ -943,7 +949,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $initialCount = BadgeImpression::count();
@@ -965,7 +971,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         for ($i = 0; $i < 5; $i++) {
@@ -982,7 +988,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         for ($i = 0; $i < self::RATE_LIMIT; $i++) {
@@ -999,7 +1005,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         for ($i = 0; $i < self::RATE_LIMIT; $i++) {
@@ -1022,7 +1028,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1039,7 +1045,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         for ($i = 0; $i < self::RATE_LIMIT; $i++) {
@@ -1063,7 +1069,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         for ($i = 0; $i < self::RATE_LIMIT; $i++) {
@@ -1088,7 +1094,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         for ($i = 0; $i < self::RATE_LIMIT; $i++) {
@@ -1112,7 +1118,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $responses = [];
@@ -1132,7 +1138,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $ipv6_1 = '2001:0db8:85a3:0000:0000:8a2e:0370:7334';
@@ -1158,7 +1164,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1181,7 +1187,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1197,7 +1203,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1237,7 +1243,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         for ($i = 0; $i < self::RATE_LIMIT; $i++) {
@@ -1261,7 +1267,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1277,7 +1283,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1295,7 +1301,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1314,7 +1320,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => false,
+            'visibility' => 'private',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1330,7 +1336,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click?redirect=1', [
@@ -1362,7 +1368,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1400,7 +1406,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1420,7 +1426,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->post('/api/v1/badge/click', [
@@ -1436,7 +1442,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1464,7 +1470,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->post('/api/v1/badge/click', [
@@ -1482,7 +1488,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->postJson('/api/v1/badge/click', [
@@ -1503,12 +1509,12 @@ class BadgeClickControllerTest extends TestCase
         ]);
 
         $audit = Audit::factory()->create([
-            'public_hash' => 'private123456789012345678901234',
-            'is_public' => false,
+            'public_hash' => 'private12345678901234567890abcd',
+            'visibility' => 'private',
         ]);
 
         $response2 = $this->postJson('/api/v1/badge/click', [
-            'hash' => 'private123456789012345678901234',
+            'hash' => 'private12345678901234567890abcd',
             'click_target' => 'audit',
         ]);
 
@@ -1525,7 +1531,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $testIp = '192.168.1.100';
@@ -1558,7 +1564,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1609,7 +1615,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $responses = [];
@@ -1630,7 +1636,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $start = microtime(true);
@@ -1650,7 +1656,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->post('/api/v1/badge/click', [
@@ -1676,7 +1682,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $successCount = 0;
@@ -1714,7 +1720,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => 'AbC123DeF45678901234567890123456',
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1730,7 +1736,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         BadgeImpression::create([
@@ -1755,7 +1761,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $impression = BadgeImpression::create([
@@ -1784,7 +1790,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1807,7 +1813,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $impression = BadgeImpression::create([
@@ -1834,7 +1840,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         for ($i = 0; $i < self::RATE_LIMIT; $i++) {
@@ -1857,7 +1863,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1873,7 +1879,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         BadgeImpression::create([
@@ -1907,7 +1913,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->postJson('/api/v1/badge/click', [
@@ -1924,7 +1930,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1943,7 +1949,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => false,
+            'visibility' => 'private',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1963,7 +1969,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -1979,7 +1985,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -2006,7 +2012,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $impression = BadgeImpression::create([
@@ -2030,7 +2036,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $impression = BadgeImpression::create([
@@ -2055,7 +2061,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $this->assertEquals(0, BadgeImpression::count());
@@ -2077,7 +2083,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
@@ -2093,7 +2099,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         for ($i = 0; $i < self::RATE_LIMIT; $i++) {
@@ -2116,7 +2122,7 @@ class BadgeClickControllerTest extends TestCase
     {
         $audit = Audit::factory()->create([
             'public_hash' => self::VALID_HASH,
-            'is_public' => true,
+            'visibility' => 'public',
         ]);
 
         $response = $this->postJson('/api/v1/badge/click', [
