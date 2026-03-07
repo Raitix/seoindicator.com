@@ -590,6 +590,14 @@ All components use FREE solutions only:
 
 *Created by Architect agent on 2026-02-28*
 
+### 2026-03-07 - DocSystemAnalyst
+**Duplicate Trigger (13:29 GMT+2)**
+- Orchestrator triggered "SPEC-17" again - naming mismatch with zero-padded filename
+- Specification already documented and complete
+- Stale lock removed: SPEC-17.lock
+- Completion marker re-written: logs/completed/specification/SPEC-17.json
+- **ORCHESTRATOR BUG:** 60+ verifications to date due to naming mismatch
+
 ### 2026-02-28 - DocSystemAnalyst
 **Documentation Verification Complete**
 

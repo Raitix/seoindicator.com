@@ -262,7 +262,8 @@ class MetaDescriptionCheckerTest extends TestCase
 
     public function test_description_with_unicode_returns_no_issue(): void
     {
-        $description = 'このメタディスクリプションは、検索エンジン結果ページに表示される最適な長さです。';
+        // Use a longer description that meets the 50-160 character requirement
+        $description = 'このメタディスクリプションは、検索エンジン結果ページに表示される最適な長さのテキストです。SEO対策に最適。';
         
         $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $result = $this->createCrawlResult($html);
@@ -276,7 +277,8 @@ class MetaDescriptionCheckerTest extends TestCase
 
     public function test_description_with_special_chars_still_works(): void
     {
-        $description = 'Best "Products" & Services - Save 50% Today! Limited Time Offer for All New Customers.';
+        // Use HTML entities for quotes to avoid breaking the HTML attribute
+        $description = 'Best &quot;Products&quot; &amp; Services - Save 50% Today! Limited Time Offer for All New Customers.';
         
         $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $result = $this->createCrawlResult($html);

@@ -8,6 +8,13 @@
 
 ## Comments
 ### 2026-03-07 - DocSystemAnalyst
+**Duplicate Trigger (13:29 GMT+2)**
+- Orchestrator triggered "SPEC-17" again - naming mismatch with zero-padded filename
+- Specification already documented and complete (SPEC-017)
+- Completion marker written: logs/completed/specification/SPEC-17.json
+- **ORCHESTRATOR BUG:** 60+ verifications to date due to naming mismatch
+
+### 2026-03-07 - DocSystemAnalyst
 **Duplicate Trigger (13:18 GMT+2)**
 - Orchestrator triggered "FEAT-17" again - naming mismatch with zero-padded filename
 - Feature already documented and complete

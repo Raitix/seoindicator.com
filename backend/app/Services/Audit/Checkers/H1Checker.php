@@ -67,12 +67,15 @@ class H1Checker extends BaseChecker
         // Parse HTML
         $crawler = new Crawler($html);
 
-        // Extract H1 tags
-        $h1s = $this->extractH1s($crawler);
-        $count = count($h1s);
+        // Count total H1 elements (including empty ones)
+        $totalH1Count = $crawler->filter('h1')->count();
 
-        // Check for missing H1
-        if ($count === 0) {
+        // Extract non-empty H1 text content
+        $h1s = $this->extractH1s($crawler);
+        $nonEmptyCount = count($h1s);
+
+        // Check for missing H1 (no H1 elements at all)
+        if ($totalH1Count === 0) {
             return $this->createFinding(
                 issueType: $this->issueType,
                 severity: 'warning',
@@ -82,41 +85,30 @@ class H1Checker extends BaseChecker
             );
         }
 
-        // Check for empty H1 (single empty H1)
-        if ($count === 1 && $this->isEmptyH1($h1s[0])) {
+        // Check for single empty H1
+        if ($totalH1Count === 1 && $nonEmptyCount === 0) {
             return $this->createFinding(
                 issueType: $this->issueType,
                 severity: 'warning',
                 description: 'Empty H1 tag - H1 element exists but contains no text content',
                 recommendation: 'Add descriptive text to the H1 element that describes the main topic of the page.',
-                context: ['count' => 1, 'h1s' => $h1s]
+                context: ['count' => 1, 'h1s' => []]
             );
         }
 
         // Check for multiple H1s
-        if ($count > 1) {
+        if ($totalH1Count > 1) {
             return $this->createFinding(
                 issueType: $this->issueType,
                 severity: 'notice',
-                description: "Multiple H1 tags found ({$count}) - best practice is to have only one H1 per page",
+                description: "Multiple H1 tags found ({$totalH1Count}) - best practice is to have only one H1 per page",
                 recommendation: 'Use only one H1 tag per page for the main heading. Other headings should use H2-H6 elements to create a proper heading hierarchy.',
-                context: ['count' => $count, 'h1s' => $h1s]
+                context: ['count' => $totalH1Count, 'h1s' => $h1s]
             );
         }
 
         // Single valid H1
         return null;
-    }
-
-    /**
-     * Check if an H1 text is empty.
-     *
-     * @param string $h1Text The H1 text content
-     * @return bool
-     */
-    private function isEmptyH1(string $h1Text): bool
-    {
-        return trim($h1Text) === '';
     }
 
     /**
