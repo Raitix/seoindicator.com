@@ -1,7 +1,7 @@
 # TASK-32-7: ProsConsCard Component
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `Medium`

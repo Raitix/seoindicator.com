@@ -1,7 +1,7 @@
 # TASK-34-5: AIVisibilityService
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
