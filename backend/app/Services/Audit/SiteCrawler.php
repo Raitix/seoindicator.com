@@ -32,7 +32,7 @@ class SiteCrawler implements SiteCrawlerInterface
     protected string $baseDomain = '';
     protected array $config = [];
     protected array $rateLimits = [];
-    protected ?array $robotsRules = null;
+    protected ?DTOs\ParsedRobots $robotsRules = null;
 
     /**
      * Create a new SiteCrawler instance.
@@ -798,11 +798,19 @@ class SiteCrawler implements SiteCrawlerInterface
     /**
      * Fetch robots.txt rules for a domain.
      */
-    protected function fetchRobotsRules(string $domain): array
+    protected function fetchRobotsRules(string $domain): DTOs\ParsedRobots
     {
         $cacheKey = "robots:{$domain}";
 
         return Cache::remember($cacheKey, $this->config['robots_cache_ttl'], function () use ($domain) {
+            // Use RobotsParser to fetch and parse robots.txt
+            if ($this->robotsParser) {
+                $robotsUrl = "https://{$domain}/robots.txt";
+                $robotsTxt = $this->robotsParser->fetch($robotsUrl);
+                return $this->robotsParser->parse($robotsTxt, $this->config['user_agent']);
+            }
+
+            // Fallback: fetch manually and parse
             try {
                 $robotsUrl = "https://{$domain}/robots.txt";
                 $response = Http::timeout(10)->get($robotsUrl);
@@ -817,19 +825,25 @@ class SiteCrawler implements SiteCrawlerInterface
                 ]);
             }
 
-            return [];
+            // Return empty ParsedRobots (allows all)
+            $parsed = new DTOs\ParsedRobots();
+            $parsed->isEmpty = true;
+            return $parsed;
         });
     }
 
     /**
      * Parse robots.txt content.
      */
-    protected function parseRobotsTxt(string $content): array
+    protected function parseRobotsTxt(string $content): DTOs\ParsedRobots
     {
-        $rules = [
-            'user_agents' => [],
-            'sitemaps' => [],
-        ];
+        // Use RobotsParser to parse if available
+        if ($this->robotsParser) {
+            return $this->robotsParser->parse($content, $this->config['user_agent']);
+        }
+
+        // Fallback: manual parsing into ParsedRobots DTO
+        $parsed = new DTOs\ParsedRobots();
 
         $lines = explode("\n", $content);
         $currentUserAgent = '*';
@@ -850,35 +864,35 @@ class SiteCrawler implements SiteCrawlerInterface
                 switch ($directive) {
                     case 'user-agent':
                         $currentUserAgent = $value;
-                        if (!isset($rules['user_agents'][$currentUserAgent])) {
-                            $rules['user_agents'][$currentUserAgent] = [
-                                'disallow' => [],
-                                'allow' => [],
-                                'crawl-delay' => null,
-                            ];
+                        if (!in_array($currentUserAgent, $parsed->userAgents)) {
+                            $parsed->userAgents[] = $currentUserAgent;
                         }
                         break;
 
                     case 'disallow':
-                        $rules['user_agents'][$currentUserAgent]['disallow'][] = $value;
+                        $parsed->rules[] = new DTOs\RobotsRule($currentUserAgent, $value, false);
                         break;
 
                     case 'allow':
-                        $rules['user_agents'][$currentUserAgent]['allow'][] = $value;
+                        $parsed->rules[] = new DTOs\RobotsRule($currentUserAgent, $value, true);
                         break;
 
                     case 'crawl-delay':
-                        $rules['user_agents'][$currentUserAgent]['crawl-delay'] = (float)$value;
+                        $delay = (float) $value;
+                        $parsed->crawlDelays[$currentUserAgent] = $delay;
+                        if ($parsed->crawlDelay === null) {
+                            $parsed->crawlDelay = $delay;
+                        }
                         break;
 
                     case 'sitemap':
-                        $rules['sitemaps'][] = $value;
+                        $parsed->sitemaps[] = $value;
                         break;
                 }
             }
         }
 
-        return $rules;
+        return $parsed;
     }
 
     /**
