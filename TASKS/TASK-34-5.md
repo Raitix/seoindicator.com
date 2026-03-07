@@ -1,7 +1,7 @@
 # TASK-34-5: AIVisibilityService
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -108,6 +108,98 @@ Create the main `AIVisibilityService` that orchestrates project management, quer
 - Consider using Repository pattern for data access
 - Cache analytics with `Cache::remember()`
 - Query limits should be configurable via `config/ai-visibility.php`
+
+---
+
+## Comments
+
+### ProjectManager Prioritization (2026-03-07 18:48 UTC)
+
+**Priority: HIGH (confirmed)** ✅
+
+**Rationale:**
+- **Main Orchestration Service for GEO Feature** - AIVisibilityService coordinates project management, query execution, and analytics retrieval for the entire Generative Engine Optimization feature
+- **Central Integration Point** - All other services (AIQueryEngine, MentionParser) are consumed by this service
+- **Enables All Downstream Work** - API endpoints, frontend dashboards, and analytics features all depend on this service
+- **MVP Critical Path** - Task is in Phase 1 MVP (Core Tracking) of SPEC-034
+- **Business Value** - This service IS the product for users managing AI visibility projects
+
+**Risk: MEDIUM (confirmed)** ✅
+
+**Rationale:**
+- **Standard Laravel Service** - Well-established patterns for CRUD, caching, coordination
+- **Multiple Dependencies** - Needs Models, AIQueryEngine, and MentionParser
+- **Business Logic Complexity** - Query limits, analytics aggregation, alert detection
+- **No External APIs Directly** - Delegates to AIQueryEngine for API calls
+- **Caching Layer** - 1-hour cache for analytics adds complexity
+
+**Dependency Analysis:**
+
+| Dependency | Status | Ready |
+|------------|--------|-------|
+| TASK-34-2 (Models) | To Write Tests | ❌ NOT IMPLEMENTED |
+| TASK-34-3 (AIQueryEngine) | To Write Tests | ❌ NOT IMPLEMENTED |
+| TASK-34-4 (MentionParser) | To Write Tests | ❌ NOT IMPLEMENTED |
+
+**TDD Pattern Applied:**
+
+PreTester CAN design tests immediately using mocked interfaces:
+1. **Mocked AIVisibilityProject Model** - Define expected CRUD behavior
+2. **Mocked AIQueryEngine** - Define expected query/dispatch behavior
+3. **Mocked MentionParser** - Define expected parsing behavior
+4. **Test Categories:**
+   - `createProject()` validation (competitor count, keyword format)
+   - `updateProject()` / `deleteProject()` with ownership validation
+   - `runQueries()` dispatch and job tracking
+   - `getAnalytics()` aggregation with caching (1-hour TTL)
+   - `getCompetitorComparison()` brand vs competitors
+   - `checkAlerts()` threshold breach detection
+   - Query limit enforcement (Free/Pro/Business tiers)
+
+**Downstream Impact:**
+
+| Task | Depends On TASK-34-5 |
+|------|---------------------|
+| TASK-34-6 (Controller) | Exposes service via API |
+| TASK-34-7 (Query Job) | Background processing |
+| TASK-34-8+ (Frontend) | Dashboard displays |
+
+**Execution Order:**
+1. TASK-34-1 (Migrations) → Phase 1 foundation
+2. TASK-34-2 (Models) → To Write Tests (parallel)
+3. TASK-34-3 (AIQueryEngine) → To Write Tests (parallel)
+4. TASK-34-4 (MentionParser) → To Write Tests (parallel)
+5. TASK-34-5 (AIVisibilityService) → This task (TDD with mocked interfaces)
+6. TASK-34-6+ → After all Phase 1 services ready
+
+**Parallel Development Pattern:**
+- PreTester designs tests NOW with mocked service interfaces
+- Tests don't need actual models or services - use DTO mocks
+- All 4 core tasks (34-2, 34-3, 34-4, 34-5) can have tests designed in parallel
+- Integration testing happens when all dependencies reach `To Test Locally`
+
+**Key Service Methods to Test:**
+- `createProject()` - Creates project with validation (max 3 competitors)
+- `updateProject()` / `deleteProject()` - Ownership validation
+- `runQueries()` - Dispatches AIQueryJob for each platform
+- `getAnalytics()` - Aggregated metrics with 1-hour cache
+- `getCompetitorComparison()` - Brand vs competitors comparison
+- `checkAlerts()` - Threshold breach detection (±20%, +15% competitor gain)
+- Query limit enforcement per tier (Free: 5, Pro: 50, Business: 200)
+
+**Free Tools Compliance:**
+- Uses free OpenRouter models via AIQueryEngine
+- Caching reduces API calls
+- Query limits prevent abuse
+
+**Handoff to PreTester:** Ready for test design. Focus on:
+- Service method signatures and DTO return types
+- Mocked model/repository interfaces
+- Mocked AIQueryEngine for query dispatch
+- Mocked MentionParser for mention extraction
+- Cache layer testing with `Cache::remember()`
+- Alert detection thresholds
+- Query limit enforcement with custom exceptions
 
 ---
 
