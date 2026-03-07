@@ -143,4 +143,30 @@ return [
         // Case-sensitive URL paths
         'case_sensitive_paths' => true,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Performance Settings
+    |--------------------------------------------------------------------------
+    |
+    | Settings for performance-related SEO checks.
+    |
+    */
+
+    'performance' => [
+        // Response time threshold for "slow" pages (milliseconds)
+        'slow_threshold_ms' => env('AUDIT_SLOW_THRESHOLD', 3000),
+
+        // Response time threshold for "very slow" pages (milliseconds)
+        'very_slow_threshold_ms' => env('AUDIT_VERY_SLOW_THRESHOLD', 5000),
+
+        // Response time threshold for "acceptable" pages (milliseconds)
+        'acceptable_threshold_ms' => env('AUDIT_ACCEPTABLE_THRESHOLD', 1000),
+
+        // Response time threshold for "needs improvement" pages (milliseconds)
+        'needs_improvement_threshold_ms' => env('AUDIT_NEEDS_IMPROVEMENT_THRESHOLD', 2000),
+
+        // Maximum page size in KB before flagging as large
+        'max_page_size_kb' => env('AUDIT_MAX_PAGE_SIZE', 500),
+    ],
 ];

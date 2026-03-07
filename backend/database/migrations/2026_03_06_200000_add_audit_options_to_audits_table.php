@@ -33,8 +33,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('audits', function (Blueprint $table) {
-            $table->dropColumn(['max_pages', 'max_depth', 'user_agent', 'error_message']);
-        });
+        // SQLite doesn't support dropColumn in all versions
+        // For testing purposes, we'll check if the columns exist first
+        if (Schema::hasColumn('audits', 'max_pages')) {
+            Schema::table('audits', function (Blueprint $table) {
+                $table->dropColumn(['max_pages', 'max_depth', 'user_agent', 'error_message']);
+            });
+        }
     }
 };
