@@ -1,7 +1,7 @@
 # TASK-32-8: UseCaseSection Component
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `Medium`

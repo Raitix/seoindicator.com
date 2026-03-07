@@ -179,7 +179,7 @@ class AIVisibilityProjectController extends Controller
      */
     public function update(UpdateAIVisibilityProjectRequest $request, int $id): JsonResponse
     {
-        $project = AIVisibilityProject::find($id);
+        $project = $this->service->getProject($id, $request->user()->id);
 
         if (!$project) {
             return response()->json([
@@ -189,17 +189,6 @@ class AIVisibilityProjectController extends Controller
                     'message' => 'Project not found.',
                 ],
             ], 404);
-        }
-
-        // Authorization check
-        if (Gate::denies('update', $project)) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'FORBIDDEN',
-                    'message' => 'You do not have permission to update this project.',
-                ],
-            ], 403);
         }
 
         // Transform competitors from array of strings to expected format
@@ -240,15 +229,10 @@ class AIVisibilityProjectController extends Controller
      */
     public function destroy(Request $request, int $id): Response
     {
-        $project = AIVisibilityProject::find($id);
+        $project = $this->service->getProject($id, $request->user()->id);
 
         if (!$project) {
             abort(404, 'Project not found.');
-        }
-
-        // Authorization check
-        if (Gate::denies('delete', $project)) {
-            abort(403, 'You do not have permission to delete this project.');
         }
 
         $userId = $request->user()->id;
@@ -268,7 +252,7 @@ class AIVisibilityProjectController extends Controller
      */
     public function run(Request $request, int $id): JsonResponse
     {
-        $project = AIVisibilityProject::find($id);
+        $project = $this->service->getProject($id, $request->user()->id);
 
         if (!$project) {
             return response()->json([
@@ -280,7 +264,7 @@ class AIVisibilityProjectController extends Controller
             ], 404);
         }
 
-        // Authorization check
+        // Authorization check - verify user can run queries
         if (Gate::denies('runQueries', $project)) {
             return response()->json([
                 'success' => false,
