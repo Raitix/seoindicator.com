@@ -1,7 +1,7 @@
 # TASK-34-6: Project CRUD API Endpoints
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`

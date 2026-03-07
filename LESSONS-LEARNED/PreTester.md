@@ -570,4 +570,89 @@ const mockTopAudit = {
 
 ---
 
+## Laravel API Controller Testing (TASK-34-6)
+
+### Controller Test Patterns
+- Mock service interfaces with Mockery for isolation
+- Use `Sanctum::actingAs($user)` for authentication in tests
+- Use `LengthAwarePaginator` for paginated response mocks
+- Test all CRUD operations plus custom actions
+- Test HTTP method restrictions (405 for wrong method)
+- Test rate limiting with multiple sequential requests
+
+### Form Request Testing
+- Test each validation rule independently
+- Test boundary values (min, max, exact)
+- Test required vs optional fields
+- Test array validation (type, count, item validation)
+- Test enum validation (valid values, invalid values, case sensitivity)
+- Test that authorize() returns true for authenticated users
+- Test custom error messages exist
+
+### Policy Testing
+- Test user can access their own resources
+- Test user cannot access another user's resources
+- Test all policy methods exist (view, update, delete, custom)
+- Test with same user object and different objects with same ID
+- Test denial of all actions for non-owner
+
+### Mock Project Pattern
+```php
+protected function mockProject(array $attributes = []): object
+{
+    return new class($attributes) {
+        public array $attributes;
+
+        public function __construct(array $attributes = [])
+        {
+            $this->attributes = array_merge([
+                'id' => 1,
+                'user_id' => 1,
+                'brand_name' => 'Test Brand',
+                // ... default values
+            ], $attributes);
+        }
+
+        public function __get(string $name)
+        {
+            return $this->attributes[$name] ?? null;
+        }
+    };
+}
+```
+
+### Service Mock Pattern
+```php
+$this->mock(AIVisibilityServiceInterface::class, function ($mock) use ($project) {
+    $mock->shouldReceive('getProject')->once()->andReturn($project);
+    $mock->shouldReceive('runQueries')->once()->andReturn(['job_ids' => ['uuid-1']]);
+});
+```
+
+### Rate Limiting Tests
+- Test rate limit enforcement (n requests succeed, n+1 fails with 429)
+- Test rate limit headers if present
+- Test rate limit reset after time period
+
+### Error Response Testing
+- 401 Unauthorized: `{ message: "Unauthenticated" }`
+- 403 Forbidden: `{ success: false, error: "Forbidden" }`
+- 404 Not Found: `{ success: false, error: "Not found" }`
+- 422 Validation Error: `{ success: false, errors: {...} }`
+- 429 Rate Limited: `{ success: false, error: "Too many requests", retry_after: 3600 }`
+
+### Security Test Categories
+- SQL injection in input fields (stored as literal string)
+- SQL injection in URL parameters (404, no exploitation)
+- XSS in text fields (stored but escaped in output)
+- Path traversal in URL (404, no file access)
+- Mass assignment protection (user_id, is_admin ignored)
+- CSRF protection (token-based auth)
+- No sensitive data in responses (no passwords, tokens)
+- Enumeration protection (same error for non-existent and unauthorized)
+- Input length limits enforced
+- JSON parsing errors handled (400 for invalid JSON)
+
+---
+
 Last updated: 2026-03-07
