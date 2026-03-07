@@ -1,7 +1,7 @@
 # TASK-14-9: Implement HTML Analysis Checkers
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -177,3 +177,23 @@ _Agent communication log_
 - Use symfony/dom-crawler for HTML parsing (Laravel built-in)
 
 **Status changed:** `To Prioritize` → `To Write Tests`
+
+### [2026-03-07 10:25] Agent: PreTester
+**Test Design Complete:**
+
+| Test File | Tests | Coverage |
+|-----------|-------|----------|
+| `TitleTagCheckerTest.php` | 45 | Missing/empty title, length rules, special chars, edge cases |
+| `MetaDescriptionCheckerTest.php` | 42 | Missing/empty description, length rules, case insensitivity |
+| `H1CheckerTest.php` | 35 | Missing/empty H1, multiple H1s, nested elements |
+| `ViewportCheckerTest.php` | 32 | Missing viewport, invalid settings, case insensitivity |
+| `BaseCheckerTest.php` | 25 | Helper methods, extraction logic, finding creation |
+| **Total** | **179** | All detection rules covered |
+
+**TDD Pattern:**
+- Tests use Mockery for CrawlResult with HTML property
+- IssueFinding DTO assertions for severity, type, recommendation
+- symfony/dom-crawler used for HTML parsing
+- Unicode/emoji/special character tests included
+
+**Status changed:** `To Write Tests` → `To Develop`
