@@ -122,6 +122,150 @@ Keyword-based classification (free approach):
 - TASK-34-7: Query Job (uses AIQueryEngine in background)
 
 ---
+## MentionParser Service (TASK-34-4)
+
+### Service Description
+Core parsing service for the AI Visibility Tracking feature (FEAT-034) that extracts brand mentions from AI-generated responses, determines mention types (list/comparison/recommendation/neutral), and extracts surrounding context. Part of the Generative Engine Optimization (GEO) infrastructure.
+
+### Component Location
+- **Service:** `backend/app/Services/AIVisibility/MentionParser.php`
+- **Tests:** `backend/tests/Unit/Services/AIVisibility/MentionParserTest.php`
+- **Test Documentation:** `TESTS/TEST-34-4.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `extractMentions(response, targetBrands)` | Extract brand mentions with position, context, and type |
+| `extractContext(text, position, radius)` | Extract surrounding text around a mention position |
+| `detectMentionType(context)` | Classify mention as list/comparison/recommendation/neutral |
+| `extractCompetitorMentions(response, competitors)` | Extract competitor mentions using same logic as brands |
+
+### Mention Type Detection Patterns
+
+| Type | Trigger Patterns | Example |
+|------|-----------------|---------|
+| `list` | "top 10", "best", "including", "list of" | "Here are the top 10 SEO tools including SEOIndicator..." |
+| `comparison` | "vs", "compared to", "better than", "versus" | "SEOIndicator vs Ahrefs is a common comparison..." |
+| `recommendation` | "I recommend", "you should use", "I suggest" | "I recommend SEOIndicator for small businesses..." |
+| `neutral` | Default fallback (no pattern match) | "SEOIndicator is a tool for tracking rankings..." |
+
+### Return Structure
+
+**extractMentions() returns:**
+```php
+[
+    [
+        'brand' => 'SEOIndicator',
+        'position' => 25,        // Character position in response
+        'context' => '...',      // Surrounding text (100 chars radius)
+        'type' => 'list'         // list|comparison|recommendation|neutral
+    ],
+    // ... additional mentions
+]
+```
+
+**extractCompetitorMentions() returns:**
+```php
+[
+    [
+        'competitor' => 'Ahrefs',
+        'position' => 150,
+        'context' => '...'
+    ],
+    // ... additional competitor mentions
+]
+```
+
+### Word Boundary Detection
+
+The service uses character-by-character word boundary detection for reliable matching with unicode text:
+
+```php
+private function isWordChar(string $char): bool
+{
+    // ASCII word chars: a-z, A-Z, 0-9, _
+    // Plus unicode letters and numbers
+    return ctype_alnum($char) || 
+           $char === '_' || 
+           preg_match('/[\p{L}\p{N}]/u', $char);
+}
+```
+
+This approach handles:
+- Standard ASCII brand names (SEOIndicator, Ahrefs)
+- Special characters in brand names (C++, C#, .NET)
+- Unicode brand names (Japanese, Cyrillic)
+- Emoji in text content
+
+### Special Character Handling
+
+| Character | Handling |
+|-----------|----------|
+| `$` | Escaped properly (e.g., "JQuery$") |
+| `+` | Handled (e.g., "C++") |
+| `#` | Handled (e.g., "C#") |
+| `.` | Handled (e.g., ".NET") |
+| `/` | Handled (e.g., "A/B testing") |
+| `()[]` | Handled (e.g., "Tool (Pro)") |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `MentionParserTest.php` | 86 | ✅ PASS |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Class Structure | 2 | Namespace, instantiation |
+| extractMentions() | 25 | Brand extraction, position, word boundaries, unicode |
+| extractContext() | 14 | Context extraction, radius, edge cases |
+| detectMentionType() | 16 | Type detection (list/comparison/recommendation/neutral) |
+| extractCompetitorMentions() | 9 | Competitor mention extraction |
+| Edge Cases | 15 | Special characters, unicode, large responses |
+| Integration | 5 | Full flows, performance |
+
+### Performance Characteristics
+
+| Test Case | Result |
+|-----------|--------|
+| 100 brands processed | 3.15ms |
+| 50KB response handling | < 50ms |
+| Unicode text (Japanese, Cyrillic) | < 10ms |
+| Target for 100 brands | < 1s ✅ |
+
+### Security Considerations
+
+| Concern | Mitigation |
+|---------|------------|
+| SQL Injection | N/A - No database queries |
+| XSS | N/A - No HTML output |
+| External APIs | N/A - Pure PHP string operations |
+| Special Characters | Properly escaped via character-by-character search |
+| Unicode | Full support via `\p{L}` and `\p{N}` patterns |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `5831b489` |
+| Deployment Method | Manual SSH (GitHub Actions timeout workaround) |
+| Health Check | ✅ 200 OK |
+| Tests | 86/86 passing (136 assertions) |
+| Status | Complete |
+
+### Dependencies
+- None - Pure PHP service with no external dependencies
+
+### Related Tasks
+- TASK-34-3: AIQueryEngine (produces responses parsed by MentionParser)
+- TASK-34-5: AIVisibilityService (uses MentionParser for analysis)
+- TASK-34-7: Query Job (uses MentionParser in background processing)
+
+---
 ## Typography and Spacing Design System (TASK-28-2)
 
 ### Feature Description

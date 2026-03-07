@@ -474,6 +474,16 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
     // Credit Transaction History (TASK-26-7, SPEC-026)
     Route::get('credits/transactions', [CreditController::class, 'transactions']);
+
+    // AI Visibility Projects (TASK-34-6, SPEC-034)
+    Route::prefix('ai-visibility')->group(function () {
+        Route::get('projects', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityProjectController::class, 'index']);
+        Route::post('projects', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityProjectController::class, 'store']);
+        Route::get('projects/{id}', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityProjectController::class, 'show'])->where('id', '[0-9]+');
+        Route::put('projects/{id}', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityProjectController::class, 'update'])->where('id', '[0-9]+');
+        Route::delete('projects/{id}', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityProjectController::class, 'destroy'])->where('id', '[0-9]+');
+        Route::post('projects/{id}/run', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityProjectController::class, 'run'])->where('id', '[0-9]+');
+    });
 });
 
 /*

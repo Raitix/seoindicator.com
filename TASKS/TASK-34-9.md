@@ -1,7 +1,7 @@
 # TASK-34-9: Frontend Create Project Form
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -189,6 +189,109 @@ PreTester CAN design tests immediately using mocked API responses:
 - Form submission states (idle, loading, success, error)
 - Accessibility requirements (labels, focus, keyboard, ARIA)
 - Responsive form layout
+
+---
+
+## Comments
+
+### PreTester Test Coverage (2026-03-07 20:15 UTC)
+
+**Status:** To Develop ✅
+
+**Tests Created:** 235 test scenarios across 3 test files
+
+| File | Tests | Purpose |
+|------|-------|---------|
+| `TESTS/TASK-34-9.md` | - | Test documentation |
+| `frontend/__tests__/app/ai-visibility/new/page.test.tsx` | 40 | Page component, routing, SEO, accessibility |
+| `frontend/__tests__/components/ai-visibility/CreateProjectForm.test.tsx` | 120 | Form validation, submission, states, error handling |
+| `frontend/__tests__/components/ai-visibility/TagInput.test.tsx` | 75 | Tag input behavior, limits, duplicates, accessibility |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| PAGE-* | 40 | Page rendering, auth, SEO, navigation, accessibility |
+| FORM-RENDER | 8 | Form rendering, all fields visible |
+| FORM-FIELDS | 15 | Field rendering, labels, placeholders |
+| FORM-VALIDATION | 25 | Client-side validation, error messages |
+| FORM-TAGS | 15 | Keywords/competitors tag behavior |
+| FORM-FREQUENCY | 8 | Tracking frequency select |
+| FORM-TEMPLATES | 8 | Query templates multi-select |
+| FORM-SUBMIT | 15 | Form submission, loading state |
+| FORM-SUCCESS | 8 | Success flow, redirect, toast |
+| FORM-ERROR | 12 | Error handling, inline errors, retry |
+| FORM-CANCEL | 5 | Cancel button, navigation |
+| FORM-A11Y | 10 | Accessibility attributes |
+| FORM-EDGE | 11 | Edge cases, boundary conditions |
+| TAG-* | 75 | TagInput component tests |
+
+**Component Interfaces Defined:**
+
+```typescript
+interface CreateProjectFormProps {
+  onSuccess?: (projectId: number) => void;
+  onCancel?: () => void;
+  className?: string;
+  defaultValues?: Partial<CreateProjectFormData>;
+}
+
+interface CreateProjectFormData {
+  brand_name: string;           // required, max 255 chars
+  keywords: string[];           // required, 1-10 items, each max 100 chars
+  competitors: string[];        // required, 1-3 items, each max 100 chars
+  tracking_frequency: 'daily' | 'weekly' | 'monthly';  // default: 'weekly'
+  query_templates?: string[];   // optional
+}
+
+interface TagInputProps {
+  id: string;
+  name: string;
+  label: string;
+  value: string[];
+  onChange: (tags: string[]) => void;
+  minTags?: number;
+  maxTags: number;
+  maxLength?: number;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  error?: string;
+  className?: string;
+}
+```
+
+**Validation Rules Tested:**
+- Brand Name: required, max 255 chars, alphanumeric/spaces/hyphens
+- Keywords: required, 1-10 items, each max 100 chars
+- Competitors: required, 1-3 items, each max 100 chars
+- Tracking Frequency: optional, default 'weekly'
+
+**API Integration Mocked:**
+- `POST /api/v1/ai-visibility/projects` - Create project
+- Success (201): Redirect to `/ai-visibility/{projectId}`
+- Validation Error (422): Display inline errors
+- Rate Limit (429): Show toast notification
+- Server Error (500): Show toast with retry option
+
+**Key Test Patterns:**
+- Mock React Query mutation with `vi.mock('@tanstack/react-query')`
+- Mock Next.js navigation with `vi.mock('next/navigation')`
+- Mock sonner toast with `vi.mock('sonner')`
+- Mock Lucide icons with `data-testid` attributes
+- TDD mock components included in test files for reference
+
+**Dependencies (Mocked):**
+- TASK-34-6 (API Endpoints) - Mocked in tests
+- TASK-34-8 (Project List) - Navigation destination
+
+**Handoff to Developer:**
+1. Create page at `frontend/app/ai-visibility/new/page.tsx`
+2. Create `CreateProjectForm` component with React Hook Form + Zod
+3. Create `TagInput` reusable component
+4. Integrate with API endpoint (TASK-34-6)
+5. Add shadcn/ui components (Input, Select, Button)
+6. Run tests: `npm test -- __tests__/ai-visibility/new`
 
 ---
 
