@@ -108,7 +108,8 @@ export function formatContextWindow(tokens: number): string {
     return '1M tokens';
   }
   if (tokens >= 1000) {
-    return `${Math.round(tokens / 1000)}K tokens`;
+    // Use floor to avoid rounding up (e.g., 32.7K should show as 32K, not 33K)
+    return `${Math.floor(tokens / 1000)}K tokens`;
   }
   return `${tokens} tokens`;
 }

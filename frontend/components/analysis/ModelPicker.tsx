@@ -224,8 +224,8 @@ export function ModelPicker({
     );
   }
 
-  // Empty state
-  if (models.length === 0) {
+  // Empty state (handle null/undefined models gracefully)
+  if (!models || models.length === 0) {
     return (
       <div className={`model-picker-container ${className}`}>
         <label className="block text-sm font-medium text-gray-700 mb-2">
