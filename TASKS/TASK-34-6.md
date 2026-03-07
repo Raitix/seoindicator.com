@@ -1,7 +1,7 @@
 # TASK-34-6: Project CRUD API Endpoints
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -88,6 +88,97 @@ Create REST API endpoints for AI Visibility project management.
 - Use form requests for validation: `StoreAIVisibilityProjectRequest`, `UpdateAIVisibilityProjectRequest`
 - Use policies for authorization: `AIVisibilityProjectPolicy`
 - Rate limiting via `RateLimiter` facade or middleware
+
+---
+
+## Comments
+
+### ProjectManager Prioritization (2026-03-07 18:53 UTC)
+
+**Priority: HIGH (confirmed)** ✅
+
+**Rationale:**
+- **API Foundation for GEO Feature** - Exposes AIVisibilityService via REST endpoints for frontend consumption
+- **Enables All Frontend Work** - TASK-34-8 (Project List), TASK-34-9 (Create Form), TASK-34-10 (Dashboard) all depend on these endpoints
+- **MVP Critical Path** - Part of Phase 1 MVP (Core Tracking) in SPEC-034
+- **User-Facing Functionality** - Project CRUD is the core user workflow for AI visibility tracking
+- **Business Value** - Without these endpoints, users cannot create/manage projects
+
+**Risk: MEDIUM (confirmed)** ✅
+
+**Rationale:**
+- **Standard Laravel Controller** - Well-established CRUD patterns with FormRequest validation
+- **Security Requirements** - Authentication (Sanctum), authorization (ownership), rate limiting
+- **Input Validation** - Brand name, keywords array, competitors array validation
+- **Error Handling** - Standard HTTP status codes (200, 201, 403, 404, 422, 429)
+- **No External APIs Directly** - Delegates all business logic to AIVisibilityService
+
+**Dependency Status:**
+
+| Dependency | Status | Ready |
+|------------|--------|-------|
+| TASK-34-5 (AIVisibilityService) | To Write Tests | ❌ NOT IMPLEMENTED |
+
+**TDD Pattern Applied:**
+
+PreTester CAN design tests immediately using mocked service interfaces:
+
+1. **Mock AIVisibilityServiceInterface** - Define expected CRUD responses
+2. **Laravel HTTP Testing** - Use `$this->mock()` for service mocks
+3. **Test Categories:**
+   - Route registration (`GET /projects`, `POST /projects`, `GET /projects/{id}`, `PUT /projects/{id}`, `DELETE /projects/{id}`)
+   - Authentication middleware (`auth:sanctum`)
+   - Authorization (user owns project - 403 for unauthorized)
+   - Rate limiting (POST: 5/hour, run: 3/hour)
+   - Request validation errors (422)
+   - Success responses (200, 201)
+   - Not found responses (404)
+   - Rate limit exceeded (429)
+
+**API Endpoints to Test:**
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/v1/ai-visibility/projects` | List user's projects |
+| POST | `/api/v1/ai-visibility/projects` | Create new project |
+| GET | `/api/v1/ai-visibility/projects/{id}` | Get project details |
+| PUT | `/api/v1/ai-visibility/projects/{id}` | Update project |
+| DELETE | `/api/v1/ai-visibility/projects/{id}` | Delete project |
+| POST | `/api/v1/ai-visibility/projects/{id}/run` | Manually trigger query run |
+
+**Validation Rules (from SPEC-034):**
+- `brand_name`: required, string, max 255 chars, alphanumeric + spaces
+- `keywords`: required, array, max 10 items, each string max 100 chars
+- `competitors`: required, array, max 3 items, each string max 100 chars
+- `tracking_frequency`: optional, enum (daily, weekly, monthly)
+
+**Rate Limiting (from SPEC-034):**
+- POST `/projects`: 5 requests per hour
+- POST `/projects/{id}/run`: 3 requests per hour
+
+**Execution Order:**
+1. PreTester designs tests NOW with mocked AIVisibilityService
+2. Tests verify route registration, middleware, validation, error responses
+3. Developer implements when TASK-34-5 reaches `To Test Locally`
+4. Integration tests run against real service when ready
+
+**Parallel Development:**
+- TASK-34-5 (AIVisibilityService) and TASK-34-6 (Controller) can have tests designed in parallel
+- Both use TDD with mocked interfaces
+- Integration happens when dependencies are implemented
+
+**Free Tools Compliance:**
+- No external API costs for controller implementation
+- Rate limiting prevents abuse
+- Query limits enforced at service level
+
+**Handoff to PreTester:** Ready for test design. Focus on:
+- Mock AIVisibilityServiceInterface with all CRUD methods
+- Controller instantiation and route registration
+- FormRequest validation for create/update
+- Authorization middleware for ownership checks
+- Rate limiting middleware verification
+- Error response format consistency
 
 ---
 

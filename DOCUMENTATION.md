@@ -36016,6 +36016,161 @@ The `formatComparisonTitle` function converts slugs to human-readable titles:
 - FEAT-032: Competitor Comparison Landing Pages
 
 ---
+## OG Image Generation for Comparisons (TASK-32-17)
+
+### Feature Description
+Dynamic Open Graph image generation for comparison pages to improve social sharing appearance. Pre-generates static OG images at build time for all 13 comparison slugs, ensuring compatibility with Next.js static export (`output: 'export'`).
+
+### Component Locations
+- **OG Images:** `frontend/public/og/compare/{slug}.png` (13 images)
+- **Generation Script:** `frontend/scripts/generate-og-images.mjs`
+- **OG Utility:** `frontend/lib/compare/og-images.ts`
+- **API Route (fallback):** `frontend/app/api/og/route.tsx`
+- **Tests:** `frontend/__tests__/app/api/og/route.test.tsx`
+
+### Implementation Strategy
+
+The implementation uses **pre-generated static images** rather than runtime generation due to Next.js static export constraints. The `ImageResponse` class from `next/og` requires server-side rendering and is incompatible with `output: 'export'`.
+
+| Approach | Status | Notes |
+|----------|--------|-------|
+| Pre-generated static images | ✅ Implemented | Build-time generation |
+| Dynamic API route | ❌ Not used | Incompatible with static export |
+
+### Build Script
+
+**Command:** `npm run build:og` (integrated into `npm run build`)
+
+**Technology Stack:**
+| Library | Purpose |
+|---------|---------|
+| `satori` | JSX to SVG conversion |
+| `@resvg/resvg-js` | SVG to PNG rendering |
+
+**Generation Process:**
+1. Read all comparison slugs from registry (`COMPARISON_SLUGS`)
+2. Generate JSX template with competitor names
+3. Convert JSX to SVG using satori
+4. Render SVG to PNG using resvg-js
+5. Save to `/public/og/compare/{slug}.png`
+
+### Generated OG Images
+
+| Image | Slug | Status |
+|-------|------|--------|
+| seoindicator-vs-ahrefs.png | seoindicator-vs-ahrefs | ✅ 200 |
+| seoindicator-vs-semrush.png | seoindicator-vs-semrush | ✅ 200 |
+| seoindicator-vs-moz.png | seoindicator-vs-moz | ✅ 200 |
+| seoindicator-vs-ubersuggest.png | seoindicator-vs-ubersuggest | ✅ 200 |
+| seoindicator-vs-gsc.png | seoindicator-vs-gsc | ✅ 200 |
+| seoindicator-vs-ga.png | seoindicator-vs-ga | ✅ 200 |
+| seoindicator-vs-answerthepublic.png | seoindicator-vs-answerthepublic | ✅ 200 |
+| ahrefs-vs-moz.png | ahrefs-vs-moz | ✅ 200 |
+| ahrefs-vs-semrush.png | ahrefs-vs-semrush | ✅ 200 |
+| ahrefs-vs-ubersuggest.png | ahrefs-vs-ubersuggest | ✅ 200 |
+| moz-vs-semrush.png | moz-vs-semrush | ✅ 200 |
+| moz-vs-ubersuggest.png | moz-vs-ubersuggest | ✅ 200 |
+| semrush-vs-ubersuggest.png | semrush-vs-ubersuggest | ✅ 200 |
+
+### Image Specifications
+
+| Property | Value |
+|----------|-------|
+| Dimensions | 1200x630 (OG standard) |
+| Format | PNG |
+| File Size | ~120KB per image |
+| Background | Dark gradient (`#1e3a5f` to `#0f172a`) |
+| Font | System fonts (Arial/Segoe/Liberation Sans) |
+
+### OG Metadata Integration
+
+Comparison pages include OG image metadata via `getComparisonOGMetadata()`:
+
+```typescript
+// In comparison page metadata
+export async function generateMetadata({ params }): Promise<Metadata> {
+  const comparison = getComparisonBySlug(params.slug);
+  const ogImageUrl = `https://seoindicator.com/og/compare/${params.slug}.png`;
+  
+  return {
+    openGraph: {
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: [ogImageUrl],
+    },
+  };
+}
+```
+
+### Utility Functions
+
+**File:** `frontend/lib/compare/og-images.ts`
+
+| Function | Description |
+|----------|-------------|
+| `getComparisonOGImage(slug)` | Returns OG image URL for a comparison slug |
+| `getAllOGImages()` | Returns all OG image URLs for sitemap |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| HTML Tag Stripping | Removes `<script>`, `<img>`, and other tags |
+| JavaScript Removal | Strips `javascript:` and `on*=` handlers |
+| Name Truncation | Limits competitor names to 50 characters |
+| URL Encoding | Safe handling of encoded parameters |
+| Unicode Support | Handles emoji and special characters |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `route.test.tsx` | 67 | ✅ PASS |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| OG-ROUTE | 4 | Route structure, GET export |
+| OG-PARAMS | 10 | Query params, defaults |
+| OG-DIMENSIONS | 5 | 1200x630 OG standard |
+| OG-HEADERS | 5 | Content-Type, caching |
+| OG-CONTENT | 8 | Content, branding |
+| OG-SEC | 8 | XSS, injection, truncation |
+| OG-EDGE | 10 | Unicode, emoji, boundaries |
+| OG-HTTP | 3 | HTTP methods |
+| OG-PERF | 3 | Performance benchmarks |
+| AC | 7 | All 7 ACs verified |
+| OG-INT | 4 | Integration flows |
+
+### API Route (Documentation Only)
+
+The API route `/api/og` has `export const dynamic = 'error'` to prevent accidental use with static export. Pre-generated images are served directly from `/public/og/compare/`.
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | Deployed via GitHub Actions |
+| OG Images | 13/13 deployed |
+| Content-Type | image/png |
+| Cache-Control | public, max-age=604800 (7 days) |
+| Tests | 67/67 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-32-2 (Registry for competitor data) - Done ✅
+- TASK-32-3 (Page for metadata integration) - Done ✅
+
+### Related Tasks
+- TASK-32-15: Sitemap integration
+- TASK-32-16: Internal linking implementation
+- FEAT-032: Competitor Comparison Landing Pages
+
+---
 ## PricingComparison Component (TASK-32-6)
 
 ### Component Description

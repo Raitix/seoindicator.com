@@ -224,6 +224,8 @@ export interface ProsConsCardProps {
   cons: string[];
   /** Optional overall rating (e.g., 4.5) */
   overallRating?: number;
+  /** Optional CSS class name */
+  className?: string;
 }
 
 /**
