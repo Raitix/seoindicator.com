@@ -583,7 +583,7 @@ class StoreProjectRequestTest extends TestCase
         $request = new StoreAIVisibilityProjectRequest();
         $validator = Validator::make([
             'brand_name' => str_repeat('a', 255),
-            'keywords' => range(1, 10),
+            'keywords' => array_map('strval', range(1, 10)),
             'competitors' => ['A', 'B', 'C'],
         ], $request->rules(), $request->messages());
 
@@ -607,7 +607,11 @@ class StoreProjectRequestTest extends TestCase
 
             $request->passedValidation();
 
-            $this->assertArrayNotHasKey('extra_field', $request->validated());
+            // After passedValidation, extra fields should be removed from the request input
+            $this->assertArrayNotHasKey('extra_field', $request->all());
+            $this->assertArrayHasKey('brand_name', $request->all());
+            $this->assertArrayHasKey('keywords', $request->all());
+            $this->assertArrayHasKey('competitors', $request->all());
         } else {
             $this->assertTrue(true);
         }

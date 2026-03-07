@@ -32,14 +32,28 @@ class UpdateAIVisibilityProjectRequest extends FormRequest
         return [
             'brand_name' => ['sometimes', 'required', 'string', 'max:255'],
             'keywords' => ['sometimes', 'required', 'array', 'min:1', 'max:10'],
-            'keywords.*' => ['string', 'max:100'],
+            'keywords.*' => ['required', 'string', 'max:100', 'min:1'],
             'competitors' => ['sometimes', 'required', 'array', 'min:1', 'max:3'],
-            'competitors.*' => ['string', 'max:100'],
+            'competitors.*' => ['required', 'string', 'max:100', 'min:1'],
             'query_templates' => ['nullable', 'array'],
             'query_templates.*' => ['string', 'max:500'],
             'tracking_frequency' => ['nullable', 'string', 'in:daily,weekly,monthly'],
             'is_active' => ['sometimes', 'boolean'],
         ];
+    }
+
+    /**
+     * Handle a passed validation attempt.
+     */
+    public function passedValidation(): void
+    {
+        // Get only the fields defined in the rules
+        $rules = $this->rules();
+        $allowedFields = array_keys($rules);
+        
+        // Filter the input to only include allowed fields
+        $filtered = array_intersect_key($this->all(), array_flip($allowedFields));
+        $this->replace($filtered);
     }
 
     /**
@@ -56,11 +70,15 @@ class UpdateAIVisibilityProjectRequest extends FormRequest
             'keywords.array' => 'Keywords must be provided as an array.',
             'keywords.min' => 'At least one keyword is required.',
             'keywords.max' => 'You can add a maximum of 10 keywords.',
+            'keywords.*.required' => 'Each keyword is required.',
+            'keywords.*.min' => 'Each keyword must be at least 1 character.',
             'keywords.*.max' => 'Each keyword may not be greater than 100 characters.',
             'competitors.required' => 'At least one competitor is required.',
             'competitors.array' => 'Competitors must be provided as an array.',
             'competitors.min' => 'At least one competitor is required.',
             'competitors.max' => 'You can add a maximum of 3 competitors.',
+            'competitors.*.required' => 'Each competitor is required.',
+            'competitors.*.min' => 'Each competitor name must be at least 1 character.',
             'competitors.*.max' => 'Each competitor name may not be greater than 100 characters.',
             'tracking_frequency.in' => 'Tracking frequency must be daily, weekly, or monthly.',
         ];
