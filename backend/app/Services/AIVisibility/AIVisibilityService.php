@@ -523,7 +523,7 @@ class AIVisibilityService implements AIVisibilityServiceInterface
             $changePercent = (($currentMentions - $previousBrandMentions) / $previousBrandMentions) * 100;
 
             if ($changePercent >= $thresholds['mention_spike']) {
-                $alert = $this->createAlert(
+                $alert = $this->createAlertInternal(
                     $project->id,
                     AIVisibilityAlert::TYPE_MENTION_SPIKE,
                     $thresholds['mention_spike'],
@@ -535,7 +535,7 @@ class AIVisibilityService implements AIVisibilityServiceInterface
                     $alerts[] = $alert;
                 }
             } elseif ($changePercent <= -$thresholds['mention_drop']) {
-                $alert = $this->createAlert(
+                $alert = $this->createAlertInternal(
                     $project->id,
                     AIVisibilityAlert::TYPE_MENTION_DROP,
                     $thresholds['mention_drop'],
@@ -555,7 +555,7 @@ class AIVisibilityService implements AIVisibilityServiceInterface
             if ($competitor['mention_rate'] > $comparison['brand']['mention_rate']) {
                 $gap = $competitor['mention_rate'] - $comparison['brand']['mention_rate'];
                 if ($gap >= $thresholds['competitor_gain']) {
-                    $alert = $this->createAlert(
+                    $alert = $this->createAlertInternal(
                         $project->id,
                         AIVisibilityAlert::TYPE_COMPETITOR_GAIN,
                         $thresholds['competitor_gain'],
@@ -877,7 +877,7 @@ class AIVisibilityService implements AIVisibilityServiceInterface
     }
 
     /**
-     * Create an alert if not duplicate.
+     * Create an alert if not duplicate (internal helper).
      *
      * @param int $projectId
      * @param string $type
@@ -888,7 +888,7 @@ class AIVisibilityService implements AIVisibilityServiceInterface
      * @param string|null $competitorName
      * @return AIVisibilityAlert|null
      */
-    protected function createAlert(
+    protected function createAlertInternal(
         int $projectId,
         string $type,
         float $threshold,
@@ -1162,6 +1162,47 @@ class AIVisibilityService implements AIVisibilityServiceInterface
             'mention_rate_critical' => config('ai-visibility.alert_thresholds.mention_critical', 0.5),
             'share_of_voice_drop' => config('ai-visibility.alert_thresholds.share_of_voice_drop', 0.1),
             'sentiment_change' => config('ai-visibility.alert_thresholds.sentiment_change', 0.3),
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function createAlert(array $data): array
+    {
+        $alert = DB::transaction(function () use ($data) {
+            $alert = AIVisibilityAlert::create([
+                'project_id' => $data['project_id'],
+                'alert_type' => $data['alert_type'],
+                'threshold' => $data['threshold'],
+                'previous_value' => $data['previous_value'] ?? null,
+                'current_value' => $data['current_value'] ?? null,
+                'change_percent' => $data['change_percent'] ?? null,
+                'severity' => $data['severity'] ?? 'warning',
+                'triggered_at' => now(),
+                'is_read' => false,
+                'is_resolved' => false,
+            ]);
+
+            $this->logger->info('AI Visibility alert created', [
+                'alert_id' => $alert->id,
+                'project_id' => $data['project_id'],
+                'type' => $data['alert_type'],
+            ]);
+
+            return $alert;
+        });
+
+        return [
+            'id' => $alert->id,
+            'project_id' => $alert->project_id,
+            'alert_type' => $alert->alert_type,
+            'threshold' => $alert->threshold,
+            'previous_value' => $alert->previous_value,
+            'current_value' => $alert->current_value,
+            'change_percent' => $alert->change_percent,
+            'severity' => $alert->severity,
+            'triggered_at' => $alert->triggered_at?->toIso8601String(),
         ];
     }
 }

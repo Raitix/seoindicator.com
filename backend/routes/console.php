@@ -28,15 +28,15 @@ Artisan::command('rank-checks:schedule {--force}', function (\App\Services\Sched
 // AI Visibility scheduled jobs
 Schedule::job(new RunAIVisibilityQueriesJob)
     ->weeklyOn(0, '02:00')
-    ->name('ai-visibility:run-queries')
+    ->name('ai-visibility:run-queries RunAIVisibilityQueries')
     ->withoutOverlapping(3600);
 
 Schedule::job(new AggregateAIVisibilityAnalyticsJob)
     ->dailyAt('03:00')
-    ->name('ai-visibility:aggregate-analytics')
+    ->name('ai-visibility:aggregate-analytics AggregateAIVisibilityAnalytics')
     ->withoutOverlapping(3600);
 
 Schedule::job(new CheckAIVisibilityAlertsJob)
     ->cron('0 */6 * * *')
-    ->name('ai-visibility:check-alerts')
+    ->name('ai-visibility:check-alerts CheckAIVisibilityAlerts')
     ->withoutOverlapping(1800);

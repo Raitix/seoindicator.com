@@ -34,16 +34,74 @@ class KernelScheduleTest extends TestCase
             $command = $event->command ?? '';
             $description = $event->description ?? '';
 
-            if (
-                str_contains($command, $jobClass)
-                || str_contains($description, $jobClass)
-                || str_contains((string) $event, $jobClass)
-            ) {
+            // Check command and description
+            if (str_contains($command, $jobClass) || str_contains($description, $jobClass)) {
                 return $event;
+            }
+
+            // For callback events, check the job name if available
+            if (method_exists($event, 'getJobName')) {
+                $jobName = $event->getJobName();
+                if ($jobName && str_contains($jobName, $jobClass)) {
+                    return $event;
+                }
+            }
+
+            // Check the event summary if it's a job event
+            if (method_exists($event, 'summaryForDisplay')) {
+                $summary = $event->summaryForDisplay();
+                if (str_contains($summary, $jobClass)) {
+                    return $event;
+                }
+            }
+
+            // Check the name property (for Schedule::job() with ->name())
+            if (property_exists($event, 'name')) {
+                $name = $event->name;
+                if ($name && str_contains($name, $jobClass)) {
+                    return $event;
+                }
+            }
+
+            // Check description property
+            if (property_exists($event, 'description')) {
+                $desc = $event->description;
+                if ($desc && str_contains($desc, $jobClass)) {
+                    return $event;
+                }
             }
         }
 
         return null;
+    }
+
+    /**
+     * Get a string representation of an event for matching.
+     */
+    protected function getEventString(object $event): string
+    {
+        $parts = [];
+
+        if (isset($event->command)) {
+            $parts[] = $event->command;
+        }
+
+        if (isset($event->description)) {
+            $parts[] = $event->description;
+        }
+
+        if (method_exists($event, 'summaryForDisplay')) {
+            $parts[] = $event->summaryForDisplay();
+        }
+
+        if (method_exists($event, 'getJobName')) {
+            $jobName = $event->getJobName();
+            if ($jobName) {
+                $parts[] = $jobName;
+            }
+        }
+
+        return implode(' ', $parts);
     }
 
     // ============================================
@@ -98,7 +156,7 @@ class KernelScheduleTest extends TestCase
 
         if ($event) {
             // Check that job runs on the correct queue
-            $this->assertStringContainsString('ai-visibility', (string) $event);
+            $this->assertStringContainsString('ai-visibility', $this->getEventString($event));
         } else {
             // If we can't verify directly, the test passes if the job exists
             $this->assertTrue(true, 'Job is scheduled');
@@ -111,7 +169,7 @@ class KernelScheduleTest extends TestCase
         $event = $this->findScheduledJob('AggregateAIVisibilityAnalytics');
 
         if ($event) {
-            $this->assertStringContainsString('ai-visibility', (string) $event);
+            $this->assertStringContainsString('ai-visibility', $this->getEventString($event));
         } else {
             $this->assertTrue(true, 'Job is scheduled');
         }
@@ -123,7 +181,7 @@ class KernelScheduleTest extends TestCase
         $event = $this->findScheduledJob('CheckAIVisibilityAlerts');
 
         if ($event) {
-            $this->assertStringContainsString('ai-visibility', (string) $event);
+            $this->assertStringContainsString('ai-visibility', $this->getEventString($event));
         } else {
             $this->assertTrue(true, 'Job is scheduled');
         }
@@ -166,7 +224,7 @@ class KernelScheduleTest extends TestCase
         foreach ($events as $event) {
             foreach ($aiVisibilityJobs as $jobName) {
                 if (
-                    str_contains((string) $event, $jobName)
+                    str_contains($this->getEventString($event), $jobName)
                     || str_contains($event->command ?? '', $jobName)
                 ) {
                     // Job exists in schedule
@@ -210,7 +268,7 @@ class KernelScheduleTest extends TestCase
 
         foreach ($events as $event) {
             // Check that overlapping prevention is configured
-            $eventString = (string) $event;
+            $eventString = $this->getEventString($event);
 
             if (
                 str_contains($eventString, 'RunAIVisibilityQueries')
@@ -231,7 +289,7 @@ class KernelScheduleTest extends TestCase
         $aiJobsFound = 0;
 
         foreach ($events as $event) {
-            $eventString = (string) $event;
+            $eventString = $this->getEventString($event);
 
             if (str_contains($eventString, 'AIVisibility')) {
                 $aiJobsFound++;
