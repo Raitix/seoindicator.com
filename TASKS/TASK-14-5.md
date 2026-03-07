@@ -1,7 +1,7 @@
 # TASK-14-5: Create SiteCrawler Service
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -179,3 +179,37 @@ return [
   - TASK-14-6 (RobotsParser) - Mocked in tests
   - TASK-14-8 (IssueDetector) - Mocked in tests
 - **TDD Pattern:** Tests will fail until SiteCrawler, CrawlResult, CrawlQueue classes are created
+
+### [2026-03-07 09:48 UTC] LocalTester: Bug Report - Tests FAILED
+- **Status:** To Develop (returned)
+- **Test Results:** 62 failed, 42 passed (86 assertions)
+- **Command:** `php artisan test --filter="SiteCrawlerTest|CrawlResultTest|CrawlQueueItemTest"`
+
+#### BUG #1: Missing Static Factory Methods in CrawlResult DTO
+- **Location:** `backend/app/Services/Audit/DTOs/CrawlResult.php`
+- **Issue:** SiteCrawler calls `CrawlResult::success()` and `CrawlResult::failure()` but these methods don't exist
+- **Failing Lines in SiteCrawler.php:**
+  - Line 340: `CrawlResult::failure($url, "Server error ({$statusCode})", ...)`
+  - Line 363: `CrawlResult::success(url: $url, statusCode: $statusCode, ...)`
+  - Line 376: `CrawlResult::failure($url, "Connection error: {$e->getMessage()}", ...)`
+  - Line 380: `CrawlResult::failure($url, $e->getMessage(), ...)`
+  - Line 505 (processQueue): `CrawlResult::failure($item->url, $e->getMessage, ...)`
+- **Error:** `Call to undefined method App\Services\Audit\DTOs\CrawlResult::success()`
+- **Fix Required:** Add static factory methods to CrawlResult DTO:
+  ```php
+  public static function success(string $url, int $statusCode, float $responseTimeMs, ?string $html = null, array $links = [], array $metadata = [], array $headers = [], array $redirectChain = []): self
+  public static function failure(string $url, string $errorMessage, int $statusCode, float $responseTimeMs, int $depth = 0): self
+  ```
+
+#### BUG #2: RobotsParser Type Mismatch
+- **Location:** `backend/app/Services/Audit/SiteCrawler.php` line 455
+- **Issue:** `shouldCrawl()` passes `$this->robotsRules` (array) to `RobotsParser::isAllowed()` which expects `ParsedRobots` DTO
+- **Error:** `App\Services\Audit\RobotsParser::isAllowed(): Argument #2 ($parsed) must be of type App\Services\Audit\DTOs\ParsedRobots, array given`
+- **Root Cause:** `fetchRobotsRules()` returns parsed array, but should return `ParsedRobots` DTO or use RobotsParser to parse
+- **Fix Required:** Either:
+  1. Store `ParsedRobots` DTO in `$this->robotsRules` instead of array, OR
+  2. Remove inline robots.txt parsing and delegate to RobotsParser service
+
+#### Additional Notes
+- CrawlQueueService test file exists (`tests/Unit/Services/Crawler/CrawlQueueServiceTest.php`) but service doesn't exist - this is unrelated to TASK-14-5
+- SiteCrawler service has good implementation structure but integration with RobotsParser needs fixing
