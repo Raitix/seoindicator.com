@@ -213,6 +213,9 @@ Route::prefix('v1')->group(function () {
         Route::post('models/preferences', [\App\Http\Controllers\Api\V1\ModelController::class, 'setPreference']);
     });
 
+    // AI Models (TASK-31-14) - Public endpoint for AI model selection
+    Route::get('ai/models', [\App\Http\Controllers\Api\V1\AIModelController::class, 'index']);
+
     // Metadata (TASK-7-18)
     Route::get('metadata', [\App\Http\Controllers\Api\V1\MetadataController::class, 'index']);
     Route::get('metadata/serp-features', [\App\Http\Controllers\Api\V1\MetadataController::class, 'serpFeatures']);

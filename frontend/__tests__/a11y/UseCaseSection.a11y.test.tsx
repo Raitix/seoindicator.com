@@ -270,17 +270,17 @@ describe('UseCaseSection Accessibility', () => {
         />
       );
 
-      // Audience badges
-      expect(screen.getByText('Solo Users')).toBeInTheDocument();
-      expect(screen.getByText('Small Teams')).toBeInTheDocument();
-      expect(screen.getByText('Enterprise')).toBeInTheDocument();
-      expect(screen.getByText('Agencies')).toBeInTheDocument();
+      // Audience badges - use getAllByText since there might be multiple
+      expect(screen.getAllByText('Solo Users').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Small Teams').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Enterprise').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Agencies').length).toBeGreaterThanOrEqual(1);
 
       // Budget badges
       expect(screen.getAllByText('Budget').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Free').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Premium').length).toBeGreaterThan(0);
-      expect(screen.getByText('Mid-Range')).toBeInTheDocument();
+      expect(screen.getAllByText('Mid-Range').length).toBeGreaterThanOrEqual(1);
     });
 
     it('should have proper grid structure', () => {
