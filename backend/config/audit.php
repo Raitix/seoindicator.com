@@ -146,6 +146,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Image Settings
+    |--------------------------------------------------------------------------
+    |
+    | Settings for image-related SEO checks (alt text, src validation).
+    |
+    */
+
+    'images' => [
+        // Enable/disable alt text checking
+        'check_alt' => env('AUDIT_CHECK_IMAGE_ALT', true),
+
+        // Maximum recommended alt text length (screen readers may truncate)
+        'max_alt_length' => env('AUDIT_MAX_ALT_LENGTH', 125),
+
+        // Report empty alt="" as an issue (acceptable for decorative images)
+        'report_empty_alt' => env('AUDIT_REPORT_EMPTY_ALT', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Performance Settings
     |--------------------------------------------------------------------------
     |
