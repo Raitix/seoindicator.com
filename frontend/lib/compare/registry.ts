@@ -15,6 +15,9 @@ import { ahrefs } from './competitors/ahrefs';
 import { semrush } from './competitors/semrush';
 import { moz } from './competitors/moz';
 import { ubersuggest } from './competitors/ubersuggest';
+import { gsc } from './competitors/gsc';
+import { ga } from './competitors/ga';
+import { answerthepublic } from './competitors/answerthepublic';
 
 // Re-export seoindicator for direct access
 export { seoindicator };
@@ -33,6 +36,9 @@ export const COMPETITOR_REGISTRY: Record<string, CompetitorData> = {
   semrush,
   moz,
   ubersuggest,
+  gsc,
+  ga,
+  answerthepublic,
 };
 
 /**
@@ -46,6 +52,10 @@ export const COMPARISON_SLUGS: string[] = [
   'seoindicator-vs-moz',
   'seoindicator-vs-semrush',
   'seoindicator-vs-ubersuggest',
+  // SEOIndicator vs free alternatives
+  'seoindicator-vs-gsc',
+  'seoindicator-vs-ga',
+  'seoindicator-vs-answerthepublic',
   // Cross-competitor comparisons
   'ahrefs-vs-moz',
   'ahrefs-vs-semrush',
@@ -254,7 +264,7 @@ export function getRelatedComparisons(competitorId: string, excludeId?: string):
     const includesExcluded = excludeId && (a === excludeId || b === excludeId);
 
     return includesCompetitor && !includesExcluded;
-  });
+  }).slice(0, 5);
 }
 
 /**
