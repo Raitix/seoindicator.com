@@ -47,5 +47,11 @@
         <env name="GOOGLE_CLIENT_ID" value="123456789012-dev-oauth-client.apps.googleusercontent.com"/>
         <env name="GOOGLE_CLIENT_SECRET" value="GOCSPX-dev-oauth-secret-key-12345"/>
         <env name="GOOGLE_REDIRECT_URI" value="http://localhost:8000/api/v1/auth/google/callback"/>
+        <!-- PayPal Configuration (Development/Test Values) -->
+        <env name="PAYPAL_CLIENT_ID" value="test-client-id"/>
+        <env name="PAYPAL_CLIENT_SECRET" value="test-client-secret"/>
+        <env name="PAYPAL_WEBHOOK_ID" value="test-webhook-id"/>
+        <env name="PAYPAL_RETURN_URL" value="http://localhost:3000/payment/success"/>
+        <env name="PAYPAL_CANCEL_URL" value="http://localhost:3000/payment/cancel"/>
     </php>
 </phpunit>

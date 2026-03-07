@@ -3,7 +3,7 @@
 namespace Tests\Unit\Services\AIVisibility;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Mockery;
 use App\Services\AIVisibility\AIVisibilityService;
 use App\Services\AIVisibility\Contracts\AIVisibilityServiceInterface;
@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
  */
 class AIVisibilityServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
 
     protected AIVisibilityService $service;
     protected $mockQueryEngine;

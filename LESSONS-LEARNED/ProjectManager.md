@@ -18,6 +18,7 @@ Dedicated "tests for X" tasks become **REDUNDANT** when TDD workflow is adopted.
 | TASK-30-6 | Unit Tests - Pages & Cookie Consent | Done (redundant - 439+ tests existed) |
 | TASK-34-11 | Unit Tests for Services | Done (redundant - tests existed from TDD) |
 | TASK-34-12 | Feature Tests for API | Done (redundant - covered by PreTester phases) |
+| TASK-34-23 | Tests for Alerts | Done (redundant - tests in TASK-34-19/20/21 PreTester phases) |
 
 ### Key Lesson for SpecSystemAnalyst
 When breaking down specifications into tasks:

@@ -2,6 +2,10 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
+use App\Jobs\AIVisibility\RunAIVisibilityQueriesJob;
+use App\Jobs\AIVisibility\AggregateAIVisibilityAnalyticsJob;
+use App\Jobs\AIVisibility\CheckAIVisibilityAlertsJob;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -20,3 +24,19 @@ Artisan::command('rank-checks:schedule {--force}', function (\App\Services\Sched
         $this->line("Reason: {$result['reason']}");
     }
 })->purpose('Queue rank check jobs for active keywords');
+
+// AI Visibility scheduled jobs
+Schedule::job(new RunAIVisibilityQueriesJob)
+    ->weeklyOn(0, '02:00')
+    ->name('ai-visibility:run-queries')
+    ->withoutOverlapping(3600);
+
+Schedule::job(new AggregateAIVisibilityAnalyticsJob)
+    ->dailyAt('03:00')
+    ->name('ai-visibility:aggregate-analytics')
+    ->withoutOverlapping(3600);
+
+Schedule::job(new CheckAIVisibilityAlertsJob)
+    ->cron('0 */6 * * *')
+    ->name('ai-visibility:check-alerts')
+    ->withoutOverlapping(1800);

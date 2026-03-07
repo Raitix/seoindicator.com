@@ -3,8 +3,9 @@
 namespace Tests\Unit\Jobs\AIVisibility;
 
 use App\Jobs\AIVisibility\AIVisibilityQueryJob;
-use App\Services\AIQueryEngine;
-use App\Services\MentionParser;
+use App\Services\AIVisibility\AIQueryEngine;
+use App\Services\AIVisibility\MentionParser;
+use App\Services\AIVisibility\DTOs\AIQueryResult;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -108,7 +109,8 @@ class AIVisibilityQueryJobTest extends TestCase
         $cacheKey = $job->getCacheKey();
 
         $this->assertStringStartsWith('ai_visibility:query:', $cacheKey);
-        $this->assertEquals(64 + 22, strlen($cacheKey)); // prefix + md5 hash
+        // "ai_visibility:query:" (20 chars) + MD5 hash (32 chars) = 52 chars
+        $this->assertEquals(52, strlen($cacheKey));
     }
 
     /** @test JQ-CACHE-02: Cache key is deterministic */
@@ -168,11 +170,14 @@ class AIVisibilityQueryJobTest extends TestCase
         $mockEngine->shouldReceive('query')
             ->once()
             ->with('chatgpt', 'test query', true)
-            ->andReturn([
-                'response' => 'AI response',
-                'model' => 'gemini-2.0-flash',
-                'tokens_used' => 100,
-            ]);
+            ->andReturn(AIQueryResult::success(
+                responseText: 'AI response',
+                model: 'gemini-2.0-flash',
+                tokensUsed: 100,
+                latencyMs: 500,
+                platform: 'chatgpt',
+                queryText: 'test query'
+            ));
 
         $result = $job->handle($mockEngine, app(MentionParser::class));
 
@@ -192,11 +197,14 @@ class AIVisibilityQueryJobTest extends TestCase
             });
 
         $mockEngine = $this->mock(AIQueryEngine::class);
-        $mockEngine->shouldReceive('query')->andReturn([
-            'response' => 'test',
-            'model' => 'test-model',
-            'tokens_used' => 10,
-        ]);
+        $mockEngine->shouldReceive('query')->andReturn(AIQueryResult::success(
+            responseText: 'test',
+            model: 'test-model',
+            tokensUsed: 10,
+            latencyMs: 100,
+            platform: 'chatgpt',
+            queryText: 'test query'
+        ));
 
         $job->handle($mockEngine, app(MentionParser::class));
     }
@@ -207,18 +215,20 @@ class AIVisibilityQueryJobTest extends TestCase
         $job = new AIVisibilityQueryJob(1, 'chatgpt', 'test query', true);
 
         $mockEngine = $this->mock(AIQueryEngine::class);
-        $mockEngine->shouldReceive('query')->andReturn([
-            'response' => 'AI response with brand mention',
-            'model' => 'gemini-2.0-flash',
-            'tokens_used' => 100,
-        ]);
+        $mockEngine->shouldReceive('query')->andReturn(AIQueryResult::success(
+            responseText: 'AI response with brand mention',
+            model: 'gemini-2.0-flash',
+            tokensUsed: 100,
+            latencyMs: 500,
+            platform: 'chatgpt',
+            queryText: 'test query'
+        ));
 
         $job->handle($mockEngine, app(MentionParser::class));
 
         $this->assertDatabaseHas('ai_query_results', [
             'project_id' => 1,
             'platform' => 'chatgpt',
-            'query' => 'test query',
         ]);
     }
 
@@ -235,11 +245,14 @@ class AIVisibilityQueryJobTest extends TestCase
         $mockEngine->shouldReceive('query')
             ->once()
             ->with('chatgpt', 'best seo tools', false)
-            ->andReturn([
-                'response' => 'test response',
-                'model' => 'test-model',
-                'tokens_used' => 50,
-            ]);
+            ->andReturn(AIQueryResult::success(
+                responseText: 'test response',
+                model: 'test-model',
+                tokensUsed: 50,
+                latencyMs: 100,
+                platform: 'chatgpt',
+                queryText: 'best seo tools'
+            ));
 
         $job->handle($mockEngine, app(MentionParser::class));
     }
@@ -250,20 +263,22 @@ class AIVisibilityQueryJobTest extends TestCase
         $job = new AIVisibilityQueryJob(1, 'chatgpt', 'test query', true);
 
         $mockParser = $this->mock(MentionParser::class);
-        $mockParser->shouldReceive('parse')
+        $mockParser->shouldReceive('extractMentions')
             ->once()
-            ->with('AI response text')
             ->andReturn([
-                ['text' => 'Brand is mentioned', 'sentiment' => 'positive'],
+                ['brand' => 'Brand', 'position' => 0, 'context' => 'Brand is mentioned'],
             ]);
 
         $mockEngine = $this->mock(AIQueryEngine::class);
         $mockEngine->shouldReceive('query')
-            ->andReturn([
-                'response' => 'AI response text',
-                'model' => 'test-model',
-                'tokens_used' => 50,
-            ]);
+            ->andReturn(AIQueryResult::success(
+                responseText: 'AI response text',
+                model: 'test-model',
+                tokensUsed: 50,
+                latencyMs: 100,
+                platform: 'chatgpt',
+                queryText: 'test query'
+            ));
 
         $job->handle($mockEngine, $mockParser);
     }
@@ -275,11 +290,14 @@ class AIVisibilityQueryJobTest extends TestCase
 
         $mockEngine = $this->mock(AIQueryEngine::class);
         $mockEngine->shouldReceive('query')
-            ->andReturn([
-                'response' => '',
-                'model' => 'test-model',
-                'tokens_used' => 0,
-            ]);
+            ->andReturn(AIQueryResult::success(
+                responseText: '',
+                model: 'test-model',
+                tokensUsed: 0,
+                latencyMs: 100,
+                platform: 'chatgpt',
+                queryText: 'test query'
+            ));
 
         $result = $job->handle($mockEngine, app(MentionParser::class));
 
@@ -308,11 +326,14 @@ class AIVisibilityQueryJobTest extends TestCase
 
         $mockEngine = $this->mock(AIQueryEngine::class);
         $mockEngine->shouldReceive('query')
-            ->andReturn([
-                'response' => 'test response',
-                'model' => 'gemini-2.0-flash',
-                'tokens_used' => 150,
-            ]);
+            ->andReturn(AIQueryResult::success(
+                responseText: 'test response',
+                model: 'gemini-2.0-flash',
+                tokensUsed: 150,
+                latencyMs: 500,
+                platform: 'chatgpt',
+                queryText: 'test query'
+            ));
 
         $result = $job->handle($mockEngine, app(MentionParser::class));
 
@@ -382,11 +403,14 @@ class AIVisibilityQueryJobTest extends TestCase
 
         $mockEngine = $this->mock(AIQueryEngine::class);
         $mockEngine->shouldReceive('query')
-            ->andReturn([
-                'response' => 'test',
-                'model' => 'test-model',
-                'tokens_used' => 10,
-            ]);
+            ->andReturn(AIQueryResult::success(
+                responseText: 'test',
+                model: 'test-model',
+                tokensUsed: 10,
+                latencyMs: 100,
+                platform: 'chatgpt',
+                queryText: 'test query'
+            ));
 
         // Simulate database error
         DB::shouldReceive('table')
@@ -441,11 +465,14 @@ class AIVisibilityQueryJobTest extends TestCase
         $mockEngine = $this->mock(AIQueryEngine::class);
         $mockEngine->shouldReceive('query')
             ->with('chatgpt', "test's query \"with\" special <chars>", true)
-            ->andReturn([
-                'response' => 'test',
-                'model' => 'test-model',
-                'tokens_used' => 10,
-            ]);
+            ->andReturn(AIQueryResult::success(
+                responseText: 'test',
+                model: 'test-model',
+                tokensUsed: 10,
+                latencyMs: 100,
+                platform: 'chatgpt',
+                queryText: "test's query"
+            ));
 
         $result = $job->handle($mockEngine, app(MentionParser::class));
 
