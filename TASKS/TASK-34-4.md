@@ -1,7 +1,7 @@
 # TASK-34-4: MentionParser Service
 
 ## STATUS
-`To Develop`
+`In Development`
 
 ## PRIORITY
 `High`
