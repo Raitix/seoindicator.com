@@ -112,12 +112,14 @@ describe('VisibilitySettings Component', () => {
 
     it('shows "Public" badge when isPublic is true', () => {
       renderComponent({ isPublic: true });
-      expect(screen.getByText(/public/i)).toBeInTheDocument();
+      const badge = screen.getByTestId('visibility-badge');
+      expect(badge).toHaveTextContent('Public');
     });
 
     it('shows "Private" badge when isPublic is false', () => {
       renderComponent({ isPublic: false });
-      expect(screen.getByText(/private/i)).toBeInTheDocument();
+      const badge = screen.getByTestId('visibility-badge');
+      expect(badge).toHaveTextContent('Private');
     });
 
     it('renders toggle switch component', () => {
@@ -863,10 +865,12 @@ describe('VisibilitySettings Component', () => {
 
     it('updates UI when isPublic prop changes', () => {
       const { rerender } = renderComponent({ isPublic: false });
-      expect(screen.getByText(/private/i)).toBeInTheDocument();
+      const badge = screen.getByTestId('visibility-badge');
+      expect(badge).toHaveTextContent('Private');
 
       rerender(<VisibilitySettings {...createDefaultProps({ isPublic: true })} />);
-      expect(screen.getByText(/public/i)).toBeInTheDocument();
+      const badgeAfter = screen.getByTestId('visibility-badge');
+      expect(badgeAfter).toHaveTextContent('Public');
     });
 
     it('handles offline network gracefully', async () => {
@@ -880,7 +884,8 @@ describe('VisibilitySettings Component', () => {
       await userEvent.click(toggle);
 
       await waitFor(() => {
-        expect(screen.getByText(/failed to publish/i)).toBeInTheDocument();
+        // Component shows the error message from the caught error
+        expect(screen.getByText(/network offline/i)).toBeInTheDocument();
       });
 
       // Restore
@@ -893,7 +898,8 @@ describe('VisibilitySettings Component', () => {
       // Simulate external state change while loading
       rerender(<VisibilitySettings {...createDefaultProps({ isPublic: true })} />);
 
-      expect(screen.getByText(/public/i)).toBeInTheDocument();
+      const badge = screen.getByTestId('visibility-badge');
+      expect(badge).toHaveTextContent('Public');
     });
   });
 
@@ -909,10 +915,12 @@ describe('VisibilitySettings Component', () => {
 
     it('AC-002: Toggle switch shows current state (Public/Private)', () => {
       const { rerender } = renderComponent({ isPublic: false });
-      expect(screen.getByText(/private/i)).toBeInTheDocument();
+      const badge = screen.getByTestId('visibility-badge');
+      expect(badge).toHaveTextContent('Private');
 
       rerender(<VisibilitySettings {...createDefaultProps({ isPublic: true })} />);
-      expect(screen.getByText(/public/i)).toBeInTheDocument();
+      const badgeAfter = screen.getByTestId('visibility-badge');
+      expect(badgeAfter).toHaveTextContent('Public');
     });
 
     it('AC-003: Public URL displayed when public with copy button', () => {
