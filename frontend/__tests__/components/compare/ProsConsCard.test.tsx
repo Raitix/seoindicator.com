@@ -18,17 +18,18 @@ import type { ProsConsCardProps } from '@/lib/compare/types';
 // ============================================================================
 
 jest.mock('lucide-react', () => ({
-  Check: ({ className }: { className?: string }) => (
-    <span data-testid="check-icon" className={className}>✓</span>
+  Check: ({ className, 'aria-hidden': ariaHidden }: { className?: string; 'aria-hidden'?: boolean }) => (
+    <span data-testid="check-icon" className={className} aria-hidden={ariaHidden}>✓</span>
   ),
-  X: ({ className }: { className?: string }) => (
-    <span data-testid="x-icon" className={className}>✗</span>
+  X: ({ className, 'aria-hidden': ariaHidden }: { className?: string; 'aria-hidden'?: boolean }) => (
+    <span data-testid="x-icon" className={className} aria-hidden={ariaHidden}>✗</span>
   ),
-  Star: ({ className, filled }: { className?: string; filled?: boolean }) => (
+  Star: ({ className, filled, 'aria-hidden': ariaHidden }: { className?: string; filled?: boolean; 'aria-hidden'?: boolean }) => (
     <span 
       data-testid="star-icon" 
       className={className}
       data-filled={filled}
+      aria-hidden={ariaHidden}
     >
       {filled ? '★' : '☆'}
     </span>
@@ -138,7 +139,7 @@ describe('ProsConsCard', () => {
       renderProsConsCard({ pros: ['A pro'] });
 
       const checkIcon = screen.getByTestId('check-icon');
-      expect(checkIcon.className).toMatch(/green|emerald/);
+      expect(checkIcon.getAttribute('class')).toMatch(/green|emerald/);
     });
 
     it('renders pros list with correct semantic structure', () => {
@@ -201,7 +202,7 @@ describe('ProsConsCard', () => {
       renderProsConsCard({ cons: ['A con'] });
 
       const xIcon = screen.getByTestId('x-icon');
-      expect(xIcon.className).toMatch(/gray|slate|neutral|muted/);
+      expect(xIcon.getAttribute('class')).toMatch(/gray|slate|neutral|muted/);
     });
 
     it('renders cons list with correct semantic structure', () => {
@@ -365,11 +366,15 @@ describe('ProsConsCard', () => {
     it('icon elements are hidden from screen readers', () => {
       renderProsConsCard();
 
-      const checkIcon = screen.getByTestId('check-icon');
-      const xIcon = screen.getByTestId('x-icon');
+      const checkIcons = screen.getAllByTestId('check-icon');
+      const xIcons = screen.getAllByTestId('x-icon');
 
-      expect(checkIcon).toHaveAttribute('aria-hidden', 'true');
-      expect(xIcon).toHaveAttribute('aria-hidden', 'true');
+      checkIcons.forEach(icon => {
+        expect(icon).toHaveAttribute('aria-hidden', 'true');
+      });
+      xIcons.forEach(icon => {
+        expect(icon).toHaveAttribute('aria-hidden', 'true');
+      });
     });
 
     it('rating has appropriate aria attributes', () => {
@@ -460,12 +465,12 @@ describe('ProsConsCard', () => {
     it('clamps rating values outside 0-5 range', () => {
       // Test negative rating
       renderProsConsCard({ overallRating: -1 });
-      let ratingText = screen.queryByText(/0 out of 5/i);
+      let ratingText = screen.queryByText(/0\.?0? out of 5/i);
       expect(ratingText).toBeInTheDocument();
 
       // Test rating > 5
       renderProsConsCard({ overallRating: 10 });
-      ratingText = screen.queryByText(/5 out of 5/i);
+      ratingText = screen.queryByText(/5\.?0? out of 5/i);
       expect(ratingText).toBeInTheDocument();
     });
   });
@@ -625,7 +630,7 @@ describe('ProsConsCard', () => {
       
       // Verify green color
       checkIcons.forEach(icon => {
-        expect(icon.className).toMatch(/green|emerald/);
+        expect(icon.getAttribute('class')).toMatch(/green|emerald/);
       });
     });
 
@@ -642,7 +647,7 @@ describe('ProsConsCard', () => {
       
       // Verify subtle color
       xIcons.forEach(icon => {
-        expect(icon.className).toMatch(/gray|slate|neutral|muted/);
+        expect(icon.getAttribute('class')).toMatch(/gray|slate|neutral|muted/);
       });
     });
 
