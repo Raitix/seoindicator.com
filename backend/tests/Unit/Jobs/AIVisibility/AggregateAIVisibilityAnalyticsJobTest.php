@@ -7,6 +7,7 @@ use App\Services\AIVisibilityServiceInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /**
  * Unit tests for AggregateAIVisibilityAnalyticsJob.
@@ -17,6 +18,8 @@ use Tests\TestCase;
  */
 class AggregateAIVisibilityAnalyticsJobTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -166,6 +169,9 @@ class AggregateAIVisibilityAnalyticsJobTest extends TestCase
     /** @test JAA-AGG-07: Stores in ai_mention_analytics */
     public function stores_in_ai_mention_analytics(): void
     {
+        // Create a project first (needed for foreign key constraint)
+        \App\Models\AIVisibility\AIVisibilityProject::factory()->create(['id' => 1]);
+
         $mockService = $this->mock(AIVisibilityServiceInterface::class);
         $mockService->shouldReceive('getUnprocessedQueryResults')
             ->once()
@@ -202,12 +208,16 @@ class AggregateAIVisibilityAnalyticsJobTest extends TestCase
     {
         $today = now()->toDateString();
 
+        // Create a project first (needed for foreign key constraint)
+        \App\Models\AIVisibility\AIVisibilityProject::factory()->create(['id' => 1]);
+
         // Create existing record
         DB::table('ai_mention_analytics')->insert([
             'project_id' => 1,
             'platform' => 'chatgpt',
             'date' => $today,
             'total_queries' => 5,
+            'brand_mentions' => 2,
             'total_mentions' => 2,
             'mention_rate' => 0.4,
             'created_at' => now(),
