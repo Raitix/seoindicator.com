@@ -1,7 +1,29 @@
 # TASK-34-6: Project CRUD API Endpoints
 
 ## STATUS
-`To Test Locally`
+`To Develop`
+
+## LocalTester Bug Report (2026-03-07 23:50 UTC)
+
+**Result: FAIL**
+
+### Critical Issues Found
+
+1. **Missing Service Interface Methods** - Tests expect `getUserProjects()` and `getProject()` on `AIVisibilityServiceInterface` but these don't exist.
+
+2. **Controller Bypasses Service Layer** - The `index()` and `show()` methods query the database directly instead of using the service.
+
+### Required Fixes
+
+Add to `AIVisibilityServiceInterface`:
+```php
+public function getUserProjects(int $userId, array $filters = []): LengthAwarePaginator;
+public function getProject(int $projectId, int $userId): ?AIVisibilityProject;
+```
+
+Then update controller to use these service methods instead of direct DB queries.
+
+See `TESTS/TEST-34-6-RESULTS.md` for full report.
 
 ## PRIORITY
 `High`
