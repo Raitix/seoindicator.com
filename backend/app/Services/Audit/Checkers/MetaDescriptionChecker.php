@@ -78,11 +78,8 @@ class MetaDescriptionChecker extends BaseChecker
         // Parse HTML
         $crawler = new Crawler($html);
 
-        // Extract meta description
-        $description = $this->extractMetaDescription($crawler);
-
-        // Check for missing meta description
-        if ($description === null) {
+        // Check if meta description element exists
+        if (!$this->hasMetaDescription($crawler)) {
             return $this->createFinding(
                 issueType: $this->issueType,
                 severity: 'warning',
@@ -92,11 +89,11 @@ class MetaDescriptionChecker extends BaseChecker
             );
         }
 
-        // Calculate length (using mb_strlen for multibyte character support)
-        $length = mb_strlen($description);
+        // Get the raw content attribute
+        $rawContent = $this->extractMetaDescriptionContent($crawler);
 
-        // Check for empty description
-        if ($length === 0) {
+        // Check for missing or empty content attribute
+        if ($rawContent === null || trim($rawContent) === '') {
             return $this->createFinding(
                 issueType: $this->issueType,
                 severity: 'warning',
@@ -105,6 +102,12 @@ class MetaDescriptionChecker extends BaseChecker
                 context: ['description' => '', 'length' => 0]
             );
         }
+
+        // Get trimmed description
+        $description = trim($rawContent);
+
+        // Calculate length (using mb_strlen for multibyte character support)
+        $length = mb_strlen($description);
 
         // Check description length
         if ($length > self::MAX_LENGTH) {
