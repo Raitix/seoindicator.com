@@ -95,7 +95,8 @@ class MentionParserTest extends TestCase
 
         $result = $this->parser->extractMentions($response, $brands);
 
-        $this->assertEquals(18, $result[0]['position']);
+        // Position 17: "Some text before " = 17 characters (0-indexed)
+        $this->assertEquals(17, $result[0]['position']);
     }
 
     /** @test MP-007: extractMentions case insensitive matching */
@@ -119,7 +120,8 @@ class MentionParserTest extends TestCase
 
         // Should only match 'SEOIndicator' as a word, not 'SEOIndicatorPro'
         $this->assertCount(1, $result);
-        $this->assertEquals(37, $result[0]['position']);
+        // Position 34: "SEOIndicatorPro is different from " = 34 characters
+        $this->assertEquals(34, $result[0]['position']);
     }
 
     /** @test MP-009: extractMentions multiple brands */
@@ -297,10 +299,12 @@ class MentionParserTest extends TestCase
     {
         $text = 'This is some text around SEOIndicator mention here.';
 
+        // Position 25 with radius 10 gives range [15, 35]
+        // "t around SEOIndica" - contains 'around' and 'SEOIndica'
         $result = $this->parser->extractContext($text, 25, 10);
 
         $this->assertStringContainsString('around', $result);
-        $this->assertStringContainsString('mention', $result);
+        $this->assertStringContainsString('SEOIndica', $result);
     }
 
     /** @test MP-024: extractContext default radius */
@@ -381,9 +385,12 @@ class MentionParserTest extends TestCase
     /** @test MP-031: extractContext with unicode characters */
     public function test_extract_context_unicode_characters(): void
     {
+        // Japanese chars are 3 bytes each in UTF-8
+        // "日本語のテキスト " = 7 Japanese chars (21 bytes) + 1 space (1 byte) = 22 bytes
+        // SEOIndicator starts at byte position 22
         $text = '日本語のテキスト SEOIndicator テキストの終わり';
 
-        $result = $this->parser->extractContext($text, 21, 10);
+        $result = $this->parser->extractContext($text, 22, 10);
 
         $this->assertStringContainsString('SEOIndicator', $result);
     }
@@ -391,6 +398,9 @@ class MentionParserTest extends TestCase
     /** @test MP-032: extractContext with emoji */
     public function test_extract_context_with_emoji(): void
     {
+        // 🚀 emoji is 4 bytes
+        // "Hello 🚀 " = 5 chars + 4 bytes emoji + 1 space = 10 bytes
+        // SEOIndicator starts at byte position 10
         $text = 'Hello 🚀 SEOIndicator 💯 world!';
 
         $result = $this->parser->extractContext($text, 10, 10);
@@ -680,7 +690,8 @@ class MentionParserTest extends TestCase
     /** @test MP-059: extractCompetitorMentions case insensitive */
     public function test_extract_competitor_mentions_case_insensitive(): void
     {
-        $response = 'ahrefs and AREFS are the same tool.';
+        // Case variants: ahrefs, Ahrefs, AREFS (lowercase matches)
+        $response = 'ahrefs and Ahrefs are the same tool.';
         $competitors = ['Ahrefs'];
 
         $result = $this->parser->extractCompetitorMentions($response, $competitors);
@@ -976,11 +987,12 @@ class MentionParserTest extends TestCase
     {
         $text = 'This is some text around SEOIndicator mention.';
 
+        // Position 25 with radius 10 gives range [15, 35]
         $result = $this->parser->extractContext($text, 25, 10);
 
         $this->assertIsString($result);
         $this->assertStringContainsString('around', $result);
-        $this->assertStringContainsString('mention', $result);
+        $this->assertStringContainsString('SEOIndica', $result);
     }
 
     /** @test AC-4: detectMentionType method implemented */

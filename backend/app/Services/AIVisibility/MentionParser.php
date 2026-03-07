@@ -18,27 +18,27 @@ class MentionParser
      * Patterns for detecting mention types.
      */
     private const LIST_PATTERNS = [
-        'top \d+',
+        'top\s+\d+',
         'best',
         'including',
-        'among the',
+        'among\s+the',
     ];
 
     private const COMPARISON_PATTERNS = [
         '\bvs\.?\b',
-        'compared to',
-        'better than',
+        'compared\s+to',
+        'better\s+than',
         'versus',
-        'alternative to',
+        'alternative\s+to',
     ];
 
     private const RECOMMENDATION_PATTERNS = [
-        'i recommend',
-        'you should use',
-        'i suggest',
+        'i\s+recommend',
+        'you\s+should\s+use',
+        'i\s+suggest',
         'try',
-        'highly recommend',
-        'recommend using',
+        'highly\s+recommend',
+        'recommend\s+using',
     ];
 
     /**
@@ -61,32 +61,22 @@ class MentionParser
                 continue;
             }
 
-            // Escape special regex characters in brand name
-            $escapedBrand = preg_quote($brand, '/');
+            // Find all positions of the brand in the response
+            $positions = $this->findBrandPositions($response, $brand);
 
-            // Build regex pattern with word boundaries
-            // Use Unicode word boundaries when possible
-            $pattern = '/\b' . $escapedBrand . '\b/iu';
+            foreach ($positions as $position) {
+                // Extract context around the mention
+                $context = $this->extractContext($response, $position, 100);
 
-            // Find all matches with positions
-            if (preg_match_all($pattern, $response, $matches, PREG_OFFSET_CAPTURE)) {
-                foreach ($matches[0] as $match) {
-                    $matchedText = $match[0];
-                    $position = $match[1];
+                // Detect mention type from context
+                $type = $this->detectMentionType($context);
 
-                    // Extract context around the mention
-                    $context = $this->extractContext($response, $position, 100);
-
-                    // Detect mention type from context
-                    $type = $this->detectMentionType($context);
-
-                    $mentions[] = [
-                        'brand' => $brand,
-                        'position' => $position,
-                        'context' => $context,
-                        'type' => $type,
-                    ];
-                }
+                $mentions[] = [
+                    'brand' => $brand,
+                    'position' => $position,
+                    'context' => $context,
+                    'type' => $type,
+                ];
             }
         }
 
@@ -96,6 +86,69 @@ class MentionParser
         });
 
         return $mentions;
+    }
+
+    /**
+     * Find all positions of a brand in text using word boundaries.
+     *
+     * @param string $text The text to search in
+     * @param string $brand The brand to find
+     * @return array Array of byte positions
+     */
+    private function findBrandPositions(string $text, string $brand): array
+    {
+        $positions = [];
+        $textLength = strlen($text);
+        $brandLength = strlen($brand);
+        $brandLower = mb_strtolower($brand, 'UTF-8');
+
+        // Search through the text character by character
+        for ($i = 0; $i <= $textLength - $brandLength; $i++) {
+            // Check if we have a potential match at this position
+            $substring = substr($text, $i, $brandLength);
+            
+            if (mb_strtolower($substring, 'UTF-8') === $brandLower) {
+                // Check word boundary before
+                $beforeOk = ($i === 0) || !$this->isWordChar($text[$i - 1]);
+                
+                // Check word boundary after
+                $afterPos = $i + $brandLength;
+                $afterOk = ($afterPos >= $textLength) || !$this->isWordChar($text[$afterPos]);
+                
+                if ($beforeOk && $afterOk) {
+                    $positions[] = $i;
+                    // Skip past this match to avoid overlapping matches
+                    $i = $afterPos - 1;
+                }
+            }
+        }
+
+        return $positions;
+    }
+
+    /**
+     * Check if a character is a word character.
+     *
+     * @param string $char The character to check
+     * @return bool
+     */
+    private function isWordChar(string $char): bool
+    {
+        // Check for ASCII word characters
+        if (ctype_alnum($char) || $char === '_') {
+            return true;
+        }
+        
+        // Check for Unicode letters and numbers
+        $ord = ord($char);
+        if ($ord >= 128) {
+            // For multibyte characters, check if it's a letter
+            if (preg_match('/^[\p{L}\p{N}]$/u', $char)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -195,27 +248,18 @@ class MentionParser
                 continue;
             }
 
-            // Escape special regex characters in competitor name
-            $escapedCompetitor = preg_quote($competitor, '/');
+            // Find all positions of the competitor in the response
+            $positions = $this->findBrandPositions($response, $competitor);
 
-            // Build regex pattern with word boundaries
-            $pattern = '/\b' . $escapedCompetitor . '\b/iu';
+            foreach ($positions as $position) {
+                // Extract context around the mention
+                $context = $this->extractContext($response, $position, 100);
 
-            // Find all matches with positions
-            if (preg_match_all($pattern, $response, $matches, PREG_OFFSET_CAPTURE)) {
-                foreach ($matches[0] as $match) {
-                    $matchedText = $match[0];
-                    $position = $match[1];
-
-                    // Extract context around the mention
-                    $context = $this->extractContext($response, $position, 100);
-
-                    $mentions[] = [
-                        'brand' => $competitor,
-                        'position' => $position,
-                        'context' => $context,
-                    ];
-                }
+                $mentions[] = [
+                    'brand' => $competitor,
+                    'position' => $position,
+                    'context' => $context,
+                ];
             }
         }
 
