@@ -711,7 +711,7 @@ describe('BrightEdge Competitor Data', () => {
   let brightedge: CompetitorData;
 
   beforeAll(() => {
-    brightedge = mockBrightEdgeData;
+    brightedge = brightedgeActual;
   });
 
   // BE-001 to BE-007: Basic Structure
@@ -1045,7 +1045,7 @@ describe('Conductor Competitor Data', () => {
   let conductor: CompetitorData;
 
   beforeAll(() => {
-    conductor = mockConductorData;
+    conductor = conductorActual;
   });
 
   // CD-001 to CD-007: Basic Structure
@@ -1285,7 +1285,7 @@ describe('Wincher Competitor Data', () => {
   let wincher: CompetitorData;
 
   beforeAll(() => {
-    wincher = mockWincherData;
+    wincher = wincherActual;
   });
 
   // WC-001 to WC-007: Basic Structure
@@ -1537,10 +1537,10 @@ describe('Wincher Competitor Data', () => {
 
 describe('Tier 3 Cross-Competitor Consistency', () => {
   const competitors = [
-    { name: 'Raven', data: mockRavenData },
-    { name: 'BrightEdge', data: mockBrightEdgeData },
-    { name: 'Conductor', data: mockConductorData },
-    { name: 'Wincher', data: mockWincherData },
+    { name: 'Raven', data: ravenActual },
+    { name: 'BrightEdge', data: brightedgeActual },
+    { name: 'Conductor', data: conductorActual },
+    { name: 'Wincher', data: wincherActual },
   ];
 
   it('CC-001: all competitors should be valid CompetitorData', () => {
@@ -1653,19 +1653,19 @@ describe('Tier 3 Cross-Competitor Consistency', () => {
 
 describe('Enterprise Pricing Specific Tests', () => {
   it('EP-001: BrightEdge should have Custom pricing', () => {
-    expect(mockBrightEdgeData.pricing[0].monthlyPrice).toBe('Custom');
+    expect(brightedgeActual.pricing[0].monthlyPrice).toBe('Custom');
   });
 
   it('EP-002: Conductor should have Custom pricing', () => {
-    expect(mockConductorData.pricing[0].monthlyPrice).toBe('Custom');
+    expect(conductorActual.pricing[0].monthlyPrice).toBe('Custom');
   });
 
   it('EP-003: Raven should have numeric pricing', () => {
-    expect(typeof mockRavenData.pricing[0].monthlyPrice).toBe('number');
+    expect(typeof ravenActual.pricing[0].monthlyPrice).toBe('number');
   });
 
   it('EP-004: Wincher should have numeric or Free pricing', () => {
-    const validPrices = mockWincherData.pricing.map((t) => t.monthlyPrice);
+    const validPrices = wincherActual.pricing.map((t) => t.monthlyPrice);
     validPrices.forEach((price) => {
       expect(['number', 'string']).toContain(typeof price);
       if (typeof price === 'string') {
@@ -1675,15 +1675,15 @@ describe('Enterprise Pricing Specific Tests', () => {
   });
 
   it('EP-005: BrightEdge annual should be Custom', () => {
-    expect(mockBrightEdgeData.pricing[0].annualPrice).toBe('Custom');
+    expect(brightedgeActual.pricing[0].annualPrice).toBe('Custom');
   });
 
   it('EP-006: Conductor annual should be Custom', () => {
-    expect(mockConductorData.pricing[0].annualPrice).toBe('Custom');
+    expect(conductorActual.pricing[0].annualPrice).toBe('Custom');
   });
 
   it('EP-007: Enterprise tools should have enterprise audience', () => {
-    const enterpriseTools = [mockBrightEdgeData, mockConductorData];
+    const enterpriseTools = [brightedgeActual, conductorActual];
     enterpriseTools.forEach((tool) => {
       const hasEnterprise = tool.useCases.some((uc) => uc.audience === 'enterprise');
       expect(hasEnterprise).toBe(true);
@@ -1691,7 +1691,7 @@ describe('Enterprise Pricing Specific Tests', () => {
   });
 
   it('EP-008: Enterprise tools should have premium budget', () => {
-    const enterpriseTools = [mockBrightEdgeData, mockConductorData];
+    const enterpriseTools = [brightedgeActual, conductorActual];
     enterpriseTools.forEach((tool) => {
       const hasPremium = tool.useCases.some((uc) => uc.budget === 'premium');
       expect(hasPremium).toBe(true);
@@ -1699,7 +1699,7 @@ describe('Enterprise Pricing Specific Tests', () => {
   });
 
   it('EP-009: Enterprise pros should mention scale', () => {
-    const enterpriseTools = [mockBrightEdgeData, mockConductorData];
+    const enterpriseTools = [brightedgeActual, conductorActual];
     enterpriseTools.forEach((tool) => {
       const mentionsScale = tool.pros.some((pro) => 
         pro.toLowerCase().includes('enterprise') || 
@@ -1710,7 +1710,7 @@ describe('Enterprise Pricing Specific Tests', () => {
   });
 
   it('EP-010: Enterprise cons should mention cost', () => {
-    const enterpriseTools = [mockBrightEdgeData, mockConductorData];
+    const enterpriseTools = [brightedgeActual, conductorActual];
     enterpriseTools.forEach((tool) => {
       const mentionsCost = tool.cons.some((con) => 
         con.toLowerCase().includes('cost') || 
@@ -1722,29 +1722,29 @@ describe('Enterprise Pricing Specific Tests', () => {
   });
 
   it('EP-011: Wincher should have free tier', () => {
-    const hasFreeTier = mockWincherData.pricing.some((t) => t.monthlyPrice === 'Free');
+    const hasFreeTier = wincherActual.pricing.some((t) => t.monthlyPrice === 'Free');
     expect(hasFreeTier).toBe(true);
   });
 
   it('EP-012: Wincher should have solo audience', () => {
-    const hasSolo = mockWincherData.useCases.some((uc) => uc.audience === 'solo');
+    const hasSolo = wincherActual.useCases.some((uc) => uc.audience === 'solo');
     expect(hasSolo).toBe(true);
   });
 
   it('EP-013: Wincher should have budget audience', () => {
-    const hasBudget = mockWincherData.useCases.some((uc) => 
+    const hasBudget = wincherActual.useCases.some((uc) => 
       uc.budget === 'budget' || uc.budget === 'free'
     );
     expect(hasBudget).toBe(true);
   });
 
   it('EP-014: Raven should have agency focus', () => {
-    const hasAgency = mockRavenData.useCases.some((uc) => uc.audience === 'agency');
+    const hasAgency = ravenActual.useCases.some((uc) => uc.audience === 'agency');
     expect(hasAgency).toBe(true);
   });
 
   it('EP-015: Custom pricing tiers should have features listed', () => {
-    const customPricingTools = [mockBrightEdgeData, mockConductorData];
+    const customPricingTools = [brightedgeActual, conductorActual];
     customPricingTools.forEach((tool) => {
       expect(tool.pricing[0].features.length).toBeGreaterThan(0);
     });
@@ -1756,7 +1756,7 @@ describe('Enterprise Pricing Specific Tests', () => {
 // ============================================================================
 
 describe('Edge Cases and Validation', () => {
-  const validCompetitor = mockRavenData;
+  const validCompetitor = ravenActual;
 
   it('EC-001: should not have empty pricing array', () => {
     expect(validCompetitor.pricing.length).toBeGreaterThan(0);
@@ -1901,10 +1901,10 @@ describe('TypeScript Compilation', () => {
   });
 
   it('TS-008: type guard isCompetitorData should return true for valid data', () => {
-    expect(isCompetitorData(mockRavenData)).toBe(true);
-    expect(isCompetitorData(mockBrightEdgeData)).toBe(true);
-    expect(isCompetitorData(mockConductorData)).toBe(true);
-    expect(isCompetitorData(mockWincherData)).toBe(true);
+    expect(isCompetitorData(ravenActual)).toBe(true);
+    expect(isCompetitorData(brightedgeActual)).toBe(true);
+    expect(isCompetitorData(conductorActual)).toBe(true);
+    expect(isCompetitorData(wincherActual)).toBe(true);
   });
 
   it('TS-009: type guard isCompetitorData should return false for invalid data', () => {
