@@ -13,9 +13,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $audit_id
  * @property string $url
  * @property int $issue_type_id
+ * @property string|null $issue_type
  * @property string $severity
  * @property string $description
  * @property string $recommendation
+ * @property array|null $context
  * @property string $status
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
@@ -40,9 +42,11 @@ class AuditIssue extends Model
         'audit_id',
         'url',
         'issue_type_id',
+        'issue_type',
         'severity',
         'description',
         'recommendation',
+        'context',
         'status',
     ];
 
@@ -54,7 +58,7 @@ class AuditIssue extends Model
     protected function casts(): array
     {
         return [
-            // All are strings, no special casting needed
+            'context' => 'array',
         ];
     }
 

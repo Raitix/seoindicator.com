@@ -46,6 +46,23 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Audit\RobotsParser::class,
             \App\Services\Audit\RobotsParser::class
         );
+
+        // IssueDetector service binding (TASK-14-8)
+        $this->app->bind(
+            \App\Services\Audit\Contracts\IssueDetectorInterface::class,
+            \App\Services\Audit\IssueDetector::class
+        );
+
+        // Repository bindings (TASK-14-8)
+        $this->app->bind(
+            \App\Repositories\IssueTypeRepository::class,
+            \App\Repositories\IssueTypeRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\AuditIssueRepository::class,
+            \App\Repositories\AuditIssueRepository::class
+        );
     }
 
     /**
