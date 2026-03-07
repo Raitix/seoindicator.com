@@ -22154,6 +22154,310 @@ if ($site->user_id !== $request->user()->id) {
 - TASK-14-13: AuditController (Done)
 
 ---
+## Audit Detail Page (TASK-14-16)
+
+### Component Description
+Frontend page component for viewing detailed SEO audit results with issue filtering, search, sorting, and bulk actions. Displays audit summary with severity breakdown, paginated issue list with individual status management, and comprehensive error handling for various user states. Part of the Technical SEO Site Audit feature (FEAT-014).
+
+### Component Location
+- **Page Component:** `frontend/app/sites/[siteId]/audits/[auditId]/page.tsx`
+- **Components:** `frontend/components/audit/`
+  - `AuditSummary.tsx` - Summary header with severity cards
+  - `IssueFilters.tsx` - Filter controls for issues
+  - `IssueList.tsx` - Paginated issue list
+  - `IssueItem.tsx` - Individual issue card
+  - `BulkActions.tsx` - Bulk action toolbar
+  - `IssueStatusBadge.tsx` - Status indicator component
+  - `ErrorBoundary.tsx` - Error handling wrapper
+- **Hooks:** `frontend/lib/api/audit.ts`
+  - `useAuditIssues` - Fetch paginated issues
+  - `useAuditSummary` - Fetch audit summary
+  - `useUpdateIssueStatus` - Update single issue
+  - `useBulkUpdateIssues` - Bulk status update
+- **Tests:** `frontend/__tests__/components/audit/`
+- **Test Documentation:** `TESTS/TEST-14-16.md`
+
+### Route
+- **URL:** `/sites/:siteId/audits/:auditId`
+- **File:** `frontend/app/sites/[siteId]/audits/[auditId]/page.tsx` (Next.js App Router)
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Audit Summary Header | Displays audit status, pages crawled, issues found |
+| Severity Cards | Clickable cards showing Critical/Warning/Notice counts |
+| Issue Filtering | Filter by type, severity, status |
+| Debounced Search | 300ms debounce on search input |
+| URL State Sync | Filters and pagination persisted in URL |
+| Pagination | 15 items per page with navigation |
+| Individual Status Updates | Mark Fixed, Ignore, Reopen buttons |
+| Bulk Actions | Select multiple issues, apply bulk status change |
+| Error Handling | Unauthenticated, 404, error states |
+| Loading States | Skeleton loading during data fetch |
+
+### Component Architecture
+
+```
+AuditDetailPage
+├── ErrorBoundary
+│   ├── AuditSummary
+│   │   ├── Status Badge
+│   │   ├── Pages Crawled Count
+│   │   ├── Issues Found Count
+│   │   └── Severity Cards (Critical, Warning, Notice)
+│   ├── IssueFilters
+│   │   ├── Type Select
+│   │   ├── Severity Select
+│   │   ├── Status Select
+│   │   ├── Search Input
+│   │   └── Sort Select
+│   ├── BulkActions
+│   │   ├── Select All Checkbox
+│   │   ├── Selected Count
+│   │   ├── Bulk Mark Fixed
+│   │   ├── Bulk Ignore
+│   │   └── Bulk Reopen
+│   └── IssueList
+│       ├── Pagination Controls
+│       └── IssueItem × N
+│           ├── Issue Type Badge
+│           ├── Severity Badge
+│           ├── Status Badge
+│           ├── URL Display
+│           ├── Description
+│           ├── Recommendation
+│           └── Action Buttons
+```
+
+### AuditSummary Component
+
+**Props:**
+```typescript
+interface AuditSummaryProps {
+  auditId: string;
+  onSeverityClick?: (severity: 'critical' | 'warning' | 'notice') => void;
+}
+```
+
+**Display Elements:**
+| Element | Description |
+|---------|-------------|
+| Status Badge | Running/Completed/Failed with color |
+| Pages Crawled | Total pages analyzed |
+| Issues Found | Total issues detected |
+| Critical Card | Red background, click to filter |
+| Warning Card | Yellow background, click to filter |
+| Notice Card | Blue background, click to filter |
+
+### IssueFilters Component
+
+**Props:**
+```typescript
+interface IssueFiltersProps {
+  filters: IssueFilters;
+  onFilterChange: (filters: Partial<IssueFilters>) => void;
+  issueTypes: IssueType[];
+}
+```
+
+**Filter Options:**
+| Filter | Options | Default |
+|--------|---------|---------|
+| Type | All, + seeded issue types | All |
+| Severity | All, Critical, Warning, Notice | All |
+| Status | All, Open, Fixed, Ignored | All |
+| Sort | Newest, Oldest, Severity | Newest |
+| Search | Free text (debounced 300ms) | Empty |
+
+### IssueItem Component
+
+**Props:**
+```typescript
+interface IssueItemProps {
+  issue: AuditIssue;
+  isSelected: boolean;
+  onSelect: (id: number) => void;
+  onStatusChange: (id: number, status: IssueStatus) => void;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+}
+```
+
+**Display Elements:**
+| Element | Description |
+|---------|-------------|
+| Checkbox | Selection for bulk actions |
+| Issue Type Badge | Category of issue (e.g., "Missing Title") |
+| Severity Badge | Critical (red), Warning (yellow), Notice (blue) |
+| Status Badge | Open (gray), Fixed (green), Ignored (orange) |
+| URL | Affected page URL (truncated with tooltip) |
+| Description | Issue details (expandable) |
+| Recommendation | Fix suggestion (expandable) |
+| Action Buttons | Mark Fixed, Ignore, Reopen |
+
+### BulkActions Component
+
+**Props:**
+```typescript
+interface BulkActionsProps {
+  selectedIds: Set<number>;
+  totalIssues: number;
+  onBulkUpdate: (ids: number[], status: IssueStatus) => void;
+  onClearSelection: () => void;
+  isUpdating: boolean;
+}
+```
+
+**Actions:**
+| Action | Effect |
+|--------|--------|
+| Select All | Select all issues on current page |
+| Mark Fixed | Set selected issues to `fixed` status |
+| Ignore | Set selected issues to `ignored` status |
+| Reopen | Set selected issues to `open` status |
+| Clear Selection | Deselect all issues |
+
+### API Integration
+
+**useAuditIssues Hook:**
+```typescript
+const { data, isLoading, error } = useAuditIssues({
+  auditId: string,
+  page: number,
+  perPage: number,
+  severity?: 'critical' | 'warning' | 'notice',
+  status?: 'open' | 'fixed' | 'ignored',
+  typeId?: number,
+  search?: string,
+  sort?: 'newest' | 'oldest' | 'severity'
+});
+```
+
+**useAuditSummary Hook:**
+```typescript
+const { data: summary, isLoading } = useAuditSummary(auditId);
+// Returns: { status, pagesCrawled, issuesFound, severityCounts }
+```
+
+**useUpdateIssueStatus Mutation:**
+```typescript
+const mutation = useUpdateIssueStatus();
+mutation.mutate({ issueId: number, status: 'fixed' | 'ignored' | 'open' });
+```
+
+**useBulkUpdateIssues Mutation:**
+```typescript
+const mutation = useBulkUpdateIssues();
+mutation.mutate({ 
+  auditId: string, 
+  issueIds: number[], 
+  status: 'fixed' | 'ignored' | 'open' 
+});
+```
+
+### State Management
+
+| State | Type | Purpose |
+|-------|------|---------|
+| `filters` | IssueFilters | Current filter values |
+| `page` | number | Current pagination page |
+| `selectedIds` | Set<number> | Selected issues for bulk actions |
+| `expandedIds` | Set<number> | Expanded issue cards |
+| `isUpdating` | boolean | Loading state for mutations |
+
+**URL State Sync:**
+- Filters persisted in URL query params
+- Enables shareable filtered views
+- Browser back/forward navigation supported
+
+### Error Handling
+
+| Error State | Display |
+|-------------|---------|
+| Unauthenticated | Redirect to login with return URL |
+| Audit Not Found | 404 page with "Audit not found" message |
+| Site Not Found | 404 page with "Site not found" message |
+| API Error | Error message with retry button |
+| Network Error | "Network error" message with retry button |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication Check | Redirect unauthenticated users to login |
+| User Isolation | API enforces site ownership via audit → site → user chain |
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| URL Validation | URLs sanitized before display |
+| No Sensitive Data | Only audit/issue data displayed |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Labels | All interactive elements labeled |
+| Keyboard Navigation | Tab through filters, issues, actions |
+| Screen Reader | Issue status announced on change |
+| Focus Management | Focus maintained after status updates |
+| Color Contrast | Severity colors meet WCAG AA contrast |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `AuditDetailPage.test.tsx` | 45 | ✅ PASS |
+| `AuditSummary.test.tsx` | 32 | ✅ PASS |
+| `IssueFilters.test.tsx` | 38 | ✅ PASS |
+| `IssueList.test.tsx` | 42 | ✅ PASS |
+| `IssueItem.test.tsx` | 35 | ✅ PASS |
+| `BulkActions.test.tsx` | 28 | ✅ PASS |
+| `IssueStatusBadge.test.tsx` | 15 | ✅ PASS |
+| **Total** | **235** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 45 | Component structure, elements, props |
+| Filtering | 35 | Type, severity, status, search filters |
+| Pagination | 20 | Navigation, page size, URL sync |
+| Selection | 25 | Individual, bulk select, select all |
+| Status Updates | 30 | Individual and bulk status changes |
+| Error States | 20 | 401, 404, network errors |
+| Accessibility | 25 | ARIA, keyboard, screen reader |
+| Performance | 15 | Debounce, pagination speed |
+
+### Production Verification
+
+| Check | Result |
+|-------|--------|
+| Health Check | ✅ 200 OK |
+| Page Load | ✅ Page renders correctly |
+| Error Handling (Unauthenticated) | ✅ Redirects to login |
+| Severity Filtering | ✅ Cards filter issues correctly |
+| Issue Status Update | ✅ Status changes persist |
+| Bulk Actions | ✅ Bulk updates work |
+| Pagination | ✅ Navigation works |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `0a48e5f6` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 235/235 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-14-13: AuditController (Done) - API endpoints
+- TASK-14-14: AuditIssueController (Done) - Issue management API
+
+### Related Tasks
+- TASK-14-15: Audit List Page (Frontend list view)
+- TASK-14-17: Audit Dashboard Widget (Dashboard integration)
+
+---
 ## BrokenLinkChecker Service (TASK-14-10)
 
 ### Service Description
