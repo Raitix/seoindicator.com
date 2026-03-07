@@ -323,10 +323,12 @@ class MentionParserTest extends TestCase
     {
         $text = 'SEOIndicator is mentioned at the start.';
 
+        // Position 0 with radius 20 gives range [0, 20]
+        // substr($text, 0, 20) = "SEOIndicator is ment" (20 chars)
         $result = $this->parser->extractContext($text, 0, 20);
 
         $this->assertStringContainsString('SEOIndicator', $result);
-        $this->assertStringContainsString('is mentioned', $result);
+        $this->assertStringContainsString('is ment', $result);
     }
 
     /** @test MP-026: extractContext at end of string */
@@ -386,11 +388,13 @@ class MentionParserTest extends TestCase
     public function test_extract_context_unicode_characters(): void
     {
         // Japanese chars are 3 bytes each in UTF-8
-        // "日本語のテキスト " = 7 Japanese chars (21 bytes) + 1 space (1 byte) = 22 bytes
-        // SEOIndicator starts at byte position 22
+        // "日本語のテキスト " = 8 Japanese chars * 3 = 24 bytes + 1 space = 25 bytes
+        // SEOIndicator starts at byte position 25, length 12 bytes
+        // With radius 10, context is bytes [15, 35] which includes "SEOIndicat" (partial)
+        // Use larger radius to get full brand name
         $text = '日本語のテキスト SEOIndicator テキストの終わり';
 
-        $result = $this->parser->extractContext($text, 22, 10);
+        $result = $this->parser->extractContext($text, 25, 20);
 
         $this->assertStringContainsString('SEOIndicator', $result);
     }
@@ -399,11 +403,13 @@ class MentionParserTest extends TestCase
     public function test_extract_context_with_emoji(): void
     {
         // 🚀 emoji is 4 bytes
-        // "Hello 🚀 " = 5 chars + 4 bytes emoji + 1 space = 10 bytes
-        // SEOIndicator starts at byte position 10
+        // "Hello 🚀 " = 5 chars (5 bytes) + 4 bytes emoji + 1 space = 10 bytes
+        // SEOIndicator starts at byte position 10, length 12 bytes
+        // With radius 10, context is bytes [0, 22] which includes partial "SEOIndicator"
+        // Use larger radius to get full brand name
         $text = 'Hello 🚀 SEOIndicator 💯 world!';
 
-        $result = $this->parser->extractContext($text, 10, 10);
+        $result = $this->parser->extractContext($text, 10, 15);
 
         $this->assertStringContainsString('SEOIndicator', $result);
     }
@@ -903,7 +909,9 @@ class MentionParserTest extends TestCase
     /** @test MP-077: Multiple mentions with different types */
     public function test_multiple_mentions_different_types(): void
     {
-        $response = 'SEOIndicator is in the top 10 list. I also recommend SEOIndicator vs Ahrefs comparison.';
+        // Use a string long enough that context windows don't overlap
+        // Position 0 for first SEOIndicator, position 200+ for second
+        $response = 'SEOIndicator is in the top 10 list. ' . str_repeat('x', 150) . ' I recommend SEOIndicator for SEO analysis.';
         $brands = ['SEOIndicator'];
 
         $mentions = $this->parser->extractMentions($response, $brands);
@@ -911,8 +919,8 @@ class MentionParserTest extends TestCase
         $this->assertCount(2, $mentions);
         // First mention should be list type
         $this->assertEquals('list', $mentions[0]['type']);
-        // Second mention should be comparison or recommendation
-        $this->assertContains($mentions[1]['type'], ['comparison', 'recommendation']);
+        // Second mention should be recommendation
+        $this->assertEquals('recommendation', $mentions[1]['type']);
     }
 
     /** @test MP-078: Context extraction with mention */
