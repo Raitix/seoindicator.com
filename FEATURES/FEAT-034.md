@@ -1,7 +1,7 @@
 # FEAT-034: AI Visibility Tracking (Generative Engine Optimization)
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
