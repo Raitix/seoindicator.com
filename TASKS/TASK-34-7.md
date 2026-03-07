@@ -1,7 +1,7 @@
 # TASK-34-7: Query Job and Scheduling
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -62,10 +62,10 @@ Create background queue jobs for executing AI visibility queries and scheduled t
   - [ ] Retry logic respects backoff
   - [ ] Dead letter handling after max tries
 
-- [ ] Unit tests created
-  - [ ] Test job execution with mocked services
-  - [ ] Test cache hit/miss scenarios
-  - [ ] Test scheduling configuration
+- [x] Unit tests created
+  - [x] Test job execution with mocked services
+  - [x] Test cache hit/miss scenarios
+  - [x] Test scheduling configuration
 
 ---
 
@@ -187,3 +187,56 @@ PreTester CAN design tests immediately using mocked interfaces:
 ---
 
 *Created by SpecSystemAnalyst on 2026-03-07*
+
+---
+
+### PreTester Test Design (2026-03-07 19:10 UTC)
+
+**Status:** Tests Complete → Ready for Developer
+
+**Test Files Created:**
+
+| File | Tests | Purpose |
+|------|-------|---------|
+| `TESTS/TEST-34-7.md` | 140+ | Test documentation with all scenarios |
+| `backend/tests/Unit/Jobs/AIVisibility/AIVisibilityQueryJobTest.php` | 45+ | Query job unit tests |
+| `backend/tests/Unit/Jobs/AIVisibility/RunAIVisibilityQueriesJobTest.php` | 30+ | Batch dispatch job tests |
+| `backend/tests/Unit/Jobs/AIVisibility/AggregateAIVisibilityAnalyticsJobTest.php` | 25+ | Analytics aggregation tests |
+| `backend/tests/Unit/Jobs/AIVisibility/CheckAIVisibilityAlertsJobTest.php` | 25+ | Alert detection tests |
+| `backend/tests/Feature/Console/KernelScheduleTest.php` | 15+ | Schedule configuration tests |
+
+**Total Tests:** 140+ tests across 5 test files
+
+**Test Categories Covered:**
+- Job configuration (ShouldQueue, tries, backoff, queue)
+- Cache handling (key generation, hit/miss, TTL)
+- Query execution (AIQueryEngine mock, MentionParser mock)
+- Error handling (exceptions, logging, retry logic)
+- Scheduling (cron expressions, queue assignment)
+- Edge cases (null data, large datasets, unicode)
+- Security (no sensitive data in logs, XSS prevention)
+
+**TDD Approach:**
+All tests use mocked interfaces (AIQueryEngine, AIVisibilityServiceInterface, MentionParser). This allows tests to pass once the job classes are created, without waiting for dependency implementations.
+
+**Key Mock Patterns:**
+```php
+$mockEngine = $this->mock(AIQueryEngine::class);
+$mockEngine->shouldReceive('query')->andReturn([...]);
+
+$mockService = $this->mock(AIVisibilityServiceInterface::class);
+$mockService->shouldReceive('getActiveProjectsForQuery')->andReturn([...]);
+```
+
+**Handoff to Developer:**
+1. Create job classes at `app/Jobs/AIVisibility/`
+2. Implement ShouldQueue interface
+3. Configure tries, backoff, queue properties
+4. Implement handle() methods to pass tests
+5. Register scheduled tasks in Kernel.php
+
+**Dependencies for Tests:**
+- Tests pass with mocked services
+- Actual AIQueryEngine and AIVisibilityService needed at integration testing stage
+
+**Status:** `To Write Tests` → `To Develop`
