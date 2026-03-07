@@ -369,7 +369,7 @@ class UpdateProjectRequestTest extends TestCase
         $request = new UpdateAIVisibilityProjectRequest();
         $validator = Validator::make([
             'brand_name' => str_repeat('a', 255),
-            'keywords' => range(1, 10),
+            'keywords' => array_map('strval', range(1, 10)),
             'competitors' => ['A', 'B', 'C'],
         ], $request->rules());
 
