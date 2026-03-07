@@ -1,7 +1,7 @@
 # TASK-29-5: Rate Limiting Integration
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`
@@ -239,3 +239,35 @@ Status updated: `To Develop` → `To Test Locally`
 **Deployment Readiness:** ✅ APPROVED FOR DEPLOYMENT
 
 Status updated: `To Test Locally` → `To Deploy`
+
+### [2026-03-07 16:12 GMT+2] Agent: DevOps
+**Deployment Complete - Production Live**
+
+**Deployment Summary:**
+- GitHub Actions workflow: `Deploy to Production` (run #22800548406)
+- Build-and-test job: ✅ Completed in 1m48s
+- Deploy job: ✅ Completed in 35s
+- Health check: ✅ HTTP 200 OK
+
+**Deployment Steps Executed:**
+1. Git push to `origin/main` triggered GitHub Actions
+2. Frontend built (static export)
+3. Playwright tests passed
+4. Backend deployed via SSH to production
+5. Frontend uploaded via SCP
+6. Health endpoint verified: `https://seoindicator.com/api/health` → 200 OK
+
+**Production Status:**
+- Rate limiting now active on `POST /api/v1/tools/export` endpoint
+- 10 exports per hour per user (configurable)
+- Rate limit headers included in all responses
+- 429 response with retry message when limit exceeded
+
+**Rollback Command (if needed):**
+```bash
+ssh -p 65002 u949031532@45.84.206.11
+cd /home/u949031532/domains/seoindicator.com/public_html
+git reset --hard HEAD~1
+```
+
+Status updated: `To Deploy` → `To Test Prod`
