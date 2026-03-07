@@ -24,5 +24,9 @@ export type { WelcomeCardProps } from "./WelcomeCard";
 
 export { DashboardSkeleton, AuthLoadingState } from "./DashboardSkeleton";
 
+// AuditWidget - TASK-14-17
+export { AuditWidget } from "./AuditWidget";
+export type { AuditWidgetProps, AuditIssue, LastAudit, RunningAudit } from "./AuditWidget";
+
 // Re-export types
 export type { AnalysisStatus, RecentAnalysis, DashboardData, CostSummary, QuickInsights, DashboardStats } from "@/lib/types/dashboard";

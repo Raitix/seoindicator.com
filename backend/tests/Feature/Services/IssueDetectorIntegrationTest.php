@@ -38,8 +38,7 @@ class IssueDetectorIntegrationTest extends TestCase
         $this->user = User::factory()->create();
         $this->site = Site::factory()->create(['user_id' => $this->user->id]);
         $this->audit = Audit::factory()->create([
-            'site_id' => $this->user->id,
-            'user_id' => $this->user->id,
+            'site_id' => $this->site->id,
         ]);
         
         // Create issue types for testing
@@ -49,15 +48,15 @@ class IssueDetectorIntegrationTest extends TestCase
     private function createIssueTypes(): void
     {
         $types = [
-            ['type' => 'missing_title_tag', 'category' => 'meta', 'severity' => 'critical'],
-            ['type' => 'duplicate_title', 'category' => 'meta', 'severity' => 'warning'],
-            ['type' => 'missing_meta_description', 'category' => 'meta', 'severity' => 'warning'],
-            ['type' => 'missing_h1', 'category' => 'content', 'severity' => 'warning'],
-            ['type' => 'multiple_h1', 'category' => 'content', 'severity' => 'notice'],
-            ['type' => 'broken_link', 'category' => 'technical', 'severity' => 'critical'],
-            ['type' => 'slow_page', 'category' => 'performance', 'severity' => 'notice'],
-            ['type' => 'missing_viewport', 'category' => 'mobile', 'severity' => 'warning'],
-            ['type' => 'image_missing_alt', 'category' => 'content', 'severity' => 'notice'],
+            ['type' => 'missing_title_tag', 'name' => 'Missing Title Tag', 'category' => 'meta', 'severity' => 'critical'],
+            ['type' => 'duplicate_title', 'name' => 'Duplicate Title', 'category' => 'meta', 'severity' => 'warning'],
+            ['type' => 'missing_meta_description', 'name' => 'Missing Meta Description', 'category' => 'meta', 'severity' => 'warning'],
+            ['type' => 'missing_h1', 'name' => 'Missing H1', 'category' => 'content', 'severity' => 'warning'],
+            ['type' => 'multiple_h1', 'name' => 'Multiple H1', 'category' => 'content', 'severity' => 'notice'],
+            ['type' => 'broken_link', 'name' => 'Broken Link', 'category' => 'technical', 'severity' => 'critical'],
+            ['type' => 'slow_page', 'name' => 'Slow Page', 'category' => 'performance', 'severity' => 'notice'],
+            ['type' => 'missing_viewport', 'name' => 'Missing Viewport', 'category' => 'mobile', 'severity' => 'warning'],
+            ['type' => 'image_missing_alt', 'name' => 'Image Missing Alt', 'category' => 'content', 'severity' => 'notice'],
         ];
         
         foreach ($types as $type) {
