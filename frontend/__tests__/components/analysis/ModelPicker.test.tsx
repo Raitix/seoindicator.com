@@ -10,6 +10,9 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
+// Import the ACTUAL component (not a mock)
+import { ModelPicker } from '@/components/analysis/ModelPicker';
+
 // Mock data - defined at module level for hoisting
 const mockModelsData = [
   {
@@ -58,14 +61,12 @@ const mockModelsData = [
   },
 ];
 
-// Mutable state for tests
-let mockState = {
-  models: [...mockModelsData],
-  defaultModel: 'google/gemini-2.0-flash-exp:free',
-  userPreference: null as string | null,
-  isLoading: false,
-  error: null as any,
-};
+// Mutable state for tests - must be at module level
+let mockModels = [...mockModelsData];
+let mockDefaultModel = 'google/gemini-2.0-flash-exp:free';
+let mockUserPreference: string | null = null;
+let mockIsLoading = false;
+let mockError: Error | null = null;
 
 const mockRefetch = vi.fn();
 
@@ -78,160 +79,26 @@ vi.mock('lucide-react', () => ({
   RefreshCw: () => <span data-testid="refresh-icon">↻</span>,
 }));
 
-// Mock useAIModels hook - use vi.hoisted pattern
+// Mock useAIModels hook - module level mock with factory function
 vi.mock('@/hooks/useAIModels', () => ({
   useAIModels: () => ({
-    models: mockState.models,
-    defaultModel: mockState.defaultModel,
-    userPreference: mockState.userPreference,
-    isLoading: mockState.isLoading,
-    error: mockState.error,
+    models: mockModels,
+    defaultModel: mockDefaultModel,
+    userPreference: mockUserPreference,
+    isLoading: mockIsLoading,
+    error: mockError,
     refetch: mockRefetch,
   }),
 }));
 
-// Component interface for mock
-interface ModelPickerProps {
-  selectedModel: string | null;
-  onModelChange: (modelId: string) => void;
-  estimatedTokens?: number;
-  disabled?: boolean;
-  className?: string;
-}
-
-// Mock component implementation for TDD reference
-function ModelPicker({
-  selectedModel,
-  onModelChange,
-  estimatedTokens,
-  disabled = false,
-  className = '',
-}: ModelPickerProps) {
-  const { models, defaultModel, isLoading, error, refetch, userPreference } = require('@/hooks/useAIModels').useAIModels();
-
-  if (isLoading) {
-    return (
-      <div data-testid="model-picker-skeleton" role="status" aria-busy="true">
-        <div className="skeleton-item" />
-        <div className="skeleton-item" />
-        <div className="skeleton-item" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div data-testid="model-picker-error" role="alert">
-        <span>Failed to load models</span>
-        <button onClick={() => refetch()} data-testid="retry-button">
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  if (models.length === 0) {
-    return (
-      <div data-testid="model-picker-empty">
-        No models available
-      </div>
-    );
-  }
-
-  const formatContextWindow = (tokens: number): string => {
-    if (tokens >= 1000000) return '1M tokens';
-    if (tokens >= 1000) return `${Math.round(tokens / 1000)}K tokens`;
-    return `${tokens} tokens`;
-  };
-
-  const formatLatency = (ms: number): string => {
-    return `~${(ms / 1000).toFixed(1)}s`;
-  };
-
-  const getModelToSelect = (): string | null => {
-    if (selectedModel) return selectedModel;
-    if (userPreference) return userPreference;
-    return defaultModel;
-  };
-
-  const modelToSelect = getModelToSelect();
-
-  return (
-    <div className={`model-picker ${className}`} data-testid="model-picker">
-      <label className="text-sm font-medium text-gray-700">AI Model</label>
-      
-      <div className="models-grid">
-        {models.map((model: any) => {
-          const isSelected = modelToSelect === model.id;
-          const fitsContent = estimatedTokens ? estimatedTokens < model.context_window : true;
-          const isDisabled = disabled || !fitsContent;
-
-          return (
-            <button
-              key={model.id}
-              type="button"
-              onClick={() => !isDisabled && onModelChange(model.id)}
-              disabled={isDisabled}
-              data-testid={`model-card-${model.id}`}
-              aria-pressed={isSelected}
-              aria-disabled={isDisabled}
-              className={`model-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
-            >
-              {isSelected && (
-                <span data-testid={`check-${model.id}`} className="check-icon">
-                  <span data-testid="check-icon">✓</span>
-                </span>
-              )}
-
-              {model.is_recommended && (
-                <span data-testid={`recommended-badge-${model.id}`} className="recommended-badge">
-                  Recommended
-                </span>
-              )}
-
-              <div className="model-info">
-                <div className="model-name">{model.name}</div>
-                <div className="model-provider">{model.provider}</div>
-
-                <div className="model-stats">
-                  <span className="model-context" data-testid={`context-${model.id}`}>
-                    <span data-testid="database-icon">📊</span>
-                    {formatContextWindow(model.context_window)}
-                  </span>
-                  <span className="model-latency" data-testid={`latency-${model.id}`}>
-                    <span data-testid="clock-icon">⏱</span>
-                    {formatLatency(model.avg_latency_ms)}
-                  </span>
-                </div>
-
-                {!fitsContent && (
-                  <div className="content-warning" data-testid={`warning-${model.id}`}>
-                    Content too large for this model
-                  </div>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      <p className="help-text">
-        Model is automatically selected based on page size. Override for specific needs.
-      </p>
-    </div>
-  );
-}
-
 // Reset mocks before each test
 beforeEach(() => {
   vi.clearAllMocks();
-  mockState = {
-    models: [...mockModelsData],
-    defaultModel: 'google/gemini-2.0-flash-exp:free',
-    userPreference: null,
-    isLoading: false,
-    error: null,
-  };
+  mockModels = [...mockModelsData];
+  mockDefaultModel = 'google/gemini-2.0-flash-exp:free';
+  mockUserPreference = null;
+  mockIsLoading = false;
+  mockError = null;
 });
 
 // ============================================
@@ -321,7 +188,7 @@ describe('MP-RENDER: Component Rendering', () => {
 
 describe('MP-LOAD: Loading State', () => {
   beforeEach(() => {
-    mockState.isLoading = true;
+    mockIsLoading = true;
   });
 
   it('MP-LOAD-001: Shows loading skeleton', () => {
@@ -348,7 +215,7 @@ describe('MP-LOAD: Loading State', () => {
     
     expect(screen.getByTestId('model-picker-skeleton')).toBeInTheDocument();
     
-    mockState.isLoading = false;
+    mockIsLoading = false;
     rerender(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     expect(screen.getByTestId('model-picker')).toBeInTheDocument();
@@ -375,7 +242,7 @@ describe('MP-LOAD: Loading State', () => {
 
 describe('MP-ERROR: Error State', () => {
   beforeEach(() => {
-    mockState.error = new Error('Network error');
+    mockError = new Error('Network error');
   });
 
   it('MP-ERROR-001: Shows error message', () => {
@@ -412,7 +279,7 @@ describe('MP-ERROR: Error State', () => {
   });
 
   it('MP-ERROR-006: Network error handled', () => {
-    mockState.error = { message: 'Network Error', status: 0 };
+    mockError = { message: 'Network Error', status: 0 } as any;
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     expect(screen.getByText('Failed to load models')).toBeInTheDocument();
@@ -670,7 +537,7 @@ describe('MP-CONTEXT: Context Window Display', () => {
   });
 
   it('MP-CONTEXT-008: Zero context handled', () => {
-    mockState.models = [{
+    mockModels = [{
       ...mockModelsData[0],
       id: 'test/zero-context',
       context_window: 0,
@@ -703,7 +570,7 @@ describe('MP-LATENCY: Latency Display', () => {
   });
 
   it('MP-LATENCY-003: Formats 500ms', () => {
-    mockState.models = [{
+    mockModels = [{
       ...mockModelsData[0],
       id: 'test/fast-model',
       avg_latency_ms: 500,
@@ -1027,7 +894,7 @@ describe('MP-HOOK: useAIModels Hook Integration', () => {
   });
 
   it('MP-HOOK-004: Returns user preference', () => {
-    mockState.userPreference = 'qwen/qwen-2-7b-instruct:free';
+    mockUserPreference = 'qwen/qwen-2-7b-instruct:free';
     
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
@@ -1037,7 +904,7 @@ describe('MP-HOOK: useAIModels Hook Integration', () => {
   });
 
   it('MP-HOOK-005: Returns loading state', () => {
-    mockState.isLoading = true;
+    mockIsLoading = true;
     
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
@@ -1046,7 +913,7 @@ describe('MP-HOOK: useAIModels Hook Integration', () => {
   });
 
   it('MP-HOOK-006: Returns error state', () => {
-    mockState.error = new Error('Test error');
+    mockError = new Error('Test error');
     
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
@@ -1073,7 +940,7 @@ describe('MP-HOOK: useAIModels Hook Integration', () => {
   });
 
   it('MP-HOOK-009: Handles empty models', () => {
-    mockState.models = [];
+    mockModels = [];
     
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
@@ -1082,11 +949,11 @@ describe('MP-HOOK: useAIModels Hook Integration', () => {
   });
 
   it('MP-HOOK-010: Handles null response', () => {
-    mockState.models = null as any;
+    mockModels = null as any;
     
     const onModelChange = vi.fn();
-    // Should not crash
-    expect(() => render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />)).toThrow();
+    // Should not crash - empty state shown
+    expect(() => render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />)).not.toThrow();
   });
 });
 
@@ -1096,7 +963,7 @@ describe('MP-HOOK: useAIModels Hook Integration', () => {
 
 describe('MP-EDGE: Edge Cases', () => {
   it('MP-EDGE-001: Empty models array', () => {
-    mockState.models = [];
+    mockModels = [];
     
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
@@ -1105,7 +972,7 @@ describe('MP-EDGE: Edge Cases', () => {
   });
 
   it('MP-EDGE-002: Single model', () => {
-    mockState.models = [mockModelsData[0]];
+    mockModels = [mockModelsData[0]];
     
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
@@ -1115,7 +982,7 @@ describe('MP-EDGE: Edge Cases', () => {
   });
 
   it('MP-EDGE-003: Very long model name', () => {
-    mockState.models = [{
+    mockModels = [{
       ...mockModelsData[0],
       id: 'test/long',
       name: 'This is a very long model name that might need truncation in the UI to prevent overflow issues',
@@ -1128,7 +995,7 @@ describe('MP-EDGE: Edge Cases', () => {
   });
 
   it('MP-EDGE-004: Unicode in model name', () => {
-    mockState.models = [{
+    mockModels = [{
       ...mockModelsData[0],
       id: 'test/unicode',
       name: 'Gemini 🚀 Flash ✨',
@@ -1162,7 +1029,7 @@ describe('MP-EDGE: Edge Cases', () => {
   });
 
   it('MP-EDGE-007: Zero latency', () => {
-    mockState.models = [{
+    mockModels = [{
       ...mockModelsData[0],
       id: 'test/zero-latency',
       avg_latency_ms: 0,
@@ -1221,14 +1088,14 @@ describe('MP-INT: Integration Scenarios', () => {
     const user = userEvent.setup();
     const onModelChange = vi.fn();
     
-    mockState.isLoading = true;
+    mockIsLoading = true;
     const { rerender } = render(
       <ModelPicker selectedModel={null} onModelChange={onModelChange} />
     );
     
     expect(screen.getByTestId('model-picker-skeleton')).toBeInTheDocument();
     
-    mockState.isLoading = false;
+    mockIsLoading = false;
     rerender(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     expect(screen.getByTestId('model-picker')).toBeInTheDocument();
@@ -1241,7 +1108,7 @@ describe('MP-INT: Integration Scenarios', () => {
     const user = userEvent.setup();
     const onModelChange = vi.fn();
     
-    mockState.error = new Error('Test error');
+    mockError = new Error('Test error');
     const { rerender } = render(
       <ModelPicker selectedModel={null} onModelChange={onModelChange} />
     );
@@ -1251,7 +1118,7 @@ describe('MP-INT: Integration Scenarios', () => {
     await user.click(screen.getByTestId('retry-button'));
     expect(mockRefetch).toHaveBeenCalled();
     
-    mockState.error = null;
+    mockError = null;
     rerender(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     expect(screen.getByTestId('model-picker')).toBeInTheDocument();
@@ -1355,20 +1222,20 @@ describe('AC: Acceptance Criteria', () => {
     const onModelChange = vi.fn();
     
     // Loading state
-    mockState.isLoading = true;
+    mockIsLoading = true;
     const { rerender } = render(
       <ModelPicker selectedModel={null} onModelChange={onModelChange} />
     );
     expect(screen.getByTestId('model-picker-skeleton')).toBeInTheDocument();
     
     // Error state
-    mockState.isLoading = false;
-    mockState.error = new Error('Test error');
+    mockIsLoading = false;
+    mockError = new Error('Test error');
     rerender(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     expect(screen.getByTestId('model-picker-error')).toBeInTheDocument();
     
     // Success state
-    mockState.error = null;
+    mockError = null;
     rerender(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     expect(screen.getByTestId('model-picker')).toBeInTheDocument();
   });
