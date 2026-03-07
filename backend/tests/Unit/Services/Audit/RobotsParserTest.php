@@ -136,7 +136,9 @@ class RobotsParserTest extends TestCase
     public function test_fetch_04_handles_connection_timeout(): void
     {
         Http::fake([
-            'example.com/robots.txt' => Http::timeout(),
+            'example.com/robots.txt' => function () {
+                throw new \Illuminate\Http\Client\ConnectionException('Connection timed out');
+            },
         ]);
 
         $result = $this->parser->fetch('https://example.com');
@@ -226,7 +228,9 @@ class RobotsParserTest extends TestCase
     public function test_fetch_11_handles_dns_failure(): void
     {
         Http::fake([
-            'nonexistent.invalid/robots.txt' => Http::response(null, 0),
+            'nonexistent.invalid/robots.txt' => function () {
+                throw new \Illuminate\Http\Client\ConnectionException('DNS resolution failed');
+            },
         ]);
 
         $result = $this->parser->fetch('https://nonexistent.invalid');
@@ -238,7 +242,9 @@ class RobotsParserTest extends TestCase
     public function test_fetch_12_handles_ssl_errors(): void
     {
         Http::fake([
-            'expired.badssl.com/robots.txt' => Http::response(null, 0),
+            'expired.badssl.com/robots.txt' => function () {
+                throw new \Illuminate\Http\Client\ConnectionException('SSL certificate error');
+            },
         ]);
 
         $result = $this->parser->fetch('https://expired.badssl.com');
@@ -1094,7 +1100,9 @@ class RobotsParserTest extends TestCase
     public function test_error_03_handles_connection_reset(): void
     {
         Http::fake([
-            'example.com/robots.txt' => Http::response(null, 0),
+            'example.com/robots.txt' => function () {
+                throw new \Illuminate\Http\Client\ConnectionException('Connection reset');
+            },
         ]);
 
         $result = $this->parser->fetch('https://example.com');
@@ -1119,7 +1127,9 @@ class RobotsParserTest extends TestCase
     public function test_error_05_handles_timeout_gracefully(): void
     {
         Http::fake([
-            'example.com/robots.txt' => Http::timeout(),
+            'example.com/robots.txt' => function () {
+                throw new \Illuminate\Http\Client\ConnectionException('Request timeout');
+            },
         ]);
 
         $result = $this->parser->fetch('https://example.com');
