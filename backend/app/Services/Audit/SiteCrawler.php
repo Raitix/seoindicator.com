@@ -278,6 +278,8 @@ class SiteCrawler implements SiteCrawlerInterface
         // Mark as completed
         $this->state->markAsCompleted();
         $this->saveState();
+        $this->saveQueue();
+        $this->saveCrawledUrls();
 
         Log::info('SiteCrawler: Crawl completed', [
             'auditId' => $this->state->auditId,
