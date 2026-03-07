@@ -128,6 +128,36 @@ abstract class BaseChecker implements CheckerInterface
     }
 
     /**
+     * Check if meta description element exists (regardless of content).
+     *
+     * @param Crawler $crawler The DOM crawler
+     * @return bool True if meta description element exists
+     */
+    protected function hasMetaDescription(Crawler $crawler): bool
+    {
+        $metaNode = $crawler->filter('head > meta[name="description"], head > meta[NAME="Description"], head > meta[name="Description"]');
+        return $metaNode->count() > 0;
+    }
+
+    /**
+     * Extract the raw content attribute from meta description.
+     *
+     * @param Crawler $crawler The DOM crawler
+     * @return string|null The raw content attribute or null if element not found
+     */
+    protected function extractMetaDescriptionContent(Crawler $crawler): ?string
+    {
+        $metaNode = $crawler->filter('head > meta[name="description"], head > meta[NAME="Description"], head > meta[name="Description"]')->first();
+
+        if ($metaNode->count() === 0) {
+            return null;
+        }
+
+        // Return raw content attribute (may be empty string or null)
+        return $metaNode->attr('content');
+    }
+
+    /**
      * Extract all images from HTML.
      *
      * @param Crawler $crawler The DOM crawler
