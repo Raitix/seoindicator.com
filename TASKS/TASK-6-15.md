@@ -1,7 +1,7 @@
 # TASK-6-15: Webhook Retry Logic
 
 ## Status
-`To Write Tests`
+`To Develop`
 
 ## Priority
 `Medium`
@@ -65,3 +65,31 @@ Medium (2-3 hours)
 - Priority: Medium (reliability improvement)
 - Risk: Low (background process)
 - Part of Phase 4: Webhooks
+
+### [2026-03-07 18:00 GMT+2] PreTester: Tests Ready for Developer
+**Test Files Created:**
+- `backend/tests/Unit/Services/WebhookRetryServiceTest.php` - 28 tests ✅ ALL PASSING
+- `backend/tests/Unit/Jobs/ProcessWebhookRetriesJobTest.php` - 25 tests (15 passing, 10 pending implementation)
+
+**Test Documentation:** `TESTS/TEST-6-15.md`
+
+**Run Commands:**
+```bash
+php artisan test --filter=WebhookRetryServiceTest
+php artisan test --filter=ProcessWebhookRetriesJobTest
+```
+
+**Design Issue Identified:**
+The `WebhookDispatcherService::dispatch()` creates a NEW delivery record each call.
+For retries, we need to UPDATE the existing delivery instead.
+
+**Solution:** Add `redeliver(WebhookDelivery $delivery)` method to WebhookDispatcherService that:
+1. Reuses the existing delivery record
+2. Increments attempt_count
+3. Updates response_status, response_body, delivered_at
+4. Returns success/failure boolean
+
+**Current Implementation Status:**
+- ✅ `WebhookRetryService` - Fully implemented, all tests pass
+- ⚠️ `ProcessWebhookRetriesJob` - Needs fix for delivery update issue
+- ⚠️ `WebhookDispatcherService::redeliver()` - Not yet implemented
