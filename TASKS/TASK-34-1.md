@@ -1,7 +1,7 @@
 # TASK-34-1: Database Migrations
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`
