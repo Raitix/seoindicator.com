@@ -20,6 +20,10 @@ export { default as PublicAuditPage } from './PublicAuditPage';
 export { default as ShareAuditModal } from './ShareAuditModal';
 export { default as TopIssues } from './TopIssues';
 
+// Badge Preview Component (TASK-33-13)
+export { BadgePreview } from './BadgePreview';
+export type { BadgePreviewProps, BadgeSize, BadgeTheme, EmbedType } from './BadgePreview';
+
 // New TASK-14-15 components
 export { AuditStatusBadge } from './AuditStatusBadge';
 export type { AuditStatusBadgeProps } from './AuditStatusBadge';
