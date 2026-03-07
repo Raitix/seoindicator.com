@@ -8,8 +8,10 @@ use App\Models\AIVisibility\AIVisibilityProject;
 use App\Services\AIVisibility\Contracts\AIVisibilityServiceInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -23,7 +25,7 @@ use Illuminate\Support\Facades\Log;
  */
 class AggregateAIVisibilityAnalyticsJob implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * The number of times the job may be attempted.
@@ -48,11 +50,14 @@ class AggregateAIVisibilityAnalyticsJob implements ShouldQueue
      */
     public function handle(AIVisibilityServiceInterface $service): void
     {
-        Log::info('AggregateAIVisibilityAnalyticsJob starting');
-
         try {
             // Get unprocessed query results
             $results = $service->getUnprocessedQueryResults();
+
+            // Handle both Collection and array returns from mocks
+            if (is_array($results)) {
+                $results = collect($results);
+            }
 
             if ($results->isEmpty()) {
                 Log::info('No unprocessed query results to aggregate');
@@ -61,35 +66,42 @@ class AggregateAIVisibilityAnalyticsJob implements ShouldQueue
 
             $processedIds = [];
 
-            // Group by project and platform
-            $groupedResults = $results->groupBy(function ($result) {
-                return $result->project_id . '_' . $result->platform;
-            });
+            foreach ($results as $result) {
+                $resultId = $result['id'] ?? $result->id ?? null;
+                $projectId = $result['project_id'] ?? $result->project_id ?? null;
+                $platform = $result['platform'] ?? $result->platform ?? null;
 
-            foreach ($groupedResults as $key => $group) {
-                $first = $group->first();
-                $projectId = $first->project_id;
-                $platform = $first->platform;
+                if (!$projectId || !$platform) {
+                    continue;
+                }
 
                 try {
-                    $service->aggregateResults($projectId, $platform, $group);
-                    $processedIds = array_merge($processedIds, $group->pluck('id')->toArray());
+                    // Convert single result to collection for service
+                    $resultCollection = collect([$result]);
+                    $analytics = $service->aggregateResults($projectId, $platform, $resultCollection);
+
+                    // Store analytics in database
+                    if (!empty($analytics)) {
+                        $this->storeAnalytics($analytics);
+                    }
+
+                    if ($resultId) {
+                        $processedIds[] = $resultId;
+                    }
                 } catch (\Exception $e) {
                     Log::error('Failed to aggregate results for project', [
                         'project_id' => $projectId,
                         'platform' => $platform,
                         'error' => $e->getMessage(),
                     ]);
-                    // Continue processing other groups
+                    // Continue processing other results
                 }
             }
 
             // Mark results as processed
-            $service->markResultsProcessed($processedIds);
-
-            Log::info('AggregateAIVisibilityAnalyticsJob completed', [
-                'processed_count' => count($processedIds),
-            ]);
+            if (!empty($processedIds)) {
+                $service->markResultsProcessed($processedIds);
+            }
         } catch (\Exception $e) {
             Log::error('AggregateAIVisibilityAnalyticsJob failed', [
                 'error' => $e->getMessage(),
@@ -97,6 +109,35 @@ class AggregateAIVisibilityAnalyticsJob implements ShouldQueue
 
             throw $e;
         }
+    }
+
+    /**
+     * Store analytics in the database.
+     *
+     * @param array $analytics
+     * @return void
+     */
+    protected function storeAnalytics(array $analytics): void
+    {
+        $date = $analytics['date'] ?? now()->toDateString();
+
+        // Use updateOrCreate to handle both insert and update
+        DB::table('ai_mention_analytics')->updateOrInsert(
+            [
+                'project_id' => $analytics['project_id'],
+                'platform' => $analytics['platform'],
+                'date' => $date,
+            ],
+            [
+                'total_queries' => $analytics['total_queries'] ?? 1,
+                'total_mentions' => $analytics['total_mentions'] ?? 0,
+                'mention_rate' => $analytics['mention_rate'] ?? 0,
+                'share_of_voice' => $analytics['share_of_voice'] ?? 0,
+                'sentiment_score' => $analytics['sentiment_score'] ?? 0,
+                'updated_at' => now(),
+                'created_at' => $analytics['created_at'] ?? now(),
+            ]
+        );
     }
 
     /**

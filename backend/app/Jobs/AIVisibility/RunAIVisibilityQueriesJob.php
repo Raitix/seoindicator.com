@@ -45,6 +45,9 @@ class RunAIVisibilityQueriesJob implements ShouldQueue
     {
         $this->frequency = $frequency;
         $this->onQueue('ai-visibility');
+        $this->middleware = [
+            new \Illuminate\Queue\Middleware\WithoutOverlapping('run-ai-visibility-queries', 3600),
+        ];
     }
 
     /**
@@ -55,10 +58,6 @@ class RunAIVisibilityQueriesJob implements ShouldQueue
      */
     public function handle(AIVisibilityServiceInterface $service): void
     {
-        Log::info('RunAIVisibilityQueriesJob starting', [
-            'frequency' => $this->frequency ?? 'all',
-        ]);
-
         try {
             // Get active projects for querying via the service
             $projects = $service->getActiveProjectsForQuery($this->frequency);
@@ -95,15 +94,13 @@ class RunAIVisibilityQueriesJob implements ShouldQueue
                 }
             }
 
-            Log::info('RunAIVisibilityQueriesJob completed', [
-                'dispatched' => $dispatchedCount,
+            Log::info('Dispatched AI visibility query jobs', [
                 'count' => $dispatchedCount,
-                'frequency' => $this->frequency,
             ]);
         } catch (\Exception $e) {
             Log::error('RunAIVisibilityQueriesJob failed', [
                 'error' => $e->getMessage(),
-                'frequency' => $this->frequency,
+                'frequency' => $this->frequency ?? 'all',
             ]);
 
             throw $e;
@@ -120,20 +117,8 @@ class RunAIVisibilityQueriesJob implements ShouldQueue
     {
         Log::error('RunAIVisibilityQueriesJob failed permanently', [
             'error' => $exception->getMessage(),
-            'frequency' => $this->frequency,
+            'frequency' => $this->frequency ?? 'all',
         ]);
-    }
-
-    /**
-     * Get the middleware the job should pass through.
-     *
-     * @return array
-     */
-    public function middleware(): array
-    {
-        return [
-            new \Illuminate\Queue\Middleware\WithoutOverlapping('run-ai-visibility-queries', 3600),
-        ];
     }
 
     /**

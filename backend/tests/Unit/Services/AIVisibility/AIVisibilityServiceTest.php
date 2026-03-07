@@ -525,10 +525,18 @@ class AIVisibilityServiceTest extends TestCase
         
         $this->mockLogger->shouldReceive('info')->once();
         
+        // Use Laravel's event faking to verify event dispatch
+        \Illuminate\Support\Facades\Event::fake();
+        
         $project = $this->service->createProject($this->user->id, $data);
         
-        // Event dispatch is handled by the service
+        // Assert the project was created and has an ID
         $this->assertNotNull($project->id);
+        
+        // Verify the event was dispatched with the correct name
+        \Illuminate\Support\Facades\Event::assertDispatched('ai-visibility.project.created', function ($eventName, $payload) use ($project) {
+            return isset($payload[0]) && $payload[0]->id === $project->id;
+        });
     }
 
     // ============================================================

@@ -4,6 +4,46 @@
 
 ### Completed Work
 
+#### TASK-34-7: Query Job and Scheduling (2026-03-07)
+
+**Implementation Summary:**
+Verified and fixed AI Visibility queue jobs and scheduled tasks. All 114 tests pass.
+
+**Files Modified:**
+1. `app/Jobs/AIVisibility/CheckAIVisibilityAlertsJob.php`:
+   - Added exception handling for alert creation (continues after failure)
+   - Fixed share of voice and sentiment score calculations to handle pre-calculated values
+   - Added `normalizeToPercentage()` helper for decimal/percentage conversion
+   - Added `getPreviousShareOfVoice()` and `getPreviousSentimentScore()` helpers
+
+2. `app/Services/AIVisibility/Contracts/AIVisibilityServiceInterface.php`:
+   - Added `createAlert(array $data): array` method signature
+
+3. `app/Services/AIVisibility/AIVisibilityService.php`:
+   - Added public `createAlert()` method implementation
+
+4. `routes/console.php`:
+   - Updated job names to include class names for easier test discovery
+
+5. `tests/Unit/Jobs/AIVisibility/CheckAIVisibilityAlertsJobTest.php`:
+   - Fixed `creates_alert_record` test to use mock verification instead of database assertion
+
+6. `tests/Feature/Console/KernelScheduleTest.php`:
+   - Fixed `CallbackEvent` to string casting errors
+   - Added `getEventString()` helper method
+   - Updated `findScheduledJob()` to check additional properties
+
+**Test Results:**
+- 114 tests pass (1 risky - no assertions)
+- All AI visibility job tests pass
+- All schedule tests pass
+
+**Key Lessons:**
+- Laravel `Schedule::job()` creates `CallbackEvent` which cannot be cast to string
+- Test helper methods should check multiple event properties for job discovery
+- Job names should include class names for easier testing and debugging
+- Unit tests with mocks shouldn't assert database state - verify mock expectations instead
+
 #### TASK-32-21: E2E Tests for Comparison Pages (2026-03-07)
 
 **Implementation Summary:**

@@ -173,6 +173,13 @@ class CheckAIVisibilityAlertsJobTest extends TestCase
 
         $mockService->shouldReceive('createAlert')
             ->once()
+            ->withArgs(function ($alert) {
+                return $alert['project_id'] === 1
+                    && $alert['alert_type'] === 'mention_rate_drop'
+                    && isset($alert['threshold'])
+                    && isset($alert['previous_value'])
+                    && isset($alert['current_value']);
+            })
             ->andReturn([
                 'id' => 1,
                 'project_id' => 1,
@@ -184,10 +191,8 @@ class CheckAIVisibilityAlertsJobTest extends TestCase
         $job = new CheckAIVisibilityAlertsJob();
         $job->handle($mockService);
 
-        $this->assertDatabaseHas('ai_alerts', [
-            'project_id' => 1,
-            'alert_type' => 'mention_rate_drop',
-        ]);
+        // Alert was created (verified by mock expectation)
+        $this->assertTrue(true);
     }
 
     /** @test JCA-ALERT-06: Links alert to project */

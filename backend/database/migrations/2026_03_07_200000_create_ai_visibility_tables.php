@@ -68,9 +68,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained('ai_visibility_projects')->cascadeOnDelete();
             $table->string('platform', 50);
+            $table->date('date')->nullable();
             $table->unsignedInteger('total_queries')->default(0);
             $table->unsignedInteger('brand_mentions')->default(0);
+            $table->unsignedInteger('total_mentions')->default(0);
             $table->decimal('mention_rate', 5, 2)->default(0);
+            $table->decimal('share_of_voice', 5, 2)->default(0);
+            $table->decimal('sentiment_score', 5, 2)->default(0);
             $table->unsignedInteger('positive_mentions')->default(0);
             $table->unsignedInteger('neutral_mentions')->default(0);
             $table->unsignedInteger('negative_mentions')->default(0);
@@ -80,7 +84,9 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['project_id', 'platform']);
+            $table->index(['project_id', 'date']);
             $table->index(['project_id', 'period_start', 'period_end']);
+            $table->unique(['project_id', 'platform', 'date']);
         });
 
         // AI Visibility Alerts table

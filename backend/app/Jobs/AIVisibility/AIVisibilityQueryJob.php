@@ -8,6 +8,7 @@ use App\Services\AIVisibility\MentionParser;
 use App\Services\AIVisibility\DTOs\AIQueryResult;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
@@ -24,7 +25,7 @@ use Illuminate\Support\Facades\Log;
  */
 class AIVisibilityQueryJob implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * The number of times the job may be attempted.
