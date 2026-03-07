@@ -32,10 +32,10 @@ class WebhookDeliveryFactory extends Factory
                 'test' => true,
                 'timestamp' => now()->toIso8601String(),
             ],
-            'response_status' => $this->faker->randomElement([200, 201, 204, 400, 500]),
+            'response_status' => null,
             'response_body' => null,
             'attempt_count' => 1,
-            'delivered_at' => now(),
+            'delivered_at' => null,
             'next_retry_at' => null,
         ];
     }
@@ -47,6 +47,7 @@ class WebhookDeliveryFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'response_status' => $this->faker->randomElement([200, 201, 204]),
+            'delivered_at' => now(),
         ]);
     }
 
@@ -68,6 +69,45 @@ class WebhookDeliveryFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'webhook_id' => $webhookId,
+        ]);
+    }
+
+    /**
+     * Indicate that the delivery is pending (not yet processed).
+     */
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'response_status' => null,
+            'response_body' => null,
+            'delivered_at' => null,
+            'next_retry_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the delivery is in retry queue.
+     */
+    public function retrying(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'response_status' => 500,
+            'next_retry_at' => now()->addMinutes(5),
+            'attempt_count' => 1,
+            'delivered_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the delivery has exhausted all retries.
+     */
+    public function exhausted(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'response_status' => 500,
+            'next_retry_at' => null,
+            'attempt_count' => 5,
+            'delivered_at' => null,
         ]);
     }
 }
