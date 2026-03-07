@@ -9,6 +9,7 @@
 
 import { Suspense } from 'react';
 import { AuditDetailPage } from '@/components/audit/AuditDetailPage';
+import { ErrorBoundary } from '@/components/audit/ErrorBoundary';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function AuditDetailSkeleton() {
@@ -61,8 +62,10 @@ function AuditDetailSkeleton() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<AuditDetailSkeleton />}>
-      <AuditDetailPage />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<AuditDetailSkeleton />}>
+        <AuditDetailPage />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

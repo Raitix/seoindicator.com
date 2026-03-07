@@ -41,3 +41,6 @@ export type { BulkActionsProps } from './BulkActions';
 
 export { AuditDetailPage } from './AuditDetailPage';
 export type { AuditDetailPageProps } from './AuditDetailPage';
+
+// Error Boundary
+export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
