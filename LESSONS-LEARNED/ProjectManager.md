@@ -4,6 +4,41 @@ Knowledge base for ProjectManager agent working on SEOIndicator project.
 
 ---
 
+## Redundant Testing Tasks Pattern (CRITICAL)
+
+### Pattern Identification
+Dedicated "tests for X" tasks become **REDUNDANT** when TDD workflow is adopted. Tests are created during each implementation task's PreTester phase.
+
+### Affected Tasks (2026-03-02 to 2026-03-07)
+| Task | Description | Resolution |
+|------|-------------|------------|
+| TASK-14-19 | Backend Unit Tests for Audit | Done (redundant) |
+| TASK-14-20 | Backend Feature Tests for Audit | Done (redundant) |
+| TASK-14-21 | Frontend Component Tests for Audit | Done (redundant) |
+| TASK-30-6 | Unit Tests - Pages & Cookie Consent | Done (redundant - 439+ tests existed) |
+| TASK-34-11 | Unit Tests for Services | Done (redundant - tests existed from TDD) |
+| TASK-34-12 | Feature Tests for API | Done (redundant - covered by PreTester phases) |
+
+### Key Lesson for SpecSystemAnalyst
+When breaking down specifications into tasks:
+1. **Check TDD adoption** - If TDD is used, tests are created during PreTester phases
+2. **Avoid separate testing tasks** for normal feature coverage
+3. **Only create separate testing tasks** for:
+   - Integration testing across multiple components
+   - E2E testing scenarios
+   - Performance/stress testing
+   - Security testing requiring specialized expertise
+4. **Verify with file checks** - Check if TEST files exist before creating redundant tasks
+
+### Coverage Mapping Example (TASK-34-12)
+| Test File | Created By | When |
+|-----------|------------|------|
+| AIVisibilityProjectTest.php | TASK-34-6 PreTester | During Project CRUD API development |
+| AIVisibilityAnalyticsTest.php | TASK-34-14 PreTester | During Analytics API development |
+| AIVisibilityAlertTest.php | TASK-34-20 PreTester | During Alert API development |
+
+---
+
 ## Priority Patterns
 
 ### SPEC-021 AI Suggestions (2026-03-01)
