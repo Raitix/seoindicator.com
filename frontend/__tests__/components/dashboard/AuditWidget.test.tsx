@@ -332,11 +332,6 @@ const mockOnViewAll = vi.fn();
 describe('AuditWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   // ============================================
@@ -383,7 +378,7 @@ describe('AuditWidget', () => {
     });
 
     it('AW-NA-004: Clicking "Start First Audit" triggers callback', async () => {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const user = userEvent.setup();
       render(
         <MockAuditWidget
           siteId="1"
@@ -708,7 +703,7 @@ describe('AuditWidget', () => {
     });
 
     it('AW-CO-010: Clicking "Start New" triggers callback', async () => {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const user = userEvent.setup();
       render(
         <MockAuditWidget
           siteId="1"
@@ -723,7 +718,7 @@ describe('AuditWidget', () => {
     });
 
     it('AW-CO-011: Clicking "View All Issues" triggers callback', async () => {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const user = userEvent.setup();
       render(
         <MockAuditWidget
           siteId="1"
@@ -886,7 +881,7 @@ describe('AuditWidget', () => {
     });
 
     it('AW-AF-008: Clicking "Run New Audit" triggers callback', async () => {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const user = userEvent.setup();
       render(
         <MockAuditWidget
           siteId="1"
@@ -976,7 +971,7 @@ describe('AuditWidget', () => {
     });
 
     it('AW-AC-004: All buttons are keyboard accessible', async () => {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const user = userEvent.setup();
       render(
         <MockAuditWidget
           siteId="1"
