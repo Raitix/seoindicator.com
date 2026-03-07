@@ -7,73 +7,66 @@ use App\Events\AuditFailed;
 use App\Events\AuditProgress;
 use App\Events\AuditStarted;
 use App\Models\Audit;
-use App\Models\AuditIssue;
-use App\Services\Audit\DTOs\CrawlResult;
-use App\Services\Audit\DTOs\IssueFinding;
+use App\Models\Site;
 use App\Services\Audit\IssueDetector;
 use App\Services\Audit\SiteCrawler;
-use Illuminate\Bus\Batchable;
+use App\Services\Audit\DTOs\CrawlResult;
+use App\Services\Audit\DTOs\IssueFinding;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
 /**
- * ProcessCrawlJob - Queue job for processing SEO audit crawls.
+ * Queue job that processes SEO audit crawl requests.
  *
  * Orchestrates the full audit workflow:
- * - Updates audit status throughout lifecycle
- * - Processes URLs from SiteCrawler
- * - Detects issues with IssueDetector
+ * - Starts crawling via SiteCrawler
+ * - Detects issues via IssueDetector
  * - Tracks progress in cache
+ * - Updates audit status throughout lifecycle
  * - Dispatches events for external listeners
  *
  * @see TASK-14-7
  */
 class ProcessCrawlJob implements ShouldQueue
 {
-    use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     * The number of times the job may be attempted.
-     */
-    public int $tries = 3;
-
-    /**
-     * The maximum number of seconds the job can run.
-     */
-    public int $timeout = 3600;
-
-    /**
-     * The number of seconds to wait before retrying the job.
-     */
-    public array $backoff = [10, 30, 60];
-
-    /**
-     * The audit ID being processed.
+     * The audit ID to process.
      */
     public int $auditId;
 
     /**
-     * The base URL being crawled.
+     * The base URL to crawl.
      */
     public string $baseUrl;
 
     /**
-     * Progress tracking data.
+     * Maximum number of attempts.
      */
-    protected array $progress = [
-        'pages_crawled' => 0,
-        'issues_found' => 0,
-        'current_url' => null,
-        'errors' => [],
-    ];
+    public int $tries = 3;
+
+    /**
+     * Maximum execution time in seconds.
+     */
+    public int $timeout = 3600;
+
+    /**
+     * Memory limit percentage threshold (stop at 80% of limit).
+     */
+    protected float $memoryThreshold = 0.8;
+
+    /**
+     * Number of pages between progress updates.
+     */
+    protected int $progressUpdateInterval = 10;
 
     /**
      * Create a new job instance.
@@ -86,11 +79,200 @@ class ProcessCrawlJob implements ShouldQueue
     }
 
     /**
-     * Calculate the number of seconds to wait before retrying.
+     * Execute the job.
+     */
+    public function handle(SiteCrawler $crawler, IssueDetector $detector): void
+    {
+        try {
+            // Validate inputs
+            if (empty($this->baseUrl)) {
+                throw new RuntimeException('Base URL cannot be empty');
+            }
+
+            if (!$this->isValidUrl($this->baseUrl)) {
+                throw new RuntimeException("Invalid base URL: {$this->baseUrl}");
+            }
+
+            // Load audit
+            $audit = Audit::find($this->auditId);
+            if (!$audit) {
+                throw new RuntimeException("Audit not found: {$this->auditId}");
+            }
+
+            // Check if audit can be processed
+            if (in_array($audit->status, ['running', 'completed'])) {
+                Log::info('ProcessCrawlJob: Audit already processed, skipping', [
+                    'auditId' => $this->auditId,
+                    'status' => $audit->status,
+                ]);
+                return;
+            }
+
+            // Initialize progress tracking
+            $progress = $this->getInitialProgress();
+            $this->saveProgress($progress);
+
+            // Update status to running
+            $audit->status = 'running';
+            $audit->started_at = now();
+            $audit->save();
+
+            // Dispatch AuditStarted event
+            AuditStarted::dispatch($audit);
+
+            Log::info('ProcessCrawlJob: Started', [
+                'auditId' => $this->auditId,
+                'baseUrl' => $this->baseUrl,
+            ]);
+
+            // Start crawling
+            $crawler->startCrawl($this->auditId, $this->baseUrl);
+
+            // Track statistics
+            $pagesCrawled = 0;
+            $issuesFound = 0;
+            $errorCount = 0;
+            $errors = [];
+
+            // Process crawl results
+            foreach ($crawler->processQueue() as $crawlResult) {
+                // Check memory limit
+                if ($this->isMemoryLimitReached()) {
+                    Log::warning('ProcessCrawlJob: Memory limit reached, stopping', [
+                        'auditId' => $this->auditId,
+                        'memoryUsage' => memory_get_usage(true),
+                    ]);
+                    break;
+                }
+
+                // Check execution time
+                if ($this->isTimeLimitReached()) {
+                    Log::warning('ProcessCrawlJob: Time limit approaching, stopping', [
+                        'auditId' => $this->auditId,
+                    ]);
+                    break;
+                }
+
+                // Skip if not a valid CrawlResult
+                if (!($crawlResult instanceof CrawlResult)) {
+                    Log::warning('ProcessCrawlJob: Invalid crawl result, skipping', [
+                        'auditId' => $this->auditId,
+                    ]);
+                    continue;
+                }
+
+                // Track current URL
+                $progress['current_url'] = $crawlResult->url;
+
+                // Check for page errors
+                if ($crawlResult->isError()) {
+                    $errorCount++;
+                    $errors[] = [
+                        'url' => $crawlResult->url,
+                        'error' => $crawlResult->errorMessage ?? 'Unknown error',
+                    ];
+                    // Don't count error pages as successfully crawled
+                    continue;
+                }
+
+                // Count successful pages
+                $pagesCrawled++;
+
+                // Detect issues on successful pages
+                try {
+                    // Detect issues
+                    $findings = $detector->detect($crawlResult);
+                    $issueCount = count($findings);
+                    $issuesFound += $issueCount;
+
+                    // Store issues in database
+                    foreach ($findings as $finding) {
+                        $this->createIssueFromFinding($finding, $audit, $crawlResult->url);
+                    }
+                } catch (Throwable $e) {
+                    Log::warning('ProcessCrawlJob: IssueDetector failed for URL', [
+                        'url' => $crawlResult->url,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Continue processing other pages
+                }
+                $progress['pages_crawled'] = $pagesCrawled;
+                $progress['issues_found'] = $issuesFound;
+                $progress['error_count'] = $errorCount;
+                $progress['errors'] = array_slice($errors, -10); // Keep last 10 errors
+                $progress['last_updated'] = now()->toISOString();
+
+                // Update progress every N pages
+                if ($pagesCrawled % $this->progressUpdateInterval === 0) {
+                    $this->saveProgress($progress);
+                    AuditProgress::dispatch($audit, $progress);
+                }
+            }
+
+            // Final update
+            $audit->pages_crawled = $pagesCrawled;
+            $audit->issues_found = $issuesFound;
+            $audit->status = 'completed';
+            $audit->completed_at = now();
+            $audit->save();
+
+            // Clear progress cache
+            $this->clearProgress();
+
+            // Dispatch AuditCompleted event
+            AuditCompleted::dispatch($audit);
+
+            Log::info('ProcessCrawlJob: Completed', [
+                'auditId' => $this->auditId,
+                'pagesCrawled' => $pagesCrawled,
+                'issuesFound' => $issuesFound,
+            ]);
+
+        } catch (Throwable $e) {
+            Log::error('Crawl job failed', [
+                'auditId' => $this->auditId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Re-throw to trigger retry logic
+            throw $e;
+        }
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(Throwable $exception): void
+    {
+        Log::error('ProcessCrawlJob: Job failed permanently', [
+            'auditId' => $this->auditId,
+            'error' => $exception->getMessage(),
+        ]);
+
+        $audit = Audit::find($this->auditId);
+        if (!$audit) {
+            return;
+        }
+
+        // Update audit status
+        $audit->status = 'failed';
+        $audit->error_message = $exception->getMessage();
+        $audit->completed_at = now();
+        $audit->save();
+
+        // Dispatch AuditFailed event
+        AuditFailed::dispatch($audit, $exception->getMessage());
+    }
+
+    /**
+     * Get the backoff time between retries.
+     *
+     * @return array<int, int>
      */
     public function backoff(): array
     {
-        return $this->backoff;
+        return [10, 30, 60]; // 10s, 30s, 60s between retries
     }
 
     /**
@@ -102,85 +284,9 @@ class ProcessCrawlJob implements ShouldQueue
     }
 
     /**
-     * Execute the job.
-     */
-    public function handle(SiteCrawler $crawler, IssueDetector $detector): void
-    {
-        // Load the audit
-        $audit = Audit::find($this->auditId);
-
-        if (!$audit) {
-            throw new RuntimeException("Audit not found: {$this->auditId}");
-        }
-
-        // Check if audit can be processed
-        if (in_array($audit->status, ['running', 'completed'])) {
-            Log::info('ProcessCrawlJob: Audit already processed or in progress', [
-                'auditId' => $this->auditId,
-                'status' => $audit->status,
-            ]);
-            return;
-        }
-
-        // Validate base URL
-        if (empty($this->baseUrl) || !filter_var($this->baseUrl, FILTER_VALIDATE_URL)) {
-            throw new RuntimeException("Invalid base URL: {$this->baseUrl}");
-        }
-
-        try {
-            // Start the audit
-            $this->startAudit($audit);
-
-            // Initialize progress
-            $this->initializeProgress();
-
-            // Start the crawl
-            $crawler->startCrawl($this->auditId, $this->baseUrl);
-
-            // Process the crawl queue
-            $this->processCrawlQueue($audit, $crawler, $detector);
-
-            // Complete the audit
-            $this->completeAudit($audit);
-
-        } catch (Throwable $e) {
-            $this->handleError($audit, $e);
-            throw $e;
-        }
-    }
-
-    /**
-     * Handle a job failure.
-     */
-    public function failed(Throwable $exception): void
-    {
-        $audit = Audit::find($this->auditId);
-
-        if (!$audit) {
-            return;
-        }
-
-        // Update audit status
-        $audit->status = 'failed';
-        $audit->error_message = $exception->getMessage();
-        $audit->completed_at = now();
-        $audit->save();
-
-        // Clear progress cache
-        $this->clearProgressCache();
-
-        // Dispatch failure event
-        AuditFailed::dispatch($audit, $exception->getMessage());
-
-        Log::error('ProcessCrawlJob: Audit failed', [
-            'auditId' => $this->auditId,
-            'error' => $exception->getMessage(),
-            'trace' => $exception->getTraceAsString(),
-        ]);
-    }
-
-    /**
      * Get the tags that should be assigned to the job.
+     *
+     * @return array<int, string>
      */
     public function tags(): array
     {
@@ -188,33 +294,15 @@ class ProcessCrawlJob implements ShouldQueue
     }
 
     // =========================================================================
-    // Protected Methods
+    // Progress Tracking
     // =========================================================================
 
     /**
-     * Start the audit.
+     * Get initial progress data.
      */
-    protected function startAudit(Audit $audit): void
+    protected function getInitialProgress(): array
     {
-        $audit->status = 'running';
-        $audit->started_at = now();
-        $audit->save();
-
-        // Dispatch started event
-        AuditStarted::dispatch($audit);
-
-        Log::info('ProcessCrawlJob: Audit started', [
-            'auditId' => $this->auditId,
-            'baseUrl' => $this->baseUrl,
-        ]);
-    }
-
-    /**
-     * Initialize progress tracking.
-     */
-    protected function initializeProgress(): void
-    {
-        $this->progress = [
+        return [
             'audit_id' => $this->auditId,
             'pages_crawled' => 0,
             'issues_found' => 0,
@@ -224,196 +312,20 @@ class ProcessCrawlJob implements ShouldQueue
             'error_count' => 0,
             'errors' => [],
         ];
-
-        $this->saveProgress();
-    }
-
-    /**
-     * Process the crawl queue.
-     */
-    protected function processCrawlQueue(Audit $audit, SiteCrawler $crawler, IssueDetector $detector): void
-    {
-        $startTime = time();
-        $memoryLimit = $this->getMemoryLimit();
-        $progressUpdateInterval = 10; // Update every 10 pages
-
-        /** @var CrawlResult $crawlResult */
-        foreach ($crawler->processQueue() as $crawlResult) {
-            // Check memory limit
-            if ($this->shouldStopForMemory($memoryLimit)) {
-                Log::warning('ProcessCrawlJob: Memory limit approaching, stopping gracefully', [
-                    'auditId' => $this->auditId,
-                    'memoryUsage' => memory_get_usage(true),
-                    'memoryLimit' => $memoryLimit,
-                ]);
-                break;
-            }
-
-            // Check time limit
-            if ($this->shouldStopForTime($startTime)) {
-                Log::warning('ProcessCrawlJob: Time limit approaching, stopping gracefully', [
-                    'auditId' => $this->auditId,
-                    'elapsedTime' => time() - $startTime,
-                ]);
-                break;
-            }
-
-            // Check if job was cancelled
-            if ($this->batch()?->cancelled()) {
-                Log::info('ProcessCrawlJob: Batch cancelled, stopping', [
-                    'auditId' => $this->auditId,
-                ]);
-                break;
-            }
-
-            // Process the crawl result
-            $this->processCrawlResult($audit, $crawlResult, $detector);
-
-            // Update progress periodically
-            if ($this->progress['pages_crawled'] % $progressUpdateInterval === 0) {
-                $this->saveProgress();
-                $this->dispatchProgressEvent($audit);
-            }
-        }
-
-        // Final progress save
-        $this->saveProgress();
-    }
-
-    /**
-     * Process a single crawl result.
-     */
-    protected function processCrawlResult(Audit $audit, CrawlResult $crawlResult, IssueDetector $detector): void
-    {
-        // Update current URL
-        $this->progress['current_url'] = $crawlResult->url;
-
-        try {
-            // Detect issues (skip error pages)
-            $issues = [];
-            if ($crawlResult->isSuccess() && !$crawlResult->isError()) {
-                $issues = $detector->detect($crawlResult);
-            }
-
-            // Store issues in database
-            if (!empty($issues)) {
-                $this->storeIssues($audit, $issues, $crawlResult->url);
-                $this->progress['issues_found'] += count($issues);
-            }
-
-            // Increment pages crawled
-            $this->progress['pages_crawled']++;
-
-        } catch (Throwable $e) {
-            // Log but continue processing
-            Log::warning('ProcessCrawlJob: Error processing crawl result', [
-                'auditId' => $this->auditId,
-                'url' => $crawlResult->url,
-                'error' => $e->getMessage(),
-            ]);
-
-            $this->progress['error_count']++;
-            $this->progress['errors'][] = [
-                'url' => $crawlResult->url,
-                'error' => $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Store issues in the database.
-     */
-    protected function storeIssues(Audit $audit, array $issues, string $url): void
-    {
-        foreach ($issues as $issue) {
-            if (!$issue instanceof IssueFinding) {
-                continue;
-            }
-
-            // Get issue type ID from detector
-            $issueTypeId = $this->getIssueTypeId($issue->issueType);
-
-            // Get URL from context if available, otherwise use the page URL
-            $issueUrl = $issue->getContextValue('url', $url);
-
-            AuditIssue::create([
-                'audit_id' => $audit->id,
-                'url' => $issueUrl,
-                'issue_type' => $issue->issueType,
-                'issue_type_id' => $issueTypeId,
-                'severity' => $issue->getNormalizedSeverity(),
-                'description' => $issue->description,
-                'recommendation' => $issue->recommendation,
-                'context' => $issue->context,
-                'status' => 'open',
-            ]);
-        }
-    }
-
-    /**
-     * Get issue type ID from the issue type name.
-     */
-    protected function getIssueTypeId(string $issueType): ?int
-    {
-        return \App\Models\IssueType::where('type', $issueType)->value('id');
-    }
-
-    /**
-     * Complete the audit.
-     */
-    protected function completeAudit(Audit $audit): void
-    {
-        // Update audit record
-        $audit->status = 'completed';
-        $audit->pages_crawled = $this->progress['pages_crawled'];
-        $audit->issues_found = $this->progress['issues_found'];
-        $audit->completed_at = now();
-        $audit->save();
-
-        // Clear progress cache
-        $this->clearProgressCache();
-
-        // Dispatch completed event
-        AuditCompleted::dispatch($audit);
-
-        Log::info('ProcessCrawlJob: Audit completed', [
-            'auditId' => $this->auditId,
-            'pagesCrawled' => $this->progress['pages_crawled'],
-            'issuesFound' => $this->progress['issues_found'],
-            'duration' => $audit->started_at->diffInSeconds($audit->completed_at),
-        ]);
-    }
-
-    /**
-     * Handle an error during processing.
-     */
-    protected function handleError(Audit $audit, Throwable $e): void
-    {
-        Log::error('ProcessCrawlJob: Crawl job failed', [
-            'auditId' => $this->auditId,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-
-        // Don't mark as failed yet - the failed() method will handle that
-        // This allows for retry logic
     }
 
     /**
      * Save progress to cache.
      */
-    protected function saveProgress(): void
+    protected function saveProgress(array $progress): void
     {
-        $this->progress['last_updated'] = now()->toISOString();
-
         try {
             Cache::put(
                 "audit:progress:{$this->auditId}",
-                $this->progress,
-                86400 // 24 hours
+                $progress,
+                now()->addHours(24)
             );
         } catch (Throwable $e) {
-            // Continue without cache if it fails
             Log::warning('ProcessCrawlJob: Failed to save progress to cache', [
                 'auditId' => $this->auditId,
                 'error' => $e->getMessage(),
@@ -422,9 +334,21 @@ class ProcessCrawlJob implements ShouldQueue
     }
 
     /**
-     * Clear progress cache.
+     * Get progress from cache.
      */
-    protected function clearProgressCache(): void
+    protected function getProgress(): ?array
+    {
+        try {
+            return Cache::get("audit:progress:{$this->auditId}");
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Clear progress from cache.
+     */
+    protected function clearProgress(): void
     {
         try {
             Cache::forget("audit:progress:{$this->auditId}");
@@ -433,42 +357,97 @@ class ProcessCrawlJob implements ShouldQueue
         }
     }
 
+    // =========================================================================
+    // Resource Management
+    // =========================================================================
+
     /**
-     * Dispatch progress event.
+     * Check if memory limit is approaching.
      */
-    protected function dispatchProgressEvent(Audit $audit): void
+    protected function isMemoryLimitReached(): bool
     {
-        AuditProgress::dispatch($audit, $this->progress);
+        $memoryLimit = ini_get('memory_limit');
+        if ($memoryLimit === '-1') {
+            return false;
+        }
+
+        $limitBytes = $this->parseMemoryLimit($memoryLimit);
+        $usedBytes = memory_get_usage(true);
+        $thresholdBytes = $limitBytes * $this->memoryThreshold;
+
+        return $usedBytes >= $thresholdBytes;
     }
 
     /**
-     * Get memory limit in bytes.
+     * Check if time limit is approaching.
      */
-    protected function getMemoryLimit(): int
+    protected function isTimeLimitReached(): bool
     {
-        $limit = config('audit.memory_limit', 512); // MB
-        return $limit * 1024 * 1024;
+        // Stop 5 minutes before timeout to allow graceful shutdown
+        $safetyMargin = 300;
+        return time() >= ($this->startTime ?? time()) + $this->timeout - $safetyMargin;
     }
 
     /**
-     * Check if we should stop for memory reasons.
+     * Parse memory limit string to bytes.
      */
-    protected function shouldStopForMemory(int $limit): bool
+    protected function parseMemoryLimit(string $memoryLimit): int
     {
-        $usage = memory_get_usage(true);
-        $threshold = $limit * 0.8; // 80% threshold
+        $memoryLimit = trim($memoryLimit);
+        $last = strtolower($memoryLimit[strlen($memoryLimit) - 1]);
+        $value = (int) $memoryLimit;
 
-        return $usage > $threshold;
+        switch ($last) {
+            case 'g':
+                $value *= 1024;
+                // no break
+            case 'm':
+                $value *= 1024;
+                // no break
+            case 'k':
+                $value *= 1024;
+        }
+
+        return $value;
+    }
+
+    // =========================================================================
+    // Helper Methods
+    // =========================================================================
+
+    /**
+     * Validate URL format.
+     */
+    protected function isValidUrl(string $url): bool
+    {
+        if (empty($url)) {
+            return false;
+        }
+
+        return filter_var($url, FILTER_VALIDATE_URL) !== false;
     }
 
     /**
-     * Check if we should stop for time reasons.
+     * Create an AuditIssue from an IssueFinding.
      */
-    protected function shouldStopForTime(int $startTime): bool
+    protected function createIssueFromFinding(IssueFinding $finding, Audit $audit, string $url): void
     {
-        $elapsed = time() - $startTime;
-        $buffer = 60; // Stop 60 seconds before timeout
-
-        return $elapsed > ($this->timeout - $buffer);
+        try {
+            $audit->issues()->create([
+                'url' => $url,
+                'issue_type' => $finding->issueType,
+                'severity' => $finding->getNormalizedSeverity(),
+                'description' => $finding->description,
+                'recommendation' => $finding->recommendation,
+                'context' => $finding->context,
+                'status' => 'open',
+            ]);
+        } catch (Throwable $e) {
+            Log::warning('ProcessCrawlJob: Failed to create issue', [
+                'auditId' => $this->auditId,
+                'issueType' => $finding->issueType,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

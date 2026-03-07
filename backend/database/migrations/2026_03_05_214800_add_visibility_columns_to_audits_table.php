@@ -46,13 +46,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('audits', function (Blueprint $table) {
-            // Drop index first
-            $table->dropIndex('idx_audits_public_hash');
-
-            // Drop unique constraint (MySQL requires dropping unique before column)
-            $table->dropUnique(['public_hash']);
-
-            // Drop columns
+            // Drop columns first (SQLite doesn't support dropping indexes separately in some cases)
             $table->dropColumn([
                 'visibility',
                 'public_hash',
