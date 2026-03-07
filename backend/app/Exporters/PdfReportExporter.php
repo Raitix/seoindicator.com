@@ -2,6 +2,8 @@
 
 namespace App\Exporters;
 
+use App\Exporters\DTOs\AuditReportSection;
+
 /**
  * PDF Report Exporter with branding support.
  *
@@ -10,6 +12,8 @@ namespace App\Exporters;
  * - Custom fonts (with fallback)
  * - Logo embedding (PNG, JPG)
  * - Company name display
+ * 
+ * TASK-14-18: Includes audit section for technical SEO audit findings
  */
 class PdfReportExporter
 {
@@ -117,6 +121,7 @@ class PdfReportExporter
             'changes' => 'Position Changes',
             'trends' => 'Trend Charts',
             'serp_features' => 'SERP Features',
+            'audit' => 'Technical SEO Audit',
         ];
 
         $title = $titleMap[$section] ?? ucfirst(str_replace('-', ' ', $section));
@@ -177,6 +182,9 @@ class PdfReportExporter
                 break;
             case 'serp_features':
                 $lines = $this->buildSerpFeaturesSection($data, $branding);
+                break;
+            case 'audit':
+                $lines = $this->buildAuditSection($data, $branding);
                 break;
             default:
                 $lines[] = 'Section content not available.';
@@ -304,6 +312,123 @@ class PdfReportExporter
         }
 
         return $lines;
+    }
+
+    /**
+     * Build audit section content for PDF.
+     * 
+     * TASK-14-18: Technical SEO Audit section with severity breakdown
+     *
+     * @param array $data Report data containing audit_data
+     * @param array $branding Branding settings
+     * @return array Lines for PDF rendering
+     */
+    protected function buildAuditSection(array $data, array $branding): array
+    {
+        $auditData = $data['audit_data'] ?? null;
+
+        // Handle AuditReportSection DTO object
+        if ($auditData instanceof AuditReportSection) {
+            return $this->buildAuditSectionFromDto($auditData, $branding);
+        }
+
+        // Handle array data
+        if (is_array($auditData)) {
+            $auditSection = AuditReportSection::fromArray($auditData);
+            return $this->buildAuditSectionFromDto($auditSection, $branding);
+        }
+
+        // No audit data available
+        return ['TECHNICAL SEO AUDIT', '', 'Audit data not available.'];
+    }
+
+    /**
+     * Build audit section from AuditReportSection DTO.
+     *
+     * @param AuditReportSection $audit
+     * @param array $branding
+     * @return array
+     */
+    protected function buildAuditSectionFromDto(AuditReportSection $audit, array $branding): array
+    {
+        $lines = ['TECHNICAL SEO AUDIT'];
+        $lines[] = '';
+
+        // Summary section
+        $lines[] = 'Summary';
+        $lines[] = str_repeat('-', 50);
+        $lines[] = sprintf('Pages Crawled: %d', $audit->getPagesCrawled());
+        $lines[] = sprintf('Total Issues: %d', $audit->getTotalIssues());
+        $lines[] = '';
+
+        // Severity boxes (represented as text with color indicators)
+        $lines[] = sprintf('[CRITICAL: %d]  [WARNING: %d]  [NOTICE: %d]',
+            $audit->getCriticalCount(),
+            $audit->getWarningCount(),
+            $audit->getNoticeCount()
+        );
+        $lines[] = '';
+
+        // Critical issues section
+        if ($audit->hasCriticalIssues()) {
+            $lines[] = 'Critical Issues';
+            $lines[] = str_repeat('-', 50);
+            $issueNumber = 1;
+            foreach ($audit->criticalIssues as $issue) {
+                $issueObj = is_array($issue) ? (object) $issue : $issue;
+                $lines[] = sprintf('%d. %s', $issueNumber, $this->sanitizeText($issueObj->name ?? 'Unknown Issue'));
+                $lines[] = sprintf('   URL: %s', $this->sanitizeText($issueObj->url ?? 'N/A'));
+                $lines[] = sprintf('   Fix: %s', $this->sanitizeText($issueObj->recommendation ?? 'No recommendation'));
+                $lines[] = '';
+                $issueNumber++;
+            }
+        }
+
+        // Warnings section
+        if ($audit->hasWarningIssues()) {
+            $lines[] = 'Warnings';
+            $lines[] = str_repeat('-', 50);
+            $issueNumber = 1;
+            foreach ($audit->warningIssues as $issue) {
+                $issueObj = is_array($issue) ? (object) $issue : $issue;
+                $lines[] = sprintf('%d. %s', $issueNumber, $this->sanitizeText($issueObj->name ?? 'Unknown Warning'));
+                $lines[] = sprintf('   URL: %s', $this->sanitizeText($issueObj->url ?? 'N/A'));
+                $lines[] = sprintf('   Fix: %s', $this->sanitizeText($issueObj->recommendation ?? 'No recommendation'));
+                $lines[] = '';
+                $issueNumber++;
+            }
+        }
+
+        // Recommendations section
+        if ($audit->hasRecommendations()) {
+            $lines[] = 'Recommendations';
+            $lines[] = str_repeat('-', 50);
+            foreach ($audit->recommendations as $recommendation) {
+                $lines[] = sprintf('* %s', $this->sanitizeText($recommendation));
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * Sanitize text for PDF output (XSS prevention).
+     *
+     * @param string $text
+     * @return string
+     */
+    protected function sanitizeText(string $text): string
+    {
+        // Remove HTML/script tags
+        $text = strip_tags($text);
+        
+        // Decode HTML entities
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        // Remove null bytes and other control characters
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text);
+        
+        return $text;
     }
 
     /**

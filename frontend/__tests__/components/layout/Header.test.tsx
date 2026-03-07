@@ -5,31 +5,31 @@
  * @see TESTS/TEST-28-12.md for full test documentation
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Header from "@/components/layout/Header";
 
 // Mock next/navigation
-const mockPathname = vi.fn();
-const mockPush = vi.fn();
-vi.mock("next/navigation", () => ({
+const mockPathname = jest.fn();
+const mockPush = jest.fn();
+jest.mock("next/navigation", () => ({
   usePathname: () => mockPathname(),
   useRouter: () => ({
     push: mockPush,
-    replace: vi.fn(),
-    back: vi.fn(),
-    forward: vi.fn(),
-    refresh: vi.fn(),
-    prefetch: vi.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+    prefetch: jest.fn(),
   }),
 }));
 
 // Mock notifications API
-vi.mock("@/lib/api/notifications", () => ({
+jest.mock("@/lib/api/notifications", () => ({
   useUnreadCount: () => ({
     count: 0,
-    mutate: vi.fn(),
+    mutate: jest.fn(),
   }),
 }));
 
@@ -45,17 +45,17 @@ const userProps = {
   userName: "John Doe",
   userEmail: "john.doe@example.com",
   userAvatar: undefined,
-  onLogout: vi.fn(),
+  onLogout: jest.fn(),
 };
 
 describe("Header Component", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     mockPathname.mockReturnValue("/dashboard");
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    jest.resetAllMocks();
   });
 
   // ============================================
@@ -488,7 +488,7 @@ describe("Header Component", () => {
     });
 
     it("TYPES-004: onLogout should be callable", async () => {
-      const onLogout = vi.fn();
+      const onLogout = jest.fn();
       const user = userEvent.setup();
       render(<Header {...userProps} onLogout={onLogout} />);
 

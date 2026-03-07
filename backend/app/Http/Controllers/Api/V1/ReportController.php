@@ -213,7 +213,7 @@ class ReportController extends Controller
             'compareRange.start' => 'nullable|date',
             'compareRange.end' => 'nullable|date|after_or_equal:compareRange.start',
             'sections' => 'nullable|array',
-            'sections.*' => 'string|in:cover,summary,keywords,changes,top-performers,needs-attention,trends,competitors,serp-features',
+            'sections.*' => 'string|in:cover,summary,keywords,changes,top-performers,needs-attention,trends,competitors,serp-features,audit',
         ]);
 
         // Create report record

@@ -6,6 +6,10 @@
 import { vi, afterEach } from 'vitest';
 import '@testing-library/jest-dom';
 
+// Provide jest as alias for vi (for tests using Jest syntax)
+// @ts-expect-error Jest compatibility
+global.jest = vi;
+
 // Mock IntersectionObserver
 class MockIntersectionObserver {
   readonly root: Element | null = null;
