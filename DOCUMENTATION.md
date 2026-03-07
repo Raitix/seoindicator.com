@@ -1,6 +1,152 @@
 # DOCUMENTATION.md
 
 ---
+## BadgePreview Component (TASK-33-13)
+
+### Component Description
+React component for the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033) that displays live badge previews with size/theme selectors and generates embed code snippets for users to copy. Enables users to embed SEO score badges on third-party websites with three different embedding methods.
+
+### Component Location
+- **Component:** `frontend/components/audit/BadgePreview.tsx`
+- **Export Index:** `frontend/components/audit/index.ts`
+- **Tests:** `frontend/__tests__/components/audit/BadgePreview.test.tsx`
+- **Test Documentation:** `TESTS/TEST-33-13.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Live Badge Preview | Real-time preview of badge in selected size and theme |
+| Size Selector | Small, Medium, Large badge dimensions |
+| Theme Selector | Light and dark theme options |
+| Embed Code Tabs | Three tab interface for SVG, JS, and iframe embed types |
+| Copy to Clipboard | One-click copy for each embed code type |
+| Copy Confirmation | Visual feedback ("Copied!") for 2 seconds |
+| Score Color Coding | Dynamic color based on SEO score (0-100) |
+
+### Component Props
+
+```typescript
+interface BadgePreviewProps {
+  auditHash: string;           // 32-character public audit hash
+  score: number;               // SEO score (0-100)
+  siteUrl?: string;            // Optional site URL for display
+  className?: string;          // Optional CSS classes
+}
+```
+
+### Badge Sizes
+
+| Size | Dimensions | Use Case |
+|------|------------|----------|
+| `small` | 120x40px | Inline in blog posts, footer links |
+| `medium` | 150x100px | Sidebar widgets, about pages |
+| `large` | 300x150px | Footer widgets, partner pages |
+
+### Theme Options
+
+| Theme | Background | Text Color | Use Case |
+|-------|------------|------------|----------|
+| `light` | #ffffff | #1a1a1a | Light-themed websites |
+| `dark` | #1a1a1a | #ffffff | Dark-themed websites |
+
+### Score Color Mapping
+
+| Score Range | Color | Hex Code | Status |
+|-------------|-------|----------|--------|
+| 90-100 | Green | #22c55e | Excellent |
+| 70-89 | Blue | #3b82f6 | Good |
+| 50-69 | Yellow | #eab308 | Needs Work |
+| 30-49 | Orange | #f97316 | Poor |
+| 0-29 | Red | #ef4444 | Critical Issues |
+
+### Embed Code Templates
+
+**SVG Image Link:**
+```html
+<a href="https://seoindicator.com/audit/{hash}/">
+  <img src="https://seoindicator.com/badge/{hash}/{size}.svg" alt="SEO Score: {score}/100" />
+</a>
+```
+
+**JavaScript Embed:**
+```html
+<div data-seoindicator-badge="{hash}" data-size="{size}" data-theme="{theme}"></div>
+<script src="https://seoindicator.com/badge.js" async></script>
+```
+
+**iframe Embed:**
+```html
+<iframe src="https://seoindicator.com/badge/{hash}/large?theme={theme}" 
+        width="300" height="150" frameborder="0"></iframe>
+```
+
+### Sub-Components
+
+| Component | Description |
+|-----------|-------------|
+| `SizeSelector` | Dropdown for small/medium/large with dimension labels |
+| `ThemeSelector` | Toggle buttons for light/dark themes |
+| `EmbedTypeTabs` | Tabbed interface for SVG/JS/iframe embed codes |
+| `CopyButton` | Button with clipboard integration and feedback |
+| `BadgePreviewDisplay` | Live preview container with actual badge rendering |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Labels | `aria-label` on all selectors and buttons |
+| Tab Navigation | `role="tablist"`, `role="tab"`, `aria-selected` |
+| Status Announcements | `aria-live="polite"` on copy button for feedback |
+| Keyboard Support | Tab, Enter, Space for all interactive elements |
+| Focus Management | Visible focus indicators on all controls |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `BadgePreview.test.tsx` | 84 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 9 | Component structure, props display |
+| Size Selector | 6 | Small/medium/large selection, dimension display |
+| Theme Selector | 6 | Light/dark toggle, theme application |
+| Embed Code Generation | 10 | SVG/JS/iframe code templates |
+| Copy Functionality | 8 | Clipboard API, fallback, confirmation |
+| Embed Type Tabs | 6 | Tab switching, aria-selected |
+| Score Color | 5 | All 5 color ranges |
+| Accessibility | 7 | ARIA labels, keyboard navigation |
+| Edge Cases | 8 | Missing props, boundary scores, unicode |
+| Props Validation | 5 | Required/optional props |
+| Responsive Design | 2 | Mobile/desktop layouts |
+| Acceptance Criteria | 9 | All 9 ACs verified |
+| Integration | 3 | Full user flows |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `e6048d0a` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 84/84 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-33-6 (BadgeService for badge data) - Done ✅
+- TASK-33-15 (SVG badge route) - Done ✅
+- TASK-33-16 (badge.js embed script) - Done ✅
+
+### Related Tasks
+- TASK-33-6: BadgeService (badge data generation)
+- TASK-33-15: SVG Badge Route (badge image generation)
+- TASK-33-16: Badge.js Embed Script (JS embed method)
+- TASK-33-20: Publish Audit UI Component (uses BadgePreview)
+
+---
 ## AIQueryEngine Service (TASK-34-3)
 
 ### Service Description
@@ -2502,6 +2648,170 @@ savings = ((monthly * 12 - annual * 12) / (monthly * 12)) * 100
 
 ### Related Tasks
 - TASK-32-5: ComparisonTable component
+- TASK-32-7: ProsConsCard component
+- TASK-32-2: Registry (data loading)
+- TASK-32-3: Page route
+
+---
+## UseCaseSection Component (TASK-32-8)
+
+### Component Description
+Use-case recommendation section component that helps users self-select the right tool based on their situation, team size, and budget. Displays side-by-side use cases for SEOIndicator and competitors with audience and budget tags for quick comparison.
+
+### Component Location
+- **Component:** `frontend/components/compare/UseCaseSection.tsx`
+- **Types:** `frontend/lib/compare/types.ts` (UseCaseSectionProps, UseCase)
+- **Tests:** `frontend/__tests__/components/compare/UseCaseSection.test.tsx`
+- **Accessibility Tests:** `frontend/__tests__/a11y/UseCaseSection.a11y.test.tsx`
+- **Test Documentation:** `TESTS/TEST-32-8.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Side-by-Side Layout | Both tools' use cases displayed in two columns |
+| Audience Tags | Solo Users, Small Teams, Enterprise, Agencies |
+| Budget Tags | Free, Budget, Mid-Range, Premium |
+| Visual Separation | Emerald branding for SEOIndicator, blue for competitors |
+| Mobile Responsive | Single column on mobile, grid on desktop (md:grid-cols-2) |
+| Balanced Presentation | Equal column heights for fair comparison |
+
+### Sub-components
+
+| Component | Description |
+|-----------|-------------|
+| `UseCaseCard` | Individual use case card with title, description, and tags |
+
+### Component Props
+
+```typescript
+interface UseCaseSectionProps {
+  seoindicator: UseCase[];     // SEOIndicator use cases
+  competitor: UseCase[];       // Competitor use cases
+}
+
+interface UseCase {
+  title: string;               // Use case title (e.g., "Budget-conscious solopreneurs")
+  description: string;         // Detailed description
+  audience: 'solo' | 'small-team' | 'enterprise' | 'agency';
+  budget: 'free' | 'budget' | 'mid-range' | 'premium';
+}
+```
+
+### Audience and Budget Labels
+
+**Audience Types:**
+| Key | Label |
+|-----|-------|
+| `solo` | Solo Users |
+| `small-team` | Small Teams |
+| `enterprise` | Enterprise |
+| `agency` | Agencies |
+
+**Budget Types:**
+| Key | Label | Color |
+|-----|-------|-------|
+| `free` | Free | Green |
+| `budget` | Budget | Emerald |
+| `mid-range` | Mid-Range | Blue |
+| `premium` | Premium | Purple |
+
+### Visual Design
+
+**Layout:**
+- Container: Grid with `gap-8`
+- Mobile: Single column
+- Desktop: Two columns (`md:grid-cols-2`)
+- Card padding: 16px with rounded corners
+
+**Card Styling:**
+- Background: `bg-slate-800/30`
+- Border: `border-slate-700`, hover accent
+- Title: White, font-semibold
+- Description: `text-slate-300`, text-sm
+- Tags: Pill-shaped badges with rounded-full
+
+**Branding Colors:**
+| Element | SEOIndicator | Competitor |
+|---------|--------------|------------|
+| Heading | Emerald-400 | Blue-400 |
+| Border Hover | Emerald-500/50 | Blue-500/50 |
+| Audience Badge | Emerald-500/10 | Blue-500/10 |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Landmarks | `data-testid` attributes for sections |
+| Heading Hierarchy | H3 for column headers, H4 for card titles |
+| Color Contrast | WCAG AA compliant text colors |
+| Keyboard Navigation | Tab through cards |
+| Screen Reader | Descriptive labels for all elements |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `UseCaseSection.test.tsx` | 44 | ✅ PASS |
+| `UseCaseSection.a11y.test.tsx` | 27 | ✅ PASS |
+| **Total** | **71** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Component Rendering | 7 | Section structure, columns, headings |
+| UseCase Card Rendering | 9 | Title, description, tags display |
+| Visual Separation | 5 | Branding colors, column styling |
+| Accessibility | 5 | ARIA, heading hierarchy |
+| Data Handling | 5 | Empty states, undefined, long text |
+| Mobile Responsiveness | 4 | Grid breakpoints, stacked layout |
+| Integration Tests | 2 | Full rendering, equal columns |
+| Acceptance Criteria | 6 | All 6 criteria verified |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping |
+| No Sensitive Data | Display component only |
+| No User Input | Static data from types |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| GitHub Actions Run | #22808391175 |
+| Health Check | ✅ 200 OK |
+| Component Status | ✅ Deployed |
+| Tests | 71/71 passing |
+
+### Production Verification
+
+| Check | Result |
+|-------|--------|
+| Health Check | ✅ 200 OK |
+| `/compare/seoindicator-vs-ahrefs/` | ✅ UseCaseSection found |
+| `/compare/seoindicator-vs-semrush/` | ✅ UseCaseSection found |
+| `/compare/seoindicator-vs-moz/` | ✅ UseCaseSection found |
+| Audience Labels | ✅ Solo Users, Small Teams, Enterprise, Agencies |
+| Budget Labels | ✅ Free, Budget, Mid-Range, Premium |
+
+### Acceptance Criteria Status
+
+- [x] Both tools' use cases displayed side-by-side
+- [x] Each use case has title, description, audience, and budget tags
+- [x] Tags use appropriate badge styling
+- [x] Mobile responsive layout
+- [x] Clear visual separation between tools
+- [x] Honest, balanced recommendations
+
+### Dependencies
+- TASK-32-1 (Types) - Done
+
+### Related Tasks
+- TASK-32-5: ComparisonTable component
+- TASK-32-6: PricingComparison component
 - TASK-32-7: ProsConsCard component
 - TASK-32-2: Registry (data loading)
 - TASK-32-3: Page route
