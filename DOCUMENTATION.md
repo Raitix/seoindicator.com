@@ -1,6 +1,127 @@
 # DOCUMENTATION.md
 
 ---
+## AIQueryEngine Service (TASK-34-3)
+
+### Service Description
+Core service for the AI Visibility Tracking feature (FEAT-034) that queries AI platforms via OpenRouter and parses responses for brand mentions. Provides platform-agnostic querying with free-tier model support, mention extraction, and keyword-based sentiment analysis for Generative Engine Optimization (GEO).
+
+### Component Location
+- **Service:** `backend/app/Services/AIVisibility/AIQueryEngine.php`
+- **DTO:** `backend/app/Services/AIVisibility/DTOs/AIQueryResult.php`
+- **Tests:** `backend/tests/Unit/Services/AIVisibility/AIQueryEngineTest.php`
+- **Test Documentation:** `TESTS/TEST-34-3.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `query(platform, query, useFreeModel)` | Query AI platform via OpenRouter, returns `AIQueryResult` DTO |
+| `parseMentions(response, brands)` | Extract brand mentions with context (100 chars radius) |
+| `analyzeSentiment(context)` | Keyword-based sentiment classification |
+| `getPlatformConfig(platform)` | Get platform configuration (model, enabled status) |
+| `getQueryTemplate(type)` | Get query template by type |
+| `interpolateTemplate(template, variables)` | Replace placeholders in template |
+
+### Platform Configuration
+
+| Platform | Status | Model |
+|----------|--------|-------|
+| `chatgpt` | ✅ Enabled | `google/gemini-2.0-flash-exp:free` |
+| `perplexity` | ✅ Enabled | `google/gemini-2.0-flash-exp:free` |
+| `claude` | ❌ Disabled (MVP) | `anthropic/claude-3-haiku` |
+
+### Query Templates
+
+| Type | Template |
+|------|----------|
+| `comparison` | "What are the best {category} tools for {audience}?" |
+| `recommendation` | "Can you recommend a good {category} tool?" |
+| `feature` | "How does {brand} compare to {competitor}?" |
+| `use_case` | "What tool should I use to {use_case}?" |
+
+### AIQueryResult DTO
+
+```php
+readonly class AIQueryResult
+{
+    public function __construct(
+        public bool $success,
+        public ?string $responseText,
+        public ?string $model,
+        public ?int $tokensUsed,
+        public ?int $latencyMs,
+        public ?string $errorMessage,
+        public ?string $platform,
+        public ?string $queryText,
+        public array $mentions = [],
+        public ?string $sentiment = null,
+    ) {}
+    
+    public static function success(...): self;
+    public static function error(...): self;
+    public static function fromJson(string $json): self;
+}
+```
+
+### Sentiment Analysis
+
+Keyword-based classification (free approach):
+
+| Sentiment | Keywords |
+|-----------|----------|
+| Positive | excellent, great, best, recommended, top, amazing, outstanding, superb, fantastic, wonderful, perfect, reliable, powerful |
+| Negative | poor, bad, worst, avoid, limited, terrible, awful, horrible, disappointing, unreliable, slow, buggy, expensive |
+| Mixed | Both positive and negative keywords found |
+| Neutral | No sentiment keywords detected |
+
+### Cache Strategy
+
+| Parameter | Value |
+|-----------|-------|
+| TTL | 7 days (604800 seconds) |
+| Key Generation | MD5 hash of platform + query |
+| Purpose | Minimize API calls to OpenRouter |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `AIQueryEngineTest.php` | 84 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Class Structure | 10 | Instantiation, method existence |
+| Platform Configuration | 8 | Enabled/disabled platforms |
+| Query Templates | 12 | Template retrieval, interpolation |
+| query() Method | 15 | Success, error, caching, latency |
+| parseMentions() Method | 13 | Mention extraction, context |
+| analyzeSentiment() Method | 18 | All sentiment types |
+| Error Handling | 5 | Invalid platform, empty query |
+| Integration | 3 | End-to-end flow |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `e315b66a` |
+| Deployment Method | GitHub Actions auto-deploy (run #22803978644) |
+| Health Check | ✅ 200 OK |
+| Tests | 84/84 passing (106 assertions) |
+| Status | Complete |
+
+### Dependencies
+- TASK-34-2 (Models) - In Progress
+- FEAT-031 (AI Infrastructure / OpenRouter Client) - Done ✅
+
+### Related Tasks
+- TASK-34-4: MentionParser Service (uses AIQueryEngine results)
+- TASK-34-5: AIVisibilityService (uses AIQueryEngine for queries)
+- TASK-34-7: Query Job (uses AIQueryEngine in background)
+
+---
 ## Typography and Spacing Design System (TASK-28-2)
 
 ### Feature Description

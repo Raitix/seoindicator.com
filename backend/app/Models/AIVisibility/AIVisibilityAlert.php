@@ -32,6 +32,14 @@ class AIVisibilityAlert extends Model
     use HasFactory;
 
     /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\AIVisibility\AIVisibilityAlertFactory::new();
+    }
+
+    /**
      * Alert type constants.
      */
     public const TYPE_MENTION_SPIKE = 'mention_spike';

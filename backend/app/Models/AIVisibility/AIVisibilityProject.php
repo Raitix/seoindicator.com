@@ -33,6 +33,14 @@ class AIVisibilityProject extends Model
     use HasFactory, SoftDeletes;
 
     /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\AIVisibility\AIVisibilityProjectFactory::new();
+    }
+
+    /**
      * The table associated with the model.
      */
     protected $table = 'ai_visibility_projects';
