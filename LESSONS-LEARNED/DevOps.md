@@ -1,4 +1,4 @@
-# DevOps.md — Project Lessons Learned
+﻿# DevOps.md â€” Project Lessons Learned
 
 Knowledge base for DevOps agent working on SEOIndicator project.
 
@@ -114,7 +114,7 @@ _(Document rollback events and causes)_
 - **What was deployed:**
   - PWASuggestionService - generates actionable suggestions for PWA analysis
   - 51 unit tests covering all suggestion scenarios
-  - Priority-based sorting (high → medium → low)
+  - Priority-based sorting (high â†’ medium â†’ low)
 - **Note:** Service and tests were already in origin/main from Developer/LocalTester work. No additional deployment needed.
 
 ### TASK-32-2 (Comparison Registry and Data Loading)
@@ -172,4 +172,21 @@ _(Document rollback events and causes)_
 
 ---
 
-Last updated: 2026-03-06
+Last updated: 2026-03-07
+### TASK-32-14 (Free Alternatives Data - GSC, GA, AnswerThePublic)
+- **Date:** 2026-03-07
+- **Method:** GitHub Actions (automatic)
+- **Commit:** 6517f27e (pushed to origin/main)
+- **Result:** Successful
+- **Health Check:** 200 OK, database connected
+- **What was deployed:**
+  - rontend/lib/compare/competitors/gsc.ts - Google Search Console competitor data
+  - rontend/lib/compare/competitors/ga.ts - Google Analytics competitor data
+  - rontend/lib/compare/competitors/answerthepublic.ts - AnswerThePublic competitor data
+- **Tests:** 210 tests passing (LocalTester verified)
+- **Positioning:**
+  - GSC: Essential complement for indexing (not replacement)
+  - GA: Traffic analytics (not SEO-specific)
+  - ATP: Limited free tier (3 searches/day)
+- **Note:** Code was committed by LocalTester. DevOps pushed to origin/main to trigger deployment.
+
