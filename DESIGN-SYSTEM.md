@@ -1,375 +1,269 @@
-# Design System — SEOIndicator
+# Design System
 
-This document defines the design tokens, color system, typography, spacing, and component guidelines for SEOIndicator's UI. All values are defined as CSS variables in `frontend/app/globals.css` and integrated with Tailwind CSS via the `@theme` directive.
+> SEOIndicator Design System Documentation
+
+This document defines the typography scale and spacing system used throughout the SEOIndicator application. All values align with Tailwind CSS utilities for consistent implementation.
 
 ---
 
 ## Table of Contents
 
-1. [Color System](#color-system)
-2. [Typography](#typography)
-3. [Spacing System](#spacing-system)
-4. [Border Radius](#border-radius)
-5. [Shadows](#shadows)
-6. [Component Patterns](#component-patterns)
-7. [Tailwind Integration](#tailwind-integration)
-8. [Dark Mode](#dark-mode)
-9. [Accessibility Guidelines](#accessibility-guidelines)
+- [Typography Scale](#typography-scale)
+- [Spacing System](#spacing-system)
+- [Responsive Considerations](#responsive-considerations)
 
 ---
 
-## Color System
+## Typography Scale
 
-All colors use the **oklch** color space for better perceptual uniformity and wide-gamut support.
+The typography scale provides a consistent hierarchy for all text elements in the application. Use these scales to maintain visual consistency across pages and components.
 
-### Brand Colors
+### Typography Scale Table
 
-| Variable | Light Mode | Dark Mode | Usage |
-|----------|------------|-----------|-------|
-| `--brand-primary` | `oklch(0.65 0.2 160)` | `oklch(0.7 0.22 160)` | Primary brand color (emerald green) |
-| `--brand-primary-foreground` | `oklch(0.145 0 0)` | `oklch(0.145 0 0)` | Text on primary color |
-| `--brand-secondary` | `oklch(0.55 0.15 200)` | `oklch(0.6 0.17 200)` | Secondary accent (teal) |
-| `--brand-accent` | `oklch(0.75 0.18 50)` | `oklch(0.8 0.2 50)` | Accent color (orange) |
+| Name | Tailwind Class | Font Size | Use Case |
+|------|---------------|-----------|----------|
+| **Display** | `text-5xl` / `text-4xl` | 48px / 36px | Hero headings, major page headers |
+| **H1** | `text-3xl` | 30px | Page titles |
+| **H2** | `text-2xl` | 24px | Section titles |
+| **H3** | `text-xl` | 20px | Card titles, subsection headers |
+| **Body** | `text-base` | 16px | Paragraphs, body text |
+| **Small** | `text-sm` | 14px | Captions, metadata, helper text |
 
-**Usage Guidelines:**
-- Use `--brand-primary` for primary CTAs, active states, and key interactive elements
-- Use `--brand-secondary` for secondary actions and supporting elements
-- Use `--brand-accent` sparingly for highlights and call-to-action accents
+### Typography Tailwind Class Mappings
 
-```css
-/* Example usage */
-.button-primary {
-  background-color: var(--brand-primary);
-  color: var(--brand-primary-foreground);
-}
+| Scale | Tailwind Classes | CSS Equivalent |
+|-------|-----------------|----------------|
+| Display | `text-5xl` | `font-size: 3rem; line-height: 1;` |
+| Display (sm) | `text-4xl` | `font-size: 2.25rem; line-height: 2.5rem;` |
+| H1 | `text-3xl` | `font-size: 1.875rem; line-height: 2.25rem;` |
+| H2 | `text-2xl` | `font-size: 1.5rem; line-height: 2rem;` |
+| H3 | `text-xl` | `font-size: 1.25rem; line-height: 1.75rem;` |
+| Body | `text-base` | `font-size: 1rem; line-height: 1.5rem;` |
+| Small | `text-sm` | `font-size: 0.875rem; line-height: 1.25rem;` |
+
+### Typography Examples
+
+#### Display (Hero Headings)
+
+```tsx
+// Large display for hero sections
+<h1 className="text-5xl font-bold tracking-tight">
+  SEO Dashboard
+</h1>
+
+// Medium display for secondary hero
+<h1 className="text-4xl font-semibold">
+  Analyze Your Rankings
+</h1>
 ```
 
-### Semantic Colors
+#### H1 (Page Titles)
 
-| Variable | Light Mode | Dark Mode | Usage |
-|----------|------------|-----------|-------|
-| `--success` | `oklch(0.65 0.2 145)` | `oklch(0.7 0.22 145)` | Success states, positive indicators |
-| `--warning` | `oklch(0.75 0.18 85)` | `oklch(0.8 0.2 85)` | Warning states, caution messages |
-| `--error` | `oklch(0.6 0.22 25)` | `oklch(0.65 0.24 25)` | Error states, destructive actions |
-| `--info` | `oklch(0.6 0.15 230)` | `oklch(0.65 0.17 230)` | Informational messages |
+```tsx
+// Main page title
+<h1 className="text-3xl font-semibold">
+  Keyword Rankings
+</h1>
+```
 
-**Color Hue Ranges:**
+#### H2 (Section Titles)
 
-| Color | Hue Range | Description |
-|-------|-----------|-------------|
-| Success (Green) | 130-170 | Fresh, positive, completed |
-| Warning (Yellow/Orange) | 60-100 | Attention, caution |
-| Error (Red) | 0-50 | Urgent, destructive |
-| Info (Blue) | 200-260 | Informational, neutral |
+```tsx
+// Section heading
+<h2 className="text-2xl font-medium">
+  Top Performing Keywords
+</h2>
+```
 
-**Usage Guidelines:**
-- `success`: Use for positive status indicators, completed actions, and good scores (≥80%)
-- `warning`: Use for cautionary states, moderate scores (50-79%), and pending actions
-- `error`: Use for error messages, destructive confirmations, and critical scores (<50%)
-- `info`: Use for neutral information, tooltips, and helpful hints
+#### H3 (Card Titles)
 
-### Surface Layers
+```tsx
+// Card or subsection title
+<h3 className="text-xl font-medium">
+  Visibility Score
+</h3>
+```
 
-Surface layers provide depth hierarchy in the UI. All surface layers have **zero chroma** (neutral grays).
+#### Body (Paragraphs)
 
-| Variable | Light Mode | Dark Mode | Usage |
-|----------|------------|-----------|-------|
-| `--surface-0` | `oklch(0.145 0 0)` | `oklch(0.145 0 0)` | Base background |
-| `--surface-1` | `oklch(0.18 0 0)` | `oklch(0.18 0 0)` | Elevated surfaces |
-| `--surface-2` | `oklch(0.22 0 0)` | `oklch(0.22 0 0)` | Cards, panels |
-| `--surface-3` | `oklch(0.26 0 0)` | `oklch(0.26 0 0)` | Modals, overlays |
+```tsx
+// Body text for descriptions
+<p className="text-base text-muted-foreground">
+  Track your keyword positions across search engines
+  and identify opportunities for improvement.
+</p>
+```
 
-**Lightness Progression:** Each surface layer increases in lightness (surface-0 < surface-1 < surface-2 < surface-3).
+#### Small (Captions & Metadata)
 
-**Usage Guidelines:**
-- `surface-0`: Page backgrounds, app shell
-- `surface-1`: Navigation bars, sidebars
-- `surface-2`: Cards, content containers
-- `surface-3`: Modals, dropdowns, tooltips
+```tsx
+// Caption or helper text
+<span className="text-sm text-muted-foreground">
+  Last updated: 2 hours ago
+</span>
 
-### Base Colors
-
-| Variable | Light Mode | Dark Mode | Usage |
-|----------|------------|-----------|-------|
-| `--background` | `oklch(1 0 0)` | `oklch(0.145 0 0)` | Page background |
-| `--foreground` | `oklch(0.145 0 0)` | `oklch(0.985 0 0)` | Primary text |
-| `--card` | `oklch(1 0 0)` | `oklch(0.205 0 0)` | Card backgrounds |
-| `--card-foreground` | `oklch(0.145 0 0)` | `oklch(0.985 0 0)` | Card text |
-| `--primary` | `oklch(0.205 0 0)` | `oklch(0.922 0 0)` | Primary button |
-| `--primary-foreground` | `oklch(0.985 0 0)` | `oklch(0.205 0 0)` | Primary button text |
-| `--secondary` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` | Secondary button |
-| `--secondary-foreground` | `oklch(0.205 0 0)` | `oklch(0.985 0 0)` | Secondary button text |
-| `--muted` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` | Muted backgrounds |
-| `--muted-foreground` | `oklch(0.5 0 0)` | `oklch(0.708 0 0)` | Muted text |
-| `--accent` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` | Accent backgrounds |
-| `--accent-foreground` | `oklch(0.205 0 0)` | `oklch(0.985 0 0)` | Accent text |
-| `--destructive` | `oklch(0.577 0.245 27.325)` | `oklch(0.704 0.191 22.216)` | Destructive actions |
-| `--border` | `oklch(0.922 0 0)` | `oklch(1 0 0 / 10%)` | Borders |
-| `--input` | `oklch(0.922 0 0)` | `oklch(1 0 0 / 15%)` | Input backgrounds |
-| `--ring` | `oklch(0.708 0 0)` | `oklch(0.556 0 0)` | Focus rings |
-
----
-
-## Typography
-
-### Font Families
-
-| Font | Variable | Usage |
-|------|----------|-------|
-| Sans | `--font-geist-sans` | Body text, UI elements |
-| Mono | `--font-geist-mono` | Code, numbers, data |
-
-### Type Scale
-
-| Token | Tailwind Class | Size | Line Height | Usage |
-|-------|---------------|------|-------------|-------|
-| Display | `text-4xl`, `text-5xl` | 36-48px | 1.1 | Hero headings |
-| H1 | `text-3xl` | 30px | 1.25 | Page titles |
-| H2 | `text-2xl` | 24px | 1.3 | Section titles |
-| H3 | `text-xl` | 20px | 1.4 | Card titles |
-| H4 | `text-lg` | 18px | 1.5 | Subsection titles |
-| Body | `text-base` | 16px | 1.5 | Paragraphs, default |
-| Small | `text-sm` | 14px | 1.5 | Captions, metadata |
-| XSmall | `text-xs` | 12px | 1.5 | Fine print, labels |
-
-### Font Weights
-
-| Weight | Tailwind Class | Usage |
-|--------|---------------|-------|
-| Normal | `font-normal` | Body text |
-| Medium | `font-medium` | Emphasis, labels |
-| Semibold | `font-semibold` | Headings, buttons |
-| Bold | `font-bold` | Strong emphasis |
+// Metadata label
+<span className="text-sm font-medium">
+  150 keywords tracked
+</span>
+```
 
 ---
 
 ## Spacing System
 
-The spacing system uses a consistent 4px base unit.
+The spacing system provides consistent margins, padding, and gaps throughout the application. These values follow Tailwind's default spacing scale.
 
-| Token | Tailwind Class | Value | Usage |
-|-------|---------------|-------|-------|
-| xs | `p-1`, `gap-1` | 4px | Tight spacing |
-| sm | `p-2`, `gap-2` | 8px | Compact spacing |
-| md | `p-4`, `gap-4` | 16px | Default spacing |
-| lg | `p-6`, `gap-6` | 24px | Comfortable spacing |
-| xl | `p-8`, `gap-8` | 32px | Generous spacing |
-| 2xl | `p-12`, `gap-12` | 48px | Section spacing |
-| 3xl | `p-16`, `gap-16` | 64px | Major section spacing |
+### Spacing Scale Table
 
-### Component Spacing Patterns
+| Name | Tailwind Class | Rem Value | Pixel Value | Use Case |
+|------|---------------|-----------|-------------|----------|
+| **xs** | `p-1`, `m-1`, `gap-1` | 0.25rem | 4px | Tight spacing, icon gaps |
+| **sm** | `p-2`, `m-2`, `gap-2` | 0.5rem | 8px | Compact elements, badge padding |
+| **md** | `p-4`, `m-4`, `gap-4` | 1rem | 16px | Default spacing, card padding |
+| **lg** | `p-6`, `m-6`, `gap-6` | 1.5rem | 24px | Section spacing, container padding |
+| **xl** | `p-8`, `m-8`, `gap-8` | 2rem | 32px | Large gaps, major sections |
+| **2xl** | `p-12`, `m-12`, `gap-12` | 3rem | 48px | Page-level spacing, hero margins |
 
-| Component | Internal Padding | Gap |
-|-----------|-----------------|-----|
-| Button | `px-4 py-2` | - |
-| Card | `p-6` | `gap-4` |
-| Modal | `p-6` | `gap-4` |
-| Form Group | - | `gap-2` |
-| Section | `py-12` | `gap-6` |
+### Spacing Tailwind Class Mappings
 
----
+| Scale | Tailwind Classes | CSS Equivalent |
+|-------|-----------------|----------------|
+| xs | `p-1`, `m-1`, `gap-1` | `0.25rem` (4px) |
+| sm | `p-2`, `m-2`, `gap-2` | `0.5rem` (8px) |
+| md | `p-4`, `m-4`, `gap-4` | `1rem` (16px) |
+| lg | `p-6`, `m-6`, `gap-6` | `1.5rem` (24px) |
+| xl | `p-8`, `m-8`, `gap-8` | `2rem` (32px) |
+| 2xl | `p-12`, `m-12`, `gap-12` | `3rem` (48px) |
 
-## Border Radius
+### Spacing Usage Examples
 
-| Token | Tailwind Class | Value | Usage |
-|-------|---------------|-------|-------|
-| sm | `rounded-sm` | 2px | Subtle rounding |
-| md | `rounded-md` | 4px | Default rounding |
-| lg | `rounded-lg` | 10px | Cards, buttons |
-| xl | `rounded-xl` | 14px | Large cards |
-| 2xl | `rounded-2xl` | 18px | Modals |
-| 3xl | `rounded-3xl` | 24px | Feature cards |
-| full | `rounded-full` | 9999px | Pills, avatars |
-
-**Base Radius:** `--radius: 0.625rem` (10px)
-
----
-
-## Shadows
-
-| Token | Tailwind Class | Usage |
-|-------|---------------|-------|
-| sm | `shadow-sm` | Subtle elevation |
-| md | `shadow-md` | Cards, dropdowns |
-| lg | `shadow-lg` | Modals, popovers |
-| xl | `shadow-xl` | Floating elements |
-
----
-
-## Component Patterns
-
-### Button Variants
-
-| Variant | Classes | Usage |
-|---------|---------|-------|
-| Primary | `bg-primary text-primary-foreground` | Main CTAs |
-| Secondary | `bg-secondary text-secondary-foreground` | Secondary actions |
-| Destructive | `bg-destructive text-destructive-foreground` | Destructive actions |
-| Outline | `border border-input bg-background` | Tertiary actions |
-| Ghost | `hover:bg-accent` | Minimal actions |
-| Link | `text-primary underline-offset-4` | Text links |
-
-### Badge Variants
-
-| Variant | Usage | Color |
-|---------|-------|-------|
-| default | Primary status | Brand primary |
-| secondary | Secondary status | Muted |
-| destructive | Error status | Error |
-| outline | Neutral status | Border |
-
-### Status Indicators
-
-| Status | Color | Badge Variant |
-|--------|-------|---------------|
-| good | `--success` | default |
-| warning | `--warning` | secondary |
-| critical | `--error` | destructive |
-| neutral | `--muted-foreground` | outline |
-
----
-
-## Tailwind Integration
-
-Colors and design tokens are integrated with Tailwind CSS via the `@theme` directive in `globals.css`:
-
-```css
-@theme inline {
-  --color-brand-primary: var(--brand-primary);
-  --color-success: var(--success);
-  --color-surface-0: var(--surface-0);
-  /* ... etc */
-}
-```
-
-### Usage in Components
+#### Padding Examples
 
 ```tsx
-// Using Tailwind classes with design tokens
-<button className="bg-brand-primary text-white">
-  Primary Button
-</button>
-
-<div className="bg-surface-2 border-border rounded-lg">
-  Card content
+// Card with default padding
+<div className="p-4 bg-card rounded-lg">
+  <h3 className="text-xl">Card Title</h3>
+  <p className="text-sm mt-2">Card content...</p>
 </div>
 
-<span className="text-success font-medium">
-  Status: Good
+// Compact badge
+<span className="px-2 py-1 text-sm bg-primary/10 rounded">
+  New
 </span>
+
+// Section with larger padding
+<section className="p-6 md:p-8">
+  <h2 className="text-2xl">Section Title</h2>
+</section>
 ```
 
-### Custom Utility Classes
-
-```css
-/* From globals.css */
-.animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
-.animate-pulse-slow { animation: pulse-slow 2s ease-in-out infinite; }
-.animate-scale-in { animation: scale-in 0.5s ease-out forwards; }
-```
-
----
-
-## Dark Mode
-
-Dark mode is implemented via the `.dark` class on the root element. All color variables have corresponding dark mode values.
-
-### Implementation
+#### Margin Examples
 
 ```tsx
-// ThemeProvider handles dark mode
-<html className={theme === 'dark' ? 'dark' : ''}>
-  {/* ... */}
-</html>
+// Margin between elements
+<h2 className="text-2xl mb-4">Section Title</h2>
+<p className="text-base mb-2">Description text...</p>
+
+// Centered container with top margin
+<div className="mt-8 mx-auto max-w-7xl">
+  Content here...
+</div>
+
+// Card grid with gap
+<div className="grid grid-cols-3 gap-6">
+  {/* Cards */}
+</div>
 ```
 
-### Color Inversion
+#### Gap Examples
 
-| Element | Light Mode | Dark Mode |
-|---------|------------|-----------|
-| Background | Near white | Near black |
-| Text | Dark | Light |
-| Primary button | Dark | Light |
-| Borders | Light gray | Semi-transparent white |
+```tsx
+// Flex container with gap
+<div className="flex items-center gap-2">
+  <Icon name="check" />
+  <span>Completed</span>
+</div>
 
-### Dark Mode Best Practices
+// Grid layout with responsive gap
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+  {/* Grid items */}
+</div>
 
-1. **Maintain contrast ratios:** Ensure text remains readable in both modes
-2. **Reduce chroma slightly:** Dark mode colors can appear more saturated
-3. **Test shadows:** Dark mode shadows may need adjustment
-4. **Consider reduced motion:** Respect `prefers-reduced-motion`
+// Stack with consistent vertical spacing
+<div className="flex flex-col gap-4">
+  <div>Item 1</div>
+  <div>Item 2</div>
+  <div>Item 3</div>
+</div>
+```
+
+### Spacing Best Practices
+
+1. **Use gap over margins** for flex/grid children to avoid margin collapse issues
+2. **Responsive spacing**: Scale padding/margins at breakpoints (e.g., `p-4 md:p-6 lg:p-8`)
+3. **Consistent sections**: Use `lg` (24px) for section separators
+4. **Tight groups**: Use `xs` (4px) or `sm` (8px) for related inline elements
+5. **Page-level spacing**: Use `xl` (32px) or `2xl` (48px) for hero sections
 
 ---
 
-## Accessibility Guidelines
+## Responsive Considerations
 
-### Color Contrast
+Typography and spacing should adapt to different screen sizes for optimal readability and layout.
 
-All text must meet **WCAG 2.1 AA** requirements:
-- **Normal text:** Minimum 4.5:1 contrast ratio
-- **Large text (18px+):** Minimum 3:1 contrast ratio
-- **Interactive elements:** Minimum 3:1 for UI components
+### Responsive Typography
 
-### Focus Indicators
+Use Tailwind's responsive modifiers to scale typography:
 
-All interactive elements must have visible focus states:
+```tsx
+// Display scales down on mobile
+<h1 className="text-4xl md:text-5xl font-bold">
+  Hero Title
+</h1>
 
-```css
-.focus-visible {
-  outline: none;
-  ring: 2px;
-  ring-color: var(--ring);
-  ring-offset: 2px;
-}
+// Section titles adjust for mobile
+<h2 className="text-xl md:text-2xl font-medium">
+  Section Title
+</h2>
 ```
 
-### ARIA Labels
+### Responsive Spacing Patterns
 
-| Element | Requirement |
-|---------|-------------|
-| Buttons | `aria-label` for icon-only buttons |
-| Icons | `aria-hidden="true"` for decorative, `role="img"` + `aria-label` for meaningful |
-| Links | Descriptive text or `aria-label` |
-| Form inputs | Associated `<label>` or `aria-labelledby` |
+```tsx
+// Container padding scales with viewport
+<div className="p-4 md:p-6 lg:p-8">
+  Content...
+</div>
 
-### Keyboard Navigation
+// Section margins responsive
+<section className="mb-8 md:mb-12 lg:mb-16">
+  Section content...
+</section>
 
-| Key | Action |
-|-----|--------|
-| Tab | Move focus forward |
-| Shift + Tab | Move focus backward |
-| Enter | Activate buttons/links |
-| Space | Activate buttons, toggle checkboxes |
-| Escape | Close modals, dropdowns |
-| Arrow keys | Navigate menus, tabs |
-
-### Screen Reader Support
-
-- Use semantic HTML elements (`<nav>`, `<main>`, `<article>`)
-- Provide skip links for main content
-- Use `aria-live` regions for dynamic content updates
-- Announce status changes with `role="status"` or `role="alert"`
-
-### Reduced Motion
-
-```css
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
+// Grid gap responsive
+<div className="grid gap-4 md:gap-6 lg:gap-8">
+  Grid items...
+</div>
 ```
+
+### Breakpoint Reference
+
+| Breakpoint | Min Width | Use Case |
+|------------|-----------|----------|
+| `sm` | 640px | Mobile landscape |
+| `md` | 768px | Tablet portrait |
+| `lg` | 1024px | Tablet landscape / Small desktop |
+| `xl` | 1280px | Desktop |
+| `2xl` | 1536px | Large desktop |
 
 ---
 
-## Related Documentation
+## Summary
 
-- **DOCUMENTATION.md** — Feature documentation and component locations
-- **frontend/components/README.md** — Component usage guide
-- **frontend/app/globals.css** — CSS variable definitions
+| Category | Values | Tailwind Prefix |
+|----------|--------|-----------------|
+| Typography | Display, H1, H2, H3, Body, Small | `text-*` |
+| Spacing | xs, sm, md, lg, xl, 2xl | `p-*`, `m-*`, `gap-*` |
 
----
-
-Last updated: 2026-03-07
+Always reference this document when implementing new components to ensure design consistency across the application.
