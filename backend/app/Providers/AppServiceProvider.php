@@ -122,9 +122,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Rate limiter for badge tracking routes (TASK-33-7, TASK-33-17, TASK-33-18, SPEC-33)
-        // 60 requests per minute per IP - supports high-volume widget impressions
+        // 10 requests per minute per IP - prevents abuse while allowing reasonable tracking
         RateLimiter::for('badge-tracking', function (Request $request) {
-            return \Illuminate\Cache\RateLimiting\Limit::perMinute(60)
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(10)
                 ->by($request->ip())
                 ->response(function () {
                     return response()->json([

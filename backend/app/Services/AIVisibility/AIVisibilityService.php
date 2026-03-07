@@ -139,8 +139,15 @@ class AIVisibilityService implements AIVisibilityServiceInterface
      */
     public function deleteProject(int $projectId, int $userId): bool
     {
-        // Find project
-        $project = AIVisibilityProject::findOrFail($projectId);
+        // Find project (including trashed to check if already deleted)
+        $project = AIVisibilityProject::withTrashed()->find($projectId);
+
+        if (!$project) {
+            throw (new ModelNotFoundException)->setModel(
+                AIVisibilityProject::class,
+                $projectId
+            );
+        }
 
         // Validate ownership
         if (!$project->belongsToUser($userId)) {

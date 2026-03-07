@@ -503,7 +503,10 @@ class AIVisibilityServiceTest extends TestCase
                     isset($context['user_id']);
             });
         
-        $this->service->createProject($this->user->id, $data);
+        $project = $this->service->createProject($this->user->id, $data);
+        
+        // Assert the project was created (mock expectation is verified)
+        $this->assertNotNull($project->id);
     }
 
     /** @test VS-033: Returns model with id */
@@ -671,7 +674,10 @@ class AIVisibilityServiceTest extends TestCase
                 return str_contains($message, 'project updated');
             });
         
-        $this->service->updateProject($project->id, ['brand_name' => 'Updated']);
+        $updated = $this->service->updateProject($project->id, ['brand_name' => 'Updated']);
+        
+        // Assert the project was updated (mock expectation is verified)
+        $this->assertEquals('Updated', $updated->brand_name);
     }
 
     /** @test VS-050: Partial update: only brand_name */
@@ -827,7 +833,10 @@ class AIVisibilityServiceTest extends TestCase
                 return str_contains($message, 'project deleted');
             });
         
-        $this->service->deleteProject($project->id, $this->user->id);
+        $result = $this->service->deleteProject($project->id, $this->user->id);
+        
+        // Assert the deletion was logged (mock expectation is verified)
+        $this->assertTrue($result);
     }
 
     /** @test VS-069: Clears related cache */
