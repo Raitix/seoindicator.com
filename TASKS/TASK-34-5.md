@@ -1,7 +1,7 @@
 # TASK-34-5: AIVisibilityService
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
