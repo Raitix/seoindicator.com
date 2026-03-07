@@ -134,7 +134,7 @@ export function TagInput({
             maxLength={maxLength}
             aria-invalid={!!error}
             aria-describedby={error ? `${id}-error` : undefined}
-            data-testid={`tag-input-${id}`}
+            data-testid={`input-${id}`}
             className="flex-1 min-w-[120px] outline-none bg-transparent text-sm disabled:cursor-not-allowed disabled:opacity-50"
           />
         )}
@@ -177,7 +177,7 @@ export function TagInput({
       {/* Tag Count */}
       <span
         className="text-sm text-gray-400"
-        data-testid={`tag-count-${id}`}
+        data-testid={`count-${id}`}
         aria-live="polite"
       >
         {value.length}/{maxTags}
