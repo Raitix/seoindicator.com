@@ -111,6 +111,15 @@ class RobotsParser
             return true;
         }
 
+        // Handle directory patterns (ending with /)
+        // /admin/ should block both /admin/ and /admin
+        if (str_ends_with($pattern, '/')) {
+            $basePattern = rtrim($pattern, '/');
+            if ($path === $basePattern) {
+                return true;
+            }
+        }
+
         // Convert robots.txt pattern to regex
         // * matches any sequence of characters
         // $ matches end of URL
