@@ -443,3 +443,16 @@ Updated `DOCUMENTATION.md` with:
 - Completion marker written: `logs/completed/task/TASK-1-1.json`
 - Active agents entry cleared
 - Status: Done (final)
+
+### [2026-03-07 16:18 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Complete**
+
+- Task status: Done (confirmed)
+- DOCUMENTATION.md verified:
+  - Keywords Table: lines 20387-20417 (complete schema with all fields, constraints, indexes)
+  - Ranking History Table: lines 20432-20459 (complete schema with all fields, FK constraint, indexes)
+  - Sites Table reference: lines 20461-20470
+- Stale lock removed: `.locks/TASK-1-1.lock`
+- Completion marker written: `logs/completed/task/TASK-1-1.json`
+- Active agents entry cleared
+- Status: Done (final)
