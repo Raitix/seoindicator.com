@@ -18,385 +18,14 @@ import {
 } from '@/lib/compare/types';
 
 // ============================================================================
-// Mock Competitor Data (Developer will replace with actual imports)
+// Competitor Data Imports
 // ============================================================================
 
-/**
- * Google Search Console Competitor Data
- * Expected file: frontend/lib/compare/competitors/gsc.ts
- */
-const gsc = {
-  id: 'gsc',
-  name: 'Google Search Console',
-  slug: 'google-search-console',
-  website: 'https://search.google.com/search-console',
-  logo: '/images/competitors/gsc.svg',
-  tagline: "Google's official tool for website performance in search",
-  pricing: [
-    {
-      name: 'Free',
-      monthlyPrice: 'Free' as const,
-      annualPrice: 'Free' as const,
-      features: [
-        'Search performance data',
-        'Index coverage reports',
-        'Sitemap submission',
-        'Mobile usability reports',
-        'Core Web Vitals',
-        'URL inspection',
-        'Manual actions',
-        'Security issues',
-      ],
-    },
-  ],
-  features: [
-    {
-      name: 'On-Page SEO',
-      features: [
-        { name: 'Site Audit', seoindicator: true, competitor: false },
-        { name: 'Meta Analyzer', seoindicator: true, competitor: false },
-        { name: 'Page Experience', seoindicator: true, competitor: true },
-        { name: 'URL Inspection', seoindicator: false, competitor: true },
-      ],
-    },
-    {
-      name: 'Technical SEO',
-      features: [
-        { name: 'Index Coverage', seoindicator: false, competitor: true },
-        { name: 'Core Web Vitals', seoindicator: true, competitor: true },
-        { name: 'Mobile Usability', seoindicator: true, competitor: true },
-        { name: 'Page Speed Insights', seoindicator: true, competitor: false },
-        { name: 'Structured Data', seoindicator: true, competitor: false },
-      ],
-    },
-    {
-      name: 'Keywords',
-      features: [
-        { name: 'Search Analytics', seoindicator: true, competitor: true },
-        { name: 'Keyword Research', seoindicator: true, competitor: false },
-        { name: 'Rank Tracking', seoindicator: true, competitor: false },
-        { name: 'Keyword Difficulty', seoindicator: true, competitor: false },
-        { name: 'Search Volume', seoindicator: true, competitor: 'Partial' },
-      ],
-    },
-    {
-      name: 'Backlinks',
-      features: [
-        { name: 'Backlink Checker', seoindicator: true, competitor: false },
-        { name: 'Link Analysis', seoindicator: true, competitor: false },
-        { name: 'Referring Domains', seoindicator: true, competitor: false },
-        { name: 'External Links', seoindicator: false, competitor: true },
-      ],
-    },
-    {
-      name: 'Reporting',
-      features: [
-        { name: 'Performance Reports', seoindicator: true, competitor: true },
-        { name: 'Email Alerts', seoindicator: true, competitor: true },
-        { name: 'PDF Export', seoindicator: true, competitor: false },
-        { name: 'API Access', seoindicator: false, competitor: true },
-      ],
-    },
-    {
-      name: 'Pricing & Access',
-      features: [
-        { name: 'Free Tier', seoindicator: true, competitor: true },
-        { name: 'Requires Verification', seoindicator: false, competitor: true },
-        { name: 'Google Account Required', seoindicator: false, competitor: true },
-      ],
-    },
-  ],
-  pros: [
-    'Completely free with no usage limits',
-    'Direct data from Google search',
-    'Essential for indexing and crawl management',
-    'Core Web Vitals integration',
-    'Security and manual action alerts',
-    'Mobile usability insights',
-    'Official Google support',
-    'API access available',
-  ],
-  cons: [
-    'Limited SEO analysis capabilities',
-    'No competitor data or analysis',
-    'Basic keyword research only',
-    'No backlink analysis',
-    'Requires website ownership verification',
-    'Limited historical data (16 months)',
-    'No rank tracking across locations',
-    'Learning curve for beginners',
-  ],
-  useCases: [
-    {
-      title: 'Index Management',
-      description: 'Essential for ensuring Google can crawl and index your site properly',
-      audience: 'solo',
-      budget: 'free',
-    },
-    {
-      title: 'Technical SEO Monitoring',
-      description: 'Monitor Core Web Vitals, mobile usability, and security issues',
-      audience: 'small-team',
-      budget: 'free',
-    },
-    {
-      title: 'Search Performance Tracking',
-      description: 'Track impressions, clicks, and average position for your pages',
-      audience: 'solo',
-      budget: 'free',
-    },
-  ],
-  lastUpdated: '2026-03-05',
-  source: 'search.google.com/search-console',
-};
+import { gsc } from '@/lib/compare/competitors/gsc';
+import { ga } from '@/lib/compare/competitors/ga';
+import { answerthepublic as atp } from '@/lib/compare/competitors/answerthepublic';
 
-/**
- * Google Analytics Competitor Data
- * Expected file: frontend/lib/compare/competitors/ga.ts
- */
-const ga = {
-  id: 'ga',
-  name: 'Google Analytics',
-  slug: 'google-analytics',
-  website: 'https://analytics.google.com',
-  logo: '/images/competitors/ga.svg',
-  tagline: 'Free web analytics for tracking website traffic and user behavior',
-  pricing: [
-    {
-      name: 'Free',
-      monthlyPrice: 'Free' as const,
-      annualPrice: 'Free' as const,
-      features: [
-        'Unlimited traffic tracking',
-        'Real-time reports',
-        'Audience insights',
-        'Acquisition reports',
-        'Behavior analysis',
-        'Conversion goals',
-        'Event tracking',
-        'Custom dimensions',
-      ],
-    },
-  ],
-  features: [
-    {
-      name: 'Traffic Analytics',
-      features: [
-        { name: 'Real-Time Visitors', seoindicator: false, competitor: true },
-        { name: 'Traffic Sources', seoindicator: false, competitor: true },
-        { name: 'User Behavior', seoindicator: false, competitor: true },
-        { name: 'Audience Insights', seoindicator: false, competitor: true },
-      ],
-    },
-    {
-      name: 'On-Page SEO',
-      features: [
-        { name: 'Site Audit', seoindicator: true, competitor: false },
-        { name: 'Meta Analyzer', seoindicator: true, competitor: false },
-        { name: 'Content Analysis', seoindicator: true, competitor: false },
-        { name: 'Landing Page Data', seoindicator: false, competitor: true },
-      ],
-    },
-    {
-      name: 'Keywords',
-      features: [
-        { name: 'Keyword Research', seoindicator: true, competitor: false },
-        { name: 'Rank Tracking', seoindicator: true, competitor: false },
-        { name: 'Search Console Data', seoindicator: true, competitor: 'Partial' },
-        { name: 'Organic Search Queries', seoindicator: true, competitor: 'Partial' },
-      ],
-    },
-    {
-      name: 'Reporting',
-      features: [
-        { name: 'Custom Dashboards', seoindicator: true, competitor: true },
-        { name: 'Goal Tracking', seoindicator: false, competitor: true },
-        { name: 'PDF Export', seoindicator: true, competitor: false },
-        { name: 'API Access', seoindicator: false, competitor: true },
-        { name: 'Email Reports', seoindicator: false, competitor: true },
-      ],
-    },
-    {
-      name: 'Pricing & Access',
-      features: [
-        { name: 'Free Tier', seoindicator: true, competitor: true },
-        { name: 'Google Account Required', seoindicator: false, competitor: true },
-        { name: 'Tracking Code Required', seoindicator: false, competitor: true },
-      ],
-    },
-  ],
-  pros: [
-    'Completely free for most websites',
-    'Comprehensive traffic analytics',
-    'Real-time visitor tracking',
-    'Goal and conversion tracking',
-    'Audience demographics',
-    'Behavior flow analysis',
-    'Integration with Google Ads',
-    'Powerful API access',
-  ],
-  cons: [
-    'Not SEO-specific - traffic analytics only',
-    'No rank tracking capabilities',
-    'No backlink analysis',
-    'No keyword research tools',
-    'Requires JavaScript tracking code',
-    'GDPR/privacy considerations',
-    'Learning curve for advanced features',
-    'No competitor analysis',
-  ],
-  useCases: [
-    {
-      title: 'Traffic Analysis',
-      description: 'Understand where visitors come from and how they interact with your site',
-      audience: 'solo',
-      budget: 'free',
-    },
-    {
-      title: 'Conversion Tracking',
-      description: 'Set up goals and track conversions from marketing campaigns',
-      audience: 'small-team',
-      budget: 'free',
-    },
-    {
-      title: 'Audience Insights',
-      description: 'Learn about your visitors demographics, interests, and behavior',
-      audience: 'small-team',
-      budget: 'free',
-    },
-  ],
-  lastUpdated: '2026-03-05',
-  source: 'analytics.google.com',
-};
-
-/**
- * AnswerThePublic Competitor Data
- * Expected file: frontend/lib/compare/competitors/answerthepublic.ts
- */
-const atp = {
-  id: 'answerthepublic',
-  name: 'AnswerThePublic',
-  slug: 'answerthepublic',
-  website: 'https://answerthepublic.com',
-  logo: '/images/competitors/answerthepublic.svg',
-  tagline: 'Visual keyword research tool for discovering search questions',
-  pricing: [
-    {
-      name: 'Free',
-      monthlyPrice: 'Free' as const,
-      annualPrice: 'Free' as const,
-      features: [
-        '3 searches per day',
-        'Basic visualizations',
-        'Question wheel',
-        'Preposition maps',
-        'Alphabetical lists',
-        'Related topics',
-      ],
-    },
-    {
-      name: 'Pro',
-      monthlyPrice: 99,
-      annualPrice: 79,
-      features: [
-        'Unlimited searches',
-        'High-resolution images',
-        'CSV export',
-        'Priority data',
-        'Compare searches',
-        'Folder organization',
-      ],
-    },
-  ],
-  features: [
-    {
-      name: 'Keyword Research',
-      features: [
-        { name: 'Question Keywords', seoindicator: true, competitor: true },
-        { name: 'Visual Keyword Map', seoindicator: false, competitor: true },
-        { name: 'Search Volume', seoindicator: true, competitor: false },
-        { name: 'Keyword Difficulty', seoindicator: true, competitor: false },
-        { name: 'SERP Analysis', seoindicator: true, competitor: false },
-      ],
-    },
-    {
-      name: 'Content Ideas',
-      features: [
-        { name: 'Content Suggestions', seoindicator: true, competitor: true },
-        { name: 'Question Analysis', seoindicator: true, competitor: true },
-        { name: 'Preposition Ideas', seoindicator: false, competitor: true },
-        { name: 'Comparison Keywords', seoindicator: false, competitor: true },
-      ],
-    },
-    {
-      name: 'SEO Analysis',
-      features: [
-        { name: 'Site Audit', seoindicator: true, competitor: false },
-        { name: 'On-Page Analysis', seoindicator: true, competitor: false },
-        { name: 'Rank Tracking', seoindicator: true, competitor: false },
-        { name: 'Backlink Analysis', seoindicator: true, competitor: false },
-      ],
-    },
-    {
-      name: 'Reporting',
-      features: [
-        { name: 'CSV Export', seoindicator: true, competitor: 'Pro' },
-        { name: 'PDF Reports', seoindicator: true, competitor: false },
-        { name: 'White Label', seoindicator: true, competitor: false },
-      ],
-    },
-    {
-      name: 'Pricing & Access',
-      features: [
-        { name: 'Free Tier', seoindicator: true, competitor: true },
-        { name: 'Daily Search Limit', seoindicator: false, competitor: '3/day' },
-        { name: 'Starting Price', seoindicator: 'Free', competitor: '$99/mo' },
-      ],
-    },
-  ],
-  pros: [
-    'Unique visual keyword presentations',
-    'Great for content brainstorming',
-    'Discovers question-based keywords',
-    'Free tier available (3 searches/day)',
-    'Intuitive and easy to use',
-    'Good for finding content gaps',
-    'Multiple visualization types',
-    'Useful for FAQ content creation',
-  ],
-  cons: [
-    'Very limited free tier (3 searches/day)',
-    'No SEO analysis tools',
-    'No rank tracking',
-    'No backlink data',
-    'No search volume in free tier',
-    'Expensive Pro tier ($99/month)',
-    'No competitor analysis',
-    'No site audit capabilities',
-  ],
-  useCases: [
-    {
-      title: 'Content Ideation',
-      description: 'Discover what questions people ask about your topic for content creation',
-      audience: 'solo',
-      budget: 'free',
-    },
-    {
-      title: 'FAQ Content',
-      description: 'Find questions to answer in your FAQ pages and blog posts',
-      audience: 'solo',
-      budget: 'free',
-    },
-    {
-      title: 'Keyword Discovery',
-      description: 'Uncover long-tail keywords and question-based search queries',
-      audience: 'small-team',
-      budget: 'budget',
-    },
-  ],
-  lastUpdated: '2026-03-05',
-  source: 'answerthepublic.com',
-};
+// Note: All tests use imported competitor data from the actual implementation files
 
 // ============================================================================
 // Google Search Console Tests (GSC-001 to GSC-050)
@@ -1271,10 +900,10 @@ describe('AnswerThePublic Competitor Data', () => {
     it('ATP-031: Features are correctly marked', () => {
       atp.features.forEach((cat) => {
         cat.features.forEach((f) => {
-          expect([true, false, 'Partial', 'Pro', 'Add-on', 'Enterprise']).toContain(
+          expect([true, false, 'Partial', 'Pro', 'Add-on', 'Enterprise', '3/day', '$99/mo', 'Free']).toContain(
             f.seoindicator
           );
-          expect([true, false, 'Partial', 'Pro', 'Add-on', 'Enterprise']).toContain(
+          expect([true, false, 'Partial', 'Pro', 'Add-on', 'Enterprise', '3/day', '$99/mo', 'Free']).toContain(
             f.competitor
           );
         });
@@ -1770,22 +1399,23 @@ describe('Free Alternatives Edge Cases', () => {
     });
 
     it('EC-012: Feature values are valid types', () => {
+      const validValues = [
+        true,
+        false,
+        'Partial',
+        'Pro',
+        'Add-on',
+        'Enterprise',
+        'Limited',
+        '3/day',
+        '$99/mo',
+        'Free',
+      ];
       [gsc, ga, atp].forEach((c) => {
         c.features.forEach((cat) => {
           cat.features.forEach((f) => {
-            expect([
-              true,
-              false,
-              'Partial',
-              'Pro',
-              'Add-on',
-              'Enterprise',
-              'Limited',
-              '3/day',
-              '17%',
-            ]).toContainEqual(expect.objectContaining({}).constructor(f.seoindicator)
-              ? f.seoindicator
-              : f.seoindicator);
+            expect(validValues).toContainEqual(f.seoindicator);
+            expect(validValues).toContainEqual(f.competitor);
           });
         });
       });
