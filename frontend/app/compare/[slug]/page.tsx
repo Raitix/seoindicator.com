@@ -13,6 +13,7 @@ import { notFound } from 'next/navigation';
 
 import { getComparisonBySlug, COMPARISON_SLUGS } from '@/lib/compare/registry';
 import { ComparisonData, ComparisonPageProps } from '@/lib/compare/types';
+import { getComparisonOGMetadata, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/lib/compare/og-images';
 
 // Components
 import { ComparisonTable } from '@/components/compare/ComparisonTable';
@@ -58,6 +59,9 @@ export async function generateMetadata({
   }
 
   const url = `https://seoindicator.com/compare/${comparison.slug}/`;
+  
+  // Get OG image metadata (uses pre-generated static image)
+  const ogImage = getComparisonOGMetadata(comparison.slug, 'https://seoindicator.com');
 
   return {
     title: comparison.title,
@@ -75,11 +79,20 @@ export async function generateMetadata({
       url,
       siteName: 'SEOIndicator',
       type: 'article',
+      images: [
+        {
+          url: ogImage.url,
+          width: ogImage.width,
+          height: ogImage.height,
+          alt: ogImage.alt,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title: comparison.title,
       description: comparison.metaDescription,
+      images: [ogImage.url],
     },
   };
 }
