@@ -1,7 +1,7 @@
 # TASK-34-3: AIQueryEngine Service
 
 ## STATUS
-`To Write Tests`
+`In Development`
 
 ## PRIORITY
 `High`
@@ -173,3 +173,49 @@ PreTester CAN design tests immediately using:
 - Cache layer with 7-day TTL
 
 **Status:** `Prioritization In Progress` → `To Write Tests`
+
+---
+
+### PreTester Test Design (2026-03-07 19:30 UTC)
+
+**Tests Created:**
+- `TEST-34-3.md` - Comprehensive test documentation (160 test scenarios)
+- `AIQueryEngineTest.php` - Unit test file with 84 tests implemented
+
+**Test Coverage:**
+
+| Category | Tests | Status |
+|----------|-------|--------|
+| Class Structure & Configuration | 25 | ✅ Ready |
+| query() Method | 30 | ✅ Ready |
+| parseMentions() Method | 30 | ✅ Ready |
+| analyzeSentiment() Method | 35 | ✅ Ready |
+| Error Handling | 20 | ✅ Ready |
+| Integration & Edge Cases | 20 | ✅ Ready |
+| **Total** | **160** | **84 unit tests** |
+
+**Test Execution Results:**
+- Tests fail as expected (TDD pattern)
+- Error: `Class "App\Services\AIVisibility\AIQueryEngine" not found`
+- This is correct behavior - service needs to be implemented
+
+**DTO Already Created:**
+- `AIQueryResult.php` exists at `app/Services/AIVisibility/DTOs/`
+- Includes: success, responseText, model, tokensUsed, latencyMs, errorMessage, platform, queryText, mentions, sentiment
+- Static methods: `success()`, `error()`, `fromJson()`
+
+**Dependencies Ready:**
+- OpenRouterClient ✅ (FEAT-031)
+- AIResponse DTO ✅ (FEAT-031)
+- AIQueryResult DTO ✅ (Created)
+- Cache facade ✅ (Laravel built-in)
+
+**Developer Handoff:**
+1. Create `app/Services/AIVisibility/AIQueryEngine.php`
+2. Implement all methods to pass the 84 unit tests
+3. Platform config: chatgpt/perplexity enabled, claude disabled
+4. Model: `google/gemini-2.0-flash-exp:free` for both platforms
+5. Sentiment keywords defined in test file
+6. Run tests: `php artisan test --filter=AIQueryEngineTest`
+
+**Status:** `To Write Tests` → `To Develop`
