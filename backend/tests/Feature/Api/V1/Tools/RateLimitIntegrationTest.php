@@ -177,9 +177,8 @@ class RateLimitIntegrationTest extends TestCase
 
         $response = $this->makeExportRequest();
 
-        $response->assertJson([
-            'message' => fn ($message) => str_contains($message, 'rate limit exceeded'),
-        ]);
+        $message = $response->json('message');
+        $this->assertStringContainsStringIgnoringCase('rate limit exceeded', $message);
     }
 
     /**
