@@ -2984,6 +2984,182 @@ return [
 - TASK-31-13: AnalysisRunnerService (uses AIAnalysisService with caching)
 
 ---
+## ModelPicker Component (TASK-31-15)
+
+### Component Description
+React component for selecting AI models for SEO analysis. Displays available AI models from the `/api/v1/ai/models` endpoint with context window sizes, latency information, and recommended model indicators. Supports keyboard navigation, mobile-responsive layout, and content fit warnings. Part of the Unified AI Prompt + Context Management feature (FEAT-031).
+
+### Component Location
+- **Component:** `frontend/components/analysis/ModelPicker.tsx`
+- **Types:** `frontend/types/ai-models.ts`
+- **Hook:** `frontend/hooks/useAIModels.ts`
+- **Tests:** `frontend/__tests__/components/analysis/ModelPicker.test.tsx`
+
+### Props Interface
+
+```typescript
+interface ModelPickerProps {
+  /** Currently selected model ID */
+  selectedModel: string | null;
+
+  /** Callback when model selection changes */
+  onModelChange: (modelId: string) => void;
+
+  /** Estimated tokens for the content being analyzed */
+  estimatedTokens?: number;
+
+  /** Whether the picker is disabled */
+  disabled?: boolean;
+
+  /** Optional CSS class name */
+  className?: string;
+}
+```
+
+### Sub-Components
+
+| Component | Description |
+|-----------|-------------|
+| `ModelCard` | Individual model card with selection, disabled states, badges |
+| `LoadingSkeleton` | Skeleton loader with 3 animated placeholders |
+| `ErrorState` | Error display with retry button |
+| `EmptyState` | "No models available" message |
+
+### Model Card Features
+
+| Feature | Description |
+|---------|-------------|
+| Selection | Click or keyboard (Enter/Space) to select |
+| Recommended Badge | Blue "Recommended" badge on Gemini 2.0 Flash |
+| Check Icon | Blue checkmark on selected model |
+| Content Fit Warning | "Content too large for this model" when tokens exceed context |
+| Disabled State | Opacity 50%, cursor not-allowed for unfit models |
+
+### Type Definitions
+
+```typescript
+interface AIModel {
+  id: string;              // Model identifier (e.g., 'google/gemini-2.0-flash-exp:free')
+  name: string;            // Display name (e.g., 'Gemini 2.0 Flash')
+  provider: string;        // Provider name (e.g., 'Google')
+  context_window: number;  // Context window in tokens
+  is_free: boolean;        // Whether free to use
+  is_recommended: boolean; // Whether recommended
+  capabilities: string[];  // Capabilities array
+  avg_latency_ms: number;  // Average latency in milliseconds
+  best_for: string;        // Best use case description
+}
+
+interface UseAIModelsReturn {
+  models: AIModel[];           // Available models
+  defaultModel: string | null; // Default model ID
+  userPreference: string | null; // User's preferred model ID
+  isLoading: boolean;          // Loading state
+  error: Error | null;         // Error state
+  refetch: () => void;         // Refetch function
+}
+```
+
+### Helper Functions
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `formatContextWindow` | `(tokens: number) => string` | Format tokens as "32K tokens" or "1M tokens" |
+| `formatLatency` | `(ms: number) => string` | Format latency as "~3.0s" |
+| `contentFitsModel` | `(estimatedTokens: number \| undefined, contextWindow: number) => boolean` | Check if content fits in model context |
+
+### useAIModels Hook
+
+| Feature | Value |
+|---------|-------|
+| API Endpoint | `/api/v1/ai/models` |
+| Data Fetching | SWR with 1-minute deduplication |
+| Revalidation | On reconnect (not on focus) |
+| Error Retry | Max 3 attempts |
+
+### UI States
+
+| State | Display |
+|-------|---------|
+| Loading | 3 gray skeleton cards with pulse animation |
+| Error | Red alert box with "Retry" button |
+| Empty | Gray box with "No models available" |
+| Normal | Grid of model cards (1-4 columns responsive) |
+
+### Responsive Grid
+
+| Screen Size | Columns |
+|-------------|---------|
+| Mobile | 1 |
+| Small (sm) | 2 |
+| Large (lg) | 4 |
+
+### Accessibility
+
+| Feature | Implementation |
+|---------|----------------|
+| Keyboard Navigation | Tab, Enter, Space supported |
+| ARIA Pressed | `aria-pressed` on selected card |
+| ARIA Disabled | `aria-disabled` on unfit models |
+| Focus Ring | Blue ring with offset |
+| Role | `button` for card interaction |
+| Busy State | `aria-busy="true"` on loading |
+| Alert Role | `role="alert"` on error state |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `ModelPicker.test.tsx` | 103 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| MP-RENDER | 10 | Component rendering, label, help text |
+| MP-LOAD | 6 | Loading skeleton, aria-busy |
+| MP-ERROR | 6 | Error display, retry button |
+| MP-SELECT | 12 | Selection behavior, callback invocation |
+| MP-RECOMMEND | 5 | Recommended badge display |
+| MP-CONTEXT | 8 | Context window formatting |
+| MP-LATENCY | 5 | Latency display |
+| MP-FIT | 8 | Content fit warning |
+| MP-A11Y | 8 | Accessibility attributes |
+| MP-RESPONSIVE | 4 | Mobile-responsive classes |
+| MP-HOOK | 10 | useAIModels hook integration |
+| MP-EDGE | 8 | Edge cases (null models, empty, undefined) |
+| MP-INT | 5 | Integration scenarios |
+| AC | 8 | Acceptance criteria verification |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | No dangerouslySetInnerHTML, React's default escaping |
+| Input Validation | Props validated with TypeScript |
+| API Response Sanitization | React's default escaping for all display values |
+| No Sensitive Data | No api_key, password, or secret in component |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `832706c6` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 103/103 passing |
+| Duration | ~2.3s |
+| Status | Complete |
+
+### Dependencies
+- TASK-31-14 (AI Model Selection API Endpoint) - Done
+
+### Related Tasks
+- TASK-31-14: AI Model Selection API Endpoint (data source)
+- TASK-31-8: ModelSelectionService (backend service)
+- TASK-26-17: Models List API Endpoint (alternative model endpoint)
+
+---
 ## Unified AI Analysis Integration Tests (TASK-31-17)
 
 ### Test Description

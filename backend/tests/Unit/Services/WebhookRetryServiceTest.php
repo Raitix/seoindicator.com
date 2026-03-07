@@ -43,13 +43,10 @@ class WebhookRetryServiceTest extends TestCase
         $nextRetry = $this->service->calculateNextRetryAt(0);
 
         $this->assertNotNull($nextRetry);
+        $expected = now()->addMinute();
         $this->assertTrue(
-            $nextRetry->diffInMinutes(now()) >= 1,
-            'First retry should be scheduled 1 minute from now'
-        );
-        $this->assertTrue(
-            $nextRetry->diffInMinutes(now()) < 2,
-            'First retry should be within 2 minutes'
+            $nextRetry->diffInSeconds($expected) < 10,
+            'First retry should be scheduled approximately 1 minute from now'
         );
     }
 
@@ -62,13 +59,10 @@ class WebhookRetryServiceTest extends TestCase
         $nextRetry = $this->service->calculateNextRetryAt(1);
 
         $this->assertNotNull($nextRetry);
+        $expected = now()->addMinutes(5);
         $this->assertTrue(
-            $nextRetry->diffInMinutes(now()) >= 5,
-            'Second retry should be scheduled 5 minutes from now'
-        );
-        $this->assertTrue(
-            $nextRetry->diffInMinutes(now()) < 6,
-            'Second retry should be within 6 minutes'
+            $nextRetry->diffInSeconds($expected) < 10,
+            'Second retry should be scheduled approximately 5 minutes from now'
         );
     }
 
@@ -81,13 +75,10 @@ class WebhookRetryServiceTest extends TestCase
         $nextRetry = $this->service->calculateNextRetryAt(2);
 
         $this->assertNotNull($nextRetry);
+        $expected = now()->addMinutes(15);
         $this->assertTrue(
-            $nextRetry->diffInMinutes(now()) >= 15,
-            'Third retry should be scheduled 15 minutes from now'
-        );
-        $this->assertTrue(
-            $nextRetry->diffInMinutes(now()) < 16,
-            'Third retry should be within 16 minutes'
+            $nextRetry->diffInSeconds($expected) < 10,
+            'Third retry should be scheduled approximately 15 minutes from now'
         );
     }
 
@@ -100,13 +91,10 @@ class WebhookRetryServiceTest extends TestCase
         $nextRetry = $this->service->calculateNextRetryAt(3);
 
         $this->assertNotNull($nextRetry);
+        $expected = now()->addHour();
         $this->assertTrue(
-            $nextRetry->diffInMinutes(now()) >= 60,
-            'Fourth retry should be scheduled 1 hour from now'
-        );
-        $this->assertTrue(
-            $nextRetry->diffInMinutes(now()) < 61,
-            'Fourth retry should be within 61 minutes'
+            $nextRetry->diffInSeconds($expected) < 10,
+            'Fourth retry should be scheduled approximately 1 hour from now'
         );
     }
 
@@ -119,13 +107,10 @@ class WebhookRetryServiceTest extends TestCase
         $nextRetry = $this->service->calculateNextRetryAt(4);
 
         $this->assertNotNull($nextRetry);
+        $expected = now()->addHours(6);
         $this->assertTrue(
-            $nextRetry->diffInHours(now()) >= 6,
-            'Fifth retry should be scheduled 6 hours from now'
-        );
-        $this->assertTrue(
-            $nextRetry->diffInHours(now()) < 7,
-            'Fifth retry should be within 7 hours'
+            $nextRetry->diffInSeconds($expected) < 10,
+            'Fifth retry should be scheduled approximately 6 hours from now'
         );
     }
 

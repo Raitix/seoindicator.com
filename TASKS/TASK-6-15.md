@@ -1,7 +1,7 @@
 # TASK-6-15: Webhook Retry Logic
 
 ## Status
-`Tests Coverage In Progress`
+`To Write Tests`
 
 ## Priority
 `Medium`
