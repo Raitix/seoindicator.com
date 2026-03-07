@@ -1,7 +1,7 @@
 # TASK-34-1: Database Migrations
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -112,6 +112,43 @@ Create database migrations for AI Visibility Tracking feature. This includes fou
 - FULLTEXT index requires `$table->fullText('response_text')`
 - ENUM columns use `$table->enum('column', ['value1', 'value2'])`
 - Foreign keys with cascade delete: `$table->foreignId('project_id')->constrained()->cascadeOnDelete()`
+
+---
+
+## Comments
+
+### ProjectManager Prioritization (2026-03-07)
+
+**Priority: HIGH (confirmed)**
+- Foundation task for SPEC-034 - creates all 4 tables for AI Visibility Tracking
+- Enables entire downstream pipeline: models → services → API → frontend
+- No dependencies - can start immediately
+- Non-blocking for other features but critical for this feature's MVP
+
+**Risk: MEDIUM (confirmed)**
+- Standard Laravel migrations - non-destructive (add tables only)
+- JSON columns for flexible data structures (competitors, citations)
+- FULLTEXT index on response_text for search capability
+- Foreign key cascade delete ensures referential integrity
+- Well-documented Laravel Schema Builder patterns
+
+**Dependency Analysis:**
+- None - Foundation task with no blockers
+- Users table exists (required for `user_id` foreign key)
+- Migration order: projects → query_results/analytics/alerts (project_id FK)
+
+**Downstream Impact:**
+- Enables: Models (TASK-34-2+), Services, API endpoints, Frontend components
+- All SPEC-034 tasks depend on these 4 tables existing
+
+**TDD Pattern:** PreTester CAN design migration tests immediately:
+- Verify table creation with correct columns
+- Verify index creation
+- Verify foreign key constraints
+- Verify rollback functionality
+- No mocks needed - direct database assertions
+
+**Execution Order:** First task in SPEC-034 pipeline
 
 ---
 
