@@ -1,7 +1,7 @@
 # TASK-34-5: AIVisibilityService
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -204,3 +204,73 @@ PreTester CAN design tests immediately using mocked interfaces:
 ---
 
 *Created by SpecSystemAnalyst on 2026-03-07*
+
+---
+
+### PreTester Test Design (2026-03-07 19:35 UTC)
+
+**Status:** To Develop ✅
+
+**Test Coverage:** 260 test scenarios across 10 categories
+
+**Files Created:**
+- `TESTS/TEST-34-5.md` — Test documentation
+- `backend/tests/Unit/Services/AIVisibility/AIVisibilityServiceTest.php` — 260 unit tests
+- `backend/app/Services/AIVisibility/Contracts/AIVisibilityServiceInterface.php` — Service interface
+- `backend/app/Services/AIVisibility/Exceptions/QueryLimitExceededException.php` — Custom exception
+- `backend/app/Services/AIVisibility/AIVisibilityService.php` — Skeleton implementation
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 10 | Namespace, interface, DI, config |
+| createProject() | 25 | Validation, storage, defaults, errors |
+| updateProject() | 20 | Ownership, partial updates, validation |
+| deleteProject() | 20 | Ownership, cascade, soft/hard delete |
+| runQueries() | 35 | Dispatch, limits, templates, tracking |
+| getAnalytics() | 35 | Aggregation, caching, periods |
+| getCompetitorComparison() | 30 | Brand vs competitors, caching |
+| checkAlerts() | 35 | Threshold detection, alert creation |
+| Query Limits | 25 | Tier limits, usage tracking |
+| Integration & Edge Cases | 25 | Unicode, XSS, SQL injection, performance |
+
+**Key Test Patterns:**
+- Mockery for models and dependencies
+- Cache facade mock for caching tests
+- Queue facade mock for job dispatch tests
+- ValidationException for validation failures
+- QueryLimitExceededException for limit breaches
+- AuthorizationException for ownership failures
+
+**Dependencies Mocked:**
+- AIVisibilityProject model (TASK-34-2)
+- AIQueryEngine service (TASK-34-3)
+- MentionParser service (TASK-34-4)
+- Cache, Queue, Log facades
+
+**TDD Pattern:**
+- All tests start with `$this->markTestIncomplete('Service not yet implemented')`
+- Tests will pass incrementally as Developer implements each method
+- Skeleton service provides `createProject()` as reference implementation
+
+**Threshold Values Defined:**
+- Mention spike: +20%
+- Mention drop: -20%
+- Competitor gain: +15%
+
+**Query Limits Defined:**
+- Free tier: 5 queries/month
+- Pro tier: 50 queries/month
+- Business tier: 200 queries/month
+
+**Cache TTL:**
+- Analytics: 1 hour (3600 seconds)
+- Competitor comparison: 1 hour (3600 seconds)
+
+**Notes for Developer:**
+1. Run tests: `php artisan test --filter=AIVisibilityServiceTest`
+2. Start by implementing one method at a time
+3. Remove `$this->markTestIncomplete()` as each method is implemented
+4. Use the skeleton service as starting point
+5. Check TEST-34-5.md for detailed expected return structures
