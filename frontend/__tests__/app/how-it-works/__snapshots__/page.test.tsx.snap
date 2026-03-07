@@ -1,4 +1,36 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`How It Works Page > Snapshots > SNAP-001: Page matches snapshot 1`] = `
+<div>
+  <div
+    data-testid="how-it-works-content"
+  >
+    <h1>
+      How It Works
+    </h1>
+    <section
+      data-testid="steps-section"
+    >
+      User Journey Steps
+    </section>
+    <section
+      data-testid="categories-section"
+    >
+      Indicator Categories
+    </section>
+    <section
+      data-testid="scoring-section"
+    >
+      Scoring Methodology
+    </section>
+    <section
+      data-testid="faq-section"
+    >
+      FAQ
+    </section>
+  </div>
+</div>
+`;
 
 exports[`How It Works Page Snapshots SNAP-001: Page matches snapshot 1`] = `
 <div>

@@ -419,7 +419,8 @@ describe("MobileNav", () => {
   describe("Props and State", () => {
     it("PS-001: handles empty navItems", () => {
       render(<MobileNav navItems={[]} />);
-      expect(screen.getByTestId("sheet")).toBeInTheDocument();
+      // Check that the mobile nav renders with the menu button (sheet trigger)
+      expect(screen.getByRole("button", { name: /open navigation/i })).toBeInTheDocument();
     });
 
     it("PS-002: handles null user", async () => {
