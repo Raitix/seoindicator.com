@@ -6,6 +6,9 @@ use App\Models\Keyword;
 use App\Models\Ranking;
 use App\Models\Site;
 use App\Models\SerpFeature;
+use App\Models\Audit;
+use App\Models\AuditIssue;
+use App\Exporters\DTOs\AuditReportSection;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -106,6 +109,9 @@ class ReportDataAggregator
         // Get SERP feature data
         $serpFeatureData = $this->getSerpFeatureData($keywordIds);
 
+        // Get audit data for the site (TASK-14-18)
+        $auditData = $this->getAuditData($siteId);
+
         return [
             'site_id' => $siteId,
             'date_range' => [
@@ -122,6 +128,7 @@ class ReportDataAggregator
             'trends' => $trends,
             'competitors' => $competitorSummary,
             'serp_features' => $serpFeatureData,
+            'audit_data' => $auditData,
         ];
     }
 
@@ -322,5 +329,96 @@ class ReportDataAggregator
             'types' => $features,
             'icons' => implode('', $icons),
         ];
+    }
+
+    /**
+     * Get audit data for a site.
+     * 
+     * TASK-14-18: Build AuditReportSection for PDF reports
+     *
+     * @param int $siteId
+     * @return AuditReportSection|null
+     */
+    public function getAuditData(int $siteId): ?AuditReportSection
+    {
+        // Get the latest completed audit for the site
+        $audit = Audit::where('site_id', $siteId)
+            ->where('status', 'completed')
+            ->latest('completed_at')
+            ->first();
+
+        if (!$audit) {
+            return null;
+        }
+
+        // Get severity counts from audit issues
+        $severityCounts = AuditIssue::where('audit_id', $audit->id)
+            ->where('status', 'open')
+            ->select('severity', DB::raw('count(*) as count'))
+            ->groupBy('severity')
+            ->pluck('count', 'severity')
+            ->toArray();
+
+        $criticalCount = $severityCounts['critical'] ?? 0;
+        $warningCount = $severityCounts['warning'] ?? 0;
+        $noticeCount = $severityCounts['notice'] ?? 0;
+
+        // Get critical issues (limited to 10)
+        $criticalIssues = AuditIssue::where('audit_id', $audit->id)
+            ->where('severity', 'critical')
+            ->where('status', 'open')
+            ->orderBy('created_at', 'desc')
+            ->limit(AuditReportSection::MAX_CRITICAL_ISSUES)
+            ->get()
+            ->map(fn ($issue) => [
+                'id' => $issue->id,
+                'url' => $issue->url,
+                'name' => $issue->issue_type ?? $issue->issueType?->name ?? 'Critical Issue',
+                'description' => $issue->description,
+                'recommendation' => $issue->recommendation,
+                'severity' => 'critical',
+            ])
+            ->toArray();
+
+        // Get warning issues (limited to 5)
+        $warningIssues = AuditIssue::where('audit_id', $audit->id)
+            ->where('severity', 'warning')
+            ->where('status', 'open')
+            ->orderBy('created_at', 'desc')
+            ->limit(AuditReportSection::MAX_WARNING_ISSUES)
+            ->get()
+            ->map(fn ($issue) => [
+                'id' => $issue->id,
+                'url' => $issue->url,
+                'name' => $issue->issue_type ?? $issue->issueType?->name ?? 'Warning',
+                'description' => $issue->description,
+                'recommendation' => $issue->recommendation,
+                'severity' => 'warning',
+            ])
+            ->toArray();
+
+        // Build recommendations from issue recommendations
+        $recommendations = AuditIssue::where('audit_id', $audit->id)
+            ->where('status', 'open')
+            ->whereNotNull('recommendation')
+            ->orderBy('severity') // critical first, then warning, then notice
+            ->limit(AuditReportSection::MAX_RECOMMENDATIONS)
+            ->pluck('recommendation')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        return AuditReportSection::fromArray([
+            'summary' => [
+                'pages_crawled' => $audit->pages_crawled ?? 0,
+                'total_issues' => $criticalCount + $warningCount + $noticeCount,
+                'critical' => $criticalCount,
+                'warning' => $warningCount,
+                'notice' => $noticeCount,
+            ],
+            'criticalIssues' => $criticalIssues,
+            'warningIssues' => $warningIssues,
+            'recommendations' => $recommendations,
+        ]);
     }
 }

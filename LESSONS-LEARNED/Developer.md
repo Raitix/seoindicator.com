@@ -1,8 +1,31 @@
 # Developer Memory
 
-## Last Updated: 2026-03-01
+## Last Updated: 2026-03-07
 
 ### Completed Work
+
+#### TASK-28-18: Unit and Feature Tests for SPEC-028 (2026-03-07)
+
+**Implementation Summary:**
+Fixed test configuration issues and verified all SPEC-028 UI component tests pass.
+
+**Issues Fixed:**
+1. `indicator-icon-registry.test.tsx`: Dynamic import of @testing-library/react inside test caused hook errors. Fixed by adding top-level import.
+2. `Header.test.tsx`: Used Vitest syntax (`vi`) instead of Jest (`jest`). Converted all Vitest-specific code to Jest.
+
+**Test Results:**
+- All 461 tests pass across 6 test files
+- IndicatorIcon.test.tsx: 79 tests
+- indicator-icon-registry.test.tsx: 49 tests
+- SkeletonLoaders.test.tsx: passing
+- progress-indicators.test.tsx: passing
+- Header.test.tsx: 61 tests
+- MobileNav.test.tsx: 28 tests
+
+**Key Lessons:**
+- Jest and Vitest have different APIs (`jest.fn()` vs `vi.fn()`)
+- Dynamic imports inside test functions can cause issues with React Testing Library hooks
+- Always use top-level imports for testing libraries
 
 #### TASK-19-12: Frontend Live Results Table (2026-03-01)
 
