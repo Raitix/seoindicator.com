@@ -112,33 +112,46 @@ class RobotsParser
         // Generate cache key
         $cacheKey = 'robots:' . md5($robotsUrl);
 
-        // Force refresh - clear cache
+        // Force refresh - clear cache and bypass it
         if ($forceRefresh) {
             Cache::forget($cacheKey);
+            // Make the request directly without caching
+            return $this->makeRequest($robotsUrl);
         }
 
         // Try to get from cache
         return Cache::remember($cacheKey, $this->cacheTtl, function () use ($robotsUrl) {
-            try {
-                $response = Http::timeout($this->timeout)
-                    ->withUserAgent('SEOIndicator-Crawler/1.0')
-                    ->get($robotsUrl);
+            return $this->makeRequest($robotsUrl);
+        });
+    }
 
-                if ($response->successful()) {
-                    return $response->body();
-                }
+    /**
+     * Make the actual HTTP request to fetch robots.txt.
+     *
+     * @param string $robotsUrl The full robots.txt URL
+     * @return string|null The robots.txt content or null on failure
+     */
+    protected function makeRequest(string $robotsUrl): ?string
+    {
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withUserAgent('SEOIndicator-Crawler/1.0')
+                ->get($robotsUrl);
 
-                // 404 means no robots.txt - cache as null (allow all)
-                if ($response->status() === 404) {
-                    return null;
-                }
+            if ($response->successful()) {
+                return $response->body();
+            }
 
-                return null;
-            } catch (\Exception $e) {
-                // Handle timeouts, connection errors, SSL errors, etc.
+            // 404 means no robots.txt - cache as null (allow all)
+            if ($response->status() === 404) {
                 return null;
             }
-        });
+
+            return null;
+        } catch (\Exception $e) {
+            // Handle timeouts, connection errors, SSL errors, etc.
+            return null;
+        }
     }
 
     /**
@@ -420,17 +433,24 @@ class RobotsParser
             $decodedPattern = substr($decodedPattern, 0, -1);
         }
 
-        // Handle exact path matching (no wildcard, no trailing slash)
-        // /private should match /private and /private/ and /private/anything
-        // but NOT /private-data
-        if (!$hasEndMarker && !str_contains($decodedPattern, '*')) {
+        // Check if pattern contains wildcards
+        $hasWildcards = str_contains($decodedPattern, '*');
+
+        // Handle path matching
+        // If pattern contains special URL characters (? or #), we need exact prefix matching
+        // Otherwise, apply standard robots.txt matching rules
+        if (!$hasEndMarker && !$hasWildcards) {
             // Check if pattern ends with /
             if (str_ends_with($decodedPattern, '/')) {
                 // Directory pattern: /admin/ matches /admin/ and /admin/anything
                 $regex = '/^' . preg_quote($decodedPattern, '/') . '/';
+            } elseif (str_contains($decodedPattern, '?') || str_contains($decodedPattern, '#')) {
+                // Pattern contains query string or fragment
+                // /search?q= should match /search?q=test but not /search?other
+                $regex = '/^' . preg_quote($decodedPattern, '/') . '/';
             } else {
-                // Exact path or prefix with /: /private matches /private or /private/
-                $regex = '/^' . preg_quote($decodedPattern, '/') . '(\/|$)/';
+                // Exact path or prefix with /: /private matches /private or /private/ or /private? or /private#
+                $regex = '/^' . preg_quote($decodedPattern, '/') . '(\/|\?|#|$)/';
             }
             return (bool) preg_match($regex, $decodedPath);
         }
