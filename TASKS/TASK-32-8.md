@@ -1,7 +1,7 @@
 # TASK-32-8: UseCaseSection Component
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `Medium`
