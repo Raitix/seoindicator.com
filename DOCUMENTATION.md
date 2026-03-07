@@ -4054,6 +4054,132 @@ Core site page presenting SEOIndicator's mission, product overview, key features
 - TASK-30-5: Consent Integration (pending)
 
 ---
+## ProsConsCard Component (TASK-32-7)
+
+### Component Description
+React component that displays balanced, honest pros and cons assessment for SEO tools in comparison landing pages. Part of the Competitor Comparison Landing Pages feature (FEAT-032). Renders side-by-side lists of advantages and disadvantages with visual icons, optional star rating, and full accessibility support.
+
+### Component Location
+- **Component:** `frontend/components/compare/ProsConsCard.tsx`
+- **Types:** `frontend/lib/compare/types.ts` (ProsConsCardProps)
+- **Tests:** `frontend/__tests__/components/compare/ProsConsCard.test.tsx`
+- **Test Documentation:** `TESTS/TEST-32-7.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Pros Section | Green check icons with list of advantages |
+| Cons Section | Subtle gray X icons with list of disadvantages |
+| Star Rating | Optional 1-5 star display with clamping |
+| Balanced Layout | Equal visual weight for both sections |
+| Responsive Grid | Stacked on mobile, side-by-side on desktop |
+| Accessibility | Full ARIA support with heading hierarchy |
+
+### Component Props
+
+```typescript
+interface ProsConsCardProps {
+  tool: string;              // Tool name for header
+  pros?: string[];           // Array of advantages (default: [])
+  cons?: string[];           // Array of disadvantages (default: [])
+  overallRating?: number;    // Optional rating 1-5 (clamped automatically)
+  className?: string;        // Optional CSS classes
+}
+```
+
+### Sub-Components
+
+| Component | Description |
+|-----------|-------------|
+| `StarRating` | Internal component for 5-star display with filled/empty states |
+
+### Star Rating Logic
+
+```typescript
+// Rating is clamped to 0-5 range
+const clampedRating = Math.max(0, Math.min(5, overallRating));
+
+// Stars: filled based on floor of rating
+const fullStars = Math.floor(clampedRating);  // 4.5 → 4 filled stars
+
+// Display: "4.5 out of 5" text for accessibility
+```
+
+### Styling
+
+| Element | Tailwind Classes |
+|---------|-----------------|
+| Card | `bg-slate-900/50 border-slate-800` |
+| Pros Heading | `text-emerald-400` (green) |
+| Cons Heading | `text-slate-400` (gray) |
+| Check Icon | `text-emerald-400` (green) |
+| X Icon | `text-slate-500` (subtle gray) |
+| Filled Star | `fill-yellow-400 text-yellow-400` |
+| Empty Star | `fill-none text-slate-600` |
+| Grid Layout | `grid-cols-1 md:grid-cols-2` |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `ProsConsCard.test.tsx` | 68 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Rendering | 4 | Component mounts, tool name, sections |
+| Pros Section | 7 | All pros displayed, green icons |
+| Cons Section | 7 | All cons displayed, subtle icons |
+| Overall Rating | 8 | Star display, clamping, accessibility |
+| Accessibility | 7 | Heading hierarchy, ARIA labels |
+| Responsive Design | 4 | Grid layout, mobile stacking |
+| Props Validation | 6 | Custom className, undefined handling |
+| Edge Cases | 10 | Long text, many items, unicode |
+| Security | 5 | XSS prevention |
+| Acceptance Criteria | 7 | All ACs verified |
+| Snapshots | 3 | Updated |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Role | `role="region"` on card |
+| ARIA Label | `aria-label="Pros and cons for {tool}"` |
+| Heading Hierarchy | h3 for tool name, h4 for pros/cons |
+| Icon Hiding | `aria-hidden="true"` on decorative icons |
+| Rating Accessibility | `role="img"` with `aria-label` |
+| List Semantics | Proper `<ul>` and `<li>` structure |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| Rating Clamp | Prevents invalid values (0-5 only) |
+| No Sensitive Data | Display component only |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `cc9d7f51` |
+| Deployment Method | GitHub Actions auto-deploy (run #22803853099) |
+| Health Check | ✅ 200 OK |
+| Tests | 68/68 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-32-1 (Types) - Done ✅
+
+### Related Tasks
+- TASK-32-5: ComparisonTable component
+- TASK-32-6: PricingComparison component
+- TASK-32-8: UseCaseSection component
+- TASK-32-3: Comparison page route
+
+---
 ## ExportModal Component (TASK-29-7)
 
 ### Component Description
