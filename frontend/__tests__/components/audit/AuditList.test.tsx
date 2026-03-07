@@ -254,7 +254,9 @@ describe('AuditList', () => {
     it('AL-LIST-EM-003: Shows "Start your first audit" CTA', () => {
       render(<MockAuditList audits={[]} meta={{ ...mockMeta, total: 0 }} siteId="1" />);
       
-      expect(screen.getByText('Start your first audit')).toBeInTheDocument();
+      // The empty state shows the button and description text
+      expect(screen.getByText('Start Audit')).toBeInTheDocument();
+      expect(screen.getByText(/Start your first audit/i)).toBeInTheDocument();
     });
 
     it('AL-LIST-EM-004: CTA opens start audit modal', async () => {
