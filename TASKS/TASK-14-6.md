@@ -1,7 +1,7 @@
 # TASK-14-6: Create RobotsParser Service
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`

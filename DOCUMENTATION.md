@@ -21655,6 +21655,195 @@ CREATE TABLE audit_issues (
 - `idx_issue_type_id` on `issue_type_id`
 
 ---
+## RobotsParser Service (TASK-14-6)
+
+### Service Description
+Dedicated service for parsing robots.txt files and determining crawl permissions. Used by SiteCrawler to ensure compliant, respectful crawling that adheres to site owner directives. Implements full robots.txt specification including wildcard patterns, crawl delays, and sitemap discovery.
+
+### Component Location
+- **Service:** `backend/app/Services/Audit/RobotsParser.php`
+- **DTOs:**
+  - `backend/app/Services/Audit/DTOs/ParsedRobots.php`
+  - `backend/app/Services/Audit/DTOs/RobotsRule.php`
+- **Tests:** `backend/tests/Unit/Services/Audit/RobotsParserTest.php`
+- **Test Documentation:** `TESTS/TEST-14-6.md`
+
+### Core Methods
+
+| Method | Description |
+|--------|-------------|
+| `fetch(string $baseUrl): ?string` | Fetch robots.txt content from URL with caching |
+| `parse(string $robotsTxt, string $userAgent = '*'): ParsedRobots` | Parse robots.txt directives into structured data |
+| `isAllowed(string $url, string $userAgent = '*'): bool` | Check if URL is crawlable for user-agent |
+| `getCrawlDelay(string $userAgent = '*'): ?int` | Get crawl delay in seconds for user-agent |
+| `getSitemaps(): array` | Extract sitemap URLs from robots.txt |
+| `getDisallowedPaths(string $userAgent = '*'): array` | List all disallowed paths for user-agent |
+
+### Data Transfer Objects
+
+**ParsedRobots:**
+```php
+class ParsedRobots
+{
+    public array $userAgents = [];   // List of user-agent groups
+    public array $rules = [];        // Array of RobotsRule objects
+    public array $sitemaps = [];     // Sitemap URLs
+    public ?int $crawlDelay = null;  // Default crawl delay in seconds
+    public bool $isEmpty = false;    // True if no robots.txt found
+}
+```
+
+**RobotsRule:**
+```php
+class RobotsRule
+{
+    public string $userAgent;  // User-agent this rule applies to
+    public string $path;       // Path pattern (may contain wildcards)
+    public bool $allow;        // True = allow, False = disallow
+}
+```
+
+### Robots.txt Directive Support
+
+| Directive | Support | Description |
+|-----------|---------|-------------|
+| `User-agent` | ✅ | User-agent group declaration |
+| `Allow` | ✅ | Path allowed for crawling |
+| `Disallow` | ✅ | Path blocked from crawling |
+| `Crawl-delay` | ✅ | Delay between requests (seconds) |
+| `Sitemap` | ✅ | Sitemap URL location |
+| `*` wildcard | ✅ | Matches any sequence of characters |
+| `$` end-anchor | ✅ | Matches end of path |
+
+### Permission Checking Algorithm
+
+```
+1. Normalize URL path
+2. Find matching user-agent group (exact match first, then '*')
+3. For each rule matching the path:
+   a. Calculate specificity (path length + wildcard count)
+   b. Track most specific allow and disallow rules
+4. If allow rule is more specific → ALLOW
+5. If disallow rule is more specific → DISALLOW
+6. If no matching rules → ALLOW (default)
+```
+
+### Wildcard Pattern Matching
+
+| Pattern | Matches | Doesn't Match |
+|---------|---------|---------------|
+| `/admin/*` | `/admin/`, `/admin/users`, `/admin/settings/` | `/admin`, `/administrator` |
+| `/*.pdf` | `/file.pdf`, `/docs/report.pdf` | `/file.pdf.txt`, `/pdf` |
+| `/private$` | `/private` | `/private/data`, `/private/` |
+| `/*/secret` | `/path/secret`, `/admin/secret` | `/secret`, `/path/secret/data` |
+
+### Caching Strategy
+
+| Parameter | Value |
+|-----------|-------|
+| Cache Key | `robots:{sha256(domain)}` |
+| TTL | 3600 seconds (1 hour) |
+| Force Refresh | Pass `true` to `fetch()` second parameter |
+| Cache Clear | Automatic on TTL expiry |
+
+### SSRF Protection
+
+The service blocks requests to potentially dangerous URLs:
+
+| Blocked Category | Examples |
+|------------------|----------|
+| Localhost | `localhost`, `127.0.0.1`, `::1` |
+| Private IPs | `10.x.x.x`, `172.16-31.x.x`, `192.168.x.x` |
+| Cloud Metadata | `169.254.169.254` (AWS/GCP/Azure) |
+| Internal hostnames | `*.internal`, `*.local`, `*.localhost` |
+
+**SSRF Check Implementation:**
+```php
+private function isBlockedUrl(string $url): bool
+{
+    $host = parse_url($url, PHP_URL_HOST);
+    
+    // Block localhost variants
+    if (in_array($host, ['localhost', '127.0.0.1', '::1'])) {
+        return true;
+    }
+    
+    // Block private IP ranges
+    if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE) === false) {
+        return true;
+    }
+    
+    // Block cloud metadata IP
+    if ($host === '169.254.169.254') {
+        return true;
+    }
+    
+    return false;
+}
+```
+
+### Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| No robots.txt (404) | Return empty ParsedRobots (allow all) |
+| Server error (5xx) | Return empty ParsedRobots (allow all) |
+| Timeout (>10s) | Return empty ParsedRobots (allow all) |
+| Invalid URL | Return empty ParsedRobots |
+| SSRF attempt | Return empty ParsedRobots |
+| Malformed robots.txt | Parse what's possible, ignore errors |
+
+### HTTP Configuration
+
+| Parameter | Value |
+|-----------|-------|
+| Timeout | 10 seconds |
+| User-Agent | Configurable (default: `SEOIndicatorBot/1.0`) |
+| Follow Redirects | Yes (max 5) |
+| Verify SSL | Yes |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `RobotsParserTest.php` | 126 | 182 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| SI (Service Instantiation) | 5 | Container binding, method existence |
+| FETCH (Robots.txt Fetching) | 14 | HTTP requests, caching, timeouts |
+| PARSE (Directive Parsing) | 18 | User-agent groups, allow/disallow, comments |
+| PERM (Permission Checking) | 16 | URL matching, rule precedence |
+| WILDCARD (Pattern Matching) | 12 | `*` and `$` pattern support |
+| DELAY (Crawl Delay) | 8 | Per-user-agent delay extraction |
+| SITEMAP (Sitemap Extraction) | 6 | Sitemap URL parsing |
+| CACHE (Caching Behavior) | 10 | TTL, force refresh, cache keys |
+| ERROR (Error Handling) | 10 | 404, 5xx, timeout, malformed URLs |
+| SEC (SSRF Prevention) | 10 | Blocked IP ranges, localhost, metadata |
+| EDGE (Edge Cases) | 12 | Unicode, empty files, large files |
+| INT (Integration) | 5 | Full workflow tests |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `342f1c92` |
+| Deployment Method | GitHub Actions auto-deploy (run #22795259280) |
+| Health Check | ✅ 200 OK |
+| Tests | 126/126 passing (182 assertions) |
+| Status | Complete |
+
+### Dependencies
+- None (standalone service)
+
+### Related Tasks
+- TASK-14-5: SiteCrawler Service (uses RobotsParser)
+- TASK-14-7: ProcessCrawlJob (uses SiteCrawler)
+- TASK-14-13: AuditController (triggers crawls)
+
+---
 ## AuditController API Endpoints (TASK-14-13)
 
 ### Service Description
