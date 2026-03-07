@@ -26,7 +26,7 @@ class CrawlResult implements \JsonSerializable
         public readonly string $url,
         public readonly int $statusCode,
         public readonly float $responseTimeMs,
-        public readonly ?string $html,
+        public readonly ?string $html = null,
         public readonly array $links = [],
         public readonly array $metadata = [],
         public readonly ?string $errorMessage = null,
@@ -35,12 +35,16 @@ class CrawlResult implements \JsonSerializable
         public readonly array $redirectChain = [],
     ) {}
 
+    // =========================================================================
+    // Status Checks
+    // =========================================================================
+
     /**
      * Check if the crawl was successful.
      */
     public function isSuccess(): bool
     {
-        return $this->statusCode >= 200 && $this->statusCode < 300 && $this->errorMessage === null;
+        return $this->statusCode >= 200 && $this->statusCode < 400 && $this->errorMessage === null;
     }
 
     /**
@@ -52,12 +56,40 @@ class CrawlResult implements \JsonSerializable
     }
 
     /**
+     * Check if the crawl was a failure (alias for isError).
+     */
+    public function isFailure(): bool
+    {
+        return $this->isError();
+    }
+
+    /**
      * Check if this is a redirect.
      */
     public function isRedirect(): bool
     {
         return in_array($this->statusCode, [301, 302, 303, 307, 308]);
     }
+
+    /**
+     * Check if this is a client error (4xx).
+     */
+    public function isClientError(): bool
+    {
+        return $this->statusCode >= 400 && $this->statusCode < 500;
+    }
+
+    /**
+     * Check if this is a server error (5xx).
+     */
+    public function isServerError(): bool
+    {
+        return $this->statusCode >= 500 && $this->statusCode < 600;
+    }
+
+    // =========================================================================
+    // Link Accessors
+    // =========================================================================
 
     /**
      * Get internal links.
@@ -75,6 +107,10 @@ class CrawlResult implements \JsonSerializable
         return $this->links['external'] ?? [];
     }
 
+    // =========================================================================
+    // Metadata Accessors
+    // =========================================================================
+
     /**
      * Get a specific metadata value.
      */
@@ -84,40 +120,102 @@ class CrawlResult implements \JsonSerializable
     }
 
     /**
-     * Convert to array representation.
+     * Get the page title from metadata.
+     */
+    public function getTitle(): ?string
+    {
+        return $this->metadata['title'] ?? null;
+    }
+
+    /**
+     * Get the meta description from metadata.
+     */
+    public function getDescription(): ?string
+    {
+        return $this->metadata['description'] ?? null;
+    }
+
+    /**
+     * Get the canonical URL from metadata.
+     */
+    public function getCanonical(): ?string
+    {
+        return $this->metadata['canonical'] ?? null;
+    }
+
+    /**
+     * Get H1 tags from metadata.
+     */
+    public function getH1Tags(): array
+    {
+        return $this->metadata['h1'] ?? [];
+    }
+
+    // =========================================================================
+    // Header Accessors
+    // =========================================================================
+
+    /**
+     * Get a specific header value (case-insensitive).
+     */
+    public function getHeader(string $name, mixed $default = null): mixed
+    {
+        // Try exact match first
+        if (isset($this->headers[$name])) {
+            $value = $this->headers[$name];
+            return is_array($value) ? ($value[0] ?? $default) : $value;
+        }
+
+        // Try case-insensitive match
+        $lowerName = strtolower($name);
+        foreach ($this->headers as $key => $value) {
+            if (strtolower($key) === $lowerName) {
+                return is_array($value) ? ($value[0] ?? $default) : $value;
+            }
+        }
+
+        return $default;
+    }
+
+    // =========================================================================
+    // Serialization
+    // =========================================================================
+
+    /**
+     * Convert to array representation (camelCase keys).
      */
     public function toArray(): array
     {
         return [
             'url' => $this->url,
-            'status_code' => $this->statusCode,
-            'response_time_ms' => $this->responseTimeMs,
+            'statusCode' => $this->statusCode,
+            'responseTimeMs' => $this->responseTimeMs,
             'html' => $this->html,
             'links' => $this->links,
             'metadata' => $this->metadata,
-            'error_message' => $this->errorMessage,
+            'errorMessage' => $this->errorMessage,
             'headers' => $this->headers,
             'depth' => $this->depth,
-            'redirect_chain' => $this->redirectChain,
+            'redirectChain' => $this->redirectChain,
         ];
     }
 
     /**
-     * Create from array.
+     * Create from array (accepts both camelCase and snake_case).
      */
     public static function fromArray(array $data): self
     {
         return new self(
             url: $data['url'],
-            statusCode: $data['status_code'] ?? $data['statusCode'] ?? 0,
-            responseTimeMs: $data['response_time_ms'] ?? $data['responseTimeMs'] ?? 0.0,
+            statusCode: $data['statusCode'] ?? $data['status_code'] ?? 0,
+            responseTimeMs: $data['responseTimeMs'] ?? $data['response_time_ms'] ?? 0.0,
             html: $data['html'] ?? null,
             links: $data['links'] ?? [],
             metadata: $data['metadata'] ?? [],
-            errorMessage: $data['error_message'] ?? $data['errorMessage'] ?? null,
+            errorMessage: $data['errorMessage'] ?? $data['error_message'] ?? null,
             headers: $data['headers'] ?? [],
             depth: $data['depth'] ?? 0,
-            redirectChain: $data['redirect_chain'] ?? $data['redirectChain'] ?? [],
+            redirectChain: $data['redirectChain'] ?? $data['redirect_chain'] ?? [],
         );
     }
 
@@ -128,6 +226,10 @@ class CrawlResult implements \JsonSerializable
     {
         return $this->toArray();
     }
+
+    // =========================================================================
+    // Factory Methods
+    // =========================================================================
 
     /**
      * Create a successful crawl result.
