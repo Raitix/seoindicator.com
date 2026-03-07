@@ -1,7 +1,7 @@
 # TASK-14-7: Create CrawlJob Queue Worker
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `High`

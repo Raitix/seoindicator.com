@@ -16,11 +16,13 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
 
 class ProcessCrawlJobTest extends TestCase
 {
+    use RefreshDatabase;
     protected function tearDown(): void
     {
         Mockery::close();
