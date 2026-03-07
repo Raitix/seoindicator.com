@@ -78,7 +78,7 @@ class ProcessCrawlJobIntegrationTest extends TestCase
             ->andReturn($this->createGeneratorFromResults([$crawlResult]));
         
         $mockDetector = Mockery::mock(IssueDetector::class);
-        $mockDetector->shouldReceive('analyze')
+        $mockDetector->shouldReceive('detect')
             ->once()
             ->andReturn([]);
         
@@ -193,7 +193,7 @@ class ProcessCrawlJobIntegrationTest extends TestCase
             ->andReturn($this->createGeneratorFromResults([$successResult1, $failedResult, $successResult2]));
         
         $mockDetector = Mockery::mock(IssueDetector::class);
-        $mockDetector->shouldReceive('analyze')
+        $mockDetector->shouldReceive('detect')
             ->andReturn([]);
         
         $this->app->instance(SiteCrawler::class, $mockCrawler);
@@ -232,6 +232,9 @@ class ProcessCrawlJobIntegrationTest extends TestCase
         Cache::shouldReceive('get')
             ->with("audit:progress:{$audit->id}")
             ->andReturn($cachedProgress);
+        
+        Cache::shouldReceive('put')->andReturn(true);
+        Cache::shouldReceive('forget')->andReturn(true);
         
         // Additional pages to crawl after resume
         $additionalResult = new CrawlResult(
@@ -432,7 +435,7 @@ class ProcessCrawlJobIntegrationTest extends TestCase
             ->andReturn($this->createGeneratorFromResults([$crawlResult]));
         
         $mockDetector = Mockery::mock(IssueDetector::class);
-        $mockDetector->shouldReceive('analyze')
+        $mockDetector->shouldReceive('detect')
             ->andReturn([1]);
         
         $this->app->instance(SiteCrawler::class, $mockCrawler);
@@ -548,7 +551,7 @@ class ProcessCrawlJobIntegrationTest extends TestCase
             ->andReturn($this->createGeneratorFromResults([$crawlResult]));
         
         $mockDetector = Mockery::mock(IssueDetector::class);
-        $mockDetector->shouldReceive('analyze')
+        $mockDetector->shouldReceive('detect')
             ->andReturn([1, 2, 3]);
         
         $this->app->instance(SiteCrawler::class, $mockCrawler);
