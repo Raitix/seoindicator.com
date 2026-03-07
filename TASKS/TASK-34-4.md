@@ -1,7 +1,7 @@
 # TASK-34-4: MentionParser Service
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
