@@ -489,4 +489,85 @@ jest.mock('lucide-react', () => ({
 
 ---
 
+## Badge Analytics Dashboard Testing (TASK-33-29)
+
+### Dashboard Component Testing
+- Test all 4 states: Loading, Error, Data, Empty
+- Mock charting libraries (Recharts) for deterministic testing
+- Mock icons (Lucide) for consistent test output
+- Use `data-testid` attributes for reliable element selection
+- Test number formatting (K, M suffixes) in stats cards
+- Test change indicators (positive/negative) with data attributes
+
+### Chart Testing with Mocked Recharts
+- Mock LineChart, Line, XAxis, YAxis, ResponsiveContainer
+- Pass data points via data attributes for verification
+- Test empty data arrays render without crash
+- Test ResponsiveContainer usage for responsiveness
+
+### Table Testing Patterns
+- Test table headers separately from row content
+- Use `within()` to scope queries to specific table
+- Test sorting behavior (highest values first)
+- Test empty state messages
+- Test URL truncation in cells
+- Test links to detail pages
+
+### Date Range Selector Testing
+- Test preset options (7d, 30d, 90d, custom)
+- Test custom date input visibility toggle
+- Test onChange callback with correct parameters
+- Test accessible label on select element
+
+### Mock Data Patterns for Analytics
+```typescript
+const mockStats = {
+  totalImpressions: 5600,
+  totalClicks: 234,
+  avgCTR: 4.2,
+  impressionsChange: 12.5,  // Can be positive or negative
+  clicksChange: 8.3,
+  ctrChange: -2.1,
+};
+
+const mockTimeSeriesData = [
+  { date: '2026-03-01', impressions: 450, clicks: 18 },
+  { date: '2026-03-02', impressions: 520, clicks: 22 },
+];
+
+const mockTopReferrer = {
+  domain: 'example.com',
+  impressions: 1200,
+  clicks: 48,
+  ctr: 4.0,
+};
+
+const mockTopAudit = {
+  auditId: '1',
+  url: 'https://example.com/page',
+  hash: 'abc123def456',
+  impressions: 890,
+  clicks: 38,
+  ctr: 4.3,
+  score: 92,
+};
+```
+
+### Number Formatting Test Cases
+| Input | Expected Output |
+|-------|-----------------|
+| 0 | "0" |
+| 234 | "234" |
+| 5600 | "5.6K" |
+| 12345 | "12.3K" |
+| 2500000 | "2.5M" |
+| 1000000000 | "1000.0M" |
+
+### Acceptance Criteria to Test ID Mapping
+- Create a mapping table in test documentation
+- Each AC should have at least one test ID
+- Group tests by AC for easy verification
+
+---
+
 Last updated: 2026-03-07
