@@ -196,6 +196,7 @@ export function ComparisonCTAWithABTest({
       text={text}
       href={href}
       abTestGroup={abVariant}
+      abTestId={testId}
     />
   );
 }
