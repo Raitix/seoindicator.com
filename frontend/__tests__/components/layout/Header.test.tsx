@@ -488,7 +488,7 @@ describe("Header Component", () => {
     });
 
     it("TYPES-004: onLogout should be callable", async () => {
-      const onLogout = jest.fn();
+      const onLogout = vi.fn();
       const user = userEvent.setup();
       render(<Header {...userProps} onLogout={onLogout} />);
 

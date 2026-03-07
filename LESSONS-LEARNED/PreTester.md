@@ -417,4 +417,76 @@ const mockPublicAudit = {
 
 ---
 
-Last updated: 2026-03-05
+## Visibility Toggle Settings Testing (TASK-33-22)
+
+### Settings Page Integration
+- Test permission-based rendering (isOwner check)
+- Settings page should show access denied for non-owners
+- Unauthenticated users should be redirected to login
+- Multiple settings sections should use consistent Card components
+
+### Toggle Switch Component
+- Test both public and private initial states
+- Test publish flow (private → public) with optimistic UI
+- Test unpublish flow (public → private) with confirmation dialog
+- Warning message about embedded badges is required
+- Toast notifications on success/error
+- Loading states during API calls
+
+### Public URL Display
+- Only visible when isPublic is true
+- URL input is readonly
+- Copy button with clipboard API mock
+- Success feedback (checkmark icon) after copy
+- Full URL with domain (not just path)
+
+### Confirmation Dialog Pattern
+- Show confirmation before unpublish (not before publish)
+- Include warning about embedded badges breaking
+- Focus trap within dialog
+- Focus restored to trigger on close
+- Cancel button closes dialog without action
+- Confirm button calls onUnpublish callback
+
+### Test Mock Patterns
+```typescript
+// Mock sonner toast
+jest.mock('sonner', () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+  },
+}));
+
+// Mock clipboard API
+const mockClipboardWrite = jest.fn();
+Object.assign(navigator, {
+  clipboard: {
+    writeText: mockClipboardWrite,
+  },
+});
+
+// Mock Lucide icons
+jest.mock('lucide-react', () => ({
+  Globe: () => <span data-testid="globe-icon">Globe</span>,
+  Lock: () => <span data-testid="lock-icon">Lock</span>,
+  Copy: () => <span data-testid="copy-icon">Copy</span>,
+  Check: () => <span data-testid="check-icon">Check</span>,
+  Loader2: () => <span data-testid="loader-icon" className="animate-spin">Loading</span>,
+  AlertTriangle: () => <span data-testid="alert-icon">Alert</span>,
+}));
+```
+
+### Acceptance Criteria Testing
+- Visibility section added to settings page
+- Toggle switch shows current state (Public/Private)
+- Public URL displayed when public (with copy button)
+- Warning shown when changing from public to private
+- "This will break any embedded badges" message
+- Success toast on save
+- Audit settings page respects permissions
+- Unit tests for settings UI
+
+---
+
+Last updated: 2026-03-07

@@ -2,19 +2,20 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MobileNav, NavItem, UserInfo } from "@/components/layout/MobileNav";
 import * as React from "react";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 
 // Mock next/navigation
-const mockPush = jest.fn();
+const mockPush = vi.fn();
 const mockPathname = "/dashboard";
 
-jest.mock("next/navigation", () => ({
+vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
   usePathname: () => mockPathname,
 }));
 
 // Mock next/link
-jest.mock("next/link", () => {
-  const MockLink = ({
+vi.mock("next/link", () => ({
+  default: ({
     children,
     href,
     onClick,
@@ -28,24 +29,22 @@ jest.mock("next/link", () => {
     <a href={href} onClick={onClick} {...props}>
       {children}
     </a>
-  );
-  MockLink.displayName = "Link";
-  return MockLink;
-});
+  ),
+}));
 
 // Mock Lucide icons
-jest.mock("lucide-react", () => ({
+vi.mock("lucide-react", () => ({
   Menu: () => <span data-testid="menu-icon">Menu</span>,
   X: () => <span data-testid="close-icon">X</span>,
 }));
 
 // Mock cn utility
-jest.mock("@/lib/utils", () => ({
+vi.mock("@/lib/utils", () => ({
   cn: (...args: string[]) => args.filter(Boolean).join(" "),
 }));
 
 // Mock Sheet component
-jest.mock("@/components/ui/sheet", () => {
+vi.mock("@/components/ui/sheet", () => {
   const React = require("react");
   
   interface SheetProps {
@@ -185,7 +184,7 @@ const mockUser: UserInfo = {
 
 describe("MobileNav", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================
@@ -435,7 +434,7 @@ describe("MobileNav", () => {
     });
 
     it("PS-003: onLogout callback works", async () => {
-      const onLogout = jest.fn();
+      const onLogout = vi.fn();
       const user = userEvent.setup();
       render(<MobileNav navItems={mockNavItems} user={mockUser} onLogout={onLogout} />);
       
