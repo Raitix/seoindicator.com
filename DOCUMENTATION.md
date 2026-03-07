@@ -1,6 +1,57 @@
 # DOCUMENTATION.md
 
 ---
+## Image Alt Checker (TASK-14-12)
+
+### Service Description
+Image alt text checker for the Technical SEO Site Audit feature (FEAT-014) that detects images missing alt text, empty alt attributes, and overly long alt text. Implements the CheckerInterface pattern for accessibility and SEO issue detection.
+
+### Component Locations
+- **ImageAltChecker:** `backend/app/Services/Audit/Checkers/ImageAltChecker.php`
+- **Tests:** `backend/tests/Unit/Services/Audit/Checkers/ImageAltCheckerTest.php`
+- **Test Documentation:** `TESTS/TASK-14-12.md`
+
+### Detection Rules
+
+| Condition | Severity | Description |
+|-----------|----------|-------------|
+| Missing alt attribute | Notice | Image has no alt attribute |
+| Empty alt="" attribute | Notice | Alt is empty (decorative, but flagged for review) |
+| Alt text > 125 chars | Notice | Alt text too long for screen readers |
+| Empty src attribute | Notice | Image has empty src (broken image) |
+
+### Configuration
+
+```php
+// config/audit.php
+'images' => [
+    'check_alt' => env('AUDIT_CHECK_IMAGE_ALT', true),
+    'max_alt_length' => env('AUDIT_MAX_ALT_LENGTH', 125),
+    'report_empty_alt' => env('AUDIT_REPORT_EMPTY_ALT', true),
+],
+```
+
+### Context Structure
+
+```php
+[
+    'images' => ['/path1.jpg', '/path2.jpg'],  // Missing alt srcs
+    'count' => 2,                              // Missing alt count
+    'empty_alt_count' => 1,                    // Empty alt count
+    'too_long_count' => 0,                     // Alt > 125 chars
+    'total_images' => 5,                       // All images found
+    'empty_src_count' => 0,                    // Empty src images
+    'too_long_images' => [...]                 // Optional: images with long alt
+]
+```
+
+### Performance Characteristics
+- 100 images: < 100ms
+- 1000 images: < 10ms
+- 1MB HTML: < 200ms
+- Memory: < 10MB peak
+
+---
 ## HTML Analysis Checkers (TASK-14-9)
 
 ### Service Description
@@ -23598,6 +23649,162 @@ private function isBlockedUrl(string $url): bool
 - TASK-14-12: Image Checker
 
 ---
+## PerformanceChecker Service (TASK-14-11)
+
+### Service Description
+Checker service for analyzing page performance during SEO site audits. Measures response times and identifies slow-loading pages, helping users understand which pages need optimization. Part of the Technical SEO Site Audit feature (FEAT-014).
+
+### Component Location
+- **Service:** `backend/app/Services/Audit/Checkers/PerformanceChecker.php`
+- **Interface:** `backend/app/Services/Audit/Contracts/CheckerInterface.php`
+- **Tests:** `backend/tests/Unit/Services/Audit/Checkers/PerformanceCheckerTest.php`
+- **Test Documentation:** `TESTS/TEST-14-11.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `check(CrawlResult $result)` | Analyze response time and page size, returns IssueFinding or null |
+| `getIssueType()` | Returns issue type identifier ('slow_page', 'large_page') |
+| `getName()` | Returns checker name ('Performance Checker') |
+| `getPriority()` | Returns checker priority (100) |
+
+### Response Time Thresholds
+
+| Response Time | Severity | Issue Type | Description |
+|---------------|----------|------------|-------------|
+| < 1000ms | — | None | Good - No issue created |
+| 1000-1999ms | Notice | slow_page | Acceptable performance |
+| 2000-2999ms | Warning | slow_page | Needs improvement |
+| 3000-4999ms | Warning | slow_page | Slow page |
+| ≥ 5000ms | Critical | slow_page | Very slow page |
+
+### Page Size Thresholds
+
+| Page Size | Severity | Issue Type |
+|-----------|----------|------------|
+| ≤ 500KB | — | None |
+| > 500KB | Notice | large_page |
+
+### PerformanceChecker Logic
+
+```php
+public function check(CrawlResult $result): ?IssueFinding
+{
+    // Skip error results
+    if ($result->error) {
+        return null;
+    }
+    
+    $responseTime = $result->responseTimeMs;
+    $pageSize = strlen($result->html ?? '') / 1024; // KB
+    
+    // Check response time
+    $slowIssue = $this->checkResponseTime($responseTime);
+    
+    // Check page size
+    $sizeIssue = $this->checkPageSize($pageSize);
+    
+    // Return higher severity issue
+    return $this->selectHigherSeverity($slowIssue, $sizeIssue);
+}
+```
+
+### Configuration
+
+```php
+// config/audit.php
+'performance' => [
+    'slow_threshold_ms' => env('AUDIT_SLOW_THRESHOLD', 3000),
+    'very_slow_threshold_ms' => env('AUDIT_VERY_SLOW_THRESHOLD', 5000),
+    'acceptable_threshold_ms' => env('AUDIT_ACCEPTABLE_THRESHOLD', 1000),
+    'needs_improvement_threshold_ms' => env('AUDIT_NEEDS_IMPROVEMENT_THRESHOLD', 2000),
+    'max_page_size_kb' => env('AUDIT_MAX_PAGE_SIZE', 500),
+],
+```
+
+### Issue Finding Context
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `response_time_ms` | int | Page load time in milliseconds |
+| `page_size_kb` | float | Page size in kilobytes |
+| `threshold_ms` | int | Configured threshold that was exceeded |
+| `threshold_kb` | int | Configured size threshold |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `PerformanceCheckerTest.php` | 119 | 310 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| SI (Service Instantiation) | 6 | Container binding, interface implementation |
+| RESP (Response Time Analysis) | 20 | All threshold boundaries |
+| SIZE (Page Size Analysis) | 12 | Size boundary testing |
+| THRESH (Threshold Boundaries) | 15 | Exact boundary values |
+| SEV (Severity Mapping) | 10 | Severity assignment logic |
+| ERR (Error Handling) | 8 | Null HTML, zero/negative times, errors |
+| EDGE (Edge Cases) | 14 | Unicode, binary, large data, statelessness |
+| SEC (Security) | 5 | XSS, SQL injection, info leakage |
+| CONFIG (Configuration) | 8 | Custom thresholds, config validation |
+| PERF (Performance) | 3 | <10ms check, no memory leak |
+| INT (Integration) | 5 | IssueDetector workflow |
+| Data Providers | 13 | Boundary test data |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | Response times escaped in descriptions |
+| No SQL Interaction | Read-only analysis of CrawlResult data |
+| No Sensitive Data | Only metrics stored in context |
+| Input Validation | Null checks, type validation |
+
+### Edge Case Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Null HTML | Returns null (no issue) |
+| Zero response time | Returns null (no issue) |
+| Negative response time | Returns null (invalid data) |
+| Error result | Skips check, returns null |
+| Very large HTML (50MB+) | Processes without memory issues |
+| Unicode in HTML | Handled safely via strlen() |
+
+### Performance Characteristics
+
+| Metric | Value |
+|--------|-------|
+| Single check time | < 10ms |
+| Memory usage | < 1MB per check |
+| Stateless | No state between checks |
+| Thread-safe | Safe for concurrent execution |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-07 (commit 42c06029) |
+| **Run ID** | 22798427980 |
+| **Health Check** | ✅ 200 OK |
+| **Tests** | 119/119 passed (310 assertions) |
+| **Status** | Complete |
+
+### Dependencies
+- TASK-14-5: SiteCrawler Service (provides CrawlResult with responseTimeMs)
+- TASK-14-8: IssueDetector Service (consumes IssueFinding)
+
+### Related Tasks
+- TASK-14-5: SiteCrawler Service
+- TASK-14-8: IssueDetector Service
+- TASK-14-9: HTML Analysis Checkers
+- TASK-14-10: BrokenLinkChecker Service
+- TASK-14-12: Image Checker
+
+---
 ## SERP Fetcher Interface and Mock Implementation (TASK-1-7)
 
 ### Service Description
@@ -33883,6 +34090,438 @@ interface ButtonLoadingProps {
 | Pattern | Implementation | Use Case |
 |---------|---------------|----------|
 | **Optimistic Updates** | useOptimisticUpdate hook | Keyword status changes, project updates |
+
+---
+## Indicator Catalog Component (TASK-28-10)
+
+### Component Description
+Interactive grid component displaying all 17 SEO indicators on the homepage. Provides visual representation of indicator status, scores, and quick access to detailed analysis. Features responsive layout, category filtering, and real-time score updates. Part of the Modern UI/UX + Indicator Catalog feature (FEAT-028).
+
+### Component Location
+- **Component:** `frontend/components/indicators/IndicatorCatalog.tsx`
+- **Card Component:** `frontend/components/indicators/IndicatorCard.tsx`
+- **Grid Component:** `frontend/components/indicators/IndicatorGrid.tsx`
+- **Types:** `frontend/lib/types/indicator.ts`
+- **Tests:** `frontend/__tests__/components/indicators/IndicatorCatalog.test.tsx`
+- **Skeleton:** `frontend/components/ui/skeletons/IndicatorCatalogSkeleton.tsx`
+
+### Component Props
+
+```typescript
+interface IndicatorCatalogProps {
+  indicators?: Indicator[];           // Pre-loaded indicator data
+  showFilters?: boolean;              // Show category filter tabs (default: true)
+  showSearch?: boolean;               // Show search input (default: true)
+  columns?: ResponsiveColumns;        // Responsive column configuration
+  className?: string;
+}
+
+interface ResponsiveColumns {
+  default?: number;  // Default: 1
+  sm?: number;       // 640px breakpoint
+  md?: number;       // 768px breakpoint
+  lg?: number;       // 1024px breakpoint
+  xl?: number;       // 1280px breakpoint
+  '2xl'?: number;    // 1536px breakpoint
+}
+```
+
+### Indicator Data Structure
+
+```typescript
+interface Indicator {
+  id: string;                        // Unique identifier (e.g., 'keyword-rankings')
+  slug: string;                      // URL-friendly identifier
+  title: string;                     // Display title
+  description: string;               // Short description
+  category: IndicatorCategory;       // Category classification
+  icon: string;                      // Icon name from lucide-react
+  score?: number;                    // Current score (0-100)
+  maxScore: number;                  // Maximum possible score (100)
+  status: IndicatorStatus;           // good | warning | critical | neutral
+  lastAnalyzed?: string;             // ISO timestamp
+  trend?: 'up' | 'down' | 'neutral'; // Score trend direction
+  trendValue?: number;               // Percentage change
+}
+
+type IndicatorCategory = 'Rankings' | 'Traffic' | 'Technical' | 'Content' | 'Backlinks';
+type IndicatorStatus = 'good' | 'warning' | 'critical' | 'neutral';
+```
+
+### Category Filter Tabs
+
+| Category | Indicators | Description |
+|----------|------------|-------------|
+| All | All 17 | Default view showing all indicators |
+| Rankings | 4 | Keyword Rankings, SERP Features, Visibility Score, Competitor Rankings |
+| Traffic | 3 | Organic Traffic, Click-Through Rate, Bounce Rate |
+| Technical | 5 | Page Speed, Mobile Friendly, HTTPS, Core Web Vitals, Crawlability |
+| Content | 3 | Meta Tags, Headings, Image Alt Text |
+| Backlinks | 2 | Backlink Count, Domain Authority |
+
+### Responsive Grid Layout
+
+| Viewport | Default Columns | Example Configuration |
+|----------|-----------------|----------------------|
+| Mobile (< 640px) | 1 column | `{ default: 1 }` |
+| Small (640px+) | 2 columns | `{ sm: 2 }` |
+| Medium (768px+) | 3 columns | `{ md: 3 }` |
+| Large (1024px+) | 4 columns | `{ lg: 4 }` |
+| XL (1280px+) | 4 columns | `{ xl: 4 }` |
+| 2XL (1536px+) | 4 columns | `{ '2xl': 4 }` |
+
+### Card Visual Elements
+
+**IndicatorCard Components:**
+| Element | Description |
+|---------|-------------|
+| Icon | Category-specific icon from lucide-react |
+| Title | Indicator name |
+| Score | Percentage score with progress bar |
+| Status Badge | Color-coded status indicator |
+| Description | Short indicator description |
+| Trend Arrow | Up/down/neutral trend indicator |
+| Last Analyzed | Relative time since last analysis |
+
+**Status Badge Colors:**
+| Status | Background | Text | Icon |
+|--------|------------|------|------|
+| Good | `bg-green-100` | `text-green-800` | ✓ CircleCheckBig |
+| Warning | `bg-yellow-100` | `text-yellow-800` | ⚠ TriangleAlert |
+| Critical | `bg-red-100` | `text-red-800` | ✕ CircleX |
+| Neutral | `bg-gray-100` | `text-gray-800` | − Minus |
+
+### Loading States
+
+| State | Display |
+|-------|---------|
+| Initial Load | IndicatorCatalogSkeleton with configurable card count |
+| Refresh | Pulse animation on cards being updated |
+| Error | Error boundary with retry button |
+| Empty | EmptyState component with "No indicators" message |
+
+### Accessibility Implementation
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Labels | Comprehensive labels on all interactive elements |
+| Keyboard Navigation | Tab through cards, Enter to activate |
+| Screen Reader | Status and score announced |
+| Focus Indicators | Visible focus ring on cards |
+| Skip Link | Skip to main content link |
+
+**ARIA Label Format:**
+```
+"{title}: {score}%. {description}. Status: {status}"
+```
+
+### Performance Optimizations
+
+| Optimization | Implementation |
+|--------------|----------------|
+| Lazy Loading | Cards rendered on scroll intersection |
+| Memoization | React.memo on IndicatorCard |
+| Virtualization | Considered for 50+ indicators |
+| Image Optimization | Icons loaded from lucide-react (SVG) |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| IndicatorCatalog.test.tsx | 85 | 100+ |
+| IndicatorCard.test.tsx | 45 | 60+ |
+| IndicatorGrid.test.tsx | 30 | 40+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Component Rendering | 20 | Cards, grid, filters, search |
+| Category Filtering | 15 | Tab selection, indicator filtering |
+| Search Functionality | 10 | Search input, results filtering |
+| Responsive Layout | 15 | Viewport breakpoints, column counts |
+| Loading States | 10 | Skeleton, error, empty states |
+| Accessibility | 15 | ARIA labels, keyboard navigation |
+| Score Display | 10 | Progress bars, status badges |
+| Trend Indicators | 5 | Up/down/neutral arrows |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions #22677101149)
+- **Commit:** `a6481e9`
+- **Health Check:** Passing (https://seoindicator.com/api/health → 200 OK)
+- **Tests:** 160/160 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-28-7 (IndicatorCard Component)
+- TASK-28-8 (IndicatorGrid Component)
+- TASK-28-9 (Skeleton Loader Variants)
+- TASK-28-11 (Loading State Integration)
+
+### Related Tasks
+- TASK-28-7: IndicatorCard Component
+- TASK-28-8: IndicatorGrid Component
+- TASK-28-9: Skeleton Loader Variants
+- TASK-28-11: Loading State Integration
+- SPEC-028: Modern UI/UX + Indicator Catalog
+- FEAT-028: Modern UI/UX + Indicator Catalog
+
+---
+## Design System Reference (TASK-28-19)
+
+### Description
+Comprehensive design system documentation including color tokens, typography, spacing, component patterns, and accessibility guidelines. Provides single source of truth for all UI/UX decisions and ensures consistency across the application.
+
+### Documentation Location
+- **Design System Doc:** `PROJECT-SEOINDICATOR/DESIGN-SYSTEM.md`
+- **CSS Variables:** `frontend/app/globals.css`
+- **Tailwind Config:** `tailwind.config.ts`
+
+### Design Tokens Overview
+
+**Color System:**
+| Category | Variables | Count |
+|----------|-----------|-------|
+| Brand Colors | `--brand-primary`, `--brand-secondary`, `--brand-accent` | 3 |
+| Semantic Colors | `--success`, `--warning`, `--error`, `--info` | 4 |
+| Surface Layers | `--surface-0` through `--surface-3` | 4 |
+| Base Colors | `--background`, `--foreground`, `--card`, `--border` | 12 |
+
+**Typography:**
+| Category | Tokens | Count |
+|----------|--------|-------|
+| Font Families | `--font-geist-sans`, `--font-geist-mono` | 2 |
+| Font Sizes | `text-xs` through `text-5xl` | 8 |
+| Font Weights | `font-normal` through `font-bold` | 4 |
+
+**Spacing:**
+| Category | Tokens | Base Unit |
+|----------|--------|-----------|
+| Spacing Scale | `p-1` through `p-16` | 4px |
+| Gap Scale | `gap-1` through `gap-16` | 4px |
+
+### Component Patterns
+
+**Button Variants:**
+| Variant | Usage | Classes |
+|---------|-------|---------|
+| Primary | Main CTAs | `bg-primary text-primary-foreground` |
+| Secondary | Secondary actions | `bg-secondary text-secondary-foreground` |
+| Destructive | Delete, remove | `bg-destructive text-destructive-foreground` |
+| Outline | Tertiary actions | `border border-input bg-background` |
+| Ghost | Minimal actions | `hover:bg-accent` |
+| Link | Text links | `text-primary underline-offset-4` |
+
+**Status Indicators:**
+| Status | Color | Usage |
+|--------|-------|-------|
+| Good | `--success` | Positive states, scores ≥80% |
+| Warning | `--warning` | Caution states, scores 50-79% |
+| Critical | `--error` | Error states, scores <50% |
+| Neutral | `--muted-foreground` | No data, pending |
+
+### Tailwind Integration
+
+Colors are integrated via the `@theme` directive:
+
+```css
+@theme inline {
+  --color-brand-primary: var(--brand-primary);
+  --color-success: var(--success);
+  --color-surface-0: var(--surface-0);
+  /* ... etc */
+}
+```
+
+**Usage in Components:**
+```tsx
+<button className="bg-brand-primary text-white">
+  Primary Button
+</button>
+
+<div className="bg-surface-2 border-border rounded-lg">
+  Card content
+</div>
+```
+
+### Dark Mode
+
+All color variables have dark mode counterparts applied via the `.dark` class:
+
+```css
+:root {
+  --background: oklch(1 0 0);  /* Light mode */
+}
+
+.dark {
+  --background: oklch(0.145 0 0);  /* Dark mode */
+}
+```
+
+### Accessibility Guidelines
+
+| Guideline | Implementation |
+|-----------|---------------|
+| Color Contrast | WCAG 2.1 AA minimum (4.5:1 for text) |
+| Focus Indicators | 2px ring with offset |
+| ARIA Labels | Required for all interactive elements |
+| Keyboard Navigation | Tab, Enter, Space, Escape support |
+| Reduced Motion | Respects `prefers-reduced-motion` |
+
+### Related Documentation
+- `DESIGN-SYSTEM.md` — Full design system documentation
+- `DOCUMENTATION.md` — Feature and component documentation
+- `frontend/components/README.md` — Component usage guide
+
+### Production Status
+- **Deployed:** 2026-03-07
+- **Documentation:** Complete
+- **Status:** Complete
+
+### Dependencies
+- TASK-28-1 through TASK-28-18 (Modern UI/UX implementation)
+
+### Related Tasks
+- TASK-28-1: Install shadcn/ui Components
+- TASK-28-3: Configure Tailwind Theme
+- SPEC-028: Modern UI/UX + Indicator Catalog
+- FEAT-028: Modern UI/UX + Indicator Catalog
+
+---
+## Navigation Components (TASK-28-12, TASK-28-13)
+
+### Description
+Responsive navigation system with desktop header and mobile sheet navigation. Includes skip links, landmark roles, and full keyboard accessibility. Part of the Modern UI/UX + Indicator Catalog feature (FEAT-028).
+
+### Component Locations
+- **Header:** `frontend/components/layout/Header.tsx`
+- **MobileNav:** `frontend/components/layout/MobileNav.tsx`
+- **SkipLink:** `frontend/components/layout/SkipLink.tsx`
+- **Tests:** `frontend/__tests__/components/layout/`
+
+### Desktop Header
+
+**Header Component:**
+```typescript
+interface HeaderProps {
+  logo?: React.ReactNode;
+  navigation?: NavItem[];
+  showAuth?: boolean;
+  className?: string;
+}
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon?: string;
+  badge?: string | number;
+}
+```
+
+**Features:**
+- Fixed position at top of viewport
+- Logo with home link
+- Primary navigation links
+- Authentication buttons (Login/Register)
+- User dropdown when authenticated
+- Responsive: collapses to hamburger on mobile
+
+**Navigation Links:**
+| Link | Route | Description |
+|------|-------|-------------|
+| Dashboard | `/dashboard` | User dashboard |
+| Projects | `/projects` | Project list |
+| Keywords | `/keywords` | Keyword tracking |
+| Reports | `/reports` | Analysis reports |
+
+### Mobile Navigation
+
+**MobileNav Component:**
+```typescript
+interface MobileNavProps {
+  navigation?: NavItem[];
+  trigger?: React.ReactNode;
+  className?: string;
+}
+```
+
+**Features:**
+- Sheet component (slide-in from left)
+- Hamburger menu trigger
+- Full navigation menu
+- User profile section
+- Logout button
+- Close on route change
+- Focus trap when open
+
+**Sheet Behavior:**
+| Property | Value |
+|----------|-------|
+| Side | Left |
+| Animation | Slide |
+| Focus Trap | Enabled |
+| Close on Escape | Yes |
+| Close on Outside Click | Yes |
+
+### Skip Link
+
+**SkipLink Component:**
+```typescript
+interface SkipLinkProps {
+  targetId?: string;  // Default: "main-content"
+  label?: string;     // Default: "Skip to main content"
+}
+```
+
+**Behavior:**
+- Hidden by default (`sr-only`)
+- Becomes visible on focus
+- Moves focus to main content
+- Required for WCAG 2.1 compliance
+
+### Accessibility Implementation
+
+| Feature | Implementation |
+|---------|---------------|
+| Landmark Roles | `<header role="banner">`, `<nav role="navigation">` |
+| ARIA Labels | Navigation has `aria-label="Main navigation"` |
+| Keyboard Navigation | Tab through links, Enter to activate |
+| Focus Management | Focus moves to content after skip link |
+| Mobile Focus Trap | Sheet traps focus, returns to hamburger on close |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| Header.test.tsx | 35 | 50+ |
+| MobileNav.test.tsx | 28 | 40+ |
+| SkipLink.test.tsx | 14 | 14+ |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Component Rendering | 15 | Logo, navigation, auth buttons |
+| Responsive Behavior | 10 | Desktop/mobile breakpoints |
+| Mobile Sheet | 15 | Open, close, navigation |
+| Accessibility | 20 | ARIA, keyboard, skip link |
+| Authentication | 10 | Login/logout states |
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions #22677101149)
+- **Commit:** `a6481e9`
+- **Health Check:** Passing
+- **Tests:** 77/77 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-28-1 (shadcn/ui Components)
+- TASK-28-16 (ARIA Labels and Keyboard Navigation)
+
+### Related Tasks
+- TASK-28-12: Desktop Navigation
+- TASK-28-13: Mobile Navigation
+- TASK-28-16: ARIA Labels and Keyboard Navigation
+- SPEC-028: Modern UI/UX + Indicator Catalog
+- FEAT-028: Modern UI/UX + Indicator Catalog
 | **Progressive Loading** | LoadingWrapper with skeleton | Page-level data loading |
 | **Error Boundaries** | ErrorBoundary component | Component-level error catching |
 | **Empty States** | EmptyState component | No data scenarios |

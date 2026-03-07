@@ -1,0 +1,430 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ProsConsCard > Snapshots > matches snapshot with default props 1`] = `
+<div>
+  <div
+    class="text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm bg-slate-900/50 border-slate-800"
+    data-slot="card"
+    data-testid="pros-cons-card-seoindicator"
+  >
+    <div
+      class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+      data-slot="card-header"
+    >
+      <div
+        class="leading-none font-semibold text-white flex items-center justify-between"
+        data-slot="card-title"
+      >
+        SEOIndicator
+      </div>
+    </div>
+    <div
+      class="px-6 space-y-4"
+      data-slot="card-content"
+    >
+      <div>
+        <h4
+          class="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👍
+          </span>
+          Pros
+        </h4>
+        <ul
+          class="space-y-1 text-sm text-slate-300"
+          data-testid="pros-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Easy to use
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Affordable pricing
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Great support
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h4
+          class="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👎
+          </span>
+          Cons
+        </h4>
+        <ul
+          class="space-y-1 text-sm text-slate-300"
+          data-testid="cons-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-red-400 mt-0.5"
+            >
+              ✗
+            </span>
+            Limited integrations
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-red-400 mt-0.5"
+            >
+              ✗
+            </span>
+            No mobile app
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`ProsConsCard > Snapshots > matches snapshot with many items 1`] = `
+<div>
+  <div
+    class="text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm bg-slate-900/50 border-slate-800"
+    data-slot="card"
+    data-testid="pros-cons-card-seoindicator"
+  >
+    <div
+      class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+      data-slot="card-header"
+    >
+      <div
+        class="leading-none font-semibold text-white flex items-center justify-between"
+        data-slot="card-title"
+      >
+        SEOIndicator
+      </div>
+    </div>
+    <div
+      class="px-6 space-y-4"
+      data-slot="card-content"
+    >
+      <div>
+        <h4
+          class="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👍
+          </span>
+          Pros
+        </h4>
+        <ul
+          class="space-y-1 text-sm text-slate-300"
+          data-testid="pros-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Pro 1
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Pro 2
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Pro 3
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Pro 4
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Pro 5
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Pro 6
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Pro 7
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Pro 8
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h4
+          class="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👎
+          </span>
+          Cons
+        </h4>
+        <ul
+          class="space-y-1 text-sm text-slate-300"
+          data-testid="cons-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-red-400 mt-0.5"
+            >
+              ✗
+            </span>
+            Con 1
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-red-400 mt-0.5"
+            >
+              ✗
+            </span>
+            Con 2
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-red-400 mt-0.5"
+            >
+              ✗
+            </span>
+            Con 3
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-red-400 mt-0.5"
+            >
+              ✗
+            </span>
+            Con 4
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-red-400 mt-0.5"
+            >
+              ✗
+            </span>
+            Con 5
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-red-400 mt-0.5"
+            >
+              ✗
+            </span>
+            Con 6
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`ProsConsCard > Snapshots > matches snapshot with rating 1`] = `
+<div>
+  <div
+    class="text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm bg-slate-900/50 border-slate-800"
+    data-slot="card"
+    data-testid="pros-cons-card-seoindicator"
+  >
+    <div
+      class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+      data-slot="card-header"
+    >
+      <div
+        class="leading-none font-semibold text-white flex items-center justify-between"
+        data-slot="card-title"
+      >
+        SEOIndicator
+        <span
+          class="text-lg font-bold text-emerald-400"
+        >
+          4.5
+           / 5
+        </span>
+      </div>
+    </div>
+    <div
+      class="px-6 space-y-4"
+      data-slot="card-content"
+    >
+      <div>
+        <h4
+          class="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👍
+          </span>
+          Pros
+        </h4>
+        <ul
+          class="space-y-1 text-sm text-slate-300"
+          data-testid="pros-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Easy to use
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Affordable pricing
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-emerald-400 mt-0.5"
+            >
+              ✓
+            </span>
+            Great support
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h4
+          class="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👎
+          </span>
+          Cons
+        </h4>
+        <ul
+          class="space-y-1 text-sm text-slate-300"
+          data-testid="cons-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-red-400 mt-0.5"
+            >
+              ✗
+            </span>
+            Limited integrations
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <span
+              class="text-red-400 mt-0.5"
+            >
+              ✗
+            </span>
+            No mobile app
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+`;

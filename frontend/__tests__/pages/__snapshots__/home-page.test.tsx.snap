@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`TASK-28-8: Homepage Integration HI-013: Snapshot Tests HI-013.01: Homepage matches snapshot 1`] = `
 <div>
