@@ -1,7 +1,7 @@
 # SPEC-034: AI Visibility Tracking (Generative Engine Optimization)
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -754,6 +754,45 @@ return [
 
 3. **Google AI Overview**: Include in MVP?
    - **Recommendation**: No, API access is limited. Add in Phase 4.
+
+---
+
+## Comments
+
+### [2026-03-07 18:25 UTC] SpecSystemAnalyst: Task Breakdown Complete
+
+**Action**: Created 23 tasks across 3 phases
+
+**Task Summary**:
+
+| Phase | Tasks | Effort | Description |
+|-------|-------|--------|-------------|
+| Phase 1 (MVP) | TASK-34-1 to 34-12 | ~38 hours | Core infrastructure, models, services, API, frontend MVP |
+| Phase 2 (Analytics) | TASK-34-13 to 34-18 | ~18 hours | Analytics aggregation, charts, competitor comparison |
+| Phase 3 (Alerts/Export) | TASK-34-19 to 34-23 | ~13 hours | Alert detection, notifications, export functionality |
+
+**Total Effort**: ~69 hours
+
+**Key Task Dependencies**:
+- TASK-34-1 (Migrations) → TASK-34-2 (Models)
+- TASK-34-2 → TASK-34-3, 34-4, 34-5 (Services)
+- TASK-34-5 → TASK-34-6 (API) → TASK-34-8, 34-9, 34-10 (Frontend)
+- TASK-34-13 → TASK-34-14 → TASK-34-16, 34-17 (Analytics Flow)
+
+**Critical Path**: 
+1. Migrations → Models → Services → API → Frontend → Tests
+
+**Risk Notes**:
+- TASK-34-3 (AIQueryEngine): Medium risk - OpenRouter integration complexity
+- TASK-34-5 (AIVisibilityService): Medium risk - orchestration of multiple services
+- TASK-34-19 (AlertDetectionService): Medium risk - threshold tuning required
+
+**Free Tools Compliance**:
+- All tasks use OpenRouter free-tier models
+- No paid API dependencies
+- Aggressive caching minimizes API calls
+
+**Handoff**: Ready for ProjectManager to prioritize tasks.
 
 ---
 
