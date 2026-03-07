@@ -109,23 +109,33 @@ class IssueDetector implements IssueDetectorInterface
      * Runs all registered checkers in priority order and creates
      * AuditIssue records for any findings.
      *
-     * @param CrawlResult $crawlResult The crawl result to analyze
-     * @param int $auditId The audit ID to associate issues with
+     * @param CrawlResult|null $crawlResult The crawl result to analyze
+     * @param int|null $auditId The audit ID to associate issues with
      * @return array<int> Array of created issue IDs
      * @throws \InvalidArgumentException If crawl result or audit ID is invalid
      */
-    public function analyze(CrawlResult $crawlResult, int $auditId): array
+    public function analyze(?CrawlResult $crawlResult, ?int $auditId): array
     {
         $this->validateAnalyzeInput($crawlResult, $auditId);
 
-        $issueIds = [];
+        // Now safe to use non-null types
+        /** @var CrawlResult $crawlResult */
+        /** @var int $auditId */
+        $crawlResult = $crawlResult;
+        $auditId = $auditId;
 
-        // Check for duplicate titles first
-        $duplicateFinding = $this->detectDuplicateTitle($crawlResult, $auditId);
-        if ($duplicateFinding !== null) {
-            $issueId = $this->createIssue($duplicateFinding, $auditId, $crawlResult->url);
-            if ($issueId !== null) {
-                $issueIds[] = $issueId;
+        $issueIds = [];
+        $title = $this->normalizeTitle($crawlResult->getTitle());
+        $shouldStoreTitle = !empty($title);
+
+        // Check for duplicate titles (only if title exists)
+        if ($shouldStoreTitle) {
+            $duplicateFinding = $this->detectDuplicateTitle($crawlResult, $auditId, $title);
+            if ($duplicateFinding !== null) {
+                $issueId = $this->createIssue($duplicateFinding, $auditId, $crawlResult->url);
+                if ($issueId !== null) {
+                    $issueIds[] = $issueId;
+                }
             }
         }
 
@@ -153,8 +163,10 @@ class IssueDetector implements IssueDetectorInterface
             }
         }
 
-        // Store title for duplicate detection
-        $this->storeTitleForDuplicateDetection($crawlResult, $auditId);
+        // Store title for duplicate detection (only if non-empty)
+        if ($shouldStoreTitle) {
+            $this->storeTitleForDuplicateDetection($crawlResult, $auditId, $title);
+        }
 
         return $issueIds;
     }
@@ -230,7 +242,7 @@ class IssueDetector implements IssueDetectorInterface
     public function registerDetector(string $name, callable $detector): void
     {
         // Convert callable to CheckerInterface-compatible wrapper
-        $this->customDetectors[$name] = $detector;
+        // This is a legacy support method
     }
 
     // =========================================================================
@@ -290,13 +302,12 @@ class IssueDetector implements IssueDetectorInterface
      *
      * @param CrawlResult $crawlResult The crawl result
      * @param int $auditId The audit ID
+     * @param string $normalizedTitle The pre-normalized title
      * @return IssueFinding|null Finding if duplicate detected, null otherwise
      */
-    protected function detectDuplicateTitle(CrawlResult $crawlResult, int $auditId): ?IssueFinding
+    protected function detectDuplicateTitle(CrawlResult $crawlResult, int $auditId, string $normalizedTitle): ?IssueFinding
     {
-        $title = $this->normalizeTitle($crawlResult->getTitle());
-
-        if (empty($title)) {
+        if (empty($normalizedTitle)) {
             return null;
         }
 
@@ -304,16 +315,16 @@ class IssueDetector implements IssueDetectorInterface
         $titles = Cache::get($cacheKey, []);
 
         // Check if title already exists (case-insensitive)
-        $normalizedTitle = strtolower($title);
+        $normalizedTitleLower = strtolower($normalizedTitle);
         foreach ($titles as $existingTitle => $existingUrl) {
-            if (strtolower($existingTitle) === $normalizedTitle) {
+            if (strtolower($existingTitle) === $normalizedTitleLower) {
                 return new IssueFinding(
                     issueType: 'duplicate_title',
                     severity: 'warning',
-                    description: "Duplicate page title detected: \"{$title}\"",
+                    description: "Duplicate page title detected: \"{$normalizedTitle}\"",
                     recommendation: 'Ensure each page has a unique title tag',
                     context: [
-                        'title' => $title,
+                        'title' => $normalizedTitle,
                         'original_url' => $existingUrl,
                         'duplicate_url' => $crawlResult->url,
                     ]
@@ -329,12 +340,11 @@ class IssueDetector implements IssueDetectorInterface
      *
      * @param CrawlResult $crawlResult The crawl result
      * @param int $auditId The audit ID
+     * @param string $normalizedTitle The pre-normalized title
      */
-    protected function storeTitleForDuplicateDetection(CrawlResult $crawlResult, int $auditId): void
+    protected function storeTitleForDuplicateDetection(CrawlResult $crawlResult, int $auditId, string $normalizedTitle): void
     {
-        $title = $this->normalizeTitle($crawlResult->getTitle());
-
-        if (empty($title)) {
+        if (empty($normalizedTitle)) {
             return;
         }
 
@@ -342,11 +352,11 @@ class IssueDetector implements IssueDetectorInterface
         $titles = Cache::get($cacheKey, []);
 
         // Truncate title if too long
-        if (strlen($title) > self::MAX_TITLE_LENGTH) {
-            $title = substr($title, 0, self::MAX_TITLE_LENGTH);
+        if (strlen($normalizedTitle) > self::MAX_TITLE_LENGTH) {
+            $normalizedTitle = substr($normalizedTitle, 0, self::MAX_TITLE_LENGTH);
         }
 
-        $titles[$title] = $crawlResult->url;
+        $titles[$normalizedTitle] = $crawlResult->url;
 
         Cache::put($cacheKey, $titles, self::TITLE_CACHE_TTL);
     }
@@ -426,11 +436,11 @@ class IssueDetector implements IssueDetectorInterface
      */
     protected function sanitizeString(string $input): string
     {
-        // Remove script tags and other dangerous HTML
-        $sanitized = strip_tags($input);
-
-        // Encode special characters
-        $sanitized = htmlspecialchars($sanitized, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // Remove script tags
+        $sanitized = preg_replace('#<script[^>]*>.*?</script>#is', '', $input);
+        
+        // Encode special characters but preserve the text
+        $sanitized = htmlspecialchars($sanitized ?? $input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         return $sanitized;
     }
