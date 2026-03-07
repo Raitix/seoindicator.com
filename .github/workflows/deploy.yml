@@ -46,14 +46,13 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chrome-${{ hashFiles('frontend/package-lock.json') }}
+          key: playwright-browsers-${{ hashFiles('frontend/package-lock.json') }}
           restore-keys: |
-            playwright-chrome-
             playwright-browsers-
 
       - name: Install Playwright Browsers
         working-directory: frontend
-        run: npx playwright install --with-deps chrome
+        run: npx playwright install --with-deps
 
       - name: Run Playwright tests
         working-directory: frontend
