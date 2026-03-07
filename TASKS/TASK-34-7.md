@@ -1,7 +1,7 @@
 # TASK-34-7: Query Job and Scheduling
 
 ## STATUS
-`To Develop`
+`Ready for Testing`
 
 ## PRIORITY
 `High`
@@ -22,45 +22,45 @@ Create background queue jobs for executing AI visibility queries and scheduled t
 
 ## Acceptance Criteria
 
-- [ ] `AIVisibilityQueryJob` created at `app/Jobs/AIVisibility/`
-  - [ ] Implements `ShouldQueue`
-  - [ ] Accepts: `projectId`, `platform`, `query`, `useFreeModel`
-  - [ ] Tries: 3, Backoff: 60 seconds
-  - [ ] Queue: `ai-visibility`
+- [x] `AIVisibilityQueryJob` created at `app/Jobs/AIVisibility/`
+  - [x] Implements `ShouldQueue`
+  - [x] Accepts: `projectId`, `platform`, `query`, `useFreeModel`
+  - [x] Tries: 3, Backoff: 60 seconds
+  - [x] Queue: `ai-visibility`
 
-- [ ] Job handles cache check
-  - [ ] Generates cache key from query hash
-  - [ ] Returns cached result if available (7-day TTL)
-  - [ ] Marks result as `cache_hit = true`
+- [x] Job handles cache check
+  - [x] Generates cache key from query hash
+  - [x] Returns cached result if available (7-day TTL)
+  - [x] Marks result as `cache_hit = true`
 
-- [ ] Job executes query
-  - [ ] Calls `AIQueryEngine::query()`
-  - [ ] Parses mentions with `MentionParser`
-  - [ ] Stores result in `ai_query_results` table
-  - [ ] Caches result for 7 days
+- [x] Job executes query
+  - [x] Calls `AIQueryEngine::query()`
+  - [x] Parses mentions with `MentionParser`
+  - [x] Stores result in `ai_query_results` table
+  - [x] Caches result for 7 days
 
-- [ ] `RunAIVisibilityQueries` job created
-  - [ ] Dispatches individual query jobs for all active projects
-  - [ ] Respects tracking frequency (daily/weekly/monthly)
-  - [ ] Only queries projects due for query run
-  - [ ] Scheduled: Weekly on Sundays at 02:00
+- [x] `RunAIVisibilityQueries` job created
+  - [x] Dispatches individual query jobs for all active projects
+  - [x] Respects tracking frequency (daily/weekly/monthly)
+  - [x] Only queries projects due for query run
+  - [x] Scheduled: Weekly on Sundays at 02:00
 
-- [ ] `AggregateAIVisibilityAnalytics` job created
-  - [ ] Aggregates query results into `ai_mention_analytics`
-  - [ ] Calculates mention rates, share of voice, sentiment
-  - [ ] Scheduled: Daily at 03:00
+- [x] `AggregateAIVisibilityAnalytics` job created
+  - [x] Aggregates query results into `ai_mention_analytics`
+  - [x] Calculates mention rates, share of voice, sentiment
+  - [x] Scheduled: Daily at 03:00
 
-- [ ] `CheckAIVisibilityAlerts` job created
-  - [ ] Compares current vs previous analytics
-  - [ ] Creates alerts for threshold breaches
-  - [ ] Scheduled: Every 6 hours
+- [x] `CheckAIVisibilityAlerts` job created
+  - [x] Compares current vs previous analytics
+  - [x] Creates alerts for threshold breaches
+  - [x] Scheduled: Every 6 hours
 
-- [ ] Scheduled tasks registered in `app/Console/Kernel.php`
+- [x] Scheduled tasks registered in `routes/console.php`
 
-- [ ] Error handling
-  - [ ] Failed jobs logged with context
-  - [ ] Retry logic respects backoff
-  - [ ] Dead letter handling after max tries
+- [x] Error handling
+  - [x] Failed jobs logged with context
+  - [x] Retry logic respects backoff
+  - [x] Dead letter handling after max tries
 
 - [x] Unit tests created
   - [x] Test job execution with mocked services

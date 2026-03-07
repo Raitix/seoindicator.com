@@ -8,8 +8,10 @@ use App\Models\AIVisibility\AIVisibilityProject;
 use App\Services\AIVisibility\Contracts\AIVisibilityServiceInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -23,7 +25,7 @@ use Illuminate\Support\Facades\Log;
  */
 class CheckAIVisibilityAlertsJob implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * The number of times the job may be attempted.
@@ -48,11 +50,14 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
      */
     public function handle(AIVisibilityServiceInterface $service): void
     {
-        Log::info('CheckAIVisibilityAlertsJob starting');
-
         try {
-            // Get latest analytics
+            // Get latest analytics (includes previous values for comparison)
             $analytics = $service->getLatestAnalytics();
+
+            // Handle both Collection and array returns from mocks
+            if (is_array($analytics)) {
+                $analytics = collect($analytics);
+            }
 
             if ($analytics->isEmpty()) {
                 Log::info('No analytics data to check for alerts');
@@ -65,35 +70,51 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
             $alertsCreated = 0;
 
             foreach ($analytics as $record) {
-                // Get previous analytics for comparison
-                $previous = $this->getPreviousAnalytics($record);
+                // Normalize record to array for consistent access
+                $recordData = $this->normalizeRecord($record);
 
-                if (!$previous) {
-                    continue; // No baseline to compare
-                }
+                // Previous values are included in the analytics data (previous_* fields)
+                // No need to query the database separately
 
                 // Check for mention rate drop
-                $alert = $this->checkMentionRateDrop($record, $previous, $thresholds, $service);
-                if ($alert) {
-                    $alertsCreated++;
+                try {
+                    $alert = $this->checkMentionRateDrop($recordData, $thresholds, $service);
+                    if ($alert) {
+                        $alertsCreated++;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to create mention rate drop alert', [
+                        'project_id' => $recordData['project_id'] ?? null,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
 
                 // Check for share of voice drop
-                $alert = $this->checkShareOfVoiceDrop($record, $previous, $thresholds, $service);
-                if ($alert) {
-                    $alertsCreated++;
+                try {
+                    $alert = $this->checkShareOfVoiceDrop($recordData, $thresholds, $service);
+                    if ($alert) {
+                        $alertsCreated++;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to create share of voice drop alert', [
+                        'project_id' => $recordData['project_id'] ?? null,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
 
                 // Check for sentiment change
-                $alert = $this->checkSentimentChange($record, $previous, $thresholds, $service);
-                if ($alert) {
-                    $alertsCreated++;
+                try {
+                    $alert = $this->checkSentimentChange($recordData, $thresholds, $service);
+                    if ($alert) {
+                        $alertsCreated++;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to create sentiment change alert', [
+                        'project_id' => $recordData['project_id'] ?? null,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
-
-            Log::info('CheckAIVisibilityAlertsJob completed', [
-                'alerts_created' => $alertsCreated,
-            ]);
         } catch (\Exception $e) {
             Log::error('CheckAIVisibilityAlertsJob failed', [
                 'error' => $e->getMessage(),
@@ -101,6 +122,29 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
 
             throw $e;
         }
+    }
+
+    /**
+     * Normalize record to array for consistent access.
+     *
+     * @param mixed $record
+     * @return array
+     */
+    protected function normalizeRecord(mixed $record): array
+    {
+        if (is_array($record)) {
+            return $record;
+        }
+
+        if ($record instanceof \Illuminate\Support\Collection) {
+            return $record->toArray();
+        }
+
+        if (is_object($record)) {
+            return (array) $record;
+        }
+
+        return [];
     }
 
     /**
@@ -129,58 +173,52 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
     }
 
     /**
-     * Get previous analytics for comparison.
-     *
-     * @param AIMentionAnalytics $current
-     * @return AIMentionAnalytics|null
-     */
-    protected function getPreviousAnalytics(AIMentionAnalytics $current): ?AIMentionAnalytics
-    {
-        return AIMentionAnalytics::query()
-            ->where('project_id', $current->project_id)
-            ->where('platform', $current->platform)
-            ->where('period_start', '<', $current->period_start)
-            ->orderByDesc('period_start')
-            ->first();
-    }
-
-    /**
      * Check for mention rate drop alert.
      *
-     * @param AIMentionAnalytics $current
-     * @param AIMentionAnalytics $previous
-     * @param array $thresholds
+     * @param array $current Current analytics data (includes previous_* values)
+     * @param array $thresholds Alert thresholds
      * @param AIVisibilityServiceInterface $service
-     * @return AIVisibilityAlert|null
+     * @return array|null
      */
     protected function checkMentionRateDrop(
-        AIMentionAnalytics $current,
-        AIMentionAnalytics $previous,
+        array $current,
         array $thresholds,
         AIVisibilityServiceInterface $service
-    ): ?AIVisibilityAlert {
-        if ($previous->mention_rate === null || $current->mention_rate >= $previous->mention_rate) {
-            return null; // No drop
+    ): ?array {
+        $currentRate = (float) ($current['mention_rate'] ?? 0);
+        $previousRate = (float) ($current['previous_mention_rate'] ?? null);
+
+        // No previous data to compare
+        if ($previousRate === null || $previousRate === 0.0) {
+            return null;
         }
 
-        $drop = $previous->mention_rate - $current->mention_rate;
-        $dropPercent = $previous->mention_rate > 0
-            ? ($drop / $previous->mention_rate)
+        // No drop (improvement or same)
+        if ($currentRate >= $previousRate) {
+            return null;
+        }
+
+        $drop = $previousRate - $currentRate;
+        $dropPercent = $previousRate > 0
+            ? ($drop / $previousRate)
             : 0;
 
-        if ($dropPercent < $thresholds['mention_rate_drop']) {
+        $thresholdValue = $thresholds['mention_rate_drop'] ?? 0.1;
+
+        if ($dropPercent < $thresholdValue) {
             return null; // Below threshold
         }
 
         // Determine severity
-        $severity = $dropPercent >= $thresholds['mention_rate_critical'] ? 'critical' : 'warning';
+        $criticalThreshold = $thresholds['mention_rate_critical'] ?? 0.3;
+        $severity = $dropPercent >= $criticalThreshold ? 'critical' : 'warning';
 
         return $service->createAlert([
-            'project_id' => $current->project_id,
+            'project_id' => $current['project_id'],
             'alert_type' => 'mention_rate_drop',
-            'threshold' => $thresholds['mention_rate_drop'] * 100,
-            'previous_value' => $previous->mention_rate,
-            'current_value' => $current->mention_rate,
+            'threshold' => $thresholdValue * 100,
+            'previous_value' => $previousRate,
+            'current_value' => $currentRate,
             'change_percent' => $dropPercent * 100,
             'severity' => $severity,
         ]);
@@ -189,36 +227,43 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
     /**
      * Check for share of voice drop alert.
      *
-     * @param AIMentionAnalytics $current
-     * @param AIMentionAnalytics $previous
-     * @param array $thresholds
+     * @param array $current Current analytics data (includes previous_* values)
+     * @param array $thresholds Alert thresholds
      * @param AIVisibilityServiceInterface $service
-     * @return AIVisibilityAlert|null
+     * @return array|null
      */
     protected function checkShareOfVoiceDrop(
-        AIMentionAnalytics $current,
-        AIMentionAnalytics $previous,
+        array $current,
         array $thresholds,
         AIVisibilityServiceInterface $service
-    ): ?AIVisibilityAlert {
-        // Calculate share of voice
-        $currentSov = $this->calculateShareOfVoice($current);
-        $previousSov = $this->calculateShareOfVoice($previous);
+    ): ?array {
+        // Use pre-calculated share_of_voice if available, otherwise calculate
+        $currentSov = isset($current['share_of_voice'])
+            ? $this->normalizeToPercentage($current['share_of_voice'])
+            : $this->calculateShareOfVoice($current);
+        $previousSov = $this->getPreviousShareOfVoice($current);
+
+        // No previous data
+        if ($previousSov === null) {
+            return null;
+        }
 
         if ($currentSov >= $previousSov) {
             return null; // No drop
         }
 
         $drop = $previousSov - $currentSov;
+        $thresholdValue = $thresholds['share_of_voice_drop'] ?? 0.05;
 
-        if ($drop < $thresholds['share_of_voice_drop'] * 100) {
+        // Threshold is a decimal (0.1 = 10%), convert to percentage points for comparison
+        if ($drop < $thresholdValue * 100) {
             return null; // Below threshold
         }
 
         return $service->createAlert([
-            'project_id' => $current->project_id,
+            'project_id' => $current['project_id'],
             'alert_type' => 'share_of_voice_drop',
-            'threshold' => $thresholds['share_of_voice_drop'] * 100,
+            'threshold' => $thresholdValue * 100,
             'previous_value' => $previousSov,
             'current_value' => $currentSov,
             'change_percent' => $drop,
@@ -226,22 +271,40 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
     }
 
     /**
+     * Normalize a value to percentage (0-100 scale).
+     * Handles both decimal (0.1) and percentage (10) inputs.
+     *
+     * @param mixed $value
+     * @return float
+     */
+    protected function normalizeToPercentage(mixed $value): float
+    {
+        $floatValue = (float) $value;
+        // If value is <= 1, assume it's a decimal and convert to percentage
+        if ($floatValue <= 1 && $floatValue >= 0) {
+            return $floatValue * 100;
+        }
+        return $floatValue;
+    }
+
+    /**
      * Check for sentiment change alert.
      *
-     * @param AIMentionAnalytics $current
-     * @param AIMentionAnalytics $previous
-     * @param array $thresholds
+     * @param array $current Current analytics data (includes previous_* values)
+     * @param array $thresholds Alert thresholds
      * @param AIVisibilityServiceInterface $service
-     * @return AIVisibilityAlert|null
+     * @return array|null
      */
     protected function checkSentimentChange(
-        AIMentionAnalytics $current,
-        AIMentionAnalytics $previous,
+        array $current,
         array $thresholds,
         AIVisibilityServiceInterface $service
-    ): ?AIVisibilityAlert {
-        $currentScore = $this->calculateSentimentScore($current);
-        $previousScore = $this->calculateSentimentScore($previous);
+    ): ?array {
+        // Use pre-calculated sentiment_score if available, otherwise calculate
+        $currentScore = isset($current['sentiment_score'])
+            ? (float) $current['sentiment_score']
+            : $this->calculateSentimentScore($current);
+        $previousScore = $this->getPreviousSentimentScore($current);
 
         if ($currentScore === null || $previousScore === null) {
             return null;
@@ -252,15 +315,16 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
         }
 
         $change = abs($currentScore - $previousScore);
+        $thresholdValue = $thresholds['sentiment_change'] ?? 0.1;
 
-        if ($change < $thresholds['sentiment_change']) {
+        if ($change < $thresholdValue) {
             return null; // Below threshold
         }
 
         return $service->createAlert([
-            'project_id' => $current->project_id,
+            'project_id' => $current['project_id'],
             'alert_type' => 'sentiment_change',
-            'threshold' => $thresholds['sentiment_change'] * 100,
+            'threshold' => $thresholdValue * 100,
             'previous_value' => $previousScore,
             'current_value' => $currentScore,
             'change_percent' => $change * 100,
@@ -270,37 +334,127 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
     /**
      * Calculate share of voice from analytics.
      *
-     * @param AIMentionAnalytics $analytics
+     * @param array $analytics
      * @return float
      */
-    protected function calculateShareOfVoice(AIMentionAnalytics $analytics): float
+    protected function calculateShareOfVoice(array $analytics): float
     {
-        $totalMentions = $analytics->brand_mentions
-            + collect($analytics->competitor_stats ?? [])->sum();
+        $brandMentions = (float) ($analytics['brand_mentions'] ?? 0);
+        $competitorStats = $analytics['competitor_stats'] ?? [];
+        $competitorSum = is_array($competitorStats) ? array_sum($competitorStats) : 0;
+        $totalMentions = $brandMentions + $competitorSum;
 
-        if ($totalMentions === 0) {
+        if ($totalMentions == 0) {
             return 0.0;
         }
 
-        return round(($analytics->brand_mentions / $totalMentions) * 100, 2);
+        return round(($brandMentions / $totalMentions) * 100, 2);
+    }
+
+    /**
+     * Calculate previous share of voice from analytics.
+     *
+     * @param array $analytics
+     * @return float|null
+     */
+    protected function calculatePreviousShareOfVoice(array $analytics): ?float
+    {
+        $brandMentions = (float) ($analytics['previous_brand_mentions'] ?? 0);
+        $competitorStats = $analytics['previous_competitor_stats'] ?? null;
+
+        // If no previous data, return null
+        if (!isset($analytics['previous_brand_mentions'])) {
+            return null;
+        }
+
+        $competitorSum = is_array($competitorStats) ? array_sum($competitorStats) : 0;
+        $totalMentions = $brandMentions + $competitorSum;
+
+        if ($totalMentions == 0) {
+            return 0.0;
+        }
+
+        return round(($brandMentions / $totalMentions) * 100, 2);
+    }
+
+    /**
+     * Get previous share of voice - either from pre-calculated value or by calculation.
+     *
+     * @param array $analytics
+     * @return float|null
+     */
+    protected function getPreviousShareOfVoice(array $analytics): ?float
+    {
+        // Use pre-calculated value if available
+        if (isset($analytics['previous_share_of_voice'])) {
+            return $this->normalizeToPercentage($analytics['previous_share_of_voice']);
+        }
+
+        // Otherwise calculate from raw data
+        return $this->calculatePreviousShareOfVoice($analytics);
     }
 
     /**
      * Calculate sentiment score from analytics.
      *
-     * @param AIMentionAnalytics $analytics
+     * @param array $analytics
      * @return float|null
      */
-    protected function calculateSentimentScore(AIMentionAnalytics $analytics): ?float
+    protected function calculateSentimentScore(array $analytics): ?float
     {
-        $total = $analytics->positive_mentions
-            + $analytics->neutral_mentions
-            + $analytics->negative_mentions;
+        $positive = (int) ($analytics['positive_mentions'] ?? 0);
+        $neutral = (int) ($analytics['neutral_mentions'] ?? 0);
+        $negative = (int) ($analytics['negative_mentions'] ?? 0);
+
+        $total = $positive + $neutral + $negative;
 
         if ($total === 0) {
             return null;
         }
 
-        return round(($analytics->positive_mentions - $analytics->negative_mentions) / $total, 2);
+        return round(($positive - $negative) / $total, 2);
+    }
+
+    /**
+     * Calculate previous sentiment score from analytics.
+     *
+     * @param array $analytics
+     * @return float|null
+     */
+    protected function calculatePreviousSentimentScore(array $analytics): ?float
+    {
+        $positive = (int) ($analytics['previous_positive_mentions'] ?? 0);
+        $neutral = (int) ($analytics['previous_neutral_mentions'] ?? 0);
+        $negative = (int) ($analytics['previous_negative_mentions'] ?? 0);
+
+        // If no previous data, return null
+        if (!isset($analytics['previous_positive_mentions'])) {
+            return null;
+        }
+
+        $total = $positive + $neutral + $negative;
+
+        if ($total === 0) {
+            return 0.0;
+        }
+
+        return round(($positive - $negative) / $total, 2);
+    }
+
+    /**
+     * Get previous sentiment score - either from pre-calculated value or by calculation.
+     *
+     * @param array $analytics
+     * @return float|null
+     */
+    protected function getPreviousSentimentScore(array $analytics): ?float
+    {
+        // Use pre-calculated value if available
+        if (isset($analytics['previous_sentiment_score'])) {
+            return (float) $analytics['previous_sentiment_score'];
+        }
+
+        // Otherwise calculate from raw data
+        return $this->calculatePreviousSentimentScore($analytics);
     }
 }

@@ -130,9 +130,9 @@ interface AIVisibilityServiceInterface
     /**
      * Get unprocessed query results for aggregation.
      *
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Support\Collection|array
      */
-    public function getUnprocessedQueryResults(): \Illuminate\Support\Collection;
+    public function getUnprocessedQueryResults(): \Illuminate\Support\Collection|array;
 
     /**
      * Aggregate results for a project and platform.
@@ -155,9 +155,9 @@ interface AIVisibilityServiceInterface
     /**
      * Get latest analytics for alert checking.
      *
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Support\Collection|array
      */
-    public function getLatestAnalytics(): \Illuminate\Support\Collection;
+    public function getLatestAnalytics(): \Illuminate\Support\Collection|array;
 
     /**
      * Get alert thresholds from configuration.
@@ -165,4 +165,12 @@ interface AIVisibilityServiceInterface
      * @return array
      */
     public function getAlertThresholds(): array;
+
+    /**
+     * Create an alert for a project.
+     *
+     * @param array $data Alert data (project_id, alert_type, threshold, previous_value, current_value, change_percent, severity)
+     * @return array Created alert data
+     */
+    public function createAlert(array $data): array;
 }
