@@ -37310,3 +37310,327 @@ npm run test:coverage
 - FEAT-028: Modern UI/UX + Indicator Catalog
 
 ---
+## Tier 2 Competitor Data (TASK-32-12)
+
+### Feature Description
+Tier 2 competitor data files for the Competitor Comparison Landing Pages feature (FEAT-032). Provides structured data for Mangools, Serpstat, SpyFu, and SE Ranking - medium search volume competitors that expand comparison coverage. Each file exports a `CompetitorData` object with pricing, features, pros/cons, and use cases.
+
+### Component Locations
+- **Mangools:** `frontend/lib/compare/competitors/mangools.ts`
+- **Serpstat:** `frontend/lib/compare/competitors/serpstat.ts`
+- **SpyFu:** `frontend/lib/compare/competitors/spyfu.ts`
+- **SE Ranking:** `frontend/lib/compare/competitors/seranking.ts`
+- **Tests:** `frontend/__tests__/lib/compare/competitors/tier2-competitors.test.ts`
+- **Test Documentation:** `TESTS/TEST-32-12.md`
+
+### Tier 2 Competitors Summary
+
+| Competitor | Focus | Starting Price | Annual Price | Target Audience |
+|------------|-------|---------------|--------------|-----------------|
+| Mangools | Simplicity, beginners | $29/mo | $19.90/mo | Solo, Small teams |
+| Serpstat | All-in-one, database | $69/mo | Custom | Small teams, Agencies |
+| SpyFu | Competitor spying, PPC | $39/mo | Custom | Agencies, PPC focus |
+| SE Ranking | Rank tracking, agencies | $52/mo | Custom | Agencies, SMBs |
+
+### Competitor Data Structure
+
+Each competitor exports a `CompetitorData` object following the interface from TASK-32-1:
+
+```typescript
+interface CompetitorData {
+  id: string;              // Unique identifier (e.g., 'mangools')
+  name: string;            // Display name (e.g., 'Mangools')
+  slug: string;            // URL-friendly slug (e.g., 'mangools')
+  website: string;         // Official website URL
+  logo?: string;           // Optional logo path
+  tagline: string;         // Short description
+  pricing: PricingTier[];  // Pricing tiers with features
+  features: FeatureCategory[]; // Feature comparison by category
+  pros: string[];          // Honest pros list
+  cons: string[];          // Honest cons list
+  useCases: UseCase[];     // Target audience recommendations
+  lastUpdated: string;     // ISO date of last update
+  source: string;          // Data source URL
+}
+```
+
+### Mangools Data Highlights
+
+**Pricing Tiers (3):**
+| Tier | Monthly | Annual | Key Features |
+|------|---------|--------|--------------|
+| Entry | $29 | $19.90 | 25 keyword lookups/day, 100 SERP lookups/day |
+| Premium | $49 | $39.90 | 100 keyword lookups/day, 300 SERP lookups/day |
+| Agency | $129 | $99.90 | 500 keyword lookups/day, 1000 SERP lookups/day |
+
+**Tool Suite:** KWFinder, SERPChecker, SERPWatcher, LinkMiner, SiteProfiler
+
+**Positioning:** Beginner-focused with simple UI, affordable for solopreneurs
+
+### Serpstat Data Highlights
+
+**Pricing Tiers (4):**
+| Tier | Monthly | Annual | Key Features |
+|------|---------|--------|--------------|
+| Lite | $69 | Custom | Basic keyword research |
+| Standard | $149 | Custom | Team features |
+| Advanced | $299 | Custom | API access, white label |
+| Enterprise | Custom | Custom | Unlimited, dedicated support |
+
+**Database:** Large keyword database with clustering and batch analysis
+
+**Positioning:** All-in-one SEO platform with strong database coverage
+
+### SpyFu Data Highlights
+
+**Pricing Tiers (3):**
+| Tier | Monthly | Annual | Key Features |
+|------|---------|--------|--------------|
+| Basic | $39 | Custom | Keyword research, competitor spying |
+| Professional | $79 | Custom | API access, white label |
+| Team | $149 | Custom | Multiple users, unlimited projects |
+
+**Unique Feature:** Kombat (competitor comparison tool), PPC research focus
+
+**Positioning:** Competitor intelligence and PPC/SEO hybrid tool
+
+### SE Ranking Data Highlights
+
+**Pricing Tiers (3):**
+| Tier | Monthly | Annual | Key Features |
+|------|---------|--------|--------------|
+| Essential | $52 | Custom | Rank tracking, keyword research |
+| Pro | $95 | Custom | Site audit, competitor analysis |
+| Business | $207 | Custom | White label, API, team features |
+
+**Agency Features:** Client management, automated reports, white label
+
+**Positioning:** Agency-focused rank tracking with comprehensive SEO tools
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `tier2-competitors.test.ts` | 208 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Mangools (MG) | 50 | Structure, pricing, features, pros/cons |
+| Serpstat (SS) | 50 | Structure, pricing, features, pros/cons |
+| SpyFu (SF) | 50 | Structure, pricing, features, pros/cons |
+| SE Ranking (SR) | 50 | Structure, pricing, features, pros/cons |
+| Cross-Competitor (T2-CC) | 20 | Consistency, uniqueness, balance |
+| Acceptance Criteria | 8 | All ACs verified |
+
+### Data Freshness
+
+| Competitor | Last Updated | Source |
+|------------|--------------|--------|
+| Mangools | 2026-03-07 | https://mangools.com/pricing |
+| Serpstat | 2026-03-07 | https://serpstat.com/pricing |
+| SpyFu | 2026-03-07 | https://spyfu.com/plans |
+| SE Ranking | 2026-03-07 | https://seranking.com/pricing.html |
+
+### Positioning Notes
+
+**Mangools:** Emphasize simplicity and beginner-friendliness. Pros include user-friendly interface and affordable pricing. Cons include limited advanced features and smaller database.
+
+**Serpstat:** Emphasize all-in-one platform and database size. Pros include comprehensive feature set and keyword clustering. Cons include steeper learning curve and higher starting price.
+
+**SpyFu:** Emphasize competitor intelligence and PPC data. Pros include unique Kombat feature and unlimited searches on higher tiers. Cons include less focus on content SEO and smaller keyword database.
+
+**SE Ranking:** Emphasize agency features and rank tracking accuracy. Pros include white-label reports and team collaboration. Cons include fewer content marketing features compared to competitors.
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `d16d86e2` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 208/208 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-32-1 (Types) - CompetitorData interface
+- TASK-32-11 (Tier 1 Data) - Pattern established
+
+### Related Tasks
+- TASK-32-11: Tier 1 Competitor Data (Ahrefs, SEMrush, Moz, Ubersuggest)
+- TASK-32-13: Tier 3 Competitor Data (Raven, BrightEdge, Conductor, Wincher)
+- TASK-32-14: Free Alternatives Data (GSC, GA, AnswerThePublic)
+- FEAT-032: Competitor Comparison Landing Pages
+
+---
+## Tier 3 Competitor Data (TASK-32-13)
+
+### Feature Description
+Tier 3 competitor data files for the Competitor Comparison Landing Pages feature (FEAT-032). Provides structured data for Raven Tools, BrightEdge, Conductor, and Wincher - niche/enterprise competitors that provide comprehensive coverage for specific audiences. Each file exports a `CompetitorData` object with pricing, features, pros/cons, and use cases.
+
+### Component Locations
+- **Raven Tools:** `frontend/lib/compare/competitors/raven.ts`
+- **BrightEdge:** `frontend/lib/compare/competitors/brightedge.ts`
+- **Conductor:** `frontend/lib/compare/competitors/conductor.ts`
+- **Wincher:** `frontend/lib/compare/competitors/wincher.ts`
+- **Tests:** `frontend/__tests__/lib/compare/competitors/tier3-competitors.test.ts`
+- **Test Documentation:** `TESTS/TEST-32-13.md`
+
+### Tier 3 Competitors Summary
+
+| Competitor | Focus | Starting Price | Annual Price | Target Audience |
+|------------|-------|---------------|--------------|-----------------|
+| Raven Tools | Agency reporting | $49/mo | $39/mo | Agencies, Small teams |
+| BrightEdge | Enterprise AI SEO | Custom | Custom | Enterprise |
+| Conductor | Content marketing | Custom | Custom | Enterprise |
+| Wincher | Rank tracking | Free | Free | Solopreneurs, Small business |
+
+### Competitor Data Structure
+
+Each competitor exports a `CompetitorData` object following the interface from TASK-32-1:
+
+```typescript
+interface CompetitorData {
+  id: string;              // Unique identifier (e.g., 'raven')
+  name: string;            // Display name (e.g., 'Raven Tools')
+  slug: string;            // URL-friendly slug (e.g., 'raven')
+  website: string;         // Official website URL
+  logo?: string;           // Optional logo path
+  tagline: string;         // Short description
+  pricing: PricingTier[];  // Pricing tiers with features
+  features: FeatureCategory[]; // Feature comparison by category
+  pros: string[];          // Honest pros list
+  cons: string[];          // Honest cons list
+  useCases: UseCase[];     // Target audience recommendations
+  lastUpdated: string;     // ISO date of last update
+  source: string;          // Data source URL
+}
+```
+
+### Raven Tools Data Highlights
+
+**Pricing Tiers (3):**
+| Tier | Monthly | Annual | Key Features |
+|------|---------|--------|--------------|
+| Lite | $49 | $39 | 1 user, 5 campaigns, 50 keywords, Site Auditor |
+| Pro | $99 | $79 | 25 campaigns, 500 keywords, API access, White label |
+| Agency | $279 | $229 | Unlimited users/campaigns, 5,000 keywords, Priority support |
+
+**Unique Features:** Link Manager for outreach tracking, Social media management tools, Client Portal
+
+**Positioning:** Agency-focused SEO and marketing reporting platform with white label capabilities
+
+### BrightEdge Data Highlights
+
+**Pricing Tiers (1 - Enterprise):**
+| Tier | Monthly | Annual | Key Features |
+|------|---------|--------|--------------|
+| Enterprise | Custom | Custom | Full platform, Dedicated CSM, API, Custom integrations |
+
+**AI Features:** Datacube (deep keyword insights), Intent Targeting, Hyperlocal (multi-location), BrightEdge Autopilot
+
+**Positioning:** Enterprise SEO platform powered by AI with dedicated customer success management
+
+### Conductor Data Highlights
+
+**Pricing Tiers (1 - Enterprise):**
+| Tier | Monthly | Annual | Key Features |
+|------|---------|--------|--------------|
+| Enterprise | Custom | Custom | Full platform, Workspaces, Dedicated support, Content guidance |
+
+**Content Features:** Content Guidance, Impact Analysis (ROI tracking), Workspaces for team collaboration
+
+**Positioning:** Enterprise SEO and content marketing platform with strong workflow capabilities
+
+### Wincher Data Highlights
+
+**Pricing Tiers (4):**
+| Tier | Monthly | Annual | Key Features |
+|------|---------|--------|--------------|
+| Free | Free | Free | 10 keywords, Daily updates, 1 website |
+| Starter | $29 | $24 | 100 keywords, 3 websites, CSV export |
+| Professional | $99 | $79 | 500 keywords, Local SEO, API, White label |
+| Business | $399 | $319 | 5,000 keywords, Team members, Custom integrations |
+
+**Free Tier:** Genuine usable free tier with 10 keywords and daily updates
+
+**Positioning:** Affordable rank tracking focused tool for solopreneurs and small businesses
+
+### Enterprise Pricing Handling
+
+BrightEdge and Conductor use `monthlyPrice: 'Custom'` and `annualPrice: 'Custom'` to indicate enterprise pricing:
+
+```typescript
+pricing: [
+  {
+    name: 'Enterprise',
+    monthlyPrice: 'Custom',
+    annualPrice: 'Custom',
+    features: ['Custom pricing', 'Dedicated support', ...],
+    highlighted: true,
+  },
+],
+```
+
+This distinguishes enterprise tools from tools with published pricing.
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `tier3-competitors.test.ts` | 234 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Raven Tools (RV) | 55 | Structure, pricing, features, pros/cons, agency focus |
+| BrightEdge (BE) | 55 | Structure, custom pricing, AI features, enterprise focus |
+| Conductor (CD) | 55 | Structure, custom pricing, content features, enterprise focus |
+| Wincher (WC) | 55 | Structure, free tier, pricing tiers, solopreneur focus |
+| Cross-Competitor (T3-CC) | 20 | Consistency, uniqueness, enterprise pricing validation |
+| Edge Cases | 30 | Type validation, data freshness |
+| Acceptance Criteria | 14 | All ACs verified |
+
+### Data Freshness
+
+| Competitor | Last Updated | Source |
+|------------|--------------|--------|
+| Raven Tools | 2026-03-07 | https://raventools.com/pricing |
+| BrightEdge | 2026-03-07 | https://brightedge.com/contact |
+| Conductor | 2026-03-07 | https://conductor.com/contact |
+| Wincher | 2026-03-07 | https://wincher.com/pricing |
+
+### Positioning Notes
+
+**Raven Tools:** Emphasize agency-focused features like white label reporting, client management, and team collaboration. Pros include affordable agency pricing and comprehensive reporting. Cons include limited backlink database and no proprietary keyword database.
+
+**BrightEdge:** Emphasize enterprise AI-powered features with dedicated support. Pros include comprehensive AI capabilities and dedicated customer success. Cons include very expensive pricing requiring sales contact and long implementation timeline.
+
+**Conductor:** Emphasize content marketing and workflow capabilities for enterprises. Pros include strong content guidance and team collaboration features. Cons include enterprise-only pricing with no self-service options.
+
+**Wincher:** Emphasize affordable rank tracking with genuine free tier. Pros include very affordable pricing and accurate daily tracking. Cons include limited features compared to comprehensive SEO tools and no backlink/site audit features.
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `9b681e88` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 234/234 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-32-1 (Types) - CompetitorData interface
+- TASK-32-11 (Tier 1 Data) - Pattern established
+- TASK-32-12 (Tier 2 Data) - Pattern established
+
+### Related Tasks
+- TASK-32-11: Tier 1 Competitor Data (Ahrefs, SEMrush, Moz, Ubersuggest)
+- TASK-32-12: Tier 2 Competitor Data (Mangools, Serpstat, SpyFu, SE Ranking)
+- TASK-32-14: Free Alternatives Data (GSC, GA, AnswerThePublic)
+- FEAT-032: Competitor Comparison Landing Pages
+
+---
