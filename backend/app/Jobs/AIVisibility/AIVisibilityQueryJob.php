@@ -2,9 +2,10 @@
 
 namespace App\Jobs\AIVisibility;
 
-use App\Models\AIVisibility\AIQueryResult;
+use App\Models\AIVisibility\AIQueryResult as AIQueryResultModel;
 use App\Services\AIVisibility\AIQueryEngine;
 use App\Services\AIVisibility\MentionParser;
+use App\Services\AIVisibility\DTOs\AIQueryResult;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
@@ -123,11 +124,29 @@ class AIVisibilityQueryJob implements ShouldQueue
                 throw new \Exception('AI query returned null result');
             }
 
+            // Handle both DTO and array returns from the engine
+            if ($result instanceof AIQueryResult) {
+                $responseText = $result->responseText ?? '';
+                $model = $result->model ?? '';
+                $tokensUsed = $result->tokensUsed ?? 0;
+            } elseif (is_object($result) && method_exists($result, 'jsonSerialize')) {
+                $resultArray = $result->jsonSerialize();
+                $responseText = $resultArray['responseText'] ?? $resultArray['response'] ?? '';
+                $model = $resultArray['model'] ?? '';
+                $tokensUsed = $resultArray['tokensUsed'] ?? $resultArray['tokens_used'] ?? 0;
+            } elseif (is_array($result)) {
+                $responseText = $result['response'] ?? $result['responseText'] ?? '';
+                $model = $result['model'] ?? '';
+                $tokensUsed = $result['tokens_used'] ?? $result['tokensUsed'] ?? 0;
+            } else {
+                throw new \Exception('Invalid result type from AIQueryEngine');
+            }
+
             // Parse mentions from response
             $mentions = [];
-            if (!empty($result->responseText)) {
+            if (!empty($responseText)) {
                 $mentions = $parser->extractMentions(
-                    $result->responseText,
+                    $responseText,
                     [$this->getBrandName()]
                 );
             }
@@ -137,9 +156,9 @@ class AIVisibilityQueryJob implements ShouldQueue
                 'query_hash' => $this->getQueryHash(),
                 'platform' => $this->platform,
                 'query' => $this->query,
-                'response_text' => $result->responseText ?? '',
-                'model' => $result->model ?? '',
-                'tokens_used' => $result->tokensUsed ?? 0,
+                'response_text' => $responseText,
+                'model' => $model,
+                'tokens_used' => $tokensUsed,
                 'mentions' => $mentions,
                 'cache_hit' => false,
             ];
@@ -147,7 +166,7 @@ class AIVisibilityQueryJob implements ShouldQueue
             // Store in database
             $this->storeResult($resultData, false);
 
-            // Cache the result for 7 days
+            // Cache the result for 7 days (604800 seconds)
             Cache::put($cacheKey, $resultData, 604800);
 
             return $resultData;
@@ -186,7 +205,7 @@ class AIVisibilityQueryJob implements ShouldQueue
      */
     public function getCacheKey(): string
     {
-        return 'ai_visibility:query:' . $this->getQueryHash();
+        return 'ai_visibility:query:' . md5($this->projectId . ':' . $this->platform . ':' . $this->query);
     }
 
     /**
@@ -196,7 +215,7 @@ class AIVisibilityQueryJob implements ShouldQueue
      */
     public function getQueryHash(): string
     {
-        return md5($this->platform . ':' . $this->query);
+        return md5($this->projectId . ':' . $this->platform . ':' . $this->query);
     }
 
     /**
@@ -233,7 +252,7 @@ class AIVisibilityQueryJob implements ShouldQueue
         // Sanitize query for storage
         $sanitizedQuery = strip_tags($this->query);
 
-        AIQueryResult::create([
+        AIQueryResultModel::create([
             'project_id' => $this->projectId,
             'platform' => $this->platform,
             'query_text' => $sanitizedQuery,
