@@ -88,8 +88,27 @@ export function AuditDetailPage({ className }: AuditDetailPageProps) {
   const { updateStatus } = useUpdateIssueStatus();
   const { bulkUpdate } = useBulkUpdateIssues();
 
-  // Update URL when filters change
+  // Loading state (computed before useEffect)
+  const isLoading = isAuditLoading || isIssuesLoading;
+  const error = auditError || issuesError;
+
+  // Track if component is mounted and has successfully loaded data
+  const isMountedRef = React.useRef(false);
+
+  // Update URL when filters change (only after successful data load)
   React.useEffect(() => {
+    // Don't update URL during loading or error states
+    if (isLoading || error) {
+      return;
+    }
+
+    // Don't update URL on first render until we have data
+    if (!audit && !isMountedRef.current) {
+      return;
+    }
+
+    isMountedRef.current = true;
+
     const params = new URLSearchParams();
 
     if (filters.type) params.set('type', filters.type);
@@ -103,8 +122,14 @@ export function AuditDetailPage({ className }: AuditDetailPageProps) {
 
     const queryString = params.toString();
     const url = queryString ? `?${queryString}` : window.location.pathname;
-    router.replace(url, { scroll: false });
-  }, [filters, page, perPage, router]);
+    
+    // Use try-catch to handle any navigation errors gracefully
+    try {
+      router.replace(url, { scroll: false });
+    } catch (navError) {
+      console.warn('Navigation error:', navError);
+    }
+  }, [filters, page, perPage, router, isLoading, error, audit]);
 
   // Clear selection when issues change
   React.useEffect(() => {
@@ -185,10 +210,6 @@ export function AuditDetailPage({ className }: AuditDetailPageProps) {
     mutateAudit();
     mutateIssues();
   }, [mutateAudit, mutateIssues]);
-
-  // Loading state
-  const isLoading = isAuditLoading || isIssuesLoading;
-  const error = auditError || issuesError;
 
   // Error state
   if (error && !isLoading) {
