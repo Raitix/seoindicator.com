@@ -1,7 +1,7 @@
 # TASK-14-6: Create RobotsParser Service
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
