@@ -8,6 +8,16 @@
 
 ## Comments
 ### 2026-03-07 - DocSystemAnalyst
+**Re-verification Complete (15:38 GMT+2)**
+- Feature status: Done (Phase 1 MVP complete, Phases 2-4 planned)
+- SPEC-017 status: Done
+- DOCUMENTATION.md verified at line 13588 (User Onboarding & Activation Flow section)
+- Stale lock removed: FEAT-17.lock
+- Completion marker written: logs/completed/feature/FEAT-17.json
+- Active-agents entry cleared
+- **ORCHESTRATOR BUG:** 60+ verifications to date due to naming mismatch ("FEAT-17" vs "FEAT-017")
+
+### 2026-03-07 - DocSystemAnalyst
 **Duplicate Trigger (13:29 GMT+2)**
 - Orchestrator triggered "SPEC-17" again - naming mismatch with zero-padded filename
 - Specification already documented and complete (SPEC-017)
