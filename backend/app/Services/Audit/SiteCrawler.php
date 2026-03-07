@@ -137,8 +137,9 @@ class SiteCrawler implements SiteCrawlerInterface
             return;
         }
 
-        // Skip if max pages reached
-        if (count($this->crawledUrls) >= $this->config['max_pages']) {
+        // Skip if max pages reached (queue + already crawled)
+        $pendingCount = count(array_filter($this->queue, fn($item) => $item->isPending()));
+        if (count($this->crawledUrls) + $pendingCount >= $this->config['max_pages']) {
             return;
         }
 

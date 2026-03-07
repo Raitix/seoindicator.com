@@ -157,8 +157,8 @@ export function IssueFilters({
       <div className="flex flex-wrap items-center gap-2">
         {/* Issue Type Filter */}
         <Select
-          value={filters.type || ''}
-          onValueChange={(value) => onFilterChange({ type: value || undefined })}
+          value={filters.type || 'all'}
+          onValueChange={(value) => onFilterChange({ type: value === 'all' ? undefined : value })}
         >
           <SelectTrigger
             data-testid="type-filter"
@@ -178,8 +178,8 @@ export function IssueFilters({
 
         {/* Severity Filter */}
         <Select
-          value={filters.severity || ''}
-          onValueChange={(value) => onFilterChange({ severity: (value || undefined) as IssueSeverity | undefined })}
+          value={filters.severity || 'all'}
+          onValueChange={(value) => onFilterChange({ severity: value === 'all' ? undefined : (value as IssueSeverity) })}
         >
           <SelectTrigger
             data-testid="severity-filter"
@@ -199,8 +199,8 @@ export function IssueFilters({
 
         {/* Status Filter */}
         <Select
-          value={filters.status || ''}
-          onValueChange={(value) => onFilterChange({ status: (value || undefined) as IssueStatus | undefined })}
+          value={filters.status || 'all'}
+          onValueChange={(value) => onFilterChange({ status: value === 'all' ? undefined : (value as IssueStatus) })}
         >
           <SelectTrigger
             data-testid="status-filter"

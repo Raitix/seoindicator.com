@@ -19,6 +19,21 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace }),
 }));
 
+// Mock window.location
+const originalLocation = window.location;
+beforeAll(() => {
+  Object.defineProperty(window, 'location', {
+    value: {
+      pathname: '/sites/1/audits/123',
+      search: '',
+    },
+    writable: true,
+  });
+});
+afterAll(() => {
+  window.location = originalLocation;
+});
+
 // Mock API hooks
 vi.mock('@/lib/api/audit-issues', () => ({
   useAuditSummary: () => ({
