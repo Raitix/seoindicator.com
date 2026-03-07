@@ -1,7 +1,7 @@
 # TASK-34-4: MentionParser Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -87,3 +87,85 @@ Create the `MentionParser` service for extracting brand mentions from AI respons
 ---
 
 *Created by SpecSystemAnalyst on 2026-03-07*
+
+---
+
+## Comments
+
+### ProjectManager Prioritization (2026-03-07 18:45 UTC)
+
+**Priority: HIGH (confirmed)** ✅
+
+**Rationale:**
+- **Core Parsing Service for GEO Feature** - MentionParser extracts brand mentions from AI responses, determining mention types and context
+- **Enables Analytics Pipeline** - Without this service, brand visibility analytics cannot be calculated
+- **MVP Critical Path** - Task is in Phase 1 MVP (Core Tracking) of SPEC-034
+- **Business Value** - Directly enables the Generative Engine Optimization feature's core value proposition: understanding how brands appear in AI responses
+
+**Risk: LOW (confirmed)** ✅
+
+**Rationale:**
+- **Pure PHP Logic** - No external API calls, all regex and string manipulation
+- **Standard Laravel Service** - Follows established patterns from other services
+- **Well-Defined Scope** - Clear acceptance criteria with specific methods
+- **Testable in Isolation** - Can be unit tested without external dependencies
+
+**Dependency Analysis:**
+
+| Dependency | Status | Ready |
+|------------|--------|-------|
+| TASK-34-3 (AIQueryEngine) | To Write Tests | ❌ NOT IMPLEMENTED |
+
+**TDD Pattern Applied:**
+
+PreTester CAN design tests immediately using:
+1. **Mocked AI Response Strings** - Sample responses for testing mention extraction
+2. **Interface-Based Testing** - Define expected input/output contracts
+3. **Test Categories:**
+   - `extractMentions()` with word boundaries, case-insensitivity
+   - `extractContext()` with edge cases (start/end of string)
+   - `detectMentionType()` with pattern detection (list, comparison, recommendation, neutral)
+   - `extractCompetitorMentions()` with same logic as brand mentions
+   - Edge cases: empty response, no mentions, special characters, unicode, long text
+
+**Parallel Development Pattern:**
+- PreTester designs tests NOW with mocked response strings
+- Tests don't need AIQueryEngine to exist - use static test fixtures
+- Implementation proceeds independently
+- Integration testing happens when TASK-34-3 completes
+
+**Downstream Impact:**
+
+| Task | Depends On TASK-34-4 |
+|------|---------------------|
+| TASK-34-5 (AIVisibilityService) | Uses MentionParser for analysis |
+| TASK-34-6 (AIVisibilityController) | Exposes mention data via API |
+| TASK-34-7 (Query Job) | Uses MentionParser in background |
+| All frontend dashboard tasks | Display mention analytics |
+
+**Execution Order:**
+1. TASK-34-1 (Migrations) → Done first
+2. TASK-34-2 (Models) → To Write Tests
+3. TASK-34-3 (AIQueryEngine) → To Write Tests (parallel with this task)
+4. TASK-34-4 (MentionParser) → This task (TDD with static fixtures)
+5. TASK-34-5, 34-6, 34-7 → After both services ready
+
+**Technical Notes from Task:**
+- Uses `preg_match_all()` with `PREG_OFFSET_CAPTURE` for position tracking
+- Brand names escaped with `preg_quote()` before regex
+- Performance consideration for large texts (>10KB responses)
+
+**Free Tools Compliance:**
+- Pure PHP implementation - no external services required
+- Regex-based parsing - no paid NLP libraries needed
+- Can be enhanced later with ML if needed (out of scope for MVP)
+
+**Handoff to PreTester:** Ready for test design. Focus on:
+- `extractMentions()` with word boundaries and case-insensitivity
+- `extractContext()` radius handling and edge cases
+- `detectMentionType()` pattern detection accuracy
+- `extractCompetitorMentions()` reuse of brand extraction logic
+- Unicode text support and special character handling
+- Performance with long responses (>10KB)
+
+**Status:** `Prioritization In Progress` → `To Write Tests`
