@@ -118,7 +118,7 @@ class ReportControllerAuditTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Test Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
@@ -154,7 +154,7 @@ class ReportControllerAuditTest extends TestCase
 
         // No completed audit
         $response = $this->actingAs($this->user)
-            ->postJson("/api/v1/sites/{$this->site->id}/reports", [
+            ->postJson("/api/v1/sites/{$this->site->id}/reports/generate", [
                 'name' => 'Test Report',
                 'type' => 'one-time',
                 'format' => 'pdf',
