@@ -811,12 +811,9 @@ class ImageAltCheckerTest extends TestCase
         $checker = new ImageAltChecker();
         $finding = $checker->check($result);
 
-        // Should have alt, so no issue OR handled safely
-        if ($finding !== null) {
-            // If it returns a finding, it should be sanitized
-            $json = json_encode($finding->context);
-            $this->assertIsString($json);
-        }
+        // Image has alt text (even with special chars), so no issue should be raised
+        // The alt text is present and should be handled safely
+        $this->assertNull($finding, 'Image with alt text should not raise issue, even with special chars');
     }
 
     #[Test]
