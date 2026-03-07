@@ -186,3 +186,32 @@ public function markAsFailed(): void;
 - Analyzing retry requirements
 - Creating test scenarios for exponential backoff
 - Designing worker job tests
+
+### [2026-03-07 17:50 GMT+2] PreTester: Test Execution Results
+**WebhookRetryServiceTest:** ✅ 28 tests passing (69 assertions)
+- All retry schedule calculations correct
+- All HTTP status retry logic working
+- All exception handling tests passing
+- Integration with delivery model working
+
+**ProcessWebhookRetriesJobTest:** ⚠️ 10 failures, 15 passes
+- Failures are expected (TDD) - implementation incomplete
+- Tests reveal design issue: dispatcher creates NEW delivery instead of updating EXISTING one
+
+### [2026-03-07 17:55 GMT+2] PreTester: Design Issue Identified
+**Issue:** `WebhookDispatcherService::dispatch()` creates a new `WebhookDelivery` record each call.
+**Impact:** Retry job should UPDATE existing delivery, not create new one.
+**Solution for Developer:**
+1. Add `redeliver(WebhookDelivery $delivery)` method to WebhookDispatcherService
+2. Or modify `dispatch()` to accept optional delivery parameter
+3. The retry job should use this method to update the existing delivery record
+
+### [2026-03-07 18:00 GMT+2] PreTester: Tests Fixed
+- Fixed EC-001: Changed null status test to connection exception test
+- Fixed SC-001: Changed invalid webhook_id test to use deleted webhook pattern
+
+**Test Commands:**
+```bash
+php artisan test --filter=WebhookRetryServiceTest    # 28 tests
+php artisan test --filter=ProcessWebhookRetriesJobTest  # 25 tests (10 pending implementation)
+```
