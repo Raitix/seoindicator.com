@@ -29,6 +29,13 @@ class IssueDetector implements IssueDetectorInterface
     protected array $checkers = [];
 
     /**
+     * Title cache for duplicate detection (per-audit).
+     *
+     * @var array<int, array<string, string>>
+     */
+    protected array $titleCache = [];
+
+    /**
      * Duplicate title cache key pattern.
      */
     protected const TITLE_CACHE_KEY = 'audit:titles:{audit_id}';
@@ -126,11 +133,15 @@ class IssueDetector implements IssueDetectorInterface
 
         $issueIds = [];
         $title = $this->normalizeTitle($crawlResult->getTitle());
-        $shouldStoreTitle = !empty($title);
+        $shouldCheckDuplicates = !empty($title);
 
-        // Check for duplicate titles (only if title exists)
-        if ($shouldStoreTitle) {
-            $duplicateFinding = $this->detectDuplicateTitle($crawlResult, $auditId, $title);
+        // Get cached titles for duplicate detection
+        $cachedTitles = [];
+        if ($shouldCheckDuplicates) {
+            $cachedTitles = $this->getTitlesFromCache($auditId);
+            
+            // Check for duplicate titles
+            $duplicateFinding = $this->detectDuplicateTitleFromCache($crawlResult, $title, $cachedTitles);
             if ($duplicateFinding !== null) {
                 $issueId = $this->createIssue($duplicateFinding, $auditId, $crawlResult->url);
                 if ($issueId !== null) {
@@ -163,9 +174,9 @@ class IssueDetector implements IssueDetectorInterface
             }
         }
 
-        // Store title for duplicate detection (only if non-empty)
-        if ($shouldStoreTitle) {
-            $this->storeTitleForDuplicateDetection($crawlResult, $auditId, $title);
+        // Store title for duplicate detection
+        if ($shouldCheckDuplicates) {
+            $this->storeTitleInCache($auditId, $title, $crawlResult->url, $cachedTitles);
         }
 
         return $issueIds;
@@ -298,25 +309,43 @@ class IssueDetector implements IssueDetectorInterface
     // =========================================================================
 
     /**
-     * Detect duplicate titles across pages.
+     * Get titles from cache for duplicate detection.
+     *
+     * @param int $auditId The audit ID
+     * @return array<string, string> Array of title => URL
+     */
+    protected function getTitlesFromCache(int $auditId): array
+    {
+        $cacheKey = $this->getTitleCacheKey($auditId);
+        
+        try {
+            $cached = Cache::get($cacheKey);
+            return is_array($cached) ? $cached : [];
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Detect duplicate title from cached titles.
      *
      * @param CrawlResult $crawlResult The crawl result
-     * @param int $auditId The audit ID
      * @param string $normalizedTitle The pre-normalized title
+     * @param array<string, string> $cachedTitles The cached titles
      * @return IssueFinding|null Finding if duplicate detected, null otherwise
      */
-    protected function detectDuplicateTitle(CrawlResult $crawlResult, int $auditId, string $normalizedTitle): ?IssueFinding
-    {
+    protected function detectDuplicateTitleFromCache(
+        CrawlResult $crawlResult,
+        string $normalizedTitle,
+        array $cachedTitles
+    ): ?IssueFinding {
         if (empty($normalizedTitle)) {
             return null;
         }
 
-        $cacheKey = $this->getTitleCacheKey($auditId);
-        $titles = Cache::get($cacheKey, []);
-
         // Check if title already exists (case-insensitive)
         $normalizedTitleLower = strtolower($normalizedTitle);
-        foreach ($titles as $existingTitle => $existingUrl) {
+        foreach ($cachedTitles as $existingTitle => $existingUrl) {
             if (strtolower($existingTitle) === $normalizedTitleLower) {
                 return new IssueFinding(
                     issueType: 'duplicate_title',
@@ -336,29 +365,36 @@ class IssueDetector implements IssueDetectorInterface
     }
 
     /**
-     * Store title for duplicate detection.
+     * Store title in cache for duplicate detection.
      *
-     * @param CrawlResult $crawlResult The crawl result
      * @param int $auditId The audit ID
-     * @param string $normalizedTitle The pre-normalized title
+     * @param string $normalizedTitle The normalized title
+     * @param string $url The URL
+     * @param array<string, string> $cachedTitles The existing cached titles
      */
-    protected function storeTitleForDuplicateDetection(CrawlResult $crawlResult, int $auditId, string $normalizedTitle): void
+    protected function storeTitleInCache(int $auditId, string $normalizedTitle, string $url, array $cachedTitles): void
     {
         if (empty($normalizedTitle)) {
             return;
         }
-
-        $cacheKey = $this->getTitleCacheKey($auditId);
-        $titles = Cache::get($cacheKey, []);
 
         // Truncate title if too long
         if (strlen($normalizedTitle) > self::MAX_TITLE_LENGTH) {
             $normalizedTitle = substr($normalizedTitle, 0, self::MAX_TITLE_LENGTH);
         }
 
-        $titles[$normalizedTitle] = $crawlResult->url;
+        $cachedTitles[$normalizedTitle] = $url;
+        $cacheKey = $this->getTitleCacheKey($auditId);
 
-        Cache::put($cacheKey, $titles, self::TITLE_CACHE_TTL);
+        try {
+            Cache::put($cacheKey, $cachedTitles, self::TITLE_CACHE_TTL);
+        } catch (\Exception $e) {
+            // Log but don't fail the analysis
+            Log::warning('IssueDetector: Failed to store title in cache', [
+                'audit_id' => $auditId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
