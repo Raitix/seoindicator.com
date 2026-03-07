@@ -128,7 +128,7 @@ class AIVisibilityProjectPolicyTest extends TestCase
         $user = User::factory()->create();
         $project = $this->mockProject(['user_id' => $user->id]);
 
-        $result = $this->policy->run($user, $project);
+        $result = $this->policy->runQueries($user, $project);
 
         $this->assertTrue($result);
     }
@@ -142,7 +142,7 @@ class AIVisibilityProjectPolicyTest extends TestCase
         $otherUser = User::factory()->create();
         $project = $this->mockProject(['user_id' => $otherUser->id]);
 
-        $result = $this->policy->run($user, $project);
+        $result = $this->policy->runQueries($user, $project);
 
         $this->assertFalse($result);
     }
@@ -176,11 +176,11 @@ class AIVisibilityProjectPolicyTest extends TestCase
     }
 
     /**
-     * Test policy has run method.
+     * Test policy has runQueries method.
      */
     public function test_policy_has_run_method(): void
     {
-        $this->assertTrue(method_exists($this->policy, 'run'));
+        $this->assertTrue(method_exists($this->policy, 'runQueries'));
     }
 
     // =========================================================================
@@ -198,7 +198,7 @@ class AIVisibilityProjectPolicyTest extends TestCase
         $this->assertTrue($this->policy->view($user, $project));
         $this->assertTrue($this->policy->update($user, $project));
         $this->assertTrue($this->policy->delete($user, $project));
-        $this->assertTrue($this->policy->run($user, $project));
+        $this->assertTrue($this->policy->runQueries($user, $project));
     }
 
     /**
@@ -226,7 +226,7 @@ class AIVisibilityProjectPolicyTest extends TestCase
         $this->assertFalse($this->policy->view($user, $project));
         $this->assertFalse($this->policy->update($user, $project));
         $this->assertFalse($this->policy->delete($user, $project));
-        $this->assertFalse($this->policy->run($user, $project));
+        $this->assertFalse($this->policy->runQueries($user, $project));
     }
 
     // =========================================================================

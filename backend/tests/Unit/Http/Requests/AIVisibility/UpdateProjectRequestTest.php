@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Http\Requests\AIVisibility;
 
-use App\Http\Requests\Api\V1\AIVisibility\UpdateAIVisibilityProjectRequest;
+use App\Http\Requests\V1\AIVisibility\UpdateAIVisibilityProjectRequest;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
