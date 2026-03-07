@@ -34,7 +34,7 @@ class RunAIVisibilityQueriesJob implements ShouldQueue
      *
      * @var string|null
      */
-    protected ?string $frequency;
+    public ?string $frequency;
 
     /**
      * Create a new job instance.
@@ -60,8 +60,8 @@ class RunAIVisibilityQueriesJob implements ShouldQueue
         ]);
 
         try {
-            // Get active projects for querying
-            $projects = $this->getActiveProjectsForQuery($service);
+            // Get active projects for querying via the service
+            $projects = $service->getActiveProjectsForQuery($this->frequency);
 
             if (empty($projects)) {
                 Log::info('No projects due for AI visibility queries');
@@ -78,7 +78,7 @@ class RunAIVisibilityQueriesJob implements ShouldQueue
                 }
 
                 // Get the query to use
-                $query = $project['default_query'] ?? $this->generateDefaultQuery($project['brand_name']);
+                $query = $project['default_query'] ?? $this->generateDefaultQuery($project['brand_name'] ?? '');
 
                 // Get useFreeModel setting
                 $useFreeModel = $project['use_free_model'] ?? true;
@@ -97,6 +97,7 @@ class RunAIVisibilityQueriesJob implements ShouldQueue
 
             Log::info('RunAIVisibilityQueriesJob completed', [
                 'dispatched' => $dispatchedCount,
+                'count' => $dispatchedCount,
                 'frequency' => $this->frequency,
             ]);
         } catch (\Exception $e) {
@@ -136,103 +137,6 @@ class RunAIVisibilityQueriesJob implements ShouldQueue
     }
 
     /**
-     * Get active projects that are due for querying.
-     *
-     * @param AIVisibilityServiceInterface $service
-     * @return array
-     */
-    protected function getActiveProjectsForQuery(AIVisibilityServiceInterface $service): array
-    {
-        $query = AIVisibilityProject::query()
-            ->where('is_active', true);
-
-        // Filter by frequency if specified
-        if ($this->frequency) {
-            $query->where('tracking_frequency', $this->frequency);
-        }
-
-        // Filter by due date based on tracking frequency
-        $query->where(function ($q) {
-            $now = now();
-
-            // Daily: last_queried_at is null or more than 1 day ago
-            $q->orWhere(function ($subQ) use ($now) {
-                $subQ->where('tracking_frequency', 'daily')
-                    ->where(function ($dateQ) use ($now) {
-                        $dateQ->whereNull('last_queried_at')
-                            ->orWhere('last_queried_at', '<', $now->subDay());
-                    });
-            });
-
-            // Weekly: last_queried_at is null or more than 7 days ago
-            $q->orWhere(function ($subQ) use ($now) {
-                $subQ->where('tracking_frequency', 'weekly')
-                    ->where(function ($dateQ) use ($now) {
-                        $dateQ->whereNull('last_queried_at')
-                            ->orWhere('last_queried_at', '<', $now->subWeek());
-                    });
-            });
-
-            // Monthly: last_queried_at is null or more than 30 days ago
-            $q->orWhere(function ($subQ) use ($now) {
-                $subQ->where('tracking_frequency', 'monthly')
-                    ->where(function ($dateQ) use ($now) {
-                        $dateQ->whereNull('last_queried_at')
-                            ->orWhere('last_queried_at', '<', $now->subMonth());
-                    });
-            });
-        });
-
-        $projects = $query->get();
-
-        return $projects->map(function ($project) {
-            return [
-                'id' => $project->id,
-                'brand_name' => $project->brand_name,
-                'platforms' => $this->getPlatformsForProject($project),
-                'default_query' => $this->getDefaultQuery($project),
-                'use_free_model' => true,
-            ];
-        })->toArray();
-    }
-
-    /**
-     * Get the platforms configured for a project.
-     *
-     * @param AIVisibilityProject $project
-     * @return array
-     */
-    protected function getPlatformsForProject(AIVisibilityProject $project): array
-    {
-        // Get platforms from config
-        $defaultPlatforms = config('ai-visibility.platforms', ['chatgpt', 'perplexity']);
-
-        return $defaultPlatforms;
-    }
-
-    /**
-     * Get the default query for a project.
-     *
-     * @param AIVisibilityProject $project
-     * @return string
-     */
-    protected function getDefaultQuery(AIVisibilityProject $project): string
-    {
-        // Use query templates if configured
-        $templates = $project->query_templates;
-
-        if (!empty($templates) && is_array($templates)) {
-            $template = $templates[0] ?? null;
-            if ($template) {
-                return $this->interpolateTemplate($template, $project);
-            }
-        }
-
-        // Fall back to brand name query
-        return $this->generateDefaultQuery($project->brand_name);
-    }
-
-    /**
      * Generate a default query from brand name.
      *
      * @param string $brandName
@@ -240,28 +144,9 @@ class RunAIVisibilityQueriesJob implements ShouldQueue
      */
     protected function generateDefaultQuery(string $brandName): string
     {
+        if (empty($brandName)) {
+            return 'What are the best SEO tools?';
+        }
         return "What are the best tools for SEO? Include {$brandName} if relevant.";
-    }
-
-    /**
-     * Interpolate a query template with project data.
-     *
-     * @param string $template
-     * @param AIVisibilityProject $project
-     * @return string
-     */
-    protected function interpolateTemplate(string $template, AIVisibilityProject $project): string
-    {
-        $replacements = [
-            '{brand}' => $project->brand_name,
-            '{category}' => 'SEO',
-            '{competitors}' => implode(', ', $project->getCompetitorNames()),
-        ];
-
-        return str_replace(
-            array_keys($replacements),
-            array_values($replacements),
-            $template
-        );
     }
 }

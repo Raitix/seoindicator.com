@@ -4,7 +4,7 @@ namespace Tests\Unit\Jobs\AIVisibility;
 
 use App\Jobs\AIVisibility\RunAIVisibilityQueriesJob;
 use App\Jobs\AIVisibility\AIVisibilityQueryJob;
-use App\Services\AIVisibilityServiceInterface;
+use App\Services\AIVisibility\Contracts\AIVisibilityServiceInterface;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
