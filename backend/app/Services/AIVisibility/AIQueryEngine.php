@@ -183,13 +183,13 @@ class AIQueryEngine
     /**
      * Query an AI platform with the given query.
      *
-     * @param string $platform The platform to query (chatgpt, perplexity)
-     * @param string $query The query to send
+     * @param string|null $platform The platform to query (chatgpt, perplexity)
+     * @param string|null $query The query to send
      * @param bool $useFreeModel Whether to use free-tier model (default: true)
      * @return AIQueryResult The query result
      * @throws InvalidArgumentException If platform or query is invalid
      */
-    public function query(string $platform, string $query, bool $useFreeModel = true): AIQueryResult
+    public function query(?string $platform, ?string $query, bool $useFreeModel = true): AIQueryResult
     {
         // Validate platform
         if ($platform === null || !$this->isValidPlatform($platform)) {

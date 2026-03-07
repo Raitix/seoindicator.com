@@ -470,18 +470,26 @@ class AIQueryEngineTest extends TestCase
     {
         $mockClient = Mockery::mock(OpenRouterClientInterface::class);
         $mockClient->shouldReceive('isAvailable')->andReturn(true);
-        $mockClient->shouldReceive('generate')
-            ->once()
-            ->andReturn($this->createSuccessfulAIResponse());
+
+        // Create a proper AIQueryResult that Cache::remember should return
+        $expectedResult = AIQueryResult::success(
+            responseText: 'Cached response',
+            model: 'google/gemini-2.0-flash-exp:free',
+            tokensUsed: 100,
+            latencyMs: 50,
+            platform: 'chatgpt',
+            queryText: 'test query',
+        );
 
         Cache::shouldReceive('remember')
             ->once()
-            ->andReturn($this->createSuccessfulAIResponse());
+            ->andReturn($expectedResult);
 
         $engine = new AIQueryEngine($mockClient);
         $result = $engine->query('chatgpt', 'test query');
 
         $this->assertInstanceOf(AIQueryResult::class, $result);
+        $this->assertEquals('Cached response', $result->responseText);
     }
 
     /** @test QE-045: query() invalid platform throws */

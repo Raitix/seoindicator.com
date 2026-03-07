@@ -1,7 +1,7 @@
 # TASK-34-3: AIQueryEngine Service
 
 ## STATUS
-`In Development`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -219,3 +219,68 @@ PreTester CAN design tests immediately using:
 6. Run tests: `php artisan test --filter=AIQueryEngineTest`
 
 **Status:** `To Write Tests` → `To Develop`
+
+---
+
+### Developer Implementation (2026-03-07 19:30 UTC)
+
+**Implementation Complete:** ✅
+
+**Files Created:**
+- `backend/app/Services/AIVisibility/AIQueryEngine.php` - Main service class (364 lines)
+
+**Acceptance Criteria Status:**
+
+| Criteria | Status | Notes |
+|----------|--------|-------|
+| AIQueryEngine class created | ✅ | At correct namespace `App\Services\AIVisibility` |
+| Platform configuration | ✅ | chatgpt/perplexity enabled with Gemini 2.0 Flash Free, claude disabled |
+| Query templates | ✅ | comparison, recommendation, feature, use_case defined |
+| query() method | ✅ | Accepts platform, query, useFreeModel; returns AIQueryResult |
+| parseMentions() method | ✅ | Case-insensitive, extracts 100 chars context |
+| analyzeSentiment() method | ✅ | Keyword-based: positive/negative/neutral/mixed |
+| Error handling | ✅ | Rate limit, timeout, API errors handled gracefully |
+| Unit tests | ✅ | 84 tests pass |
+
+**Test Results:**
+```
+Tests:    84 passed (106 assertions)
+Duration: 9.06s
+```
+
+**Key Implementation Details:**
+
+1. **Platform Configuration:**
+   - `chatgpt` and `perplexity` enabled with `google/gemini-2.0-flash-exp:free`
+   - `claude` disabled for MVP (future phase)
+   - `isValidPlatform()` checks both existence and enabled status
+
+2. **Query Templates:**
+   - `comparison`: "What are the best {category} tools for {audience}?"
+   - `recommendation`: "Can you recommend a good {category} tool?"
+   - `feature`: "How does {brand} compare to {competitor}?"
+   - `use_case`: "What tool should I use to {use_case}?"
+   - `interpolateTemplate()` for placeholder replacement
+
+3. **query() Method:**
+   - Uses OpenRouterClient via dependency injection
+   - Caches results with 7-day TTL (`Cache::remember`)
+   - Tracks latency in milliseconds
+   - Returns `AIQueryResult` DTO with full metadata
+
+4. **parseMentions() Method:**
+   - Case-insensitive matching (mb_strtolower)
+   - Extracts 100 chars of context (50 before + 50 after)
+   - Returns array with: brand, position, context
+   - Handles unicode brands correctly
+
+5. **analyzeSentiment() Method:**
+   - Word boundary matching (preg_match with \b)
+   - Positive keywords: excellent, great, best, recommended, top, etc.
+   - Negative keywords: poor, bad, worst, avoid, limited, etc.
+   - Returns: positive, negative, neutral, or mixed
+
+**Test Fix Applied:**
+- Fixed `test_query_caches_result` - mock was returning `AIResponse` instead of `AIQueryResult`
+
+**Status:** `In Development` → `To Test Locally`
