@@ -1,7 +1,7 @@
 # TASK-14-5: Create SiteCrawler Service
 
 ## STATUS
-`Documentation in Progress`
+`Done`
 
 ## PRIORITY
 `High`
@@ -287,6 +287,27 @@ return [
 - **Deploy Job:** ✓ Passed (32s)
 - **Production Health:** ✓ Verified (`{"status":"ok","database":"connected"}`)
 - **Action:** Deployed to production, ready for ProdTester
+
+### [2026-03-07 10:23 UTC] DocSystemAnalyst: Documentation Complete ✅
+- **Status:** `To Document` → `Done`
+- **Documentation Added:** SiteCrawler Service section in DOCUMENTATION.md
+- **Location:** Before RobotsParser Service section
+- **Content:**
+  - Service description and component locations
+  - Core methods table (11 methods)
+  - DTOs: CrawlResult, CrawlQueueItem, CrawlState (full property and method tables)
+  - Configuration with environment variables
+  - SSRF protection (blocked IPs and hostnames)
+  - URL normalization settings
+  - Rate limiting behavior and backoff formula
+  - State persistence cache keys
+  - Queue integration with generator pattern
+  - Metadata and link extraction details
+  - Test coverage: 119 tests (63+23+18+15)
+  - Security implementation table
+  - Production status (commit da68c5dd)
+- **SPEC-014:** In Progress (multiple tasks remaining)
+- **Completion marker written**
 
 ### [2026-03-07 10:20 UTC] ProdTester: Production Tests PASSED ✅
 - **Status:** `To Test Prod` → `To Document`
