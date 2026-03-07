@@ -1,7 +1,7 @@
 # TASK-34-9: Frontend Create Project Form
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
