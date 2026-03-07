@@ -1,6 +1,319 @@
 # DOCUMENTATION.md
 
 ---
+## HTML Analysis Checkers (TASK-14-9)
+
+### Service Description
+HTML analysis checkers for the Technical SEO Site Audit feature (FEAT-014) that detect on-page SEO issues including missing title tags, meta descriptions, H1 tags, and viewport settings. Implements the CheckerInterface pattern for extensible issue detection with severity-based classification.
+
+### Component Locations
+- **BaseChecker:** `backend/app/Services/Audit/Checkers/BaseChecker.php`
+- **TitleTagChecker:** `backend/app/Services/Audit/Checkers/TitleTagChecker.php`
+- **MetaDescriptionChecker:** `backend/app/Services/Audit/Checkers/MetaDescriptionChecker.php`
+- **H1Checker:** `backend/app/Services/Audit/Checkers/H1Checker.php`
+- **ViewportChecker:** `backend/app/Services/Audit/Checkers/ViewportChecker.php`
+- **Tests:** `backend/tests/Unit/Services/Audit/Checkers/` (5 test files)
+- **Test Documentation:** `TESTS/TASK-14-9.md`
+
+### Checker Architecture
+
+| Checker | Priority | Issues Detected | Severity |
+|---------|----------|-----------------|----------|
+| TitleTagChecker | 100 | Missing/empty title, length issues | Critical/Warning/Notice |
+| MetaDescriptionChecker | 90 | Missing/empty description, length issues | Warning/Notice |
+| H1Checker | 80 | Missing/empty H1, multiple H1s | Warning/Notice |
+| ViewportChecker | 70 | Missing/invalid viewport | Warning |
+
+### Detection Rules
+
+**TitleTagChecker:**
+| Condition | Severity | Description |
+|-----------|----------|-------------|
+| Missing `<title>` tag | Critical | Title tag not found in HTML |
+| Empty `<title>` tag | Critical | Title tag exists but contains no text |
+| Title > 60 chars | Warning | Title may be truncated in SERPs |
+| Title < 30 chars | Notice | Title may be too short for SEO |
+
+**MetaDescriptionChecker:**
+| Condition | Severity | Description |
+|-----------|----------|-------------|
+| Missing `<meta name="description">` | Warning | Meta description not found |
+| Empty content attribute | Warning | Meta description exists but is empty |
+| Description > 160 chars | Notice | Description may be truncated in SERPs |
+| Description < 50 chars | Notice | Description may be too short |
+
+**H1Checker:**
+| Condition | Severity | Description |
+|-----------|----------|-------------|
+| No `<h1>` tag | Warning | H1 heading not found |
+| Empty `<h1>` tag | Warning | H1 exists but contains no text |
+| Multiple `<h1>` tags | Notice | More than one H1 found on page |
+
+**ViewportChecker:**
+| Condition | Severity | Description |
+|-----------|----------|-------------|
+| Missing viewport meta | Warning | Viewport meta tag not found |
+| Missing `width=device-width` | Warning | Viewport doesn't include proper width setting |
+
+### BaseChecker Helper Methods
+
+```php
+abstract class BaseChecker implements CheckerInterface
+{
+    protected function extractTitle(Crawler $crawler): ?string;
+    protected function extractMetaDescription(Crawler $crawler): ?string;
+    protected function extractH1s(Crawler $crawler): array;
+    protected function hasViewport(Crawler $crawler): bool;
+    protected function hasMetaDescription(Crawler $crawler): bool;
+    protected function extractMetaDescriptionContent(Crawler $crawler): ?string;
+    protected function createFinding(
+        string $issueType,
+        string $severity,
+        string $description,
+        string $recommendation
+    ): IssueFinding;
+}
+```
+
+### HTML Parsing
+
+Uses `symfony/dom-crawler` (Laravel built-in) for HTML parsing:
+
+```php
+use Symfony\Component\DomCrawler\Crawler;
+
+$crawler = new Crawler($html);
+$title = $crawler->filter('title')->first()->text();
+$description = $crawler->filter('meta[name="description"]')->attr('content');
+$h1Count = $crawler->filter('h1')->count();
+```
+
+### IssueDetector Integration
+
+All checkers implement `CheckerInterface` and are registered with the IssueDetector service:
+
+```php
+interface CheckerInterface
+{
+    public function check(CrawlResult $result): ?IssueFinding;
+    public function getPriority(): int;
+}
+```
+
+**Checker Registration:**
+```php
+// IssueDetector automatically discovers and registers all checkers
+$detector->registerChecker(new TitleTagChecker());
+$detector->registerChecker(new MetaDescriptionChecker());
+$detector->registerChecker(new H1Checker());
+$detector->registerChecker(new ViewportChecker());
+```
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| BaseCheckerTest.php | 28 | ✅ PASS |
+| TitleTagCheckerTest.php | 30 | ✅ PASS |
+| MetaDescriptionCheckerTest.php | 31 | ✅ PASS |
+| H1CheckerTest.php | 31 | ✅ PASS |
+| ViewportCheckerTest.php | 26 | ✅ PASS |
+| **Total** | **146** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Description |
+|----------|-------------|
+| Detection Rules | All severity levels for each checker |
+| Edge Cases | Malformed HTML, empty pages, special characters |
+| Unicode Support | Multibyte character handling |
+| XSS Prevention | Script tags handled safely |
+| Performance | Large HTML documents |
+
+### Security Implementation
+
+| Security Test | Result |
+|---------------|--------|
+| XSS in title | ✅ Handled safely |
+| XSS in description | ✅ Handled safely |
+| XSS in H1 | ✅ Handled safely |
+| SQL injection | ✅ No vulnerabilities |
+| Malformed HTML | ✅ Graceful degradation |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `9064d999` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 341/341 passing (671 assertions) |
+| Status | Complete |
+
+### Dependencies
+- TASK-14-8: IssueDetector Service (Done ✅)
+
+### Related Tasks
+- TASK-14-8: IssueDetector (checker registration)
+- TASK-14-10: Link Checker (similar pattern)
+- TASK-14-11: Image Alt Checker (similar pattern)
+
+---
+## Audit List Page (TASK-14-15)
+
+### Page Description
+Frontend page component for the Technical SEO Site Audit feature (FEAT-014) that displays a list of audits for a site with status indicators, issue summaries, and quick actions. Users can view audit history, start new audits, and cancel running audits from this interface.
+
+### Component Location
+- **Page Component:** `frontend/app/sites/[siteId]/audits/page.tsx`
+- **Components:**
+  - `frontend/components/audit/AuditList.tsx` - Main list component with filtering and pagination
+  - `frontend/components/audit/AuditListCard.tsx` - Individual audit card with progress bar
+  - `frontend/components/audit/AuditStatusBadge.tsx` - Status indicator with icons and animations
+  - `frontend/components/audit/IssueSummary.tsx` - Critical/Warning/Notice badge display
+  - `frontend/components/audit/StartAuditModal.tsx` - Modal for starting new audits
+- **API Hook:** `frontend/lib/hooks/useAudits.ts` - React Query hook with conditional polling
+- **Tests:** `frontend/__tests__/components/audit/*.test.tsx`, `frontend/__tests__/app/sites/[siteId]/audits/page.test.tsx`
+- **Test Documentation:** `TESTS/TASK-14-15.md`
+
+### Route
+- **URL:** `/sites/:siteId/audits`
+- **File:** `frontend/app/sites/[siteId]/audits/page.tsx` (Next.js App Router)
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Audit List | Displays all audits for a site with status, pages crawled, issues found |
+| Status Indicators | Visual indicators for pending/running/completed/failed/cancelled states |
+| Issue Summary | Colored badges showing critical, warning, and notice counts |
+| Start Audit | Modal with max_pages (1-10000) and max_depth (1-10) configuration |
+| Cancel Audit | Ability to cancel running audits |
+| Auto-Refresh | Running audits poll every 5 seconds for updates |
+| Filtering | Filter by status (all, pending, running, completed, failed, cancelled) |
+| Pagination | Page through large audit histories |
+| Empty State | Helpful messaging when no audits exist |
+| Loading States | Skeleton loading indicators during data fetch |
+
+### Status Indicators
+
+| Status | Icon | Color | Animation |
+|--------|------|-------|-----------|
+| `pending` | Clock | Gray (#6b7280) | Pulse |
+| `running` | Loader | Blue (#3b82f6) | Spin |
+| `completed` | CheckCircle | Green (#22c55e) | None |
+| `failed` | XCircle | Red (#ef4444) | None |
+| `cancelled` | Ban | Gray (#6b7280) | None |
+
+### Component Props
+
+**AuditList:**
+```typescript
+interface AuditListProps {
+  siteId: string;
+  className?: string;
+}
+```
+
+**AuditListCard:**
+```typescript
+interface AuditListCardProps {
+  audit: Audit;
+  onCancel?: (id: number) => void;
+  className?: string;
+}
+
+interface Audit {
+  id: number;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  pages_crawled: number;
+  issues_found: number;
+  started_at: string;
+  completed_at: string | null;
+}
+```
+
+**StartAuditModal:**
+```typescript
+interface StartAuditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onStart: (params: StartAuditParams) => void;
+  isLoading?: boolean;
+}
+
+interface StartAuditParams {
+  max_pages: number;  // 1-10000
+  max_depth: number;  // 1-10
+}
+```
+
+### API Integration
+
+**useAudits Hook:**
+```typescript
+export function useAudits(siteId: string) {
+  return useQuery({
+    queryKey: ['audits', siteId],
+    queryFn: () => fetchAudits(siteId),
+    refetchInterval: (data) => {
+      // Poll every 5s if any audit is running
+      const hasRunning = data?.some(a => a.status === 'running');
+      return hasRunning ? 5000 : false;
+    },
+  });
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `AuditStatusBadge.test.tsx` | 13 | ✅ PASS |
+| `AuditList.test.tsx` | 26 | ✅ PASS |
+| `StartAuditModal.test.tsx` | 20 | ✅ PASS |
+| `AuditCard.test.tsx` | 29 | ✅ PASS |
+| `IssueSummary.test.tsx` | 14 | ✅ PASS |
+| **Total** | **102** | **✅ ALL PASS** |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Labels | All interactive elements have aria-label |
+| Keyboard Navigation | Tab through all controls, Enter to activate |
+| Focus Management | Focus states visible on all interactive elements |
+| Screen Reader | Descriptive labels for status badges and actions |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| Input Validation | max_pages (1-10000), max_depth (1-10) validated |
+| Authentication Required | Page protected by Next.js middleware |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `cdc2fc7a` |
+| Deployment Method | GitHub Actions auto-deploy (run #22774900733) |
+| Health Check | ✅ 200 OK |
+| Page URL | `/sites/1/audits/` |
+| Tests | 102/102 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-14-13 (AuditController API endpoints) - Done ✅
+
+### Related Tasks
+- TASK-14-13: AuditController (API endpoints)
+- TASK-14-16: Audit Detail Page (uses similar components)
+- TASK-14-17: Audit Dashboard Widget (uses AuditStatusBadge, IssueSummary)
+
+---
 ## QueueMonitoringService (TASK-27-12)
 
 ### Service Description
@@ -20864,6 +21177,93 @@ Triggers the generation of site analysis reports (PDF/CSV formats). For MVP, use
 - TASK-4-6 (Data Aggregator)
 
 ---
+## CSV Report Exporter (TASK-4-4)
+
+### Service Description
+Generates CSV exports from SEO report data suitable for data analysis and import into other tools. Uses PHP's native `fputcsv()` for proper escaping and includes UTF-8 BOM for Excel compatibility.
+
+### Core Functionalities
+
+**CsvReportExporter Class:**
+- `generate(array $data, bool $includeBom = true): string` - Returns CSV content as string
+- UTF-8 BOM support for Excel compatibility (configurable)
+- Proper CSV escaping for special characters
+
+**Output Columns:**
+| Column | Description |
+|--------|-------------|
+| Keyword | The search keyword |
+| Current Position | Current ranking position ("Not ranked" if null) |
+| Previous Position | Previous ranking position ("N/A" if null) |
+| Change | Position change (+/- number, "N/A" if null) |
+| Search Engine | Search engine identifier |
+| Location | Geographic location |
+| Last Checked | Last check timestamp |
+| SERP Features | SERP feature icons |
+
+### SERP Feature Icons
+| Feature | Icon |
+|---------|------|
+| Featured Snippet | 🏆 |
+| Local Pack | 📍 |
+| Image Pack | 🖼️ |
+| Video | 🎬 |
+| People Also Ask | ❓ |
+| Knowledge Panel | 📋 |
+| Sitelinks | 🔗 |
+| Reviews | ⭐ |
+| FAQ | 📝 |
+| Product | 🛒 |
+
+### Value Formatting
+| Scenario | Output |
+|----------|--------|
+| Missing current position | "Not ranked" |
+| Missing previous position | "N/A" |
+| Missing change | "N/A" |
+| Empty dataset | Header row only |
+| UTF-8 keywords | Preserved correctly |
+
+### Technical Implementation
+- **Class:** `backend/app/Exporters/CsvReportExporter.php`
+- **Method:** Uses PHP's `fputcsv()` for proper CSV escaping
+- **Memory:** Uses `php://temp` stream (no file system exposure)
+- **Encoding:** UTF-8 with optional BOM prefix
+
+### API Integration
+- Used by `ReportController::download()` for CSV format
+- Triggered via `GET /api/v1/reports/{id}/download?format=csv`
+
+### Unit Tests
+16 tests, 36 assertions covering:
+- CSV generation with sample data
+- Column order verification
+- Special character escaping (commas, quotes, newlines)
+- UTF-8 keyword preservation
+- Missing value rendering ("N/A", "Not ranked")
+- Empty dataset handling (header only)
+- BOM inclusion/exclusion
+- Multiple keywords output
+- Long keyword strings
+- Position value casting
+- Change value formatting
+
+### Security Notes
+- Special characters properly escaped via `fputcsv()`
+- In-memory generation (no temp file exposure)
+- No SQL queries (receives pre-aggregated data)
+
+### Production Status
+- **Deployed:** 2026-02-28 (commit e2b6ec7)
+- **Health Check:** Passing
+- **Tests:** 16/16 passing (36 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-4-2 (Report model)
+- TASK-4-6 (Report data aggregation)
+
+---
 ## PDF Report Exporter (TASK-4-5)
 
 ### Service Description
@@ -23473,6 +23873,324 @@ Aggregates ranking data for SEO reports, collecting keyword positions, calculati
 ### Deployment
 - Deployed: 2026-02-24 via GitHub Actions
 - Production verified: 2026-02-25
+
+---
+## Indicator Catalog (TASK-28-7)
+
+### Component Description
+Homepage component displaying all 8 SEO indicators in a responsive, branded layout. Serves as the primary entry point for users to understand the value proposition and navigate to specific tools.
+
+### Component Location
+- **File:** `frontend/components/indicators/IndicatorCatalog.tsx`
+- **Export:** `frontend/components/indicators/index.ts`
+- **Tests:** `frontend/__tests__/components/indicators/IndicatorCatalog.test.tsx`
+
+### Props Interface
+
+```typescript
+interface IndicatorCatalogProps {
+  /** Optional custom class name */
+  className?: string;
+  /** Show loading state */
+  isLoading?: boolean;
+}
+```
+
+### Displayed Indicators
+
+| Indicator | Icon | Description | Link |
+|-----------|------|-------------|------|
+| Keyword Rankings | TrendingUp | Track SERP positions | /dashboard |
+| Visibility Score | Eye | Overall SEO visibility | /dashboard |
+| Competitor Analysis | Users | Compare with competitors | /comparison |
+| Technical Health | Wrench | Site audit score | /tools |
+| Backlink Profile | Link2 | Link analysis | /dashboard |
+| Content Opportunities | FileText | Keyword gaps | /dashboard |
+| SERP Features | Star | Featured snippets, etc. | /dashboard |
+| Page Speed | Zap | Performance metrics | /tools |
+
+### Layout
+
+**Desktop (≥1024px):** 4 columns × 2 rows
+**Tablet (768-1023px):** 2 columns × 4 rows
+**Mobile (<768px):** 1 column × 8 rows
+
+### Features
+
+- Responsive grid layout via `IndicatorGrid`
+- Individual `IndicatorCard` components for each indicator
+- Consistent branding with emerald/teal color scheme
+- Hover animations on each card
+- Click navigation to relevant pages
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| IndicatorCatalog.test.tsx | 28 | 35+ |
+
+**Test Categories:**
+- Component rendering
+- All 8 indicators displayed
+- Responsive layout
+- Navigation functionality
+- Loading state
+- Accessibility
+
+### Production Status
+- **Deployed:** 2026-03-04 (GitHub Actions)
+- **Health Check:** Passing
+- **Tests:** 28/28 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-28-5 (IndicatorCard)
+- TASK-28-6 (IndicatorGrid)
+- TASK-28-4 (IndicatorIcon)
+
+---
+## Design System Documentation (TASK-28-19)
+
+### Description
+Comprehensive design system documentation covering color tokens, typography, spacing, and component guidelines. Serves as the single source of truth for UI development.
+
+### Documentation Location
+- **File:** `DESIGN-SYSTEM.md`
+- **Related:** `frontend/app/globals.css` (CSS variable definitions)
+- **Related:** `frontend/components/README.md` (Component usage)
+
+### Color System
+
+**Brand Colors:**
+| Token | Light Mode | Dark Mode | Usage |
+|-------|------------|-----------|-------|
+| `--brand-primary` | `oklch(0.65 0.2 160)` | `oklch(0.7 0.22 160)` | Primary brand (emerald) |
+| `--brand-secondary` | `oklch(0.55 0.15 200)` | `oklch(0.6 0.17 200)` | Secondary brand (teal) |
+| `--brand-accent` | `oklch(0.75 0.18 50)` | `oklch(0.8 0.2 50)` | Accent color (orange) |
+
+**Semantic Colors:**
+| Token | Light Mode | Dark Mode | Usage |
+|-------|------------|-----------|-------|
+| `--success` | `oklch(0.65 0.2 145)` | `oklch(0.7 0.22 145)` | Success states |
+| `--warning` | `oklch(0.75 0.18 85)` | `oklch(0.8 0.2 85)` | Warning states |
+| `--error` | `oklch(0.6 0.22 25)` | `oklch(0.65 0.24 25)` | Error states |
+| `--info` | `oklch(0.6 0.15 230)` | `oklch(0.65 0.17 230)` | Information |
+
+**Surface Layers:**
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--surface-0` | `oklch(0.145 0 0)` | Background |
+| `--surface-1` | `oklch(0.18 0 0)` | Elevated surface 1 |
+| `--surface-2` | `oklch(0.22 0 0)` | Elevated surface 2 |
+| `--surface-3` | `oklch(0.26 0 0)` | Hover states |
+
+### Typography
+
+**Font Stack:**
+- Primary: Geist Sans (`var(--font-geist-sans)`)
+- Monospace: Geist Mono (`var(--font-geist-mono)`)
+
+**Scale:**
+| Size | Tailwind Class | Usage |
+|------|----------------|-------|
+| Display | `text-4xl`, `text-5xl` | Hero headings |
+| H1 | `text-3xl` | Page titles |
+| H2 | `text-2xl` | Section headings |
+| Body | `text-base` | Default body text |
+| Small | `text-sm` | Supporting text |
+
+### Spacing
+
+| Token | Value | Tailwind Class |
+|-------|-------|----------------|
+| xs | 0.25rem (4px) | `gap-1`, `p-1` |
+| sm | 0.5rem (8px) | `gap-2`, `p-2` |
+| md | 1rem (16px) | `gap-4`, `p-4` |
+| lg | 1.5rem (24px) | `gap-6`, `p-6` |
+| xl | 2rem (32px) | `gap-8`, `p-8` |
+
+### Border Radius
+
+| Token | Value | Tailwind Class |
+|-------|-------|----------------|
+| `--radius` | 0.625rem (10px) | Base radius |
+| `--radius-sm` | `calc(var(--radius) - 4px)` | `rounded-sm` |
+| `--radius-lg` | `var(--radius)` | `rounded-lg` |
+| `--radius-xl` | `calc(var(--radius) + 4px)` | `rounded-xl` |
+
+### Production Status
+- **Status:** Complete
+- **Documentation:** DESIGN-SYSTEM.md
+- **CSS Variables:** frontend/app/globals.css
+
+---
+## Navigation Components (FEAT-028)
+
+### Description
+Mobile-responsive navigation components with accessible drawer menu and consistent header layout.
+
+### Components
+
+**Header:**
+- **File:** `frontend/components/layout/Header.tsx`
+- Desktop: Full horizontal navigation
+- Mobile: Hamburger menu → Sheet drawer
+
+**Sheet (Mobile Navigation):**
+- **File:** `frontend/components/ui/sheet.tsx`
+- Side drawer for mobile navigation
+- Touch-friendly targets (min 44px)
+- Keyboard accessible (Escape to close)
+
+### Navigation Items
+
+| Item | Icon | Link |
+|------|------|------|
+| Dashboard | LayoutDashboard | /dashboard |
+| Sites | Globe | /sites |
+| Keywords | TrendingUp | /keywords |
+| Reports | FileText | /reports |
+| Settings | Settings | /settings |
+
+### Responsive Breakpoints
+
+| Breakpoint | Behavior |
+|------------|----------|
+| < 768px | Mobile: Sheet drawer |
+| ≥ 768px | Desktop: Horizontal nav |
+
+### Accessibility
+
+- `aria-label` on navigation landmarks
+- `aria-expanded` on menu toggle
+- `role="navigation"` on nav elements
+- Focus trap in mobile drawer
+- Keyboard navigation (Tab, Escape)
+
+---
+## Loading States (TASK-28-10)
+
+### Description
+Loading state components for indicating async operations and data fetching progress.
+
+### Components
+
+**LinearProgress:**
+- **File:** `frontend/components/ui/LinearProgress.tsx`
+- Horizontal progress bar
+- Determinate (value-based) and indeterminate (animated) modes
+- Color variants: primary, secondary, success, warning, error
+
+**CircularProgress:**
+- **File:** `frontend/components/ui/CircularProgress.tsx`
+- Circular spinner/progress indicator
+- Determinate (SVG stroke-dashoffset) and indeterminate (spin animation) modes
+- Size variants: sm (24px), md (40px), lg (56px)
+
+**Skeleton:**
+- **File:** `frontend/components/ui/skeleton.tsx` (shadcn)
+- Pulse animation placeholder
+- Used in IndicatorCard loading state
+
+### Usage
+
+```tsx
+// Determinate progress
+<LinearProgress value={75} color="primary" />
+
+// Indeterminate loading
+<LinearProgress color="primary" />
+
+// Circular spinner
+<CircularProgress size="md" color="primary" />
+
+// Skeleton placeholder
+<Skeleton className="h-4 w-24" />
+```
+
+### Accessibility
+
+All progress components include ARIA attributes:
+- `role="progressbar"`
+- `aria-valuenow`, `aria-valuemin`, `aria-valuemax` (determinate mode)
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| progress-indicators.test.tsx | 100 | 100+ |
+
+### Production Status
+- **Deployed:** 2026-03-06 (GitHub Actions)
+- **Tests:** 100/100 passing
+- **Status:** Complete
+
+---
+## Accessibility Features (FEAT-028)
+
+### Description
+Comprehensive accessibility implementation across all UI components, ensuring WCAG 2.1 AA compliance.
+
+### Features
+
+**Color Contrast:**
+| Text Size | Minimum Contrast | Status |
+|-----------|------------------|--------|
+| Normal text | 4.5:1 | ✅ All text meets |
+| Large text (18px+) | 3:1 | ✅ All text meets |
+| UI components | 3:1 | ✅ All components meet |
+
+**Focus Indicators:**
+- Visible focus ring on all interactive elements
+- `focus-visible:ring-2` implementation
+- `focus-visible:ring-offset-2` offset
+
+**Keyboard Navigation:**
+| Key | Action |
+|-----|--------|
+| Tab | Move to next focusable element |
+| Shift+Tab | Move to previous focusable element |
+| Enter | Activate button/link |
+| Escape | Close modal/dropdown |
+| Space | Toggle checkbox/button |
+
+**Screen Reader Support:**
+- `aria-label` on icon-only buttons
+- `aria-hidden="true"` on decorative elements
+- `role="img"` on meaningful icons
+- Semantic HTML (`<button>`, `<nav>`, `<main>`)
+
+**Reduced Motion:**
+```css
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+### Component Accessibility
+
+| Component | ARIA Support |
+|-----------|--------------|
+| IndicatorIcon | `aria-label`, `role="img"` |
+| IndicatorCard | `aria-label`, `role="article"` |
+| Progress | `role="progressbar"`, `aria-valuenow/min/max` |
+| Badge | `role="status"` |
+| Tooltip | `aria-describedby` |
+| Sheet | Focus trap, `aria-modal` |
+
+### Testing
+
+All components tested with:
+- `aria-label` presence checks
+- `role` attribute verification
+- Keyboard navigation testing
+- Screen reader compatibility
+
+### Production Status
+- **Status:** Complete
+- **Compliance:** WCAG 2.1 AA
 
 ---
 ## Rank Check Scheduler (TASK-1-12)

@@ -6,6 +6,7 @@
 
 import * as React from 'react';
 import * as LucideReact from 'lucide-react';
+import { render, screen } from '@testing-library/react';
 
 // Type for the expected registry structure
 type IndicatorIconName =
@@ -574,9 +575,7 @@ describe('Integration with IndicatorIcon Component', () => {
     }
   });
 
-  it('II-001: Registry icons can be used with IndicatorIcon component', async () => {
-    const { render, screen } = await import('@testing-library/react');
-    
+  it('II-001: Registry icons can be used with IndicatorIcon component', () => {
     // Get the icon from registry
     const TrendingUpIcon = INDICATOR_ICONS['keyword-rankings'];
     
@@ -588,9 +587,7 @@ describe('Integration with IndicatorIcon Component', () => {
     expect(container.querySelector('svg')).toBeInTheDocument();
   });
 
-  it('II-002: All registry icons render correctly', async () => {
-    const { render } = await import('@testing-library/react');
-    
+  it('II-002: All registry icons render correctly', () => {
     Object.entries(INDICATOR_ICONS).forEach(([indicator, Icon]) => {
       const { container } = render(
         <IndicatorIcon customIcon={<Icon />} />
