@@ -118,4 +118,51 @@ interface AIVisibilityServiceInterface
      * @return bool
      */
     public function canRunQueries(int $userId, int $count = 1): bool;
+
+    /**
+     * Get active projects that are due for querying.
+     *
+     * @param string|null $frequency Filter by tracking frequency (daily, weekly, monthly)
+     * @return array Array of project data with id, brand_name, platforms, default_query, use_free_model
+     */
+    public function getActiveProjectsForQuery(?string $frequency = null): array;
+
+    /**
+     * Get unprocessed query results for aggregation.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getUnprocessedQueryResults(): \Illuminate\Support\Collection;
+
+    /**
+     * Aggregate results for a project and platform.
+     *
+     * @param int $projectId
+     * @param string $platform
+     * @param \Illuminate\Support\Collection $results
+     * @return array
+     */
+    public function aggregateResults(int $projectId, string $platform, \Illuminate\Support\Collection $results): array;
+
+    /**
+     * Mark results as processed.
+     *
+     * @param array $ids
+     * @return void
+     */
+    public function markResultsProcessed(array $ids): void;
+
+    /**
+     * Get latest analytics for alert checking.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getLatestAnalytics(): \Illuminate\Support\Collection;
+
+    /**
+     * Get alert thresholds from configuration.
+     *
+     * @return array
+     */
+    public function getAlertThresholds(): array;
 }

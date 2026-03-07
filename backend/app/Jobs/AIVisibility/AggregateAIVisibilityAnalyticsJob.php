@@ -52,7 +52,7 @@ class AggregateAIVisibilityAnalyticsJob implements ShouldQueue
 
         try {
             // Get unprocessed query results
-            $results = $this->getUnprocessedQueryResults();
+            $results = $service->getUnprocessedQueryResults();
 
             if ($results->isEmpty()) {
                 Log::info('No unprocessed query results to aggregate');
@@ -72,7 +72,7 @@ class AggregateAIVisibilityAnalyticsJob implements ShouldQueue
                 $platform = $first->platform;
 
                 try {
-                    $this->aggregateResults($projectId, $platform, $group);
+                    $service->aggregateResults($projectId, $platform, $group);
                     $processedIds = array_merge($processedIds, $group->pluck('id')->toArray());
                 } catch (\Exception $e) {
                     Log::error('Failed to aggregate results for project', [
@@ -85,7 +85,7 @@ class AggregateAIVisibilityAnalyticsJob implements ShouldQueue
             }
 
             // Mark results as processed
-            $this->markResultsProcessed($processedIds);
+            $service->markResultsProcessed($processedIds);
 
             Log::info('AggregateAIVisibilityAnalyticsJob completed', [
                 'processed_count' => count($processedIds),
@@ -122,122 +122,5 @@ class AggregateAIVisibilityAnalyticsJob implements ShouldQueue
         return [
             new \Illuminate\Queue\Middleware\WithoutOverlapping('aggregate-ai-visibility-analytics', 3600),
         ];
-    }
-
-    /**
-     * Get unprocessed query results from today.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    protected function getUnprocessedQueryResults(): \Illuminate\Support\Collection
-    {
-        return AIQueryResult::query()
-            ->where('success', true)
-            ->whereNotNull('response_text')
-            ->where('queried_at', '>=', now()->startOfDay())
-            ->orderBy('queried_at')
-            ->get();
-    }
-
-    /**
-     * Aggregate results for a project and platform.
-     *
-     * @param int $projectId
-     * @param string $platform
-     * @param \Illuminate\Support\Collection $results
-     * @return array
-     */
-    protected function aggregateResults(int $projectId, string $platform, \Illuminate\Support\Collection $results): array
-    {
-        $project = AIVisibilityProject::find($projectId);
-        $brandName = $project?->brand_name ?? '';
-
-        $totalQueries = $results->count();
-        $brandMentions = 0;
-        $competitorMentions = [];
-        $positiveMentions = 0;
-        $neutralMentions = 0;
-        $negativeMentions = 0;
-
-        foreach ($results as $result) {
-            $mentions = $result->mentions ?? [];
-
-            foreach ($mentions as $mention) {
-                $mentionBrand = $mention['brand'] ?? null;
-
-                if ($mentionBrand) {
-                    if (strcasecmp($mentionBrand, $brandName) === 0) {
-                        $brandMentions++;
-                    } else {
-                        if (!isset($competitorMentions[$mentionBrand])) {
-                            $competitorMentions[$mentionBrand] = 0;
-                        }
-                        $competitorMentions[$mentionBrand]++;
-                    }
-                }
-            }
-
-            // Count sentiment from result
-            $sentiment = $result->sentiment ?? 'neutral';
-            match ($sentiment) {
-                'positive' => $positiveMentions++,
-                'negative' => $negativeMentions++,
-                default => $neutralMentions++,
-            };
-        }
-
-        // Calculate metrics
-        $mentionRate = $totalQueries > 0 ? round(($brandMentions / $totalQueries) * 100, 2) : 0;
-        $totalMentions = $brandMentions + array_sum($competitorMentions);
-        $shareOfVoice = $totalMentions > 0 ? round(($brandMentions / $totalMentions) * 100, 2) : 0;
-        $totalSentiment = $positiveMentions + $neutralMentions + $negativeMentions;
-        $sentimentScore = $totalSentiment > 0
-            ? round(($positiveMentions - $negativeMentions) / $totalSentiment, 2)
-            : 0;
-
-        // Store or update analytics
-        $analytics = AIMentionAnalytics::updateOrCreate(
-            [
-                'project_id' => $projectId,
-                'platform' => $platform,
-                'period_start' => now()->startOfDay(),
-                'period_end' => now()->endOfDay(),
-            ],
-            [
-                'total_queries' => $totalQueries,
-                'brand_mentions' => $brandMentions,
-                'mention_rate' => $mentionRate,
-                'positive_mentions' => $positiveMentions,
-                'neutral_mentions' => $neutralMentions,
-                'negative_mentions' => $negativeMentions,
-                'competitor_stats' => $competitorMentions,
-            ]
-        );
-
-        return [
-            'project_id' => $projectId,
-            'platform' => $platform,
-            'total_queries' => $totalQueries,
-            'brand_mentions' => $brandMentions,
-            'mention_rate' => $mentionRate,
-            'share_of_voice' => $shareOfVoice,
-            'sentiment_score' => $sentimentScore,
-        ];
-    }
-
-    /**
-     * Mark results as processed.
-     *
-     * @param array $ids
-     * @return void
-     */
-    protected function markResultsProcessed(array $ids): void
-    {
-        if (empty($ids)) {
-            return;
-        }
-
-        // For now, we don't have a processed flag on results
-        // The aggregation is based on the queried_at date
     }
 }

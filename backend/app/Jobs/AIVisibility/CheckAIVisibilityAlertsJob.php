@@ -52,7 +52,7 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
 
         try {
             // Get latest analytics
-            $analytics = $this->getLatestAnalytics();
+            $analytics = $service->getLatestAnalytics();
 
             if ($analytics->isEmpty()) {
                 Log::info('No analytics data to check for alerts');
@@ -60,7 +60,7 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
             }
 
             // Get alert thresholds
-            $thresholds = $this->getAlertThresholds();
+            $thresholds = $service->getAlertThresholds();
 
             $alertsCreated = 0;
 
@@ -73,19 +73,19 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
                 }
 
                 // Check for mention rate drop
-                $alert = $this->checkMentionRateDrop($record, $previous, $thresholds);
+                $alert = $this->checkMentionRateDrop($record, $previous, $thresholds, $service);
                 if ($alert) {
                     $alertsCreated++;
                 }
 
                 // Check for share of voice drop
-                $alert = $this->checkShareOfVoiceDrop($record, $previous, $thresholds);
+                $alert = $this->checkShareOfVoiceDrop($record, $previous, $thresholds, $service);
                 if ($alert) {
                     $alertsCreated++;
                 }
 
                 // Check for sentiment change
-                $alert = $this->checkSentimentChange($record, $previous, $thresholds);
+                $alert = $this->checkSentimentChange($record, $previous, $thresholds, $service);
                 if ($alert) {
                     $alertsCreated++;
                 }
@@ -129,18 +129,6 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
     }
 
     /**
-     * Get the latest analytics records.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    protected function getLatestAnalytics(): \Illuminate\Support\Collection
-    {
-        return AIMentionAnalytics::query()
-            ->where('period_start', '>=', now()->subDay()->startOfDay())
-            ->get();
-    }
-
-    /**
      * Get previous analytics for comparison.
      *
      * @param AIMentionAnalytics $current
@@ -157,32 +145,19 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
     }
 
     /**
-     * Get alert thresholds from config.
-     *
-     * @return array
-     */
-    protected function getAlertThresholds(): array
-    {
-        return [
-            'mention_rate_drop' => config('ai-visibility.alert_thresholds.mention_drop', 0.1),
-            'mention_rate_critical' => config('ai-visibility.alert_thresholds.mention_critical', 0.5),
-            'share_of_voice_drop' => config('ai-visibility.alert_thresholds.share_of_voice_drop', 0.1),
-            'sentiment_change' => config('ai-visibility.alert_thresholds.sentiment_change', 0.3),
-        ];
-    }
-
-    /**
      * Check for mention rate drop alert.
      *
      * @param AIMentionAnalytics $current
      * @param AIMentionAnalytics $previous
      * @param array $thresholds
+     * @param AIVisibilityServiceInterface $service
      * @return AIVisibilityAlert|null
      */
     protected function checkMentionRateDrop(
         AIMentionAnalytics $current,
         AIMentionAnalytics $previous,
-        array $thresholds
+        array $thresholds,
+        AIVisibilityServiceInterface $service
     ): ?AIVisibilityAlert {
         if ($previous->mention_rate === null || $current->mention_rate >= $previous->mention_rate) {
             return null; // No drop
@@ -200,15 +175,15 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
         // Determine severity
         $severity = $dropPercent >= $thresholds['mention_rate_critical'] ? 'critical' : 'warning';
 
-        return $this->createAlert(
-            $current->project_id,
-            'mention_rate_drop',
-            $thresholds['mention_rate_drop'] * 100,
-            $previous->mention_rate,
-            $current->mention_rate,
-            $dropPercent * 100,
-            $severity
-        );
+        return $service->createAlert([
+            'project_id' => $current->project_id,
+            'alert_type' => 'mention_rate_drop',
+            'threshold' => $thresholds['mention_rate_drop'] * 100,
+            'previous_value' => $previous->mention_rate,
+            'current_value' => $current->mention_rate,
+            'change_percent' => $dropPercent * 100,
+            'severity' => $severity,
+        ]);
     }
 
     /**
@@ -217,12 +192,14 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
      * @param AIMentionAnalytics $current
      * @param AIMentionAnalytics $previous
      * @param array $thresholds
+     * @param AIVisibilityServiceInterface $service
      * @return AIVisibilityAlert|null
      */
     protected function checkShareOfVoiceDrop(
         AIMentionAnalytics $current,
         AIMentionAnalytics $previous,
-        array $thresholds
+        array $thresholds,
+        AIVisibilityServiceInterface $service
     ): ?AIVisibilityAlert {
         // Calculate share of voice
         $currentSov = $this->calculateShareOfVoice($current);
@@ -238,14 +215,14 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
             return null; // Below threshold
         }
 
-        return $this->createAlert(
-            $current->project_id,
-            'share_of_voice_drop',
-            $thresholds['share_of_voice_drop'] * 100,
-            $previousSov,
-            $currentSov,
-            $drop
-        );
+        return $service->createAlert([
+            'project_id' => $current->project_id,
+            'alert_type' => 'share_of_voice_drop',
+            'threshold' => $thresholds['share_of_voice_drop'] * 100,
+            'previous_value' => $previousSov,
+            'current_value' => $currentSov,
+            'change_percent' => $drop,
+        ]);
     }
 
     /**
@@ -254,12 +231,14 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
      * @param AIMentionAnalytics $current
      * @param AIMentionAnalytics $previous
      * @param array $thresholds
+     * @param AIVisibilityServiceInterface $service
      * @return AIVisibilityAlert|null
      */
     protected function checkSentimentChange(
         AIMentionAnalytics $current,
         AIMentionAnalytics $previous,
-        array $thresholds
+        array $thresholds,
+        AIVisibilityServiceInterface $service
     ): ?AIVisibilityAlert {
         $currentScore = $this->calculateSentimentScore($current);
         $previousScore = $this->calculateSentimentScore($previous);
@@ -278,14 +257,14 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
             return null; // Below threshold
         }
 
-        return $this->createAlert(
-            $current->project_id,
-            'sentiment_change',
-            $thresholds['sentiment_change'] * 100,
-            $previousScore,
-            $currentScore,
-            $change * 100
-        );
+        return $service->createAlert([
+            'project_id' => $current->project_id,
+            'alert_type' => 'sentiment_change',
+            'threshold' => $thresholds['sentiment_change'] * 100,
+            'previous_value' => $previousScore,
+            'current_value' => $currentScore,
+            'change_percent' => $change * 100,
+        ]);
     }
 
     /**
@@ -323,60 +302,5 @@ class CheckAIVisibilityAlertsJob implements ShouldQueue
         }
 
         return round(($analytics->positive_mentions - $analytics->negative_mentions) / $total, 2);
-    }
-
-    /**
-     * Create an alert if not a duplicate.
-     *
-     * @param int $projectId
-     * @param string $alertType
-     * @param float $threshold
-     * @param float $previousValue
-     * @param float $currentValue
-     * @param float $changePercent
-     * @param string $severity
-     * @return AIVisibilityAlert|null
-     */
-    protected function createAlert(
-        int $projectId,
-        string $alertType,
-        float $threshold,
-        float $previousValue,
-        float $currentValue,
-        float $changePercent,
-        string $severity = 'warning'
-    ): ?AIVisibilityAlert {
-        // Check for duplicate in last 24 hours
-        $existing = AIVisibilityAlert::query()
-            ->where('project_id', $projectId)
-            ->where('alert_type', $alertType)
-            ->where('triggered_at', '>=', now()->subDay())
-            ->first();
-
-        if ($existing) {
-            return null;
-        }
-
-        $alert = AIVisibilityAlert::create([
-            'project_id' => $projectId,
-            'alert_type' => $alertType,
-            'threshold' => $threshold,
-            'previous_value' => $previousValue,
-            'current_value' => $currentValue,
-            'change_percent' => $changePercent,
-            'triggered_at' => now(),
-            'is_read' => false,
-            'is_resolved' => false,
-        ]);
-
-        Log::info('AI Visibility alert created', [
-            'alert_id' => $alert->id,
-            'project_id' => $projectId,
-            'type' => $alertType,
-            'severity' => $severity,
-            'change_percent' => $changePercent,
-        ]);
-
-        return $alert;
     }
 }

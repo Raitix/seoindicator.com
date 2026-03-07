@@ -939,4 +939,229 @@ class AIVisibilityService implements AIVisibilityServiceInterface
             return $alert;
         });
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getActiveProjectsForQuery(?string $frequency = null): array
+    {
+        $query = AIVisibilityProject::query()
+            ->where('is_active', true);
+
+        // Filter by frequency if specified
+        if ($frequency) {
+            $query->where('tracking_frequency', $frequency);
+        }
+
+        // Filter by due date based on tracking frequency
+        $query->where(function ($q) {
+            $now = now();
+
+            // Daily: last_queried_at is null or more than 1 day ago
+            $q->orWhere(function ($subQ) use ($now) {
+                $subQ->where('tracking_frequency', 'daily')
+                    ->where(function ($dateQ) use ($now) {
+                        $dateQ->whereNull('last_queried_at')
+                            ->orWhere('last_queried_at', '<', $now->copy()->subDay());
+                    });
+            });
+
+            // Weekly: last_queried_at is null or more than 7 days ago
+            $q->orWhere(function ($subQ) use ($now) {
+                $subQ->where('tracking_frequency', 'weekly')
+                    ->where(function ($dateQ) use ($now) {
+                        $dateQ->whereNull('last_queried_at')
+                            ->orWhere('last_queried_at', '<', $now->copy()->subWeek());
+                    });
+            });
+
+            // Monthly: last_queried_at is null or more than 30 days ago
+            $q->orWhere(function ($subQ) use ($now) {
+                $subQ->where('tracking_frequency', 'monthly')
+                    ->where(function ($dateQ) use ($now) {
+                        $dateQ->whereNull('last_queried_at')
+                            ->orWhere('last_queried_at', '<', $now->copy()->subMonth());
+                    });
+            });
+        });
+
+        $projects = $query->get();
+
+        return $projects->map(function ($project) {
+            return [
+                'id' => $project->id,
+                'brand_name' => $project->brand_name,
+                'platforms' => config('ai-visibility.platforms', ['chatgpt', 'perplexity']),
+                'default_query' => $this->getDefaultQueryForProject($project),
+                'use_free_model' => true,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get the default query for a project.
+     *
+     * @param AIVisibilityProject $project
+     * @return string
+     */
+    protected function getDefaultQueryForProject(AIVisibilityProject $project): string
+    {
+        // Use query templates if configured
+        $templates = $project->query_templates;
+
+        if (!empty($templates) && is_array($templates) && isset($templates[0])) {
+            return $this->interpolateTemplate($templates[0], $project);
+        }
+
+        // Fall back to brand name query
+        return "What are the best tools for SEO? Include {$project->brand_name} if relevant.";
+    }
+
+    /**
+     * Interpolate a query template with project data.
+     *
+     * @param string $template
+     * @param AIVisibilityProject $project
+     * @return string
+     */
+    protected function interpolateTemplate(string $template, AIVisibilityProject $project): string
+    {
+        $replacements = [
+            '{brand}' => $project->brand_name,
+            '{category}' => 'SEO',
+            '{competitors}' => implode(', ', $project->getCompetitorNames()),
+        ];
+
+        return str_replace(
+            array_keys($replacements),
+            array_values($replacements),
+            $template
+        );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getUnprocessedQueryResults(): \Illuminate\Support\Collection
+    {
+        return AIQueryResult::query()
+            ->where('success', true)
+            ->whereNotNull('response_text')
+            ->where('queried_at', '>=', now()->startOfDay())
+            ->orderBy('queried_at')
+            ->get();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function aggregateResults(int $projectId, string $platform, \Illuminate\Support\Collection $results): array
+    {
+        $project = AIVisibilityProject::find($projectId);
+        $brandName = $project?->brand_name ?? '';
+
+        $totalQueries = $results->count();
+        $brandMentions = 0;
+        $competitorMentions = [];
+        $positiveMentions = 0;
+        $neutralMentions = 0;
+        $negativeMentions = 0;
+
+        foreach ($results as $result) {
+            $mentions = $result->mentions ?? [];
+
+            foreach ($mentions as $mention) {
+                $mentionBrand = $mention['brand'] ?? null;
+
+                if ($mentionBrand) {
+                    if (strcasecmp($mentionBrand, $brandName) === 0) {
+                        $brandMentions++;
+                    } else {
+                        if (!isset($competitorMentions[$mentionBrand])) {
+                            $competitorMentions[$mentionBrand] = 0;
+                        }
+                        $competitorMentions[$mentionBrand]++;
+                    }
+                }
+            }
+
+            // Count sentiment from result
+            $sentiment = $result->sentiment ?? 'neutral';
+            match ($sentiment) {
+                'positive' => $positiveMentions++,
+                'negative' => $negativeMentions++,
+                default => $neutralMentions++,
+            };
+        }
+
+        // Calculate metrics
+        $mentionRate = $totalQueries > 0 ? round(($brandMentions / $totalQueries) * 100, 2) : 0;
+        $totalMentions = $brandMentions + array_sum($competitorMentions);
+        $shareOfVoice = $totalMentions > 0 ? round(($brandMentions / $totalMentions) * 100, 2) : 0;
+        $totalSentiment = $positiveMentions + $neutralMentions + $negativeMentions;
+        $sentimentScore = $totalSentiment > 0
+            ? round(($positiveMentions - $negativeMentions) / $totalSentiment, 2)
+            : 0;
+
+        // Store or update analytics
+        $analytics = AIMentionAnalytics::updateOrCreate(
+            [
+                'project_id' => $projectId,
+                'platform' => $platform,
+                'period_start' => now()->startOfDay(),
+                'period_end' => now()->endOfDay(),
+            ],
+            [
+                'total_queries' => $totalQueries,
+                'brand_mentions' => $brandMentions,
+                'mention_rate' => $mentionRate,
+                'positive_mentions' => $positiveMentions,
+                'neutral_mentions' => $neutralMentions,
+                'negative_mentions' => $negativeMentions,
+                'competitor_stats' => $competitorMentions,
+            ]
+        );
+
+        return [
+            'project_id' => $projectId,
+            'platform' => $platform,
+            'total_queries' => $totalQueries,
+            'brand_mentions' => $brandMentions,
+            'mention_rate' => $mentionRate,
+            'share_of_voice' => $shareOfVoice,
+            'sentiment_score' => $sentimentScore,
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function markResultsProcessed(array $ids): void
+    {
+        // For now, we don't have a processed flag on results
+        // The aggregation is based on the queried_at date
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getLatestAnalytics(): \Illuminate\Support\Collection
+    {
+        return AIMentionAnalytics::query()
+            ->where('period_start', '>=', now()->subDay()->startOfDay())
+            ->get();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getAlertThresholds(): array
+    {
+        return [
+            'mention_rate_drop' => config('ai-visibility.alert_thresholds.mention_drop', 0.1),
+            'mention_rate_critical' => config('ai-visibility.alert_thresholds.mention_critical', 0.5),
+            'share_of_voice_drop' => config('ai-visibility.alert_thresholds.share_of_voice_drop', 0.1),
+            'sentiment_change' => config('ai-visibility.alert_thresholds.sentiment_change', 0.3),
+        ];
+    }
 }
