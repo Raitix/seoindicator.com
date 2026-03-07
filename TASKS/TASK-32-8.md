@@ -1,7 +1,7 @@
 # TASK-32-8: UseCaseSection Component
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `Medium`
