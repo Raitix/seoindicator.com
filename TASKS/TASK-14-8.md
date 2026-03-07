@@ -1,7 +1,7 @@
 # TASK-14-8: Create IssueDetector Service
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -128,3 +128,43 @@ _Agent communication log_
 - Tests can verify orchestrator behavior with mock checkers
 
 **Status changed:** `To Prioritize` → `To Write Tests`
+
+### [2026-03-07 10:15] Agent: PreTester
+**Test Design Complete:**
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Test Files Created | 4 | IssueDetector, IssueFinding, CheckerInterface, Integration |
+| Total Tests | 215+ | Exceeds minimum threshold |
+| Test Categories | 12 | Comprehensive coverage |
+
+**Test Files:**
+1. `backend/tests/Unit/Services/Audit/IssueDetectorTest.php` - 95+ tests
+2. `backend/tests/Unit/Services/Audit/DTOs/IssueFindingTest.php` - 45+ tests
+3. `backend/tests/Unit/Services/Audit/CheckerInterfaceTest.php` - 35+ tests
+4. `backend/tests/Feature/Services/IssueDetectorIntegrationTest.php` - 40+ tests
+
+**Test Coverage:**
+- Service instantiation and container binding
+- Checker registration (single, multiple, bulk)
+- Analyze workflow (no checkers, one, multiple)
+- Run check method (by name, not found, case-sensitive)
+- Duplicate title detection (cache-based, case-insensitive)
+- Severity mapping (critical/warning/notice, database lookup)
+- Error handling (exceptions, graceful degradation)
+- Edge cases (empty HTML, unicode, large context)
+- Security (XSS, SQL injection, cache key injection)
+- Performance (100 pages < 30s, memory < 50MB)
+
+**Key Design Decisions:**
+- TDD approach with `CrawlResult` mocked from TASK-14-5 (not blocking)
+- Duplicate detection uses cache key `audit:titles:{audit_id}`
+- Severity mapped from `issue_types` table, checker can override
+- `IssueFinding` DTO is immutable with validation
+
+**Dependencies Verified:**
+- TASK-14-2 (Audit Issues table) - Done ✅
+- TASK-14-3 (Issue Types table) - Done ✅
+- TASK-14-5 (SiteCrawler/CrawlResult) - Mocked in tests
+
+**Status changed:** `To Write Tests` → `To Develop`
