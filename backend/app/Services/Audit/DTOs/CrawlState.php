@@ -20,24 +20,23 @@ class CrawlState implements Arrayable, JsonSerializable
     public const STATUS_FAILED = 'failed';
     public const STATUS_CANCELLED = 'cancelled';
 
+    public int $totalPages = 0;
+    public int $pagesCrawled = 0;
+    public int $pagesFailed = 0;
+    public string $status;
+    public ?string $completedAt = null;
+    public array $errors = [];
+
     /**
      * Create a new CrawlState instance.
      */
     public function __construct(
         public readonly int $auditId,
         public readonly string $baseUrl,
-        public int $totalPages = 0,
-        public int $pagesCrawled = 0,
-        public int $pagesFailed = 0,
-        public string $status = self::STATUS_PENDING,
-        public readonly string $startedAt = '',
-        public ?string $completedAt = null,
-        public array $errors = [],
-        public array $config = [],
+        public readonly string $startedAt,
+        public readonly array $config = [],
     ) {
-        if (empty($this->startedAt)) {
-            $this->startedAt = now()->toIso8601String();
-        }
+        $this->status = self::STATUS_PENDING;
     }
 
     /**
@@ -48,7 +47,7 @@ class CrawlState implements Arrayable, JsonSerializable
         return new self(
             auditId: $auditId,
             baseUrl: $baseUrl,
-            status: self::STATUS_PENDING,
+            startedAt: now()->toIso8601String(),
             config: $config,
         );
     }
@@ -250,17 +249,20 @@ class CrawlState implements Arrayable, JsonSerializable
      */
     public static function fromArray(array $data): self
     {
-        return new self(
+        $state = new self(
             auditId: $data['auditId'],
             baseUrl: $data['baseUrl'],
-            totalPages: $data['totalPages'] ?? 0,
-            pagesCrawled: $data['pagesCrawled'] ?? 0,
-            pagesFailed: $data['pagesFailed'] ?? 0,
-            status: $data['status'] ?? self::STATUS_PENDING,
-            startedAt: $data['startedAt'] ?? '',
-            completedAt: $data['completedAt'] ?? null,
-            errors: $data['errors'] ?? [],
+            startedAt: $data['startedAt'] ?? now()->toIso8601String(),
             config: $data['config'] ?? [],
         );
+
+        $state->totalPages = $data['totalPages'] ?? 0;
+        $state->pagesCrawled = $data['pagesCrawled'] ?? 0;
+        $state->pagesFailed = $data['pagesFailed'] ?? 0;
+        $state->status = $data['status'] ?? self::STATUS_PENDING;
+        $state->completedAt = $data['completedAt'] ?? null;
+        $state->errors = $data['errors'] ?? [];
+
+        return $state;
     }
 }

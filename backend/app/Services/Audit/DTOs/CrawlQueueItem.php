@@ -19,6 +19,10 @@ class CrawlQueueItem implements Arrayable, JsonSerializable
     public const STATUS_DONE = 'done';
     public const STATUS_FAILED = 'failed';
 
+    public string $status;
+    public ?int $retryCount;
+    public ?string $errorMessage = null;
+
     /**
      * Create a new CrawlQueueItem instance.
      */
@@ -26,14 +30,10 @@ class CrawlQueueItem implements Arrayable, JsonSerializable
         public readonly string $url,
         public readonly int $depth = 0,
         public readonly int $priority = 0,
-        public string $status = self::STATUS_PENDING,
-        public ?int $retryCount = 0,
-        public ?string $errorMessage = null,
-        public readonly string $addedAt = '',
+        public readonly string $addedAt,
     ) {
-        if (empty($this->addedAt)) {
-            $this->addedAt = now()->toIso8601String();
-        }
+        $this->status = self::STATUS_PENDING;
+        $this->retryCount = 0;
     }
 
     /**
@@ -45,7 +45,7 @@ class CrawlQueueItem implements Arrayable, JsonSerializable
             url: $url,
             depth: $depth,
             priority: $priority,
-            status: self::STATUS_PENDING,
+            addedAt: now()->toIso8601String(),
         );
     }
 
@@ -169,11 +169,13 @@ class CrawlQueueItem implements Arrayable, JsonSerializable
             url: $data['url'],
             depth: $data['depth'] ?? 0,
             priority: $data['priority'] ?? 0,
-            status: $data['status'] ?? self::STATUS_PENDING,
-            retryCount: $data['retryCount'] ?? 0,
-            errorMessage: $data['errorMessage'] ?? null,
-            addedAt: $data['addedAt'] ?? '',
+            addedAt: $data['addedAt'] ?? now()->toIso8601String(),
         );
+
+        $item->status = $data['status'] ?? self::STATUS_PENDING;
+        $item->retryCount = $data['retryCount'] ?? 0;
+        $item->errorMessage = $data['errorMessage'] ?? null;
+
         return $item;
     }
 }

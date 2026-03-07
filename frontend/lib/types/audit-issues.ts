@@ -115,8 +115,9 @@ export type SortField = 'created_at' | 'severity' | 'url' | 'status';
 export type SortOrder = 'asc' | 'desc';
 
 // Issue type options for filter
+// Note: Radix Select doesn't accept empty string values, so we use 'all' for "All" options
 export const ISSUE_TYPE_OPTIONS = [
-  { value: '', label: 'All Issues' },
+  { value: 'all', label: 'All Issues' },
   { value: 'Meta', label: 'Meta' },
   { value: 'Content', label: 'Content' },
   { value: 'Technical', label: 'Technical' },
@@ -126,7 +127,7 @@ export const ISSUE_TYPE_OPTIONS = [
 
 // Severity options for filter
 export const SEVERITY_OPTIONS = [
-  { value: '', label: 'All Severities' },
+  { value: 'all', label: 'All Severities' },
   { value: 'critical', label: 'Critical' },
   { value: 'warning', label: 'Warning' },
   { value: 'notice', label: 'Notice' },
@@ -134,7 +135,7 @@ export const SEVERITY_OPTIONS = [
 
 // Status options for filter
 export const STATUS_OPTIONS = [
-  { value: '', label: 'All Statuses' },
+  { value: 'all', label: 'All Statuses' },
   { value: 'open', label: 'Open' },
   { value: 'fixed', label: 'Fixed' },
   { value: 'ignored', label: 'Ignored' },

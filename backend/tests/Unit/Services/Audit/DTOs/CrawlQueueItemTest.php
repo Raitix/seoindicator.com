@@ -31,7 +31,7 @@ class CrawlQueueItemTest extends TestCase
     /** @test Creates with defaults */
     public function test_creates_with_defaults(): void
     {
-        $item = new CrawlQueueItem('https://example.com/');
+        $item = new CrawlQueueItem('https://example.com/', 0, 0, now()->toIso8601String());
 
         $this->assertEquals('https://example.com/', $item->url);
         $this->assertEquals(0, $item->depth);
@@ -249,7 +249,7 @@ class CrawlQueueItemTest extends TestCase
     /** @test addedAt is set automatically */
     public function test_added_at_is_set_automatically(): void
     {
-        $item = new CrawlQueueItem('https://example.com/');
+        $item = new CrawlQueueItem('https://example.com/', 0, 0, now()->toIso8601String());
 
         $this->assertNotEmpty($item->addedAt);
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T/', $item->addedAt);

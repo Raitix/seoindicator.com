@@ -31,7 +31,7 @@ class CrawlStateTest extends TestCase
     /** @test Creates with defaults */
     public function test_creates_with_defaults(): void
     {
-        $state = new CrawlState(1, 'https://example.com/');
+        $state = new CrawlState(1, 'https://example.com/', now()->toIso8601String());
 
         $this->assertEquals(1, $state->auditId);
         $this->assertEquals('https://example.com/', $state->baseUrl);
@@ -352,7 +352,7 @@ class CrawlStateTest extends TestCase
     /** @test startedAt is set automatically */
     public function test_started_at_is_set_automatically(): void
     {
-        $state = new CrawlState(1, 'https://example.com/');
+        $state = new CrawlState(1, 'https://example.com/', now()->toIso8601String());
 
         $this->assertNotEmpty($state->startedAt);
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T/', $state->startedAt);
