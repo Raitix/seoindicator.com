@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run build:og && next build",
+    "build:og": "node scripts/generate-og-images.mjs",
     "build:badge": "node scripts/build-badge.mjs",
     "export": "next build",
     "start": "next start",
