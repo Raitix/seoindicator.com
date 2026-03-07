@@ -1,7 +1,7 @@
 # TASK-14-5: Create SiteCrawler Service
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -112,6 +112,36 @@ return [
 ---
 
 ## Comments
+### [2026-03-07 10:15 UTC] Developer: Bug Fixes Complete
+- **Status:** `To Develop` → `To Test Locally`
+- **Tests:** 104 passed (191 assertions)
+
+#### Bug #1: Missing Static Factory Methods in CrawlResult DTO
+- **Fixed:** Added `success()` and `failure()` static factory methods to `CrawlResult.php`
+- **Additional Methods Added:**
+  - `isFailure()` - alias for `isError()`
+  - `isClientError()` - detects 4xx status codes
+  - `isServerError()` - detects 5xx status codes
+  - `getTitle()` - returns title from metadata
+  - `getDescription()` - returns description from metadata
+  - `getCanonical()` - returns canonical URL from metadata
+  - `getH1Tags()` - returns H1 array from metadata
+  - `getHeader()` - case-insensitive header accessor
+- **toArray() Updated:** Now uses camelCase keys (`statusCode` instead of `status_code`)
+- **fromArray() Updated:** Accepts both camelCase and snake_case keys
+
+#### Bug #2: RobotsParser Type Mismatch
+- **Fixed:** Updated `SiteCrawler.php` to use `ParsedRobots` DTO instead of raw array
+- **Changes:**
+  - `$robotsRules` property type changed from `?array` to `?ParsedRobots`
+  - `fetchRobotsRules()` now returns `ParsedRobots` DTO
+  - `parseRobotsTxt()` now returns `ParsedRobots` DTO
+  - Proper integration with `RobotsParser::parse()` method
+
+#### Test Fix
+- **Fixed:** `test_parse_robots_txt` test now uses proper `ParsedRobots` DTO
+- Changed from passing raw array to using `RobotsParser::parse()` method
+
 ### [2026-03-06 22:52] ProjectManager: Prioritization Complete
 - **Priority:** HIGH (confirmed) - Foundation service for entire SEO audit pipeline
 - **Risk:** MEDIUM (confirmed) - External HTTP requests, rate limiting, robots.txt compliance, outbound SSRF considerations
