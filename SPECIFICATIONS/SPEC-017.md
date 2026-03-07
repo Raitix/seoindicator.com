@@ -591,6 +591,19 @@ All components use FREE solutions only:
 *Created by Architect agent on 2026-02-28*
 
 ### 2026-03-07 - DocSystemAnalyst
+**Re-verification (18:19 GMT+2)**
+- Task triggered for "SPEC-17" (non-padded) but specification file is "SPEC-017.md" (zero-padded)
+- Specification status: Done (Phase 1 MVP complete)
+- FEAT-017 status: Done
+- DOCUMENTATION.md verified at line 13937 (User Onboarding & Activation Flow section)
+- Phase 1 tasks (TASK-17-1 through TASK-17-7): All Done
+- Phase 2-4 tasks (TASK-17-8 through TASK-17-20): To Write Tests (future)
+- Stale lock removed: SPEC-17.lock
+- Completion marker written: logs/completed/specification/SPEC-17.json
+- Active-agents entry cleared
+- **ORCHESTRATOR BUG:** 66+ verifications to date due to naming mismatch ("SPEC-17" vs "SPEC-017")
+
+### 2026-03-07 - DocSystemAnalyst
 **Duplicate Trigger (13:29 GMT+2)**
 - Orchestrator triggered "SPEC-17" again - naming mismatch with zero-padded filename
 - Specification already documented and complete
