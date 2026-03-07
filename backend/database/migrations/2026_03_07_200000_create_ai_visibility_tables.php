@@ -75,8 +75,8 @@ return new class extends Migration
             $table->unsignedInteger('neutral_mentions')->default(0);
             $table->unsignedInteger('negative_mentions')->default(0);
             $table->json('competitor_stats')->nullable();
-            $table->timestamp('period_start');
-            $table->timestamp('period_end');
+            $table->timestamp('period_start')->nullable();
+            $table->timestamp('period_end')->nullable();
             $table->timestamps();
 
             $table->index(['project_id', 'platform']);
