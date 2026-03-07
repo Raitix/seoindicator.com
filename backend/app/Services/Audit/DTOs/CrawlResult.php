@@ -128,4 +128,74 @@ class CrawlResult implements \JsonSerializable
     {
         return $this->toArray();
     }
+
+    /**
+     * Create a successful crawl result.
+     *
+     * @param string $url The crawled URL
+     * @param int $statusCode HTTP status code
+     * @param float $responseTimeMs Response time in milliseconds
+     * @param string|null $html HTML content
+     * @param array $links Extracted links
+     * @param array $metadata Page metadata
+     * @param array $headers Response headers
+     * @param array $redirectChain Redirect history
+     * @param int $depth Crawl depth
+     * @return self
+     */
+    public static function success(
+        string $url,
+        int $statusCode,
+        float $responseTimeMs,
+        ?string $html = null,
+        array $links = [],
+        array $metadata = [],
+        array $headers = [],
+        array $redirectChain = [],
+        int $depth = 0
+    ): self {
+        return new self(
+            url: $url,
+            statusCode: $statusCode,
+            responseTimeMs: $responseTimeMs,
+            html: $html,
+            links: $links,
+            metadata: $metadata,
+            errorMessage: null,
+            headers: $headers,
+            depth: $depth,
+            redirectChain: $redirectChain,
+        );
+    }
+
+    /**
+     * Create a failed crawl result.
+     *
+     * @param string $url The URL that failed
+     * @param string $errorMessage Error description
+     * @param int $statusCode HTTP status code (0 for network errors)
+     * @param float $responseTimeMs Response time in milliseconds
+     * @param int $depth Crawl depth
+     * @return self
+     */
+    public static function failure(
+        string $url,
+        string $errorMessage,
+        int $statusCode = 0,
+        float $responseTimeMs = 0.0,
+        int $depth = 0
+    ): self {
+        return new self(
+            url: $url,
+            statusCode: $statusCode,
+            responseTimeMs: $responseTimeMs,
+            html: null,
+            links: [],
+            metadata: [],
+            errorMessage: $errorMessage,
+            headers: [],
+            depth: $depth,
+            redirectChain: [],
+        );
+    }
 }
