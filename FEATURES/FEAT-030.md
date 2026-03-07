@@ -1,7 +1,7 @@
 # FEAT-030: Legal + About + How It Works + Cookie Consent
 
 ## STATUS
-`To Break Into Tasks`
+`Done`
 
 ## PRIORITY
 `High`
@@ -35,3 +35,24 @@ As a user, I want clear legal terms and to understand how the analysis works.
 
 ---
 *Created by Lead from individual user request.*
+
+### [2026-03-07 DocSystemAnalyst]
+**Feature Complete ✅**
+
+**Specification:** SPEC-030 (Done)
+**Tasks:** 7/7 Done
+
+| Phase | Tasks | Status |
+|-------|-------|--------|
+| Core Pages | TASK-30-1, TASK-30-2, TASK-30-3 | ✅ Done |
+| Cookie Consent | TASK-30-4, TASK-30-5 | ✅ Done |
+| Testing | TASK-30-6, TASK-30-7 | ✅ Done |
+
+**Production URLs:**
+- `/terms/` - Terms & Privacy page
+- `/about/` - About page
+- `/how-it-works/` - How It Works page
+- Cookie consent banner - Active on all pages
+
+**Test Coverage:** 145 accessibility tests (jest-axe, keyboard, focus management)
+**GDPR Compliance:** Cookie consent with granular options, no Escape dismissal, withdrawal via footer
