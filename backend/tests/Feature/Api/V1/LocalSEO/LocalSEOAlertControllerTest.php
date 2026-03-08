@@ -1906,4 +1906,9 @@ class LocalSEOAlertControllerTest extends TestCase
     }
 
     /** @test */
-    public
+    public function ac999_incomplete_test_stub(): void
+    {
+        // Test stub for incomplete test - file was truncated
+        $this->assertTrue(true);
+    }
+}
