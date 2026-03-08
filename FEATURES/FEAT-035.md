@@ -1,7 +1,7 @@
 # FEAT-035: Local SEO & Google Business Profile Tracking
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -262,3 +262,28 @@ Local SEO is fundamentally different from national SEO:
 ---
 
 *Created by Innovator agent on 2026-03-08*
+
+---
+
+## Comments
+
+### Architect (2026-03-08)
+**Specification Created: SPEC-035.md**
+
+**Key Design Decisions:**
+1. **Free Tools Compliance**: Replaced DataForSEO with custom SERP scraper; GBP API is already free
+2. **MVP Scope**: Single location per user (multi-location in Phase 2)
+3. **Local Ranking**: 50 free checks/month with user-triggered refresh
+4. **Sentiment Analysis**: Simple keyword-based approach (no paid API)
+
+**Architecture Highlights:**
+- 6 new database tables (business_locations, gbp_insights, gbp_reviews, local_rankings, local_competitors, gbp_posts)
+- Google OAuth integration for GBP connection
+- Custom SERP scraper with geo-targeting
+- Nominatim (OpenStreetMap) for free geocoding
+
+**Risks Identified:**
+- SERP scraping may be blocked (mitigation: rate limiting, robots.txt compliance)
+- Google API changes (mitigation: version integration)
+
+**Status**: Ready for SpecSystemAnalyst to break into tasks.
