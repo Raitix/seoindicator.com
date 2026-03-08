@@ -147,6 +147,180 @@ interface BadgePreviewProps {
 - TASK-33-20: Publish Audit UI Component (uses BadgePreview)
 
 ---
+## EmbedCodeGenerator Component (TASK-33-21)
+
+### Component Description
+Dedicated UI component for generating embed code snippets with live badge preview, allowing users to easily copy badge code for their websites. Provides a standalone interface with size/theme selectors, embed type tabs, and clipboard integration with visual feedback.
+
+### Component Location
+- **Component:** `frontend/components/audit/EmbedCodeGenerator.tsx`
+- **Export Index:** `frontend/components/audit/index.ts`
+- **Tests:** `frontend/__tests__/components/audit/EmbedCodeGenerator.test.tsx`
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-33-21.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Live Badge Preview | Real-time preview with score display in selected size/theme |
+| Size Selector | Dropdown with small (120x40), medium (150x100), large (300x150) |
+| Theme Selector | Dropdown with light/dark theme options |
+| Embed Type Tabs | Three tabs for SVG, JavaScript, and iframe embed types |
+| Code Generation | Dynamic embed code based on selected options |
+| Copy to Clipboard | navigator.clipboard.writeText() with 2-second feedback |
+| Instructions | Type-specific tips for embedding |
+
+### Component Props
+
+```typescript
+interface EmbedCodeGeneratorProps {
+  auditHash: string;           // Required: 32-character public audit hash
+  score: number;               // Required: SEO score (0-100)
+  siteUrl?: string;            // Optional: Site URL for display purposes
+  onCopy?: (type, code) => void;  // Optional: Callback when code copied
+  className?: string;          // Optional: Additional CSS classes
+  showInstructions?: boolean;  // Optional: Show/hide instructions (default: true)
+}
+```
+
+### Badge Sizes
+
+| Size | Dimensions | Label | Use Case |
+|------|------------|-------|----------|
+| `small` | 120x40px | Small (120x40) | Inline in blog posts, footer links |
+| `medium` | 150x100px | Medium (150x100) | Sidebar widgets, about pages |
+| `large` | 300x150px | Large (300x150) | Footer widgets, partner pages |
+
+### Theme Options
+
+| Theme | Background | Text Color | Use Case |
+|-------|------------|------------|----------|
+| `light` | #ffffff | (score color) | Light-themed websites |
+| `dark` | #1a1a1a | (score color) | Dark-themed websites |
+
+### Score Color Mapping
+
+| Score Range | Color | Hex Code | Status |
+|-------------|-------|----------|--------|
+| 90-100 | Green | #22c55e | Excellent |
+| 70-89 | Blue | #3b82f6 | Good |
+| 50-69 | Yellow | #eab308 | Needs Work |
+| 30-49 | Orange | #f97316 | Poor |
+| 0-29 | Red | #ef4444 | Critical Issues |
+
+### Embed Code Templates
+
+**SVG Image Link (default):**
+```html
+<a href="https://seoindicator.com/audit/{hash}/">
+  <img src="https://seoindicator.com/badge/{hash}/{size}.svg" alt="SEO Score: {score}/100" width="{width}" height="{height}" />
+</a>
+```
+
+**JavaScript Embed:**
+```html
+<div data-seoindicator-badge="{hash}" data-size="{size}" data-theme="{theme}"></div>
+<script src="https://seoindicator.com/badge.js" async></script>
+```
+
+**iframe Embed:**
+```html
+<iframe src="https://seoindicator.com/badge/{hash}/large?theme={theme}" 
+        width="300" height="150" frameborder="0" loading="lazy"></iframe>
+```
+
+### Sub-Components
+
+| Component | Description |
+|-----------|-------------|
+| `Badge Preview Section` | Live preview container with score display |
+| `Size Selector` | `<select>` dropdown with size options and dimensions |
+| `Theme Selector` | `<select>` dropdown with light/dark options |
+| `Embed Type Tabs` | Button group with tablist ARIA role |
+| `Code Display` | `<textarea>` showing generated embed code |
+| `Copy Button` | Button with clipboard integration and "Copied!" feedback |
+| `Instructions Section` | Contextual tips based on selected embed type |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Labels | `aria-label` on selectors and buttons |
+| Tab Navigation | `role="tablist"`, `role="tab"`, `aria-selected` |
+| Status Announcements | `aria-live="polite"` on copy button |
+| Keyboard Support | Tab, Enter, Space for all interactive elements |
+| Focus Indicators | Visible focus ring on all controls |
+| Hidden Testing Element | `data-testid="current-settings"` with aria-hidden |
+
+### Analytics Integration
+
+The component tracks events via `trackEvent()`:
+```typescript
+trackEvent('embed_code_copied', {
+  hash: auditHash,
+  embedType: selectedEmbedType,
+  size: selectedSize,
+  theme: selectedTheme,
+});
+```
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `EmbedCodeGenerator.test.tsx` | 88 | ✅ PASS |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering (REND) | 10 | Component structure, all sections visible |
+| Size Selector (SIZE) | 6 | Small/medium/large options, dimension updates |
+| Theme Selector (THEME) | 6 | Light/dark toggle, code updates |
+| Embed Type Tabs (TABS) | 6 | SVG/JS/iframe tabs, ARIA roles |
+| Embed Code Generation (CODE) | 10 | Correct code for each embed type |
+| Copy Functionality (COPY) | 8 | Clipboard API, "Copied!" feedback |
+| Instructions Section (INST) | 5 | Type-specific tips display |
+| Score Display (SCORE) | 6 | Color-coded scores (0-100) |
+| Accessibility (A11Y) | 6 | Labels, roles, keyboard navigation |
+| Edge Cases (EDGE) | 8 | Score 0/100, long hash, clipboard failure |
+| Integration (INT) | 3 | Full user flows |
+| Acceptance Criteria (AC) | 8 | All AC requirements verified |
+| Props Validation (PROPS) | 6 | Required/optional props |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | (auto-deployed via GitHub Actions #22808548317) |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 88/88 passing |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-33-13 (BadgePreview) | Done ✅ | Reusable preview component |
+| TASK-33-20 (Share modal) | Done ✅ | Integration target |
+
+### Integration Points
+
+- **ShareAuditModal**: EmbedCodeGenerator can be embedded in the share modal
+- **PublicAuditPage**: Component available for public audit results page
+- **Standalone Page**: Can be used on dedicated embed code generation page
+
+### Related Tasks
+
+- TASK-33-6: BadgeService (badge data generation)
+- TASK-33-13: BadgePreview Component (shared preview logic)
+- TASK-33-15: SVG Badge Route (badge image generation)
+- TASK-33-16: Badge.js Embed Script (JS embed method)
+- TASK-33-20: ShareAuditModal (integration point)
+
+---
 ## AIQueryEngine Service (TASK-34-3)
 
 ### Service Description
