@@ -36273,6 +36273,281 @@ Static legal page at `/terms` combining Terms of Service and Privacy Policy cont
 - TASK-30-5: Consent Integration (pending)
 
 ---
+## Project CRUD API Endpoints (TASK-34-6)
+
+### Service Description
+RESTful API endpoints for managing AI Visibility Tracking projects. Provides full CRUD operations for creating, reading, updating, and deleting projects with proper authorization, validation, and error handling. Part of the AI Visibility Tracking feature (FEAT-034).
+
+### Controller Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/ProjectController.php`
+- **Routes:** `backend/routes/api.php`
+- **Request Classes:**
+  - `backend/app/Http/Requests/StoreProjectRequest.php`
+  - `backend/app/Http/Requests/UpdateProjectRequest.php`
+- **Resource:** `backend/app/Http/Resources/ProjectResource.php`
+- **Tests:** `backend/tests/Feature/Controllers/ProjectControllerTest.php`
+
+### API Endpoints
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/v1/projects` | List all user's projects | Required |
+| POST | `/api/v1/projects` | Create a new project | Required |
+| GET | `/api/v1/projects/{id}` | Get a specific project | Required |
+| PUT/PATCH | `/api/v1/projects/{id}` | Update a project | Required |
+| DELETE | `/api/v1/projects/{id}` | Delete a project | Required |
+
+### List Projects
+`GET /api/v1/projects`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | int | 1 | Page number for pagination |
+| `per_page` | int | 15 | Items per page (max: 100) |
+| `search` | string | - | Search by name or domain |
+| `status` | string | - | Filter by status (active, paused, archived) |
+| `sort_by` | string | created_at | Sort field (name, created_at, updated_at) |
+| `sort_order` | string | desc | Sort direction (asc, desc) |
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "My Website",
+      "domain": "example.com",
+      "status": "active",
+      "visibility_score": 78.5,
+      "keywords_tracked": 42,
+      "last_analyzed_at": "2026-03-08T10:00:00Z",
+      "created_at": "2026-03-01T00:00:00Z",
+      "updated_at": "2026-03-08T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 5,
+    "last_page": 1
+  }
+}
+```
+
+### Create Project
+`POST /api/v1/projects`
+
+**Request Body:**
+```json
+{
+  "name": "My Website",
+  "domain": "example.com",
+  "description": "Main company website",
+  "status": "active",
+  "settings": {
+    "track_competitors": true,
+    "notification_enabled": true,
+    "analysis_frequency": "daily"
+  }
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `name` | Required, string, max:255 |
+| `domain` | Required, string, max:255, valid domain format, unique per user |
+| `description` | Nullable, string, max:1000 |
+| `status` | Nullable, enum: active, paused, archived (default: active) |
+| `settings` | Nullable, array |
+| `settings.track_competitors` | Nullable, boolean |
+| `settings.notification_enabled` | Nullable, boolean |
+| `settings.analysis_frequency` | Nullable, enum: hourly, daily, weekly |
+
+**Response (201):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "My Website",
+    "domain": "example.com",
+    "description": "Main company website",
+    "status": "active",
+    "settings": {
+      "track_competitors": true,
+      "notification_enabled": true,
+      "analysis_frequency": "daily"
+    },
+    "visibility_score": null,
+    "keywords_tracked": 0,
+    "last_analyzed_at": null,
+    "created_at": "2026-03-08T10:00:00Z",
+    "updated_at": "2026-03-08T10:00:00Z"
+  }
+}
+```
+
+### Get Project
+`GET /api/v1/projects/{id}`
+
+**Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "My Website",
+    "domain": "example.com",
+    "description": "Main company website",
+    "status": "active",
+    "settings": {
+      "track_competitors": true,
+      "notification_enabled": true,
+      "analysis_frequency": "daily"
+    },
+    "visibility_score": 78.5,
+    "keywords_tracked": 42,
+    "last_analyzed_at": "2026-03-08T10:00:00Z",
+    "created_at": "2026-03-01T00:00:00Z",
+    "updated_at": "2026-03-08T10:00:00Z"
+  }
+}
+```
+
+### Update Project
+`PUT /api/v1/projects/{id}`
+
+**Request Body:**
+```json
+{
+  "name": "Updated Name",
+  "status": "paused"
+}
+```
+
+**Validation Rules:** Same as create, but all fields are optional.
+
+**Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Updated Name",
+    "status": "paused",
+    ...
+  }
+}
+```
+
+### Delete Project
+`DELETE /api/v1/projects/{id}`
+
+**Response (204):** No content
+
+### Authorization
+
+All endpoints require authentication via Laravel Sanctum. Users can only access their own projects.
+
+**Authorization Logic:**
+```php
+// User can only access their own projects
+if ($project->user_id !== auth()->id()) {
+    abort(403, 'Unauthorized');
+}
+```
+
+### Error Responses
+
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated |
+| 403 | Unauthorized (not project owner) |
+| 404 | Project not found |
+| 422 | Validation error |
+| 429 | Rate limit exceeded |
+
+**Error Response Format:**
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "domain": ["The domain has already been taken."]
+  }
+}
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum token auth |
+| Authorization | User-scoped queries, ownership check |
+| Input Validation | FormRequest classes with rules |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Prevention | Input sanitization, output escaping |
+| Rate Limiting | 60 requests per minute per user |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `ProjectControllerTest.php` | 86 | 124 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| List Projects | 12 | Pagination, filtering, sorting, search |
+| Create Project | 15 | Validation, success, errors, unique domain |
+| Get Project | 8 | Success, not found, unauthorized |
+| Update Project | 15 | Validation, partial update, status change |
+| Delete Project | 8 | Success, not found, unauthorized |
+| Authorization | 12 | User isolation, ownership checks |
+| Validation | 10 | Field rules, edge cases |
+| Error Handling | 6 | Various error scenarios |
+
+### Production Verification
+
+**Tests Run:** 2026-03-08
+
+| Test | Status | Details |
+|------|--------|---------|
+| Health Check | ✅ PASS | Database connected, all systems operational |
+| Auth Required | ✅ PASS | Returns 401 on protected endpoints |
+| List Projects | ✅ PASS | Returns paginated list with filters |
+| Create Project | ✅ PASS | Creates project with valid data |
+| Update Project | ✅ PASS | Updates project fields |
+| Delete Project | ✅ PASS | Deletes project successfully |
+| Authorization | ✅ PASS | User cannot access other users' projects |
+| Validation | ✅ PASS | Invalid data returns 422 |
+| SQL Injection Prevention | ✅ PASS | Returns 422 for malicious input |
+| XSS Prevention | ✅ PASS | Returns 422 for script injection |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-08 (GitHub Actions auto-deploy) |
+| **Controller** | `App\Http\Controllers\Api\V1\ProjectController` |
+| **Routes** | `/api/v1/projects` (CRUD) |
+| **Tests** | 86/86 passing (124 assertions) |
+| **Status** | Complete |
+
+### Dependencies
+- TASK-34-1 (Projects Table Schema)
+- TASK-34-2 (Project Model)
+- TASK-34-3 (Project Repository)
+- TASK-34-5 (Project Authorization Policies)
+
+### Related Tasks
+- TASK-34-1: Projects Table Schema
+- TASK-34-2: Project Model
+- TASK-34-3: Project Repository
+- TASK-34-4: Project Form Requests
+- TASK-34-5: Project Authorization Policies
+- SPEC-034: AI Visibility Tracking
+- FEAT-034: AI Visibility Tracking
+
+---
 
 ## How It Works Page (TASK-30-3)
 
