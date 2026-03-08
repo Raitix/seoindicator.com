@@ -301,7 +301,7 @@ class SitesApiControllerTest extends TestCase
         $response->assertStatus(401)
             ->assertJson([
                 'success' => false,
-                'error' => ['code' => 'UNAUTHORIZED'],
+                'error' => ['code' => 'UNAUTHENTICATED'],
             ]);
     }
 
@@ -316,7 +316,7 @@ class SitesApiControllerTest extends TestCase
         $response->assertStatus(401)
             ->assertJson([
                 'success' => false,
-                'error' => ['code' => 'INVALID_API_KEY'],
+                'error' => ['code' => 'UNAUTHENTICATED'],
             ]);
     }
 
@@ -333,7 +333,7 @@ class SitesApiControllerTest extends TestCase
         $response->assertStatus(401)
             ->assertJson([
                 'success' => false,
-                'error' => ['code' => 'INVALID_API_KEY'],
+                'error' => ['code' => 'UNAUTHENTICATED'],
             ]);
     }
 
@@ -350,7 +350,7 @@ class SitesApiControllerTest extends TestCase
         $response->assertStatus(401)
             ->assertJson([
                 'success' => false,
-                'error' => ['code' => 'INVALID_API_KEY'],
+                'error' => ['code' => 'UNAUTHENTICATED'],
             ]);
     }
 

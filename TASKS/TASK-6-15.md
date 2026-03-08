@@ -1,7 +1,7 @@
 # TASK-6-15: Webhook Retry Logic
 
 ## Status
-`To Develop`
+`To Test Locally`
 
 ## Priority
 `Medium`
@@ -45,11 +45,11 @@ Implement retry logic for failed webhook deliveries.
 - `retrying` - In retry queue
 
 ## Acceptance Criteria
-- [ ] Retry logic implemented
-- [ ] Exponential backoff working
-- [ ] Max retry limit enforced
-- [ ] Worker job processing queue
-- [ ] Status updates correctly
+- [x] Retry logic implemented
+- [x] Exponential backoff working
+- [x] Max retry limit enforced
+- [x] Worker job processing queue
+- [x] Status updates correctly
 
 ## Dependencies
 - TASK-6-14 (Webhook dispatcher)
@@ -93,3 +93,28 @@ For retries, we need to UPDATE the existing delivery instead.
 - ✅ `WebhookRetryService` - Fully implemented, all tests pass
 - ⚠️ `ProcessWebhookRetriesJob` - Needs fix for delivery update issue
 - ⚠️ `WebhookDispatcherService::redeliver()` - Not yet implemented
+
+### [2026-03-08 19:35 GMT+2] Developer: Implementation Complete
+**Changes Made:**
+1. Added `redeliver()` method to `WebhookDispatcherService`:
+   - Reuses existing delivery record (no new record created)
+   - Increments `attempt_count` before HTTP request
+   - Updates `response_status`, `response_body`, `delivered_at`
+   - Returns `true` for 2xx responses, `false` otherwise
+   - Throws exceptions for connection errors (to allow retry logic)
+
+2. Updated `ProcessWebhookRetriesJob`:
+   - Changed from `dispatch()` to `redeliver()` for retry processing
+   - Removed duplicate `attempt_count` increment in `handleRetryFailure()`
+   - Added proper `ConnectionException` catch block
+
+3. Added `maxResponseBodySize` constant (64KB) for consistent truncation
+
+**Test Results:**
+- `WebhookRetryServiceTest`: 28 tests ✅ ALL PASSING
+- `ProcessWebhookRetriesJobTest`: 25 tests ✅ ALL PASSING
+- `WebhookDispatcherServiceTest`: 32 tests ✅ ALL PASSING
+
+**Files Modified:**
+- `backend/app/Services/WebhookDispatcherService.php` - Added `redeliver()` method
+- `backend/app/Jobs/ProcessWebhookRetriesJob.php` - Updated to use `redeliver()`

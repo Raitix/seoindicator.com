@@ -27,6 +27,11 @@ class WebhookDispatcherService
     protected int $maxPayloadSize = 1048576;
 
     /**
+     * Maximum response body storage size in bytes (64KB).
+     */
+    protected int $maxResponseBodySize = 65535;
+
+    /**
      * Dispatch a webhook event.
      *
      * @param Webhook $webhook The webhook to dispatch to
@@ -144,6 +149,126 @@ class WebhookDispatcherService
             ]);
 
             return false;
+        }
+    }
+
+    /**
+     * Redeliver an existing webhook delivery (for retries).
+     *
+     * Updates the existing delivery record instead of creating a new one.
+     * Increments attempt_count and updates response details.
+     *
+     * @param WebhookDelivery $delivery The delivery to retry
+     * @return bool True if delivery was successful (2xx response)
+     */
+    public function redeliver(WebhookDelivery $delivery): bool
+    {
+        $webhook = $delivery->webhook;
+
+        // Check if webhook exists and is enabled
+        if (!$webhook || !$webhook->isEnabled()) {
+            Log::debug('Webhook not available for redelivery', [
+                'delivery_id' => $delivery->id,
+                'webhook_id' => $delivery->webhook_id,
+            ]);
+            return false;
+        }
+
+        // Validate webhook URL
+        if (empty($webhook->url)) {
+            Log::warning('Webhook has empty URL for redelivery', [
+                'delivery_id' => $delivery->id,
+                'webhook_id' => $webhook->id,
+            ]);
+            return false;
+        }
+
+        // Get the event payload from the delivery
+        $event = $delivery->payload;
+        $payload = json_encode($event);
+
+        // Increment attempt count for this retry
+        $newAttemptCount = $delivery->attempt_count + 1;
+
+        try {
+            $timestamp = time();
+            $signature = $this->generateSignature($payload, $webhook->secret, $timestamp);
+
+            $response = Http::timeout($this->timeout)
+                ->withHeaders([
+                    'X-SEOIndicator-Signature' => $signature,
+                    'X-SEOIndicator-Timestamp' => (string) $timestamp,
+                    'Content-Type' => 'application/json',
+                ])
+                ->post($webhook->url, $event);
+
+            $statusCode = $response->status();
+            $responseBody = $response->body();
+
+            // Limit response body storage
+            if (strlen($responseBody) > $this->maxResponseBodySize) {
+                $responseBody = substr($responseBody, 0, $this->maxResponseBodySize);
+            }
+
+            // Update delivery with results
+            $delivery->update([
+                'attempt_count' => $newAttemptCount,
+                'response_status' => $statusCode,
+                'response_body' => $responseBody,
+                'delivered_at' => now(),
+            ]);
+
+            $success = $statusCode >= 200 && $statusCode < 300;
+
+            if ($success) {
+                Log::info('Webhook redelivery successful', [
+                    'delivery_id' => $delivery->id,
+                    'webhook_id' => $webhook->id,
+                    'attempt' => $newAttemptCount,
+                    'status' => $statusCode,
+                ]);
+            } else {
+                Log::warning('Webhook redelivery returned error status', [
+                    'delivery_id' => $delivery->id,
+                    'webhook_id' => $webhook->id,
+                    'attempt' => $newAttemptCount,
+                    'status' => $statusCode,
+                ]);
+            }
+
+            return $success;
+        } catch (ConnectionException $e) {
+            Log::error('Webhook redelivery failed: connection error', [
+                'delivery_id' => $delivery->id,
+                'webhook_id' => $webhook->id,
+                'attempt' => $newAttemptCount,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Update delivery with error info
+            $delivery->update([
+                'attempt_count' => $newAttemptCount,
+                'response_status' => null,
+                'response_body' => $e->getMessage(),
+            ]);
+
+            throw $e; // Re-throw to let caller handle retry logic
+        } catch (\Exception $e) {
+            Log::error('Webhook redelivery failed: unexpected error', [
+                'delivery_id' => $delivery->id,
+                'webhook_id' => $webhook->id,
+                'attempt' => $newAttemptCount,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Update delivery with error info
+            $delivery->update([
+                'attempt_count' => $newAttemptCount,
+                'response_status' => null,
+                'response_body' => $e->getMessage(),
+            ]);
+
+            throw $e; // Re-throw to let caller handle retry logic
         }
     }
 
