@@ -18,9 +18,11 @@ class GBPTrendResource extends JsonResource
      */
     public function toArray($request): array
     {
+        $data = $this->resource;
+
         return [
-            'wow' => $this->wow ?? [],
-            'mom' => $this->mom ?? [],
+            'wow' => $data['wow'] ?? [],
+            'mom' => $data['mom'] ?? [],
         ];
     }
 }

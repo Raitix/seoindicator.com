@@ -106,6 +106,18 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\LocalSEO\Contracts\LocalSEOAlertServiceInterface::class,
             \App\Services\LocalSEO\LocalSEOAlertService::class
         );
+
+        // Business Location Service binding (TASK-35-5, TASK-35-13, SPEC-035)
+        $this->app->bind(
+            \App\Services\LocalSEO\Contracts\BusinessLocationServiceInterface::class,
+            \App\Services\LocalSEO\BusinessLocationService::class
+        );
+
+        // Google OAuth Service binding (TASK-35-7, TASK-35-13, SPEC-035)
+        $this->app->bind(
+            \App\Services\LocalSEO\Contracts\GoogleOAuthServiceInterface::class,
+            \App\Services\LocalSEO\GoogleOAuthService::class
+        );
     }
 
     /**
