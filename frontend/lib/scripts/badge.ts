@@ -185,8 +185,9 @@ async function fetchBadgeConfig(
       throw new Error(`HTTP ${response.status}`);
     }
     
-    const data = await response.json();
-    return { success: true, data };
+    // API returns { success: true, data: { score, site_url, ... } }
+    // Return the response as-is since it already has the correct structure
+    return await response.json();
   } catch (error) {
     // Retry with exponential backoff
     if (retryCount < MAX_RETRY_ATTEMPTS) {
@@ -678,6 +679,9 @@ if (typeof window !== 'undefined') {
     }
   }
 }
+
+// Export version as a constant for ESM consumers
+export const version = VERSION;
 
 export default api;
 export { init, refresh, setTheme, destroy, noConflict, VERSION };

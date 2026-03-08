@@ -1,6 +1,6 @@
 /**
  * badge.js - SEO Score Badge Embed Script
- * Version: 1.0.0
+ * Version: 0.1.0
  * (c) SEOIndicator
  * Released under the MIT License
  */
@@ -33,7 +33,8 @@ var SEOIndicatorBadge = (() => {
     init: () => init,
     noConflict: () => noConflict,
     refresh: () => refresh,
-    setTheme: () => setTheme
+    setTheme: () => setTheme,
+    version: () => version
   });
   var VERSION = "1.0.0";
   var DEFAULT_BASE_URL = "https://seoindicator.com";
@@ -127,8 +128,7 @@ var SEOIndicatorBadge = (() => {
         }
         throw new Error(`HTTP ${response.status}`);
       }
-      const data = await response.json();
-      return { success: true, data };
+      return await response.json();
     } catch (error) {
       if (retryCount < MAX_RETRY_ATTEMPTS) {
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[retryCount]));
@@ -503,6 +503,7 @@ var SEOIndicatorBadge = (() => {
       }
     }
   }
+  var version = VERSION;
   var badge_default = api;
   return __toCommonJS(badge_exports);
 })();
