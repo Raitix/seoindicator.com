@@ -173,6 +173,19 @@ _(Document rollback events and causes)_
 ---
 
 Last updated: 2026-03-07
+### TASK-33-29 (Badge Analytics Dashboard)
+- **Date:** 2026-03-08
+- **Method:** GitHub Actions (automatic)
+- **Run ID:** 22819076567
+- **Result:** Successful
+- **Duration:** ~3 minutes (build: 2m15s, deploy: 38s)
+- **Commit:** 0e7e6e6d
+- **Health Check:** 200 OK, database connected
+- **What was deployed:**
+  - `frontend/components/dashboard/BadgeAnalyticsDashboard.tsx` - Main dashboard with charts, tables, date selector
+  - `frontend/components/dashboard/BadgeStatsCard.tsx` - Stats card component with change indicators
+  - 120 unit tests for dashboard components
+- **Note:** Frontend-only feature for badge performance analytics. Uses Recharts for charts, responsive design with grid layouts. Part of FEAT-033 (Public SEO Audit Reports & Embeddable Score Widget).
 ### TASK-33-26 (JSON-LD Schema for Public Audit Pages)
 - **Date:** 2026-03-08
 - **Method:** GitHub Actions (automatic)
