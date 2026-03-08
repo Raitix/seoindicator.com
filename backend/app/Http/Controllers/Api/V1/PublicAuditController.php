@@ -132,7 +132,7 @@ class PublicAuditController extends Controller
         $siteUrl = $audit->site->url ?? '';
         $displayUrl = preg_replace('#^https?://#', '', $siteUrl);
 
-        $badgeUrl = url("/api/v1/public-audit/{$hash}/badge/image");
+        $auditUrl = url("/audit/public/{$hash}");
 
         return response()->json([
             'success' => true,
@@ -140,10 +140,12 @@ class PublicAuditController extends Controller
                 'hash' => $hash,
                 'score' => $score,
                 'site_url' => $displayUrl,
-                'badge_url' => $badgeUrl,
+                'audit_url' => $auditUrl,
+                'impressions_endpoint' => url('/api/v1/badge/impression'),
+                'clicks_endpoint' => url('/api/v1/badge/click'),
                 'sizes' => ['small', 'medium', 'large'],
                 'themes' => ['light', 'dark'],
-                'embed_code' => $this->generateEmbedCode($hash, $score, $badgeUrl),
+                'embed_code' => $this->generateEmbedCode($hash, $score, $auditUrl),
             ],
         ]);
     }
@@ -320,16 +322,14 @@ class PublicAuditController extends Controller
      *
      * @param string $hash
      * @param int $score
-     * @param string $badgeUrl
+     * @param string $auditUrl
      * @return string
      */
-    protected function generateEmbedCode(string $hash, int $score, string $badgeUrl): string
+    protected function generateEmbedCode(string $hash, int $score, string $auditUrl): string
     {
-        $auditUrl = url("/audit/public/{$hash}");
-
         return <<<HTML
 <a href="{$auditUrl}" target="_blank" rel="noopener">
-  <img src="{$badgeUrl}" alt="SEO Score: {$score}" />
+  <img src="{$auditUrl}/badge/small.svg" alt="SEO Score: {$score}" />
 </a>
 HTML;
     }
