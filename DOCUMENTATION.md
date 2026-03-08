@@ -478,6 +478,212 @@ trackEvent('audit_unpublished', { auditId });
 - TASK-33-8: PublicAuditPage (public audit display)
 
 ---
+## Badge Management Page (TASK-33-24)
+
+### Page Description
+Dashboard page for the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033) that provides a centralized interface for users to view all their public audits, see impression analytics, and manage embed codes. Displays badge previews, analytics (impressions/clicks/CTR), and quick access to embed code generation.
+
+### Component Location
+- **Page:** `frontend/app/dashboard/badges/page.tsx`
+- **Row Component:** `frontend/components/dashboard/BadgeManagementRow.tsx`
+- **Modal Component:** `frontend/components/dashboard/EmbedCodeModal.tsx`
+- **API Client:** `frontend/lib/api/badges.ts`
+- **SWR Hook:** `frontend/lib/hooks/useBadges.ts`
+- **Types:** `frontend/lib/types/badges.ts`
+- **Tests:** `frontend/__tests__/app/dashboard/badges/page.test.tsx`
+- **Test Documentation:** `TESTS/TEST-33-24.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Summary Cards | Total badges, impressions, clicks overview |
+| Badges Table | Sortable list of all public audits |
+| Badge Preview | Live preview using BadgePreview component |
+| Analytics Display | Impressions, clicks, CTR per badge |
+| Visibility Toggle | Public/private toggle with optimistic updates |
+| Embed Code Access | Quick button to open embed code modal |
+| View Audit Link | Link to full audit page |
+| Empty State | Message when no public audits exist |
+| Loading State | Spinner while fetching data |
+| Error State | Error message with retry option |
+| Authentication Check | Redirect to login if not authenticated |
+
+### Page Structure
+
+```
+/dashboard/badges
+├── Summary Cards (3 cards)
+│   ├── Total Badges count
+│   ├── Total Impressions
+│   └── Total Clicks
+├── Badges Table
+│   ├── Site URL (link)
+│   ├── Badge Preview
+│   ├── Impressions count
+│   ├── Clicks count
+│   ├── CTR percentage
+│   ├── Visibility Toggle
+│   ├── Embed Code Button
+│   └── View Audit Link
+├── Empty State (no badges)
+├── Loading State
+└── Error State
+```
+
+### Component Props
+
+**Page Component:**
+```typescript
+// No props - uses route params and SWR for data
+```
+
+**BadgeManagementRow Component:**
+```typescript
+interface BadgeManagementRowProps {
+  audit: PublicAudit;
+  onToggleVisibility: (auditId: number, isPublic: boolean) => Promise<void>;
+  onOpenEmbedCode: (audit: PublicAudit) => void;
+}
+```
+
+**EmbedCodeModal Component:**
+```typescript
+interface EmbedCodeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  audit: PublicAudit | null;
+}
+```
+
+### TypeScript Interfaces
+
+```typescript
+interface PublicAudit {
+  id: number;
+  site_url: string;
+  public_hash: string;
+  score: number;
+  visibility: 'public' | 'private';
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface BadgesResponse {
+  audits: PublicAudit[];
+  totalImpressions: number;
+  totalClicks: number;
+}
+```
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/badges` | Fetch all public audits with analytics |
+| PATCH | `/api/v1/audits/{id}/visibility` | Toggle audit visibility |
+
+### Sorting Options
+
+| Sort By | Default | Description |
+|---------|---------|-------------|
+| Impressions | ✅ Default | Sort by impression count (DESC) |
+| Clicks | Available | Sort by click count (DESC) |
+| CTR | Available | Sort by click-through rate (DESC) |
+
+### Sub-Components
+
+| Component | Description |
+|-----------|-------------|
+| `Summary Cards` | Three cards showing totals |
+| `Badges Table` | Main table with all public audits |
+| `BadgeManagementRow` | Individual row component |
+| `EmbedCodeModal` | Modal for embed code display |
+| `Empty State` | Message when no badges |
+| `Loading Spinner` | Shown during data fetch |
+| `Error Alert` | Shown on API errors |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Heading Structure | `<h1>` for page title, `<h2>` for sections |
+| Table Headers | `<th>` with `scope="col"` |
+| ARIA Labels | `aria-label` on buttons and toggles |
+| Focus Management | Focus ring on all interactive elements |
+| Keyboard Navigation | Tab through all controls |
+| Live Regions | `aria-live` for status updates |
+
+### Responsive Design
+
+| Breakpoint | Behavior |
+|------------|----------|
+| Mobile (<640px) | Horizontal scroll on table |
+| Tablet (640-1024px) | Compact table layout |
+| Desktop (>1024px) | Full table with all columns |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `page.test.tsx` | 113 | ✅ PASS |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Page Rendering | 8 | Page structure, summary cards, table |
+| Empty State | 6 | No badges message, CTA |
+| Badge List Display | 8 | Table rows, data display |
+| Analytics Display | 8 | Impressions, clicks, CTR |
+| Embed Code Access | 7 | Modal open/close, copy |
+| Visibility Toggle | 8 | Toggle switch, API calls |
+| Sorting | 6 | Sort by impressions/clicks/CTR |
+| Responsive Design | 6 | Mobile/tablet/desktop |
+| Loading States | 6 | Spinner, skeleton |
+| Error Handling | 6 | API errors, retry |
+| Authentication | 6 | Login redirect |
+| Accessibility | 10 | ARIA, keyboard, headings |
+| Integration | 5 | Full user flows |
+| Edge Cases | 10 | Large datasets, network errors |
+| Acceptance Criteria | 9 | All 9 ACs verified |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `832706c6` |
+| Deployment Method | GitHub Actions auto-deploy (run #22808391175) |
+| Health Check | ✅ 200 OK |
+| Tests | 113/113 passing |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-33-28 (Analytics) | In Development | Badge analytics API |
+| TASK-33-21 (Embed Code) | Done ✅ | EmbedCodeGenerator component |
+
+### Integration Points
+
+- **Dashboard Navigation**: Link from main dashboard
+- **BadgePreview Component**: Used for live preview in table
+- **EmbedCodeGenerator Component**: Used in modal
+- **Auth Context**: Authentication check
+
+### Related Tasks
+
+- TASK-33-13: BadgePreview Component (badge preview)
+- TASK-33-21: EmbedCodeGenerator Component (embed code modal)
+- TASK-33-22: VisibilitySettings Component (visibility toggle patterns)
+- TASK-33-28: Public Audit Analytics (analytics data source)
+
+---
 ## AIQueryEngine Service (TASK-34-3)
 
 ### Service Description
