@@ -26,7 +26,7 @@ class AIMentionAnalyticsFactory extends Factory
         return [
             'project_id' => \App\Models\AIVisibility\AIVisibilityProject::factory(),
             'platform' => fake()->randomElement(['chatgpt', 'perplexity', 'all']),
-            'period' => fake()->randomElement(['daily', 'weekly', 'monthly']),
+            'period' => fake()->randomElement(['day', 'week', 'month']),
             'total_queries' => fake()->numberBetween(10, 100),
             'brand_mentions' => fake()->numberBetween(0, 50),
             'mention_rate' => fake()->randomFloat(2, 0, 100),
