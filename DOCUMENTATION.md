@@ -1,6 +1,137 @@
 # DOCUMENTATION.md
 
 ---
+## API Integration Tests (TASK-6-20)
+
+### Test Description
+Comprehensive integration test suite for API workflows as part of the Reporting & Export feature (FEAT-006). Tests cover complete API lifecycle workflows including authentication, CRUD operations, rate limiting, and webhook delivery. Uses Laravel's RefreshDatabase trait for isolated test environments.
+
+### Component Locations
+- **Tests Directory:** `backend/tests/Integration/Api/`
+- **Test Files:**
+  - `ApiAuthWorkflowTest.php` - API key lifecycle tests (25 tests)
+  - `ApiKeywordsWorkflowTest.php` - Keywords CRUD workflow tests (29 tests)
+  - `ApiRankingsWorkflowTest.php` - Rankings history workflow tests (19 tests)
+  - `ApiWebhooksWorkflowTest.php` - Webhooks CRUD workflow tests (25 tests)
+  - `RateLimitingWorkflowTest.php` - Rate limiting workflow tests (19 tests)
+- **Test Documentation:** `TESTS/TASK-6-20.md`
+
+### Test Coverage Summary
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| ApiAuthWorkflowTest.php | 25 | - | ✅ PASS |
+| ApiKeywordsWorkflowTest.php | 29 | - | ✅ PASS |
+| ApiRankingsWorkflowTest.php | 19 | - | ✅ PASS |
+| ApiWebhooksWorkflowTest.php | 25 | - | ✅ PASS |
+| RateLimitingWorkflowTest.php | 19 | - | ✅ PASS |
+| **Total** | **117** | **217** | **✅ ALL PASS** |
+
+### Workflow Coverage
+
+#### API Key Workflow
+- Create API key → Use key for authentication → Revoke key → Verify revoked key rejected
+- Permission-based access control tests
+- Authentication header format validation
+- User isolation and security tests
+
+#### Keywords API Workflow
+- Full keyword CRUD lifecycle (create, read, update, delete)
+- Ranking history tracking
+- SERP features integration
+- Pagination and filtering
+- Cross-user authorization checks
+
+#### Rankings Workflow
+- Rankings history workflow
+- Position change tracking
+- SERP features with rankings
+- Large dataset performance tests
+- Authorization and isolation
+
+#### Webhooks Workflow
+- Full webhook CRUD lifecycle
+- Webhook testing endpoint
+- Event triggering and delivery
+- HMAC signature verification
+- User isolation and authorization
+
+#### Rate Limiting Workflow
+- Rate limit hit and reset workflow
+- Per-key rate limits
+- Rate limit headers verification
+- Cross-user isolation
+- Reset timing tests
+
+### Test Structure
+
+```
+backend/tests/Integration/Api/
+├── ApiAuthWorkflowTest.php      # API key lifecycle
+├── ApiKeywordsWorkflowTest.php  # Keywords CRUD
+├── ApiRankingsWorkflowTest.php  # Rankings history
+├── ApiWebhooksWorkflowTest.php  # Webhooks CRUD
+└── RateLimitingWorkflowTest.php # Rate limiting
+
+backend/tests/TESTS/
+└── TASK-6-20.md                 # Test documentation
+```
+
+### Test Environment Configuration
+
+| Setting | Value |
+|---------|-------|
+| Database | Separate test database |
+| HTTP Mocking | Webhook tests use HTTP fake |
+| State Isolation | RefreshDatabase trait (clean state between tests) |
+| Factories | Factory methods for test data |
+
+### Security Tests
+
+| Security Test | Coverage |
+|---------------|----------|
+| SQL Injection | Parameterized queries via Eloquent |
+| XSS Prevention | Input validation in all tests |
+| User Isolation | Cross-user access blocked in all workflows |
+| Authentication | 401 on protected endpoints without auth |
+| Authorization | 403 for unauthorized access |
+
+### Error Response Tests
+
+| Code | Tested In |
+|------|-----------|
+| 401 | All workflow tests (missing/invalid API key) |
+| 403 | Authorization tests (user isolation) |
+| 404 | Not found tests (invalid resource IDs) |
+| 422 | Validation tests (invalid input data) |
+| 429 | Rate limiting tests |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `5d3e30fa` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 117/117 passing (217 assertions) |
+| Duration | 14.64s |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-6-19 | Done ✅ | Unit tests (prerequisite) |
+| TASK-6-4 | Done ✅ | API Key Management (authentication) |
+
+### Related Tasks
+
+- TASK-6-4: API Key Management (authentication layer)
+- TASK-6-11: Reports API Endpoints (API consumer)
+- TASK-6-19: Unit Tests (prerequisite test suite)
+
+---
 ## Reports API Endpoints (TASK-6-11)
 
 ### Service Description
