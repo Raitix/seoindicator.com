@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\ApiKey;
+use App\Models\User;
+use App\Repositories\ApiKeyRepository;
+
 /**
  * API Key Service for TASK-6-3.
  *
@@ -14,6 +18,13 @@ namespace App\Services;
  */
 class ApiKeyService
 {
+    protected ApiKeyRepository $repository;
+
+    public function __construct(ApiKeyRepository $repository)
+    {
+        $this->repository = $repository;
+    }
+
     /**
      * Key prefix for production keys.
      */
@@ -61,6 +72,36 @@ class ApiKeyService
             'key' => $key,
             'hash' => $hash,
             'prefix' => $prefix,
+        ];
+    }
+
+    /**
+     * Generate and persist a new API key for a user.
+     *
+     * Convenience method that generates the key and creates the database record.
+     * Used by tests and API endpoints.
+     *
+     * @param User $user The user who owns the key
+     * @param array $options Additional options (name, permissions, rate_limit, expires_at)
+     * @return array{key: string, model: ApiKey} The plain key and the model
+     */
+    public function generateKey(User $user, array $options = []): array
+    {
+        $keyData = $this->generate();
+
+        $apiKey = $this->repository->create([
+            'user_id' => $user->id,
+            'name' => $options['name'] ?? 'API Key',
+            'key_hash' => $keyData['hash'],
+            'key_prefix' => $keyData['prefix'],
+            'permissions' => $options['permissions'] ?? [],
+            'rate_limit' => $options['rate_limit'] ?? ApiKey::DEFAULT_RATE_LIMIT,
+            'expires_at' => $options['expires_at'] ?? null,
+        ]);
+
+        return [
+            'key' => $keyData['key'],
+            'model' => $apiKey,
         ];
     }
 

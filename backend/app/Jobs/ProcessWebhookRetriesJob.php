@@ -84,19 +84,11 @@ class ProcessWebhookRetriesJob implements ShouldQueue
             return;
         }
 
-        // Build event payload from delivery
-        $event = [
-            'id' => $delivery->id,
-            'type' => $delivery->event_type,
-            'created_at' => $delivery->created_at->toIso8601String(),
-            'data' => $delivery->payload['data'] ?? $delivery->payload,
-        ];
-
         try {
-            $success = $dispatcher->dispatch($webhook, $event);
+            $success = $dispatcher->redeliver($delivery);
 
             if ($success) {
-                // Delivery successful
+                // Delivery successful - clear next_retry_at
                 $delivery->update([
                     'next_retry_at' => null,
                 ]);
@@ -107,6 +99,14 @@ class ProcessWebhookRetriesJob implements ShouldQueue
             } else {
                 $this->handleRetryFailure($delivery, $retryService);
             }
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Webhook retry failed with connection exception', [
+                'delivery_id' => $delivery->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Treat connection exceptions as retryable
+            $this->handleRetryFailure($delivery, $retryService, $e);
         } catch (\Throwable $e) {
             Log::error('Webhook retry failed with exception', [
                 'delivery_id' => $delivery->id,
@@ -120,6 +120,8 @@ class ProcessWebhookRetriesJob implements ShouldQueue
 
     /**
      * Handle a failed retry attempt.
+     *
+     * Note: attempt_count is already incremented by redeliver()
      *
      * @param WebhookDelivery $delivery
      * @param WebhookRetryService $retryService
@@ -142,6 +144,8 @@ class ProcessWebhookRetriesJob implements ShouldQueue
             $shouldRetry = true;
         }
 
+        // Note: attempt_count was already incremented by redeliver()
+        // canRetry checks if attempt_count < MAX, so we check if we can schedule ANOTHER retry
         if ($shouldRetry && $retryService->canRetry($delivery->attempt_count)) {
             // Schedule next retry
             $nextRetryAt = $retryService->calculateNextRetryAt($delivery->attempt_count);
@@ -149,7 +153,6 @@ class ProcessWebhookRetriesJob implements ShouldQueue
             if ($nextRetryAt !== null) {
                 $delivery->update([
                     'next_retry_at' => $nextRetryAt,
-                    'attempt_count' => $delivery->attempt_count + 1,
                 ]);
 
                 Log::info('Webhook retry scheduled', [

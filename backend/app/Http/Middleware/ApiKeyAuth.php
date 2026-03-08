@@ -40,19 +40,19 @@ class ApiKeyAuth
         $token = $this->extractToken($request);
 
         if ($token === null) {
-            return $this->unauthorizedResponse('UNAUTHORIZED', 'Missing API key');
+            return $this->unauthorizedResponse('UNAUTHENTICATED', 'Missing API key');
         }
 
         // Validate the API key
         $apiKey = $this->validateToken($token);
 
         if ($apiKey === null) {
-            return $this->unauthorizedResponse('INVALID_API_KEY', 'Invalid or revoked API key');
+            return $this->unauthorizedResponse('UNAUTHENTICATED', 'Invalid or revoked API key');
         }
 
         // Check if API key is active (not revoked, not expired)
         if (!$apiKey->isActive()) {
-            return $this->unauthorizedResponse('INVALID_API_KEY', 'Invalid or revoked API key');
+            return $this->unauthorizedResponse('UNAUTHENTICATED', 'Invalid or revoked API key');
         }
 
         // Attach API key and user to request
