@@ -1,7 +1,7 @@
 # TASK-35-4: Local SEO Models
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking

@@ -26,8 +26,8 @@ class UpdateBusinessLocationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'string', 'max:255', 'regex:/^[^<>]*$/'],
-            'address' => ['sometimes', 'string', 'max:512', 'regex:/^[^<>]*$/'],
+            'name' => ['sometimes', 'filled', 'string', 'max:255', 'regex:/^[^<>]*$/'],
+            'address' => ['sometimes', 'filled', 'string', 'max:512', 'regex:/^[^<>]*$/'],
             'phone' => ['nullable', 'string', 'max:50', 'regex:/^[\d\s\+\-\(\)\.]+$/'],
             'website' => ['nullable', 'string', 'url', 'max:2048'],
             'category' => ['nullable', 'string', 'max:100'],
@@ -68,11 +68,13 @@ class UpdateBusinessLocationRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Trim whitespace from string inputs
-        if ($this->has('name')) {
-            $this->merge(['name' => $this->name ? trim($this->name) : null]);
+        // Note: We intentionally do NOT convert empty strings to null for name/address
+        // so that validation catches them with 'filled' rule
+        if ($this->has('name') && $this->name !== '' && $this->name !== null) {
+            $this->merge(['name' => trim($this->name)]);
         }
-        if ($this->has('address')) {
-            $this->merge(['address' => $this->address ? trim($this->address) : null]);
+        if ($this->has('address') && $this->address !== '' && $this->address !== null) {
+            $this->merge(['address' => trim($this->address)]);
         }
         if ($this->has('phone')) {
             $this->merge(['phone' => $this->phone ? trim($this->phone) : null]);
