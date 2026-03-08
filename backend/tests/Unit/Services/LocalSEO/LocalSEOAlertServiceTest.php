@@ -98,7 +98,7 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseHas('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'ranking_improved',
         ]);
     }
@@ -1033,12 +1033,16 @@ class LocalSEOAlertServiceTest extends TestCase
 
     protected function createMockLocation(array $attributes = []): BusinessLocation
     {
+        $user = \App\Models\User::factory()->create();
+        
         $default = [
+            'user_id' => $user->id,
             'name' => 'Test Business',
-            'google_location_id' => 'accounts/123/locations/456',
+            'gbp_place_id' => 'accounts/123/locations/456',
             'latitude' => 40.7128,
             'longitude' => -74.0060,
             'address' => '123 Main St, New York, NY 10001',
+            'is_active' => true,
         ];
 
         return BusinessLocation::create(array_merge($default, $attributes));
