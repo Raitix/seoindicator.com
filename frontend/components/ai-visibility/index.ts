@@ -7,6 +7,7 @@
  * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-9.md
  * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-10.md
  * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-17.md
+ * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-21.md
  */
 
 // Dashboard Components (TASK-34-10)
@@ -33,3 +34,11 @@ export { CompetitiveAdvantages } from './CompetitiveAdvantages';
 export { PlatformBreakdown } from './PlatformBreakdown';
 export { CompetitorDetailPanel } from './CompetitorDetailPanel';
 export { ComparisonActions } from './ComparisonActions';
+
+// Alert Components (TASK-34-21)
+export { AlertNotification } from './AlertNotification';
+export { AlertList } from './AlertList';
+export { AlertDetailModal } from './AlertDetailModal';
+export { AlertBell } from './AlertBell';
+export { AlertToast, AlertToastContainer } from './AlertToast';
+export { AlertPreferencesForm } from './AlertPreferencesForm';

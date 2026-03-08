@@ -508,6 +508,10 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
         // AI Visibility Alert Preferences (TASK-34-20, SPEC-034)
         Route::get('alert-preferences', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAlertController::class, 'getPreferences']);
         Route::put('alert-preferences', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAlertController::class, 'updatePreferences']);
+
+        // AI Visibility Export (TASK-34-22, SPEC-034)
+        Route::get('export', [\App\Http\Controllers\Api\V1\AIVisibility\ExportController::class, 'export']);
+        Route::get('projects/{id}/export', [\App\Http\Controllers\Api\V1\AIVisibility\ExportController::class, 'exportProject'])->where('id', '[0-9]+');
     });
 });
 
