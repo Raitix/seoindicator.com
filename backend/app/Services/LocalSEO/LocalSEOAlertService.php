@@ -125,7 +125,7 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
             'severity' => $severity,
             'title' => $title,
             'message' => $message,
-            'data' => json_encode($data),
+            'data' => $data,
             'is_read' => false,
             'created_at' => now(),
         ]);
