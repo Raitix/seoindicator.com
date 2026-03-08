@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\LocalRanking;
+use App\Models\LocalCompetitor;
 
 class BusinessLocation extends Model
 {
@@ -64,6 +66,22 @@ class BusinessLocation extends Model
     public function alerts(): HasMany
     {
         return $this->hasMany(LocalSEOAlert::class, 'location_id');
+    }
+
+    /**
+     * Get the local rankings for this location.
+     */
+    public function localRankings(): HasMany
+    {
+        return $this->hasMany(LocalRanking::class, 'location_id');
+    }
+
+    /**
+     * Get the local competitors for this location.
+     */
+    public function localCompetitors(): HasMany
+    {
+        return $this->hasMany(LocalCompetitor::class, 'location_id');
     }
 
     /**

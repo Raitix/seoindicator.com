@@ -72,7 +72,7 @@ class LocalRankingControllerTest extends TestCase
     protected function createLocalRanking(BusinessLocation $location, Keyword $keyword, array $attributes = []): LocalRanking
     {
         return LocalRanking::factory()->create(array_merge([
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'keyword_id' => $keyword->id,
         ], $attributes));
     }
@@ -83,7 +83,7 @@ class LocalRankingControllerTest extends TestCase
     protected function createCompetitor(BusinessLocation $location, array $attributes = []): LocalCompetitor
     {
         return LocalCompetitor::factory()->create(array_merge([
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
         ], $attributes));
     }
 
@@ -568,8 +568,8 @@ class LocalRankingControllerTest extends TestCase
             ->assertJsonPath('data.competitor.name', "Joe's Pizza");
 
         $this->assertDatabaseHas('local_competitors', [
-            'business_location_id' => $location->id,
-            'name' => "Joe's Pizza",
+            'location_id' => $location->id,
+            'competitor_name' => "Joe's Pizza",
         ]);
     }
 
@@ -985,8 +985,8 @@ class LocalRankingControllerTest extends TestCase
         $response->assertStatus(201);
 
         // Verify user_id wasn't overridden
-        $competitor = LocalCompetitor::where('google_place_id', 'ChIJtest123')->first();
-        $this->assertEquals($location->id, $competitor->business_location_id);
+        $competitor = LocalCompetitor::where('competitor_gbp_id', 'ChIJtest123')->first();
+        $this->assertEquals($location->id, $competitor->location_id);
     }
 
     /** @test */

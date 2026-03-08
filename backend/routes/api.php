@@ -538,6 +538,49 @@ Route::post('/v1/payments/paypal/webhook', [\App\Http\Controllers\Api\V1\Payment
 
 /*
 |--------------------------------------------------------------------------
+| Local SEO Rankings Routes (TASK-35-15, SPEC-035)
+|--------------------------------------------------------------------------
+|
+| Local rank tracking and competitor management API endpoints.
+| All routes require authentication and ownership verification.
+|
+*/
+Route::prefix('v1')->middleware(['auth'])->group(function () {
+    Route::prefix('locations/{id}')->where(['id' => '[0-9]+'])->group(function () {
+        // Rankings endpoints
+        Route::get('rankings', [\App\Http\Controllers\Api\V1\LocalRankingController::class, 'rankings'])
+            ->name('locations.rankings.index')
+            ->middleware('throttle:60,1');
+        Route::get('rankings/history', [\App\Http\Controllers\Api\V1\LocalRankingController::class, 'history'])
+            ->name('locations.rankings.history')
+            ->middleware('throttle:60,1');
+        Route::post('rankings/check', [\App\Http\Controllers\Api\V1\LocalRankingController::class, 'checkAll'])
+            ->name('locations.rankings.check-all')
+            ->middleware('throttle:10,60'); // 10 per hour
+        Route::post('rankings/check/{keywordId}', [\App\Http\Controllers\Api\V1\LocalRankingController::class, 'checkSingle'])
+            ->name('locations.rankings.check-single')
+            ->where('keywordId', '[0-9]+')
+            ->middleware('throttle:10,60'); // 10 per hour
+        Route::get('rankings/quota', [\App\Http\Controllers\Api\V1\LocalRankingController::class, 'quota'])
+            ->name('locations.rankings.quota')
+            ->middleware('throttle:60,1');
+
+        // Competitor endpoints
+        Route::get('competitors', [\App\Http\Controllers\Api\V1\LocalRankingController::class, 'competitors'])
+            ->name('locations.competitors.index')
+            ->middleware('throttle:60,1');
+        Route::post('competitors', [\App\Http\Controllers\Api\V1\LocalRankingController::class, 'addCompetitor'])
+            ->name('locations.competitors.store')
+            ->middleware('throttle:30,60'); // 30 per hour
+        Route::delete('competitors/{competitorId}', [\App\Http\Controllers\Api\V1\LocalRankingController::class, 'deleteCompetitor'])
+            ->name('locations.competitors.destroy')
+            ->where('competitorId', '[0-9]+')
+            ->middleware('throttle:30,60'); // 30 per hour
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
 | GBP Insights & Reviews Routes (TASK-35-14, SPEC-035)
 |--------------------------------------------------------------------------
 |
