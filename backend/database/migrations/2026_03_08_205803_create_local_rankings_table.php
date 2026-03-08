@@ -8,16 +8,13 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * Creates local_rankings table for Local SEO feature (SPEC-035).
-     * Stores local search ranking positions for keywords.
      */
     public function up(): void
     {
         Schema::create('local_rankings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('location_id')->constrained('business_locations')->onDelete('cascade');
-            $table->foreignId('keyword_id')->constrained()->onDelete('cascade');
+            $table->foreignId('keyword_id')->constrained('keywords')->onDelete('cascade');
             $table->string('search_location');
             $table->decimal('search_lat', 10, 8)->nullable();
             $table->decimal('search_lng', 11, 8)->nullable();
@@ -26,7 +23,7 @@ return new class extends Migration
             $table->json('competitors_in_pack')->nullable();
             $table->timestamp('checked_at')->useCurrent();
 
-            // Indexes for query optimization
+            // Indexes
             $table->index(['location_id', 'keyword_id']);
             $table->index('checked_at');
         });

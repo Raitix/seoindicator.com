@@ -8,9 +8,6 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * Creates gbp_reviews table for Local SEO feature (SPEC-035).
-     * Stores Google Business Profile reviews data.
      */
     public function up(): void
     {
@@ -28,10 +25,8 @@ return new class extends Migration
             $table->timestamp('review_date')->nullable();
             $table->timestamps();
 
-            // Unique constraint for Google review ID
+            // Indexes
             $table->unique('google_review_id');
-            
-            // Indexes for query optimization
             $table->index('location_id');
             $table->index('rating');
             $table->index('review_date');

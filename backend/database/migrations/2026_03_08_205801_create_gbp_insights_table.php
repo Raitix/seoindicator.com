@@ -8,9 +8,6 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * Creates gbp_insights table for Local SEO feature (SPEC-035).
-     * Stores Google Business Profile insights/metrics data.
      */
     public function up(): void
     {
@@ -26,10 +23,8 @@ return new class extends Migration
             $table->date('insights_date');
             $table->timestamp('created_at')->useCurrent();
 
-            // Unique constraint to prevent duplicate insights per location per date
+            // Unique constraint and indexes
             $table->unique(['location_id', 'insights_date']);
-            
-            // Indexes for query optimization
             $table->index('insights_date');
         });
     }

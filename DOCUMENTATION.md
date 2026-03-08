@@ -40964,3 +40964,290 @@ if (strcasecmp($mention['name'], $competitorName) === 0) {
 | TASK-34-17 | Competitor Comparison Frontend (consumes this service) |
 
 ---
+## AIVisibilityAlertController (TASK-34-20)
+
+### Service Description
+RESTful API controller for managing AI Visibility alerts. Provides endpoints for listing, reading, resolving, and deleting alerts, plus bulk operations and user preferences management. Part of the AI Visibility Tracking feature (FEAT-034) for Generative Engine Optimization (GEO) alerts and notifications.
+
+### Component Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/AIVisibility/AIVisibilityAlertController.php`
+- **Resource:** `backend/app/Http/Resources/V1/AIVisibility/AIVisibilityAlertResource.php`
+- **Tests:** `backend/tests/Feature/Api/V1/AIVisibility/AIVisibilityAlertRoutesTest.php`, `AIVisibilityAlertControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-34-20.md`
+
+### API Endpoints
+
+| Method | Endpoint | Purpose | Auth |
+|--------|----------|---------|------|
+| GET | `/api/v1/ai-visibility/alerts` | Paginated list with filters | Sanctum |
+| GET | `/api/v1/ai-visibility/alerts/{id}` | Single alert details | Sanctum |
+| POST | `/api/v1/ai-visibility/alerts/{id}/read` | Mark as read | Sanctum |
+| POST | `/api/v1/ai-visibility/alerts/{id}/resolve` | Mark as resolved | Sanctum |
+| POST | `/api/v1/ai-visibility/alerts/mark-all-read` | Bulk mark read | Sanctum |
+| DELETE | `/api/v1/ai-visibility/alerts/{id}` | Delete alert | Sanctum |
+| GET | `/api/v1/ai-visibility/alert-preferences` | Get preferences | Sanctum |
+| PUT | `/api/v1/ai-visibility/alert-preferences` | Update preferences | Sanctum |
+
+### Endpoint Details
+
+#### GET /api/v1/ai-visibility/alerts
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | int | No | Filter by project |
+| `is_read` | bool | No | Filter by read status |
+| `alert_type` | string | No | Filter by type (mention_spike, mention_drop, competitor_gain, sentiment_change) |
+| `page` | int | No | Page number (default: 1) |
+| `per_page` | int | No | Items per page (default: 15, max: 100) |
+
+**Response Structure:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "project_id": 1,
+      "project_name": "SEOIndicator",
+      "alert_type": "mention_spike",
+      "threshold": 20.00,
+      "previous_value": 15.00,
+      "current_value": 25.00,
+      "change_percent": 66.67,
+      "is_read": false,
+      "is_resolved": false,
+      "triggered_at": "2026-03-07T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "unread_count": 5,
+    "total": 20,
+    "current_page": 1,
+    "per_page": 15,
+    "last_page": 2
+  }
+}
+```
+
+**Sorting:** Results sorted by `triggered_at` descending (most recent first)
+
+#### GET /api/v1/ai-visibility/alerts/{id}
+
+**Response Structure:**
+```json
+{
+  "data": {
+    "id": 1,
+    "project_id": 1,
+    "project_name": "SEOIndicator",
+    "alert_type": "mention_spike",
+    "threshold": 20.00,
+    "previous_value": 15.00,
+    "current_value": 25.00,
+    "change_percent": 66.67,
+    "is_read": false,
+    "is_resolved": false,
+    "triggered_at": "2026-03-07T10:00:00Z",
+    "resolved_at": null
+  }
+}
+```
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 404 | Alert not found |
+| 403 | User does not own alert |
+
+#### POST /api/v1/ai-visibility/alerts/{id}/read
+
+**Purpose:** Mark alert as read (`is_read = true`)
+
+**Response:** Returns updated alert with `is_read: true`
+
+**Idempotent:** Safe to call multiple times
+
+#### POST /api/v1/ai-visibility/alerts/{id}/resolve
+
+**Purpose:** Mark alert as resolved (`is_resolved = true`, sets `resolved_at` timestamp)
+
+**Response:** Returns updated alert with `is_resolved: true` and `resolved_at` timestamp
+
+**Idempotent:** Safe to call multiple times
+
+#### POST /api/v1/ai-visibility/alerts/mark-all-read
+
+**Request Body (optional):**
+```json
+{
+  "project_id": 1
+}
+```
+
+**Purpose:** Mark all unread alerts as read. Optionally scoped to a specific project.
+
+**Response Structure:**
+```json
+{
+  "message": "Marked 5 alerts as read",
+  "updated_count": 5
+}
+```
+
+#### DELETE /api/v1/ai-visibility/alerts/{id}
+
+**Response:** 204 No Content
+
+**Error Responses:**
+| Code | Condition |
+|------|-----------|
+| 404 | Alert not found |
+| 403 | User does not own alert |
+
+#### GET /api/v1/ai-visibility/alert-preferences
+
+**Response Structure:**
+```json
+{
+  "data": {
+    "email_notifications": true,
+    "webhook_url": "https://example.com/webhook",
+    "alert_types": ["mention_spike", "mention_drop", "competitor_gain"]
+  }
+}
+```
+
+**Default Preferences (for new users):**
+| Setting | Default Value |
+|---------|---------------|
+| `email_notifications` | `true` |
+| `webhook_url` | `null` |
+| `alert_types` | All types enabled |
+
+#### PUT /api/v1/ai-visibility/alert-preferences
+
+**Request Body:**
+```json
+{
+  "email_notifications": false,
+  "webhook_url": "https://example.com/webhook",
+  "alert_types": ["mention_spike", "competitor_gain"]
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `email_notifications` | boolean |
+| `webhook_url` | nullable, URL, max 255 chars |
+| `alert_types` | array, each in: mention_spike, mention_drop, competitor_gain, sentiment_change |
+
+**Response:** Returns updated preferences
+
+### Alert Types
+
+| Alert Type | Description | Threshold Config |
+|------------|-------------|------------------|
+| `mention_spike` | Brand mention rate increased significantly | `AI_VISIBILITY_SPIKE_THRESHOLD` (default 20%) |
+| `mention_drop` | Brand mention rate decreased significantly | `AI_VISIBILITY_DROP_THRESHOLD` (default 20%) |
+| `competitor_gain` | Competitor mention rate increased vs brand | `AI_VISIBILITY_COMPETITOR_THRESHOLD` (default 15%) |
+| `sentiment_change` | Brand sentiment shifted (positive → negative, etc.) | Not configurable |
+
+### Authorization
+
+**Policy:** `AIVisibilityAlertPolicy`
+
+| Method | Authorization Rule |
+|--------|-------------------|
+| `index` | User sees only their own alerts (via project ownership) |
+| `show` | User must own the alert's project |
+| `read` | User must own the alert's project |
+| `resolve` | User must own the alert's project |
+| `delete` | User must own the alert's project |
+| `markAllRead` | Only affects user's own alerts |
+| `preferences` | Only user's own preferences |
+
+### Database Schema
+
+**Migration:** `2026_03_08_160000_add_resolved_at_to_ai_visibility_alerts_table.php`
+- Adds `resolved_at` timestamp column to `ai_visibility_alerts` table
+
+**Migration:** `2026_03_08_161000_add_ai_visibility_preferences_to_users_table.php`
+- Adds `ai_visibility_preferences` JSON column to `users` table
+
+**Preferences Schema:**
+```json
+{
+  "email_notifications": true,
+  "webhook_url": null,
+  "alert_types": ["mention_spike", "mention_drop", "competitor_gain", "sentiment_change"]
+}
+```
+
+### Rate Limiting
+
+| Endpoint | Rate Limit | Window |
+|----------|------------|--------|
+| All endpoints | 60 requests | 1 minute |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum Bearer token |
+| Authorization | Policy-based project ownership check |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Prevention | JSON response, no HTML rendering |
+| CSRF Protection | API routes exempt (Sanctum) |
+| Input Validation | Form Request classes for all inputs |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `AIVisibilityAlertRoutesTest.php` | 24 | 38 | ✅ PASS |
+| `AIVisibilityAlertControllerTest.php` | 36 | 152 | ✅ PASS |
+| **Total** | **60** | **190** | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Route Registration | 24 | All routes registered, middleware applied |
+| Authentication | 8 | Unauthenticated requests blocked (401) |
+| Authorization | 12 | User isolation, cross-user access blocked (403) |
+| CRUD Operations | 20 | List, show, read, resolve, delete |
+| Bulk Operations | 6 | mark-all-read with project scoping |
+| Preferences | 8 | Get/update preferences, validation |
+| Edge Cases | 10 | Empty lists, already read, already resolved |
+| HTTP Methods | 8 | Method restrictions enforced |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `07355e28` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 60/60 passing (190 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Dependency | Type | Status | Notes |
+|------------|------|--------|-------|
+| TASK-34-19 | Alert Detection Service | Done | Produces alerts |
+| `ai_visibility_alerts` table | Database | Created | Migration in TASK-34-1 |
+| `AIVisibilityAlert` model | Model | Created | TASK-34-2 |
+| Laravel Sanctum | Package | Available | Authentication |
+
+### Related Tasks
+
+| Task | Description |
+|------|-------------|
+| TASK-34-1 | Database migrations (alerts table) |
+| TASK-34-2 | AIVisibilityAlert model |
+| TASK-34-19 | AlertDetectionService (produces alerts) |
+| TASK-34-21 | Frontend Alert Notifications (consumes this API) |
+
+---

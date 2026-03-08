@@ -154,7 +154,7 @@ class RequestLoggingMiddleware
      */
     public function isAsyncLogging(): bool
     {
-        return $this->asyncLogging;
+        return config('api-logging.async_logging', true);
     }
 
     /**
@@ -206,13 +206,13 @@ class RequestLoggingMiddleware
                 'user_agent' => $request->userAgent(),
             ];
 
-            if ($this->asyncLogging) {
+            if ($this->isAsyncLogging()) {
                 // Dispatch async to avoid blocking
                 dispatch(function () use ($data) {
-                    ApiRequestLog::create($data);
+                    $this->createLog($data);
                 });
             } else {
-                ApiRequestLog::create($data);
+                $this->createLog($data);
             }
         } catch (\Throwable $e) {
             // Log error but don't fail the request

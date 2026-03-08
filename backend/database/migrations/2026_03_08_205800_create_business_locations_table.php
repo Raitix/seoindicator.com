@@ -8,16 +8,13 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     Creates business_locations table for Local SEO feature (SPEC-035).
-     * Stores Google Business Profile location data for local SEO tracking.
      */
     public function up(): void
     {
         Schema::create('business_locations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('site_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('site_id')->constrained('sites')->onDelete('cascade');
             $table->string('gbp_place_id', 255)->nullable();
             $table->string('name');
             $table->string('address', 500);
@@ -31,7 +28,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            // Indexes for query optimization
+            // Indexes
             $table->index('user_id');
             $table->index('site_id');
             $table->index('gbp_place_id');
