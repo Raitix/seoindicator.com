@@ -14,15 +14,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int $project_id
  * @property string $platform
+ * @property string|null $period
  * @property int $total_queries
  * @property int $brand_mentions
  * @property float $mention_rate
  * @property int $positive_mentions
  * @property int $neutral_mentions
  * @property int $negative_mentions
+ * @property int $mixed_mentions
+ * @property float $average_sentiment
+ * @property array $competitor_mentions
  * @property array $competitor_stats
  * @property \Illuminate\Support\Carbon $period_start
  * @property \Illuminate\Support\Carbon $period_end
+ * @property \Illuminate\Support\Carbon|null $aggregated_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  *
@@ -44,15 +49,20 @@ class AIMentionAnalytics extends Model
     protected $fillable = [
         'project_id',
         'platform',
+        'period',
         'total_queries',
         'brand_mentions',
         'mention_rate',
         'positive_mentions',
         'neutral_mentions',
         'negative_mentions',
+        'mixed_mentions',
+        'average_sentiment',
+        'competitor_mentions',
         'competitor_stats',
         'period_start',
         'period_end',
+        'aggregated_at',
     ];
 
     /**
@@ -62,9 +72,12 @@ class AIMentionAnalytics extends Model
     {
         return [
             'mention_rate' => 'decimal:2',
+            'average_sentiment' => 'decimal:2',
+            'competitor_mentions' => 'array',
             'competitor_stats' => 'array',
             'period_start' => 'datetime',
             'period_end' => 'datetime',
+            'aggregated_at' => 'datetime',
         ];
     }
 

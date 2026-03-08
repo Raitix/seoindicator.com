@@ -22,6 +22,62 @@ interface AnalyticsAggregatorInterface
     public function getProject(int $projectId): ?object;
 
     /**
+     * Aggregate query results into analytics table
+     *
+     * @param int $projectId
+     * @param string $period Period: 'day', 'week', 'month'
+     * @return object The created/updated analytics model
+     */
+    public function aggregate(int $projectId, string $period = 'week'): object;
+
+    /**
+     * Calculate mention rate for a platform
+     *
+     * @param int $projectId
+     * @param string $platform Platform: 'chatgpt', 'perplexity', etc.
+     * @param string $period Period: 'day', 'week', 'month'
+     * @return float Mention rate as percentage (0-100)
+     */
+    public function calculateMentionRate(int $projectId, string $platform, string $period = 'week'): float;
+
+    /**
+     * Calculate share of voice
+     *
+     * @param int $projectId
+     * @param string $period Period: 'day', 'week', 'month'
+     * @return array{share_of_voice: float, competitor_breakdown: array}
+     */
+    public function calculateShareOfVoice(int $projectId, string $period = 'week'): array;
+
+    /**
+     * Get trend direction and change percentage
+     *
+     * @param int $projectId
+     * @param string $period Period: 'day', 'week', 'month'
+     * @return array{direction: string, change_percent: float, current_period: array, previous_period: array}
+     */
+    public function getTrend(int $projectId, string $period = 'week'): array;
+
+    /**
+     * Get top categories by query count
+     *
+     * @param int $projectId
+     * @param int $limit Maximum number of categories to return
+     * @param string|null $period Optional period filter
+     * @return array Array of categories with count and mention_rate
+     */
+    public function getTopCategories(int $projectId, int $limit = 5, ?string $period = null): array;
+
+    /**
+     * Get sentiment breakdown
+     *
+     * @param int $projectId
+     * @param string $period Period: 'day', 'week', 'month'
+     * @return array{positive: int, neutral: int, negative: int, mixed: int, average_sentiment: float, total: int}
+     */
+    public function getSentimentBreakdown(int $projectId, string $period = 'week'): array;
+
+    /**
      * Get aggregated analytics for a project
      *
      * @param int $projectId
@@ -38,15 +94,6 @@ interface AnalyticsAggregatorInterface
      * @return array Comparison data with 'brand' and 'competitors' arrays
      */
     public function getComparison(int $projectId): array;
-
-    /**
-     * Get trend analysis over time
-     *
-     * @param int $projectId
-     * @param int $days Number of days to analyze (1-365)
-     * @return array Trend data with 'data' array, 'direction', and 'change_percent'
-     */
-    public function getTrend(int $projectId, int $days = 90): array;
 
     /**
      * Get paginated query history
