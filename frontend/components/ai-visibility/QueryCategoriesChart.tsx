@@ -1,10 +1,10 @@
 /**
- * TASK-34-10: QueryCategoriesChart Component
+ * TASK-34-16: QueryCategoriesChart Component
  * 
  * Pie chart showing distribution of query categories.
  * Uses Recharts for rendering.
  * 
- * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-10.md
+ * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-16.md
  */
 
 'use client';
@@ -94,6 +94,12 @@ export function QueryCategoriesChart({ data, className }: QueryCategoriesChartPr
   // Calculate total for percentages
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
+  // Helper to calculate percentage
+  const calculatePercentage = (value: number, total: number): string => {
+    if (total === 0) return '0';
+    return ((value / total) * 100).toFixed(0);
+  };
+
   return (
     <div data-testid="query-categories" className={className}>
       {/* Chart */}
@@ -129,7 +135,7 @@ export function QueryCategoriesChart({ data, className }: QueryCategoriesChartPr
       <div data-testid="chart-legend" className="mt-4 grid grid-cols-2 gap-2">
         {data.map((item, index) => {
           const label = CATEGORY_LABELS[item.name] || item.name;
-          const percentage = ((item.value / total) * 100).toFixed(0);
+          const percentage = calculatePercentage(item.value, total);
 
           return (
             <div
@@ -138,6 +144,7 @@ export function QueryCategoriesChart({ data, className }: QueryCategoriesChartPr
               className="flex items-center gap-2"
             >
               <span
+                data-testid={`legend-color-${item.name}`}
                 className="h-3 w-3 rounded"
                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
               />
@@ -150,10 +157,10 @@ export function QueryCategoriesChart({ data, className }: QueryCategoriesChartPr
       </div>
 
       {/* Stats */}
-      <div className="mt-4 pt-4 border-t border-slate-700">
-        <div className="flex items-center justify-between">
+      <div data-testid="chart-stats" className="mt-4 pt-4 border-t border-slate-700">
+        <div data-testid="total-queries" className="flex items-center justify-between">
           <span className="text-sm text-slate-500">Total Queries</span>
-          <span className="text-lg font-bold text-white">{total}</span>
+          <span data-testid="total-value" className="text-lg font-bold text-white">{total}</span>
         </div>
       </div>
     </div>

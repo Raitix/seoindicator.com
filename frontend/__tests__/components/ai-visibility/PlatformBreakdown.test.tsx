@@ -14,11 +14,11 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="responsive-container">{children}</div>
   ),
-  RadarChart: ({ children, data }: { children: React.ReactNode; data: unknown[] }) => (
-    <div data-testid="radar-chart" data-points={data?.length}>{children}</div>
+  RadarChart: ({ children, data, 'aria-label': ariaLabel }: { children: React.ReactNode; data: unknown[]; 'aria-label'?: string }) => (
+    <div data-testid="radar-chart" data-points={data?.length} aria-label={ariaLabel}>{children}</div>
   ),
-  BarChart: ({ children, data }: { children: React.ReactNode; data: unknown[] }) => (
-    <div data-testid="bar-chart" data-items={data?.length}>{children}</div>
+  BarChart: ({ children, data, 'aria-label': ariaLabel }: { children: React.ReactNode; data: unknown[]; 'aria-label'?: string }) => (
+    <div data-testid="bar-chart" data-items={data?.length} aria-label={ariaLabel}>{children}</div>
   ),
   Radar: ({ data, fill }: { data: unknown[]; fill?: string }) => (
     <div data-testid="radar" data-points={data?.length} data-fill={fill} />
