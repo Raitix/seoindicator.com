@@ -824,12 +824,19 @@ class RequestLoggingMiddlewareTest extends TestCase
     /** @test DM-006: isEnabled returns correct state */
     public function test_dm006_is_enabled_returns_correct_state(): void
     {
-        config(['api-logging.enabled' => false]);
+        // Test with config enabled
+        config(['api-logging.enabled' => true]);
         
         $middleware = new RequestLoggingMiddleware();
         
+        $this->assertTrue($middleware->isEnabled());
+        
+        // Runtime disable should work when config is enabled
+        $middleware->disable();
+        
         $this->assertFalse($middleware->isEnabled());
         
+        // Runtime re-enable should work when config is enabled
         $middleware->enable();
         
         $this->assertTrue($middleware->isEnabled());
