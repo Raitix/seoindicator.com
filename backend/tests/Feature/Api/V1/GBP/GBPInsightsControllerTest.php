@@ -127,16 +127,20 @@ class GBPInsightsControllerTest extends TestCase
     /** @test RR-005 */
     public function middleware_applied(): void
     {
-        $routes = [
-            'GET /locations/{id}/insights',
-            'GET /locations/{id}/insights/trend',
-            'POST /locations/{id}/insights/sync',
-        ];
+        // Test that authentication middleware is applied to all routes
+        $location = $this->mockLocation();
 
-        foreach ($routes as $route) {
-            $response = $this->getJson('/api/v1/' . ltrim(explode(' ', $route)[1], '/'));
-            $response->assertStatus(401);
-        }
+        // GET insights without auth
+        $response = $this->getJson("/api/v1/locations/{$location->id}/insights");
+        $response->assertStatus(401);
+
+        // GET trend without auth
+        $response = $this->getJson("/api/v1/locations/{$location->id}/insights/trend");
+        $response->assertStatus(401);
+
+        // POST sync without auth
+        $response = $this->postJson("/api/v1/locations/{$location->id}/insights/sync");
+        $response->assertStatus(401);
     }
 
     /** @test RR-006 */
