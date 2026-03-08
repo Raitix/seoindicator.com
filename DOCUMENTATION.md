@@ -41251,3 +41251,209 @@ RESTful API controller for managing AI Visibility alerts. Provides endpoints for
 | TASK-34-21 | Frontend Alert Notifications (consumes this API) |
 
 ---
+## AI Visibility Export Functionality (TASK-34-22)
+
+### Service Description
+Data export functionality for AI Visibility tracking data with CSV and XLSX format support. Provides streaming exports for large datasets, multi-sheet XLSX generation, rate limiting, and comprehensive security measures. Part of the AI Visibility Tracking feature (FEAT-034) for Generative Engine Optimization (GEO) data export and reporting.
+
+### Component Locations
+- **ExportController:** `backend/app/Http/Controllers/Api/V1/AIVisibility/ExportController.php`
+- **ExportService:** `backend/app/Services/AIVisibility/ExportService.php`
+- **CsvExporter:** `backend/app/Services/AIVisibility/CsvExporter.php`
+- **XlsxExporter:** `backend/app/Services/AIVisibility/XlsxExporter.php`
+- **ExporterInterface:** `backend/app/Services/AIVisibility/Contracts/ExporterInterface.php`
+- **Tests:** `backend/tests/Feature/Api/V1/AIVisibility/ExportControllerTest.php`, `backend/tests/Unit/Services/AIVisibility/ExportServiceTest.php`, `CsvExporterTest.php`, `XlsxExporterTest.php`
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/TEST-34-22.md`
+
+### API Endpoints
+
+| Method | Endpoint | Purpose | Auth |
+|--------|----------|---------|------|
+| GET | `/api/v1/ai-visibility/export` | Export with filters | Sanctum |
+| GET | `/api/v1/ai-visibility/projects/{id}/export` | Export specific project | Sanctum |
+
+### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `format` | string | No | Export format: `csv`, `xlsx` (default: csv) |
+| `project_id` | int | No | Single project filter |
+| `project_ids[]` | int[] | No | Multiple projects filter |
+| `from` | date | No | Start date filter (Y-m-d) |
+| `to` | date | No | End date filter (Y-m-d) |
+| `data_type` | string | No | Data type: `projects`, `queries`, `analytics`, `mentions`, `all` |
+
+### Export Formats
+
+#### CSV Export
+- **UTF-8 BOM:** Included for Excel compatibility
+- **Streaming:** Enabled for datasets >10,000 rows
+- **Delimiters:** Configurable (default: comma)
+- **Escaping:** Proper quote doubling for special characters
+
+#### XLSX Export
+- **Multi-sheet Support:** Different sheets for each data type
+- **Auto-sizing:** Column widths adjusted to content
+- **Formatting:** Bold headers, frozen header row, auto-filter
+- **Formula Injection Prevention:** Escapes `=`, `+`, `-`, `@` prefixes
+
+### Data Types Export
+
+| Data Type | Description | Columns |
+|-----------|-------------|---------|
+| `projects` | Project list with configuration | id, brand_name, keywords, competitors, tracking_frequency, created_at |
+| `queries` | Query results with mentions | id, project_id, platform, query_text, response_text, mentions, sentiment, queried_at |
+| `analytics` | Aggregated analytics data | date, platform, mention_rate, share_of_voice, sentiment_score |
+| `mentions` | Individual mention records | id, query_id, brand, context, mention_type, sentiment |
+| `all` | Multi-sheet XLSX with all data types | All above columns in separate sheets |
+
+### Core Methods
+
+**ExportService:**
+| Method | Description |
+|--------|-------------|
+| `export(array $filters)` | Main export orchestration method |
+| `exportProjects($query, $format)` | Export project data |
+| `exportQueries($query, $format)` | Export query results |
+| `exportAnalytics($query, $format)` | Export aggregated analytics |
+| `exportMentions($query, $format)` | Export individual mentions |
+| `exportAll($query)` | Multi-sheet XLSX export |
+| `clearRateLimitCache($userId)` | Clear rate limit counter (testing) |
+
+**CsvExporter:**
+| Method | Description |
+|--------|-------------|
+| `export(Collection $data, array $columns)` | Generate CSV output |
+| `stream(Collection $data, array $columns)` | Stream large datasets |
+| `setDelimiter(string $delimiter)` | Configure CSV delimiter |
+| `setEnclosure(string $enclosure)` | Configure field enclosure |
+
+**XlsxExporter:**
+| Method | Description |
+|--------|-------------|
+| `export(Collection $data, array $columns, string $sheetName)` | Generate XLSX output |
+| `addSheet(Collection $data, array $columns, string $name)` | Add additional sheet |
+| `setAutoSize(bool $auto)` | Enable/disable column auto-sizing |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum Bearer token required |
+| Authorization | User must own project(s) being exported |
+| Rate Limiting | 10 exports per minute per user (configurable) |
+| Date Range Validation | Maximum 1 year range allowed |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Prevention | Data escaped in output |
+| Formula Injection | XLSX: escapes `=`, `+`, `-`, `@`, `\t`, `\r` prefixes |
+| Input Validation | Form Request classes for all parameters |
+
+### Rate Limiting
+
+| Metric | Value |
+|--------|-------|
+| Default Limit | 10 exports per minute |
+| Config Key | `ai-visibility.export_rate_limit` |
+| Cache Key | `export_rate_limit:{user_id}` |
+| Response Code | 429 Too Many Requests when exceeded |
+
+### File Generation
+
+| Attribute | Value |
+|-----------|-------|
+| Filename Format | `{brand_name}_visibility_{date}.{ext}` |
+| Content-Type CSV | `text/csv; charset=utf-8` |
+| Content-Type XLSX | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` |
+| Content-Disposition | `attachment; filename="{filename}"` |
+| UTF-8 BOM | `\xEF\xBB\xBF` (CSV only) |
+
+### Performance
+
+| Optimization | Description |
+|--------------|-------------|
+| Streaming | CSV exports >10k rows use streamed response |
+| Chunked Processing | 1000 rows per chunk for memory efficiency |
+| Memory Limit | <256MB for 100k row exports |
+| Response Time | <500ms for small datasets, <60s for 100k rows |
+
+### ExporterInterface Contract
+
+```php
+interface ExporterInterface
+{
+    public function export(Collection $data, array $columns): string;
+    public function getContentType(): string;
+    public function getFileExtension(): string;
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `ExportControllerTest.php` | 36 | 55 | ✅ PASS |
+| `ExportServiceTest.php` | 22 | 30 | ✅ PASS |
+| `CsvExporterTest.php` | 23 | 32 | ✅ PASS |
+| `XlsxExporterTest.php` | 25 | 32 | ✅ PASS |
+| **Total** | **106** | **149** | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authentication | 8 | Unauthenticated requests blocked (401) |
+| Authorization | 12 | User ownership verification, cross-user blocked |
+| Format Selection | 10 | CSV, XLSX, case insensitivity, invalid format |
+| Project Filtering | 14 | Single, multiple, all projects, non-existent handling |
+| Date Range Filtering | 8 | Valid ranges, invalid dates, max 1 year validation |
+| Data Type Export | 16 | Projects, queries, analytics, mentions, all |
+| Rate Limiting | 6 | Within limit, exceed limit (429), headers |
+| File Generation | 12 | Filename format, headers, UTF-8 BOM |
+| Security | 14 | SQL injection, XSS, formula injection prevention |
+| Performance | 6 | Small/medium/large dataset timing |
+
+### Configuration
+
+**config/ai-visibility.php:**
+```php
+'export_rate_limit' => env('AI_VISIBILITY_EXPORT_RATE_LIMIT', 10),
+'export_max_date_range_days' => env('AI_VISIBILITY_EXPORT_MAX_DAYS', 365),
+```
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `7cae2358` |
+| Deployment Method | GitHub Actions auto-deploy (run #22827159887) |
+| Health Check | ✅ 200 OK |
+| Tests | 106/106 passing (149 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Dependency | Type | Status | Notes |
+|------------|------|--------|-------|
+| TASK-34-5 | AIVisibilityService | Done | Data source for exports |
+| TASK-34-1 | Database migrations | Done | ai_query_results, ai_visibility_projects tables |
+| `league/csv` | Package | Available | CSV generation (optional) |
+| `phpoffice/phpspreadsheet` | Package | Available | XLSX generation |
+
+### Deferred Features
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Frontend Export Components | Not Implemented | Separate task |
+| PDF/HTML Analytics Report | Not Implemented | Requires FEAT-029 |
+| Background Job for Large Exports | Not Implemented | Can be added later |
+| Email Notification | Not Implemented | Can be added later |
+
+### Related Tasks
+
+| Task | Description |
+|------|-------------|
+| TASK-34-5 | AIVisibilityService (data source) |
+| TASK-34-14 | Analytics API (analytics data) |
+| FEAT-029 | Export Results (PDF infrastructure - deferred) |
+
+---
