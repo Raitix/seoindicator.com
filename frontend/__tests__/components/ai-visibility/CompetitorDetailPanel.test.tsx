@@ -137,8 +137,9 @@ describe('CompetitorDetailPanel', () => {
 
     it('DET-011: shows platform badge', () => {
       render(<CompetitorDetailPanel {...expandedProps} />);
-      expect(screen.getByText('ChatGPT')).toBeInTheDocument();
-      expect(screen.getByText('Perplexity')).toBeInTheDocument();
+      // Use getAllByText since there may be multiple mentions with the same platform
+      expect(screen.getAllByText('ChatGPT').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Perplexity').length).toBeGreaterThan(0);
     });
   });
 
@@ -147,14 +148,17 @@ describe('CompetitorDetailPanel', () => {
 
     it('DET-012: shows positive sentiment badge in green', () => {
       render(<CompetitorDetailPanel {...expandedProps} />);
-      const positiveBadge = screen.getByText('positive');
-      expect(positiveBadge).toHaveClass('bg-green-100');
+      // Use getAllByText since there may be multiple mentions with the same sentiment
+      const positiveBadges = screen.getAllByText('positive');
+      expect(positiveBadges.length).toBeGreaterThan(0);
+      expect(positiveBadges[0]).toHaveClass('bg-green-100');
     });
 
     it('DET-013: shows negative sentiment badge in red', () => {
       render(<CompetitorDetailPanel {...expandedProps} />);
-      const negativeBadge = screen.getByText('negative');
-      expect(negativeBadge).toHaveClass('bg-red-100');
+      const negativeBadges = screen.getAllByText('negative');
+      expect(negativeBadges.length).toBeGreaterThan(0);
+      expect(negativeBadges[0]).toHaveClass('bg-red-100');
     });
   });
 

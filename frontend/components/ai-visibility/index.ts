@@ -6,6 +6,7 @@
  * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-8.md
  * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-9.md
  * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-10.md
+ * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-17.md
  */
 
 // Dashboard Components (TASK-34-10)
@@ -24,3 +25,11 @@ export { DeleteProjectModal } from './DeleteProjectModal';
 // Form Components (TASK-34-9)
 export { CreateProjectForm } from './CreateProjectForm';
 export { TagInput } from './TagInput';
+
+// Comparison Components (TASK-34-17)
+export { ComparisonRankingTable } from './ComparisonRankingTable';
+export { HeadToHeadComparison } from './HeadToHeadComparison';
+export { CompetitiveAdvantages } from './CompetitiveAdvantages';
+export { PlatformBreakdown } from './PlatformBreakdown';
+export { CompetitorDetailPanel } from './CompetitorDetailPanel';
+export { ComparisonActions } from './ComparisonActions';
