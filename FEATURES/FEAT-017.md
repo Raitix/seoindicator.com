@@ -8,6 +8,14 @@
 
 ## Comments
 ### 2026-03-08 - DocSystemAnalyst
+**Re-verification Complete (21:08 GMT+2)**
+- Feature status: Done (Phase 1 MVP complete, Phases 2-4 planned)
+- SPEC-017 status: Done
+- DOCUMENTATION.md verified (User Onboarding & Activation Flow section)
+- Completion markers written: FEAT-17.json + FEAT-017.json
+- **ORCHESTRATOR BUG:** 77+ verifications to date due to naming mismatch ("FEAT-17" vs "FEAT-017")
+
+### 2026-03-08 - DocSystemAnalyst
 **Re-verification Complete (18:54 GMT+2)**
 - Feature status: Done (Phase 1 MVP complete, Phases 2-4 planned)
 - SPEC-017 status: Done
