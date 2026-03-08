@@ -1,7 +1,7 @@
 # TASK-35-2: BusinessLocation Model
 
 ## STATUS
-`To Prioritize`
+`To Develop`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -85,3 +85,109 @@ TASK-35-5+ (Services, APIs, Frontend)
 **Next Steps for This Task:**
 1. Wait for TASK-35-1 to reach `To Test Locally` status
 2. Then this task can proceed to PreTester for test design
+
+### ProjectManager Session (2026-03-08 23:38 GMT+2)
+- **Priority:** HIGH (confirmed) - Foundation model for Local SEO feature
+- **Risk:** LOW (confirmed) - Standard Eloquent model, no external dependencies
+- **DEPENDENCY RESOLVED:** TASK-35-1 (Database Migrations) is now **DONE** ✅
+
+**Dependency Status Updated:**
+| Dependency | Status | Ready? |
+|------------|--------|--------|
+| TASK-35-1 (Migrations) | Done | ✅ YES |
+
+**Previous Blocker Cleared:**
+- Previous session (2026-03-08 21:23) identified TASK-35-1 as blocker
+- TASK-35-1 completed through full pipeline: Migrations → Tests → Local Test → Deploy → Prod Test → Documentation → Done
+- All 7 tables exist in production database: business_locations, gbp_insights, gbp_reviews, local_rankings, local_competitors, gbp_posts, local_seo_alerts
+
+**Technical Assessment:**
+- BusinessLocation model can now be created against existing `business_locations` table
+- Table schema verified: 16 columns + soft deletes, indexes on user_id/site_id/gbp_place_id
+- Foreign keys to users.id and sites.id confirmed
+- JSON column `settings` for flexible configuration
+- DECIMAL(10,8) for latitude, DECIMAL(11,8) for longitude
+
+**Downstream Impact:**
+- Enables TASK-35-3 (Other models)
+- Enables TASK-35-5 (BusinessLocationService)
+- Enables TASK-35-13 (API Controller)
+- Enables TASK-35-17 (Frontend Location Management)
+
+**TDD Ready:** PreTester can design tests immediately:
+1. Model fillable attributes
+2. Relationship methods (user, site, insights, reviews, rankings, competitors, posts, alerts)
+3. Accessor methods (full_address, hasConnectedGBP, google_maps_url)
+4. Scope methods (scopeConnected, scopeForUser)
+5. Factory generation with coordinate validation
+
+**Status:** `To Write Tests` - Ready for PreTester
+
+### PreTester Session (2026-03-08 23:45 GMT+2)
+- **Status:** `To Develop` ✅
+- **Tests Designed:** 85+ test scenarios across 12 categories
+
+**Files Created:**
+| File | Type | Tests |
+|------|------|-------|
+| `TESTS/TEST-35-2.md` | Documentation | 85+ scenarios |
+| `backend/tests/Unit/Models/BusinessLocationTest.php` | Unit Tests | 85+ tests |
+
+**Test Categories:**
+| Category | Tests | Coverage |
+|----------|-------|----------|
+| Model Instantiation | 5 | MI-01 to MI-05 |
+| Casts | 10 | CA-01 to CA-10 |
+| Relationships | 12 | RE-01 to RE-12 |
+| Scopes | 15 | SQ-01 to SQ-15 |
+| Accessors | 12 | AC-01 to AC-12 |
+| Methods | 10 | MT-01 to MT-10 |
+| Hidden Attributes | 4 | HD-01 to HD-04 |
+| Factory States | 6 | FS-01 to FS-06 |
+| Edge Cases | 10 | EC-01 to EC-10 |
+| Security | 5 | SEC-01 to SEC-05 |
+| Integration | 6 | INT-01 to INT-06 |
+| Performance | 3 | PERF-01 to PERF-03 |
+
+**Existing Model Analysis:**
+The BusinessLocation model already exists with:
+- ✅ `HasFactory`, `SoftDeletes` traits
+- ✅ All fillable attributes (15 fields)
+- ✅ Relationships: `user()`, `site()`, `alerts()`, `localRankings()`, `localCompetitors()`
+- ✅ Scopes: `scopeActive()`, `scopeGbpConnected()`
+- ✅ Accessors: `getGoogleLocationIdAttribute()`, `getIsGbpConnectedAttribute()`
+- ✅ Hidden: `gbp_access_token`, `gbp_refresh_token`
+- ✅ Factory with states: `inactive()`, `withGbp()`, `withoutGbp()`
+
+**Missing Model Methods (for Developer):**
+1. `getFullAddressAttribute()` - Format name + address for display
+2. `scopeForUser($userId)` - Filter locations by user ID
+3. `getMapsUrl()` - Generate Google Maps URL
+4. `hasValidGBPToken()` - Check if GBP OAuth token is valid (not expired)
+5. `getSettingsValue($key, $default)` - Get value from settings JSON
+
+**Acceptance Criteria Status:**
+| Criteria | Status | Notes |
+|----------|--------|-------|
+| Model with fillable attributes | ✅ Done | 15 fillable fields |
+| BelongsTo: user(), site() | ✅ Done | Both implemented |
+| HasMany relationships | ⚠️ Partial | Has alerts, rankings, competitors; Missing insights, reviews, posts |
+| JSON casts | ✅ Done | settings cast to array |
+| SoftDeletes | ✅ Done | Trait used |
+| Full address accessor | ❌ Missing | Needs implementation |
+| scopeConnected() | ✅ Done | As scopeGbpConnected() |
+| scopeForUser() | ❌ Missing | Needs implementation |
+| hasConnectedGBP() | ✅ Done | As is_gbp_connected accessor |
+| getMapsUrl() | ❌ Missing | Needs implementation |
+| Model factory | ✅ Done | With 3 states |
+| Unit tests | ✅ Done | 85+ tests created |
+
+**Test Run Command:**
+```bash
+php artisan test --filter BusinessLocationTest
+```
+
+**Dependencies:**
+- TASK-35-1 (Migrations) - Done ✅
+- User model - Exists
+- Site model - Exists
