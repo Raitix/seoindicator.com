@@ -40,6 +40,18 @@ class AIVisibilityAlert extends Model
     }
 
     /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $alert) {
+            if (empty($alert->triggered_at)) {
+                $alert->triggered_at = now();
+            }
+        });
+    }
+
+    /**
      * Alert type constants.
      */
     public const TYPE_MENTION_SPIKE = 'mention_spike';
@@ -50,6 +62,14 @@ class AIVisibilityAlert extends Model
      * The table associated with the model.
      */
     protected $table = 'ai_visibility_alerts';
+
+    /**
+     * The model's default values for attributes.
+     */
+    protected $attributes = [
+        'is_read' => false,
+        'is_resolved' => false,
+    ];
 
     /**
      * The attributes that are mass assignable.

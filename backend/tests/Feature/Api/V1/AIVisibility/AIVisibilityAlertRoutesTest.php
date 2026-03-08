@@ -5,8 +5,6 @@ namespace Tests\Feature\Api\V1\AIVisibility;
 use App\Models\AIVisibility\AIVisibilityAlert;
 use App\Models\AIVisibility\AIVisibilityProject;
 use App\Models\User;
-use Database\Factories\AIVisibility\AIVisibilityAlertFactory;
-use Database\Factories\AIVisibility\AIVisibilityProjectFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -45,8 +43,8 @@ class AIVisibilityAlertRoutesTest extends TestCase
     public function it_registers_get_alert_show_route(): void
     {
         $user = User::factory()->create();
-        $project = AIVisibilityProject::factory()->for($user)->create();
-        $alert = AIVisibilityAlert::factory()->for($project)->create();
+        $project = AIVisibilityProject::factory()->for($user, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($project, 'project')->create();
 
         Sanctum::actingAs($user);
 
@@ -59,8 +57,8 @@ class AIVisibilityAlertRoutesTest extends TestCase
     public function it_registers_post_alert_read_route(): void
     {
         $user = User::factory()->create();
-        $project = AIVisibilityProject::factory()->for($user)->create();
-        $alert = AIVisibilityAlert::factory()->for($project)->create();
+        $project = AIVisibilityProject::factory()->for($user, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($project, 'project')->create();
 
         Sanctum::actingAs($user);
 
@@ -73,8 +71,8 @@ class AIVisibilityAlertRoutesTest extends TestCase
     public function it_registers_post_alert_resolve_route(): void
     {
         $user = User::factory()->create();
-        $project = AIVisibilityProject::factory()->for($user)->create();
-        $alert = AIVisibilityAlert::factory()->for($project)->create();
+        $project = AIVisibilityProject::factory()->for($user, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($project, 'project')->create();
 
         Sanctum::actingAs($user);
 
@@ -98,8 +96,8 @@ class AIVisibilityAlertRoutesTest extends TestCase
     public function it_registers_delete_alert_route(): void
     {
         $user = User::factory()->create();
-        $project = AIVisibilityProject::factory()->for($user)->create();
-        $alert = AIVisibilityAlert::factory()->for($project)->create();
+        $project = AIVisibilityProject::factory()->for($user, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($project, 'project')->create();
 
         Sanctum::actingAs($user);
 
@@ -227,8 +225,8 @@ class AIVisibilityAlertRoutesTest extends TestCase
     public function alert_show_only_accepts_get(): void
     {
         $user = User::factory()->create();
-        $project = AIVisibilityProject::factory()->for($user)->create();
-        $alert = AIVisibilityAlert::factory()->for($project)->create();
+        $project = AIVisibilityProject::factory()->for($user, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($project, 'project')->create();
 
         Sanctum::actingAs($user);
 
@@ -240,8 +238,8 @@ class AIVisibilityAlertRoutesTest extends TestCase
     public function alert_read_only_accepts_post(): void
     {
         $user = User::factory()->create();
-        $project = AIVisibilityProject::factory()->for($user)->create();
-        $alert = AIVisibilityAlert::factory()->for($project)->create();
+        $project = AIVisibilityProject::factory()->for($user, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($project, 'project')->create();
 
         Sanctum::actingAs($user);
 
@@ -254,8 +252,8 @@ class AIVisibilityAlertRoutesTest extends TestCase
     public function alert_resolve_only_accepts_post(): void
     {
         $user = User::factory()->create();
-        $project = AIVisibilityProject::factory()->for($user)->create();
-        $alert = AIVisibilityAlert::factory()->for($project)->create();
+        $project = AIVisibilityProject::factory()->for($user, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($project, 'project')->create();
 
         Sanctum::actingAs($user);
 
@@ -279,8 +277,8 @@ class AIVisibilityAlertRoutesTest extends TestCase
     public function alert_delete_only_accepts_delete(): void
     {
         $user = User::factory()->create();
-        $project = AIVisibilityProject::factory()->for($user)->create();
-        $alert = AIVisibilityAlert::factory()->for($project)->create();
+        $project = AIVisibilityProject::factory()->for($user, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($project, 'project')->create();
 
         Sanctum::actingAs($user);
 
