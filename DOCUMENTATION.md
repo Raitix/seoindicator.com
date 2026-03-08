@@ -3827,6 +3827,117 @@ it('renders 404 for invalid slug', () => {
 - TASK-32-22: Performance optimization and launch
 
 ---
+## E2E Tests for Badge Embedding (TASK-33-34)
+
+### Test Description
+End-to-end test suite for the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033) that verifies badge embedding functionality works correctly on third-party pages. Uses Playwright to test all three badge types (SVG, JS, iframe) with comprehensive coverage of rendering, interaction, tracking, and error handling.
+
+### Component Location
+- **E2E Tests:** `frontend/e2e/badge-embedding.spec.ts` (39 tests)
+- **Test Fixture:** `frontend/e2e/fixtures/badge-test-page.html`
+- **Test Documentation:** `TESTS/TEST-33-34.md`
+
+### Test Categories
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| SVG Badge Tests | 4 | Badge loads, renders all sizes, click navigation |
+| JavaScript Badge Tests | 7 | Init, render, sizes, themes, errors |
+| Score Color Coding | 5 | All 5 score ranges (green/blue/yellow/orange/red) |
+| Click Navigation | 2 | Badge click navigates to correct URL |
+| Impression Tracking | 2 | Tracked on load, can be disabled |
+| Click Tracking | 1 | Click event tracked |
+| iframe Badge Tests | 3 | All sizes render correctly |
+| Auto-refresh Tests | 2 | Interval refresh, can be disabled |
+| Manual Initialization | 4 | init(), refresh(), setTheme(), destroy() |
+| Accessibility Tests | 3 | ARIA attributes, keyboard, Enter key |
+| Error Handling Tests | 3 | Network errors, invalid sizes, empty hashes |
+| Multiple Badges Tests | 2 | Multiple badges on same page |
+| API Version Tests | 1 | VERSION property exported |
+
+### Badge Sizes Tested
+
+| Size | Dimensions | Use Case |
+|------|------------|----------|
+| `small` | 120x40px | Inline in blog posts, footer links |
+| `medium` | 150x100px | Sidebar widgets, about pages |
+| `large` | 300x150px | Footer widgets, partner pages |
+
+### Score Color Ranges Tested
+
+| Score Range | Color | Hex Code | Status |
+|-------------|-------|----------|--------|
+| 90-100 | Green | #22c55e | Excellent |
+| 70-89 | Blue | #3b82f6 | Good |
+| 50-69 | Yellow | #eab308 | Needs Work |
+| 30-49 | Orange | #f97316 | Poor |
+| 0-29 | Red | #ef4444 | Critical Issues |
+
+### Mock Strategy
+
+| Mock Function | Purpose |
+|---------------|---------|
+| `mockBadgeAPI()` | Mock badge configuration endpoint |
+| `mockBadgeTracking()` | Mock impression/click endpoints |
+| `mockSVGBadge()` | Mock SVG badge responses |
+| Route interception | Network error simulation |
+
+### Test Fixtures
+
+- HTML page with all badge variants (SVG, JS, iframe)
+- Theme test sections (light/dark)
+- Error state containers
+- Tracking log visualization
+- Accessibility test containers
+
+### Test Coverage Summary
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `badge-embedding.spec.ts` | 39 | ✅ PASS |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `e6048d0a` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 39/39 passing |
+| Duration | ~19s |
+| Status | Complete |
+
+### Acceptance Criteria Status
+
+- [x] Test: Badge.js loads and initializes correctly
+- [x] Test: SVG badge renders in all sizes
+- [x] Test: JS badge renders in all sizes/themes
+- [x] Test: iframe badge renders correctly
+- [x] Test: Badge click navigates to correct URL
+- [x] Test: Auto-refresh updates score
+- [x] Test: Impression tracked on load
+- [x] Test: Click tracked on interaction
+- [x] Tests run against preview environment
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-33-16 (badge.js) | Done ✅ | JavaScript embed script |
+| TASK-33-15 (SVG Badge Route) | Done ✅ | SVG badge generation |
+| TASK-33-17 (Impression API) | Done ✅ | Impression tracking |
+| TASK-33-18 (Click API) | Done ✅ | Click tracking |
+
+### Related Tasks
+
+- TASK-33-16: Badge.js Embed Script (JavaScript API)
+- TASK-33-15: SVG Badge Route (SVG generation)
+- TASK-33-17: Badge Impression Controller (tracking)
+- TASK-33-18: Badge Click Controller (click tracking)
+- TASK-33-33: Integration Tests for Public Audit Flow
+
+---
 ## TruncationService (TASK-31-3)
 
 ### Service Description
