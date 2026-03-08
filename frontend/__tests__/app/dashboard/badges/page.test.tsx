@@ -687,8 +687,14 @@ describe('Badge Management Page', () => {
       };
       renderPage({ audits: [auditWithLargeNumbers] });
 
-      expect(screen.getByTestId('impressions-99')).toHaveTextContent('1,234,567');
-      expect(screen.getByTestId('clicks-99')).toHaveTextContent('89,123');
+      // toLocaleString() uses locale-specific formatting (commas or spaces)
+      // Accept both "1,234,567" (US) and "1 234 567" (European) formats
+      const impressionsText = screen.getByTestId('impressions-99').textContent || '';
+      const clicksText = screen.getByTestId('clicks-99').textContent || '';
+
+      // Verify the numbers are formatted (contain separators for thousands)
+      expect(impressionsText).toMatch(/1[,\s]234[,\s]567/);
+      expect(clicksText).toMatch(/89[,\s]123/);
     });
 
     it('ANALYTICS-008: handles zero impressions gracefully', () => {

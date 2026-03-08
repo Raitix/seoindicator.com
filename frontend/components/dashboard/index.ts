@@ -30,3 +30,9 @@ export type { AuditWidgetProps, AuditIssue, LastAudit, RunningAudit } from "./Au
 
 // Re-export types
 export type { AnalysisStatus, RecentAnalysis, DashboardData, CostSummary, QuickInsights, DashboardStats } from "@/lib/types/dashboard";
+
+// Badge Management - TASK-33-24
+export { BadgeManagementRow } from "./BadgeManagementRow";
+export type { BadgeManagementRowProps } from "./BadgeManagementRow";
+
+export { EmbedCodeModal } from "./EmbedCodeModal";
