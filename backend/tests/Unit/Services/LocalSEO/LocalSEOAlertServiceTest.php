@@ -72,6 +72,7 @@ class LocalSEOAlertServiceTest extends TestCase
 
         $this->mockRankService
             ->shouldReceive('getLastRanking')
+            ->once()
             ->with($location->id)
             ->andReturn((object) [
                 'local_pack_position' => 2,
@@ -80,20 +81,35 @@ class LocalSEOAlertServiceTest extends TestCase
 
         $this->mockRankService
             ->shouldReceive('getPreviousRanking')
+            ->once()
             ->with($location->id)
             ->andReturn((object) [
                 'local_pack_position' => 5,
                 'keyword' => 'best pizza',
             ]);
 
-        $this->mockReviewsService->shouldReceive('getNewReviews')->andReturn(collect());
-        $this->mockReviewsService->shouldReceive('getReviewStats')->andReturn([
-            'average_rating' => 4.5,
-            'previous_rating' => 4.5,
-            'total_count' => 100,
-            'previous_count' => 100,
-        ]);
-        $this->mockInsightsService->shouldReceive('getConnectionStatus')->andReturn(true);
+        $this->mockReviewsService
+            ->shouldReceive('getNewReviews')
+            ->once()
+            ->with($location->id)
+            ->andReturn(collect());
+            
+        $this->mockReviewsService
+            ->shouldReceive('getReviewStats')
+            ->once()
+            ->with($location->id)
+            ->andReturn([
+                'average_rating' => 4.5,
+                'previous_rating' => 4.5,
+                'total_count' => 100,
+                'previous_count' => 100,
+            ]);
+            
+        $this->mockInsightsService
+            ->shouldReceive('getConnectionStatus')
+            ->once()
+            ->with($location->id)
+            ->andReturn(true);
 
         $this->service->checkForAlerts($location);
 
@@ -136,7 +152,7 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseHas('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'ranking_dropped',
             'severity' => 'warning',
         ]);
@@ -175,12 +191,12 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseMissing('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'ranking_improved',
         ]);
 
         $this->assertDatabaseMissing('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'ranking_dropped',
         ]);
     }
@@ -215,7 +231,7 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseMissing('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'ranking_improved',
         ]);
     }
@@ -248,7 +264,7 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseHas('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'new_review',
         ]);
     }
@@ -281,7 +297,7 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseHas('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'negative_review',
         ]);
     }
@@ -314,7 +330,7 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseHas('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'negative_review',
         ]);
     }
@@ -347,12 +363,12 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseHas('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'new_review',
         ]);
 
         $this->assertDatabaseMissing('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'negative_review',
         ]);
     }
@@ -380,7 +396,7 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseHas('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'rating_dropped',
         ]);
     }
@@ -408,7 +424,7 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseMissing('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'rating_dropped',
         ]);
     }
@@ -436,7 +452,7 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseHas('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'gbp_disconnected',
             'severity' => 'critical',
         ]);
@@ -481,12 +497,12 @@ class LocalSEOAlertServiceTest extends TestCase
         $this->service->checkForAlerts($location);
 
         $this->assertDatabaseHas('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'ranking_dropped',
         ]);
 
         $this->assertDatabaseHas('local_seo_alerts', [
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'negative_review',
         ]);
     }
@@ -664,7 +680,7 @@ class LocalSEOAlertServiceTest extends TestCase
 
         LocalSEOAlert::create([
             'user_id' => $user->id,
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'ranking_dropped',
             'severity' => 'warning',
             'title' => 'Test',
@@ -685,7 +701,7 @@ class LocalSEOAlertServiceTest extends TestCase
         for ($i = 0; $i < 5; $i++) {
             LocalSEOAlert::create([
                 'user_id' => $user->id,
-                'business_location_id' => $location->id,
+                'location_id' => $location->id,
                 'alert_type' => 'ranking_dropped',
                 'severity' => 'warning',
                 'title' => "Test {$i}",
@@ -708,7 +724,7 @@ class LocalSEOAlertServiceTest extends TestCase
         for ($i = 0; $i < 3; $i++) {
             LocalSEOAlert::create([
                 'user_id' => $user->id,
-                'business_location_id' => $location->id,
+                'location_id' => $location->id,
                 'alert_type' => 'ranking_dropped',
                 'severity' => 'warning',
                 'title' => "Unread {$i}",
@@ -720,7 +736,7 @@ class LocalSEOAlertServiceTest extends TestCase
         for ($i = 0; $i < 2; $i++) {
             LocalSEOAlert::create([
                 'user_id' => $user->id,
-                'business_location_id' => $location->id,
+                'location_id' => $location->id,
                 'alert_type' => 'ranking_improved',
                 'severity' => 'info',
                 'title' => "Read {$i}",
@@ -744,7 +760,7 @@ class LocalSEOAlertServiceTest extends TestCase
 
         LocalSEOAlert::create([
             'user_id' => $user1->id,
-            'business_location_id' => $location1->id,
+            'location_id' => $location1->id,
             'alert_type' => 'ranking_dropped',
             'severity' => 'warning',
             'title' => 'User 1 Alert',
@@ -753,7 +769,7 @@ class LocalSEOAlertServiceTest extends TestCase
 
         LocalSEOAlert::create([
             'user_id' => $user2->id,
-            'business_location_id' => $location2->id,
+            'location_id' => $location2->id,
             'alert_type' => 'ranking_dropped',
             'severity' => 'warning',
             'title' => 'User 2 Alert',
@@ -778,7 +794,7 @@ class LocalSEOAlertServiceTest extends TestCase
 
         $alert = LocalSEOAlert::create([
             'user_id' => $user->id,
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'ranking_dropped',
             'severity' => 'warning',
             'title' => 'Test',
@@ -799,7 +815,7 @@ class LocalSEOAlertServiceTest extends TestCase
 
         $alert = LocalSEOAlert::create([
             'user_id' => $user->id,
-            'business_location_id' => $location->id,
+            'location_id' => $location->id,
             'alert_type' => 'ranking_dropped',
             'severity' => 'warning',
             'title' => 'Test',
@@ -833,7 +849,7 @@ class LocalSEOAlertServiceTest extends TestCase
         for ($i = 0; $i < 5; $i++) {
             LocalSEOAlert::create([
                 'user_id' => $user->id,
-                'business_location_id' => $location->id,
+                'location_id' => $location->id,
                 'alert_type' => 'ranking_dropped',
                 'severity' => 'warning',
                 'title' => "Test {$i}",
@@ -868,7 +884,7 @@ class LocalSEOAlertServiceTest extends TestCase
         for ($i = 0; $i < 3; $i++) {
             LocalSEOAlert::create([
                 'user_id' => $user->id,
-                'business_location_id' => $location1->id,
+                'location_id' => $location1->id,
                 'alert_type' => 'ranking_dropped',
                 'severity' => 'warning',
                 'title' => "Loc1 {$i}",
@@ -880,7 +896,7 @@ class LocalSEOAlertServiceTest extends TestCase
         for ($i = 0; $i < 2; $i++) {
             LocalSEOAlert::create([
                 'user_id' => $user->id,
-                'business_location_id' => $location2->id,
+                'location_id' => $location2->id,
                 'alert_type' => 'ranking_improved',
                 'severity' => 'info',
                 'title' => "Loc2 {$i}",
@@ -1034,15 +1050,17 @@ class LocalSEOAlertServiceTest extends TestCase
     protected function createMockLocation(array $attributes = []): BusinessLocation
     {
         $user = \App\Models\User::factory()->create();
+        $site = \App\Models\Site::factory()->create();
         
         $default = [
             'user_id' => $user->id,
+            'site_id' => $site->id,
             'name' => 'Test Business',
             'gbp_place_id' => 'accounts/123/locations/456',
             'latitude' => 40.7128,
             'longitude' => -74.0060,
             'address' => '123 Main St, New York, NY 10001',
-            'is_active' => true,
+            'gbp_connected' => true,
         ];
 
         return BusinessLocation::create(array_merge($default, $attributes));

@@ -376,7 +376,7 @@ class LocalSeoMigrationStructureTest extends TestCase
     public function business_locations_has_expected_column_count(): void
     {
         $columns = Schema::getColumnListing('business_locations');
-        $expectedCount = 16; // id, user_id, site_id, gbp_place_id, name, address, phone, website, category, latitude, longitude, gbp_connected, settings, timestamps(2), deleted_at
+        $expectedCount = 17; // id, user_id, site_id, gbp_place_id, name, address, phone, website, category, latitude, longitude, gbp_connected, is_active, settings, timestamps(2), deleted_at
         $this->assertCount($expectedCount, $columns, 'business_locations should have ' . $expectedCount . ' columns');
     }
 
@@ -424,7 +424,7 @@ class LocalSeoMigrationStructureTest extends TestCase
     public function local_seo_alerts_has_expected_column_count(): void
     {
         $columns = Schema::getColumnListing('local_seo_alerts');
-        $expectedCount = 10; // id, user_id, location_id, alert_type, severity, title, message, data, is_read, created_at
+        $expectedCount = 11; // id, user_id, location_id, alert_type, severity, title, message, data, is_read, read_at, created_at
         $this->assertCount($expectedCount, $columns, 'local_seo_alerts should have ' . $expectedCount . ' columns');
     }
 

@@ -37,7 +37,16 @@ class GBPReviewsControllerTest extends TestCase
     protected function mockReviewsService(): void
     {
         $this->mock(GBPReviewsServiceInterface::class, function ($mock) {
-            // Default implementations
+            // Default implementations for route existence tests
+            $mock->shouldReceive('getReviews')->andReturn(new LengthAwarePaginator([], 0, 15));
+            $mock->shouldReceive('getStats')->andReturn([
+                'average_rating' => 0,
+                'total_count' => 0,
+                'distribution' => [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0],
+                'sentiment_breakdown' => ['positive' => 0, 'neutral' => 0, 'negative' => 0],
+            ]);
+            $mock->shouldReceive('syncReviews')->andReturn('job-uuid-test');
+            $mock->shouldReceive('respondToReview')->andReturn(['success' => true, 'response_id' => 'resp-test']);
         });
     }
 

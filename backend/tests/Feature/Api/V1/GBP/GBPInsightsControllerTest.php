@@ -38,7 +38,16 @@ class GBPInsightsControllerTest extends TestCase
     protected function mockInsightsService(): void
     {
         $this->mock(GBPInsightsServiceInterface::class, function ($mock) {
-            // Default mock implementations will be overridden in tests
+            // Default mock implementations for route existence tests
+            $mock->shouldReceive('getInsights')->andReturn([
+                'daily_breakdown' => [],
+                'totals' => ['queries' => 0, 'views' => 0, 'actions' => 0],
+            ]);
+            $mock->shouldReceive('getTrend')->andReturn([
+                'wow' => [],
+                'mom' => [],
+            ]);
+            $mock->shouldReceive('syncInsights')->andReturn('job-uuid-test');
         });
     }
 

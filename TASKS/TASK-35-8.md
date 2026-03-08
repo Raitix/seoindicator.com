@@ -1,7 +1,7 @@
 # TASK-35-8: GBP API Client Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking

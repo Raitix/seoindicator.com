@@ -93,6 +93,18 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\LocalSEO\Contracts\GBPReviewsServiceInterface::class,
             \App\Services\LocalSEO\GBPReviewsService::class
         );
+
+        // Local Rank Service binding (TASK-35-11, SPEC-035)
+        $this->app->bind(
+            \App\Services\LocalSEO\Contracts\LocalRankServiceInterface::class,
+            \App\Services\LocalSEO\LocalRankService::class
+        );
+
+        // Local SEO Alert Service binding (TASK-35-12, SPEC-035)
+        $this->app->bind(
+            \App\Services\LocalSEO\Contracts\LocalSEOAlertServiceInterface::class,
+            \App\Services\LocalSEO\LocalSEOAlertService::class
+        );
     }
 
     /**
