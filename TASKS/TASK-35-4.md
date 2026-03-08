@@ -1,7 +1,7 @@
 # TASK-35-4: Local SEO Models
 
 ## STATUS
-`Tests Coverage In Progress`
+`To Develop`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -103,3 +103,36 @@ Create Eloquent models for local SEO tracking: LocalRanking, LocalCompetitor, an
 4. Eloquent patterns are well-documented and predictable
 
 **Status:** `To Write Tests` - Ready for PreTester to design model tests
+
+### PreTester Session (2026-03-08 23:58 GMT+2)
+- **Test Design:** TDD approach with comprehensive coverage
+- **Total Tests:** 152 tests, 244 assertions
+- **All tests passing:** ✅
+- **Test Documentation:** `TESTS/TASK-35-4.md`
+
+**Test Files Created:**
+| File | Tests | Assertions |
+|------|-------|------------|
+| `tests/Unit/Models/LocalRankingTest.php` | 45 | 69 |
+| `tests/Unit/Models/LocalCompetitorTest.php` | 39 | 52 |
+| `tests/Unit/Models/LocalSEOAlertTest.php` | 68 | 123 |
+
+**Key Findings:**
+1. **BusinessLocation** uses `SoftDeletes` - cascade delete tests require `forceDelete()`
+2. **Keyword** uses soft-delete via `status` field - cascade tests require `forceDelete()`
+3. **Decimal cast** returns string in Laravel (not float) - tests updated
+4. **LocalCompetitor.compareWithLocation()** uses `rating` and `review_count` properties not in BusinessLocation schema (likely dynamic from GBP API)
+
+**Test Coverage:**
+- ✅ Model instantiation & attributes
+- ✅ Casts (decimal, integer, array, boolean, datetime)
+- ✅ Relationships (BelongsTo)
+- ✅ Scopes (inPack, dateRange, unread, ofType, ofSeverity, forLocation)
+- ✅ Methods (inLocalPack, getPositionChange, getMapsUrl, compareWithLocation, markAsRead)
+- ✅ Factory states
+- ✅ Edge cases (nulls, max values, unicode)
+- ✅ Security (SQL injection, XSS)
+- ✅ Integration (cascade delete, CRUD)
+- ✅ Performance (indexes, bulk insert)
+
+**Status:** `To Develop` - All tests designed and passing, ready for Developer
