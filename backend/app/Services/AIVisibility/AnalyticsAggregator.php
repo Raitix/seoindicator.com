@@ -200,21 +200,79 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
     /**
      * Get trend direction and change percentage.
      * Compares current period vs previous period.
-     * Returns: { direction: up|down|stable, change_percent: float }
+     * Returns: { direction: up|down|stable, change_percent: float, data: array }
      * Stable if change < 5%
+     *
+     * @param int $projectId
+     * @param int $days Number of days to look back (default: 90, max: 365)
+     * @return array{direction: string, change_percent: float, data: array}
+     * @throws ModelNotFoundException
+     */
+    public function getTrend(int $projectId, int $days = 90): array
+    {
+        $project = $this->getProjectOrFail($projectId);
+
+        // Cap days at 365
+        $days = min($days, 365);
+
+        $cacheKey = "ai_visibility:trend:{$projectId}:{$days}";
+
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($projectId, $days) {
+            // Get data points for each day
+            $data = [];
+            for ($i = $days; $i >= 0; $i--) {
+                $date = now()->subDays($i)->toDateString();
+                $mentions = AIQueryResult::where('project_id', $projectId)
+                    ->where('brand_mentioned', true)
+                    ->whereDate('queried_at', $date)
+                    ->count();
+
+                $data[] = [
+                    'date' => $date,
+                    'mentions' => $mentions,
+                ];
+            }
+
+            // Calculate overall direction by comparing recent vs earlier
+            $recentMentions = array_sum(array_column(array_slice($data, -7), 'mentions'));
+            $earlierMentions = array_sum(array_column(array_slice($data, 0, 7), 'mentions'));
+
+            $direction = 'stable';
+            $changePercent = 0.00;
+
+            if ($earlierMentions > 0) {
+                $changePercent = (($recentMentions - $earlierMentions) / $earlierMentions) * 100;
+                
+                if (abs($changePercent) >= self::TREND_THRESHOLD) {
+                    $direction = $changePercent > 0 ? 'up' : 'down';
+                }
+            } elseif ($recentMentions > 0) {
+                // No earlier data but recent has data
+                $direction = 'stable';
+                $changePercent = 0.00;
+            }
+
+            return [
+                'data' => $data,
+                'direction' => $direction,
+                'change_percent' => round($changePercent, 2),
+            ];
+        });
+    }
+
+    /**
+     * Get trend by period string (for internal use).
      *
      * @param int $projectId
      * @param string $period
      * @return array{direction: string, change_percent: float, current_period: array, previous_period: array}
-     * @throws ModelNotFoundException
-     * @throws ValidationException
      */
-    public function getTrend(int $projectId, string $period = 'week'): array
+    public function getTrendByPeriod(int $projectId, string $period = 'week'): array
     {
         $this->validatePeriod($period);
         $this->getProjectOrFail($projectId);
 
-        $cacheKey = "ai_visibility:trend:{$projectId}:{$period}";
+        $cacheKey = "ai_visibility:trend_period:{$projectId}:{$period}";
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($projectId, $period) {
             [$currentStart, $currentEnd] = $this->getPeriodDates($period);
@@ -423,15 +481,28 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
 
         $mentionRate = $this->calculateMentionRate($projectId, $platform ?? 'all', $period);
         $sov = $this->calculateShareOfVoice($projectId, $period);
-        $trend = $this->getTrend($projectId, $period);
+        $trend = $this->getTrendByPeriod($projectId, $period);
         $sentiment = $this->getSentimentBreakdown($projectId, $period);
+
+        // Get total queries count
+        [$periodStart, $periodEnd] = $this->getPeriodDates($period);
+        $totalQueries = AIQueryResult::where('project_id', $projectId)
+            ->whereBetween('queried_at', [$periodStart, $periodEnd])
+            ->count();
+
+        // Get total mentions count
+        $mentionCount = AIQueryResult::where('project_id', $projectId)
+            ->where('brand_mentioned', true)
+            ->whereBetween('queried_at', [$periodStart, $periodEnd])
+            ->count();
 
         // Get by_platform breakdown
         $platforms = ['chatgpt', 'perplexity'];
         $byPlatform = [];
         
         foreach ($platforms as $p) {
-            $byPlatform[$p] = [
+            $byPlatform[] = [
+                'platform' => $p,
                 'mention_rate' => $this->calculateMentionRate($projectId, $p, $period),
             ];
         }
@@ -439,10 +510,20 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
         return [
             'project_id' => $projectId,
             'period' => $period,
+            'total_queries' => $totalQueries,
+            'mention_count' => $mentionCount,
             'mention_rate' => $mentionRate,
             'share_of_voice' => $sov['share_of_voice'],
             'competitor_breakdown' => $sov['competitor_breakdown'],
-            'sentiment' => $sentiment,
+            'sentiment' => [
+                'breakdown' => [
+                    'positive' => $sentiment['positive'],
+                    'neutral' => $sentiment['neutral'],
+                    'negative' => $sentiment['negative'],
+                    'mixed' => $sentiment['mixed'],
+                ],
+                'score' => $sentiment['average_sentiment'],
+            ],
             'trend' => $trend,
             'by_platform' => $byPlatform,
         ];
