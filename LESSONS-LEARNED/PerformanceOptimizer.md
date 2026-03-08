@@ -342,4 +342,39 @@ Ranking::whereIn('keyword_id', $ids)
 
 ---
 
-Last updated: 2026-03-07
+## 2026-03-08: Performance Audit
+
+### GA Metrics Trend (12-day comparison)
+
+| Metric | 02-24 | 03-08 | Change |
+|--------|-------|-------|--------|
+| Bounce Rate | 68.2% | 27.0% | ✅ -41.2% |
+| Engagement Rate | 31.8% | 73.0% | ✅ +41.2% |
+| Homepage Bounce | 75.7% | 58.1% | ✅ -17.6% |
+| Avg Session | 200s | 879s | ✅ +679s |
+
+### Page Performance
+
+| Page | Bounce | Duration | Status |
+|------|--------|----------|--------|
+| `/` | 58.1% | 292s | ✅ IMPROVED |
+| `/dashboard/` | 0% | 50s | ✅ Excellent |
+| `/tools/meta-tag-analyzer/` | 0% | 272s | ✅ Excellent |
+| `/ai-visibility/new/` | 0% | 161s | ✅ Excellent |
+| `/competitors/` | 20% | 43s | ✅ Excellent |
+| `/comparison/` | 43% | 211s | ✅ Good |
+| `/sites/1/audits/1/` | 0% | 2062s | ✅ Excellent |
+
+### Backend Status
+
+**N+1 Query (KeywordController::index):** Still present at lines 106-108
+- `getLatestRankings()` called inside map loop
+- Impact: 501 queries for 500 keywords
+
+**DashboardController:** 5-minute cache mitigates memory issue
+
+**MILESTONE:** Bounce rate dropped below 30% for first time. Engagement rate exceeded 70%.
+
+---
+
+Last updated: 2026-03-08

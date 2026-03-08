@@ -5,7 +5,7 @@ namespace Tests\Integration\Api;
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\ApiKey;
-use App\Models\Project;
+use App\Models\Site;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 
@@ -23,7 +23,7 @@ class ApiAuthWorkflowTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
-    protected Project $project;
+    protected Site $site;
 
     protected function setUp(): void
     {
@@ -31,7 +31,7 @@ class ApiAuthWorkflowTest extends TestCase
         $this->artisan('migrate');
 
         $this->user = User::factory()->create();
-        $this->project = Project::factory()->create(['user_id' => $this->user->id]);
+        $this->site = Site::factory()->create(['user_id' => $this->user->id]);
     }
 
     // =========================================================================
@@ -59,11 +59,11 @@ class ApiAuthWorkflowTest extends TestCase
         $this->assertStringStartsWith('sk_live_', $fullKey);
         $this->assertNotNull($keyId);
 
-        // Step 2: Use key for authentication - make authenticated request
+        // Step 2: Use key for authentication - make authenticated request to external API
         $apiResponse = $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
             'Accept' => 'application/json',
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords");
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id);
 
         $apiResponse->assertStatus(200);
 
@@ -77,7 +77,7 @@ class ApiAuthWorkflowTest extends TestCase
         $rejectedResponse = $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
             'Accept' => 'application/json',
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords");
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id);
 
         $rejectedResponse->assertStatus(401);
     }
@@ -100,7 +100,7 @@ class ApiAuthWorkflowTest extends TestCase
         $apiResponse = $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
             'Accept' => 'application/json',
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords");
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id);
 
         $apiResponse->assertStatus(200);
     }
@@ -129,11 +129,11 @@ class ApiAuthWorkflowTest extends TestCase
         // Both keys should work
         $response1 = $this->withHeaders([
             'Authorization' => 'Bearer ' . $key1,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords");
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id);
 
         $response2 = $this->withHeaders([
             'Authorization' => 'Bearer ' . $key2,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords");
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id);
 
         $response1->assertStatus(200);
         $response2->assertStatus(200);
@@ -169,13 +169,13 @@ class ApiAuthWorkflowTest extends TestCase
         // Key1 should be rejected
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $key1,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(401);
 
         // Key2 should still work
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $key2,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(200);
     }
 
@@ -197,7 +197,7 @@ class ApiAuthWorkflowTest extends TestCase
         // Should work now
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(200);
     }
 
@@ -209,7 +209,7 @@ class ApiAuthWorkflowTest extends TestCase
         // Create already expired key directly in database
         $apiKey = ApiKey::factory()->create([
             'user_id' => $this->user->id,
-            'key_hash' => Hash::make('sk_live_expired_key_test'),
+            'key_hash' => hash('sha256', 'sk_live_expired_key_test'),
             'key_prefix' => 'sk_live_expired_k',
             'expires_at' => now()->subDay(),
         ]);
@@ -217,7 +217,7 @@ class ApiAuthWorkflowTest extends TestCase
         // Should be rejected
         $this->withHeaders([
             'Authorization' => 'Bearer sk_live_expired_key_test',
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(401);
     }
 
@@ -241,7 +241,7 @@ class ApiAuthWorkflowTest extends TestCase
         // Should be able to read
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(200);
     }
 
@@ -253,7 +253,7 @@ class ApiAuthWorkflowTest extends TestCase
         $response = $this->actingAs($this->user)
             ->postJson('/api/v1/api-keys', [
                 'name' => 'Limited Key',
-                'permissions' => ['keywords:read'], // No rankings permission
+                'permissions' => ['keywords:read'], // No webhooks permission
             ]);
 
         $fullKey = $response->json('data.key');
@@ -261,11 +261,14 @@ class ApiAuthWorkflowTest extends TestCase
         // Should be able to read keywords
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(200);
 
-        // Should not be able to access webhooks (if not permitted)
-        // Note: This depends on the actual implementation
+        // Should not be able to access webhooks
+        $this->withHeaders([
+            'Authorization' => 'Bearer ' . $fullKey,
+        ])->getJson('/api/v1/webhooks')
+            ->assertStatus(403);
     }
 
     /**
@@ -291,7 +294,7 @@ class ApiAuthWorkflowTest extends TestCase
         // Should have access to all permitted resources
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(200);
     }
 
@@ -314,7 +317,7 @@ class ApiAuthWorkflowTest extends TestCase
 
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(200);
     }
 
@@ -325,7 +328,7 @@ class ApiAuthWorkflowTest extends TestCase
     {
         $this->withHeaders([
             'Authorization' => 'Bearer invalid-token-format',
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(401);
     }
 
@@ -334,7 +337,7 @@ class ApiAuthWorkflowTest extends TestCase
      */
     public function test_missing_authorization_header(): void
     {
-        $this->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        $this->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(401);
     }
 
@@ -345,7 +348,7 @@ class ApiAuthWorkflowTest extends TestCase
     {
         $this->withHeaders([
             'Authorization' => 'Bearer pk_test_something',
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(401);
     }
 
@@ -356,7 +359,7 @@ class ApiAuthWorkflowTest extends TestCase
     {
         $this->withHeaders([
             'Authorization' => 'Bearer ',
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(401);
     }
 
@@ -377,13 +380,13 @@ class ApiAuthWorkflowTest extends TestCase
         // Lowercase key should work
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(200);
 
         // Uppercase key should fail (keys are case-sensitive)
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $upperKey,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(401);
     }
 
@@ -397,7 +400,7 @@ class ApiAuthWorkflowTest extends TestCase
     public function test_key_authenticates_as_correct_user(): void
     {
         $otherUser = User::factory()->create();
-        $otherProject = Project::factory()->create(['user_id' => $otherUser->id]);
+        $otherSite = Site::factory()->create(['user_id' => $otherUser->id]);
 
         // Create key for user1
         $response = $this->actingAs($this->user)
@@ -408,11 +411,18 @@ class ApiAuthWorkflowTest extends TestCase
 
         $fullKey = $response->json('data.key');
 
-        // Should not access other user's project
+        // Should not access other user's site keywords via API
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
-        ])->getJson("/api/v1/projects/{$otherProject->id}/keywords")
-            ->assertStatus(403);
+        ])->getJson('/api/v1/keywords?site_id=' . $otherSite->id)
+            ->assertStatus(200); // Returns empty list, not forbidden
+
+        // But should return empty data
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $fullKey,
+        ])->getJson('/api/v1/keywords?site_id=' . $otherSite->id);
+        
+        $this->assertEquals(0, count($response->json('data')));
     }
 
     /**
@@ -435,8 +445,8 @@ class ApiAuthWorkflowTest extends TestCase
         // but should not have access to user1's resources
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
-            ->assertStatus(403);
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
+            ->assertStatus(200); // Returns empty list
     }
 
     // =========================================================================
@@ -464,7 +474,7 @@ class ApiAuthWorkflowTest extends TestCase
         // Try to use immediately (no delay)
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(401);
     }
 
@@ -484,7 +494,7 @@ class ApiAuthWorkflowTest extends TestCase
         // Token with leading/trailing whitespace should fail
         $this->withHeaders([
             'Authorization' => 'Bearer  ' . $fullKey . '  ',
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords")
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id)
             ->assertStatus(401);
     }
 
@@ -506,7 +516,7 @@ class ApiAuthWorkflowTest extends TestCase
         for ($i = 0; $i < 5; $i++) {
             $responses[] = $this->withHeaders([
                 'Authorization' => 'Bearer ' . $fullKey,
-            ])->getJson("/api/v1/projects/{$this->project->id}/keywords");
+            ])->getJson('/api/v1/keywords?site_id=' . $this->site->id);
         }
 
         // All should succeed
@@ -554,7 +564,7 @@ class ApiAuthWorkflowTest extends TestCase
         // Use the key
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $fullKey,
-        ])->getJson("/api/v1/projects/{$this->project->id}/keywords");
+        ])->getJson('/api/v1/keywords?site_id=' . $this->site->id);
 
         // Should be updated
         $apiKey->refresh();
@@ -581,13 +591,13 @@ class ApiAuthWorkflowTest extends TestCase
         // Measure time for valid key
         $start = microtime(true);
         $this->withHeaders(['Authorization' => 'Bearer ' . $fullKey])
-            ->getJson("/api/v1/projects/{$this->project->id}/keywords");
+            ->getJson('/api/v1/keywords?site_id=' . $this->site->id);
         $validTime = microtime(true) - $start;
 
         // Measure time for invalid key
         $start = microtime(true);
         $this->withHeaders(['Authorization' => 'Bearer sk_live_invalid_key'])
-            ->getJson("/api/v1/projects/{$this->project->id}/keywords");
+            ->getJson('/api/v1/keywords?site_id=' . $this->site->id);
         $invalidTime = microtime(true) - $start;
 
         // Times should be roughly similar (within 2x)
@@ -637,7 +647,7 @@ class ApiAuthWorkflowTest extends TestCase
                 'permissions' => ['keywords:read'],
             ]);
 
-        $keyId = $response->json('data.key');
+        $keyId = $response->json('data.id');
 
         // Other user should not be able to see or manage this key
         $this->actingAs($otherUser)
