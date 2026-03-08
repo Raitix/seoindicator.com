@@ -21,6 +21,7 @@ return new class extends Migration
             $table->text('message');
             $table->json('data')->nullable();
             $table->boolean('is_read')->default(false);
+            $table->timestamp('read_at')->nullable();
             $table->timestamp('created_at')->useCurrent();
 
             // Indexes

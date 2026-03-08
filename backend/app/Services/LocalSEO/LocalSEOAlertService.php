@@ -4,10 +4,10 @@ namespace App\Services\LocalSEO;
 
 use App\Models\BusinessLocation;
 use App\Models\LocalSEOAlert;
+use App\Services\LocalSEO\Contracts\LocalSEOAlertServiceInterface;
 use App\Services\LocalSEO\Contracts\LocalRankServiceInterface;
 use App\Services\LocalSEO\Contracts\GBPReviewsServiceInterface;
 use App\Services\LocalSEO\Contracts\GBPInsightsServiceInterface;
-use App\Services\LocalSEO\Contracts\LocalSEOAlertServiceInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,15 +19,30 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
     protected GBPInsightsServiceInterface $insightsService;
 
     /**
-     * Deduplication window in hours.
+     * Valid alert types.
      */
-    protected int $deduplicationWindow = 24;
+    public const ALERT_TYPES = [
+        'ranking_improved',
+        'ranking_dropped',
+        'new_review',
+        'negative_review',
+        'rating_dropped',
+        'competitor_overtake',
+        'gbp_disconnected',
+    ];
 
     /**
-     * Rating drop threshold for alerts.
+     * Valid severity levels.
      */
-    protected float $ratingDropThreshold = 0.5;
+    public const SEVERITY_LEVELS = [
+        'info',
+        'warning',
+        'critical',
+    ];
 
+    /**
+     * Create a new service instance.
+     */
     public function __construct(
         LocalRankServiceInterface $rankService,
         GBPReviewsServiceInterface $reviewsService,
@@ -43,31 +58,23 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
      */
     public function checkForAlerts(?BusinessLocation $location): void
     {
-        if ($location === null) {
+        if (!$location) {
             return;
         }
 
         try {
-            // Check GBP connection status first
-            $this->checkGbpConnection($location);
+            // Check GBP connection first
+            $gbpConnected = $this->checkGbpConnection($location);
 
-            // If GBP is not connected, skip GBP-dependent checks
-            if (!$location->gbp_connected && !$location->gbp_place_id) {
-                return;
+            if (!$gbpConnected) {
+                $this->createGbpDisconnectedAlert($location);
+                return; // Don't check other alerts if GBP is disconnected
             }
 
-            // Check ranking changes
+            // Run all alert checks
             $this->checkRankingChanges($location);
-
-            // Check reviews
             $this->checkReviews($location);
-
-            // Check rating changes
             $this->checkRatingChanges($location);
-
-            // Check competitor movements
-            $this->checkCompetitorMovements($location);
-
         } catch (\Exception $e) {
             Log::error('Local SEO alert check failed', [
                 'location_id' => $location->id,
@@ -78,6 +85,8 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
 
     /**
      * Create a new alert with deduplication.
+     *
+     * @throws \InvalidArgumentException If severity is invalid
      */
     public function createAlert(
         int $userId,
@@ -89,26 +98,26 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
         array $data = []
     ): LocalSEOAlert {
         // Validate severity
-        if (!in_array($severity, LocalSEOAlert::SEVERITY_LEVELS)) {
+        if (!in_array($severity, self::SEVERITY_LEVELS)) {
             throw new \InvalidArgumentException("Invalid severity level: {$severity}");
         }
 
-        // Truncate title if needed
-        $title = mb_substr($title, 0, 255);
-        $message = mb_substr($message, 0, 1000);
-
-        // Check for duplicates within 24 hours
-        $existingAlert = LocalSEOAlert::query()
-            ->where('location_id', $locationId)
+        // Check for duplicate within 24 hours
+        $existingAlert = LocalSEOAlert::where('location_id', $locationId)
             ->where('alert_type', $type)
-            ->where('created_at', '>=', now()->subHours($this->deduplicationWindow))
+            ->where('created_at', '>=', now()->subDay())
             ->first();
 
         if ($existingAlert) {
             return $existingAlert;
         }
 
-        // Create new alert
+        // Truncate title if too long
+        $title = mb_substr($title, 0, 255);
+
+        // Truncate message if too long
+        $message = mb_substr($message, 0, 1000);
+
         return LocalSEOAlert::create([
             'user_id' => $userId,
             'location_id' => $locationId,
@@ -116,7 +125,7 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
             'severity' => $severity,
             'title' => $title,
             'message' => $message,
-            'data' => !empty($data) ? json_encode($data) : null,
+            'data' => json_encode($data),
             'is_read' => false,
             'created_at' => now(),
         ]);
@@ -127,12 +136,12 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
      */
     public function getUnreadAlerts(int $userId, ?int $locationId = null): Collection
     {
-        $query = LocalSEOAlert::query()
-            ->where('user_id', $userId)
+        $query = LocalSEOAlert::where('user_id', $userId)
             ->where('is_read', false)
+            ->with(['location'])
             ->orderBy('created_at', 'desc');
 
-        if ($locationId !== null) {
+        if ($locationId) {
             $query->where('location_id', $locationId);
         }
 
@@ -165,11 +174,10 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
      */
     public function markAllAsRead(int $userId, ?int $locationId = null): int
     {
-        $query = LocalSEOAlert::query()
-            ->where('user_id', $userId)
+        $query = LocalSEOAlert::where('user_id', $userId)
             ->where('is_read', false);
 
-        if ($locationId !== null) {
+        if ($locationId) {
             $query->where('location_id', $locationId);
         }
 
@@ -182,38 +190,29 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
     /**
      * Check GBP connection status.
      */
-    protected function checkGbpConnection(BusinessLocation $location): void
+    protected function checkGbpConnection(BusinessLocation $location): bool
     {
         if (!$location->gbp_place_id) {
-            return;
+            return false;
         }
 
-        try {
-            $isConnected = $this->insightsService->getConnectionStatus($location->id);
+        return $this->insightsService->getConnectionStatus($location->id);
+    }
 
-            if (!$isConnected) {
-                $this->createAlert(
-                    userId: $location->user_id,
-                    locationId: $location->id,
-                    type: 'gbp_disconnected',
-                    severity: 'critical',
-                    title: 'Google Business Profile disconnected',
-                    message: 'Your Google Business Profile connection has been lost. Please reconnect to continue receiving insights.',
-                    data: ['gbp_place_id' => $location->gbp_place_id]
-                );
-            }
-        } catch (\Exception $e) {
-            // If we can't check, assume disconnected
-            $this->createAlert(
-                userId: $location->user_id,
-                locationId: $location->id,
-                type: 'gbp_disconnected',
-                severity: 'critical',
-                title: 'Google Business Profile disconnected',
-                message: 'Unable to verify Google Business Profile connection. Please check your credentials.',
-                data: ['error' => $e->getMessage()]
-            );
-        }
+    /**
+     * Create GBP disconnected alert.
+     */
+    protected function createGbpDisconnectedAlert(BusinessLocation $location): void
+    {
+        $this->createAlert(
+            userId: $location->user_id,
+            locationId: $location->id,
+            type: 'gbp_disconnected',
+            severity: 'critical',
+            title: 'Google Business Profile disconnected',
+            message: 'Your Google Business Profile connection has been lost. Please reconnect to continue monitoring.',
+            data: ['gbp_place_id' => $location->gbp_place_id]
+        );
     }
 
     /**
@@ -225,7 +224,7 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
         $previousRanking = $this->rankService->getPreviousRanking($location->id);
 
         if (!$lastRanking || !$previousRanking) {
-            return;
+            return; // Need baseline data
         }
 
         $currentPosition = $lastRanking->local_pack_position ?? null;
@@ -235,26 +234,28 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
             return;
         }
 
+        // Calculate position change (lower is better in rankings)
         $positionChange = $previousPosition - $currentPosition;
         $keyword = $lastRanking->keyword ?? 'unknown';
 
         if ($positionChange > 0) {
-            // Ranking improved (lower position number = better)
+            // Ranking improved
             $this->createAlert(
                 userId: $location->user_id,
                 locationId: $location->id,
                 type: 'ranking_improved',
                 severity: 'info',
-                title: "Ranking improved {$positionChange} positions",
+                title: "Ranking improved {$positionChange} position(s)",
                 message: "Your local pack ranking improved from position {$previousPosition} to {$currentPosition} for keyword \"{$keyword}\".",
                 data: [
                     'old_position' => $previousPosition,
                     'new_position' => $currentPosition,
                     'keyword' => $keyword,
+                    'change' => $positionChange,
                 ]
             );
         } elseif ($positionChange < 0) {
-            // Ranking dropped (higher position number = worse)
+            // Ranking dropped
             $dropAmount = abs($positionChange);
             $severity = $dropAmount >= 4 ? 'critical' : 'warning';
 
@@ -263,12 +264,13 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
                 locationId: $location->id,
                 type: 'ranking_dropped',
                 severity: $severity,
-                title: "Ranking dropped {$dropAmount} positions",
+                title: "Ranking dropped {$dropAmount} position(s)",
                 message: "Your local pack ranking dropped from position {$previousPosition} to {$currentPosition} for keyword \"{$keyword}\".",
                 data: [
                     'old_position' => $previousPosition,
                     'new_position' => $currentPosition,
                     'keyword' => $keyword,
+                    'change' => $positionChange,
                 ]
             );
         }
@@ -279,50 +281,42 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
      */
     protected function checkReviews(BusinessLocation $location): void
     {
-        try {
-            $newReviews = $this->reviewsService->getNewReviews($location->id);
+        $newReviews = $this->reviewsService->getNewReviews($location->id);
 
-            foreach ($newReviews as $review) {
-                $rating = $review->rating ?? 0;
-                $author = $review->author ?? 'Anonymous';
+        foreach ($newReviews as $review) {
+            $rating = $review->rating ?? 0;
 
-                if ($rating <= 2) {
-                    // Negative review
-                    $this->createAlert(
-                        userId: $location->user_id,
-                        locationId: $location->id,
-                        type: 'negative_review',
-                        severity: 'warning',
-                        title: "Negative review received ({$rating} stars)",
-                        message: "A {$rating}-star review was posted by {$author}. Consider responding to address their concerns.",
-                        data: [
-                            'rating' => $rating,
-                            'author' => $author,
-                            'review_id' => $review->id ?? null,
-                        ]
-                    );
-                } else {
-                    // Positive review
-                    $this->createAlert(
-                        userId: $location->user_id,
-                        locationId: $location->id,
-                        type: 'new_review',
-                        severity: 'info',
-                        title: "New {$rating}-star review received",
-                        message: "A {$rating}-star review was posted by {$author}.",
-                        data: [
-                            'rating' => $rating,
-                            'author' => $author,
-                            'review_id' => $review->id ?? null,
-                        ]
-                    );
-                }
+            // Check for negative review
+            if ($rating <= 2) {
+                $this->createAlert(
+                    userId: $location->user_id,
+                    locationId: $location->id,
+                    type: 'negative_review',
+                    severity: 'warning',
+                    title: "Negative review received ({$rating} star(s))",
+                    message: "A new {$rating}-star review was received from {$review->author}. Consider responding to address their concerns.",
+                    data: [
+                        'review_id' => $review->id ?? null,
+                        'rating' => $rating,
+                        'author' => $review->author ?? 'Unknown',
+                    ]
+                );
+            } else {
+                // Positive/neutral review
+                $this->createAlert(
+                    userId: $location->user_id,
+                    locationId: $location->id,
+                    type: 'new_review',
+                    severity: 'info',
+                    title: "New {$rating}-star review received",
+                    message: "A new {$rating}-star review was received from {$review->author}.",
+                    data: [
+                        'review_id' => $review->id ?? null,
+                        'rating' => $rating,
+                        'author' => $review->author ?? 'Unknown',
+                    ]
+                );
             }
-        } catch (\Exception $e) {
-            Log::warning('Failed to check reviews for location', [
-                'location_id' => $location->id,
-                'error' => $e->getMessage(),
-            ]);
         }
     }
 
@@ -331,111 +325,34 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
      */
     protected function checkRatingChanges(BusinessLocation $location): void
     {
-        try {
-            $stats = $this->reviewsService->getReviewStats($location->id);
+        $stats = $this->reviewsService->getReviewStats($location->id);
 
-            $currentRating = $stats['average_rating'] ?? null;
-            $previousRating = $stats['previous_rating'] ?? null;
+        $currentRating = $stats['average_rating'] ?? null;
+        $previousRating = $stats['previous_rating'] ?? null;
 
-            if ($currentRating === null || $previousRating === null) {
-                return;
-            }
-
-            $ratingDrop = $previousRating - $currentRating;
-
-            if ($ratingDrop >= $this->ratingDropThreshold) {
-                $severity = $ratingDrop >= 1.0 ? 'critical' : 'warning';
-
-                $this->createAlert(
-                    userId: $location->user_id,
-                    locationId: $location->id,
-                    type: 'rating_dropped',
-                    severity: $severity,
-                    title: 'Average rating dropped',
-                    message: "Your average rating dropped from " . number_format($previousRating, 1) . " to " . number_format($currentRating, 1) . " stars.",
-                    data: [
-                        'old_rating' => $previousRating,
-                        'new_rating' => $currentRating,
-                        'drop' => $ratingDrop,
-                    ]
-                );
-            }
-        } catch (\Exception $e) {
-            Log::warning('Failed to check rating changes for location', [
-                'location_id' => $location->id,
-                'error' => $e->getMessage(),
-            ]);
+        if ($currentRating === null || $previousRating === null) {
+            return;
         }
-    }
 
-    /**
-     * Check for competitor movements.
-     */
-    protected function checkCompetitorMovements(BusinessLocation $location): void
-    {
-        try {
-            $lastRanking = $this->rankService->getLastRanking($location->id);
-            $previousRanking = $this->rankService->getPreviousRanking($location->id);
+        $ratingDrop = $previousRating - $currentRating;
 
-            if (!$lastRanking || !$previousRanking) {
-                return;
-            }
+        // Check if rating dropped by 0.5 or more
+        if ($ratingDrop >= 0.5) {
+            $severity = $ratingDrop >= 1.0 ? 'critical' : 'warning';
 
-            $currentCompetitors = $lastRanking->competitors ?? [];
-            $previousCompetitors = $previousRanking->competitors ?? [];
-
-            $currentPosition = $lastRanking->local_pack_position ?? null;
-            $previousPosition = $previousRanking->local_pack_position ?? null;
-
-            if ($currentPosition === null || $previousPosition === null) {
-                return;
-            }
-
-            // Check if any competitor overtook the business
-            foreach ($currentCompetitors as $index => $competitor) {
-                if (isset($competitor['is_own']) && $competitor['is_own']) {
-                    continue; // Skip own business
-                }
-
-                $competitorName = $competitor['name'] ?? 'Unknown competitor';
-                $competitorCurrentPosition = $competitor['position'] ?? null;
-
-                // Find previous position of this competitor
-                $competitorPreviousPosition = null;
-                foreach ($previousCompetitors as $prevCompetitor) {
-                    if (($prevCompetitor['name'] ?? '') === $competitorName) {
-                        $competitorPreviousPosition = $prevCompetitor['position'] ?? null;
-                        break;
-                    }
-                }
-
-                // Check if competitor overtook
-                if ($competitorCurrentPosition !== null && $competitorPreviousPosition !== null) {
-                    if ($competitorCurrentPosition < $currentPosition && $competitorPreviousPosition >= $previousPosition) {
-                        $positionGain = $competitorPreviousPosition - $competitorCurrentPosition;
-                        $severity = $positionGain >= 2 ? 'critical' : 'warning';
-
-                        $this->createAlert(
-                            userId: $location->user_id,
-                            locationId: $location->id,
-                            type: 'competitor_overtake',
-                            severity: $severity,
-                            title: "{$competitorName} overtook your position",
-                            message: "Competitor \"{$competitorName}\" moved from position {$competitorPreviousPosition} to {$competitorCurrentPosition}, overtaking your position.",
-                            data: [
-                                'competitor_name' => $competitorName,
-                                'old_position' => $competitorPreviousPosition,
-                                'new_position' => $competitorCurrentPosition,
-                            ]
-                        );
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            Log::warning('Failed to check competitor movements for location', [
-                'location_id' => $location->id,
-                'error' => $e->getMessage(),
-            ]);
+            $this->createAlert(
+                userId: $location->user_id,
+                locationId: $location->id,
+                type: 'rating_dropped',
+                severity: $severity,
+                title: "Average rating dropped by " . number_format($ratingDrop, 1),
+                message: "Your average rating dropped from " . number_format($previousRating, 1) . " to " . number_format($currentRating, 1) . " stars.",
+                data: [
+                    'old_rating' => $previousRating,
+                    'new_rating' => $currentRating,
+                    'drop' => $ratingDrop,
+                ]
+            );
         }
     }
 }
