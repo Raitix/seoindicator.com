@@ -496,6 +496,18 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
         Route::get('projects/{id}/comparison', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAnalyticsController::class, 'comparison'])->where('id', '[0-9]+');
         Route::get('projects/{id}/trend', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAnalyticsController::class, 'trend'])->where('id', '[0-9]+');
         Route::get('projects/{id}/queries', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAnalyticsController::class, 'queries'])->where('id', '[0-9]+');
+
+        // AI Visibility Alerts (TASK-34-20, SPEC-034)
+        Route::get('alerts', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAlertController::class, 'index']);
+        Route::get('alerts/{id}', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAlertController::class, 'show'])->where('id', '[0-9]+');
+        Route::post('alerts/{id}/read', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAlertController::class, 'markAsRead'])->where('id', '[0-9]+');
+        Route::post('alerts/{id}/resolve', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAlertController::class, 'markAsResolved'])->where('id', '[0-9]+');
+        Route::post('alerts/mark-all-read', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAlertController::class, 'markAllAsRead']);
+        Route::delete('alerts/{id}', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAlertController::class, 'destroy'])->where('id', '[0-9]+');
+
+        // AI Visibility Alert Preferences (TASK-34-20, SPEC-034)
+        Route::get('alert-preferences', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAlertController::class, 'getPreferences']);
+        Route::put('alert-preferences', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAlertController::class, 'updatePreferences']);
     });
 });
 

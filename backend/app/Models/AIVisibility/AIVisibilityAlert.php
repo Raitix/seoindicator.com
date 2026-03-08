@@ -64,6 +64,8 @@ class AIVisibilityAlert extends Model
         'triggered_at',
         'is_read',
         'is_resolved',
+        'resolved_at',
+        'metadata',
     ];
 
     /**
@@ -79,6 +81,8 @@ class AIVisibilityAlert extends Model
             'triggered_at' => 'datetime',
             'is_read' => 'boolean',
             'is_resolved' => 'boolean',
+            'resolved_at' => 'datetime',
+            'metadata' => 'array',
         ];
     }
 

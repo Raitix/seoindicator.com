@@ -49,14 +49,34 @@ return [
     | mention_spike: Alert when mentions increase by this percentage
     | mention_drop: Alert when mentions decrease by this percentage
     | competitor_gain: Alert when competitor mentions increase by this percentage
+    | sentiment_change: Alert when sentiment changes by this amount
+    |
+    | Environment variables:
+    | - AI_VISIBILITY_SPIKE_THRESHOLD
+    | - AI_VISIBILITY_DROP_THRESHOLD
+    | - AI_VISIBILITY_COMPETITOR_THRESHOLD
+    | - AI_VISIBILITY_SENTIMENT_THRESHOLD
     |
     */
 
     'alert_thresholds' => [
-        'mention_spike' => 20,    // +20%
-        'mention_drop' => 20,     // -20%
-        'competitor_gain' => 15,  // +15%
+        'mention_spike' => env('AI_VISIBILITY_SPIKE_THRESHOLD', 20),    // +20%
+        'mention_drop' => env('AI_VISIBILITY_DROP_THRESHOLD', 20),     // -20%
+        'competitor_gain' => env('AI_VISIBILITY_COMPETITOR_THRESHOLD', 15),  // +15%
+        'sentiment_change' => env('AI_VISIBILITY_SENTIMENT_THRESHOLD', 0.30),  // ±0.30 score
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Alert Deduplication Window
+    |--------------------------------------------------------------------------
+    |
+    | Time in seconds before a new alert can be created for the same condition.
+    | Default: 86400 seconds (24 hours)
+    |
+    */
+
+    'deduplication_window' => env('AI_VISIBILITY_DEDUP_WINDOW', 86400),
 
     /*
     |--------------------------------------------------------------------------

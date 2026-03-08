@@ -2,8 +2,10 @@
 
 namespace App\Models\AIVisibility;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -71,6 +73,14 @@ class AIVisibilityProject extends Model
             'is_active' => 'boolean',
             'last_queried_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the user that owns this project.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**
