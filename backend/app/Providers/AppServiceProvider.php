@@ -75,6 +75,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\AIVisibility\Contracts\AnalyticsAggregatorInterface::class,
             \App\Services\AIVisibility\AnalyticsAggregator::class
         );
+
+        // Alert Detection Service binding (TASK-34-19, SPEC-034)
+        $this->app->bind(
+            \App\Services\AIVisibility\Contracts\AlertDetectionServiceInterface::class,
+            \App\Services\AIVisibility\AlertDetectionService::class
+        );
     }
 
     /**

@@ -1,7 +1,7 @@
 # SPEC-035: Local SEO & Google Business Profile Tracking
 
 ## STATUS
-`Specification In Progress`
+`To Break Into Tasks`
 
 ## FEATURE
 FEAT-035: Local SEO & Google Business Profile Tracking
@@ -616,6 +616,13 @@ class SentimentAnalyzer
 - Multi-location deferred to Phase 2 to reduce MVP complexity
 - Review sentiment analysis uses simple keyword matching; can upgrade to ML model later if needed
 - GBP API is stable and well-documented; low integration risk
+
+### Architect Session (2026-03-08 20:18 GMT+2)
+- Status corrected from "New Feature" to "To Break Into Tasks" (previous session had completed spec but status was incorrect)
+- Specification complete and ready for SpecSystemAnalyst
+- 7 database tables designed: business_locations, gbp_insights, gbp_reviews, local_rankings, local_competitors, gbp_posts, local_seo_alerts
+- All dependencies are FREE tools (GBP API, Nominatim, custom SERP scraper)
+- Risk level: Medium (SERP scraping volatility, API changes)
 
 ---
 

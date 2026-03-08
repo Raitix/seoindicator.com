@@ -33,6 +33,9 @@ class ExportServiceTest extends TestCase
     {
         parent::setUp();
 
+        // Clear rate limit cache before each test
+        ExportService::clearRateLimitCache();
+
         $this->service = app(ExportService::class);
         $this->user = User::factory()->create();
         $this->project = AIVisibilityProject::factory()->create([

@@ -224,25 +224,39 @@ class XlsxExporter implements ExporterInterface
             return;
         }
 
-        // Check for formula injection and escape
+        // Handle DateTime BEFORE string cast (prevents "Object of class DateTime could not be converted to string")
+        if ($value instanceof \DateTimeInterface) {
+            $sheet->setCellValue($cellCoordinate, $value->format('Y-m-d H:i:s'));
+            return;
+        }
+
+        // Handle array/object BEFORE string cast (prevents "Array to string conversion")
+        if (is_array($value) || (is_object($value) && !method_exists($value, '__toString'))) {
+            $sheet->setCellValue($cellCoordinate, json_encode($value, JSON_UNESCAPED_UNICODE));
+            return;
+        }
+
+        if (is_bool($value)) {
+            $sheet->setCellValue($cellCoordinate, $value ? 'Yes' : 'No');
+            return;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            $sheet->setCellValue($cellCoordinate, $value);
+            return;
+        }
+
+        // Now safe to cast to string
         $stringValue = (string) $value;
+
+        // Check for formula injection and escape
         if (in_array(substr($stringValue, 0, 1), ['=', '+', '-', '@', "\t", "\r"])) {
             // Escape by prefixing with apostrophe
             $sheet->setCellValueExplicit($cellCoordinate, "'" . $stringValue, DataType::TYPE_STRING);
             return;
         }
 
-        if (is_bool($value)) {
-            $sheet->setCellValue($cellCoordinate, $value ? 'Yes' : 'No');
-        } elseif (is_int($value) || is_float($value)) {
-            $sheet->setCellValue($cellCoordinate, $value);
-        } elseif ($value instanceof \DateTimeInterface) {
-            $sheet->setCellValue($cellCoordinate, $value->format('Y-m-d H:i:s'));
-        } elseif (is_array($value) || is_object($value)) {
-            $sheet->setCellValue($cellCoordinate, json_encode($value, JSON_UNESCAPED_UNICODE));
-        } else {
-            $sheet->setCellValue($cellCoordinate, (string) $value);
-        }
+        $sheet->setCellValue($cellCoordinate, $stringValue);
     }
 
     /**

@@ -647,6 +647,20 @@ class ExportService
     }
 
     /**
+     * Clear rate limit cache (for testing).
+     *
+     * @param int|null $userId Specific user ID, or null to clear all
+     */
+    public static function clearRateLimitCache(?int $userId = null): void
+    {
+        if ($userId === null) {
+            self::$rateLimitCache = [];
+        } else {
+            unset(self::$rateLimitCache['export_' . $userId]);
+        }
+    }
+
+    /**
      * Log export.
      *
      * @param int $userId
