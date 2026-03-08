@@ -74,7 +74,7 @@ function updateMetadata(audit: PublicAuditData | null, hash: string) {
   }
 
   const canonicalUrl = `https://seoindicator.com/audit/${hash}/`;
-  const ogImageUrl = `https://seoindicator.com/badge/${hash}/og.png`;
+  const ogImageUrl = `https://seoindicator.com/og/audit/${hash}.png`;
 
   // Update title
   document.title = `${audit.siteUrl} SEO Audit Report | SEOIndicator`;
