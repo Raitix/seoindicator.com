@@ -26,6 +26,7 @@ class LocalRankServiceTest extends TestCase
 
     protected function tearDown(): void
     {
+        LocalRankService::resetLocationResolver();
         Mockery::close();
         parent::tearDown();
     }
@@ -305,14 +306,19 @@ class LocalRankServiceTest extends TestCase
     /** @test */
     public function lr_check_01_business_found_in_local_pack(): void
     {
-        $this->mockSerpRequest($this->getMockLocalPackHtml());
-
-        $location = $this->createMockLocation([
-            'id' => 1,
-            'name' => 'Joes Pizza',
-            'latitude' => 40.7128,
-            'longitude' => -74.0060,
+        Http::fake([
+            'google.com/*' => Http::response($this->getMockLocalPackHtml(), 200),
         ]);
+
+        // Set up location resolver with the correct business name
+        LocalRankService::setLocationResolver(function ($id) {
+            return $this->createMockLocation([
+                'id' => $id,
+                'name' => 'Joes Pizza',
+                'latitude' => 40.7128,
+                'longitude' => -74.0060,
+            ]);
+        });
 
         $result = $this->service->checkRanking(1, 'best pizza');
 
@@ -910,7 +916,7 @@ class LocalRankServiceTest extends TestCase
             'google.com/*' => Http::response($html, 200),
         ]);
 
-        // Mock location resolver
+        // Mock location resolver - return different locations for different IDs
         LocalRankService::setLocationResolver(function ($id) {
             return $this->createMockLocation(['id' => $id]);
         });
@@ -923,17 +929,17 @@ class LocalRankServiceTest extends TestCase
 <html>
 <body>
 <div class="local-pack">
-  <div data-cid="123456789" class="local-result">
+  <div data-cid="123456789" class="local-result" data-position="1">
     <span class="OSrXXb">Joes Pizza</span>
     <span class="rating">4.5 stars</span>
     <span class="reviews">(123)</span>
   </div>
-  <div data-cid="987654321" class="local-result">
+  <div data-cid="987654321" class="local-result" data-position="2">
     <span class="OSrXXb">Pizza Palace</span>
     <span class="rating">4.8 stars</span>
     <span class="reviews">(256)</span>
   </div>
-  <div data-cid="456789012" class="local-result">
+  <div data-cid="456789012" class="local-result" data-position="3">
     <span class="OSrXXb">Marios Pizzeria</span>
     <span class="rating">4.2 stars</span>
     <span class="reviews">(89)</span>
