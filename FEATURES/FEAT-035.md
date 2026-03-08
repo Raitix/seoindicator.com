@@ -1,7 +1,7 @@
 # FEAT-035: Local SEO & Google Business Profile Tracking
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`
@@ -287,3 +287,28 @@ Local SEO is fundamentally different from national SEO:
 - Google API changes (mitigation: version integration)
 
 **Status**: Ready for SpecSystemAnalyst to break into tasks.
+
+### SpecSystemAnalyst (2026-03-08)
+**Task Breakdown Complete: 24 tasks created**
+
+**Phase 1: Database & Models (TASK-35-1 to TASK-35-4)**
+- 4 tasks, ~10 hours
+- Foundation for all 7 database tables and Eloquent models
+
+**Phase 2: Backend Services & API (TASK-35-5 to TASK-35-16)**
+- 12 tasks, ~41 hours
+- Services: BusinessLocation, Nominatim, OAuth, GBP API, Insights, Reviews, Rankings, Alerts
+- Controllers for all API endpoints
+- HIGH RISK: TASK-35-7 (OAuth) - security-sensitive
+- MEDIUM RISK: TASK-35-11 (SERP scraper) - may need adjustment
+
+**Phase 3: Frontend (TASK-35-17 to TASK-35-23)**
+- 7 tasks, ~26 hours
+- Pages: Locations, Dashboard, Insights, Reviews, Rankings, Alerts
+- Components: GBP Connect Button, Charts, Review Cards, etc.
+
+**Phase 4: Testing (TASK-35-24)**
+- 1 task, ~6 hours
+- Comprehensive backend tests (unit + feature)
+
+**Total Estimated Effort: ~83 hours**
