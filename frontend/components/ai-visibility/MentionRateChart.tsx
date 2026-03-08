@@ -1,10 +1,10 @@
 /**
- * TASK-34-10: MentionRateChart Component
+ * TASK-34-16: MentionRateChart Component
  * 
  * Line chart showing mention rate over time with platform breakdown.
  * Uses Recharts for rendering.
  * 
- * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-10.md
+ * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-16.md
  */
 
 'use client';
@@ -145,17 +145,17 @@ export function MentionRateChart({ data, className }: MentionRateChartProps) {
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex items-center justify-center gap-6">
-        <div className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-blue-500" />
+      <div data-testid="chart-legend" className="mt-4 flex items-center justify-center gap-6">
+        <div data-testid="legend-overall" className="flex items-center gap-2">
+          <span data-testid="legend-color-overall" className="h-3 w-3 rounded-full bg-blue-500" style={{ backgroundColor: '#3b82f6' }} />
           <span className="text-sm text-slate-400">Overall</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-emerald-500" />
+        <div data-testid="legend-chatgpt" className="flex items-center gap-2">
+          <span data-testid="legend-color-chatgpt" className="h-3 w-3 rounded-full bg-emerald-500" style={{ backgroundColor: '#10b981' }} />
           <span className="text-sm text-slate-400">ChatGPT</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-amber-500" />
+        <div data-testid="legend-perplexity" className="flex items-center gap-2">
+          <span data-testid="legend-color-perplexity" className="h-3 w-3 rounded-full bg-amber-500" style={{ backgroundColor: '#f59e0b' }} />
           <span className="text-sm text-slate-400">Perplexity</span>
         </div>
       </div>
