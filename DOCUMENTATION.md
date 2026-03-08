@@ -1691,6 +1691,177 @@ npm run build:badge
 - TASK-33-20: Publish Audit UI Component (generates embed code)
 
 ---
+## Badge Impression Tracking API (TASK-33-17)
+
+### API Description
+REST API endpoint for tracking badge impressions when embedded SEO score badges are viewed on third-party websites. Provides privacy-compliant analytics by hashing IP addresses before storage. Part of the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033).
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/BadgeTrackingController.php`
+- **Request:** `backend/app/Http/Requests/Api/V1/BadgeImpressionRequest.php`
+- **Model:** `backend/app/Models/BadgeImpression.php`
+- **Tests:** `backend/tests/Feature/Api/V1/BadgeImpressionControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-33-17.md`
+
+### API Endpoint
+
+| Method | Endpoint | Rate Limit | Purpose |
+|--------|----------|------------|---------|
+| POST | `/api/v1/badge/impression` | 10/minute per IP | Track badge impression |
+
+### Request Body
+
+```json
+{
+  "hash": "abc123def456...",    // Required: 32-char public audit hash
+  "referrer_domain": "example.com"  // Optional: Referring domain
+}
+```
+
+### Validation Rules
+
+| Field | Rules |
+|-------|-------|
+| `hash` | Required, string, 32 characters, alphanumeric |
+| `referrer_domain` | Optional, string, max 255 chars, valid domain format |
+
+### Response Codes
+
+| Code | Description |
+|------|-------------|
+| 204 | No Content - Impression recorded successfully |
+| 404 | Not Found - Invalid hash or audit is not public |
+| 422 | Unprocessable Entity - Validation error |
+| 429 | Too Many Requests - Rate limit exceeded (10/min/IP) |
+
+### Response Format
+
+**Success (204 No Content):**
+```
+// Empty response body
+```
+
+**Error (404 Not Found):**
+```json
+{
+  "success": false,
+  "error": "Audit not found"
+}
+```
+
+**Validation Error (422 Unprocessable Entity):**
+```json
+{
+  "message": "The hash must be 32 characters.",
+  "errors": {
+    "hash": ["The hash must be 32 characters."]
+  }
+}
+```
+
+### IP Hashing (Privacy)
+
+IP addresses are hashed before storage using SHA-256:
+
+```php
+// IP hashing in BadgeImpression model
+$ipHash = hash('sha256', $ipAddress . config('app.key'));
+// Result: 64-character hexadecimal string
+```
+
+**Privacy Properties:**
+- One-way hash (irreversible)
+- Salted with application key
+- No PII stored in database
+
+### Rate Limiting
+
+| Parameter | Value |
+|-----------|-------|
+| Limiter Name | `badge-tracking` |
+| Limit | 10 requests per minute |
+| Scope | Per IP address |
+| Response | 429 Too Many Requests |
+
+### Database Storage
+
+**badge_impressions table:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | BIGINT | Primary key |
+| `audit_id` | BIGINT | FK to audits table |
+| `public_hash` | VARCHAR(32) | Public audit hash |
+| `referrer_domain` | VARCHAR(255) | Referring domain |
+| `impression_at` | TIMESTAMP | Impression timestamp |
+| `ip_hash` | VARCHAR(64) | SHA-256 hashed IP |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SQL Injection | Parameterized queries via Eloquent |
+| XSS Prevention | Input validation, no HTML output |
+| Path Traversal | Hash validation (alphanumeric only) |
+| Rate Limiting | Throttle middleware (10/min/IP) |
+| 404 Consistency | Same response for non-existent and private audits (prevents enumeration) |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `BadgeImpressionControllerTest.php` | 77 | 189 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| BI-VAL (Hash Validation) | 12 | 32-char alphanumeric, case sensitivity |
+| BI-AUDIT (Audit Validation) | 7 | Public/private, existence |
+| BI-REF (Referrer Domain) | 10 | Storage, header extraction |
+| BI-IP (IP Hashing) | 7 | SHA-256, privacy, IPv6 |
+| BI-DB (Database Writes) | 7 | audit_id, public_hash, timestamps |
+| BI-RES (Response Codes) | 5 | 204, 404, 422 formats |
+| BI-SEC (Security) | 8 | SQL injection, XSS, path traversal |
+| BI-EDGE (Edge Cases) | 7 | Malformed JSON, extra fields, unicode |
+| AC (Acceptance Criteria) | 9 | All ACs verified |
+| BI-INT (Integration) | 5 | Full flow, model usage |
+
+### Production Verification
+
+| Test | Result | Notes |
+|------|--------|-------|
+| Health Check | ✅ PASS | API responding correctly |
+| Route Registration | ✅ PASS | POST /api/v1/badge/impression exists |
+| Invalid Hash Format (422) | ✅ PASS | 30-char hash rejected |
+| Missing Fields (422) | ✅ PASS | Missing hash rejected |
+| Malformed JSON (422) | ✅ PASS | Invalid JSON rejected |
+| Rate Limiting (429) | ✅ PASS | Triggered after ~6 rapid requests |
+| SQL Injection | ✅ PASS | All payloads rejected (422) |
+| XSS in Referrer | ✅ PASS | Sanitized/accepted |
+| Path Traversal | ✅ PASS | All payloads rejected (422) |
+| Extra Fields | ✅ PASS | Ignored (no privilege escalation) |
+| No Data Leak | ✅ PASS | No sensitive data in responses |
+| 404 Consistency | ✅ PASS | Same response for non-existent hashes |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `88260e5f` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 77/77 passing (189 assertions) |
+| Status | Complete |
+
+### Dependencies
+- TASK-33-3 (badge_impressions table) - Done ✅
+
+### Related Tasks
+- TASK-33-18: Badge Click Controller (click tracking)
+- TASK-33-16: Badge.js Embed Script (uses impression tracking)
+- TASK-33-5: PublicAuditController (audit data)
+
+---
 ## Public Audit API Routes (TASK-33-7)
 
 ### Route Description
