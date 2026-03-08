@@ -119,4 +119,15 @@ return [
         'perplexity',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Export Rate Limit
+    |--------------------------------------------------------------------------
+    |
+    | Maximum number of exports per minute per user.
+    |
+    */
+
+    'export_rate_limit' => env('AI_VISIBILITY_EXPORT_RATE_LIMIT', 10),
+
 ];
