@@ -268,3 +268,16 @@ CREATE TABLE visibility_scores (
 - **Completion marker:** Written to `logs/completed/task/TASK-10-1.json`
 - **Lock cleanup:** Complete
 - **Active agents:** Cleared
+
+### [2026-03-08 15:40 GMT+2] DocSystemAnalyst: Re-verification Complete ✅
+- **Documentation Verified:** Line ~18900 in DOCUMENTATION.md (Visibility Scores Table section)
+- **Task Status:** Done (confirmed)
+- **SPEC-010 Status:** Done
+- **FEAT-010 Status:** Done
+- **Schema:** visibility_scores table with project_id, score (0-100), position/serp/volume components, keywords_count, calculated_at
+- **Model:** VisibilityScore with scopes (forProject, dateRange, latestPerProject), static methods (getLatestForProject, getTrendForProject)
+- **Factory states:** high, medium, low
+- **Test coverage:** 19 tests, 47 assertions
+- **Lock file:** Not present (clean)
+- **Completion marker:** Written to `logs/completed/task/TASK-10-1.json`
+- **Active agents:** Cleared
