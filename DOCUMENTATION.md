@@ -1,6 +1,193 @@
 # DOCUMENTATION.md
 
 ---
+## Frontend Analytics Charts (TASK-34-16)
+
+### Component Description
+React chart components for displaying AI Visibility analytics in the Generative Engine Optimization (GEO) dashboard. Provides four interactive chart types with Recharts library integration for visualizing mention rates, competitor comparisons, and query category distributions.
+
+### Component Locations
+- **MentionRateChart:** `frontend/components/ai-visibility/MentionRateChart.tsx`
+- **CompetitorComparisonChart:** `frontend/components/ai-visibility/CompetitorComparisonChart.tsx`
+- **QueryCategoriesChart:** `frontend/components/ai-visibility/QueryCategoriesChart.tsx`
+- **MetricCard:** `frontend/components/ai-visibility/MetricCard.tsx`
+- **Export Index:** `frontend/components/ai-visibility/index.ts`
+- **Tests:** `frontend/__tests__/components/ai-visibility/` (5 test files)
+- **Test Documentation:** `TESTS/TEST-34-16.md`
+
+### Core Functionalities
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| `MentionRateChart` | Line Chart | Mention rate over time with platform breakdown |
+| `CompetitorComparisonChart` | Horizontal Bar | Brand vs competitors comparison |
+| `QueryCategoriesChart` | Donut Chart | Query type distribution (comparison, recommendation, feature, use_case) |
+| `MetricCard` | Card Display | Single metric with value, trend indicator, and tooltip |
+
+### Component Props
+
+**MentionRateChart:**
+```typescript
+interface MentionRateChartProps {
+  data: Array<{
+    date: string;
+    overall: number;
+    chatgpt?: number;
+    perplexity?: number;
+  }>;
+  className?: string;
+}
+```
+
+**CompetitorComparisonChart:**
+```typescript
+interface CompetitorComparisonChartProps {
+  data: Array<{
+    name: string;
+    value: number;
+    isBrand: boolean;
+  }>;
+  onBarClick?: (item: { name: string; value: number }) => void;
+  className?: string;
+}
+```
+
+**QueryCategoriesChart:**
+```typescript
+interface QueryCategoriesChartProps {
+  data: Array<{
+    name: string;
+    value: number;
+  }>;
+  className?: string;
+}
+```
+
+**MetricCard:**
+```typescript
+interface MetricCardProps {
+  title: string;
+  value: string | number;
+  change?: number;
+  changeLabel?: string;
+  tooltip?: string;
+  isLoading?: boolean;
+  className?: string;
+}
+```
+
+### Chart Features
+
+**MentionRateChart:**
+| Feature | Description |
+|---------|-------------|
+| Multi-line Support | Overall, ChatGPT, Perplexity lines with distinct colors |
+| Interactive Tooltips | Date and percentage formatting on hover |
+| Legend | Color-coded platform indicators |
+| Responsive Container | Resizes with viewport |
+| Empty State | Displays when no data available |
+
+**CompetitorComparisonChart:**
+| Feature | Description |
+|---------|-------------|
+| Color Differentiation | Brand (blue) vs competitors (slate) |
+| Sorted Display | Descending by value |
+| Details Grid | Clickable items for drill-down |
+| `onBarClick` Callback | Interactive bar selection |
+| Empty State | Displays when no data available |
+
+**QueryCategoriesChart:**
+| Feature | Description |
+|---------|-------------|
+| Donut Chart | Four category colors (blue, emerald, amber, violet) |
+| Legend with Percentages | Shows category distribution |
+| Total Display | Center label showing total queries |
+| Empty State | Displays when no data available |
+
+**MetricCard:**
+| Feature | Description |
+|---------|-------------|
+| Title + Value | Primary metric display |
+| Change Indicator | Trend with direction arrow |
+| Tooltip | Explanation text on hover |
+| Loading State | Skeleton during data fetch |
+| Empty State | Displays when no data available |
+
+### Category Colors (QueryCategoriesChart)
+
+| Category | Color | Hex Code |
+|----------|-------|----------|
+| Comparison | Blue | #3b82f6 |
+| Recommendation | Emerald | #10b981 |
+| Feature | Amber | #f59e0b |
+| Use Case | Violet | #8b5cf6 |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `MentionRateChart.test.tsx` | 42 | ✅ PASS |
+| `CompetitorComparisonChart.test.tsx` | 51 | ✅ PASS |
+| `QueryCategoriesChart.test.tsx` | 53 | ✅ PASS |
+| `MetricCard.test.tsx` | 37 | ✅ PASS |
+| `admin/MetricCard.test.tsx` | 66 | ✅ PASS |
+| **Total** | **249** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 45 | Component structure, data display |
+| Chart Types | 30 | Line, bar, donut configurations |
+| Empty States | 20 | No data handling |
+| Color Coding | 25 | Brand vs competitor, category colors |
+| Legend Items | 20 | Display and interaction |
+| Responsive Container | 15 | Viewport adaptation |
+| Accessibility | 30 | ARIA attributes, keyboard navigation |
+| Interactions | 25 | Click callbacks, hover behavior |
+| Edge Cases | 25 | Boundary conditions, unusual inputs |
+| Acceptance Criteria | 14 | All ACs verified |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Labels | `aria-label` on all chart containers |
+| Screen Reader | Chart data announced via sr-only text |
+| Keyboard Navigation | Tab through interactive elements |
+| Focus Indicators | Visible focus ring on clickable items |
+| Color Contrast | WCAG AA compliant |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| GitHub Actions Run | #22821389515 |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 249/249 passing |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-34-10 (Dashboard Page) | Ready for Testing | Dashboard integration point |
+| TASK-34-14 (Analytics API) | Done ✅ | API endpoints for chart data |
+
+### Integration Points
+
+- **AI Visibility Dashboard**: Primary integration at `/ai-visibility/[projectId]`
+- **Analytics Page**: Detailed analytics view
+- **Reports**: Future report generation
+
+### Related Tasks
+
+- TASK-34-10: Dashboard Page (uses chart components)
+- TASK-34-14: Analytics API (data source)
+- TASK-34-17: Competitor Comparison Page (uses CompetitorComparisonChart)
+
+---
 ## BadgePreview Component (TASK-33-13)
 
 ### Component Description
@@ -40521,5 +40708,259 @@ All error responses follow consistent format:
 | TASK-34-13 | AnalyticsAggregator service |
 | TASK-34-16 | Analytics Charts (frontend consumer) |
 | TASK-34-17 | Competitor Comparison (frontend consumer) |
+
+---
+## CompetitorComparisonService (TASK-34-15)
+
+### Service Description
+Business logic service for the AI Visibility Tracking feature (FEAT-034) that provides detailed competitor comparison analysis. Implements head-to-head brand comparisons, competitor ranking by mention rate, detailed competitor mention breakdowns, and trend tracking over time. Part of the Generative Engine Optimization (GEO) analytics infrastructure.
+
+### Component Location
+- **Service:** `backend/app/Services/AIVisibility/CompetitorComparisonService.php`
+- **Tests:** `backend/tests/Unit/Services/AIVisibility/CompetitorComparisonServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-34-15.md`
+
+### Core Functionalities
+
+| Method | Purpose | Returns |
+|--------|---------|---------|
+| `getHeadToHead(projectId, competitorName)` | Direct brand vs competitor comparison | Comparison object with mentions, rates, sentiment, co-mentions, advantages |
+| `getCompetitorRanking(projectId)` | Ranked list by mention rate | Array of positions with trend direction |
+| `getCompetitorMentionDetails(projectId, competitorName)` | Detailed competitor breakdown | Query categories, contexts, sentiment, platforms |
+| `trackCompetitorTrend(projectId, competitorName, period)` | Time series data | Daily data points for week/month |
+
+### API Methods
+
+#### getHeadToHead()
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `projectId` | int | Yes | AI visibility project ID |
+| `competitorName` | string | Yes | Competitor name to compare |
+
+**Return Structure:**
+```json
+{
+  "brand": {
+    "mentions": 15,
+    "rate": 23.5,
+    "sentiment": 0.45
+  },
+  "competitor": {
+    "mentions": 25,
+    "rate": 38.5,
+    "sentiment": 0.30
+  },
+  "co_mentions": 5,
+  "brand_advantage": ["comparison", "use_case"],
+  "competitor_advantage": ["recommendation"]
+}
+```
+
+**Logic:**
+- Queries `ai_query_results` for brand and competitor mentions
+- Calculates mention rate: `(mentions / total_queries) * 100`
+- Detects co-mentions: both brands in same response's `competitor_mentions` array
+- Advantage categories: where brand has more mentions than competitor by type
+
+#### getCompetitorRanking()
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `projectId` | int | Yes | AI visibility project ID |
+
+**Return Structure:**
+```json
+{
+  "rankings": [
+    { "position": 1, "name": "Ahrefs", "rate": 38.5, "trend": "up" },
+    { "position": 2, "name": "SEMrush", "rate": 30.8, "trend": "stable" },
+    { "position": 3, "name": "SEOIndicator", "rate": 23.5, "trend": "up" }
+  ],
+  "brand_position": 3
+}
+```
+
+**Trend Calculation:**
+| Change | Trend |
+|--------|-------|
+| >= 5% increase | `up` |
+| >= 5% decrease | `down` |
+| < 5% change | `stable` |
+
+**Trend Source Priority:**
+1. `ai_mention_analytics` records (if available)
+2. Fallback: Query `ai_query_results` for period comparison
+
+#### getCompetitorMentionDetails()
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `projectId` | int | Yes | AI visibility project ID |
+| `competitorName` | string | Yes | Competitor name to analyze |
+
+**Return Structure:**
+```json
+{
+  "competitor": "Ahrefs",
+  "total_mentions": 25,
+  "query_categories": {
+    "comparison": 10,
+    "recommendation": 8,
+    "feature": 5,
+    "use_case": 2
+  },
+  "context_snippets": [
+    "Ahrefs is a powerful SEO tool for backlink analysis...",
+    "When comparing Ahrefs vs SEMrush for keyword research..."
+  ],
+  "sentiment_breakdown": {
+    "positive": 15,
+    "neutral": 8,
+    "negative": 2
+  },
+  "platforms": {
+    "chatgpt": 15,
+    "perplexity": 10
+  }
+}
+```
+
+#### trackCompetitorTrend()
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `projectId` | int | Yes | AI visibility project ID |
+| `competitorName` | string | Yes | Competitor name to track |
+| `period` | string | Yes | `week` or `month` |
+
+**Return Structure:**
+```json
+{
+  "competitor": "Ahrefs",
+  "period": "week",
+  "data_points": [
+    { "date": "2026-03-01", "mentions": 3, "rate": 30.0 },
+    { "date": "2026-03-02", "mentions": 4, "rate": 40.0 },
+    ...
+  ],
+  "trend_direction": "up"
+}
+```
+
+**Period Data Points:**
+| Period | Days | Data Points |
+|--------|------|-------------|
+| `week` | 7 | 7 daily points |
+| `month` | 30 | 30 daily points |
+
+### Caching Strategy
+
+| Method | TTL | Cache Key Format |
+|--------|-----|------------------|
+| `getHeadToHead()` | 3600s (1 hour) | `ai_visibility:head_to_head:{projectId}:{competitorHash}` |
+| `getCompetitorRanking()` | 3600s (1 hour) | `ai_visibility:ranking:{projectId}` |
+| `getCompetitorMentionDetails()` | 3600s (1 hour) | `ai_visibility:details:{projectId}:{competitorHash}` |
+| `trackCompetitorTrend()` | 3600s (1 hour) | `ai_visibility:trend:{projectId}:{competitorHash}:{period}` |
+
+**Cache Implementation:**
+```php
+return Cache::remember($cacheKey, 3600, function () use ($projectId, $competitorName) {
+    // Query and calculate results
+});
+```
+
+### Performance Optimization
+
+| Optimization | Implementation |
+|--------------|----------------|
+| Single Query | Uses `AIQueryResult::where('project_id', $projectId)` once per method |
+| No N+1 Issues | Eager loads project relationship when needed |
+| Batch Processing | Single query for all competitors in `getCompetitorRanking()` |
+| Result Caching | 1-hour cache TTL reduces database load |
+
+### Error Handling
+
+| Exception | Condition | Message |
+|-----------|-----------|---------|
+| `ModelNotFoundException` | Project not found | Auto-generated by Eloquent |
+| `InvalidArgumentException` | Invalid competitor name | `"Invalid competitor: {name}"` |
+| `InvalidArgumentException` | Invalid period | `"Invalid period: {period}. Use 'week' or 'month'."` |
+
+**Graceful Degradation:**
+- Returns zero values for missing data (not exceptions)
+- Empty arrays for missing competitors
+- Null sentiment when not available
+
+### Case-Insensitive Matching
+
+All brand/competitor name comparisons use case-insensitive matching:
+```php
+// Match brand in competitor_mentions JSON array
+if (strcasecmp($mention['name'], $competitorName) === 0) {
+    // Found match
+}
+```
+
+### Dependencies
+
+| Dependency | Type | Purpose |
+|------------|------|---------|
+| `AIVisibilityProject` | Model | Project configuration with brand/competitors |
+| `AIQueryResult` | Model | Query results for mention extraction |
+| `AIMentionAnalytics` | Model | Pre-aggregated analytics (optional fallback) |
+| `LoggerInterface` | Service | Error logging |
+
+**Note:** Does NOT depend on `AnalyticsAggregator` - queries `AIQueryResult` directly.
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `CompetitorComparisonServiceTest.php` | 58 | 135 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Class Structure | 5 | Service instantiation, dependencies |
+| getHeadToHead() | 20 | Mention counts, rates, sentiment, co-mentions, advantages |
+| getCompetitorRanking() | 16 | Position ranking, trend calculation, sorting |
+| getCompetitorMentionDetails() | 18 | Categories, contexts, sentiment breakdown, platforms |
+| trackCompetitorTrend() | 14 | Daily points, period validation, trend direction |
+| Performance Optimization | 3 | Cache behavior, single query verification |
+| Error Handling | 5 | Invalid project, competitor, period |
+| Edge Cases | 5 | Zero mentions, missing brand, empty data |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Project Ownership | Validated before service calls in controller |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| Input Validation | Competitor name validated against project's competitor list |
+| XSS Prevention | Context snippets returned as-is (API consumer handles display) |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `d20470ac` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 58/58 passing (135 assertions) |
+| Status | Complete |
+
+### Related Tasks
+
+| Task | Description |
+|------|-------------|
+| TASK-34-4 | MentionParser (produces mention data) |
+| TASK-34-14 | Analytics API endpoints (uses this service) |
+| TASK-34-17 | Competitor Comparison Frontend (consumes this service) |
 
 ---
