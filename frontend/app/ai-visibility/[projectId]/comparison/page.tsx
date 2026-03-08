@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * TASK-34-17: Competitor Comparison Page
  * 
