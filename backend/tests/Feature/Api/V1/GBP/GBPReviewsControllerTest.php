@@ -64,12 +64,11 @@ class GBPReviewsControllerTest extends TestCase
     {
         return GBPReview::factory()->create(array_merge([
             'location_id' => 1,
-            'gbp_review_id' => 'review_abc123',
+            'google_review_id' => 'review_abc123',
             'rating' => 5,
-            'text' => 'Great service!',
-            'author' => 'John Doe',
-            'sentiment' => 'positive',
-            'has_response' => false,
+            'review_text' => 'Great service!',
+            'author_name' => 'John Doe',
+            'review_text_sentiment' => 'positive',
         ], $attributes));
     }
 
@@ -960,7 +959,7 @@ class GBPReviewsControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $location = $this->mockLocation(['user_id' => $user->id]);
-        $review = $this->mockReview(['location_id' => $location->id, 'has_response' => true]);
+        $review = $this->mockReview(['location_id' => $location->id, 'owner_response' => 'Previous response']);
 
         $this->mock(GBPReviewsServiceInterface::class, function ($mock) {
             $mock->shouldReceive('respondToReview')->andThrow(new \Exception('Review already has response', 409));

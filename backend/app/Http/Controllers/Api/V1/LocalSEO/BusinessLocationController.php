@@ -193,12 +193,12 @@ class BusinessLocationController extends Controller
      * 
      * @RateLimit 20/hour
      */
-    public function gbpCallback(Request $request, int $id): RedirectResponse
+    public function gbpCallback(Request $request, int $id)
     {
         $location = $this->locationService->getLocation($id);
 
         if (!$location) {
-            return redirect()->to(config('app.frontend_url') . "/locations?error=location_not_found");
+            return $this->callbackError('location_not_found', 'Location not found', $request);
         }
 
         $this->authorize('connectGbp', $location);
@@ -208,7 +208,7 @@ class BusinessLocationController extends Controller
             $error = $request->input('error');
             $errorDescription = $request->input('error_description', $error);
             
-            return redirect()->to(config('app.frontend_url') . "/locations/{$id}?error=" . urlencode($errorDescription));
+            return $this->callbackError($error, $errorDescription, $request);
         }
 
         // Validate required parameters
@@ -216,23 +216,44 @@ class BusinessLocationController extends Controller
         $state = $request->input('state');
 
         if (!$code || !$state) {
-            return redirect()->to(config('app.frontend_url') . "/locations/{$id}?error=missing_parameters");
+            return $this->callbackError('missing_parameters', 'Missing code or state parameter', $request);
         }
 
         // Validate state
         if (!$this->oauthService->validateState($state)) {
-            return redirect()->to(config('app.frontend_url') . "/locations/{$id}?error=invalid_state");
+            return $this->callbackError('invalid_state', 'Invalid state parameter', $request, 400);
         }
 
         // Handle callback
         $result = $this->oauthService->handleCallback($code, $state);
 
         if ($result['success']) {
-            return redirect()->to(config('app.frontend_url') . "/locations/{$id}?connected=true");
+            $frontendUrl = config('app.frontend_url', config('app.url'));
+            return redirect()->to("{$frontendUrl}/locations/{$id}?connected=true");
         }
 
         $error = $result['error'] ?? 'connection_failed';
-        return redirect()->to(config('app.frontend_url') . "/locations/{$id}?error=" . urlencode($error));
+        return $this->callbackError($error, $error, $request);
+    }
+
+    /**
+     * Return error response for callback - JSON or redirect based on Accept header.
+     */
+    protected function callbackError(string $error, string $description, Request $request, int $status = 302)
+    {
+        // For JSON requests, return JSON error
+        if ($request->expectsJson() || $request->header('Accept') === 'application/json') {
+            return response()->json([
+                'success' => false,
+                'error' => $error,
+                'message' => $description,
+            ], $status === 302 ? 400 : $status);
+        }
+
+        // For browser requests, redirect with error
+        $frontendUrl = config('app.frontend_url', config('app.url'));
+        $id = $request->route('id');
+        return redirect()->to("{$frontendUrl}/locations/{$id}?error=" . urlencode($description));
     }
 
     /**
