@@ -248,3 +248,13 @@ CREATE TABLE visibility_scores (
 - **Lock file:** Not present (clean)
 - **Completion marker:** Written to `logs/completed/task/TASK-10-1.json`
 - **Active agents:** Cleared
+
+### [2026-03-08 10:53 GMT+2] DocSystemAnalyst: Re-verification Complete ✅
+- **Documentation Verified:** Line 17811 in DOCUMENTATION.md (visibility_scores table schema)
+- **Task Status:** Done (confirmed)
+- **SPEC-010 Status:** Done
+- **FEAT-010 Status:** Done
+- **Stale completion marker:** Cleared
+- **Completion marker:** Written to `logs/completed/task/TASK-10-1.json`
+- **Lock cleanup:** Complete
+- **Active agents:** Cleared
