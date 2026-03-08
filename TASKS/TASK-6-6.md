@@ -1,7 +1,7 @@
 # TASK-6-6: Request Logging
 
 ## Status
-`Testing Locally`
+`To Test Locally`
 
 ## Priority
 `Medium`
