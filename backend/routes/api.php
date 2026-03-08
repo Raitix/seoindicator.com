@@ -271,6 +271,13 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
             ->where('id', '[0-9]+');
     });
 
+    // Audit Analytics Routes (TASK-33-28, SPEC-33)
+    Route::middleware(['throttle:60,1'])->group(function () {
+        Route::get('audits/{id}/analytics', [\App\Http\Controllers\Api\V1\AuditAnalyticsController::class, 'show'])
+            ->name('api.v1.audits.analytics')
+            ->where('id', '[0-9]+');
+    });
+
     // Audit API Routes (TASK-14-13, SPEC-014)
     Route::post('sites/{site}/audits', [AuditController::class, 'store'])
         ->middleware('throttle:audit-trigger')

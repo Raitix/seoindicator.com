@@ -45,11 +45,12 @@ class PublicAuditViewFactory extends Factory
 
     /**
      * Create for a specific audit
+     * @param Audit|int $audit Audit model or ID
      */
-    public function forAudit(Audit $audit): static
+    public function forAudit(Audit|int $audit): static
     {
         return $this->state(fn(array $attributes) => [
-            'audit_id' => $audit->id,
+            'audit_id' => $audit instanceof Audit ? $audit->id : $audit,
         ]);
     }
 
@@ -66,10 +67,10 @@ class PublicAuditViewFactory extends Factory
     /**
      * Create with referrer
      */
-    public function withReferrer(): static
+    public function withReferrer(string $referrer = null): static
     {
         return $this->state(fn(array $attributes) => [
-            'referrer' => $this->faker->url(),
+            'referrer' => $referrer ?? $this->faker->url(),
         ]);
     }
 
@@ -85,11 +86,18 @@ class PublicAuditViewFactory extends Factory
 
     /**
      * Create with IP hash (simulating hashed visitor IP)
+     * @param string $ipOrHash IP address to hash, or pre-computed hash (64 chars)
      */
-    public function withIpHash(string $ipAddress = '192.168.1.1'): static
+    public function withIpHash(string $ipOrHash = '192.168.1.1'): static
     {
+        // If it looks like a SHA-256 hash (64 hex chars), use it directly
+        // Otherwise, hash the IP address
+        $hash = (strlen($ipOrHash) === 64 && ctype_xdigit($ipOrHash))
+            ? $ipOrHash
+            : hash('sha256', $ipOrHash . config('app.key'));
+        
         return $this->state(fn(array $attributes) => [
-            'ip_hash' => hash('sha256', $ipAddress . config('app.key')),
+            'ip_hash' => $hash,
         ]);
     }
 

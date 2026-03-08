@@ -1,7 +1,7 @@
 # TASK-9-2: Annotation Category Enum
 
 ## STATUS
-`To Write Tests`
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `Medium`
