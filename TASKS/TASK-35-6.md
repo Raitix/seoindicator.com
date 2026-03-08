@@ -1,7 +1,7 @@
 # TASK-35-6: Nominatim Geocoding Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -47,3 +47,33 @@ Create NominatimService for free geocoding using OpenStreetMap's Nominatim API. 
 ---
 
 *Created by SpecSystemAnalyst on 2026-03-08*
+
+---
+
+## Comments
+
+### ProjectManager Assessment (2026-03-08)
+
+**Priority: HIGH (confirmed)**
+- Foundation service for Local SEO feature
+- Enables TASK-35-5 (BusinessLocationService) for geocoding functionality
+- No dependencies - can proceed immediately
+- Uses FREE tool (OpenStreetMap Nominatim) aligned with project constraints
+
+**Risk: LOW (confirmed)**
+- Standard Laravel service with external API
+- Nominatim is free with reasonable rate limits (1 req/sec)
+- No security concerns (read-only geocoding)
+- Network failures handled gracefully with caching fallback
+
+**Downstream Impact:**
+- TASK-35-5 (BusinessLocationService) uses this for `createLocation()` and `updateLocation()`
+- All location management functionality depends on this service
+- No downstream blockers - this is a leaf utility service
+
+**TDD Ready:**
+- PreTester can design tests immediately with mocked HTTP responses
+- No dependencies required to start test design
+- Cache layer can be tested with Laravel Cache facade mocks
+
+**Execution Order:** This task can proceed to PreTester immediately. It's independent and enables downstream services.
