@@ -124,7 +124,7 @@ class LocalSeoMigrationStructureTest extends TestCase
     {
         if ($this->isSqlite()) {
             $columns = $this->getSqliteColumnInfo('business_locations');
-            $this->assertStringContainsString('REAL', strtoupper($columns['latitude']->type));
+            $this->assertStringContainsString('NUMERIC', strtoupper($columns['latitude']->type));
         } else {
             $column = DB::connection()->getDoctrineColumn('business_locations', 'latitude');
             $this->assertEquals('decimal', $column->getType()->getName());
@@ -136,7 +136,7 @@ class LocalSeoMigrationStructureTest extends TestCase
     {
         if ($this->isSqlite()) {
             $columns = $this->getSqliteColumnInfo('business_locations');
-            $this->assertStringContainsString('REAL', strtoupper($columns['longitude']->type));
+            $this->assertStringContainsString('NUMERIC', strtoupper($columns['longitude']->type));
         } else {
             $column = DB::connection()->getDoctrineColumn('business_locations', 'longitude');
             $this->assertEquals('decimal', $column->getType()->getName());
@@ -148,7 +148,7 @@ class LocalSeoMigrationStructureTest extends TestCase
     {
         if ($this->isSqlite()) {
             $columns = $this->getSqliteColumnInfo('business_locations');
-            $this->assertStringContainsString('INTEGER', strtoupper($columns['gbp_connected']->type));
+            $this->assertStringContainsString('TINYINT(1)', strtoupper($columns['gbp_connected']->type));
         } else {
             $column = DB::connection()->getDoctrineColumn('business_locations', 'gbp_connected');
             $this->assertEquals('boolean', $column->getType()->getName());
@@ -237,7 +237,7 @@ class LocalSeoMigrationStructureTest extends TestCase
     {
         if ($this->isSqlite()) {
             $columns = $this->getSqliteColumnInfo('local_competitors');
-            $this->assertStringContainsString('REAL', strtoupper($columns['competitor_rating']->type));
+            $this->assertStringContainsString('NUMERIC', strtoupper($columns['competitor_rating']->type));
         } else {
             $column = DB::connection()->getDoctrineColumn('local_competitors', 'competitor_rating');
             $this->assertEquals('decimal', $column->getType()->getName());
@@ -249,7 +249,7 @@ class LocalSeoMigrationStructureTest extends TestCase
     {
         if ($this->isSqlite()) {
             $columns = $this->getSqliteColumnInfo('local_seo_alerts');
-            $this->assertStringContainsString('INTEGER', strtoupper($columns['is_read']->type));
+            $this->assertStringContainsString('TINYINT(1)', strtoupper($columns['is_read']->type));
         } else {
             $column = DB::connection()->getDoctrineColumn('local_seo_alerts', 'is_read');
             $this->assertEquals('boolean', $column->getType()->getName());
@@ -279,7 +279,8 @@ class LocalSeoMigrationStructureTest extends TestCase
         $columns = $this->getSqliteColumnInfo('business_locations');
         
         foreach ($requiredColumns as $col) {
-            $this->assertEquals(0, $columns[$col]->notnull, "Column {$col} should not be nullable");
+            // In SQLite: notnull=1 means NOT NULL, notnull=0 means nullable
+            $this->assertEquals(1, $columns[$col]->notnull, "Column {$col} should not be nullable");
         }
     }
 
@@ -290,7 +291,8 @@ class LocalSeoMigrationStructureTest extends TestCase
         $columns = $this->getSqliteColumnInfo('business_locations');
         
         foreach ($nullableColumns as $col) {
-            $this->assertEquals(1, $columns[$col]->notnull, "Column {$col} should be nullable");
+            // In SQLite: notnull=0 means nullable, notnull=1 means NOT NULL
+            $this->assertEquals(0, $columns[$col]->notnull, "Column {$col} should be nullable");
         }
     }
 
@@ -301,7 +303,8 @@ class LocalSeoMigrationStructureTest extends TestCase
         $columns = $this->getSqliteColumnInfo('gbp_reviews');
         
         foreach ($requiredColumns as $col) {
-            $this->assertEquals(0, $columns[$col]->notnull, "Column {$col} should not be nullable");
+            // In SQLite: notnull=1 means NOT NULL, notnull=0 means nullable
+            $this->assertEquals(1, $columns[$col]->notnull, "Column {$col} should not be nullable");
         }
     }
 
@@ -312,7 +315,8 @@ class LocalSeoMigrationStructureTest extends TestCase
         $columns = $this->getSqliteColumnInfo('gbp_reviews');
         
         foreach ($nullableColumns as $col) {
-            $this->assertEquals(1, $columns[$col]->notnull, "Column {$col} should be nullable");
+            // In SQLite: notnull=0 means nullable, notnull=1 means NOT NULL
+            $this->assertEquals(0, $columns[$col]->notnull, "Column {$col} should be nullable");
         }
     }
 
@@ -323,7 +327,8 @@ class LocalSeoMigrationStructureTest extends TestCase
         $columns = $this->getSqliteColumnInfo('local_rankings');
         
         foreach ($requiredColumns as $col) {
-            $this->assertEquals(0, $columns[$col]->notnull, "Column {$col} should not be nullable");
+            // In SQLite: notnull=1 means NOT NULL, notnull=0 means nullable
+            $this->assertEquals(1, $columns[$col]->notnull, "Column {$col} should not be nullable");
         }
     }
 
@@ -334,7 +339,8 @@ class LocalSeoMigrationStructureTest extends TestCase
         $columns = $this->getSqliteColumnInfo('local_rankings');
         
         foreach ($nullableColumns as $col) {
-            $this->assertEquals(1, $columns[$col]->notnull, "Column {$col} should be nullable");
+            // In SQLite: notnull=0 means nullable, notnull=1 means NOT NULL
+            $this->assertEquals(0, $columns[$col]->notnull, "Column {$col} should be nullable");
         }
     }
 
@@ -345,7 +351,8 @@ class LocalSeoMigrationStructureTest extends TestCase
         $columns = $this->getSqliteColumnInfo('local_seo_alerts');
         
         foreach ($requiredColumns as $col) {
-            $this->assertEquals(0, $columns[$col]->notnull, "Column {$col} should not be nullable");
+            // In SQLite: notnull=1 means NOT NULL, notnull=0 means nullable
+            $this->assertEquals(1, $columns[$col]->notnull, "Column {$col} should not be nullable");
         }
     }
 
@@ -356,7 +363,8 @@ class LocalSeoMigrationStructureTest extends TestCase
         $columns = $this->getSqliteColumnInfo('local_seo_alerts');
         
         foreach ($nullableColumns as $col) {
-            $this->assertEquals(1, $columns[$col]->notnull, "Column {$col} should be nullable");
+            // In SQLite: notnull=0 means nullable, notnull=1 means NOT NULL
+            $this->assertEquals(0, $columns[$col]->notnull, "Column {$col} should be nullable");
         }
     }
 
