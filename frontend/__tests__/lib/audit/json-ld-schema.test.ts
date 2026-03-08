@@ -8,57 +8,18 @@
 // JSON-LD Schema Generation Tests
 // ============================================================================
 
-// Test data interfaces
-interface PublicAuditData {
-  siteUrl: string;
-  auditedAt: string;
-  overallScore: number;
-  categoryScores: Array<{
-    name: string;
-    score: number;
-    maxScore: number;
-    issues: number;
-  }>;
-  topIssues: Array<{
-    id: string;
-    title: string;
-    severity: 'critical' | 'warning' | 'info';
-    description: string;
-  }>;
-  recommendations: string[];
-  isPartial: boolean;
-  publicHash: string;
-}
+import {
+  generateJsonLdSchema,
+  isValidJsonLd,
+  parseJsonLdScript,
+  type JsonLdSchema,
+  type PublicAuditData,
+} from '@/lib/audit/json-ld-schema';
 
-interface JsonLdSchema {
-  '@context': string;
-  '@type': string;
-  name: string;
-  description?: string;
-  url?: string;
-  publisher?: {
-    '@type': string;
-    name: string;
-    url: string;
-    logo?: {
-      '@type': string;
-      url: string;
-    };
-  };
-  mainEntity?: {
-    '@type': string;
-    result?: {
-      '@type': string;
-      ratingValue: string;
-      bestRating: string;
-      worstRating: string;
-    };
-  };
-  datePublished?: string;
-  dateModified?: string;
-}
+// Re-export types for test usage
+export type { JsonLdSchema, PublicAuditData };
 
-// Mock valid audit data
+// Mock valid audit data helper
 const createMockAuditData = (overrides: Partial<PublicAuditData> = {}): PublicAuditData => ({
   siteUrl: 'https://example.com',
   auditedAt: '2026-03-05T10:00:00Z',
@@ -75,80 +36,6 @@ const createMockAuditData = (overrides: Partial<PublicAuditData> = {}): PublicAu
   publicHash: 'abc123def456789012345678901234',
   ...overrides,
 });
-
-// Helper to escape HTML entities
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-// JSON-LD Schema Generator function (to be tested)
-function generateJsonLdSchema(audit: PublicAuditData | null, siteUrl = 'https://seoindicator.com'): JsonLdSchema | null {
-  if (!audit) {
-    return null;
-  }
-
-  // Process URL for display
-  let displayUrl = audit.siteUrl
-    .replace(/^https?:\/\//, '')
-    .replace(/\/$/, '');
-
-  const pageUrl = `${siteUrl}/audit/${audit.publicHash}/`;
-
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    name: `${displayUrl} SEO Audit Report`,
-    description: `SEO audit results for ${displayUrl} - Score: ${audit.overallScore}/100`,
-    url: pageUrl,
-    publisher: {
-      '@type': 'Organization',
-      name: 'SEOIndicator',
-      url: siteUrl,
-      logo: {
-        '@type': 'ImageObject',
-        url: `${siteUrl}/logo.png`,
-      },
-    },
-    mainEntity: {
-      '@type': 'Analysis',
-      result: {
-        '@type': 'Rating',
-        ratingValue: String(audit.overallScore),
-        bestRating: '100',
-        worstRating: '0',
-      },
-    },
-    datePublished: audit.auditedAt,
-    dateModified: audit.auditedAt,
-  };
-}
-
-// Helper to validate JSON-LD structure
-function isValidJsonLd(schema: unknown): schema is JsonLdSchema {
-  if (!schema || typeof schema !== 'object') return false;
-  const s = schema as Record<string, unknown>;
-  
-  return (
-    s['@context'] === 'https://schema.org' &&
-    typeof s['@type'] === 'string' &&
-    typeof s.name === 'string'
-  );
-}
-
-// Helper to parse and validate JSON-LD script content
-function parseJsonLdScript(scriptContent: string): JsonLdSchema | null {
-  try {
-    const parsed = JSON.parse(scriptContent);
-    return isValidJsonLd(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
 
 // ============================================================================
 // TEST SUITE
@@ -1082,53 +969,3 @@ describe('JSON-LD Schema Generation', () => {
     });
   });
 });
-
-// ============================================================================
-// HELPER FUNCTION EXPORTS (for Developer reference)
-// ============================================================================
-
-/**
- * Generate JSON-LD schema for public audit page
- * 
- * @param audit - Public audit data
- * @param siteUrl - Base site URL (default: https://seoindicator.com)
- * @returns JSON-LD schema object or null if audit is null
- * 
- * @example
- * const audit = { siteUrl: 'https://example.com', overallScore: 85, ... };
- * const schema = generateJsonLdSchema(audit);
- * // Use in page: <script type="application/ld+json">{JSON.stringify(schema)}</script>
- */
-export { generateJsonLdSchema, isValidJsonLd, parseJsonLdScript };
-
-/**
- * Expected usage in Next.js page:
- * 
- * // In page.tsx or layout.tsx
- * import { generateJsonLdSchema } from '@/lib/audit/json-ld-schema';
- * 
- * export default async function PublicAuditPage({ params }) {
- *   const audit = await getAuditData(params.hash);
- *   const jsonLd = generateJsonLdSchema(audit);
- *   
- *   return (
- *     <>
- *       {jsonLd && (
- *         <script
- *           type="application/ld+json"
- *           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
- *         />
- *       )}
- *       <AuditContent audit={audit} />
- *     </>
- *   );
- * }
- * 
- * Or use Next.js Script component:
- * 
- * import Script from 'next/script';
- * 
- * <Script id="json-ld" type="application/ld+json">
- *   {JSON.stringify(jsonLd)}
- * </Script>
- */
