@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\KeywordController;
 use App\Http\Controllers\Api\V1\KeywordsApiController;
 use App\Http\Controllers\Api\V1\RankingsApiController;
 use App\Http\Controllers\Api\V1\SitesApiController;
+use App\Http\Controllers\Api\V1\ReportsApiController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\RankingController;
 use App\Http\Controllers\Api\V1\DashboardController;
@@ -87,6 +88,9 @@ Route::prefix('v1')->middleware(['api-key.auth', 'api-key.ratelimit'])->group(fu
 
     // Sites API (TASK-6-10)
     Route::get('sites', [SitesApiController::class, 'index'])->middleware('api-key.auth:sites:read');
+
+    // Reports API (TASK-6-11)
+    Route::post('reports', [ReportsApiController::class, 'store'])->middleware('api-key.auth:reports:write');
 });
 
 /*

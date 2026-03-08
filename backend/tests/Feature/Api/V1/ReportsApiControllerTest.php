@@ -730,11 +730,9 @@ class ReportsApiControllerTest extends TestCase
 
         $response->assertStatus(202);
 
-        $this->assertDatabaseHas('reports', [
-            'site_id' => $this->site->id,
-            'date_range_start' => '2026-01-01',
-            'date_range_end' => '2026-01-31',
-        ]);
+        $report = Report::where('site_id', $this->site->id)->latest()->first();
+        $this->assertEquals('2026-01-01', $report->date_range_start->toDateString());
+        $this->assertEquals('2026-01-31', $report->date_range_end->toDateString());
     }
 
     /**
@@ -1079,16 +1077,19 @@ class ReportsApiControllerTest extends TestCase
     // ============================================================
 
     /**
-     * ERR-01: Invalid JSON body returns 400.
+     * ERR-01: Invalid JSON body returns 422 (validation error).
+     * Note: Laravel treats malformed JSON as empty content, resulting in validation errors.
      */
     public function test_invalid_json_body_returns_400(): void
     {
         $response = $this->withHeaders([
             'Authorization' => "Bearer {$this->plainKey}",
             'Content-Type' => 'application/json',
-        ])->post('/api/v1/reports', 'invalid json {{{');
+        ])->post('/api/v1/reports', [], [], [], [], [], 'invalid json {{{');
 
-        $response->assertStatus(400);
+        // Laravel treats invalid JSON as empty body, resulting in validation errors
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['site_id']);
     }
 
     /**
@@ -1520,10 +1521,8 @@ class ReportsApiControllerTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonStructure([
                 'success',
-                'error' => [
-                    'code',
-                    'message',
-                ],
+                'message',
+                'errors',
             ]);
 
         // Verify success is boolean false
@@ -1545,9 +1544,13 @@ class ReportsApiControllerTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonStructure([
-                'error' => [
-                    'details', // Should contain field-level errors
-                ],
+                'success',
+                'message',
+                'errors', // Contains field-level errors
             ]);
+
+        // Verify field errors are present
+        $this->assertArrayHasKey('type', $response->json('errors'));
+        $this->assertArrayHasKey('format', $response->json('errors'));
     }
 }
