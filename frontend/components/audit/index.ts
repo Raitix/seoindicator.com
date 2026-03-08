@@ -68,3 +68,7 @@ export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
 // Visibility Settings (TASK-33-22)
 export { VisibilitySettings } from './VisibilitySettings';
 export type { VisibilitySettingsProps } from './VisibilitySettings';
+
+// Embed Code Generator (TASK-33-21)
+export { EmbedCodeGenerator } from './EmbedCodeGenerator';
+export type { EmbedCodeGeneratorProps } from './EmbedCodeGenerator';
