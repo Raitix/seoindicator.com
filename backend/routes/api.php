@@ -538,6 +538,45 @@ Route::post('/v1/payments/paypal/webhook', [\App\Http\Controllers\Api\V1\Payment
 
 /*
 |--------------------------------------------------------------------------
+| GBP Insights & Reviews Routes (TASK-35-14, SPEC-035)
+|--------------------------------------------------------------------------
+|
+| Google Business Profile API endpoints for insights and reviews.
+| All routes require authentication and ownership verification.
+|
+*/
+Route::prefix('v1')->middleware(['auth'])->group(function () {
+    // GBP Insights Routes
+    Route::prefix('locations/{id}')->where(['id' => '[0-9]+'])->group(function () {
+        Route::get('insights', [\App\Http\Controllers\Api\V1\GBP\GBPInsightsController::class, 'index'])
+            ->name('locations.insights.index')
+            ->middleware('throttle:60,1');
+        Route::get('insights/trend', [\App\Http\Controllers\Api\V1\GBP\GBPInsightsController::class, 'trend'])
+            ->name('locations.insights.trend')
+            ->middleware('throttle:60,1');
+        Route::post('insights/sync', [\App\Http\Controllers\Api\V1\GBP\GBPInsightsController::class, 'sync'])
+            ->name('locations.insights.sync')
+            ->middleware('throttle:3,60'); // 3 per hour
+
+        // GBP Reviews Routes
+        Route::get('reviews', [\App\Http\Controllers\Api\V1\GBP\GBPReviewsController::class, 'index'])
+            ->name('locations.reviews.index')
+            ->middleware('throttle:60,1');
+        Route::get('reviews/stats', [\App\Http\Controllers\Api\V1\GBP\GBPReviewsController::class, 'stats'])
+            ->name('locations.reviews.stats')
+            ->middleware('throttle:60,1');
+        Route::post('reviews/sync', [\App\Http\Controllers\Api\V1\GBP\GBPReviewsController::class, 'sync'])
+            ->name('locations.reviews.sync')
+            ->middleware('throttle:3,60'); // 3 per hour
+        Route::post('reviews/{reviewId}/respond', [\App\Http\Controllers\Api\V1\GBP\GBPReviewsController::class, 'respond'])
+            ->name('locations.reviews.respond')
+            ->where('reviewId', '[0-9]+')
+            ->middleware('throttle:10,60'); // 10 per hour
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
 | Admin Routes (TASK-27-2, SPEC-027)
 |--------------------------------------------------------------------------
 |

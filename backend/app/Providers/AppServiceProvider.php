@@ -81,6 +81,18 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\AIVisibility\Contracts\AlertDetectionServiceInterface::class,
             \App\Services\AIVisibility\AlertDetectionService::class
         );
+
+        // GBP Insights Service binding (TASK-35-14, SPEC-035)
+        $this->app->bind(
+            \App\Services\LocalSEO\Contracts\GBPInsightsServiceInterface::class,
+            \App\Services\LocalSEO\GBPInsightsService::class
+        );
+
+        // GBP Reviews Service binding (TASK-35-10, TASK-35-14, SPEC-035)
+        $this->app->bind(
+            \App\Services\LocalSEO\Contracts\GBPReviewsServiceInterface::class,
+            \App\Services\LocalSEO\GBPReviewsService::class
+        );
     }
 
     /**

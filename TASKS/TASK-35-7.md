@@ -1,7 +1,7 @@
 # TASK-35-7: Google OAuth Service for GBP
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -61,3 +61,67 @@ Create GoogleOAuthService for handling Google OAuth 2.0 flow to connect Google B
 ---
 
 *Created by SpecSystemAnalyst on 2026-03-08*
+
+## Comments
+
+### ProjectManager Session (2026-03-08 22:13 GMT+2)
+- **Priority:** HIGH (confirmed) - OAuth foundation for GBP integration, security-critical
+- **Risk:** HIGH (confirmed) - OAuth token handling, CSRF protection, token encryption, identity management
+
+**Dependency Analysis:**
+| Dependency | Status | Ready? |
+|------------|--------|--------|
+| TASK-35-2 (BusinessLocation Model) | To Prioritize | ⏳ PARALLEL DEV |
+
+**Transitive Dependency Chain:**
+```
+TASK-35-1 (Migrations) → To Deploy ✅ ESSENTIALLY DONE
+  ↓
+TASK-35-2 (BusinessLocation Model) → To Prioritize (not implemented)
+  ↓
+TASK-35-7 (This task - GoogleOAuthService)
+```
+
+**TDD Pattern Applied:**
+PreTester CAN design tests with mocked BusinessLocation interface:
+- Mock `BusinessLocation` model for token storage/retrieval
+- Mock Laravel's `encrypt()`/`decrypt()` helpers
+- Mock Google OAuth HTTP responses (authorization code, tokens)
+- Mock session for state parameter CSRF validation
+- Test all OAuth flow: getAuthorizationUrl() → handleCallback() → token storage → refresh → disconnect
+
+**Key Test Categories:**
+1. **OAuth Flow:** Authorization URL generation, callback handling, state validation
+2. **Token Management:** Storage, encryption, retrieval, refresh, expiration
+3. **Security:** CSRF state validation, token encryption, never expose in API
+4. **Disconnect:** Token revocation with Google, local cleanup
+5. **Error Handling:** Invalid codes, expired tokens, network failures
+
+**Why HIGH Priority Despite Blocked Dependency:**
+1. OAuth is security-critical - token handling must be bulletproof
+2. Tests can be designed with mocked interfaces (TDD approach)
+3. Enables downstream: GBP connection, insights sync, reviews management
+4. SecurityAuditor review MANDATORY before deployment (High Risk)
+
+**Why HIGH Risk:**
+1. OAuth tokens are sensitive - must be encrypted at rest
+2. CSRF protection via state parameter - must be validated
+3. Token refresh logic - race conditions, expiration edge cases
+4. Never expose tokens in API responses - must be carefully scoped
+5. Disconnect must revoke with Google AND clear local storage
+
+**Execution Pattern:**
+- PreTester designs tests NOW with mocked BusinessLocation interface
+- TASK-35-2 developed in parallel (model for token storage)
+- Developer implements when TASK-35-2 reaches `To Test Locally`
+- SecurityAuditor reviews before `To Deploy`
+
+**Security Requirements (PreTester Must Test):**
+1. State parameter CSRF validation
+2. Token encryption using Laravel's `encrypt()`
+3. Tokens NEVER returned in API responses
+4. Refresh token rotation handling
+5. Idempotent disconnect (handles already-revoked tokens)
+
+**Status Update:**
+- `To Prioritize` → `To Write Tests` (TDD with mocked interfaces)

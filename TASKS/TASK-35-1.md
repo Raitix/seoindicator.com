@@ -1,7 +1,7 @@
 # TASK-35-1: Database Migrations for Local SEO
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
