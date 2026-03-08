@@ -3,97 +3,194 @@
 namespace Database\Factories;
 
 use App\Models\GBPReview;
-use App\Models\Location;
+use App\Models\BusinessLocation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\GBPReview>
- * @Task TASK-35-14
+ * Factory for GBPReview model
+ * 
+ * @see TASK-35-3
+ * @see TEST-35-3
  */
 class GBPReviewFactory extends Factory
 {
-    /**
-     * The name of the factory's corresponding model.
-     */
     protected $model = GBPReview::class;
 
     /**
      * Define the model's default state.
-     *
-     * @return array<string, mixed>
      */
     public function definition(): array
     {
         return [
-            'location_id' => Location::factory(),
-            'gbp_review_id' => 'review_' . fake()->bothify('??####??##'),
-            'rating' => fake()->numberBetween(1, 5),
-            'text' => fake()->optional(0.8)->paragraph(),
-            'author' => fake()->name(),
-            'reviewed_at' => fake()->dateTimeBetween('-6 months', 'now'),
-            'sentiment' => fake()->randomElement(['positive', 'neutral', 'negative']),
-            'has_response' => fake()->boolean(30),
-            'response_text' => fn (array $attributes) =>
-                $attributes['has_response'] ? fake()->sentence() : null,
-            'responded_at' => fn (array $attributes) =>
-                $attributes['has_response'] ? fake()->dateTimeBetween($attributes['reviewed_at'], 'now') : null,
+            'location_id' => BusinessLocation::factory(),
+            'google_review_id' => $this->faker->unique()->uuid(),
+            'author_name' => $this->faker->name(),
+            'author_photo' => $this->faker->imageUrl(100, 100, 'people'),
+            'rating' => $this->faker->numberBetween(1, 5),
+            'review_text' => $this->faker->paragraph(),
+            'review_text_sentiment' => $this->faker->randomElement(['positive', 'neutral', 'negative']),
+            'owner_response' => null,
+            'owner_response_date' => null,
+            'review_date' => $this->faker->dateTimeBetween('-1 year', 'now'),
         ];
     }
 
     /**
-     * Indicate that the review has a positive sentiment.
+     * Set a specific location.
+     */
+    public function forLocation(int $locationId): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'location_id' => $locationId,
+        ]);
+    }
+
+    /**
+     * Positive review (4-5 stars).
      */
     public function positive(): static
     {
         return $this->state(fn (array $attributes) => [
-            'sentiment' => 'positive',
-            'rating' => fake()->numberBetween(4, 5),
+            'rating' => $this->faker->randomElement([4, 5]),
+            'review_text' => $this->faker->randomElement([
+                'Great experience! Highly recommended.',
+                'Excellent service, very professional.',
+                'Wonderful! Will definitely come back.',
+                'Amazing customer service and quality.',
+            ]),
+            'review_text_sentiment' => 'positive',
         ]);
     }
 
     /**
-     * Indicate that the review has a negative sentiment.
+     * Negative review (1-2 stars).
      */
     public function negative(): static
     {
         return $this->state(fn (array $attributes) => [
-            'sentiment' => 'negative',
-            'rating' => fake()->numberBetween(1, 2),
+            'rating' => $this->faker->randomElement([1, 2]),
+            'review_text' => $this->faker->randomElement([
+                'Disappointing experience.',
+                'Would not recommend.',
+                'Poor service quality.',
+                'Expected much better.',
+            ]),
+            'review_text_sentiment' => 'negative',
         ]);
     }
 
     /**
-     * Indicate that the review has a neutral sentiment.
+     * Neutral review (3 stars).
      */
     public function neutral(): static
     {
         return $this->state(fn (array $attributes) => [
-            'sentiment' => 'neutral',
             'rating' => 3,
+            'review_text' => $this->faker->randomElement([
+                'Average experience.',
+                'It was okay, nothing special.',
+                'Mediocre service.',
+            ]),
+            'review_text_sentiment' => 'neutral',
         ]);
     }
 
     /**
-     * Indicate that the review has a response.
+     * Review with owner response.
      */
     public function responded(): static
     {
         return $this->state(fn (array $attributes) => [
-            'has_response' => true,
-            'response_text' => fake()->sentence(),
-            'responded_at' => fake()->dateTimeBetween($attributes['reviewed_at'] ?? '-6 months', 'now'),
+            'owner_response' => $this->faker->randomElement([
+                'Thank you for your feedback! We appreciate your business.',
+                'We are glad you enjoyed your experience!',
+                'Thank you for sharing your thoughts. We hope to serve you again.',
+            ]),
+            'owner_response_date' => $this->faker->dateTimeBetween('-1 month', 'now'),
         ]);
     }
 
     /**
-     * Indicate that the review has no response.
+     * Review without owner response.
      */
-    public function notResponded(): static
+    public function unresponded(): static
     {
         return $this->state(fn (array $attributes) => [
-            'has_response' => false,
-            'response_text' => null,
-            'responded_at' => null,
+            'owner_response' => null,
+            'owner_response_date' => null,
+        ]);
+    }
+
+    /**
+     * Set specific sentiment.
+     */
+    public function withSentiment(string $sentiment): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'review_text_sentiment' => $sentiment,
+        ]);
+    }
+
+    /**
+     * Five-star review.
+     */
+    public function fiveStar(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rating' => 5,
+            'review_text_sentiment' => 'positive',
+        ]);
+    }
+
+    /**
+     * One-star review.
+     */
+    public function oneStar(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rating' => 1,
+            'review_text_sentiment' => 'negative',
+        ]);
+    }
+
+    /**
+     * Review from recent days.
+     */
+    public function recent(int $days = 7): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'review_date' => $this->faker->dateTimeBetween("-{$days} days", 'now'),
+        ]);
+    }
+
+    /**
+     * Review with specific Google Review ID.
+     */
+    public function withGoogleId(string $googleId): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'google_review_id' => $googleId,
+        ]);
+    }
+
+    /**
+     * Anonymous review (no author name).
+     */
+    public function anonymous(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'author_name' => null,
+            'author_photo' => null,
+        ]);
+    }
+
+    /**
+     * Review with specific rating.
+     */
+    public function withRating(int $rating): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rating' => $rating,
         ]);
     }
 }

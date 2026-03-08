@@ -581,6 +581,53 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Business Location Routes (TASK-35-13, SPEC-035)
+|--------------------------------------------------------------------------
+|
+| Business Location API endpoints for managing locations and GBP connections.
+| All routes require authentication and ownership verification.
+|
+*/
+Route::prefix('v1')->middleware(['auth'])->group(function () {
+    // Business Location CRUD Routes
+    Route::get('sites/{siteId}/locations', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'index'])
+        ->name('locations.index')
+        ->where('siteId', '[0-9]+')
+        ->middleware('throttle:60,1');
+    Route::post('sites/{siteId}/locations', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'store'])
+        ->name('locations.store')
+        ->where('siteId', '[0-9]+')
+        ->middleware('throttle:10,60'); // 10 per hour for creation
+    Route::get('locations/{id}', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'show'])
+        ->name('locations.show')
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:60,1');
+    Route::put('locations/{id}', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'update'])
+        ->name('locations.update')
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:60,1');
+    Route::delete('locations/{id}', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'destroy'])
+        ->name('locations.destroy')
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:60,1');
+
+    // GBP OAuth Routes
+    Route::post('locations/{id}/connect-gbp', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'connectGbp'])
+        ->name('locations.connect-gbp')
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:5,60'); // 5 per hour for OAuth initiation
+    Route::get('locations/{id}/gbp-callback', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'gbpCallback'])
+        ->name('locations.gbp-callback')
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:20,60'); // 20 per hour for callback
+    Route::delete('locations/{id}/disconnect-gbp', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'disconnectGbp'])
+        ->name('locations.disconnect-gbp')
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:10,60'); // 10 per hour for disconnect
+});
+
+/*
+|--------------------------------------------------------------------------
 | GBP Insights & Reviews Routes (TASK-35-14, SPEC-035)
 |--------------------------------------------------------------------------
 |

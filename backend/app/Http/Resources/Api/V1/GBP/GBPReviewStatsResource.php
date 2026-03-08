@@ -18,15 +18,17 @@ class GBPReviewStatsResource extends JsonResource
      */
     public function toArray($request): array
     {
+        $data = $this->resource;
+
         return [
-            'average_rating' => $this->average_rating ?? 0,
-            'previous_rating' => $this->previous_rating ?? null,
-            'total_count' => $this->total_count ?? 0,
-            'previous_count' => $this->previous_count ?? null,
-            'distribution' => $this->distribution ?? [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0],
-            'sentiment_breakdown' => $this->sentiment_breakdown ?? ['positive' => 0, 'neutral' => 0, 'negative' => 0],
-            'response_rate' => $this->response_rate ?? 0,
-            'average_response_time_hours' => $this->average_response_time_hours ?? 0,
+            'average_rating' => $data['average_rating'] ?? 0,
+            'previous_rating' => $data['previous_rating'] ?? null,
+            'total_count' => $data['total_count'] ?? 0,
+            'previous_count' => $data['previous_count'] ?? null,
+            'distribution' => $data['distribution'] ?? [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0],
+            'sentiment_breakdown' => $data['sentiment_breakdown'] ?? ['positive' => 0, 'neutral' => 0, 'negative' => 0],
+            'response_rate' => $data['response_rate'] ?? 0,
+            'average_response_time_hours' => $data['average_response_time_hours'] ?? 0,
         ];
     }
 }

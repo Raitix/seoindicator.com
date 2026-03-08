@@ -724,4 +724,120 @@ vi.mock('recharts', () => ({
 
 ---
 
-Last updated: 2026-03-07
+## Laravel Eloquent Model Testing (TASK-35-3)
+
+### Model Test Categories
+Standard categories for Eloquent model tests:
+1. **Model Instantiation** (3 tests) - Constructor, fillable, guarded
+2. **Casts** (5-8 tests) - All type casts verified
+3. **Relationships** (3 tests) - Relationship exists, returns correct type, data accessible
+4. **Scopes** (5-8 tests) - Each scope with multiple scenarios
+5. **Methods** (3-6 tests) - Business logic methods
+6. **Factory** (5-8 tests) - Factory creation, all states
+7. **Unique Constraints** (2-3 tests) - Duplicates fail, variations succeed
+8. **Edge Cases** (4-6 tests) - Nulls, max values, boundaries
+9. **Security** (3 tests) - SQL injection, XSS, invalid values
+10. **Accessors** (3-5 tests) - Computed attributes
+11. **Integration** (2 tests) - CRUD operations, cascade delete
+12. **Performance** (2 tests) - Index usage, bulk operations
+
+### Factory State Patterns
+```php
+// Location-based state
+public function forLocation(int $locationId): static
+{
+    return $this->state(fn (array $attributes) => [
+        'location_id' => $locationId,
+    ]);
+}
+
+// Date-based state
+public function withDate(string $date): static
+{
+    return $this->state(fn (array $attributes) => [
+        'insights_date' => $date,
+    ]);
+}
+
+// High-value state
+public function highEngagement(): static
+{
+    return $this->state(fn (array $attributes) => [
+        'views' => $this->faker->numberBetween(500, 5000),
+        // ... high values
+    ]);
+}
+
+// Zero-value state
+public function noEngagement(): static
+{
+    return $this->state(fn (array $attributes) => [
+        'views' => 0,
+        // ... all zeros
+    ]);
+}
+```
+
+### Scope Testing Pattern
+```php
+/** @test */
+public function scope_for_date_range_filters_by_date(): void
+{
+    $location = BusinessLocation::factory()->create();
+    
+    // Create records at different dates
+    GBPInsight::factory()->forLocation($location->id)->withDate('2026-03-01')->create();
+    GBPInsight::factory()->forLocation($location->id)->withDate('2026-03-05')->create();
+    GBPInsight::factory()->forLocation($location->id)->withDate('2026-03-10')->create();
+    
+    // Test scope
+    $results = GBPInsight::forDateRange('2026-03-03', '2026-03-12')->get();
+    
+    // Verify filtering
+    $this->assertCount(1, $results);
+    $this->assertEquals('2026-03-05', $results->first()->insights_date->format('Y-m-d'));
+}
+```
+
+### Accessor Testing Pattern
+```php
+/** @test */
+public function get_star_rating_attribute_returns_star_string(): void
+{
+    $review1 = GBPReview::factory()->create(['rating' => 1]);
+    $review5 = GBPReview::factory()->create(['rating' => 5]);
+    
+    $this->assertEquals('★☆☆☆☆', $review1->star_rating);
+    $this->assertEquals('★★★★★', $review5->star_rating);
+}
+```
+
+### Unique Constraint Testing
+- Test duplicate fails (QueryException expected)
+- Test same location/field with different date succeeds
+- Test different location with same date succeeds
+
+### TDD for Models with Dependencies
+- Tests can use factories that create parent models
+- Parent model doesn't need to exist - factory handles it
+- RefreshDatabase trait handles cleanup
+- Tests run against migrations (schema must exist)
+
+### Post Type Labels Map
+| post_type | Label | Description |
+|-----------|-------|-------------|
+| EVENT | Event | Time-based promotional event |
+| OFFER | Offer | Special discount or promotion |
+| UPDATE | Update | General business update |
+| COVID | Covid Update | COVID-related information |
+
+### Sentiment Labels
+| sentiment | Label | Use Case |
+|-----------|-------|----------|
+| positive | Positive | Rating 4-5 |
+| negative | Negative | Rating 1-2 |
+| neutral | Neutral | Rating 3 or null |
+
+---
+
+Last updated: 2026-03-08

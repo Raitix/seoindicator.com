@@ -55,14 +55,26 @@ class BusinessLocationControllerTest extends TestCase
                 $location->is_gbp_connected = false;
                 return $location;
             });
-            $mock->shouldReceive('getLocation')->andReturn(null);
+            // Return the actual location from database if it exists
+            $mock->shouldReceive('getLocation')->andReturnUsing(function ($id) {
+                return BusinessLocation::find($id);
+            });
             $mock->shouldReceive('updateLocation')->andReturnUsing(function ($id, $data) {
-                $location = new BusinessLocation();
-                $location->id = $id;
-                $location->name = $data['name'] ?? 'Updated Business';
+                $location = BusinessLocation::find($id);
+                if ($location) {
+                    foreach ($data as $key => $value) {
+                        $location->$key = $value;
+                    }
+                    $location->save();
+                }
                 return $location;
             });
-            $mock->shouldReceive('deleteLocation')->andReturn(null);
+            $mock->shouldReceive('deleteLocation')->andReturnUsing(function ($id) {
+                $location = BusinessLocation::find($id);
+                if ($location) {
+                    $location->delete();
+                }
+            });
             $mock->shouldReceive('getInsightsSummary')->andReturn([
                 'total_queries' => 0,
                 'total_views' => 0,
@@ -116,12 +128,26 @@ class BusinessLocationControllerTest extends TestCase
 
     /**
      * Create a mock location
+     * 
+     * Ensures a site exists for the location (creates one if needed)
      */
     protected function mockLocation(array $attributes = []): BusinessLocation
     {
+        // Ensure user exists if user_id is specified
+        $userId = $attributes['user_id'] ?? 1;
+        if (!User::where('id', $userId)->exists()) {
+            User::factory()->create(['id' => $userId]);
+        }
+
+        // Ensure site exists if site_id is specified
+        $siteId = $attributes['site_id'] ?? 1;
+        if (!Site::where('id', $siteId)->exists()) {
+            Site::factory()->create(['id' => $siteId, 'user_id' => $userId]);
+        }
+
         return BusinessLocation::factory()->create(array_merge([
-            'user_id' => 1,
-            'site_id' => 1,
+            'user_id' => $userId,
+            'site_id' => $siteId,
             'name' => 'Test Business',
             'address' => '123 Main St, New York, NY 10001',
             'is_gbp_connected' => false,
