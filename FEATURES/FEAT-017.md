@@ -8,6 +8,16 @@
 
 ## Comments
 ### 2026-03-08 - DocSystemAnalyst
+**Re-verification Complete (16:40 GMT+2)**
+- Feature status: Done (Phase 1 MVP complete, Phases 2-4 planned)
+- SPEC-017 status: Done
+- DOCUMENTATION.md verified: User Onboarding & Activation Flow section present
+- Stale lock removed: FEAT-17.lock
+- Completion marker written: logs/completed/feature/FEAT-17.json
+- Active-agents entry cleared
+- **ORCHESTRATOR BUG:** 72+ verifications to date due to naming mismatch ("FEAT-17" vs "FEAT-017")
+
+### 2026-03-08 - DocSystemAnalyst
 **Re-verification Complete (14:23 GMT+2)**
 - Feature status: Done (Phase 1 MVP complete, Phases 2-4 planned)
 - SPEC-017 status: Done

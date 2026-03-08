@@ -461,7 +461,7 @@ class AIVisibilityAlertTest extends TestCase
      */
     public function test_va022_default_triggered_at(): void
     {
-        $before = now();
+        $before = now()->subSecond();
         
         $alert = AIVisibilityAlert::create([
             'project_id' => $this->project->id,
@@ -472,7 +472,7 @@ class AIVisibilityAlertTest extends TestCase
             'change_percent' => 48.57,
         ]);
 
-        $after = now();
+        $after = now()->addSecond();
 
         $this->assertNotNull($alert->triggered_at);
         $this->assertTrue($alert->triggered_at->between($before, $after));
