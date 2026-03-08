@@ -2,6 +2,7 @@
 
 namespace App\Services\Audit;
 
+use App\Models\Audit;
 use App\Models\BadgeImpression;
 use App\Models\PublicAuditView;
 use Illuminate\Support\Facades\Cache;
@@ -11,90 +12,130 @@ use Illuminate\Support\Facades\DB;
  * Service for aggregating public audit analytics.
  *
  * TASK-33-28: Implement Public Audit Analytics
+ * SPEC-33: Public SEO Audit Reports & Embeddable Score Widget
  *
- * Aggregates views, leads, and badge metrics from public_audit_views
- * and badge_impressions tables.
+ * Aggregates analytics data from public_audit_views and badge_impressions tables
+ * to provide comprehensive analytics for audit owners.
  */
 class PublicAuditAnalyticsService
 {
     /**
      * Cache TTL in seconds (5 minutes).
      */
-    private const CACHE_TTL = 300;
+    protected const CACHE_TTL = 300;
 
     /**
-     * Default date range in days.
+     * Default date range in days when no range is specified.
      */
-    private const DEFAULT_DATE_RANGE_DAYS = 30;
+    protected const DEFAULT_DATE_RANGE_DAYS = 30;
 
     /**
-     * Maximum countries to return in breakdown.
+     * Maximum number of items to return in breakdown arrays.
      */
-    private const MAX_COUNTRIES = 10;
-
-    /**
-     * Maximum referrers to return in breakdown.
-     */
-    private const MAX_REFERRERS = 10;
+    protected const MAX_BREAKDOWN_ITEMS = 10;
 
     /**
      * Get analytics for a specific audit.
      *
-     * @param int|string $auditId The audit ID (accepts int or string for security testing)
+     * @param mixed $auditId The audit ID (will be validated)
      * @param string|null $start Start date (Y-m-d format)
      * @param string|null $end End date (Y-m-d format)
+     * @param bool $nocache Whether to bypass cache
      * @return array Analytics data
      */
-    public function getAnalytics(int|string $auditId, ?string $start = null, ?string $end = null): array
+    public function getAnalytics(mixed $auditId, ?string $start = null, ?string $end = null, bool $nocache = false): array
     {
-        // Cast to int and validate
-        $auditId = is_numeric($auditId) ? (int) $auditId : 0;
-        
-        // Normalize and validate audit ID
-        if ($auditId <= 0) {
-            return $this->emptyResponse($start, $end);
+        // Validate audit ID
+        if (!is_numeric($auditId) || $auditId <= 0) {
+            [$startDate, $endDate] = $this->normalizeDateRange($start, $end);
+            return $this->emptyResponse($startDate, $endDate);
         }
 
-        // Parse and validate date range
-        [$startDate, $endDate] = $this->parseDateRange($start, $end);
+        $auditId = (int) $auditId;
 
-        // Check cache
+        // Validate and normalize date range
+        [$startDate, $endDate] = $this->normalizeDateRange($start, $end);
+
+        // Generate cache key
         $cacheKey = $this->getCacheKey($auditId, $startDate, $endDate);
-        
+
+        // If nocache is true, compute fresh data
+        if ($nocache) {
+            return $this->computeAnalytics($auditId, $startDate, $endDate);
+        }
+
+        // Try to get from cache
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($auditId, $startDate, $endDate) {
-            return [
-                'views' => $this->getViewsData($auditId, $startDate, $endDate),
-                'leads' => $this->getLeadsData($auditId, $startDate, $endDate),
-                'badges' => $this->getBadgesData($auditId, $startDate, $endDate),
-                'dateRange' => [
-                    'start' => $startDate->toDateString(),
-                    'end' => $endDate->toDateString(),
-                ],
-            ];
+            return $this->computeAnalytics($auditId, $startDate, $endDate);
         });
     }
 
     /**
-     * Get views aggregation data.
+     * Clear the analytics cache for an audit.
      *
-     * @param int $auditId
-     * @param \Carbon\Carbon $startDate
-     * @param \Carbon\Carbon $endDate
-     * @return array
+     * @param int $auditId The audit ID
      */
-    private function getViewsData(int $auditId, $startDate, $endDate): array
+    public function clearCache(int $auditId): void
     {
-        $query = PublicAuditView::where('audit_id', $auditId)
-            ->whereBetween('viewed_at', [$startDate->startOfDay(), $endDate->endOfDay()]);
+        // Clear all date range variations
+        // This is a simple approach - could be optimized with cache tags
+        Cache::forget($this->getCacheKey($auditId, null, null));
+    }
+
+    /**
+     * Compute analytics data (expensive operation).
+     *
+     * @param int $auditId The audit ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Analytics data
+     */
+    protected function computeAnalytics(int $auditId, string $startDate, string $endDate): array
+    {
+        // Check if audit exists and is public
+        $audit = Audit::find($auditId);
+        if (!$audit || $audit->visibility !== 'public') {
+            return $this->emptyResponse($startDate, $endDate);
+        }
+
+        return [
+            'views' => $this->aggregateViews($auditId, $startDate, $endDate),
+            'leads' => $this->aggregateLeads($auditId, $startDate, $endDate),
+            'badges' => $this->aggregateBadges($auditId, $startDate, $endDate),
+            'dateRange' => [
+                'start' => $startDate,
+                'end' => $endDate,
+            ],
+        ];
+    }
+
+    /**
+     * Aggregate view analytics.
+     *
+     * @param int $auditId The audit ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array View analytics
+     */
+    protected function aggregateViews(int $auditId, string $startDate, string $endDate): array
+    {
+        $baseQuery = PublicAuditView::query()
+            ->where('audit_id', $auditId)
+            ->whereBetween('viewed_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
 
         // Total views
-        $total = (clone $query)->count();
+        $total = (clone $baseQuery)->count();
 
-        // Unique views by IP hash
-        $unique = (clone $query)
+        // Unique views (by distinct IP hash)
+        $unique = (clone $baseQuery)
             ->whereNotNull('ip_hash')
             ->distinct('ip_hash')
             ->count('ip_hash');
+
+        // If no IP hashes, use all views as unique
+        if ($unique === 0 && $total > 0) {
+            $unique = $total;
+        }
 
         // Views by day
         $byDay = $this->getViewsByDay($auditId, $startDate, $endDate);
@@ -117,18 +158,18 @@ class PublicAuditAnalyticsService
     /**
      * Get views grouped by day.
      *
-     * @param int $auditId
-     * @param \Carbon\Carbon $startDate
-     * @param \Carbon\Carbon $endDate
-     * @return array
+     * @param int $auditId The audit ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Daily view counts
      */
-    private function getViewsByDay(int $auditId, $startDate, $endDate): array
+    protected function getViewsByDay(int $auditId, string $startDate, string $endDate): array
     {
         $results = DB::table('public_audit_views')
             ->select(DB::raw('DATE(viewed_at) as date'), DB::raw('COUNT(*) as count'))
             ->where('audit_id', $auditId)
+            ->whereBetween('viewed_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->whereNotNull('viewed_at')
-            ->whereBetween('viewed_at', [$startDate->startOfDay(), $endDate->endOfDay()])
             ->groupBy(DB::raw('DATE(viewed_at)'))
             ->orderBy('date')
             ->get();
@@ -142,105 +183,194 @@ class PublicAuditAnalyticsService
     /**
      * Get views grouped by country.
      *
-     * @param int $auditId
-     * @param \Carbon\Carbon $startDate
-     * @param \Carbon\Carbon $endDate
-     * @return array
+     * @param int $auditId The audit ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Country breakdown
      */
-    private function getViewsByCountry(int $auditId, $startDate, $endDate): array
+    protected function getViewsByCountry(int $auditId, string $startDate, string $endDate): array
     {
+        // Get all country codes with counts
         $results = DB::table('public_audit_views')
-            ->select('country_code', DB::raw('COUNT(*) as count'))
+            ->select(
+                DB::raw('UPPER(country_code) as country'),
+                DB::raw('COUNT(*) as count')
+            )
             ->where('audit_id', $auditId)
-            ->whereBetween('viewed_at', [$startDate->startOfDay(), $endDate->endOfDay()])
-            ->groupBy('country_code')
+            ->whereBetween('viewed_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->whereNotNull('country_code')
+            ->where('country_code', '!=', '')
+            ->groupBy(DB::raw('UPPER(country_code)'))
             ->orderByDesc('count')
-            ->limit(self::MAX_COUNTRIES)
             ->get();
 
-        return $results->map(function ($row) {
-            $country = $row->country_code;
-            
-            // Handle null, empty, or invalid country codes
-            if (empty($country) || strlen($country) !== 2 || !ctype_alpha($country)) {
-                $country = 'Unknown';
+        // Separate valid ISO country codes from invalid ones
+        $validCountries = [];
+        $unknownCount = 0;
+
+        // Get count of null/empty country codes
+        $nullEmptyCount = DB::table('public_audit_views')
+            ->where('audit_id', $auditId)
+            ->whereBetween('viewed_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->where(function ($query) {
+                $query->whereNull('country_code')
+                    ->orWhere('country_code', '');
+            })
+            ->count();
+
+        $unknownCount += $nullEmptyCount;
+
+        // Process results - valid ISO 2-letter codes only
+        foreach ($results as $row) {
+            if ($this->isValidCountryCode($row->country)) {
+                $validCountries[] = [
+                    'country' => $row->country,
+                    'count' => (int) $row->count,
+                ];
             } else {
-                $country = strtoupper($country);
+                // Invalid country code goes to Unknown
+                $unknownCount += $row->count;
             }
-            
-            return [
-                'country' => $country,
-                'count' => (int) $row->count,
+        }
+
+        // Sort and limit valid countries
+        usort($validCountries, fn($a, $b) => $b['count'] <=> $a['count']);
+        $validCountries = array_slice($validCountries, 0, self::MAX_BREAKDOWN_ITEMS);
+
+        // Add Unknown category if there are views without/with invalid country
+        if ($unknownCount > 0) {
+            $validCountries[] = [
+                'country' => 'Unknown',
+                'count' => $unknownCount,
             ];
-        })->toArray();
+        }
+
+        return $validCountries;
+    }
+
+    /**
+     * Check if a country code is a valid ISO 3166-1 alpha-2 code.
+     *
+     * @param string|null $code Country code to validate
+     * @return bool Whether the code is valid
+     */
+    protected function isValidCountryCode(?string $code): bool
+    {
+        if (!$code || strlen($code) !== 2) {
+            return false;
+        }
+
+        // List of valid ISO 3166-1 alpha-2 country codes
+        $validCodes = [
+            'AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW', 'AX', 'AZ',
+            'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BL', 'BM', 'BN', 'BO', 'BQ', 'BR', 'BS', 'BT', 'BV', 'BW', 'BY', 'BZ',
+            'CA', 'CC', 'CD', 'CF', 'CG', 'CH', 'CI', 'CK', 'CL', 'CM', 'CN', 'CO', 'CR', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ',
+            'DE', 'DJ', 'DK', 'DM', 'DO', 'DZ', 'EC', 'EE', 'EG', 'EH', 'ER', 'ES', 'ET', 'FI', 'FJ', 'FK', 'FM', 'FO', 'FR',
+            'GA', 'GB', 'GD', 'GE', 'GF', 'GG', 'GH', 'GI', 'GL', 'GM', 'GN', 'GP', 'GQ', 'GR', 'GS', 'GT', 'GU', 'GW', 'GY',
+            'HK', 'HM', 'HN', 'HR', 'HT', 'HU', 'ID', 'IE', 'IL', 'IM', 'IN', 'IO', 'IQ', 'IR', 'IS', 'IT', 'JE', 'JM', 'JO', 'JP',
+            'KE', 'KG', 'KH', 'KI', 'KM', 'KN', 'KP', 'KR', 'KW', 'KY', 'KZ', 'LA', 'LB', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT', 'LU', 'LV', 'LY',
+            'MA', 'MC', 'MD', 'ME', 'MF', 'MG', 'MH', 'MK', 'ML', 'MM', 'MN', 'MO', 'MP', 'MQ', 'MR', 'MS', 'MT', 'MU', 'MV', 'MW', 'MX', 'MY', 'MZ',
+            'NA', 'NC', 'NE', 'NF', 'NG', 'NI', 'NL', 'NO', 'NP', 'NR', 'NU', 'NZ', 'OM', 'PA', 'PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PM', 'PN', 'PR', 'PS', 'PT', 'PW', 'PY',
+            'QA', 'RE', 'RO', 'RS', 'RU', 'RW', 'SA', 'SB', 'SC', 'SD', 'SE', 'SG', 'SH', 'SI', 'SJ', 'SK', 'SL', 'SM', 'SN', 'SO', 'SR', 'SS', 'ST', 'SV', 'SX', 'SY', 'SZ',
+            'TC', 'TD', 'TF', 'TG', 'TH', 'TJ', 'TK', 'TL', 'TM', 'TN', 'TO', 'TR', 'TT', 'TV', 'TW', 'TZ', 'UA', 'UG', 'UM', 'US', 'UY', 'UZ', 'VA', 'VC', 'VE', 'VG', 'VI', 'VN', 'VU', 'WF', 'WS', 'YE', 'YT', 'ZA', 'ZM', 'ZW',
+        ];
+
+        return in_array(strtoupper($code), $validCodes, true);
     }
 
     /**
      * Get views grouped by referrer domain.
      *
-     * @param int $auditId
-     * @param \Carbon\Carbon $startDate
-     * @param \Carbon\Carbon $endDate
-     * @return array
+     * @param int $auditId The audit ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Referrer breakdown
      */
-    private function getViewsByReferrer(int $auditId, $startDate, $endDate): array
+    protected function getViewsByReferrer(int $auditId, string $startDate, string $endDate): array
     {
-        // Get all referrers and extract domains in PHP for reliability
+        // Get all referrers with their counts
         $results = DB::table('public_audit_views')
             ->select('referrer', DB::raw('COUNT(*) as count'))
             ->where('audit_id', $auditId)
-            ->whereBetween('viewed_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->whereBetween('viewed_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->whereNotNull('referrer')
+            ->where('referrer', '!=', '')
             ->groupBy('referrer')
             ->orderByDesc('count')
+            ->limit(self::MAX_BREAKDOWN_ITEMS * 2) // Get more for grouping
             ->get();
 
         // Group by extracted domain
         $domainCounts = [];
         foreach ($results as $row) {
             $domain = $this->extractDomain($row->referrer);
-            if (!isset($domainCounts[$domain])) {
-                $domainCounts[$domain] = 0;
+            if ($domain) {
+                // Skip self-referrals
+                if ($this->isSelfReferral($domain)) {
+                    continue;
+                }
+                $domainCounts[$domain] = ($domainCounts[$domain] ?? 0) + $row->count;
             }
-            $domainCounts[$domain] += $row->count;
         }
 
-        // Sort by count and limit
+        // Sort and limit
         arsort($domainCounts);
-        $domainCounts = array_slice($domainCounts, 0, self::MAX_REFERRERS, true);
+        $domainCounts = array_slice($domainCounts, 0, self::MAX_BREAKDOWN_ITEMS, true);
 
-        return collect($domainCounts)->map(fn($count, $domain) => [
-            'referrer' => $domain,
-            'count' => $count,
-        ])->values()->toArray();
+        $breakdown = [];
+        foreach ($domainCounts as $domain => $count) {
+            $breakdown[] = [
+                'referrer' => $domain,
+                'count' => $count,
+            ];
+        }
+
+        // Get count of direct visits (no referrer)
+        $directCount = DB::table('public_audit_views')
+            ->where('audit_id', $auditId)
+            ->whereBetween('viewed_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->where(function ($query) {
+                $query->whereNull('referrer')
+                    ->orWhere('referrer', '');
+            })
+            ->count();
+
+        if ($directCount > 0) {
+            $breakdown[] = [
+                'referrer' => 'Direct',
+                'count' => $directCount,
+            ];
+        }
+
+        return $breakdown;
     }
 
     /**
-     * Get leads aggregation data.
+     * Aggregate lead analytics.
      *
-     * @param int $auditId
-     * @param \Carbon\Carbon $startDate
-     * @param \Carbon\Carbon $endDate
-     * @return array
+     * @param int $auditId The audit ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Lead analytics
      */
-    private function getLeadsData(int $auditId, $startDate, $endDate): array
+    protected function aggregateLeads(int $auditId, string $startDate, string $endDate): array
     {
-        $baseQuery = PublicAuditView::where('audit_id', $auditId)
-            ->whereBetween('viewed_at', [$startDate->startOfDay(), $endDate->endOfDay()]);
+        // Get view and lead counts for conversion rate
+        $baseQuery = PublicAuditView::query()
+            ->where('audit_id', $auditId)
+            ->whereBetween('viewed_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
 
-        // Total views for conversion rate calculation
         $totalViews = (clone $baseQuery)->count();
+        $totalLeads = (clone $baseQuery)->where('is_lead_capture', true)->count();
 
-        // Total leads (is_lead_capture = true)
-        $total = (clone $baseQuery)->where('is_lead_capture', true)->count();
-
-        // Conversion rate
-        $conversionRate = $totalViews > 0 ? round($total / $totalViews, 4) : 0.0;
+        // Calculate conversion rate
+        $conversionRate = $totalViews > 0 ? round($totalLeads / $totalViews, 4) : 0.0;
 
         // Leads by day
         $byDay = $this->getLeadsByDay($auditId, $startDate, $endDate);
 
         return [
-            'total' => $total,
+            'total' => $totalLeads,
             'conversionRate' => $conversionRate,
             'byDay' => $byDay,
         ];
@@ -249,19 +379,19 @@ class PublicAuditAnalyticsService
     /**
      * Get leads grouped by day.
      *
-     * @param int $auditId
-     * @param \Carbon\Carbon $startDate
-     * @param \Carbon\Carbon $endDate
-     * @return array
+     * @param int $auditId The audit ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Daily lead counts
      */
-    private function getLeadsByDay(int $auditId, $startDate, $endDate): array
+    protected function getLeadsByDay(int $auditId, string $startDate, string $endDate): array
     {
         $results = DB::table('public_audit_views')
             ->select(DB::raw('DATE(viewed_at) as date'), DB::raw('COUNT(*) as count'))
             ->where('audit_id', $auditId)
             ->where('is_lead_capture', true)
+            ->whereBetween('viewed_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->whereNotNull('viewed_at')
-            ->whereBetween('viewed_at', [$startDate->startOfDay(), $endDate->endOfDay()])
             ->groupBy(DB::raw('DATE(viewed_at)'))
             ->orderBy('date')
             ->get();
@@ -273,41 +403,45 @@ class PublicAuditAnalyticsService
     }
 
     /**
-     * Get badge impressions/clicks data.
+     * Aggregate badge analytics.
      *
-     * @param int $auditId
-     * @param \Carbon\Carbon $startDate
-     * @param \Carbon\Carbon $endDate
-     * @return array
+     * @param int $auditId The audit ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Badge analytics
      */
-    private function getBadgesData(int $auditId, $startDate, $endDate): array
+    protected function aggregateBadges(int $auditId, string $startDate, string $endDate): array
     {
-        $baseQuery = BadgeImpression::where('audit_id', $auditId);
+        $baseQuery = BadgeImpression::query()
+            ->where('audit_id', $auditId);
 
-        // Total impressions (use impression_at for date filtering, fall back to created_at)
-        $impressionsQuery = (clone $baseQuery)
-            ->where(function ($q) use ($startDate, $endDate) {
-                $q->whereBetween('impression_at', [$startDate->startOfDay(), $endDate->endOfDay()])
-                    ->orWhereNull('impression_at');
-            });
-        $impressions = $impressionsQuery->count();
+        // Use impression_at for date filtering, fallback to created_at
+        $dateColumn = 'impression_at';
 
-        // Clicks (with clicked_at)
-        $clicksQuery = (clone $baseQuery)
+        // Total impressions
+        $impressions = (clone $baseQuery)
+            ->where(function ($query) use ($dateColumn, $startDate, $endDate) {
+                $query->whereBetween($dateColumn, [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                    ->orWhereNull($dateColumn);
+            })
+            ->count();
+
+        // Total clicks
+        $clicks = (clone $baseQuery)
             ->whereNotNull('clicked_at')
-            ->whereBetween('clicked_at', [$startDate->startOfDay(), $endDate->endOfDay()]);
-        $clicks = $clicksQuery->count();
+            ->whereBetween('clicked_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->count();
 
         // Click-through rate
         $clickRate = $impressions > 0 ? round($clicks / $impressions, 4) : 0.0;
 
-        // Clicks by target
-        $byTarget = $this->getClicksByTarget($auditId, $startDate, $endDate);
+        // Click target breakdown
+        $byTarget = $this->getBadgeClicksByTarget($auditId, $startDate, $endDate);
 
-        // Badges by day
+        // Impressions by day
         $byDay = $this->getBadgesByDay($auditId, $startDate, $endDate);
 
-        // Badges by referrer
+        // Referrer breakdown
         $byReferrer = $this->getBadgesByReferrer($auditId, $startDate, $endDate);
 
         return [
@@ -321,112 +455,160 @@ class PublicAuditAnalyticsService
     }
 
     /**
-     * Get clicks grouped by target.
+     * Get badge clicks grouped by target.
      *
-     * @param int $auditId
-     * @param \Carbon\Carbon $startDate
-     * @param \Carbon\Carbon $endDate
-     * @return array
+     * @param int $auditId The audit ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Target breakdown
      */
-    private function getClicksByTarget(int $auditId, $startDate, $endDate): array
+    protected function getBadgeClicksByTarget(int $auditId, string $startDate, string $endDate): array
     {
         $results = DB::table('badge_impressions')
             ->select('click_target', DB::raw('COUNT(*) as count'))
             ->where('audit_id', $auditId)
             ->whereNotNull('clicked_at')
             ->whereNotNull('click_target')
-            ->whereBetween('clicked_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->whereBetween('clicked_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->groupBy('click_target')
             ->get();
 
-        $byTarget = ['audit' => 0, 'home' => 0];
+        $breakdown = ['audit' => 0, 'home' => 0];
         foreach ($results as $row) {
-            if (isset($byTarget[$row->click_target])) {
-                $byTarget[$row->click_target] = (int) $row->count;
+            if (in_array($row->click_target, ['audit', 'home'])) {
+                $breakdown[$row->click_target] = (int) $row->count;
             }
         }
 
-        return $byTarget;
+        return $breakdown;
     }
 
     /**
-     * Get badge impressions grouped by day.
+     * Get badge impressions and clicks grouped by day.
      *
-     * @param int $auditId
-     * @param \Carbon\Carbon $startDate
-     * @param \Carbon\Carbon $endDate
-     * @return array
+     * @param int $auditId The audit ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Daily badge stats
      */
-    private function getBadgesByDay(int $auditId, $startDate, $endDate): array
+    protected function getBadgesByDay(int $auditId, string $startDate, string $endDate): array
     {
-        $results = DB::table('badge_impressions')
-            ->select(DB::raw('DATE(impression_at) as date'), DB::raw('COUNT(*) as count'))
+        // Get impressions by day
+        $impressions = DB::table('badge_impressions')
+            ->select(DB::raw('DATE(impression_at) as date'), DB::raw('COUNT(*) as impressions'))
             ->where('audit_id', $auditId)
             ->whereNotNull('impression_at')
-            ->whereBetween('impression_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->whereBetween('impression_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->groupBy(DB::raw('DATE(impression_at)'))
-            ->orderBy('date')
-            ->get();
+            ->get()
+            ->keyBy('date');
 
-        return $results->map(fn($row) => [
-            'date' => $row->date,
-            'count' => (int) $row->count,
-        ])->toArray();
+        // Get clicks by day
+        $clicks = DB::table('badge_impressions')
+            ->select(DB::raw('DATE(clicked_at) as date'), DB::raw('COUNT(*) as clicks'))
+            ->where('audit_id', $auditId)
+            ->whereNotNull('clicked_at')
+            ->whereBetween('clicked_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->groupBy(DB::raw('DATE(clicked_at)'))
+            ->get()
+            ->keyBy('date');
+
+        // Merge results
+        $allDates = $impressions->keys()->merge($clicks->keys())->unique()->sort();
+        $results = [];
+
+        foreach ($allDates as $date) {
+            $results[] = [
+                'date' => $date,
+                'impressions' => (int) ($impressions->get($date)?->impressions ?? 0),
+                'clicks' => (int) ($clicks->get($date)?->clicks ?? 0),
+            ];
+        }
+
+        return $results;
     }
 
     /**
      * Get badge impressions grouped by referrer domain.
      *
-     * @param int $auditId
-     * @param \Carbon\Carbon $startDate
-     * @param \Carbon\Carbon $endDate
-     * @return array
+     * @param int $auditId The audit ID
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Referrer breakdown
      */
-    private function getBadgesByReferrer(int $auditId, $startDate, $endDate): array
+    protected function getBadgesByReferrer(int $auditId, string $startDate, string $endDate): array
     {
         $results = DB::table('badge_impressions')
             ->select('referrer_domain', DB::raw('COUNT(*) as count'))
             ->where('audit_id', $auditId)
-            ->where(function ($q) use ($startDate, $endDate) {
-                $q->whereBetween('impression_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('impression_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
                     ->orWhereNull('impression_at');
             })
+            ->whereNotNull('referrer_domain')
+            ->where('referrer_domain', '!=', '')
             ->groupBy('referrer_domain')
             ->orderByDesc('count')
-            ->limit(self::MAX_REFERRERS)
+            ->limit(self::MAX_BREAKDOWN_ITEMS)
             ->get();
 
-        return $results->map(fn($row) => [
-            'referrer' => $row->referrer_domain ?: 'Direct',
+        $breakdown = $results->map(fn($row) => [
+            'referrer' => $row->referrer_domain,
             'count' => (int) $row->count,
         ])->toArray();
+
+        // Get count of direct (no referrer)
+        $directCount = DB::table('badge_impressions')
+            ->where('audit_id', $auditId)
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('impression_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                    ->orWhereNull('impression_at');
+            })
+            ->where(function ($query) {
+                $query->whereNull('referrer_domain')
+                    ->orWhere('referrer_domain', '');
+            })
+            ->count();
+
+        if ($directCount > 0) {
+            $breakdown[] = [
+                'referrer' => 'Direct',
+                'count' => $directCount,
+            ];
+        }
+
+        return $breakdown;
     }
 
     /**
-     * Parse and validate date range.
+     * Normalize and validate date range.
      *
-     * @param string|null $start
-     * @param string|null $end
-     * @return array [\Carbon\Carbon $startDate, \Carbon\Carbon $endDate]
+     * @param string|null $start Start date
+     * @param string|null $end End date
+     * @return array Normalized [startDate, endDate]
      */
-    private function parseDateRange(?string $start, ?string $end): array
+    protected function normalizeDateRange(?string $start, ?string $end): array
     {
-        $now = now();
-
-        try {
-            $startDate = $start ? \Carbon\Carbon::parse($start)->startOfDay() : $now->copy()->subDays(self::DEFAULT_DATE_RANGE_DAYS)->startOfDay();
-        } catch (\Exception $e) {
-            $startDate = $now->copy()->subDays(self::DEFAULT_DATE_RANGE_DAYS)->startOfDay();
+        // Default to last 30 days
+        if (!$start && !$end) {
+            return [
+                now()->subDays(self::DEFAULT_DATE_RANGE_DAYS)->toDateString(),
+                now()->toDateString(),
+            ];
         }
 
-        try {
-            $endDate = $end ? \Carbon\Carbon::parse($end)->endOfDay() : $now->copy()->endOfDay();
-        } catch (\Exception $e) {
-            $endDate = $now->copy()->endOfDay();
-        }
+        // Validate start date
+        $startDate = $this->validateDate($start)
+            ? $start
+            : now()->subDays(self::DEFAULT_DATE_RANGE_DAYS)->toDateString();
 
-        // If end is before start, swap them
-        if ($endDate->lt($startDate)) {
+        // Validate end date
+        $endDate = $this->validateDate($end)
+            ? $end
+            : now()->toDateString();
+
+        // Ensure end >= start (swap if needed)
+        if (strtotime($endDate) < strtotime($startDate)) {
             [$startDate, $endDate] = [$endDate, $startDate];
         }
 
@@ -434,53 +616,84 @@ class PublicAuditAnalyticsService
     }
 
     /**
-     * Generate cache key for analytics query.
+     * Validate a date string.
      *
-     * @param int $auditId
-     * @param \Carbon\Carbon $startDate
-     * @param \Carbon\Carbon $endDate
-     * @return string
+     * @param string|null $date Date string to validate
+     * @return bool Whether the date is valid
      */
-    private function getCacheKey(int $auditId, $startDate, $endDate): string
+    protected function validateDate(?string $date): bool
     {
-        return "audit_analytics:{$auditId}:{$startDate->toDateString()}:{$endDate->toDateString()}";
+        if (!$date) {
+            return false;
+        }
+
+        $parsed = date_parse($date);
+        return $parsed['error_count'] === 0 && $parsed['warning_count'] === 0;
     }
 
     /**
-     * Extract domain from URL.
+     * Generate a cache key for the analytics.
      *
-     * @param string|null $url
-     * @return string
+     * @param int $auditId The audit ID
+     * @param string|null $startDate Start date
+     * @param string|null $endDate End date
+     * @return string Cache key
      */
-    private function extractDomain(?string $url): string
+    protected function getCacheKey(int $auditId, ?string $startDate, ?string $endDate): string
     {
-        if (empty($url)) {
-            return 'Direct';
+        return "audit_analytics:{$auditId}:{$startDate}:{$endDate}";
+    }
+
+    /**
+     * Extract domain from a URL.
+     *
+     * @param string|null $url Full URL
+     * @return string|null Domain only
+     */
+    protected function extractDomain(?string $url): ?string
+    {
+        if (!$url) {
+            return null;
         }
 
         $parsed = parse_url($url, PHP_URL_HOST);
-        
-        if (empty($parsed)) {
-            return 'Direct';
+        if (!$parsed) {
+            return null;
         }
 
         // Remove www. prefix
-        $domain = preg_replace('/^www\./i', '', $parsed);
+        $domain = preg_replace('/^www\./', '', strtolower($parsed));
 
-        return strtolower($domain);
+        return $domain;
     }
 
     /**
-     * Return empty response structure.
+     * Check if a domain is a self-referral.
      *
-     * @param string|null $start
-     * @param string|null $end
-     * @return array
+     * @param string $domain Domain to check
+     * @return bool Whether it's a self-referral
      */
-    private function emptyResponse(?string $start, ?string $end): array
+    protected function isSelfReferral(string $domain): bool
     {
-        [$startDate, $endDate] = $this->parseDateRange($start, $end);
+        $ownDomain = parse_url(config('app.url'), PHP_URL_HOST);
+        if (!$ownDomain) {
+            return false;
+        }
 
+        $ownDomain = preg_replace('/^www\./', '', strtolower($ownDomain));
+
+        return $domain === $ownDomain;
+    }
+
+    /**
+     * Return an empty analytics response.
+     *
+     * @param string $startDate Start date
+     * @param string $endDate End date
+     * @return array Empty response
+     */
+    protected function emptyResponse(string $startDate, string $endDate): array
+    {
         return [
             'views' => [
                 'total' => 0,
@@ -503,8 +716,8 @@ class PublicAuditAnalyticsService
                 'byReferrer' => [],
             ],
             'dateRange' => [
-                'start' => $startDate->toDateString(),
-                'end' => $endDate->toDateString(),
+                'start' => $startDate,
+                'end' => $endDate,
             ],
         ];
     }

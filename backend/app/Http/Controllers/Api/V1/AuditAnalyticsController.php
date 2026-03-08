@@ -7,24 +7,30 @@ use App\Models\Audit;
 use App\Services\Audit\PublicAuditAnalyticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 
 /**
  * Controller for audit analytics API.
  *
  * TASK-33-28: Implement Public Audit Analytics
- *
- * Provides analytics aggregation for public audits including
- * views, leads, and badge metrics.
+ * SPEC-33: Public SEO Audit Reports & Embeddable Score Widget
  */
 class AuditAnalyticsController extends Controller
 {
     /**
-     * Create a new controller instance.
+     * @var PublicAuditAnalyticsService
      */
-    public function __construct(
-        private PublicAuditAnalyticsService $analyticsService
-    ) {}
+    protected PublicAuditAnalyticsService $analyticsService;
+
+    /**
+     * Create a new controller instance.
+     *
+     * @param PublicAuditAnalyticsService $analyticsService
+     */
+    public function __construct(PublicAuditAnalyticsService $analyticsService)
+    {
+        $this->analyticsService = $analyticsService;
+    }
 
     /**
      * Get analytics for a specific audit.
@@ -35,9 +41,8 @@ class AuditAnalyticsController extends Controller
      */
     public function show(Request $request, int $id): JsonResponse
     {
-        // Find audit
+        // Validate audit exists
         $audit = Audit::find($id);
-
         if (!$audit) {
             return response()->json([
                 'success' => false,
@@ -46,89 +51,72 @@ class AuditAnalyticsController extends Controller
             ], 404);
         }
 
-        // Authorize - user must own the audit (via site) or be admin
+        // Authorize: user must own the audit (via site relationship) or be admin
         $user = $request->user();
-        
-        if (!$this->canViewAnalytics($user, $audit)) {
+        if (!$this->canAccess($user, $audit)) {
             return response()->json([
                 'success' => false,
-                'error' => 'You do not have permission to view this audit analytics',
+                'error' => 'You do not have permission to access this audit',
                 'code' => 403,
             ], 403);
         }
 
         // Validate query parameters
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'start' => ['nullable', 'date', 'before_or_equal:end'],
             'end' => ['nullable', 'date', 'before_or_equal:today'],
-            'nocache' => ['nullable', 'boolean'],
-        ], [
-            'start.date' => 'The start date must be a valid date.',
-            'start.before_or_equal' => 'The start date must be before or equal to the end date.',
-            'end.date' => 'The end date must be a valid date.',
-            'end.before_or_equal' => 'The end date cannot be in the future.',
         ]);
 
-        // Get date parameters
-        $start = $validated['start'] ?? null;
-        $end = $validated['end'] ?? null;
-
-        // Bypass cache if requested
-        if (!empty($validated['nocache'])) {
-            // Clear cache for this query
-            $this->clearCache($id, $start, $end);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Invalid date parameters',
+                'details' => $validator->errors(),
+                'code' => 400,
+            ], 400);
         }
 
+        // Check for cache bypass
+        $nocache = $request->boolean('nocache');
+
         // Get analytics
-        $data = $this->analyticsService->getAnalytics($id, $start, $end);
+        $analytics = $this->analyticsService->getAnalytics(
+            $id,
+            $request->input('start'),
+            $request->input('end'),
+            $nocache // bypass cache if requested
+        );
 
         return response()->json([
             'success' => true,
-            'data' => $data,
+            'data' => $analytics,
         ]);
     }
 
     /**
-     * Check if user can view analytics for the audit.
+     * Check if user can access the audit analytics.
      *
      * @param mixed $user
      * @param Audit $audit
      * @return bool
      */
-    private function canViewAnalytics($user, Audit $audit): bool
+    protected function canAccess($user, Audit $audit): bool
     {
-        // Check if user is admin or super admin
-        if (in_array($user->role ?? '', ['admin', 'super_admin'])) {
+        if (!$user) {
+            return false;
+        }
+
+        // Admin or super admin can access any audit
+        if ($user->role === 'admin' || $user->role === 'super_admin') {
             return true;
         }
 
         // Check if user owns the site that owns the audit
         $site = $audit->site;
-        
         if (!$site) {
             return false;
         }
 
         return $site->user_id === $user->id;
-    }
-
-    /**
-     * Clear cache for specific analytics query.
-     *
-     * @param int $auditId
-     * @param string|null $start
-     * @param string|null $end
-     * @return void
-     */
-    private function clearCache(int $auditId, ?string $start, ?string $end): void
-    {
-        // Calculate cache key
-        $now = now();
-        $startDate = $start ? \Carbon\Carbon::parse($start)->toDateString() : $now->copy()->subDays(30)->toDateString();
-        $endDate = $end ? \Carbon\Carbon::parse($end)->toDateString() : $now->toDateString();
-        
-        $cacheKey = "audit_analytics:{$auditId}:{$startDate}:{$endDate}";
-        
-        \Illuminate\Support\Facades\Cache::forget($cacheKey);
     }
 }

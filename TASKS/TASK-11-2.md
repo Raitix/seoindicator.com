@@ -147,3 +147,25 @@ Updated `DOCUMENTATION.md` with:
 - Related tasks and dependencies
 
 **Status: Done** - Task completed. Project members table is documented and deployed to production.
+
+### [2026-03-08 11:29 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - TASK-11-2 Project Members Table
+
+Verification:
+- Task status: `Done` ✅
+- DOCUMENTATION.md verified at line 17755+ (Project Members Table section) ✅
+- Schema: `project_members` table with project_id, user_id, role ENUM('editor', 'viewer')
+- Model: ProjectMember with relationships to Project and User
+- Foreign keys: CASCADE delete on both project_id and user_id
+- Unique constraint: (project_id, user_id)
+- Role permissions matrix: Editor (full access) vs Viewer (read-only + reports)
+- Production deployed: 2026-02-26, commit 42ca3ac
+- Test coverage: 28 tests passed
+
+Actions:
+- Completion marker written: `logs/completed/task/TASK-11-2.json`
+- No stale locks found
+- No active-agents entry to clear
+
+Task fully closed and documented.
+- SPEC-011: In Progress (TASK-11-1 still at "Tested Locally")
