@@ -27,7 +27,7 @@ class GBPInsightsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'start_date' => ['nullable', 'date', 'before_or_equal:end_date', 'before:tomorrow'],
+            'start_date' => ['nullable', 'date', 'before:tomorrow'],
             'end_date' => ['nullable', 'date', 'before:tomorrow'],
         ];
     }

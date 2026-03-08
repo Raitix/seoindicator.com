@@ -7,11 +7,11 @@ use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 /**
- * LocalRanking Policy for API authorization.
+ * BusinessLocation Policy for API authorization.
  *
  * TASK-35-15: Local Rankings API Controller
  */
-class LocalRankingPolicy
+class BusinessLocationPolicy
 {
     use HandlesAuthorization;
 
