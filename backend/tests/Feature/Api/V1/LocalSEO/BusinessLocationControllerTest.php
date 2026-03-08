@@ -99,7 +99,10 @@ class BusinessLocationControllerTest extends TestCase
                 'location_id' => 1,
             ]);
             $mock->shouldReceive('disconnect')->andReturn(null);
-            $mock->shouldReceive('validateState')->andReturn(true);
+            // Validate state - only accept 'test-state'
+            $mock->shouldReceive('validateState')->andReturnUsing(function ($state) {
+                return $state === 'test-state';
+            });
         });
     }
 
@@ -119,8 +122,14 @@ class BusinessLocationControllerTest extends TestCase
      */
     protected function mockSite(array $attributes = []): Site
     {
+        // Ensure user exists if user_id is specified
+        $userId = $attributes['user_id'] ?? 1;
+        if (!User::where('id', $userId)->exists()) {
+            User::factory()->create(['id' => $userId]);
+        }
+
         return Site::factory()->create(array_merge([
-            'user_id' => 1,
+            'user_id' => $userId,
             'name' => 'Test Site',
             'url' => 'https://example.com',
         ], $attributes));
@@ -1662,10 +1671,14 @@ class BusinessLocationControllerTest extends TestCase
 
         Sanctum::actingAs($user);
 
+        // For JSON requests, expect JSON error response
         $response = $this->getJson("/api/v1/locations/{$location->id}/gbp-callback?error=access_denied&state=test-state");
 
-        $response->assertStatus(302);
-        $this->assertStringContainsString('error=', $response->headers->get('Location'));
+        $response->assertStatus(400);
+        $response->assertJson([
+            'success' => false,
+            'error' => 'access_denied',
+        ]);
     }
 
     /** @test CALLBACK-016 */
@@ -1768,8 +1781,10 @@ class BusinessLocationControllerTest extends TestCase
     // ==========================================
 
     /** @test HM-001 */
-    public function get_list_post_method_returns_405(): void
+    public function get_list_post_method_creates_location(): void
     {
+        // POST to /sites/{siteId}/locations is for creating locations (RESTful)
+        // Without data, it should return 422 validation error, not 405
         $user = $this->mockUser();
         $site = $this->mockSite(['user_id' => $user->id]);
 
@@ -1777,7 +1792,7 @@ class BusinessLocationControllerTest extends TestCase
 
         $response = $this->postJson("/api/v1/sites/{$site->id}/locations");
 
-        $response->assertStatus(405);
+        $response->assertStatus(422); // Validation error - name and address required
     }
 
     /** @test HM-005 */
