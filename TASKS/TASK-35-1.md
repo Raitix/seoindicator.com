@@ -1,7 +1,7 @@
 # TASK-35-1: Database Migrations for Local SEO
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -107,3 +107,46 @@ TASK-35-1 (Migrations)
 4. Database schema is the single source of truth for data models
 
 **Status:** `To Write Tests` - Ready for PreTester to design migration tests
+
+### PreTester Session (2026-03-08 21:00 GMT+2)
+- **Status:** `To Develop` - Tests designed and ready for Developer
+- **Test Files Created:**
+  - `TESTS/TEST-35-1.md` - Test documentation with 133 test scenarios
+  - `backend/tests/Feature/Database/Migrations/LocalSeoMigrationTest.php` - 91 feature tests
+  - `backend/tests/Unit/Database/Migrations/LocalSeoMigrationStructureTest.php` - 42 unit tests
+- **Test Coverage:**
+  - All 7 tables verified for existence after migration
+  - All columns verified for correct type, length, nullable, default values
+  - All indexes verified (single, composite, unique)
+  - All foreign keys verified with ON DELETE CASCADE
+  - JSON columns verified for correct type
+  - Decimal precision verified for lat/lng columns (10,8 and 11,8)
+  - Soft deletes verified on business_locations
+  - Timestamps verified on all appropriate tables
+  - Rollback tests included (tables dropped cleanly)
+
+**Test Organization:**
+| Table | Tests | Coverage |
+|-------|-------|----------|
+| business_locations | 22 | BL-01 to BL-22 |
+| gbp_insights | 15 | GI-01 to GI-15 |
+| gbp_reviews | 19 | GR-01 to GR-19 |
+| local_rankings | 16 | LR-01 to LR-16 |
+| local_competitors | 12 | LC-01 to LC-12 |
+| gbp_posts | 16 | GP-01 to GP-16 |
+| local_seo_alerts | 18 | LA-01 to LA-18 |
+| Rollback/Integration | 5 | RB-01 to RB-04, INT-08 to INT-12 |
+
+**Notes for Developer:**
+1. Run tests with: `php artisan test --filter LocalSeoMigration`
+2. Integration tests (INT-08 to INT-12) are skipped pending model implementation
+3. Tests use Doctrine Schema Manager for introspection
+4. Column length assertions verify VARCHAR lengths
+5. Decimal precision assertions verify (precision, scale)
+
+**Key Decisions:**
+- Used DECIMAL(10,8) for latitude (range -90 to 90)
+- Used DECIMAL(11,8) for longitude (range -180 to 180)
+- JSON columns allow flexible data storage
+- Soft deletes only on business_locations (preserve historical data)
+- ON DELETE CASCADE on all foreign keys for referential integrity
