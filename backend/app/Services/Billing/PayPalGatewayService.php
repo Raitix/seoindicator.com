@@ -95,21 +95,29 @@ class PayPalGatewayService implements PaymentGatewayInterface
      */
     public function __construct()
     {
-        $this->clientId = Config::get('services.paypal.client_id');
-        $this->clientSecret = Config::get('services.paypal.client_secret');
-        $this->webhookId = Config::get('services.paypal.webhook_id');
-        $this->returnUrl = Config::get('services.paypal.return_url');
-        $this->cancelUrl = Config::get('services.paypal.cancel_url');
-
-        if (empty($this->clientId) || empty($this->clientSecret)) {
-            throw new \RuntimeException('PayPal credentials are not configured.');
-        }
+        $this->clientId = Config::get('services.paypal.client_id') ?? '';
+        $this->clientSecret = Config::get('services.paypal.client_secret') ?? '';
+        $this->webhookId = Config::get('services.paypal.webhook_id') ?? '';
+        $this->returnUrl = Config::get('services.paypal.return_url') ?? '';
+        $this->cancelUrl = Config::get('services.paypal.cancel_url') ?? '';
 
         // Set API URL based on mode
         $mode = Config::get('services.paypal.mode', 'sandbox');
         $this->apiBaseUrl = $mode === 'live'
             ? 'https://api-m.paypal.com'
             : 'https://api-m.sandbox.paypal.com';
+    }
+
+    /**
+     * Validate that PayPal credentials are configured.
+     *
+     * @throws \RuntimeException If credentials are missing
+     */
+    protected function validateCredentials(): void
+    {
+        if (empty($this->clientId) || empty($this->clientSecret)) {
+            throw new \RuntimeException('PayPal credentials are not configured.');
+        }
     }
 
     /**
@@ -725,6 +733,9 @@ class PayPalGatewayService implements PaymentGatewayInterface
      */
     protected function getAccessToken(): string
     {
+        // Validate credentials before making API call
+        $this->validateCredentials();
+
         // Return cached token if still valid
         if ($this->accessToken && $this->tokenExpiresAt && time() < $this->tokenExpiresAt) {
             return $this->accessToken;
