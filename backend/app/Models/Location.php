@@ -13,6 +13,12 @@ namespace App\Models;
 class Location extends BusinessLocation
 {
     /**
+     * The table associated with the model.
+     * Explicitly set to match parent class table.
+     */
+    protected $table = 'business_locations';
+
+    /**
      * The attributes that should be accessed via aliases.
      */
     protected $appends = ['gbp_location_id', 'is_gbp_connected'];
