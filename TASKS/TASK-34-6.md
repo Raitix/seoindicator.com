@@ -1,7 +1,7 @@
 # TASK-34-6: Project CRUD API Endpoints
 
 ## STATUS
-`To Document`
+`Done`
 
 ---
 
