@@ -37,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(append: [
             \App\Http\Middleware\SetProjectContext::class,
             \App\Http\Middleware\RequestTrackingMiddleware::class,
+            \App\Http\Middleware\RequestLoggingMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
