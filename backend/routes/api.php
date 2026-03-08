@@ -91,6 +91,14 @@ Route::prefix('v1')->middleware(['api-key.auth', 'api-key.ratelimit'])->group(fu
 
     // Reports API (TASK-6-11)
     Route::post('reports', [ReportsApiController::class, 'store'])->middleware('api-key.auth:reports:write');
+
+    // Webhooks API (TASK-6-13)
+    Route::get('webhooks', [\App\Http\Controllers\Api\V1\WebhookController::class, 'index'])->middleware('api-key.auth:webhooks:read');
+    Route::post('webhooks', [\App\Http\Controllers\Api\V1\WebhookController::class, 'store'])->middleware('api-key.auth:webhooks:write');
+    Route::get('webhooks/{id}', [\App\Http\Controllers\Api\V1\WebhookController::class, 'show'])->middleware('api-key.auth:webhooks:read');
+    Route::put('webhooks/{id}', [\App\Http\Controllers\Api\V1\WebhookController::class, 'update'])->middleware('api-key.auth:webhooks:write');
+    Route::delete('webhooks/{id}', [\App\Http\Controllers\Api\V1\WebhookController::class, 'destroy'])->middleware('api-key.auth:webhooks:write');
+    Route::post('webhooks/{id}/test', [\App\Http\Controllers\Api\V1\WebhookController::class, 'test'])->middleware('api-key.auth:webhooks:write');
 });
 
 /*
@@ -407,13 +415,11 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
         Route::get('/alerts', [\App\Http\Controllers\Api\V1\Admin\HealthController::class, 'alerts']);
     });
 
-    // Webhooks Management (TASK-6-13)
-    Route::get('webhooks', [\App\Http\Controllers\Api\V1\WebhookController::class, 'index']);
-    Route::post('webhooks', [\App\Http\Controllers\Api\V1\WebhookController::class, 'store']);
-    Route::get('webhooks/{id}', [\App\Http\Controllers\Api\V1\WebhookController::class, 'show']);
-    Route::put('webhooks/{id}', [\App\Http\Controllers\Api\V1\WebhookController::class, 'update']);
-    Route::delete('webhooks/{id}', [\App\Http\Controllers\Api\V1\WebhookController::class, 'destroy']);
-    Route::post('webhooks/{id}/test', [\App\Http\Controllers\Api\V1\WebhookController::class, 'test']);
+    // API Key Management (TASK-6-4)
+    Route::get('api-keys', [\App\Http\Controllers\Api\V1\ApiKeyController::class, 'index']);
+    Route::post('api-keys', [\App\Http\Controllers\Api\V1\ApiKeyController::class, 'store']);
+    Route::get('api-keys/{id}', [\App\Http\Controllers\Api\V1\ApiKeyController::class, 'show'])->where('id', '[0-9]+');
+    Route::delete('api-keys/{id}', [\App\Http\Controllers\Api\V1\ApiKeyController::class, 'destroy'])->where('id', '[0-9]+');
 
     // Onboarding (SPEC-017, FEAT-017)
     Route::get('onboarding', [OnboardingController::class, 'index']);
