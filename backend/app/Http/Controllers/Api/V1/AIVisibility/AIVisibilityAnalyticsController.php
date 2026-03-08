@@ -64,13 +64,15 @@ class AIVisibilityAnalyticsController extends Controller
 
         if (!$project) {
             return response()->json([
-                'message' => 'Project not found.',
+                'success' => false,
+                'error' => 'Project not found.',
             ], 404);
         }
 
         if ($project->user_id !== $request->user()->id) {
             return response()->json([
-                'message' => 'You do not have access to this project.',
+                'success' => false,
+                'error' => 'You do not have access to this project.',
             ], 403);
         }
 
@@ -80,14 +82,17 @@ class AIVisibilityAnalyticsController extends Controller
 
         if (!in_array($period, self::VALID_PERIODS)) {
             return response()->json([
+                'success' => false,
+                'error' => 'Invalid period. Must be one of: day, week, month.',
                 'message' => 'Invalid period. Must be one of: day, week, month.',
-            ], 400);
+            ], 422);
         }
 
         if ($platform !== null && !in_array($platform, self::VALID_PLATFORMS)) {
             return response()->json([
-                'message' => 'Invalid platform. Must be one of: ' . implode(', ', self::VALID_PLATFORMS) . '.',
-            ], 400);
+                'success' => false,
+                'error' => 'Invalid platform. Must be one of: ' . implode(', ', self::VALID_PLATFORMS) . '.',
+            ], 422);
         }
 
         // Check ETag for cache validation
@@ -104,8 +109,10 @@ class AIVisibilityAnalyticsController extends Controller
             return response()->json(null, 304);
         }
 
-        return response()->json($data)
-            ->header('ETag', $etag);
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ])->header('ETag', $etag);
     }
 
     /**
@@ -124,13 +131,15 @@ class AIVisibilityAnalyticsController extends Controller
 
         if (!$project) {
             return response()->json([
-                'message' => 'Project not found.',
+                'success' => false,
+                'error' => 'Project not found.',
             ], 404);
         }
 
         if ($project->user_id !== $request->user()->id) {
             return response()->json([
-                'message' => 'You do not have access to this project.',
+                'success' => false,
+                'error' => 'You do not have access to this project.',
             ], 403);
         }
 
@@ -146,8 +155,10 @@ class AIVisibilityAnalyticsController extends Controller
             return response()->json(null, 304);
         }
 
-        return response()->json($data)
-            ->header('ETag', $etag);
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ])->header('ETag', $etag);
     }
 
     /**
@@ -166,13 +177,15 @@ class AIVisibilityAnalyticsController extends Controller
 
         if (!$project) {
             return response()->json([
-                'message' => 'Project not found.',
+                'success' => false,
+                'error' => 'Project not found.',
             ], 404);
         }
 
         if ($project->user_id !== $request->user()->id) {
             return response()->json([
-                'message' => 'You do not have access to this project.',
+                'success' => false,
+                'error' => 'You do not have access to this project.',
             ], 403);
         }
 
@@ -181,16 +194,18 @@ class AIVisibilityAnalyticsController extends Controller
 
         if (!is_numeric($days) || (int) $days < 1) {
             return response()->json([
-                'message' => 'Invalid days parameter. Must be a positive integer.',
-            ], 400);
+                'success' => false,
+                'error' => 'Invalid days parameter. Must be a positive integer.',
+            ], 422);
         }
 
         $days = (int) $days;
 
         if ($days > self::MAX_TREND_DAYS) {
             return response()->json([
-                'message' => 'Days parameter exceeds maximum of ' . self::MAX_TREND_DAYS . '.',
-            ], 400);
+                'success' => false,
+                'error' => 'Days parameter exceeds maximum of ' . self::MAX_TREND_DAYS . '.',
+            ], 422);
         }
 
         // Get trend data with caching
@@ -205,8 +220,10 @@ class AIVisibilityAnalyticsController extends Controller
             return response()->json(null, 304);
         }
 
-        return response()->json($data)
-            ->header('ETag', $etag);
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ])->header('ETag', $etag);
     }
 
     /**
@@ -225,13 +242,15 @@ class AIVisibilityAnalyticsController extends Controller
 
         if (!$project) {
             return response()->json([
-                'message' => 'Project not found.',
+                'success' => false,
+                'error' => 'Project not found.',
             ], 404);
         }
 
         if ($project->user_id !== $request->user()->id) {
             return response()->json([
-                'message' => 'You do not have access to this project.',
+                'success' => false,
+                'error' => 'You do not have access to this project.',
             ], 403);
         }
 
@@ -242,16 +261,18 @@ class AIVisibilityAnalyticsController extends Controller
 
         if (!is_numeric($page) || (int) $page < 1) {
             return response()->json([
-                'message' => 'Invalid page parameter. Must be a positive integer.',
-            ], 400);
+                'success' => false,
+                'error' => 'Invalid page parameter. Must be a positive integer.',
+            ], 422);
         }
 
         $page = (int) $page;
 
         if ($platform !== null && !in_array($platform, self::VALID_PLATFORMS)) {
             return response()->json([
-                'message' => 'Invalid platform. Must be one of: ' . implode(', ', self::VALID_PLATFORMS) . '.',
-            ], 400);
+                'success' => false,
+                'error' => 'Invalid platform. Must be one of: ' . implode(', ', self::VALID_PLATFORMS) . '.',
+            ], 422);
         }
 
         // Get queries data with caching
@@ -266,8 +287,11 @@ class AIVisibilityAnalyticsController extends Controller
             return response()->json(null, 304);
         }
 
-        return response()->json($data)
-            ->header('ETag', $etag);
+        return response()->json([
+            'success' => true,
+            'data' => $data['data'] ?? $data,
+            'meta' => $data['meta'] ?? [],
+        ])->header('ETag', $etag);
     }
 
     /**
