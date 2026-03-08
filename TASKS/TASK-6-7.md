@@ -37,10 +37,10 @@ X-RateLimit-Reset: 1708368300  # Unix timestamp when window resets
 - Add to response object
 
 ## Acceptance Criteria
-- [ ] Headers present in responses
-- [ ] Accurate limit/remaining values
-- [ ] Correct reset timestamp
-- [ ] Works with rate limiter
+- [x] Headers present in responses - Tests: HD-001 to HD-007
+- [x] Accurate limit/remaining values - Tests: HD-001, HD-002, HD-006, HD-007
+- [x] Correct reset timestamp - Tests: HD-003
+- [x] Works with rate limiter - Tests: MI-001 to MI-008
 
 ## Dependencies
 - TASK-6-5 (Rate limiter middleware)
