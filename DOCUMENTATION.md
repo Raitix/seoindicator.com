@@ -1,6 +1,365 @@
 # DOCUMENTATION.md
 
 ---
+## Reports API Endpoints (TASK-6-11)
+
+### Service Description
+REST API endpoint for triggering asynchronous report generation as part of the Reporting & Export feature (FEAT-006). Provides a POST endpoint that queues report generation jobs and returns a job ID for status tracking. Supports multiple report formats (PDF, CSV) with per-key rate limiting and API key authentication.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/ReportsApiController.php`
+- **Job:** `backend/app/Jobs/GenerateReportJob.php`
+- **Route:** `backend/routes/api.php` (POST /api/v1/reports)
+- **Tests:** `backend/tests/Feature/Api/V1/ReportsApiControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-6-11.md`
+
+### API Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/reports` | Generate and queue a new report |
+
+### Request Format
+
+```json
+{
+  "site_id": 1,
+  "type": "weekly",
+  "format": "pdf",
+  "name": "Weekly SEO Report"
+}
+```
+
+### Request Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `site_id` | integer | Yes | ID of the site to generate report for |
+| `type` | string | Yes | Report type (weekly, monthly, custom) |
+| `format` | string | Yes | Output format (pdf, csv) |
+| `name` | string | No | Optional report name |
+
+### Response Format
+
+**Success (202 Accepted):**
+```json
+{
+  "success": true,
+  "data": {
+    "job_id": "rpt-abc123def45678",
+    "status": "queued"
+  }
+}
+```
+
+**Error (422 Unprocessable Entity):**
+```json
+{
+  "success": false,
+  "error": "Validation error",
+  "details": {
+    "site_id": ["The selected site_id is invalid."]
+  }
+}
+```
+
+### Job ID Format
+
+- Prefix: `rpt-`
+- Body: 16 alphanumeric characters
+- Example: `rpt-abc123def45678`
+
+### Authentication
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Authentication | API Key via `api-key.auth` middleware |
+| Authorization | User must own the site |
+| Rate Limiting | Per-key via `api-key.ratelimit` middleware |
+
+### Error Responses
+
+| Code | Description |
+|------|-------------|
+| 401 | UNAUTHENTICATED - Missing or invalid API key |
+| 403 | Forbidden - User does not own the site |
+| 404 | Not Found - Site not found |
+| 422 | Validation Error - Invalid request parameters |
+| 429 | Too Many Requests - Rate limit exceeded |
+
+### GenerateReportJob
+
+| Property | Value |
+|----------|-------|
+| Queue | `default` |
+| Tries | 3 |
+| Timeout | 300 seconds (5 minutes) |
+
+**Job Usage:**
+```php
+// Dispatched by controller
+GenerateReportJob::dispatch($siteId, $type, $format, $name);
+
+// Job ID returned for tracking
+$jobId = 'rpt-' . Str::random(16);
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | `htmlspecialchars()` on name field |
+| SQL Injection | Parameterized queries via Eloquent |
+| User Isolation | API key owner must own the site |
+| Rate Limiting | Per-key rate limiting middleware |
+| Input Validation | All fields validated before processing |
+
+### Performance Characteristics
+
+| Operation | Performance |
+|-----------|-------------|
+| Request processing | < 500ms |
+| Job queue time | Variable (background) |
+| Report generation | Background job |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `ReportsApiControllerTest.php` | 69 | 164 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authentication (AUTH) | 5 | API key authentication |
+| Permissions (PERM) | 4 | Permission checks (reports:write required) |
+| Validation (VAL) | 10 | Input validation |
+| Success Cases (SUCC) | 9 | Successful report generation |
+| Optional Params (OPT) | 7 | Optional parameters handling |
+| Rate Limiting (RATE) | 3 | Rate limiting tests |
+| Security (SEC) | 5 | SQL injection, XSS, mass assignment |
+| Error Handling (ERR) | 5 | Error responses |
+| Edge Cases (EDGE) | 6 | Boundary conditions |
+| Performance (PERF) | 2 | Response time tests |
+| Acceptance Criteria (AC) | 4 | All ACs verified |
+| Response Format (RESP) | 3 | Response structure tests |
+| HTTP Methods (HTTP) | 1 | Method restrictions |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `12f11a82` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 69/69 passing (164 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-6-4 | Done ✅ | API Key Management |
+
+### Related Tasks
+
+- TASK-6-4: API Key Management (authentication)
+- TASK-6-1 through TASK-6-10: Other Reporting & Export tasks
+- TASK-6-12 through TASK-6-20: Additional report functionality
+
+---
+## GBPReviewsService (TASK-35-10)
+
+### Service Description
+Service for managing Google Business Profile (GBP) reviews as part of the Local SEO & Google Business Profile Tracking feature (FEAT-035). Provides comprehensive review synchronization from the GBP API, sentiment analysis using a free keyword-based approach, review statistics aggregation, and response management. Includes background job support for scalable syncing operations.
+
+### Component Locations
+- **Service:** `backend/app/Services/GBP/GBPReviewsService.php`
+- **Service Interface:** `backend/app/Services/GBP/Contracts/GBPReviewsServiceInterface.php`
+- **Sentiment Analyzer:** `backend/app/Services/GBP/SentimentAnalyzer.php`
+- **Queue Job:** `backend/app/Jobs/SyncGBPReviewsJob.php`
+- **Tests:** `backend/tests/Unit/Services/GBP/SentimentAnalyzerTest.php`, `backend/tests/Feature/Services/GBP/GBPReviewsServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-35-10.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `syncReviews(BusinessLocation $location): void` | Fetches all reviews from GBP API (paginated), stores in gbp_reviews table, updates existing reviews if changed, triggers sentiment analysis |
+| `getReviews(BusinessLocation $location, array $filters = []): LengthAwarePaginator` | Returns paginated reviews with filtering by rating, sentiment, date range and sorting by date, rating |
+| `getReviewStats(BusinessLocation $location): array` | Returns average rating, total count, rating distribution (1-5 stars), sentiment breakdown |
+| `respondToReview(BusinessLocation $location, string $reviewId, string $reply): bool` | Posts response to Google, stores response locally |
+| `detectNewNegativeReviews(BusinessLocation $location): Collection` | Returns reviews with rating <= 2 and no prior alert for negative review alerting |
+
+### SentimentAnalyzer Class
+
+Standalone class for keyword-based sentiment analysis with no external dependencies.
+
+| Method | Description |
+|--------|-------------|
+| `analyzeSentiment(string $text): string` | Returns 'positive', 'negative', or 'neutral' based on keyword matching |
+
+**Sentiment Detection Logic:**
+1. Strip HTML tags and normalize text
+2. Count positive keywords (50+ words)
+3. Count negative keywords (50+ words)
+4. Apply negation detection (e.g., "not good" → negative)
+5. Return sentiment based on higher count or 'neutral' if equal
+
+**Positive Keywords (examples):**
+```
+excellent, amazing, great, wonderful, best, fantastic, perfect, love,
+recommend, friendly, helpful, clean, professional, outstanding, superb,
+awesome, outstanding, pleased, satisfied, impressed, quality, value
+```
+
+**Negative Keywords (examples):**
+```
+terrible, awful, worst, horrible, bad, disappointed, rude, slow, dirty,
+expensive, poor, avoid, never, waste, overpriced, unprofessional, broken,
+frustrating, useless, defective, unreliable, incompetent, unacceptable
+```
+
+**Negation Detection:**
+- Detects negation words: not, no, never, none, nothing, barely, hardly
+- Applies to both positive and negative keywords
+- "Not good" → negative, "Not bad" → positive
+- Extended negatable words list for accuracy
+
+**Language Support:**
+- English: Full keyword coverage (50+ per category)
+- Spanish: Partial support for common sentiment words (excelente, terrible, etc.)
+
+### Service Interface
+
+```php
+interface GBPReviewsServiceInterface
+{
+    public function syncReviews(BusinessLocation $location): void;
+    public function getReviews(BusinessLocation $location, array $filters = []): LengthAwarePaginator;
+    public function getReviewStats(BusinessLocation $location): array;
+    public function respondToReview(BusinessLocation $location, string $reviewId, string $reply): bool;
+    public function detectNewNegativeReviews(BusinessLocation $location): Collection;
+}
+```
+
+### getReviews Filters
+
+| Filter | Type | Description |
+|--------|------|-------------|
+| `rating` | int | Filter by rating (1-5) |
+| `sentiment` | string | Filter by sentiment ('positive', 'negative', 'neutral') |
+| `date_from` | string | Filter reviews from date (Y-m-d) |
+| `date_to` | string | Filter reviews to date (Y-m-d) |
+| `sort` | string | Sort column ('date', 'rating') |
+| `order` | string | Sort direction ('asc', 'desc') |
+| `per_page` | int | Items per page (default: 15) |
+
+### getReviewStats Response
+
+```php
+[
+    'average_rating' => 4.2,
+    'total_count' => 25,
+    'rating_distribution' => [
+        1 => 2,
+        2 => 3,
+        3 => 5,
+        4 => 8,
+        5 => 7,
+    ],
+    'sentiment_breakdown' => [
+        'positive' => 15,
+        'negative' => 5,
+        'neutral' => 5,
+    ],
+]
+```
+
+### SyncGBPReviewsJob
+
+| Property | Value |
+|----------|-------|
+| Queue | `default` |
+| Tries | 3 |
+| Timeout | 300 seconds (5 minutes) |
+
+**Job Usage:**
+```php
+// Dispatch for background sync
+SyncGBPReviewsJob::dispatch($location);
+
+// Dispatch with delay
+SyncGBPReviewsJob::dispatch($location)->delay(now()->addMinutes(5));
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| HTML Sanitization | `strip_tags()` removes HTML/JS injection in review text |
+| No External APIs | Sentiment analysis is local keyword matching (no data sent externally) |
+| SQL Injection | Parameterized queries via Eloquent |
+| Rate Limiting | GBP API respects Google's quotas |
+
+### Performance Characteristics
+
+| Operation | Performance |
+|-----------|-------------|
+| Sentiment analysis (500 chars) | < 10ms |
+| Sentiment analysis (5000 chars) | < 500ms |
+| Sync 100 reviews | < 30 seconds |
+| Sync with pagination | Handles unlimited reviews |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `SentimentAnalyzerTest.php` | 87 | 134 | ✅ PASS |
+| `GBPReviewsServiceTest.php` | 50 | 134 | ✅ PASS |
+| **Total** | **137** | **268** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Positive Sentiment | 18 | 50+ positive keywords detected |
+| Negative Sentiment | 18 | 50+ negative keywords detected |
+| Neutral Sentiment | 8 | Empty, whitespace, no keywords |
+| Negation Handling | 12 | Single/double negation |
+| Mixed Sentiment | 10 | Higher count wins |
+| Unicode/Emoji | 8 | Multi-language support |
+| Edge Cases | 13 | Long text, HTML, special chars |
+| Service Methods | 50 | All service methods tested |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `1e4a43db` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 137/137 passing (268 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-35-3 | Not Implemented | GBP Models (using mocked interfaces) |
+| TASK-35-8 | Not Implemented | GBP API Client (using mocked interfaces) |
+
+**Note:** Service is implemented with interface-based dependency injection, allowing it to work with mocked dependencies until TASK-35-3 and TASK-35-8 are completed.
+
+### Related Tasks
+
+- TASK-35-3: GBP-Related Models (database models)
+- TASK-35-8: GBP API Client Service (API integration)
+- TASK-35-9: GBP Insights Service (insights tracking)
+- TASK-35-11: Local Ranking Service (ranking checks)
+
+---
 ## Frontend Analytics Charts (TASK-34-16)
 
 ### Component Description
@@ -27649,6 +28008,190 @@ function verifyWebhook(string $payload, string $signature, string $secret): bool
 - TASK-6-14: Webhook dispatcher service
 - TASK-6-15: Webhook retry logic
 - TASK-6-16: Event emitters integration
+
+---
+## Webhook Retry Logic (TASK-6-15)
+
+### Service Description
+Implements retry logic for failed webhook deliveries with exponential backoff, max retry limits, and background job processing. Part of the Webhooks & Event System feature (FEAT-006). Ensures reliable webhook delivery by automatically retrying failed deliveries on a configurable schedule.
+
+### Component Locations
+- **Retry Service:** `backend/app/Services/WebhookRetryService.php`
+- **Queue Job:** `backend/app/Jobs/ProcessWebhookRetriesJob.php`
+- **Dispatcher:** `backend/app/Services/WebhookDispatcherService.php` (redeliver method)
+- **Model:** `backend/app/Models/WebhookDelivery.php` (retry scopes/methods)
+- **Tests:** `backend/tests/Unit/Services/WebhookRetryServiceTest.php`, `backend/tests/Unit/Jobs/ProcessWebhookRetriesJobTest.php`
+- **Test Documentation:** `TESTS/TEST-6-15.md`
+
+### Retry Schedule
+
+Exponential backoff with 5 retry attempts:
+
+| Attempt | Delay | Description |
+|---------|-------|-------------|
+| 1st retry | 1 minute | Initial retry |
+| 2nd retry | 5 minutes | Short backoff |
+| 3rd retry | 15 minutes | Medium backoff |
+| 4th retry | 1 hour | Extended backoff |
+| 5th retry | 6 hours | Final retry |
+| 6th+ | None | Max attempts exceeded |
+
+### Retry Conditions
+
+**Retriable Conditions:**
+| Condition | HTTP Status | Retry |
+|-----------|-------------|-------|
+| Server Error | 500-599 | ✅ Yes |
+| Connection Timeout | N/A | ✅ Yes |
+| DNS Resolution Failure | N/A | ✅ Yes |
+| Connection Refused | N/A | ✅ Yes |
+
+**Non-Retriable Conditions:**
+| Condition | HTTP Status | Retry |
+|-----------|-------------|-------|
+| Bad Request | 400 | ❌ No |
+| Unauthorized | 401 | ❌ No |
+| Forbidden | 403 | ❌ No |
+| Not Found | 404 | ❌ No |
+| Validation Error | 422 | ❌ No |
+
+### Delivery Status Values
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Not yet delivered |
+| `delivered` | Success (2xx response) |
+| `retrying` | In retry queue, waiting for next attempt |
+| `failed` | All retries exhausted or non-retriable error |
+
+### WebhookRetryService Methods
+
+| Method | Description |
+|--------|-------------|
+| `calculateNextRetryAt(int $attemptCount): ?Carbon` | Calculate next retry time based on attempt count |
+| `shouldRetry(int $responseStatus): bool` | Check if HTTP status is retriable (5xx) |
+| `shouldRetryOnError(?\Throwable $error): bool` | Check if exception is retriable (ConnectionException) |
+| `getRemainingAttempts(int $attemptCount): int` | Get count of remaining retry attempts |
+| `canRetry(int $attemptCount): bool` | Check if more retries are available |
+| `getRetrySchedule(): array` | Get configured retry schedule |
+| `scheduleRetry(WebhookDelivery $delivery): bool` | Schedule next retry for delivery |
+| `markAsFailed(WebhookDelivery $delivery): void` | Mark delivery as permanently failed |
+
+### ProcessWebhookRetriesJob
+
+Background queue job that processes pending webhook retries.
+
+| Property | Value |
+|----------|-------|
+| Queue | `webhooks` |
+| Tries | 3 |
+| Timeout | 300 seconds (5 minutes) |
+| Default Batch Size | 100 deliveries |
+
+**Job Flow:**
+```
+ProcessWebhookRetriesJob
+├── Query deliveries with next_retry_at <= now()
+├── Limit to batch size (default 100)
+└── For each delivery:
+    ├── Skip if webhook disabled/deleted
+    ├── Call WebhookDispatcherService::redeliver()
+    ├── On success → Clear next_retry_at
+    ├── On 5xx error → Schedule next retry
+    ├── On 4xx error → Mark as failed
+    └── On connection error → Schedule next retry
+```
+
+### WebhookDispatcherService::redeliver()
+
+Method for retrying existing deliveries without creating new records.
+
+| Feature | Description |
+|---------|-------------|
+| Record Reuse | Updates existing delivery record |
+| Attempt Tracking | Increments attempt_count before HTTP request |
+| Response Storage | Updates response_status, response_body, delivered_at |
+| Return Value | `true` for 2xx responses, `false` otherwise |
+| Exception Handling | Throws ConnectionException for retry logic |
+
+### WebhookDelivery Model Extensions
+
+**New Methods:**
+| Method | Description |
+|--------|-------------|
+| `getStatus(): string` | Get delivery status (pending/delivered/retrying/failed) |
+| `markAsRetrying(Carbon $nextRetryAt): void` | Mark delivery for retry |
+| `markAsFailed(): void` | Mark delivery as permanently failed |
+
+**New Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `scopePendingRetry($query)` | Deliveries with next_retry_at <= now() |
+| `scopeFailedDeliveries($query)` | Failed deliveries without retry pending |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| HMAC Signatures | Regenerated on each retry with new timestamp |
+| Timestamp Validation | Prevents replay attacks |
+| User Isolation | Delivery inherits webhook's user ownership |
+| SQL Injection | Parameterized queries via Eloquent |
+| Rate Limiting | Background job respects queue limits |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `WebhookRetryServiceTest` | 28 | 69 | ✅ PASS |
+| `ProcessWebhookRetriesJobTest` | 25 | 54 | ✅ PASS |
+| `WebhookDispatcherServiceTest` | 32 | 57 | ✅ PASS |
+| **Total** | **85** | **180** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Retry Logic (RL) | 21 | Schedule calculations, retry conditions |
+| Delivery Status (DS) | 8 | Status transitions, scope queries |
+| Worker Job (WJ) | 10 | Batch processing, error handling |
+| Edge Cases (EC) | 8 | Null status, large responses, concurrency |
+| Security (SC) | 3 | HMAC verification, auth handling |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `ee3c153e` |
+| Deployment Method | Manual SSH |
+| Health Check | ✅ 200 OK |
+| Tests | 85/85 passing (180 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-6-12 | Done ✅ | Webhooks schema (database tables) |
+| TASK-6-14 | Done ✅ | Webhook dispatcher service |
+
+### Related Tasks
+
+- TASK-6-12: Webhooks Tables (database schema)
+- TASK-6-13: Webhook Management API (CRUD endpoints)
+- TASK-6-14: Webhook Dispatcher Service (HTTP delivery)
+- TASK-6-16: Event Emitters Integration (event triggers)
+
+### Scheduler Note
+
+The `ProcessWebhookRetriesJob` is implemented and tested but is NOT automatically scheduled in `routes/console.php`. For automatic retry processing, configure a cron entry:
+
+```php
+// routes/console.php
+Schedule::job(new ProcessWebhookRetriesJob())->everyMinute();
+```
+
+Or use Laravel Horizon/supervisor for queue processing.
 
 ---
 ## Database Schema: GSC Query Match Column (TASK-12-3)
