@@ -10,6 +10,16 @@ import * as React from 'react';
 import { ComparisonPageClient } from './page.client';
 
 // ============================================
+// Static Export Compatibility
+// ============================================
+
+// Required for static export with dynamic routes
+// Returns empty array since this is a client-rendered page
+export function generateStaticParams() {
+  return [];
+}
+
+// ============================================
 // Metadata (exported for Next.js - Server Component)
 // ============================================
 
