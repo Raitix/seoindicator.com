@@ -7,7 +7,6 @@ use App\Models\AIVisibilityProject;
 use App\Services\AIVisibility\Contracts\AlertDetectionServiceInterface;
 use App\Services\AIVisibility\Contracts\AnalyticsAggregatorInterface;
 use App\Services\AIVisibility\Events\AIVisibilityAlertTriggered;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 
@@ -321,29 +320,19 @@ class AlertDetectionService implements AlertDetectionServiceInterface
             return $existing;
         }
         
-        // Create new alert
-        $alert = DB::transaction(function () use (
-            $projectId,
-            $alertType,
-            $threshold,
-            $previousValue,
-            $currentValue,
-            $changePercent,
-            $metadata
-        ) {
-            return AIVisibilityAlert::create([
-                'project_id' => $projectId,
-                'alert_type' => $alertType,
-                'threshold' => $threshold,
-                'previous_value' => $previousValue,
-                'current_value' => $currentValue,
-                'change_percent' => $changePercent,
-                'triggered_at' => now(),
-                'is_read' => false,
-                'is_resolved' => false,
-                'metadata' => $metadata,
-            ]);
-        });
+        // Create new alert (direct create to avoid nested transaction issues with SQLite)
+        $alert = AIVisibilityAlert::create([
+            'project_id' => $projectId,
+            'alert_type' => $alertType,
+            'threshold' => $threshold,
+            'previous_value' => $previousValue,
+            'current_value' => $currentValue,
+            'change_percent' => $changePercent,
+            'triggered_at' => now(),
+            'is_read' => false,
+            'is_resolved' => false,
+            'metadata' => $metadata,
+        ]);
         
         Log::info('Alert created', [
             'alert_id' => $alert->id,

@@ -13,6 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Account;
 use App\Models\TeamMember;
+use App\Models\AIVisibility\AIVisibilityProject;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -33,6 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at',
         'last_login_at',
         'plan',
+        'ai_visibility_preferences',
     ];
 
     /**
@@ -56,7 +58,16 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'last_login_at' => 'datetime',
+            'ai_visibility_preferences' => 'array',
         ];
+    }
+
+    /**
+     * Get the AI visibility projects for this user.
+     */
+    public function aiVisibilityProjects(): HasMany
+    {
+        return $this->hasMany(AIVisibilityProject::class);
     }
 
     /**
