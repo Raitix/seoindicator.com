@@ -684,6 +684,185 @@ interface BadgesResponse {
 - TASK-33-28: Public Audit Analytics (analytics data source)
 
 ---
+## PublicAuditAnalyticsService (TASK-33-28)
+
+### Service Description
+Analytics aggregation service for the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033) that provides comprehensive analytics data including views, leads, and badge impressions. Powers the analytics dashboard for audit owners to track public audit engagement and lead generation.
+
+### Component Location
+- **Service:** `backend/app/Services/Audit/PublicAuditAnalyticsService.php`
+- **Controller:** `backend/app/Http/Controllers/Api/V1/AuditAnalyticsController.php`
+- **Tests:** `backend/tests/Unit/Services/Audit/PublicAuditAnalyticsServiceTest.php` (94 tests)
+- **Tests:** `backend/tests/Feature/Api/V1/AuditAnalyticsControllerTest.php` (85 tests)
+- **Test Documentation:** `TESTS/TEST-33-28.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `getAnalytics(auditId, start, end, nocache)` | Get full analytics for an audit |
+| `clearCache(auditId)` | Clear cached analytics for an audit |
+| `aggregateViews(auditId, start, end)` | Aggregate view analytics |
+| `aggregateLeads(auditId, start, end)` | Aggregate lead capture analytics |
+| `aggregateBadges(auditId, start, end)` | Aggregate badge impression/click analytics |
+| `normalizeDateRange(start, end)` | Validate and normalize date range |
+
+### API Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/audits/{id}/analytics` | Get analytics for an audit |
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `start` | date (Y-m-d) | Start date filter (default: 30 days ago) |
+| `end` | date (Y-m-d) | End date filter (default: today) |
+| `nocache` | boolean | Bypass cache for fresh data |
+
+### Response Structure
+
+```json
+{
+  "success": true,
+  "data": {
+    "views": {
+      "total": 1234,
+      "unique": 890,
+      "byDay": [{ "date": "2026-03-08", "count": 42 }],
+      "byCountry": [{ "country": "US", "count": 500 }, { "country": "Unknown", "count": 100 }],
+      "byReferrer": [{ "referrer": "google.com", "count": 200 }, { "referrer": "Direct", "count": 150 }]
+    },
+    "leads": {
+      "total": 45,
+      "conversionRate": 0.0365,
+      "byDay": [{ "date": "2026-03-08", "count": 3 }]
+    },
+    "badges": {
+      "impressions": 5678,
+      "clicks": 234,
+      "clickRate": 0.0412,
+      "byTarget": { "audit": 180, "home": 54 },
+      "byDay": [{ "date": "2026-03-08", "impressions": 100, "clicks": 5 }],
+      "byReferrer": [{ "referrer": "example.com", "count": 50 }]
+    },
+    "dateRange": { "start": "2026-02-06", "end": "2026-03-08" }
+  }
+}
+```
+
+### Views Analytics
+
+| Metric | Description |
+|--------|-------------|
+| `total` | Total page views |
+| `unique` | Unique visitors (by IP hash) |
+| `byDay` | Daily breakdown of view counts |
+| `byCountry` | Geographic breakdown (ISO 3166-1 alpha-2) |
+| `byReferrer` | Referrer domain breakdown |
+
+### Leads Analytics
+
+| Metric | Description |
+|--------|-------------|
+| `total` | Total lead captures (email submissions) |
+| `conversionRate` | Leads / Total views (0-1 decimal) |
+| `byDay` | Daily breakdown of lead captures |
+
+### Badge Analytics
+
+| Metric | Description |
+|--------|-------------|
+| `impressions` | Total badge impressions |
+| `clicks` | Total badge clicks |
+| `clickRate` | Clicks / Impressions (0-1 decimal) |
+| `byTarget` | Click breakdown by target (audit/home) |
+| `byDay` | Daily impression/click breakdown |
+| `byReferrer` | Impression breakdown by referrer domain |
+
+### Caching Strategy
+
+| Setting | Value |
+|---------|-------|
+| TTL | 5 minutes (300 seconds) |
+| Cache Key | `audit_analytics:{auditId}:{startDate}:{endDate}` |
+| Bypass | `nocache=true` query parameter |
+| Clear Method | `clearCache(auditId)` |
+
+### Authorization Rules
+
+| Role | Access |
+|------|--------|
+| Site Owner | Full access to own audits |
+| Admin | Full access to all audits |
+| Super Admin | Full access to all audits |
+| Anonymous | 401 Unauthorized |
+| Non-owner | 403 Forbidden |
+
+### Security Features
+
+| Feature | Implementation |
+|---------|----------------|
+| SQL Injection | Parameterized queries via Eloquent |
+| XSS | JSON response encoding |
+| IDOR | Ownership verification via site.user_id |
+| Rate Limiting | `throttle:60,1` middleware |
+| Privacy | No raw IPs or emails in response |
+
+### Performance Optimizations
+
+| Optimization | Description |
+|--------------|-------------|
+| Database Indexes | `idx_audit_id`, `idx_viewed_at`, `idx_impression_at` |
+| Cache TTL | 5-minute cache to reduce DB load |
+| Breakdown Limit | Max 10 items per breakdown array |
+| ISO Country Validation | Pre-defined list of 249 valid codes |
+| Self-referral Filtering | Excludes own domain from referrer breakdown |
+
+### Error Responses
+
+| Code | Description |
+|------|-------------|
+| 401 | Authentication required |
+| 403 | No permission to access audit |
+| 404 | Audit not found |
+| 400 | Invalid date parameters |
+
+### Test Coverage Summary
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| PublicAuditAnalyticsServiceTest | 94 | 149 |
+| AuditAnalyticsControllerTest | 85 | 191 |
+| **Total** | **179** | **340** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `88bb6f36` |
+| Deployment Method | GitHub Actions auto-deploy (run #22818842418) |
+| Health Check | ✅ 200 OK |
+| Tests | 179/179 passing |
+| Status | Complete |
+
+### Database Tables Used
+
+| Table | Purpose |
+|-------|---------|
+| `public_audit_views` | View tracking, lead captures, geographic data |
+| `badge_impressions` | Badge impressions, clicks, referrer tracking |
+| `audits` | Audit ownership, visibility check |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-33-2 | Done ✅ | public_audit_views table |
+| TASK-33-3 | Done ✅ | badge_impressions table |
+
+---
 ## AIQueryEngine Service (TASK-34-3)
 
 ### Service Description
@@ -4121,6 +4300,245 @@ analyze(url, html, options)
 - TASK-31-5: AIAnalysisResponseParser (response parsing)
 - TASK-31-6: OpenRouterClient (AI API calls)
 - TASK-31-13: AnalysisRunnerService (uses AIAnalysisService)
+
+---
+## Badge Analytics Dashboard (TASK-33-29)
+
+### Component Description
+Dashboard component for the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033) that displays badge performance analytics across all public audits. Provides overview cards with key metrics, time-series charts for impressions and clicks, and tables for top referrers and top performing audits. Helps users understand the reach and effectiveness of their embedded badges.
+
+### Component Location
+- **Dashboard Component:** `frontend/components/dashboard/BadgeAnalyticsDashboard.tsx`
+- **Stats Card Component:** `frontend/components/dashboard/BadgeStatsCard.tsx`
+- **Export Index:** `frontend/components/dashboard/index.ts`
+- **Tests:** `frontend/__tests__/components/dashboard/BadgeAnalyticsDashboard.test.tsx`
+- **Test Documentation:** `TESTS/TEST-33-29.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Overview Cards | 3 cards showing Total Impressions, Total Clicks, Avg CTR with change indicators |
+| Impressions Chart | Line chart showing impressions over time (Recharts LineChart) |
+| Clicks Chart | Line chart showing clicks over time (Recharts LineChart) |
+| Top Referrers Table | Table of top referrer domains with impressions, clicks, CTR |
+| Top Audits Table | Table of top performing audits with links to audit pages |
+| Date Range Selector | Presets (7d, 30d, 90d) and custom date range picker |
+| Loading State | Skeleton loading for cards and charts |
+| Error State | Error message with graceful fallback |
+| Empty State | Message when no analytics data available |
+| Responsive Design | Grid layouts and ResponsiveContainer for charts |
+
+### Component Props
+
+```typescript
+interface BadgeAnalyticsDashboardProps {
+  siteId?: string;                    // Optional: Filter by site
+  stats?: BadgeStats;                 // Overview statistics
+  impressionsData?: TimeSeriesPoint[];// Time series data for impressions chart
+  clicksData?: TimeSeriesPoint[];     // Time series data for clicks chart
+  topReferrers?: TopReferrer[];       // Top referrer domains
+  topAudits?: TopAudit[];             // Top performing audits
+  dateRange?: PresetRange;            // Selected date range preset
+  customDateRange?: DateRange;        // Custom date range (if preset is "custom")
+  onDateRangeChange?: (range: PresetRange, custom?: DateRange) => void;
+  isLoading?: boolean;                // Loading state
+  error?: string | null;              // Error message
+  className?: string;                 // Additional CSS classes
+}
+
+interface BadgeStats {
+  totalImpressions: number;
+  totalClicks: number;
+  avgCTR: number;
+  impressionsChange?: number;         // Percentage change
+  clicksChange?: number;              // Percentage change
+  ctrChange?: number;                 // Percentage change
+}
+
+interface TimeSeriesPoint {
+  date: string;                       // ISO date string
+  impressions?: number;
+  clicks?: number;
+}
+
+interface TopReferrer {
+  domain: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+}
+
+interface TopAudit {
+  auditId: string;
+  url: string;
+  hash: string;                       // Public audit hash
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  score: number;                      // SEO score (0-100)
+}
+```
+
+### Dashboard Layout
+
+```
+┌─────────────────────────────────────────┐
+│ Badge Analytics            [Date Range] │
+├─────────────────────────────────────────┤
+│ ┌───────┐ ┌───────┐ ┌───────┐           │
+│ │ 5.6K  │ │  234  │ │ 4.2%  │           │
+│ │Impr.  │ │Clicks │ │  CTR  │           │
+│ │+12.5% │ │ +8.3% │ │ -2.1% │           │
+│ └───────┘ └───────┘ └───────┘           │
+├─────────────────────────────────────────┤
+│ [Line Chart: Impressions over time]     │
+├─────────────────────────────────────────┤
+│ [Line Chart: Clicks over time]          │
+├─────────────────────────────────────────┤
+│ Top Referrers          Top Audits       │
+│ 1. example.com (1.2K)  1. abc... (890)  │
+│ 2. test.com (456)      2. def... (456)  │
+│ 3. demo.com (234)      3. ghi... (234)  │
+└─────────────────────────────────────────┘
+```
+
+### Sub-Components
+
+| Component | Description |
+|-----------|-------------|
+| `BadgeStatsCard` | Individual stat card with icon, value, and change indicator |
+| `ImpressionsChart` | Line chart for impressions over time |
+| `ClicksChart` | Line chart for clicks over time |
+| `TopReferrersTable` | Table showing top referrer domains |
+| `TopAuditsTable` | Table showing top performing audits |
+| `DateRangeSelector` | Dropdown with presets and custom date picker |
+
+### BadgeStatsCard Component
+
+```typescript
+interface BadgeStatsCardProps {
+  title: string;                      // Card title (e.g., "Impressions")
+  value: number | string;             // Main value to display
+  change?: number;                    // Percentage change (optional)
+  icon?: React.ReactNode;             // Icon component
+  loading?: boolean;                  // Loading state
+}
+```
+
+**Change Indicators:**
+| Change | Styling |
+|--------|---------|
+| Positive (+) | Green text, TrendingUp icon |
+| Negative (-) | Red text, TrendingDown icon |
+| No change | Gray text |
+
+### Number Formatting
+
+| Value | Formatted |
+|-------|-----------|
+| 1,234 | "1.2K" |
+| 12,345 | "12.3K" |
+| 1,234,567 | "1.2M" |
+| 1,234,567,890 | "1.2B" |
+
+### Chart Configuration
+
+**Recharts Setup:**
+```typescript
+<ResponsiveContainer width="100%" height={300}>
+  <LineChart data={chartData}>
+    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+    <XAxis dataKey="date" stroke="#9CA3AF" />
+    <YAxis stroke="#9CA3AF" />
+    <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
+    <Line type="monotone" dataKey="impressions" stroke="#22C55E" strokeWidth={2} />
+  </LineChart>
+</ResponsiveContainer>
+```
+
+### Date Range Presets
+
+| Preset | Label | Description |
+|--------|-------|-------------|
+| `7d` | Last 7 days | Last 7 days of data |
+| `30d` | Last 30 days | Default, last 30 days |
+| `90d` | Last 90 days | Last 90 days of data |
+| `custom` | Custom | Custom date range picker |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Landmarks | `role="region"`, `aria-label="Badge Analytics Dashboard"` |
+| Table Headers | `<th>` with `scope="col"` |
+| Live Regions | `aria-live` for loading/error states |
+| Keyboard Navigation | Tab through all controls |
+| Focus Indicators | Visible focus ring on all interactive elements |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| URL Sanitization | `truncateUrl()` helper for safe display |
+| Safe Links | Relative URLs for audit links (`/audit/{hash}`) |
+| No Sensitive Data | Only public analytics data displayed |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `BadgeAnalyticsDashboard.test.tsx` | 120 | ✅ PASS |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Rendering | 5 | Dashboard container, title, ARIA |
+| Loading State | 3 | Spinner, skeleton loaders |
+| Error State | 3 | Error message, graceful fallback |
+| Overview Cards | 10 | Stats display, change indicators |
+| Charts Section | 8 | Line charts, data points |
+| Top Referrers Table | 10 | Domain display, sorting |
+| Top Audits Table | 12 | URL display, links, sorting |
+| Date Range Selector | 8 | Presets, custom range |
+| Empty State | 4 | No data scenario |
+| Accessibility | 6 | ARIA, keyboard navigation |
+| Edge Cases | 11 | Large numbers, empty arrays, unicode |
+| Responsive Design | 4 | Grid layouts, chart responsiveness |
+| Security | 4 | XSS prevention, safe links |
+| Helper Functions | 11 | `formatNumber()`, `truncateUrl()` |
+| BadgeStatsCard | 12 | Individual card tests |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | (auto-deployed via GitHub Actions #22819076567) |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 120/120 passing |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-33-28 (Analytics API) | To Test Locally | Badge analytics data source |
+| TASK-33-24 (Badge Management) | Done ✅ | Can embed dashboard as section |
+
+### Integration Points
+
+- **Badge Management Page**: Can be embedded as a section
+- **Dashboard Analytics**: Uses analytics API for data
+- **Audit Pages**: Links from Top Audits table
+
+### Related Tasks
+
+- TASK-33-24: Badge Management Page (dashboard can be embedded)
+- TASK-33-28: Public Audit Analytics API (data source)
 
 ---
 ## AnalysisCacheService (TASK-31-12)
