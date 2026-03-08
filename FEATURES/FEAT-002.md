@@ -756,4 +756,4 @@ Actions:
 - Written completion marker: `FEAT-2.json` (alias)
 - Cleared active-agents entry
 
-**ORCHESTRATOR BUG:** Task file uses "FEAT-2" but actual feature ID is "FEAT-002" (with leading zero). Naming mismatch causes repeated spawns (76+ verifications to date). Feature is complete - no further action required.
+**ORCHESTRATOR BUG:** Task file uses "FEAT-2" but actual feature ID is "FEAT-002" (with leading zero). Naming mismatch causes repeated spawns (78+ verifications to date). Feature is complete - no further action required.
