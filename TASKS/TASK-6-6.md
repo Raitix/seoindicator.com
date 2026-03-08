@@ -1,7 +1,7 @@
 # TASK-6-6: Request Logging
 
 ## Status
-`In Deployment`
+`To Deploy`
 
 ## Priority
 `Medium`
