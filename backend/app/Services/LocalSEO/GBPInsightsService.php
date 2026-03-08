@@ -19,7 +19,7 @@ class GBPInsightsService implements GBPInsightsServiceInterface
      */
     public function getConnectionStatus(int $locationId): bool
     {
-        $location = \App\Models\Location::find($locationId);
+        $location = \App\Models\BusinessLocation::find($locationId);
         return $location?->gbp_connected ?? false;
     }
 

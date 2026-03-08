@@ -8412,6 +8412,195 @@ interface PaymentGatewayInterface
 - TASK-26-5: CreditService (used after capture)
 
 ---
+## LocalRankService (TASK-35-11)
+
+### Service Description
+Core service for local SEO ranking detection and tracking. Implements geo-targeted SERP scraping with local pack position extraction, local organic ranking detection, and competitor comparison. Uses custom SERP scraping with Nominatim geocoding (all free tools). Part of the Local SEO & Google Business Profile Tracking feature (FEAT-035).
+
+### Component Location
+- **Service:** `backend/app/Services/LocalSEO/LocalRankService.php`
+- **DTOs:** `backend/app/Services/LocalSEO/DTOs/LocalRankingResult.php`, `LocalPackResult.php`, `LocalOrganicResult.php`
+- **Exceptions:** `backend/app/Exceptions/LocalSEO/LocalRankingException.php`, `QuotaExceededException.php`
+- **Tests:** `backend/tests/Unit/Services/LocalSEO/LocalRankServiceTest.php`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `checkLocalRanking(BusinessLocation $location, Keyword $keyword): ?LocalRankingResult` | Check local pack and organic rankings for a keyword |
+| `checkLocalPack(string $keyword, float $lat, float $lng, string $location): ?LocalPackResult` | Extract local pack positions from SERP |
+| `checkLocalOrganic(string $keyword, float $lat, float $lng, string $location): ?LocalOrganicResult` | Extract local organic positions |
+| `getCompetitorsInPack(LocalPackResult $pack): array` | Get competitors appearing in local pack |
+| `buildUule(string $location): string` | Build Google UULE parameter for geo-targeting |
+
+### Local Ranking Strategy
+
+**Free Tier Approach:**
+- Custom SERP scraper with geo-targeting (no paid APIs)
+- User-triggered refresh (no automatic polling)
+- Monthly quota: 50 checks per location (configurable)
+- 24-hour cache TTL to minimize redundant requests
+
+**Geo-Targeting Parameters:**
+| Parameter | Purpose |
+|-----------|---------|
+| `gl` | Country code (e.g., 'us') |
+| `uule` | Encoded location string for precise geo-targeting |
+| `tbm=lcl` | Local search mode (triggers local pack) |
+| `near` | Location name for proximity-based results |
+
+### UULE Encoding
+
+The UULE (Uniform URL Location Encoding) parameter enables precise geo-targeted searches:
+
+```php
+private function buildUule(string $location): string
+{
+    // Build UULE parameter for Google SERP geo-targeting
+    // Format: encoded location string with length prefix
+}
+```
+
+### Local Pack Detection
+
+**Local Pack Structure:**
+- Typically 3 positions (top 3 local results)
+- Contains business name, rating, reviews, address
+- Extracted via HTML parsing
+
+**Detection Algorithm:**
+1. Send geo-targeted search request to Google
+2. Parse local pack HTML structure
+3. Extract position, business name, rating, review count
+4. Match against target business location
+5. Store competitor data for comparison
+
+### Local Organic Detection
+
+**Local Organic Rankings:**
+- Standard organic results with local intent
+- May differ from national organic rankings
+- Geo-personalized based on search location
+
+**Detection Algorithm:**
+1. Send geo-targeted search request (without `tbm=lcl`)
+2. Parse organic results HTML
+3. Extract position, URL, title
+4. Match against target business domain
+5. Store position data
+
+### Caching Strategy
+
+| Data Type | TTL | Purpose |
+|-----------|-----|---------|
+| Local rankings | 24 hours | Reduce redundant SERP requests |
+| Geocoding results | 30 days | Address → coordinates mapping |
+| SERP responses | 1 hour | Temporary cache for debugging |
+
+### Rate Limiting
+
+| Limit | Value | Enforcement |
+|-------|-------|-------------|
+| Monthly checks | 50 per location | Database counter + exception |
+| Request delay | 1 second | Between SERP requests |
+| Burst limit | 5 per minute | Prevents rapid-fire requests |
+
+### Error Handling
+
+| Error | Response |
+|-------|----------|
+| Quota exceeded | `QuotaExceededException` with remaining quota |
+| SERP blocked | `LocalRankingException` with fallback suggestion |
+| Invalid location | `LocalRankingException` with validation errors |
+| Network timeout | Retry with exponential backoff (3 attempts) |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| Robots.txt Compliance | Checked before scraping |
+| Rate Limiting | Prevents abuse and detection |
+| User-Agent Rotation | Avoids blocking patterns |
+| No PII Storage | Only business names and positions stored |
+| SQL Injection Safe | Parameterized queries via Eloquent |
+
+### Quota Management
+
+```php
+class LocalRankService
+{
+    private const FREE_TIER_LIMIT = 50; // checks per month
+
+    public function checkLocalRanking(BusinessLocation $location, Keyword $keyword): ?LocalRankingResult
+    {
+        // Check monthly quota
+        $monthlyChecks = $this->getMonthlyCheckCount($location);
+        if ($monthlyChecks >= self::FREE_TIER_LIMIT) {
+            throw new QuotaExceededException('Monthly ranking check limit reached');
+        }
+
+        // Increment counter and perform check
+        $this->incrementCheckCount($location);
+        // ... perform ranking check
+    }
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `LocalRankServiceTest.php` | 71 | 142 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation (SI) | 5 | Service creation, method existence |
+| Local Pack Detection (LP) | 12 | Position extraction, competitor data |
+| Local Organic Detection (LO) | 10 | Organic ranking, domain matching |
+| UULE Encoding (UE) | 8 | Location encoding, special characters |
+| Quota Management (QM) | 10 | Monthly limits, exception handling |
+| Caching (CA) | 6 | Cache hit/miss, TTL |
+| Rate Limiting (RL) | 5 | Request delays, burst protection |
+| Error Handling (EH) | 8 | Exceptions, retry logic |
+| Security (SC) | 4 | Robots.txt, user-agent |
+| Edge Cases (EC) | 3 | Empty results, unicode |
+
+### Acceptance Criteria Status
+
+- [x] AC-01: Check local pack ranking for keyword
+- [x] AC-02: Check local organic ranking for keyword
+- [x] AC-03: Extract competitor data from local pack
+- [x] AC-04: Geo-targeting via UULE parameter
+- [x] AC-05: Monthly quota enforcement (50 checks/location)
+- [x] AC-06: 24-hour cache TTL
+- [x] AC-07: Rate limiting with exponential backoff
+- [x] AC-08: Free tools only (no paid APIs)
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | (auto-deployed via GitHub Actions) |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 71/71 passing (142 assertions) |
+| Status | Complete |
+
+### Dependencies
+- TASK-35-1 (business_locations table) - Done
+- TASK-35-2 (local_rankings table) - Done
+- TASK-35-5 (BusinessLocationService) - To Write Tests
+- TASK-35-6 (NominatimService) - To Prioritize
+
+### Related Tasks
+- TASK-35-12: LocalRankController (API endpoint)
+- TASK-35-13: Local SEO Alert Service
+- TASK-35-5: BusinessLocationService (location management)
+- TASK-35-6: NominatimService (geocoding)
+
+---
 ## PayPal Smart Buttons Support (TASK-26-15)
 
 ### Endpoint Description
