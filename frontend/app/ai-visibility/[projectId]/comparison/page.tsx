@@ -13,10 +13,18 @@ import { ComparisonPageClient } from './page.client';
 // Static Export Compatibility
 // ============================================
 
-// Required for static export with dynamic routes
-// Returns empty array since this is a client-rendered page
+// Disable dynamic params for static export compatibility
+export const dynamicParams = false;
+
+/**
+ * Generate static params for static export compatibility.
+ * Returns a placeholder projectId to satisfy Next.js static export requirement.
+ * The actual projectId lookup is done client-side via ComparisonPageClient.
+ */
 export function generateStaticParams() {
-  return [];
+  // Return a placeholder to satisfy Next.js static export
+  // The client-side component handles actual projectId routing
+  return [{ projectId: '_' }];
 }
 
 // ============================================
