@@ -22,7 +22,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $success
  * @property string|null $error_message
  * @property array $mentions
+ * @property bool $brand_mentioned
+ * @property array $competitor_mentions
+ * @property string|null $query_category
  * @property string|null $sentiment
+ * @property float|null $sentiment_score
  * @property \Illuminate\Support\Carbon|null $queried_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -61,7 +65,11 @@ class AIQueryResult extends Model
         'success',
         'error_message',
         'mentions',
+        'brand_mentioned',
+        'competitor_mentions',
+        'query_category',
         'sentiment',
+        'sentiment_score',
         'queried_at',
     ];
 
@@ -72,7 +80,10 @@ class AIQueryResult extends Model
     {
         return [
             'mentions' => 'array',
+            'brand_mentioned' => 'boolean',
+            'competitor_mentions' => 'array',
             'success' => 'boolean',
+            'sentiment_score' => 'decimal:2',
             'queried_at' => 'datetime',
         ];
     }

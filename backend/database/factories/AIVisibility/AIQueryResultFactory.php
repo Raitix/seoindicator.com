@@ -34,7 +34,11 @@ class AIQueryResultFactory extends Factory
             'success' => true,
             'error_message' => null,
             'mentions' => [],
-            'sentiment' => fake()->randomElement(['positive', 'neutral', 'negative']),
+            'brand_mentioned' => false,
+            'competitor_mentions' => [],
+            'query_category' => fake()->randomElement(['product', 'recommendation', 'comparison', 'general']),
+            'sentiment' => fake()->randomElement(['positive', 'neutral', 'negative', 'mixed']),
+            'sentiment_score' => fake()->randomFloat(2, -1, 1),
             'queried_at' => now(),
         ];
     }
@@ -65,7 +69,7 @@ class AIQueryResultFactory extends Factory
                     'context' => fake()->sentence(),
                 ];
             }
-            return ['mentions' => $mentions];
+            return ['mentions' => $mentions, 'brand_mentioned' => true];
         });
     }
 
@@ -86,6 +90,46 @@ class AIQueryResultFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'sentiment' => $sentiment,
+        ]);
+    }
+
+    /**
+     * Indicate that brand was mentioned.
+     */
+    public function withBrandMentioned(bool $mentioned = true): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'brand_mentioned' => $mentioned,
+        ]);
+    }
+
+    /**
+     * Indicate competitor mentions.
+     */
+    public function withCompetitorMentions(array $competitors): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'competitor_mentions' => $competitors,
+        ]);
+    }
+
+    /**
+     * Indicate a specific query category.
+     */
+    public function withCategory(string $category): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'query_category' => $category,
+        ]);
+    }
+
+    /**
+     * Indicate a specific sentiment score.
+     */
+    public function withSentimentScore(float $score): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'sentiment_score' => $score,
         ]);
     }
 }
