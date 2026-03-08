@@ -69,6 +69,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\AIVisibility\Contracts\AIVisibilityServiceInterface::class,
             \App\Services\AIVisibility\AIVisibilityService::class
         );
+
+        // Analytics Aggregator binding (TASK-34-13, SPEC-034)
+        $this->app->bind(
+            \App\Services\AIVisibility\Contracts\AnalyticsAggregatorInterface::class,
+            \App\Services\AIVisibility\AnalyticsAggregator::class
+        );
     }
 
     /**
