@@ -3,6 +3,7 @@
 namespace App\Services\LocalSEO\Contracts;
 
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 /**
  * @Task TASK-35-14
@@ -28,12 +29,22 @@ interface GBPReviewsServiceInterface
     public function getReviews(int $locationId, array $filters = []): LengthAwarePaginator;
 
     /**
+     * Get new reviews since last sync.
+     *
+     * @param int $locationId
+     * @return Collection
+     */
+    public function getNewReviews(int $locationId): Collection;
+
+    /**
      * Get review statistics for a location
      *
      * @param int $locationId
      * @return array{
      *     average_rating: float,
+     *     previous_rating: float,
      *     total_count: int,
+     *     previous_count: int,
      *     distribution: array<int, int>,
      *     sentiment_breakdown: array<string, int>,
      *     response_rate: float,
@@ -41,6 +52,14 @@ interface GBPReviewsServiceInterface
      * }
      */
     public function getStats(int $locationId): array;
+
+    /**
+     * Alias for getStats (for test compatibility).
+     *
+     * @param int $locationId
+     * @return array
+     */
+    public function getReviewStats(int $locationId): array;
 
     /**
      * Trigger a background sync of reviews from GBP API

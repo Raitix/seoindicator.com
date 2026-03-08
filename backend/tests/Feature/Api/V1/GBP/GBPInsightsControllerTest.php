@@ -2089,4 +2089,9 @@ class GBPInsightsControllerTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $response = $this->getJson("/api/v1/locations/{$location
+        $response = $this->getJson("/api/v1/locations/{$location->id}/insights");
+
+        $response->assertStatus(200)
+            ->assertHeader('X-RateLimit-Limit');
+    }
+}
