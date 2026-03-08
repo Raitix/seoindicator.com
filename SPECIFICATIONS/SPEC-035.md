@@ -1,7 +1,7 @@
 # SPEC-035: Local SEO & Google Business Profile Tracking
 
 ## STATUS
-`To Break Into Tasks`
+`Breaking Into Tasks`
 
 ## FEATURE
 FEAT-035: Local SEO & Google Business Profile Tracking

@@ -1,7 +1,7 @@
 # TASK-6-20: Integration Tests
 
 ## Status
-`To Develop`
+`In Development`
 
 ## Priority
 `Medium`
