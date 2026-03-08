@@ -27,7 +27,7 @@ class AIVisibilityAlertControllerTest extends TestCase
         parent::setUp();
 
         $this->user = User::factory()->create();
-        $this->project = AIVisibilityProject::factory()->for($this->user)->create();
+        $this->project = AIVisibilityProject::factory()->for($this->user, 'user')->create();
     }
 
     // ==========================================
@@ -39,7 +39,7 @@ class AIVisibilityAlertControllerTest extends TestCase
     {
         Sanctum::actingAs($this->user);
 
-        AIVisibilityAlert::factory()->count(5)->for($this->project)->create();
+        AIVisibilityAlert::factory()->count(5)->for($this->project, 'project')->create();
 
         $response = $this->getJson('/api/v1/ai-visibility/alerts');
 
@@ -75,11 +75,11 @@ class AIVisibilityAlertControllerTest extends TestCase
     public function it_only_returns_alerts_for_authenticated_user(): void
     {
         $otherUser = User::factory()->create();
-        $otherProject = AIVisibilityProject::factory()->for($otherUser)->create();
+        $otherProject = AIVisibilityProject::factory()->for($otherUser, 'user')->create();
 
         // Create alerts for both users
-        AIVisibilityAlert::factory()->count(3)->for($this->project)->create();
-        AIVisibilityAlert::factory()->count(5)->for($otherProject)->create();
+        AIVisibilityAlert::factory()->count(3)->for($this->project, 'project')->create();
+        AIVisibilityAlert::factory()->count(5)->for($otherProject, 'project')->create();
 
         Sanctum::actingAs($this->user);
 
@@ -92,10 +92,10 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_filters_by_project_id(): void
     {
-        $project2 = AIVisibilityProject::factory()->for($this->user)->create();
+        $project2 = AIVisibilityProject::factory()->for($this->user, 'user')->create();
 
-        AIVisibilityAlert::factory()->count(3)->for($this->project)->create();
-        AIVisibilityAlert::factory()->count(2)->for($project2)->create();
+        AIVisibilityAlert::factory()->count(3)->for($this->project, 'project')->create();
+        AIVisibilityAlert::factory()->count(2)->for($project2, 'project')->create();
 
         Sanctum::actingAs($this->user);
 
@@ -108,8 +108,8 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_filters_by_is_read(): void
     {
-        AIVisibilityAlert::factory()->count(3)->for($this->project)->create(['is_read' => false]);
-        AIVisibilityAlert::factory()->count(2)->for($this->project)->create(['is_read' => true]);
+        AIVisibilityAlert::factory()->count(3)->for($this->project, 'project')->create(['is_read' => false]);
+        AIVisibilityAlert::factory()->count(2)->for($this->project, 'project')->create(['is_read' => true]);
 
         Sanctum::actingAs($this->user);
 
@@ -122,8 +122,8 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_filters_by_alert_type(): void
     {
-        AIVisibilityAlert::factory()->count(3)->for($this->project)->mentionSpike()->create();
-        AIVisibilityAlert::factory()->count(2)->for($this->project)->mentionDrop()->create();
+        AIVisibilityAlert::factory()->count(3)->for($this->project, 'project')->mentionSpike()->create();
+        AIVisibilityAlert::factory()->count(2)->for($this->project, 'project')->mentionDrop()->create();
 
         Sanctum::actingAs($this->user);
 
@@ -136,9 +136,9 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_sorts_by_triggered_at_desc(): void
     {
-        $alert1 = AIVisibilityAlert::factory()->for($this->project)->create(['triggered_at' => now()->subDays(2)]);
-        $alert2 = AIVisibilityAlert::factory()->for($this->project)->create(['triggered_at' => now()->subDay()]);
-        $alert3 = AIVisibilityAlert::factory()->for($this->project)->create(['triggered_at' => now()]);
+        $alert1 = AIVisibilityAlert::factory()->for($this->project, 'project')->create(['triggered_at' => now()->subDays(2)]);
+        $alert2 = AIVisibilityAlert::factory()->for($this->project, 'project')->create(['triggered_at' => now()->subDay()]);
+        $alert3 = AIVisibilityAlert::factory()->for($this->project, 'project')->create(['triggered_at' => now()]);
 
         Sanctum::actingAs($this->user);
 
@@ -153,8 +153,8 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_returns_unread_count_in_meta(): void
     {
-        AIVisibilityAlert::factory()->count(3)->for($this->project)->create(['is_read' => false]);
-        AIVisibilityAlert::factory()->count(2)->for($this->project)->create(['is_read' => true]);
+        AIVisibilityAlert::factory()->count(3)->for($this->project, 'project')->create(['is_read' => false]);
+        AIVisibilityAlert::factory()->count(2)->for($this->project, 'project')->create(['is_read' => true]);
 
         Sanctum::actingAs($this->user);
 
@@ -167,7 +167,7 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_paginates_results(): void
     {
-        AIVisibilityAlert::factory()->count(25)->for($this->project)->create();
+        AIVisibilityAlert::factory()->count(25)->for($this->project, 'project')->create();
 
         Sanctum::actingAs($this->user);
 
@@ -186,7 +186,7 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_returns_single_alert(): void
     {
-        $alert = AIVisibilityAlert::factory()->for($this->project)->create();
+        $alert = AIVisibilityAlert::factory()->for($this->project, 'project')->create();
 
         Sanctum::actingAs($this->user);
 
@@ -213,8 +213,8 @@ class AIVisibilityAlertControllerTest extends TestCase
     public function it_returns_403_for_other_users_alert(): void
     {
         $otherUser = User::factory()->create();
-        $otherProject = AIVisibilityProject::factory()->for($otherUser)->create();
-        $alert = AIVisibilityAlert::factory()->for($otherProject)->create();
+        $otherProject = AIVisibilityProject::factory()->for($otherUser, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($otherProject, 'project')->create();
 
         Sanctum::actingAs($this->user);
 
@@ -232,7 +232,7 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_marks_alert_as_read(): void
     {
-        $alert = AIVisibilityAlert::factory()->for($this->project)->create(['is_read' => false]);
+        $alert = AIVisibilityAlert::factory()->for($this->project, 'project')->create(['is_read' => false]);
 
         Sanctum::actingAs($this->user);
 
@@ -252,8 +252,8 @@ class AIVisibilityAlertControllerTest extends TestCase
     public function it_returns_403_when_marking_other_users_alert_as_read(): void
     {
         $otherUser = User::factory()->create();
-        $otherProject = AIVisibilityProject::factory()->for($otherUser)->create();
-        $alert = AIVisibilityAlert::factory()->for($otherProject)->create();
+        $otherProject = AIVisibilityProject::factory()->for($otherUser, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($otherProject, 'project')->create();
 
         Sanctum::actingAs($this->user);
 
@@ -279,7 +279,7 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_marks_alert_as_resolved(): void
     {
-        $alert = AIVisibilityAlert::factory()->for($this->project)->create(['is_resolved' => false]);
+        $alert = AIVisibilityAlert::factory()->for($this->project, 'project')->create(['is_resolved' => false]);
 
         Sanctum::actingAs($this->user);
 
@@ -300,7 +300,7 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_sets_resolved_at_timestamp(): void
     {
-        $alert = AIVisibilityAlert::factory()->for($this->project)->create(['is_resolved' => false]);
+        $alert = AIVisibilityAlert::factory()->for($this->project, 'project')->create(['is_resolved' => false]);
 
         Sanctum::actingAs($this->user);
 
@@ -317,8 +317,8 @@ class AIVisibilityAlertControllerTest extends TestCase
     public function it_returns_403_when_resolving_other_users_alert(): void
     {
         $otherUser = User::factory()->create();
-        $otherProject = AIVisibilityProject::factory()->for($otherUser)->create();
-        $alert = AIVisibilityAlert::factory()->for($otherProject)->create();
+        $otherProject = AIVisibilityProject::factory()->for($otherUser, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($otherProject, 'project')->create();
 
         Sanctum::actingAs($this->user);
 
@@ -334,7 +334,7 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_marks_all_unread_alerts_as_read(): void
     {
-        AIVisibilityAlert::factory()->count(5)->for($this->project)->create(['is_read' => false]);
+        AIVisibilityAlert::factory()->count(5)->for($this->project, 'project')->create(['is_read' => false]);
 
         Sanctum::actingAs($this->user);
 
@@ -351,10 +351,10 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_scopes_mark_all_read_by_project(): void
     {
-        $project2 = AIVisibilityProject::factory()->for($this->user)->create();
+        $project2 = AIVisibilityProject::factory()->for($this->user, 'user')->create();
 
-        AIVisibilityAlert::factory()->count(3)->for($this->project)->create(['is_read' => false]);
-        AIVisibilityAlert::factory()->count(2)->for($project2)->create(['is_read' => false]);
+        AIVisibilityAlert::factory()->count(3)->for($this->project, 'project')->create(['is_read' => false]);
+        AIVisibilityAlert::factory()->count(2)->for($project2, 'project')->create(['is_read' => false]);
 
         Sanctum::actingAs($this->user);
 
@@ -372,10 +372,10 @@ class AIVisibilityAlertControllerTest extends TestCase
     public function it_does_not_affect_other_users_alerts(): void
     {
         $otherUser = User::factory()->create();
-        $otherProject = AIVisibilityProject::factory()->for($otherUser)->create();
+        $otherProject = AIVisibilityProject::factory()->for($otherUser, 'user')->create();
 
-        AIVisibilityAlert::factory()->count(3)->for($this->project)->create(['is_read' => false]);
-        AIVisibilityAlert::factory()->count(2)->for($otherProject)->create(['is_read' => false]);
+        AIVisibilityAlert::factory()->count(3)->for($this->project, 'project')->create(['is_read' => false]);
+        AIVisibilityAlert::factory()->count(2)->for($otherProject, 'project')->create(['is_read' => false]);
 
         Sanctum::actingAs($this->user);
 
@@ -396,7 +396,7 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_deletes_alert(): void
     {
-        $alert = AIVisibilityAlert::factory()->for($this->project)->create();
+        $alert = AIVisibilityAlert::factory()->for($this->project, 'project')->create();
 
         Sanctum::actingAs($this->user);
 
@@ -423,8 +423,8 @@ class AIVisibilityAlertControllerTest extends TestCase
     public function it_returns_403_when_deleting_other_users_alert(): void
     {
         $otherUser = User::factory()->create();
-        $otherProject = AIVisibilityProject::factory()->for($otherUser)->create();
-        $alert = AIVisibilityAlert::factory()->for($otherProject)->create();
+        $otherProject = AIVisibilityProject::factory()->for($otherUser, 'user')->create();
+        $alert = AIVisibilityAlert::factory()->for($otherProject, 'project')->create();
 
         Sanctum::actingAs($this->user);
 
@@ -565,7 +565,7 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_handles_already_read_alert(): void
     {
-        $alert = AIVisibilityAlert::factory()->for($this->project)->create(['is_read' => true]);
+        $alert = AIVisibilityAlert::factory()->for($this->project, 'project')->create(['is_read' => true]);
 
         Sanctum::actingAs($this->user);
 
@@ -579,7 +579,7 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_handles_already_resolved_alert(): void
     {
-        $alert = AIVisibilityAlert::factory()->for($this->project)->create(['is_resolved' => true]);
+        $alert = AIVisibilityAlert::factory()->for($this->project, 'project')->create(['is_resolved' => true]);
 
         Sanctum::actingAs($this->user);
 
@@ -606,7 +606,7 @@ class AIVisibilityAlertControllerTest extends TestCase
     /** @test */
     public function it_limits_per_page_to_100(): void
     {
-        AIVisibilityAlert::factory()->count(150)->for($this->project)->create();
+        AIVisibilityAlert::factory()->count(150)->for($this->project, 'project')->create();
 
         Sanctum::actingAs($this->user);
 

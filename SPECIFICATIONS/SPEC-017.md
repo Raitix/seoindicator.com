@@ -629,3 +629,15 @@ Reviewed all Phase 1 completed tasks and verified documentation in DOCUMENTATION
 - Phase 2-4 (TASK-17-8 to TASK-17-20): `To Write Tests` (future development)
 
 Status: Done (Phase 1 MVP complete, documentation verified)
+
+### 2026-03-08 - DocSystemAnalyst
+**Re-verification Complete (17:23 GMT+2)**
+- Task triggered for "SPEC-17" (non-padded) but specification file is "SPEC-017.md" (zero-padded)
+- Specification status: Done (Phase 1 MVP complete)
+- FEAT-017 status: Done
+- Phase 1 tasks (TASK-17-1 through TASK-17-7): All Done
+- Phase 2-4 tasks (TASK-17-8 through TASK-17-20): To Write Tests (future)
+- DOCUMENTATION.md verified at line 16062 (User Onboarding & Activation Flow section)
+- Completion marker written: logs/completed/specification/SPEC-17.json
+- Active-agents entry cleared
+- **ORCHESTRATOR BUG:** 73+ verifications to date due to naming mismatch ("SPEC-17" vs "SPEC-017")

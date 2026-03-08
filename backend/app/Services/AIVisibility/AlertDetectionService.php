@@ -29,20 +29,29 @@ use Illuminate\Support\Facades\Log;
  */
 class AlertDetectionService implements AlertDetectionServiceInterface
 {
-    protected array $thresholds;
-    protected int $deduplicationWindow;
-
     public function __construct(
         protected AnalyticsAggregatorInterface $analyticsAggregator
-    ) {
-        $this->thresholds = config('ai-visibility.alert_thresholds', [
+    ) {}
+
+    /**
+     * Get threshold values from config (reads dynamically)
+     */
+    protected function getThresholds(): array
+    {
+        return config('ai-visibility.alert_thresholds', [
             'mention_spike' => 20,
             'mention_drop' => 20,
             'competitor_gain' => 15,
             'sentiment_change' => 0.30,
         ]);
-        
-        $this->deduplicationWindow = config('ai-visibility.deduplication_window', 86400);
+    }
+
+    /**
+     * Get deduplication window from config (reads dynamically)
+     */
+    protected function getDeduplicationWindow(): int
+    {
+        return config('ai-visibility.deduplication_window', 86400);
     }
 
     /**
@@ -67,7 +76,7 @@ class AlertDetectionService implements AlertDetectionServiceInterface
         }
         
         $changePercent = (($current - $previous) / $previous) * 100;
-        $threshold = (float) ($this->thresholds['mention_spike'] ?? 20);
+        $threshold = (float) ($this->getThresholds()['mention_spike'] ?? 20);
         
         // Only alert on positive changes exceeding threshold
         if ($changePercent < $threshold) {
@@ -112,7 +121,7 @@ class AlertDetectionService implements AlertDetectionServiceInterface
         }
         
         $changePercent = (($current - $previous) / $previous) * 100;
-        $threshold = (float) ($this->thresholds['mention_drop'] ?? 20);
+        $threshold = (float) ($this->getThresholds()['mention_drop'] ?? 20);
         
         // Only alert on negative changes exceeding threshold (more negative than -threshold)
         if ($changePercent > -$threshold) {
@@ -144,7 +153,7 @@ class AlertDetectionService implements AlertDetectionServiceInterface
         }
         
         $brandRate = (float) ($comparison['brand']['mention_rate'] ?? 0);
-        $threshold = (float) ($this->thresholds['competitor_gain'] ?? 15);
+        $threshold = (float) ($this->getThresholds()['competitor_gain'] ?? 15);
         
         $highestGain = null;
         $highestGainPercent = 0;
@@ -212,7 +221,7 @@ class AlertDetectionService implements AlertDetectionServiceInterface
         }
         
         $change = abs($current - $previous);
-        $threshold = (float) ($this->thresholds['sentiment_change'] ?? 0.30);
+        $threshold = (float) ($this->getThresholds()['sentiment_change'] ?? 0.30);
         
         if ($change < $threshold) {
             return null;
@@ -296,7 +305,7 @@ class AlertDetectionService implements AlertDetectionServiceInterface
         $existing = AIVisibilityAlert::where('project_id', $projectId)
             ->where('alert_type', $alertType)
             ->where('is_resolved', false)
-            ->where('triggered_at', '>=', now()->subSeconds($this->deduplicationWindow))
+            ->where('triggered_at', '>=', now()->subSeconds($this->getDeduplicationWindow()))
             ->first();
         
         if ($existing) {

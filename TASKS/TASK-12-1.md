@@ -178,3 +178,20 @@ Verification:
 
 No further action required - task fully closed.
 
+### [2026-03-08 16:28 GMT+2] Agent: DocSystemAnalyst - Re-verification Pass
+Verification:
+- Task status: `Done` ✅
+- DOCUMENTATION.md verified at line 27066 (GSC Connections Table section) ✅
+- Schema: `gsc_connections` table with user_id, site_url, property_url, encrypted tokens, status
+- Security: Token encryption via Laravel encrypted cast, unique constraint on (user_id, property_url)
+- Model: GSCConnection with status helpers, token expiration utilities, query scopes
+- Test coverage: 27 tests, 64 assertions
+- Production deployed: 2026-02-28
+
+Cleanup:
+- Removed stale lock file: `TASK-12-1.lock`
+- Written completion marker: `logs/completed/task/TASK-12-1.json`
+- Cleared active-agents entry
+
+Task fully closed and documented.
+
