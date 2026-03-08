@@ -50,13 +50,13 @@ interface AnalyticsAggregatorInterface
     public function calculateShareOfVoice(int $projectId, string $period = 'week'): array;
 
     /**
-     * Get trend direction and change percentage
+     * Get trend data over time
      *
      * @param int $projectId
-     * @param string $period Period: 'day', 'week', 'month'
-     * @return array{direction: string, change_percent: float, current_period: array, previous_period: array}
+     * @param int $days Number of days to look back (default: 90, max: 365)
+     * @return array{data: array, direction: string, change_percent: float}
      */
-    public function getTrend(int $projectId, string $period = 'week'): array;
+    public function getTrend(int $projectId, int $days = 90): array;
 
     /**
      * Get top categories by query count
