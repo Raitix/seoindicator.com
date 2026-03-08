@@ -655,7 +655,7 @@ class LocalSEOAlertServiceTest extends TestCase
             data: $data
         );
 
-        $this->assertEquals($data, json_decode($alert->data, true));
+        $this->assertEquals($data, $alert->data);
     }
 
     // ==========================================
@@ -741,6 +741,7 @@ class LocalSEOAlertServiceTest extends TestCase
                 'severity' => 'info',
                 'title' => "Read {$i}",
                 'message' => 'Test message',
+                'is_read' => true,
                 'read_at' => now(),
             ]);
         }
