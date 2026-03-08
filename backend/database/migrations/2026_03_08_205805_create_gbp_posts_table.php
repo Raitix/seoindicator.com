@@ -8,9 +8,6 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * Creates gbp_posts table for Local SEO feature (SPEC-035).
-     * Stores Google Business Profile posts data.
      */
     public function up(): void
     {
@@ -27,10 +24,8 @@ return new class extends Migration
             $table->timestamp('published_at')->nullable();
             $table->timestamp('created_at')->useCurrent();
 
-            // Unique constraint for Google post ID
+            // Indexes
             $table->unique('google_post_id');
-            
-            // Index for query optimization
             $table->index('location_id');
         });
     }

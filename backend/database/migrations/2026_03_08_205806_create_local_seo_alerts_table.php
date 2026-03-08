@@ -8,15 +8,12 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * Creates local_seo_alerts table for Local SEO feature (SPEC-035).
-     * Stores alerts and notifications for local SEO tracking.
      */
     public function up(): void
     {
         Schema::create('local_seo_alerts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('location_id')->constrained('business_locations')->onDelete('cascade');
             $table->string('alert_type', 50);
             $table->string('severity', 20);
@@ -26,7 +23,7 @@ return new class extends Migration
             $table->boolean('is_read')->default(false);
             $table->timestamp('created_at')->useCurrent();
 
-            // Indexes for query optimization
+            // Indexes
             $table->index('user_id');
             $table->index('location_id');
             $table->index('alert_type');
