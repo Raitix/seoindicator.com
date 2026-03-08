@@ -11,6 +11,14 @@ use Illuminate\Pagination\LengthAwarePaginator;
 interface GBPInsightsServiceInterface
 {
     /**
+     * Check if the GBP connection is active.
+     *
+     * @param int $locationId
+     * @return bool
+     */
+    public function getConnectionStatus(int $locationId): bool;
+
+    /**
      * Get insights for a location within a date range
      *
      * @param int $locationId
@@ -34,6 +42,14 @@ interface GBPInsightsServiceInterface
      * }
      */
     public function getTrend(int $locationId, int $days = 30): array;
+
+    /**
+     * Get the latest insights for a location.
+     *
+     * @param int $locationId
+     * @return object|null
+     */
+    public function getLatestInsights(int $locationId): ?object;
 
     /**
      * Trigger a background sync of insights from GBP API
