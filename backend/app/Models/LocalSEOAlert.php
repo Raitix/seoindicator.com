@@ -11,6 +11,11 @@ class LocalSEOAlert extends Model
     use HasFactory;
 
     /**
+     * The table associated with the model.
+     */
+    protected $table = 'local_seo_alerts';
+
+    /**
      * Indicates if the model should be timestamped.
      */
     public $timestamps = false;
@@ -156,14 +161,6 @@ class LocalSEOAlert extends Model
     public function isUnread(): bool
     {
         return !$this->is_read;
-    }
-
-    /**
-     * Get the data attribute (alias for tests).
-     */
-    public function getDataAttribute($value)
-    {
-        return $value;
     }
 
     /**
