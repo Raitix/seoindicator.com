@@ -8,9 +8,6 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * Creates local_competitors table for Local SEO feature (SPEC-035).
-     * Stores competitor information for local SEO tracking.
      */
     public function up(): void
     {
@@ -24,7 +21,7 @@ return new class extends Migration
             $table->unsignedInteger('competitor_review_count')->default(0);
             $table->timestamps();
 
-            // Index for query optimization
+            // Indexes
             $table->index('location_id');
         });
     }
