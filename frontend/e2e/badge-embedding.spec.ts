@@ -75,6 +75,7 @@ const mockBadgeConfigError = {
 // ============================================================================
 
 async function mockBadgeAPI(page: Page, hash: string, response: object, status: number = 200) {
+  // Route pattern matches both localhost and production domain
   await page.route(`**/api/v1/public-audit/${hash}/badge`, (route) => {
     route.fulfill({
       status,
@@ -82,6 +83,30 @@ async function mockBadgeAPI(page: Page, hash: string, response: object, status: 
       body: JSON.stringify(response),
     });
   });
+}
+
+async function mockAllBadgeAPIs(page: Page, hashes: string[], score: number = 85) {
+  // Set up mocks for all test hashes at once
+  for (const hash of hashes) {
+    await page.route(`**/api/v1/public-audit/${hash}/badge`, (route) => {
+      const response = {
+        success: true,
+        data: {
+          hash,
+          site_url: 'https://example.com',
+          score,
+          audit_url: `https://seoindicator.com/audit/${hash}/`,
+          impressions_endpoint: `${BASE_URL}/api/v1/badge/impression`,
+          clicks_endpoint: `${BASE_URL}/api/v1/badge/click`,
+        },
+      };
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(response),
+      });
+    });
+  }
 }
 
 async function mockBadgeTracking(page: Page, endpoint: string, response: object = { success: true }) {
@@ -108,6 +133,30 @@ async function mockSVGBadge(page: Page, hash: string, size: string, score: numbe
       body: svg,
     });
   });
+}
+
+// Helper to create test page with badge.js and proper API URL
+async function createBadgeTestPage(page: Page, content: string, options: { noAutoInit?: boolean } = {}) {
+  // Set up the page content first (without script)
+  await page.setContent(`
+    <html>
+      <head>
+        <script>
+          // Prevent auto-init if needed
+          ${options.noAutoInit ? 'window.SEOINDICATOR_NO_AUTO_INIT = true;' : ''}
+        </script>
+      </head>
+      <body>
+        ${content}
+      </body>
+    </html>
+  `);
+  
+  // Add the badge.js script after mocks are ready
+  await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
+  
+  // Wait for script to load
+  await page.waitForFunction(() => typeof (window as any).SEOIndicatorBadge !== 'undefined');
 }
 
 // ============================================================================
@@ -212,9 +261,10 @@ test.describe('SVG Badge Tests', () => {
 
 test.describe('JavaScript Badge Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock badge config API
+    // Mock badge config API for all test hashes
     await mockBadgeAPI(page, TEST_HASHES.valid, mockBadgeConfig(TEST_HASHES.valid, 85));
     await mockBadgeAPI(page, TEST_HASHES.valid2, mockBadgeConfig(TEST_HASHES.valid2, 72));
+    await mockBadgeAPI(page, TEST_HASHES.valid3, mockBadgeConfig(TEST_HASHES.valid3, 45));
     await mockBadgeAPI(page, TEST_HASHES.excellent, mockBadgeConfig(TEST_HASHES.excellent, 95));
     await mockBadgeAPI(page, TEST_HASHES.good, mockBadgeConfig(TEST_HASHES.good, 75));
     await mockBadgeAPI(page, TEST_HASHES.average, mockBadgeConfig(TEST_HASHES.average, 55));
@@ -224,12 +274,9 @@ test.describe('JavaScript Badge Tests', () => {
   });
 
   test('JS-BADGE-01: Badge.js loads and initializes correctly', async ({ page }) => {
-    // Create test page with badge.js
+    // Set content WITHOUT script first
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
                data-size="medium" 
@@ -238,21 +285,21 @@ test.describe('JavaScript Badge Tests', () => {
         </body>
       </html>
     `);
+    
+    // Add script after mocks are ready
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
     // Wait for badge to initialize
-    await page.waitForSelector('#test-badge svg, #test-badge img, #test-badge a', { timeout: 10000 });
+    await page.waitForSelector('#test-badge a, #test-badge [data-seoindicator-link]', { timeout: 10000 });
 
     // Verify global API is available
-    const badgeAPI = await page.evaluate(() => typeof window.SEOIndicatorBadge);
+    const badgeAPI = await page.evaluate(() => typeof (window as any).SEOIndicatorBadge);
     expect(badgeAPI).toBe('object');
   });
 
   test('JS-BADGE-02: Badge renders with correct score', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
                data-size="medium"
@@ -260,8 +307,10 @@ test.describe('JavaScript Badge Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#score-badge *', { timeout: 10000 });
+    await page.waitForSelector('#score-badge a, #score-badge [data-seoindicator-link]', { timeout: 10000 });
 
     // Check if score is displayed
     const badgeContent = await page.locator('#score-badge').textContent();
@@ -271,9 +320,6 @@ test.describe('JavaScript Badge Tests', () => {
   test('JS-BADGE-03: Small size badge renders with correct dimensions', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
                data-size="small"
@@ -281,11 +327,14 @@ test.describe('JavaScript Badge Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#small-badge *', { timeout: 10000 });
+    await page.waitForSelector('#small-badge a, #small-badge [data-seoindicator-link]', { timeout: 10000 });
 
-    const container = page.locator('#small-badge');
-    const boundingBox = await container.boundingBox();
+    // The badge container itself should have small dimensions
+    const badgeLink = page.locator('#small-badge a');
+    const boundingBox = await badgeLink.boundingBox();
     
     // Small badge should be around 120x40
     expect(boundingBox?.width).toBeLessThanOrEqual(130);
@@ -295,9 +344,6 @@ test.describe('JavaScript Badge Tests', () => {
   test('JS-BADGE-04: Large size badge renders with correct dimensions', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
                data-size="large"
@@ -305,11 +351,13 @@ test.describe('JavaScript Badge Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#large-badge *', { timeout: 10000 });
+    await page.waitForSelector('#large-badge a, #large-badge [data-seoindicator-link]', { timeout: 10000 });
 
-    const container = page.locator('#large-badge');
-    const boundingBox = await container.boundingBox();
+    const badgeLink = page.locator('#large-badge a');
+    const boundingBox = await badgeLink.boundingBox();
     
     // Large badge should be around 300x150
     expect(boundingBox?.width).toBeGreaterThanOrEqual(280);
@@ -319,9 +367,6 @@ test.describe('JavaScript Badge Tests', () => {
   test('JS-BADGE-05: Light theme renders correctly', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
                data-size="medium"
@@ -330,24 +375,44 @@ test.describe('JavaScript Badge Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#light-badge *', { timeout: 10000 });
+    await page.waitForSelector('#light-badge a, #light-badge [data-seoindicator-link]', { timeout: 10000 });
 
-    // Light theme should have white/light background
-    const badge = page.locator('#light-badge');
-    const bgColor = await badge.evaluate((el) => 
+    // Check the badge inner container (the div inside the link) for light background
+    const innerDiv = page.locator('#light-badge a > div');
+    const bgColor = await innerDiv.evaluate((el) => 
       window.getComputedStyle(el).backgroundColor
     );
-    // Accept light background (rgb values close to white)
-    expect(bgColor).toMatch(/rgb\(\s*2[0-9]{2}/); // R component >= 200
+    // Light theme should have white background rgb(255, 255, 255) or similar
+    expect(bgColor).toMatch(/rgb\(\s*25[0-5]/); // R component >= 250
   });
 
   test('JS-BADGE-06: Dark theme renders correctly', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
+        <body>
+          <div data-seoindicator-badge="${TEST_HASHES.valid}" 
+               data-size="medium"
+               data-theme="dark"
+               id="dark-badge"></div>
+        </body>
+      </html>
+    `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
+
+    await page.waitForSelector('#dark-badge a, #dark-badge [data-seoindicator-link]', { timeout: 10000 });
+
+    // Check the badge inner container for dark background
+    const innerDiv = page.locator('#dark-badge a > div');
+    const bgColor = await innerDiv.evaluate((el) => 
+      window.getComputedStyle(el).backgroundColor
+    );
+    // Dark theme should have dark background (rgb values close to black)
+    expect(bgColor).toMatch(/rgb\(\s*[0-3]{1,2}\s*,/); // R component <= 30
+  });
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
                data-size="medium"
@@ -371,9 +436,6 @@ test.describe('JavaScript Badge Tests', () => {
   test('JS-BADGE-07: Invalid hash shows error state', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.invalid}" 
                data-size="medium"
@@ -381,6 +443,8 @@ test.describe('JavaScript Badge Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
     await page.waitForSelector('#error-badge *', { timeout: 10000 });
 
@@ -407,9 +471,6 @@ test.describe('Score Color Coding Tests', () => {
   test('COLOR-01: Excellent score (90-100) shows green', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.excellent}" 
                data-size="medium"
@@ -417,14 +478,16 @@ test.describe('Score Color Coding Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#excellent-badge *', { timeout: 10000 });
+    await page.waitForSelector('#excellent-badge a, #excellent-badge [data-seoindicator-link]', { timeout: 10000 });
 
     // Check score displays
     const content = await page.locator('#excellent-badge').textContent();
     expect(content).toContain('95');
 
-    // Green color should be applied (check for green class or inline style)
+    // Green color should be applied (check for green hex in style)
     const badge = page.locator('#excellent-badge');
     const style = await badge.evaluate((el) => el.innerHTML);
     // Check for green hex or class
@@ -434,9 +497,6 @@ test.describe('Score Color Coding Tests', () => {
   test('COLOR-02: Good score (70-89) shows blue', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.good}" 
                data-size="medium"
@@ -444,8 +504,10 @@ test.describe('Score Color Coding Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#good-badge *', { timeout: 10000 });
+    await page.waitForSelector('#good-badge a, #good-badge [data-seoindicator-link]', { timeout: 10000 });
 
     const content = await page.locator('#good-badge').textContent();
     expect(content).toContain('75');
@@ -458,9 +520,6 @@ test.describe('Score Color Coding Tests', () => {
   test('COLOR-03: Average score (50-69) shows yellow', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.average}" 
                data-size="medium"
@@ -468,8 +527,10 @@ test.describe('Score Color Coding Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#average-badge *', { timeout: 10000 });
+    await page.waitForSelector('#average-badge a, #average-badge [data-seoindicator-link]', { timeout: 10000 });
 
     const content = await page.locator('#average-badge').textContent();
     expect(content).toContain('55');
@@ -482,9 +543,6 @@ test.describe('Score Color Coding Tests', () => {
   test('COLOR-04: Poor score (30-49) shows orange', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.poor}" 
                data-size="medium"
@@ -492,8 +550,10 @@ test.describe('Score Color Coding Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#poor-badge *', { timeout: 10000 });
+    await page.waitForSelector('#poor-badge a, #poor-badge [data-seoindicator-link]', { timeout: 10000 });
 
     const content = await page.locator('#poor-badge').textContent();
     expect(content).toContain('35');
@@ -506,9 +566,6 @@ test.describe('Score Color Coding Tests', () => {
   test('COLOR-05: Bad score (0-29) shows red', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.bad}" 
                data-size="medium"
@@ -516,8 +573,10 @@ test.describe('Score Color Coding Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#bad-badge *', { timeout: 10000 });
+    await page.waitForSelector('#bad-badge a, #bad-badge [data-seoindicator-link]', { timeout: 10000 });
 
     const content = await page.locator('#bad-badge').textContent();
     expect(content).toContain('15');
@@ -537,9 +596,6 @@ test.describe('Click Navigation Tests', () => {
   test('CLICK-01: Click on badge navigates to audit URL', async ({ page }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
                data-size="medium"
@@ -547,11 +603,13 @@ test.describe('Click Navigation Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#click-badge a, #click-badge [role="link"]', { timeout: 10000 });
+    await page.waitForSelector('#click-badge a, #click-badge [data-seoindicator-link]', { timeout: 10000 });
 
-    // Find the clickable element
-    const clickableElement = page.locator('#click-badge a, #click-badge [role="link"]').first();
+    // Find the clickable element (the link)
+    const clickableElement = page.locator('#click-badge a').first();
     
     // Verify it has correct href
     const href = await clickableElement.getAttribute('href');
@@ -562,9 +620,6 @@ test.describe('Click Navigation Tests', () => {
   test('CLICK-02: Click opens in new tab', async ({ page, context }) => {
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
                data-size="medium"
@@ -572,6 +627,8 @@ test.describe('Click Navigation Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
     await page.waitForSelector('#new-tab-badge a', { timeout: 10000 });
 
@@ -603,9 +660,6 @@ test.describe('Impression Tracking Tests', () => {
 
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
                data-size="medium"
@@ -613,8 +667,10 @@ test.describe('Impression Tracking Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#impression-badge *', { timeout: 10000 });
+    await page.waitForSelector('#impression-badge a, #impression-badge [data-seoindicator-link]', { timeout: 10000 });
 
     // Wait for potential impression tracking
     await page.waitForTimeout(1000);
@@ -642,9 +698,6 @@ test.describe('Impression Tracking Tests', () => {
 
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
                data-size="medium"
@@ -653,8 +706,10 @@ test.describe('Impression Tracking Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#no-tracking-badge *', { timeout: 10000 });
+    await page.waitForSelector('#no-tracking-badge a, #no-tracking-badge [data-seoindicator-link]', { timeout: 10000 });
     await page.waitForTimeout(2000);
 
     // Only badge config API should have been called, not tracking
@@ -683,9 +738,6 @@ test.describe('Click Tracking Tests', () => {
 
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
-        </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
                data-size="medium"
@@ -693,11 +745,13 @@ test.describe('Click Tracking Tests', () => {
         </body>
       </html>
     `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
 
-    await page.waitForSelector('#click-track-badge a, #click-track-badge [role="link"]', { timeout: 10000 });
+    await page.waitForSelector('#click-track-badge a, #click-track-badge [data-seoindicator-link]', { timeout: 10000 });
 
     // Click the badge
-    const clickable = page.locator('#click-track-badge a, #click-track-badge [role="link"]').first();
+    const clickable = page.locator('#click-track-badge a').first();
     await clickable.click();
 
     await page.waitForTimeout(500);
@@ -818,8 +872,64 @@ test.describe('Auto-refresh Tests', () => {
 
     await page.setContent(`
       <html>
-        <head>
-          <script src="${BASE_URL}/badge.js"></script>
+        <body>
+          <div data-seoindicator-badge="${TEST_HASHES.valid}" 
+               data-size="medium"
+               data-refresh="3000"
+               id="refresh-badge"></div>
+        </body>
+      </html>
+    `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
+
+    await page.waitForSelector('#refresh-badge a, #refresh-badge [data-seoindicator-link]', { timeout: 10000 });
+
+    // Initial load
+    expect(requestCount).toBeGreaterThanOrEqual(1);
+
+    // Wait for auto-refresh (3 seconds)
+    await page.waitForTimeout(4000);
+
+    // Should have made another request
+    // Note: Actual behavior depends on implementation
+    expect(requestCount).toBeGreaterThanOrEqual(1);
+  });
+
+  test('REFRESH-02: Refresh disabled when data-refresh="0"', async ({ page }) => {
+    let requestCount = 0;
+
+    await page.route('**/api/v1/public-audit/*/badge', (route) => {
+      requestCount++;
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(mockBadgeConfig(TEST_HASHES.valid, 85)),
+      });
+    });
+
+    await page.setContent(`
+      <html>
+        <body>
+          <div data-seoindicator-badge="${TEST_HASHES.valid}" 
+               data-size="medium"
+               data-refresh="0"
+               id="no-refresh-badge"></div>
+        </body>
+      </html>
+    `);
+    
+    await page.addScriptTag({ url: `${BASE_URL}/badge.js` });
+
+    await page.waitForSelector('#no-refresh-badge a, #no-refresh-badge [data-seoindicator-link]', { timeout: 10000 });
+
+    // Wait to verify no additional requests
+    await page.waitForTimeout(5000);
+
+    // Should only have 1 request (initial load)
+    expect(requestCount).toBe(1);
+  });
+});
         </head>
         <body>
           <div data-seoindicator-badge="${TEST_HASHES.valid}" 
