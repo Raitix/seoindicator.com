@@ -36,3 +36,18 @@ export { BadgeManagementRow } from "./BadgeManagementRow";
 export type { BadgeManagementRowProps } from "./BadgeManagementRow";
 
 export { EmbedCodeModal } from "./EmbedCodeModal";
+
+// Badge Analytics Dashboard - TASK-33-29
+export { BadgeAnalyticsDashboard } from "./BadgeAnalyticsDashboard";
+export type {
+  BadgeAnalyticsDashboardProps,
+  BadgeStats,
+  TimeSeriesPoint,
+  TopReferrer,
+  TopAudit,
+  DateRange,
+  PresetRange,
+} from "./BadgeAnalyticsDashboard";
+
+export { BadgeStatsCard, BadgeStatsCardSkeleton, formatNumber } from "./BadgeStatsCard";
+export type { BadgeStatsCardProps } from "./BadgeStatsCard";
