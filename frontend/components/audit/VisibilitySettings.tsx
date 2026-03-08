@@ -213,7 +213,7 @@ export function VisibilitySettings({
             <Lock className="h-5 w-5 text-slate-400" data-testid="lock-icon" aria-hidden="true" />
           )}
           <div>
-            <p className="text-sm font-medium text-white">Visibility</p>
+            <h3 id={headingId} className="text-sm font-medium text-white">Visibility</h3>
             <p
               className="text-xs text-slate-400"
               id={statusId}
