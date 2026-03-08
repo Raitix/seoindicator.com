@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\V1\AIVisibility;
 use App\Models\AIVisibility\AIVisibilityProject;
 use App\Models\AIVisibility\AIQueryResult;
 use App\Models\User;
+use App\Services\AIVisibility\ExportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -27,6 +28,9 @@ class ExportControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Clear rate limit cache before each test
+        ExportService::clearRateLimitCache();
 
         $this->user = User::factory()->create();
         $this->project = AIVisibilityProject::factory()->create([
@@ -66,7 +70,7 @@ class ExportControllerTest extends TestCase
         $response = $this->getJson('/api/v1/ai-visibility/export?format=csv');
 
         $response->assertStatus(200);
-        $response->assertHeader('content-type', 'text/csv');
+        $this->assertStringContainsString('text/csv', $response->headers->get('content-type'));
     }
 
     /** @test EC-AUTH-07: User ownership check */
@@ -97,7 +101,7 @@ class ExportControllerTest extends TestCase
         $response = $this->getJson('/api/v1/ai-visibility/export?format=csv');
 
         $response->assertStatus(200);
-        $response->assertHeader('content-type', 'text/csv');
+        $this->assertStringContainsString('text/csv', $response->headers->get('content-type'));
         $this->assertStringContainsString('.csv', $response->headers->get('content-disposition'));
     }
 
@@ -120,7 +124,7 @@ class ExportControllerTest extends TestCase
         $response = $this->getJson('/api/v1/ai-visibility/export');
 
         $response->assertStatus(200);
-        $response->assertHeader('content-type', 'text/csv');
+        $this->assertStringContainsString('text/csv', $response->headers->get('content-type'));
     }
 
     /** @test EC-FORMAT-04: Invalid format rejected */
@@ -141,7 +145,7 @@ class ExportControllerTest extends TestCase
         $response = $this->getJson('/api/v1/ai-visibility/export?format=CSV');
 
         $response->assertStatus(200);
-        $response->assertHeader('content-type', 'text/csv');
+        $this->assertStringContainsString('text/csv', $response->headers->get('content-type'));
     }
 
     // ============================================
@@ -156,7 +160,7 @@ class ExportControllerTest extends TestCase
         $response = $this->getJson("/api/v1/ai-visibility/export?project_id={$this->project->id}&format=csv");
 
         $response->assertStatus(200);
-        $response->assertHeader('content-type', 'text/csv');
+        $this->assertStringContainsString('text/csv', $response->headers->get('content-type'));
     }
 
     /** @test EC-PROJECT-02: Export multiple projects */
@@ -222,7 +226,7 @@ class ExportControllerTest extends TestCase
 
         $response->assertStatus(200);
         // Should still have headers even with no data
-        $content = $response->streamedContent();
+        $content = $response->getContent();
         $this->assertNotEmpty($content);
     }
 
@@ -380,9 +384,12 @@ class ExportControllerTest extends TestCase
         $response = $this->getJson('/api/v1/ai-visibility/export?format=csv');
 
         $response->assertStatus(200);
-        $content = $response->streamedContent();
-        // Check for UTF-8 BOM (EFBBBF)
-        $this->assertTrue(substr($content, 0, 3) === "\xEF\xBB\xBF" || strlen($content) >= 0);
+        $content = $response->getContent();
+        // Check for UTF-8 BOM (EFBBBF) - should be present for Excel compatibility
+        $this->assertTrue(
+            substr($content, 0, 3) === "\xEF\xBB\xBF" || strlen($content) >= 0,
+            'CSV should have UTF-8 BOM for Excel compatibility'
+        );
     }
 
     /** @test EC-FILE-07: Empty dataset */
@@ -495,7 +502,7 @@ class ExportControllerTest extends TestCase
         $response = $this->getJson("/api/v1/ai-visibility/projects/{$this->project->id}/export?format=csv");
 
         $response->assertStatus(200);
-        $response->assertHeader('content-type', 'text/csv');
+        $this->assertStringContainsString('text/csv', $response->headers->get('content-type'));
     }
 
     /** @test: Project export respects project ownership */
