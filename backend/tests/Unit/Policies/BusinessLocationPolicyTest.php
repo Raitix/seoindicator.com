@@ -38,13 +38,43 @@ class BusinessLocationPolicyTest extends TestCase
     }
 
     /**
+     * Create a mock site
+     */
+    protected function mockSite(array $attributes = []): Site
+    {
+        // Ensure user exists if user_id is specified
+        $userId = $attributes['user_id'] ?? 1;
+        if (!User::where('id', $userId)->exists()) {
+            User::factory()->create(['id' => $userId]);
+        }
+
+        return Site::factory()->create(array_merge([
+            'user_id' => $userId,
+            'name' => 'Test Site',
+            'url' => 'https://example.com',
+        ], $attributes));
+    }
+
+    /**
      * Create a mock location
      */
     protected function mockLocation(array $attributes = []): BusinessLocation
     {
+        // Ensure user exists if user_id is specified
+        $userId = $attributes['user_id'] ?? 1;
+        if (!User::where('id', $userId)->exists()) {
+            User::factory()->create(['id' => $userId]);
+        }
+
+        // Ensure site exists if site_id is specified
+        $siteId = $attributes['site_id'] ?? 1;
+        if (!Site::where('id', $siteId)->exists()) {
+            Site::factory()->create(['id' => $siteId, 'user_id' => $userId]);
+        }
+
         return BusinessLocation::factory()->create(array_merge([
-            'user_id' => 1,
-            'site_id' => 1,
+            'user_id' => $userId,
+            'site_id' => $siteId,
             'name' => 'Test Business',
             'address' => '123 Main St',
         ], $attributes));

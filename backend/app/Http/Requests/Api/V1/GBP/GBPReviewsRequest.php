@@ -19,6 +19,19 @@ class GBPReviewsRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Convert string boolean values to actual booleans
+        if ($this->has('has_response')) {
+            $this->merge([
+                'has_response' => $this->boolean('has_response'),
+            ]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>

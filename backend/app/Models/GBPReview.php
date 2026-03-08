@@ -12,15 +12,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $location_id
- * @property string $gbp_review_id
+ * @property string $google_review_id
+ * @property string|null $author_name
+ * @property string|null $author_photo
  * @property int $rating
- * @property string|null $text
- * @property string $author
- * @property \Carbon\Carbon|null $reviewed_at
- * @property string $sentiment
- * @property bool $has_response
- * @property string|null $response_text
- * @property \Carbon\Carbon|null $responded_at
+ * @property string|null $review_text
+ * @property string|null $review_text_sentiment
+ * @property string|null $owner_response
+ * @property \Carbon\Carbon|null $owner_response_date
+ * @property \Carbon\Carbon|null $review_date
  * @property \Carbon\Carbon|null $created_at
  * @property \Carbon\Carbon|null $updated_at
  */
@@ -28,20 +28,22 @@ class GBPReview extends Model
 {
     use HasFactory;
 
+    protected $table = 'gbp_reviews';
+
     /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
         'location_id',
-        'gbp_review_id',
+        'google_review_id',
+        'author_name',
+        'author_photo',
         'rating',
-        'text',
-        'author',
-        'reviewed_at',
-        'sentiment',
-        'has_response',
-        'response_text',
-        'responded_at',
+        'review_text',
+        'review_text_sentiment',
+        'owner_response',
+        'owner_response_date',
+        'review_date',
     ];
 
     /**
@@ -50,9 +52,8 @@ class GBPReview extends Model
     protected $casts = [
         'location_id' => 'integer',
         'rating' => 'integer',
-        'reviewed_at' => 'datetime',
-        'has_response' => 'boolean',
-        'responded_at' => 'datetime',
+        'owner_response_date' => 'datetime',
+        'review_date' => 'datetime',
     ];
 
     /**
@@ -76,7 +77,7 @@ class GBPReview extends Model
      */
     public function scopeBySentiment($query, string $sentiment)
     {
-        return $query->where('sentiment', $sentiment);
+        return $query->where('review_text_sentiment', $sentiment);
     }
 
     /**
@@ -84,7 +85,10 @@ class GBPReview extends Model
      */
     public function scopeHasResponse($query, bool $hasResponse)
     {
-        return $query->where('has_response', $hasResponse);
+        if ($hasResponse) {
+            return $query->whereNotNull('owner_response');
+        }
+        return $query->whereNull('owner_response');
     }
 
     /**
@@ -93,10 +97,10 @@ class GBPReview extends Model
     public function scopeDateRange($query, ?string $startDate, ?string $endDate)
     {
         if ($startDate) {
-            $query->whereDate('reviewed_at', '>=', $startDate);
+            $query->whereDate('review_date', '>=', $startDate);
         }
         if ($endDate) {
-            $query->whereDate('reviewed_at', '<=', $endDate);
+            $query->whereDate('review_date', '<=', $endDate);
         }
         return $query;
     }
@@ -110,10 +114,18 @@ class GBPReview extends Model
         $field = ltrim($sort, '-');
 
         if (in_array($field, ['date', 'rating'])) {
-            $field = $field === 'date' ? 'reviewed_at' : $field;
+            $field = $field === 'date' ? 'review_date' : $field;
             return $query->orderBy($field, $direction);
         }
 
-        return $query->orderBy('reviewed_at', 'desc');
+        return $query->orderBy('review_date', 'desc');
+    }
+
+    /**
+     * Check if review has owner response.
+     */
+    public function hasResponse(): bool
+    {
+        return !empty($this->owner_response);
     }
 }

@@ -3,14 +3,13 @@
 namespace Database\Factories;
 
 use App\Models\GBPReview;
-use App\Models\BusinessLocation;
+use App\Models\Location;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * Factory for GBPReview model
  * 
- * @see TASK-35-3
- * @see TEST-35-3
+ * @see TASK-35-14
  */
 class GBPReviewFactory extends Factory
 {
@@ -22,7 +21,7 @@ class GBPReviewFactory extends Factory
     public function definition(): array
     {
         return [
-            'location_id' => BusinessLocation::factory(),
+            'location_id' => Location::factory(),
             'google_review_id' => $this->faker->unique()->uuid(),
             'author_name' => $this->faker->name(),
             'author_photo' => $this->faker->imageUrl(100, 100, 'people'),
