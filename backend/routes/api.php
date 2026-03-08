@@ -490,6 +490,12 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
         Route::put('projects/{id}', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityProjectController::class, 'update'])->where('id', '[0-9]+');
         Route::delete('projects/{id}', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityProjectController::class, 'destroy'])->where('id', '[0-9]+');
         Route::post('projects/{id}/run', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityProjectController::class, 'run'])->where('id', '[0-9]+');
+
+        // AI Visibility Analytics (TASK-34-14, SPEC-034)
+        Route::get('projects/{id}/analytics', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAnalyticsController::class, 'analytics'])->where('id', '[0-9]+');
+        Route::get('projects/{id}/comparison', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAnalyticsController::class, 'comparison'])->where('id', '[0-9]+');
+        Route::get('projects/{id}/trend', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAnalyticsController::class, 'trend'])->where('id', '[0-9]+');
+        Route::get('projects/{id}/queries', [\App\Http\Controllers\Api\V1\AIVisibility\AIVisibilityAnalyticsController::class, 'queries'])->where('id', '[0-9]+');
     });
 });
 

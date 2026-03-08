@@ -157,7 +157,7 @@ class AIVisibilityAnalyticsControllerTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) {
+        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) use ($user) {
             $mock->shouldReceive('getAnalytics')->andReturn($this->getMockAnalyticsData());
             $mock->shouldReceive('getProject')->andReturn($this->mockProject(['user_id' => $user->id]));
         });
@@ -173,7 +173,7 @@ class AIVisibilityAnalyticsControllerTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) {
+        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) use ($user) {
             $mock->shouldReceive('getComparison')->andReturn($this->getMockComparisonData());
             $mock->shouldReceive('getProject')->andReturn($this->mockProject(['user_id' => $user->id]));
         });
@@ -189,7 +189,7 @@ class AIVisibilityAnalyticsControllerTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) {
+        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) use ($user) {
             $mock->shouldReceive('getTrend')->andReturn($this->getMockTrendData());
             $mock->shouldReceive('getProject')->andReturn($this->mockProject(['user_id' => $user->id]));
         });
@@ -205,7 +205,7 @@ class AIVisibilityAnalyticsControllerTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) {
+        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) use ($user) {
             $mock->shouldReceive('getQueries')->andReturn($this->getMockQueriesData());
             $mock->shouldReceive('getProject')->andReturn($this->mockProject(['user_id' => $user->id]));
         });
@@ -286,7 +286,7 @@ class AIVisibilityAnalyticsControllerTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) {
+        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) use ($user) {
             $mock->shouldReceive('getProject')->andReturn(null);
         });
 
@@ -784,7 +784,7 @@ class AIVisibilityAnalyticsControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('brand.mentions', 0)
-            ->assertJsonPath('brand.rate', 0.0);
+            ->assertJsonPath('brand.rate', 0);
     }
 
     /** @test */
@@ -1109,7 +1109,7 @@ class AIVisibilityAnalyticsControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('direction', 'stable')
-            ->assertJsonPath('change_percent', 0.0);
+            ->assertJsonPath('change_percent', 0);
     }
 
     /** @test */
@@ -1528,7 +1528,7 @@ class AIVisibilityAnalyticsControllerTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) {
+        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) use ($user) {
             $mock->shouldReceive('getProject')->andReturn(null);
         });
 
@@ -1568,17 +1568,16 @@ class AIVisibilityAnalyticsControllerTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        // Verify cache keys are different for different projects
+        // Verify cache keys include project ID
         Cache::shouldReceive('remember')
-            ->twice()
+            ->once()
             ->withArgs(function ($key) {
-                return strpos($key, '1') !== false;
+                return strpos($key, 'ai_visibility:1:') === 0;
             })
             ->andReturn($this->getMockAnalyticsData());
 
         $this->mock(AnalyticsAggregatorInterface::class, function ($mock) use ($user) {
             $mock->shouldReceive('getProject')->andReturn($this->mockProject(['user_id' => $user->id]));
-            $mock->shouldReceive('getAnalytics')->andReturn($this->getMockAnalyticsData());
         });
 
         $this->getJson('/api/v1/ai-visibility/projects/1/analytics');
@@ -1804,27 +1803,38 @@ class AIVisibilityAnalyticsControllerTest extends TestCase
     }
 
     /** @test */
-    public function ac_018_error_handling_404_403_400(): void
+    public function ac_018_error_handling_404(): void
     {
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        // Test 404
-        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) {
+        $this->mock(AnalyticsAggregatorInterface::class, function ($mock) use ($user) {
             $mock->shouldReceive('getProject')->andReturn(null);
         });
         $response = $this->getJson('/api/v1/ai-visibility/projects/99999/analytics');
         $response->assertStatus(404);
+    }
 
-        // Test 400
+    /** @test */
+    public function ac_018_error_handling_400(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
         $this->mock(AnalyticsAggregatorInterface::class, function ($mock) use ($user) {
             $mock->shouldReceive('getProject')->andReturn($this->mockProject(['user_id' => $user->id]));
         });
         $response = $this->getJson('/api/v1/ai-visibility/projects/1/analytics?period=invalid');
         $response->assertStatus(400);
+    }
 
-        // Test 403
+    /** @test */
+    public function ac_018_error_handling_403(): void
+    {
         $owner = User::factory()->create();
+        $nonOwner = User::factory()->create();
+        Sanctum::actingAs($nonOwner);
+
         $this->mock(AnalyticsAggregatorInterface::class, function ($mock) use ($owner) {
             $mock->shouldReceive('getProject')->andReturn($this->mockProject(['user_id' => $owner->id]));
         });
@@ -1847,9 +1857,16 @@ class AIVisibilityAnalyticsControllerTest extends TestCase
         });
 
         // All routes should return 200, not 404
-        $this->getJson('/api/v1/ai-visibility/projects/1/analytics')->assertStatus(200);
-        $this->getJson('/api/v1/ai-visibility/projects/1/comparison')->assertStatus(200);
-        $this->getJson('/api/v1/ai-visibility/projects/1/trend')->assertStatus(200);
-        $this->getJson('/api/v1/ai-visibility/projects/1/queries')->assertStatus(200);
+        $response1 = $this->getJson('/api/v1/ai-visibility/projects/1/analytics');
+        $response1->assertStatus(200);
+
+        $response2 = $this->getJson('/api/v1/ai-visibility/projects/1/comparison');
+        $response2->assertStatus(200);
+
+        $response3 = $this->getJson('/api/v1/ai-visibility/projects/1/trend');
+        $response3->assertStatus(200);
+
+        $response4 = $this->getJson('/api/v1/ai-visibility/projects/1/queries');
+        $response4->assertStatus(200);
     }
 }
