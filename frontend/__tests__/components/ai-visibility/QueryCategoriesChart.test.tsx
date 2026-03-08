@@ -556,10 +556,10 @@ describe('PERC: Percentage Calculations', () => {
     }
   });
 
-  test('PERC-003: Handles 50/50 split', () => {
+  test('PERC-003: Handles 60/40 split', () => {
     render(<QueryCategoriesChart data={mockTwoCategories} />);
 
-    expect(screen.getByText(/Comparison \(50%\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Comparison \(60%\)/)).toBeInTheDocument();
     expect(screen.getByText(/Recommendation \(40%\)/)).toBeInTheDocument();
   });
 
