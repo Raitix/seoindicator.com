@@ -28010,6 +28010,190 @@ function verifyWebhook(string $payload, string $signature, string $secret): bool
 - TASK-6-16: Event emitters integration
 
 ---
+## Webhook Retry Logic (TASK-6-15)
+
+### Service Description
+Implements retry logic for failed webhook deliveries with exponential backoff, max retry limits, and background job processing. Part of the Webhooks & Event System feature (FEAT-006). Ensures reliable webhook delivery by automatically retrying failed deliveries on a configurable schedule.
+
+### Component Locations
+- **Retry Service:** `backend/app/Services/WebhookRetryService.php`
+- **Queue Job:** `backend/app/Jobs/ProcessWebhookRetriesJob.php`
+- **Dispatcher:** `backend/app/Services/WebhookDispatcherService.php` (redeliver method)
+- **Model:** `backend/app/Models/WebhookDelivery.php` (retry scopes/methods)
+- **Tests:** `backend/tests/Unit/Services/WebhookRetryServiceTest.php`, `backend/tests/Unit/Jobs/ProcessWebhookRetriesJobTest.php`
+- **Test Documentation:** `TESTS/TEST-6-15.md`
+
+### Retry Schedule
+
+Exponential backoff with 5 retry attempts:
+
+| Attempt | Delay | Description |
+|---------|-------|-------------|
+| 1st retry | 1 minute | Initial retry |
+| 2nd retry | 5 minutes | Short backoff |
+| 3rd retry | 15 minutes | Medium backoff |
+| 4th retry | 1 hour | Extended backoff |
+| 5th retry | 6 hours | Final retry |
+| 6th+ | None | Max attempts exceeded |
+
+### Retry Conditions
+
+**Retriable Conditions:**
+| Condition | HTTP Status | Retry |
+|-----------|-------------|-------|
+| Server Error | 500-599 | ✅ Yes |
+| Connection Timeout | N/A | ✅ Yes |
+| DNS Resolution Failure | N/A | ✅ Yes |
+| Connection Refused | N/A | ✅ Yes |
+
+**Non-Retriable Conditions:**
+| Condition | HTTP Status | Retry |
+|-----------|-------------|-------|
+| Bad Request | 400 | ❌ No |
+| Unauthorized | 401 | ❌ No |
+| Forbidden | 403 | ❌ No |
+| Not Found | 404 | ❌ No |
+| Validation Error | 422 | ❌ No |
+
+### Delivery Status Values
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Not yet delivered |
+| `delivered` | Success (2xx response) |
+| `retrying` | In retry queue, waiting for next attempt |
+| `failed` | All retries exhausted or non-retriable error |
+
+### WebhookRetryService Methods
+
+| Method | Description |
+|--------|-------------|
+| `calculateNextRetryAt(int $attemptCount): ?Carbon` | Calculate next retry time based on attempt count |
+| `shouldRetry(int $responseStatus): bool` | Check if HTTP status is retriable (5xx) |
+| `shouldRetryOnError(?\Throwable $error): bool` | Check if exception is retriable (ConnectionException) |
+| `getRemainingAttempts(int $attemptCount): int` | Get count of remaining retry attempts |
+| `canRetry(int $attemptCount): bool` | Check if more retries are available |
+| `getRetrySchedule(): array` | Get configured retry schedule |
+| `scheduleRetry(WebhookDelivery $delivery): bool` | Schedule next retry for delivery |
+| `markAsFailed(WebhookDelivery $delivery): void` | Mark delivery as permanently failed |
+
+### ProcessWebhookRetriesJob
+
+Background queue job that processes pending webhook retries.
+
+| Property | Value |
+|----------|-------|
+| Queue | `webhooks` |
+| Tries | 3 |
+| Timeout | 300 seconds (5 minutes) |
+| Default Batch Size | 100 deliveries |
+
+**Job Flow:**
+```
+ProcessWebhookRetriesJob
+├── Query deliveries with next_retry_at <= now()
+├── Limit to batch size (default 100)
+└── For each delivery:
+    ├── Skip if webhook disabled/deleted
+    ├── Call WebhookDispatcherService::redeliver()
+    ├── On success → Clear next_retry_at
+    ├── On 5xx error → Schedule next retry
+    ├── On 4xx error → Mark as failed
+    └── On connection error → Schedule next retry
+```
+
+### WebhookDispatcherService::redeliver()
+
+Method for retrying existing deliveries without creating new records.
+
+| Feature | Description |
+|---------|-------------|
+| Record Reuse | Updates existing delivery record |
+| Attempt Tracking | Increments attempt_count before HTTP request |
+| Response Storage | Updates response_status, response_body, delivered_at |
+| Return Value | `true` for 2xx responses, `false` otherwise |
+| Exception Handling | Throws ConnectionException for retry logic |
+
+### WebhookDelivery Model Extensions
+
+**New Methods:**
+| Method | Description |
+|--------|-------------|
+| `getStatus(): string` | Get delivery status (pending/delivered/retrying/failed) |
+| `markAsRetrying(Carbon $nextRetryAt): void` | Mark delivery for retry |
+| `markAsFailed(): void` | Mark delivery as permanently failed |
+
+**New Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `scopePendingRetry($query)` | Deliveries with next_retry_at <= now() |
+| `scopeFailedDeliveries($query)` | Failed deliveries without retry pending |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| HMAC Signatures | Regenerated on each retry with new timestamp |
+| Timestamp Validation | Prevents replay attacks |
+| User Isolation | Delivery inherits webhook's user ownership |
+| SQL Injection | Parameterized queries via Eloquent |
+| Rate Limiting | Background job respects queue limits |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `WebhookRetryServiceTest` | 28 | 69 | ✅ PASS |
+| `ProcessWebhookRetriesJobTest` | 25 | 54 | ✅ PASS |
+| `WebhookDispatcherServiceTest` | 32 | 57 | ✅ PASS |
+| **Total** | **85** | **180** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Retry Logic (RL) | 21 | Schedule calculations, retry conditions |
+| Delivery Status (DS) | 8 | Status transitions, scope queries |
+| Worker Job (WJ) | 10 | Batch processing, error handling |
+| Edge Cases (EC) | 8 | Null status, large responses, concurrency |
+| Security (SC) | 3 | HMAC verification, auth handling |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-08 |
+| Commit | `ee3c153e` |
+| Deployment Method | Manual SSH |
+| Health Check | ✅ 200 OK |
+| Tests | 85/85 passing (180 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-6-12 | Done ✅ | Webhooks schema (database tables) |
+| TASK-6-14 | Done ✅ | Webhook dispatcher service |
+
+### Related Tasks
+
+- TASK-6-12: Webhooks Tables (database schema)
+- TASK-6-13: Webhook Management API (CRUD endpoints)
+- TASK-6-14: Webhook Dispatcher Service (HTTP delivery)
+- TASK-6-16: Event Emitters Integration (event triggers)
+
+### Scheduler Note
+
+The `ProcessWebhookRetriesJob` is implemented and tested but is NOT automatically scheduled in `routes/console.php`. For automatic retry processing, configure a cron entry:
+
+```php
+// routes/console.php
+Schedule::job(new ProcessWebhookRetriesJob())->everyMinute();
+```
+
+Or use Laravel Horizon/supervisor for queue processing.
+
+---
 ## Database Schema: GSC Query Match Column (TASK-12-3)
 
 ### Schema Change
