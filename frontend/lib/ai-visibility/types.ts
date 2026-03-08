@@ -28,6 +28,12 @@ export interface AlertPreferences {
   alert_types: AlertType[];
 }
 
+export interface AlertFilters {
+  project_id?: string | null;
+  alert_types?: AlertType[];
+  is_read?: boolean | null;
+}
+
 export interface AlertsListResponse {
   data: Alert[];
   meta: {

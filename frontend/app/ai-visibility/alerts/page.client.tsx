@@ -28,7 +28,7 @@ import {
   useUpdatePreferences,
   useTestWebhook,
 } from '@/hooks/useAlerts';
-import type { Alert, AlertPreferences } from '@/lib/ai-visibility/types';
+import type { Alert, AlertPreferences, AlertFilters, AlertType } from '@/lib/ai-visibility/types';
 
 // ============================================
 // Client Component
@@ -41,11 +41,7 @@ export function AlertsPageClient() {
 
   const [selectedAlertId, setSelectedAlertId] = React.useState<string | null>(null);
   const [page, setPage] = React.useState(1);
-  const [filters, setFilters] = React.useState<{
-    project_id?: string | null;
-    alert_types?: string[];
-    is_read?: boolean | null;
-  }>({});
+  const [filters, setFilters] = React.useState<AlertFilters>({});
   const [isMobile, setIsMobile] = React.useState(false);
   const [showMobileSettings, setShowMobileSettings] = React.useState(false);
   const [toastAlerts, setToastAlerts] = React.useState<Alert[]>([]);
@@ -81,7 +77,7 @@ export function AlertsPageClient() {
 
     setFilters({
       project_id: projectId || null,
-      alert_types: alertTypes ? alertTypes.split(',') : undefined,
+      alert_types: alertTypes ? (alertTypes.split(',') as AlertType[]) : undefined,
       is_read: isRead === 'false' ? false : isRead === 'true' ? true : null,
     });
   }, [searchParams]);
@@ -168,21 +164,21 @@ export function AlertsPageClient() {
     }
   };
 
-  const handleFilterChange = (newFilters: Record<string, unknown>) => {
+  const handleFilterChange = (newFilters: AlertFilters) => {
     const params = new URLSearchParams();
     
     if (newFilters.project_id) {
       params.set('project_id', newFilters.project_id as string);
     }
-    if ((newFilters.alert_types as string[])?.length) {
-      params.set('types', (newFilters.alert_types as string[]).join(','));
+    if (newFilters.alert_types?.length) {
+      params.set('types', newFilters.alert_types.join(','));
     }
     if (newFilters.is_read !== null && newFilters.is_read !== undefined) {
       params.set('read', String(newFilters.is_read));
     }
 
     router.replace(`${pathname}?${params.toString()}`);
-    setFilters(newFilters as typeof filters);
+    setFilters(newFilters);
     setPage(1);
   };
 

@@ -7,6 +7,7 @@
  */
 
 import * as React from 'react';
+import { Suspense } from 'react';
 import { AlertsPageClient } from './page.client';
 
 // ============================================
@@ -25,9 +26,29 @@ export const metadata = {
 };
 
 // ============================================
+// Loading Skeleton
+// ============================================
+
+function AlertsLoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
+      <div className="animate-pulse">
+        <div className="h-8 w-32 bg-slate-200 dark:bg-slate-700 rounded mb-4" />
+        <div className="h-4 w-64 bg-slate-200 dark:bg-slate-700 rounded mb-6" />
+        <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded" />
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // Page Component (Server Component)
 // ============================================
 
 export default function AlertsPage() {
-  return <AlertsPageClient />;
+  return (
+    <Suspense fallback={<AlertsLoadingSkeleton />}>
+      <AlertsPageClient />
+    </Suspense>
+  );
 }
