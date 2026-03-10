@@ -142,6 +142,9 @@ class ContentDecayControllerTest extends TestCase
 
         Sanctum::actingAs($nonOwner);
 
+        // Mock the service even though it won't be called (authorization fails)
+        $this->mock(ContentDecayServiceInterface::class);
+
         $response = $this->getJson("/api/v1/sites/{$site->id}/content-decay/summary");
 
         $response->assertStatus(403);
@@ -173,6 +176,9 @@ class ContentDecayControllerTest extends TestCase
 
         Sanctum::actingAs($nonOwner);
 
+        // Mock the service even though it won't be called (authorization fails)
+        $this->mock(ContentDecayDetectionServiceInterface::class);
+
         $response = $this->postJson("/api/v1/sites/{$site->id}/content-decay/run");
 
         $response->assertStatus(403);
@@ -186,6 +192,9 @@ class ContentDecayControllerTest extends TestCase
         $site = Site::factory()->create(['user_id' => $owner->id]);
 
         Sanctum::actingAs($nonOwner);
+
+        // Mock the service even though it won't be called (authorization fails)
+        $this->mock(ContentDecayServiceInterface::class);
 
         $response = $this->patchJson("/api/v1/sites/{$site->id}/content-decay/settings", [
             'window_days' => 14,
@@ -203,6 +212,9 @@ class ContentDecayControllerTest extends TestCase
     {
         $user = User::factory()->create();
         Sanctum::actingAs($user);
+
+        // Mock the service even though it won't be called (site doesn't exist)
+        $this->mock(ContentDecayServiceInterface::class);
 
         $response = $this->getJson('/api/v1/sites/999999/content-decay/summary');
 
@@ -361,7 +373,7 @@ class ContentDecayControllerTest extends TestCase
         $mockService = $this->mock(ContentDecayDetectionServiceInterface::class);
         $mockService->shouldReceive('runDetection')
             ->once()
-            ->andReturn('job-uuid-12345');
+            ->andReturn(['job_id' => 'job-uuid-12345', 'status' => 'queued']);
 
         $response = $this->postJson("/api/v1/sites/{$site->id}/content-decay/run");
 

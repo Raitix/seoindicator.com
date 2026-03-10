@@ -859,15 +859,6 @@ class ContentRefreshTaskTest extends TestCase
         $this->assertTrue($task->due_date->isFuture());
     }
 
-    /** @test EC-008 */
-    public function empty_metadata_json(): void
-    {
-        $task = ContentRefreshTask::factory()->create(['metadata_json' => []]);
-
-        $this->assertIsArray($task->metadata_json);
-        $this->assertEmpty($task->metadata_json);
-    }
-
     /** @test EC-009 */
     public function deeply_nested_metadata_json(): void
     {

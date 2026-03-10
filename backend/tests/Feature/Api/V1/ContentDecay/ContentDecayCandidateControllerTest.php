@@ -465,7 +465,7 @@ class ContentDecayCandidateControllerTest extends TestCase
     /** @test */
     public function update_status_to_in_progress(): void
     {
-        ['user' => $user, 'site' => $site, 'candidate' => $this->createMockCandidate(['status' => 'planned'])['candidate']];
+        ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockCandidate(['status' => 'planned']);
         Sanctum::actingAs($user);
 
         $updatedCandidate = (object) array_merge((array) $candidate, [
@@ -494,7 +494,7 @@ class ContentDecayCandidateControllerTest extends TestCase
     /** @test */
     public function update_status_to_refreshed(): void
     {
-        ['user' => $user, 'site' => $site, 'candidate' => $this->createMockCandidate(['status' => 'in_progress'])['candidate']];
+        ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockCandidate(['status' => 'in_progress']);
         Sanctum::actingAs($user);
 
         $updatedCandidate = (object) array_merge((array) $candidate, [
@@ -580,7 +580,7 @@ class ContentDecayCandidateControllerTest extends TestCase
     /** @test */
     public function restore_ignored_candidate_to_backlog(): void
     {
-        ['user' => $user, 'site' => $site, 'candidate' => $this->createMockCandidate(['status' => 'ignored'])['candidate']];
+        ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockCandidate(['status' => 'ignored']);
         Sanctum::actingAs($user);
 
         $restoredCandidate = (object) array_merge((array) $candidate, [

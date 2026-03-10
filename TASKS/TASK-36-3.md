@@ -1,7 +1,7 @@
 # TASK-36-3: ContentDecayScoringService
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -140,3 +140,56 @@ new_weights = original_weights / (1 - weight_ranking_decline)
 ---
 
 *Created by SpecSystemAnalyst agent on 2026-03-10*
+
+---
+
+## Comments
+
+### PreTester (2026-03-10)
+**Test Design Complete**
+
+**Test Documentation:**
+- Created `TESTS/TEST-36-3.md` with 175+ test cases organized into 11 categories
+
+**Test Implementation:**
+- Created `backend/tests/Unit/Services/ContentDecay/ContentDecayScoringServiceTest.php`
+- Comprehensive PHPUnit test file with all test cases implemented
+
+**Test Categories Covered:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| SI | 8 | Service instantiation and structure |
+| CALC | 35 | Score calculation with various inputs |
+| RENORM | 30 | Weight renormalization when signals missing |
+| CONF | 20 | Confidence multiplier (0.85/0.93/1.00) |
+| SEV | 25 | Severity band classification |
+| CONTRIB | 20 | Contributing factors output |
+| BREAKDOWN | 10 | Score breakdown structure |
+| DET | 15 | Deterministic behavior verification |
+| EDGE | 20 | Edge cases (null, INF, NAN, etc.) |
+| INT | 10 | Integration readiness |
+
+**Key Test Scenarios:**
+1. ✅ All 7 base weights defined and sum to 1.0
+2. ✅ Score calculation with all signals present
+3. ✅ Weight renormalization when optional signals missing
+4. ✅ Confidence multiplier: GSC only (0.85), +rankings (0.93), +audit (1.00)
+5. ✅ Severity bands: Low (0-19), Medium (20-39), High (40-69), Critical (70-100)
+6. ✅ Only negative movement contributes to decay
+7. ✅ Score is deterministic and reproducible
+8. ✅ Edge cases: null, INF, NAN, negative values handled
+
+**Service Interface Expected:**
+```php
+class ContentDecayScoringService {
+    public function getBaseWeights(): array;
+    public function getRenormalizedWeights(array $availableSignals): array;
+    public function calculateDecayScore(array $signals): array;
+    public function normalizeClickLoss(int|float $previous, int|float $current): float;
+    public function normalizeImpressionLoss(int|float $previous, int|float $current): float;
+    public function normalizeCtrDrop(int|float $previous, int|float $current): float;
+    public function normalizePositionDecline(int $previous, int $current): float;
+}
+```
+
+**Status:** `To Write Tests` → `To Develop`

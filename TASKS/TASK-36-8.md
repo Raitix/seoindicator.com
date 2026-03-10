@@ -1,7 +1,7 @@
 # TASK-36-8: ContentDecayExportService
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Medium`
@@ -75,6 +75,59 @@ Appendix: Recovery Report
 - `backend/resources/views/pdf/content-decay-queue.blade.php`
 - `backend/resources/views/pdf/content-decay-recovery.blade.php`
 - `backend/tests/Unit/Services/ContentDecay/ContentDecayExportServiceTest.php`
+
+---
+
+## Comments
+
+### ProjectManager (2026-03-10)
+**Prioritization Complete**
+
+**Priority: MEDIUM** (confirmed - already set by SpecSystemAnalyst)
+- Export service task for reporting/sharing content decay data
+- Leaf task in dependency tree - no downstream tasks blocked by this
+- Reuses existing infrastructure from FEAT-029 (PdfToolExporter, XlsToolExporter patterns)
+- Standard Laravel service implementation with no external API dependencies
+
+**Risk: LOW** (confirmed - already set)
+- Standard Laravel service with Blade templates for PDF
+- No external APIs, no security-sensitive operations
+- Reuses proven export patterns from FEAT-029
+- CSV/PDF generation is well-documented and testable
+
+**Dependencies Analysis:**
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| TASK-36-2 (Eloquent Models) | `To Develop` | Tests complete (385+ tests), Developer implementation pending |
+| FEAT-029 (Export Results) | `Done` ✅ | PDF/CSV infrastructure exists and functional |
+
+**TDD Pattern Applied:**
+- PreTester CAN design tests immediately using mocked model interfaces
+- ContentDecayProject, ContentDecayCandidate models have defined interfaces
+- Test categories: CSV generation, PDF generation, filtering, token-based downloads
+- Implementation waits for TASK-36-2 to reach `To Test Locally`
+- This enables PARALLEL development - test design proceeds with model implementation
+
+**Export Architecture:**
+| Export Type | Format | Content |
+|-------------|--------|---------|
+| Queue Export | CSV/PDF | Candidate list with metrics, severity, status |
+| Recovery Report | CSV/PDF | Before/after comparison, timeline, outcomes |
+| Candidate Detail | CSV/PDF | Single page deep-dive with all signals |
+
+**Key Features:**
+- Reuses PdfToolExporter patterns for PDF generation
+- Reuses XlsToolExporter patterns for CSV generation
+- Token-based download system (already from FEAT-029)
+- Filtering by status, severity, date range
+- Executive summary section in PDF (totals, top pages)
+
+**Phase Context:**
+- Phase 4 Backend - Export layer on top of detection services
+- Depends on models (TASK-36-2) but NOT on detection services directly
+- Can be developed in parallel with TASK-36-3 through TASK-36-7 (services)
+
+**Status:** `To Write Tests` → Ready for PreTester
 
 ---
 

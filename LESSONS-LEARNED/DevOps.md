@@ -230,3 +230,21 @@ Last updated: 2026-03-07
 - **Tests:** 443 tests passing (LocalTester verified)
 - **Note:** Frontend comparison page for AI Visibility feature. Part of SPEC-034 (AI Visibility Tracking). Uses components from TASK-34-16 for charts and comparison logic.
 
+### TASK-35-9 (GBP Insights Sync Service)
+- **Date:** 2026-03-10
+- **Method:** Local/self-hosted deployment
+- **Deployment ID:** 20260310T214330Z-7beae7bf
+- **Result:** Successful
+- **Duration:** ~3 minutes (build: 1m20s, deploy: 1m16s, smoke: 8s)
+- **Commit:** aa55349f
+- **Health Check:** 200 OK, production smoke passed
+- **What was deployed:**
+  - `GBPInsightsService.php` - Domain service for GBP insights sync
+  - `GBPInsightsServiceInterface.php` - Service interface
+  - `SyncInsightsJob.php` - Queue job for background sync
+  - Container binding in AppServiceProvider
+  - 17 tests (35 assertions)
+- **Issue Encountered:** Frontend build failed with `ERR_MODULE_NOT_FOUND: Cannot find package 'satori'` because the temp worktree's node_modules was linked from the main project but `satori` wasn't installed there.
+- **Fix:** Ran `npm install satori --save-dev` in the main frontend directory before retrying deployment.
+- **Lesson:** When deployment fails due to missing npm packages in the temp worktree, install them in the main project's frontend/node_modules (which is linked to the temp worktree) and retry.
+
