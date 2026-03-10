@@ -1,15 +1,22 @@
 /**
  * Comparison Page Route
  * Task: TASK-32-3 - Comparison Page Route with Static Generation
+ * Task: TASK-32-22 - Performance Optimization and Launch
  * Spec: SPEC-32 (Competitor Comparison Landing Pages)
  *
  * Dynamic route page using Next.js App Router with static site generation
  * via generateStaticParams(). Renders comparison content between SEO tools.
+ *
+ * Performance optimizations:
+ * - Force static rendering for optimal build output
+ * - Static params generation at build time
+ * - Optimized metadata for SEO
  */
 
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { getComparisonBySlug, COMPARISON_SLUGS } from '@/lib/compare/registry';
 import { ComparisonData, ComparisonPageProps } from '@/lib/compare/types';
@@ -25,9 +32,84 @@ import { ComparisonSchema } from '@/components/compare/ComparisonSchema';
 import { FAQSection } from '@/components/compare/FAQSection';
 import { RelatedComparisons } from '@/components/compare/RelatedComparisons';
 
+// Skeleton components for loading states
+import { Skeleton } from '@/components/ui/skeleton';
+
 // ============================================================================
-// Static Generation
+// Skeleton Components for Loading States
 // ============================================================================
+
+/**
+ * Skeleton for comparison table section
+ */
+function ComparisonTableSkeleton() {
+  return (
+    <div className="w-full bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-6" data-testid="comparison-table-skeleton">
+      <div className="grid grid-cols-3 gap-4 pb-3 border-b border-slate-700">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-24 mx-auto" />
+        <Skeleton className="h-4 w-24 mx-auto" />
+      </div>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="grid grid-cols-3 gap-4 py-3 border-b border-slate-800/50">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-5 w-5 mx-auto rounded-full" />
+          <Skeleton className="h-5 w-5 mx-auto rounded-full" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Skeleton for pricing comparison section
+ */
+function PricingComparisonSkeleton() {
+  return (
+    <div className="grid gap-6 md:grid-cols-2" data-testid="pricing-comparison-skeleton">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <div key={i} className="bg-slate-900/50 rounded-xl border border-slate-800 p-6">
+          <Skeleton className="h-6 w-32 mb-4" />
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, j) => (
+              <div key={j} className="flex justify-between">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Skeleton for FAQ section
+ */
+function FAQSkeleton() {
+  return (
+    <div className="space-y-4" data-testid="faq-skeleton">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="bg-slate-900/50 rounded-xl border border-slate-800 p-4">
+          <Skeleton className="h-5 w-3/4 mb-2" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6 mt-1" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
+// Static Generation Configuration
+// ============================================================================
+
+/**
+ * Force static rendering for optimal performance.
+ * Ensures pages are pre-rendered at build time with no dynamic rendering.
+ */
+export const dynamic = 'force-static';
 
 /**
  * Generate static params for all comparison pages.

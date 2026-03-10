@@ -1,7 +1,7 @@
 # TASK-35-5: BusinessLocationService
 
 ## STATUS
-`To Document`
+`Done`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -54,6 +54,21 @@ Create BusinessLocationService for CRUD operations and business logic related to
 *Created by SpecSystemAnalyst on 2026-03-08*
 
 ## Comments
+
+### DocSystemAnalyst Session (2026-03-10 21:10 GMT+2)
+- **Status:** Done ✅
+- Added comprehensive `BusinessLocationService (TASK-35-5)` section to `PROJECT-SEOINDICATOR/DOCUMENTATION.md` covering:
+  - Service interface methods (CRUD, validation, list, restore)
+  - List options and filter parameters
+  - Validation rules for create/update operations
+  - Immutability guards for `site_id` and GBP identifiers
+  - Geocoding integration with NominatimService
+  - Cache versioning strategy and invalidation
+  - Schema-drift tolerance for missing columns
+  - Delete behavior (soft delete, force delete, restore)
+  - Test coverage summary and production validation evidence
+- Refreshed the top deployment baseline to `20260310T162658Z-4e75c9fc` / `9f6834f0`.
+- Task remains `Done`; SPEC-035 / FEAT-035 remain open because sibling TASK-35 items are still unfinished.
 
 ### ProjectManager Session (2026-03-08 22:05 GMT+2)
 - **Priority:** HIGH (confirmed) - Service layer for Local SEO feature, enables multiple downstream tasks

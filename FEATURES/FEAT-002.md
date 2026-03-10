@@ -827,3 +827,20 @@ Actions:
 - Will remove temporary feature lock files and clear the active-agents entry during cleanup.
 
 **ORCHESTRATOR BUG:** Requests still arrive as `FEAT-2` while the canonical feature id/file is `FEAT-002` / `FEAT-002.md`. The feature remains fully complete; this pass refreshed housekeeping state only.
+
+### [2026-03-10 21:25 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - Orchestrator-triggered processing for `FEAT-2`.
+
+Verification:
+- Alias file `FEATURES/FEAT-2.md` does not exist; canonical feature file is `FEATURES/FEAT-002.md`.
+- FEAT-002 status: `Done` ✅
+- SPEC-002 status: `Done` ✅
+- All 14 child tasks (TASK-002-1 through TASK-002-14): `Done` ✅
+- `DOCUMENTATION.md`: Present at line 18416 (`## Ranking Change Alert System (FEAT-002)`) ✅
+
+Actions:
+- Removed stale lock file `FEATURES/.locks/FEAT-2.lock`
+- Written completion markers: `FEAT-2.json` (alias) + `FEAT-002.json` (canonical)
+- Cleared active-agents entry
+
+**ORCHESTRATOR BUG:** Task triggers continue using `FEAT-2` while the canonical feature ID is `FEAT-002` (zero-padded). This naming mismatch causes repeated spawns. Feature remains fully complete - no documentation updates required.
