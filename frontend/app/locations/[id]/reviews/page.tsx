@@ -1,6 +1,11 @@
+"use client";
+
+import * as React from "react";
 import { Suspense } from "react";
+import { useParams } from "next/navigation";
 
 import { LocationReviewsPage } from "@/components/local/LocationReviewsPage";
+import { resolveStandaloneLocationDashboardId } from "@/lib/location-dashboard-route";
 
 function LocationReviewsFallback() {
   return (
@@ -10,20 +15,25 @@ function LocationReviewsFallback() {
   );
 }
 
-export default async function StandaloneLocationReviewsRoute({
-  params,
-}: {
-  params: Promise<{ id?: string }>;
-}) {
-  const resolvedParams = await params;
-  const locationId = resolvedParams.id ?? "preview";
+export default function StandaloneLocationReviewsPage() {
+  const params = useParams<{ id?: string | string[] }>();
+  const [locationId, setLocationId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const pathname = typeof window !== "undefined" ? window.location.pathname : null;
+    setLocationId(resolveStandaloneLocationDashboardId(params.id, pathname));
+  }, [params.id]);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-7xl">
-        <Suspense fallback={<LocationReviewsFallback />}>
-          <LocationReviewsPage locationId={locationId} />
-        </Suspense>
+        {locationId ? (
+          <Suspense fallback={<LocationReviewsFallback />}>
+            <LocationReviewsPage locationId={locationId} />
+          </Suspense>
+        ) : (
+          <LocationReviewsFallback />
+        )}
       </div>
     </main>
   );
