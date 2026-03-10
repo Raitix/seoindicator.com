@@ -5,7 +5,10 @@ namespace App\Services\LocalSEO;
 use App\Models\BusinessLocation;
 use App\Models\Site;
 use App\Services\LocalSEO\Contracts\BusinessLocationServiceInterface;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -17,67 +20,15 @@ use Illuminate\Support\Facades\DB;
 class BusinessLocationService implements BusinessLocationServiceInterface
 {
     /**
-     * Get paginated list of locations for a site.
-     *
-     * @param int $siteId
-     * @param array $filters
-     * @return LengthAwarePaginator
-     */
-    public function getLocations(int $siteId, array $filters = []): LengthAwarePaginator
-    {
-        $query = BusinessLocation::query()
-            ->where('site_id', $siteId)
-            ->whereNull('deleted_at');
-
-        // Filter by GBP connection status
-        if (isset($filters['is_gbp_connected'])) {
-            $query->where('gbp_connected', $filters['is_gbp_connected']);
-        }
-
-        // Search by name or address
-        if (!empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('address', 'like', "%{$search}%");
-            });
-        }
-
-        // Sorting
-        $sortField = 'created_at';
-        $sortDirection = 'desc';
-
-        if (!empty($filters['sort'])) {
-            $sort = $filters['sort'];
-            if (str_starts_with($sort, '-')) {
-                $sortDirection = 'desc';
-                $sortField = ltrim($sort, '-');
-            } else {
-                $sortDirection = 'asc';
-                $sortField = $sort;
-            }
-
-            // Validate sort field
-            $allowedSortFields = ['name', 'created_at', 'updated_at', 'address'];
-            if (!in_array($sortField, $allowedSortFields)) {
-                $sortField = 'created_at';
-            }
-        }
-
-        $query->orderBy($sortField, $sortDirection);
-
-        return $query->paginate(15);
-    }
-
-    /**
      * Create a new business location.
      *
-     * @param int $siteId
-     * @param array $data
+     * @param array $data Location data including site_id, name, address, city, country
      * @return BusinessLocation
+     * @throws \Illuminate\Validation\ValidationException
      */
-    public function createLocation(int $siteId, array $data): BusinessLocation
+    public function createLocation(array $data): BusinessLocation
     {
+        $siteId = $data['site_id'];
         $site = Site::findOrFail($siteId);
 
         $location = new BusinessLocation();
@@ -93,42 +44,23 @@ class BusinessLocationService implements BusinessLocationServiceInterface
         $location->is_active = true;
         $location->save();
 
-        // Geocode address to get coordinates (placeholder - would use geocoding service)
-        // $this->geocodeLocation($location);
-
         return $location;
     }
 
     /**
-     * Get a single location by ID.
+     * Update an existing business location.
      *
-     * @param int $id
-     * @return BusinessLocation|null
-     */
-    public function getLocation(int $id): ?BusinessLocation
-    {
-        return BusinessLocation::where('id', $id)
-            ->whereNull('deleted_at')
-            ->first();
-    }
-
-    /**
-     * Update a business location.
-     *
-     * @param int $id
-     * @param array $data
+     * @param int $id Location ID
+     * @param array $data Updated location data
      * @return BusinessLocation
+     * @throws ModelNotFoundException
      */
     public function updateLocation(int $id, array $data): BusinessLocation
     {
-        $location = $this->getLocation($id);
-
-        if (!$location) {
-            throw new \Exception('Location not found');
-        }
+        $location = $this->findLocation($id);
 
         // Only update provided fields
-        $updatableFields = ['name', 'address', 'phone', 'website', 'category', 'hours', 'latitude', 'longitude'];
+        $updatableFields = ['name', 'address', 'phone', 'website', 'category', 'hours', 'latitude', 'longitude', 'is_active'];
 
         foreach ($updatableFields as $field) {
             if (array_key_exists($field, $data)) {
@@ -144,16 +76,267 @@ class BusinessLocationService implements BusinessLocationServiceInterface
     /**
      * Delete a business location (soft delete).
      *
-     * @param int $id
-     * @return void
+     * @param int $id Location ID
+     * @param bool $force Force delete (hard delete)
+     * @return bool
+     * @throws ModelNotFoundException
      */
-    public function deleteLocation(int $id): void
+    public function deleteLocation(int $id, bool $force = false): bool
     {
-        $location = BusinessLocation::find($id);
+        $location = $this->findLocation($id);
 
-        if ($location) {
-            $location->delete();
+        if ($force) {
+            return $location->forceDelete();
         }
+
+        return $location->delete();
+    }
+
+    /**
+     * Get all locations for a specific site.
+     *
+     * @param int $siteId Site ID
+     * @param array $options Filter options
+     * @return Collection|LengthAwarePaginator
+     */
+    public function getLocationsForSite(int $siteId, array $options = []): Collection|Paginator
+    {
+        $query = BusinessLocation::query()
+            ->where('site_id', $siteId);
+
+        // Filter by active status
+        if (!empty($options['active_only'])) {
+            $query->where('is_active', true);
+        }
+
+        // Filter by GBP connection status
+        if (!empty($options['gbp_connected'])) {
+            $query->where('gbp_connected', true);
+        }
+
+        // Include soft deleted
+        if (!empty($options['include_deleted'])) {
+            $query->withTrashed();
+        } else {
+            $query->whereNull('deleted_at');
+        }
+
+        // Eager load relations
+        if (!empty($options['with'])) {
+            $query->with($options['with']);
+        }
+
+        // Sorting
+        $sortField = $options['sort'] ?? 'created_at';
+        $sortDirection = str_starts_with($sortField, '-') ? 'desc' : 'asc';
+        $sortField = ltrim($sortField, '-');
+        
+        $allowedSortFields = ['name', 'created_at', 'updated_at', 'address'];
+        if (!in_array($sortField, $allowedSortFields)) {
+            $sortField = 'created_at';
+        }
+        
+        $query->orderBy($sortField, $sortDirection);
+
+        // Pagination
+        if (!empty($options['per_page'])) {
+            return $query->paginate($options['per_page'], ['*'], 'page', $options['page'] ?? 1);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get all locations for a specific user (via their sites).
+     *
+     * @param int $userId User ID
+     * @param array $options Filter options
+     * @return Collection|LengthAwarePaginator
+     */
+    public function getLocationsForUser(int $userId, array $options = []): Collection|Paginator
+    {
+        $query = BusinessLocation::query()
+            ->where('user_id', $userId);
+
+        // Filter by site
+        if (!empty($options['site_id'])) {
+            $query->where('site_id', $options['site_id']);
+        }
+
+        // Filter by active status
+        if (!empty($options['active_only'])) {
+            $query->where('is_active', true);
+        }
+
+        // Filter by GBP connection status
+        if (!empty($options['gbp_connected'])) {
+            $query->where('gbp_connected', true);
+        }
+
+        // Include soft deleted
+        if (!empty($options['include_deleted'])) {
+            $query->withTrashed();
+        } else {
+            $query->whereNull('deleted_at');
+        }
+
+        // Eager load relations
+        if (!empty($options['with'])) {
+            $query->with($options['with']);
+        }
+
+        // Sorting
+        $sortField = $options['sort'] ?? 'created_at';
+        $sortDirection = str_starts_with($sortField, '-') ? 'desc' : 'asc';
+        $sortField = ltrim($sortField, '-');
+        
+        $allowedSortFields = ['name', 'created_at', 'updated_at', 'address'];
+        if (!in_array($sortField, $allowedSortFields)) {
+            $sortField = 'created_at';
+        }
+        
+        $query->orderBy($sortField, $sortDirection);
+
+        // Pagination
+        if (!empty($options['per_page'])) {
+            return $query->paginate($options['per_page'], ['*'], 'page', $options['page'] ?? 1);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Validate location data.
+     *
+     * @param array $data Location data to validate
+     * @return array ['valid' => bool, 'errors' => array]
+     */
+    public function validateLocationData(array $data): array
+    {
+        $errors = [];
+
+        // Required fields
+        $required = ['name', 'address', 'site_id'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                $errors[$field] = "The {$field} field is required.";
+            }
+        }
+
+        // Name length
+        if (!empty($data['name']) && strlen($data['name']) > 255) {
+            $errors['name'] = 'The name may not be greater than 255 characters.';
+        }
+
+        // Address length
+        if (!empty($data['address']) && strlen($data['address']) > 500) {
+            $errors['address'] = 'The address may not be greater than 500 characters.';
+        }
+
+        // Phone format
+        if (!empty($data['phone']) && !preg_match('/^[\d\s\-\+\(\)]+$/', $data['phone'])) {
+            $errors['phone'] = 'The phone format is invalid.';
+        }
+
+        // Website URL
+        if (!empty($data['website']) && !filter_var($data['website'], FILTER_VALIDATE_URL)) {
+            $errors['website'] = 'The website must be a valid URL.';
+        }
+
+        // Coordinates
+        if (isset($data['latitude']) && ($data['latitude'] < -90 || $data['latitude'] > 90)) {
+            $errors['latitude'] = 'The latitude must be between -90 and 90.';
+        }
+        if (isset($data['longitude']) && ($data['longitude'] < -180 || $data['longitude'] > 180)) {
+            $errors['longitude'] = 'The longitude must be between -180 and 180.';
+        }
+
+        return [
+            'valid' => empty($errors),
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * Find a location by ID.
+     *
+     * @param int $id Location ID
+     * @return BusinessLocation
+     * @throws ModelNotFoundException
+     */
+    public function findLocation(int $id): BusinessLocation
+    {
+        $location = BusinessLocation::where('id', $id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$location) {
+            throw new ModelNotFoundException("Location with ID {$id} not found");
+        }
+
+        return $location;
+    }
+
+    /**
+     * Restore a soft-deleted location.
+     *
+     * @param int $id Location ID
+     * @return BusinessLocation
+     * @throws ModelNotFoundException
+     */
+    public function restoreLocation(int $id): BusinessLocation
+    {
+        $location = BusinessLocation::withTrashed()
+            ->where('id', $id)
+            ->first();
+
+        if (!$location) {
+            throw new ModelNotFoundException("Location with ID {$id} not found");
+        }
+
+        if (!$location->trashed()) {
+            return $location;
+        }
+
+        $location->restore();
+
+        return $location;
+    }
+
+    /**
+     * Get a single location by ID (alias for findLocation).
+     *
+     * @param int $id
+     * @return BusinessLocation|null
+     */
+    public function getLocation(int $id): ?BusinessLocation
+    {
+        try {
+            return $this->findLocation($id);
+        } catch (ModelNotFoundException $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Get paginated list of locations for a site.
+     *
+     * @param int $siteId
+     * @param array $filters
+     * @return Paginator
+     */
+    public function getLocations(int $siteId, array $filters = []): Paginator
+    {
+        $options = [
+            'site_id' => $siteId,
+            'active_only' => $filters['active_only'] ?? false,
+            'gbp_connected' => $filters['is_gbp_connected'] ?? null,
+            'sort' => $filters['sort'] ?? null,
+            'per_page' => $filters['per_page'] ?? 15,
+            'page' => $filters['page'] ?? 1,
+        ];
+
+        return $this->getLocationsForSite($siteId, $options);
     }
 
     /**

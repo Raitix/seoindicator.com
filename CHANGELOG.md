@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Deployment platform and deployment visibility
+
+#### Deployment automation
+- Replaced GitHub-hosted deployment with a local / self-hosted deployment flow
+- Disabled `.github/workflows/deploy.yml` as the active deployment mechanism
+- Added `scripts/deploy-prod.ps1` as the local PowerShell deployment entrypoint
+- Added `scripts/deploy_prod.py` as the deployment engine
+- Added `.githooks/post-push` for auto-deploy on pushes to `main`
+- Added `scripts/install-git-hooks.ps1` to configure `core.hooksPath=.githooks`
+
+#### Deployment verification
+- Added `frontend/scripts/prod-smoke-check.mjs` for local Playwright-based production smoke validation
+- Deployment success now requires local smoke verification and a successful deployment JSON log
+- Deployment logs are now stored in `C:\Users\Raitis\.openclaw\logs\deployments`
+
+#### Workflow Control
+- Added a new **Deploy** tab in `PROJECT-CONTROL`
+- Added deployment history / details / run APIs used by the control UI
+- Workflow Control now shows recent deployment status and step-level details
+
+#### Documentation / operations
+- Updated deployment, production, testing, and workflow guidance to reflect the local deployment model
+- Historical GitHub Actions references remain in older release records as historical context only
+
 ### Added - AI Suggestions Feature (FEAT-021)
 
 #### Core Infrastructure
@@ -170,4 +194,4 @@ AI_MAX_RETRIES=2
 
 ---
 
-*Last updated: 2026-03-04*
+*Last updated: 2026-03-09*

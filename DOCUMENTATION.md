@@ -1,6 +1,48 @@
 # DOCUMENTATION.md
 
 ---
+## Current Deployment Baseline (2026-03-09)
+
+### Active deployment model
+SEOIndicator is now deployed through a **local / self-hosted deployment pipeline**, not GitHub-hosted Actions.
+
+Current rollout path:
+
+```text
+git push main
+  → local post-push hook or Workflow Control Deploy action
+  → local frontend build
+  → SSH/SFTP production deploy
+  → backend composer / migrate / cache refresh
+  → local Playwright smoke verification against production
+  → structured deployment log written to C:\Users\Raitis\.openclaw\logs\deployments
+```
+
+### Current deployment control surface
+- Script entrypoint: `scripts/deploy-prod.ps1`
+- Deploy engine: `scripts/deploy_prod.py`
+- Git hook: `.githooks/post-push`
+- Workflow Control UI: **Deploy** tab (between Agents and Stats)
+- Production smoke script: `frontend/scripts/prod-smoke-check.mjs`
+
+### Current deployment success criteria
+A deployment is considered successful only when all of the following are true:
+1. frontend build succeeds locally
+2. backend deployment succeeds over SSH
+3. local production smoke verification succeeds
+4. deployment log is marked `success`
+
+### Latest verified deployment baseline
+- Deployment id: `20260309T113619Z-d109d19a`
+- Commit: `f407c8133c9df73a3b9481fb4a93a59f1fa5df8e`
+- Result: `success`
+
+### Important notes
+- Historical sections below may still reference **GitHub Actions runs**. Those references are preserved as historical release records and do **not** describe the current deployment path.
+- Public `https://seoindicator.com/api/health` is **not currently used as the deployment success gate** from this machine because some access paths return Hostinger’s generic 404 page.
+- The local Windows Playwright **test runner** is currently unreliable for deployment gating, so deployment verification uses a direct Playwright browser script instead of `playwright test`.
+
+---
 ## Local SEO Database Migrations (TASK-35-1)
 
 ### Migration Description
@@ -22991,14 +23033,16 @@ End-to-end tests for critical user flows in the Keyword Rank Tracking feature (F
 | Path Traversal | ✅ Returns 404 (blocked) |
 | SQL Injection | ✅ No SQL errors exposed in response |
 
-### CI/CD Integration
+### Deployment / Validation Integration
 
-Tests run automatically on:
-- Push to `main` branch
-- Pull request creation
-- Manual workflow dispatch
+Current validation path is local/self-hosted:
+- local automated tests run from the development machine
+- deployment is triggered via local post-push hook or Workflow Control Deploy
+- production verification runs through the local Playwright smoke script
 
-**GitHub Actions Workflow:** `.github/workflows/playwright.yml`
+**Current production smoke entrypoint:** `frontend/scripts/prod-smoke-check.mjs`
+
+**Historical note:** earlier versions of the project used GitHub Actions workflows for this stage.
 
 ### Running Tests Locally
 
