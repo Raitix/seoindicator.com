@@ -25,17 +25,67 @@ class BusinessLocationPolicy
      */
     public function view(User $user, BusinessLocation $location): bool
     {
-        // Owner can view
-        if ($location->user_id === $user->id) {
-            return true;
-        }
+        return $this->ownsLocationOrIsAdmin($user, $location);
+    }
 
-        // Admin can view any
-        if ($user->role === 'admin' || $user->role === 'super_admin') {
-            return true;
-        }
+    /**
+     * Determine whether the user can view local rankings for the location.
+     *
+     * @Task TASK-35-15
+     */
+    public function viewRankings(User $user, BusinessLocation $location): bool
+    {
+        return $this->view($user, $location);
+    }
 
-        return false;
+    /**
+     * Determine whether the user can trigger local ranking checks.
+     *
+     * @Task TASK-35-15
+     */
+    public function checkRankings(User $user, BusinessLocation $location): bool
+    {
+        return $this->update($user, $location);
+    }
+
+    /**
+     * Determine whether the user can view local rank quota usage.
+     *
+     * @Task TASK-35-15
+     */
+    public function viewQuota(User $user, BusinessLocation $location): bool
+    {
+        return $this->view($user, $location);
+    }
+
+    /**
+     * Determine whether the user can view tracked competitors.
+     *
+     * @Task TASK-35-15
+     */
+    public function viewCompetitors(User $user, BusinessLocation $location): bool
+    {
+        return $this->view($user, $location);
+    }
+
+    /**
+     * Determine whether the user can add tracked competitors.
+     *
+     * @Task TASK-35-15
+     */
+    public function addCompetitor(User $user, BusinessLocation $location): bool
+    {
+        return $this->update($user, $location);
+    }
+
+    /**
+     * Determine whether the user can delete tracked competitors.
+     *
+     * @Task TASK-35-15
+     */
+    public function deleteCompetitor(User $user, BusinessLocation $location): bool
+    {
+        return $this->update($user, $location);
     }
 
     /**
@@ -61,17 +111,7 @@ class BusinessLocationPolicy
      */
     public function update(User $user, BusinessLocation $location): bool
     {
-        // Owner can update
-        if ($location->user_id === $user->id) {
-            return true;
-        }
-
-        // Admin can update any
-        if ($user->role === 'admin' || $user->role === 'super_admin') {
-            return true;
-        }
-
-        return false;
+        return $this->ownsLocationOrIsAdmin($user, $location);
     }
 
     /**
@@ -79,17 +119,7 @@ class BusinessLocationPolicy
      */
     public function delete(User $user, BusinessLocation $location): bool
     {
-        // Owner can delete
-        if ($location->user_id === $user->id) {
-            return true;
-        }
-
-        // Admin can delete any
-        if ($user->role === 'admin' || $user->role === 'super_admin') {
-            return true;
-        }
-
-        return false;
+        return $this->ownsLocationOrIsAdmin($user, $location);
     }
 
     /**
@@ -97,17 +127,7 @@ class BusinessLocationPolicy
      */
     public function restore(User $user, BusinessLocation $location): bool
     {
-        // Owner can restore
-        if ($location->user_id === $user->id) {
-            return true;
-        }
-
-        // Admin can restore any
-        if ($user->role === 'admin' || $user->role === 'super_admin') {
-            return true;
-        }
-
-        return false;
+        return $this->ownsLocationOrIsAdmin($user, $location);
     }
 
     /**
@@ -115,17 +135,7 @@ class BusinessLocationPolicy
      */
     public function forceDelete(User $user, BusinessLocation $location): bool
     {
-        // Owner can force delete
-        if ($location->user_id === $user->id) {
-            return true;
-        }
-
-        // Admin can force delete any
-        if ($user->role === 'admin' || $user->role === 'super_admin') {
-            return true;
-        }
-
-        return false;
+        return $this->ownsLocationOrIsAdmin($user, $location);
     }
 
     /**
@@ -135,17 +145,7 @@ class BusinessLocationPolicy
      */
     public function connectGbp(User $user, BusinessLocation $location): bool
     {
-        // Owner can connect GBP
-        if ($location->user_id === $user->id) {
-            return true;
-        }
-
-        // Admin can connect GBP for any
-        if ($user->role === 'admin' || $user->role === 'super_admin') {
-            return true;
-        }
-
-        return false;
+        return $this->ownsLocationOrIsAdmin($user, $location);
     }
 
     /**
@@ -155,17 +155,7 @@ class BusinessLocationPolicy
      */
     public function disconnectGbp(User $user, BusinessLocation $location): bool
     {
-        // Owner can disconnect GBP
-        if ($location->user_id === $user->id) {
-            return true;
-        }
-
-        // Admin can disconnect GBP for any
-        if ($user->role === 'admin' || $user->role === 'super_admin') {
-            return true;
-        }
-
-        return false;
+        return $this->ownsLocationOrIsAdmin($user, $location);
     }
 
     /**
@@ -175,16 +165,13 @@ class BusinessLocationPolicy
      */
     public function syncGbp(User $user, BusinessLocation $location): bool
     {
-        // Owner can sync GBP
-        if ($location->user_id === $user->id) {
-            return true;
-        }
+        return $this->ownsLocationOrIsAdmin($user, $location);
+    }
 
-        // Admin can sync GBP for any
-        if ($user->role === 'admin' || $user->role === 'super_admin') {
-            return true;
-        }
-
-        return false;
+    protected function ownsLocationOrIsAdmin(User $user, BusinessLocation $location): bool
+    {
+        return $location->user_id === $user->id
+            || $user->role === 'admin'
+            || $user->role === 'super_admin';
     }
 }
