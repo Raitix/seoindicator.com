@@ -56,6 +56,15 @@ class BusinessLocationControllerProductionRegressionTest extends TestCase
         }
     }
 
+    protected function dropBusinessLocationIsActiveColumn(): void
+    {
+        if (Schema::hasColumn('business_locations', 'is_active')) {
+            Schema::table('business_locations', function ($table) {
+                $table->dropColumn('is_active');
+            });
+        }
+    }
+
     /** @test */
     public function locations_index_returns_200_without_sort_query_and_uses_real_service(): void
     {
@@ -256,6 +265,32 @@ class BusinessLocationControllerProductionRegressionTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath('data.0.name', 'Soft Delete Drift Location');
+    }
+
+    /** @test */
+    public function locations_index_tolerates_missing_is_active_column_in_drifted_production_schemas(): void
+    {
+        $user = User::factory()->create();
+        $site = Site::factory()->create(['user_id' => $user->id]);
+
+        BusinessLocation::factory()->create([
+            'user_id' => $user->id,
+            'site_id' => $site->id,
+            'name' => 'Active Flag Drift Location',
+            'address' => '901 Schema Drift Plaza',
+            'is_active' => true,
+        ]);
+
+        $this->dropBusinessLocationIsActiveColumn();
+
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson("/api/v1/sites/{$site->id}/locations");
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Active Flag Drift Location')
+            ->assertJsonPath('data.0.is_active', true);
     }
 
     /** @test */
