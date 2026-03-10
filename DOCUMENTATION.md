@@ -1,7 +1,7 @@
 # DOCUMENTATION.md
 
 ---
-## Current Deployment Baseline (2026-03-09)
+## Current Deployment Baseline (2026-03-10)
 
 ### Active deployment model
 SEOIndicator is now deployed through a **local / self-hosted deployment pipeline**, not GitHub-hosted Actions.
@@ -33,8 +33,8 @@ A deployment is considered successful only when all of the following are true:
 4. deployment log is marked `success`
 
 ### Latest verified deployment baseline
-- Deployment id: `20260309T113619Z-d109d19a`
-- Commit: `f407c8133c9df73a3b9481fb4a93a59f1fa5df8e`
+- Deployment id: `20260310T084645Z-ef7441dd`
+- Commit: `d6b9c9624567b35a916d3634e64bf9a65968f108`
 - Result: `success`
 
 ### Important notes
