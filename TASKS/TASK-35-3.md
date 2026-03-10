@@ -1,7 +1,7 @@
 # TASK-35-3: GBP-Related Models
 
 ## STATUS
-`To Test Prod`
+`To Document`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -54,6 +54,27 @@ Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
 *Created by SpecSystemAnalyst on 2026-03-08*
 
 ## Comments
+
+### ProdTester Session (2026-03-10 18:11 GMT+2)
+- Moved the task from `To Test Prod` → `Testing Prod` → `To Document` after validating the deployed GBP model layer against production with a disposable fixture and live HTTPS probes.
+- Evidence: `PROJECT-SEOINDICATOR/temp/task353-prod-validation-20260310T161124Z.json`
+- Production Eloquent smoke checks passed for the dedicated model layer:
+  - `BusinessLocation` relations resolved to the dedicated GBP models and returned the expected counts (`reviews=3`, `insights=2`, `posts=2`).
+  - `GBPInsight::forLocation()->forDateRange()` returned the expected 2-row slice and `calculateTotalActions()` returned `21` for the seeded day.
+  - `GBPReview` rating scopes returned the expected split (`positive=1`, `neutral=1`, `negative=1`), `unresponded()` returned `2`, and `sentiment_label` resolved to `Positive`.
+  - `GBPPost` published/scheduled scopes returned `1/1`, and `post_type_label` resolved to `Event`.
+- Live authenticated review flows passed in production using the same fixture:
+  - `GET /api/v1/auth/user` ✅ 200
+  - `GET /api/v1/locations/{id}/reviews` ✅ returned all seeded reviews
+  - `GET /api/v1/locations/{id}/reviews?rating=5` ✅ returned only the 5-star review
+  - `GET /api/v1/locations/{id}/reviews?has_response=true` ✅ moved from `1` result to `2` after posting a response
+  - `GET /api/v1/locations/{id}/reviews/stats` ✅ `average_rating=3`, `total_count=3`, `response_rate` updated from `33.3` → `66.7`
+  - `POST /api/v1/locations/{id}/reviews/{reviewId}/respond` ✅ persisted the owner response through the production API
+- Important downstream finding: `GET /api/v1/locations/{id}/insights?start_date=2026-03-08&end_date=2026-03-09` returned **500 Server Error** against the real production fixture.
+  - This does **not** invalidate TASK-35-3 acceptance; the dedicated `GBPInsight` model itself is deployed and works in production.
+  - The failure aligns with the still-open TASK-35-9 / LocalSEO adapter gap: `backend/app/Services/LocalSEO/GBPInsightsService.php` still queries legacy columns like `date`, `queries`, and `actions` instead of the deployed `gbp_insights` schema (`insights_date`, `searches`, `calls`, `directions`, `website_clicks`).
+- Cleanup completed successfully: the disposable production user/fixtures were deleted after validation.
+- Handoff: model task is production-validated; DocSystemAnalyst can record the completion while the separate insights-service work continues under TASK-35-9.
 
 ### DevOps Session (2026-03-10 17:52 GMT+2)
 - Moved the task from `To Deploy` → `In Deployment` → `To Test Prod` after rolling out commit `82cf1b5fafab481d9513d0fbdfcd19d124abc360` to production.
