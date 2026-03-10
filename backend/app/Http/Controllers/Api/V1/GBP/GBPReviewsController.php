@@ -94,8 +94,8 @@ class GBPReviewsController extends Controller
     {
         $location = Location::findOrFail($id);
 
-        // Check authorization
-        $this->authorize('sync', $location);
+        // Confirm the user can access the location before exposing connection state.
+        $this->authorize('view', $location);
 
         // Check GBP connection
         if (!$location->gbp_connected) {
@@ -103,6 +103,9 @@ class GBPReviewsController extends Controller
                 'message' => 'Location is not connected to Google Business Profile.',
             ], 422);
         }
+
+        // Check authorization for running syncs
+        $this->authorize('sync', $location);
 
         try {
             $jobId = $service->syncReviews($location->id);
@@ -138,8 +141,8 @@ class GBPReviewsController extends Controller
     {
         $location = Location::findOrFail($id);
 
-        // Check authorization
-        $this->authorize('respondToReviews', $location);
+        // Confirm the user can access the location before exposing connection state.
+        $this->authorize('view', $location);
 
         // Check GBP connection
         if (!$location->gbp_connected) {
@@ -148,13 +151,20 @@ class GBPReviewsController extends Controller
             ], 422);
         }
 
-        // Verify review belongs to this location
-        $review = GBPReview::where('id', $reviewId)
-            ->where('location_id', $location->id)
-            ->firstOrFail();
+        // Check authorization for review responses
+        $this->authorize('respondToReviews', $location);
+
+        $review = GBPReview::findOrFail($reviewId);
+
+        // Prevent cross-location review access from leaking valid review IDs.
+        if ((int) $review->location_id !== (int) $location->id) {
+            return response()->json([
+                'message' => 'You do not have access to this review.',
+            ], 403);
+        }
 
         // Check if already responded
-        if ($review->has_response) {
+        if ($review->hasResponse()) {
             return response()->json([
                 'message' => 'This review already has a response.',
             ], 409);
