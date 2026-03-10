@@ -24325,7 +24325,7 @@ CREATE TABLE keywords (
 - `idx_keywords_site_id` on `site_id`
 - `idx_keywords_status` on `status`
 - `idx_keywords_last_checked` on `last_checked_at`
-- `idx_keywords_gsc_query_match` on `(site_id, keyword)` for GSC integration
+- `keywords_gsc_query_match_index` on `gsc_query_match` for GSC query matching
 
 ### Ranking History Table
 ```sql
