@@ -1,7 +1,7 @@
 # TASK-35-2: BusinessLocation Model
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -244,3 +244,10 @@ php artisan test --filter BusinessLocationTest
 
 **Handoff:**
 - Approved for DevOps / deployment.
+
+### DevOps Session (2026-03-10 13:18 GMT+2)
+- **Status:** `In Deployment` 🚀
+- Cleared the stale LocalTester completion marker and replaced the stale `TASK-35-2` lock with the current DevOps session lock.
+- Production is still on `origin/main` commit `482fe5eb`, which does **not** contain TASK-35-2 (`32b302f9`, `03b1d461` are not ancestors of the deployed commit).
+- Local `main` is 12 commits ahead of `origin/main` and contains unrelated work in flight, so deployment is being isolated through a task-specific deploy branch/worktree to avoid shipping unrelated changes.
+- Next steps: cherry-pick only the TASK-35-2 implementation + LocalTester approval commits onto an isolated deploy branch, verify the task gate in that clean tree, push the deploy branch, run `scripts/deploy-prod.ps1`, then hand off to ProdTester with the deployment log id + commit hash.
