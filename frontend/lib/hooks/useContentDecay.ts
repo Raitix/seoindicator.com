@@ -165,7 +165,7 @@ export function useContentDecaySummary(siteId: string | number): UseContentDecay
     summary: data ?? null,
     isLoading,
     error: error ?? null,
-    mutate: async (newData, shouldRevalidate) => {
+    mutate: async (newData: any, shouldRevalidate?: boolean) => {
       await mutate(newData as any, shouldRevalidate);
     },
   };
@@ -209,7 +209,7 @@ export function useContentDecayCandidates(
     meta: data?.meta ?? null,
     isLoading,
     error: error ?? null,
-    mutate: async (newData, shouldRevalidate) => {
+    mutate: async (newData: any, shouldRevalidate?: boolean) => {
       await mutate(newData as any, shouldRevalidate);
     },
   };
@@ -228,7 +228,7 @@ export function useContentDecayCandidate(candidateId: string | number): UseConte
     candidate: data?.candidate ?? null,
     isLoading,
     error: error ?? null,
-    mutate: async (newData, shouldRevalidate) => {
+    mutate: async (newData: any, shouldRevalidate?: boolean) => {
       await mutate(newData as any, shouldRevalidate);
     },
   };
@@ -247,7 +247,7 @@ export function useContentDecaySettings(siteId: string | number): UseContentDeca
     settings: data ?? null,
     isLoading,
     error: error ?? null,
-    mutate: async (newData, shouldRevalidate) => {
+    mutate: async (newData: any, shouldRevalidate?: boolean) => {
       await mutate(newData as any, shouldRevalidate);
     },
   };
@@ -276,7 +276,7 @@ export function useContentDecayRecovery(
     recovery: data ?? null,
     isLoading,
     error: error ?? null,
-    mutate: async (newData, shouldRevalidate) => {
+    mutate: async (newData: any, shouldRevalidate?: boolean) => {
       await mutate(newData as any, shouldRevalidate);
     },
   };
