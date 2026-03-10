@@ -27454,14 +27454,14 @@ RateLimiter::for('audit-trigger', function (Request $request) {
 ## AuditIssueController (TASK-14-14)
 
 ### Service Description
-The AuditIssueController provides REST API endpoints for managing SEO audit issues. It handles listing issues with filtering and pagination, retrieving single issue details, updating issue status (open/fixed/ignored), and bulk status updates for efficient issue management. Part of the Technical SEO Site Audit feature (FEAT-014).
+The AuditIssueController provides REST API endpoints for managing SEO audit issues. It handles listing issues with filtering and pagination, retrieving single issue details, updating issue status (`open`, `fixed`, `ignored`), and bulk status updates for efficient issue management. Part of the Technical SEO Site Audit feature (FEAT-014).
 
 ### Component Location
 - **Controller:** `backend/app/Http/Controllers/Api/V1/AuditIssueController.php`
 - **Requests:**
   - `backend/app/Http/Requests/Api/V1/UpdateIssueStatusRequest.php`
   - `backend/app/Http/Requests/Api/V1/BulkUpdateIssuesRequest.php`
-- **Routes:** `routes/api.php`
+- **Routes:** `backend/routes/api.php`
 - **Tests:** `backend/tests/Feature/Api/V1/AuditIssueControllerTest.php`
 
 ### API Endpoints
@@ -27496,6 +27496,7 @@ Authorization: Bearer {token}
 **Response (200 OK):**
 ```json
 {
+    "success": true,
     "data": [
         {
             "id": 1,
@@ -27531,7 +27532,7 @@ Authorization: Bearer {token}
 ```
 
 **Error Responses:**
-- `401 Unauthorized` - Invalid or missing API token
+- `401 Unauthorized` - Unauthenticated request
 - `403 Forbidden` - User does not own the site associated with the audit
 - `404 Not Found` - Audit not found
 
@@ -27546,29 +27547,32 @@ Authorization: Bearer {token}
 **Response (200 OK):**
 ```json
 {
-    "id": 1,
-    "url": "https://example.com/page",
-    "issue_type": {
+    "success": true,
+    "data": {
         "id": 1,
-        "name": "Missing title tag",
-        "category": "meta",
-        "category_label": "Meta Tags"
-    },
-    "severity": "critical",
-    "description": "This page is missing a title tag",
-    "recommendation": "Add a unique, descriptive title tag to this page.",
-    "status": "open",
-    "created_at": "2026-03-06T15:05:00Z",
-    "audit": {
-        "id": 123,
-        "status": "completed",
-        "pages_crawled": 100
+        "url": "https://example.com/page",
+        "issue_type": {
+            "id": 1,
+            "name": "Missing title tag",
+            "category": "meta",
+            "category_label": "Meta Tags"
+        },
+        "severity": "critical",
+        "description": "This page is missing a title tag",
+        "recommendation": "Add a unique, descriptive title tag to this page.",
+        "status": "open",
+        "created_at": "2026-03-06T15:05:00Z",
+        "audit": {
+            "id": 123,
+            "status": "completed",
+            "pages_crawled": 100
+        }
     }
 }
 ```
 
 **Error Responses:**
-- `401 Unauthorized` - Invalid or missing API token
+- `401 Unauthorized` - Unauthenticated request
 - `403 Forbidden` - User does not own the site associated with the issue
 - `404 Not Found` - Issue not found
 
@@ -27593,14 +27597,17 @@ Content-Type: application/json
 **Response (200 OK):**
 ```json
 {
-    "id": 1,
-    "status": "fixed",
-    "updated_at": "2026-03-06T16:00:00Z"
+    "success": true,
+    "data": {
+        "id": 1,
+        "status": "fixed",
+        "updated_at": "2026-03-06T16:00:00Z"
+    }
 }
 ```
 
 **Error Responses:**
-- `401 Unauthorized` - Invalid or missing API token
+- `401 Unauthorized` - Unauthenticated request
 - `403 Forbidden` - User does not own the site OR audit is not completed
 - `404 Not Found` - Issue not found
 - `422 Unprocessable Entity` - Validation failed
@@ -27629,13 +27636,16 @@ Content-Type: application/json
 **Response (200 OK):**
 ```json
 {
-    "updated_count": 5,
-    "message": "5 issues marked as ignored"
+    "success": true,
+    "data": {
+        "updated_count": 5,
+        "message": "5 issues marked as ignored"
+    }
 }
 ```
 
 **Error Responses:**
-- `401 Unauthorized` - Invalid or missing API token
+- `401 Unauthorized` - Unauthenticated request
 - `403 Forbidden` - User does not own the site OR audit is not completed
 - `404 Not Found` - Audit not found
 - `422 Unprocessable Entity` - Validation failed
@@ -27644,11 +27654,20 @@ Content-Type: application/json
 
 **Site Ownership Check:**
 ```php
-// Authorization via site ownership
-$audit = Audit::findOrFail($auditId);
-$site = $audit->site;
-if ($site->user_id !== $request->user()->id) {
-    return response()->json(['message' => 'Forbidden'], 403);
+$audit = Audit::find($auditId);
+
+if (!$audit) {
+    return response()->json([
+        'success' => false,
+        'message' => 'Audit not found',
+    ], 404);
+}
+
+if ($audit->site->user_id !== $request->user()->id) {
+    return response()->json([
+        'success' => false,
+        'message' => 'Forbidden',
+    ], 403);
 }
 ```
 
@@ -27662,26 +27681,26 @@ if ($site->user_id !== $request->user()->id) {
 |------|----------------|
 | Single Audit Scope | Bulk updates only affect issues within the specified audit |
 | Status Transitions | Issues can transition between `open`, `fixed`, `ignored` freely |
-| Severity Sorting | Custom sort order: `critical`=1, `warning`=2, `notice`=3 |
+| Severity Sorting | Custom sort order: `critical` = 1, `warning` = 2, `notice` = 3 |
 | Meta Counts | Response includes `severity_counts` and `status_counts` for UI badges |
 
 ### Security Implementation
 
 | Security Measure | Implementation |
 |------------------|----------------|
-| Authentication | Laravel Sanctum Bearer token required |
-| Authorization | Site ownership via `$site->user_id === $user->id` |
+| Authentication | Laravel `auth` middleware; authenticated user required |
+| Authorization | Site ownership verified via audit -> site -> user chain |
 | User Isolation | Users can only access issues from their own audits |
-| IDOR Protection | Issue ownership verified via audit → site → user chain |
-| SQL Injection | Eloquent ORM with parameterized queries |
-| XSS Protection | Input sanitization and output escaping |
-| Bulk Update Scope | Only issues belonging to specified audit are affected |
+| IDOR Protection | Issue and audit ownership verified before read/update operations |
+| SQL Injection | Eloquent ORM queries plus sort-field allowlist for non-raw sorting |
+| XSS Protection | Search input is treated as data; JSON responses do not render HTML |
+| Bulk Update Scope | Only issues belonging to the specified audit are affected |
 
 ### Test Coverage
 
 | Test File | Tests | Assertions | Status |
 |-----------|-------|------------|--------|
-| `AuditIssueControllerTest.php` | 69 | 215 | ✓ PASS |
+| `AuditIssueControllerTest.php` | 69 | 215 | PASS |
 
 **Test Categories:**
 | Category | Tests | Description |
