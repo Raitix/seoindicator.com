@@ -28769,10 +28769,10 @@ Backend service for fetching and storing Google Search Console data via API. Han
 | Method | Description |
 |--------|-------------|
 | `syncProject(Site $site, ?string $fromDate = null, ?string $toDate = null)` | Fetch GSC data for a specific site |
-| `fetchBatch(GSCConnection $conn, array $params)` | Batch API requests with retry logic |
+| `fetchBatch(GSCConnection $connection, array $params)` | Batch API requests with retry logic |
 | `importHistorical(Site $site, string $fromDate, string $toDate)` | Historical data import (16-month limit) |
-| `handleRateLimit(Response $response, int $attempt)` | Exponential backoff with jitter |
-| `storeData(array $data)` | Upsert with deduplication |
+| `handleRateLimit($response, int $attempt)` | Exponential backoff with jitter |
+| `storeData(Site $site, array $data)` | Upsert fetched rows for one site |
 | `syncAllConnections()` | Sync all active connections |
 | `getSyncStatus(Site $site)` | Connection and data status |
 
@@ -28787,27 +28787,35 @@ Backend service for fetching and storing Google Search Console data via API. Han
 | 4 | 8 seconds |
 | 5 | 16 seconds |
 
-**Rate Limit Handling:**
+**Rate Limit Handling (current implementation):**
 - Max 5 retry attempts per request
-- Jitter added to prevent thundering herd
-- Cache-based rate limit lock prevents concurrent syncs
-- Configurable buffer before hitting actual API limits
+- Jitter is added to the exponential backoff delay
+- `handleRateLimit()` writes a temporary `gsc_rate_limit` cache flag for the computed delay
+- Concurrency prevention is handled separately by the per-connection sync lock; the rate-limit cache flag is not currently consulted before later requests
 
 ### Data Storage
 
-**Upsert Logic:**
-- Unique constraint: `(site_id, query, page, data_date)`
-- Deduplicates records automatically
-- Auto keyword matching via QueryMatcher integration
-- CTR and position calculations validated
+**Upsert Logic (current implementation):**
+- `GSCDataSync::storeData()` writes `site_id`, `query`, `page`, `clicks`, `impressions`, `ctr`, `avg_position`, and `data_date`
+- The service calls `GSCData::upsert(..., ['site_id', 'query', 'page', 'data_date'], ...)`
+- Auto keyword matching runs via `QueryMatcher::autoMatchForSite($site->id)` when the matcher class exists
+- CTR and position values are passed through from the GSC API payload
+
+**Current implementation caveats:**
+- The `gsc_data` migration still defines the schema-level unique index as `(project_id, query, page, data_date)` rather than the service's site-scoped upsert key
+- Because `project_id` is nullable and the sync service currently writes only `site_id`, schema-level deduplication is not fully aligned with the site's upsert intent
 
 ### Batch Processing
 
-**API Quota Management:**
-- 25,000 rows per request maximum
-- Date chunking for large date ranges
-- Pagination handling for large result sets
-- Progress tracking for long-running syncs
+**API Quota Management (current implementation):**
+- 25,000 rows per request maximum (`MAX_ROWS_PER_REQUEST`)
+- Date ranges are chunked into 500-day windows (`MAX_DAYS_PER_REQUEST`)
+- Per-chunk failures are collected into the returned `errors` array
+- No explicit `startRow` pagination loop is currently implemented for result sets larger than one request
+
+**Current request shape caveat:**
+- `fetchAndStoreData()` currently requests `dimensions: ['query', 'page']`
+- `parseResponse()` only fills `data_date` when the API payload includes a third `keys[]` entry, so persisted `data_date` depends on the response shape matching the current request contract
 
 ### Sync Management
 

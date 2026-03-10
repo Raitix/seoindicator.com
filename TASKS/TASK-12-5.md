@@ -235,3 +235,16 @@ Re-verified the completed TASK-12-5 implementation against the current source an
 **Status:**
 - TASK-12-5 remains `Done`.
 - SPEC-012 remains `In Progress` because other child tasks are still open.
+
+### [2026-03-10 14:41] DocSystemAnalyst: Re-verification Follow-up ✓
+Performed a deeper source-level audit after the initial re-verification and updated the documentation to reflect the live implementation more precisely.
+
+**Additional findings captured in `DOCUMENTATION.md`:**
+- `GSCDataSync::storeData()` is site-scoped in code (`site_id`, `query`, `page`, `data_date`), but the `gsc_data` schema's unique index is still project-scoped (`project_id`, `query`, `page`, `data_date`), so schema-level deduplication is not fully aligned with the service's current write pattern.
+- `fetchAndStoreData()` currently requests only `query` and `page` dimensions, while `parseResponse()` only populates `data_date` when a third `keys[]` entry is present, so persisted date handling depends on payload shape matching the request contract.
+- The rate-limit section was corrected to reflect the real behavior: `handleRateLimit()` sets a temporary cache flag, but concurrency prevention is actually enforced by the separate per-connection sync lock.
+- The batch-processing section was corrected to reflect the implemented 25k row cap, 500-day chunking, per-chunk error aggregation, and the absence of an explicit `startRow` pagination loop.
+
+**Status:**
+- TASK-12-5 remains `Done` as a workflow record, with the above implementation caveats now documented.
+- SPEC-012 remains `In Progress` because other child tasks are still open.
