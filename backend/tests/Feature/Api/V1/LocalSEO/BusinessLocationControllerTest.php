@@ -414,13 +414,14 @@ class BusinessLocationControllerTest extends TestCase
     }
 
     /** @test AUTH-007 */
-    public function unauthenticated_get_callback_returns_401(): void
+    public function unauthenticated_get_callback_returns_400_for_invalid_state(): void
     {
         $location = $this->mockLocation();
 
         $response = $this->getJson("/api/v1/locations/{$location->id}/gbp-callback?code=test&state=test");
 
-        $response->assertStatus(401);
+        $response->assertStatus(400)
+            ->assertJsonPath('error', 'invalid_state');
     }
 
     /** @test AUTH-008 */
@@ -1805,17 +1806,19 @@ class BusinessLocationControllerTest extends TestCase
     }
 
     /** @test CALLBACK-016 */
-    public function callback_non_owner_returns_403(): void
+    public function callback_rejects_state_bound_to_a_different_location(): void
     {
-        $owner = $this->mockUser();
-        $otherUser = $this->mockUser(['email' => 'other@example.com']);
-        $location = $this->mockLocation(['user_id' => $owner->id]);
+        $location = $this->mockLocation();
 
-        Sanctum::actingAs($otherUser);
+        Cache::put('gbp_state_data_test-state', [
+            'location_id' => $location->id + 1,
+            'created_at' => now()->toISOString(),
+        ], now()->addMinutes(10));
 
         $response = $this->getJson("/api/v1/locations/{$location->id}/gbp-callback?code=test-code&state=test-state");
 
-        $response->assertStatus(403);
+        $response->assertStatus(400)
+            ->assertJsonPath('error', 'invalid_state');
     }
 
     // ==========================================

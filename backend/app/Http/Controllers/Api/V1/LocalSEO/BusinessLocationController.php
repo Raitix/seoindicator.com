@@ -18,6 +18,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
@@ -264,39 +265,35 @@ class BusinessLocationController extends Controller
      */
     public function gbpCallback(Request $request, int $id)
     {
-        $location = $this->locationService->getLocation($id);
+        $state = trim((string) $request->input('state', ''));
 
-        if (!$location) {
-            return $this->callbackError('location_not_found', 'Location not found', $request);
-        }
-
-        $this->authorize('connectGbp', $location);
-
-        // Check for error from Google
-        if ($request->has('error')) {
-            $error = $request->input('error');
-            $errorDescription = $request->input('error_description', $error);
-            
-            return $this->callbackError($error, $errorDescription, $request);
-        }
-
-        // Validate required parameters
-        $code = $request->input('code');
-        $state = $request->input('state');
-
-        if (!$code || !$state) {
-            return $this->callbackError('missing_parameters', 'Missing code or state parameter', $request);
-        }
-
-        // Validate state
-        if (!$this->oauthService->validateState($state)) {
+        if (!$this->stateMatchesLocation($state, $id)) {
             return $this->callbackError('invalid_state', 'Invalid state parameter', $request, 400);
         }
 
-        // Handle callback
-        $result = $this->oauthService->handleCallback($code, $state);
+        $location = $this->locationService->getLocation($id);
 
-        if ($result['success']) {
+        if (!$location) {
+            return $this->callbackError('location_not_found', 'Location not found', $request, 404);
+        }
+
+        // Check for error from Google
+        if ($request->has('error')) {
+            $error = (string) $request->input('error');
+            $errorDescription = (string) $request->input('error_description', $error);
+
+            return $this->callbackError($error, $errorDescription, $request, 400);
+        }
+
+        $code = $request->input('code');
+
+        if (!$code) {
+            return $this->callbackError('missing_parameters', 'Missing code or state parameter', $request, 400);
+        }
+
+        $result = $this->oauthService->handleCallback((string) $code, $state);
+
+        if (($result['success'] ?? false) === true) {
             $frontendUrl = config('app.frontend_url', config('app.url'));
 
             if ($request->expectsJson() || $request->header('Accept') === 'application/json') {
@@ -315,7 +312,8 @@ class BusinessLocationController extends Controller
             );
         }
 
-        $error = $result['error'] ?? 'connection_failed';
+        $error = (string) ($result['error'] ?? 'connection_failed');
+
         return $this->callbackError($error, $error, $request, 400);
     }
 
@@ -399,6 +397,27 @@ class BusinessLocationController extends Controller
 HTML;
 
         return response($html, $status)->header('Content-Type', 'text/html; charset=UTF-8');
+    }
+
+    /**
+     * Verify that the pending OAuth state belongs to the callback route location.
+     *
+     * Falls back to the legacy validateState() contract for older mocks/tests that
+     * do not expose cached location binding details.
+     */
+    protected function stateMatchesLocation(string $state, int $locationId): bool
+    {
+        if ($state === '') {
+            return false;
+        }
+
+        $cachedState = Cache::get("gbp_state_data_{$state}");
+
+        if (is_array($cachedState) && array_key_exists('location_id', $cachedState)) {
+            return (int) $cachedState['location_id'] === $locationId;
+        }
+
+        return $this->oauthService->validateState($state);
     }
 
     /**

@@ -545,7 +545,7 @@ Route::post('/v1/payments/paypal/webhook', [\App\Http\Controllers\Api\V1\Payment
 | All routes require authentication and ownership verification.
 |
 */
-Route::prefix('v1')->middleware(['auth'])->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     Route::prefix('locations/{id}')->where(['id' => '[0-9]+'])->group(function () {
         // Rankings endpoints
         Route::get('rankings', [\App\Http\Controllers\Api\V1\LocalRankingController::class, 'rankings'])
@@ -588,7 +588,7 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 | All routes require authentication and ownership verification.
 |
 */
-Route::prefix('v1')->middleware(['auth'])->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     // Business Location CRUD Routes
     Route::get('sites/{siteId}/locations', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'index'])
         ->name('locations.index')
@@ -620,14 +620,17 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
         ->name('locations.connect-gbp')
         ->where('id', '[0-9]+')
         ->middleware('throttle:5,60'); // 5 per hour for OAuth initiation
-    Route::get('locations/{id}/gbp-callback', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'gbpCallback'])
-        ->name('locations.gbp-callback')
-        ->where('id', '[0-9]+')
-        ->middleware('throttle:20,60'); // 20 per hour for callback
     Route::delete('locations/{id}/disconnect-gbp', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'disconnectGbp'])
         ->name('locations.disconnect-gbp')
         ->where('id', '[0-9]+')
         ->middleware('throttle:10,60'); // 10 per hour for disconnect
+});
+
+Route::prefix('v1')->group(function () {
+    Route::get('locations/{id}/gbp-callback', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'gbpCallback'])
+        ->name('locations.gbp-callback')
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:20,60'); // 20 per hour for callback
 });
 
 /*
@@ -639,7 +642,7 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 | All routes require authentication and ownership verification.
 |
 */
-Route::prefix('v1')->middleware(['auth'])->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     // GBP Insights Routes
     Route::prefix('locations/{id}')->where(['id' => '[0-9]+'])->group(function () {
         Route::get('insights', [\App\Http\Controllers\Api\V1\GBP\GBPInsightsController::class, 'index'])
