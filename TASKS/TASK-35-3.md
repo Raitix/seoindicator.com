@@ -1,7 +1,7 @@
 # TASK-35-3: GBP-Related Models
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -54,6 +54,17 @@ Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
 *Created by SpecSystemAnalyst on 2026-03-08*
 
 ## Comments
+
+### DevOps Session (2026-03-10 17:52 GMT+2)
+- Moved the task from `To Deploy` → `In Deployment` → `To Test Prod` after rolling out commit `82cf1b5fafab481d9513d0fbdfcd19d124abc360` to production.
+- Re-ran the task-scoped backend validation from an isolated `origin/main` worktree before deploy:
+  - `php artisan test tests/Unit/Models/GBPInsightTest.php tests/Unit/Models/GBPReviewTest.php tests/Unit/Models/GBPPostTest.php tests/Unit/Models/BusinessLocationTest.php tests/Feature/Services/GBP/GBPReviewsServiceTest.php` ✅ **293 tests passed / 450 assertions**.
+- Production rollout succeeded via `scripts/deploy-prod.ps1` from the canonical project root (the deploy script mis-resolves `secrets/seoindicator.env` when invoked from a nested temp worktree).
+- Deployment evidence: `C:\Users\Raitis\.openclaw\logs\deployments\20260310T155017Z-27d18eff.json` (`status: success`, build + SSH deploy + Playwright smoke all green).
+- Smoke verification passed against production:
+  - homepage ✅
+  - login page ✅
+- Handoff: ready for ProdTester to validate the dedicated GBP models in production / live data paths that depend on them.
 
 ### LocalTester Session (2026-03-10 17:45 GMT+2)
 - Moved the task from `To Test Locally` → `Testing Locally` → `To Deploy` after local validation passed.
