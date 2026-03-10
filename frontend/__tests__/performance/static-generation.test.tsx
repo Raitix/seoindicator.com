@@ -8,47 +8,30 @@
  */
 
 import '@testing-library/jest-dom';
+import { describe, it, expect } from 'vitest';
 
 // ============================================================================
-// Mock Registry Module
+// Test Data (mirrors registry for testing patterns)
 // ============================================================================
 
-const MOCK_COMPARISON_SLUGS = [
+const COMPARISON_SLUGS = [
+  // SEOIndicator vs competitors (primary comparisons)
   'seoindicator-vs-ahrefs',
-  'seoindicator-vs-semrush',
   'seoindicator-vs-moz',
+  'seoindicator-vs-semrush',
   'seoindicator-vs-ubersuggest',
-  'seoindicator-vs-mangools',
-  'seoindicator-vs-serpstat',
-  'seoindicator-vs-spyfu',
-  'seoindicator-vs-seranking',
-  'ahrefs-vs-semrush',
+  // SEOIndicator vs free alternatives
+  'seoindicator-vs-gsc',
+  'seoindicator-vs-ga',
+  'seoindicator-vs-answerthepublic',
+  // Cross-competitor comparisons
   'ahrefs-vs-moz',
-  'semrush-vs-moz',
+  'ahrefs-vs-semrush',
+  'ahrefs-vs-ubersuggest',
+  'moz-vs-semrush',
+  'moz-vs-ubersuggest',
+  'semrush-vs-ubersuggest',
 ];
-
-jest.mock('@/lib/compare/registry', () => ({
-  COMPARISON_SLUGS: MOCK_COMPARISON_SLUGS,
-  getComparisonBySlug: jest.fn((slug: string) => {
-    if (MOCK_COMPARISON_SLUGS.includes(slug)) {
-      const [a, b] = slug.split('-vs-');
-      return {
-        slug,
-        title: `${a} vs ${b}: Which SEO Tool Is Better?`,
-        competitors: [a, b],
-        summary: `Compare ${a} and ${b}`,
-        featureComparison: [],
-        pricingComparison: { seoindicator: [], competitor: [] },
-        prosCons: { seoindicator: { pros: [], cons: [] }, competitor: { pros: [], cons: [] } },
-        useCases: { seoindicator: [], competitor: [] },
-        verdict: 'Test verdict',
-        faqs: [],
-        relatedComparisons: [],
-      };
-    }
-    return null;
-  }),
-}));
 
 // ============================================================================
 // Test Suite: Static Params (PERF-STATIC)
@@ -57,7 +40,6 @@ jest.mock('@/lib/compare/registry', () => ({
 describe('Static Generation - generateStaticParams', () => {
   describe('PERF-STATIC: Static Params Generation', () => {
     it('PERF-STATIC-001: returns array of slug params', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const params = COMPARISON_SLUGS.map((slug: string) => ({ slug }));
 
       expect(Array.isArray(params)).toBe(true);
@@ -65,7 +47,6 @@ describe('Static Generation - generateStaticParams', () => {
     });
 
     it('PERF-STATIC-002: each param has required slug property', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const params = COMPARISON_SLUGS.map((slug: string) => ({ slug }));
 
       params.forEach((param: { slug: string }) => {
@@ -76,7 +57,6 @@ describe('Static Generation - generateStaticParams', () => {
     });
 
     it('PERF-STATIC-003: all comparison slugs are included', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const params = COMPARISON_SLUGS.map((slug: string) => ({ slug }));
 
       expect(params.length).toBe(COMPARISON_SLUGS.length);
@@ -86,22 +66,18 @@ describe('Static Generation - generateStaticParams', () => {
     });
 
     it('PERF-STATIC-004: slug format validation (-vs- separator)', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
-
       COMPARISON_SLUGS.forEach((slug: string) => {
         expect(slug).toMatch(/^.+-vs-.+$/);
       });
     });
 
     it('PERF-STATIC-005: no duplicate slugs in params', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const uniqueSlugs = new Set(COMPARISON_SLUGS);
 
       expect(uniqueSlugs.size).toBe(COMPARISON_SLUGS.length);
     });
 
     it('PERF-STATIC-006: params are JSON serializable', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const params = COMPARISON_SLUGS.map((slug: string) => ({ slug }));
 
       expect(() => JSON.stringify(params)).not.toThrow();
@@ -110,7 +86,6 @@ describe('Static Generation - generateStaticParams', () => {
     });
 
     it('PERF-STATIC-007: primary comparisons (seoindicator-vs-*) come first', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const primaryComparisons = COMPARISON_SLUGS.filter((s: string) => s.startsWith('seoindicator-vs-'));
       const firstNonPrimaryIndex = COMPARISON_SLUGS.findIndex((s: string) => !s.startsWith('seoindicator-vs-'));
 
@@ -123,22 +98,18 @@ describe('Static Generation - generateStaticParams', () => {
     });
 
     it('PERF-STATIC-008: minimum 7 primary comparisons exist', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const primaryComparisons = COMPARISON_SLUGS.filter((s: string) => s.startsWith('seoindicator-vs-'));
 
       expect(primaryComparisons.length).toBeGreaterThanOrEqual(7);
     });
 
     it('PERF-STATIC-009: cross-competitor comparisons included', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const crossCompetitor = COMPARISON_SLUGS.filter((s: string) => !s.startsWith('seoindicator-'));
 
       expect(crossCompetitor.length).toBeGreaterThan(0);
     });
 
     it('PERF-STATIC-010: total slugs count is reasonable (10-30)', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
-
       expect(COMPARISON_SLUGS.length).toBeGreaterThanOrEqual(10);
       expect(COMPARISON_SLUGS.length).toBeLessThanOrEqual(30);
     });
@@ -152,7 +123,6 @@ describe('Static Generation - generateStaticParams', () => {
     });
 
     it('PERF-STATIC-012: params type safety', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const params = COMPARISON_SLUGS.map((slug: string) => ({ slug }));
 
       params.forEach((param: { slug: string }) => {
@@ -175,8 +145,6 @@ describe('Static Generation - generateStaticParams', () => {
     });
 
     it('PERF-STATIC-015: static generation metadata', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
-
       // Each slug should have corresponding metadata generation capability
       expect(COMPARISON_SLUGS.length).toBeGreaterThan(0);
     });

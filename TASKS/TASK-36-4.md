@@ -1,7 +1,7 @@
 # TASK-36-4: ContentDecayReasonService
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -18,7 +18,7 @@ SPEC-036: Content Decay Detection & Refresh Planner
 Create the reason code assignment service that converts numeric deltas into human-readable reason codes and builds evidence payloads for UI display.
 
 ## Dependencies
-- TASK-36-2 (Eloquent Models) - To Prioritize
+- TASK-36-2 (Eloquent Models) - To Write Tests
 
 ## Acceptance Criteria
 - [ ] `ContentDecayReasonService` class created with:
@@ -96,4 +96,66 @@ Create the reason code assignment service that converts numeric deltas into huma
 
 ---
 
-*Created by SpecSystemAnalyst agent on 2026-03-10*
+## Comments
+
+### ProjectManager (2026-03-10)
+**Prioritization Complete**
+
+**Priority: HIGH** (confirmed - already set)
+- Core service for Content Decay feature - converts raw metrics into actionable insights
+- Enables UI to display meaningful reason codes (WHY content is decaying)
+- Evidence payloads are critical for user understanding and decision-making
+- 11 distinct reason codes with priority ordering for actionable recommendations
+- Downstream: Used by Detection Service (TASK-36-6) and displayed in UI (TASK-36-11, 36-12)
+
+**Risk: LOW** (confirmed - already set)
+- Pure business logic service - no external APIs
+- Standard Laravel service with configurable thresholds
+- Well-defined interface: `assignReasonCodes(array $signals): array`
+- Testable with mocked signal data structures
+
+**Dependency Analysis:**
+| Dependency | Status | Impact |
+|------------|--------|--------|
+| TASK-36-2 (Eloquent Models) | To Write Tests | TDD: Tests CAN be designed with mocked model interfaces |
+
+**TDD Pattern Applied:**
+- PreTester CAN design tests immediately with mocked signal data
+- The service operates on signal arrays, not directly on Eloquent models
+- Reason code logic is pure computation - easily testable
+- Thresholds are configurable via service constructor or config file
+
+**Reason Code Architecture:**
+| Code | Priority | Category | Actionability |
+|------|----------|----------|---------------|
+| audit_issues_present | 1 | Technical | HIGH - Fix issues directly |
+| clicks_down | 2 | Traffic | HIGH - Direct impact |
+| ctr_down | 3 | SERP | HIGH - Optimize meta/snippet |
+| avg_position_down | 4 | Ranking | MEDIUM - SEO work needed |
+| tracked_rankings_down | 5 | Keywords | MEDIUM - Content optimization |
+| impressions_down | 6 | Visibility | MEDIUM - Promote/index issues |
+| stale_content | 7 | Freshness | HIGH - Update content |
+| ai_visibility_down | 8 | GEO | MEDIUM - Optimize for AI |
+| competitor_gain_suspected | 9 | Competitive | LOW - External factor |
+| internal_link_weakness | 10 | Structure | HIGH - Add internal links |
+
+**Evidence Payload Structure:**
+- Provides BEFORE/AFTER context for UI display
+- Change percentages and absolute values for quantification
+- Window comparison (e.g., "28 days vs 28 days")
+- Context field for page-specific information
+
+**Execution Order for SPEC-036:**
+1. TASK-36-1 (Migrations) → Done
+2. TASK-36-2 (Models) → To Write Tests
+3. TASK-36-3 (Detection Service) → To Write Tests (parallel with this)
+4. TASK-36-4 (Reason Service) → **This task** (parallel with TASK-36-3, 36-5)
+5. TASK-36-5 (Scoring Service) → To Write Tests
+6. TASK-36-6 (Main Detection Orchestrator) → To Prioritize
+
+**Parallel Development:**
+- TASK-36-3, 36-4, 36-5 can all proceed to PreTester simultaneously
+- All three services have well-defined interfaces
+- Tests designed with mocks, implementation can proceed in parallel
+
+**Status:** `To Write Tests` → Ready for PreTester
