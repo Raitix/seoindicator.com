@@ -1,0 +1,45 @@
+{
+  "taskId": "TASK-35-17",
+  "capturedAtUtc": "2026-03-10T13:03:33Z",
+  "environment": {
+    "baseUrl": "https://seoindicator.com",
+    "agent": "ProdTester"
+  },
+  "disposableAccount": {
+    "email": "task3517-prod-20260310T130332Z-tccmdp@example.com",
+    "userId": 10047
+  },
+  "apiChecks": {
+    "guest": {
+      "GET /api/v1/auth/user": 401,
+      "GET /api/v1/sites/1/locations": 401,
+      "GET /api/v1/locations/1": 401
+    },
+    "authenticatedDisposableUserAgainstSite1": {
+      "GET /api/v1/sites/1/locations": 403,
+      "GET /api/v1/sites/1/locations?search=foo": 403,
+      "GET /api/v1/sites/1/locations?is_gbp_connected=false": 403,
+      "GET /api/v1/sites/1/locations?sort=name": 403,
+      "GET /api/v1/locations/1": 404,
+      "POST /api/v1/sites/1/locations": 403
+    },
+    "onboardingWithBearerFallback": {
+      "POST /api/v1/onboarding": 401,
+      "note": "Fresh disposable users can authenticate via bearer-token fallback, but onboarding does not accept that auth path in production, so a safe owned disposable site could not be provisioned for full CRUD smoke coverage."
+    }
+  },
+  "browserChecks": {
+    "route": "/sites/1/local/",
+    "bearerTokenFallback": "working",
+    "pageShell": "rendered",
+    "addLocationModal": "opened",
+    "detailsDialogRoute": "/sites/1/local/?locationId=1",
+    "detailsDialogResult": "rendered graceful error state: Unable to load location / Location not found",
+    "unauthorizedListState": "rendered graceful error state: Failed to load locations / You do not have access to this site's locations"
+  },
+  "assessment": {
+    "task3517BlockingRegression": "resolved in production",
+    "securityBoundary": "holding (guest 401, cross-site disposable-user access denied with 403/404)",
+    "productionCrudOnOwnedDisposableSite": "not exercised because no safe owned site provisioning path was available from the current production auth surface"
+  }
+}
