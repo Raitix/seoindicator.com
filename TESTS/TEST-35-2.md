@@ -326,3 +326,22 @@ php artisan test --coverage --filter BusinessLocation
 - GBP tokens hidden from all API responses
 - Settings stored as JSON for flexibility
 - Decimal precision (10,8) for lat/lng coordinates
+
+### LocalTester Session (2026-03-10 13:09 GMT+2)
+- **Result:** PASS — task approved for deployment handoff.
+
+**Executed suites:**
+| Command | Result |
+|---------|--------|
+| `php artisan test tests/Unit/Models/BusinessLocationTest.php` | ✅ 97 passed / 143 assertions |
+| `php artisan test tests/Unit/Policies/BusinessLocationPolicyTest.php` | ✅ 23 passed / 23 assertions |
+| `php artisan test tests/Unit/Http/Requests/LocalSEO/StoreBusinessLocationRequestTest.php` | ✅ 44 passed / 65 assertions |
+| `php artisan test tests/Unit/Http/Requests/LocalSEO/UpdateBusinessLocationRequestTest.php` | ✅ 35 passed / 44 assertions |
+
+**Validation summary:**
+- Model acceptance coverage is green end-to-end.
+- Relationship contract, helper/accessor methods, scopes, soft-delete semantics, factory states, hidden token behavior, and adversarial string inputs all behaved as expected.
+- Additional narrow safety checks through policy/request suites passed, reducing risk for downstream controller/service use.
+
+**Adjacent non-gating observation:**
+- `tests/Feature/Api/V1/LocalSEO/BusinessLocationControllerTest.php` remains red on an existing mock-signature issue (`...closure() ... exactly 2 expected` at line 2071). This did not block TASK-35-2 because the model gate was already satisfied and the failure is in the controller-layer test harness, not in the model/factory contract under test.
