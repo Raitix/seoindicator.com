@@ -233,6 +233,52 @@ export const normalizeRankings = (payload: unknown): LocalRankings => {
   const root = asRecord(payload);
   const record = asRecord(root.data ?? payload);
 
+  const rankingRows = asArray(record.rankings).map((item) => {
+    const row = asRecord(item);
+
+    return {
+      keyword: asNullableString(row.keyword ?? row.term) ?? "Untitled keyword",
+      localPackPosition: asNullableNumber(row.local_pack_position ?? row.localPackPosition),
+      localOrganicPosition: asNullableNumber(row.local_organic_position ?? row.localOrganicPosition),
+    };
+  });
+
+  if (rankingRows.length > 0) {
+    const packPositions = rankingRows
+      .map((row) => row.localPackPosition)
+      .filter((value): value is number => value !== null && value > 0);
+
+    const topKeywords = [...rankingRows]
+      .sort((left, right) => {
+        if (left.localPackPosition === null && right.localPackPosition === null) {
+          return (left.localOrganicPosition ?? 999) - (right.localOrganicPosition ?? 999);
+        }
+
+        if (left.localPackPosition === null) {
+          return 1;
+        }
+
+        if (right.localPackPosition === null) {
+          return -1;
+        }
+
+        return left.localPackPosition - right.localPackPosition;
+      })
+      .slice(0, 3)
+      .map((row) => ({
+        keyword: row.keyword,
+        position: row.localPackPosition ?? row.localOrganicPosition ?? 0,
+        change: 0,
+      }));
+
+    return {
+      keywords_in_pack: packPositions.filter((value) => value <= 3).length,
+      average_position: packPositions.length ? Number((packPositions.reduce((sum, value) => sum + value, 0) / packPositions.length).toFixed(1)) : 0,
+      top_keywords: topKeywords,
+      dropped_keywords: [],
+    };
+  }
+
   return {
     keywords_in_pack: asNumber(record.keywords_in_pack ?? record.in_local_pack ?? record.keywordsInPack),
     average_position: asNumber(record.average_position ?? record.averagePosition),
@@ -264,29 +310,33 @@ const normalizeAlertItem = (payload: unknown): AlertItem => {
 export const normalizeAlertSummary = (payload: unknown): AlertSummary => {
   const root = asRecord(payload);
   const record = asRecord(root.data ?? payload);
-  const latest = asArray(record.latest ?? record.alerts ?? record.items ?? payload)
+  const rawLatest = Array.isArray(root.data)
+    ? root.data
+    : record.latest ?? record.alerts ?? record.items ?? root.latest ?? root.alerts ?? payload;
+  const latest = asArray(rawLatest)
     .map(normalizeAlertItem)
     .slice(0, 3);
 
   return {
-    unread_count: asNumber(record.unread_count ?? record.unreadCount ?? latest.length),
+    unread_count: asNumber(record.unread_count ?? record.unreadCount ?? root.unread_count ?? root.unreadCount ?? latest.length),
     latest,
   };
 };
 
 export const normalizeCompetitors = (payload: unknown): CompetitorPreview[] => {
   const root = asRecord(payload);
-  const list = asArray(root.data ?? root.competitors ?? payload);
+  const data = asRecord(root.data ?? payload);
+  const list = asArray(data.competitors ?? root.competitors ?? root.data ?? payload);
 
   return list
-    .map((item) => {
+    .map((item, index) => {
       const record = asRecord(item);
 
       return {
         name: asNullableString(record.name ?? record.business_name ?? record.title) ?? "Competitor",
         rating: asNumber(record.rating),
         review_count: asNumber(record.review_count ?? record.reviewCount),
-        position: asNumber(record.position),
+        position: asNumber(record.position, index + 1),
       } satisfies CompetitorPreview;
     })
     .slice(0, 3);
