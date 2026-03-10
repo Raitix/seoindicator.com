@@ -25,9 +25,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { buildApiUrl } from "@/lib/api/base-url";
+import { getStoredAuthToken } from "@/lib/api/auth";
 import { cn } from "@/lib/utils";
 
-const API_BASE = "/api/v1";
 export const GBP_OAUTH_STATE_KEY = "gbp_oauth_state";
 
 type GBPConnectStatus = "idle" | "connecting" | "selecting" | "connected" | "error";
@@ -117,13 +118,49 @@ const createApiError = (message: string, status?: number, payload?: unknown): Ap
   return error;
 };
 
+const hasContractFallbackHint = (value: unknown) => {
+  const normalized = toNonEmptyString(value)?.toLowerCase();
+
+  if (!normalized) {
+    return false;
+  }
+
+  return [
+    "not found",
+    "method not allowed",
+    "cannot get",
+    "cannot post",
+    "cannot delete",
+    "unsupported",
+    "not implemented",
+  ].some((hint) => normalized.includes(hint));
+};
+
 const isContractFallbackError = (error: unknown) => {
   if (!(error instanceof Error)) {
     return false;
   }
 
-  const status = (error as ApiRequestError).status;
-  return status === 404 || status === 405 || status === 501;
+  const apiError = error as ApiRequestError;
+  const status = apiError.status;
+
+  if (status === 404 || status === 405 || status === 501) {
+    return true;
+  }
+
+  if (hasContractFallbackHint(apiError.message)) {
+    return true;
+  }
+
+  if (apiError.payload && typeof apiError.payload === "object") {
+    const payload = apiError.payload as JsonRecord;
+
+    return hasContractFallbackHint(
+      payload.error ?? payload.message ?? payload.detail ?? payload.title ?? payload.code
+    );
+  }
+
+  return false;
 };
 
 const sanitizeErrorMessage = (value: unknown, fallback = "Connection failed. Please try again.") => {
@@ -303,14 +340,23 @@ export function GBPConnectButton({
   React.useEffect(() => () => clearOAuthListener(), [clearOAuthListener]);
 
   const apiRequest = React.useCallback(async (path: string, init?: RequestInit) => {
-    const response = await fetch(path, {
+    const token = getStoredAuthToken();
+    const rawResponse = await fetch(buildApiUrl(path), {
       ...init,
+      credentials: "include",
       headers: {
         Accept: "application/json",
         ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(init?.headers ?? {}),
       },
     });
+
+    if (!rawResponse || typeof rawResponse !== "object" || typeof (rawResponse as Response).ok !== "boolean") {
+      throw createApiError("Connection failed. Please try again.");
+    }
+
+    const response = rawResponse as Response;
 
     let payload: unknown = null;
     try {
@@ -322,7 +368,7 @@ export function GBPConnectButton({
     if (!response.ok) {
       throw createApiError(
         getErrorMessageFromPayload(payload, "Connection failed. Please try again."),
-        response.status,
+        typeof response.status === "number" ? response.status : undefined,
         payload
       );
     }
@@ -337,7 +383,7 @@ export function GBPConnectButton({
   }, []);
 
   const syncConnectedLocation = React.useCallback(async () => {
-    const response = await apiRequest(`${API_BASE}/locations/${locationId}`);
+    const response = await apiRequest(`/locations/${locationId}`);
     const normalized = normalizeConnectedState(response, locationId);
 
     if (!normalized.connected) {
@@ -373,7 +419,7 @@ export function GBPConnectButton({
       const suffix = query.toString() ? `?${query.toString()}` : "";
 
       try {
-        const response = await apiRequest(`${API_BASE}/locations/${locationId}/gbp/accounts${suffix}`);
+        const response = await apiRequest(`/locations/${locationId}/gbp/accounts${suffix}`);
         const rawAccounts = Array.isArray((response as JsonRecord)?.accounts)
           ? ((response as JsonRecord).accounts as unknown[])
           : Array.isArray((response as JsonRecord)?.data)
@@ -448,12 +494,10 @@ export function GBPConnectButton({
     [syncConnectedLocation, tryLoadSelectableAccounts]
   );
 
-  const requestOAuthBootstrap = React.useCallback(async () => {
-    const provisionalState = `${siteId}-${locationId}-${Date.now()}`;
-
+  const requestOAuthBootstrap = React.useCallback(async (provisionalState: string) => {
     try {
       const legacyResponse = await apiRequest(
-        `${API_BASE}/locations/${locationId}/gbp/oauth-url?state=${encodeURIComponent(provisionalState)}`
+        `/locations/${locationId}/gbp/oauth-url?state=${encodeURIComponent(provisionalState)}`
       );
 
       const oauthUrl = toNonEmptyString(
@@ -476,7 +520,7 @@ export function GBPConnectButton({
       }
     }
 
-    const response = await apiRequest(`${API_BASE}/locations/${locationId}/connect-gbp`, {
+    const response = await apiRequest(`/locations/${locationId}/connect-gbp`, {
       method: "POST",
       body: JSON.stringify({ site_id: siteId }),
     });
@@ -509,8 +553,35 @@ export function GBPConnectButton({
     setIsFetchingLocations(false);
     setStatus("connecting");
 
+    const provisionalState = `${siteId}-${locationId}-${Date.now()}`;
+    sessionStorage.setItem(GBP_OAUTH_STATE_KEY, provisionalState);
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin && event.origin !== window.location.origin) {
+        return;
+      }
+
+      const payload = event.data;
+
+      if (!payload || typeof payload !== "object") {
+        return;
+      }
+
+      const record = payload as JsonRecord;
+
+      if (record.type !== "gbp_oauth_callback") {
+        return;
+      }
+
+      clearOAuthListener();
+      void handleOAuthCompleted(record);
+    };
+
+    callbackHandlerRef.current = handleMessage;
+    window.addEventListener("message", handleMessage);
+
     try {
-      const bootstrap = await requestOAuthBootstrap();
+      const bootstrap = await requestOAuthBootstrap(provisionalState);
       sessionStorage.setItem(GBP_OAUTH_STATE_KEY, bootstrap.state);
 
       const popup = window.open(
@@ -522,30 +593,6 @@ export function GBPConnectButton({
       if (!popup) {
         throw new Error("Popup blocked. Please allow popups for this site.");
       }
-
-      const handleMessage = (event: MessageEvent) => {
-        if (event.origin && event.origin !== window.location.origin) {
-          return;
-        }
-
-        const payload = event.data;
-
-        if (!payload || typeof payload !== "object") {
-          return;
-        }
-
-        const record = payload as JsonRecord;
-
-        if (record.type !== "gbp_oauth_callback") {
-          return;
-        }
-
-        clearOAuthListener();
-        void handleOAuthCompleted(record);
-      };
-
-      callbackHandlerRef.current = handleMessage;
-      window.addEventListener("message", handleMessage);
     } catch (oauthError) {
       sessionStorage.removeItem(GBP_OAUTH_STATE_KEY);
       clearOAuthListener();
@@ -557,7 +604,7 @@ export function GBPConnectButton({
       );
       setStatus("error");
     }
-  }, [clearOAuthListener, handleOAuthCompleted, requestOAuthBootstrap, resetSelectionState, status]);
+  }, [clearOAuthListener, handleOAuthCompleted, locationId, requestOAuthBootstrap, resetSelectionState, siteId, status]);
 
   const selectAccount = React.useCallback(
     async (account: GBPAccount) => {
@@ -567,7 +614,7 @@ export function GBPConnectButton({
       setIsFetchingLocations(true);
 
       try {
-        const response = await apiRequest(`${API_BASE}/locations/${locationId}/gbp/accounts/${account.id}/locations`);
+        const response = await apiRequest(`/locations/${locationId}/gbp/accounts/${account.id}/locations`);
         const rawLocations = Array.isArray((response as JsonRecord)?.locations)
           ? ((response as JsonRecord).locations as unknown[])
           : Array.isArray((response as JsonRecord)?.data)
@@ -602,7 +649,7 @@ export function GBPConnectButton({
       setStatus("connecting");
 
       try {
-        await apiRequest(`${API_BASE}/locations/${locationId}/connect-gbp`, {
+        await apiRequest(`/locations/${locationId}/connect-gbp`, {
           method: "POST",
           body: JSON.stringify({
             site_id: siteId,
@@ -641,7 +688,7 @@ export function GBPConnectButton({
 
     try {
       try {
-        await apiRequest(`${API_BASE}/locations/${locationId}/disconnect-gbp`, {
+        await apiRequest(`/locations/${locationId}/disconnect-gbp`, {
           method: "POST",
           body: JSON.stringify({ site_id: siteId }),
         });
@@ -650,7 +697,7 @@ export function GBPConnectButton({
           throw requestError;
         }
 
-        await apiRequest(`${API_BASE}/locations/${locationId}/disconnect-gbp`, {
+        await apiRequest(`/locations/${locationId}/disconnect-gbp`, {
           method: "DELETE",
         });
       }
