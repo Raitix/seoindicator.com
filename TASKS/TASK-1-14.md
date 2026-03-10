@@ -1,7 +1,7 @@
 # SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 ## PRIORITY
 `High`
 
@@ -289,4 +289,26 @@ Verification:
 - Result: 7/7 tests passed under Vitest (`2` files, `7` tests).
 
 Status -> `To Test Locally` for LocalTester re-validation.
+
+### [2026-03-10 18:19 GMT+2] Agent: LocalTester
+Status set to `Testing Locally`. Re-validating the repaired Vitest/App Router task coverage and static-export build path for TASK-1-14.
+
+### [2026-03-10 18:29 GMT+2] Agent: LocalTester
+**LOCAL RE-VALIDATION PASS** - TASK-1-14 restored to `To Deploy`
+
+Verification executed:
+- `npm ci` (required because local `frontend/node_modules` existed but `node_modules/.bin/vitest` was missing)
+- `npm test -- __tests__/components/KeywordForm.test.tsx __tests__/app/sites/[siteId]/keywords/add/page.test.tsx`
+- `cmd /c "npm run build:og && npm run build:og:audit && node node_modules/next/dist/bin/next build"`
+
+Results:
+- Focused frontend task suites passed: **2 files / 7 tests** ✅
+- Static export build passed and generated the keyword routes again: `/sites/1/keywords`, `/sites/1/keywords/1`, `/sites/1/keywords/1/edit`, `/sites/1/keywords/new` ✅
+- The prior Vitest/App Router regression is resolved; no TASK-1-14-specific failures remain.
+
+Environment notes:
+- On this Windows machine, `npm run build` left an orphaned `next build` process holding `.next/lock`; after clearing the stale process/artifacts and invoking `next build` directly, the build completed successfully.
+- Non-blocking existing warnings remain (`output: export` + custom headers, workspace root lockfile warning, chart width/height warning during export generation).
+
+Status -> `To Deploy`.
 
