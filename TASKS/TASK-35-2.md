@@ -1,7 +1,7 @@
 # TASK-35-2: BusinessLocation Model
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -16,18 +16,18 @@ SPEC-035: Local SEO & Google Business Profile Tracking
 Create the BusinessLocation Eloquent model with relationships, accessors, and scopes for managing business locations.
 
 ## Acceptance Criteria
-- [ ] BusinessLocation model created with fillable attributes
-- [ ] BelongsTo relationships: user(), site()
-- [ ] HasMany relationships: insights(), reviews(), rankings(), competitors(), posts(), alerts()
-- [ ] Casts for JSON columns (settings)
-- [ ] SoftDeletes trait implemented
-- [ ] Accessor for full address formatting
-- [ ] Scope for connected GBP locations (scopeConnected())
-- [ ] Scope for locations by user (scopeForUser())
-- [ ] Method to check if location has GBP connected (hasConnectedGBP())
-- [ ] Method to get Google Maps URL
-- [ ] Model factory with realistic test data
-- [ ] Unit tests for model relationships and methods
+- [x] BusinessLocation model created with fillable attributes
+- [x] BelongsTo relationships: user(), site()
+- [x] HasMany relationships: insights(), reviews(), rankings(), competitors(), posts(), alerts()
+- [x] Casts for JSON columns (settings)
+- [x] SoftDeletes trait implemented
+- [x] Accessor for full address formatting
+- [x] Scope for connected GBP locations (scopeConnected())
+- [x] Scope for locations by user (scopeForUser())
+- [x] Method to check if location has GBP connected (hasConnectedGBP())
+- [x] Method to get Google Maps URL
+- [x] Model factory with realistic test data
+- [x] Unit tests for model relationships and methods
 
 ## Dependencies
 - TASK-35-1 (Database Migrations)
@@ -191,3 +191,30 @@ php artisan test --filter BusinessLocationTest
 - TASK-35-1 (Migrations) - Done ✅
 - User model - Exists
 - Site model - Exists
+
+### Developer Session (2026-03-10 12:53 GMT+2)
+- **Status:** `To Test Locally` ✅
+- Completed the BusinessLocation model behavior requested by PreTester: added `scopeForUser()`, `scopeConnected()` alias, `getFullAddressAttribute()`, `getCoordinatesAttribute()`, `hasConnectedGBP()`, `hasValidGBPToken()`, `getMapsUrl()`, and `getSettingsValue()`.
+- Added missing relationship coverage on the model:
+  - concrete relations for `reviews()`, `rankings()`, `competitors()`, `alerts()`
+  - table-backed placeholder `insights()` / `posts()` relations so this task can satisfy the contract without taking over TASK-35-3 model implementation
+- Added delete cascade handling in `booted()` so soft-deleting a BusinessLocation removes dependent alerts/rankings/competitors/reviews/insights/posts rows as required by the unit tests.
+- Hardened mutators for nullable test inputs against non-null DB columns (`name`, `gbp_connected`, `is_active`) to keep factory/test writes valid.
+- Improved `BusinessLocationFactory` realism:
+  - keeps `site_id` and `user_id` aligned
+  - adds GBP token fields to `withGbp()` / `withoutGbp()` states
+  - keeps default settings/token values realistic and internally consistent
+- Fixed 2 red-phase test issues in `BusinessLocationTest.php` where `keyword_id = 1` violated the foreign key constraint; both now create a real Keyword via factory.
+
+**Files Changed:**
+- `backend/app/Models/BusinessLocation.php`
+- `backend/database/factories/BusinessLocationFactory.php`
+- `backend/tests/Unit/Models/BusinessLocationTest.php`
+
+**Verification:**
+- ✅ `php artisan test tests/Unit/Models/BusinessLocationTest.php`
+- Result: **97 passed**
+
+**Notes for LocalTester:**
+- `insights()` and `posts()` intentionally use table-backed generic relations for now because dedicated GBPInsight/GBPPost model behavior belongs to TASK-35-3.
+- There are unrelated modified files already present in the repo (`TASK-35-17.md`, `TASK-35-18.md`, `TASK-35-19.md`, `TEST-35-18.md`, `TEST-35-19.md`, `SPEC-002.md`, `temp/task3519-prod-validation-*.json`). They were not touched for this task.
