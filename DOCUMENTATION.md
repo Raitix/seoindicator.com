@@ -20521,7 +20521,8 @@ CREATE TABLE project_members (
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
 
-    UNIQUE KEY idx_project_user (project_id, user_id)
+    UNIQUE KEY idx_project_user (project_id, user_id),
+    INDEX project_members_role_index (role)
 );
 ```
 
@@ -20542,6 +20543,7 @@ CREATE TABLE project_members (
 
 **Indexes:**
 - `idx_project_user` unique index on `(project_id, user_id)`
+- `project_members_role_index` non-unique index on `role`
 
 **Model:** `App\Models\ProjectMember`
 

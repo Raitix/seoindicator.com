@@ -190,3 +190,23 @@ Actions:
 - Task remains fully closed
 
 - SPEC-011 remains `In Progress` because TASK-11-1 is not yet `Done`
+
+### [2026-03-10 17:32 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - TASK-11-2 Project Members Table
+
+Verification:
+- Status set to `Documentation in Progress` for this pass, then returned to `Done`
+- Migration re-verified: `backend/database/migrations/2026_02_26_191000_create_project_members_table.php`
+- Model re-verified: `backend/app/Models/ProjectMember.php`
+- Relationships re-verified in `backend/app/Models/Project.php` and `backend/app/Models/User.php`
+- Confirmed schema still includes FK cascades on `project_id` and `user_id`, unique `idx_project_user`, and the additional Laravel-generated `project_members_role_index` on `role`
+- Targeted local rerun `php artisan test tests/Feature/Migrations/CreateProjectMembersTableTest.php` returned **11 passed / 2 failed**
+- The two failures are in stale test logic, not the shipped migration: `test_role_enum_validation` reuses the same `(project_id, user_id)` pair and trips the unique constraint, while `test_migration_rollback` assumes a single rollback step removes this migration even though later migrations exist
+
+Actions:
+- Corrected `DOCUMENTATION.md` to include the missing `project_members_role_index` in the SQL snippet and indexes list
+- Cleared stale completion marker before re-processing
+- Recreated task lock for this verification pass
+- Task remains `Done`; the implementation/documentation drift is resolved, and the remaining local issue is isolated to the targeted regression test file
+
+- SPEC-011 remains `In Progress` because TASK-11-1 is not yet `Done`
