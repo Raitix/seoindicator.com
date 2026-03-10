@@ -28370,22 +28370,28 @@ Stores imported Google Search Console metrics (clicks, impressions, CTR, positio
 ```sql
 CREATE TABLE gsc_data (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    site_id BIGINT UNSIGNED NOT NULL,
+    project_id BIGINT UNSIGNED NULL,
+    site_id BIGINT UNSIGNED NULL,
     query VARCHAR(255) NOT NULL,
     page VARCHAR(255) NULL,
     clicks INT UNSIGNED NOT NULL DEFAULT 0,
     impressions INT UNSIGNED NOT NULL DEFAULT 0,
-    ctr DECIMAL(8,5) UNSIGNED NOT NULL DEFAULT 0.00000,
-    avg_position DECIMAL(8,2) UNSIGNED NOT NULL DEFAULT 0.00,
+    ctr DECIMAL(8,5) NOT NULL DEFAULT 0,
+    avg_position DECIMAL(8,2) NOT NULL DEFAULT 0,
     data_date DATE NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
 
-    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
-    UNIQUE KEY idx_unique_data (site_id, query, page, data_date),
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE SET NULL,
+    UNIQUE KEY idx_unique_data (project_id, query, page, data_date),
+    INDEX gsc_data_query_index (query),
     INDEX idx_query_date (query, data_date),
+    INDEX idx_project_date (project_id, data_date),
+    INDEX idx_project_query (project_id, query),
     INDEX idx_site_date (site_id, data_date),
-    INDEX idx_site_query (site_id, query)
+    INDEX idx_site_query (site_id, query),
+    INDEX idx_date (data_date)
 );
 ```
 
@@ -28393,35 +28399,47 @@ CREATE TABLE gsc_data (
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | BIGINT UNSIGNED | Primary key |
-| `site_id` | BIGINT UNSIGNED | FK to sites.id (project context) |
+| `project_id` | BIGINT UNSIGNED NULL | Optional FK to `projects.id` |
+| `site_id` | BIGINT UNSIGNED NULL | Optional FK to `sites.id` |
 | `query` | VARCHAR(255) | Search query from GSC |
 | `page` | VARCHAR(255) | Landing page URL (nullable) |
 | `clicks` | INT UNSIGNED | Number of clicks from search |
 | `impressions` | INT UNSIGNED | Number of impressions in search |
-| `ctr` | DECIMAL(8,5) | Click-through rate (0-100) |
+| `ctr` | DECIMAL(8,5) | Click-through rate stored as decimal fraction |
 | `avg_position` | DECIMAL(8,2) | Average ranking position |
 | `data_date` | DATE | Date of the metrics |
-| `created_at` | TIMESTAMP | Record creation timestamp |
-| `updated_at` | TIMESTAMP | Last update timestamp |
+| `created_at` | TIMESTAMP NULL | Record creation timestamp |
+| `updated_at` | TIMESTAMP NULL | Last update timestamp |
 
 **Constraints:**
-- Foreign Key: `site_id → sites.id` ON DELETE CASCADE
-- Unique: `(site_id, query, page, data_date)` - prevents duplicate data imports
+- Foreign Key: `project_id → projects.id` with `ON DELETE SET NULL`
+- Foreign Key: `site_id → sites.id` with `ON DELETE SET NULL`
+- Unique: `(project_id, query, page, data_date)` - prevents duplicate imports within a project context
 
 **Indexes:**
-- `idx_unique_data` unique index on `(site_id, query, page, data_date)`
-- `idx_query_date` on `(query, data_date)` for query-based searches
-- `idx_site_date` on `(site_id, data_date)` for site filtering by date
-- `idx_site_query` on `(site_id, query)` for site-specific query lookups
+- `idx_unique_data` unique index on `(project_id, query, page, data_date)`
 - `gsc_data_query_index` on `query`
-- `gsc_data_data_date_index` on `data_date`
+- `idx_query_date` on `(query, data_date)` for query/date lookups
+- `idx_project_date` on `(project_id, data_date)` for project/date filtering
+- `idx_project_query` on `(project_id, query)` for project-specific query lookups
+- `idx_site_date` on `(site_id, data_date)` for site/date filtering
+- `idx_site_query` on `(site_id, query)` for site-specific query lookups
+- `idx_date` on `data_date`
 
 ### Model Properties
 
-**GSCData Model:**
+**GSCData Model Relationships:**
 | Method | Relationship | Description |
 |--------|--------------|-------------|
-| `site()` | belongsTo | Site this data belongs to |
+| `project()` | belongsTo | Project this row belongs to |
+| `site()` | belongsTo | Site this row belongs to |
+
+**Computed Accessors / Helpers:**
+| Method | Description |
+|--------|-------------|
+| `getCTRPercentageAttribute()` | Formats CTR as a percentage string |
+| `getEngagementScoreAttribute()` | Weighted engagement score based on clicks and impressions |
+| `isRecent()` | Returns true when `data_date` is within the last 7 days |
 
 **Model Scopes:**
 | Scope | Description |
@@ -28433,29 +28451,29 @@ CREATE TABLE gsc_data (
 | `topByImpressions($limit)` | Order by impressions descending |
 | `topByCTR($limit)` | Order by CTR descending |
 | `topByPosition($limit)` | Order by position ascending |
-| `needsRefresh()` | Data older than threshold |
-| `opportunities()` | High impression, lower-than-expected CTR |
+| `needsRefresh()` | Data older than 3 days |
+| `opportunities($impressionThreshold = 1000)` | High-impression, low-CTR, page-one/page-two opportunity rows |
 
 ### Factory States
 
 | State | Description |
 |-------|-------------|
 | `recent()` | Data from the last 7 days |
-| `highPerforming()` | High clicks, impressions, good CTR |
-| `opportunity()` | High impressions, low CTR |
+| `highPerforming()` | High clicks, higher CTR, strong average position |
+| `opportunity()` | High impressions, low CTR, average position within opportunity range |
 
 ### Opportunity Detection
 
-The `opportunities()` scope identifies keywords with optimization potential:
-- High impressions but lower-than-expected CTR for position
-- Uses CTR benchmarks based on average position
-- Calculates potential missed clicks: `(expected_ctr - actual_ctr) * impressions`
+The `opportunities()` scope identifies rows that meet all of the current model thresholds:
+- `impressions >= 1000` (or the supplied threshold)
+- `ctr < 0.03`
+- `avg_position <= 10`
 
 **Example:**
 ```php
 $opportunities = GSCData::forSite($siteId)
-    ->opportunities()
-    ->orderByDesc('opportunity_score')
+    ->opportunities(1000)
+    ->orderByDesc('impressions')
     ->limit(10)
     ->get();
 ```
@@ -28471,12 +28489,12 @@ $opportunities = GSCData::forSite($siteId)
 | Category | Tests | Description |
 |----------|-------|-------------|
 | Schema Validation | 9 | Table structure, columns, indexes, constraints |
-| Model Scopes | 9 | Query scopes for filtering and ordering |
-| Factory States | 3 | recent, highPerforming, opportunity states |
+| Model / Factory Verification | 9+ | Factory creation, states, query scopes, helpers |
 | Data Sync | 13 | API parsing, batch processing, aggregation |
 
 ### Production Status
 - **Deployed**: 2026-02-28 (migration already in production)
+- **Re-verified**: 2026-03-10 against the current repository migration/model/test files; local migration test passed (`9 tests, 44 assertions`)
 - **Migration**: `2026_02_21_191000_create_gsc_data_table.php`
 - **Verified**: Health check passing, 22 tests passing (89 assertions)
 - **Status**: Complete

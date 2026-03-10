@@ -194,3 +194,25 @@ Status: Ready for deployment
 
 ### [2026-02-20 17:34] Agent: SpecSystemAnalyst
 Database task for storing imported GSC metrics.
+
+### [2026-03-10 11:58] DocSystemAnalyst: Re-verification Complete ✓
+**Re-verification Summary:**
+- Confirmed `TASK-12-2` remains `Done`.
+- Verified migration: `backend/database/migrations/2026_02_21_191000_create_gsc_data_table.php`
+- Verified model: `backend/app/Models/GSCData.php`
+- Verified factory: `backend/database/factories/GSCDataFactory.php`
+- Ran local validation: `php artisan test tests/Feature/Migrations/CreateGSCDataTableTest.php --compact` → **9 passed, 44 assertions**
+
+**Documentation Corrections Applied:**
+- Updated `DOCUMENTATION.md` to match the current repository implementation.
+- Corrected the schema from a stale `site_id`-only description to the actual dual-FK schema (`project_id` + `site_id`, both nullable).
+- Corrected the unique key to the current implementation: `idx_unique_data (project_id, query, page, data_date)`.
+- Corrected the documented indexes to include `idx_project_date`, `idx_project_query`, `idx_site_date`, `idx_site_query`, `idx_query_date`, `idx_date`, and the default `query` index.
+- Added the missing `project()` relationship and helper/accessor behavior from the `GSCData` model.
+- Rewrote the opportunity-detection notes to match the actual threshold-based `opportunities()` scope.
+
+**Result:**
+- Task file remains accurate at status level (`Done`).
+- Documentation now matches the current implementation under version control.
+
+Status: Done
