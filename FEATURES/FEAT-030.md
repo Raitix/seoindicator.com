@@ -95,3 +95,16 @@ As a user, I want clear legal terms and to understand how the analysis works.
 - Re-checked live documentation anchors now at `DOCUMENTATION.md` lines 7127 (Cookie Consent Component), 7266 (Cookie Consent Integration), 7457-7462 (task completion summary), with no drift found for Terms & Privacy / About / How It Works / accessibility coverage
 - Feature status remains `Done`; cleanup will refresh both completion markers (`FEAT-30` + `FEAT-030`), remove both lock files, and clear the active-agent entry `docsystemanalyst-FEAT-30-20260310-180840`
 
+### [2026-03-10 23:47 GMT+2 DocSystemAnalyst]
+**Alias trigger re-verification complete ✅**
+
+- Trigger: Task file referenced `FEAT-30` (non-padded); canonical file is `FEATURES/FEAT-030.md`
+- Verified all 7 tasks (TASK-30-1 through TASK-30-7): All `Done` ✅
+- Verified SPEC-030 status: `Done` ✅
+- Verified DOCUMENTATION.md coverage at line 7784+ (Cookie Consent, Terms & Privacy, About, How It Works) ✅
+- Actions completed:
+  - Wrote completion markers: `logs/completed/feature/FEAT-30.json` + `FEAT-030.json`
+  - Removed stale lock: `FEATURES/.locks/FEAT-30.lock`
+  - Cleared active-agents entry: `docsystemanalyst-FEAT-30-20260310-234359`
+- Feature status remains `Done`
+
