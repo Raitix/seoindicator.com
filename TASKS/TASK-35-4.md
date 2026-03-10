@@ -1,7 +1,7 @@
 # TASK-35-4: Local SEO Models
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -136,3 +136,21 @@ Create Eloquent models for local SEO tracking: LocalRanking, LocalCompetitor, an
 - ✅ Performance (indexes, bulk insert)
 
 **Status:** `To Develop` - All tests designed and passing, ready for Developer
+
+### Developer Session (2026-03-10 16:57 GMT+2)
+- Picked up `TASK-35-4`, attempted the stale-marker clear step, refreshed the task lock, and moved the task through `In Development`.
+- Audited the existing Local SEO model layer and confirmed the core implementation, factories, and PreTester coverage were already in place for:
+  - `backend/app/Models/LocalRanking.php`
+  - `backend/app/Models/LocalCompetitor.php`
+  - `backend/app/Models/LocalSEOAlert.php`
+  - corresponding factories and unit suites under `backend/database/factories/` and `backend/tests/Unit/Models/`
+- Closed the remaining acceptance-criteria naming gaps without breaking the shipped API used by the existing tests:
+  - added `businessLocation()` aliases on `LocalRanking`, `LocalCompetitor`, and `LocalSEOAlert`
+  - added `LocalSEOAlert::SEVERITIES` as an alias to the existing severity constant set
+  - added `LocalSEOAlert::scopeByType()` plus severity convenience scopes `scopeCritical()`, `scopeWarning()`, and `scopeInfo()`
+- Validation run on this machine:
+  - `php artisan test tests/Unit/Models/LocalRankingTest.php tests/Unit/Models/LocalCompetitorTest.php tests/Unit/Models/LocalSEOAlertTest.php` PASS
+  - Result: **152 tests passed / 244 assertions**
+- Non-blocking note: the targeted PHPUnit run still emits the existing doc-comment metadata deprecation warnings from the prewritten test files; no task-specific failures remained.
+- **Status Change:** `To Develop` -> `In Development` -> `To Test Locally`
+- **Next Agent:** LocalTester should rerun the targeted Local SEO model suite and, if desired, include any nearby Local SEO backend smoke tests that depend on these models.

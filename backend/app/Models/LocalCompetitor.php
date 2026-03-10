@@ -57,6 +57,14 @@ class LocalCompetitor extends Model
     }
 
     /**
+     * Alias for the task/spec naming used in acceptance criteria.
+     */
+    public function businessLocation(): BelongsTo
+    {
+        return $this->location();
+    }
+
+    /**
      * Get Google Maps URL for this competitor.
      */
     public function getMapsUrl(): string

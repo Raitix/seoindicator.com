@@ -71,6 +71,14 @@ class LocalRanking extends Model
     }
 
     /**
+     * Alias for the task/spec naming used in acceptance criteria.
+     */
+    public function businessLocation(): BelongsTo
+    {
+        return $this->location();
+    }
+
+    /**
      * Get the keyword for this ranking.
      */
     public function keyword(): BelongsTo
