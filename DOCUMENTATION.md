@@ -4991,6 +4991,178 @@ REST API controller for the authenticated Local SEO alert inbox. Exposes 6 user-
 - TASK-35-18: GBP Connect Button (frontend integration on the Local SEO UI)
 
 ---
+## Location Management Page (TASK-35-17)
+
+### Component Description
+Authenticated Local SEO location-management surface for `/sites/{siteId}/local`. The page provides the operational shell for site-level business locations: list loading, add/edit/delete workflows, summary KPIs, search/filter/sort controls, optimistic CRUD updates, and a query-parameter-driven location details dialog. The shipped production scope also includes the backend contract hardening that prevented Local SEO list/detail reads from failing with generic `500` responses when Google OAuth credentials were missing or when production schema/query drift was encountered.
+
+### Component and Route Locations
+- **Page Route Wrapper:** `frontend/app/sites/[siteId]/local/page.tsx`
+- **Primary UI:** `frontend/components/local/LocationManagementPage.tsx`
+- **Details Dialog:** `frontend/components/local/LocationDetailsDialog.tsx`
+- **Card Component:** `frontend/components/local/LocationCard.tsx`
+- **Create/Edit Form:** `frontend/components/local/LocationForm.tsx`
+- **Delete Confirmation:** `frontend/components/local/DeleteLocationDialog.tsx`
+- **Data Hook:** `frontend/lib/hooks/useLocations.ts`
+- **Route/Base URL Helper:** `frontend/lib/api/base-url.ts`
+- **Auth Token Fallback Helper:** `frontend/lib/api/auth.ts`
+- **Location Types/Normalizers:** `frontend/lib/types/locations.ts`
+- **Backend API Controller:** `backend/app/Http/Controllers/Api/V1/LocalSEO/BusinessLocationController.php`
+- **Backend Service:** `backend/app/Services/LocalSEO/BusinessLocationService.php`
+- **OAuth Guardrail Service:** `backend/app/Services/LocalSEO/GoogleOAuthService.php`
+- **Regression Tests:**
+  - `frontend/__tests__/components/local/LocationManagementPage.real.test.tsx`
+  - `frontend/__tests__/components/local/LocationManagementPage.endpoint-states.test.tsx`
+  - `frontend/__tests__/app/sites/[siteId]/local/LocationListPage.test.tsx`
+  - `frontend/__tests__/components/local/LocationCard.test.tsx`
+  - `frontend/__tests__/components/local/LocationForm.test.tsx`
+  - `frontend/__tests__/components/local/LocationForm.real.test.tsx`
+  - `frontend/__tests__/components/local/DeleteLocationDialog.test.tsx`
+  - `frontend/__tests__/lib/api/base-url.test.ts`
+  - `frontend/__tests__/lib/api/auth.production-routing.test.ts`
+  - `frontend/__tests__/lib/hooks/useLocations.production-routing.test.ts`
+  - `backend/tests/Feature/Api/V1/LocalSEO/BusinessLocationControllerProductionRegressionTest.php`
+- **Test Documentation:** `TESTS/TEST-35-17.md`
+
+### Route Behavior
+
+| Route | Behavior |
+|------|----------|
+| `/sites/{siteId}/local` | Renders the full location-management page for one site |
+| `/sites/{siteId}/local?locationId={id}` | Opens `LocationDetailsDialog` for the selected location without leaving the list page |
+| `GET /api/v1/sites/{siteId}/locations` | Returns paginated site locations for the page list |
+| `POST /api/v1/sites/{siteId}/locations` | Creates a new business location |
+| `GET /api/v1/locations/{id}` | Returns one business location with summary data used by the details dialog |
+| `PUT /api/v1/locations/{id}` | Updates an existing location |
+| `DELETE /api/v1/locations/{id}` | Soft-deletes a location |
+| `POST /api/v1/locations/{id}/sync` | Triggers a dashboard refresh job for connected GBP locations |
+| `POST /api/v1/locations/{id}/connect-gbp` | Starts GBP OAuth and now fails gracefully with `503 JSON` when OAuth is not configured |
+| `DELETE /api/v1/locations/{id}/disconnect-gbp` | Disconnects GBP from the location |
+
+### Frontend Behavior
+
+| Area | Implementation |
+|------|----------------|
+| Rendering model | Server wrapper route uses `Suspense`; the interactive page runs fully in `LocationManagementPage` |
+| Summary KPIs | Shows tracked locations, GBP-connected count, and average rating based on loaded data |
+| Search | `searchInput` is debounced by `250ms` before server revalidation; a second client-side filter keeps the currently loaded page responsive while typing |
+| Filters | Supports `all`, `connected`, and `not-connected` GBP states |
+| Sorting | Server-backed for `updated`, `name`, and `connection`; client-side secondary sorting adds `rating`, `reviews`, and `pack-position` |
+| Pagination | Uses backend `meta.current_page`, `per_page`, `total`, and `last_page` with previous/next controls |
+| Create/update/delete UX | Uses SWR `mutate()` with optimistic list updates, rollback-on-error, and toast feedback |
+| Empty/error states | Includes dedicated zero-state, filter-empty state, skeleton loading state, and retryable API error panel |
+| Details flow | Query-param-driven dialog keeps static export compatibility and avoids a dedicated dynamic detail page dependency |
+| Refresh actions | Both the list page and details dialog expose explicit refresh controls |
+
+### Location Card Behavior
+- Displays location name, address, optional category badge, and GBP connection badge.
+- Surfaces quick stats for rating, review count, and local-pack position.
+- Shows optional phone, website, and coordinate chips when those fields exist.
+- Exposes `View details`, `Edit`, and `Delete` actions, with delete-state button locking.
+- Provides a dedicated skeleton variant used while the page is loading.
+
+### Location Form Behavior
+
+| Feature | Implementation |
+|--------|----------------|
+| Validation | `zod` schema validates required name/address, phone pattern, website safety, and length limits |
+| Website normalization | Bare domains are normalized to `https://...`; only `http`/`https` protocols are accepted |
+| Geocoding | Address blur and explicit “Geocode address” actions call `geocodeAddress()` and display confirmed coordinates |
+| Edit handling | Existing coordinates are preloaded; changing the address invalidates them until re-geocoded |
+| Submit safety | Duplicate-submit guard (`submissionGuardRef` + `isSubmitLocked`) prevents rapid double posts |
+| Output payload | Sends trimmed strings plus nullable `phone`, `website`, `category`, `latitude`, and `longitude` |
+
+### Details Dialog Behavior
+- Resolves details from `useLocation()` and falls back to the already-loaded list record while the detail fetch is pending.
+- Shows business identity, rating/review/pack metrics, address/phone/website/coordinates, insights summary, review summary, and last updated timestamp.
+- Embeds the GBP connection component so GBP status can be refreshed from the same dialog.
+- Uses the `locationId` query parameter as the state source so dialog open/close is URL-addressable and browser-navigation friendly.
+
+### Data Fetching and Authentication Contract
+- `buildApiUrl()` normalizes `NEXT_PUBLIC_API_URL` so local, relative, and absolute API base configurations all resolve to `/api/v1` consistently.
+- `buildSanctumUrl()` keeps `/sanctum/csrf-cookie` on the frontend origin when the API base is absolute, preventing production cross-origin routing mistakes.
+- `useLocations()` and `useLocation()` always send `credentials: "include"` and add a `Bearer` token from `localStorage` when present.
+- This bearer-token fallback keeps the Local SEO shell usable in environments where the SPA cookie/session contract is not yet fully established.
+- List cache refreshes revalidate all site location list keys plus the selected detail key after mutations.
+
+### Backend Contract Hardening Shipped With This Task
+
+| Problem | Resolution |
+|--------|------------|
+| Missing Google OAuth credentials could crash controller construction before non-OAuth reads ran | `GoogleOAuthService` now stores config as nullable strings and validates credentials only when OAuth work is actually requested |
+| `connect-gbp` previously risked an unhandled failure when OAuth config was absent | `BusinessLocationController::connectGbp()` now catches the configuration error and returns `503` JSON with a clear message |
+| List reads could fail when no `sort` query parameter was sent | `BusinessLocationService` now safely defaults sorting instead of assuming a non-null sort string |
+| Public API sort alias `is_gbp_connected` did not match the physical DB column | Controller/service mapping now translates the alias to `gbp_connected` |
+| `search` and `is_gbp_connected=false` were part of the frontend contract but were not fully honored by the real service path | The service now applies real text search plus explicit false-valued GBP filters |
+| Drifted production schemas without `business_locations.deleted_at` could break list/detail/sync queries | `BusinessLocationService::newLocationQuery()` now detects soft-delete column support and tolerates missing `deleted_at` |
+| OAuth callback state validation depended on the older service mock contract only | Controller callback validation now prefers cached `location_id` binding and falls back to `validateState()` only when needed |
+
+### Request Parameters Used by the Page
+
+| Parameter | Example | Purpose |
+|-----------|---------|---------|
+| `page` | `2` | Backend pagination |
+| `per_page` | `15` | Page size (backend-capped) |
+| `search` | `bakery` | Name/address/phone/website/category search |
+| `is_gbp_connected` | `true` / `false` | Connection-state filter |
+| `sort` | `name`, `-updated_at`, `-is_gbp_connected` | Server-side sorting contract |
+| `locationId` | `123` | Frontend URL state for the details dialog |
+
+### Error Handling
+
+| Scenario | User/API Result |
+|----------|-----------------|
+| Guest list/detail request | JSON `401` instead of generic HTML/server error |
+| Cross-user site access | JSON `403` on site list endpoints |
+| Missing or foreign location | JSON `404` on detail/connect/disconnect paths |
+| Missing Google OAuth configuration | JSON `503` with `Google Business Profile OAuth is not configured.` |
+| Frontend fetch failure | Retryable error card or inline dialog error message |
+| Geocoding failure | Inline warning plus blocked save when coordinates cannot be confirmed |
+
+### Test Coverage
+
+| Suite | Evidence | Status |
+|------|----------|--------|
+| Frontend production-routing + real-component validation | `vitest` suites for `base-url`, auth routing, `useLocations`, `LocationManagementPage`, and `LocationForm` | ✅ 25/25 passed |
+| Broader location-management component suite | `LocationListPage`, `LocationCard`, `LocationForm`, and `DeleteLocationDialog` test runs | ✅ 194/194 passed |
+| Focused rerun after submit/routing hardening | `LocationManagementPage.real.test.tsx` + `LocationForm.real.test.tsx` | ✅ 7/7 passed |
+| Backend production regression coverage | `BusinessLocationControllerProductionRegressionTest.php` | ✅ 11 tests / 29 assertions |
+| Static export compatibility | `frontend npm run build` | ✅ Passed |
+
+### Production Validation
+- `/sites/1/local/` renders the Local SEO page shell in production.
+- The Add Location modal renders expected fields: name, address, phone, website, and category.
+- `/sites/1/local/?locationId=1` opens the details dialog and now degrades cleanly with `Unable to load location` / `Location not found` when the record is unavailable.
+- Guest list/detail/auth probes now return proper JSON `401` responses instead of the earlier `500`/host-level HTML failure mode.
+- Cross-site or foreign-record probes return safe `403`/`404` JSON responses instead of leaking server errors.
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| First Deploy Date | 2026-03-10 |
+| Verification Date | 2026-03-10 |
+| Public Host | `https://seoindicator.com` |
+| Public API Bridge | `/api/...` and `/sanctum/csrf-cookie` reachable on the production host |
+| Production QA Evidence | `temp/task3517-prod-validation-20260310T1303Z.json` |
+| Deployment Pattern | Local / self-hosted deployment pipeline |
+| Status | Complete |
+
+### Dependencies
+
+| Dependency | Status | Description |
+|------------|--------|-------------|
+| TASK-35-13 | Implemented | Business Location controller/service contract used by the page |
+| TASK-35-25 | Related | API base and production routing hardening that supports the page shell |
+| TASK-35-26 | Related | SPA auth/session follow-up that informed bearer-token fallback coverage |
+| TASK-35-27 | Related | Production locations-endpoint regression investigation folded into the shipped backend hardening |
+
+### Related Tasks
+- TASK-35-18: GBP Connect Button (embedded inside the details dialog)
+- TASK-35-19: Location Dashboard Page (deeper single-location analytics surface)
+- TASK-35-21: Reviews Management Page (location-specific review workflow)
+
+---
 ## PricingComparison Component (TASK-32-6)
 
 ### Component Description
