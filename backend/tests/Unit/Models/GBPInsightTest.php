@@ -52,9 +52,12 @@ class GBPInsightTest extends TestCase
     /** @test */
     public function it_guards_non_fillable_attributes(): void
     {
+        $location = BusinessLocation::factory()->create();
+
         $insight = GBPInsight::create([
-            'location_id' => 1,
+            'location_id' => $location->id,
             'views' => 100,
+            'insights_date' => '2026-03-08',
             'id' => 999, // Should be ignored
         ]);
         

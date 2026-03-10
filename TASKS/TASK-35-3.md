@@ -1,7 +1,7 @@
 # TASK-35-3: GBP-Related Models
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -16,13 +16,13 @@ SPEC-035: Local SEO & Google Business Profile Tracking
 Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
 
 ## Acceptance Criteria
-- [ ] GBPInsight model created:
+- [x] GBPInsight model created:
   - BelongsTo relationship to BusinessLocation
   - Casts for numeric fields (views, searches, calls, etc.)
   - Date casting for insights_date
   - Scope for date range filtering
   - Method to calculate total actions (calls + directions + website_clicks)
-- [ ] GBPReview model created:
+- [x] GBPReview model created:
   - BelongsTo relationship to BusinessLocation
   - Fillable: google_review_id, author_name, author_photo, rating, review_text, sentiment, response fields
   - Casts for rating (integer) and dates
@@ -30,13 +30,13 @@ Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
   - Scope for unresponded reviews
   - Method to check if owner has responded
   - Method to get sentiment label (positive/negative/neutral)
-- [ ] GBPPost model created:
+- [x] GBPPost model created:
   - BelongsTo relationship to BusinessLocation
   - Casts for published_at timestamp
   - Scope for published posts
   - Accessor for post type label (EVENT, OFFER, UPDATE, etc.)
-- [ ] Model factories for all three models
-- [ ] Unit tests for all models
+- [x] Model factories for all three models
+- [x] Unit tests for all models
 
 ## Dependencies
 - TASK-35-1 (Database Migrations)
@@ -54,6 +54,25 @@ Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
 *Created by SpecSystemAnalyst on 2026-03-08*
 
 ## Comments
+
+### Developer Session (2026-03-10 16:59 GMT+2)
+- ✅ Implemented dedicated `GBPInsight` and `GBPPost` Eloquent models and rewired `GBPReview` to the `BusinessLocation` model instead of the stale `Location` reference.
+- ✅ Added/verified required casts, relationships, scopes, accessors, and helper methods from the task contract:
+  - `GBPInsight`: `forDateRange()`, `forLocation()`, `calculateTotalActions()`, `formatted_date`, `total_views`, `engagement_rate`
+  - `GBPReview`: `positive()`, `negative()`, `neutral()`, `unresponded()`, `responded()`, `forLocation()`, `withRating()`, `recent()`, `hasOwnerResponse()`, `sentiment_label`, `star_rating`, `is_positive`, `is_negative`
+  - `GBPPost`: `published()`, `scheduled()`, `forLocation()`, `ofType()`, `recent()`, `post_type_label`
+- ✅ Added model-level normalization/guards needed for the existing schema and cross-database tests (date normalization, non-negative insight metrics, review rating range validation, string truncation for bounded columns).
+- ✅ Updated `BusinessLocation` GBP relationships to real `hasMany()` model bindings for insights and posts.
+- ✅ Corrected three prewritten mass-assignment tests so they create valid parent `BusinessLocation` records (and provide required `insights_date`) before asserting guarded fields; this keeps the assertions intact while aligning the tests with the real foreign-key / NOT NULL schema.
+- ✅ Verified targeted task suite passes: `php artisan test tests/Unit/Models/GBPInsightTest.php tests/Unit/Models/GBPReviewTest.php tests/Unit/Models/GBPPostTest.php` → **146 passed**.
+- ✅ Verified nearby compatibility suites still pass: `tests/Unit/Models/BusinessLocationTest.php` and `tests/Feature/Services/GBP/GBPReviewsServiceTest.php` → **147 passed**.
+- ℹ️ `tests/Feature/Services/GBP/GBPInsightsServiceTest.php` still fails because `GBPInsightsService` is explicitly unimplemented in this repo; that is outside TASK-35-3 scope.
+- **Status:** `In Development` → `To Test Locally`
+
+### Developer Session (2026-03-10 16:46 GMT+2)
+- Picked TASK-35-3 up for implementation and moved status to `In Development`.
+- Confirmed schema/factories/tests already exist, but the model layer is incomplete/drifted: `GBPReview` currently points at `Location` instead of `BusinessLocation`, while dedicated `GBPInsight`/`GBPPost` models are still missing.
+- Implementing the three dedicated GBP models to satisfy the TASK-35-3 unit-test contract while preserving existing Local SEO service compatibility where possible.
 
 ### ProjectManager Session (2026-03-08 21:48 GMT+2)
 - **Priority:** HIGH (confirmed) - Model layer for GBP data (insights, reviews, posts)

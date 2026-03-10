@@ -54,8 +54,10 @@ class GBPReviewTest extends TestCase
     /** @test */
     public function it_guards_non_fillable_attributes(): void
     {
+        $location = BusinessLocation::factory()->create();
+
         $review = GBPReview::create([
-            'location_id' => 1,
+            'location_id' => $location->id,
             'google_review_id' => 'test123',
             'rating' => 5,
             'id' => 999, // Should be ignored

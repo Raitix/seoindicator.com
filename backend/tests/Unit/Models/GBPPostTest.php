@@ -53,8 +53,10 @@ class GBPPostTest extends TestCase
     /** @test */
     public function it_guards_non_fillable_attributes(): void
     {
+        $location = BusinessLocation::factory()->create();
+
         $post = GBPPost::create([
-            'location_id' => 1,
+            'location_id' => $location->id,
             'google_post_id' => 'test123',
             'post_type' => 'UPDATE',
             'id' => 999, // Should be ignored
