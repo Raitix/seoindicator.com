@@ -33,8 +33,8 @@ A deployment is considered successful only when all of the following are true:
 4. deployment log is marked `success`
 
 ### Latest verified deployment baseline
-- Deployment id: `20260310T155017Z-27d18eff`
-- Commit: `82cf1b5fafab481d9513d0fbdfcd19d124abc360`
+- Deployment id: `20260310T160753Z-ed1559f2`
+- Commit: `b40acea0de299919a1d4a00c61d40e810c4d20eb`
 - Result: `success`
 
 ### Important notes
@@ -279,11 +279,9 @@ This remediation migration is idempotent and is covered by `backend/tests/Featur
 - `keywords` table (exists)
 
 ### Related Tasks
-- TASK-35-2: BusinessLocation Model (uses business_locations table)
-- TASK-35-3: GBP-Related Models (uses gbp_insights, gbp_reviews, gbp_posts tables)
-- TASK-35-4: LocalRanking Model (uses local_rankings table)
-- TASK-35-5: LocalCompetitor Model (uses local_competitors table)
-- TASK-35-6: LocalSeoAlert Model (uses local_seo_alerts table)
+- TASK-35-2: BusinessLocation Model (uses `business_locations`)
+- TASK-35-3: GBP-Related Models (uses `gbp_insights`, `gbp_reviews`, `gbp_posts`)
+- TASK-35-4: Local SEO Models (uses `local_rankings`, `local_competitors`, `local_seo_alerts`)
 
 ---
 ## BusinessLocation Model (TASK-35-2)
@@ -591,6 +589,133 @@ Dedicated Eloquent model layer for Local SEO Google Business Profile data. TASK-
 - TASK-35-9: GBP Insights Service
 - TASK-35-10: GBP Reviews Service
 - TASK-35-14: GBP Controllers & API Endpoints
+
+---
+## Local SEO Models (TASK-35-4)
+
+### Model Description
+Foundation Eloquent model layer for Local SEO ranking snapshots, competitor records, and the authenticated alert inbox. TASK-35-4 ships `LocalRanking`, `LocalCompetitor`, and `LocalSEOAlert`, keeps the acceptance-criteria aliases that downstream tasks now depend on, and provides dedicated factories plus targeted unit coverage for the three model families.
+
+### Component Locations
+- **Models:**
+  - `backend/app/Models/LocalRanking.php`
+  - `backend/app/Models/LocalCompetitor.php`
+  - `backend/app/Models/LocalSEOAlert.php`
+- **Parent model integration:** `backend/app/Models/BusinessLocation.php`
+- **Factories:**
+  - `backend/database/factories/LocalRankingFactory.php`
+  - `backend/database/factories/LocalCompetitorFactory.php`
+  - `backend/database/factories/LocalSEOAlertFactory.php`
+- **Unit Tests:**
+  - `backend/tests/Unit/Models/LocalRankingTest.php`
+  - `backend/tests/Unit/Models/LocalCompetitorTest.php`
+  - `backend/tests/Unit/Models/LocalSEOAlertTest.php`
+- **Test Specification:** `TESTS/TASK-35-4.md`
+- **Production validation evidence:**
+  - `temp/task354-prod-model-smoke-20260310T162624Z.json`
+  - `temp/task354-prod-validation-20260310T162427Z.json`
+
+### LocalRanking Model
+
+| Area | Implementation |
+|------|----------------|
+| Table | `local_rankings` |
+| Relationships | `location()` / `businessLocation()` -> `belongsTo(BusinessLocation::class, 'location_id')`; `keyword()` -> `belongsTo(Keyword::class)` |
+| Fillable | `location_id`, `keyword_id`, `search_location`, `search_lat`, `search_lng`, `local_pack_position`, `local_organic_position`, `competitors_in_pack`, `checked_at` |
+| Casts | `search_lat` + `search_lng` -> `decimal:8`; `local_pack_position` + `local_organic_position` -> `integer`; `competitors_in_pack` -> `array`; `checked_at` -> `datetime` |
+| Scopes | `inPack()`, `dateRange($startDate, $endDate)` |
+| Helper methods | `inLocalPack()`, `getPositionChange()` |
+| Runtime notes | Timestamps disabled; `getPositionChange()` compares the current row to the previous `checked_at` snapshot for the same `location_id` + `keyword_id` pair and returns `null` when either side has no pack position |
+
+### LocalCompetitor Model
+
+| Area | Implementation |
+|------|----------------|
+| Table | `local_competitors` |
+| Relationships | `location()` / `businessLocation()` -> `belongsTo(BusinessLocation::class, 'location_id')` |
+| Fillable | `location_id`, `competitor_name`, `competitor_gbp_id`, `competitor_address`, `competitor_rating`, `competitor_review_count` |
+| Casts | `competitor_rating` -> `decimal:1`; `competitor_review_count` -> `integer` |
+| Helper methods | `getMapsUrl()`, `compareWithLocation(BusinessLocation $location)` |
+| Runtime notes | Uses the GBP place ID first for Google Maps deep links, then falls back to address search or name search; `compareWithLocation()` returns `rating_diff`, `review_count_diff`, and both sides of the comparison payload for downstream UI/API consumers |
+
+### LocalSEOAlert Model
+
+| Area | Implementation |
+|------|----------------|
+| Table | `local_seo_alerts` |
+| Relationships | `user()` -> `belongsTo(User::class)`; `location()` / `businessLocation()` -> `belongsTo(BusinessLocation::class, 'location_id')` |
+| Fillable | `user_id`, `location_id`, `alert_type`, `severity`, `title`, `message`, `data`, `is_read`, `read_at`, `created_at` |
+| Casts | `data` -> `array`; `is_read` -> `boolean`; `created_at` + `read_at` -> `datetime` |
+| Constants | `ALERT_TYPES`, `SEVERITY_LEVELS`, plus acceptance-criteria alias `SEVERITIES` |
+| Scopes | `unread()`, `read()`, `ofType()`, `byType()`, `ofSeverity()`, `critical()`, `warning()`, `info()`, `forLocation()` |
+| Helper methods | `markAsRead()`, `isRead()`, `isUnread()`, `business_location_id` accessor |
+| Runtime notes | Timestamps disabled; `markAsRead()` is idempotent and persists both `is_read` and `read_at` for the inbox API |
+
+### Factory Coverage
+
+| Factory | Key States |
+|---------|------------|
+| `LocalRankingFactory` | `inPack()`, `notInPack()`, `checkedAt()` |
+| `LocalCompetitorFactory` | `withoutGbpId()`, `highRated()` |
+| `LocalSEOAlertFactory` | `read()`, `unread()`, `rankingImproved()`, `rankingDropped()`, `negativeReview()`, `gbpDisconnected()`, `critical()`, `warning()`, `info()` |
+
+`LocalSEOAlertFactory::configure()` backfills missing parent `User` / `BusinessLocation` records when explicit IDs are provided, which keeps task-scoped tests deterministic when they seed related fixtures manually.
+
+### Test Coverage
+
+| Validation Layer | Result |
+|------------------|--------|
+| Task-scoped unit suite | `php artisan test tests/Unit/Models/LocalRankingTest.php tests/Unit/Models/LocalCompetitorTest.php tests/Unit/Models/LocalSEOAlertTest.php` -> **152 passed / 244 assertions** |
+| Deployment gate (handoff) | Same targeted Local SEO model suite rerun before deploy -> **152 passed / 244 assertions** |
+| Production validation | Live model smoke + authenticated alert-surface API smoke passed with disposable fixtures cleaned up afterward |
+
+**Primary coverage areas:**
+- fillable / mass-assignment behavior across all three models
+- decimal / integer / JSON / datetime casting behavior
+- acceptance-criteria relationship aliases (`businessLocation()` and `SEVERITIES`)
+- ranking/alert query scopes and chained filtering behavior
+- helper methods (`inLocalPack`, `getPositionChange`, `getMapsUrl`, `compareWithLocation`, `markAsRead`)
+- factory state coverage and explicit-related-record seeding
+- CRUD, cascade delete, Unicode, XSS/SQL-injection string handling, and bulk insert / index-backed query checks
+
+### Production Status
+- **Deployed:** 2026-03-10 via the local/self-hosted deployment pipeline
+- **Deployment id:** `20260310T160753Z-ed1559f2`
+- **Commit:** `b40acea0de299919a1d4a00c61d40e810c4d20eb`
+- **Deployment result:** `success`
+- **Production smoke:** Homepage + login Playwright smoke passed
+- **Production validation:** Dedicated Local SEO model smoke passed against the live host with disposable fixtures
+
+**Production verification summary:**
+- `LocalRanking` live smoke confirmed `businessLocation()` / `keyword()` relations, `inPack()` filtering, `dateRange()` slicing (`2` rows in the seeded window), `getPositionChange()` (`2` in the seeded improvement case), and `inLocalPack()` truthiness.
+- `LocalCompetitor` live smoke confirmed the GBP place-ID Google Maps URL path and the `compareWithLocation()` response shape used by downstream consumers.
+- `LocalSEOAlert` live smoke confirmed the `SEVERITIES` alias contains `warning`, `unread()` / `warning()` / `byType()` queries work, and `markAsRead()` persists the read state.
+- Authenticated production alert probes passed for register, login, `GET /api/v1/auth/user`, `GET /api/v1/local-seo/alerts`, `GET /api/v1/local-seo/alerts/unread-count`, `POST /api/v1/local-seo/alerts/{id}/read`, and cross-user alert reads still returned `404`.
+
+**Known downstream gap (separate task):**
+- The broader production probe recorded `GET /api/v1/locations/{id}/competitors` returning `403` for an owned fixture. ProdTester classified this as a downstream controller/policy issue outside TASK-35-4’s model acceptance scope; it should be addressed in the Local Rankings / competitors API task set rather than by reopening the model task.
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| ORM-only access | Relationships, scopes, and helper lookups use Eloquent/query-builder flows instead of raw SQL |
+| Alert ownership safety | Production validation confirmed cross-user alert access still resolves to `404`, preventing simple enumeration through the alert inbox surface |
+| Data-integrity casting | JSON, boolean, decimal, and datetime casts keep downstream services/controllers from parsing raw DB payloads manually |
+| Idempotent state mutation | `LocalSEOAlert::markAsRead()` safely handles repeated reads without duplicating side effects |
+| Compatibility aliases | Acceptance-criteria aliases (`businessLocation()`, `SEVERITIES`, `byType()`, severity scopes) were added without breaking existing downstream call sites |
+
+### Dependencies
+- TASK-35-1: Local SEO database migrations (`local_rankings`, `local_competitors`, `local_seo_alerts`)
+- TASK-35-2: `BusinessLocation` parent model used by ranking, competitor, and alert relations
+- TASK-35-11: downstream local ranking service logic consumes `LocalRanking` snapshots
+- TASK-35-13 / TASK-35-16: downstream alert service and alert controller consume `LocalSEOAlert`
+
+### Related Tasks
+- TASK-35-11: Local Ranking Service
+- TASK-35-13: Local SEO Alert Service
+- TASK-35-16: Local SEO Alerts API Controller
+- TASK-35-17 to TASK-35-23: Frontend Local SEO surfaces that read rankings / competitors / alerts
 
 ---
 ## API Integration Tests (TASK-6-20)
