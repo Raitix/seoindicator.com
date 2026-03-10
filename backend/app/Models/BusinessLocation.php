@@ -94,7 +94,7 @@ class BusinessLocation extends Model
      */
     public function insights(): HasMany
     {
-        return $this->genericHasMany('gbp_insights');
+        return $this->hasMany(GBPInsight::class, 'location_id');
     }
 
     /**
@@ -126,7 +126,7 @@ class BusinessLocation extends Model
      */
     public function posts(): HasMany
     {
-        return $this->genericHasMany('gbp_posts');
+        return $this->hasMany(GBPPost::class, 'location_id');
     }
 
     /**
