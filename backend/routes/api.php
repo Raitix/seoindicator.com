@@ -667,6 +667,44 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Local SEO Alerts Routes (TASK-35-16, SPEC-035)
+|--------------------------------------------------------------------------
+|
+| Local SEO alert management API endpoints.
+| All routes require authentication and ownership verification.
+|
+*/
+Route::prefix('v1')->middleware(['auth'])->group(function () {
+    // Local SEO Alerts Routes
+    Route::prefix('local-seo/alerts')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\V1\LocalSEO\LocalSEOAlertController::class, 'index'])
+            ->name('local-seo.alerts.index')
+            ->middleware('throttle:60,1');
+        Route::get('/unread-count', [\App\Http\Controllers\Api\V1\LocalSEO\LocalSEOAlertController::class, 'unreadCount'])
+            ->name('local-seo.alerts.unread-count')
+            ->middleware('throttle:60,1');
+        Route::post('/mark-all-read', [\App\Http\Controllers\Api\V1\LocalSEO\LocalSEOAlertController::class, 'markAllAsRead'])
+            ->name('local-seo.alerts.mark-all-read')
+            ->middleware('throttle:10,1'); // 10 per minute
+        Route::post('/{id}/read', [\App\Http\Controllers\Api\V1\LocalSEO\LocalSEOAlertController::class, 'markAsRead'])
+            ->name('local-seo.alerts.read')
+            ->where('id', '[0-9]+')
+            ->middleware('throttle:60,1');
+        Route::delete('/{id}', [\App\Http\Controllers\Api\V1\LocalSEO\LocalSEOAlertController::class, 'destroy'])
+            ->name('local-seo.alerts.destroy')
+            ->where('id', '[0-9]+')
+            ->middleware('throttle:60,1');
+    });
+
+    // Location-specific alerts
+    Route::get('locations/{id}/alerts', [\App\Http\Controllers\Api\V1\LocalSEO\LocalSEOAlertController::class, 'locationAlerts'])
+        ->name('locations.alerts.index')
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:60,1');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Admin Routes (TASK-27-2, SPEC-027)
 |--------------------------------------------------------------------------
 |

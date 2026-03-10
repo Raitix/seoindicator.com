@@ -72,7 +72,7 @@ class BusinessLocationController extends Controller
         $data['user_id'] = $request->user()->id;
         $data['site_id'] = $siteId;
 
-        $location = $this->locationService->createLocation($siteId, $data);
+        $location = $this->locationService->createLocation($data);
 
         return (new BusinessLocationResource($location))
             ->response()
