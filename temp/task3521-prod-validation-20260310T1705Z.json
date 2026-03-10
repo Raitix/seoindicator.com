@@ -1,0 +1,96 @@
+{
+  "taskId": "TASK-35-21",
+  "validatedAt": "2026-03-10T15:05:00Z",
+  "validatedAtLocal": "2026-03-10 17:05 GMT+2",
+  "environment": "production",
+  "baseUrl": "https://seoindicator.com",
+  "deploymentLog": "C:\\Users\\Raitis\\.openclaw\\logs\\deployments\\20260310T140137Z-b15b011a.json",
+  "disposableAccount": {
+    "email": "task3521-prod-20260310T165345Z-540e1d@example.com",
+    "userId": 10057,
+    "siteId": 29,
+    "locationId": 8,
+    "cleanupCompleted": true
+  },
+  "routeChecks": {
+    "GET /locations/8/reviews": 404,
+    "GET /sites/29/local/8/reviews": 404,
+    "browserVisibleResult": "Both routes render the production 404 page ('This Page Does Not Exist')."
+  },
+  "apiChecks": {
+    "guest": {
+      "GET /api/v1/locations/8/reviews": 401
+    },
+    "authenticated": {
+      "GET /api/v1/locations/8": {
+        "status": 200,
+        "name": "TASK-35-21 QA Location task3521-20260310T165551",
+        "siteId": 29,
+        "isGbpConnected": true
+      },
+      "GET /api/v1/locations/8/reviews/stats": {
+        "status": 200,
+        "totalCount": 21,
+        "averageRating": 3.1,
+        "responseRate": 42.9,
+        "distribution": [4, 4, 4, 4, 5],
+        "sentiment": {
+          "positive": 9,
+          "neutral": 4,
+          "negative": 8
+        }
+      },
+      "GET /api/v1/locations/8/reviews?page=1&per_page=20": {
+        "status": 200,
+        "count": 20,
+        "total": 21,
+        "lastPage": 2
+      },
+      "GET /api/v1/locations/8/reviews?page=2&per_page=20": {
+        "status": 200,
+        "count": 1
+      },
+      "GET /api/v1/locations/8/reviews?rating=1&sentiment=negative&per_page=50": {
+        "status": 200,
+        "count": 4,
+        "ids": [18, 19, 20, 21]
+      },
+      "GET /api/v1/locations/8/reviews?has_response=false&per_page=50": {
+        "status": 200,
+        "count": 12
+      },
+      "GET /api/v1/locations/8/reviews?sort=rating&per_page=5": {
+        "status": 200,
+        "ratings": [1, 1, 1, 1, 2]
+      }
+    },
+    "authenticatedWritePath": {
+      "localQaIp": {
+        "POST /api/v1/locations/8/reviews/9/respond": {
+          "status": 429,
+          "body": {
+            "success": false,
+            "error": {
+              "code": "rate_limit_exceeded",
+              "message": "Too many requests. Please try again later."
+            }
+          }
+        }
+      },
+      "freshServerSideIp": {
+        "POST /api/v1/locations/8/reviews/9/respond": {
+          "status": 200,
+          "message": "Response posted successfully.",
+          "responseId": "resp-9-1773154645"
+        }
+      }
+    }
+  },
+  "assessment": {
+    "apiContract": "working",
+    "productionReviewPages": "blocked",
+    "blockingRegression": "The promised production review routes are not reachable on the live static export host; both direct URLs return 404 instead of rendering the reviews workspace.",
+    "likelyCause": "Static-export dynamic route deployment / host routing mismatch for /locations/{id}/reviews and /sites/{siteId}/local/{locationId}/reviews.",
+    "verdict": "fail"
+  }
+}
