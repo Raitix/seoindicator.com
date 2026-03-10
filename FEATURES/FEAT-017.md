@@ -7,6 +7,18 @@
 - **SPEC-017**: User Onboarding & Activation Flow - [View Specification](../SPECIFICATIONS/SPEC-017.md)
 
 ## Comments
+### 2026-03-10 - DocSystemAnalyst
+**Re-verification Complete (10:20 GMT+2)**
+- Trigger referenced `FEAT-17`, but canonical feature file remains `FEAT-017.md`
+- Feature status: Done (Phase 1 MVP complete, Phases 2-4 planned)
+- SPEC-017 status: Done
+- Phase 1 tasks (TASK-17-1 through TASK-17-7): Done
+- Phase 2-4 tasks (TASK-17-8 through TASK-17-20): To Write Tests / future work
+- DOCUMENTATION.md verified at line 17241 (User Onboarding & Activation Flow section)
+- Completion markers refreshed: `logs/completed/feature/FEAT-17.json` + `FEAT-017.json`
+- Active-agents entry cleared
+- **ORCHESTRATOR BUG:** naming mismatch (`FEAT-17` vs `FEAT-017`) still causes duplicate documentation passes
+
 ### 2026-03-08 - DocSystemAnalyst
 **Re-verification Complete (23:18 GMT+2)**
 - Feature status: Done (Phase 1 MVP complete, Phases 2-4 planned)
