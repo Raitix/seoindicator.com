@@ -1,0 +1,984 @@
+{
+  "task": "TASK-35-5",
+  "generatedAt": "2026-03-10T16:41:43.240571+00:00",
+  "sessionId": "agent:prodtester:main",
+  "productionUrl": "https://seoindicator.com/api/v1",
+  "remote": {
+    "setup": {
+      "code": 0,
+      "out": "<redacted setup payload>",
+      "err": ""
+    },
+    "serviceSmoke": {
+      "schema": {
+        "has_deleted_at": true,
+        "has_is_active": true
+      },
+      "create": {
+        "location_id": 26,
+        "site_id": 47,
+        "gbp_place_id": "place-orig-5qwwbfhdsp",
+        "latitude": "56.94960000",
+        "longitude": "24.10520000"
+      },
+      "duplicate_validation": true,
+      "duplicate_errors": {
+        "address": [
+          "A location with this name and address already exists for the site."
+        ]
+      },
+      "update": {
+        "name": "Service Smoke Updated 5qwwbfhdsp",
+        "site_id_unchanged": true,
+        "gbp_place_id_unchanged": true,
+        "latitude_preserved": true,
+        "longitude_preserved": true
+      },
+      "active_only_count": 1,
+      "delete": {
+        "record_exists": true,
+        "soft_deleted": true,
+        "gbp_connected_cleared": true,
+        "gbp_access_token_cleared": true,
+        "gbp_refresh_token_cleared": true,
+        "settings_gbp_location_removed": true
+      }
+    },
+    "schema": {
+      "has_deleted_at": true,
+      "has_is_active": true
+    },
+    "verifyBeforeDelete": {
+      "code": 0,
+      "out": "{\"has_deleted_at\":true,\"location_found\":true,\"location\":{\"id\":27,\"site_id\":47,\"name\":\"API Smoke Updated 5qwwbfhdsp\",\"gbp_place_id\":\"place-orig-5qwwbfhdsp\",\"gbp_connected\":false,\"deleted\":false}}",
+      "err": ""
+    },
+    "verifyAfterDelete": {
+      "code": 0,
+      "out": "{\"has_deleted_at\":true,\"location_found\":true,\"location\":{\"id\":27,\"site_id\":47,\"name\":\"API Smoke Updated 5qwwbfhdsp\",\"gbp_place_id\":\"place-orig-5qwwbfhdsp\",\"gbp_connected\":false,\"deleted\":true}}",
+      "err": ""
+    },
+    "verifyBeforeDeleteParsed": {
+      "has_deleted_at": true,
+      "location_found": true,
+      "location": {
+        "id": 27,
+        "site_id": 47,
+        "name": "API Smoke Updated 5qwwbfhdsp",
+        "gbp_place_id": "place-orig-5qwwbfhdsp",
+        "gbp_connected": false,
+        "deleted": false
+      }
+    },
+    "verifyAfterDeleteParsed": {
+      "has_deleted_at": true,
+      "location_found": true,
+      "location": {
+        "id": 27,
+        "site_id": 47,
+        "name": "API Smoke Updated 5qwwbfhdsp",
+        "gbp_place_id": "place-orig-5qwwbfhdsp",
+        "gbp_connected": false,
+        "deleted": true
+      }
+    }
+  },
+  "fixture": {
+    "suffix": "5qwwbfhdsp",
+    "owner_id": 10076,
+    "other_id": 10077,
+    "site_id": 47,
+    "secondary_site_id": 48,
+    "owner_email": "task35-5-owner-5qwwbfhdsp@example.test",
+    "other_email": "task35-5-other-5qwwbfhdsp@example.test"
+  },
+  "checks": [
+    {
+      "name": "remote service smoke: schema state recorded and active-only path stays healthy",
+      "passed": true,
+      "details": {
+        "schema": {
+          "has_deleted_at": true,
+          "has_is_active": true
+        },
+        "active_only_count": 1,
+        "note": "Production currently reports whether business_locations.is_active exists; live validation focuses on healthy behavior instead of forcing a missing-column precondition."
+      }
+    },
+    {
+      "name": "remote service smoke: duplicate validation",
+      "passed": true,
+      "details": {
+        "address": [
+          "A location with this name and address already exists for the site."
+        ]
+      }
+    },
+    {
+      "name": "remote service smoke: update preserves site",
+      "passed": true,
+      "details": {
+        "name": "Service Smoke Updated 5qwwbfhdsp",
+        "site_id_unchanged": true,
+        "gbp_place_id_unchanged": true,
+        "latitude_preserved": true,
+        "longitude_preserved": true
+      }
+    },
+    {
+      "name": "remote service smoke: update preserves gbp place id",
+      "passed": true,
+      "details": {
+        "name": "Service Smoke Updated 5qwwbfhdsp",
+        "site_id_unchanged": true,
+        "gbp_place_id_unchanged": true,
+        "latitude_preserved": true,
+        "longitude_preserved": true
+      }
+    },
+    {
+      "name": "remote service smoke: active_only still returns row",
+      "passed": true,
+      "details": 1
+    },
+    {
+      "name": "remote service smoke: delete clears tokens/settings",
+      "passed": true,
+      "details": {
+        "record_exists": true,
+        "soft_deleted": true,
+        "gbp_connected_cleared": true,
+        "gbp_access_token_cleared": true,
+        "gbp_refresh_token_cleared": true,
+        "settings_gbp_location_removed": true
+      }
+    },
+    {
+      "name": "guest list returns JSON 401",
+      "passed": true,
+      "details": {
+        "message": "Unauthenticated."
+      }
+    },
+    {
+      "name": "non-owner list returns 403",
+      "passed": true,
+      "details": {
+        "message": "This action is unauthorized."
+      }
+    },
+    {
+      "name": "owner empty list returns 200 with total 0",
+      "passed": true,
+      "details": {
+        "data": [],
+        "links": {
+          "first": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+          "last": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+          "prev": null,
+          "next": null
+        },
+        "meta": {
+          "current_page": 1,
+          "from": null,
+          "last_page": 1,
+          "links": [
+            {
+              "url": null,
+              "label": "&laquo; Previous",
+              "page": null,
+              "active": false
+            },
+            {
+              "url": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+              "label": "1",
+              "page": 1,
+              "active": true
+            },
+            {
+              "url": null,
+              "label": "Next &raquo;",
+              "page": null,
+              "active": false
+            }
+          ],
+          "path": "https://seoindicator.com/api/v1/sites/47/locations",
+          "per_page": 15,
+          "to": null,
+          "total": 0
+        }
+      }
+    },
+    {
+      "name": "create returns 201",
+      "passed": true,
+      "details": {
+        "data": {
+          "id": 27,
+          "site_id": 47,
+          "name": "API Smoke 5qwwbfhdsp",
+          "address": "55 API Validation Street, Riga, Latvia",
+          "phone": "+371 555 5000",
+          "website": "https://api-smoke-5qwwbfhdsp.example.test",
+          "category": "Bakery",
+          "latitude": null,
+          "longitude": null,
+          "hours": {
+            "monday": {
+              "open": "09:00",
+              "close": "17:00"
+            }
+          },
+          "is_gbp_connected": false,
+          "gbp_location_id": "place-orig-5qwwbfhdsp",
+          "is_active": true,
+          "created_at": "2026-03-10T16:41:04.000000Z",
+          "updated_at": "2026-03-10T16:41:04.000000Z",
+          "last_gbp_sync_at": null
+        }
+      }
+    },
+    {
+      "name": "create response keeps original site and defaults active",
+      "passed": true,
+      "details": {
+        "id": 27,
+        "site_id": 47,
+        "name": "API Smoke 5qwwbfhdsp",
+        "address": "55 API Validation Street, Riga, Latvia",
+        "phone": "+371 555 5000",
+        "website": "https://api-smoke-5qwwbfhdsp.example.test",
+        "category": "Bakery",
+        "latitude": null,
+        "longitude": null,
+        "hours": {
+          "monday": {
+            "open": "09:00",
+            "close": "17:00"
+          }
+        },
+        "is_gbp_connected": false,
+        "gbp_location_id": "place-orig-5qwwbfhdsp",
+        "is_active": true,
+        "created_at": "2026-03-10T16:41:04.000000Z",
+        "updated_at": "2026-03-10T16:41:04.000000Z",
+        "last_gbp_sync_at": null
+      }
+    },
+    {
+      "name": "detail omits GBP tokens",
+      "passed": true,
+      "details": {
+        "data": {
+          "id": 27,
+          "site_id": 47,
+          "name": "API Smoke 5qwwbfhdsp",
+          "address": "55 API Validation Street, Riga, Latvia",
+          "phone": "+371 555 5000",
+          "website": "https://api-smoke-5qwwbfhdsp.example.test",
+          "category": "Bakery",
+          "latitude": null,
+          "longitude": null,
+          "hours": {
+            "monday": {
+              "open": "09:00",
+              "close": "17:00"
+            }
+          },
+          "is_gbp_connected": false,
+          "gbp_location_id": "place-orig-5qwwbfhdsp",
+          "is_active": true,
+          "created_at": "2026-03-10T16:41:04.000000Z",
+          "updated_at": "2026-03-10T16:41:04.000000Z",
+          "insights_summary": {
+            "total_queries": 0,
+            "total_views": 0,
+            "total_actions": 0,
+            "last_sync_at": null
+          },
+          "review_stats": {
+            "average_rating": 0,
+            "total_reviews": 0,
+            "response_rate": 0
+          },
+          "last_gbp_sync_at": null
+        }
+      }
+    },
+    {
+      "name": "update returns 200 and ignores site_id / gbp_place_id mutation",
+      "passed": true,
+      "details": {
+        "id": 27,
+        "site_id": 47,
+        "name": "API Smoke Updated 5qwwbfhdsp",
+        "address": "55 API Validation Street, Riga, Latvia",
+        "phone": "+371 555 5000",
+        "website": "https://api-smoke-5qwwbfhdsp.example.test",
+        "category": "Cafe",
+        "latitude": null,
+        "longitude": null,
+        "hours": {
+          "monday": {
+            "open": "09:00",
+            "close": "17:00"
+          }
+        },
+        "is_gbp_connected": false,
+        "gbp_location_id": "place-orig-5qwwbfhdsp",
+        "is_active": true,
+        "created_at": "2026-03-10T16:41:04.000000Z",
+        "updated_at": "2026-03-10T16:41:05.000000Z",
+        "last_gbp_sync_at": null
+      }
+    },
+    {
+      "name": "remote verify before delete shows unchanged site/gpb place id",
+      "passed": true,
+      "details": {
+        "has_deleted_at": true,
+        "location_found": true,
+        "location": {
+          "id": 27,
+          "site_id": 47,
+          "name": "API Smoke Updated 5qwwbfhdsp",
+          "gbp_place_id": "place-orig-5qwwbfhdsp",
+          "gbp_connected": false,
+          "deleted": false
+        }
+      }
+    },
+    {
+      "name": "delete returns 204",
+      "passed": true,
+      "details": {
+        "method": "DELETE",
+        "path": "/locations/27",
+        "url": "https://seoindicator.com/api/v1/locations/27",
+        "status": 204,
+        "contentType": null,
+        "headers": {
+          "Connection": "close",
+          "X-Powered-By": "PHP/8.2.29",
+          "Cache-Control": "no-cache, private",
+          "X-RateLimit-Limit": "60",
+          "X-RateLimit-Remaining": "54",
+          "Access-Control-Allow-Origin": "*",
+          "Date": "Tue, 10 Mar 2026 16:41:05 GMT",
+          "Server": "LiteSpeed",
+          "platform": "hostinger",
+          "panel": "hpanel",
+          "Retry-After": "60",
+          "Content-Security-Policy": "upgrade-insecure-requests",
+          "X-Content-Type-Options": "nosniff",
+          "X-Frame-Options": "SAMEORIGIN",
+          "X-XSS-Protection": "1; mode=block",
+          "Referrer-Policy": "strict-origin-when-cross-origin",
+          "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+        },
+        "body": "",
+        "json": null
+      }
+    },
+    {
+      "name": "detail after delete returns 404",
+      "passed": true,
+      "details": {
+        "message": "Location not found"
+      }
+    },
+    {
+      "name": "owner list after delete returns total 0",
+      "passed": true,
+      "details": {
+        "data": [],
+        "links": {
+          "first": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+          "last": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+          "prev": null,
+          "next": null
+        },
+        "meta": {
+          "current_page": 1,
+          "from": null,
+          "last_page": 1,
+          "links": [
+            {
+              "url": null,
+              "label": "&laquo; Previous",
+              "page": null,
+              "active": false
+            },
+            {
+              "url": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+              "label": "1",
+              "page": 1,
+              "active": true
+            },
+            {
+              "url": null,
+              "label": "Next &raquo;",
+              "page": null,
+              "active": false
+            }
+          ],
+          "path": "https://seoindicator.com/api/v1/sites/47/locations",
+          "per_page": 15,
+          "to": null,
+          "total": 0
+        }
+      }
+    },
+    {
+      "name": "remote verify after delete shows soft delete",
+      "passed": true,
+      "details": {
+        "has_deleted_at": true,
+        "location_found": true,
+        "location": {
+          "id": 27,
+          "site_id": 47,
+          "name": "API Smoke Updated 5qwwbfhdsp",
+          "gbp_place_id": "place-orig-5qwwbfhdsp",
+          "gbp_connected": false,
+          "deleted": true
+        }
+      }
+    }
+  ],
+  "http": {
+    "guestList": {
+      "method": "GET",
+      "path": "/sites/47/locations",
+      "url": "https://seoindicator.com/api/v1/sites/47/locations",
+      "status": 401,
+      "contentType": "application/json; charset=UTF-8",
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "30",
+        "Date": "Tue, 10 Mar 2026 16:41:04 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": "{\"message\":\"Unauthenticated.\"}",
+      "json": {
+        "message": "Unauthenticated."
+      }
+    },
+    "otherList": {
+      "method": "GET",
+      "path": "/sites/47/locations",
+      "url": "https://seoindicator.com/api/v1/sites/47/locations",
+      "status": 403,
+      "contentType": "application/json; charset=UTF-8",
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "59",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "49",
+        "Date": "Tue, 10 Mar 2026 16:41:04 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": "{\n    \"message\": \"This action is unauthorized.\"\n}",
+      "json": {
+        "message": "This action is unauthorized."
+      }
+    },
+    "ownerListEmpty": {
+      "method": "GET",
+      "path": "/sites/47/locations",
+      "url": "https://seoindicator.com/api/v1/sites/47/locations",
+      "status": 200,
+      "contentType": "application/json; charset=UTF-8",
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "59",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "597",
+        "Date": "Tue, 10 Mar 2026 16:41:04 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": "{\"data\":[],\"links\":{\"first\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations?page=1\",\"last\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations?page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":null,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations?page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations\",\"per_page\":15,\"to\":null,\"total\":0}}",
+      "json": {
+        "data": [],
+        "links": {
+          "first": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+          "last": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+          "prev": null,
+          "next": null
+        },
+        "meta": {
+          "current_page": 1,
+          "from": null,
+          "last_page": 1,
+          "links": [
+            {
+              "url": null,
+              "label": "&laquo; Previous",
+              "page": null,
+              "active": false
+            },
+            {
+              "url": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+              "label": "1",
+              "page": 1,
+              "active": true
+            },
+            {
+              "url": null,
+              "label": "Next &raquo;",
+              "page": null,
+              "active": false
+            }
+          ],
+          "path": "https://seoindicator.com/api/v1/sites/47/locations",
+          "per_page": 15,
+          "to": null,
+          "total": 0
+        }
+      }
+    },
+    "create": {
+      "method": "POST",
+      "path": "/sites/47/locations",
+      "url": "https://seoindicator.com/api/v1/sites/47/locations",
+      "status": 201,
+      "contentType": "application/json; charset=UTF-8",
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "10",
+        "X-RateLimit-Remaining": "8",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "491",
+        "Date": "Tue, 10 Mar 2026 16:41:04 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": "{\"data\":{\"id\":27,\"site_id\":47,\"name\":\"API Smoke 5qwwbfhdsp\",\"address\":\"55 API Validation Street, Riga, Latvia\",\"phone\":\"+371 555 5000\",\"website\":\"https:\\/\\/api-smoke-5qwwbfhdsp.example.test\",\"category\":\"Bakery\",\"latitude\":null,\"longitude\":null,\"hours\":{\"monday\":{\"open\":\"09:00\",\"close\":\"17:00\"}},\"is_gbp_connected\":false,\"gbp_location_id\":\"place-orig-5qwwbfhdsp\",\"is_active\":true,\"created_at\":\"2026-03-10T16:41:04.000000Z\",\"updated_at\":\"2026-03-10T16:41:04.000000Z\",\"last_gbp_sync_at\":null}}",
+      "json": {
+        "data": {
+          "id": 27,
+          "site_id": 47,
+          "name": "API Smoke 5qwwbfhdsp",
+          "address": "55 API Validation Street, Riga, Latvia",
+          "phone": "+371 555 5000",
+          "website": "https://api-smoke-5qwwbfhdsp.example.test",
+          "category": "Bakery",
+          "latitude": null,
+          "longitude": null,
+          "hours": {
+            "monday": {
+              "open": "09:00",
+              "close": "17:00"
+            }
+          },
+          "is_gbp_connected": false,
+          "gbp_location_id": "place-orig-5qwwbfhdsp",
+          "is_active": true,
+          "created_at": "2026-03-10T16:41:04.000000Z",
+          "updated_at": "2026-03-10T16:41:04.000000Z",
+          "last_gbp_sync_at": null
+        }
+      }
+    },
+    "listAfterCreate": {
+      "method": "GET",
+      "path": "/sites/47/locations",
+      "url": "https://seoindicator.com/api/v1/sites/47/locations",
+      "status": 200,
+      "contentType": "application/json; charset=UTF-8",
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "57",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "997",
+        "Date": "Tue, 10 Mar 2026 16:41:04 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": "{\"data\":[{\"id\":27,\"site_id\":47,\"name\":\"API Smoke 5qwwbfhdsp\",\"address\":\"55 API Validation Street, Riga, Latvia\",\"phone\":\"+371 555 5000\",\"website\":\"https:\\/\\/api-smoke-5qwwbfhdsp.example.test\",\"category\":\"Bakery\",\"latitude\":null,\"longitude\":null,\"is_gbp_connected\":false,\"gbp_location_id\":\"place-orig-5qwwbfhdsp\",\"is_active\":true,\"created_at\":\"2026-03-10T16:41:04.000000Z\",\"updated_at\":\"2026-03-10T16:41:04.000000Z\"}],\"links\":{\"first\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations?page=1\",\"last\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations?page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations?page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations\",\"per_page\":15,\"to\":1,\"total\":1}}",
+      "json": {
+        "data": [
+          {
+            "id": 27,
+            "site_id": 47,
+            "name": "API Smoke 5qwwbfhdsp",
+            "address": "55 API Validation Street, Riga, Latvia",
+            "phone": "+371 555 5000",
+            "website": "https://api-smoke-5qwwbfhdsp.example.test",
+            "category": "Bakery",
+            "latitude": null,
+            "longitude": null,
+            "is_gbp_connected": false,
+            "gbp_location_id": "place-orig-5qwwbfhdsp",
+            "is_active": true,
+            "created_at": "2026-03-10T16:41:04.000000Z",
+            "updated_at": "2026-03-10T16:41:04.000000Z"
+          }
+        ],
+        "links": {
+          "first": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+          "last": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+          "prev": null,
+          "next": null
+        },
+        "meta": {
+          "current_page": 1,
+          "from": 1,
+          "last_page": 1,
+          "links": [
+            {
+              "url": null,
+              "label": "&laquo; Previous",
+              "page": null,
+              "active": false
+            },
+            {
+              "url": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+              "label": "1",
+              "page": 1,
+              "active": true
+            },
+            {
+              "url": null,
+              "label": "Next &raquo;",
+              "page": null,
+              "active": false
+            }
+          ],
+          "path": "https://seoindicator.com/api/v1/sites/47/locations",
+          "per_page": 15,
+          "to": 1,
+          "total": 1
+        }
+      }
+    },
+    "detail": {
+      "method": "GET",
+      "path": "/locations/27",
+      "url": "https://seoindicator.com/api/v1/locations/27",
+      "status": 200,
+      "contentType": "application/json; charset=UTF-8",
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "56",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "656",
+        "Date": "Tue, 10 Mar 2026 16:41:05 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": "{\"data\":{\"id\":27,\"site_id\":47,\"name\":\"API Smoke 5qwwbfhdsp\",\"address\":\"55 API Validation Street, Riga, Latvia\",\"phone\":\"+371 555 5000\",\"website\":\"https:\\/\\/api-smoke-5qwwbfhdsp.example.test\",\"category\":\"Bakery\",\"latitude\":null,\"longitude\":null,\"hours\":{\"monday\":{\"open\":\"09:00\",\"close\":\"17:00\"}},\"is_gbp_connected\":false,\"gbp_location_id\":\"place-orig-5qwwbfhdsp\",\"is_active\":true,\"created_at\":\"2026-03-10T16:41:04.000000Z\",\"updated_at\":\"2026-03-10T16:41:04.000000Z\",\"insights_summary\":{\"total_queries\":0,\"total_views\":0,\"total_actions\":0,\"last_sync_at\":null},\"review_stats\":{\"average_rating\":0,\"total_reviews\":0,\"response_rate\":0},\"last_gbp_sync_at\":null}}",
+      "json": {
+        "data": {
+          "id": 27,
+          "site_id": 47,
+          "name": "API Smoke 5qwwbfhdsp",
+          "address": "55 API Validation Street, Riga, Latvia",
+          "phone": "+371 555 5000",
+          "website": "https://api-smoke-5qwwbfhdsp.example.test",
+          "category": "Bakery",
+          "latitude": null,
+          "longitude": null,
+          "hours": {
+            "monday": {
+              "open": "09:00",
+              "close": "17:00"
+            }
+          },
+          "is_gbp_connected": false,
+          "gbp_location_id": "place-orig-5qwwbfhdsp",
+          "is_active": true,
+          "created_at": "2026-03-10T16:41:04.000000Z",
+          "updated_at": "2026-03-10T16:41:04.000000Z",
+          "insights_summary": {
+            "total_queries": 0,
+            "total_views": 0,
+            "total_actions": 0,
+            "last_sync_at": null
+          },
+          "review_stats": {
+            "average_rating": 0,
+            "total_reviews": 0,
+            "response_rate": 0
+          },
+          "last_gbp_sync_at": null
+        }
+      }
+    },
+    "update": {
+      "method": "PUT",
+      "path": "/locations/27",
+      "url": "https://seoindicator.com/api/v1/locations/27",
+      "status": 200,
+      "contentType": "application/json; charset=UTF-8",
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "55",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "497",
+        "Date": "Tue, 10 Mar 2026 16:41:05 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": "{\"data\":{\"id\":27,\"site_id\":47,\"name\":\"API Smoke Updated 5qwwbfhdsp\",\"address\":\"55 API Validation Street, Riga, Latvia\",\"phone\":\"+371 555 5000\",\"website\":\"https:\\/\\/api-smoke-5qwwbfhdsp.example.test\",\"category\":\"Cafe\",\"latitude\":null,\"longitude\":null,\"hours\":{\"monday\":{\"open\":\"09:00\",\"close\":\"17:00\"}},\"is_gbp_connected\":false,\"gbp_location_id\":\"place-orig-5qwwbfhdsp\",\"is_active\":true,\"created_at\":\"2026-03-10T16:41:04.000000Z\",\"updated_at\":\"2026-03-10T16:41:05.000000Z\",\"last_gbp_sync_at\":null}}",
+      "json": {
+        "data": {
+          "id": 27,
+          "site_id": 47,
+          "name": "API Smoke Updated 5qwwbfhdsp",
+          "address": "55 API Validation Street, Riga, Latvia",
+          "phone": "+371 555 5000",
+          "website": "https://api-smoke-5qwwbfhdsp.example.test",
+          "category": "Cafe",
+          "latitude": null,
+          "longitude": null,
+          "hours": {
+            "monday": {
+              "open": "09:00",
+              "close": "17:00"
+            }
+          },
+          "is_gbp_connected": false,
+          "gbp_location_id": "place-orig-5qwwbfhdsp",
+          "is_active": true,
+          "created_at": "2026-03-10T16:41:04.000000Z",
+          "updated_at": "2026-03-10T16:41:05.000000Z",
+          "last_gbp_sync_at": null
+        }
+      }
+    },
+    "delete": {
+      "method": "DELETE",
+      "path": "/locations/27",
+      "url": "https://seoindicator.com/api/v1/locations/27",
+      "status": 204,
+      "contentType": null,
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "54",
+        "Access-Control-Allow-Origin": "*",
+        "Date": "Tue, 10 Mar 2026 16:41:05 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": "",
+      "json": null
+    },
+    "detailAfterDelete": {
+      "method": "GET",
+      "path": "/locations/27",
+      "url": "https://seoindicator.com/api/v1/locations/27",
+      "status": 404,
+      "contentType": "application/json; charset=UTF-8",
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "53",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "39",
+        "Date": "Tue, 10 Mar 2026 16:41:05 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": "{\n    \"message\": \"Location not found\"\n}",
+      "json": {
+        "message": "Location not found"
+      }
+    },
+    "listAfterDelete": {
+      "method": "GET",
+      "path": "/sites/47/locations",
+      "url": "https://seoindicator.com/api/v1/sites/47/locations",
+      "status": 200,
+      "contentType": "application/json; charset=UTF-8",
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "52",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "597",
+        "Date": "Tue, 10 Mar 2026 16:41:05 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": "{\"data\":[],\"links\":{\"first\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations?page=1\",\"last\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations?page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":null,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations?page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"https:\\/\\/seoindicator.com\\/api\\/v1\\/sites\\/47\\/locations\",\"per_page\":15,\"to\":null,\"total\":0}}",
+      "json": {
+        "data": [],
+        "links": {
+          "first": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+          "last": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+          "prev": null,
+          "next": null
+        },
+        "meta": {
+          "current_page": 1,
+          "from": null,
+          "last_page": 1,
+          "links": [
+            {
+              "url": null,
+              "label": "&laquo; Previous",
+              "page": null,
+              "active": false
+            },
+            {
+              "url": "https://seoindicator.com/api/v1/sites/47/locations?page=1",
+              "label": "1",
+              "page": 1,
+              "active": true
+            },
+            {
+              "url": null,
+              "label": "Next &raquo;",
+              "page": null,
+              "active": false
+            }
+          ],
+          "path": "https://seoindicator.com/api/v1/sites/47/locations",
+          "per_page": 15,
+          "to": null,
+          "total": 0
+        }
+      }
+    }
+  },
+  "summary": {
+    "schema_has_deleted_at": true,
+    "schema_has_is_active": true,
+    "owner_email": "task35-5-owner-5qwwbfhdsp@example.test",
+    "api_location_id": 27
+  },
+  "verdict": "pass",
+  "cleanup": {
+    "remote": {
+      "code": 0,
+      "out": "{\"ok\":true,\"remaining_users\":0,\"remaining_sites\":0,\"remaining_locations_for_sites\":0}",
+      "err": ""
+    },
+    "parsed": {
+      "ok": true,
+      "remaining_users": 0,
+      "remaining_sites": 0,
+      "remaining_locations_for_sites": 0
+    }
+  }
+}
