@@ -320,3 +320,12 @@ Task status remains: Done. Completion marker written.
 - No stale locks present
 - Completion marker written: `logs/completed/task/TASK-1-12.json`
 - SPEC-001: In Progress (other tasks pending)
+
+### [2026-03-10 11:25 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** ✓
+
+- Task status: `Done` (confirmed)
+- `DOCUMENTATION.md` verified at line 28199 (Rank Check Scheduler section)
+- Coverage confirmed: configurable interval, randomized spread window, priority scheduling via `last_viewed_at`, manual trigger endpoint, artisan command, logging, environment variables, dependencies, and unit tests
+- No documentation gaps found; no documentation content changes required
+- SPEC-001: In Progress (other tasks still pending)
