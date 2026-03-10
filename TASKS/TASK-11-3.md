@@ -264,3 +264,15 @@ Updated `DOCUMENTATION.md` with:
 - Confirmed production status remains documented: deployed 2026-02-26 (commit `82a3081`), 56 tests / 101 assertions
 - Cleared stale completion marker before processing, refreshed lock state, and prepared final cleanup
 - Parent `SPEC-011` remains `In Progress` because `TASK-11-1` is still `To Deploy`; no parent status change required
+
+### [2026-03-10 17:43 GMT+2] Agent: DocSystemAnalyst
+**Documentation Drift Fix + Verification**
+- Task status remains `Done`
+- Corrected `DOCUMENTATION.md` drift so the TeamService section now matches the live implementation:
+  - method signatures now include the `Account $account` and `actorId` parameters where required
+  - `validateInvitationToken()` / `acceptInvitation()` return types now match the service
+  - `team_members` schema now reflects nullable `invited_by`, nullable timestamps, `invitation_token VARCHAR(128)`, and `invitation_expires_at`
+  - token storage is documented as indexed lookup, not a unique database constraint
+  - User relationships now document `ownedAccounts()`, `teamMemberships()`, and `accounts()`
+- Re-ran `php artisan test tests/Unit/Services/TeamServiceTest.php` in `backend/` -> **56 passed / 101 assertions / 5.39s**
+- Parent `SPEC-011` still remains `In Progress`; TASK-11-3 required no parent status transition
