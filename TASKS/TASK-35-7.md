@@ -1,7 +1,7 @@
 # TASK-35-7: Google OAuth Service for GBP
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -125,3 +125,30 @@ PreTester CAN design tests with mocked BusinessLocation interface:
 
 **Status Update:**
 - `To Prioritize` → `To Write Tests` (TDD with mocked interfaces)
+
+### PreTester Session (2026-03-10 11:03 GMT+2)
+- **Status:** `To Write Tests` → `Tests Coverage In Progress` → `To Develop`
+- Recycled the stale task lock, kept the controller-facing OAuth wrapper contract from TASK-35-13 intact, and added the deeper token lifecycle contract required by this task.
+- **Files created / updated:**
+  - `PROJECT-SEOINDICATOR/TESTS/TEST-35-7.md`
+  - `backend/tests/Unit/Services/LocalSEO/GoogleOAuthServiceTest.php`
+  - `backend/app/Services/LocalSEO/Contracts/GoogleOAuthServiceInterface.php`
+  - `backend/app/Services/LocalSEO/GoogleOAuthService.php` (compile-safe task skeleton additions only)
+- **Coverage delivered:** 21 unit tests covering:
+  - authorization URL generation
+  - session-based CSRF state expectations
+  - token exchange + refresh flow expectations
+  - encrypted `gbp_tokens` persistence
+  - valid access-token retrieval / refresh fallback
+  - disconnect + revoke behavior
+- **Execution:**
+  - `php -l app/Services/LocalSEO/Contracts/GoogleOAuthServiceInterface.php` ✅
+  - `php -l app/Services/LocalSEO/GoogleOAuthService.php` ✅
+  - `php -l tests/Unit/Services/LocalSEO/GoogleOAuthServiceTest.php` ✅
+  - `php artisan test tests/Unit/Services/LocalSEO/GoogleOAuthServiceTest.php` ➜ **17 passing / 4 failing / 48 assertions**
+- **Expected red failures left for Developer:**
+  1. `getAuthorizationUrl()` still persists OAuth state in cache instead of session.
+  2. `validateState()` still reads cache instead of session.
+  3. `exchangeCodeForTokens()` is still a placeholder and must call Google's token endpoint.
+  4. `refreshAccessToken()` is still a placeholder and must implement refresh-token grant exchange.
+- **Important implementation note:** task acceptance still calls for encrypted JSON storage in `gbp_tokens`, while older Local SEO scaffolding still references legacy token columns. Developer should finish the OAuth service around the `gbp_tokens` payload and then align the callback/controller wrapper accordingly before LocalTester handoff.
