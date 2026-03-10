@@ -178,3 +178,7 @@ Create NominatimService for free geocoding using OpenStreetMap's Nominatim API. 
 - No information leakage on errors (returns null only)
 
 **Ready for DevOps deployment.**
+
+### DevOps Session (2026-03-10 22:18 GMT+2)
+- **Status:** `In Deployment` - Starting deployment
+- **Action:** Running `scripts/deploy-prod.ps1` for NominatimService
