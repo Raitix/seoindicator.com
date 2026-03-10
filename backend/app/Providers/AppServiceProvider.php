@@ -88,10 +88,16 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\LocalSEO\GBPInsightsService::class
         );
 
-        // GBP API Client binding (TASK-35-8, TASK-35-10, SPEC-035)
+        // GBP API Client binding (TASK-35-8, TASK-35-10, TASK-35-9, SPEC-035)
         $this->app->bind(
             \App\Services\GBP\Contracts\GBPApiServiceInterface::class,
             \App\Services\GBP\GBPApiService::class
+        );
+
+        // GBP Insights domain service binding (TASK-35-9, SPEC-035)
+        $this->app->bind(
+            \App\Services\GBP\Contracts\GBPInsightsServiceInterface::class,
+            \App\Services\GBP\GBPInsightsService::class
         );
 
         // GBP Reviews Service binding (TASK-35-10, TASK-35-12, TASK-35-14, SPEC-035)

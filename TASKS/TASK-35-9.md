@@ -1,7 +1,7 @@
 # TASK-35-9: GBP Insights Sync Service
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -90,6 +90,43 @@ Create GBPInsightsService for syncing and aggregating Google Business Profile in
 4. Dependencies are progressing in parallel (TDD pattern enables test design)
 
 **Status:** `To Write Tests` - PreTester can design tests with mocked service interfaces
+
+### PreTester Session (2026-03-10 16:22 GMT+02:00)
+- **Status:** `To Write Tests` → `Tests Coverage In Progress` → `To Develop`
+- Replaced a stale task lock and wrote the red-phase contract for the GBP insights domain service under `App\Services\GBP`, plus a compile-safe `SyncInsightsJob` for background execution.
+- **Files created / updated:**
+  - `PROJECT-SEOINDICATOR/TESTS/TEST-35-9.md`
+  - `backend/app/Services/GBP/Contracts/GBPInsightsServiceInterface.php`
+  - `backend/app/Services/GBP/GBPInsightsService.php`
+  - `backend/app/Jobs/SyncInsightsJob.php`
+  - `backend/app/Providers/AppServiceProvider.php`
+  - `backend/tests/Feature/Services/GBP/GBPInsightsServiceTest.php`
+  - `backend/tests/Feature/Jobs/SyncInsightsJobTest.php`
+  - `PROJECT-SEOINDICATOR/TASKS/TASK-35-9.md`
+- **Coverage delivered:** 12 service-level contract tests + 5 job/queue tests covering:
+  - domain service/interface/container wiring
+  - sync + upsert expectations for daily snapshots
+  - collection reads with derived `queries` / `actions` fields
+  - totals, trend analysis, top-performing-day calculation
+  - 1-hour cache expectation for read models
+  - error logging/rethrow behavior
+  - queue dispatch, handle, missing-location guard, retry/timeout, failure logging
+- **Execution:**
+  - `php -l app/Services/GBP/Contracts/GBPInsightsServiceInterface.php` ✅
+  - `php -l app/Services/GBP/GBPInsightsService.php` ✅
+  - `php -l app/Jobs/SyncInsightsJob.php` ✅
+  - `php -l tests/Feature/Services/GBP/GBPInsightsServiceTest.php` ✅
+  - `php -l tests/Feature/Jobs/SyncInsightsJobTest.php` ✅
+  - `php -l app/Providers/AppServiceProvider.php` ✅
+  - `php artisan test tests/Feature/Services/GBP/GBPInsightsServiceTest.php tests/Feature/Jobs/SyncInsightsJobTest.php` ➜ **9 passing / 8 failing / 15 assertions**
+- **Expected red failures left for Developer:**
+  1. implement `App\Services\GBP\GBPInsightsService::syncInsights()` to call `GBPApiServiceInterface::getInsights()`, persist `gbp_insights` rows, store `raw_response`, and upsert by `(location_id, insights_date)`;
+  2. implement `getInsights()` read-model mapping to return ordered collections with derived `queries = searches` and `actions = calls + directions + website_clicks`;
+  3. implement `getTotalMetrics()`, `getInsightsTrend()`, and `getTopPerformingDay()` over stored snapshots;
+  4. add 1-hour cache behavior for read methods and invalidate relevant keys after sync;
+  5. log and rethrow external/API failures during sync;
+  6. adapt the existing `App\Services\LocalSEO\GBPInsightsService` controller-facing stub to delegate into this new domain service so TASK-35-14 remains compatible.
+- **Important design note:** I intentionally kept the controller-facing `LocalSEO\GBPInsightsService` stub untouched during this pass. The new TASK-35-9 contract lives in `App\Services\GBP` and mirrors the repo's existing reviews split (`GBP` domain service + `LocalSEO` adapter), which gives Developer a clean implementation target without regressing controller task coverage.
 
 ---
 
