@@ -54,6 +54,7 @@ jest.mock("@/lib/api/auth", () => ({
   resendVerificationEmail: () => mockResendVerificationEmail(),
   storeUserData: jest.fn(),
   getStoredUserData: jest.fn(() => null),
+  getStoredAuthToken: jest.fn(() => null),
   storeRedirectUrl: jest.fn(),
   getStoredRedirectUrl: jest.fn(() => null),
   clearStoredRedirectUrl: jest.fn(),

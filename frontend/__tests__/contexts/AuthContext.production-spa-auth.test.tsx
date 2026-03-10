@@ -38,6 +38,7 @@ vi.mock("@/lib/api/auth", () => ({
     const stored = localStorage.getItem("seoindicator_user");
     return stored ? JSON.parse(stored) : null;
   },
+  getStoredAuthToken: () => localStorage.getItem("seoindicator_token"),
   storeRedirectUrl: (url: string) => localStorage.setItem("seoindicator_redirect", url),
   getStoredRedirectUrl: () => localStorage.getItem("seoindicator_redirect"),
   clearStoredRedirectUrl: () => localStorage.removeItem("seoindicator_redirect"),
