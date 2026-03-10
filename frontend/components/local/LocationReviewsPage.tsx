@@ -77,9 +77,20 @@ export function LocationReviewsPage({ locationId, siteId }: LocationReviewsPageP
     setPage(1);
   }, [filters]);
 
+  const selectionScopeKey = `${meta.currentPage}:${reviews.map((review) => review.id).join("|")}`;
+
   React.useEffect(() => {
-    setSelectedReviewIds([]);
-  }, [reviews]);
+    const availableReviewIds = new Set(reviews.map((review) => review.id));
+
+    setSelectedReviewIds((current) => {
+      if (!current.length) {
+        return current;
+      }
+
+      const next = current.filter((reviewId) => availableReviewIds.has(reviewId));
+      return next.length === current.length ? current : next;
+    });
+  }, [selectionScopeKey, reviews]);
 
   const retryAll = React.useCallback(async () => {
     await Promise.all([mutateLocation(), mutateStats(), mutateReviews()]);
