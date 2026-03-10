@@ -28006,7 +28006,7 @@ SQLite-backed job queue for background rank checking operations.
 - Tables: `queue_jobs`, `queue_dead_letters`
 
 ### Unit Tests
-4 tests, 23 assertions covering addJob, getJob, updateJob, getPending operations.
+5 tests, 25 assertions covering addJob, getJob, updateJob, getPending operations, cleanup of completed jobs, and skipping future-scheduled jobs.
 
 ### Dependencies
 None (standalone SQLite implementation).
