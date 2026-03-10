@@ -152,3 +152,15 @@ Small (1-2 hours)
   - Production status
 - All acceptance criteria verified
 - **Status changed to:** Done
+
+### [2026-03-10 16:58 GMT+2] DocSystemAnalyst: Re-verification Complete
+- Re-verified `DOCUMENTATION.md` section `Sites API Endpoints (TASK-6-10)` against the live repo state; no documentation drift found.
+- Confirmed route still exists as `GET /api/v1/sites` in `backend/routes/api.php` with `api-key.auth`, `api-key.ratelimit`, and `api-key.auth:sites:read` middleware.
+- Confirmed implementation still matches docs in `backend/app/Http/Controllers/Api/V1/SitesApiController.php` and `backend/app/Http/Requests/Api/V1/SitesApiIndexRequest.php`:
+  - user-scoped site listing only
+  - `keyword_count` excludes `deleted` keywords
+  - pagination defaults remain `page=1`, `per_page=20`, max `per_page=100`
+  - response meta remains `total`, `page`, `per_page`, `total_pages`
+- Targeted backend verification: `Tests\Feature\Api\V1\SitesApiControllerTest` still passes at **44 tests / 166 assertions**.
+- Note: running `php artisan test --filter=SitesApiControllerTest` currently exits non-zero because PHPUnit test discovery also surfaces an unrelated `Tests\Unit\Enums\AnnotationCategoryTest` autoload/data-provider failure (`App\Enums\AnnotationCategory` not found). TASK-6-10 itself remains green and unchanged.
+- **Status remains:** Done
