@@ -29039,14 +29039,18 @@ Automated scheduler that queues rank check jobs on a configurable interval. Enab
 **Environment Variables:**
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `RANK_CHECK_INTERVAL_MINUTES` | `1440` | Time between scheduler runs (24 hours) |
-| `RANK_CHECK_SPREAD_MINUTES` | `60` | Random window to spread job scheduling |
+| `RANK_CHECK_INTERVAL_HOURS` | `24` | Minimum time between non-forced scheduler runs |
+| `RANK_CHECK_SPREAD_MINUTES` | `120` | Random window to spread queued jobs and avoid bursts |
+| `RANK_CHECK_PRIORITY_HIGH_HOURS` | `24` | `last_viewed_at` recency window for `high` priority |
+| `RANK_CHECK_PRIORITY_NORMAL_DAYS` | `7` | `last_viewed_at` recency window for `normal` priority |
+| `RANK_CHECK_CACHE_KEY` | `rank_checks.scheduler.last_run` | Cache key storing the last scheduler run timestamp |
 
 ### Technical Implementation
-- Service: `backend/app/Services/RankCheckScheduler.php`
+- Service: `backend/app/Services/Scheduler/RankCheckScheduler.php`
 - Controller: `backend/app/Http/Controllers/Api/V1/SchedulerController.php`
-- Command: `backend/app/Console/Commands/ScheduleRankChecks.php`
-- Route: `POST /api/v1/scheduler/rank-checks/run`
+- Command definition: `backend/routes/console.php` via `php artisan rank-checks:schedule {--force}`
+- API route: `backend/routes/api.php` → `POST /api/v1/scheduler/rank-checks/run`
+- Manual API trigger forces a run (`run(true)`), while scheduled/CLI runs respect the interval gate unless `--force` is used
 
 ### Dependencies
 - TASK-1-10 (Job Queue)
