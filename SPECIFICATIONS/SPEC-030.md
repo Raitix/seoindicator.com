@@ -329,3 +329,10 @@ All 7 tasks completed:
 - Re-confirmed documentation coverage is present for Terms & Privacy, About, How It Works, cookie consent, consent integration, and accessibility coverage
 - No specification updates were required; status remains `Done`
 - Fresh completion markers will be re-written for both `SPEC-30` and `SPEC-030` to tolerate non-padded and zero-padded triggers
+
+### [2026-03-10 DocSystemAnalyst | SPEC-30 alias replay housekeeping]
+- Orchestration trigger again arrived as `SPEC-30`; `PROJECT-SEOINDICATOR/SPECIFICATIONS/SPEC-30.md` does not exist and the canonical file remains `SPEC-030.md`
+- Re-checked TASK-30-1 through TASK-30-7 and confirmed every child item is still `Done`
+- Re-checked `DOCUMENTATION.md` coverage for Terms & Privacy, About, How It Works, Cookie Consent, Cookie Consent Integration, and Accessibility Tests; no drift found
+- Refreshed alias/canonical lock handling and completion markers so both padded and non-padded IDs resolve cleanly
+- Specification content remains accurate; status stays `Done`
