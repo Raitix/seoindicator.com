@@ -1,0 +1,95 @@
+{
+  "taskId": "TASK-35-17",
+  "validatedAtUtc": "2026-03-10T10:10:30Z",
+  "environment": "production",
+  "baseUrl": "https://seoindicator.com",
+  "testUser": {
+    "id": 10034,
+    "email": "prodtester+task3517-20260310b@example.com"
+  },
+  "findings": {
+    "bridgeHealth": {
+      "csrfCookie": {
+        "method": "GET",
+        "url": "https://seoindicator.com/sanctum/csrf-cookie",
+        "status": 204,
+        "result": "pass"
+      },
+      "authUserGuest": {
+        "method": "GET",
+        "url": "https://seoindicator.com/api/v1/auth/user",
+        "status": 401,
+        "contentType": "application/json",
+        "body": { "message": "Unauthenticated." },
+        "result": "pass"
+      }
+    },
+    "authFlow": {
+      "register": {
+        "method": "POST",
+        "url": "https://seoindicator.com/api/v1/auth/register",
+        "status": 201,
+        "contentType": "application/json",
+        "body": {
+          "success": true,
+          "message": "Registration successful. Please verify your email."
+        },
+        "result": "pass"
+      },
+      "browserLikeLogin": {
+        "method": "POST",
+        "url": "https://seoindicator.com/api/v1/auth/login",
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "success": true,
+          "userId": 10034,
+          "tokenReturned": true
+        },
+        "result": "partial"
+      },
+      "browserLikeAuthUserAfterLogin": {
+        "method": "GET",
+        "url": "https://seoindicator.com/api/v1/auth/user",
+        "status": 401,
+        "contentType": "application/json",
+        "body": { "message": "Unauthenticated." },
+        "result": "fail",
+        "note": "The SPA login flow gets a 200 response with a token, but the same browser session is still unauthenticated on /auth/user. Protected routes relying on fetchUser() cannot remain logged in."
+      },
+      "bearerAuthUser": {
+        "method": "GET",
+        "url": "https://seoindicator.com/api/v1/auth/user",
+        "status": 200,
+        "contentType": "application/json",
+        "result": "pass",
+        "note": "Bearer token auth still works when the returned token is supplied manually."
+      }
+    },
+    "locationsApi": {
+      "guestList": {
+        "method": "GET",
+        "url": "https://seoindicator.com/api/v1/sites/1/locations",
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "result": "fail",
+        "note": "Returns Laravel Server Error page instead of a protected-route JSON response."
+      },
+      "bearerList": {
+        "method": "GET",
+        "url": "https://seoindicator.com/api/v1/sites/1/locations",
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "result": "fail",
+        "note": "Even with a valid bearer token, the list endpoint crashes instead of returning 200/403/404 JSON."
+      }
+    }
+  },
+  "summary": {
+    "taskStatus": "failed",
+    "blockers": [
+      "SPA login/register do not leave the browser session authenticated for /api/v1/auth/user.",
+      "GET /api/v1/sites/{siteId}/locations still throws 500 HTML in production."
+    ]
+  }
+}
