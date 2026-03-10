@@ -169,3 +169,24 @@ Actions:
 
 Task fully closed and documented.
 - SPEC-011: In Progress (TASK-11-1 still at "Tested Locally")
+
+### [2026-03-10 11:20 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - TASK-11-2 Project Members Table
+
+Verification:
+- Task status remains `Done` ✅
+- DOCUMENTATION.md verified at line 19716+ (Project Members Table section) ✅
+- Migration verified: `backend/database/migrations/2026_02_26_191000_create_project_members_table.php`
+- Model verified: `backend/app/Models/ProjectMember.php`
+- Relationships verified in `Project` and `User` models
+- Schema remains aligned: `project_id`, `user_id`, role ENUM(`editor`, `viewer`), unique `(project_id, user_id)`
+- Foreign keys still cascade on both `project_id` and `user_id`
+- Production deployment reference still valid: commit `42ca3ac`
+
+Actions:
+- Cleared stale completion marker before re-processing
+- Recreated task lock for this verification pass
+- No documentation changes required; existing documentation remains accurate
+- Task remains fully closed
+
+- SPEC-011 remains `In Progress` because TASK-11-1 is not yet `Done`
