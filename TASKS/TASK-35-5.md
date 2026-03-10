@@ -1,7 +1,7 @@
 # TASK-35-5: BusinessLocationService
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -164,3 +164,15 @@ TASK-35-17 (Location Management Page frontend) - Blocked via TASK-35-13
   - invalid required/typed fields and duplicate locations throw validation errors
   - SQL-like/XSS-like strings are persisted as data, and stray mass-assignment input is ignored
 - Non-blocking note: PHPUnit 11 still emits legacy doc-comment metadata deprecation warnings across this suite; worth future cleanup, but not a blocker for deployment.
+
+### DevOps Session (2026-03-10 18:25 GMT+2)
+- **Status:** To Test Prod ✅
+- Prepared a clean deployment branch from `origin/main` and isolated only TASK-35-5 changes for rollout (`d786cbf8`, `03e2c561`) so unrelated local branch drift did not reach production.
+- Resolved the cherry-pick overlap in `BusinessLocationService.php` by keeping the TASK-35-5 implementation path and re-validating PHP syntax before rollout.
+- Pushed the isolated rollout to `origin/main` as commit `9f6834f0` and deployed that exact ref with `scripts/deploy-prod.ps1` after the worktree-local post-push hook failed to produce a deployment log.
+- First deploy attempt failed locally because the rollout worktree was missing frontend dependency `satori` (`logs/deployments/20260310T162437Z-42a55dcd.json`). Repaired the worktree with `frontend npm ci`, retried, and the production rollout succeeded.
+- Successful deployment evidence: `logs/deployments/20260310T162658Z-4e75c9fc.json`
+  - frontend build: success
+  - remote deploy/migrations/cache refresh: success
+  - production smoke checks: success (`/` and `/login`)
+- Handoff for ProdTester: validate the deployed BusinessLocationService flows through the Local SEO API/location-management paths on production, with particular attention to schema-drift tolerance when `business_locations.is_active` is absent and to update immutability for `site_id` / GBP identifiers.
