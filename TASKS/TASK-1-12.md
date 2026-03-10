@@ -329,3 +329,14 @@ Task status remains: Done. Completion marker written.
 - Coverage confirmed: configurable interval, randomized spread window, priority scheduling via `last_viewed_at`, manual trigger endpoint, artisan command, logging, environment variables, dependencies, and unit tests
 - No documentation gaps found; no documentation content changes required
 - SPEC-001: In Progress (other tasks still pending)
+
+### [2026-03-10 17:38 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** ✓
+
+- Task status: `Done` (confirmed)
+- Live implementation re-checked against `backend/app/Services/Scheduler/RankCheckScheduler.php`, `backend/config/seoindicator.php`, `backend/routes/console.php`, `backend/app/Http/Controllers/Api/V1/SchedulerController.php`, and `backend/routes/api.php`
+- Found documentation drift again: `DOCUMENTATION.md` had regressed to the stale `RANK_CHECK_INTERVAL_MINUTES` / `1440` + `RANK_CHECK_SPREAD_MINUTES` / `60` config and the old `backend/app/Services/RankCheckScheduler.php` / `backend/app/Console/Commands/ScheduleRankChecks.php` paths
+- Corrected the documentation to the live implementation: `RANK_CHECK_INTERVAL_HOURS=24`, `RANK_CHECK_SPREAD_MINUTES=120`, added `RANK_CHECK_PRIORITY_HIGH_HOURS`, `RANK_CHECK_PRIORITY_NORMAL_DAYS`, and `RANK_CHECK_CACHE_KEY`, and fixed the implementation references to `backend/app/Services/Scheduler/RankCheckScheduler.php` + `backend/routes/console.php`
+- Verified the manual API trigger forces execution via `run(true)`, while non-forced scheduler runs respect the configured interval gate
+- Re-ran `php artisan test --filter RankCheckSchedulerTest`: `Tests\Unit\Services\Scheduler\RankCheckSchedulerTest` still passes (2 tests, 6 assertions); PHPUnit also surfaced an unrelated `Tests\Unit\Enums\AnnotationCategoryTest` discovery failure (`App\Enums\AnnotationCategory` missing), which does not belong to TASK-1-12
+- SPEC-001: In Progress (other tasks still pending)
