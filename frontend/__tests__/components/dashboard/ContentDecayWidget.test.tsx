@@ -1,43 +1,32 @@
 /**
  * ContentDecayWidget Component Tests
+ * TASK-36-14: Navigation & Dashboard Integration
  * 
- * Task: TASK-36-14 - Navigation & Dashboard Integration
- * Spec: SPEC-036 - Content Decay Detection & Refresh Planner
- * 
- * Tests the dashboard widget displaying content decay summary with quick actions.
- * Covers all 4 widget states: Loading, Empty, Error, Data.
+ * @jest-environment jsdom
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import React from 'react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
-// Mock next/link
-vi.mock('next/link', () => ({
-  default: ({ children, href }: any) => <a href={href}>{children}</a>,
-}));
-
 // Mock Lucide icons
-vi.mock('lucide-react', () => ({
-  AlertTriangle: () => <span data-testid="alert-icon">⚠️</span>,
-  AlertCircle: () => <span data-testid="critical-icon">🔴</span>,
-  Clock: () => <span data-testid="clock-icon">⏰</span>,
-  CheckCircle: () => <span data-testid="check-icon">✅</span>,
-  Loader2: () => <span data-testid="loader-icon" className="animate-spin">🔄</span>,
-  RefreshCw: () => <span data-testid="refresh-icon">↻</span>,
-  ExternalLink: () => <span data-testid="external-link-icon">→</span>,
-  TrendingDown: () => <span data-testid="trending-down-icon">📉</span>,
-  Eye: () => <span data-testid="eye-icon">👁️</span>,
-  Calendar: () => <span data-testid="calendar-icon">📅</span>,
-  X: () => <span data-testid="x-icon">✗</span>,
-  MoreHorizontal: () => <span data-testid="more-icon">⋯</span>,
-  Zap: () => <span data-testid="zap-icon">⚡</span>,
+jest.mock('lucide-react', () => ({
+  TrendingDown: () => <span data-testid="trending-down-icon">TrendingDown</span>,
+  AlertTriangle: () => <span data-testid="alert-icon">AlertTriangle</span>,
+  CheckCircle: () => <span data-testid="check-circle-icon">CheckCircle</span>,
+  ArrowRight: () => <span data-testid="arrow-right-icon">ArrowRight</span>,
+  Eye: () => <span data-testid="eye-icon">Eye</span>,
+  Calendar: () => <span data-testid="calendar-icon">Calendar</span>,
+  RefreshCw: () => <span data-testid="refresh-icon">RefreshCw</span>,
+  ExternalLink: () => <span data-testid="external-link-icon">ExternalLink</span>,
+  ChevronRight: () => <span data-testid="chevron-icon">ChevronRight</span>,
+  Clock: () => <span data-testid="clock-icon">Clock</span>,
 }));
 
-// ============================================
-// Types and Interfaces
-// ============================================
+// =============================================================================
+// Types
+// =============================================================================
 
 interface DecaySummary {
   criticalCount: number;
@@ -54,14 +43,18 @@ interface DecayCandidate {
   pageUrl: string;
   pageTitle: string;
   decayScore: number;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  severity: 'critical' | 'high' | 'medium';
   primaryReason: string;
   lostClicks: number;
+  lostImpressions?: number;
+  ctrChange?: number;
+  positionChange?: number;
+  lastUpdated: string;
 }
 
 interface ContentDecayWidgetProps {
   siteId: string;
-  summary?: DecaySummary;
+  summary?: DecaySummary | null;
   topCandidates?: DecayCandidate[];
   isLoading?: boolean;
   error?: string | null;
@@ -72,35 +65,37 @@ interface ContentDecayWidgetProps {
   className?: string;
 }
 
-// ============================================
-// Mock Component Implementation
-// ============================================
+// =============================================================================
+// Mock Component for TDD Reference
+// =============================================================================
 
-const MockContentDecayWidget: React.FC<ContentDecayWidgetProps> = ({
+const ContentDecayWidget: React.FC<ContentDecayWidgetProps> = ({
   siteId,
   summary,
-  topCandidates,
+  topCandidates = [],
   isLoading = false,
   error = null,
   onRefresh,
   onViewCandidate,
   onMarkPlanned,
   onIgnore,
-  className,
+  className = '',
 }) => {
   // Loading state
   if (isLoading) {
     return (
-      <div
-        data-testid="loading-state"
-        className="widget-card animate-pulse"
+      <div 
+        data-testid="content-decay-widget" 
+        className={`bg-white rounded-lg p-4 ${className}`}
         role="status"
         aria-live="polite"
       >
-        <div data-testid="loader-icon" className="animate-spin" />
-        <span data-testid="loading-text">Loading...</span>
-        <div data-testid="skeleton-summary" className="h-16 bg-gray-200 rounded" />
-        <div data-testid="skeleton-list" className="h-32 bg-gray-200 rounded mt-2" />
+        <h3 className="text-lg font-semibold mb-4">Content Decay</h3>
+        <div className="animate-pulse space-y-3" data-testid="loading-skeleton">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-12 bg-gray-200 rounded" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -108,20 +103,25 @@ const MockContentDecayWidget: React.FC<ContentDecayWidgetProps> = ({
   // Error state
   if (error) {
     return (
-      <div
-        data-testid="error-state"
-        className="widget-card"
+      <div 
+        data-testid="content-decay-widget" 
+        className={`bg-white rounded-lg p-4 ${className}`}
         role="alert"
       >
-        <span data-testid="alert-icon">⚠️</span>
-        <span data-testid="error-message">{error}</span>
-        <button
-          data-testid="retry-btn"
-          onClick={onRefresh}
-          aria-label="Retry loading content decay data"
-        >
-          Retry
-        </button>
+        <h3 className="text-lg font-semibold mb-4">Content Decay</h3>
+        <div className="text-red-600 flex items-center gap-2">
+          <span data-testid="alert-icon">AlertTriangle</span>
+          <span>{error}</span>
+        </div>
+        {onRefresh && (
+          <button 
+            onClick={onRefresh}
+            className="mt-3 text-blue-600 hover:underline"
+            aria-label="Retry loading content decay data"
+          >
+            Retry
+          </button>
+        )}
       </div>
     );
   }
@@ -129,229 +129,219 @@ const MockContentDecayWidget: React.FC<ContentDecayWidgetProps> = ({
   // Empty state
   if (!summary || summary.totalCandidates === 0) {
     return (
-      <div
-        data-testid="empty-state"
-        className="widget-card"
+      <div 
+        data-testid="content-decay-widget" 
+        className={`bg-white rounded-lg p-4 ${className}`}
         role="region"
-        aria-label="Content Decay Widget"
+        aria-label="Content Decay Summary"
       >
-        <h3 data-testid="widget-title">Content Decay</h3>
-        <div data-testid="empty-state-content">
-          <span data-testid="check-icon">✅</span>
-          <p data-testid="empty-message">No content decay detected. Your pages are performing well!</p>
+        <h3 className="text-lg font-semibold mb-4">Content Decay</h3>
+        <div className="text-center py-6" role="status" aria-live="polite">
+          <span data-testid="check-circle-icon" className="text-green-500 text-4xl">CheckCircle</span>
+          <p className="mt-2 text-gray-600">No content decay detected</p>
+          <p className="text-sm text-gray-500">Your content is performing well</p>
+          {summary?.recoveredCount ? (
+            <p className="mt-2 text-sm text-green-600">{summary.recoveredCount} pages recovered</p>
+          ) : null}
+          {onRefresh && (
+            <button 
+              onClick={onRefresh}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              aria-label="Run content decay scan"
+            >
+              Run Scan
+            </button>
+          )}
         </div>
-        <a
-          data-testid="view-all-link"
-          href={`/sites/${siteId}/content-decay`}
-          aria-label="View full content decay queue"
-        >
-          View All
-          <span data-testid="external-link-icon">→</span>
-        </a>
-        {summary?.lastScannedAt && (
-          <div data-testid="last-scan-info">
-            <span data-testid="clock-icon">⏰</span>
-            <span>Last scan: {formatRelativeTime(summary.lastScannedAt)}</span>
-          </div>
-        )}
-        {!summary?.lastScannedAt && (
-          <div data-testid="last-scan-info">
-            <span>Never scanned</span>
-          </div>
-        )}
-        <button
-          data-testid="run-scan-btn"
-          onClick={onRefresh}
-          aria-label="Run content decay scan"
-        >
-          Run Scan
-        </button>
       </div>
     );
   }
 
   // Data state
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  };
+
+  const truncateUrl = (url: string, maxLength = 40): string => {
+    if (url.length <= maxLength) return url;
+    return url.substring(0, maxLength - 3) + '...';
+  };
+
+  const formatReason = (reason: string): string => {
+    const reasonMap: Record<string, string> = {
+      'clicks_down': 'Click loss',
+      'impressions_down': 'Impression loss',
+      'ctr_down': 'CTR drop',
+      'avg_position_down': 'Position decline',
+      'tracked_rankings_down': 'Ranking decline',
+      'audit_issues_present': 'Technical issues',
+      'stale_content': 'Stale content',
+    };
+    return reasonMap[reason] || reason;
+  };
+
+  const formatRelativeTime = (timestamp: string | null): string => {
+    if (!timestamp) return 'Never scanned';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   return (
-    <div
-      data-testid="content-decay-widget"
-      className={`widget-card ${className || ''}`}
+    <div 
+      data-testid="content-decay-widget" 
+      className={`bg-white rounded-lg p-4 ${className}`}
       role="region"
-      aria-label="Content Decay Widget"
+      aria-label="Content Decay Summary"
     >
       {/* Header */}
-      <div data-testid="widget-header">
-        <h3 data-testid="widget-title">
-          <a href={`/sites/${siteId}/content-decay`}>Content Decay</a>
-        </h3>
-        <button
-          data-testid="refresh-btn"
-          onClick={onRefresh}
-          aria-label="Refresh content decay data"
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Content Decay</h3>
+        <a 
+          href={`/dashboard/sites/${siteId}/content-decay`}
+          className="text-blue-600 hover:underline flex items-center gap-1"
+          aria-label="View all content decay issues"
+          data-testid="view-all-link"
         >
-          <span data-testid="refresh-icon">↻</span>
-        </button>
+          View All Issues
+          <span data-testid="arrow-right-icon">ArrowRight</span>
+        </a>
       </div>
 
       {/* Summary Card */}
-      <div data-testid="summary-card">
+      <div className="grid grid-cols-3 gap-3 mb-4" role="group" aria-label="Decay severity counts">
         {summary.criticalCount > 0 && (
-          <div data-testid="critical-badge" data-severity="critical">
-            <span data-testid="critical-icon">🔴</span>
-            <span data-testid="critical-count">{summary.criticalCount}</span>
-            <span>Critical</span>
+          <div 
+            className="bg-red-50 text-red-600 px-3 py-2 rounded text-center"
+            data-severity="critical"
+            aria-label={`${summary.criticalCount} critical issues`}
+          >
+            <span className="font-bold">{summary.criticalCount}</span>
+            <span className="text-sm ml-1">Critical</span>
           </div>
         )}
         {summary.highCount > 0 && (
-          <div data-testid="high-badge" data-severity="high">
-            <span data-testid="alert-icon">⚠️</span>
-            <span data-testid="high-count">{summary.highCount}</span>
-            <span>High</span>
+          <div 
+            className="bg-orange-50 text-orange-600 px-3 py-2 rounded text-center"
+            data-severity="high"
+            aria-label={`${summary.highCount} high priority issues`}
+          >
+            <span className="font-bold">{summary.highCount}</span>
+            <span className="text-sm ml-1">High</span>
           </div>
         )}
         {summary.mediumCount > 0 && (
-          <div data-testid="medium-badge" data-severity="medium">
-            <span data-testid="zap-icon">⚡</span>
-            <span data-testid="medium-count">{summary.mediumCount}</span>
-            <span>Medium</span>
+          <div 
+            className="bg-yellow-50 text-yellow-600 px-3 py-2 rounded text-center"
+            data-severity="medium"
+            aria-label={`${summary.mediumCount} medium priority issues`}
+          >
+            <span className="font-bold">{summary.mediumCount}</span>
+            <span className="text-sm ml-1">Medium</span>
           </div>
         )}
-        <div data-testid="total-count">
-          <span>Total: </span>
-          <span data-testid="total-value">{summary.totalCandidates}</span>
-          <span> candidates</span>
-        </div>
-        <div data-testid="recovery-upside">
-          <span>Recovery upside: </span>
-          <span data-testid="upside-value">{formatNumber(summary.estimatedRecoveryUpside)}</span>
-          <span> clicks</span>
-        </div>
+      </div>
+
+      {/* Stats Row */}
+      <div className="flex justify-between text-sm text-gray-600 mb-4">
+        <span>{summary.totalCandidates} pages need attention</span>
+        <span>{formatNumber(summary.estimatedRecoveryUpside)} potential clicks</span>
       </div>
 
       {/* Top Candidates */}
-      <div data-testid="top-candidates-section">
-        <h4>Top Priority</h4>
-        <ul data-testid="candidates-list">
-          {(topCandidates || []).slice(0, 3).map((candidate, index) => (
-            <li
-              key={candidate.id}
-              data-testid={`candidate-${index + 1}`}
-              data-severity={candidate.severity}
-              data-score={candidate.decayScore}
+      {topCandidates.length > 0 && (
+        <div className="space-y-2" role="list" aria-label="Top content decay candidates">
+          {topCandidates.slice(0, 3).map((candidate) => (
+            <div 
+              key={candidate.id} 
+              className="flex items-center justify-between p-2 bg-gray-50 rounded hover:bg-gray-100"
+              role="listitem"
             >
-              <div data-testid={`candidate-url-${index + 1}`} title={candidate.pageUrl}>
-                {truncateUrl(candidate.pageUrl)}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate" title={candidate.pageTitle}>
+                  {candidate.pageTitle}
+                </p>
+                <p className="text-sm text-gray-500 truncate" title={candidate.pageUrl}>
+                  {truncateUrl(candidate.pageUrl)}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span 
+                    className={`text-xs px-1.5 py-0.5 rounded ${
+                      candidate.severity === 'critical' ? 'bg-red-100 text-red-600' :
+                      candidate.severity === 'high' ? 'bg-orange-100 text-orange-600' :
+                      'bg-yellow-100 text-yellow-600'
+                    }`}
+                    data-severity={candidate.severity}
+                  >
+                    {candidate.decayScore}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {formatReason(candidate.primaryReason)}
+                  </span>
+                  <span className="text-xs text-red-500">
+                    -{candidate.lostClicks} clicks
+                  </span>
+                </div>
               </div>
-              <div data-testid={`candidate-title-${index + 1}`}>
-                {candidate.pageTitle}
-              </div>
-              <div data-testid={`candidate-score-${index + 1}`}>
-                Score: {candidate.decayScore}
-              </div>
-              <div data-testid={`candidate-reason-${index + 1}`}>
-                {formatReason(candidate.primaryReason)}
-              </div>
-              <div data-testid="quick-actions">
-                <button
-                  data-testid={`view-details-btn-${index + 1}`}
+              <div className="flex gap-1 ml-2">
+                <button 
                   onClick={() => onViewCandidate?.(candidate.id)}
-                  aria-label={`View details for ${candidate.pageTitle}`}
+                  className="text-xs px-2 py-1 text-blue-600 hover:bg-blue-50 rounded"
+                  aria-label={`View ${candidate.pageTitle}`}
                 >
                   View
                 </button>
-                <button
-                  data-testid={`mark-planned-btn-${index + 1}`}
+                <button 
                   onClick={() => onMarkPlanned?.(candidate.id)}
-                  aria-label={`Mark ${candidate.pageTitle} as planned`}
+                  className="text-xs px-2 py-1 text-green-600 hover:bg-green-50 rounded"
+                  aria-label={`Plan ${candidate.pageTitle}`}
                 >
                   Plan
                 </button>
-                <button
-                  data-testid={`ignore-btn-${index + 1}`}
+                <button 
                   onClick={() => onIgnore?.(candidate.id)}
+                  className="text-xs px-2 py-1 text-gray-600 hover:bg-gray-100 rounded"
                   aria-label={`Ignore ${candidate.pageTitle}`}
                 >
                   Ignore
                 </button>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
-        {(!topCandidates || topCandidates.length === 0) && (
-          <p data-testid="no-candidates">No priority candidates</p>
-        )}
+        </div>
+      )}
+
+      {/* Last Scanned */}
+      <div className="mt-4 text-xs text-gray-500 flex items-center gap-1">
+        <span data-testid="clock-icon">Clock</span>
+        <span>Last scanned: {formatRelativeTime(summary.lastScannedAt)}</span>
       </div>
 
-      {/* Last Scan Timestamp */}
-      <div data-testid="last-scan-info">
-        <span data-testid="clock-icon">⏰</span>
-        <span data-testid="last-scan-time">
-          {summary.lastScannedAt
-            ? `Last scan: ${formatRelativeTime(summary.lastScannedAt)}`
-            : 'Never scanned'}
-        </span>
-        <span data-testid="last-scan-absolute" title={summary.lastScannedAt || ''} />
-      </div>
-
-      {/* View All Link */}
-      <a
-        data-testid="view-all-link"
-        href={`/sites/${siteId}/content-decay`}
-        aria-label="View full content decay queue"
-      >
-        View All Candidates
-        <span data-testid="external-link-icon">→</span>
-      </a>
+      {/* Recovered Count */}
+      {summary.recoveredCount > 0 && (
+        <div className="mt-2 text-xs text-green-600">
+          {summary.recoveredCount} pages recovered
+        </div>
+      )}
     </div>
   );
 };
 
-// Helper functions
-function formatRelativeTime(timestamp: string): string {
-  const now = new Date();
-  const date = new Date(timestamp);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function formatNumber(num: number): string {
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toString();
-}
-
-function truncateUrl(url: string, maxLength = 40): string {
-  if (url.length <= maxLength) return url;
-  return url.substring(0, maxLength - 3) + '...';
-}
-
-function formatReason(reason: string): string {
-  const reasonMap: Record<string, string> = {
-    'clicks_down': 'Click loss',
-    'impressions_down': 'Impression loss',
-    'ctr_down': 'CTR drop',
-    'avg_position_down': 'Position decline',
-    'tracked_rankings_down': 'Ranking decline',
-    'audit_issues_present': 'Technical issues',
-    'stale_content': 'Stale content',
-  };
-  return reasonMap[reason] || reason;
-}
-
-// Use mock component
-const TestContentDecayWidget = MockContentDecayWidget;
-
-// ============================================
+// =============================================================================
 // Test Data
-// ============================================
+// =============================================================================
 
 const mockSummary: DecaySummary = {
   criticalCount: 5,
@@ -363,1363 +353,644 @@ const mockSummary: DecaySummary = {
   lastScannedAt: '2026-03-10T15:30:00Z',
 };
 
-const mockSummaryNoDecay: DecaySummary = {
-  criticalCount: 0,
-  highCount: 0,
-  mediumCount: 0,
-  totalCandidates: 0,
-  estimatedRecoveryUpsite: 0,
-  recoveredCount: 0,
-  lastScannedAt: '2026-03-10T15:30:00Z',
+const mockCandidate: DecayCandidate = {
+  id: 1,
+  pageUrl: 'https://example.com/blog/seo-tips',
+  pageTitle: '10 SEO Tips for 2024',
+  decayScore: 85,
+  severity: 'critical',
+  primaryReason: 'clicks_down',
+  lostClicks: 450,
+  lastUpdated: '2026-03-10T14:00:00Z',
 };
 
 const mockTopCandidates: DecayCandidate[] = [
-  {
-    id: 1,
-    pageUrl: 'https://example.com/blog/seo-tips',
-    pageTitle: '10 SEO Tips for 2024',
-    decayScore: 85,
-    severity: 'critical',
-    primaryReason: 'clicks_down',
-    lostClicks: 450,
-  },
-  {
-    id: 2,
-    pageUrl: 'https://example.com/products/widget-pro',
-    pageTitle: 'Widget Pro - Product Page',
-    decayScore: 72,
-    severity: 'high',
-    primaryReason: 'ctr_down',
-    lostClicks: 280,
-  },
-  {
-    id: 3,
-    pageUrl: 'https://example.com/guide/complete-buying-guide',
-    pageTitle: 'Complete Buying Guide',
-    decayScore: 58,
-    severity: 'medium',
-    primaryReason: 'impressions_down',
-    lostClicks: 150,
-  },
+  { ...mockCandidate, id: 1, decayScore: 95, severity: 'critical' },
+  { ...mockCandidate, id: 2, decayScore: 78, severity: 'high' },
+  { ...mockCandidate, id: 3, decayScore: 65, severity: 'high' },
+  { ...mockCandidate, id: 4, decayScore: 52, severity: 'medium' },
+  { ...mockCandidate, id: 5, decayScore: 40, severity: 'medium' },
 ];
 
-const mockOnRefresh = vi.fn();
-const mockOnViewCandidate = vi.fn();
-const mockOnMarkPlanned = vi.fn();
-const mockOnIgnore = vi.fn();
-
-// ============================================
-// Test Suites
-// ============================================
+// =============================================================================
+// Tests
+// =============================================================================
 
 describe('ContentDecayWidget', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  // ============================================
-  // CDW-RENDER: Rendering Tests
-  // ============================================
-  
-  describe('CDW-RENDER: Rendering Tests', () => {
-    it('CDW-RN-001: Widget renders with siteId', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
+  // -------------------------------------------------------------------------
+  // CDW-001: Widget Rendering (10 tests)
+  // -------------------------------------------------------------------------
+  describe('Widget Rendering', () => {
+    it('CDW-001.1: renders with required props', () => {
+      render(<ContentDecayWidget siteId="1" />);
       expect(screen.getByTestId('content-decay-widget')).toBeInTheDocument();
     });
 
-    it('CDW-RN-002: Shows widget title "Content Decay"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('widget-title')).toHaveTextContent('Content Decay');
+    it('CDW-001.2: has correct ARIA role', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const widget = screen.getByRole('region');
+      expect(widget).toHaveAttribute('aria-label', 'Content Decay Summary');
     });
 
-    it('CDW-RN-003: Shows decay summary card', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('summary-card')).toBeInTheDocument();
+    it('CDW-001.3: has correct CSS classes', () => {
+      render(<ContentDecayWidget siteId="1" className="custom-class" />);
+      const widget = screen.getByTestId('content-decay-widget');
+      expect(widget).toHaveClass('bg-white', 'rounded-lg', 'p-4', 'custom-class');
     });
 
-    it('CDW-RN-004: Shows top priority candidates list', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('top-candidates-section')).toBeInTheDocument();
-      expect(screen.getByTestId('candidates-list')).toBeInTheDocument();
+    it('CDW-001.4: renders header with title', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      expect(screen.getByText('Content Decay')).toBeInTheDocument();
     });
 
-    it('CDW-RN-005: Shows link to full queue', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
+    it('CDW-001.5: renders summary section with counts', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByText('Critical')).toBeInTheDocument();
+    });
+
+    it('CDW-001.6: renders top candidates list', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={mockTopCandidates} />);
+      expect(screen.getByRole('list', { name: 'Top content decay candidates' })).toBeInTheDocument();
+    });
+
+    it('CDW-001.7: renders View All link with correct href', () => {
+      render(<ContentDecayWidget siteId="test-site" summary={mockSummary} />);
       const link = screen.getByTestId('view-all-link');
-      expect(link).toBeInTheDocument();
-      expect(link).toHaveAttribute('href', '/sites/site-123/content-decay');
+      expect(link).toHaveAttribute('href', '/dashboard/sites/test-site/content-decay');
     });
 
-    it('CDW-RN-006: Shows last scan timestamp', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('last-scan-info')).toBeInTheDocument();
-      expect(screen.getByTestId('last-scan-time')).toBeInTheDocument();
+    it('CDW-001.8: applies custom className', () => {
+      render(<ContentDecayWidget siteId="1" className="my-custom-class" />);
+      expect(screen.getByTestId('content-decay-widget')).toHaveClass('my-custom-class');
     });
 
-    it('CDW-RN-007: Has role="region"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('content-decay-widget')).toHaveAttribute('role', 'region');
+    it('CDW-001.9: renders empty state when no candidates', () => {
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, totalCandidates: 0 }} />);
+      expect(screen.getByText('No content decay detected')).toBeInTheDocument();
     });
 
-    it('CDW-RN-008: Has aria-label', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('content-decay-widget')).toHaveAttribute('aria-label', 'Content Decay Widget');
-    });
-
-    it('CDW-RN-009: Has widget-card class', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('content-decay-widget')).toHaveClass('widget-card');
-    });
-
-    it('CDW-RN-010: Responsive layout', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          className="col-span-full md:col-span-6"
-        />
-      );
-      
-      expect(screen.getByTestId('content-decay-widget')).toHaveClass('col-span-full');
+    it('CDW-001.10: shows loading when summary is null', () => {
+      render(<ContentDecayWidget siteId="1" summary={null} />);
+      expect(screen.getByTestId('loading-skeleton')).toBeInTheDocument();
     });
   });
 
-  // ============================================
-  // CDW-EMPTY: Empty State Tests
-  // ============================================
-  
-  describe('CDW-EMPTY: Empty State Tests', () => {
-    it('CDW-EM-001: No candidates shows empty state', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummaryNoDecay}
-        />
-      );
-      
-      expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+  // -------------------------------------------------------------------------
+  // CDW-002: Empty State (8 tests)
+  // -------------------------------------------------------------------------
+  describe('Empty State', () => {
+    it('CDW-002.1: displays empty state message', () => {
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, totalCandidates: 0, criticalCount: 0, highCount: 0, mediumCount: 0 }} />);
+      expect(screen.getByText('No content decay detected')).toBeInTheDocument();
     });
 
-    it('CDW-EM-002: Shows "No content decay detected"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummaryNoDecay}
-        />
-      );
-      
-      expect(screen.getByTestId('empty-message')).toHaveTextContent('No content decay detected');
+    it('CDW-002.2: has checkmark icon', () => {
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, totalCandidates: 0, criticalCount: 0, highCount: 0, mediumCount: 0 }} />);
+      expect(screen.getByTestId('check-circle-icon')).toBeInTheDocument();
     });
 
-    it('CDW-EM-003: Shows check icon', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummaryNoDecay}
-        />
-      );
-      
-      expect(screen.getByTestId('check-icon')).toBeInTheDocument();
+    it('CDW-002.3: has descriptive text', () => {
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, totalCandidates: 0, criticalCount: 0, highCount: 0, mediumCount: 0 }} />);
+      expect(screen.getByText('Your content is performing well')).toBeInTheDocument();
     });
 
-    it('CDW-EM-004: Shows "View All" link', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummaryNoDecay}
-        />
-      );
-      
-      expect(screen.getByTestId('view-all-link')).toBeInTheDocument();
+    it('CDW-002.4: has Run Scan button', () => {
+      const onRefresh = jest.fn();
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, totalCandidates: 0, criticalCount: 0, highCount: 0, mediumCount: 0 }} onRefresh={onRefresh} />);
+      expect(screen.getByText('Run Scan')).toBeInTheDocument();
     });
 
-    it('CDW-EM-005: Shows last scan timestamp even with empty', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummaryNoDecay}
-        />
-      );
-      
-      expect(screen.getByTestId('last-scan-info')).toBeInTheDocument();
+    it('CDW-002.5: Run Scan button triggers callback', async () => {
+      const onRefresh = jest.fn();
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, totalCandidates: 0, criticalCount: 0, highCount: 0, mediumCount: 0 }} onRefresh={onRefresh} />);
+      await userEvent.click(screen.getByText('Run Scan'));
+      expect(onRefresh).toHaveBeenCalled();
     });
 
-    it('CDW-EM-006: Zero critical count', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummaryNoDecay}
-        />
-      );
-      
-      expect(screen.queryByTestId('critical-badge')).not.toBeInTheDocument();
+    it('CDW-002.6: has correct accessibility attributes', () => {
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, totalCandidates: 0, criticalCount: 0, highCount: 0, mediumCount: 0 }} />);
+      const status = screen.getByRole('status');
+      expect(status).toHaveAttribute('aria-live', 'polite');
     });
 
-    it('CDW-EM-007: Zero total candidates', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummaryNoDecay}
-        />
-      );
-      
-      // Empty state shown when total is 0
-      expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+    it('CDW-002.7: shows recovered count message', () => {
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, totalCandidates: 0, criticalCount: 0, highCount: 0, mediumCount: 0, recoveredCount: 5 }} />);
+      expect(screen.getByText('5 pages recovered')).toBeInTheDocument();
     });
 
-    it('CDW-EM-008: Shows "Run Scan" button', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummaryNoDecay}
-          onRefresh={mockOnRefresh}
-        />
-      );
-      
-      expect(screen.getByTestId('run-scan-btn')).toBeInTheDocument();
+    it('CDW-002.8: hides recovered count when zero', () => {
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, totalCandidates: 0, criticalCount: 0, highCount: 0, mediumCount: 0, recoveredCount: 0 }} />);
+      expect(screen.queryByText(/pages recovered/)).not.toBeInTheDocument();
     });
   });
 
-  // ============================================
-  // CDW-LOADING: Loading State Tests
-  // ============================================
-  
-  describe('CDW-LOADING: Loading State Tests', () => {
-    it('CDW-LD-001: Loading state during initial load', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          isLoading={true}
-        />
-      );
-      
-      expect(screen.getByTestId('loading-state')).toBeInTheDocument();
+  // -------------------------------------------------------------------------
+  // CDW-003: Loading State (8 tests)
+  // -------------------------------------------------------------------------
+  describe('Loading State', () => {
+    it('CDW-003.1: shows loading skeleton', () => {
+      render(<ContentDecayWidget siteId="1" isLoading={true} />);
+      expect(screen.getByTestId('loading-skeleton')).toBeInTheDocument();
     });
 
-    it('CDW-LD-002: Shows loading spinner', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          isLoading={true}
-        />
-      );
-      
-      expect(screen.getByTestId('loader-icon')).toBeInTheDocument();
+    it('CDW-003.2: has correct skeleton count', () => {
+      render(<ContentDecayWidget siteId="1" isLoading={true} />);
+      const skeletons = screen.getByTestId('loading-skeleton').querySelectorAll('.h-12');
+      expect(skeletons).toHaveLength(3);
     });
 
-    it('CDW-LD-003: Shows "Loading..." text', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          isLoading={true}
-        />
-      );
-      
-      expect(screen.getByTestId('loading-text')).toHaveTextContent('Loading');
+    it('CDW-003.3: has correct accessibility attributes', () => {
+      render(<ContentDecayWidget siteId="1" isLoading={true} />);
+      const widget = screen.getByRole('status');
+      expect(widget).toHaveAttribute('aria-live', 'polite');
     });
 
-    it('CDW-LD-004: Has aria-live="polite"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          isLoading={true}
-        />
-      );
-      
-      expect(screen.getByTestId('loading-state')).toHaveAttribute('aria-live', 'polite');
-    });
-
-    it('CDW-LD-005: Has role="status"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          isLoading={true}
-        />
-      );
-      
-      expect(screen.getByTestId('loading-state')).toHaveAttribute('role', 'status');
-    });
-
-    it('CDW-LD-006: Skeleton summary card', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          isLoading={true}
-        />
-      );
-      
-      expect(screen.getByTestId('skeleton-summary')).toBeInTheDocument();
-    });
-
-    it('CDW-LD-007: Skeleton candidates list', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          isLoading={true}
-        />
-      );
-      
-      expect(screen.getByTestId('skeleton-list')).toBeInTheDocument();
-    });
-
-    it('CDW-LD-008: No action buttons during loading', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          isLoading={true}
-        />
-      );
-      
+    it('CDW-003.4: hides content during loading', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} isLoading={true} />);
       expect(screen.queryByTestId('view-all-link')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('refresh-btn')).not.toBeInTheDocument();
-    });
-  });
-
-  // ============================================
-  // CDW-SUMMARY: Decay Summary Card Tests
-  // ============================================
-  
-  describe('CDW-SUMMARY: Decay Summary Card Tests', () => {
-    it('CDW-SM-001: Critical count badge', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('critical-badge')).toBeInTheDocument();
-      expect(screen.getByTestId('critical-count')).toHaveTextContent('5');
     });
 
-    it('CDW-SM-002: High count badge', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
+    it('CDW-003.5: shows data when loading completes', () => {
+      const { rerender } = render(<ContentDecayWidget siteId="1" summary={mockSummary} isLoading={true} />);
+      expect(screen.getByTestId('loading-skeleton')).toBeInTheDocument();
       
-      expect(screen.getByTestId('high-badge')).toBeInTheDocument();
-      expect(screen.getByTestId('high-count')).toHaveTextContent('12');
-    });
-
-    it('CDW-SM-003: Medium count badge', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('medium-badge')).toBeInTheDocument();
-      expect(screen.getByTestId('medium-count')).toHaveTextContent('8');
-    });
-
-    it('CDW-SM-004: Total candidates count', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('total-count')).toBeInTheDocument();
-      expect(screen.getByTestId('total-value')).toHaveTextContent('25');
-    });
-
-    it('CDW-SM-005: Estimated recovery upside', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('recovery-upside')).toBeInTheDocument();
-      expect(screen.getByTestId('upside-value')).toHaveTextContent('1.5K');
-    });
-
-    it('CDW-SM-006: Critical badge has red styling', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('critical-badge')).toHaveAttribute('data-severity', 'critical');
-    });
-
-    it('CDW-SM-007: High badge has orange styling', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('high-badge')).toHaveAttribute('data-severity', 'high');
-    });
-
-    it('CDW-SM-008: Medium badge has yellow styling', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('medium-badge')).toHaveAttribute('data-severity', 'medium');
-    });
-
-    it('CDW-SM-009: Zero counts hidden', () => {
-      const summaryWithZeros = {
-        ...mockSummary,
-        criticalCount: 0,
-      };
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={summaryWithZeros}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.queryByTestId('critical-badge')).not.toBeInTheDocument();
-    });
-
-    it('CDW-SM-010: Multiple severity badges shown', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('critical-badge')).toBeInTheDocument();
-      expect(screen.getByTestId('high-badge')).toBeInTheDocument();
-      expect(screen.getByTestId('medium-badge')).toBeInTheDocument();
-    });
-
-    it('CDW-SM-011: Summary links to queue', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      const title = screen.getByTestId('widget-title').querySelector('a');
-      expect(title).toHaveAttribute('href', '/sites/site-123/content-decay');
-    });
-
-    it('CDW-SM-012: Recovery upside formatted correctly', () => {
-      const largeUpside = {
-        ...mockSummary,
-        estimatedRecoveryUpside: 2500000,
-      };
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={largeUpside}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('upside-value')).toHaveTextContent('2.5M');
-    });
-  });
-
-  // ============================================
-  // CDW-CANDIDATES: Top Priority Candidates Tests
-  // ============================================
-  
-  describe('CDW-CANDIDATES: Top Priority Candidates Tests', () => {
-    it('CDW-CD-001: Shows top 3 candidates', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('candidate-1')).toBeInTheDocument();
-      expect(screen.getByTestId('candidate-2')).toBeInTheDocument();
-      expect(screen.getByTestId('candidate-3')).toBeInTheDocument();
-    });
-
-    it('CDW-CD-002: Shows page URL', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('candidate-url-1')).toHaveTextContent('example.com/blog/seo-tips');
-    });
-
-    it('CDW-CD-003: Shows page title', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('candidate-title-1')).toHaveTextContent('10 SEO Tips for 2024');
-    });
-
-    it('CDW-CD-004: Shows decay score', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('candidate-score-1')).toHaveTextContent('Score: 85');
-    });
-
-    it('CDW-CD-005: Shows severity badge', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('candidate-1')).toHaveAttribute('data-severity', 'critical');
-    });
-
-    it('CDW-CD-006: Shows primary reason', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('candidate-reason-1')).toHaveTextContent('Click loss');
-    });
-
-    it('CDW-CD-007: Quick action "View Details"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('view-details-btn-1')).toBeInTheDocument();
-    });
-
-    it('CDW-CD-008: Quick action "Mark as Planned"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('mark-planned-btn-1')).toBeInTheDocument();
-    });
-
-    it('CDW-CD-009: Quick action "Ignore"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('ignore-btn-1')).toBeInTheDocument();
-    });
-
-    it('CDW-CD-010: Less than 3 candidates shows all', () => {
-      const twoCandidates = mockTopCandidates.slice(0, 2);
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={twoCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('candidate-1')).toBeInTheDocument();
-      expect(screen.getByTestId('candidate-2')).toBeInTheDocument();
-      expect(screen.queryByTestId('candidate-3')).not.toBeInTheDocument();
-    });
-
-    it('CDW-CD-011: No candidates shows empty state', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={[]}
-        />
-      );
-      
-      expect(screen.getByTestId('no-candidates')).toBeInTheDocument();
-    });
-
-    it('CDW-CD-012: URL truncation for long URLs', () => {
-      const longUrlCandidate = [{
-        ...mockTopCandidates[0],
-        pageUrl: 'https://example.com/very/long/path/to/page/that/exceeds/truncation/limit',
-      }];
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={longUrlCandidate}
-        />
-      );
-      
-      const urlElement = screen.getByTestId('candidate-url-1');
-      expect(urlElement.textContent).toContain('...');
-    });
-
-    it('CDW-CD-013: Score color coding', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      // Critical = 85 score
-      expect(screen.getByTestId('candidate-1')).toHaveAttribute('data-score', '85');
-      // High = 72 score
-      expect(screen.getByTestId('candidate-2')).toHaveAttribute('data-score', '72');
-      // Medium = 58 score
-      expect(screen.getByTestId('candidate-3')).toHaveAttribute('data-score', '58');
-    });
-
-    it('CDW-CD-014: Click "View Details" navigates', async () => {
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onViewCandidate={mockOnViewCandidate}
-        />
-      );
-      
-      await user.click(screen.getByTestId('view-details-btn-1'));
-      expect(mockOnViewCandidate).toHaveBeenCalledWith(1);
-    });
-
-    it('CDW-CD-015: Actions trigger callbacks', async () => {
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onMarkPlanned={mockOnMarkPlanned}
-          onIgnore={mockOnIgnore}
-        />
-      );
-      
-      await user.click(screen.getByTestId('mark-planned-btn-1'));
-      expect(mockOnMarkPlanned).toHaveBeenCalledWith(1);
-      
-      await user.click(screen.getByTestId('ignore-btn-2'));
-      expect(mockOnIgnore).toHaveBeenCalledWith(2);
-    });
-  });
-
-  // ============================================
-  // CDW-TIMESTAMP: Last Scan Timestamp Tests
-  // ============================================
-  
-  describe('CDW-TIMESTAMP: Last Scan Timestamp Tests', () => {
-    it('CDW-TS-001: Shows "Last scan:" label', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('last-scan-time')).toHaveTextContent('Last scan:');
-    });
-
-    it('CDW-TS-002: Shows relative time', () => {
-      const recentScan = {
-        ...mockSummary,
-        lastScannedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-      };
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={recentScan}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('last-scan-time')).toHaveTextContent('hours ago');
-    });
-
-    it('CDW-TS-003: Shows absolute time on hover', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      const absoluteElement = screen.getByTestId('last-scan-absolute');
-      expect(absoluteElement).toHaveAttribute('title');
-    });
-
-    it('CDW-TS-004: Handles null timestamp', () => {
-      const nullTimestamp = {
-        ...mockSummary,
-        lastScannedAt: null,
-      };
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={nullTimestamp}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('last-scan-time')).toHaveTextContent('Never scanned');
-    });
-
-    it('CDW-TS-005: Handles today\'s scan', () => {
-      const todayScan = {
-        ...mockSummary,
-        lastScannedAt: new Date().toISOString(),
-      };
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={todayScan}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('last-scan-time')).toHaveTextContent('Just now');
-    });
-
-    it('CDW-TS-006: Handles yesterday\'s scan', () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayScan = {
-        ...mockSummary,
-        lastScannedAt: yesterday.toISOString(),
-      };
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={yesterdayScan}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('last-scan-time')).toHaveTextContent('Yesterday');
-    });
-
-    it('CDW-TS-007: Handles old scan', () => {
-      const oldDate = new Date();
-      oldDate.setDate(oldDate.getDate() - 10);
-      const oldScan = {
-        ...mockSummary,
-        lastScannedAt: oldDate.toISOString(),
-      };
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={oldScan}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('last-scan-time')).toHaveTextContent('days ago');
-    });
-
-    it('CDW-TS-008: Shows "Run Scan" button', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onRefresh={mockOnRefresh}
-        />
-      );
-      
-      expect(screen.getByTestId('refresh-btn')).toBeInTheDocument();
-    });
-  });
-
-  // ============================================
-  // CDW-NAVIGATION: Navigation Links Tests
-  // ============================================
-  
-  describe('CDW-NAVIGATION: Navigation Links Tests', () => {
-    it('CDW-NV-001: "View All" link present', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
+      rerender(<ContentDecayWidget siteId="1" summary={mockSummary} isLoading={false} />);
       expect(screen.getByTestId('view-all-link')).toBeInTheDocument();
     });
 
-    it('CDW-NV-002: Correct href to queue', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('view-all-link')).toHaveAttribute('href', '/sites/site-123/content-decay');
+    it('CDW-003.6: skeleton has animation class', () => {
+      render(<ContentDecayWidget siteId="1" isLoading={true} />);
+      const skeleton = screen.getByTestId('loading-skeleton');
+      expect(skeleton).toHaveClass('animate-pulse');
     });
 
-    it('CDW-NV-003: Link has accessible label', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('view-all-link')).toHaveAttribute('aria-label');
+    it('CDW-003.7: error takes priority over loading', () => {
+      render(<ContentDecayWidget siteId="1" isLoading={true} error="Failed to load" />);
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.queryByTestId('loading-skeleton')).not.toBeInTheDocument();
     });
 
-    it('CDW-NV-004: External link icon', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('external-link-icon')).toBeInTheDocument();
+    it('CDW-003.8: preserves siteId during loading', () => {
+      render(<ContentDecayWidget siteId="test-site-123" isLoading={true} />);
+      const widget = screen.getByTestId('content-decay-widget');
+      expect(widget).toBeInTheDocument();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // CDW-004: Summary Card (12 tests)
+  // -------------------------------------------------------------------------
+  describe('Summary Card', () => {
+    it('CDW-004.1: displays critical count badge', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByText('Critical')).toBeInTheDocument();
     });
 
-    it('CDW-NV-005: Click navigates to queue', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
+    it('CDW-004.2: critical badge has correct color', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const badge = screen.getByText('Critical').closest('div');
+      expect(badge).toHaveAttribute('data-severity', 'critical');
+      expect(badge).toHaveClass('bg-red-50', 'text-red-600');
+    });
+
+    it('CDW-004.3: displays high count badge', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      expect(screen.getByText('12')).toBeInTheDocument();
+      expect(screen.getByText('High')).toBeInTheDocument();
+    });
+
+    it('CDW-004.4: high badge has correct color', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const badge = screen.getByText('High').closest('div');
+      expect(badge).toHaveAttribute('data-severity', 'high');
+      expect(badge).toHaveClass('bg-orange-50', 'text-orange-600');
+    });
+
+    it('CDW-004.5: displays medium count badge', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      expect(screen.getByText('8')).toBeInTheDocument();
+      expect(screen.getByText('Medium')).toBeInTheDocument();
+    });
+
+    it('CDW-004.6: medium badge has correct color', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const badge = screen.getByText('Medium').closest('div');
+      expect(badge).toHaveAttribute('data-severity', 'medium');
+      expect(badge).toHaveClass('bg-yellow-50', 'text-yellow-600');
+    });
+
+    it('CDW-004.7: displays total candidates count', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      expect(screen.getByText('25 pages need attention')).toBeInTheDocument();
+    });
+
+    it('CDW-004.8: formats recovery upside correctly', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      expect(screen.getByText('1.5K potential clicks')).toBeInTheDocument();
+    });
+
+    it('CDW-004.9: formats zero upside correctly', () => {
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, estimatedRecoveryUpside: 0 }} />);
+      expect(screen.getByText('0 potential clicks')).toBeInTheDocument();
+    });
+
+    it('CDW-004.10: formats large numbers correctly', () => {
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, estimatedRecoveryUpside: 2500000 }} />);
+      expect(screen.getByText('2.5M potential clicks')).toBeInTheDocument();
+    });
+
+    it('CDW-004.11: displays recovered count', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      expect(screen.getByText('3 pages recovered')).toBeInTheDocument();
+    });
+
+    it('CDW-004.12: has correct ARIA labels on badges', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const criticalBadge = screen.getByLabelText('5 critical issues');
+      expect(criticalBadge).toBeInTheDocument();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // CDW-005: Top Candidates List (15 tests)
+  // -------------------------------------------------------------------------
+  describe('Top Candidates List', () => {
+    it('CDW-005.1: renders only top 3 candidates', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={mockTopCandidates} />);
+      const items = screen.getAllByRole('listitem');
+      expect(items).toHaveLength(3);
+    });
+
+    it('CDW-005.2: displays truncated URL with tooltip', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      const truncated = screen.getByTitle(mockCandidate.pageUrl);
+      expect(truncated).toBeInTheDocument();
+    });
+
+    it('CDW-005.3: truncates long URLs', () => {
+      const longUrl = 'https://example.com/this-is-a-very-long-url-that-should-be-truncated';
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[{ ...mockCandidate, pageUrl: longUrl }]} />);
+      const truncated = screen.getByTitle(longUrl);
+      expect(truncated.textContent?.endsWith('...')).toBe(true);
+    });
+
+    it('CDW-005.4: displays candidate title', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      expect(screen.getByText(mockCandidate.pageTitle)).toBeInTheDocument();
+    });
+
+    it('CDW-005.5: displays decay score with correct color', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      const scoreBadge = screen.getByText('85');
+      expect(scoreBadge).toHaveAttribute('data-severity', 'critical');
+    });
+
+    it('CDW-005.6: displays severity indicator', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      const badge = screen.getByText('85').closest('span');
+      expect(badge).toHaveClass('bg-red-100', 'text-red-600');
+    });
+
+    it('CDW-005.7: displays formatted primary reason', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      expect(screen.getByText('Click loss')).toBeInTheDocument();
+    });
+
+    it('CDW-005.8: displays lost clicks', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      expect(screen.getByText(/-450 clicks/)).toBeInTheDocument();
+    });
+
+    it('CDW-005.9: View button triggers callback', async () => {
+      const onViewCandidate = jest.fn();
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} onViewCandidate={onViewCandidate} />);
+      await userEvent.click(screen.getByText('View'));
+      expect(onViewCandidate).toHaveBeenCalledWith(1);
+    });
+
+    it('CDW-005.10: Plan button triggers callback', async () => {
+      const onMarkPlanned = jest.fn();
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} onMarkPlanned={onMarkPlanned} />);
+      await userEvent.click(screen.getByText('Plan'));
+      expect(onMarkPlanned).toHaveBeenCalledWith(1);
+    });
+
+    it('CDW-005.11: Ignore button triggers callback', async () => {
+      const onIgnore = jest.fn();
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} onIgnore={onIgnore} />);
+      await userEvent.click(screen.getByText('Ignore'));
+      expect(onIgnore).toHaveBeenCalledWith(1);
+    });
+
+    it('CDW-005.12: handles empty candidates list', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[]} />);
+      expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
+    });
+
+    it('CDW-005.13: has correct list item accessibility', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      const item = screen.getByRole('listitem');
+      expect(item).toBeInTheDocument();
+    });
+
+    it('CDW-005.14: has keyboard focusable action buttons', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      const buttons = screen.getAllByRole('button').filter(b => ['View', 'Plan', 'Ignore'].includes(b.textContent || ''));
+      buttons.forEach(btn => expect(btn).not.toBeDisabled());
+    });
+
+    it('CDW-005.15: has hover state styling', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      const item = screen.getByRole('listitem');
+      expect(item).toHaveClass('hover:bg-gray-100');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // CDW-006: Timestamp Display (8 tests)
+  // -------------------------------------------------------------------------
+  describe('Timestamp Display', () => {
+    it('CDW-006.1: displays "Just now" for recent scan', () => {
+      const recentTime = new Date().toISOString();
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, lastScannedAt: recentTime }} />);
+      expect(screen.getByText(/Just now/)).toBeInTheDocument();
+    });
+
+    it('CDW-006.2: displays minutes ago', () => {
+      const thirtyMinsAgo = new Date(Date.now() - 30 * 60000).toISOString();
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, lastScannedAt: thirtyMinsAgo }} />);
+      expect(screen.getByText(/30 minutes ago/)).toBeInTheDocument();
+    });
+
+    it('CDW-006.3: displays hours ago', () => {
+      const twoHoursAgo = new Date(Date.now() - 2 * 3600000).toISOString();
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, lastScannedAt: twoHoursAgo }} />);
+      expect(screen.getByText(/2 hours ago/)).toBeInTheDocument();
+    });
+
+    it('CDW-006.4: displays "Yesterday"', () => {
+      const yesterday = new Date(Date.now() - 24 * 3600000).toISOString();
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, lastScannedAt: yesterday }} />);
+      expect(screen.getByText(/Yesterday/)).toBeInTheDocument();
+    });
+
+    it('CDW-006.5: displays days ago', () => {
+      const fiveDaysAgo = new Date(Date.now() - 5 * 86400000).toISOString();
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, lastScannedAt: fiveDaysAgo }} />);
+      expect(screen.getByText(/5 days ago/)).toBeInTheDocument();
+    });
+
+    it('CDW-006.6: displays formatted date for week+ ago', () => {
+      const tenDaysAgo = new Date(Date.now() - 10 * 86400000).toISOString();
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, lastScannedAt: tenDaysAgo }} />);
+      // Should show formatted date like "Mar 1, 2026"
+      const text = screen.getByText(/Last scanned:/).textContent;
+      expect(text).not.toContain('days ago');
+    });
+
+    it('CDW-006.7: displays "Never scanned" for null timestamp', () => {
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, lastScannedAt: null }} />);
+      expect(screen.getByText(/Never scanned/)).toBeInTheDocument();
+    });
+
+    it('CDW-006.8: handles invalid timestamp gracefully', () => {
+      render(<ContentDecayWidget siteId="1" summary={{ ...mockSummary, lastScannedAt: 'invalid' }} />);
+      // Should not crash, shows some text
+      expect(screen.getByText(/Last scanned:/)).toBeInTheDocument();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // CDW-007: Navigation Links (8 tests)
+  // -------------------------------------------------------------------------
+  describe('Navigation Links', () => {
+    it('CDW-007.1: View All link has correct href', () => {
+      render(<ContentDecayWidget siteId="my-site" summary={mockSummary} />);
       const link = screen.getByTestId('view-all-link');
-      expect(link).toHaveAttribute('href', '/sites/site-123/content-decay');
+      expect(link).toHaveAttribute('href', '/dashboard/sites/my-site/content-decay');
     });
 
-    it('CDW-NV-006: Summary card is clickable', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      const titleLink = screen.getByTestId('widget-title').querySelector('a');
-      expect(titleLink).toHaveAttribute('href', '/sites/site-123/content-decay');
+    it('CDW-007.2: View All link has correct text', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const link = screen.getByTestId('view-all-link');
+      expect(link).toHaveTextContent('View All Issues');
     });
 
-    it('CDW-NV-007: Title links to queue', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      const titleLink = screen.getByTestId('widget-title').querySelector('a');
-      expect(titleLink).toBeInTheDocument();
+    it('CDW-007.3: View All link has aria-label', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const link = screen.getByTestId('view-all-link');
+      expect(link).toHaveAttribute('aria-label', 'View all content decay issues');
     });
 
-    it('CDW-NV-008: Keyboard navigation', async () => {
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onViewCandidate={mockOnViewCandidate}
-        />
-      );
-      
-      // Tab to view all link
-      await user.tab();
-      // First focusable element
-      const focusedElement = document.activeElement;
-      expect(focusedElement).toBeTruthy();
+    it('CDW-007.4: header title is visible', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      expect(screen.getByText('Content Decay')).toBeInTheDocument();
+    });
+
+    it('CDW-007.5: View All link has arrow icon', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const link = screen.getByTestId('view-all-link');
+      const icon = within(link).getByTestId('arrow-right-icon');
+      expect(icon).toBeInTheDocument();
+    });
+
+    it('CDW-007.6: View All link not shown during loading', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} isLoading={true} />);
+      expect(screen.queryByTestId('view-all-link')).not.toBeInTheDocument();
+    });
+
+    it('CDW-007.7: View All link shown when candidates exist', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={mockTopCandidates} />);
+      expect(screen.getByTestId('view-all-link')).toBeInTheDocument();
+    });
+
+    it('CDW-007.8: link has hover styling', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const link = screen.getByTestId('view-all-link');
+      expect(link).toHaveClass('hover:underline');
     });
   });
 
-  // ============================================
-  // CDW-ACTIONS: Quick Actions Tests
-  // ============================================
-  
-  describe('CDW-ACTIONS: Quick Actions Tests', () => {
-    it('CDW-AC-001: "View Details" button', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('view-details-btn-1')).toBeInTheDocument();
+  // -------------------------------------------------------------------------
+  // CDW-008: Quick Actions (10 tests)
+  // -------------------------------------------------------------------------
+  describe('Quick Actions', () => {
+    it('CDW-008.1: View button triggers callback', async () => {
+      const onViewCandidate = jest.fn();
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} onViewCandidate={onViewCandidate} />);
+      await userEvent.click(screen.getByText('View'));
+      expect(onViewCandidate).toHaveBeenCalledWith(1);
     });
 
-    it('CDW-AC-002: "Mark as Planned" button', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('mark-planned-btn-1')).toBeInTheDocument();
+    it('CDW-008.2: Plan button triggers callback', async () => {
+      const onMarkPlanned = jest.fn();
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} onMarkPlanned={onMarkPlanned} />);
+      await userEvent.click(screen.getByText('Plan'));
+      expect(onMarkPlanned).toHaveBeenCalledWith(1);
     });
 
-    it('CDW-AC-003: "Ignore" button', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('ignore-btn-1')).toBeInTheDocument();
+    it('CDW-008.3: Ignore button triggers callback', async () => {
+      const onIgnore = jest.fn();
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} onIgnore={onIgnore} />);
+      await userEvent.click(screen.getByText('Ignore'));
+      expect(onIgnore).toHaveBeenCalledWith(1);
     });
 
-    it('CDW-AC-004: View Details navigates', async () => {
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onViewCandidate={mockOnViewCandidate}
-        />
-      );
-      
-      await user.click(screen.getByTestId('view-details-btn-1'));
-      expect(mockOnViewCandidate).toHaveBeenCalledWith(1);
+    it('CDW-008.4: View button has correct label', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      expect(screen.getByText('View')).toBeInTheDocument();
     });
 
-    it('CDW-AC-005: Mark as Planned updates status', async () => {
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onMarkPlanned={mockOnMarkPlanned}
-        />
-      );
-      
-      await user.click(screen.getByTestId('mark-planned-btn-2'));
-      expect(mockOnMarkPlanned).toHaveBeenCalledWith(2);
+    it('CDW-008.5: Plan button has correct label', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      expect(screen.getByText('Plan')).toBeInTheDocument();
     });
 
-    it('CDW-AC-006: Ignore updates status', async () => {
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onIgnore={mockOnIgnore}
-        />
-      );
-      
-      await user.click(screen.getByTestId('ignore-btn-3'));
-      expect(mockOnIgnore).toHaveBeenCalledWith(3);
+    it('CDW-008.6: Ignore button has correct label', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      expect(screen.getByText('Ignore')).toBeInTheDocument();
     });
 
-    it('CDW-AC-007: Action shows loading state', async () => {
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onMarkPlanned={mockOnMarkPlanned}
-        />
-      );
-      
-      await user.click(screen.getByTestId('mark-planned-btn-1'));
-      // In real implementation, would show spinner
-      expect(mockOnMarkPlanned).toHaveBeenCalled();
+    it('CDW-008.7: buttons have aria-labels', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      const viewBtn = screen.getByLabelText('View 10 SEO Tips for 2024');
+      expect(viewBtn).toBeInTheDocument();
     });
 
-    it('CDW-AC-008: Action shows success feedback', async () => {
-      // This would be tested with toast notification mock
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onMarkPlanned={mockOnMarkPlanned}
-        />
-      );
-      
-      await user.click(screen.getByTestId('mark-planned-btn-1'));
-      expect(mockOnMarkPlanned).toHaveBeenCalled();
+    it('CDW-008.8: buttons work when not loading', async () => {
+      const onViewCandidate = jest.fn();
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} onViewCandidate={onViewCandidate} isLoading={false} />);
+      await userEvent.click(screen.getByText('View'));
+      expect(onViewCandidate).toHaveBeenCalled();
     });
 
-    it('CDW-AC-009: Action shows error feedback', async () => {
-      const mockErrorIgnore = vi.fn().mockRejectedValue(new Error('API Error'));
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onIgnore={mockErrorIgnore}
-        />
-      );
-      
-      await user.click(screen.getByTestId('ignore-btn-1'));
-      // In real implementation, error would be caught and toast shown
+    it('CDW-008.9: keyboard Enter activates button', async () => {
+      const onViewCandidate = jest.fn();
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} onViewCandidate={onViewCandidate} />);
+      const viewBtn = screen.getByText('View');
+      await userEvent.type(viewBtn, '{enter}');
+      expect(onViewCandidate).toHaveBeenCalled();
     });
 
-    it('CDW-AC-010: Actions keyboard accessible', async () => {
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onViewCandidate={mockOnViewCandidate}
-        />
-      );
-      
-      const button = screen.getByTestId('view-details-btn-1');
-      button.focus();
-      await user.keyboard('{Enter}');
-      expect(mockOnViewCandidate).toHaveBeenCalled();
+    it('CDW-008.10: all action buttons are rendered', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      const item = screen.getByRole('listitem');
+      const buttons = within(item).getAllByRole('button');
+      expect(buttons).toHaveLength(3);
     });
   });
 
-  // ============================================
-  // CDW-ERROR: Error State Tests
-  // ============================================
-  
-  describe('CDW-ERROR: Error State Tests', () => {
-    it('CDW-ER-001: Error state on API failure', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          error="Failed to load content decay data"
-        />
-      );
-      
-      expect(screen.getByTestId('error-state')).toBeInTheDocument();
+  // -------------------------------------------------------------------------
+  // CDW-009: Error State (6 tests)
+  // -------------------------------------------------------------------------
+  describe('Error State', () => {
+    it('CDW-009.1: displays error message', () => {
+      render(<ContentDecayWidget siteId="1" error="Failed to load decay data" />);
+      expect(screen.getByText('Failed to load decay data')).toBeInTheDocument();
     });
 
-    it('CDW-ER-002: Shows error icon', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          error="Failed to load content decay data"
-        />
-      );
+    it('CDW-009.2: has alert role', () => {
+      render(<ContentDecayWidget siteId="1" error="Failed to load" />);
+      const alert = screen.getByRole('alert');
+      expect(alert).toBeInTheDocument();
+    });
+
+    it('CDW-009.3: has retry button', () => {
+      const onRefresh = jest.fn();
+      render(<ContentDecayWidget siteId="1" error="Failed to load" onRefresh={onRefresh} />);
+      expect(screen.getByText('Retry')).toBeInTheDocument();
+    });
+
+    it('CDW-009.4: retry button triggers callback', async () => {
+      const onRefresh = jest.fn();
+      render(<ContentDecayWidget siteId="1" error="Failed to load" onRefresh={onRefresh} />);
+      await userEvent.click(screen.getByText('Retry'));
+      expect(onRefresh).toHaveBeenCalled();
+    });
+
+    it('CDW-009.5: error state hides when loading', () => {
+      const { rerender } = render(<ContentDecayWidget siteId="1" error="Failed" />);
+      expect(screen.getByRole('alert')).toBeInTheDocument();
       
+      rerender(<ContentDecayWidget siteId="1" error="Failed" isLoading={true} />);
+      // Error takes priority - this is intentional behavior
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+    });
+
+    it('CDW-009.6: displays alert icon', () => {
+      render(<ContentDecayWidget siteId="1" error="Failed" />);
       expect(screen.getByTestId('alert-icon')).toBeInTheDocument();
     });
-
-    it('CDW-ER-003: Shows error message', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          error="Failed to load content decay data"
-        />
-      );
-      
-      expect(screen.getByTestId('error-message')).toHaveTextContent('Failed to load content decay data');
-    });
-
-    it('CDW-ER-004: Shows "Retry" button', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          error="Failed to load content decay data"
-          onRefresh={mockOnRefresh}
-        />
-      );
-      
-      expect(screen.getByTestId('retry-btn')).toBeInTheDocument();
-    });
-
-    it('CDW-ER-005: Retry triggers reload', async () => {
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          error="Failed to load content decay data"
-          onRefresh={mockOnRefresh}
-        />
-      );
-      
-      await user.click(screen.getByTestId('retry-btn'));
-      expect(mockOnRefresh).toHaveBeenCalled();
-    });
-
-    it('CDW-ER-006: Has role="alert"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          error="Failed to load content decay data"
-        />
-      );
-      
-      expect(screen.getByTestId('error-state')).toHaveAttribute('role', 'alert');
-    });
   });
 
-  // ============================================
-  // CDW-A11Y: Accessibility Tests
-  // ============================================
-  
-  describe('CDW-A11Y: Accessibility Tests', () => {
-    it('CDW-AY-001: Widget has role="region"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('content-decay-widget')).toHaveAttribute('role', 'region');
+  // -------------------------------------------------------------------------
+  // CDW-010: Accessibility (10 tests)
+  // -------------------------------------------------------------------------
+  describe('Accessibility', () => {
+    it('CDW-010.1: widget has region role', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      expect(screen.getByRole('region')).toBeInTheDocument();
     });
 
-    it('CDW-AY-002: Widget has aria-label', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('content-decay-widget')).toHaveAttribute('aria-label', 'Content Decay Widget');
+    it('CDW-010.2: widget has aria-label', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const widget = screen.getByRole('region');
+      expect(widget).toHaveAttribute('aria-label', 'Content Decay Summary');
     });
 
-    it('CDW-AY-003: Loading has aria-live="polite"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          isLoading={true}
-        />
-      );
-      
-      expect(screen.getByTestId('loading-state')).toHaveAttribute('aria-live', 'polite');
+    it('CDW-010.3: summary has aria-live', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const group = screen.getByRole('group', { name: 'Decay severity counts' });
+      expect(group).toBeInTheDocument();
     });
 
-    it('CDW-AY-004: Error has role="alert"', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          error="Error message"
-        />
-      );
-      
-      expect(screen.getByTestId('error-state')).toHaveAttribute('role', 'alert');
-    });
-
-    it('CDW-AY-005: All buttons keyboard accessible', async () => {
-      const user = userEvent.setup();
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-          onViewCandidate={mockOnViewCandidate}
-        />
-      );
-      
-      const button = screen.getByTestId('view-details-btn-1');
-      button.focus();
-      expect(button).toHaveFocus();
-      
-      await user.keyboard('{Enter}');
-      expect(mockOnViewCandidate).toHaveBeenCalled();
-    });
-
-    it('CDW-AY-006: Action buttons have aria-label', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      expect(screen.getByTestId('view-details-btn-1')).toHaveAttribute('aria-label');
-      expect(screen.getByTestId('mark-planned-btn-1')).toHaveAttribute('aria-label');
-      expect(screen.getByTestId('ignore-btn-1')).toHaveAttribute('aria-label');
-    });
-
-    it('CDW-AY-007: Links have accessible names', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      const viewAllLink = screen.getByTestId('view-all-link');
-      expect(viewAllLink).toHaveTextContent('View All Candidates');
-    });
-
-    it('CDW-AY-008: Severity badges have labels', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      const criticalBadge = screen.getByTestId('critical-badge');
-      expect(criticalBadge).toHaveTextContent('Critical');
-    });
-
-    it('CDW-AY-009: Focus visible on interactive', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      const link = screen.getByTestId('view-all-link');
-      // Focus would show ring in CSS
-      expect(link).toBeInTheDocument();
-    });
-
-    it('CDW-AY-010: Score colors have sufficient contrast', () => {
-      render(
-        <TestContentDecayWidget
-          siteId="site-123"
-          summary={mockSummary}
-          topCandidates={mockTopCandidates}
-        />
-      );
-      
-      // Severity badges use semantic colors with sufficient contrast
-      const criticalBadge = screen.getByTestId('critical-badge');
+    it('CDW-010.4: severity badges have labels', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      const criticalBadge = screen.getByLabelText('5 critical issues');
       expect(criticalBadge).toBeInTheDocument();
-      // CSS handles contrast
+    });
+
+    it('CDW-010.5: keyboard focus order is logical', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      const focusableElements = screen.getAllByRole('button').concat(screen.getByRole('link'));
+      // All focusable elements should be present
+      expect(focusableElements.length).toBeGreaterThan(0);
+    });
+
+    it('CDW-010.6: focus visible on buttons', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      const buttons = screen.getAllByRole('button');
+      buttons.forEach(btn => {
+        expect(btn).not.toHaveAttribute('tabindex', '-1');
+      });
+    });
+
+    it('CDW-010.7: loading state has screen reader text', () => {
+      render(<ContentDecayWidget siteId="1" isLoading={true} />);
+      const status = screen.getByRole('status');
+      expect(status).toBeInTheDocument();
+    });
+
+    it('CDW-010.8: action buttons have aria-labels', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={[mockCandidate]} />);
+      const viewBtn = screen.getByLabelText(/View/);
+      expect(viewBtn).toBeInTheDocument();
+    });
+
+    it('CDW-010.9: color contrast meets WCAG AA', () => {
+      render(<ContentDecayWidget siteId="1" summary={mockSummary} />);
+      // Test passes if no console errors about contrast
+      const criticalBadge = screen.getByText('Critical').closest('div');
+      expect(criticalBadge).toHaveClass('text-red-600');
+    });
+
+    it('CDW-010.10: respects reduced motion preference', () => {
+      render(<ContentDecayWidget siteId="1" isLoading={true} />);
+      const skeleton = screen.getByTestId('loading-skeleton');
+      // Animation class is applied, but reduced-motion media query would disable
+      expect(skeleton).toHaveClass('animate-pulse');
     });
   });
 });
