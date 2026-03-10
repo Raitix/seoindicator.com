@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\Site;
 use App\Models\BusinessLocation;
 use App\Services\LocalSEO\Contracts\BusinessLocationServiceInterface;
+use App\Services\LocalSEO\Contracts\GBPInsightsServiceInterface;
+use App\Services\LocalSEO\Contracts\GBPReviewsServiceInterface;
 use App\Services\LocalSEO\Contracts\GoogleOAuthServiceInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -103,6 +105,14 @@ class BusinessLocationControllerTest extends TestCase
             $mock->shouldReceive('validateState')->andReturnUsing(function ($state) {
                 return $state === 'test-state';
             });
+        });
+
+        $this->mock(GBPInsightsServiceInterface::class, function ($mock) {
+            $mock->shouldReceive('syncInsights')->andReturn('insights-sync-job-1');
+        });
+
+        $this->mock(GBPReviewsServiceInterface::class, function ($mock) {
+            $mock->shouldReceive('syncReviews')->andReturn('reviews-sync-job-1');
         });
     }
 
@@ -209,6 +219,22 @@ class BusinessLocationControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
+    /** @test RR-003A */
+    public function post_sync_location_route_exists(): void
+    {
+        $user = $this->mockUser();
+        $location = $this->mockLocation([
+            'user_id' => $user->id,
+            'is_gbp_connected' => true,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson("/api/v1/locations/{$location->id}/sync");
+
+        $response->assertStatus(202);
+    }
+
     /** @test RR-004 */
     public function put_update_location_route_exists(): void
     {
@@ -283,6 +309,7 @@ class BusinessLocationControllerTest extends TestCase
             'locations.index',
             'locations.store',
             'locations.show',
+            'locations.sync',
             'locations.update',
             'locations.destroy',
             'locations.connect-gbp',
@@ -342,6 +369,16 @@ class BusinessLocationControllerTest extends TestCase
         $location = $this->mockLocation();
 
         $response = $this->getJson("/api/v1/locations/{$location->id}");
+
+        $response->assertStatus(401);
+    }
+
+    /** @test AUTH-003A */
+    public function unauthenticated_post_sync_returns_401(): void
+    {
+        $location = $this->mockLocation(['is_gbp_connected' => true]);
+
+        $response = $this->postJson("/api/v1/locations/{$location->id}/sync");
 
         $response->assertStatus(401);
     }
@@ -448,6 +485,24 @@ class BusinessLocationControllerTest extends TestCase
         $response = $this->getJson("/api/v1/locations/{$location->id}");
 
         $response->assertStatus(200);
+    }
+
+    /** @test AUTH-014A */
+    public function authenticated_post_sync_returns_202(): void
+    {
+        $user = $this->mockUser();
+        $location = $this->mockLocation([
+            'user_id' => $user->id,
+            'is_gbp_connected' => true,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson("/api/v1/locations/{$location->id}/sync");
+
+        $response->assertStatus(202)
+            ->assertJsonPath('data.insights_job_id', 'insights-sync-job-1')
+            ->assertJsonPath('data.reviews_job_id', 'reviews-sync-job-1');
     }
 
     /** @test AUTH-015 */
@@ -593,6 +648,56 @@ class BusinessLocationControllerTest extends TestCase
         $response = $this->getJson("/api/v1/locations/{$location->id}");
 
         $response->assertStatus(403);
+    }
+
+    /** @test AUTHZ-006A */
+    public function owner_can_trigger_dashboard_sync(): void
+    {
+        $user = $this->mockUser();
+        $location = $this->mockLocation([
+            'user_id' => $user->id,
+            'is_gbp_connected' => true,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson("/api/v1/locations/{$location->id}/sync");
+
+        $response->assertStatus(202);
+    }
+
+    /** @test AUTHZ-006B */
+    public function non_owner_cannot_trigger_dashboard_sync(): void
+    {
+        $owner = $this->mockUser();
+        $otherUser = $this->mockUser(['email' => 'other@example.com']);
+        $location = $this->mockLocation([
+            'user_id' => $owner->id,
+            'is_gbp_connected' => true,
+        ]);
+
+        Sanctum::actingAs($otherUser);
+
+        $response = $this->postJson("/api/v1/locations/{$location->id}/sync");
+
+        $response->assertStatus(403);
+    }
+
+    /** @test AUTHZ-006C */
+    public function disconnected_location_sync_returns_409(): void
+    {
+        $user = $this->mockUser();
+        $location = $this->mockLocation([
+            'user_id' => $user->id,
+            'is_gbp_connected' => false,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson("/api/v1/locations/{$location->id}/sync");
+
+        $response->assertStatus(409)
+            ->assertJsonPath('message', 'Google Business Profile is not connected for this location.');
     }
 
     /** @test AUTHZ-007 */
@@ -1232,6 +1337,24 @@ class BusinessLocationControllerTest extends TestCase
                     'review_stats',
                 ],
             ]);
+    }
+
+    /** @test SHOW-004A */
+    public function show_handles_null_settings_without_error(): void
+    {
+        $user = $this->mockUser();
+        $location = $this->mockLocation([
+            'user_id' => $user->id,
+            'settings' => null,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson("/api/v1/locations/{$location->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.site_id', $location->site_id)
+            ->assertJsonPath('data.hours', null);
     }
 
     /** @test SHOW-007 */

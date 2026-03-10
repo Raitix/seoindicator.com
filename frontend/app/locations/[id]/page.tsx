@@ -1,4 +1,7 @@
+"use client";
+
 import { Suspense } from "react";
+import { useParams } from "next/navigation";
 
 import { LocationDashboardPage } from "@/components/local/LocationDashboardPage";
 
@@ -10,22 +13,16 @@ function LocationDashboardFallback() {
   );
 }
 
-export function generateStaticParams(): Array<{ id: string }> {
-  return [{ id: "preview" }];
-}
-
-export default async function StandaloneLocationDashboardPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
+export default function StandaloneLocationDashboardPage() {
+  const params = useParams<{ id?: string | string[] }>();
+  const rawId = params.id;
+  const locationId = Array.isArray(rawId) ? rawId[0] : rawId ?? "preview";
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-7xl">
         <Suspense fallback={<LocationDashboardFallback />}>
-          <LocationDashboardPage locationId={id} />
+          <LocationDashboardPage locationId={locationId} />
         </Suspense>
       </div>
     </main>

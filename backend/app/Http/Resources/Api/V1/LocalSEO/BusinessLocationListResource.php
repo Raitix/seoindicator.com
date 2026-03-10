@@ -22,6 +22,7 @@ class BusinessLocationListResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'site_id' => $this->site_id,
             'name' => $this->name,
             'address' => $this->address,
             'phone' => $this->phone,

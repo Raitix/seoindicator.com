@@ -3,6 +3,8 @@
 import { useCallback } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 
+import { buildApiUrl } from "@/lib/api/base-url";
+import { getStoredAuthToken } from "@/lib/api/auth";
 import {
   normalizeAlertSummary,
   normalizeCompetitors,
@@ -22,14 +24,37 @@ import type {
   ReviewStats,
 } from "@/lib/types/location-dashboard";
 
-const API_BASE = "/api/v1";
+const buildRequestHeaders = (headers?: HeadersInit, includeJsonContentType = false) => {
+  const nextHeaders: Record<string, string> = Array.isArray(headers)
+    ? Object.fromEntries(headers)
+    : typeof Headers !== "undefined" && headers instanceof Headers
+      ? Object.fromEntries(headers.entries())
+      : { ...((headers as Record<string, string> | undefined) ?? {}) };
+
+  if (!nextHeaders.Accept) {
+    nextHeaders.Accept = "application/json";
+  }
+
+  if (includeJsonContentType && !nextHeaders["Content-Type"]) {
+    nextHeaders["Content-Type"] = "application/json";
+  }
+
+  const token = getStoredAuthToken();
+  if (token && !nextHeaders.Authorization) {
+    nextHeaders.Authorization = `Bearer ${token}`;
+  }
+
+  return nextHeaders;
+};
+
+const buildRequestInit = (init: RequestInit = {}, includeJsonContentType = false): RequestInit => ({
+  ...init,
+  credentials: "include",
+  headers: buildRequestHeaders(init.headers, includeJsonContentType),
+});
 
 const fetchJson = async (url: string) => {
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
+  const response = await fetch(url, buildRequestInit());
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -69,7 +94,7 @@ const useDashboardResource = <T>(
 };
 
 export function useDashboardLocation(locationId?: string | number) {
-  const key = locationId ? `${API_BASE}/locations/${locationId}` : null;
+  const key = locationId ? buildApiUrl(`/locations/${locationId}`) : null;
   const state = useDashboardResource<LocationDashboardLocation>(key, normalizeDashboardLocation);
 
   return {
@@ -81,7 +106,7 @@ export function useDashboardLocation(locationId?: string | number) {
 }
 
 export function useLocationInsights(locationId?: string | number) {
-  const key = locationId ? `${API_BASE}/locations/${locationId}/insights` : null;
+  const key = locationId ? buildApiUrl(`/locations/${locationId}/insights`) : null;
   const state = useDashboardResource<GBPInsights>(key, normalizeGBPInsights);
 
   return {
@@ -93,7 +118,7 @@ export function useLocationInsights(locationId?: string | number) {
 }
 
 export function useLocationReviewStats(locationId?: string | number) {
-  const key = locationId ? `${API_BASE}/locations/${locationId}/reviews/stats` : null;
+  const key = locationId ? buildApiUrl(`/locations/${locationId}/reviews/stats`) : null;
   const state = useDashboardResource<ReviewStats>(key, normalizeReviewStats);
 
   return {
@@ -105,7 +130,7 @@ export function useLocationReviewStats(locationId?: string | number) {
 }
 
 export function useLocationReviews(locationId?: string | number) {
-  const key = locationId ? `${API_BASE}/locations/${locationId}/reviews?per_page=3` : null;
+  const key = locationId ? buildApiUrl(`/locations/${locationId}/reviews?per_page=3`) : null;
   const state = useDashboardResource<ReviewPreview[]>(key, normalizeReviewList);
 
   return {
@@ -117,7 +142,7 @@ export function useLocationReviews(locationId?: string | number) {
 }
 
 export function useLocationRankings(locationId?: string | number) {
-  const key = locationId ? `${API_BASE}/locations/${locationId}/rankings` : null;
+  const key = locationId ? buildApiUrl(`/locations/${locationId}/rankings`) : null;
   const state = useDashboardResource<LocalRankings>(key, normalizeRankings);
 
   return {
@@ -129,7 +154,7 @@ export function useLocationRankings(locationId?: string | number) {
 }
 
 export function useLocationAlerts(locationId?: string | number) {
-  const key = locationId ? `${API_BASE}/locations/${locationId}/alerts?limit=3` : null;
+  const key = locationId ? buildApiUrl(`/locations/${locationId}/alerts?limit=3`) : null;
   const state = useDashboardResource<AlertSummary>(key, normalizeAlertSummary);
 
   return {
@@ -141,7 +166,7 @@ export function useLocationAlerts(locationId?: string | number) {
 }
 
 export function useLocationCompetitors(locationId?: string | number) {
-  const key = locationId ? `${API_BASE}/locations/${locationId}/competitors?limit=3` : null;
+  const key = locationId ? buildApiUrl(`/locations/${locationId}/competitors?limit=3`) : null;
   const state = useDashboardResource<CompetitorPreview[]>(key, normalizeCompetitors);
 
   return {
@@ -170,14 +195,16 @@ export function useLocationSync(locationId?: string | number) {
       throw new Error("Location ID is required to refresh dashboard data");
     }
 
-    const response = await fetch(`${API_BASE}/locations/${locationId}/sync`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
-    });
+    const response = await fetch(
+      buildApiUrl(`/locations/${locationId}/sync`),
+      buildRequestInit(
+        {
+          method: "POST",
+          body: JSON.stringify({}),
+        },
+        true
+      )
+    );
 
     if (!response.ok) {
       const body = await response.json().catch(() => null);
