@@ -8,6 +8,7 @@
  * Includes validation, geocoding, and API integration tests.
  */
 
+import * as React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -81,6 +82,8 @@ const MockLocationForm = ({
   onSubmit?: (data: any) => void;
   isLoading?: boolean;
 }) => {
+  const submitLockedRef = React.useRef(false);
+
   if (!isOpen) return null;
 
   return (
@@ -108,7 +111,19 @@ const MockLocationForm = ({
         </div>
 
         {/* Form */}
-        <form data-testid="location-form" onSubmit={(e) => { e.preventDefault(); onSubmit?.({}); }}>
+        <form
+          data-testid="location-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+
+            if (isLoading || submitLockedRef.current) {
+              return;
+            }
+
+            submitLockedRef.current = true;
+            onSubmit?.({});
+          }}
+        >
           {/* Name Field */}
           <div className="mb-4">
             <label htmlFor="name" data-testid="name-label" className="block text-sm font-medium mb-1">
@@ -220,9 +235,9 @@ const MockLocationForm = ({
               type="submit"
               data-testid="submit-btn"
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-              disabled={isLoading}
+              disabled={isLoading || submitLockedRef.current}
             >
-              {isLoading ? (
+              {isLoading || submitLockedRef.current ? (
                 <>
                   <span data-testid="loader-icon" className="animate-spin">Loader</span>
                   Saving...

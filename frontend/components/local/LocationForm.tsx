@@ -138,6 +138,7 @@ export function LocationForm({
   const [isGeocoding, setIsGeocoding] = React.useState(false);
   const [geocodeError, setGeocodeError] = React.useState<string | null>(null);
   const [addressDirtySinceGeocode, setAddressDirtySinceGeocode] = React.useState(false);
+  const [isSubmitLocked, setIsSubmitLocked] = React.useState(false);
   const submissionGuardRef = React.useRef(false);
 
   const {
@@ -165,6 +166,7 @@ export function LocationForm({
     setLastGeocodedAddress(location?.address?.trim() ?? "");
     setGeocodeError(null);
     setAddressDirtySinceGeocode(false);
+    setIsSubmitLocked(false);
     submissionGuardRef.current = false;
   }, [location, open, reset]);
 
@@ -233,11 +235,13 @@ export function LocationForm({
   };
 
   const submitHandler = handleSubmit(async (values) => {
-    if (submissionGuardRef.current || isSubmitting) {
+    if (submissionGuardRef.current || isSubmitting || isSubmitLocked) {
       return;
     }
 
     submissionGuardRef.current = true;
+    setIsSubmitLocked(true);
+    let shouldUnlock = true;
 
     try {
       const trimmedAddress = values.address.trim();
@@ -261,8 +265,13 @@ export function LocationForm({
         latitude: nextCoordinates?.latitude ?? null,
         longitude: nextCoordinates?.longitude ?? null,
       });
+
+      shouldUnlock = false;
     } finally {
-      submissionGuardRef.current = false;
+      if (shouldUnlock) {
+        submissionGuardRef.current = false;
+        setIsSubmitLocked(false);
+      }
     }
   });
 
@@ -420,9 +429,9 @@ export function LocationForm({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || isGeocoding}>
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-              {isSubmitting ? "Saving..." : mode === "add" ? "Add location" : "Save changes"}
+            <Button type="submit" disabled={isSubmitting || isGeocoding || isSubmitLocked}>
+              {isSubmitting || isSubmitLocked ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+              {isSubmitting || isSubmitLocked ? "Saving..." : mode === "add" ? "Add location" : "Save changes"}
             </Button>
           </DialogFooter>
         </form>

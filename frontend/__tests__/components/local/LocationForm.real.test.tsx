@@ -6,11 +6,13 @@ import "@testing-library/jest-dom";
 
 import { LocationForm } from "@/components/local/LocationForm";
 
-const mockGeocodeAddress = vi.fn();
-const mockToast = {
-  success: vi.fn(),
-  error: vi.fn(),
-};
+const { mockGeocodeAddress, mockToast } = vi.hoisted(() => ({
+  mockGeocodeAddress: vi.fn(),
+  mockToast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
 vi.mock("@/lib/api/geocode", () => ({
   geocodeAddress: (address: string) => mockGeocodeAddress(address),
