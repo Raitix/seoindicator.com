@@ -1,7 +1,7 @@
 # TASK-35-4: Local SEO Models
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -165,3 +165,17 @@ Create Eloquent models for local SEO tracking: LocalRanking, LocalCompetitor, an
 - Non-blocking note: the targeted PHPUnit run still emits the existing PHPUnit 12 doc-comment metadata deprecation warnings from the prewritten test files; no task-specific failures or documentation drift were found.
 - **Status Change:** `Testing Locally` -> `To Deploy`
 - **Next Agent:** DevOps can deploy without additional local remediation for this task.
+
+### DevOps Session (2026-03-10 18:10 GMT+2)
+- Cleared the stale completion marker, refreshed the task lock, isolated the TASK-35-4 rollout onto a clean worktree from `origin/main`, and cherry-picked only the task-specific implementation/validation commits before deployment.
+- Final pre-deploy sanity rerun in the clean worktree passed:
+  - `php artisan test tests/Unit/Models/LocalRankingTest.php tests/Unit/Models/LocalCompetitorTest.php tests/Unit/Models/LocalSEOAlertTest.php`
+  - Result: **152 tests passed / 244 assertions**
+- Pushed the deploy candidate to `origin/main` at commit `b40acea0de299919a1d4a00c61d40e810c4d20eb` and executed the production rollout with `scripts/deploy-prod.ps1 -Trigger manual -GitRef origin/main -Branch main`.
+- Deployment succeeded end-to-end. Evidence:
+  - Deployment log: `C:\Users\Raitis\.openclaw\logs\deployments\20260310T160753Z-ed1559f2.json`
+  - Deploy branch/worktree: `devops/task-35-4-20260310`
+  - Production smoke check: homepage ✅, login page ✅
+- Non-blocking deploy notes: existing static-export/header warnings and the audit OG image fetch warning reappeared during the frontend build, but the build completed successfully and the deployment log is `success`.
+- **Status Change:** `To Deploy` -> `In Deployment` -> `To Test Prod`
+- **Next Agent:** ProdTester should verify the Local SEO model-backed production surfaces and any related authenticated Local SEO API flows now that the rollout is live.
