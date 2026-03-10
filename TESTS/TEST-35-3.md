@@ -435,6 +435,22 @@ php artisan test --coverage --filter="GBP"
 - Documentation drift discovered while validating: `DOCUMENTATION.md` still describes TASK-35-3 as not implemented / anonymous-model backed. Created follow-up `TASK-35-28` per workflow rule.
 - Status recommendation: `To Deploy`
 
+### ProdTester Session (2026-03-10 18:11 GMT+2)
+- Production evidence captured in `PROJECT-SEOINDICATOR/temp/task353-prod-validation-20260310T161124Z.json` using a disposable server-side fixture plus authenticated HTTPS probes against `https://seoindicator.com`.
+- Direct production model smoke checks passed:
+  - `BusinessLocation` → `reviews()/insights()/posts()` returned `3 / 2 / 2`
+  - `GBPInsight::forLocation()->forDateRange()` returned `2` rows and `calculateTotalActions()` returned `21`
+  - `GBPReview` scopes split correctly (`positive=1`, `neutral=1`, `negative=1`, `unresponded=2`)
+  - `GBPPost` scopes split correctly (`published=1`, `scheduled=1`) and `post_type_label=Event`
+- Live review-backed API flows also passed on production:
+  - authenticated user fetch ✅
+  - reviews listing/filtering ✅
+  - review stats aggregation ✅
+  - owner response posting + reflected response-rate change (`33.3` → `66.7`) ✅
+- Downstream note outside TASK-35-3 acceptance: the production insights endpoint still returns `500` because `App\Services\LocalSEO\GBPInsightsService` is querying legacy columns (`date`, `queries`, `actions`) rather than the deployed `gbp_insights` schema. This maps to the still-open TASK-35-9 adapter/service work, not a failure of the dedicated model layer validated here.
+- Fixture cleanup completed successfully after validation.
+- Status recommendation: `To Document`
+
 ---
 
 *Created: 2026-03-08*
