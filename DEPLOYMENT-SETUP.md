@@ -1,254 +1,279 @@
 # DEPLOYMENT-SETUP.md — Production Deployment Guide
 
-**Target:** Hostinger Shared Hosting (seoindicator.com)
+**Target:** Hostinger Shared Hosting (`seoindicator.com`)
+**Current deployment model:** local / self-hosted deployment from the development machine
 
 ---
 
 ## Overview
 
-This document describes the automated deployment pipeline for SEOIndicator.
+SEOIndicator no longer deploys through GitHub-hosted Actions.
 
-### Deployment Flow
+The production pipeline is now:
+
+```text
+Git push to main
+  → local post-push hook (or manual trigger)
+  → local frontend build in temp worktree
+  → SSH/SFTP deployment to production
+  → backend composer/migrations/cache steps on server
+  → local Playwright smoke checks against production
+  → structured deployment log written locally
 ```
-GitHub Push → GitHub Actions → Build → Test → SSH Deploy → git pull → composer install
+
+This keeps the repository private and removes dependence on GitHub Actions minute quotas.
+
+---
+
+## Deployment Entry Points
+
+### Automatic trigger
+- `.githooks/post-push`
+- fires after pushes to `main`
+- calls `scripts/deploy-prod.ps1`
+
+### Manual trigger
+- `scripts/deploy-prod.ps1`
+- Workflow Control UI → **Deploy** tab → **Run Deploy**
+
+### Hook installation
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\install-git-hooks.ps1
+```
+
+That command sets:
+
+```bash
+git config --local core.hooksPath .githooks
 ```
 
 ---
 
-## Environments
+## Deployment Scripts
 
-| Environment | Purpose | URL |
-|-------------|---------|-----|
-| **Local** | Development | http://localhost:3000 (frontend), http://localhost:8000 (backend) |
-| **Production** | Live site | https://seoindicator.com |
-
----
-
-## Credentials
-
-**All credentials stored in:** `~/.openclaw/secrets/seoindicator.env`
-
-| Service | Local | Production |
-|---------|-------|------------|
-| MySQL | 127.0.0.1 (XAMPP) | srv1924.hstgr.io |
-| SSH | — | 45.84.206.11:65002 |
-
-**Also includes:**
-- Vercel AI Gateway API key
-- OpenRouter.ai API key
-- Google PageSpeed Insights API key
-- GitHub PAT for private repo access
-- Deploy key for migrations
+| File | Purpose |
+|------|---------|
+| `scripts/deploy-prod.ps1` | PowerShell entrypoint for deployment |
+| `scripts/deploy_prod.py` | Main deployment engine |
+| `.githooks/post-push` | Auto-deploy hook for `main` pushes |
+| `scripts/install-git-hooks.ps1` | Configures git hooks path |
+| `frontend/scripts/prod-smoke-check.mjs` | Local Playwright-based production smoke verification |
 
 ---
 
-## Deployment Strategy
+## Deployment Logs
 
-### 1. Frontend Deployment (Next.js → Static Export)
+Structured deployment logs are written to:
 
-Since production is on shared hosting (no Node.js runtime), we use static export:
-
-```bash
-# Build static files
-cd frontend
-npm run build
-# Outputs to ./out (configured in next.config.ts)
+```text
+C:\Users\Raitis\.openclaw\logs\deployments
 ```
 
-**Deployed to:** `public_html/` via SCP
+Each deployment creates a JSON log containing:
+- deployment id
+- trigger source
+- git ref / commit
+- start / end times
+- status
+- per-step status and output
+- summary text
 
-### 2. Backend Deployment (Laravel PHP)
-
-Uses SSH + git pull + composer install:
-
-1. SSH into server
-2. Configure git remote with PAT
-3. `git fetch origin`
-4. `git reset --hard origin/main`
-5. `composer install --no-dev`
-
-**No more FTP timeout issues!**
-
-### 3. Database Migrations
-
-Migrations run automatically during deployment:
-
-```bash
-php artisan migrate --force
-```
+The Workflow Control UI reads these logs and shows the most recent deployment history.
 
 ---
 
-## GitHub Actions Workflow
+## Workflow Control Integration
 
-### Workflow File
-`.github/workflows/deploy.yml`
+The Workflow Control app (`PROJECT-CONTROL`) includes a **Deploy** tab between **Agents** and **Stats**.
 
-### Triggers
-- **Push to `main`** → Full deployment
-- **Pull Request** → Build & test only (no deploy)
+### Available deploy features
+- show latest deployment history (up to 100 runs)
+- inspect step-by-step deployment details
+- show running / success / failed state
+- manually trigger a deployment of `origin/main`
 
-### Required GitHub Secrets
-
-| Secret | Description |
-|--------|-------------|
-| `SSH_HOST` | SSH server hostname (45.84.206.11) |
-| `SSH_PORT` | SSH port (65002) |
-| `SSH_USERNAME` | SSH username (u949031532) |
-| `SSH_PASSWORD` | SSH password |
-| `SSH_DEPLOY_PATH` | Deploy path (/home/u949031532/domains/seoindicator.com/public_html) |
-| `GH_PAT` | GitHub PAT for private repo access |
-| `DB_HOST` | Database hostname |
-| `DB_DATABASE` | Database name |
-| `DB_USERNAME` | Database username |
-| `DB_PASSWORD` | Database password |
-| `DEPLOY_KEY` | Secret key for migration endpoint |
+### API endpoints used by the UI
+- `GET /api/deployments`
+- `GET /api/deployments/:id`
+- `POST /api/deployments/run`
 
 ---
 
-## Manual Deployment
+## Secrets & Credentials
 
-### SSH Connection
-```bash
-ssh -p 65002 u949031532@45.84.206.11
+All deployment secrets are stored locally in:
+
+```text
+~/.openclaw/secrets/seoindicator.env
 ```
 
-### Manual git pull
-```bash
-cd /home/u949031532/domains/seoindicator.com/public_html
-git fetch origin
-git reset --hard origin/main
-cd backend
-composer install --no-dev
+### Required values
+| Secret | Purpose |
+|--------|---------|
+| `SSH_HOST` | Production SSH host |
+| `SSH_PORT` | Production SSH port |
+| `SSH_USERNAME` | Production SSH username |
+| `SSH_PASSWORD` | Production SSH password |
+| `SSH_DEPLOY_PATH` | Production app root |
+| `GH_PAT` | Private GitHub repository access on production server |
+
+### Notes
+- secrets are **not** stored in GitHub Actions secrets anymore for deployment purposes
+- server-side git access still depends on `GH_PAT`
+- production `.env` remains server-managed and is not overwritten by deploy script
+
+---
+
+## What the Deployment Does
+
+### 1. Refresh git state locally
+- `git fetch origin main`
+- resolve requested git ref
+- create a temporary detached worktree for the deployment build
+
+### 2. Build frontend locally
+The deploy engine builds the frontend from the temp worktree using explicit Node commands:
+- `node scripts/generate-og-images.mjs`
+- `node scripts/generate-audit-og-images.mjs`
+- `node node_modules/next/dist/bin/next build`
+
+This produces static export output in `frontend/out`.
+
+### 3. Deploy backend over SSH
+On the server:
+- reset repo to the selected commit
+- run `composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader`
+- run `php artisan migrate --force`
+- run `php artisan db:seed --class=CreditPackageSeeder --force || true`
+- refresh Laravel caches
+
+### 4. Upload frontend static files
+- upload built `frontend/out/*` to production via SFTP/SCP semantics through the deploy engine
+- shared hosting serves the static frontend directly from production web root
+
+### 5. Run local production smoke checks
+After deployment, the local machine verifies production using:
+- homepage loads
+- login page loads
+
+Smoke checks are currently executed through:
+- `frontend/scripts/prod-smoke-check.mjs`
+
+### 6. Write deployment result log
+- mark deployment `success` or `failed`
+- store per-step output for debugging
+
+---
+
+## Production Verification Policy
+
+### Primary deployment-health checks
+These are the current reliable deployment checks:
+1. homepage loads correctly
+2. login page loads correctly
+3. deployment log finishes with `success`
+
+### Important note about `/api/health`
+A public `https://seoindicator.com/api/health` request is **not currently reliable from this machine** and may return Hostinger’s generic 404 page depending on access path. It is therefore **not** used as the deployment success gate.
+
+### Important note about Playwright Test runner
+The local Windows Playwright **test runner** is currently unreliable in this environment (`test.describe() did not expect...`). For deployment verification we therefore use a direct Playwright browser script instead of `playwright test`.
+
+---
+
+## Manual Usage
+
+### Manual deploy from local machine
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\deploy-prod.ps1 -Trigger manual -GitRef origin/main -Branch main
 ```
 
-### Build & Upload Frontend
-```bash
-cd frontend
-npm run build
-# Upload ./out/* to server via SCP or FTP
+### Optional flags
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\deploy-prod.ps1 -Trigger manual -GitRef origin/main -Branch main -SkipPlaywright
 ```
+
+Use `-SkipPlaywright` only for debugging deployment mechanics. Normal production deployments should keep smoke verification enabled.
 
 ---
 
 ## Rollback Procedure
 
-### Quick Rollback (git)
+### Code rollback
 ```bash
-ssh -p 65002 u949031532@45.84.206.11
-cd /home/u949031532/domains/seoindicator.com/public_html
-git reset --hard HEAD~1  # Previous commit
+ssh -p 65002 <user>@<host>
+cd /home/.../public_html
+git reset --hard <previous-commit>
+cd backend
+composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+php artisan config:clear || true
+php artisan cache:clear || true
+php artisan config:cache || true
+php artisan route:cache || true
 ```
 
-### Database Rollback
+### Database rollback
+Use Laravel migrations only, and only with explicit intent:
 ```bash
 php artisan migrate:rollback
 ```
 
 ---
 
-## Monitoring
+## Troubleshooting
 
-### Post-Deployment Checks
-1. Health endpoint: `GET https://seoindicator.com/api/health`
-2. Homepage loads: `GET https://seoindicator.com/`
-3. Git status shows clean: `git status`
+### Build fails locally
+- run `npm install` in `frontend`
+- verify `@next/env` and other Next.js dependencies are present
+- if needed, delete and reinstall `frontend/node_modules`
 
-### Error Tracking
-- PHP errors logged to `storage/logs/laravel.log`
-- Access via SSH or Hostinger file manager
+### Git hook does not fire
+- run `scripts/install-git-hooks.ps1`
+- verify `git config --local --get core.hooksPath`
+- expected value: `.githooks`
 
----
+### UI-triggered deploy does nothing
+- confirm `scripts/deploy-prod.ps1` exists
+- confirm Python is available through `python` or `py`
+- inspect `C:\Users\Raitis\.openclaw\logs\deployments`
 
-## Apache .htaccess Configuration
+### SSH deploy fails
+- verify `SSH_*` credentials in `~/.openclaw/secrets/seoindicator.env`
+- verify production host is reachable
+- verify `GH_PAT` still grants repo access on server
 
-### Overview
-The `.htaccess` file is located at `frontend/public/.htaccess` and is automatically copied to `out/.htaccess` during the build process. It provides:
-
-1. **Clean URL Routing** - 301 redirects for SEO guides
-2. **Security Headers** - XSS, clickjacking, and MIME sniffing protection
-3. **File Access Control** - Blocks hidden and backup files
-4. **Caching** - Optimized cache headers for static assets
-5. **Compression** - Gzip for text-based files
-
-### SEO Guides Routing
-```apache
-# Redirect /seo-guides to /seo-guides/ (301)
-RewriteCond %{REQUEST_URI} ^/seo-guides$ [NC]
-RewriteRule ^(.*)$ /seo-guides/ [L,R=301]
-
-# Redirect /seo-guides/[slug] to /seo-guides/[slug]/ (301)
-RewriteCond %{REQUEST_URI} ^/seo-guides/([a-z0-9-]+)$ [NC]
-RewriteRule ^seo-guides/(.*)$ /seo-guides/$1/ [L,R=301]
-```
-
-### Security Features
-| Feature | Purpose |
-|---------|---------|
-| Hidden file blocking | Denies access to `.htaccess`, `.env`, `.git`, etc. |
-| Backup file blocking | Denies access to `.bak`, `.backup`, `.old`, etc. |
-| X-Content-Type-Options | Prevents MIME sniffing |
-| X-Frame-Options | Prevents clickjacking |
-| X-XSS-Protection | Browser XSS filter |
-
-### Requirements
-- Apache with `mod_rewrite` enabled
-- Apache with `mod_headers` enabled (for security headers)
-- Apache with `mod_deflate` enabled (for gzip compression)
-- Apache with `mod_expires` enabled (for caching)
-
-### Verification
-After deployment, verify:
-1. `/seo-guides` redirects to `/seo-guides/` with 301 status
-2. `/seo-guides/meta-title` redirects to `/seo-guides/meta-title/` with 301 status
-3. Security headers are present in responses
-4. Hidden files return 403 Forbidden
+### Production verification fails
+- inspect latest deployment JSON log
+- run `node frontend/scripts/prod-smoke-check.mjs` locally
+- verify homepage/login behavior directly in browser
 
 ---
 
 ## Security Considerations
 
-1. **GitHub PAT:** Stored in GitHub Secrets, used for private repo access
-2. **SSH Credentials:** Stored in secrets, not in repo
-3. **Database Credentials:** In secrets and `.env` (gitignored)
-4. **.htaccess:** Restricts access to sensitive files (see Apache Configuration section)
-5. **Migrations Endpoint:** Protected by deploy key
+1. Production changes must go through the deploy scripts or Workflow Control Deploy tab.
+2. Do not edit production files directly except explicit emergency rollback/debugging scenarios.
+3. Do not store deployment secrets in the repository.
+4. Use Laravel migrations for schema changes.
+5. Use deployment logs as the source of truth for deployment history.
 
 ---
 
 ## Deployment Checklist
 
-### Each Deployment
-- [x] All tests pass in CI
-- [x] Build succeeds
-- [x] GitHub Actions workflow completes
-- [x] Health check returns 200
-- [x] Homepage loads correctly
+### Before deploy
+- [ ] local code committed
+- [ ] pushing the intended commit/ref
+- [ ] frontend dependencies installed
+- [ ] secrets file present and valid
+
+### Successful deploy means
+- [ ] local frontend build succeeded
+- [ ] SSH/backend deployment succeeded
+- [ ] smoke check script passed
+- [ ] deployment JSON log shows `success`
+- [ ] Workflow Control Deploy tab shows the run in history
 
 ---
 
-## Troubleshooting
-
-### Git Pull Fails
-- Check PAT is valid and has `repo` scope
-- Verify `.git` directory exists
-- Check remote URL is configured
-
-### Composer Install Fails
-- Check PHP version (8.2+)
-- Check for missing extensions
-- Review `composer.json` requirements
-
-### Build Fails
-- Check Node.js version matches (23)
-- Clear npm cache: `npm cache clean --force`
-- Delete `node_modules` and reinstall
-
-### Static Export Fails
-- Ensure no server-side features used
-- Check for dynamic routes (not supported in static export)
-- Verify `next.config.js` has `output: 'export'`
-
----
-
-Last updated: 2026-03-01
+Last updated: 2026-03-09

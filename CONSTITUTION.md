@@ -218,9 +218,9 @@ Every feature, specification, and task has a STATUS that tracks its progress thr
 | `To Test Locally` | LocalTester | Picks up for local testing |
 | `Testing Locally` | LocalTester | Sets this status |
 | `To Deploy` | LocalTester | Sets this status |
-| `To Deploy` | DevOps | Picks up for deployment |
-| `In Deployment` | DevOps | Sets this status |
-| `To Test Prod` | DevOps | Sets this status |
+| `To Deploy` | DevOps | Picks up for deployment using the local/self-hosted deployment flow |
+| `In Deployment` | DevOps | Sets this status while running `scripts/deploy-prod.ps1` or Workflow Control Deploy |
+| `To Test Prod` | DevOps | Sets this status after successful deployment log + smoke verification |
 | `To Test Prod` | ProdTester | Picks up for prod testing |
 | `Testing Prod` | ProdTester | Sets this status |
 | `To Document` | ProdTester | Sets this status after successful prod test |
@@ -332,10 +332,22 @@ TASKS
 5. **Test Design** → PreTester writes tests (`Tests Coverage In Progress`)
 6. **Implement** → Developer builds feature (`In Development`)
 7. **Test Locally** → LocalTester validates (`Testing Locally`)
-8. **Deploy** → DevOps deploys to prod (`In Deployment`)
+8. **Deploy** → DevOps deploys to prod using the local/self-hosted deployment flow (`In Deployment`)
 9. **Test Prod** → ProdTester validates (`Testing Prod`)
 10. **Document** → ProdTester marks `To Document`; DocSystemAnalyst sets `Documentation in Progress`, updates `DOCUMENTATION.md`, then marks `Done`
 11. **Close** → DocSystemAnalyst marks spec and feature as `Done` when all tasks complete
+
+### Deployment Policy
+- GitHub-hosted Actions are **not** the current deployment mechanism.
+- Normal production rollout must use the local deployment flow:
+  - `scripts/deploy-prod.ps1`, or
+  - Workflow Control → `Deploy` tab.
+- DevOps must treat a deployment as successful only when:
+  1. local build succeeds,
+  2. production rollout succeeds,
+  3. local production smoke verification succeeds,
+  4. deployment log is recorded as `success`.
+- Deployment history must be read from `C:\Users\Raitis\.openclaw\logs\deployments` / Workflow Control, not from GitHub Actions runs.
 
 ### Must-Follow Rules
 - **Tests required** — all new features need automated tests
@@ -378,5 +390,5 @@ TASKS
 **Note:** Features and specifications share the same number (FEAT-3 ↔ SPEC-3) for easier tracking.
 
 ---
-Last updated: 2026-02-21
+Last updated: 2026-03-09
 ---
