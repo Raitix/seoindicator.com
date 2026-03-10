@@ -14,6 +14,8 @@ const mockDeleteLocation = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
+  usePathname: () => "/sites/1/local",
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("next/link", () => ({
@@ -81,6 +83,12 @@ vi.mock("@/lib/hooks/useLocations", () => ({
       total: 2,
       last_page: 1,
     },
+    isLoading: false,
+    error: null,
+    mutate: mockMutate,
+  }),
+  useLocation: (id?: string | number) => ({
+    location: mockLocations.find((item) => String(item.id) === String(id)) ?? null,
     isLoading: false,
     error: null,
     mutate: mockMutate,
