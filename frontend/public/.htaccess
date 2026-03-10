@@ -25,18 +25,26 @@ RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 RewriteRule ^(api|sanctum)(/.*)?$ backend/public/index.php [L,QSA]
 
 # ============================================================
-# STATIC-EXPORT DASHBOARD FALLBACKS
+# STATIC-EXPORT LOCAL SEO ROUTE FALLBACKS
 # ============================================================
-# The Next.js frontend is statically exported, so numeric local-dashboard
-# routes need to reuse the exported preview shells. The client pages read the
-# real params from the browser URL via useParams().
+# The Next.js frontend is statically exported, so numeric Local SEO routes
+# need to reuse exported preview shells. Client pages recover the real ids
+# from the browser URL during hydration.
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^locations/[0-9]+/?$ /locations/preview/ [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^locations/[0-9]+/rankings/?$ /locations/preview/rankings/ [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^sites/[0-9]+/local/[0-9]+/?$ /sites/preview/local/preview/ [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^sites/[0-9]+/local/[0-9]+/rankings/?$ /sites/preview/local/preview/rankings/ [L]
 
 # ============================================================
 # SEO GUIDES: Clean URL Routing
