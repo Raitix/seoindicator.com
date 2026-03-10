@@ -1,7 +1,7 @@
 # TASK-35-6: Nominatim Geocoding Service
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -16,21 +16,21 @@ SPEC-035: Local SEO & Google Business Profile Tracking
 Create NominatimService for free geocoding using OpenStreetMap's Nominatim API. This replaces paid geocoding services like Google Geocoding API.
 
 ## Acceptance Criteria
-- [ ] NominatimService created with interface
-- [ ] Method: geocode(string $address): ?array
+- [x] NominatimService created with interface
+- [x] Method: geocode(string $address): ?array
   - Returns ['lat' => float, 'lng' => float, 'display_name' => string] or null
   - Handles API errors gracefully
-- [ ] Method: reverseGeocode(float $lat, float $lng): ?string
+- [x] Method: reverseGeocode(float $lat, float $lng): ?string
   - Returns address string from coordinates
-- [ ] Rate limiting: 1 request per second maximum
+- [x] Rate limiting: 1 request per second maximum
   - Uses Laravel's RateLimiter or similar
-- [ ] Caching: 30-day TTL for geocoding results
+- [x] Caching: 30-day TTL for geocoding results
   - Uses Laravel Cache
-- [ ] User-Agent header set (required by Nominatim ToS)
-- [ ] Proper error handling for network failures
-- [ ] Configurable API endpoint (default: https://nominatim.openstreetmap.org)
-- [ ] Unit tests with mocked HTTP responses
-- [ ] Feature tests for integration
+- [x] User-Agent header set (required by Nominatim ToS)
+- [x] Proper error handling for network failures
+- [x] Configurable API endpoint (default: https://nominatim.openstreetmap.org)
+- [x] Unit tests with mocked HTTP responses
+- [x] Feature tests for integration
 
 ## Dependencies
 - None (utility service)
@@ -119,3 +119,28 @@ Create NominatimService for free geocoding using OpenStreetMap's Nominatim API. 
 5. Throttle uncached outbound requests to 1 request/second
 6. Return `null` on HTTP / transport failures and empty results
 7. Keep downstream consumers aligned to the normalized `lat` / `lng` response contract
+
+### Developer Session (2026-03-10 19:12 GMT+2)
+- **Status:** `To Test Locally` - Implementation complete
+- **File Updated:**
+  - `backend/app/Services/LocalSEO/NominatimService.php` - Full implementation
+
+**Implementation Details:**
+1. **HTTP Calls:** Uses Laravel Http facade with configurable `services.nominatim.base_url`
+2. **User-Agent:** Builds compliant header from `app.name` + `services.nominatim.contact_email`, or uses custom `services.nominatim.user_agent`
+3. **Cache Keys:**
+   - Forward: `geocode:` . md5($address)
+   - Reverse: `reverse_geocode:` . md5("{$lat},{$lng}")
+4. **Cache TTL:** 30 days via `now()->addDays(30)`
+5. **Rate Limiting:** Static `$lastRequestTime` tracker with `usleep()` for 1 req/sec throttling
+6. **Error Handling:** Returns `null` on HTTP errors, connection exceptions, and empty results
+
+**Test Results:**
+- All 27 tests pass (21 unit + 6 integration)
+- Rate limiting test confirms >= 0.9s delay between uncached requests
+- Cache tests verify key format and TTL behavior
+- Config propagation tests verify container resolution
+
+**Handoff to LocalTester:**
+- Service is fully functional and tested
+- Ready for local integration testing with BusinessLocationService

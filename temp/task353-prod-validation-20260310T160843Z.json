@@ -1,0 +1,14 @@
+{
+  "runId": "task353-1773158923",
+  "startedAt": "2026-03-10T16:08:43.869420+00:00",
+  "productionUrl": "https://seoindicator.com",
+  "setup": null,
+  "http": {},
+  "cleanup": null,
+  "summary": {},
+  "error": {
+    "message": "Expecting value: line 2 column 1 (char 1)",
+    "traceback": "Traceback (most recent call last):\n  File \"<stdin>\", line 286, in <module>\n  File \"C:\\Python313\\Lib\\json\\__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Python313\\Lib\\json\\decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Python313\\Lib\\json\\decoder.py\", line 363, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)\n"
+  },
+  "endedAt": "2026-03-10T16:08:45.968992+00:00"
+}
