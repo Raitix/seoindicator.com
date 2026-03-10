@@ -299,54 +299,60 @@ class LocalSeoMigrationTest extends TestCase
     }
 
     /** @test */
-    public function bl_14_business_locations_has_settings_column(): void
+    public function bl_14_business_locations_has_is_active_column(): void
+    {
+        $this->assertTrue(Schema::hasColumn('business_locations', 'is_active'));
+    }
+
+    /** @test */
+    public function bl_15_business_locations_has_settings_column(): void
     {
         $this->assertTrue(Schema::hasColumn('business_locations', 'settings'));
     }
 
     /** @test */
-    public function bl_15_business_locations_has_timestamps(): void
+    public function bl_16_business_locations_has_timestamps(): void
     {
         $this->assertTrue(Schema::hasColumn('business_locations', 'created_at'));
         $this->assertTrue(Schema::hasColumn('business_locations', 'updated_at'));
     }
 
     /** @test */
-    public function bl_16_business_locations_has_soft_deletes(): void
+    public function bl_17_business_locations_has_soft_deletes(): void
     {
         $this->assertTrue(Schema::hasColumn('business_locations', 'deleted_at'));
     }
 
     /** @test */
-    public function bl_17_business_locations_has_user_id_index(): void
+    public function bl_18_business_locations_has_user_id_index(): void
     {
         $indexes = $this->getTableIndexes('business_locations');
         $this->assertTrue($this->hasIndexOnColumn($indexes, 'user_id'));
     }
 
     /** @test */
-    public function bl_18_business_locations_has_site_id_index(): void
+    public function bl_19_business_locations_has_site_id_index(): void
     {
         $indexes = $this->getTableIndexes('business_locations');
         $this->assertTrue($this->hasIndexOnColumn($indexes, 'site_id'));
     }
 
     /** @test */
-    public function bl_19_business_locations_has_gbp_place_id_index(): void
+    public function bl_20_business_locations_has_gbp_place_id_index(): void
     {
         $indexes = $this->getTableIndexes('business_locations');
         $this->assertTrue($this->hasIndexOnColumn($indexes, 'gbp_place_id'));
     }
 
     /** @test */
-    public function bl_20_business_locations_has_user_id_foreign_key(): void
+    public function bl_21_business_locations_has_user_id_foreign_key(): void
     {
         $foreignKeys = $this->getTableForeignKeys('business_locations');
         $this->assertTrue($this->hasForeignKey($foreignKeys, 'user_id', 'users', 'id'));
     }
 
     /** @test */
-    public function bl_21_business_locations_has_site_id_foreign_key(): void
+    public function bl_22_business_locations_has_site_id_foreign_key(): void
     {
         $foreignKeys = $this->getTableForeignKeys('business_locations');
         $this->assertTrue($this->hasForeignKey($foreignKeys, 'site_id', 'sites', 'id'));
@@ -894,48 +900,54 @@ class LocalSeoMigrationTest extends TestCase
     }
 
     /** @test */
-    public function la_11_local_seo_alerts_has_created_at_column(): void
+    public function la_11_local_seo_alerts_has_read_at_column(): void
+    {
+        $this->assertTrue(Schema::hasColumn('local_seo_alerts', 'read_at'));
+    }
+
+    /** @test */
+    public function la_12_local_seo_alerts_has_created_at_column(): void
     {
         $this->assertTrue(Schema::hasColumn('local_seo_alerts', 'created_at'));
     }
 
     /** @test */
-    public function la_12_local_seo_alerts_has_user_id_index(): void
+    public function la_13_local_seo_alerts_has_user_id_index(): void
     {
         $indexes = $this->getTableIndexes('local_seo_alerts');
         $this->assertTrue($this->hasIndexOnColumn($indexes, 'user_id'));
     }
 
     /** @test */
-    public function la_13_local_seo_alerts_has_location_id_index(): void
+    public function la_14_local_seo_alerts_has_location_id_index(): void
     {
         $indexes = $this->getTableIndexes('local_seo_alerts');
         $this->assertTrue($this->hasIndexOnColumn($indexes, 'location_id'));
     }
 
     /** @test */
-    public function la_14_local_seo_alerts_has_alert_type_index(): void
+    public function la_15_local_seo_alerts_has_alert_type_index(): void
     {
         $indexes = $this->getTableIndexes('local_seo_alerts');
         $this->assertTrue($this->hasIndexOnColumn($indexes, 'alert_type'));
     }
 
     /** @test */
-    public function la_15_local_seo_alerts_has_is_read_index(): void
+    public function la_16_local_seo_alerts_has_is_read_index(): void
     {
         $indexes = $this->getTableIndexes('local_seo_alerts');
         $this->assertTrue($this->hasIndexOnColumn($indexes, 'is_read'));
     }
 
     /** @test */
-    public function la_16_local_seo_alerts_has_user_id_foreign_key(): void
+    public function la_17_local_seo_alerts_has_user_id_foreign_key(): void
     {
         $foreignKeys = $this->getTableForeignKeys('local_seo_alerts');
         $this->assertTrue($this->hasForeignKey($foreignKeys, 'user_id', 'users', 'id'));
     }
 
     /** @test */
-    public function la_17_local_seo_alerts_has_location_id_foreign_key(): void
+    public function la_18_local_seo_alerts_has_location_id_foreign_key(): void
     {
         $foreignKeys = $this->getTableForeignKeys('local_seo_alerts');
         $this->assertTrue($this->hasForeignKey($foreignKeys, 'location_id', 'business_locations', 'id'));

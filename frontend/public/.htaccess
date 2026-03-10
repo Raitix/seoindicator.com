@@ -9,6 +9,22 @@
 RewriteEngine On
 
 # ============================================================
+# BACKEND BRIDGE: Route Laravel API/Sanctum through the static web root
+# ============================================================
+# Production serves the exported frontend from the document root while the
+# Laravel app lives in backend/public. Forward API and Sanctum requests into
+# Laravel so the public site can reach authenticated JSON endpoints.
+
+# Preserve auth-related headers for Laravel/Sanctum
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteCond %{HTTP:x-xsrf-token} .
+RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+# Forward backend routes before any static-site rewrites/redirects
+RewriteRule ^(api|sanctum)(/.*)?$ backend/public/index.php [L,QSA]
+
+# ============================================================
 # SEO GUIDES: Clean URL Routing
 # ============================================================
 
