@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SEOIndicator.com - AI Powered SEO Analysis",
+  title: "SEOIndicator.com : AI Powered SEO Analysis",
   description:
     "Free AI-powered SEO analysis tool. Get instant scores and suggestions for 17 SEO indicators including title, meta, mobile-friendly, and more.",
   keywords: [
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "SEOIndicator.com" }],
   openGraph: {
-    title: "SEOIndicator.com - AI Powered SEO Analysis",
+    title: "SEOIndicator.com : AI Powered SEO Analysis",
     description:
       "Free AI-powered SEO analysis tool. Get instant scores and suggestions for 17 SEO indicators.",
     url: "https://seoindicator.com",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SEOIndicator.com - AI Powered SEO Analysis",
+    title: "SEOIndicator.com : AI Powered SEO Analysis",
     description:
       "Free AI-powered SEO analysis tool. Get instant scores and suggestions for 17 SEO indicators.",
   },
