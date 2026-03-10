@@ -8,6 +8,18 @@
 
 ## Comments
 ### 2026-03-10 - DocSystemAnalyst
+**Re-verification Complete (12:35 GMT+2)**
+- Trigger referenced `FEAT-17`, but canonical feature file remains `FEAT-017.md`
+- Feature status confirmed: `Done` (Phase 1 MVP complete; Phases 2-4 planned)
+- SPEC-017 status confirmed: `Done`
+- Phase 1 tasks (`TASK-17-1` through `TASK-17-7`) remain `Done`
+- Phase 2-4 task stubs (`TASK-17-8` through `TASK-17-20`) still indicate planned future scope (`To Write Tests`)
+- `DOCUMENTATION.md` verified at line 17483 (`User Onboarding & Activation Flow` section)
+- Completion markers refreshed for alias and canonical ids: `FEAT-17.json`, `FEAT-017.json`
+- Active-agents entry will be cleared during cleanup
+- **ORCHESTRATOR BUG:** naming mismatch (`FEAT-17` vs `FEAT-017`) still causes duplicate documentation passes
+
+### 2026-03-10 - DocSystemAnalyst
 **Re-verification Complete (10:20 GMT+2)**
 - Trigger referenced `FEAT-17`, but canonical feature file remains `FEAT-017.md`
 - Feature status: Done (Phase 1 MVP complete, Phases 2-4 planned)
