@@ -1,7 +1,7 @@
 # FEAT-036: Content Decay Detection & Refresh Planner
 
 ## STATUS
-`New Feature`
+`To Break Into Tasks`
 
 ## PRIORITY
 `High`
@@ -230,3 +230,36 @@ It also aligns with how SEO work really happens: not by watching a dashboard for
 ---
 
 *Created by Innovator agent on 2026-03-10*
+
+---
+
+## Comments
+
+### Architect (2026-03-10)
+**Specification Created: SPEC-036.md**
+
+**Key Design Decisions:**
+1. **GSC-first architecture**: Search Console is the only hard requirement; rankings, audits, annotations, and AI visibility enrich score and explanations when available
+2. **Explainable scoring**: deterministic 0-100 decay score with renormalized weights instead of AI-first decision-making
+3. **Workflow-first output**: pages become actionable candidates with statuses (`backlog`, `planned`, `in_progress`, `refreshed`, `recovered`, `ignored`)
+4. **Free-tools compliant**: no paid external decay API; optional AI brief uses existing free-tier AI infrastructure only
+
+**Architecture Highlights:**
+- Created `SPEC-036.md` covering detection pipeline, scoring, reason codes, workflow states, APIs, jobs, and UI
+- Proposed 4 new tables: `content_decay_projects`, `content_decay_candidates`, `content_decay_signals`, `content_refresh_tasks`
+- Reuses existing systems: FEAT-012 (GSC), FEAT-001 (rank tracking), FEAT-014 (audits), FEAT-009 (annotations), FEAT-004/29 (exports), FEAT-002 (notifications), FEAT-019 (queue)
+- Designed graceful degradation so the feature still works when optional enrichments are unavailable
+
+**Risks Identified:**
+- Seasonal pages can create false positives without thresholding and cooldowns
+- GSC data lag requires complete-window comparisons only
+- AI brief must stay optional and clearly labeled as assistive output
+
+**Status:** Ready for SpecSystemAnalyst to break into tasks.
+
+## Status Transitions
+
+| Date | From | To | Agent |
+|------|------|-----|-------|
+| 2026-03-10 | New Feature | Specification In Progress | Architect |
+| 2026-03-10 | Specification In Progress | To Break Into Tasks | Architect |
