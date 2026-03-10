@@ -5163,6 +5163,133 @@ Authenticated Local SEO location-management surface for `/sites/{siteId}/local`.
 - TASK-35-21: Reviews Management Page (location-specific review workflow)
 
 ---
+## GBP Connect Button (TASK-35-18)
+
+### Component Description
+Google Business Profile connection workflow used inside the Local SEO location details dialog. `GBPConnectButton` gives each business location a Google-branded connect CTA, popup-based OAuth bootstrap, optional account/location selection UI when the richer GBP account endpoints are available, connected/disconnect states, and safe retryable error handling. The shipped production scope also includes the repaired backend callback bridge and invalid-location handling so the live GBP flow no longer fails with generic `500` pages.
+
+### Component and Integration Locations
+- **Primary Component:** `frontend/components/local/GBPConnectButton.tsx`
+- **Current Integration Point:** `frontend/components/local/LocationDetailsDialog.tsx`
+- **Parent Surface:** `frontend/components/local/LocationManagementPage.tsx`
+- **Page Route Wrapper:** `frontend/app/sites/[siteId]/local/page.tsx`
+- **Backend Controller:** `backend/app/Http/Controllers/Api/V1/LocalSEO/BusinessLocationController.php`
+- **OAuth Service:** `backend/app/Services/LocalSEO/GoogleOAuthService.php`
+- **JSON/Callback Middleware Guard:** `backend/app/Http/Middleware/ForceJsonResponse.php`
+- **Frontend Regression Tests:**
+  - `frontend/__tests__/components/local/GBPConnectButton.real.test.tsx`
+  - `frontend/__tests__/components/local/GBPConnectButton.production-routing.test.tsx`
+  - `frontend/__tests__/components/local-seo/GBPConnectButton.test.tsx`
+- **Backend Regression Tests:**
+  - `backend/tests/Feature/Api/V1/LocalSEO/BusinessLocationControllerTest.php`
+  - `backend/tests/Feature/Api/V1/LocalSEO/BusinessLocationControllerProductionRegressionTest.php`
+- **Test Documentation:** `TESTS/TEST-35-18.md`
+- **Production Evidence:** `temp/task3518-prod-validation-20260310T132239Z.json`
+
+### Props and State Contract
+
+| Prop / State | Type | Purpose |
+|---|---|---|
+| `siteId` | `string \| number` | Used in OAuth bootstrap and reconnect/disconnect payloads |
+| `locationId` | `string \| number` | Location-scoped API target and fallback sync key |
+| `connectedGBP` | `ConnectedGBP \| null` | Preloaded connected-state summary from the parent dialog |
+| `onConnectionChange` | callback | Pushes connected/disconnected state back to `LocationDetailsDialog` so the parent can refresh |
+| `status` | `idle \| connecting \| selecting \| connected \| error` | Internal UI state machine for connect flow rendering |
+| `GBP_OAUTH_STATE_KEY` | sessionStorage key | Stores the CSRF-style OAuth state between popup open and callback completion |
+
+### Live Route and Contract Behavior
+
+| Route / Contract | Behavior |
+|---|---|
+| `POST /api/v1/locations/{id}/connect-gbp` | Primary live bootstrap contract; returns `authorization_url` + `state` for the popup flow |
+| `GET /api/v1/locations/{id}/gbp-callback` | Handles Google callback; returns JSON for API-style requests or a popup bridge HTML page that posts `gbp_oauth_callback` to `window.opener` and closes itself |
+| `DELETE /api/v1/locations/{id}/disconnect-gbp` | Primary live disconnect contract; idempotent when the location is already disconnected |
+| `GET /api/v1/locations/{id}` | Fallback sync source after OAuth completes when account-selection endpoints are unavailable |
+| Missing / foreign location on show/connect/disconnect | Returns safe `404 JSON` (`Location not found`) instead of generic server errors |
+| Invalid callback state | Returns `400 JSON` for API requests and a visible popup-bridge error page for browser requests |
+
+### Frontend Behavior
+
+| Area | Implementation |
+|---|---|
+| Idle state | Renders a Google-branded connect button with secure OAuth copy and current site context |
+| OAuth bootstrap | Registers the popup `message` listener **before** the async bootstrap round-trip, seeds `sessionStorage`, then opens the popup using the returned Google authorization URL |
+| Legacy/current contract compatibility | First tries the older `GET /gbp/oauth-url` flow expected by historical mocked tests, then falls back to the live `POST /connect-gbp` controller contract |
+| OAuth callback handling | Accepts `gbp_oauth_callback` postMessage payloads from the popup, validates the returned state against sessionStorage, then either loads selectable accounts or refreshes the connected location directly |
+| Account selection | When optional account endpoints exist, shows selectable GBP accounts and per-account locations before finalizing the connection |
+| Fallback-to-sync | If account-list endpoints are absent (`404/405/501` or equivalent contract-hint payloads), re-fetches the location and treats `is_gbp_connected` as the source of truth |
+| Connected state | Shows business name, optional profile image, and a disconnect CTA with confirmation dialog |
+| Disconnect compatibility | Tries legacy `POST /disconnect-gbp` first for compatibility, then falls back to the live `DELETE /disconnect-gbp` contract |
+| Error safety | Sanitizes backend error copy into user-safe messages (`already connected`, popup blocked, no accounts found) and avoids leaking tokens or unrelated backend fields |
+| Production routing | Uses `buildApiUrl()` plus stored bearer-token fallback from `getStoredAuthToken()` so the component still targets the configured backend origin in exported/static deployments |
+
+### Current UI Integration Reality
+- The active shipped flow is embedded inside `LocationDetailsDialog` on `/sites/{siteId}/local`; it is **not** driven by the older dedicated `app/sites/[siteId]/local/[locationId]/page.tsx` integration referenced in early task notes.
+- `LocationDetailsDialog` derives an initial `ConnectedGBP` summary from the resolved location record, then lets the button push refreshed connection state back through `onConnectionChange()` and `mutate()`.
+- This keeps GBP connection management co-located with the rest of the location profile, instead of requiring a separate detail page to complete OAuth.
+
+### Backend Hardening Shipped With This Task
+
+| Problem | Resolution |
+|---|---|
+| Production callback route returned a generic `500` page for invalid/missing state | `BusinessLocationController::gbpCallback()` now validates state early and routes failures through `callbackError()` |
+| Browser popup flow needed a usable frontend bridge instead of raw JSON/HTML errors | `callbackBridgeResponse()` now renders a lightweight HTML page that posts `{ type: "gbp_oauth_callback", ... }` to the opener and closes itself |
+| Invalid location probes on show/connect/disconnect previously crashed at the HTTP layer in production | Current controller/service path now returns safe `404 JSON` errors for missing locations |
+| Frontend fallback detection originally depended too heavily on status codes | The component now also detects contract-mismatch hints from safe error payload text, making legacy-to-live fallback deterministic in real tests |
+| Popup callback race conditions could occur if the listener attached too late | The component now attaches the message listener before the async OAuth bootstrap completes and seeds provisional state immediately |
+
+### Error and Security Behavior
+- OAuth state is stored in `sessionStorage`, not `localStorage`, and removed after completion/error.
+- Popup messages are accepted only from the current origin and only when `event.data.type === "gbp_oauth_callback"`.
+- Error presentation is intentionally narrow: user-facing copy is normalized to safe messages such as `Invalid state parameter`, `Popup blocked`, or `No Google Business Profile accounts found.`
+- The component never exposes OAuth tokens in React state, props, or rendered UI.
+- Browser callback requests surface the error visibly in the popup page while still attempting `window.opener.postMessage(...)` for a smooth UI handoff.
+
+### Test Coverage
+
+| Suite | Evidence | Status |
+|---|---|---|
+| Real shipped component behavior | `GBPConnectButton.real.test.tsx` | ✅ 12/12 passed |
+| Production routing + API-origin handling | `GBPConnectButton.production-routing.test.tsx` | ✅ 3/3 passed |
+| Combined focused frontend rerun | Real + production-routing suites | ✅ 15/15 passed |
+| Historical mocked component/TDD coverage | `frontend/__tests__/components/local-seo/GBPConnectButton.test.tsx` | ✅ 95+ scenarios maintained |
+| Backend callback + production-regression path | Focused Local SEO callback/regression rerun | ✅ 22 tests / 48 assertions |
+| Frontend static export compatibility | `frontend npm run build` | ✅ Passed |
+
+### Production Validation
+- Authenticated control probe `GET /api/v1/auth/user` returned `200`, confirming production validation used a valid disposable account.
+- Invalid-location production probes now return safe JSON responses:
+  - `GET /api/v1/locations/999999` → `404`
+  - `POST /api/v1/locations/999999/connect-gbp` → `404`
+  - `DELETE /api/v1/locations/999999/disconnect-gbp` → `404`
+- Invalid callback production probe now returns the repaired behavior instead of a generic server error:
+  - JSON request → `400` with `{ "success": false, "error": "invalid_state", "message": "Invalid state parameter" }`
+  - Browser request → popup bridge page titled `Google Business Profile connection failed` with visible `Invalid state parameter` copy and the expected `gbp_oauth_callback` / `window.opener.postMessage` / `window.close` script bridge
+- Scope note: production validation covered the previously broken regression path (invalid location + popup callback bridge). A real Google consent/account-selection/disconnect cycle still requires a disposable owned GBP fixture.
+
+### Production Status
+
+| Metric | Value |
+|---|---|
+| First Deploy Date | 2026-03-10 |
+| Verification Date | 2026-03-10 |
+| Deployment Log | `C:\Users\Raitis\.openclaw\logs\deployments\20260310T125810Z-25fda2d7.json` |
+| Production QA Evidence | `temp/task3518-prod-validation-20260310T132239Z.json` |
+| Public Host | `https://seoindicator.com` |
+| Status | Complete |
+
+### Dependencies and Related Work
+
+| Item | Relationship | Notes |
+|---|---|---|
+| TASK-35-13 | Depends on | Provides the live Business Location / GBP controller contract |
+| TASK-35-17 | Embedded in | Current shipped host surface for the button and details dialog |
+| TASK-35-25 | Related | Production API-origin routing hardening used by the frontend connect flow |
+| TASK-35-26 | Related | SPA auth persistence follow-up that informed bearer-token fallback expectations |
+| TASK-35-27 | Related | Locations endpoint hardening that removed adjacent production `500` behavior |
+| TASK-35-19 | Adjacent | Shared the business-location drift remediation deployed in the final production pass |
+
+---
 ## PricingComparison Component (TASK-32-6)
 
 ### Component Description
