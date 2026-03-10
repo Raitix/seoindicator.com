@@ -155,6 +155,39 @@ describe("auth API production routing", () => {
     expect(localStorage.getItem("seoindicator_token")).toBe("spa-fallback-token");
   });
 
+  it("register stores the returned bearer token for SPA fallback auth", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
+
+    const auth = await import("@/lib/api/auth");
+
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            user: {
+              id: 2,
+              name: "New User",
+              email: "new@example.com",
+              email_verified: false,
+            },
+            token: "registered-spa-token",
+          },
+        }),
+      });
+
+    await auth.register({
+      name: "New User",
+      email: "new@example.com",
+      password: "Password123!",
+      password_confirmation: "Password123!",
+    });
+
+    expect(localStorage.getItem("seoindicator_token")).toBe("registered-spa-token");
+  });
+
   it("fetchUser includes the stored bearer token when cookie auth is unavailable", async () => {
     process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
     localStorage.setItem("seoindicator_token", "spa-fallback-token");
@@ -184,5 +217,52 @@ describe("auth API production routing", () => {
         headers: expect.objectContaining({ Authorization: "Bearer spa-fallback-token" }),
       })
     );
+  });
+
+  it("logout posts to the configured backend origin and clears stored SPA fallback auth state", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
+    localStorage.setItem("seoindicator_token", "spa-fallback-token");
+    localStorage.setItem(
+      "seoindicator_user",
+      JSON.stringify({
+        id: 1,
+        name: "Raitis",
+        email: "raitis@example.com",
+        email_verified: true,
+      })
+    );
+
+    const auth = await import("@/lib/api/auth");
+
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+
+    await auth.logout();
+
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      1,
+      "https://api.seoindicator.com/sanctum/csrf-cookie",
+      expect.objectContaining({ credentials: "include" })
+    );
+
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.seoindicator.com/api/v1/auth/logout",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        headers: expect.objectContaining({
+          Accept: "application/json",
+          Authorization: "Bearer spa-fallback-token",
+        }),
+      })
+    );
+
+    expect(localStorage.getItem("seoindicator_token")).toBeNull();
+    expect(localStorage.getItem("seoindicator_user")).toBeNull();
   });
 });
