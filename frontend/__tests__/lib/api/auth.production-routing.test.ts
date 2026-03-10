@@ -1,0 +1,128 @@
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+const originalEnv = { ...process.env };
+const mockFetch = vi.fn();
+
+describe("auth API production routing", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    process.env = { ...originalEnv };
+    vi.stubGlobal("fetch", mockFetch);
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
+    vi.unstubAllGlobals();
+  });
+
+  it("fetchUser requests the configured backend origin instead of the static frontend /api/v1 path", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
+
+    const auth = await import("@/lib/api/auth");
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          user: {
+            id: 1,
+            name: "Raitis",
+            email: "raitis@example.com",
+            email_verified: true,
+          },
+        },
+      }),
+    });
+
+    await auth.fetchUser();
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.seoindicator.com/api/v1/auth/user",
+      expect.objectContaining({
+        credentials: "include",
+        headers: expect.objectContaining({ Accept: "application/json" }),
+      })
+    );
+  });
+
+  it("login fetches the Sanctum CSRF cookie from the configured backend origin before posting credentials", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
+
+    const auth = await import("@/lib/api/auth");
+
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            user: {
+              id: 1,
+              name: "Raitis",
+              email: "raitis@example.com",
+              email_verified: true,
+            },
+          },
+        }),
+      });
+
+    await auth.login("raitis@example.com", "super-secret", true);
+
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      1,
+      "https://api.seoindicator.com/sanctum/csrf-cookie",
+      expect.objectContaining({ credentials: "include" })
+    );
+
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.seoindicator.com/api/v1/auth/login",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+      })
+    );
+  });
+
+  it("register posts to the configured backend origin instead of the static frontend host", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
+
+    const auth = await import("@/lib/api/auth");
+
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            user: {
+              id: 2,
+              name: "New User",
+              email: "new@example.com",
+              email_verified: false,
+            },
+          },
+        }),
+      });
+
+    await auth.register({
+      name: "New User",
+      email: "new@example.com",
+      password: "Password123!",
+      password_confirmation: "Password123!",
+    });
+
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.seoindicator.com/api/v1/auth/register",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+      })
+    );
+  });
+});
