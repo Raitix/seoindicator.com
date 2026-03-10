@@ -8,6 +8,7 @@ use App\Models\Site;
 use App\Models\LocalSEOAlert;
 use App\Models\LocalRanking;
 use App\Models\LocalCompetitor;
+use App\Models\Keyword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -293,10 +294,11 @@ class BusinessLocationTest extends TestCase
     public function local_rankings_returns_rankings(): void
     {
         $location = BusinessLocation::factory()->create();
+        $keyword = Keyword::factory()->create();
 
         LocalRanking::create([
             'location_id' => $location->id,
-            'keyword_id' => 1,
+            'keyword_id' => $keyword->id,
             'search_location' => 'New York, NY',
             'checked_at' => now(),
         ]);
@@ -1168,10 +1170,11 @@ class BusinessLocationTest extends TestCase
     public function cascade_to_rankings(): void
     {
         $location = BusinessLocation::factory()->create();
+        $keyword = Keyword::factory()->create();
 
         LocalRanking::create([
             'location_id' => $location->id,
-            'keyword_id' => 1,
+            'keyword_id' => $keyword->id,
             'search_location' => 'New York, NY',
             'checked_at' => now(),
         ]);
