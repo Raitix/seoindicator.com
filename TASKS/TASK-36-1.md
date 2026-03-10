@@ -1,7 +1,7 @@
 # TASK-36-1: Database Migrations - Content Decay Tables
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -43,7 +43,7 @@ Create database migrations for the four core tables supporting the Content Decay
   - Foreign keys to content_decay_candidates and users
 - [ ] All migrations include down() method for rollback
 - [ ] Migration order enforced (projects → candidates → signals → tasks)
-- [ ] Unit tests verify table creation and column types
+- [x] Unit tests verify table creation and column types (198 tests created)
 
 ## Effort Estimate
 **6 hours** - Four related tables with indexes and foreign keys
@@ -62,11 +62,48 @@ Create database migrations for the four core tables supporting the Content Decay
 - `backend/database/migrations/2026_03_10_XXXXXX_create_content_decay_candidates_table.php`
 - `backend/database/migrations/2026_03_10_XXXXXX_create_content_decay_signals_table.php`
 - `backend/database/migrations/2026_03_10_XXXXXX_create_content_refresh_tasks_table.php`
-- `backend/tests/Unit/Database/Migrations/ContentDecayMigrationTest.php`
+- `backend/tests/Feature/Database/Migrations/ContentDecayMigrationTest.php` ✅ Created
+- `backend/tests/Unit/Database/Migrations/ContentDecayMigrationStructureTest.php` ✅ Created
+- `TESTS/TEST-36-1.md` ✅ Created
 
 ---
 
 ## Comments
+
+### PreTester (2026-03-10)
+**Test Suite Created**
+
+Created comprehensive test suite for Content Decay database migrations:
+
+**Test Files:**
+| File | Location | Tests |
+|------|----------|-------|
+| `ContentDecayMigrationTest.php` | `tests/Feature/Database/Migrations/` | 106 |
+| `ContentDecayMigrationStructureTest.php` | `tests/Unit/Database/Migrations/` | 92 |
+| `TEST-36-1.md` | `TESTS/` | Documentation |
+
+**Total: 198 tests**
+
+**Test Coverage:**
+- Table existence for all 4 tables (CDP, CDC, CDS, CRT)
+- Column existence for all 74 columns across 4 tables
+- Index verification (unique site_id, composite project+status/score/severity)
+- Foreign key constraints with CASCADE delete
+- Rollback tests (all tables dropped after migrate:rollback)
+- Migration order verification (projects → candidates → signals/tasks)
+- Column type tests (decimal precision for scores, JSON columns, ENUM types)
+- Nullable state tests (required vs optional columns)
+- Default value tests (detection settings, thresholds, status defaults)
+
+**Test Naming Convention:**
+- CDP: Content Decay Projects
+- CDC: Content Decay Candidates
+- CDS: Content Decay Signals
+- CRT: Content Refresh Tasks
+
+**Status:** `To Develop` → Ready for Developer
+
+---
 
 ### ProjectManager (2026-03-10)
 **Prioritization Complete**
