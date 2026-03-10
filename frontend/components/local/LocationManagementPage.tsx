@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Building2, MapPin, Plus, RefreshCw, Search, SlidersHorizontal, Star } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { LocationCard, LocationCardSkeleton } from "@/components/local/LocationCard";
 import { LocationForm } from "@/components/local/LocationForm";
 import { DeleteLocationDialog } from "@/components/local/DeleteLocationDialog";
+import { LocationDetailsDialog } from "@/components/local/LocationDetailsDialog";
 import {
   useCreateLocation,
   useDeleteLocation,
@@ -182,6 +183,8 @@ function SummaryCard({
 
 export function LocationManagementPage({ siteId }: LocationManagementPageProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = React.useState("");
   const [debouncedSearch, setDebouncedSearch] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState<LocationConnectionFilter>("all");
@@ -214,6 +217,7 @@ export function LocationManagementPage({ siteId }: LocationManagementPageProps) 
   const { createLocation } = useCreateLocation(siteId);
   const { updateLocation } = useUpdateLocation();
   const { deleteLocation } = useDeleteLocation(siteId);
+  const selectedLocationId = searchParams.get("locationId");
 
   const displayedLocations = React.useMemo(() => {
     const filtered = locations.filter((location) => {
@@ -238,6 +242,27 @@ export function LocationManagementPage({ siteId }: LocationManagementPageProps) 
 
     return sortLocations(filtered, sortBy);
   }, [locations, searchInput, sortBy, statusFilter]);
+
+  const selectedLocation = React.useMemo(
+    () => locations.find((location) => String(location.id) === selectedLocationId) ?? displayedLocations.find((location) => String(location.id) === selectedLocationId) ?? null,
+    [displayedLocations, locations, selectedLocationId]
+  );
+
+  const updateLocationDetailsUrl = React.useCallback(
+    (locationId?: number | string | null) => {
+      const nextSearchParams = new URLSearchParams(searchParams.toString());
+
+      if (locationId === null || locationId === undefined || locationId === "") {
+        nextSearchParams.delete("locationId");
+      } else {
+        nextSearchParams.set("locationId", String(locationId));
+      }
+
+      const nextUrl = nextSearchParams.toString() ? `${pathname}?${nextSearchParams.toString()}` : pathname;
+      router.push(nextUrl);
+    },
+    [pathname, router, searchParams]
+  );
 
   const connectedCount = locations.filter((location) => location.isGbpConnected).length;
   const unconnectedCount = locations.length - connectedCount;
@@ -342,6 +367,9 @@ export function LocationManagementPage({ siteId }: LocationManagementPageProps) 
       );
 
       setDeletingLocation(null);
+      if (selectedLocationId === String(location.id)) {
+        updateLocationDetailsUrl(null);
+      }
       toast.success("Location deleted");
     } catch (mutationError) {
       const message = mutationError instanceof Error ? mutationError.message : "Failed to delete location";
@@ -517,7 +545,7 @@ export function LocationManagementPage({ siteId }: LocationManagementPageProps) 
                     siteId={siteId}
                     location={location}
                     isDeleting={activeMutation === "delete" && deletingLocation?.id === location.id}
-                    onViewDetails={(item) => router.push(`/sites/${siteId}/local/${item.id}`)}
+                    onViewDetails={(item) => updateLocationDetailsUrl(item.id)}
                     onEdit={(item) => setEditingLocation(item)}
                     onDelete={(item) => setDeletingLocation(item)}
                   />
@@ -579,6 +607,14 @@ export function LocationManagementPage({ siteId }: LocationManagementPageProps) 
         isDeleting={activeMutation === "delete"}
         onClose={() => setDeletingLocation(null)}
         onConfirm={handleDelete}
+      />
+
+      <LocationDetailsDialog
+        open={Boolean(selectedLocationId)}
+        siteId={siteId}
+        locationId={selectedLocationId}
+        initialLocation={selectedLocation}
+        onClose={() => updateLocationDetailsUrl(null)}
       />
     </div>
   );

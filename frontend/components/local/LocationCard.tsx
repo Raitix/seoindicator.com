@@ -42,7 +42,7 @@ export function LocationCard({
   isDeleting = false,
   className,
 }: LocationCardProps) {
-  const detailsHref = `/sites/${siteId}/local/${location.id}`;
+  const detailsHref = `/sites/${siteId}/local?locationId=${location.id}`;
   const rating = formatRating(location.rating);
   const reviewCount = location.reviewCount;
 
