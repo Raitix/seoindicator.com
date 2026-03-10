@@ -14,6 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Mockery;
 use Tests\TestCase;
@@ -1291,6 +1292,33 @@ class BusinessLocationServiceTest extends TestCase
 
         $this->assertCount(1, $collection);
         $this->assertEquals('Active Location', $collection->first()->name);
+    }
+
+    /** @test */
+    public function bsl_007_05b_active_only_tolerates_missing_is_active_column(): void
+    {
+        $service = $this->getMockedService();
+        $site = $this->createSite();
+
+        $service->createLocation([
+            'site_id' => $site->id,
+            'name' => 'Schema Drift Location',
+            'address' => '789 Drift Ave',
+            'city' => 'New York',
+            'country' => 'US',
+            'is_active' => true,
+        ]);
+
+        if (Schema::hasColumn('business_locations', 'is_active')) {
+            Schema::table('business_locations', function ($table) {
+                $table->dropColumn('is_active');
+            });
+        }
+
+        $collection = $service->getLocationsForSite($site->id, ['active_only' => true]);
+
+        $this->assertCount(1, $collection);
+        $this->assertEquals('Schema Drift Location', $collection->first()->name);
     }
 
     /** @test */
