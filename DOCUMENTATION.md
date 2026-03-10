@@ -33,8 +33,8 @@ A deployment is considered successful only when all of the following are true:
 4. deployment log is marked `success`
 
 ### Latest verified deployment baseline
-- Deployment id: `20260310T160753Z-ed1559f2`
-- Commit: `b40acea0de299919a1d4a00c61d40e810c4d20eb`
+- Deployment id: `20260310T162658Z-4e75c9fc`
+- Commit: `9f6834f0`
 - Result: `success`
 
 ### Important notes
@@ -716,6 +716,163 @@ Foundation Eloquent model layer for Local SEO ranking snapshots, competitor reco
 - TASK-35-13: Local SEO Alert Service
 - TASK-35-16: Local SEO Alerts API Controller
 - TASK-35-17 to TASK-35-23: Frontend Local SEO surfaces that read rankings / competitors / alerts
+
+---
+## BusinessLocationService (TASK-35-5)
+
+### Service Description
+Primary service layer for Local SEO business location management. `BusinessLocationService` provides CRUD operations, optional geocoding integration via Nominatim, schema-drift tolerance for production environments, and cache-versioned list queries. The service is the canonical backend entry point for all business location lifecycle operations consumed by Local SEO API controllers and frontend surfaces.
+
+### Component Locations
+- **Service:** `backend/app/Services/LocalSEO/BusinessLocationService.php`
+- **Interface:** `backend/app/Services/LocalSEO/Contracts/BusinessLocationServiceInterface.php`
+- **Exception:** `backend/app/Services/LocalSEO/Exceptions/BusinessLocationServiceException.php`
+- **Geocoding Interface:** `backend/app/Services/LocalSEO/Contracts/NominatimServiceInterface.php`
+- **Unit Tests:** `backend/tests/Unit/Services/LocalSEO/BusinessLocationServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-35-5.md`
+- **Production Validation Evidence:** `temp/task355-prod-validation-20260310T164143Z.json`
+
+### Service Interface
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `createLocation` | `createLocation(array $data): BusinessLocation` | Creates a new business location with validation, optional geocoding, and cache invalidation |
+| `updateLocation` | `updateLocation(int $id, array $data): BusinessLocation` | Updates an existing location; ignores `site_id`/`gbp_place_id` mutations, re-geocodes on address change |
+| `deleteLocation` | `deleteLocation(int $id, bool $force = false): bool` | Soft-deletes a location and clears GBP tokens; supports force delete |
+| `getLocationsForSite` | `getLocationsForSite(int $siteId, array $options = []): Collection\|LengthAwarePaginator` | Returns locations for a site with filtering, pagination, and caching |
+| `getLocationsForUser` | `getLocationsForUser(int $userId, array $options = []): Collection\|LengthAwarePaginator` | Returns locations for a user across all sites |
+| `validateLocationData` | `validateLocationData(array $data): array` | Validates location data and returns `['valid' => bool, 'errors' => array]` |
+| `findLocation` | `findLocation(int $id): BusinessLocation` | Finds a location by ID or throws `ModelNotFoundException` |
+| `restoreLocation` | `restoreLocation(int $id): BusinessLocation` | Restores a soft-deleted location |
+| `getLocation` | `getLocation(int $id): ?BusinessLocation` | Returns a location or null (alias for findLocation with null return) |
+| `getLocations` | `getLocations(int $siteId, array $filters = []): Paginator` | Paginated list with filter normalization (controller-friendly) |
+| `getInsightsSummary` | `getInsightsSummary(int $locationId): array` | Returns placeholder insights summary (extensibility hook) |
+| `getReviewStats` | `getReviewStats(int $locationId): array` | Returns placeholder review stats (extensibility hook) |
+
+### List Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `active_only` | bool | `false` | Filter to active locations only (requires `is_active` column) |
+| `gbp_connected` | bool\|null | `null` | Filter by GBP connection status |
+| `include_deleted` | bool | `false` | Include soft-deleted locations |
+| `site_id` | int | `null` | (User list only) Filter by specific site |
+| `with` | array | `[]` | Eager-load relationships |
+| `search` | string | `null` | Search in name, address, phone, website, category |
+| `sort_field` | string | `created_at` | Sort field: `name`, `created_at`, `updated_at`, `address`, `gbp_connected` |
+| `sort_direction` | string | `desc` | Sort direction: `asc`, `desc` |
+| `per_page` | int | `null` | Paginate with this many items per page |
+| `page` | int | `1` | Page number for pagination |
+
+### Validation Rules
+
+| Field | Rules (Create) | Rules (Update) |
+|-------|----------------|----------------|
+| `site_id` | `required`, `integer`, `exists:sites,id` | `sometimes`, `integer`, `exists:sites,id` |
+| `name` | `required`, `string`, `filled`, `max:255` | `sometimes`, `string`, `filled`, `max:255` |
+| `address` | `required`, `string`, `filled`, `max:500` | `sometimes`, `string`, `filled`, `max:500` |
+| `phone` | `nullable`, `string`, `max:50`, `regex:/^[\d\s\+\-\(\)\.]+$/` | Same |
+| `website` | `nullable`, `string`, `url`, `max:2048` | Same |
+| `category` | `nullable`, `string`, `max:255` | Same |
+| `latitude` | `nullable`, `numeric`, `between:-90,90` | Same |
+| `longitude` | `nullable`, `numeric`, `between:-180,180` | Same |
+| `is_active` | `sometimes`, `boolean` | Same |
+| `gbp_place_id` | `nullable`, `string`, `max:255` | Same |
+| `gbp_location_id` | `nullable`, `string`, `max:255` | Same |
+| `settings` | `nullable`, `array` | Same |
+| `hours` / `business_hours` | `nullable`, `array` | Same |
+
+**Duplicate Protection:** A location with the same `name` + `address` for the same `site_id` is rejected with a validation error.
+
+### Immutability Guards
+
+| Field | Create | Update |
+|-------|--------|--------|
+| `site_id` | Set from payload | **Ignored** (cannot reassign location to different site) |
+| `user_id` | Set from payload or site owner | **Ignored** (cannot reassign ownership) |
+| `gbp_place_id` | Set from payload | **Ignored** (managed via GBP connection flow) |
+| `gbp_location_id` | Set in `settings` | **Ignored** (managed via GBP connection flow) |
+
+### Geocoding Integration
+
+| Scenario | Behavior |
+|----------|----------|
+| Manual coordinates provided | Uses `latitude`/`longitude` from payload |
+| `skip_geocode: true` | Skips geocoding, leaves coordinates null |
+| Address provided, no coordinates | Calls `NominatimService::geocode()` with address + city + state + postal_code + country |
+| Geocoding succeeds | Stores normalized coordinates (6 decimal places) |
+| Geocoding fails | Location created/updated with null coordinates |
+| Address changed on update | Re-geocodes automatically (unless `skip_geocode: true`) |
+
+**Cache:** Geocoding results are cached for 24 hours (`local-seo:business-locations:geocode:{hash}`).
+
+### Cache Versioning
+
+The service uses versioned cache keys to avoid stale data after mutations:
+
+| Cache Key Pattern | TTL | Purpose |
+|-------------------|-----|---------|
+| `local-seo:business-locations:site-version:{siteId}` | Forever | Site list version counter |
+| `local-seo:business-locations:user-version:{userId}` | Forever | User list version counter |
+| `local-seo:business-locations:site-list:{siteId}:v{version}:{hash}` | 300s | Site location list |
+| `local-seo:business-locations:user-list:{userId}:v{version}:{hash}` | 300s | User location list |
+
+**Invalidation:** `invalidateLocationCaches(siteId, userId)` bumps the version counters, causing subsequent list queries to miss cache.
+
+### Schema-Drift Tolerance
+
+The service gracefully handles missing columns in production environments:
+
+| Column | Check Method | Fallback Behavior |
+|--------|--------------|-------------------|
+| `deleted_at` | `supportsBusinessLocationSoftDeletes()` | Disables soft-delete query scope |
+| `is_active` | `supportsBusinessLocationActiveFlag()` | Skips `active_only` filter, defaults to true on create |
+
+This allows the service to function correctly during incremental rollouts or when migrations haven't fully propagated.
+
+### Delete Behavior
+
+| Action | Effect |
+|--------|--------|
+| Soft delete (default) | Sets `deleted_at`, clears `gbp_access_token`, `gbp_refresh_token`, `gbp_token_expires_at`, `gbp_connected`, and `settings.gbp_location_id` |
+| Force delete | Permanently removes the row (bypasses soft deletes) |
+| Restore | Restores a soft-deleted location via `restoreLocation()` |
+
+### Test Coverage
+
+| Validation Layer | Result |
+|------------------|--------|
+| Task-scoped unit tests | `php artisan test tests/Unit/Services/LocalSEO/BusinessLocationServiceTest.php` → **180+ test scenarios** |
+| Local QA slices | Core acceptance: **16 passed / 20 assertions**; Validation/security: **20 passed / 23 assertions** |
+| Production validation | Live API + remote service smoke: **all 19 checks passed** |
+
+**Primary coverage areas:**
+- Service instantiation and DI container binding
+- CRUD flows (create, update, delete, list, find, restore)
+- Geocoding integration with mocked NominatimService
+- Validation rules and duplicate protection
+- Immutability guards for `site_id` / GBP identifiers
+- Cache versioning and invalidation
+- Schema-drift tolerance for missing columns
+- Security boundaries (input validation, SQL/XSS handling)
+- Edge cases (soft-delete on already-deleted, restore, force delete)
+
+### Production Status
+- **Deployed:** 2026-03-10 via the local/self-hosted deployment pipeline
+- **Deployment id:** `20260310T162658Z-4e75c9fc`
+- **Commit:** `9f6834f0`
+- **Deployment result:** `success`
+- **Production validation:** Full API lifecycle verified with disposable fixtures; remote service smoke confirmed create/update/delete/active_only/duplicate-validation behaviors
+
+### Dependencies
+- TASK-35-1: Local SEO database migrations (`business_locations` base table)
+- TASK-35-2: `BusinessLocation` model used by service queries
+- TASK-35-6: `NominatimService` for geocoding (optional, injected via interface)
+
+### Related Tasks
+- TASK-35-13: Business Location API Controller (consumes this service)
+- TASK-35-17: Location Management Page (frontend consumes API)
+- TASK-35-16: Local SEO Alerts API Controller (uses location context)
 
 ---
 ## API Integration Tests (TASK-6-20)
