@@ -1,0 +1,92 @@
+﻿{
+    "taskId":  "TASK-35-19",
+    "capturedAt":  "2026-03-10T14:43:01Z",
+    "agent":  "ProdTester",
+    "summary":  "Production numeric dashboard routes now hydrate with real numeric ids instead of preview placeholders, but full authenticated dashboard acceptance is still not executable with a disposable prod user because no owned site/location can be provisioned through the currently available bearer-token flows.",
+    "disposableUser":  {
+                           "id":  10056,
+                           "email":  "task3519-prod-20260310T143926Z@example.com"
+                       },
+    "httpRoutes":  [
+                       {
+                           "url":  "https://seoindicator.com/locations/1/",
+                           "status":  200
+                       },
+                       {
+                           "url":  "https://seoindicator.com/sites/1/local/1/",
+                           "status":  200
+                       }
+                   ],
+    "browserValidation":  {
+                              "locationRoute":  {
+                                                    "pageUrl":  "https://seoindicator.com/locations/1/",
+                                                    "windowPathname":  "/locations/1/",
+                                                    "requests":  [
+                                                                     "/api/v1/locations/1",
+                                                                     "/api/v1/locations/1/insights",
+                                                                     "/api/v1/locations/1/reviews/stats",
+                                                                     "/api/v1/locations/1/reviews?per_page=3",
+                                                                     "/api/v1/locations/1/rankings",
+                                                                     "/api/v1/locations/1/alerts?limit=3",
+                                                                     "/api/v1/locations/1/competitors?limit=3"
+                                                                 ],
+                                                    "uiState":  {
+                                                                    "headline":  "Unable to load location dashboard",
+                                                                    "message":  "Location not found"
+                                                                }
+                                                },
+                              "nestedRoute":  {
+                                                  "pageUrl":  "https://seoindicator.com/sites/1/local/1/",
+                                                  "windowPathname":  "/sites/1/local/1/",
+                                                  "requests":  [
+                                                                   "/api/v1/locations/1",
+                                                                   "/api/v1/locations/1/insights",
+                                                                   "/api/v1/locations/1/reviews/stats",
+                                                                   "/api/v1/locations/1/reviews?per_page=3",
+                                                                   "/api/v1/locations/1/rankings",
+                                                                   "/api/v1/locations/1/alerts?limit=3",
+                                                                   "/api/v1/locations/1/competitors?limit=3"
+                                                               ],
+                                                  "uiState":  {
+                                                                  "headline":  "Unable to load location dashboard",
+                                                                  "message":  "Location not found"
+                                                              }
+                                              }
+                          },
+    "apiProbes":  {
+                      "authUserBearer":  {
+                                             "status":  200,
+                                             "note":  "Bearer-token fallback user resolves normally on /api/v1/auth/user."
+                                         },
+                      "onboardingGetBearer":  {
+                                                  "status":  401,
+                                                  "note":  "Disposable bearer-token user cannot access onboarding progress."
+                                              },
+                      "onboardingPostBearer":  {
+                                                   "status":  401,
+                                                   "note":  "Disposable bearer-token user cannot start onboarding."
+                                               },
+                      "projectsListBearer":  {
+                                                 "status":  401,
+                                                 "note":  "Disposable bearer-token user cannot use the projects API to discover owned resources."
+                                             },
+                      "site1LocationsBearer":  {
+                                                   "status":  403,
+                                                   "note":  "Existing site is not owned by the disposable user."
+                                               },
+                      "scannedCandidateOwnedSites":  {
+                                                         "range":  "10045-10060",
+                                                         "foundOwnedSite":  false,
+                                                         "statusSummary":  "all 404"
+                                                     },
+                      "location1DetailBearer":  {
+                                                    "status":  404,
+                                                    "note":  "Numeric location lookup now hits the correct route and returns a normal not-found payload instead of the old preview-route mismatch."
+                                                }
+                  },
+    "conclusion":  [
+                       "The previous production bug is fixed: live numeric dashboard routes now request /api/v1/locations/{id}/... rather than /api/v1/locations/preview/....",
+                       "This validation could not complete the full dashboard acceptance criteria because the disposable production QA user had no owned site/location, and the currently available bearer-token flows still cannot create or discover one (onboarding/projects remain 401).",
+                       "TASK-35-19 should stay in To Test Prod until a real owned production location or a dedicated prod QA fixture/account is available for final authenticated dashboard verification."
+                   ]
+}
