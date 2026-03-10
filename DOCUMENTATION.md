@@ -18786,18 +18786,18 @@ X-RateLimit-Reset: 1709123456
 ## Project CRUD API (TASK-8-7)
 
 ### Service Description
-REST API endpoints for project management (Create, Read, Update, Delete). Users can organize their SEO work into separate projects/sites, enabling multi-site management for agencies and freelancers. Core functionality for the Multi-Site Project Management feature (FEAT-008).
+REST API endpoints for project management (Create, Read, Update, Delete). Users can organize work into separate projects, archive inactive projects, and manage project metadata through authenticated `/api/v1/projects` routes. Core functionality for the Multi-Site Project Management feature (FEAT-008).
 
 ### API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/v1/projects` | Create a new project |
-| GET | `/api/v1/projects` | List all projects for authenticated user |
+| GET | `/api/v1/projects` | List projects for authenticated user |
 | GET | `/api/v1/projects/{id}` | Get single project details |
-| PUT | `/api/v1/projects/{id}` | Update project name, domain, notes |
+| PUT/PATCH | `/api/v1/projects/{id}` | Update project fields |
 | DELETE | `/api/v1/projects/{id}` | Delete project (requires confirmation) |
-| POST | `/api/v1/projects/{id}/archive` | Archive project (soft delete) |
+| POST | `/api/v1/projects/{id}/archive` | Archive project |
 | POST | `/api/v1/projects/{id}/restore` | Restore archived project |
 
 ### Create Project
@@ -18808,29 +18808,34 @@ REST API endpoints for project management (Create, Read, Update, Delete). Users 
 {
   "name": "Client Website",
   "domain": "https://example.com",
-  "notes": "Main client SEO project"
+  "notes": "Main client SEO project",
+  "is_default": false
 }
 ```
 
 **Validation Rules:**
 | Field | Rules |
 |-------|-------|
-| `name` | Required, string, max 255 chars |
+| `name` | Required on create, string, max 255 chars, whitespace-only rejected |
 | `domain` | Optional, valid URL format, max 500 chars |
-| `notes` | Optional, string, max 5000 chars (HTML sanitized) |
+| `notes` | Optional, string, max 65535 chars, HTML stripped via `strip_tags()` |
+| `is_default` | Optional, boolean |
 
 **Response (201):**
 ```json
 {
-  "id": 1,
-  "user_id": 1,
-  "name": "Client Website",
-  "domain": "https://example.com",
-  "notes": "Main client SEO project",
-  "is_default": false,
-  "archived_at": null,
-  "created_at": "2026-02-26T18:00:00Z",
-  "updated_at": "2026-02-26T18:00:00Z"
+  "success": true,
+  "data": {
+    "id": 1,
+    "user_id": 1,
+    "name": "Client Website",
+    "domain": "https://example.com",
+    "notes": "Main client SEO project",
+    "is_default": false,
+    "archived_at": null,
+    "created_at": "2026-02-26T18:00:00Z",
+    "updated_at": "2026-02-26T18:00:00Z"
+  }
 }
 ```
 
@@ -18838,7 +18843,7 @@ REST API endpoints for project management (Create, Read, Update, Delete). Users 
 | Code | Condition |
 |------|-----------|
 | 401 | Unauthenticated request |
-| 422 | Invalid domain format or missing name |
+| 422 | Missing/blank name, invalid domain, or failed validation |
 
 ### List Projects
 `GET /api/v1/projects`
@@ -18846,9 +18851,9 @@ REST API endpoints for project management (Create, Read, Update, Delete). Users 
 **Query Parameters:**
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `archived` | boolean | false | Include/exclude archived projects |
+| `archived` | string | active only | `true` = archived only, `false` = active only, `all` = no archive filter |
 | `page` | int | 1 | Page number |
-| `perPage` | int | 15 | Results per page (max: 100) |
+| `perPage` | int | 15 | Results per page |
 
 **Response (200):**
 ```json
@@ -18880,7 +18885,23 @@ REST API endpoints for project management (Create, Read, Update, Delete). Users 
 ### Get Project
 `GET /api/v1/projects/{id}`
 
-**Response (200):** Returns single project object
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "user_id": 1,
+    "name": "Client Website",
+    "domain": "https://example.com",
+    "notes": "Main client SEO project",
+    "is_default": false,
+    "archived_at": null,
+    "created_at": "2026-02-26T18:00:00Z",
+    "updated_at": "2026-02-26T18:00:00Z"
+  }
+}
+```
 
 **Error Responses:**
 | Code | Condition |
@@ -18901,9 +18922,20 @@ REST API endpoints for project management (Create, Read, Update, Delete). Users 
 }
 ```
 
-**Note:** Partial updates supported - only provided fields are updated.
+**Note:** Partial updates are supported. On non-POST requests, `ProjectRequest` treats fields as optional and updates only provided attributes.
 
-**Response (200):** Returns updated project object
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Updated Name",
+    "domain": "https://newdomain.com",
+    "notes": "Updated notes"
+  }
+}
+```
 
 ### Delete Project
 `DELETE /api/v1/projects/{id}?confirm=true`
@@ -18927,7 +18959,7 @@ REST API endpoints for project management (Create, Read, Update, Delete). Users 
 | 403 | Project owned by another user |
 | 404 | Project not found |
 
-**Side Effects:** Cascade deletes all keywords, competitors, and reports associated with the project.
+**Current Verification Note:** The targeted TASK-8-7 suite currently skips cascade-delete scenarios for keywords, competitors, and reports until downstream `project_id` dependencies are available, so this task documents only the project-row deletion behavior that is actively verified.
 
 ### Archive Project
 `POST /api/v1/projects/{id}/archive`
@@ -18935,12 +18967,15 @@ REST API endpoints for project management (Create, Read, Update, Delete). Users 
 **Response (200):**
 ```json
 {
-  "id": 1,
-  "archived_at": "2026-02-26T20:00:00Z"
+  "success": true,
+  "data": {
+    "id": 1,
+    "archived_at": "2026-02-26T20:00:00Z"
+  }
 }
 ```
 
-**Note:** Archived projects are excluded from default list views but retain all data.
+**Note:** Archived projects are excluded from default list views. Use `?archived=true` for archived-only results or `?archived=all` for the full set.
 
 ### Restore Project
 `POST /api/v1/projects/{id}/restore`
@@ -18948,25 +18983,29 @@ REST API endpoints for project management (Create, Read, Update, Delete). Users 
 **Response (200):**
 ```json
 {
-  "id": 1,
-  "archived_at": null
+  "success": true,
+  "data": {
+    "id": 1,
+    "archived_at": null
+  }
 }
 ```
 
 ### Authorization
-- All endpoints require authentication (Bearer token)
-- Users can only access their own projects (user isolation via `ProjectPolicy`)
-- Cross-user access returns 403 Forbidden (not 404, to provide clear authorization feedback)
+- All endpoints are registered inside the authenticated `/api/v1` route group (`auth` middleware)
+- `authorizeResource(Project::class, 'project')` handles standard CRUD authorization
+- `archive()` and `restore()` explicitly authorize `update` on the bound `Project`
+- Users can only access their own projects via `ProjectPolicy`
 
 ### Security Implementation
 
 | Security Measure | Implementation |
 |------------------|----------------|
-| Authentication | `auth` middleware on all endpoints |
-| IDOR Protection | `ProjectPolicy` enforces user isolation |
+| Authentication | `/api/v1` authenticated route group with `auth` middleware |
+| IDOR Protection | `ProjectPolicy` ownership checks on view/update/delete/restore |
 | SQL Injection | Eloquent ORM with parameterized queries |
-| XSS | `strip_tags()` on notes field |
-| Mass Assignment | `$fillable` whitelist on Project model |
+| XSS | `strip_tags()` on `notes` during `prepareForValidation()` |
+| Mass Assignment | Project created via `$request->user()->projects()->create(...)`; model fillable list governs updates |
 | Delete Protection | Confirmation parameter required |
 
 ### Technical Implementation
@@ -18974,7 +19013,7 @@ REST API endpoints for project management (Create, Read, Update, Delete). Users 
 - Request: `backend/app/Http/Requests/ProjectRequest.php`
 - Model: `backend/app/Models/Project.php`
 - Policy: `backend/app/Policies/ProjectPolicy.php`
-- Routes: Defined in `backend/routes/api.php`
+- Routes: `backend/routes/api.php`
 
 ### Model Properties
 | Property | Type | Description |
@@ -18985,22 +19024,31 @@ REST API endpoints for project management (Create, Read, Update, Delete). Users 
 | `name` | string | Project name |
 | `domain` | string? | Project domain URL |
 | `notes` | text? | User notes |
-| `is_default` | bool | Whether this is user's default project |
+| `is_default` | bool | Whether this is the user's default project |
 | `archived_at` | timestamp? | Archive timestamp |
+| `backlinks_last_synced_at` | timestamp? | Most recent backlinks sync time |
+| `created_at` / `updated_at` | timestamp | Standard Laravel timestamps |
 
-### Model Relationships
-| Method | Relationship | Description |
-|--------|--------------|-------------|
+### Model Relationships and Helpers
+| Method | Type | Description |
+|--------|------|-------------|
 | `user()` | belongsTo | User who owns this project |
-| `keywords()` | hasMany | Keywords in this project |
-| `competitors()` | hasMany | Competitors in this project |
-| `reports()` | hasMany | Reports in this project |
-| `members()` | hasMany | ProjectMember records |
+| `account()` | belongsTo | Team/account association |
+| `gscData()` | hasMany | Search Console data rows |
+| `gscConnections()` | hasMany | Search Console connection records |
+| `members()` | hasMany | ProjectMember rows |
+| `users()` | belongsToMany | Team members through `project_members` |
+| `annotations()` | hasMany | Project annotations |
+| `visibilityScores()` | hasMany | Historical visibility scores |
+| `latestVisibilityScore()` | helper query | Latest visibility score ordering |
+| `pwaAnalysis()` | hasOne | Related PWA analysis |
+| `isArchived()` / `archive()` / `unarchive()` | helpers | Archive state helpers |
+| `scopeActive()` / `scopeArchived()` / `scopeDefault()` | local scopes | Common project filters |
 
 ### Test Coverage
 | Test File | Tests | Assertions |
 |-----------|-------|------------|
-| ProjectControllerTest | 39 | 39 |
+| `backend/tests/Feature/Api/V1/ProjectControllerTest.php` | 39 passed, 3 skipped | 111 |
 
 **Test Categories:**
 | Category | Tests | Description |
@@ -19010,18 +19058,18 @@ REST API endpoints for project management (Create, Read, Update, Delete). Users 
 | Read Project | 9 | List, single, pagination, filtering |
 | Update Project | 7 | Partial updates, validation |
 | Archive/Restore | 5 | Toggle behavior, authorization |
-| Delete Project | 4 | Confirmation, cascade behavior |
-| Security | 2 | SQL injection, XSS protection |
+| Delete Project | 4 | Confirmation and guarded deletion flow |
+| Security | 2 | SQL injection and mass-assignment protection |
 
 **Skipped Tests (Dependencies):**
-- DP-005: Delete cascades to keywords (requires keywords.project_id)
-- DP-006: Delete cascades to competitors (requires competitors.project_id)
-- DP-007: Delete cascades to reports (requires reports.project_id)
+- DP-005: Delete cascades to keywords (requires `keywords.project_id` coverage)
+- DP-006: Delete cascades to competitors (requires `competitors.project_id` coverage)
+- DP-007: Delete cascades to reports (requires `reports.project_id` coverage)
 
 ### Production Status
-- **Deployed**: 2026-02-27 (commit via GitHub Actions run 22461012834)
-- **Health Check**: Passing
-- **Tests**: 39/39 passing (3 skipped - pending dependencies)
+- **Deployed**: 2026-02-27 (historical deployment noted in task comments)
+- **Local Re-Verification**: 2026-03-10 targeted `php artisan test tests/Feature/Api/V1/ProjectControllerTest.php` passed with 39 passed / 3 skipped / 111 assertions
+- **Health Check**: Passing at original production verification
 - **Status**: Complete
 
 ### Dependencies
