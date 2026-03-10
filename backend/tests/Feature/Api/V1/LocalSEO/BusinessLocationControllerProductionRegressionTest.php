@@ -80,6 +80,25 @@ class BusinessLocationControllerProductionRegressionTest extends TestCase
     }
 
     /** @test */
+    public function locations_index_returns_empty_paginated_payload_for_owned_sites_without_locations(): void
+    {
+        $user = User::factory()->create();
+        $site = Site::factory()->create(['user_id' => $user->id]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson("/api/v1/sites/{$site->id}/locations");
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(0, 'data')
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('meta.per_page', 15)
+            ->assertJsonPath('meta.total', 0)
+            ->assertJsonPath('meta.last_page', 1);
+    }
+
+    /** @test */
     public function locations_index_still_returns_200_when_google_oauth_credentials_are_missing(): void
     {
         $this->bindRealGoogleOAuthServiceWithoutCredentials();
@@ -198,6 +217,20 @@ class BusinessLocationControllerProductionRegressionTest extends TestCase
         $response = $this->get("/api/v1/sites/{$site->id}/locations");
 
         $response->assertStatus(401);
+        $this->assertStringContainsString('application/json', (string) $response->headers->get('Content-Type'));
+    }
+
+    /** @test */
+    public function locations_index_returns_standard_json_401_payload_for_guest_json_requests(): void
+    {
+        $site = Site::factory()->create();
+
+        $response = $this->getJson("/api/v1/sites/{$site->id}/locations");
+
+        $response
+            ->assertStatus(401)
+            ->assertJsonPath('message', 'Unauthenticated.');
+
         $this->assertStringContainsString('application/json', (string) $response->headers->get('Content-Type'));
     }
 
