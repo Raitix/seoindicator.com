@@ -229,15 +229,29 @@ class BusinessLocationController extends Controller
 
         if ($result['success']) {
             $frontendUrl = config('app.frontend_url', config('app.url'));
-            return redirect()->to("{$frontendUrl}/locations/{$id}?connected=true");
+
+            if ($request->expectsJson() || $request->header('Accept') === 'application/json') {
+                return redirect()->to("{$frontendUrl}/locations/{$id}?connected=true");
+            }
+
+            return $this->callbackBridgeResponse(
+                [
+                    'success' => true,
+                    'connected' => true,
+                    'state' => $state,
+                    'locationId' => $id,
+                ],
+                'Google Business Profile connected',
+                'Connection complete. You can close this window.'
+            );
         }
 
         $error = $result['error'] ?? 'connection_failed';
-        return $this->callbackError($error, $error, $request);
+        return $this->callbackError($error, $error, $request, 400);
     }
 
     /**
-     * Return error response for callback - JSON or redirect based on Accept header.
+     * Return error response for callback - JSON or popup bridge based on Accept header.
      */
     protected function callbackError(string $error, string $description, Request $request, int $status = 302)
     {
@@ -250,10 +264,72 @@ class BusinessLocationController extends Controller
             ], $status === 302 ? 400 : $status);
         }
 
-        // For browser requests, redirect with error
-        $frontendUrl = config('app.frontend_url', config('app.url'));
-        $id = $request->route('id');
-        return redirect()->to("{$frontendUrl}/locations/{$id}?error=" . urlencode($description));
+        return $this->callbackBridgeResponse(
+            [
+                'success' => false,
+                'error' => $error,
+                'message' => $description,
+                'state' => $request->input('state'),
+                'locationId' => $request->route('id'),
+            ],
+            'Google Business Profile connection failed',
+            $description,
+            $status === 302 ? 400 : $status
+        );
+    }
+
+    /**
+     * Render a small popup bridge page that notifies the opener via postMessage and closes itself.
+     */
+    protected function callbackBridgeResponse(array $payload, string $title, string $message, int $status = 200)
+    {
+        $fullPayload = array_merge([
+            'type' => 'gbp_oauth_callback',
+        ], $payload);
+
+        $payloadJson = json_encode($fullPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        $safeTitle = e($title);
+        $safeMessage = e($message);
+
+        $html = <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{$safeTitle}</title>
+    <style>
+        body { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #020617; color: #e2e8f0; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 24px; }
+        .card { max-width: 420px; width: 100%; border: 1px solid rgba(148, 163, 184, 0.2); background: rgba(15, 23, 42, 0.92); border-radius: 20px; padding: 24px; box-shadow: 0 24px 80px rgba(2, 6, 23, 0.45); }
+        h1 { margin: 0 0 12px; font-size: 20px; }
+        p { margin: 0; color: #cbd5e1; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>{$safeTitle}</h1>
+        <p id="message">{$safeMessage}</p>
+    </div>
+    <script>
+        (function () {
+            var payload = {$payloadJson};
+
+            try {
+                if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage(payload, window.location.origin);
+                    window.close();
+                    return;
+                }
+            } catch (error) {
+                // Ignore opener access errors and fall back to visible message.
+            }
+        })();
+    </script>
+</body>
+</html>
+HTML;
+
+        return response($html, $status)->header('Content-Type', 'text/html; charset=UTF-8');
     }
 
     /**
