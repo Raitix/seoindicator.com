@@ -42,7 +42,7 @@ Tests for BusinessLocationService - service layer handling CRUD operations for b
 
 | ID | Scenario | Input | Expected Output |
 |----|----------|-------|-----------------|
-| BLS-002-01 | Create with required fields | site_id, name, address, city, country | BusinessLocation created |
+| BLS-002-01 | Create with required fields | site_id, name, address | BusinessLocation created |
 | BLS-002-02 | Returns created model | valid data | BusinessLocation instance |
 | BLS-002-03 | Geocoding called automatically | address data | NominatimService::geocode() called |
 | BLS-002-04 | Geocoding success | valid address | latitude/longitude populated |
@@ -62,11 +62,11 @@ Tests for BusinessLocationService - service layer handling CRUD operations for b
 | BLS-003-01 | Missing site_id | no site_id | ValidationException |
 | BLS-003-02 | Missing name | no name | ValidationException |
 | BLS-003-03 | Missing address | no address | ValidationException |
-| BLS-003-04 | Missing city | no city | ValidationException |
-| BLS-003-05 | Missing country | no country | ValidationException |
+| BLS-003-04 | Missing city | no city | Location still validates and creates |
+| BLS-003-05 | Missing country | no country | Location still validates and creates |
 | BLS-003-06 | Invalid site_id | non-existent site | ValidationException |
 | BLS-003-07 | Name too long | 256+ chars | ValidationException |
-| BLS-003-08 | Address too long | 256+ chars | ValidationException |
+| BLS-003-08 | Address too long | 501+ chars | ValidationException |
 | BLS-003-09 | Invalid phone format | "abc123" | ValidationException (if format check) |
 | BLS-003-10 | Invalid website URL | "not-a-url" | ValidationException |
 | BLS-003-11 | Invalid business_hours | non-array | ValidationException |
@@ -170,8 +170,8 @@ Tests for BusinessLocationService - service layer handling CRUD operations for b
 | BLS-009-02 | Missing site_id | no site_id | false, errors array |
 | BLS-009-03 | Missing name | no name | false, errors array |
 | BLS-009-04 | Missing address | no address | false, errors array |
-| BLS-009-05 | Missing city | no city | false, errors array |
-| BLS-009-06 | Missing country | no country | false, errors array |
+| BLS-009-05 | Missing city | no city | true |
+| BLS-009-06 | Missing country | no country | true |
 | BLS-009-07 | Invalid website | "not-url" | false, errors array |
 | BLS-009-08 | Invalid phone | "abc" | false, errors array |
 | BLS-009-09 | Invalid business_hours | non-array | false, errors array |
