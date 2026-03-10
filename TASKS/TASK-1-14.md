@@ -1,7 +1,7 @@
 # SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -274,3 +274,19 @@ Triggered by task processor. Cleared the stale completion marker, re-verified th
 - Updated `DOCUMENTATION.md` to match the live frontend file layout and current re-verification state.
 - Status -> `To Develop` so Developer can restore the dedicated TASK-1-14 frontend tests under the current Vitest/App Router setup.
 - SPEC-001 remains in progress; no parent closure action taken.
+
+### [2026-03-10 18:02 GMT+2] Agent: Developer
+**Vitest/App Router test repair complete** - TASK-1-14 restored to `To Test Locally`
+
+Actions taken:
+- Reworked `frontend/__tests__/components/KeywordForm.test.tsx` from legacy Jest-style mocks to Vitest-compatible mocks for `next/navigation`, `next/link`, and the keywords API.
+- Reworked `frontend/__tests__/app/sites/[siteId]/keywords/add/page.test.tsx` to inject `useParams()` through Vitest so the App Router page resolves `siteId` correctly again.
+- Preserved the existing task scope/implementation; this pass only repaired the dedicated frontend regression tests after the repo-wide test-runner drift.
+- Restored the local frontend test toolchain with `npm ci` because the checkout was missing `node_modules/.bin/vitest`.
+
+Verification:
+- `npm test -- __tests__/components/KeywordForm.test.tsx __tests__/app/sites/[siteId]/keywords/add/page.test.tsx`
+- Result: 7/7 tests passed under Vitest (`2` files, `7` tests).
+
+Status -> `To Test Locally` for LocalTester re-validation.
+
