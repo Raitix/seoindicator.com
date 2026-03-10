@@ -39,6 +39,7 @@ class AuthControllerTest extends TestCase
                         'email',
                         'email_verified',
                     ],
+                    'token',
                 ],
             ])
             ->assertJson([
@@ -56,6 +57,32 @@ class AuthControllerTest extends TestCase
         $this->assertDatabaseHas('users', [
             'email' => 'john@example.com',
         ]);
+        $this->assertNotEmpty($response->json('data.token'));
+    }
+
+    /** @test REG-001A: Registration token can access protected routes */
+    public function test_registration_token_can_access_protected_routes(): void
+    {
+        $response = $this->postJson('/api/v1/auth/register', [
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
+            'password' => 'SecurePassword123',
+            'password_confirmation' => 'SecurePassword123',
+        ]);
+
+        $token = $response->json('data.token');
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/v1/auth/user')
+            ->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'user' => [
+                        'email' => 'john@example.com',
+                    ],
+                ],
+            ]);
     }
 
     /** @test REG-002: Missing name validation */
