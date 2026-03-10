@@ -1,7 +1,7 @@
 # TASK-36-6: ContentDecayDetectionService
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -98,6 +98,100 @@ Create the main detection orchestration service that gathers signals from multip
 - `backend/app/Services/ContentDecay/ContentDecayDetectionService.php`
 - `backend/tests/Unit/Services/ContentDecay/ContentDecayDetectionServiceTest.php`
 - `backend/tests/Feature/Services/ContentDecay/ContentDecayDetectionServiceTest.php`
+
+---
+
+## Comments
+
+### ProjectManager (2026-03-10 21:58)
+**Prioritization Complete**
+
+**Priority: HIGH** (confirmed - already set)
+- **Main orchestration service** for SPEC-036 Content Decay Detection & Refresh Planner
+- This is the "conductor" service that integrates ALL other services:
+  - ContentDecayScoringService (TASK-36-3) - calculates decay scores
+  - ContentDecayReasonService (TASK-36-4) - assigns reason codes
+  - ContentRefreshPlannerService (TASK-36-5) - generates recommendations
+- Also integrates data from GSC, Rank Tracking, Site Audit, Annotations, AI Visibility
+- Without this service, the entire feature pipeline has no output
+
+**Risk: MEDIUM** (confirmed - already set)
+- Orchestration service with complex coordination logic
+- Graceful degradation required when optional data sources unavailable
+- Multiple data source integrations (GSC required, others optional)
+- Eligibility filtering and cooldown/suppression rules add complexity
+- No external API dependencies directly - uses existing service layers
+
+**Dependencies Analysis:**
+| Dependency | Status | TDD Impact |
+|------------|--------|------------|
+| TASK-36-2 (Eloquent Models) | To Write Tests | Tests CAN be designed with mocked model interfaces |
+| TASK-36-3 (ScoringService) | To Write Tests | Tests CAN be designed with mocked service interface |
+| TASK-36-4 (ReasonService) | To Write Tests | Tests CAN be designed with mocked service interface |
+| TASK-36-5 (PlannerService) | To Write Tests | Tests CAN be designed with mocked service interface |
+| FEAT-012 (GSC Integration) | Done ✅ | Real integration available |
+| FEAT-001 (Rank Tracking) | Done ✅ | Real integration available |
+| FEAT-014 (Site Audit) | Partial ✅ | Real integration available |
+
+**TDD Pattern Applied:**
+- PreTester CAN design tests immediately with mocked service interfaces
+- The service orchestrates other services - mock all dependencies
+- Detection flow is well-defined: load project → eligible pages → gather signals → compare windows → calculate score → assign reasons → upsert candidate
+- Graceful degradation logic is testable with mocked unavailable sources
+- Eligibility filtering can be tested with mocked GSC data
+
+**Detection Flow Architecture:**
+```
+1. Load project/site settings
+2. Get list of eligible pages from GSC
+3. For each page:
+   a. Gather signals from all available sources
+   b. Compare windows (current vs previous)
+   c. Calculate decay score (via ScoringService)
+   d. Assign reason codes (via ReasonService)
+   e. Generate recommendations (via PlannerService)
+   f. Upsert candidate record
+4. Archive/downgrade candidates no longer meeting thresholds
+5. Return detection summary
+```
+
+**Signal Collection Sources:**
+| Source | Required | Data Type |
+|--------|----------|-----------|
+| GSC | Yes | clicks, impressions, CTR, avg position |
+| Rank Tracking | Optional | tracked keyword visibility |
+| Site Audit | Optional | unresolved issues for page |
+| Annotations | Optional | recent update annotations |
+| AI Visibility | Optional | mention rate delta |
+
+**Key Features:**
+1. **Eligibility filtering:** GSC data for both windows, minimum thresholds (100 impressions OR 10 clicks), page existence check, ignore state check
+2. **Cooldown/suppression:** 14-day refresh cooldown, annotation suppression, low-signal threshold
+3. **Graceful degradation:** Optional sources unavailable → continue with available data
+4. **Window comparison:** Default 28 days vs 28 days, configurable per project
+
+**Execution Order for SPEC-036:**
+1. TASK-36-1 (Migrations) → Done
+2. TASK-36-2 (Models) → To Write Tests
+3. TASK-36-3 (Scoring Service) → To Write Tests (parallel)
+4. TASK-36-4 (Reason Service) → To Write Tests (parallel)
+5. TASK-36-5 (Planner Service) → To Write Tests (parallel)
+6. **TASK-36-6 (Detection Orchestrator) → This task** (integrates all services)
+7. TASK-36-9 (Queue Jobs) → TASK-36-10 (API) → Frontend
+
+**Downstream Impact:**
+| Task | Dependency Type | Impact |
+|------|-----------------|--------|
+| TASK-36-9 (Queue Jobs) | Required | Queue jobs call detection service |
+| TASK-36-10 (API Controllers) | Required | API exposes detection results |
+| TASK-36-11 (Frontend Summary) | Required | UI displays detection data |
+| TASK-36-12 (Frontend Detail) | Required | UI shows candidate details |
+
+**PreTester Queue Status:**
+- Multiple tasks at "To Write Tests" - queue has capacity
+- Service dependency tasks progressing in parallel
+
+**Status:** `To Write Tests` → Ready for PreTester
 
 ---
 
