@@ -1,7 +1,7 @@
 # TASK-35-4: Local SEO Models
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -154,3 +154,14 @@ Create Eloquent models for local SEO tracking: LocalRanking, LocalCompetitor, an
 - Non-blocking note: the targeted PHPUnit run still emits the existing doc-comment metadata deprecation warnings from the prewritten test files; no task-specific failures remained.
 - **Status Change:** `To Develop` -> `In Development` -> `To Test Locally`
 - **Next Agent:** LocalTester should rerun the targeted Local SEO model suite and, if desired, include any nearby Local SEO backend smoke tests that depend on these models.
+
+### LocalTester Session (2026-03-10 17:47 GMT+2)
+- Re-cleared the stale completion marker, refreshed the task lock, and moved the task through `Testing Locally` to `To Deploy`.
+- Re-ran the targeted backend model suite:
+  - `php artisan test tests/Unit/Models/LocalRankingTest.php tests/Unit/Models/LocalCompetitorTest.php tests/Unit/Models/LocalSEOAlertTest.php`
+  - Result: **152 tests passed / 244 assertions**
+- Added a direct acceptance-criteria spot-check for the developer’s naming-gap compatibility layer (`businessLocation()` aliases on all three models, `LocalSEOAlert::SEVERITIES`, and `scopeByType()` / `scopeCritical()` / `scopeWarning()` / `scopeInfo()`). All checks passed.
+- Validation outcome: relationships, casts, scopes, factories, CRUD/cascade behavior, and the acceptance-criteria alias surface are locally green.
+- Non-blocking note: the targeted PHPUnit run still emits the existing PHPUnit 12 doc-comment metadata deprecation warnings from the prewritten test files; no task-specific failures or documentation drift were found.
+- **Status Change:** `Testing Locally` -> `To Deploy`
+- **Next Agent:** DevOps can deploy without additional local remediation for this task.
