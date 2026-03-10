@@ -566,3 +566,16 @@ Updated `DOCUMENTATION.md` with:
 - Lock file cleaned up
 - Active-agents entry cleared
 - Status: Done (final)
+
+### [2026-03-10 13:24 GMT+2] Agent: DocSystemAnalyst
+**Re-verification + Documentation Drift Fix**
+
+- Task status remains: Done
+- Re-verified source migrations for TASK-1-1 lineage:
+  - `2026_02_20_010700_create_keywords_table.php`
+  - `2026_02_21_185600_update_keywords_and_create_ranking_history.php`
+  - Follow-up schema extensions: `gsc_query_match`, `last_viewed_at`
+- Corrected a documentation drift in `DOCUMENTATION.md`: the keywords GSC index was described as `(site_id, keyword)`, but the implemented index is `keywords_gsc_query_match_index` on `gsc_query_match`
+- Current schema block remains otherwise consistent for keywords, ranking_history, FK, unique constraint, and ranking history indexes
+- Parent files checked again: `SPEC-001.md` and `FEAT-001.md` are still empty stubs, so no parent-status update was possible in this pass
+- Status: Done (final)
