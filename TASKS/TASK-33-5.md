@@ -353,3 +353,37 @@ Duration: 19.11s
 **Documentation Location:** DOCUMENTATION.md (after Badge Impressions Table section)
 
 **Task Status:** Complete ✅
+
+### [2026-03-10 15:24 GMT+2] DocSystemAnalyst - Re-verification Found Drift ⚠️
+
+**Status:** Done (confirmed original delivery present, but current repo drift recorded)
+
+**Verification Work Performed:**
+- Cleared stale completion-marker state and created `.locks/TASK-33-5.lock`
+- Re-read controller, request, routes, task history, and documentation block
+- Re-ran targeted suite: `php artisan test --filter=PublicAuditControllerTest`
+
+**Current Re-verification Result:**
+```
+Tests:    72 failed, 16 passed (88 assertions)
+Duration: 25.60s
+```
+
+**Primary Failure Cause:**
+- Current failures are dominated by `Mockery\Exception\BadMethodCallException` for `RateLimiter::limiter()`.
+- The suite still mocks older RateLimiter methods (`tooManyAttempts`, `hit`, `retriesLeft`, etc.), but the active `throttle:public-audit` middleware path now calls `limiter()` first, so requests fail with 500 before most assertions run.
+
+**Additional Contract Drift Found:**
+- `PublicAuditController::badge()` currently returns `audit_url`, `impressions_endpoint`, `clicks_endpoint`, and a single `embed_code` string.
+- Existing task notes/tests/docs still describe `badge_url` plus structured embed snippets.
+- `PublicAuditController::show()` currently omits the documented `hash` field and uses `mobile` instead of the documented `performance` category key.
+
+**Interpretation:**
+- The original TASK-33-5 deliverable still exists and historical production/testing notes remain valid for the 2026-03-06 deployment window.
+- The current repository state is no longer cleanly aligned with the documented TASK-33-5 contract, so this item is not freshly re-verified even though it remains historically completed.
+
+**Documentation Update:**
+- Added a verification note to `DOCUMENTATION.md` under `## PublicAuditController (TASK-33-5)` describing the current local test failure and response-shape drift.
+
+**Recommended Follow-up:**
+- Reconcile controller response shape, docs, and `PublicAuditControllerTest` middleware mocking before treating TASK-33-5 as fully re-verified again.
