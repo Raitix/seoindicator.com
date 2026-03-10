@@ -1,7 +1,7 @@
 # TASK-36-1: Database Migrations - Content Decay Tables
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `High`
