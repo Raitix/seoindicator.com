@@ -1,0 +1,255 @@
+{
+  "task": "TASK-35-4",
+  "generatedAt": "2026-03-10T16:24:27.568101+00:00",
+  "baseUrl": "https://seoindicator.com",
+  "fixture": {
+    "suffix": "ba72074eca",
+    "user1Email": "task35-4-ba72074eca@example.test",
+    "user2Email": "task35-4-other-ba72074eca@example.test"
+  },
+  "http": [
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 201,
+      "ok": true,
+      "json": {
+        "success": true,
+        "message": "Registration successful. Please verify your email.",
+        "data": {
+          "user": {
+            "id": 10070,
+            "name": "TASK-35-4 ProdTester",
+            "email": "task35-4-ba72074eca@example.test",
+            "email_verified": false,
+            "role": "user",
+            "avatar": null,
+            "created_at": "2026-03-10T16:23:46.000000Z"
+          }
+        }
+      },
+      "text": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "ok": true,
+      "json": {
+        "success": true,
+        "data": {
+          "user": {
+            "id": 10070,
+            "name": "TASK-35-4 ProdTester",
+            "email": "task35-4-ba72074eca@example.test",
+            "email_verified": false,
+            "role": "user",
+            "avatar": null,
+            "created_at": "2026-03-10T16:23:46.000000Z"
+          },
+          "token": "75|WaOt7OXYqJDkuxjym6WegCJQsfU5fO7GKaO03noU8042495c"
+        }
+      },
+      "text": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/user",
+      "status": 200,
+      "ok": true,
+      "json": {
+        "success": true,
+        "data": {
+          "user": {
+            "id": 10070,
+            "name": "TASK-35-4 ProdTester",
+            "email": "task35-4-ba72074eca@example.test",
+            "email_verified": false,
+            "role": "user",
+            "avatar": null,
+            "created_at": "2026-03-10T16:23:46.000000Z",
+            "social_accounts": []
+          }
+        }
+      },
+      "text": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/local-seo/alerts",
+      "status": 200,
+      "ok": true,
+      "json": {
+        "data": [
+          {
+            "id": 11,
+            "type": "ranking_dropped",
+            "severity": "warning",
+            "title": "Ranking dropped",
+            "message": "Your local pack ranking changed during TASK-35-4 validation.",
+            "is_read": false,
+            "read_at": null,
+            "created_at": "2026-03-10T16:24:28.000000Z",
+            "location": {
+              "id": 20,
+              "name": "TASK-35-4 Location ba72074eca"
+            }
+          }
+        ],
+        "links": {
+          "first": "https://seoindicator.com/api/v1/local-seo/alerts?page=1",
+          "last": "https://seoindicator.com/api/v1/local-seo/alerts?page=1",
+          "prev": null,
+          "next": null
+        },
+        "meta": {
+          "current_page": 1,
+          "from": 1,
+          "last_page": 1,
+          "links": [
+            {
+              "url": null,
+              "label": "&laquo; Previous",
+              "page": null,
+              "active": false
+            },
+            {
+              "url": "https://seoindicator.com/api/v1/local-seo/alerts?page=1",
+              "label": "1",
+              "page": 1,
+              "active": true
+            },
+            {
+              "url": null,
+              "label": "Next &raquo;",
+              "page": null,
+              "active": false
+            }
+          ],
+          "path": "https://seoindicator.com/api/v1/local-seo/alerts",
+          "per_page": 15,
+          "to": 1,
+          "total": 1
+        }
+      },
+      "text": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/local-seo/alerts/unread-count",
+      "status": 200,
+      "ok": true,
+      "json": {
+        "total": 1,
+        "by_severity": {
+          "info": 0,
+          "warning": 1,
+          "critical": 0
+        }
+      },
+      "text": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/local-seo/alerts/11/read",
+      "status": 200,
+      "ok": true,
+      "json": {
+        "success": true,
+        "alert": {
+          "id": 11,
+          "type": "ranking_dropped",
+          "severity": "warning",
+          "title": "Ranking dropped",
+          "message": "Your local pack ranking changed during TASK-35-4 validation.",
+          "is_read": true,
+          "read_at": "2026-03-10T16:23:47.000000Z",
+          "created_at": "2026-03-10T16:24:28.000000Z",
+          "location": {
+            "id": 20,
+            "name": "TASK-35-4 Location ba72074eca"
+          }
+        }
+      },
+      "text": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/local-seo/alerts/unread-count",
+      "status": 200,
+      "ok": true,
+      "json": {
+        "total": 0,
+        "by_severity": {
+          "info": 0,
+          "warning": 0,
+          "critical": 0
+        }
+      },
+      "text": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/local-seo/alerts/12/read",
+      "status": 404,
+      "ok": false,
+      "json": {
+        "message": "Alert not found"
+      },
+      "text": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/locations/20/competitors",
+      "status": 403,
+      "ok": false,
+      "json": {
+        "message": "This action is unauthorized."
+      },
+      "text": null
+    }
+  ],
+  "remote": {
+    "debug": {
+      "code": 0,
+      "out": "{\"user1_id\":10070,\"user2_id\":10071,\"project1_id\":10000,\"project2_id\":10001,\"site1_id\":41,\"site2_id\":42,\"location1_id\":20,\"location2_id\":21,\"keyword_id\":3,\"older_ranking_id\":7,\"latest_ranking_id\":8,\"competitor_id\":3,\"alert1_id\":11,\"alert2_id\":12}",
+      "err": ""
+    },
+    "fixture": {
+      "user1_id": 10070,
+      "user2_id": 10071,
+      "project1_id": 10000,
+      "project2_id": 10001,
+      "site1_id": 41,
+      "site2_id": 42,
+      "location1_id": 20,
+      "location2_id": 21,
+      "keyword_id": 3,
+      "older_ranking_id": 7,
+      "latest_ranking_id": 8,
+      "competitor_id": 3,
+      "alert1_id": 11,
+      "alert2_id": 12
+    }
+  },
+  "cleanup": {
+    "remote": {
+      "ok": true,
+      "result": {
+        "deleted": [
+          {
+            "id": 10070,
+            "email": "task35-4-ba72074eca@example.test"
+          },
+          {
+            "id": 10071,
+            "email": "task35-4-other-ba72074eca@example.test"
+          }
+        ]
+      }
+    }
+  },
+  "verdict": "fail",
+  "error": "competitors endpoint failed",
+  "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Raitis\\.openclaw\\workspace\\temp\\task354_prod_validate.py\", line 421, in <module>\n    assert_true(competitors['status'] == 200, 'competitors endpoint failed')\n    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Raitis\\.openclaw\\workspace\\temp\\task354_prod_validate.py\", line 368, in assert_true\n    raise AssertionError(message)\nAssertionError: competitors endpoint failed\n"
+}
