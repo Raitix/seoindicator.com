@@ -1,7 +1,7 @@
 # TASK-35-5: BusinessLocationService
 
 ## STATUS
-`To Test Prod`
+`To Document`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -176,3 +176,23 @@ TASK-35-17 (Location Management Page frontend) - Blocked via TASK-35-13
   - remote deploy/migrations/cache refresh: success
   - production smoke checks: success (`/` and `/login`)
 - Handoff for ProdTester: validate the deployed BusinessLocationService flows through the Local SEO API/location-management paths on production, with particular attention to schema-drift tolerance when `business_locations.is_active` is absent and to update immutability for `site_id` / GBP identifiers.
+
+### ProdTester Session (2026-03-10 18:41 GMT+2)
+- **Status:** To Document ✅
+- Validated the live deployment at commit `9f6834f0` using disposable production fixtures over the real `/api/v1` surface plus direct remote service smoke, then cleaned all fixtures/tokens/sites/users back to zero. Evidence: `PROJECT-SEOINDICATOR/temp/task355-prod-validation-20260310T164143Z.json`.
+- Remote service smoke passed on production for the core service behaviors:
+  - `createLocation()` created a location with manual coordinates and preserved the original `gbp_place_id`
+  - duplicate create attempt raised the expected validation error
+  - `updateLocation()` ignored attempted `site_id` reassignment and ignored `gbp_place_id` mutation while preserving coordinates under `skip_geocode`
+  - `getLocationsForSite(... active_only=true)` stayed healthy
+  - `deleteLocation()` soft-deleted the row and cleared GBP connection state/tokens/settings (`gbp_connected`, access/refresh tokens, `settings.gbp_location_id`)
+- Live API checks passed with real bearer tokens:
+  - guest `GET /api/v1/sites/{site}/locations` → `401` JSON (`Unauthenticated.`)
+  - non-owner `GET /api/v1/sites/{site}/locations` → `403`
+  - owner empty-list probe → `200` with `meta.total = 0`
+  - owner create → `201`
+  - owner detail → `200` with no GBP token exposure in the JSON payload
+  - owner update → `200`, and the attempted `site_id` / `gbp_place_id` mutation was ignored end-to-end (confirmed again remotely before delete)
+  - owner delete → `204`, followed by owner detail → `404`, and remote verification confirmed the row is soft-deleted
+- Production note: this machine currently reports `business_locations.is_active` **present** in prod, so the missing-column fallback path could not be forced live during this run. That is no longer a blocker here because the live `active_only` path, create/list/detail/update/delete flows, and security boundaries all behaved correctly.
+- No new documentation-drift task created from this run.
