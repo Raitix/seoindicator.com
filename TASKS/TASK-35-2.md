@@ -1,7 +1,7 @@
 # TASK-35-2: BusinessLocation Model
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -264,3 +264,9 @@ php artisan test --filter BusinessLocationTest
   - production smoke (`/` + `/login`): ✅
   - migrations: `Nothing to migrate`
 - Production is now ready for ProdTester to validate TASK-35-2 on top of deployment `20260310T111840Z-6d975d6e` / commit `29e37fba6ec0944b7ec387db8281080d9a9f0f2b`.
+
+### DevOps Session (2026-03-10 13:32 GMT+2)
+- **Status:** `To Test Prod` ✅
+- Re-entered from the task runner trigger and verified the prior DevOps deployment already completed successfully.
+- Synced the task header from `To Deploy` to `To Test Prod` so the canonical task state now matches the deployment evidence already recorded above.
+- Recreated the task lock for this pass, refreshed the completion marker housekeeping, and confirmed no additional production rollout was needed.
