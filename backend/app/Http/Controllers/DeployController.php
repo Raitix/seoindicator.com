@@ -85,7 +85,7 @@ class DeployController extends Controller
             'timestamp' => now()->toIso8601String(),
             'database' => $dbStatus,
             'app' => env('APP_NAME', 'SEOIndicator'),
-            'env' => env('APP_ENV', 'unknown'),
+            'env' => app()->environment(),
         ]);
     }
 
