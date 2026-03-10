@@ -110,20 +110,18 @@ class ContentDecayCandidateController extends Controller
         UpdateCandidateRequest $request,
         ContentDecayCandidateServiceInterface $service
     ): JsonResponse {
-        $candidate = $service->getCandidate($id);
-
-        if (!$candidate) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'NOT_FOUND',
-                    'message' => 'Candidate not found.',
-                ],
-            ], 404);
-        }
-
         try {
             $updatedCandidate = $service->updateCandidate($id, $request->validated());
+
+            if (!$updatedCandidate) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'NOT_FOUND',
+                        'message' => 'Candidate not found.',
+                    ],
+                ], 404);
+            }
 
             return response()->json([
                 'success' => true,
@@ -147,26 +145,24 @@ class ContentDecayCandidateController extends Controller
      */
     public function restore(int $id, Request $request, ContentDecayCandidateServiceInterface $service): JsonResponse
     {
-        $candidate = $service->getCandidate($id);
-
-        if (!$candidate) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'NOT_FOUND',
-                    'message' => 'Candidate not found.',
-                ],
-            ], 404);
-        }
-
         try {
             $restoredCandidate = $service->restoreCandidate($id);
+
+            if (!$restoredCandidate) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'NOT_FOUND',
+                        'message' => 'Candidate not found.',
+                    ],
+                ], 404);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => $restoredCandidate,
             ]);
-        } catch (\InvalidArgumentException $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'error' => [
