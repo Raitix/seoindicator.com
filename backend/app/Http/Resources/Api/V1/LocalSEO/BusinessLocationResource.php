@@ -22,6 +22,7 @@ class BusinessLocationResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'site_id' => $this->site_id,
             'name' => $this->name,
             'address' => $this->address,
             'phone' => $this->phone,
@@ -29,7 +30,7 @@ class BusinessLocationResource extends JsonResource
             'category' => $this->category,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
-            'hours' => $this->settings['hours'] ?? null,
+            'hours' => data_get($this->settings ?? [], 'hours'),
             'is_gbp_connected' => $this->gbp_connected ?? false,
             'gbp_location_id' => $this->gbp_place_id,
             'is_active' => $this->is_active ?? true,
