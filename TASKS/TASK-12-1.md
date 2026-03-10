@@ -212,3 +212,23 @@ Cleanup:
 
 Task fully closed and documented.
 
+### [2026-03-10 11:44 GMT+2] Agent: DocSystemAnalyst - Re-verification Pass
+Verification:
+- Task status: `Done` ✅
+- DOCUMENTATION.md verified at line 28247 (GSC Connections Table section) ✅
+- Migration verified: `backend/database/migrations/2026_02_21_190000_create_gsc_connections_table.php`
+- Model verified: `backend/app/Models/GSCConnection.php`
+- Schema still includes `status`, `last_synced_at`, and unique constraint `idx_user_property`
+- Security still uses Laravel `encrypted` casts for `access_token` and `refresh_token`, with tokens hidden from serialization
+- Model helpers/scopes still present: `isActive`, `markAsExpired`, `markAsRevoked`, `markAsSynced`, `needsRefresh`, `readyForSync`
+- Test coverage remains documented as 27 tests / 64 assertions
+- Parent SPEC-012 remains `In Progress` (other tasks still pending)
+
+Cleanup:
+- Recreated lock file for this pass and will remove it on exit
+- Cleared stale completion marker before verification
+- Completion marker will be re-written for the current pass
+- Active-agents entry will be cleared on exit
+
+Task remains fully closed and correctly documented.
+
