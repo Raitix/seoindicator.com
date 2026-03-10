@@ -154,3 +154,12 @@ API controller for GSC data retrieval and opportunity analysis.
 
 **Status:** Done
 
+### [2026-03-10 12:33] DocSystemAnalyst: Re-verification Complete
+- Re-verified TASK-12-8 remains `Done`.
+- Verified controller + routes still present in `backend/app/Http/Controllers/Api/V1/GSCDataController.php` and `backend/routes/api.php`.
+- Re-ran targeted backend coverage: `php artisan test tests/Feature/Api/GSCApiEndpointsTest.php tests/Security/GSCSecurityTest.php` → 25 passed (50 assertions).
+- Verified production unauthenticated behavior: `/api/v1/projects/1/gsc` and `/api/v1/projects/1/gsc/opportunities` both return 401 JSON.
+- Corrected `DOCUMENTATION.md` drift to match implementation: `perPage` default is 20, response meta includes `lastPage`, ownership is enforced via `Site` lookup, and missing/foreign sites return 404 rather than 403.
+
+**Status:** Done
+
