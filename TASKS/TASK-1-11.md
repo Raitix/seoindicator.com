@@ -145,3 +145,6 @@ Re-verification run. Documentation verified at line 26493 in DOCUMENTATION.md (R
 
 ### [2026-03-08 23:23 GMT+2] Agent: DocSystemAnalyst
 Re-verification run. Documentation verified at line 27403 in DOCUMENTATION.md (Rank Checker Worker section - comprehensive: service description, queue processing, SERP fetching, ranking storage, error handling, 29 tests/80 assertions, dependencies). Task status confirmed Done. Stale lock removed. Completion marker written. Active agents entry cleared. SPEC-001 has remaining tasks in progress - spec/feature remain open.
+
+### [2026-03-10 11:15 GMT+2] Agent: DocSystemAnalyst
+Re-verification run. Documentation verified at line 27674 in DOCUMENTATION.md (Rank Checker Worker section - queue processing, configurable concurrency, SERP fetch integration, ranking_history persistence, SERP feature capture, duration tracking, error handling, and 29 tests / 80 assertions). Task status confirmed Done. Parent SPEC-001 remains open because sibling tasks are still not Done (`TASK-1-2`, `TASK-1-4`, `TASK-1-6`, `TASK-1-9`, `TASK-1-13`, `TASK-1-16`, `TASK-1-20`). Completion marker refreshed. Active agents entry should be cleared on exit.
