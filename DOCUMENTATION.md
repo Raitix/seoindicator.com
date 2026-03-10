@@ -18915,9 +18915,10 @@ Dynamic route pages use `useParams()` hook for client-side route parameter extra
 ### Production Status
 - **Deployed**: 2026-02-28 (GitHub Actions)
 - **Health Check**: Passing
-- **Historical rollout validation**: 7 focused frontend tests passed during the original delivery
-- **Current re-verification note (2026-03-10)**: the dedicated frontend test files are red under the current Vitest runner because their App Router mocks still rely on legacy `jest.mock(...)` behavior
-- **Status**: Returned to `To Develop` for test-harness repair
+- **Tests**: 7/7 focused frontend tests passing under Vitest/App Runner
+- **Test Repair (2026-03-10)**: Vitest-compatible mocks for `next/navigation`, `next/link`, and keywords API restored all tests
+- **Production Re-validation (2026-03-10)**: Live browser DOM checks confirmed no NaN route params, correct navigation links on add/edit/list pages
+- **Status**: Complete
 
 ### Dependencies
 - TASK-1-4 (Keywords CRUD API)
