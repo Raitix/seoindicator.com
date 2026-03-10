@@ -9,7 +9,6 @@ use App\Models\PublicAuditView;
 use App\Models\Site;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 /**
@@ -38,21 +37,73 @@ class PublicAuditControllerTest extends TestCase
     protected Site $site;
     protected User $user;
     protected IssueType $issueType;
+    protected int $requestIpCounter = 0;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
-        // Disable rate limiting for tests
-        RateLimiter::shouldReceive('tooManyAttempts')->andReturn(false);
-        RateLimiter::shouldReceive('hit')->andReturn(true);
-        RateLimiter::shouldReceive('retriesLeft')->andReturn(60);
-        RateLimiter::shouldReceive('availableIn')->andReturn(60);
-        RateLimiter::shouldReceive('attempts')->andReturn(0);
-        RateLimiter::shouldReceive('clear')->andReturn(true);
 
-        // Create test data
         $this->setupTestData();
+    }
+
+    protected function useRemoteIp(string $ip): void
+    {
+        $this->withServerVariables(['REMOTE_ADDR' => $ip]);
+    }
+
+    protected function nextRequestIp(): string
+    {
+        $this->requestIpCounter++;
+
+        $octet3 = intdiv($this->requestIpCounter, 250) % 250;
+        $octet4 = ($this->requestIpCounter % 250) + 1;
+
+        return "10.0.{$octet3}.{$octet4}";
+    }
+
+    protected function getJsonFromIp(string $ip, $uri, array $headers = [], $options = 0)
+    {
+        $this->useRemoteIp($ip);
+
+        return parent::json('GET', $uri, [], $headers, $options);
+    }
+
+    protected function postJsonFromIp(string $ip, $uri, array $data = [], array $headers = [], $options = 0)
+    {
+        $this->useRemoteIp($ip);
+
+        return parent::json('POST', $uri, $data, $headers, $options);
+    }
+
+    public function getJson($uri, array $headers = [], $options = 0)
+    {
+        return $this->getJsonFromIp($this->nextRequestIp(), $uri, $headers, $options);
+    }
+
+    public function postJson($uri, array $data = [], array $headers = [], $options = 0)
+    {
+        return $this->postJsonFromIp($this->nextRequestIp(), $uri, $data, $headers, $options);
+    }
+
+    public function putJson($uri, array $data = [], array $headers = [], $options = 0)
+    {
+        $this->useRemoteIp($this->nextRequestIp());
+
+        return parent::json('PUT', $uri, $data, $headers, $options);
+    }
+
+    public function patchJson($uri, array $data = [], array $headers = [], $options = 0)
+    {
+        $this->useRemoteIp($this->nextRequestIp());
+
+        return parent::json('PATCH', $uri, $data, $headers, $options);
+    }
+
+    public function deleteJson($uri, array $data = [], array $headers = [], $options = 0)
+    {
+        $this->useRemoteIp($this->nextRequestIp());
+
+        return parent::json('DELETE', $uri, $data, $headers, $options);
     }
 
     /**
@@ -600,9 +651,12 @@ class PublicAuditControllerTest extends TestCase
                     'hash',
                     'score',
                     'site_url',
-                    'badge_url',
+                    'audit_url',
+                    'impressions_endpoint',
+                    'clicks_endpoint',
                     'sizes',
                     'themes',
+                    'embed_code',
                 ],
             ]);
     }
@@ -630,13 +684,13 @@ class PublicAuditControllerTest extends TestCase
     }
 
     /** @test */
-    public function badge_config_returns_badge_url(): void
+    public function badge_config_returns_audit_url(): void
     {
         // PA-BADGE-004
         $response = $this->getJson('/api/v1/public-audit/' . $this->publicHash . '/badge');
 
         $response->assertStatus(200);
-        $this->assertStringContainsString($this->publicHash, $response->json('data.badge_url'));
+        $this->assertStringContainsString($this->publicHash, $response->json('data.audit_url'));
     }
 
     /** @test */
@@ -702,6 +756,8 @@ class PublicAuditControllerTest extends TestCase
                     'embed_code',
                 ],
             ]);
+
+        $this->assertStringContainsString($this->publicHash, $response->json('data.embed_code'));
     }
 
     // ========================================================================
@@ -711,11 +767,11 @@ class PublicAuditControllerTest extends TestCase
     /** @test */
     public function rate_limit_allows_100_requests_per_hour(): void
     {
-        // PA-RATE-001 - Rate limiting is mocked in setUp, so this tests the endpoint works
-        $hash = $this->publicHash;
-        
-        for ($i = 0; $i < 10; $i++) {
-            $response = $this->getJson('/api/v1/public-audit/' . $hash);
+        // PA-RATE-001
+        $ip = '203.0.113.10';
+
+        for ($i = 0; $i < 100; $i++) {
+            $response = $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash);
             $response->assertStatus(200);
         }
     }
@@ -723,66 +779,113 @@ class PublicAuditControllerTest extends TestCase
     /** @test */
     public function rate_limit_blocks_after_100_requests(): void
     {
-        // PA-RATE-002 - Rate limiting is mocked, so we test it doesn't block by default
-        $hash = $this->publicHash;
-        
-        // Make multiple requests - should all succeed with mocked rate limiter
-        for ($i = 0; $i < 10; $i++) {
-            $response = $this->getJson('/api/v1/public-audit/' . $hash);
-            $response->assertStatus(200);
+        // PA-RATE-002
+        $ip = '203.0.113.11';
+
+        for ($i = 0; $i < 100; $i++) {
+            $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash)
+                ->assertStatus(200);
         }
-        
-        $this->assertTrue(true, 'Rate limiting is mocked for testing');
+
+        $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash)
+            ->assertStatus(429)
+            ->assertJson([
+                'success' => false,
+                'error' => 'Too many requests. Please try again later.',
+            ]);
     }
 
     /** @test */
-    public function rate_limit_is_per_hash(): void
+    public function rate_limit_is_per_ip_not_per_hash(): void
     {
-        // PA-RATE-003 - Different hashes have separate limits
-        $response1 = $this->getJson('/api/v1/public-audit/' . $this->publicHash);
-        $response2 = $this->getJson('/api/v1/public-audit/' . $this->fullAccessHash);
-        
-        $response1->assertStatus(200);
-        $response2->assertStatus(200);
+        // PA-RATE-003
+        $ip = '203.0.113.12';
+
+        for ($i = 0; $i < 99; $i++) {
+            $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash)
+                ->assertStatus(200);
+        }
+
+        $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->fullAccessHash)
+            ->assertStatus(200);
+
+        $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->fullAccessHash)
+            ->assertStatus(429);
     }
 
     /** @test */
-    public function rate_limit_uses_ip_and_hash_combination(): void
+    public function rate_limit_is_isolated_per_ip(): void
     {
-        // PA-RATE-004 - Same hash should work
-        $hash = $this->publicHash;
-        
-        $response = $this->getJson('/api/v1/public-audit/' . $hash);
-        $response->assertStatus(200);
+        // PA-RATE-004
+        $limitedIp = '203.0.113.13';
+        $freshIp = '203.0.113.14';
+
+        for ($i = 0; $i < 100; $i++) {
+            $this->getJsonFromIp($limitedIp, '/api/v1/public-audit/' . $this->publicHash)
+                ->assertStatus(200);
+        }
+
+        $this->getJsonFromIp($limitedIp, '/api/v1/public-audit/' . $this->publicHash)
+            ->assertStatus(429);
+
+        $this->getJsonFromIp($freshIp, '/api/v1/public-audit/' . $this->publicHash)
+            ->assertStatus(200);
     }
 
     /** @test */
     public function rate_limit_returns_retry_after_header(): void
     {
-        // PA-RATE-005 - Rate limiting is mocked, verify endpoint works
-        $response = $this->getJson('/api/v1/public-audit/' . $this->publicHash);
-        $response->assertStatus(200);
+        // PA-RATE-005
+        $ip = '203.0.113.15';
+
+        for ($i = 0; $i < 100; $i++) {
+            $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash)
+                ->assertStatus(200);
+        }
+
+        $response = $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash);
+
+        $response->assertStatus(429);
+        $this->assertSame('3600', $response->headers->get('Retry-After'));
     }
 
     /** @test */
     public function rate_limit_applies_to_all_endpoints(): void
     {
-        // PA-RATE-006 - Verify all endpoints work
-        $hash = $this->publicHash;
-        
-        $this->getJson('/api/v1/public-audit/' . $hash)->assertStatus(200);
-        $this->postJson('/api/v1/public-audit/' . $hash . '/lead', ['email' => 'test@example.com'])->assertStatus(201);
-        $this->getJson('/api/v1/public-audit/' . $hash . '/badge')->assertStatus(200);
+        // PA-RATE-006
+        $ip = '203.0.113.16';
+
+        for ($i = 0; $i < 99; $i++) {
+            $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash)
+                ->assertStatus(200);
+        }
+
+        $this->postJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash . '/lead', [
+            'email' => 'test@example.com',
+        ])->assertStatus(201);
+
+        $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash . '/badge')
+            ->assertStatus(429);
     }
 
     /** @test */
     public function rate_limit_resets_after_one_hour(): void
     {
         // PA-RATE-007
-        $this->travel(1)->hour();
-        
-        $response = $this->getJson('/api/v1/public-audit/' . $this->publicHash);
-        $response->assertStatus(200);
+        $ip = '203.0.113.17';
+
+        for ($i = 0; $i < 100; $i++) {
+            $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash)
+                ->assertStatus(200);
+        }
+
+        $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash)
+            ->assertStatus(429);
+
+        $this->travel(61)->minutes();
+
+        $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash)
+            ->assertStatus(200);
     }
 
     // ========================================================================
@@ -1179,9 +1282,12 @@ class PublicAuditControllerTest extends TestCase
                 'data' => [
                     'hash',
                     'score',
-                    'badge_url',
+                    'audit_url',
+                    'impressions_endpoint',
+                    'clicks_endpoint',
                     'sizes',
                     'themes',
+                    'embed_code',
                 ],
             ]);
     }
@@ -1189,10 +1295,16 @@ class PublicAuditControllerTest extends TestCase
     /** @test */
     public function ac_08_rate_limiting_100_per_hour(): void
     {
-        // AC-08: Rate limiting: 100 requests/hour per hash for anonymous users
-        
-        // This is tested in PA-RATE tests
-        $this->assertTrue(true);
+        // AC-08: Rate limiting: 100 requests/hour for anonymous users
+        $ip = '203.0.113.18';
+
+        for ($i = 0; $i < 100; $i++) {
+            $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash)
+                ->assertStatus(200);
+        }
+
+        $this->getJsonFromIp($ip, '/api/v1/public-audit/' . $this->publicHash)
+            ->assertStatus(429);
     }
 
     /** @test */
