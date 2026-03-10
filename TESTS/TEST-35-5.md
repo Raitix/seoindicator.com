@@ -3,7 +3,7 @@
 ## Task Reference
 - **Task:** TASK-35-5 - BusinessLocationService
 - **Feature:** SPEC-35 - Local SEO Module
-- **Status:** To Develop
+- **Status:** To Deploy
 - **Depends On:** TASK-35-2 (BusinessLocation Model - tests complete, implementation pending)
 
 ---
@@ -387,6 +387,14 @@ php artisan test --filter=BusinessLocationServiceTest --coverage
 - BusinessLocationServiceInterface created for DI and mocking
 - NominatimServiceInterface created for geocoding mock
 
+### LocalTester Log
+- 2026-03-10: Local backend dependencies had to be restored before QA because `backend/vendor` was missing and one initial package extract (`filp/whoops`) was incomplete. Composer restore succeeded locally using `--ignore-platform-reqs` because this machine's PHP CLI is missing `ext-gd` / `ext-zip`; task-code validation was not blocked after install repair.
+- Focused validation slice `PROJECT-SEOINDICATOR/temp/task355-core-tests.log`: **16 passed / 20 assertions / 86.29s**.
+  - Covered: acceptance criteria, service/provider binding, `site_id` immutability on update, GBP field update protection, soft-delete rejection on update, schema-drift tolerance for missing `is_active`, `skip_geocode`, and manual-coordinate bypass.
+- Focused validation slice `PROJECT-SEOINDICATOR/temp/task355-validation-tests.log`: **20 passed / 23 assertions / 105.82s**.
+  - Covered: required-field validation, max-length/type validation, duplicate detection, SQL/XSS literal handling, ignored stray mass-assignment input, and unicode/emoji/null optional field handling.
+- Full-file execution remains a poor local gate for now because the suite uses `DatabaseMigrations` (slow per-test schema setup) and PHPUnit 11 emits metadata deprecation warnings for every legacy `/** @test */` doc-comment. Functional task coverage for deployment readiness is green.
+
 ---
 
-Last updated: 2026-03-09
+Last updated: 2026-03-10

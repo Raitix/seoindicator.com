@@ -1,7 +1,7 @@
 # TASK-35-5: BusinessLocationService
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -147,3 +147,20 @@ TASK-35-17 (Location Management Page frontend) - Blocked via TASK-35-13
   - `php artisan test tests/Unit/Services/LocalSEO/BusinessLocationServiceTest.php --stop-on-failure`
   - targeted post-fix slices through BLS-015 all pass
   - full-file run is still noisy because PHPUnit 11 warns on legacy `/** @test */` doc-comment metadata across the suite; functional task assertions are green, but the command exit is affected by those framework-level warnings until the suite is migrated to PHP attributes.
+
+### LocalTester Session (2026-03-10 18:16 GMT+2)
+- **Status:** To Deploy ✅
+- Restored missing local backend dependencies before validation. `backend/vendor` was absent at pickup, and one package extract (`filp/whoops`) was incomplete after the first reinstall. Repaired the local install with Composer; current CLI still lacks `ext-gd` / `ext-zip`, so the dependency restore required `--ignore-platform-reqs`. This was an environment issue, not a task-code failure.
+- Focused local QA passed on representative task slices (the full file remains impractically slow because `DatabaseMigrations` reruns schema setup per test and PHPUnit emits doc-comment metadata warnings for every method):
+  - `task355-core-tests.log` → **16 passed / 20 assertions / 86.29s**
+  - `task355-validation-tests.log` → **20 passed / 23 assertions / 105.82s**
+- Verified acceptance criteria end-to-end: service/interface resolution, create/update/delete/list/validate flows, geocoding integration, and service-provider binding.
+- Verified defensive behavior that matters for downstream work:
+  - update ignores `site_id` reassignment
+  - update ignores direct `gbp_location_id` mutation
+  - soft-deleted locations are rejected on update
+  - `active_only` listing still works when `business_locations.is_active` is missing
+  - `skip_geocode` and manual coordinates both bypass Nominatim correctly
+  - invalid required/typed fields and duplicate locations throw validation errors
+  - SQL-like/XSS-like strings are persisted as data, and stray mass-assignment input is ignored
+- Non-blocking note: PHPUnit 11 still emits legacy doc-comment metadata deprecation warnings across this suite; worth future cleanup, but not a blocker for deployment.
