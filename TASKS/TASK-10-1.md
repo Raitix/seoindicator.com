@@ -307,3 +307,13 @@ CREATE TABLE visibility_scores (
 - **Completion marker:** Refreshed at `logs/completed/task/TASK-10-1.json`
 - **Lock cleanup:** Complete
 - **Active agents:** Cleared
+
+### [2026-03-10 13:21 GMT+2] DocSystemAnalyst: Re-verification Found Drift ⚠️
+- **Documentation Verified:** `DOCUMENTATION.md` line 20305 still contains the Visibility Scores Table section for TASK-10-1.
+- **Task Status:** Left as `Done` because the original TASK-10-1 migration deliverable is still present and matches the documented base schema.
+- **Current Code Drift Found:**
+  - `backend/app/Models/VisibilityScore.php` currently includes `pwa_component` in the docblock, `$fillable`, `$casts`, and `getTrendForProject()`, but TASK-10-1 schema/migration/docs do **not** define that column.
+  - `backend/app/Models/Project.php::latestVisibilityScore()` is implemented as an ordered relationship/query, not a typed `hasOne` relation as documented.
+  - `backend/database/factories/VisibilityScoreFactory.php::high()` currently generates scores in the 70-100 range, while the documentation says 80-100.
+- **Interpretation:** This looks like later Visibility/PWA integration drift bleeding into the original TASK-10-1 model surface before the schema/docs were brought back into sync.
+- **Action Taken:** Recorded the drift here, refreshed housekeeping, and left the item status unchanged pending follow-up in the relevant implementation/documentation pass.
