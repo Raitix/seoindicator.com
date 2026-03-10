@@ -20,6 +20,8 @@ Dedicated "tests for X" tasks become **REDUNDANT** when TDD workflow is adopted.
 | TASK-34-12 | Feature Tests for API | Done (redundant - covered by PreTester phases) |
 | TASK-34-23 | Tests for Alerts | Done (redundant - tests in TASK-34-19/20/21 PreTester phases) |
 | TASK-35-24 | Backend Tests for Local SEO | Cancelled (redundant - 8th redundant testing task) |
+| TASK-36-15 | Unit Tests for Content Decay Services | Cancelled (redundant - 9th redundant testing task) |
+| TASK-36-17 | Frontend Tests for Content Decay Components | Cancelled (redundant - 10th redundant testing task) |
 
 ### Key Lesson for SpecSystemAnalyst
 When breaking down specifications into tasks:

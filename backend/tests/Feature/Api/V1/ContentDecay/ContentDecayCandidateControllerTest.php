@@ -144,7 +144,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('getCandidates')
+        $mockService->shouldReceive('listCandidates')
             ->once()
             ->andReturn($this->createPaginatedResponse([$candidate]));
 
@@ -276,7 +276,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('getCandidates')
+        $mockService->shouldReceive('listCandidates')
             ->once()
             ->andReturn($this->createPaginatedResponse([$candidate]));
 
@@ -296,7 +296,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('getCandidates')
+        $mockService->shouldReceive('listCandidates')
             ->once()
             ->andReturn($this->createPaginatedResponse([$candidate], 15));
 
@@ -333,7 +333,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('getCandidates')
+        $mockService->shouldReceive('listCandidates')
             ->once()
             ->andReturn($this->createPaginatedResponse([$candidate]));
 
@@ -349,7 +349,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('getCandidates')
+        $mockService->shouldReceive('listCandidates')
             ->once()
             ->andReturn($this->createPaginatedResponse([$candidate]));
 
@@ -365,7 +365,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('getCandidates')
+        $mockService->shouldReceive('listCandidates')
             ->once()
             ->andReturn($this->createPaginatedResponse([$candidate]));
 
@@ -445,7 +445,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         ]);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('updateStatus')
+        $mockService->shouldReceive('updateCandidate')
             ->once()
             ->andReturn($updatedCandidate);
 
@@ -474,7 +474,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         ]);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('updateStatus')
+        $mockService->shouldReceive('updateCandidate')
             ->once()
             ->andReturn($updatedCandidate);
 
@@ -503,7 +503,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         ]);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('updateStatus')
+        $mockService->shouldReceive('updateCandidate')
             ->once()
             ->andReturn($updatedCandidate);
 
@@ -523,7 +523,7 @@ class ContentDecayCandidateControllerTest extends TestCase
     /** @test */
     public function update_status_to_ignored(): void
     {
-        ['user' => $user, 'site' => $site, 'candidate' => $this->createMockCandidate()['candidate'];
+        ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockCandidate();
         Sanctum::actingAs($user);
 
         $updatedCandidate = (object) array_merge((array) $candidate, [
@@ -532,7 +532,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         ]);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('updateStatus')
+        $mockService->shouldReceive('updateCandidate')
             ->once()
             ->andReturn($updatedCandidate);
 
@@ -552,7 +552,7 @@ class ContentDecayCandidateControllerTest extends TestCase
     /** @test */
     public function update_status_with_notes(): void
     {
-        ['user' => $user, 'site' => $site, 'candidate' => $this->createMockCandidate()['candidate'];
+        ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockCandidate();
         Sanctum::actingAs($user);
 
         $updatedCandidate = (object) array_merge((array) $candidate, [
@@ -561,7 +561,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         ]);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('updateStatus')
+        $mockService->shouldReceive('updateCandidate')
             ->once()
             ->andReturn($updatedCandidate);
 
@@ -589,7 +589,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         ]);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('restore')
+        $mockService->shouldReceive('restoreCandidate')
             ->once()
             ->andReturn($restoredCandidate);
 
@@ -615,7 +615,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('getCandidates')
+        $mockService->shouldReceive('listCandidates')
             ->once()
             ->andReturn($this->createPaginatedResponse([], 0));
 
@@ -650,11 +650,11 @@ class ContentDecayCandidateControllerTest extends TestCase
     /** @test */
     public function restore_non_ignored_candidate_returns_400(): void
     {
-        ['user' => $user, 'site' => $site, 'candidate' => $this->createMockCandidate(['status' => 'backlog'])['candidate'];
+        ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockCandidate(['status' => 'backlog']);
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('restore')
+        $mockService->shouldReceive('restoreCandidate')
             ->once()
             ->andThrow(new \Exception('Candidate is not in ignored state'));
 
@@ -670,7 +670,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('getCandidates')
+        $mockService->shouldReceive('listCandidates')
             ->once()
             ->andReturn($this->createPaginatedResponse([$candidate], 45));
 
@@ -698,7 +698,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('getCandidates')
+        $mockService->shouldReceive('listCandidates')
             ->once()
             ->andReturn($this->createPaginatedResponse([]));
 
@@ -711,7 +711,7 @@ class ContentDecayCandidateControllerTest extends TestCase
     /** @test */
     public function xss_in_notes_is_escaped(): void
     {
-        ['user' => $user, 'site' => $site, 'candidate' => $this->createMockCandidate()['candidate'];
+        ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockCandidate();
         Sanctum::actingAs($user);
 
         $updatedCandidate = (object) array_merge((array) $candidate, [
@@ -719,7 +719,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         ]);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('updateStatus')
+        $mockService->shouldReceive('updateCandidate')
             ->once()
             ->andReturn($updatedCandidate);
 
@@ -755,7 +755,7 @@ class ContentDecayCandidateControllerTest extends TestCase
     /** @test */
     public function mass_assignment_protection_on_update(): void
     {
-        ['user' => $user, 'site' => $site, 'candidate' => $this->createMockCandidate()['candidate'];
+        ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockCandidate();
         Sanctum::actingAs($user);
 
         $updatedCandidate = (object) array_merge((array) $candidate, [
@@ -764,7 +764,7 @@ class ContentDecayCandidateControllerTest extends TestCase
         ]);
 
         $mockService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockService->shouldReceive('updateStatus')
+        $mockService->shouldReceive('updateCandidate')
             ->once()
             ->andReturn($updatedCandidate);
 

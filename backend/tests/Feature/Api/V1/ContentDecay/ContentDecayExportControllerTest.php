@@ -83,7 +83,7 @@ class ContentDecayExportControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayExportServiceInterface::class);
-        $mockService->shouldReceive('exportToCsv')
+        $mockService->shouldReceive('exportQueue')
             ->once()
             ->andReturn('page_url,decay_score,severity,status
 https://example.com/page1,75.5,high,backlog');
@@ -116,7 +116,7 @@ https://example.com/page1,75.5,high,backlog');
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayExportServiceInterface::class);
-        $mockService->shouldReceive('exportToCsv')
+        $mockService->shouldReceive('exportQueue')
             ->once()
             ->andReturn('page_url,decay_score,severity,status');
 
@@ -132,7 +132,7 @@ https://example.com/page1,75.5,high,backlog');
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayExportServiceInterface::class);
-        $mockService->shouldReceive('exportToPdf')
+        $mockService->shouldReceive('exportQueue')
             ->once()
             ->andReturn('%PDF-1.4 binary content');
 
@@ -152,7 +152,7 @@ https://example.com/page1,75.5,high,backlog');
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayExportServiceInterface::class);
-        $mockService->shouldReceive('exportToCsv')
+        $mockService->shouldReceive('exportQueue')
             ->once()
             ->andReturn('page_url,decay_score,severity,status
 https://example.com/page1,75.5,high,backlog');
@@ -170,7 +170,7 @@ https://example.com/page1,75.5,high,backlog');
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayExportServiceInterface::class);
-        $mockService->shouldReceive('exportToPdf')
+        $mockService->shouldReceive('exportQueue')
             ->once()
             ->andReturn('%PDF-1.4 binary content');
 
@@ -187,7 +187,7 @@ https://example.com/page1,75.5,high,backlog');
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayExportServiceInterface::class);
-        $mockService->shouldReceive('exportToCsv')
+        $mockService->shouldReceive('exportQueue')
             ->once()
             ->withArgs(function ($siteId, $filters) {
                 return $siteId === $site->id
@@ -208,7 +208,7 @@ https://example.com/page1,75.5,high,backlog');
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayExportServiceInterface::class);
-        $mockService->shouldReceive('exportToCsv')
+        $mockService->shouldReceive('exportQueue')
             ->once()
             ->andReturn('page_url,decay_score,severity,status');
 
@@ -266,7 +266,7 @@ https://example.com/page1,75.5,high,backlog');
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayExportServiceInterface::class);
-        $mockService->shouldReceive('exportToCsv')
+        $mockService->shouldReceive('exportQueue')
             ->once()
             ->andReturn('page_url,decay_score,severity,status');
 
@@ -336,7 +336,7 @@ https://example.com/page1,75.5,high,backlog');
         Sanctum::actingAs($user);
 
         $mockService = $this->mock(ContentDecayExportServiceInterface::class);
-        $mockService->shouldReceive('exportToCsv')
+        $mockService->shouldReceive('exportQueue')
             ->once()
             ->andReturn('page_url,decay_score,severity,status');
 

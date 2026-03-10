@@ -32,6 +32,14 @@ interface ContentRefreshTaskServiceInterface
     public function listTasks(int $candidateId, array $filters = []): Collection;
 
     /**
+     * Get a single task by ID.
+     *
+     * @param int $taskId
+     * @return object|null The task or null if not found
+     */
+    public function getTask(int $taskId): ?object;
+
+    /**
      * Create a new task for a candidate.
      *
      * @param int $candidateId
