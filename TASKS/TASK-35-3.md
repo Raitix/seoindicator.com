@@ -1,7 +1,7 @@
-# TASK-35-3: GBP-Related Models
+﻿# TASK-35-3: GBP-Related Models
 
 ## STATUS
-`To Document`
+`Done`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -56,7 +56,7 @@ Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
 ## Comments
 
 ### ProdTester Session (2026-03-10 18:11 GMT+2)
-- Moved the task from `To Test Prod` → `Testing Prod` → `To Document` after validating the deployed GBP model layer against production with a disposable fixture and live HTTPS probes.
+- Moved the task from `To Test Prod` â†’ `Testing Prod` â†’ `To Document` after validating the deployed GBP model layer against production with a disposable fixture and live HTTPS probes.
 - Evidence: `PROJECT-SEOINDICATOR/temp/task353-prod-validation-20260310T161124Z.json`
 - Production Eloquent smoke checks passed for the dedicated model layer:
   - `BusinessLocation` relations resolved to the dedicated GBP models and returned the expected counts (`reviews=3`, `insights=2`, `posts=2`).
@@ -64,12 +64,12 @@ Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
   - `GBPReview` rating scopes returned the expected split (`positive=1`, `neutral=1`, `negative=1`), `unresponded()` returned `2`, and `sentiment_label` resolved to `Positive`.
   - `GBPPost` published/scheduled scopes returned `1/1`, and `post_type_label` resolved to `Event`.
 - Live authenticated review flows passed in production using the same fixture:
-  - `GET /api/v1/auth/user` ✅ 200
-  - `GET /api/v1/locations/{id}/reviews` ✅ returned all seeded reviews
-  - `GET /api/v1/locations/{id}/reviews?rating=5` ✅ returned only the 5-star review
-  - `GET /api/v1/locations/{id}/reviews?has_response=true` ✅ moved from `1` result to `2` after posting a response
-  - `GET /api/v1/locations/{id}/reviews/stats` ✅ `average_rating=3`, `total_count=3`, `response_rate` updated from `33.3` → `66.7`
-  - `POST /api/v1/locations/{id}/reviews/{reviewId}/respond` ✅ persisted the owner response through the production API
+  - `GET /api/v1/auth/user` âœ… 200
+  - `GET /api/v1/locations/{id}/reviews` âœ… returned all seeded reviews
+  - `GET /api/v1/locations/{id}/reviews?rating=5` âœ… returned only the 5-star review
+  - `GET /api/v1/locations/{id}/reviews?has_response=true` âœ… moved from `1` result to `2` after posting a response
+  - `GET /api/v1/locations/{id}/reviews/stats` âœ… `average_rating=3`, `total_count=3`, `response_rate` updated from `33.3` â†’ `66.7`
+  - `POST /api/v1/locations/{id}/reviews/{reviewId}/respond` âœ… persisted the owner response through the production API
 - Important downstream finding: `GET /api/v1/locations/{id}/insights?start_date=2026-03-08&end_date=2026-03-09` returned **500 Server Error** against the real production fixture.
   - This does **not** invalidate TASK-35-3 acceptance; the dedicated `GBPInsight` model itself is deployed and works in production.
   - The failure aligns with the still-open TASK-35-9 / LocalSEO adapter gap: `backend/app/Services/LocalSEO/GBPInsightsService.php` still queries legacy columns like `date`, `queries`, and `actions` instead of the deployed `gbp_insights` schema (`insights_date`, `searches`, `calls`, `directions`, `website_clicks`).
@@ -77,22 +77,22 @@ Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
 - Handoff: model task is production-validated; DocSystemAnalyst can record the completion while the separate insights-service work continues under TASK-35-9.
 
 ### DevOps Session (2026-03-10 17:52 GMT+2)
-- Moved the task from `To Deploy` → `In Deployment` → `To Test Prod` after rolling out commit `82cf1b5fafab481d9513d0fbdfcd19d124abc360` to production.
+- Moved the task from `To Deploy` â†’ `In Deployment` â†’ `To Test Prod` after rolling out commit `82cf1b5fafab481d9513d0fbdfcd19d124abc360` to production.
 - Re-ran the task-scoped backend validation from an isolated `origin/main` worktree before deploy:
-  - `php artisan test tests/Unit/Models/GBPInsightTest.php tests/Unit/Models/GBPReviewTest.php tests/Unit/Models/GBPPostTest.php tests/Unit/Models/BusinessLocationTest.php tests/Feature/Services/GBP/GBPReviewsServiceTest.php` ✅ **293 tests passed / 450 assertions**.
+  - `php artisan test tests/Unit/Models/GBPInsightTest.php tests/Unit/Models/GBPReviewTest.php tests/Unit/Models/GBPPostTest.php tests/Unit/Models/BusinessLocationTest.php tests/Feature/Services/GBP/GBPReviewsServiceTest.php` âœ… **293 tests passed / 450 assertions**.
 - Production rollout succeeded via `scripts/deploy-prod.ps1` from the canonical project root (the deploy script mis-resolves `secrets/seoindicator.env` when invoked from a nested temp worktree).
 - Deployment evidence: `C:\Users\Raitis\.openclaw\logs\deployments\20260310T155017Z-27d18eff.json` (`status: success`, build + SSH deploy + Playwright smoke all green).
 - Smoke verification passed against production:
-  - homepage ✅
-  - login page ✅
+  - homepage âœ…
+  - login page âœ…
 - Handoff: ready for ProdTester to validate the dedicated GBP models in production / live data paths that depend on them.
 
 ### LocalTester Session (2026-03-10 17:45 GMT+2)
-- Moved the task from `To Test Locally` → `Testing Locally` → `To Deploy` after local validation passed.
+- Moved the task from `To Test Locally` â†’ `Testing Locally` â†’ `To Deploy` after local validation passed.
 - Task-scoped model validation passed:
-  - `php artisan test tests/Unit/Models/GBPInsightTest.php tests/Unit/Models/GBPReviewTest.php tests/Unit/Models/GBPPostTest.php` ✅ **146/146 passed**.
+  - `php artisan test tests/Unit/Models/GBPInsightTest.php tests/Unit/Models/GBPReviewTest.php tests/Unit/Models/GBPPostTest.php` âœ… **146/146 passed**.
 - Nearby compatibility suites also passed:
-  - `php artisan test tests/Unit/Models/BusinessLocationTest.php tests/Feature/Services/GBP/GBPReviewsServiceTest.php` ✅ **147/147 passed**.
+  - `php artisan test tests/Unit/Models/BusinessLocationTest.php tests/Feature/Services/GBP/GBPReviewsServiceTest.php` âœ… **147/147 passed**.
 - Verified the implementation contract matches the task intent:
   - dedicated `GBPInsight`, `GBPReview`, and `GBPPost` models exist,
   - `BusinessLocation` now uses direct `hasMany()` bindings for GBP insights/reviews/posts,
@@ -102,18 +102,18 @@ Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
 - Handoff: ready for DevOps deployment.
 
 ### Developer Session (2026-03-10 16:59 GMT+2)
-- ✅ Implemented dedicated `GBPInsight` and `GBPPost` Eloquent models and rewired `GBPReview` to the `BusinessLocation` model instead of the stale `Location` reference.
-- ✅ Added/verified required casts, relationships, scopes, accessors, and helper methods from the task contract:
+- âœ… Implemented dedicated `GBPInsight` and `GBPPost` Eloquent models and rewired `GBPReview` to the `BusinessLocation` model instead of the stale `Location` reference.
+- âœ… Added/verified required casts, relationships, scopes, accessors, and helper methods from the task contract:
   - `GBPInsight`: `forDateRange()`, `forLocation()`, `calculateTotalActions()`, `formatted_date`, `total_views`, `engagement_rate`
   - `GBPReview`: `positive()`, `negative()`, `neutral()`, `unresponded()`, `responded()`, `forLocation()`, `withRating()`, `recent()`, `hasOwnerResponse()`, `sentiment_label`, `star_rating`, `is_positive`, `is_negative`
   - `GBPPost`: `published()`, `scheduled()`, `forLocation()`, `ofType()`, `recent()`, `post_type_label`
-- ✅ Added model-level normalization/guards needed for the existing schema and cross-database tests (date normalization, non-negative insight metrics, review rating range validation, string truncation for bounded columns).
-- ✅ Updated `BusinessLocation` GBP relationships to real `hasMany()` model bindings for insights and posts.
-- ✅ Corrected three prewritten mass-assignment tests so they create valid parent `BusinessLocation` records (and provide required `insights_date`) before asserting guarded fields; this keeps the assertions intact while aligning the tests with the real foreign-key / NOT NULL schema.
-- ✅ Verified targeted task suite passes: `php artisan test tests/Unit/Models/GBPInsightTest.php tests/Unit/Models/GBPReviewTest.php tests/Unit/Models/GBPPostTest.php` → **146 passed**.
-- ✅ Verified nearby compatibility suites still pass: `tests/Unit/Models/BusinessLocationTest.php` and `tests/Feature/Services/GBP/GBPReviewsServiceTest.php` → **147 passed**.
-- ℹ️ `tests/Feature/Services/GBP/GBPInsightsServiceTest.php` still fails because `GBPInsightsService` is explicitly unimplemented in this repo; that is outside TASK-35-3 scope.
-- **Status:** `In Development` → `To Test Locally`
+- âœ… Added model-level normalization/guards needed for the existing schema and cross-database tests (date normalization, non-negative insight metrics, review rating range validation, string truncation for bounded columns).
+- âœ… Updated `BusinessLocation` GBP relationships to real `hasMany()` model bindings for insights and posts.
+- âœ… Corrected three prewritten mass-assignment tests so they create valid parent `BusinessLocation` records (and provide required `insights_date`) before asserting guarded fields; this keeps the assertions intact while aligning the tests with the real foreign-key / NOT NULL schema.
+- âœ… Verified targeted task suite passes: `php artisan test tests/Unit/Models/GBPInsightTest.php tests/Unit/Models/GBPReviewTest.php tests/Unit/Models/GBPPostTest.php` â†’ **146 passed**.
+- âœ… Verified nearby compatibility suites still pass: `tests/Unit/Models/BusinessLocationTest.php` and `tests/Feature/Services/GBP/GBPReviewsServiceTest.php` â†’ **147 passed**.
+- â„¹ï¸ `tests/Feature/Services/GBP/GBPInsightsServiceTest.php` still fails because `GBPInsightsService` is explicitly unimplemented in this repo; that is outside TASK-35-3 scope.
+- **Status:** `In Development` â†’ `To Test Locally`
 
 ### Developer Session (2026-03-10 16:46 GMT+2)
 - Picked TASK-35-3 up for implementation and moved status to `In Development`.
@@ -127,13 +127,13 @@ Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
 **Dependency Status:**
 | Dependency | Status | Ready? |
 |------------|--------|--------|
-| TASK-35-1 (Database Migrations) | To Test Locally | ✅ YES |
-| TASK-35-2 (BusinessLocation Model) | To Prioritize | ❌ NO (transitive) |
+| TASK-35-1 (Database Migrations) | To Test Locally | âœ… YES |
+| TASK-35-2 (BusinessLocation Model) | To Prioritize | âŒ NO (transitive) |
 
 **Technical Assessment:**
 - 3 models to create: GBPInsight, GBPReview, GBPPost
 - All models have `belongsTo` relationship to BusinessLocation
-- Migrations for all 3 tables exist ✅
+- Migrations for all 3 tables exist âœ…
 - BusinessLocation model NOT YET CREATED (TASK-35-2 pending)
 
 **TDD Pattern Applied:**
@@ -156,14 +156,14 @@ Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
 
 **Dependency Chain:**
 ```
-TASK-35-1 (Migrations) ✅ DONE
-  ↓
-TASK-35-2 (BusinessLocation Model) ← BLOCKED HERE
-  ↓
-TASK-35-3 (This task - GBP Models) ← Current
-  ↓
+TASK-35-1 (Migrations) âœ… DONE
+  â†“
+TASK-35-2 (BusinessLocation Model) â† BLOCKED HERE
+  â†“
+TASK-35-3 (This task - GBP Models) â† Current
+  â†“
 TASK-35-9, 35-10 (Services)
-  ↓
+  â†“
 TASK-35-14 (Controllers)
 ```
 
@@ -173,7 +173,7 @@ TASK-35-14 (Controllers)
 - Key lesson: Model tasks with transitive dependencies can proceed to PreTester using TDD with mocked interfaces
 
 ### PreTester Session (2026-03-08 23:40 GMT+2)
-**Result:** ✅ COMPLETE - Tests Ready for Development
+**Result:** âœ… COMPLETE - Tests Ready for Development
 
 ### Test Files Created
 | File | Tests | Description |
@@ -248,7 +248,7 @@ TASK-35-14 (Controllers)
 - `scopeNegative()` - Rating <= 2
 - `scopeNeutral()` - Rating = 3
 - `scopeUnresponded()` - Null owner_response
-- `star_rating` accessor - Star string (★★★★☆ format)
+- `star_rating` accessor - Star string (â˜…â˜…â˜…â˜…â˜† format)
 - `is_positive` accessor - Rating >= 4
 - `is_negative` accessor - Rating <= 2
 
@@ -260,8 +260,20 @@ TASK-35-14 (Controllers)
 - `scopeRecent($limit)` - Order by published_at DESC
 
 ### Status Updated
-- TASK-35-3: `To Write Tests` → `To Develop`
+- TASK-35-3: `To Write Tests` â†’ `To Develop`
 
 ### Cleanup
 - Completion marker written: `logs/completed/task/TASK-35-3.json`
 - Lock file removed
+
+### DocSystemAnalyst Session (2026-03-10 18:19 GMT+2)
+- Moved the task from `To Document` → `Documentation in Progress` → `Done` after updating `DOCUMENTATION.md` to match the deployed GBP model layer.
+- Documented the dedicated `GBPInsight`, `GBPReview`, and `GBPPost` models, their `BusinessLocation` relations, factory states, task-scoped model test coverage, and the production validation evidence for this task.
+- Corrected stale documentation drift from TASK-35-2 / TASK-35-10:
+  - `BusinessLocation::insights()` and `posts()` are now documented as concrete `hasMany()` relations to `GBPInsight` / `GBPPost`, not temporary table-backed anonymous models.
+  - The GBP reviews service dependency note now reflects that TASK-35-3 is complete in production.
+  - The top deployment baseline now points at the latest verified TASK-35-3 rollout (`20260310T155017Z-27d18eff`, commit `82cf1b5fafab481d9513d0fbdfcd19d124abc360`).
+- Re-verified the task-scoped model suite locally while documenting:
+  - `php artisan test tests/Unit/Models/GBPInsightTest.php tests/Unit/Models/GBPReviewTest.php tests/Unit/Models/GBPPostTest.php` ✅ **146 passed / 232 assertions**.
+- Captured the important downstream note without reopening this task: the production insights endpoint schema mismatch remains tracked separately under TASK-35-9 and does not block TASK-35-3 completion.
+
