@@ -602,6 +602,10 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
         ->name('locations.show')
         ->where('id', '[0-9]+')
         ->middleware('throttle:60,1');
+    Route::post('locations/{id}/sync', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'sync'])
+        ->name('locations.sync')
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:3,60');
     Route::put('locations/{id}', [\App\Http\Controllers\Api\V1\LocalSEO\BusinessLocationController::class, 'update'])
         ->name('locations.update')
         ->where('id', '[0-9]+')
