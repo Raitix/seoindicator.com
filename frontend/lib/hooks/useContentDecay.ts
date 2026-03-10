@@ -456,7 +456,7 @@ export function useContentRefreshTasks(candidateId: string | number) {
     tasks: data ?? [],
     isLoading,
     error: error ?? null,
-    mutate: async (newData, shouldRevalidate) => {
+    mutate: async (newData: any, shouldRevalidate?: boolean) => {
       await mutate(newData as any, shouldRevalidate);
     },
   };

@@ -840,4 +840,140 @@ public function get_star_rating_attribute_returns_star_string(): void
 
 ---
 
-Last updated: 2026-03-08
+## Content Decay Dashboard Widget Testing (TASK-36-14)
+
+### Widget Component Testing Pattern
+- Test all 4 states: Loading, Error, Empty, Data
+- Use mock component implementation in test file for TDD reference
+- Follow existing widget patterns (AuditWidget from TASK-14-17)
+- Test state transitions: Loading → Error/Empty/Data
+
+### Widget State Machine
+```
+Loading → Error (on API failure)
+Loading → Empty (totalCandidates === 0)
+Loading → Data (totalCandidates > 0)
+```
+
+### Dashboard Widget Test Categories
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 10 | Component structure, attributes |
+| Empty State | 8 | No decay detected |
+| Loading State | 8 | Initial load with skeletons |
+| Summary Card | 12 | Severity badges, totals, upside |
+| Top Candidates | 15 | List items, actions, truncation |
+| Timestamp | 8 | Relative time formatting |
+| Navigation Links | 8 | View All, hrefs |
+| Quick Actions | 10 | View, Plan, Ignore buttons |
+| Error State | 6 | API failure handling |
+| Accessibility | 10 | ARIA, keyboard, contrast |
+
+### Severity Color Coding
+- Critical: Red (#ef4444) - data-severity="critical"
+- High: Orange (#f97316) - data-severity="high"
+- Medium: Yellow (#eab308) - data-severity="medium"
+
+### Navigation Integration Testing
+Test 5 integration points:
+1. **SiteNav** - "Content Decay" link in SEO Tools menu
+2. **QuickActionsDropdown** - "View Decay Queue" action
+3. **GlobalSearch** - Decay candidates in search results
+4. **SiteSettings** - Toggle + configure link
+5. **Dashboard** - Widget placement and layout
+
+### Mock Widget Props Pattern
+```typescript
+interface ContentDecayWidgetProps {
+  siteId: string;
+  summary?: DecaySummary;
+  topCandidates?: DecayCandidate[];
+  isLoading?: boolean;
+  error?: string | null;
+  onRefresh?: () => void;
+  onViewCandidate?: (id: number) => void;
+  onMarkPlanned?: (id: number) => void;
+  onIgnore?: (id: number) => void;
+  className?: string;
+}
+```
+
+### Mock Decay Data Pattern
+```typescript
+const mockSummary = {
+  criticalCount: 5,
+  highCount: 12,
+  mediumCount: 8,
+  totalCandidates: 25,
+  estimatedRecoveryUpside: 1500,
+  recoveredCount: 3,
+  lastScannedAt: '2026-03-10T15:30:00Z',
+};
+
+const mockTopCandidates = [
+  {
+    id: 1,
+    pageUrl: 'https://example.com/blog/seo-tips',
+    pageTitle: '10 SEO Tips for 2024',
+    decayScore: 85,
+    severity: 'critical',
+    primaryReason: 'clicks_down',
+    lostClicks: 450,
+  },
+];
+```
+
+### Number Formatting for Recovery Upside
+| Input | Expected Output |
+|-------|-----------------|
+| 0 | "0" |
+| 500 | "500" |
+| 1500 | "1.5K" |
+| 2500000 | "2.5M" |
+
+### Reason Code Formatting
+| Code | Display |
+|------|---------|
+| clicks_down | "Click loss" |
+| impressions_down | "Impression loss" |
+| ctr_down | "CTR drop" |
+| avg_position_down | "Position decline" |
+| tracked_rankings_down | "Ranking decline" |
+| audit_issues_present | "Technical issues" |
+| stale_content | "Stale content" |
+
+### URL Truncation Pattern
+- Default max length: 40 characters
+- Truncate with ellipsis: `url.substring(0, 37) + '...'`
+- Full URL in title attribute for tooltip
+
+### Relative Time Formatting
+| Time Diff | Display |
+|-----------|---------|
+| < 1 min | "Just now" |
+| < 60 min | "X minutes ago" |
+| < 24 hours | "X hours ago" |
+| 1 day | "Yesterday" |
+| < 7 days | "X days ago" |
+| >= 7 days | "Mar 5, 2026" |
+
+### Navigation Structure
+```
+SEO Tools
+├── Keyword Rankings
+├── Site Audits
+├── Content Decay  ← NEW (after Audits)
+├── AI Visibility
+└── Annotations
+```
+
+### API Endpoints for Widget
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/v1/sites/{siteId}/content-decay/summary` | Summary stats |
+| GET | `/api/v1/sites/{siteId}/content-decay/candidates?limit=3&sort=decay_score` | Top 3 candidates |
+| PATCH | `/api/v1/content-decay/candidates/{id}` | Update status |
+
+---
+
+Last updated: 2026-03-10
