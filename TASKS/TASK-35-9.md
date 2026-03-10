@@ -1,7 +1,7 @@
 # TASK-35-9: GBP Insights Sync Service
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -145,6 +145,40 @@ Create GBPInsightsService for syncing and aggregating Google Business Profile in
   - 12 service tests (contract, sync, read, aggregate, cache, error handling)
   - 5 job tests (dispatch, handle, missing location, retry/timeout, failure)
 - **Design Note:** The `LocalSEO\GBPInsightsService` adapter remains as a controller-facing stub (TASK-35-14). The new domain service in `App\Services\GBP` follows the established pattern of separating domain services from controller adapters.
+
+### LocalTester Session (2026-03-11 03:45 GMT+2)
+- **Status:** `To Test Locally` → `To Deploy`
+- **Test Results:** All 17 tests PASS (35 assertions)
+  ```
+  PASS  Tests\Feature\Services\GBP\GBPInsightsServiceTest
+    ✓ service class exists
+    ✓ service implements interface
+    ✓ container resolves contract binding
+    ✓ interface exposes all required methods
+    ✓ sync insights fetches gbp metrics and persists daily snapshots
+    ✓ sync insights upserts duplicate dates instead of inserting duplicates
+    ✓ get insights returns collection ordered by date with derived queries and actions
+    ✓ get total metrics aggregates queries views actions and photo views
+    ✓ get insights trend returns daily breakdown totals and wow mom changes
+    ✓ get top performing day returns best day by total actions
+    ✓ get insights uses one hour cache for identical location and date range
+    ✓ sync insights logs and rethrows api failures
+
+  PASS  Tests\Feature\Jobs\SyncInsightsJobTest
+    ✓ job dispatches for a location and preserves optional date range
+    ✓ job handle resolves location and calls domain service with model and date range
+    ✓ missing location is logged and job exits gracefully
+    ✓ job uses expected retry and timeout defaults
+    ✓ job failure handler logs context
+  ```
+- **Security Review:**
+  - SQL Injection: Eloquent/Query Builder with parameterized queries ✅
+  - Input Sanitization: Model has integer casting and negative value validation ✅
+  - Error Handling: API failures logged with context and rethrown ✅
+  - Missing Credentials: `syncInsights()` gracefully handles missing GBP credentials ✅
+  - Queue Safety: Job has retry (3 tries), timeout (300s), failure logging ✅
+- **Acceptance Criteria:** All verified ✅
+- **Status:** Ready for deployment
 
 ---
 
