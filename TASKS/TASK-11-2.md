@@ -232,3 +232,25 @@ Actions:
 - Task remains `Done`
 
 - SPEC-011 remains `In Progress` because TASK-11-1 is not yet `Done`
+
+### [2026-03-10 23:14 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - TASK-11-2 Project Members Table
+
+Verification:
+- Task status remains `Done` ✅
+- DOCUMENTATION.md verified at line 21180+ (Project Members Table section) ✅
+- Migration re-verified: `backend/database/migrations/2026_02_26_191000_create_project_members_table.php`
+- Model re-verified: `backend/app/Models/ProjectMember.php`
+- Schema includes all expected fields: `id`, `project_id`, `user_id`, `role` ENUM('editor', 'viewer'), timestamps
+- Foreign keys with CASCADE delete on both `project_id` and `user_id`
+- Unique constraint `idx_project_user` on `(project_id, user_id)`
+- Index `project_members_role_index` on `role` column
+- Documentation includes role permissions matrix, model relationships, and production status
+
+Actions:
+- Cleared stale lock file
+- Wrote completion marker: `logs/completed/task/TASK-11-2.json`
+- Cleared active-agents entry
+
+Task fully closed and documented.
+- SPEC-011 remains `In Progress` because TASK-11-1 is not yet `Done`

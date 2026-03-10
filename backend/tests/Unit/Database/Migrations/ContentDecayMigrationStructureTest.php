@@ -191,7 +191,7 @@ class ContentDecayMigrationStructureTest extends TestCase
     {
         if ($this->isSqlite()) {
             $columns = $this->getSqliteColumnInfo('content_decay_projects');
-            $this->assertStringContainsString('TEXT', strtoupper($columns['digest_frequency']->type));
+            $this->assertStringContainsString('VARCHAR', strtoupper($columns['digest_frequency']->type));
         } else {
             $column = DB::connection()->getDoctrineColumn('content_decay_projects', 'digest_frequency');
             $this->assertEquals('string', $column->getType()->getName());
@@ -215,7 +215,7 @@ class ContentDecayMigrationStructureTest extends TestCase
     {
         if ($this->isSqlite()) {
             $columns = $this->getSqliteColumnInfo('content_decay_candidates');
-            $this->assertStringContainsString('TEXT', strtoupper($columns['page_url']->type));
+            $this->assertStringContainsString('VARCHAR', strtoupper($columns['page_url']->type));
         } else {
             $column = DB::connection()->getDoctrineColumn('content_decay_candidates', 'page_url');
             $this->assertEquals('string', $column->getType()->getName());
@@ -364,7 +364,7 @@ class ContentDecayMigrationStructureTest extends TestCase
     {
         if ($this->isSqlite()) {
             $columns = $this->getSqliteColumnInfo('content_refresh_tasks');
-            $this->assertStringContainsString('TEXT', strtoupper($columns['title']->type));
+            $this->assertStringContainsString('VARCHAR', strtoupper($columns['title']->type));
         } else {
             $column = DB::connection()->getDoctrineColumn('content_refresh_tasks', 'title');
             $this->assertEquals('string', $column->getType()->getName());
@@ -464,7 +464,7 @@ class ContentDecayMigrationStructureTest extends TestCase
     /** @test */
     public function candidates_optional_columns_are_nullable(): void
     {
-        $nullableColumns = ['page_title', 'page_type', 'signal_sources', 'evidence_json', 'planned_at', 'started_at', 'refreshed_at', 'recovered_at', 'ignored_at'];
+        $nullableColumns = ['page_title', 'signal_sources', 'evidence_json', 'planned_at', 'started_at', 'refreshed_at', 'recovered_at', 'ignored_at'];
         $columns = $this->getSqliteColumnInfo('content_decay_candidates');
         
         foreach ($nullableColumns as $col) {

@@ -1,7 +1,7 @@
 # TASK-35-6: Nominatim Geocoding Service
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
