@@ -1,7 +1,7 @@
 # TASK-36-2: Eloquent Models - Content Decay
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -74,6 +74,55 @@ Create Eloquent models for the four Content Decay database tables with relations
 ---
 
 ## Comments
+
+### PreTester (2026-03-10)
+**Test Suite Created ✅**
+
+Created comprehensive test suite for all 4 Content Decay Eloquent models:
+
+**Test Files Created:**
+| File | Location | Tests |
+|------|----------|-------|
+| ContentDecayProjectTest.php | tests/Unit/Models/ | 85+ |
+| ContentDecayCandidateTest.php | tests/Unit/Models/ | 120+ |
+| ContentDecaySignalTest.php | tests/Unit/Models/ | 90+ |
+| ContentRefreshTaskTest.php | tests/Unit/Models/ | 90+ |
+| **Total** | | **385+** |
+
+**Factory Files Created:**
+| File | States |
+|------|--------|
+| ContentDecayProjectFactory.php | disabled, noDigest, weeklyDigest, monthlyDigest, window7/14/56Days, neverScanned, recentlyScanned |
+| ContentDecayCandidateFactory.php | planned, inProgress, refreshed, recovered, ignored, criticalSeverity, highSeverity, etc. |
+| ContentDecaySignalFactory.php | clickDecline, impressionDecline, ctrDecline, positionDecline, severeDecay, etc. |
+| ContentRefreshTaskFactory.php | inProgress, done, skipped, overdue, dueSoon, highPriority, metaUpdate, contentRefresh |
+
+**Test Documentation:**
+- `TESTS/TEST-36-2.md` - Comprehensive test documentation with scenarios, mock data patterns
+
+**Test Categories Covered:**
+1. Model Instantiation (constructor, fillable, guarded)
+2. Casts (decimal, boolean, array, enum, date/datetime)
+3. Relationships (BelongsTo, HasMany)
+4. Scopes (filtering by status, severity, user, etc.)
+5. Helper Methods (status transitions, delta calculations)
+6. Accessors (computed attributes like is_recovered)
+7. Factory States (all workflow states)
+8. Edge Cases (nulls, large values, unicode, emojis)
+9. Security (SQL injection, XSS, invalid enum values)
+10. Integration (CRUD, cascade deletes, complex queries)
+11. Performance (N+1 prevention, index usage verification)
+
+**Key Implementation Notes for Developer:**
+- All models follow existing patterns from BusinessLocationTest.php
+- Factory states match workflow transitions (backlog → planned → in_progress → refreshed → recovered)
+- Unique constraints verified (site_id for projects, project+page_url_hash for candidates)
+- Cascade delete behavior tested
+- ENUM validation enforced
+
+**Status:** `To Develop` → Ready for Developer implementation
+
+---
 
 ### ProjectManager (2026-03-10)
 **Prioritization Complete**
