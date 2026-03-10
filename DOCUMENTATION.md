@@ -12323,26 +12323,27 @@ Comprehensive SEO guide content for the Page Speed indicator, covering Core Web 
 |---------|----------|-------------|
 | Resource hints | HTML | preload/prefetch for critical resources |
 | Script loading | HTML | defer/async attribute usage |
-| Image lazy loading | HTML | Native lazy loading with dimensions |
-| Browser caching | Apache | .htaccess caching headers |
+| Image lazy loading | HTML | Native lazy loading with explicit dimensions |
+| Browser caching + Gzip | Apache | `.htaccess` expires rules plus `mod_deflate` compression |
 | Server compression | Nginx | Gzip/Brotli configuration |
-| CDN configuration | Apache | Cache-Control headers for CDN |
-| Core Web Vitals thresholds | TypeScript | Reference thresholds object |
+| Core Web Vitals thresholds | Text | Good / needs-improvement / poor threshold reference |
+
+**Note:** CDN guidance is covered in the Optimization Techniques section narrative rather than as a standalone code snippet.
 
 ### Best Practices Checklist
 
 | Priority | Item |
 |----------|------|
-| Critical | Optimize Core Web Vitals (LCP < 2.5s, FID < 100ms, CLS < 0.1) |
-| Critical | Enable browser caching for static assets |
-| Critical | Compress images and use modern formats (WebP, AVIF) |
-| Important | Use a Content Delivery Network (CDN) |
-| Important | Minify CSS, JavaScript, and HTML |
-| Important | Implement lazy loading for images and videos |
-| Important | Optimize server response time (TTFB < 600ms) |
-| Important | Remove unused CSS and JavaScript |
-| Recommended | Use resource hints (preload, prefetch) |
-| Recommended | Implement critical CSS for above-the-fold content |
+| Critical | Achieve LCP under 2.5 seconds on mobile and desktop |
+| Critical | Achieve FID under 100ms and INP under 200ms for responsiveness |
+| Critical | Achieve CLS under 0.1 by setting image dimensions |
+| Important | Implement browser caching with appropriate cache-control headers |
+| Important | Use a CDN to serve content from edge locations near users |
+| Important | Optimize images with WebP/AVIF format and lazy loading |
+| Important | Minify and compress CSS/JavaScript with Gzip or Brotli |
+| Important | Use defer/async for non-critical JavaScript to prevent render blocking |
+| Recommended | Reduce server TTFB to under 600ms with caching and optimization |
+| Recommended | Enable HTTP/2 or HTTP/3 for multiplexed requests |
 
 ### Related Guides
 - `image-optimization` - Image file optimization techniques
@@ -12355,15 +12356,14 @@ Comprehensive SEO guide content for the Page Speed indicator, covering Core Web 
 {
   slug: 'page-speed',
   title: 'Page Speed Optimization',
-  summary: 'Improve your page load speed for better SEO rankings...',
+  summary: 'Improve Core Web Vitals and page load times for better user experience, higher search rankings, and increased conversions.',
   category: 'technical',
-  icon: '⚡',
+  icon: '🚀',
   readTime: 7,
-  hasTool: false,
   relatedGuides: ['image-optimization', 'mobile-friendly'],
-  sections: [ /* 6 sections */ ],
+  sections: [ /* 5 sections */ ],
   checklist: [ /* 10 items */ ],
-  codeExamples: [ /* 7 examples */ ]
+  // 6 code examples are embedded inside the Core Web Vitals and Optimization Techniques sections
 }
 ```
 
@@ -12385,7 +12385,7 @@ Comprehensive SEO guide content for the Page Speed indicator, covering Core Web 
 | Best Practices Checklist | 7 | 10 items with priorities |
 | Read Time | 3 | 5-7 minute range validation |
 | Related Guides | 4 | image-optimization, mobile-friendly |
-| Code Examples | 19 | HTML, Apache, Nginx, TypeScript |
+| Code Examples | 19 | HTML, Apache, Nginx, text |
 
 ### Production Status
 - **Deployed:** 2026-03-01 (GitHub Actions)
