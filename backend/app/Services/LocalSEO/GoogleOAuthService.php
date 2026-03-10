@@ -4,7 +4,8 @@ namespace App\Services\LocalSEO;
 
 use App\Models\BusinessLocation;
 use App\Services\LocalSEO\Contracts\GoogleOAuthServiceInterface;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 
 /**
@@ -36,6 +37,16 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
     protected array $scopes = [
         'https://www.googleapis.com/auth/business.manage',
     ];
+
+    /**
+     * Google's OAuth token endpoint.
+     */
+    protected string $tokenEndpoint = 'https://oauth2.googleapis.com/token';
+
+    /**
+     * Google's token revocation endpoint.
+     */
+    protected string $revokeEndpoint = 'https://oauth2.googleapis.com/revoke';
 
     /**
      * Create a new Google OAuth service instance.
@@ -121,15 +132,8 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
                 ];
             }
 
-            // Store tokens in the location
-            $location->gbp_access_token = encrypt($tokens['access_token']);
-            $location->gbp_refresh_token = encrypt($tokens['refresh_token']);
-            $location->gbp_token_expires_at = now()->addSeconds($tokens['expires_in']);
-            $location->gbp_connected = true;
-            $location->save();
-
-            // Fetch initial GBP data (would be done in a job in production)
-            // $this->fetchInitialData($location);
+            // Store tokens using the new gbp_tokens column
+            $this->storeTokens($location, $tokens);
 
             return [
                 'success' => true,
@@ -163,29 +167,7 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
             return;
         }
 
-        // Attempt to revoke the token with Google
-        try {
-            if ($location->gbp_access_token) {
-                $accessToken = decrypt($location->gbp_access_token);
-                $this->revokeToken($accessToken);
-            }
-        } catch (\Exception $e) {
-            \Log::warning('Failed to revoke Google token during disconnect', [
-                'location_id' => $locationId,
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        // Clear stored tokens
-        $location->gbp_access_token = null;
-        $location->gbp_refresh_token = null;
-        $location->gbp_token_expires_at = null;
-        $location->gbp_connected = false;
-        $location->gbp_place_id = null;
-        $location->save();
-
-        // Clear state cache
-        Cache::forget("gbp_state_{$locationId}");
+        $this->disconnectLocation($location);
     }
 
     /**
@@ -196,10 +178,7 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
      */
     public function validateState(string $state): bool
     {
-        // Check if state exists in cache
-        $cached = Cache::get("gbp_state_data_{$state}");
-
-        return $cached !== null;
+        return Session::get('gbp_oauth_state') === $state;
     }
 
     /**
@@ -212,21 +191,24 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
     {
         $location = BusinessLocation::find($locationId);
 
-        if (!$location || !$location->gbp_refresh_token) {
+        if (!$location) {
+            return false;
+        }
+
+        $stored = $this->decodeStoredTokens($location);
+
+        if (!$stored || empty($stored['refresh_token'])) {
             return false;
         }
 
         try {
-            $refreshToken = decrypt($location->gbp_refresh_token);
-            $tokens = $this->refreshAccessToken($refreshToken);
+            $tokens = $this->refreshAccessToken($stored['refresh_token']);
 
             if (!$tokens) {
                 return false;
             }
 
-            $location->gbp_access_token = encrypt($tokens['access_token']);
-            $location->gbp_token_expires_at = now()->addSeconds($tokens['expires_in']);
-            $location->save();
+            $this->storeTokens($location, $tokens);
 
             return true;
         } catch (\Exception $e) {
@@ -249,59 +231,55 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
     {
         $location = BusinessLocation::find($locationId);
 
-        if (!$location || !$location->gbp_connected || !$location->gbp_access_token) {
+        if (!$location || !$location->gbp_connected) {
             return false;
         }
 
-        // Check if token has expired
-        if ($location->gbp_token_expires_at && $location->gbp_token_expires_at->isPast()) {
-            // Try to refresh
-            return $this->refreshToken($locationId);
-        }
+        $token = $this->getValidAccessToken($location);
 
-        return true;
+        return $token !== null;
     }
 
     /**
-     * Generate a secure state parameter.
+     * Generate a secure state parameter and store in session.
      *
      * @param int $locationId
      * @return string
      */
     protected function generateState(int $locationId): string
     {
+        // Generate high-entropy random state (40+ characters)
         $state = Str::random(40);
 
-        // Store state with location binding
-        Cache::put("gbp_state_data_{$state}", [
-            'location_id' => $locationId,
-            'created_at' => now()->toISOString(),
-        ], now()->addMinutes(10));
-
-        // Also store by location ID for validation
-        Cache::put("gbp_state_{$locationId}", $state, now()->addMinutes(10));
+        // Store state and location ID in session for CSRF validation
+        Session::put('gbp_oauth_state', $state);
+        Session::put('gbp_oauth_location_id', $locationId);
 
         return $state;
     }
 
     /**
-     * Validate state and extract location ID.
+     * Validate state and extract location ID from session.
      *
      * @param string $state
      * @return int|null
      */
     protected function validateStateAndGetLocationId(string $state): ?int
     {
-        $cached = Cache::get("gbp_state_data_{$state}");
+        // Validate the state matches what we stored in session
+        $storedState = Session::get('gbp_oauth_state');
 
-        if (!$cached) {
+        if ($storedState !== $state) {
             return null;
         }
 
-        // Remove the state after use
-        Cache::forget("gbp_state_data_{$state}");
+        // Get the location ID from session
+        $locationId = Session::get('gbp_oauth_location_id');
 
-        return $cached['location_id'];
+        // Clear the session state after use (single-use)
+        Session::forget(['gbp_oauth_state', 'gbp_oauth_location_id']);
+
+        return $locationId;
     }
 
     /**
@@ -356,15 +334,40 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
      *
      * @param string $code
      * @param int $locationId
-     * @return array|null
+     * @return array{access_token: string, refresh_token: string, expires_at: string}|null
      */
     protected function exchangeCodeForTokens(string $code, int $locationId): ?array
     {
         $this->ensureOAuthConfigured();
 
-        // This would make an HTTP request to Google's token endpoint
-        // Placeholder implementation - actual implementation would use HTTP client
-        return null;
+        try {
+            $response = Http::asForm()->post($this->tokenEndpoint, [
+                'grant_type' => 'authorization_code',
+                'code' => $code,
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
+                'redirect_uri' => $this->getCallbackUrl($locationId),
+            ]);
+
+            if (!$response->successful()) {
+                \Log::error('Google OAuth token exchange failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return null;
+            }
+
+            $data = $response->json();
+
+            return $this->normalizeTokenResponse($data);
+        } catch (\Exception $e) {
+            \Log::error('Google OAuth token exchange exception', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**
@@ -379,8 +382,59 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
             return null;
         }
 
-        // TODO TASK-35-7: implement Google token refresh flow against oauth2.googleapis.com/token
-        return null;
+        try {
+            $response = Http::asForm()->post($this->tokenEndpoint, [
+                'grant_type' => 'refresh_token',
+                'refresh_token' => $refreshToken,
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
+            ]);
+
+            if (!$response->successful()) {
+                \Log::error('Google OAuth token refresh failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return null;
+            }
+
+            $data = $response->json();
+
+            // Google may not return a new refresh token, so keep the original
+            $tokens = $this->normalizeTokenResponse($data);
+            
+            // Preserve the original refresh token if Google didn't return a new one
+            if (empty($tokens['refresh_token'])) {
+                $tokens['refresh_token'] = $refreshToken;
+            }
+
+            return $tokens;
+        } catch (\Exception $e) {
+            \Log::error('Google OAuth token refresh exception', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Normalize Google's token response to our internal format.
+     *
+     * @param array $data
+     * @return array{access_token: string, refresh_token: string, expires_at: string}
+     */
+    protected function normalizeTokenResponse(array $data): array
+    {
+        $expiresIn = (int) ($data['expires_in'] ?? 3600);
+        $expiresAt = now()->addSeconds($expiresIn)->toISOString();
+
+        return [
+            'access_token' => $data['access_token'] ?? '',
+            'refresh_token' => $data['refresh_token'] ?? '',
+            'expires_at' => $expiresAt,
+        ];
     }
 
     /**
@@ -493,7 +547,21 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
      */
     protected function revokeToken(string $token): bool
     {
-        // TODO TASK-35-7: implement Google revoke endpoint call.
-        return true;
+        try {
+            $response = Http::asForm()->post($this->revokeEndpoint, [
+                'token' => $token,
+            ]);
+
+            // Google returns 200 for successful revocation
+            // Even if token was already revoked, we consider it a success
+            return $response->status() === 200;
+        } catch (\Exception $e) {
+            \Log::warning('Failed to revoke Google token', [
+                'error' => $e->getMessage(),
+            ]);
+
+            // Return true anyway to allow local cleanup to proceed
+            return true;
+        }
     }
 }

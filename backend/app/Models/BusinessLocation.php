@@ -27,6 +27,7 @@ class BusinessLocation extends Model
         'gbp_access_token',
         'gbp_refresh_token',
         'gbp_token_expires_at',
+        'gbp_tokens',
         'name',
         'address',
         'phone',
@@ -59,6 +60,7 @@ class BusinessLocation extends Model
     protected $hidden = [
         'gbp_access_token',
         'gbp_refresh_token',
+        'gbp_tokens',
     ];
 
     protected static function booted(): void
