@@ -1,7 +1,7 @@
 # TASK-35-9: GBP Insights Sync Service
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -179,6 +179,23 @@ Create GBPInsightsService for syncing and aggregating Google Business Profile in
   - Queue Safety: Job has retry (3 tries), timeout (300s), failure logging ✅
 - **Acceptance Criteria:** All verified ✅
 - **Status:** Ready for deployment
+
+### DevOps Session (2026-03-10 23:46 GMT+2)
+- **Status:** `To Deploy` → `In Deployment` → `To Test Prod`
+- **Deployment Result:** SUCCESS
+- **Deployment ID:** `20260310T214330Z-7beae7bf`
+- **Commit:** `aa55349f`
+- **Duration:** ~3 minutes (build: 1m20s, deploy: 1m16s, smoke: 8s)
+- **Production Smoke:** Homepage + login Playwright smoke passed
+- **What was deployed:**
+  - `backend/app/Services/GBP/GBPInsightsService.php` - Domain service for GBP insights sync
+  - `backend/app/Services/GBP/Contracts/GBPInsightsServiceInterface.php` - Service interface
+  - `backend/app/Jobs/SyncInsightsJob.php` - Queue job for background sync
+  - `backend/app/Providers/AppServiceProvider.php` - Container binding
+  - `backend/tests/Feature/Services/GBP/GBPInsightsServiceTest.php` - 12 service tests
+  - `backend/tests/Feature/Jobs/SyncInsightsJobTest.php` - 5 job tests
+- **Fix Required:** Had to install `satori` package in frontend/node_modules before deployment could succeed
+- **Status:** Ready for ProdTester validation
 
 ---
 
