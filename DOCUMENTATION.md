@@ -24560,13 +24560,13 @@ CREATE TABLE competitors (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT UNSIGNED NOT NULL,
     domain VARCHAR(255) NOT NULL,
-    display_name VARCHAR(255),
+    display_name VARCHAR(100),
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY competitors_user_domain_unique (user_id, domain)
+    UNIQUE KEY competitors_user_id_domain_unique (user_id, domain)
 );
 ```
 
@@ -24576,19 +24576,19 @@ CREATE TABLE competitors (
 | `id` | BIGINT UNSIGNED | Primary key |
 | `user_id` | BIGINT UNSIGNED | FK to users.id |
 | `domain` | VARCHAR(255) | Competitor domain (e.g., 'competitor.com') |
-| `display_name` | VARCHAR(255) | Friendly name for display (nullable) |
+| `display_name` | VARCHAR(100) | Friendly name for display (nullable) |
 | `notes` | TEXT | User notes about competitor (nullable) |
 | `deleted_at` | TIMESTAMP | Soft delete timestamp (nullable) |
 
 **Constraints:**
 - Foreign Key: `user_id → users.id` ON DELETE CASCADE
-- Unique: `(user_id, domain)` - prevents duplicate competitors per user
+- Unique: `(user_id, domain)` via `competitors_user_id_domain_unique` - prevents duplicate competitors per user
 
 **Indexes:**
-- `idx_competitors_user_id` on `user_id`
-- `idx_competitors_domain` on `domain`
+- `competitors_user_id_index` on `user_id`
+- `competitors_domain_index` on `domain`
 
-**Model:** `App\Models\Competitor` (uses SoftDeletes, has User relationship)
+**Model:** `App\Models\Competitor` (uses SoftDeletes, belongs to User, has many CompetitorRanking records)
 
 ### Competitor Rankings Table
 Stores historical ranking positions for competitor domains on tracked keywords.
@@ -24599,13 +24599,13 @@ CREATE TABLE competitor_rankings (
     competitor_id BIGINT UNSIGNED NOT NULL,
     keyword_id BIGINT UNSIGNED NOT NULL,
     position INT UNSIGNED,
-    url VARCHAR(2083),
+    url TEXT,
     checked_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (competitor_id) REFERENCES competitors(id) ON DELETE CASCADE,
     FOREIGN KEY (keyword_id) REFERENCES keywords(id) ON DELETE CASCADE,
-    UNIQUE KEY competitor_rankings_unique (competitor_id, keyword_id, checked_at)
+    UNIQUE KEY competitor_rankings_competitor_id_keyword_id_checked_at_unique (competitor_id, keyword_id, checked_at)
 );
 ```
 
@@ -24616,20 +24616,20 @@ CREATE TABLE competitor_rankings (
 | `competitor_id` | BIGINT UNSIGNED | FK to competitors.id |
 | `keyword_id` | BIGINT UNSIGNED | FK to keywords.id |
 | `position` | INT UNSIGNED | Rank position (NULL = not in top 100) |
-| `url` | VARCHAR(2083) | URL found at that position (nullable) |
+| `url` | TEXT | URL found at that position (nullable) |
 | `checked_at` | TIMESTAMP | When the ranking was checked |
 
 **Constraints:**
 - Foreign Key: `competitor_id → competitors.id` ON DELETE CASCADE
 - Foreign Key: `keyword_id → keywords.id` ON DELETE CASCADE
-- Unique: `(competitor_id, keyword_id, checked_at)` - one ranking per competitor/keyword/date
+- Unique: `(competitor_id, keyword_id, checked_at)` via `competitor_rankings_competitor_id_keyword_id_checked_at_unique` - one ranking per competitor/keyword/date
 
 **Indexes:**
-- `idx_competitor_rankings_competitor_id` on `competitor_id`
-- `idx_competitor_rankings_keyword_id` on `keyword_id`
-- `idx_competitor_rankings_checked_at` on `checked_at`
+- `competitor_rankings_competitor_id_index` on `competitor_id`
+- `competitor_rankings_keyword_id_index` on `keyword_id`
+- `competitor_rankings_checked_at_index` on `checked_at`
 
-**Model:** `App\Models\CompetitorRanking` (belongs to Competitor, belongs to Keyword)
+**Model:** `App\Models\CompetitorRanking` (belongs to Competitor and belongs to Keyword)
 
 ---
 ## Database Schema: Reports Tables (TASK-4-1)

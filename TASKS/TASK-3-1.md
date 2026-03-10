@@ -1,4 +1,4 @@
-# SPEC-003-1: Database Migration - Competitors Tables
+# TASK-3-1: Database Migration - Competitors Tables
 
 ## STATUS
 `Done`
@@ -396,4 +396,28 @@ Created task for database migration. This is the foundation task - must be compl
 - DOCUMENTATION.md updated ✓
 
 **Completion marker written:** `logs/completed/task/TASK-3-1.json`
+
+### [2026-03-10 15:03] Agent: DocSystemAnalyst
+**Re-Verification + Documentation Drift Fix**
+
+**What I verified:**
+- Migration source still creates `competitors` + `competitor_rankings` with the expected foreign keys, unique constraints, indexes, timestamps, and `softDeletes()` on `competitors`.
+- `App\Models\Competitor` still uses `SoftDeletes`, belongs to `User`, and has many `CompetitorRanking` records.
+- `App\Models\CompetitorRanking` still belongs to both `Competitor` and `Keyword`.
+
+**Documentation drift fixed in `DOCUMENTATION.md`:**
+- Corrected `competitors.display_name` from `VARCHAR(255)` to `VARCHAR(100)`.
+- Corrected `competitor_rankings.url` from `VARCHAR(2083)` to `TEXT`.
+- Corrected the documented Laravel-generated unique/index names to match the current migration output.
+- Clarified the model relationship wording.
+
+**Task file housekeeping:**
+- Corrected the task heading from `SPEC-003-1` to `TASK-3-1`.
+
+**Verification notes:**
+- A targeted `CreateCompetitorsTablesTest` rerun still shows the schema tests passing, but the old rollback assertion now fails because `migrate:rollback --step=1` no longer targets this historical migration once newer migrations exist.
+- The migration’s `down()` method itself still correctly drops `competitor_rankings` first and then `competitors`, so this task remains historically `Done`.
+- The filtered PHPUnit run also surfaced unrelated repo-level `AnnotationCategory` discovery failures outside TASK-3-1 scope.
+
+**Status:** `Done` (unchanged)
 
