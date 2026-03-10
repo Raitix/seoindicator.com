@@ -82,6 +82,7 @@ class LocalRankingController extends Controller
                 'keyword' => $keyword->keyword,
                 'local_pack_position' => $latestRanking?->local_pack_position,
                 'local_organic_position' => $latestRanking?->local_organic_position,
+                'competitors_in_pack' => $latestRanking?->competitors_in_pack ?? [],
                 'last_checked' => $latestRanking?->checked_at?->toISOString(),
             ];
         });
@@ -134,12 +135,16 @@ class LocalRankingController extends Controller
         $history = $query->orderByDesc('checked_at')->get()->groupBy('keyword_id');
 
         $formattedHistory = $history->map(function ($rankings, $keywordId) {
+            $firstRanking = $rankings->first();
+
             return [
                 'keyword_id' => $keywordId,
+                'keyword' => $firstRanking?->keyword?->keyword,
                 'snapshots' => $rankings->map(fn ($r) => [
                     'date' => $r->checked_at->format('Y-m-d'),
                     'local_pack_position' => $r->local_pack_position,
                     'local_organic_position' => $r->local_organic_position,
+                    'competitors_in_pack' => $r->competitors_in_pack ?? [],
                 ])->values(),
             ];
         })->values();
