@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api\V1\LocalSEO;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\V1\LocalSEO\LocalSEOAlertRequest;
+use App\Http\Requests\Api\V1\LocalSEO\LocalSEOAlertIndexRequest;
+use App\Http\Requests\Api\V1\LocalSEO\LocalSEOAlertMarkAllReadRequest;
 use App\Http\Resources\Api\V1\LocalSEO\LocalSEOAlertResource;
 use App\Models\BusinessLocation;
 use App\Models\LocalSEOAlert;
+use App\Models\User;
 use App\Services\LocalSEO\Contracts\LocalSEOAlertServiceInterface;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -16,113 +18,71 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 /**
  * @Task TASK-35-16
  * @Description Local SEO Alerts API Controller
- *
- * Provides endpoints for managing local SEO alerts:
- * - List alerts with filtering and pagination
- * - Get unread alert counts
- * - Mark alerts as read (single or bulk)
- * - Delete alerts
- * - List alerts for a specific location
  */
 class LocalSEOAlertController extends Controller
 {
-    use AuthorizesRequests;
-
-    protected LocalSEOAlertServiceInterface $alertService;
-
-    public function __construct(LocalSEOAlertServiceInterface $alertService)
-    {
-        $this->alertService = $alertService;
+    public function __construct(
+        protected LocalSEOAlertServiceInterface $alertService
+    ) {
     }
 
     /**
-     * List all alerts for the authenticated user.
-     *
-     * GET /api/v1/local-seo/alerts
-     *
-     * @RateLimit 60/min
+     * List alerts for the authenticated user.
      */
-    public function index(LocalSEOAlertRequest $request): AnonymousResourceCollection
+    public function index(LocalSEOAlertIndexRequest $request): AnonymousResourceCollection
     {
-        $user = $request->user();
-        $filters = $this->getFilters($request);
-
-        $query = LocalSEOAlert::where('user_id', $user->id)
+        $filters = $request->validated();
+        $query = LocalSEOAlert::query()
             ->with('location')
-            ->orderBy('created_at', 'desc');
+            ->orderByDesc('created_at');
 
-        // Apply filters
-        if (isset($filters['location_id'])) {
-            $query->where('location_id', $filters['location_id']);
-        }
+        $this->applyUserScope($query, $request->user());
+        $this->applyFilters($query, $filters);
 
-        if (isset($filters['severity'])) {
-            $query->where('severity', $filters['severity']);
-        }
-
-        if (isset($filters['alert_type'])) {
-            $query->where('alert_type', $filters['alert_type']);
-        }
-
-        if (isset($filters['is_read'])) {
-            $query->where('is_read', $filters['is_read']);
-        }
-
-        // Pagination with capped per_page
-        $perPage = min($filters['per_page'] ?? 15, 100);
-
-        $alerts = $query->paginate($perPage);
-
-        return LocalSEOAlertResource::collection($alerts);
+        return LocalSEOAlertResource::collection(
+            $query->paginate($this->resolvePerPage($filters))
+        );
     }
 
     /**
      * Get unread alert counts for the authenticated user.
-     *
-     * GET /api/v1/local-seo/alerts/unread-count
-     *
-     * @RateLimit 60/min
      */
-    public function unreadCount(LocalSEOAlertRequest $request): JsonResponse
+    public function unreadCount(LocalSEOAlertIndexRequest $request): JsonResponse
     {
-        $user = $request->user();
-        $locationId = $request->input('location_id');
+        $filters = $request->validated();
+        $query = LocalSEOAlert::query()->where('is_read', false);
 
-        $unreadAlerts = $this->alertService->getUnreadAlerts($user->id, $locationId);
+        $this->applyUserScope($query, $request->user());
 
-        // Count by severity
+        if (array_key_exists('location_id', $filters)) {
+            $query->where('location_id', $filters['location_id']);
+        }
+
+        $alerts = $query->get(['severity']);
         $bySeverity = [
             'info' => 0,
             'warning' => 0,
             'critical' => 0,
         ];
 
-        foreach ($unreadAlerts as $alert) {
-            if (isset($bySeverity[$alert->severity])) {
+        foreach ($alerts as $alert) {
+            if (array_key_exists($alert->severity, $bySeverity)) {
                 $bySeverity[$alert->severity]++;
             }
         }
 
         return response()->json([
-            'total' => $unreadAlerts->count(),
+            'total' => $alerts->count(),
             'by_severity' => $bySeverity,
         ]);
     }
 
     /**
      * Mark a specific alert as read.
-     *
-     * POST /api/v1/local-seo/alerts/{id}/read
-     *
-     * @RateLimit 60/min
      */
     public function markAsRead(Request $request, int $id): JsonResponse
     {
-        $user = $request->user();
-
-        $alert = LocalSEOAlert::where('id', $id)
-            ->where('user_id', $user->id)
-            ->first();
+        $alert = $this->findAccessibleAlert($request->user(), $id);
 
         if (!$alert) {
             return response()->json([
@@ -130,53 +90,27 @@ class LocalSEOAlertController extends Controller
             ], 404);
         }
 
-        // Already read - idempotent
-        if ($alert->is_read) {
-            return response()->json([
-                'success' => true,
-                'alert' => new LocalSEOAlertResource($alert),
-            ]);
-        }
-
-        $this->alertService->markAsRead($id);
-
-        $alert->refresh();
+        $this->alertService->markAsRead($alert->id);
+        $alert->refresh()->loadMissing('location');
 
         return response()->json([
             'success' => true,
-            'alert' => new LocalSEOAlertResource($alert),
+            'alert' => (new LocalSEOAlertResource($alert))->resolve($request),
         ]);
     }
 
     /**
      * Mark all alerts as read for the authenticated user.
-     *
-     * POST /api/v1/local-seo/alerts/mark-all-read
-     *
-     * @RateLimit 10/min
      */
-    public function markAllAsRead(LocalSEOAlertRequest $request): JsonResponse
+    public function markAllAsRead(LocalSEOAlertMarkAllReadRequest $request): JsonResponse
     {
-        $user = $request->user();
-        $locationId = $request->input('location_id');
-        $severity = $request->input('severity');
+        $filters = $request->validated();
 
-        $query = LocalSEOAlert::where('user_id', $user->id)
-            ->where('is_read', false);
-
-        // Apply optional filters
-        if ($locationId) {
-            $query->where('location_id', $locationId);
-        }
-
-        if ($severity) {
-            $query->where('severity', $severity);
-        }
-
-        $count = $query->update([
-            'is_read' => true,
-            'read_at' => now(),
-        ]);
+        $count = $this->alertService->markAllAsRead(
+            $request->user()->id,
+            $filters['location_id'] ?? null,
+            $filters['severity'] ?? null,
+        );
 
         return response()->json([
             'success' => true,
@@ -186,18 +120,10 @@ class LocalSEOAlertController extends Controller
 
     /**
      * Delete a specific alert.
-     *
-     * DELETE /api/v1/local-seo/alerts/{id}
-     *
-     * @RateLimit 60/min
      */
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $user = $request->user();
-
-        $alert = LocalSEOAlert::where('id', $id)
-            ->where('user_id', $user->id)
-            ->first();
+        $alert = $this->findAccessibleAlert($request->user(), $id);
 
         if (!$alert) {
             return response()->json([
@@ -212,84 +138,92 @@ class LocalSEOAlertController extends Controller
 
     /**
      * List all alerts for a specific location.
-     *
-     * GET /api/v1/locations/{id}/alerts
-     *
-     * @RateLimit 60/min
      */
-    public function locationAlerts(LocalSEOAlertRequest $request, int $id): AnonymousResourceCollection
+    public function locationAlerts(LocalSEOAlertIndexRequest $request, int $id): AnonymousResourceCollection
     {
-        $user = $request->user();
-
-        // Verify location ownership
-        $location = BusinessLocation::where('id', $id)
-            ->where('user_id', $user->id)
-            ->first();
+        $location = $this->findAccessibleLocation($request->user(), $id);
 
         if (!$location) {
             abort(404, 'Location not found');
         }
 
-        $filters = $this->getFilters($request);
+        $filters = $request->validated();
+        unset($filters['location_id']);
 
-        $query = LocalSEOAlert::where('location_id', $id)
-            ->orderBy('created_at', 'desc');
+        $query = LocalSEOAlert::query()
+            ->where('location_id', $id)
+            ->orderByDesc('created_at');
 
-        // Apply filters
-        if (isset($filters['severity'])) {
+        $this->applyUserScope($query, $request->user());
+        $this->applyFilters($query, $filters);
+
+        return LocalSEOAlertResource::collection(
+            $query->paginate($this->resolvePerPage($filters))
+        );
+    }
+
+    protected function applyUserScope(Builder $query, User $user): void
+    {
+        if (!$this->isAdmin($user)) {
+            $query->where('user_id', $user->id);
+        }
+    }
+
+    protected function applyFilters(Builder $query, array $filters): void
+    {
+        if (array_key_exists('location_id', $filters)) {
+            $query->where('location_id', $filters['location_id']);
+        }
+
+        if (array_key_exists('severity', $filters)) {
             $query->where('severity', $filters['severity']);
         }
 
-        if (isset($filters['alert_type'])) {
-            $query->where('alert_type', $filters['alert_type']);
+        if (array_key_exists('type', $filters)) {
+            $query->where('alert_type', $filters['type']);
         }
 
-        if (isset($filters['is_read'])) {
-            $query->where('is_read', $filters['is_read']);
+        if (array_key_exists('is_read', $filters)) {
+            $query->where('is_read', $this->normalizeBoolean($filters['is_read']));
         }
-
-        // Pagination with capped per_page
-        $perPage = min($filters['per_page'] ?? 15, 100);
-
-        $alerts = $query->paginate($perPage);
-
-        return LocalSEOAlertResource::collection($alerts);
     }
 
-    /**
-     * Extract filters from request.
-     */
-    protected function getFilters(Request $request): array
+    protected function resolvePerPage(array $filters): int
     {
-        $filters = [];
+        return min((int) ($filters['per_page'] ?? 15), 100);
+    }
 
-        // Pagination
-        $perPage = (int) $request->input('per_page', 15);
-        $filters['per_page'] = min(max($perPage, 1), 100);
+    protected function normalizeBoolean(mixed $value): bool
+    {
+        return in_array($value, [true, 1, '1', 'true'], true);
+    }
 
-        // Location filter
-        if ($request->filled('location_id')) {
-            $filters['location_id'] = (int) $request->input('location_id');
+    protected function findAccessibleAlert(User $user, int $id): ?LocalSEOAlert
+    {
+        $query = LocalSEOAlert::query()
+            ->with('location')
+            ->whereKey($id);
+
+        $this->applyUserScope($query, $user);
+
+        return $query->first();
+    }
+
+    protected function findAccessibleLocation(User $user, int $id): ?BusinessLocation
+    {
+        $query = BusinessLocation::query()->whereKey($id);
+
+        if (!$this->isAdmin($user)) {
+            $query->where('user_id', $user->id);
         }
 
-        // Severity filter (validated by request)
-        if ($request->filled('severity')) {
-            $filters['severity'] = $request->input('severity');
-        }
+        return $query->first();
+    }
 
-        // Alert type filter (validated by request)
-        if ($request->filled('alert_type')) {
-            $filters['alert_type'] = $request->input('alert_type');
-        }
-
-        // Is read filter
-        if ($request->has('is_read')) {
-            $filters['is_read'] = filter_var(
-                $request->input('is_read'),
-                FILTER_VALIDATE_BOOLEAN
-            );
-        }
-
-        return $filters;
+    protected function isAdmin(User $user): bool
+    {
+        return method_exists($user, 'isAdmin')
+            ? $user->isAdmin()
+            : in_array($user->role ?? null, ['admin', 'super_admin'], true);
     }
 }
