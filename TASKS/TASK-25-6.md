@@ -31,7 +31,7 @@ Set up Google OAuth 2.0 credentials in Google Cloud Console and configure the ap
   - `GOOGLE_CLIENT_SECRET`
   - `GOOGLE_REDIRECT_URI`
 - [x] Services config updated with Google provider
-- [ ] Documentation updated with setup instructions *(optional - already in config/services.php comments)*
+- [x] Documentation updated with setup instructions *(DOCUMENTATION.md, TESTS/TASK-25-6.md, and config/services.php comments now reflect the shipped configuration and manual setup path)*
 
 ---
 
@@ -49,10 +49,10 @@ Set up Google OAuth 2.0 credentials in Google Cloud Console and configure the ap
 Google Cloud Console steps:
 1. Go to console.cloud.google.com
 2. Create/select project
-3. Enable Google+ API
-4. Create OAuth 2.0 credentials (Web application)
-5. Add authorized origins (e.g., http://localhost:3000)
-6. Add redirect URI: `http://localhost:8000/api/v1/auth/google/callback`
+3. Create OAuth 2.0 credentials (Web application)
+4. Add authorized origins (e.g., `http://localhost:3000`, `https://seoindicator.com`)
+5. Add redirect URIs (e.g., `http://localhost:8000/api/v1/auth/google/callback`, `https://seoindicator.com/api/v1/auth/google/callback`)
+6. Copy the real Client ID and Client Secret into the target environment
 
 Config in `config/services.php`:
 ```php
@@ -60,6 +60,10 @@ Config in `config/services.php`:
     'client_id' => env('GOOGLE_CLIENT_ID'),
     'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     'redirect' => env('GOOGLE_REDIRECT_URI'),
+    'redirect_uris' => array_filter([
+        env('GOOGLE_REDIRECT_URI'),
+        env('GOOGLE_REDIRECT_URI_PROD'),
+    ]),
 ],
 ```
 
@@ -69,6 +73,33 @@ Config in `config/services.php`:
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-10 16:54 GMT+2] Agent: DocSystemAnalyst
+**Documentation Re-Verification Complete:**
+
+Re-checked the shipped Google OAuth credential configuration against the live repository state.
+
+**Verified Current Implementation:**
+- ✅ `backend/config/services.php` still wires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI`
+- ✅ Config now also exposes optional multi-environment redirect support via `redirect_uris` + `GOOGLE_REDIRECT_URI_PROD`
+- ✅ `backend/.env` contains local placeholder credentials for format-safe development verification
+- ✅ `backend/.env.example` and `backend/.env.testing` intentionally leave secrets blank
+- ✅ Task-specific auth verification suites passed: 42 passed, 3 skipped (expected environment/session-dependent skips)
+
+**Documentation Drift Fixed:**
+- Updated `DOCUMENTATION.md` to reflect the actual `services.php` structure, current environment-file behavior, and fresh test results
+- Updated `TESTS/TASK-25-6.md` to remove stale Google+ API guidance and keep the setup flow aligned with the current console/config path
+- Updated this task record so the documentation acceptance criterion reflects the shipped state
+
+**Important Reality Check:**
+- The app-side configuration is shipped and documented
+- Live Google sign-in still requires a real Google OAuth client created in Google Cloud Console
+- Placeholder credentials remain suitable only for local config/format validation
+
+Status updated: `Done`
+
+---
+*Verified by DocSystemAnalyst*
 
 ### [2026-03-01 16:15 GMT+2] Agent: DevOps
 **Deployment Analysis:**

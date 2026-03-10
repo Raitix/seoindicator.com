@@ -102,6 +102,7 @@ Tests for verifying Google OAuth 2.0 credential configuration. This task involve
 GOOGLE_CLIENT_ID=123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-abcdefghijklmnopqrstuvwxyz123456
 GOOGLE_REDIRECT_URI=http://localhost:8000/api/v1/auth/google/callback
+GOOGLE_REDIRECT_URI_PROD=https://seoindicator.com/api/v1/auth/google/callback
 ```
 
 ### Sample .env Values (Production)
@@ -109,6 +110,7 @@ GOOGLE_REDIRECT_URI=http://localhost:8000/api/v1/auth/google/callback
 GOOGLE_CLIENT_ID=123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-abcdefghijklmnopqrstuvwxyz123456
 GOOGLE_REDIRECT_URI=https://seoindicator.com/api/v1/auth/google/callback
+GOOGLE_REDIRECT_URI_PROD=
 ```
 
 ### Expected config/services.php Structure
@@ -117,6 +119,10 @@ GOOGLE_REDIRECT_URI=https://seoindicator.com/api/v1/auth/google/callback
     'client_id' => env('GOOGLE_CLIENT_ID'),
     'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     'redirect' => env('GOOGLE_REDIRECT_URI'),
+    'redirect_uris' => array_filter([
+        env('GOOGLE_REDIRECT_URI'),
+        env('GOOGLE_REDIRECT_URI_PROD'),
+    ]),
 ],
 ```
 
@@ -179,7 +185,8 @@ php artisan test --coverage --filter "GoogleOAuth"
 ### Environment Configuration
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID from Google Cloud Console
 - `GOOGLE_CLIENT_SECRET` - Google OAuth client secret
-- `GOOGLE_REDIRECT_URI` - OAuth callback URL
+- `GOOGLE_REDIRECT_URI` - primary OAuth callback URL
+- `GOOGLE_REDIRECT_URI_PROD` - optional additional production callback URL for multi-environment registration
 
 ### External Requirements
 - Google Cloud Console project with OAuth 2.0 credentials created
@@ -203,11 +210,7 @@ php artisan test --coverage --filter "GoogleOAuth"
 2. **Create or select a project:**
    - Create new project named "SEOIndicator" or select existing
 
-3. **Enable required APIs:**
-   - Go to "APIs & Services" → "Library"
-   - Enable "Google+ API" (if needed for profile data)
-
-4. **Create OAuth 2.0 credentials:**
+3. **Create OAuth 2.0 credentials:**
    - Go to "APIs & Services" → "Credentials"
    - Click "Create Credentials" → "OAuth client ID"
    - Select "Web application"
@@ -219,7 +222,7 @@ php artisan test --coverage --filter "GoogleOAuth"
      - Production: `https://seoindicator.com/api/v1/auth/google/callback`
    - Click "Create" to get Client ID and Client Secret
 
-5. **Update .env file:**
+4. **Update .env file:**
    ```env
    GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
    GOOGLE_CLIENT_SECRET=GOCSPX-your-secret
