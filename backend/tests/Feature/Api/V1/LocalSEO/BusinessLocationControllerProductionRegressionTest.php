@@ -11,6 +11,7 @@ use App\Services\LocalSEO\Contracts\BusinessLocationServiceInterface;
 use App\Services\LocalSEO\Contracts\GoogleOAuthServiceInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
 use Tests\TestCase;
@@ -44,6 +45,15 @@ class BusinessLocationControllerProductionRegressionTest extends TestCase
 
         $this->app->forgetInstance(GoogleOAuthServiceInterface::class);
         $this->app->bind(GoogleOAuthServiceInterface::class, GoogleOAuthService::class);
+    }
+
+    protected function dropBusinessLocationDeletedAtColumn(): void
+    {
+        if (Schema::hasColumn('business_locations', 'deleted_at')) {
+            Schema::table('business_locations', function ($table) {
+                $table->dropColumn('deleted_at');
+            });
+        }
     }
 
     /** @test */
@@ -178,6 +188,86 @@ class BusinessLocationControllerProductionRegressionTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.name', 'Connected Location')
             ->assertJsonPath('data.1.name', 'Disconnected Location');
+    }
+
+    /** @test */
+    public function locations_index_returns_json_401_for_plain_guest_requests_instead_of_html_server_errors(): void
+    {
+        $site = Site::factory()->create();
+
+        $response = $this->get("/api/v1/sites/{$site->id}/locations");
+
+        $response->assertStatus(401);
+        $this->assertStringContainsString('application/json', (string) $response->headers->get('Content-Type'));
+    }
+
+    /** @test */
+    public function locations_index_tolerates_missing_deleted_at_column_in_drifted_production_schemas(): void
+    {
+        $user = User::factory()->create();
+        $site = Site::factory()->create(['user_id' => $user->id]);
+
+        BusinessLocation::factory()->create([
+            'user_id' => $user->id,
+            'site_id' => $site->id,
+            'name' => 'Soft Delete Drift Location',
+            'address' => '789 Runtime Drift Road',
+        ]);
+
+        $this->dropBusinessLocationDeletedAtColumn();
+
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson("/api/v1/sites/{$site->id}/locations");
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Soft Delete Drift Location');
+    }
+
+    /** @test */
+    public function locations_show_tolerates_missing_deleted_at_column_in_drifted_production_schemas(): void
+    {
+        $user = User::factory()->create();
+        $site = Site::factory()->create(['user_id' => $user->id]);
+        $location = BusinessLocation::factory()->create([
+            'user_id' => $user->id,
+            'site_id' => $site->id,
+            'name' => 'Drifted Detail Location',
+        ]);
+
+        $this->dropBusinessLocationDeletedAtColumn();
+
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson("/api/v1/locations/{$location->id}");
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.id', $location->id)
+            ->assertJsonPath('data.name', 'Drifted Detail Location');
+    }
+
+    /** @test */
+    public function locations_sync_tolerates_missing_deleted_at_column_in_drifted_production_schemas(): void
+    {
+        $user = User::factory()->create();
+        $site = Site::factory()->create(['user_id' => $user->id]);
+        $location = BusinessLocation::factory()->create([
+            'user_id' => $user->id,
+            'site_id' => $site->id,
+            'gbp_connected' => true,
+        ]);
+
+        $this->dropBusinessLocationDeletedAtColumn();
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson("/api/v1/locations/{$location->id}/sync");
+
+        $response
+            ->assertStatus(202)
+            ->assertJsonPath('message', 'Location dashboard refresh initiated.');
     }
 
     /** @test */

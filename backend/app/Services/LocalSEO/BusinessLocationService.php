@@ -8,7 +8,9 @@ use App\Services\LocalSEO\Contracts\BusinessLocationServiceInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Business Location Service
@@ -18,6 +20,8 @@ use Illuminate\Pagination\LengthAwarePaginator as Paginator;
  */
 class BusinessLocationService implements BusinessLocationServiceInterface
 {
+    protected ?bool $supportsBusinessLocationSoftDeletesCache = null;
+
     /**
      * Create a new business location.
      *
@@ -84,7 +88,7 @@ class BusinessLocationService implements BusinessLocationServiceInterface
     {
         $location = $this->findLocation($id);
 
-        if ($force) {
+        if ($force || !$this->supportsBusinessLocationSoftDeletes()) {
             return $location->forceDelete();
         }
 
@@ -100,7 +104,7 @@ class BusinessLocationService implements BusinessLocationServiceInterface
      */
     public function getLocationsForSite(int $siteId, array $options = []): Collection|Paginator
     {
-        $query = BusinessLocation::query()
+        $query = $this->newLocationQuery(($options['include_deleted'] ?? false) === true)
             ->where('site_id', $siteId);
 
         // Filter by active status
@@ -124,13 +128,6 @@ class BusinessLocationService implements BusinessLocationServiceInterface
                     ->orWhere('website', 'like', "%{$search}%")
                     ->orWhere('category', 'like', "%{$search}%");
             });
-        }
-
-        // Include soft deleted
-        if (($options['include_deleted'] ?? false) === true) {
-            $query->withTrashed();
-        } else {
-            $query->whereNull('deleted_at');
         }
 
         // Eager load relations
@@ -176,7 +173,7 @@ class BusinessLocationService implements BusinessLocationServiceInterface
      */
     public function getLocationsForUser(int $userId, array $options = []): Collection|Paginator
     {
-        $query = BusinessLocation::query()
+        $query = $this->newLocationQuery(($options['include_deleted'] ?? false) === true)
             ->where('user_id', $userId);
 
         // Filter by site
@@ -205,13 +202,6 @@ class BusinessLocationService implements BusinessLocationServiceInterface
                     ->orWhere('website', 'like', "%{$search}%")
                     ->orWhere('category', 'like', "%{$search}%");
             });
-        }
-
-        // Include soft deleted
-        if (($options['include_deleted'] ?? false) === true) {
-            $query->withTrashed();
-        } else {
-            $query->whereNull('deleted_at');
         }
 
         // Eager load relations
@@ -309,8 +299,8 @@ class BusinessLocationService implements BusinessLocationServiceInterface
      */
     public function findLocation(int $id): BusinessLocation
     {
-        $location = BusinessLocation::where('id', $id)
-            ->whereNull('deleted_at')
+        $location = $this->newLocationQuery()
+            ->where('id', $id)
             ->first();
 
         if (!$location) {
@@ -329,7 +319,7 @@ class BusinessLocationService implements BusinessLocationServiceInterface
      */
     public function restoreLocation(int $id): BusinessLocation
     {
-        $location = BusinessLocation::withTrashed()
+        $location = $this->newLocationQuery(includeDeleted: true)
             ->where('id', $id)
             ->first();
 
@@ -337,7 +327,7 @@ class BusinessLocationService implements BusinessLocationServiceInterface
             throw new ModelNotFoundException("Location with ID {$id} not found");
         }
 
-        if (!$location->trashed()) {
+        if (!$this->supportsBusinessLocationSoftDeletes() || !$location->trashed()) {
             return $location;
         }
 
@@ -416,5 +406,39 @@ class BusinessLocationService implements BusinessLocationServiceInterface
             'total_reviews' => 0,
             'response_rate' => 0,
         ];
+    }
+
+    /**
+     * Build a location query that tolerates production schema drift.
+     */
+    protected function newLocationQuery(bool $includeDeleted = false)
+    {
+        $query = BusinessLocation::query();
+
+        if (!$this->supportsBusinessLocationSoftDeletes()) {
+            return $query->withoutGlobalScope(SoftDeletingScope::class);
+        }
+
+        return $includeDeleted ? $query->withTrashed() : $query;
+    }
+
+    /**
+     * Determine whether the business_locations table currently supports soft deletes.
+     */
+    protected function supportsBusinessLocationSoftDeletes(): bool
+    {
+        if ($this->supportsBusinessLocationSoftDeletesCache !== null) {
+            return $this->supportsBusinessLocationSoftDeletesCache;
+        }
+
+        $model = new BusinessLocation();
+        $connection = $model->getConnectionName();
+
+        $this->supportsBusinessLocationSoftDeletesCache = Schema::connection($connection)->hasColumn(
+            $model->getTable(),
+            $model->getDeletedAtColumn()
+        );
+
+        return $this->supportsBusinessLocationSoftDeletesCache;
     }
 }
