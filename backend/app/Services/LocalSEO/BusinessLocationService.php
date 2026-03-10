@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Schema;
 class BusinessLocationService implements BusinessLocationServiceInterface
 {
     protected ?bool $supportsBusinessLocationSoftDeletesCache = null;
+    protected ?bool $supportsBusinessLocationActiveFlagCache = null;
 
     /**
      * Create a new business location.
@@ -108,7 +109,7 @@ class BusinessLocationService implements BusinessLocationServiceInterface
             ->where('site_id', $siteId);
 
         // Filter by active status
-        if (($options['active_only'] ?? false) === true) {
+        if (($options['active_only'] ?? false) === true && $this->supportsBusinessLocationActiveFlag()) {
             $query->where('is_active', true);
         }
 
@@ -182,7 +183,7 @@ class BusinessLocationService implements BusinessLocationServiceInterface
         }
 
         // Filter by active status
-        if (($options['active_only'] ?? false) === true) {
+        if (($options['active_only'] ?? false) === true && $this->supportsBusinessLocationActiveFlag()) {
             $query->where('is_active', true);
         }
 
@@ -440,5 +441,25 @@ class BusinessLocationService implements BusinessLocationServiceInterface
         );
 
         return $this->supportsBusinessLocationSoftDeletesCache;
+    }
+
+    /**
+     * Determine whether the business_locations table currently supports the is_active flag.
+     */
+    protected function supportsBusinessLocationActiveFlag(): bool
+    {
+        if ($this->supportsBusinessLocationActiveFlagCache !== null) {
+            return $this->supportsBusinessLocationActiveFlagCache;
+        }
+
+        $model = new BusinessLocation();
+        $connection = $model->getConnectionName();
+
+        $this->supportsBusinessLocationActiveFlagCache = Schema::connection($connection)->hasColumn(
+            $model->getTable(),
+            'is_active'
+        );
+
+        return $this->supportsBusinessLocationActiveFlagCache;
     }
 }
