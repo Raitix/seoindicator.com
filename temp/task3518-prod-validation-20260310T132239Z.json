@@ -1,0 +1,79 @@
+{
+  "taskId": "TASK-35-18",
+  "validatedAt": "2026-03-10T13:24:00Z",
+  "validatedAtLocal": "2026-03-10 15:24 GMT+2",
+  "environment": "production",
+  "baseUrl": "https://seoindicator.com",
+  "deploymentLog": "C:\\Users\\Raitis\\.openclaw\\logs\\deployments\\20260310T125810Z-25fda2d7.json",
+  "authProbe": {
+    "account": "task3518.prod.20260310.1314@example.com",
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "user": {
+          "id": 10042,
+          "name": "Prod Tester",
+          "email": "task3518.prod.20260310.1314@example.com",
+          "email_verified": false,
+          "role": "user",
+          "avatar": null,
+          "created_at": "2026-03-10T11:18:50.000000Z",
+          "social_accounts": []
+        }
+      }
+    }
+  },
+  "invalidLocationProbes": [
+    {
+      "name": "GET /api/v1/locations/999999",
+      "status": 404,
+      "contentType": "application/json; charset=UTF-8",
+      "body": {
+        "message": "Location not found"
+      }
+    },
+    {
+      "name": "POST /api/v1/locations/999999/connect-gbp",
+      "status": 404,
+      "contentType": "application/json; charset=UTF-8",
+      "body": {
+        "message": "Location not found"
+      }
+    },
+    {
+      "name": "DELETE /api/v1/locations/999999/disconnect-gbp",
+      "status": 404,
+      "contentType": "application/json; charset=UTF-8",
+      "body": {
+        "message": "Location not found"
+      }
+    }
+  ],
+  "callbackInvalidState": {
+    "json": {
+      "status": 400,
+      "contentType": "application/json; charset=UTF-8",
+      "body": {
+        "success": false,
+        "error": "invalid_state",
+        "message": "Invalid state parameter"
+      }
+    },
+    "html": {
+      "status": 400,
+      "title": "Google Business Profile connection failed",
+      "visibleText": [
+        "Google Business Profile connection failed",
+        "Invalid state parameter"
+      ],
+      "scriptContains": [
+        "gbp_oauth_callback",
+        "window.opener.postMessage",
+        "window.close"
+      ]
+    }
+  },
+  "verdict": "pass",
+  "summary": "Production no longer returns generic 500s for the GBP/Local SEO invalid-location and callback regression path. Missing-location show/connect/disconnect requests now fail safely with 404 JSON, and the browser callback route now returns the intended popup-bridge HTML with gbp_oauth_callback postMessage behavior instead of a generic 500 page."
+}
