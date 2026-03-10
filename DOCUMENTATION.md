@@ -33,8 +33,8 @@ A deployment is considered successful only when all of the following are true:
 4. deployment log is marked `success`
 
 ### Latest verified deployment baseline
-- Deployment id: `20260310T084645Z-ef7441dd`
-- Commit: `d6b9c9624567b35a916d3634e64bf9a65968f108`
+- Deployment id: `20260310T094442Z-6ea3aa98`
+- Commit: `664484748375e03aa81e7615a4cbab5e43328624`
 - Result: `success`
 
 ### Important notes
@@ -58,6 +58,7 @@ Database migrations for the Local SEO & Google Business Profile Tracking feature
   - `2026_03_08_205804_create_local_competitors_table.php`
   - `2026_03_08_205805_create_gbp_posts_table.php`
   - `2026_03_08_205806_create_local_seo_alerts_table.php`
+  - `2026_03_10_112600_remediate_local_seo_schema_drift.php` — idempotent production repair for missing `business_locations.is_active` and `local_seo_alerts.read_at`
 - **Test Documentation:** `TESTS/TEST-35-1.md`
 
 ### Database Schema
@@ -254,12 +255,23 @@ Tables must be created in this order due to foreign key dependencies:
 
 | Metric | Value |
 |--------|-------|
-| Deploy Date | 2026-03-08 |
-| Migration Files | 7 files |
+| Deploy Date | 2026-03-10 |
+| Migration Files | 8 files |
 | Total Columns | 87 columns |
 | Total Indexes | 17 indexes |
 | Total Foreign Keys | 11 FKs |
 | Status | Complete |
+
+### Schema Drift Remediation (2026-03-10)
+
+The production rollout for TASK-35-16 added `2026_03_10_112600_remediate_local_seo_schema_drift.php` to repair already-existing Local SEO tables when earlier environments were missing columns that the API now depends on.
+
+| Repaired Table | Column | Purpose |
+|----------------|--------|---------|
+| `business_locations` | `is_active` | Preserves the documented active/inactive flag for location state |
+| `local_seo_alerts` | `read_at` | Stores the timestamp when an alert is marked as read |
+
+This remediation migration is idempotent and is covered by `backend/tests/Feature/Database/Migrations/LocalSeoMigrationTest.php`, which now asserts both columns exist after migrations.
 
 ### Dependencies
 - `users` table (exists)
@@ -4571,6 +4583,236 @@ REST API controllers for the Local SEO & Google Business Profile Tracking featur
 - TASK-35-9: GBP Insights Sync Service (data operations)
 - TASK-35-10: GBP Reviews Service (data operations)
 - TASK-35-17 to TASK-35-23: Frontend components (API consumers)
+
+---
+## Local SEO Alerts API Controller (TASK-35-16)
+
+### API Description
+REST API controller for the authenticated Local SEO alert inbox. Exposes 6 user-facing endpoints for listing alerts, getting unread counts, marking a single alert as read, bulk-marking alerts as read, deleting alerts, and listing alerts scoped to a specific business location. The controller uses dedicated Form Request validation, a JSON resource for stable payload formatting, and ownership-aware query scoping that returns `404` for cross-user resources to avoid alert and location enumeration.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/LocalSEO/LocalSEOAlertController.php`
+- **Request Classes:**
+  - `backend/app/Http/Requests/Api/V1/LocalSEO/LocalSEOAlertIndexRequest.php`
+  - `backend/app/Http/Requests/Api/V1/LocalSEO/LocalSEOAlertMarkAllReadRequest.php`
+  - `backend/app/Http/Requests/Api/V1/LocalSEO/LocalSEOAlertRequest.php` (backwards-compatible alias)
+- **API Resource:** `backend/app/Http/Resources/Api/V1/LocalSEO/LocalSEOAlertResource.php`
+- **Service Contract:** `backend/app/Services/LocalSEO/Contracts/LocalSEOAlertServiceInterface.php`
+- **Service Implementation:** `backend/app/Services/LocalSEO/LocalSEOAlertService.php`
+- **Model:** `backend/app/Models/LocalSEOAlert.php`
+- **Routes:** `backend/routes/api.php`
+- **Schema Remediation:** `backend/database/migrations/2026_03_10_112600_remediate_local_seo_schema_drift.php`
+- **Tests:**
+  - `backend/tests/Feature/Api/V1/LocalSEO/LocalSEOAlertControllerTest.php`
+  - `backend/tests/Unit/Http/Requests/LocalSEO/LocalSEOAlertRequestTest.php`
+  - `backend/tests/Unit/Services/LocalSEO/LocalSEOAlertServiceTest.php`
+  - `backend/tests/Feature/Database/Migrations/LocalSeoMigrationTest.php`
+- **Test Documentation:** `TESTS/TEST-35-16.md`
+
+### API Endpoints
+
+| Method | Endpoint | Rate Limit | Description |
+|--------|----------|------------|-------------|
+| GET | `/api/v1/local-seo/alerts` | 60/min | List the authenticated user's alerts, newest-first, with pagination and optional filters |
+| GET | `/api/v1/local-seo/alerts/unread-count` | 60/min | Return unread totals plus per-severity counts |
+| POST | `/api/v1/local-seo/alerts/{id}/read` | 60/min | Mark one owned alert as read and return the updated alert resource |
+| POST | `/api/v1/local-seo/alerts/mark-all-read` | 10/min | Bulk-mark unread alerts as read for the current user, optionally filtered by location and severity |
+| DELETE | `/api/v1/local-seo/alerts/{id}` | 60/min | Delete one owned alert and return `204 No Content` |
+| GET | `/api/v1/locations/{id}/alerts` | 60/min | List alerts for one owned business location with the same filter/pagination behavior as the main inbox |
+
+### Request Parameters
+
+**GET `/api/v1/local-seo/alerts`** and **GET `/api/v1/locations/{id}/alerts`**
+
+| Parameter | Type | Validation | Description |
+|-----------|------|------------|-------------|
+| `location_id` | integer | optional | Filter alerts to one business location (ignored on the location-scoped route because the path id is authoritative) |
+| `severity` | string | `info`, `warning`, `critical` | Filter by severity |
+| `type` | string | `ranking_improved`, `ranking_dropped`, `new_review`, `negative_review`, `rating_dropped`, `competitor_overtake`, `gbp_disconnected` | Filter by alert type |
+| `is_read` | boolean-like | `true`, `false`, `1`, `0`, `'true'`, `'false'`, `'1'`, `'0'` | Filter by read state |
+| `per_page` | integer | min `1`, capped to `100` in controller | Pagination page size |
+
+**POST `/api/v1/local-seo/alerts/mark-all-read`**
+
+| Parameter | Type | Validation | Description |
+|-----------|------|------------|-------------|
+| `location_id` | integer | optional | Restrict bulk update to one location |
+| `severity` | string | `info`, `warning`, `critical` | Restrict bulk update to one severity |
+
+### Response Formats
+
+**Alert resource shape:**
+```json
+{
+  "id": 7,
+  "type": "new_review",
+  "severity": "info",
+  "title": "Primary info middle",
+  "message": "QA info middle",
+  "is_read": true,
+  "read_at": "2026-03-10T09:57:42.000000Z",
+  "created_at": "2026-03-10T09:49:41.000000Z",
+  "location": {
+    "id": 5,
+    "name": "TASK-35-16 Primary Location"
+  }
+}
+```
+
+**GET `/api/v1/local-seo/alerts`**
+```json
+{
+  "data": [
+    {
+      "id": 9,
+      "type": "negative_review",
+      "severity": "warning",
+      "title": "Secondary warning newest",
+      "message": "QA warning newest",
+      "is_read": false,
+      "read_at": null,
+      "created_at": "2026-03-10T09:51:41.000000Z",
+      "location": {
+        "id": 6,
+        "name": "TASK-35-16 Secondary Location"
+      }
+    }
+  ],
+  "links": {
+    "first": "https://seoindicator.com/api/v1/local-seo/alerts?page=1",
+    "last": "https://seoindicator.com/api/v1/local-seo/alerts?page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 4,
+    "last_page": 1
+  }
+}
+```
+
+**GET `/api/v1/local-seo/alerts/unread-count`**
+```json
+{
+  "total": 3,
+  "by_severity": {
+    "info": 1,
+    "warning": 2,
+    "critical": 0
+  }
+}
+```
+
+**POST `/api/v1/local-seo/alerts/{id}/read`**
+```json
+{
+  "success": true,
+  "alert": {
+    "id": 7,
+    "type": "new_review",
+    "severity": "info",
+    "title": "Primary info middle",
+    "message": "QA info middle",
+    "is_read": true,
+    "read_at": "2026-03-10T09:57:42.000000Z",
+    "created_at": "2026-03-10T09:49:41.000000Z",
+    "location": {
+      "id": 5,
+      "name": "TASK-35-16 Primary Location"
+    }
+  }
+}
+```
+
+**POST `/api/v1/local-seo/alerts/mark-all-read`**
+```json
+{
+  "success": true,
+  "count": 2
+}
+```
+
+**DELETE `/api/v1/local-seo/alerts/{id}`** returns `204 No Content`.
+
+### Controller and Service Behavior
+
+| Area | Behavior |
+|------|----------|
+| Sorting | All list endpoints sort alerts by `created_at DESC` |
+| Pagination | Default `15` per page, capped at `100` |
+| Location eager loading | Main inbox and single-alert responses include nested `{id, name}` location data |
+| Single read | `LocalSEOAlertService::markAsRead()` is idempotent and writes both `is_read=true` and `read_at=now()` |
+| Bulk read | `LocalSEOAlertService::markAllAsRead(int $userId, ?int $locationId, ?string $severity)` updates only unread alerts and supports the new severity filter |
+| Location-scoped listing | Route first resolves an accessible `BusinessLocation`; inaccessible locations return `404 Location not found` |
+| Admin override | `isAdmin()` allows `admin` / `super_admin` roles (or a `User::isAdmin()` helper) to bypass the per-user scope when needed |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | All routes use `auth:sanctum` |
+| Ownership isolation | Non-admin users are always scoped by `user_id`; cross-user reads and deletes return `404` |
+| Anti-enumeration | Missing/inaccessible alerts and locations intentionally respond with `404` instead of `403` |
+| Input validation | Dedicated Form Requests validate enums, boolean-like `is_read`, and integer pagination/filter inputs |
+| SQL injection prevention | Eloquent query builder and parameterized conditions only |
+| Rate limiting | Read endpoints `60/min`, bulk mark-all-read `10/min` |
+| Response safety | `LocalSEOAlertResource` emits JSON-safe scalar fields and a minimal nested location object |
+
+### Error Responses
+
+| Code | Scenario | Example |
+|------|----------|---------|
+| 401 | Missing or invalid Sanctum auth | `{"message":"Unauthenticated."}` |
+| 404 | Alert or location is not owned by the current user (or does not exist) | `{"message":"Alert not found"}` / `{"message":"Location not found"}` |
+| 422 | Validation failure (for example invalid severity) | `{"success":false,"message":"The given data was invalid.","errors":{"severity":["The selected severity is invalid. Must be one of: info, warning, critical."]}}` |
+| 429 | Rate limit exceeded | Standard throttle middleware response |
+
+### Test Coverage
+
+| Scope | Evidence | Status |
+|-------|----------|--------|
+| Controller feature coverage | `LocalSEOAlertControllerTest.php` with route registration, auth, ownership isolation, filtering, sorting, pagination, unread count, mark-read, mark-all-read, delete, HTTP method, security, and acceptance coverage (225+ tests) | ✅ PASS |
+| Request validation coverage | `LocalSEOAlertRequestTest.php` covers alert type, severity, boolean-like `is_read`, location id, pagination, combined filters, and custom messages (45+ tests) | ✅ PASS |
+| Local regression suite | `php artisan test tests/Feature/Database/Migrations/LocalSeoMigrationTest.php tests/Feature/Api/V1/LocalSEO/LocalSEOAlertControllerTest.php tests/Unit/Http/Requests/LocalSEO/LocalSEOAlertRequestTest.php tests/Unit/Services/LocalSEO/LocalSEOAlertServiceTest.php` | ✅ 309 passing / 482 assertions / 5 existing skips |
+| Production validation | `temp/task3516-prod-validation-20260310T095821Z.json` | ✅ 31/31 checks passed |
+
+**Validated production behaviors:**
+- `/sanctum/csrf-cookie` is reachable on `https://seoindicator.com` and sets the expected cookies.
+- Unauthenticated and invalid-token probes to the alert inbox return Laravel `401` JSON instead of a host-level 404 page.
+- Inbox payloads are owner-scoped, newest-first, paginated, and include nested location data.
+- Severity and location filters work in production; invalid severity returns `422` validation JSON.
+- `mark-all-read` respects severity filtering and is throttled at `10/min`.
+- Cross-user location access, read attempts, and delete attempts remain `404` in production.
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-10 |
+| Deployment ID | `20260310T094442Z-6ea3aa98` |
+| Commit | `664484748375e03aa81e7615a4cbab5e43328624` |
+| Deployment Method | Local / self-hosted deployment pipeline |
+| Public API Bridge | `/api/...` and `/sanctum/csrf-cookie` verified on `https://seoindicator.com` |
+| Smoke Verification | Homepage + login production smoke passed |
+| Production QA | 31/31 task-specific checks passed |
+| Evidence | `temp/task3516-devops-prod-smoke-20260310.json`, `temp/task3516-prod-validation-20260310T095821Z.json` |
+| Status | Complete |
+
+### Dependencies
+
+| Dependency | Status | Description |
+|------------|--------|-------------|
+| TASK-35-1 | Done ✅ | Local SEO tables and base schema |
+| TASK-35-13 | Tested Locally - Passed | Local SEO alert service used for mark-read / mark-all-read workflows |
+| TASK-35-14 | Done ✅ | Adjacent Local SEO / GBP API controller pattern |
+
+### Related Tasks
+
+- TASK-35-13: Local SEO alert generation and service logic
+- TASK-35-17 to TASK-35-23: Frontend Local SEO surfaces that consume the alert inbox
+- TASK-35-18: GBP Connect Button (frontend integration on the Local SEO UI)
 
 ---
 ## PricingComparison Component (TASK-32-6)
