@@ -117,6 +117,7 @@ class LocalRankingControllerTest extends TestCase
                             'keyword',
                             'local_pack_position',
                             'local_organic_position',
+                            'competitors_in_pack',
                             'last_checked',
                         ],
                     ],
@@ -245,7 +246,13 @@ class LocalRankingControllerTest extends TestCase
                 'success',
                 'data' => [
                     'location_id',
-                    'history',
+                    'history' => [
+                        '*' => [
+                            'keyword_id',
+                            'keyword',
+                            'snapshots',
+                        ],
+                    ],
                 ],
             ]);
     }
