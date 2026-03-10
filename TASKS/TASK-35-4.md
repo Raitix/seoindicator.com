@@ -1,7 +1,7 @@
 # TASK-35-4: Local SEO Models
 
 ## STATUS
-`To Document`
+`Done`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -16,19 +16,19 @@ SPEC-035: Local SEO & Google Business Profile Tracking
 Create Eloquent models for local SEO tracking: LocalRanking, LocalCompetitor, and LocalSEOAlert.
 
 ## Acceptance Criteria
-- [ ] LocalRanking model created:
+- [x] LocalRanking model created:
   - BelongsTo relationships: businessLocation(), keyword()
   - Casts for coordinates (decimal) and competitors_in_pack (JSON)
   - Scope for local pack positions (scopeInPack())
   - Scope for date range filtering
   - Method to get position change from previous check
   - Method to check if in local pack (position <= 3)
-- [ ] LocalCompetitor model created:
+- [x] LocalCompetitor model created:
   - BelongsTo relationship to BusinessLocation
   - Casts for rating (decimal) and review_count (integer)
   - Method to get Google Maps URL
   - Method to compare with location (rating difference, etc.)
-- [ ] LocalSEOAlert model created:
+- [x] LocalSEOAlert model created:
   - BelongsTo relationships: user(), businessLocation()
   - Casts for data (JSON) and is_read (boolean)
   - Scope for unread alerts
@@ -36,8 +36,8 @@ Create Eloquent models for local SEO tracking: LocalRanking, LocalCompetitor, an
   - Scope by alert_type
   - Method to mark as read
   - Constants for alert types and severities
-- [ ] Model factories for all models
-- [ ] Unit tests for all models
+- [x] Model factories for all models
+- [x] Unit tests for all models
 
 ## Dependencies
 - TASK-35-1 (Database Migrations)
@@ -198,3 +198,14 @@ Create Eloquent models for local SEO tracking: LocalRanking, LocalCompetitor, an
 - Disposable prod fixtures from both validation passes were deleted successfully; no long-lived test users or records were left behind.
 - **Status Change:** `To Test Prod` -> `Testing Prod` -> `To Document`
 - **Next Agent:** DocSystemAnalyst can document TASK-35-4 as production-validated. Separately, the Local Rankings / competitors controller authorization path should be checked under the downstream API task set.
+
+### DocSystemAnalyst Session (2026-03-10 18:42 GMT+2)
+- Re-cleared the stale completion marker, refreshed the task lock, and moved the task into `Documentation in Progress` before updating project docs.
+- Added a dedicated `## Local SEO Models (TASK-35-4)` section to `PROJECT-SEOINDICATOR/DOCUMENTATION.md` covering the shipped `LocalRanking`, `LocalCompetitor`, and `LocalSEOAlert` model surface: relationships, casts, scopes, helper methods, factory states, test coverage, production evidence, and the accepted compatibility aliases (`businessLocation()`, `SEVERITIES`, `scopeByType()` plus severity scopes).
+- Corrected the Local SEO migrations section so it now points to the combined TASK-35-4 model task instead of stale per-table model task names, and updated the top deployment baseline to the latest verified production rollout (`20260310T160753Z-ed1559f2` / `b40acea0de299919a1d4a00c61d40e810c4d20eb`).
+- Re-ran the targeted local model suite while documenting:
+  - `php artisan test tests/Unit/Models/LocalRankingTest.php tests/Unit/Models/LocalCompetitorTest.php tests/Unit/Models/LocalSEOAlertTest.php`
+  - Result: **152 tests passed / 244 assertions**
+- Documented the non-blocking downstream note from ProdTester: the owned competitors endpoint `GET /api/v1/locations/{id}/competitors` still returned `403` during the broader production API probe, but that remains outside this model task’s acceptance scope and should be handled by the downstream Local Rankings / competitors API work.
+- **Status Change:** `To Document` -> `Documentation in Progress` -> `Done`
+- **Next Agent:** None for this task. Keep the downstream competitors-controller authorization follow-up with the relevant Local Rankings / competitors API task set.
