@@ -43632,7 +43632,7 @@ RESTful API controller for managing AI Visibility alerts. Provides endpoints for
 | TASK-34-1 | Database migrations (alerts table) |
 | TASK-34-2 | AIVisibilityAlert model |
 | TASK-34-19 | AlertDetectionService (produces alerts) |
-| TASK-34-21 | Frontend Alert Notifications (consumes this API) |
+| TASK-34-21 | Frontend Alert Notifications (planned consumer; current frontend implementation is not yet aligned with this API contract) |
 
 ---
 ## AI Visibility Export Functionality (TASK-34-22)
