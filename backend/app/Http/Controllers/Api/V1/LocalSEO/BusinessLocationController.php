@@ -236,7 +236,18 @@ class BusinessLocationController extends Controller
 
         $this->authorize('connectGbp', $location);
 
-        $result = $this->oauthService->getAuthorizationUrl($id);
+        try {
+            $result = $this->oauthService->getAuthorizationUrl($id);
+        } catch (RuntimeException $exception) {
+            Log::warning('Google Business Profile OAuth is not configured', [
+                'location_id' => $id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 503);
+        }
 
         return response()->json([
             'authorization_url' => $result['authorization_url'],
