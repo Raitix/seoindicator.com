@@ -1,7 +1,7 @@
 # TASK-36-1: Database Migrations - Content Decay Tables
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -179,6 +179,27 @@ Created comprehensive test suite for Content Decay database migrations:
 **Acceptance Criteria: ALL MET ✅**
 
 **Decision: PASS → Ready for DevOps deployment**
+
+---
+
+### DevOps (2026-03-10 23:50 UTC)
+**Deployment Complete ✅**
+
+**Deployment Method:** Direct SSH migration execution
+
+**Production Verification:**
+| Table | Columns | Status |
+|-------|---------|--------|
+| `content_decay_projects` | 14 | ✅ Created |
+| `content_decay_candidates` | 25 | ✅ Created |
+| `content_decay_signals` | 23 | ✅ Created |
+| `content_refresh_tasks` | 13 | ✅ Created |
+
+**Migration Status:** All 4 migrations applied (batch 57)
+
+**Note:** Standard deployment script encountered frontend build issue (missing npm packages in temp worktree). Since this is a backend-only migration task, migrations were executed directly via SSH. All tables verified with correct structure, indexes, and foreign keys.
+
+**Status:** `To Deploy` → `To Test Prod`
 
 ---
 
