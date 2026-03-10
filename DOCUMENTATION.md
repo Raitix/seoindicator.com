@@ -3934,11 +3934,20 @@ Comprehensive unit and feature tests for the PublicAuditController endpoints tha
 - **Routes:** `/api/v1/public-audit/{hash}`, `/api/v1/public-audit/{hash}/lead`, `/api/v1/public-audit/{hash}/badge`
 - **Test Documentation:** `TESTS/TEST-33-31.md`
 
+### Verification Note (2026-03-10)
+Current local re-verification shows that TASK-33-31 is **not** green in the live repository anymore.
+
+- `php artisan test --filter PublicAuditControllerTest` currently fails locally with `72 failed, 16 passed (88 assertions)` because the suite partially mocks `RateLimiter` methods like `tooManyAttempts()` / `hit()` but does not cover the `RateLimiter::limiter('public-audit')` path now exercised by the `throttle:public-audit` middleware.
+- The badge assertions/docs in this section still describe a legacy `badge_url`-style contract, while `PublicAuditController::badge()` currently returns `audit_url`, `impressions_endpoint`, `clicks_endpoint`, and a single `embed_code` string.
+- Historical examples below also describe a `hash` field and a `performance` category for `show()`, but the current controller omits `hash` and uses `mobile`.
+
+Treat the remaining subsection as the original delivery record from 2026-03-06 until the suite is repaired and re-verified.
+
 ### Test Coverage Summary
 
 | Test File | Tests | Assertions | Status |
 |-----------|-------|------------|--------|
-| `PublicAuditControllerTest.php` | 85 | 225 | ✅ PASS |
+| `PublicAuditControllerTest.php` | Historical target: 85 | Latest rerun: 88 assertions | ❌ FAIL (72 failed / 16 passed) |
 
 ### Test Categories
 
