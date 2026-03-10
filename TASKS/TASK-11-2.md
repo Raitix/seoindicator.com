@@ -210,3 +210,25 @@ Actions:
 - Task remains `Done`; the implementation/documentation drift is resolved, and the remaining local issue is isolated to the targeted regression test file
 
 - SPEC-011 remains `In Progress` because TASK-11-1 is not yet `Done`
+
+### [2026-03-10 17:35 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - TASK-11-2 Project Members Table
+
+Verification:
+- Status set to `Documentation in Progress` for this pass, then returned to `Done`
+- DOCUMENTATION.md re-verified at line 20507+; the SQL snippet and indexes list remain aligned with the live migration, including `project_members_role_index`
+- Migration re-verified: `backend/database/migrations/2026_02_26_191000_create_project_members_table.php`
+- Model re-verified: `backend/app/Models/ProjectMember.php`
+- Relationships re-verified in `backend/app/Models/Project.php` and `backend/app/Models/User.php`
+- Targeted rerun `php artisan test tests/Feature/Migrations/CreateProjectMembersTableTest.php` returned **11 passed / 2 failed**
+- Failures remain isolated to stale test assumptions, not the shipped migration:
+  - `test_role_enum_validation` inserts both `editor` and `viewer` rows with the same `(project_id, user_id)` pair, so the unique constraint fails first
+  - `test_migration_rollback` assumes `migrate:rollback --step=1` removes `project_members`, but later migrations now exist, so the last rollback step no longer targets this table
+
+Actions:
+- Cleared the stale completion marker before re-processing
+- Recreated the task lock for this pass
+- No documentation changes required; the earlier index-drift correction remains accurate
+- Task remains `Done`
+
+- SPEC-011 remains `In Progress` because TASK-11-1 is not yet `Done`
