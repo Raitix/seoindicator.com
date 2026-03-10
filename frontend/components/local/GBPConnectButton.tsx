@@ -32,6 +32,12 @@ export const GBP_OAUTH_STATE_KEY = "gbp_oauth_state";
 
 type GBPConnectStatus = "idle" | "connecting" | "selecting" | "connected" | "error";
 
+type JsonRecord = Record<string, unknown>;
+type ApiRequestError = Error & {
+  status?: number;
+  payload?: unknown;
+};
+
 export interface GBPAccount {
   id: string;
   name: string;
@@ -62,8 +68,6 @@ export interface GBPConnectButtonProps {
   className?: string;
 }
 
-type JsonRecord = Record<string, unknown>;
-
 const GOOGLE_BUTTON_LABEL = "Connect Google Business Profile";
 
 const toNonEmptyString = (value: unknown): string | null => {
@@ -88,6 +92,38 @@ const toNumber = (value: unknown, fallback = 0): number => {
   }
 
   return fallback;
+};
+
+const toBoolean = (value: unknown): boolean => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return value === 1;
+  }
+
+  if (typeof value === "string") {
+    return ["1", "true", "yes", "connected", "success"].includes(value.trim().toLowerCase());
+  }
+
+  return false;
+};
+
+const createApiError = (message: string, status?: number, payload?: unknown): ApiRequestError => {
+  const error = new Error(message) as ApiRequestError;
+  error.status = status;
+  error.payload = payload;
+  return error;
+};
+
+const isContractFallbackError = (error: unknown) => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const status = (error as ApiRequestError).status;
+  return status === 404 || status === 405 || status === 501;
 };
 
 const sanitizeErrorMessage = (value: unknown, fallback = "Connection failed. Please try again.") => {
@@ -147,9 +183,13 @@ const normalizeAccount = (input: unknown): GBPAccount | null => {
   return {
     id,
     name,
-    locationCount: Math.max(0, toNumber(item.location_count ?? item.locationCount ?? item.locations_count ?? item.locationsCount, 0)),
+    locationCount: Math.max(
+      0,
+      toNumber(item.location_count ?? item.locationCount ?? item.locations_count ?? item.locationsCount, 0)
+    ),
     profileImage:
-      toNonEmptyString(item.profile_image ?? item.profileImage ?? item.logo_url ?? item.logoUrl) ?? undefined,
+      toNonEmptyString(item.profile_image ?? item.profileImage ?? item.logo_url ?? item.logoUrl) ??
+      undefined,
   };
 };
 
@@ -184,7 +224,47 @@ const normalizeLocation = (input: unknown, accountId: string): GBPLocation | nul
       addressParts.join(", ") ??
       "Address unavailable",
     profileImage:
-      toNonEmptyString(item.profile_image ?? item.profileImage ?? item.photo_url ?? item.photoUrl) ?? undefined,
+      toNonEmptyString(item.profile_image ?? item.profileImage ?? item.photo_url ?? item.photoUrl) ??
+      undefined,
+  };
+};
+
+const normalizeConnectedState = (
+  payload: unknown,
+  fallbackLocationId: string | number
+): { connected: boolean; data: ConnectedGBP | null } => {
+  if (!payload || typeof payload !== "object") {
+    return { connected: false, data: null };
+  }
+
+  const envelope = payload as JsonRecord;
+  const record = (envelope.data && typeof envelope.data === "object" ? envelope.data : envelope) as JsonRecord;
+  const businessName =
+    toNonEmptyString(record.business_name ?? record.businessName ?? record.name) ??
+    `Location ${fallbackLocationId}`;
+  const resolvedLocationId =
+    toNonEmptyString(
+      record.gbp_location_id ??
+        record.gbpLocationId ??
+        record.gbp_place_id ??
+        record.gbpPlaceId ??
+        record.location_id ??
+        record.locationId ??
+        record.id
+    ) ?? String(fallbackLocationId);
+
+  return {
+    connected: toBoolean(record.is_gbp_connected ?? record.gbp_connected ?? record.connected ?? envelope.connected),
+    data: {
+      businessName,
+      locationId: resolvedLocationId,
+      accountId:
+        toNonEmptyString(record.gbp_account_id ?? record.gbpAccountId ?? record.account_id ?? record.accountId) ??
+        undefined,
+      profileImage:
+        toNonEmptyString(record.profile_image ?? record.profileImage ?? record.photo_url ?? record.photoUrl) ??
+        undefined,
+    },
   };
 };
 
@@ -240,7 +320,11 @@ export function GBPConnectButton({
     }
 
     if (!response.ok) {
-      throw new Error(getErrorMessageFromPayload(payload, "Connection failed. Please try again."));
+      throw createApiError(
+        getErrorMessageFromPayload(payload, "Connection failed. Please try again."),
+        response.status,
+        payload
+      );
     }
 
     return payload;
@@ -251,6 +335,77 @@ export function GBPConnectButton({
     setAvailableLocations([]);
     setAvailableAccounts([]);
   }, []);
+
+  const syncConnectedLocation = React.useCallback(async () => {
+    const response = await apiRequest(`${API_BASE}/locations/${locationId}`);
+    const normalized = normalizeConnectedState(response, locationId);
+
+    if (!normalized.connected) {
+      throw new Error("Google authorization completed, but the location is not marked connected yet. Please refresh and try again.");
+    }
+
+    const nextConnection = normalized.data ?? {
+      businessName: `Location ${locationId}`,
+      locationId: String(locationId),
+    };
+
+    setCurrentConnection(nextConnection);
+    resetSelectionState();
+    setError(null);
+    setStatus("connected");
+    onConnectionChange?.(true, nextConnection);
+  }, [apiRequest, locationId, onConnectionChange, resetSelectionState]);
+
+  const tryLoadSelectableAccounts = React.useCallback(
+    async (payload: JsonRecord) => {
+      const query = new URLSearchParams();
+      const code = toNonEmptyString(payload.code);
+      const returnedState = toNonEmptyString(payload.state);
+
+      if (code) {
+        query.set("code", code);
+      }
+
+      if (returnedState) {
+        query.set("state", returnedState);
+      }
+
+      const suffix = query.toString() ? `?${query.toString()}` : "";
+
+      try {
+        const response = await apiRequest(`${API_BASE}/locations/${locationId}/gbp/accounts${suffix}`);
+        const rawAccounts = Array.isArray((response as JsonRecord)?.accounts)
+          ? ((response as JsonRecord).accounts as unknown[])
+          : Array.isArray((response as JsonRecord)?.data)
+            ? ((response as JsonRecord).data as unknown[])
+            : Array.isArray(response)
+              ? (response as unknown[])
+              : [];
+
+        const accounts = rawAccounts.map(normalizeAccount).filter(Boolean) as GBPAccount[];
+
+        if (accounts.length === 0) {
+          setError("No Google Business Profile accounts found.");
+          setStatus("error");
+          return true;
+        }
+
+        setAvailableAccounts(accounts);
+        setAvailableLocations([]);
+        setSelectedAccount(null);
+        setError(null);
+        setStatus("selecting");
+        return true;
+      } catch (requestError) {
+        if (isContractFallbackError(requestError)) {
+          return false;
+        }
+
+        throw requestError;
+      }
+    },
+    [apiRequest, locationId]
+  );
 
   const handleOAuthCompleted = React.useCallback(
     async (payload: JsonRecord) => {
@@ -272,41 +427,13 @@ export function GBPConnectButton({
       }
 
       try {
-        const query = new URLSearchParams();
-        const code = toNonEmptyString(payload.code);
+        const handledSelectionFlow = await tryLoadSelectableAccounts(payload);
 
-        if (code) {
-          query.set("code", code);
+        if (!handledSelectionFlow) {
+          await syncConnectedLocation();
         }
 
-        if (returnedState) {
-          query.set("state", returnedState);
-        }
-
-        const suffix = query.toString() ? `?${query.toString()}` : "";
-        const response = await apiRequest(`${API_BASE}/locations/${locationId}/gbp/accounts${suffix}`);
-        const rawAccounts = Array.isArray((response as JsonRecord)?.accounts)
-          ? ((response as JsonRecord).accounts as unknown[])
-          : Array.isArray((response as JsonRecord)?.data)
-            ? ((response as JsonRecord).data as unknown[])
-            : Array.isArray(response)
-              ? (response as unknown[])
-              : [];
-
-        const accounts = rawAccounts.map(normalizeAccount).filter(Boolean) as GBPAccount[];
         sessionStorage.removeItem(GBP_OAUTH_STATE_KEY);
-
-        if (accounts.length === 0) {
-          setError("No Google Business Profile accounts found.");
-          setStatus("error");
-          return;
-        }
-
-        setAvailableAccounts(accounts);
-        setAvailableLocations([]);
-        setSelectedAccount(null);
-        setError(null);
-        setStatus("selecting");
       } catch (requestError) {
         sessionStorage.removeItem(GBP_OAUTH_STATE_KEY);
         setError(
@@ -318,8 +445,57 @@ export function GBPConnectButton({
         setStatus("error");
       }
     },
-    [apiRequest, locationId]
+    [syncConnectedLocation, tryLoadSelectableAccounts]
   );
+
+  const requestOAuthBootstrap = React.useCallback(async () => {
+    const provisionalState = `${siteId}-${locationId}-${Date.now()}`;
+
+    try {
+      const legacyResponse = await apiRequest(
+        `${API_BASE}/locations/${locationId}/gbp/oauth-url?state=${encodeURIComponent(provisionalState)}`
+      );
+
+      const oauthUrl = toNonEmptyString(
+        (legacyResponse as JsonRecord)?.oauth_url ??
+          (legacyResponse as JsonRecord)?.url ??
+          (legacyResponse as JsonRecord)?.authorization_url
+      );
+
+      if (!oauthUrl) {
+        throw new Error("Connection failed. Please try again.");
+      }
+
+      return {
+        oauthUrl,
+        state: toNonEmptyString((legacyResponse as JsonRecord)?.state) ?? provisionalState,
+      };
+    } catch (legacyError) {
+      if (!isContractFallbackError(legacyError)) {
+        throw legacyError;
+      }
+    }
+
+    const response = await apiRequest(`${API_BASE}/locations/${locationId}/connect-gbp`, {
+      method: "POST",
+      body: JSON.stringify({ site_id: siteId }),
+    });
+
+    const oauthUrl = toNonEmptyString(
+      (response as JsonRecord)?.oauth_url ??
+        (response as JsonRecord)?.url ??
+        (response as JsonRecord)?.authorization_url
+    );
+
+    if (!oauthUrl) {
+      throw new Error("Connection failed. Please try again.");
+    }
+
+    return {
+      oauthUrl,
+      state: toNonEmptyString((response as JsonRecord)?.state) ?? provisionalState,
+    };
+  }, [apiRequest, locationId, siteId]);
 
   const initiateOAuth = React.useCallback(async () => {
     if (status === "connecting") {
@@ -334,18 +510,11 @@ export function GBPConnectButton({
     setStatus("connecting");
 
     try {
-      const oauthState = `${siteId}-${locationId}-${Date.now()}`;
-      sessionStorage.setItem(GBP_OAUTH_STATE_KEY, oauthState);
-
-      const response = await apiRequest(`${API_BASE}/locations/${locationId}/gbp/oauth-url?state=${encodeURIComponent(oauthState)}`);
-      const oauthUrl = toNonEmptyString((response as JsonRecord)?.oauth_url ?? (response as JsonRecord)?.url);
-
-      if (!oauthUrl) {
-        throw new Error("Connection failed. Please try again.");
-      }
+      const bootstrap = await requestOAuthBootstrap();
+      sessionStorage.setItem(GBP_OAUTH_STATE_KEY, bootstrap.state);
 
       const popup = window.open(
-        oauthUrl,
+        bootstrap.oauthUrl,
         "GBP OAuth",
         "popup=yes,width=600,height=700,resizable=yes,scrollbars=yes"
       );
@@ -355,6 +524,10 @@ export function GBPConnectButton({
       }
 
       const handleMessage = (event: MessageEvent) => {
+        if (event.origin && event.origin !== window.location.origin) {
+          return;
+        }
+
         const payload = event.data;
 
         if (!payload || typeof payload !== "object") {
@@ -384,7 +557,7 @@ export function GBPConnectButton({
       );
       setStatus("error");
     }
-  }, [apiRequest, clearOAuthListener, handleOAuthCompleted, locationId, resetSelectionState, siteId, status]);
+  }, [clearOAuthListener, handleOAuthCompleted, requestOAuthBootstrap, resetSelectionState, status]);
 
   const selectAccount = React.useCallback(
     async (account: GBPAccount) => {
@@ -467,10 +640,20 @@ export function GBPConnectButton({
     setStatus("connecting");
 
     try {
-      await apiRequest(`${API_BASE}/locations/${locationId}/disconnect-gbp`, {
-        method: "POST",
-        body: JSON.stringify({ site_id: siteId }),
-      });
+      try {
+        await apiRequest(`${API_BASE}/locations/${locationId}/disconnect-gbp`, {
+          method: "POST",
+          body: JSON.stringify({ site_id: siteId }),
+        });
+      } catch (requestError) {
+        if (!isContractFallbackError(requestError)) {
+          throw requestError;
+        }
+
+        await apiRequest(`${API_BASE}/locations/${locationId}/disconnect-gbp`, {
+          method: "DELETE",
+        });
+      }
 
       setCurrentConnection(null);
       setShowDisconnectConfirm(false);
