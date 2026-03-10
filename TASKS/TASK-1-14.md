@@ -1,7 +1,7 @@
 ﻿# SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`To Test Prod`
+`To Document`
 ## PRIORITY
 `High`
 
@@ -325,3 +325,30 @@ Actions taken:
 - Because this DevOps pass only promotes test/task-history repairs, no new production artifact rollout was required for TASK-1-14 itself.
 
 Status -> `To Test Prod` for final production sanity verification / workflow reconciliation.
+
+### [2026-03-10 18:46 GMT+2] Agent: ProdTester
+Status -> `Testing Prod`. Running final production sanity verification after the Vitest/App Router regression repair was re-validated locally and reconciled by DevOps.
+
+### [2026-03-10 18:47 GMT+2] Agent: ProdTester
+**PRODUCTION SANITY PASS** - TASK-1-14 restored to `To Document`
+
+Verification executed:
+- `https://seoindicator.com/api/health`
+- `https://seoindicator.com/sites/1/keywords/new/`
+- `https://seoindicator.com/sites/1/keywords/1/edit/`
+- `https://seoindicator.com/sites/1/keywords/`
+- Live browser DOM checks on the add/edit/list pages for the original static-export regression (`NaN` route params / broken links)
+
+Results:
+1. `/api/health` returned `200` with database connected.
+2. Add keyword page returned `200` and rendered the expected form fields/copy in the live browser DOM: keyword, target URL, search engine, location, device, add button, cancel button.
+3. Edit keyword page returned `200` and rendered the expected edit controls/copy in the live browser DOM: immutable keyword field, target URL, status selector, save changes, cancel button.
+4. The original production regression remains fixed: browser-evaluated DOM on both add/edit pages contains **no `NaN`**, both “Back to keyword list” links resolve to `/sites/1/keywords/`, and the list page “Add Keyword” link resolves to `/sites/1/keywords/new/`.
+5. Saved evidence: `PROJECT-SEOINDICATOR/temp/task114-prod-validation-20260310T1646Z.json`.
+
+Notes:
+- `GET /api/v1/sites/1/keywords` currently returns `200` with an empty dataset for this public fixture/site, so the list page shows an empty state. That does not block TASK-1-14 acceptance criteria, which are focused on the add/edit form flows and the repaired route-param handling.
+- `https://seoindicator.com/sites/1/keywords/1/` currently renders “Keyword not found” for this public probe path, but the keyword detail page is outside TASK-1-14 scope and does not regress the add/edit form repair.
+- No new documentation discrepancy was found for TASK-1-14 in this production pass.
+
+Status -> `To Document`.
