@@ -23081,7 +23081,7 @@ REST API controller for exposing Google Search Console metrics and opportunity k
 | `from` | date | 30 days ago | Start date filter (YYYY-MM-DD) |
 | `to` | date | today | End date filter (YYYY-MM-DD) |
 | `page` | int | 1 | Page number |
-| `perPage` | int | 15 | Results per page (max: 100) |
+| `perPage` | int | 20 | Results per page (max: 100) |
 
 **Response:**
 ```json
@@ -23101,7 +23101,8 @@ REST API controller for exposing Google Search Console metrics and opportunity k
   "meta": {
     "total": 45,
     "page": 1,
-    "perPage": 15
+    "perPage": 20,
+    "lastPage": 3
   }
 }
 ```
@@ -23136,14 +23137,15 @@ Returns keywords with high impressions but lower-than-expected CTR, indicating o
 
 ### Authorization
 - All endpoints require authentication (Bearer token)
-- User must have project access via `ProjectPolicy`
+- Ownership is enforced by resolving `{projectId}` against `Site::where('id', $projectId)->where('user_id', $user->id)`
 - Returns 401 for unauthenticated requests
-- Returns 403 for unauthorized project access
+- Returns 404 when the requested site is missing or belongs to another user
 
 ### Technical Implementation
 - Controller: `backend/app/Http/Controllers/Api/V1/GSCDataController.php`
 - Methods: `index()`, `opportunities()`
-- Uses: `scopeOpportunities()` for CTR gap heuristic
+- `index()` paginates `GSCData` rows ordered by `data_date DESC, clicks DESC`
+- `opportunities()` uses the `GSCData` `opportunities()` scope with configurable `impressions` and `limit` query params
 - Routes: Defined in `backend/routes/api.php` under `/api/v1/projects/{projectId}/gsc`
 
 ### Test Coverage
