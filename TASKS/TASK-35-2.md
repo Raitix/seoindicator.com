@@ -1,7 +1,7 @@
 # TASK-35-2: BusinessLocation Model
 
 ## STATUS
-`To Test Prod`
+`To Document`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -270,3 +270,16 @@ php artisan test --filter BusinessLocationTest
 - Re-entered from the task runner trigger and verified the prior DevOps deployment already completed successfully.
 - Synced the task header from `To Deploy` to `To Test Prod` so the canonical task state now matches the deployment evidence already recorded above.
 - Recreated the task lock for this pass, refreshed the completion marker housekeeping, and confirmed no additional production rollout was needed.
+
+### ProdTester Session (2026-03-10 14:47 GMT+2)
+- **Status:** `To Document` ✅
+- Verified the production deployment evidence for commit `29e37fba6ec0944b7ec387db8281080d9a9f0f2b` / deployment `20260310T111840Z-6d975d6e`: frontend build passed, rollout passed, and Playwright smoke passed (`/` + `/login`).
+- Re-ran the task-gating suites locally on the current workspace to confirm the BusinessLocation layer itself is green:
+  - `php artisan test tests/Unit/Models/BusinessLocationTest.php` → **97 passed / 143 assertions**
+  - `php artisan test tests/Feature/Api/V1/LocalSEO/BusinessLocationControllerProductionRegressionTest.php` → **15 passed / 38 assertions**
+- Captured live production probes in `PROJECT-SEOINDICATOR/temp/task352-prod-validation-20260310T124700Z.json`:
+  - `GET /api/health` → **200 JSON**
+  - `GET /api/v1/auth/user` as guest → **401 JSON**
+  - public site routes `/` and `/login` → **200**
+- Live probes also confirmed existing Local SEO route failures on production for guest/error-path handling (`/api/v1/sites/999999/locations`, `/api/v1/locations/999999/connect-gbp`, `/api/v1/locations/999999/gbp-callback?...` all returned generic **500**). These are already tracked outside this foundation-model task by the reopened Local SEO controller/UI work (`TASK-35-17`, `TASK-35-18`, follow-up `TASK-35-27`) and therefore were treated as adjacent non-gating production issues for TASK-35-2 itself.
+- No new TASK-35-2-specific production regression was found in the BusinessLocation model/factory/service contract. Handing off to DocSystemAnalyst for documentation.
