@@ -844,3 +844,20 @@ Actions:
 - Cleared active-agents entry
 
 **ORCHESTRATOR BUG:** Task triggers continue using `FEAT-2` while the canonical feature ID is `FEAT-002` (zero-padded). This naming mismatch causes repeated spawns. Feature remains fully complete - no documentation updates required.
+
+### [2026-03-10 21:53 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - User-requested processing for `FEAT-2` (via SPEC-2 trigger).
+
+Verification:
+- Alias file `FEATURES/FEAT-2.md` does not exist; canonical feature file is `FEATURES/FEAT-002.md`.
+- FEAT-002 status: `Done` ✅
+- SPEC-002 status: `Done` ✅
+- All 14 child tasks (TASK-002-1 through TASK-002-14): `Done` ✅
+- `DOCUMENTATION.md`: Present (`## Ranking Change Alert System (FEAT-002)`) ✅
+
+Actions:
+- Cleared stale completion markers for all alias/canonical IDs
+- Written fresh completion markers: `FEAT-2.json` + `FEAT-002.json` + `SPEC-2.json` + `SPEC-002.json`
+- Cleared active-agents entry
+
+**ORCHESTRATOR BUG:** Task triggers continue using `FEAT-2`/`SPEC-2` while the canonical IDs are `FEAT-002`/`SPEC-002` (zero-padded). This naming mismatch causes repeated spawns. Feature remains fully complete.
