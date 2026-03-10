@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUseParams = vi.fn(() => ({ id: "123" }));
 
@@ -18,10 +18,25 @@ import StandaloneLocationDashboardPage from "@/app/locations/[id]/page";
 import { generateStaticParams } from "@/app/locations/[id]/layout";
 
 describe("app/locations/[id]/page", () => {
-  it("reads the runtime location id from useParams", () => {
+  beforeEach(() => {
+    mockUseParams.mockReturnValue({ id: "123" });
+    window.history.replaceState({}, "", "/locations/123/");
+  });
+
+  it("uses the route param when a real location id is already available", async () => {
     render(<StandaloneLocationDashboardPage />);
 
-    expect(screen.getByTestId("dashboard-props")).toHaveAttribute("data-location-id", "123");
+    expect(await screen.findByTestId("dashboard-props")).toHaveAttribute("data-location-id", "123");
+    expect(screen.getByTestId("dashboard-props")).toHaveAttribute("data-site-id", "");
+  });
+
+  it("recovers the numeric location id from the browser pathname when hydration keeps the preview param", async () => {
+    mockUseParams.mockReturnValue({ id: "preview" });
+    window.history.replaceState({}, "", "/locations/456/");
+
+    render(<StandaloneLocationDashboardPage />);
+
+    expect(await screen.findByTestId("dashboard-props")).toHaveAttribute("data-location-id", "456");
     expect(screen.getByTestId("dashboard-props")).toHaveAttribute("data-site-id", "");
   });
 
