@@ -22,6 +22,7 @@ import {
   resendVerificationEmail,
   storeUserData,
   getStoredUserData,
+  getStoredAuthToken,
   storeRedirectUrl,
   getStoredRedirectUrl,
   clearStoredRedirectUrl,
@@ -77,15 +78,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [publicRoutes]
   );
 
+  const getFallbackUser = React.useCallback((candidate: User | null = null) => {
+    const storedToken = getStoredAuthToken();
+    const storedUser = getStoredUserData();
+
+    if (!storedToken) {
+      return null;
+    }
+
+    return candidate ?? storedUser;
+  }, []);
+
+  const preserveFallbackAuth = React.useCallback(
+    (candidate: User | null = null) => {
+      const fallbackUser = getFallbackUser(candidate);
+
+      if (!fallbackUser) {
+        return false;
+      }
+
+      setUser(fallbackUser);
+      storeUserData(fallbackUser);
+      return true;
+    },
+    [getFallbackUser]
+  );
+
   // ==================== Initialize User on Mount ====================
 
   React.useEffect(() => {
     if (isInitialized) return;
 
     const initializeAuth = async () => {
+      const storedUser = getStoredUserData();
+
       try {
         // Try to get stored user first for quick display
-        const storedUser = getStoredUserData();
         if (storedUser) {
           setUser(storedUser);
         }
@@ -96,14 +124,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (freshUser) {
           setUser(freshUser);
           storeUserData(freshUser);
-        } else {
+        } else if (!preserveFallbackAuth(storedUser)) {
           setUser(null);
           clearAuthStorage();
         }
       } catch (err) {
         console.error("Auth initialization error:", err);
-        setUser(null);
-        clearAuthStorage();
+
+        if (!preserveFallbackAuth(storedUser)) {
+          setUser(null);
+          clearAuthStorage();
+        }
       } finally {
         setIsLoading(false);
         setIsInitialized(true);
@@ -111,7 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     initializeAuth();
-  }, [isInitialized]);
+  }, [isInitialized, preserveFallbackAuth]);
 
   // ==================== Handle Redirects ====================
 
@@ -152,15 +183,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setUser(null);
             clearAuthStorage();
           } else if (event.type === "login") {
-            // Refresh user data
+            preserveFallbackAuth();
+
+            // Refresh user data when available, but keep the persisted SPA fallback
+            // alive when auth/user cannot hydrate the browser session yet.
             fetchUser()
               .then((freshUser) => {
                 if (freshUser) {
                   setUser(freshUser);
                   storeUserData(freshUser);
+                } else {
+                  preserveFallbackAuth();
                 }
               })
-              .catch(console.error);
+              .catch((err) => {
+                if (!preserveFallbackAuth()) {
+                  console.error(err);
+                }
+              });
           }
         } catch {
           // Ignore parsing errors
@@ -170,7 +210,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  }, [preserveFallbackAuth]);
 
   // ==================== Clear Error on Navigation ====================
 
@@ -369,7 +409,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (freshUser) {
         setUser(freshUser);
         storeUserData(freshUser);
-      } else {
+      } else if (!preserveFallbackAuth(user)) {
         setUser(null);
         clearAuthStorage();
       }
@@ -378,7 +418,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [preserveFallbackAuth, user]);
 
   // ==================== Context Value ====================
 
