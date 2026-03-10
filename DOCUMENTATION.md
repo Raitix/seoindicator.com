@@ -35123,128 +35123,130 @@ Interactive chart component for visualizing keyword ranking position history ove
 **Chart Features:**
 | Feature | Description |
 |---------|-------------|
-| Line Chart | Date on X-axis, position on Y-axis |
+| Line Chart | Date on X-axis, ranking position on Y-axis |
 | Inverted Y-axis | Position 1 at top, 100 at bottom |
-| Gap Handling | "Not in top 100" shown as gap or line at bottom |
-| Date Range Selector | 7d, 30d, 90d, all options |
-| Hover Tooltip | Shows exact position and date |
-| Chart Title | Displays keyword name |
-| Loading State | Shows while fetching data |
-| Empty State | Displayed for keywords with no history |
-| Responsive Layout | Adapts to container width |
-| PNG Export | Download chart as image |
+| Gap Handling | `null` or `>100` positions render as chart gaps, with a reference line at 100 |
+| Date Range Selector | 7d, 30d, 90d, and all options |
+| Hover Tooltip | Shows formatted date and exact position or `Not in top 100` |
+| Chart Title | Displays the keyword name in the card header |
+| Loading State | Inline spinner while data is loading |
+| Empty State | Message shown when no history exists for the selected range |
+| Responsive Layout | Recharts `ResponsiveContainer` fills the card width |
+| PNG Export | Download chart as image without extra dependencies |
 
 ### Component Implementation
 
 **File:** `frontend/components/charts/RankingHistoryChart.tsx`
 
-**Props:**
+**Exports:**
 ```typescript
-interface RankingHistoryChartProps {
-  keywordId: number;
-  keywordName: string;
-  initialData?: RankingDataPoint[];
-  className?: string;
-}
-
-interface RankingDataPoint {
+export interface RankingHistoryPoint {
   date: string;
   position: number | null;
+}
+
+interface RankingHistoryChartProps {
+  keywordName: string;
+  data: RankingHistoryPoint[];
+  isLoading?: boolean;
+  initialRange?: '7d' | '30d' | '90d' | 'all';
+  onRangeChange?: (range: '7d' | '30d' | '90d' | 'all') => void;
 }
 ```
 
 **Dependencies:**
-- Recharts library (lightweight, React-friendly)
-- React hooks for state management
-- API integration for data fetching
+- Recharts (`ResponsiveContainer`, `LineChart`, `Line`, `XAxis`, `YAxis`, `CartesianGrid`, `Tooltip`, `ReferenceLine`)
+- React hooks (`useMemo`, `useRef`, `useState`)
+- Shared UI components: `Card`, `Button`
+- Lucide icons: `Download`, `LineChart`
 
 ### Date Range Options
 
 | Option | Range | Description |
 |--------|-------|-------------|
-| 7d | Last 7 days | Short-term trend analysis |
-| 30d | Last 30 days | Default view, monthly trend |
-| 90d | Last 90 days | Quarterly trend analysis |
+| 7d | Last 7 days | Short-term movement window |
+| 30d | Last 30 days | Default view |
+| 90d | Last 90 days | Longer trend analysis |
 | All | All available data | Full historical view |
+
+The component sorts data chronologically, derives the selected window from the latest point, and optionally reports changes via `onRangeChange`.
 
 ### Visual Design
 
 **Chart Layout:**
-- Container width: 100% (responsive)
-- Fixed height: 320px
-- Inverted Y-axis: Position 1 at top
-- X-axis: Date labels (auto-formatted)
-- Tooltip: Shows date and position on hover
+- Container width: 100% via `ResponsiveContainer`
+- Fixed chart area height: `h-80` (320px)
+- Inverted Y-axis with domain `[1, 100]`
+- X-axis labels formatted as `MMM d` and rotated `-35deg` for readability
+- Reference line at rank 100 to indicate the top-100 cutoff
+- Tooltip card with formatted date and exact position text
 
 **Loading State:**
-- Skeleton loader while fetching data
-- Prevents layout shift
+- Centered animated spinner (`animate-spin`) inside the card body
+- Preserves overall layout while data loads
 
 **Empty State:**
-- Message: "No ranking history available"
-- Guidance for user to check back later
+- Exact message: `No ranking history available for this keyword.`
+- Shown when the filtered data set is empty
 
 ### Export Feature
 
 **PNG Export:**
-- Button: Download icon + "Export PNG" label
-- Method: SVG → Canvas conversion (no external dependencies)
-- Filename: `ranking-history-{keyword}.png`
+- Button: Download icon + `Export PNG` label
+- Method: SVG -> canvas conversion using browser-native APIs
+- Filename: `{slugified-keyword}-ranking-history.png`
+- Export button shows `Exporting...` while the image is being generated
 
 ### Demo Route
 
 **Public Demo Page:** `/ranking-history`
-- Displays chart with sample data
+- Displays the component with sample data
 - No authentication required
-- Used for production validation
+- Used for production validation and quick visual regression checks
 
 **Sample Data:**
 - 17 data points
-- Positions ranging from 2-21
-- Includes null position (2026-02-25) for gap testing
+- Positions ranging from 2 to 21
+- Includes a `null` position on `2026-02-25` for gap handling verification
+- Demo keyword: `best seo tools`
 
 ### Technical Implementation
 
 **Frontend Files:**
 - Component: `frontend/components/charts/RankingHistoryChart.tsx`
 - Demo Page: `frontend/app/ranking-history/page.tsx`
-- Types: `frontend/lib/types/ranking.ts`
 
-**Recharts Components Used:**
-- `ResponsiveContainer` - Adaptive sizing
-- `LineChart` - Main chart component
-- `Line` - Data series
-- `XAxis`, `YAxis` - Axis configuration
-- `CartesianGrid` - Grid lines
-- `Tooltip` - Hover tooltip
-- `Legend` - Chart legend (optional)
+**Internal Helpers:**
+- `formatDate()` formats ISO date strings for chart labels and tooltips
+- `getDateRange()` filters the dataset for the selected preset
+- Export logic serializes the rendered SVG and draws it onto a canvas before download
 
 ### Security Implementation
 
 | Security Measure | Implementation |
 |------------------|----------------|
-| XSS Prevention | React auto-escapes content |
-| Data Validation | Position must be 1-100 or null |
-| No Sensitive Data | Demo route uses sample data only |
-| Public Demo | No auth required for demo route |
+| XSS Prevention | React auto-escapes rendered text |
+| Data Validation | Positions above 100 are normalized to `null` for display |
+| No Sensitive Data | Demo route uses static sample data only |
+| Public Demo | No auth required for the validation page |
 
 ### Test Coverage
 
 | Test Category | Status | Notes |
 |---------------|--------|-------|
-| Production Validation | ✅ PASS | Verified at /ranking-history |
-| Chart Rendering | ✅ PASS | Recharts container present |
-| Date Range Selector | ✅ PASS | All buttons present |
-| Export PNG Button | ✅ PASS | Button with download icon |
-| Sample Data | ✅ PASS | 17 data points loaded |
-| Null Handling | ✅ PASS | Gap in chart for null position |
-| Responsive Layout | ✅ PASS | Container 100% width |
-| Health Check | ✅ PASS | API health endpoint 200 OK |
+| Production Route | PASS | `https://seoindicator.com/ranking-history/` returned HTTP 200 on 2026-03-10 |
+| Rendered Title | PASS | Page text includes `Ranking History - best seo tools` |
+| Date Range Selector | PASS | 7d / 30d / 90d / All controls are rendered by the component |
+| Export PNG Button | PASS | Button label and download icon present |
+| Sample Data | PASS | Demo page provides 17 history points |
+| Null Handling | PASS | `2026-02-25` `null` point is preserved for gap rendering |
+| Responsive Layout | PASS | Component uses `ResponsiveContainer` with 100% width |
+| Health Check | PASS | `https://seoindicator.com/api/health` returned 200 JSON on 2026-03-10 |
 
 ### Production Status
-- **Deployed**: 2026-02-23 (commit dcecdd3 via GitHub Actions)
+- **Deployed**: 2026-02-23 (commit `dcecdd3`)
 - **Demo Route**: `https://seoindicator.com/ranking-history`
-- **Health Check**: Passing
+- **Last Re-verified**: 2026-03-10
 - **Status**: Complete
 
 ### Dependencies
