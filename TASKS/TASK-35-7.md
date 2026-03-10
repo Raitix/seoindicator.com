@@ -1,7 +1,7 @@
 # TASK-35-7: Google OAuth Service for GBP
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking

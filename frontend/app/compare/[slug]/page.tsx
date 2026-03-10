@@ -15,6 +15,7 @@
 
 import { Metadata } from 'next';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -22,18 +23,66 @@ import { getComparisonBySlug, COMPARISON_SLUGS } from '@/lib/compare/registry';
 import { ComparisonData, ComparisonPageProps } from '@/lib/compare/types';
 import { getComparisonOGMetadata, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/lib/compare/og-images';
 
-// Components
-import { ComparisonTable } from '@/components/compare/ComparisonTable';
-import { PricingComparison } from '@/components/compare/PricingComparison';
+// Static components (imported directly for optimal bundle size)
 import { ProsConsCard } from '@/components/compare/ProsConsCard';
 import { UseCaseSection } from '@/components/compare/UseCaseSection';
 import { ComparisonCTA } from '@/components/compare/ComparisonCTA';
 import { ComparisonSchema } from '@/components/compare/ComparisonSchema';
-import { FAQSection } from '@/components/compare/FAQSection';
-import { RelatedComparisons } from '@/components/compare/RelatedComparisons';
 
 // Skeleton components for loading states
 import { Skeleton } from '@/components/ui/skeleton';
+
+// ============================================================================
+// Dynamic Imports for Heavy Components (Code Splitting)
+// ============================================================================
+
+/**
+ * ComparisonTable - Lazy loaded for better initial bundle size
+ * Heavy component with feature comparison table
+ */
+const ComparisonTable = dynamic(
+  () => import('@/components/compare/ComparisonTable').then(mod => ({ default: mod.ComparisonTable })),
+  {
+    loading: () => <ComparisonTableSkeleton />,
+    ssr: true, // Keep SSR for SEO and static generation
+  }
+);
+
+/**
+ * PricingComparison - Lazy loaded component
+ * Contains pricing data for both tools
+ */
+const PricingComparison = dynamic(
+  () => import('@/components/compare/PricingComparison').then(mod => ({ default: mod.PricingComparison })),
+  {
+    loading: () => <PricingComparisonSkeleton />,
+    ssr: true,
+  }
+);
+
+/**
+ * FAQSection - Lazy loaded, below the fold
+ * Contains FAQ accordion with structured data
+ */
+const FAQSection = dynamic(
+  () => import('@/components/compare/FAQSection').then(mod => ({ default: mod.FAQSection })),
+  {
+    loading: () => <FAQSkeleton />,
+    ssr: true,
+  }
+);
+
+/**
+ * RelatedComparisons - Lazy loaded, bottom of page
+ * Links to related comparison pages
+ */
+const RelatedComparisons = dynamic(
+  () => import('@/components/compare/RelatedComparisons').then(mod => ({ default: mod.RelatedComparisons })),
+  {
+    loading: () => <RelatedComparisonsSkeleton />,
+    ssr: true,
+  }
+);
 
 // ============================================================================
 // Skeleton Components for Loading States
