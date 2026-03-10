@@ -7,6 +7,7 @@
 
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   AuthProvider,
@@ -21,10 +22,10 @@ import { AuthError, AuthErrorCode } from "@/lib/types/auth";
 
 // ==================== Mocks ====================
 
-const mockPush = jest.fn();
-const mockPathname = jest.fn(() => "/");
+const mockPush = vi.fn();
+const mockPathname = vi.fn(() => "/");
 
-jest.mock("next/navigation", () => ({
+vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
   }),
@@ -32,17 +33,17 @@ jest.mock("next/navigation", () => ({
 }));
 
 // Mock the auth API
-const mockFetchUser = jest.fn();
-const mockLogin = jest.fn();
-const mockRegister = jest.fn();
-const mockLogout = jest.fn();
-const mockInitiateGoogleOAuth = jest.fn();
-const mockHandleGoogleCallback = jest.fn();
-const mockForgotPassword = jest.fn();
-const mockResetPassword = jest.fn();
-const mockResendVerificationEmail = jest.fn();
+const mockFetchUser = vi.fn();
+const mockLogin = vi.fn();
+const mockRegister = vi.fn();
+const mockLogout = vi.fn();
+const mockInitiateGoogleOAuth = vi.fn();
+const mockHandleGoogleCallback = vi.fn();
+const mockForgotPassword = vi.fn();
+const mockResetPassword = vi.fn();
+const mockResendVerificationEmail = vi.fn();
 
-jest.mock("@/lib/api/auth", () => ({
+vi.mock("@/lib/api/auth", () => ({
   fetchUser: () => mockFetchUser(),
   login: (...args: any[]) => mockLogin(...args),
   register: (...args: any[]) => mockRegister(...args),
@@ -52,14 +53,14 @@ jest.mock("@/lib/api/auth", () => ({
   forgotPassword: (...args: any[]) => mockForgotPassword(...args),
   resetPassword: (...args: any[]) => mockResetPassword(...args),
   resendVerificationEmail: () => mockResendVerificationEmail(),
-  storeUserData: jest.fn(),
-  getStoredUserData: jest.fn(() => null),
-  getStoredAuthToken: jest.fn(() => null),
-  storeRedirectUrl: jest.fn(),
-  getStoredRedirectUrl: jest.fn(() => null),
-  clearStoredRedirectUrl: jest.fn(),
-  clearAuthStorage: jest.fn(),
-  broadcastAuthChange: jest.fn(),
+  storeUserData: vi.fn(),
+  getStoredUserData: vi.fn(() => null),
+  getStoredAuthToken: vi.fn(() => null),
+  storeRedirectUrl: vi.fn(),
+  getStoredRedirectUrl: vi.fn(() => null),
+  clearStoredRedirectUrl: vi.fn(),
+  clearAuthStorage: vi.fn(),
+  broadcastAuthChange: vi.fn(),
 }));
 
 const mockUser: User = {
@@ -117,7 +118,7 @@ function TestComponent() {
 
 describe("AuthContext", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetchUser.mockResolvedValue(null);
     mockPathname.mockReturnValue("/");
   });
@@ -483,7 +484,11 @@ describe("AuthContext", () => {
 
   it("prevents duplicate login requests (AC-017)", async () => {
     const user = userEvent.setup();
-    mockLogin.mockResolvedValue(mockUser);
+    let resolveLogin: ((value: User) => void) | undefined;
+    const loginPromise = new Promise<User>((resolve) => {
+      resolveLogin = resolve;
+    });
+    mockLogin.mockImplementation(() => loginPromise);
 
     render(
       <AuthProvider>
@@ -495,16 +500,18 @@ describe("AuthContext", () => {
       expect(screen.getByTestId("loading")).toHaveTextContent("false");
     });
 
-    // Click login multiple times quickly
+    const loginBtn = screen.getByText("Login");
+
     await act(async () => {
-      const loginBtn = screen.getByText("Login");
-      await user.click(loginBtn);
-      await user.click(loginBtn);
-      await user.click(loginBtn);
+      await Promise.all([user.click(loginBtn), user.click(loginBtn), user.click(loginBtn)]);
     });
 
-    // Should only call login once
     expect(mockLogin).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveLogin?.(mockUser);
+      await loginPromise;
+    });
   });
 
   // ==================== AC-024: isAuthenticated derived from user ====================
@@ -542,7 +549,7 @@ describe("AuthContext", () => {
   // ==================== AC-037: Context outside provider ====================
 
   it("throws error when used outside provider (AC-037)", () => {
-    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
     function ErrorComponent() {
       useAuth();

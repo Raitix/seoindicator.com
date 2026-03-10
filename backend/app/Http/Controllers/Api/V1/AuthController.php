@@ -26,6 +26,12 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        $token = $user->createToken(
+            'auth-token',
+            ['*'],
+            now()->addDays(7)
+        );
+
         // Send email verification notification
         // $user->sendEmailVerificationNotification();
 
@@ -34,6 +40,7 @@ class AuthController extends Controller
             'message' => 'Registration successful. Please verify your email.',
             'data' => [
                 'user' => new UserResource($user),
+                'token' => $token->plainTextToken,
             ],
         ], 201);
     }
