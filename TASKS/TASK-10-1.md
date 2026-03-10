@@ -317,3 +317,14 @@ CREATE TABLE visibility_scores (
   - `backend/database/factories/VisibilityScoreFactory.php::high()` currently generates scores in the 70-100 range, while the documentation says 80-100.
 - **Interpretation:** This looks like later Visibility/PWA integration drift bleeding into the original TASK-10-1 model surface before the schema/docs were brought back into sync.
 - **Action Taken:** Recorded the drift here, refreshed housekeeping, and left the item status unchanged pending follow-up in the relevant implementation/documentation pass.
+
+### [2026-03-10 16:32 GMT+2] DocSystemAnalyst: Re-verification Corrected & Documentation Synced
+- **Targeted verification rerun:** `php artisan test tests/Unit/Models/VisibilityScoreTest.php` -> **19 passed, 47 assertions** (same non-blocking PHPUnit doc-comment metadata deprecation warnings as elsewhere).
+- **Important correction to the earlier drift note:** the repo already contains follow-up migration `backend/database/migrations/2026_03_01_000000_add_pwa_component_to_visibility_scores_table.php`, so `pwa_component` is part of the current codebase schema evolution even though it was not part of the original TASK-10-1 migration.
+- **DOCUMENTATION.md corrected to current codebase state:**
+  - Added the later `pwa_component` schema extension to the TASK-10-1 `visibility_scores` table section.
+  - Updated `Project::latestVisibilityScore()` from a documented `hasOne` relation to the actual helper/ordered query implementation.
+  - Aligned factory ranges with the current factory implementation (`high()` = 70-100, `medium()` = 40-69, `low()` = 0-39).
+  - Updated stored component breakdown wording to the current four-component model (`position`, `serp`, `volume`, `pwa`).
+- **Task Status:** Kept at `Done`.
+- **SPEC-010 / FEAT-010:** Remain `Done`.

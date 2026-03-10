@@ -20842,6 +20842,10 @@ CREATE TABLE dismissed_suggestions (
 ### Visibility Scores Table
 Stores daily calculated visibility scores for each project. These scores are used for trend analysis, dashboard metrics, and tracking SEO performance over time.
 
+**Schema Evolution:**
+- Base table created by `2026_02_27_233523_create_visibility_scores_table.php` (TASK-10-1)
+- Later extended by `2026_03_01_000000_add_pwa_component_to_visibility_scores_table.php` to add `pwa_component`
+
 ```sql
 CREATE TABLE visibility_scores (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -20850,6 +20854,7 @@ CREATE TABLE visibility_scores (
     position_component DECIMAL(5,2) NOT NULL,
     serp_component DECIMAL(5,2) NOT NULL,
     volume_component DECIMAL(5,2) NOT NULL,
+    pwa_component DECIMAL(5,2) NOT NULL DEFAULT 0.00,
     keywords_count INT UNSIGNED NOT NULL DEFAULT 0,
     calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -20866,9 +20871,10 @@ CREATE TABLE visibility_scores (
 | `id` | BIGINT UNSIGNED | Primary key |
 | `project_id` | BIGINT UNSIGNED | FK to projects.id |
 | `score` | TINYINT UNSIGNED | Overall visibility score (0-100) |
-| `position_component` | DECIMAL(5,2) | Position-based component of score |
-| `serp_component` | DECIMAL(5,2) | SERP features component of score |
-| `volume_component` | DECIMAL(5,2) | Search volume component of score |
+| `position_component` | DECIMAL(5,2) | Position/rankings contribution stored for the final score |
+| `serp_component` | DECIMAL(5,2) | SERP features contribution stored for the final score |
+| `volume_component` | DECIMAL(5,2) | Search-volume contribution stored for the final score |
+| `pwa_component` | DECIMAL(5,2) | PWA readiness contribution stored for the final score (added later) |
 | `keywords_count` | INT UNSIGNED | Number of keywords used in calculation |
 | `calculated_at` | TIMESTAMP | When the score was calculated |
 
@@ -20894,7 +20900,7 @@ CREATE TABLE visibility_scores (
 | Method | Relationship | Description |
 |--------|--------------|-------------|
 | `visibilityScores()` | hasMany | VisibilityScore records for this project |
-| `latestVisibilityScore()` | hasOne | Most recent visibility score |
+| `latestVisibilityScore()` | helper query | Ordered `visibilityScores()` query returning newest score first |
 
 ### Model Scopes
 
@@ -20909,25 +20915,26 @@ CREATE TABLE visibility_scores (
 | Method | Description |
 |--------|-------------|
 | `getLatestForProject($projectId)` | Static method to get latest score for a project |
-| `getTrendForProject($projectId, $days)` | Static method to get scores within N days |
+| `getTrendForProject($projectId, $days)` | Static method to get scores within N days, including `pwa_component` in the returned payload |
 
 ### Factory States
 
 | State | Description |
 |-------|-------------|
-| `high()` | Creates score in high range (80-100) |
-| `medium()` | Creates score in medium range (40-79) |
+| `high()` | Creates score in high range (70-100) |
+| `medium()` | Creates score in medium range (40-69) |
 | `low()` | Creates score in low range (0-39) |
 
-### Score Calculation Components
+### Stored Score Components
 
-The visibility score is composed of three weighted components:
+The current visibility score storage includes four component columns. In the current implementation, weighted contribution targets are:
 
 | Component | Weight | Description |
 |-----------|--------|-------------|
-| `position_component` | ~40% | Based on average keyword positions |
-| `serp_component` | ~30% | Based on SERP feature presence |
-| `volume_component` | ~30% | Based on search volume distribution |
+| `position_component` | 50% | Based on average keyword positions |
+| `serp_component` | 25% | Based on SERP feature presence |
+| `volume_component` | 15% | Based on search volume distribution |
+| `pwa_component` | 10% | Based on PWA readiness |
 
 ### Test Coverage
 
