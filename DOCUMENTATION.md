@@ -27928,13 +27928,13 @@ Background worker that processes rank check jobs from the queue, fetches SERP da
 - Handles both single keyword checks and batch site checks
 
 **SERP Fetching:**
-- Integrates with SERPFetcherInterface (mock by default, HttpSERPFetcher for testing)
-- Captures SERP features (featured snippets, local packs, etc.)
+- Integrates with `SERPFetcherInterface` (mock by default, `HttpSERPFetcher` for testing)
+- Uses the fetcher result for ranking matches, error reporting, and duration tracking
 - Records check duration for performance monitoring
 
 **Ranking Storage:**
 - Stores results in `ranking_history` table
-- Records position, URL found, SERP features, check duration
+- Records position, URL found, check duration, and fetch errors
 - Updates keyword's `last_checked_at` timestamp
 
 **Error Handling:**
@@ -27943,21 +27943,20 @@ Background worker that processes rank check jobs from the queue, fetches SERP da
 - Logs all check attempts and results
 
 ### Technical Implementation
-- Worker: `backend/app/Workers/RankCheckerWorker.php`
+- Worker: `backend/app/Services/Queue/RankCheckerWorker.php`
 - Service: `backend/app/Services/RankCheckerService.php`
 - Interface: `backend/app/Services/SERPFetcherInterface.php`
 - Implementations:
-  - `MockSERPFetcher` (development)
-  - `HttpSERPFetcher` (testing environment)
+  - `backend/app/Services/SERP/MockSERPFetcher.php` (development)
+  - `backend/app/Services/SERP/HttpSERPFetcher.php` (testing environment)
 - Job: `backend/app/Jobs/CheckKeywordJob.php`
-- DTO: `backend/app/Services/SERPResultData.php`
+- DTO: `backend/app/Services/SERP/SERPResultData.php`
 
 ### Unit Tests
 29 tests, 80 assertions covering:
 - Single keyword rank checking
 - Site batch rank checking
 - Error handling and retry logic
-- SERP features capture
 - Duration tracking
 - Mocked fetcher/queue integration
 
