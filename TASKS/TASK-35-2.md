@@ -1,7 +1,7 @@
 # TASK-35-2: BusinessLocation Model
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -218,3 +218,29 @@ php artisan test --filter BusinessLocationTest
 **Notes for LocalTester:**
 - `insights()` and `posts()` intentionally use table-backed generic relations for now because dedicated GBPInsight/GBPPost model behavior belongs to TASK-35-3.
 - There are unrelated modified files already present in the repo (`TASK-35-17.md`, `TASK-35-18.md`, `TASK-35-19.md`, `TEST-35-18.md`, `TEST-35-19.md`, `SPEC-002.md`, `temp/task3519-prod-validation-*.json`). They were not touched for this task.
+
+### LocalTester Session (2026-03-10 13:09 GMT+2)
+- **Status:** `To Deploy` ✅
+- Verified TASK-35-2 acceptance criteria locally against the implemented BusinessLocation model/factory/tests.
+
+**Task-gating test results:**
+| Command | Result |
+|---------|--------|
+| `php artisan test tests/Unit/Models/BusinessLocationTest.php` | ✅ 97 passed / 143 assertions |
+| `php artisan test tests/Unit/Policies/BusinessLocationPolicyTest.php` | ✅ 23 passed / 23 assertions |
+| `php artisan test tests/Unit/Http/Requests/LocalSEO/StoreBusinessLocationRequestTest.php` | ✅ 44 passed / 65 assertions |
+| `php artisan test tests/Unit/Http/Requests/LocalSEO/UpdateBusinessLocationRequestTest.php` | ✅ 35 passed / 44 assertions |
+
+**Assessment:**
+- BusinessLocation model contract required by TASK-35-2 is working locally.
+- Factory consistency, relationship wiring, accessors/helpers, scopes, soft-delete behavior, and hidden token serialization all validated.
+- No task-specific regression found.
+
+**Out-of-scope / known adjacent failures:**
+- A broader controller sweep is still red outside this task gate:
+  - `php artisan test tests/Feature/Api/V1/LocalSEO/BusinessLocationControllerTest.php`
+  - first isolated failure: `Too few arguments to function ... {closure}(), 1 passed ... and exactly 2 expected` at `backend/tests/Feature/Api/V1/LocalSEO/BusinessLocationControllerTest.php:2071`
+  - interpreted as an existing adjacent controller-test/mock issue, not a blocker for the model foundation task itself.
+
+**Handoff:**
+- Approved for DevOps / deployment.
