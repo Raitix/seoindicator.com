@@ -24815,14 +24815,16 @@ Focused backend coverage exists for the Project model, project authorization, da
 CREATE TABLE keywords (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    site_id INTEGER NOT NULL,
+    site_id INTEGER,
     keyword TEXT NOT NULL,
+    gsc_query_match VARCHAR(255),
     target_url TEXT,
     search_engine TEXT NOT NULL DEFAULT 'google',
     location TEXT NOT NULL DEFAULT 'us',
     device TEXT NOT NULL DEFAULT 'desktop',
     status TEXT NOT NULL DEFAULT 'active',
     last_checked_at DATETIME,
+    last_viewed_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE
@@ -24834,15 +24836,17 @@ CREATE TABLE keywords (
 |-------|------|-------------|
 | `id` | INTEGER | Primary key |
 | `user_id` | INTEGER | Future multi-tenant support |
-| `site_id` | INTEGER | FK to sites.id |
+| `site_id` | INTEGER | Nullable FK to sites.id |
 | `keyword` | TEXT | The search term to track |
+| `gsc_query_match` | VARCHAR(255) | Fuzzy match to GSC queries (nullable) |
 | `target_url` | TEXT | User's target URL for this keyword |
 | `search_engine` | TEXT | Search engine (default: 'google') |
 | `location` | TEXT | Country code (default: 'us') |
 | `device` | TEXT | Device type: 'desktop' or 'mobile' |
 | `status` | TEXT | Enum: 'active', 'paused', 'deleted' |
 | `last_checked_at` | DATETIME | Last rank check timestamp |
-| `gsc_query_match` | VARCHAR(255) | Fuzzy match to GSC queries (nullable) |
+| `last_viewed_at` | DATETIME | Last UI view timestamp used for scheduling priority |
+
 
 **Constraints:**
 - Foreign Key: `site_id → sites.id`
@@ -24852,6 +24856,7 @@ CREATE TABLE keywords (
 - `idx_keywords_site_id` on `site_id`
 - `idx_keywords_status` on `status`
 - `idx_keywords_last_checked` on `last_checked_at`
+- `keywords_last_viewed_at_index` on `last_viewed_at` for recency-based scheduling priority
 - `keywords_gsc_query_match_index` on `gsc_query_match` for GSC query matching
 
 ### Ranking History Table

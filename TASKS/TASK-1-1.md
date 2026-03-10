@@ -579,3 +579,21 @@ Updated `DOCUMENTATION.md` with:
 - Current schema block remains otherwise consistent for keywords, ranking_history, FK, unique constraint, and ranking history indexes
 - Parent files checked again: `SPEC-001.md` and `FEAT-001.md` are still empty stubs, so no parent-status update was possible in this pass
 - Status: Done (final)
+
+### [2026-03-10 16:37 GMT+2] Agent: DocSystemAnalyst
+**Re-verification + Schema Doc Refresh**
+
+- Task status remains: Done
+- Re-verified the TASK-1-1 schema against the live migration chain:
+  - `2026_02_20_010700_create_keywords_table.php`
+  - `2026_02_21_185600_update_keywords_and_create_ranking_history.php`
+  - `2026_02_22_160800_add_gsc_query_match_to_keywords_table.php`
+  - `2026_02_22_212500_add_last_viewed_at_to_keywords_table.php`
+- Corrected `DOCUMENTATION.md` drift in the main Keywords table block:
+  - added missing `gsc_query_match` to the SQL sketch
+  - added missing `last_viewed_at` field + `keywords_last_viewed_at_index`
+  - aligned the SQL sketch / field notes with nullable `site_id`
+- `ranking_history` documentation remains consistent with the migration and existing index coverage
+- Attempted a targeted backend verification run with `php artisan test --filter CreateKeywordsTablesTest`, but the current runner surfaced unrelated global failures/deprecation noise outside TASK-1-1, so this pass used direct migration/doc verification instead of claiming a green test run
+- Parent files checked again: `SPEC-001.md` and `FEAT-001.md` are still empty stubs, so no parent-status update was possible in this pass
+- Status: Done (final)
