@@ -1,7 +1,7 @@
-# SPEC-001-14: Add/Edit Keyword Forms
+﻿# SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 ## PRIORITY
 `High`
 
@@ -312,3 +312,16 @@ Environment notes:
 
 Status -> `To Deploy`.
 
+### [2026-03-10 18:38 GMT+2] Agent: DevOps
+**Deployment reconciliation complete** - TASK-1-14 moved to `To Test Prod`
+
+Actions taken:
+- Set status to `In Deployment` while reconciling the reopened TASK-1-14 test-repair branch state against `origin/main`.
+- Isolated only TASK-1-14 commits on a clean `origin/main` worktree and confirmed the net diff is limited to the repaired Vitest/App Router test files plus this task log; no deployable frontend or backend source files changed in this pass.
+- Reconfirmed the live production keyword form routes still return HTTP 200 and render the expected add/edit form copy:
+  - `https://seoindicator.com/sites/1/keywords/new/`
+  - `https://seoindicator.com/sites/1/keywords/1/edit/`
+  - `https://seoindicator.com/sites/1/keywords/`
+- Because this DevOps pass only promotes test/task-history repairs, no new production artifact rollout was required for TASK-1-14 itself.
+
+Status -> `To Test Prod` for final production sanity verification / workflow reconciliation.
