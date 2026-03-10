@@ -1,7 +1,7 @@
 # SPEC-001-14: Add/Edit Keyword Forms
 
 ## STATUS
-`Done`
+`To Develop`
 ## PRIORITY
 `High`
 
@@ -257,3 +257,20 @@ Triggered by task processor. Task remains `Done` and documentation is still curr
 - Lock file removed
 
 No documentation changes required. Task closed.
+
+### [2026-03-10 17:52 GMT+2] Agent: DocSystemAnalyst
+**Re-verification FAILED** - TASK-1-14 returned to `To Develop`
+
+Triggered by task processor. Cleared the stale completion marker, re-verified the live implementation/docs, and re-ran the focused frontend task suites:
+- `npm test -- --runInBand __tests__/components/KeywordForm.test.tsx __tests__/app/sites/[siteId]/keywords/add/page.test.tsx`
+
+**Findings:**
+1. All 7 focused tests are currently red under the repo's current Vitest runner.
+2. `frontend/__tests__/components/KeywordForm.test.tsx` still uses legacy `jest.mock("next/navigation", ...)`, so `useRouter()` is not mocked and both form components now fail with `invariant expected app router to be mounted`.
+3. `frontend/__tests__/app/sites/[siteId]/keywords/add/page.test.tsx` similarly no longer injects `useParams()` correctly under the current runner, causing `Cannot read properties of null (reading 'siteId')`.
+4. `DOCUMENTATION.md` had path drift: the live repo uses `frontend/components/keywords/KeywordCreateForm.tsx`, `frontend/components/keywords/KeywordEditForm.tsx`, and `frontend/lib/validators/keyword.ts` (not the old shared `KeywordForm.tsx` / `lib/validations/keyword.ts` paths).
+
+**Actions taken:**
+- Updated `DOCUMENTATION.md` to match the live frontend file layout and current re-verification state.
+- Status -> `To Develop` so Developer can restore the dedicated TASK-1-14 frontend tests under the current Vitest/App Router setup.
+- SPEC-001 remains in progress; no parent closure action taken.

@@ -18620,8 +18620,8 @@ Forms for adding new keywords and editing existing keywords in the keyword track
 | `keyword` | Required, string, max 255 chars |
 | `targetUrl` | Optional, valid URL format |
 | `searchEngine` | Required, enum: google |
-| `location` | Required, valid country code |
-| `device` | Required, enum: desktop, mobile |
+| `location` | Required, enum: us |
+| `device` | Required, enum: desktop |
 
 ### User Features
 - **Duplicate Detection**: Warning shown for duplicate keywords (not blocking)
@@ -18643,23 +18643,25 @@ Forms for adding new keywords and editing existing keywords in the keyword track
 Dynamic route pages use `useParams()` hook for client-side route parameter extraction, ensuring compatibility with Next.js static export (`output: 'export'`).
 
 ### Frontend Files
-- `frontend/app/sites/[siteId]/keywords/new/page.tsx` - Add keyword page
-- `frontend/app/sites/[siteId]/keywords/[keywordId]/edit/page.tsx` - Edit keyword page
-- `frontend/components/keywords/KeywordForm.tsx` - Shared form component
-- `frontend/lib/validations/keyword.ts` - Zod validation schemas
-- `frontend/lib/api/keywords.ts` - API helper functions
+- `frontend/app/sites/[siteId]/keywords/new/page.tsx` - Add keyword page (client route using `useParams()`)
+- `frontend/app/sites/[siteId]/keywords/[keywordId]/edit/page.tsx` - Edit keyword page (client route using `useParams()`)
+- `frontend/components/keywords/KeywordCreateForm.tsx` - Create form with duplicate detection, reset-on-success, and toast feedback
+- `frontend/components/keywords/KeywordEditForm.tsx` - Edit form for target URL + status updates with toast feedback
+- `frontend/lib/validators/keyword.ts` - Zod validation schemas for create/edit flows
+- `frontend/lib/api/keywords.ts` - SWR hooks + keyword create/update API helpers
 
 ### Unit Tests
 | Test File | Tests | Description |
 |-----------|-------|-------------|
-| `KeywordForm.test.tsx` | 6 | Field rendering, validation, duplicate warning, submit flows |
-| `add/page.test.tsx` | 1 | Page renders correctly with mocked params |
+| `KeywordForm.test.tsx` | 6 | Focused create/edit form coverage for field rendering, validation, duplicate warning, and submit flows |
+| `add/page.test.tsx` | 1 | Add page render coverage with mocked route params |
 
 ### Production Status
 - **Deployed**: 2026-02-28 (GitHub Actions)
 - **Health Check**: Passing
-- **Tests**: 7/7 passing
-- **Status**: Complete
+- **Historical rollout validation**: 7 focused frontend tests passed during the original delivery
+- **Current re-verification note (2026-03-10)**: the dedicated frontend test files are red under the current Vitest runner because their App Router mocks still rely on legacy `jest.mock(...)` behavior
+- **Status**: Returned to `To Develop` for test-harness repair
 
 ### Dependencies
 - TASK-1-4 (Keywords CRUD API)
