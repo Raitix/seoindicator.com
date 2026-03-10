@@ -127,6 +127,46 @@ describe("auth API production routing", () => {
     );
   });
 
+  it("login preserves a configured backend path prefix for both Sanctum CSRF and auth endpoints", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com/backend/api/v1";
+
+    const auth = await import("@/lib/api/auth");
+
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            user: {
+              id: 1,
+              name: "Raitis",
+              email: "raitis@example.com",
+              email_verified: true,
+            },
+          },
+        }),
+      });
+
+    await auth.login("raitis@example.com", "super-secret", true);
+
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      1,
+      "https://api.seoindicator.com/backend/sanctum/csrf-cookie",
+      expect.objectContaining({ credentials: "include" })
+    );
+
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.seoindicator.com/backend/api/v1/auth/login",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+      })
+    );
+  });
+
   it("login stores the returned bearer token for SPA fallback auth", async () => {
     process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
 
