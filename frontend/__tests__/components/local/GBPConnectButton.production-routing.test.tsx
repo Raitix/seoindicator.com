@@ -15,6 +15,7 @@ describe("GBPConnectButton production routing", () => {
     vi.resetModules();
     vi.clearAllMocks();
     process.env = { ...originalEnv };
+    localStorage.clear();
     vi.stubGlobal("fetch", mockFetch);
     Object.defineProperty(window, "open", {
       configurable: true,
@@ -56,7 +57,35 @@ describe("GBPConnectButton production routing", () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("https://api.seoindicator.com/api/v1/locations/loc-456/gbp/oauth-url"),
-      expect.objectContaining({ headers: expect.any(Object) })
+      expect.objectContaining({
+        credentials: "include",
+        headers: expect.any(Object),
+      })
+    );
+  });
+
+  it("includes the stored bearer token in GBP bootstrap requests for protected API access", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
+    localStorage.setItem("seoindicator_token", "spa-fallback-token");
+
+    const { GBPConnectButton } = await loadComponent();
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ oauth_url: mockOAuthUrl }),
+    });
+    mockWindowOpen.mockReturnValue({ closed: false } as Window);
+
+    render(<GBPConnectButton siteId="site-123" locationId="loc-456" />);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("gbp-connect-button"));
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining("https://api.seoindicator.com/api/v1/locations/loc-456/gbp/oauth-url"),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer spa-fallback-token" }),
+      })
     );
   });
 

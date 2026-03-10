@@ -3,6 +3,8 @@
 import { useCallback } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 
+import { buildApiUrl } from "@/lib/api/base-url";
+import { getStoredAuthToken } from "@/lib/api/auth";
 import {
   defaultLocationMeta,
   normalizeLocation,
@@ -11,8 +13,6 @@ import {
   type LocationListResponse,
   type LocationMutationPayload,
 } from "@/lib/types/locations";
-
-const API_BASE = "/api/v1";
 
 export type LocationConnectionFilter = "all" | "connected" | "not-connected";
 export type LocationSortBy = "name" | "updated" | "created" | "connection";
@@ -66,12 +66,37 @@ const buildQueryString = (params: LocationQueryParams = {}) => {
   return queryString ? `?${queryString}` : "";
 };
 
+const buildRequestHeaders = (headers?: HeadersInit, includeJsonContentType = false) => {
+  const nextHeaders: Record<string, string> = Array.isArray(headers)
+    ? Object.fromEntries(headers)
+    : typeof Headers !== "undefined" && headers instanceof Headers
+      ? Object.fromEntries(headers.entries())
+      : { ...((headers as Record<string, string> | undefined) ?? {}) };
+
+  if (!nextHeaders.Accept) {
+    nextHeaders.Accept = "application/json";
+  }
+
+  if (includeJsonContentType && !nextHeaders["Content-Type"]) {
+    nextHeaders["Content-Type"] = "application/json";
+  }
+
+  const token = getStoredAuthToken();
+  if (token && !nextHeaders.Authorization) {
+    nextHeaders.Authorization = `Bearer ${token}`;
+  }
+
+  return nextHeaders;
+};
+
+const buildRequestInit = (init: RequestInit = {}, includeJsonContentType = false): RequestInit => ({
+  ...init,
+  credentials: "include",
+  headers: buildRequestHeaders(init.headers, includeJsonContentType),
+});
+
 const fetcher = async (url: string): Promise<LocationListResponse> => {
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
+  const response = await fetch(url, buildRequestInit());
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -104,22 +129,30 @@ const mapPayload = (payload: LocationMutationPayload) => ({
   longitude: payload.longitude ?? null,
 });
 
+const getLocationListKey = (siteId: string | number, params?: LocationQueryParams) =>
+  buildApiUrl(`/sites/${siteId}/locations${buildQueryString(params)}`);
+
+const getLocationDetailKey = (locationId: string | number) => buildApiUrl(`/locations/${locationId}`);
+
 const refreshLocationCaches = async (siteId?: string | number, locationId?: number) => {
+  const sitePrefix = siteId ? buildApiUrl(`/sites/${siteId}/locations`) : null;
+  const genericLocationsSegment = "/locations";
+
   await globalMutate(
     (key) =>
       typeof key === "string" &&
-      (key.includes("/locations") || key.includes(`/sites/${siteId}/locations`)),
+      (Boolean(sitePrefix && key.startsWith(sitePrefix)) || key.includes(genericLocationsSegment)),
     undefined,
     { revalidate: true }
   );
 
   if (locationId) {
-    await globalMutate(`${API_BASE}/locations/${locationId}`);
+    await globalMutate(getLocationDetailKey(locationId));
   }
 };
 
 export function useLocations(siteId: string | number, params: LocationQueryParams = {}) {
-  const key = siteId ? `${API_BASE}/sites/${siteId}/locations${buildQueryString(params)}` : null;
+  const key = siteId ? getLocationListKey(siteId, params) : null;
 
   const { data, error, isLoading, mutate } = useSWR<LocationListResponse>(key, fetcher);
 
@@ -134,19 +167,22 @@ export function useLocations(siteId: string | number, params: LocationQueryParam
 }
 
 export function useLocation(id?: string | number) {
-  const key = id ? `${API_BASE}/locations/${id}` : null;
+  const key = id ? getLocationDetailKey(id) : null;
 
   const { data, error, isLoading, mutate } = useSWR<BusinessLocation>(
     key,
     async (url: string) => {
-      const response = await fetch(url, {
-        headers: { Accept: "application/json" },
-      });
+      const response = await fetch(url, buildRequestInit());
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Please sign in to view location details");
+        }
+
         if (response.status === 404) {
           throw new Error("Location not found");
         }
+
         throw new Error("Failed to load location");
       }
 
@@ -166,14 +202,16 @@ export function useLocation(id?: string | number) {
 export function useCreateLocation(siteId: string | number) {
   const createLocation = useCallback(
     async (payload: LocationMutationPayload) => {
-      const response = await fetch(`${API_BASE}/sites/${siteId}/locations`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(mapPayload(payload)),
-      });
+      const response = await fetch(
+        getLocationListKey(siteId),
+        buildRequestInit(
+          {
+            method: "POST",
+            body: JSON.stringify(mapPayload(payload)),
+          },
+          true
+        )
+      );
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null);
@@ -193,14 +231,16 @@ export function useCreateLocation(siteId: string | number) {
 
 export function useUpdateLocation() {
   const updateLocation = useCallback(async (id: number, payload: LocationMutationPayload) => {
-    const response = await fetch(`${API_BASE}/locations/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(mapPayload(payload)),
-    });
+    const response = await fetch(
+      getLocationDetailKey(id),
+      buildRequestInit(
+        {
+          method: "PUT",
+          body: JSON.stringify(mapPayload(payload)),
+        },
+        true
+      )
+    );
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null);
@@ -219,12 +259,12 @@ export function useUpdateLocation() {
 export function useDeleteLocation(siteId?: string | number) {
   const deleteLocation = useCallback(
     async (id: number) => {
-      const response = await fetch(`${API_BASE}/locations/${id}`, {
-        method: "DELETE",
-        headers: {
-          Accept: "application/json",
-        },
-      });
+      const response = await fetch(
+        getLocationDetailKey(id),
+        buildRequestInit({
+          method: "DELETE",
+        })
+      );
 
       if (!response.ok && response.status !== 204) {
         const errorBody = await response.json().catch(() => null);

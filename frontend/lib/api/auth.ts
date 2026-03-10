@@ -16,10 +16,69 @@ import type {
   AuthError,
 } from "@/lib/types/auth";
 import { AuthError as AuthErrorClass, AuthErrorCode, AUTH_STORAGE_KEYS } from "@/lib/types/auth";
-
-const API_BASE = "/api/v1";
+import { buildApiUrl, buildSanctumUrl } from "@/lib/api/base-url";
 
 // ==================== Utility Functions ====================
+
+function isBrowser(): boolean {
+  return typeof window !== "undefined";
+}
+
+function headersToObject(headers?: HeadersInit): Record<string, string> {
+  if (!headers) {
+    return {};
+  }
+
+  if (typeof Headers !== "undefined" && headers instanceof Headers) {
+    return Object.fromEntries(headers.entries());
+  }
+
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers);
+  }
+
+  return { ...(headers as Record<string, string>) };
+}
+
+function buildRequestHeaders(
+  headers?: HeadersInit,
+  options: {
+    includeJsonContentType?: boolean;
+    includeAuthToken?: boolean;
+  } = {}
+): Record<string, string> {
+  const { includeJsonContentType = true, includeAuthToken = true } = options;
+  const nextHeaders = headersToObject(headers);
+
+  if (!nextHeaders.Accept) {
+    nextHeaders.Accept = "application/json";
+  }
+
+  if (includeJsonContentType && !nextHeaders["Content-Type"]) {
+    nextHeaders["Content-Type"] = "application/json";
+  }
+
+  const token = includeAuthToken ? getStoredAuthToken() : null;
+  if (token && !nextHeaders.Authorization) {
+    nextHeaders.Authorization = `Bearer ${token}`;
+  }
+
+  return nextHeaders;
+}
+
+function resolveAuthToken(response: AuthResponse | Record<string, unknown> | null | undefined): string | null {
+  if (!response || typeof response !== "object") {
+    return null;
+  }
+
+  const candidate =
+    ("data" in response && response.data && typeof response.data === "object" && "token" in response.data
+      ? (response.data as { token?: unknown }).token
+      : null) ??
+    ("token" in response ? (response as { token?: unknown }).token : null);
+
+  return typeof candidate === "string" && candidate.trim().length > 0 ? candidate : null;
+}
 
 /**
  * Sanitize user input to prevent XSS
@@ -28,7 +87,7 @@ function sanitizeInput(input: string): string {
   return input
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#x27;")
     .replace(/\//g, "&#x2F;");
 }
@@ -64,7 +123,6 @@ async function handleErrorResponse(response: Response): Promise<never> {
   const message = errorBody?.message ?? `Request failed with status ${response.status}`;
   const error = AuthErrorClass.fromApiResponse(errorBody ?? { success: false, message });
 
-  // Handle specific status codes
   if (response.status === 401) {
     throw new AuthErrorClass("Session expired. Please log in again.", AuthErrorCode.UNAUTHORIZED);
   }
@@ -88,16 +146,19 @@ async function handleErrorResponse(response: Response): Promise<never> {
  */
 async function authFetch<T>(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  config: {
+    includeAuthToken?: boolean;
+  } = {}
 ): Promise<T> {
+  const { includeAuthToken = true } = config;
   const response = await fetch(url, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...options.headers,
-    },
-    credentials: "include", // Include cookies for Sanctum
+    headers: buildRequestHeaders(options.headers, {
+      includeJsonContentType: options.body !== undefined,
+      includeAuthToken,
+    }),
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -114,7 +175,7 @@ async function authFetch<T>(
  * Get CSRF cookie from Sanctum
  */
 export async function getCsrfToken(): Promise<void> {
-  await fetch("/sanctum/csrf-cookie", {
+  await fetch(buildSanctumUrl(), {
     credentials: "include",
   });
 }
@@ -126,13 +187,14 @@ export async function getCsrfToken(): Promise<void> {
  */
 export async function fetchUser(): Promise<User | null> {
   try {
-    const response = await authFetch<AuthResponse>(`${API_BASE}/auth/user`);
+    const response = await authFetch<AuthResponse>(buildApiUrl("/auth/user"));
     return response.data?.user ? sanitizeUser(response.data.user) : null;
   } catch (error) {
-    // If 401, user is not authenticated
     if ((error as AuthError).code === AuthErrorCode.UNAUTHORIZED) {
+      clearStoredAuthToken();
       return null;
     }
+
     throw error;
   }
 }
@@ -159,23 +221,33 @@ export async function login(
   password: string,
   remember: boolean = false
 ): Promise<User> {
-  // Get CSRF token first
   await getCsrfToken();
 
-  const response = await authFetch<AuthResponse>(`${API_BASE}/auth/login`, {
-    method: "POST",
-    body: JSON.stringify({
-      email: sanitizeInput(email),
-      password, // Don't sanitize password
-      remember,
-    }),
-  });
+  const response = await authFetch<AuthResponse>(
+    buildApiUrl("/auth/login"),
+    {
+      method: "POST",
+      body: JSON.stringify({
+        email: sanitizeInput(email),
+        password,
+        remember,
+      }),
+    },
+    {
+      includeAuthToken: false,
+    }
+  );
 
   if (!response.success || !response.data?.user) {
     throw new AuthErrorClass(
       response.message ?? "Login failed",
       AuthErrorCode.INVALID_CREDENTIALS
     );
+  }
+
+  const token = resolveAuthToken(response);
+  if (token) {
+    storeAuthToken(token);
   }
 
   return sanitizeUser(response.data.user);
@@ -185,24 +257,36 @@ export async function login(
  * Register a new user
  */
 export async function register(data: RegisterData): Promise<User> {
-  // Get CSRF token first
   await getCsrfToken();
 
-  const response = await authFetch<AuthResponse>(`${API_BASE}/auth/register`, {
-    method: "POST",
-    body: JSON.stringify({
-      name: sanitizeInput(data.name),
-      email: sanitizeInput(data.email),
-      password: data.password,
-      password_confirmation: data.password_confirmation,
-    }),
-  });
+  const response = await authFetch<AuthResponse>(
+    buildApiUrl("/auth/register"),
+    {
+      method: "POST",
+      body: JSON.stringify({
+        name: sanitizeInput(data.name),
+        email: sanitizeInput(data.email),
+        password: data.password,
+        password_confirmation: data.password_confirmation,
+      }),
+    },
+    {
+      includeAuthToken: false,
+    }
+  );
 
   if (!response.success || !response.data?.user) {
     throw new AuthErrorClass(
       response.message ?? "Registration failed",
       AuthErrorCode.UNKNOWN
     );
+  }
+
+  const token = resolveAuthToken(response);
+  if (token) {
+    storeAuthToken(token);
+  } else {
+    clearStoredAuthToken();
   }
 
   return sanitizeUser(response.data.user);
@@ -214,14 +298,13 @@ export async function register(data: RegisterData): Promise<User> {
 export async function logout(): Promise<void> {
   try {
     await getCsrfToken();
-    await authFetch<AuthResponse>(`${API_BASE}/auth/logout`, {
+    await authFetch<AuthResponse>(buildApiUrl("/auth/logout"), {
       method: "POST",
     });
   } catch {
     // Even if the API call fails, clear local state
   }
 
-  // Clear any stored data
   clearAuthStorage();
 }
 
@@ -230,9 +313,12 @@ export async function logout(): Promise<void> {
  */
 export async function initiateGoogleOAuth(): Promise<string> {
   const response = await authFetch<{ redirect_url: string }>(
-    `${API_BASE}/auth/google`,
+    buildApiUrl("/auth/google"),
     {
       method: "POST",
+    },
+    {
+      includeAuthToken: false,
     }
   );
 
@@ -247,13 +333,16 @@ export async function handleGoogleCallback(data: GoogleOAuthCallbackData): Promi
   isNewUser: boolean;
 }> {
   const response = await authFetch<AuthResponse>(
-    `${API_BASE}/auth/google/callback`,
+    buildApiUrl("/auth/google/callback"),
     {
       method: "POST",
       body: JSON.stringify({
         code: data.code,
         state: data.state,
       }),
+    },
+    {
+      includeAuthToken: false,
     }
   );
 
@@ -262,6 +351,11 @@ export async function handleGoogleCallback(data: GoogleOAuthCallbackData): Promi
       response.message ?? "Google authentication failed",
       AuthErrorCode.OAUTH_FAILED
     );
+  }
+
+  const token = resolveAuthToken(response);
+  if (token) {
+    storeAuthToken(token);
   }
 
   return {
@@ -279,12 +373,15 @@ export async function forgotPassword(email: string): Promise<void> {
   await getCsrfToken();
 
   const response = await authFetch<AuthResponse>(
-    `${API_BASE}/auth/forgot-password`,
+    buildApiUrl("/auth/forgot-password"),
     {
       method: "POST",
       body: JSON.stringify({
         email: sanitizeInput(email),
       }),
+    },
+    {
+      includeAuthToken: false,
     }
   );
 
@@ -308,7 +405,7 @@ export async function resetPassword(
   await getCsrfToken();
 
   const response = await authFetch<AuthResponse>(
-    `${API_BASE}/auth/reset-password`,
+    buildApiUrl("/auth/reset-password"),
     {
       method: "POST",
       body: JSON.stringify({
@@ -317,6 +414,9 @@ export async function resetPassword(
         password,
         password_confirmation: passwordConfirmation,
       }),
+    },
+    {
+      includeAuthToken: false,
     }
   );
 
@@ -325,6 +425,11 @@ export async function resetPassword(
       response.message ?? "Failed to reset password",
       AuthErrorCode.UNKNOWN
     );
+  }
+
+  const nextToken = resolveAuthToken(response);
+  if (nextToken) {
+    storeAuthToken(nextToken);
   }
 }
 
@@ -337,7 +442,7 @@ export async function resendVerificationEmail(): Promise<void> {
   await getCsrfToken();
 
   const response = await authFetch<AuthResponse>(
-    `${API_BASE}/auth/resend-verification`,
+    buildApiUrl("/auth/resend-verification"),
     {
       method: "POST",
     }
@@ -345,7 +450,7 @@ export async function resendVerificationEmail(): Promise<void> {
 
   if (!response.success) {
     throw new AuthErrorClass(
-      response.message ?? "Failed to resend verification email",
+      response.message ?? "Failed to resend verification",
       AuthErrorCode.UNKNOWN
     );
   }
@@ -357,7 +462,7 @@ export async function resendVerificationEmail(): Promise<void> {
  * Store user data locally for quick access
  */
 export function storeUserData(user: User): void {
-  if (typeof window === "undefined") return;
+  if (!isBrowser()) return;
 
   try {
     localStorage.setItem(AUTH_STORAGE_KEYS.USER, JSON.stringify(user));
@@ -370,7 +475,7 @@ export function storeUserData(user: User): void {
  * Get stored user data
  */
 export function getStoredUserData(): User | null {
-  if (typeof window === "undefined") return null;
+  if (!isBrowser()) return null;
 
   try {
     const stored = localStorage.getItem(AUTH_STORAGE_KEYS.USER);
@@ -385,10 +490,49 @@ export function getStoredUserData(): User | null {
 }
 
 /**
+ * Store auth token locally for bearer-token fallback
+ */
+export function storeAuthToken(token: string): void {
+  if (!isBrowser()) return;
+
+  try {
+    localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, token);
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/**
+ * Get stored auth token
+ */
+export function getStoredAuthToken(): string | null {
+  if (!isBrowser()) return null;
+
+  try {
+    return localStorage.getItem(AUTH_STORAGE_KEYS.TOKEN);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Clear stored auth token
+ */
+export function clearStoredAuthToken(): void {
+  if (!isBrowser()) return;
+
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEYS.TOKEN);
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/**
  * Store redirect URL for after login
  */
 export function storeRedirectUrl(url: string): void {
-  if (typeof window === "undefined") return;
+  if (!isBrowser()) return;
 
   try {
     localStorage.setItem(AUTH_STORAGE_KEYS.REDIRECT, url);
@@ -401,7 +545,7 @@ export function storeRedirectUrl(url: string): void {
  * Get stored redirect URL
  */
 export function getStoredRedirectUrl(): string | null {
-  if (typeof window === "undefined") return null;
+  if (!isBrowser()) return null;
 
   try {
     return localStorage.getItem(AUTH_STORAGE_KEYS.REDIRECT);
@@ -414,7 +558,7 @@ export function getStoredRedirectUrl(): string | null {
  * Clear stored redirect URL
  */
 export function clearStoredRedirectUrl(): void {
-  if (typeof window === "undefined") return;
+  if (!isBrowser()) return;
 
   try {
     localStorage.removeItem(AUTH_STORAGE_KEYS.REDIRECT);
@@ -427,7 +571,7 @@ export function clearStoredRedirectUrl(): void {
  * Clear all auth-related storage
  */
 export function clearAuthStorage(): void {
-  if (typeof window === "undefined") return;
+  if (!isBrowser()) return;
 
   try {
     localStorage.removeItem(AUTH_STORAGE_KEYS.USER);
@@ -443,7 +587,7 @@ export function clearAuthStorage(): void {
  * Broadcast auth state change to other tabs
  */
 export function broadcastAuthChange(type: "login" | "logout"): void {
-  if (typeof window === "undefined") return;
+  if (!isBrowser()) return;
 
   try {
     localStorage.setItem(
@@ -453,7 +597,6 @@ export function broadcastAuthChange(type: "login" | "logout"): void {
         timestamp: Date.now(),
       })
     );
-    // Remove immediately after setting to trigger storage event in other tabs
     localStorage.removeItem("seoindicator_auth_event");
   } catch {
     // Ignore storage errors
