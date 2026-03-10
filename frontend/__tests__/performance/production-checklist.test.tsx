@@ -149,7 +149,8 @@ describe('Production Checklist - SEO', () => {
     it('PERF-SEO-002: sitemap URL format correct', () => {
       MOCK_SITEMAP_ENTRIES.forEach(entry => {
         expect(entry).toMatch(/^https:\/\//);
-        expect(entry).toMatch(/\/compare\/.*\/$/);
+        // Matches both /compare/ and /compare/slug/
+        expect(entry).toMatch(/\/compare\/(|.+\/)$/);
       });
     });
 
