@@ -1,4 +1,4 @@
-# SPEC-001-10: Job Queue Setup
+# TASK-1-10: Job Queue Setup
 
 ## STATUS
 `Done`
@@ -250,4 +250,12 @@ Implemented SQLite-backed JobQueue with interface and CheckJob DTO, added retry/
 - Completion marker written: `logs/completed/task/TASK-1-10.json`
 - Lock file removed, active-agents entry cleared.
 - Task status: Done. No further action required.
+
+## [2026-03-10 11:08] Agent: DocSystemAnalyst
+- Re-verification pass triggered by orchestrator.
+- Corrected item title from `SPEC-001-10` to `TASK-1-10` to match the actual task ID and file name.
+- Documentation verified at `DOCUMENTATION.md` line 27727 (`Job Queue System` section).
+- Coverage confirmed: SQLite-backed queue, `addJob` / `getJob` / `updateJob` / `getPending`, CheckJob DTO fields, statuses, priorities, retry logic, dead letter queue, auto-cleanup, and unit tests (4 tests, 23 assertions).
+- Existing completion marker was absent at start of run; it will be recreated during cleanup.
+- Task status remains `Done`. No additional documentation changes required.
 
