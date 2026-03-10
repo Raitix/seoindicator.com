@@ -17622,6 +17622,9 @@ CREATE TABLE notifications (
 - Components: `frontend/app/settings/alerts/page.tsx`
 - Types: `frontend/lib/types/alerts.ts`
 - API: `frontend/lib/api/alerts.ts`
+- Implemented controls: global enable toggle, threshold slider, quiet hours start/end, digest mode selector, SERP feature alerts toggle
+- Data flow: loads via `GET /api/v1/user/alert-settings`, saves via `PUT /api/v1/user/alert-settings`
+- Current feedback behavior: inline loading/error/success states on the page (not toast-based)
 
 **Notification Center:**
 - Path: `/notifications`
