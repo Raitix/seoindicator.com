@@ -1,7 +1,7 @@
 # TASK-35-9: GBP Insights Sync Service
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -16,28 +16,28 @@ SPEC-035: Local SEO & Google Business Profile Tracking
 Create GBPInsightsService for syncing and aggregating Google Business Profile insights data.
 
 ## Acceptance Criteria
-- [ ] GBPInsightsService created with interface
-- [ ] Method: syncInsights(BusinessLocation $location, ?array $dateRange = null): void
+- [x] GBPInsightsService created with interface
+- [x] Method: syncInsights(BusinessLocation $location, ?array $dateRange = null): void
   - Fetches insights from GBP API
   - Stores daily snapshots in gbp_insights table
   - Handles duplicate dates (upsert)
-- [ ] Method: getInsights(BusinessLocation $location, array $dateRange): Collection
+- [x] Method: getInsights(BusinessLocation $location, array $dateRange): Collection
   - Returns insights for date range
   - Eager loads related data efficiently
-- [ ] Method: getInsightsTrend(BusinessLocation $location, int $days = 90): array
+- [x] Method: getInsightsTrend(BusinessLocation $location, int $days = 90): array
   - Returns aggregated trends with daily breakdown
   - Calculates week-over-week and month-over-month changes
-- [ ] Method: getTotalMetrics(BusinessLocation $location, array $dateRange): array
+- [x] Method: getTotalMetrics(BusinessLocation $location, array $dateRange): array
   - Aggregates total views, searches, actions
   - Returns summary with breakdowns
-- [ ] Method: getTopPerformingDay(BusinessLocation $location, int $days = 30): ?array
+- [x] Method: getTopPerformingDay(BusinessLocation $location, int $days = 30): ?array
   - Identifies best performing day
-- [ ] Caching: 1-hour TTL for insights data
-- [ ] Queue integration for background sync
+- [x] Caching: 1-hour TTL for insights data
+- [x] Queue integration for background sync
   - dispatch(new SyncInsightsJob($location))
-- [ ] Error handling and logging
-- [ ] Unit tests with mocked GBP API
-- [ ] Feature tests for sync operations
+- [x] Error handling and logging
+- [x] Unit tests with mocked GBP API
+- [x] Feature tests for sync operations
 
 ## Dependencies
 - TASK-35-3 (GBP-Related Models)
@@ -127,6 +127,24 @@ Create GBPInsightsService for syncing and aggregating Google Business Profile in
   5. log and rethrow external/API failures during sync;
   6. adapt the existing `App\Services\LocalSEO\GBPInsightsService` controller-facing stub to delegate into this new domain service so TASK-35-14 remains compatible.
 - **Important design note:** I intentionally kept the controller-facing `LocalSEO\GBPInsightsService` stub untouched during this pass. The new TASK-35-9 contract lives in `App\Services\GBP` and mirrors the repo's existing reviews split (`GBP` domain service + `LocalSEO` adapter), which gives Developer a clean implementation target without regressing controller task coverage.
+
+### Developer Session (2026-03-10 21:20 GMT+2)
+- **Status:** `To Develop` → `In Development` → `To Test Locally`
+- Verified implementation is complete and all 17 tests pass.
+- **Implementation Details:**
+  - `GBPInsightsService` implements all required methods:
+    - `syncInsights()`: Fetches from GBP API, upserts daily snapshots with raw_response storage
+    - `getInsights()`: Returns ordered collection with derived `queries` and `actions` fields
+    - `getInsightsTrend()`: Returns daily breakdown, totals, week-over-week and month-over-month changes
+    - `getTotalMetrics()`: Aggregates queries, views, actions, photos_views
+    - `getTopPerformingDay()`: Identifies best day by total actions
+  - 1-hour cache TTL implemented for all read methods
+  - `SyncInsightsJob`: Queue job with retry (3 tries), timeout (300s), error logging
+  - Container binding in `AppServiceProvider` for interface resolution
+- **Test Results:** 17 tests pass (35 assertions)
+  - 12 service tests (contract, sync, read, aggregate, cache, error handling)
+  - 5 job tests (dispatch, handle, missing location, retry/timeout, failure)
+- **Design Note:** The `LocalSEO\GBPInsightsService` adapter remains as a controller-facing stub (TASK-35-14). The new domain service in `App\Services\GBP` follows the established pattern of separating domain services from controller adapters.
 
 ---
 
