@@ -377,4 +377,46 @@ Ranking::whereIn('keyword_id', $ids)
 
 ---
 
-Last updated: 2026-03-08
+## 2026-03-10: Performance Audit
+
+### GA Metrics Trend (14-day comparison)
+
+| Metric | 02-24 | 03-10 | Change |
+|--------|-------|-------|--------|
+| Bounce Rate | 68.2% | 26.3% | ✅ -41.9% |
+| Engagement Rate | 31.8% | 73.7% | ✅ +41.9% |
+| Homepage Bounce | 75.7% | 54.7% | ✅ -21.0% |
+| Avg Session | 200s | 754s | ✅ +554s |
+
+### Page Performance
+
+| Page | Bounce | Duration | Status |
+|------|--------|----------|--------|
+| `/` | 54.7% | 290s | ✅ IMPROVED |
+| `/dashboard/` | 0% | 45s | ✅ Excellent |
+| `/ai-visibility/new/` | 0% | 478s | ✅ Excellent |
+| `/tools/meta-tag-analyzer/` | 0% | 272s | ✅ Excellent |
+| `/compare/seoindicator-vs-ahrefs/` | 0% | 142s | ✅ Excellent |
+| `/competitors/` | 20% | 43s | ✅ Excellent |
+| `/comparison/` | 44% | 164s | ✅ Good |
+| `/sites/1/audits/1/` | 0% | 2062s | ✅ Excellent |
+
+### Backend Status
+
+**N+1 Query (KeywordController::index):** Still present in map block around lines 112-114
+- `getLatestRankings()` called inside map loop
+- Impact remains ~501 queries for 500 keywords
+
+**DashboardController:** 5-minute cache mitigates memory issue, but cold cache still loads full ranking history into memory
+
+### Tooling Status
+
+**GA helper script degraded locally:**
+- `frontend/scripts/ga-analytics.mjs` currently fails because `@google-analytics/data` is missing from `frontend/node_modules`
+- Direct REST call with the existing service account still works, so audit coverage is preserved
+
+**MILESTONE:** Homepage bounce improved to 54.7%. Engagement remains above 70% while overall bounce stays below 30%.
+
+---
+
+Last updated: 2026-03-10
