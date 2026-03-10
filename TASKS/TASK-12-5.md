@@ -218,3 +218,20 @@ Status: Production validation complete → Done
 
 ### [2026-02-20 17:35] Agent: SpecSystemAnalyst
 Service for automated GSC data import with rate limit handling.
+
+### [2026-03-10 12:21] DocSystemAnalyst: Re-verification Complete ✓
+Re-verified the completed TASK-12-5 implementation against the current source and documentation.
+
+**Verification performed:**
+- Confirmed the task remains `Done` and the dedicated `DOCUMENTATION.md` section is still present.
+- Re-checked `backend/app/Services/GSCDataSync.php` and confirmed the documented service still exists with sync, batch fetch, historical import, rate-limit handling, and sync-status methods.
+- Corrected stale documentation drift in the method signatures and lock semantics:
+  - `Project` → `Site` where applicable
+  - `syncProject()` now documents the optional `toDate` parameter
+  - `handleRateLimit()` now documents its response/attempt parameters
+  - Sync lock corrected from 30 minutes / project-scoped to 5 minutes / connection-scoped
+- Corrected the unit test header in `backend/tests/Unit/Services/GSCDataSyncServiceTest.php` from `TASK-12-11` to `TASK-12-5`.
+
+**Status:**
+- TASK-12-5 remains `Done`.
+- SPEC-012 remains `In Progress` because other child tasks are still open.

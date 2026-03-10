@@ -28767,13 +28767,13 @@ Backend service for fetching and storing Google Search Console data via API. Han
 **GSCDataSync Class:**
 | Method | Description |
 |--------|-------------|
-| `syncProject(Project $project, ?string $fromDate = null)` | Fetch GSC data for a specific site |
+| `syncProject(Site $site, ?string $fromDate = null, ?string $toDate = null)` | Fetch GSC data for a specific site |
 | `fetchBatch(GSCConnection $conn, array $params)` | Batch API requests with retry logic |
-| `importHistorical(Project $project, string $fromDate, string $toDate)` | Historical data import (16-month limit) |
-| `handleRateLimit()` | Exponential backoff with jitter |
+| `importHistorical(Site $site, string $fromDate, string $toDate)` | Historical data import (16-month limit) |
+| `handleRateLimit(Response $response, int $attempt)` | Exponential backoff with jitter |
 | `storeData(array $data)` | Upsert with deduplication |
 | `syncAllConnections()` | Sync all active connections |
-| `getSyncStatus(Project $project)` | Connection and data status |
+| `getSyncStatus(Site $site)` | Connection and data status |
 
 ### Rate Limiting Implementation
 
@@ -28817,9 +28817,9 @@ Backend service for fetching and storing Google Search Console data via API. Han
 - Skips revoked/expired connections
 
 **Lock Mechanism:**
-- Prevents concurrent syncs for same project
-- Lock expires after 30 minutes (safety)
-- Lock stored in cache with project-specific key
+- Prevents concurrent syncs for the same GSC connection
+- Lock expires after 5 minutes (safety)
+- Lock stored in cache with a connection-specific key
 
 ### Technical Implementation
 - Service: `backend/app/Services/GSCDataSync.php`
@@ -28834,7 +28834,7 @@ Backend service for fetching and storing Google Search Console data via API. Han
 |------------------|----------------|
 | Token Encryption | Tokens encrypted via OAuthService |
 | Rate Limit Compliance | Exponential backoff prevents quota exhaustion |
-| Data Isolation | Per-project sync with user ownership check |
+| Data Isolation | Per-site sync resolved through user-owned GSC connections |
 | Error Handling | Graceful degradation on API failures |
 
 ### Test Coverage

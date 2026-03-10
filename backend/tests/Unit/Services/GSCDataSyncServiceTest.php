@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 /**
- * Unit tests for GSC Data Sync Service (TASK-12-11).
+ * Unit tests for GSC Data Sync Service (TASK-12-5).
  *
  * Tests verify:
  * - Data sync scheduling
