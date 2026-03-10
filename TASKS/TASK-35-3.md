@@ -1,7 +1,7 @@
 # TASK-35-3: GBP-Related Models
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -54,6 +54,20 @@ Create Eloquent models for GBP-related data: GBPInsight, GBPReview, and GBPPost.
 *Created by SpecSystemAnalyst on 2026-03-08*
 
 ## Comments
+
+### LocalTester Session (2026-03-10 17:45 GMT+2)
+- Moved the task from `To Test Locally` → `Testing Locally` → `To Deploy` after local validation passed.
+- Task-scoped model validation passed:
+  - `php artisan test tests/Unit/Models/GBPInsightTest.php tests/Unit/Models/GBPReviewTest.php tests/Unit/Models/GBPPostTest.php` ✅ **146/146 passed**.
+- Nearby compatibility suites also passed:
+  - `php artisan test tests/Unit/Models/BusinessLocationTest.php tests/Feature/Services/GBP/GBPReviewsServiceTest.php` ✅ **147/147 passed**.
+- Verified the implementation contract matches the task intent:
+  - dedicated `GBPInsight`, `GBPReview`, and `GBPPost` models exist,
+  - `BusinessLocation` now uses direct `hasMany()` bindings for GBP insights/reviews/posts,
+  - no task-scope regressions surfaced in the validated suites.
+- Non-blocking note: PHPUnit emitted existing doc-comment metadata deprecation warnings in the GBP-related test files; results stayed green.
+- Documentation drift found during validation: `DOCUMENTATION.md` still says TASK-35-3 is not implemented and still describes anonymous/table-backed insight/post relations. Created follow-up `TASK-35-28` per the documentation discrepancy rule.
+- Handoff: ready for DevOps deployment.
 
 ### Developer Session (2026-03-10 16:59 GMT+2)
 - ✅ Implemented dedicated `GBPInsight` and `GBPPost` Eloquent models and rewired `GBPReview` to the `BusinessLocation` model instead of the stale `Location` reference.
