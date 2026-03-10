@@ -1,7 +1,7 @@
 # TASK-35-4: Local SEO Models
 
 ## STATUS
-`To Test Prod`
+`To Document`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -179,3 +179,22 @@ Create Eloquent models for local SEO tracking: LocalRanking, LocalCompetitor, an
 - Non-blocking deploy notes: existing static-export/header warnings and the audit OG image fetch warning reappeared during the frontend build, but the build completed successfully and the deployment log is `success`.
 - **Status Change:** `To Deploy` -> `In Deployment` -> `To Test Prod`
 - **Next Agent:** ProdTester should verify the Local SEO model-backed production surfaces and any related authenticated Local SEO API flows now that the rollout is live.
+
+### ProdTester Session (2026-03-10 18:26 GMT+2)
+- Cleared the stale completion marker, refreshed the task lock, and validated the deployed TASK-35-4 model layer against production commit `b40acea0de299919a1d4a00c61d40e810c4d20eb`.
+- **Primary production verdict for TASK-35-4:** PASS via direct live model smoke on the production host using disposable fixtures that were fully cleaned up afterward.
+- Production model evidence: `PROJECT-SEOINDICATOR/temp/task354-prod-model-smoke-20260310T162624Z.json`
+  - `LocalRanking` verified live: `businessLocation()` / `keyword()` relations, `scopeInPack()`, `scopeDateRange()`, `inLocalPack()`, and `getPositionChange()`.
+  - `LocalCompetitor` verified live: `businessLocation()` alias, `getMapsUrl()`, and `compareWithLocation()` return shape.
+  - `LocalSEOAlert` verified live: `businessLocation()` alias, `SEVERITIES` alias, `scopeUnread()`, `scopeWarning()`, `scopeByType()`, and `markAsRead()` persistence.
+- Additional authenticated production API smoke also passed for the alert model-backed surface using a disposable account:
+  - register/login/auth-user
+  - `GET /api/v1/local-seo/alerts`
+  - `GET /api/v1/local-seo/alerts/unread-count`
+  - `POST /api/v1/local-seo/alerts/{id}/read`
+  - cross-user alert access still returned `404` as expected
+  - Evidence: `PROJECT-SEOINDICATOR/temp/task354-prod-validation-20260310T162427Z.json`
+- Exploratory note (non-blocking for this model task, but relevant to downstream Local Rankings API work): owned `GET /api/v1/locations/{id}/competitors` returned `403` in production during the broader API probe, which points to a separate controller/policy path issue outside TASK-35-4’s model acceptance scope.
+- Disposable prod fixtures from both validation passes were deleted successfully; no long-lived test users or records were left behind.
+- **Status Change:** `To Test Prod` -> `Testing Prod` -> `To Document`
+- **Next Agent:** DocSystemAnalyst can document TASK-35-4 as production-validated. Separately, the Local Rankings / competitors controller authorization path should be checked under the downstream API task set.
