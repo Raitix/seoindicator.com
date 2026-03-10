@@ -741,3 +741,39 @@ Actions:
 - Will clear active-agents entry on exit
 
 **ORCHESTRATOR BUG:** Task file uses SPEC-2 but the canonical specification file is SPEC-002.md (leading-zero mismatch). Specification remains complete; no documentation changes were required.
+
+### [2026-03-10 12:58 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - User-triggered processing for `SPEC-2`.
+
+Verification:
+- Canonical specification file: `SPECIFICATIONS/SPEC-002.md` (`SPEC-2.md` does not exist) ✅
+- SPEC-002 status: `Done` ✅
+- FEAT-002 status: `Done` ✅
+- All 14 child tasks (TASK-002-1 through TASK-002-14): `Done` ✅
+- DOCUMENTATION.md: Present at line 17254 (`## Ranking Change Alert System (FEAT-002)`) ✅
+
+Actions:
+- Cleared stale completion markers for `SPEC-2` and `SPEC-002`
+- Re-created verification lock files for `SPEC-2` + `SPEC-002`
+- Refreshed completion markers after verification
+- Will remove lock files and clear active-agents entry during cleanup
+
+**ORCHESTRATOR BUG:** Alias triggers still use `SPEC-2` while the canonical specification file is `SPEC-002.md`. This item remains fully complete; this pass only refreshed housekeeping state for the alias/canonical ID mismatch.
+
+### [2026-03-10 13:05 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - User-requested processing for `SPEC-2`.
+
+Verification:
+- Canonical specification file remains `SPECIFICATIONS/SPEC-002.md` (`SPEC-2.md` does not exist).
+- SPEC-002 status: `Done`.
+- FEAT-002 status: `Done`.
+- All 14 child tasks (TASK-002-1 through TASK-002-14): `Done`.
+- `DOCUMENTATION.md` still documents the feature at line 17254 (`## Ranking Change Alert System (FEAT-002)`).
+
+Actions:
+- Cleared stale completion markers for `SPEC-2` and `SPEC-002` before verification.
+- Re-created verification lock files for `SPEC-2` + `SPEC-002` during the pass.
+- Refreshed alias + canonical completion markers after verification.
+- Will remove lock files and clear active-agents entry during cleanup.
+
+**ORCHESTRATOR BUG:** Alias/user triggers still use `SPEC-2` while the canonical specification file is `SPEC-002.md`. The specification remains fully complete; this pass refreshed housekeeping state only.
