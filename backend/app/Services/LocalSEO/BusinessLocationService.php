@@ -9,7 +9,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Business Location Service
@@ -105,17 +104,30 @@ class BusinessLocationService implements BusinessLocationServiceInterface
             ->where('site_id', $siteId);
 
         // Filter by active status
-        if (!empty($options['active_only'])) {
+        if (($options['active_only'] ?? false) === true) {
             $query->where('is_active', true);
         }
 
         // Filter by GBP connection status
-        if (!empty($options['gbp_connected'])) {
-            $query->where('gbp_connected', true);
+        if (array_key_exists('gbp_connected', $options) && $options['gbp_connected'] !== null) {
+            $query->where('gbp_connected', (bool) $options['gbp_connected']);
+        }
+
+        // Search filter
+        if (filled($options['search'] ?? null)) {
+            $search = trim((string) $options['search']);
+            $query->where(function ($builder) use ($search) {
+                $builder
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('website', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
+            });
         }
 
         // Include soft deleted
-        if (!empty($options['include_deleted'])) {
+        if (($options['include_deleted'] ?? false) === true) {
             $query->withTrashed();
         } else {
             $query->whereNull('deleted_at');
@@ -127,16 +139,25 @@ class BusinessLocationService implements BusinessLocationServiceInterface
         }
 
         // Sorting
-        $sortField = $options['sort'] ?? 'created_at';
-        $sortDirection = str_starts_with($sortField, '-') ? 'desc' : 'asc';
+        $sortField = $options['sort_field'] ?? $options['sort'] ?? 'created_at';
+        $sortField = is_string($sortField) && $sortField !== '' ? $sortField : 'created_at';
+
+        $sortDirection = $options['sort_direction'] ?? null;
+        if (!is_string($sortDirection) || !in_array(strtolower($sortDirection), ['asc', 'desc'], true)) {
+            $sortDirection = str_starts_with($sortField, '-') ? 'desc' : 'asc';
+        }
+
         $sortField = ltrim($sortField, '-');
-        
-        $allowedSortFields = ['name', 'created_at', 'updated_at', 'address'];
-        if (!in_array($sortField, $allowedSortFields)) {
+        if ($sortField === 'is_gbp_connected') {
+            $sortField = 'gbp_connected';
+        }
+
+        $allowedSortFields = ['name', 'created_at', 'updated_at', 'address', 'gbp_connected'];
+        if (!in_array($sortField, $allowedSortFields, true)) {
             $sortField = 'created_at';
         }
-        
-        $query->orderBy($sortField, $sortDirection);
+
+        $query->orderBy($sortField, strtolower($sortDirection));
 
         // Pagination
         if (!empty($options['per_page'])) {
@@ -164,17 +185,30 @@ class BusinessLocationService implements BusinessLocationServiceInterface
         }
 
         // Filter by active status
-        if (!empty($options['active_only'])) {
+        if (($options['active_only'] ?? false) === true) {
             $query->where('is_active', true);
         }
 
         // Filter by GBP connection status
-        if (!empty($options['gbp_connected'])) {
-            $query->where('gbp_connected', true);
+        if (array_key_exists('gbp_connected', $options) && $options['gbp_connected'] !== null) {
+            $query->where('gbp_connected', (bool) $options['gbp_connected']);
+        }
+
+        // Search filter
+        if (filled($options['search'] ?? null)) {
+            $search = trim((string) $options['search']);
+            $query->where(function ($builder) use ($search) {
+                $builder
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('website', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
+            });
         }
 
         // Include soft deleted
-        if (!empty($options['include_deleted'])) {
+        if (($options['include_deleted'] ?? false) === true) {
             $query->withTrashed();
         } else {
             $query->whereNull('deleted_at');
@@ -186,16 +220,25 @@ class BusinessLocationService implements BusinessLocationServiceInterface
         }
 
         // Sorting
-        $sortField = $options['sort'] ?? 'created_at';
-        $sortDirection = str_starts_with($sortField, '-') ? 'desc' : 'asc';
+        $sortField = $options['sort_field'] ?? $options['sort'] ?? 'created_at';
+        $sortField = is_string($sortField) && $sortField !== '' ? $sortField : 'created_at';
+
+        $sortDirection = $options['sort_direction'] ?? null;
+        if (!is_string($sortDirection) || !in_array(strtolower($sortDirection), ['asc', 'desc'], true)) {
+            $sortDirection = str_starts_with($sortField, '-') ? 'desc' : 'asc';
+        }
+
         $sortField = ltrim($sortField, '-');
-        
-        $allowedSortFields = ['name', 'created_at', 'updated_at', 'address'];
-        if (!in_array($sortField, $allowedSortFields)) {
+        if ($sortField === 'is_gbp_connected') {
+            $sortField = 'gbp_connected';
+        }
+
+        $allowedSortFields = ['name', 'created_at', 'updated_at', 'address', 'gbp_connected'];
+        if (!in_array($sortField, $allowedSortFields, true)) {
             $sortField = 'created_at';
         }
-        
-        $query->orderBy($sortField, $sortDirection);
+
+        $query->orderBy($sortField, strtolower($sortDirection));
 
         // Pagination
         if (!empty($options['per_page'])) {
@@ -331,6 +374,9 @@ class BusinessLocationService implements BusinessLocationServiceInterface
             'site_id' => $siteId,
             'active_only' => $filters['active_only'] ?? false,
             'gbp_connected' => $filters['is_gbp_connected'] ?? null,
+            'search' => $filters['search'] ?? null,
+            'sort_field' => $filters['sort_field'] ?? null,
+            'sort_direction' => $filters['sort_direction'] ?? null,
             'sort' => $filters['sort'] ?? null,
             'per_page' => $filters['per_page'] ?? 15,
             'page' => $filters['page'] ?? 1,
