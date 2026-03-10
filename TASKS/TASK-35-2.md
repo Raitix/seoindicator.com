@@ -1,7 +1,7 @@
 # TASK-35-2: BusinessLocation Model
 
 ## STATUS
-`To Document`
+`Done`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking
@@ -283,3 +283,11 @@ php artisan test --filter BusinessLocationTest
   - public site routes `/` and `/login` → **200**
 - Live probes also confirmed existing Local SEO route failures on production for guest/error-path handling (`/api/v1/sites/999999/locations`, `/api/v1/locations/999999/connect-gbp`, `/api/v1/locations/999999/gbp-callback?...` all returned generic **500**). These are already tracked outside this foundation-model task by the reopened Local SEO controller/UI work (`TASK-35-17`, `TASK-35-18`, follow-up `TASK-35-27`) and therefore were treated as adjacent non-gating production issues for TASK-35-2 itself.
 - No new TASK-35-2-specific production regression was found in the BusinessLocation model/factory/service contract. Handing off to DocSystemAnalyst for documentation.
+
+### DocSystemAnalyst Session (2026-03-10 14:58 GMT+2)
+- **Status:** `Done` ✅
+- Added `BusinessLocation Model (TASK-35-2)` to `PROJECT-SEOINDICATOR/DOCUMENTATION.md` with the shipped model contract: fillable attributes, casts, hidden GBP tokens, relationships, scopes, helper/accessor methods, soft-delete child cleanup, defensive mutators, factory states, and security notes.
+- Refreshed the documentation deployment baseline to the actual TASK-35-2 rollout: `20260310T111840Z-6d975d6e` / `29e37fba6ec0944b7ec387db8281080d9a9f0f2b`.
+- Re-ran `php artisan test tests/Unit/Models/BusinessLocationTest.php` during documentation verification: **97 passed / 143 assertions**.
+- Observed existing non-blocking PHPUnit doc-comment metadata deprecation warnings in the test file; no functional regressions were introduced by this task.
+- Preserved the ProdTester note that adjacent Local SEO guest/error-path route `500`s are already tracked under `TASK-35-17`, `TASK-35-18`, and `TASK-35-27`, so TASK-35-2 remains cleanly closed as the foundation-model documentation item.

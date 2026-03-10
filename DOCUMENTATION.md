@@ -33,8 +33,8 @@ A deployment is considered successful only when all of the following are true:
 4. deployment log is marked `success`
 
 ### Latest verified deployment baseline
-- Deployment id: `20260310T094442Z-6ea3aa98`
-- Commit: `664484748375e03aa81e7615a4cbab5e43328624`
+- Deployment id: `20260310T111840Z-6d975d6e`
+- Commit: `29e37fba6ec0944b7ec387db8281080d9a9f0f2b`
 - Result: `success`
 
 ### Important notes
@@ -284,6 +284,182 @@ This remediation migration is idempotent and is covered by `backend/tests/Featur
 - TASK-35-4: LocalRanking Model (uses local_rankings table)
 - TASK-35-5: LocalCompetitor Model (uses local_competitors table)
 - TASK-35-6: LocalSeoAlert Model (uses local_seo_alerts table)
+
+---
+## BusinessLocation Model (TASK-35-2)
+
+### Model Description
+Primary Eloquent model for the Local SEO location domain. `BusinessLocation` is the ownership and integration anchor for FEAT-035: it ties a location to a user and site, stores Google Business Profile connection metadata, exposes helper accessors for UI/API consumers, and acts as the parent record for rankings, competitors, reviews, alerts, insights, and posts.
+
+### Component Locations
+- **Model:** `backend/app/Models/BusinessLocation.php`
+- **Factory:** `backend/database/factories/BusinessLocationFactory.php`
+- **Unit Tests:** `backend/tests/Unit/Models/BusinessLocationTest.php`
+- **Test Specification:** `TESTS/TEST-35-2.md`
+- **Schema Dependencies:**
+  - `backend/database/migrations/2026_03_08_205800_create_business_locations_table.php`
+  - `backend/database/migrations/2026_03_08_235900_add_gbp_tokens_to_business_locations_table.php` (added later for OAuth token storage)
+
+### Fillable Attributes
+
+| Attribute | Purpose |
+|-----------|---------|
+| `user_id` | Owner of the business location |
+| `site_id` | Linked SEOIndicator site |
+| `gbp_place_id` | Google Business Profile / Google location identifier |
+| `gbp_access_token` | Current GBP OAuth access token |
+| `gbp_refresh_token` | Long-lived GBP OAuth refresh token |
+| `gbp_token_expires_at` | Access-token expiration timestamp |
+| `name` | Business display name |
+| `address` | Canonical business address |
+| `phone` | Public business phone number |
+| `website` | Linked business website |
+| `category` | Business category label |
+| `latitude` / `longitude` | Location coordinates |
+| `gbp_connected` | Boolean connection flag for GBP status |
+| `settings` | JSON configuration payload |
+| `is_active` | Active/inactive state used by UI and queries |
+
+### Casts and Serialization Rules
+
+| Attribute | Cast | Notes |
+|-----------|------|-------|
+| `latitude` | `decimal:8` | Preserves coordinate precision for maps/search |
+| `longitude` | `decimal:8` | Preserves coordinate precision for maps/search |
+| `gbp_connected` | `boolean` | Used by helper/accessor methods |
+| `gbp_token_expires_at` | `datetime` | Enables `isFuture()` / `isPast()` token checks |
+| `is_active` | `boolean` | Backed by the active/inactive location flag |
+| `settings` | `array` | JSON payload is exposed as a PHP array |
+
+**Hidden attributes:** `gbp_access_token`, `gbp_refresh_token`
+
+GBP credentials are intentionally excluded from `toArray()` / `toJson()` serialization so API responses and debug output do not leak secrets.
+
+### Model Relationships
+
+| Method | Relationship | Backing Table / Model | Notes |
+|--------|--------------|-----------------------|-------|
+| `user()` | `belongsTo` | `App\Models\User` | Location owner |
+| `site()` | `belongsTo` | `App\Models\Site` | Parent site/account context |
+| `alerts()` | `hasMany` | `App\Models\LocalSEOAlert` | Local SEO alert inbox items |
+| `localRankings()` | `hasMany` | `App\Models\LocalRanking` | Raw ranking snapshots |
+| `rankings()` | `hasMany` alias | `App\Models\LocalRanking` | Acceptance-criteria friendly alias |
+| `localCompetitors()` | `hasMany` | `App\Models\LocalCompetitor` | Raw competitor records |
+| `competitors()` | `hasMany` alias | `App\Models\LocalCompetitor` | Acceptance-criteria friendly alias |
+| `reviews()` | `hasMany` | `App\Models\GBPReview` | GBP review records |
+| `insights()` | table-backed `hasMany` | `gbp_insights` | Uses an internal anonymous model until the dedicated GBP insight model task is completed |
+| `posts()` | table-backed `hasMany` | `gbp_posts` | Uses an internal anonymous model until the dedicated GBP post model task is completed |
+
+### Query Scopes
+
+| Scope | Description |
+|-------|-------------|
+| `active()` | Returns only locations with `is_active = true` |
+| `gbpConnected()` | Returns only locations with `gbp_connected = true` |
+| `connected()` | Alias of `gbpConnected()` for acceptance-criteria compatibility |
+| `forUser($userId)` | Filters locations by owning user |
+
+### Accessors and Helper Methods
+
+| Method / Accessor | Return Type | Description |
+|-------------------|-------------|-------------|
+| `google_location_id` | `?string` | Alias accessor for `gbp_place_id` |
+| `is_gbp_connected` | `bool` | Alias accessor for `gbp_connected` |
+| `full_address` | `string` | Human-friendly `name - address` label, omitting blanks |
+| `coordinates` | `?array{lat: float, lng: float}` | Convenience map payload for frontend/API use |
+| `hasConnectedGBP()` | `bool` | Boolean helper around GBP connection status |
+| `hasValidGBPToken()` | `bool` | Requires a non-empty access token and a future expiry |
+| `getMapsUrl()` | `string` | Builds a Google Maps URL using place ID first, coordinates second, text search fallback last |
+| `getSettingsValue($key, $default = null)` | `mixed` | Reads nested settings safely via `data_get()` |
+
+### Lifecycle Behavior
+
+#### Soft Deletes and Dependent Cleanup
+`BusinessLocation` uses `SoftDeletes`, so deleting the parent row preserves the location record in `business_locations.deleted_at`. During the `deleting` lifecycle hook, the model explicitly removes dependent child records from tables that do **not** themselves use soft deletes:
+
+- `local_seo_alerts`
+- `local_rankings`
+- `local_competitors`
+- `gbp_reviews`
+- `gbp_insights`
+- `gbp_posts`
+
+This keeps the soft-deleted location recoverable while preventing orphan child rows.
+
+#### Defensive Mutators
+The model also normalizes a few nullable test/runtime inputs:
+- `setGbpConnectedAttribute()` defaults null values to `false`
+- `setIsActiveAttribute()` defaults null values to `true`
+- `setNameAttribute()` normalizes null names to an empty string
+- `setIsGbpConnectedAttribute()` maps the alias field to `gbp_connected`
+
+### Factory Behavior
+
+**Factory:** `Database\Factories\BusinessLocationFactory`
+
+| State / Behavior | Description |
+|------------------|-------------|
+| default | Creates a fresh `User` and a `Site` owned by that same user, keeping ownership aligned |
+| `inactive()` | Sets `is_active = false` |
+| `withGbp()` | Sets `gbp_connected = true`, ensures a place ID exists, and generates token + expiry data |
+| `withoutGbp()` | Clears place ID and token fields and forces `gbp_connected = false` |
+| `configure()` hooks | `afterMaking` and `afterCreating` keep `site.user_id` and `location.user_id` internally consistent |
+
+The default dataset uses realistic address, category, phone, website, coordinate, and settings values so downstream tests can exercise real-world shapes without additional setup.
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `tests/Unit/Models/BusinessLocationTest.php` | 97 | 143 | ✅ PASS |
+
+**Primary coverage areas:**
+- fillable + mass-assignment behavior
+- casts and coordinate precision
+- ownership / child relationships
+- scopes and query composition
+- accessors + helper methods
+- token hiding in array / JSON serialization
+- factory states and ownership consistency
+- soft-delete + dependent cleanup behavior
+- adversarial string input handling and basic performance checks
+
+**Additional local gate passed during handoff:**
+- `tests/Unit/Policies/BusinessLocationPolicyTest.php` → 23 passed / 23 assertions
+- `tests/Unit/Http/Requests/LocalSEO/StoreBusinessLocationRequestTest.php` → 44 passed / 65 assertions
+- `tests/Unit/Http/Requests/LocalSEO/UpdateBusinessLocationRequestTest.php` → 35 passed / 44 assertions
+
+### Production Status
+- **Deployed:** 2026-03-10 via the local/self-hosted deployment pipeline
+- **Deployment id:** `20260310T111840Z-6d975d6e`
+- **Commit:** `29e37fba6ec0944b7ec387db8281080d9a9f0f2b`
+- **Deployment result:** `success`
+- **Production smoke:** Homepage + login Playwright smoke passed
+- **Evidence:** `temp/task352-prod-validation-20260310T124700Z.json`
+
+**Production verification summary:**
+- `GET https://seoindicator.com/api/health` → `200` JSON
+- `GET https://seoindicator.com/api/v1/auth/user` as guest → `401` JSON
+- `GET https://seoindicator.com/` → `200`
+- `GET https://seoindicator.com/login` → `200`
+
+Adjacent Local SEO controller error-path probes still returned `500` for some guest routes during prod validation, but those failures were already tracked outside this foundation-model task (`TASK-35-17`, `TASK-35-18`, `TASK-35-27`) and did not block TASK-35-2.
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Secret hiding | GBP access + refresh tokens are hidden from serialized output |
+| ORM safety | Eloquent relationships / query scopes avoid manual SQL construction |
+| Ownership scoping | `forUser()` supports user-bounded queries for controllers/services |
+| Soft-delete integrity | Deleting hook clears non-soft-deletable children to avoid orphan data |
+| Token validity checks | `hasValidGBPToken()` requires both token presence and future expiry |
+
+### Dependencies
+- TASK-35-1: Local SEO database migrations (`business_locations` base table)
+- TASK-35-13: GBP OAuth token columns added to `business_locations`
+- Related child models already used here: `GBPReview`, `LocalRanking`, `LocalCompetitor`, `LocalSEOAlert`
+- Dedicated `gbp_insights` / `gbp_posts` model work remains in adjacent Local SEO tasks; this task bridges those tables with generic relations so the location contract is already usable
 
 ---
 ## API Integration Tests (TASK-6-20)
