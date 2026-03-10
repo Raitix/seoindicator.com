@@ -33,8 +33,8 @@ A deployment is considered successful only when all of the following are true:
 4. deployment log is marked `success`
 
 ### Latest verified deployment baseline
-- Deployment id: `20260310T111840Z-6d975d6e`
-- Commit: `29e37fba6ec0944b7ec387db8281080d9a9f0f2b`
+- Deployment id: `20260310T155017Z-27d18eff`
+- Commit: `82cf1b5fafab481d9513d0fbdfcd19d124abc360`
 - Result: `success`
 
 ### Important notes
@@ -347,8 +347,8 @@ GBP credentials are intentionally excluded from `toArray()` / `toJson()` seriali
 | `localCompetitors()` | `hasMany` | `App\Models\LocalCompetitor` | Raw competitor records |
 | `competitors()` | `hasMany` alias | `App\Models\LocalCompetitor` | Acceptance-criteria friendly alias |
 | `reviews()` | `hasMany` | `App\Models\GBPReview` | GBP review records |
-| `insights()` | table-backed `hasMany` | `gbp_insights` | Uses an internal anonymous model until the dedicated GBP insight model task is completed |
-| `posts()` | table-backed `hasMany` | `gbp_posts` | Uses an internal anonymous model until the dedicated GBP post model task is completed |
+| `insights()` | `hasMany` | `App\Models\GBPInsight` | Daily GBP insight snapshots with dedicated scopes/helpers |
+| `posts()` | `hasMany` | `App\Models\GBPPost` | GBP posts with publication/scheduling helpers |
 
 ### Query Scopes
 
@@ -457,9 +457,140 @@ Adjacent Local SEO controller error-path probes still returned `500` for some gu
 
 ### Dependencies
 - TASK-35-1: Local SEO database migrations (`business_locations` base table)
+- TASK-35-3: Dedicated GBP child models now back `insights()`, `reviews()`, and `posts()`
 - TASK-35-13: GBP OAuth token columns added to `business_locations`
-- Related child models already used here: `GBPReview`, `LocalRanking`, `LocalCompetitor`, `LocalSEOAlert`
-- Dedicated `gbp_insights` / `gbp_posts` model work remains in adjacent Local SEO tasks; this task bridges those tables with generic relations so the location contract is already usable
+- Related child models used here: `GBPInsight`, `GBPReview`, `GBPPost`, `LocalRanking`, `LocalCompetitor`, `LocalSEOAlert`
+
+---
+## GBP-Related Models (TASK-35-3)
+
+### Model Description
+Dedicated Eloquent model layer for Local SEO Google Business Profile data. TASK-35-3 completes the model side of FEAT-035 by shipping first-class `GBPInsight`, `GBPReview`, and `GBPPost` models, wiring `BusinessLocation` to those concrete relations, and providing factories + unit coverage for the three GBP data domains.
+
+### Component Locations
+- **Models:**
+  - `backend/app/Models/GBPInsight.php`
+  - `backend/app/Models/GBPReview.php`
+  - `backend/app/Models/GBPPost.php`
+- **Parent model integration:** `backend/app/Models/BusinessLocation.php`
+- **Factories:**
+  - `backend/database/factories/GBPInsightFactory.php`
+  - `backend/database/factories/GBPReviewFactory.php`
+  - `backend/database/factories/GBPPostFactory.php`
+- **Unit Tests:**
+  - `backend/tests/Unit/Models/GBPInsightTest.php`
+  - `backend/tests/Unit/Models/GBPReviewTest.php`
+  - `backend/tests/Unit/Models/GBPPostTest.php`
+- **Supporting compatibility tests:**
+  - `backend/tests/Unit/Models/BusinessLocationTest.php`
+  - `backend/tests/Feature/Services/GBP/GBPReviewsServiceTest.php`
+- **Test Specification:** `TESTS/TEST-35-3.md`
+- **Production validation evidence:** `temp/task353-prod-validation-20260310T161124Z.json`
+
+### GBPInsight Model
+
+| Area | Implementation |
+|------|----------------|
+| Table | `gbp_insights` |
+| Relationship | `belongsTo(BusinessLocation::class, 'location_id')` |
+| Fillable | `location_id`, `views`, `searches`, `calls`, `directions`, `website_clicks`, `photos_views`, `insights_date` |
+| Casts | integer casts for all metrics, `insights_date` → `date`, `created_at` → `datetime` |
+| Scopes | `forDateRange($startDate, $endDate)`, `forLocation($locationId)` |
+| Helper methods | `calculateTotalActions()`, `formatted_date`, `total_views`, `engagement_rate` |
+| Data guards | Normalizes date inputs, coerces numeric strings to integers, rejects negative metrics during `saving` |
+
+### GBPReview Model
+
+| Area | Implementation |
+|------|----------------|
+| Table | `gbp_reviews` |
+| Relationship | `belongsTo(BusinessLocation::class, 'location_id')` |
+| Fillable | `location_id`, `google_review_id`, `author_name`, `author_photo`, `rating`, `review_text`, `review_text_sentiment`, `owner_response`, `owner_response_date`, `review_date` |
+| Casts | `location_id` + `rating` → `integer`; response/review timestamps → `datetime` |
+| Core scopes | `positive()`, `negative()`, `neutral()`, `unresponded()`, `responded()`, `forLocation()`, `withRating()`, `recent()` |
+| Controller/service helper scopes | `byRating()`, `bySentiment()`, `hasResponse()`, `dateRange()`, `orderByField()` |
+| Helper methods | `hasOwnerResponse()`, `hasResponse()`, `sentiment_label`, `star_rating`, `is_positive`, `is_negative` |
+| Data guards | Enforces 1-5 rating range and truncates bounded string columns (`google_review_id`, `author_name`, `author_photo`, sentiment`) |
+
+### GBPPost Model
+
+| Area | Implementation |
+|------|----------------|
+| Table | `gbp_posts` |
+| Relationship | `belongsTo(BusinessLocation::class, 'location_id')` |
+| Fillable | `location_id`, `google_post_id`, `post_type`, `title`, `content`, `media_url`, `call_to_action`, `call_to_action_url`, `published_at` |
+| Casts | `location_id` → `integer`, `published_at` / `created_at` → `datetime` |
+| Scopes | `published()`, `scheduled()`, `forLocation()`, `ofType()`, `recent($limit = null)` |
+| Helper methods | `post_type_label` accessor (`EVENT`, `OFFER`, `UPDATE`, `COVID`, `PRODUCT`, `STANDARD`) |
+| Data guards | Normalizes `post_type` to uppercase and truncates bounded columns for IDs, URLs, CTA labels, and titles |
+
+### Factory Coverage
+
+| Factory | Key States |
+|---------|------------|
+| `GBPInsightFactory` | `forLocation()`, `withDate()`, `highEngagement()`, `noEngagement()`, `lastWeek()`, `lastMonth()`, `today()`, `daysAgo()` |
+| `GBPReviewFactory` | `forLocation()`, `positive()`, `negative()`, `neutral()`, `responded()`, `unresponded()`, `withSentiment()`, `fiveStar()`, `oneStar()`, `recent()`, `anonymous()`, `withRating()` |
+| `GBPPostFactory` | `forLocation()`, `event()`, `offer()`, `update()`, `published()`, `scheduled()`, `draft()`, `withMedia()`, `withCta()`, `withType()`, `withoutTitle()`, `withoutContent()`, `covid()` |
+
+`GBPReviewFactory` seeds its parent through the `Location` alias model, which extends `BusinessLocation`; the persisted relationship still resolves to the `business_locations` table used by the dedicated GBP models.
+
+### Test Coverage
+
+| Validation Layer | Result |
+|------------------|--------|
+| Task-scoped unit tests | `php artisan test tests/Unit/Models/GBPInsightTest.php tests/Unit/Models/GBPReviewTest.php tests/Unit/Models/GBPPostTest.php` → **146 passed / 232 assertions** |
+| Adjacent compatibility suites (handoff) | `tests/Unit/Models/BusinessLocationTest.php` + `tests/Feature/Services/GBP/GBPReviewsServiceTest.php` → **147 passed** |
+| Deployment gate (handoff) | Model suites + compatibility suites → **293 passed / 450 assertions** before deploy |
+
+**Primary coverage areas:**
+- fillable / guarded attribute behavior
+- casts and date normalization
+- `BusinessLocation` relationships
+- rating / date / publication scopes
+- uniqueness constraints and index-backed query paths
+- helper/accessor behavior (`calculateTotalActions`, sentiment labels, star labels, post type labels)
+- security / edge cases (negative metrics, SQL injection strings, XSS payload handling, long/unicode text)
+- cascade delete behavior when the parent location is deleted
+
+### Production Status
+- **Deployed:** 2026-03-10 via the local/self-hosted deployment pipeline
+- **Deployment id:** `20260310T155017Z-27d18eff`
+- **Commit:** `82cf1b5fafab481d9513d0fbdfcd19d124abc360`
+- **Deployment result:** `success`
+- **Production smoke:** Homepage + login Playwright smoke passed
+- **Production validation:** Dedicated GBP model layer verified with disposable fixtures and live authenticated review flows
+
+**Production verification summary:**
+- `BusinessLocation` relation counts resolved against the dedicated models (`reviews=3`, `insights=2`, `posts=2`)
+- `GBPInsight::forLocation()->forDateRange()` returned the expected 2-row slice; `calculateTotalActions()` returned `21` for the seeded day
+- `GBPReview` scopes produced the expected positive / neutral / negative split, `unresponded()` returned `2`, and `sentiment_label` resolved to `Positive`
+- `GBPPost` published vs scheduled scopes returned `1 / 1`, and `post_type_label` resolved to `Event`
+- Live production review API probes passed: listing, rating filter, response filter, stats endpoint, and `respond` mutation
+
+**Known downstream gap (separate task):**
+- `GET /api/v1/locations/{id}/insights?start_date=2026-03-08&end_date=2026-03-09` still returned `500` during prod validation because `backend/app/Services/LocalSEO/GBPInsightsService.php` still targets legacy column names. This is tracked outside TASK-35-3 under TASK-35-9 and does not block the deployed model layer.
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| ORM-only access | Relationships and scopes use Eloquent query builders rather than raw SQL |
+| Metric validation | `GBPInsight` rejects negative counts during `saving` |
+| Rating validation | `GBPReview` enforces the allowed 1-5 rating range |
+| Serialization safety | Models store raw content, while output escaping remains the responsibility of API/resources/views; tests confirm payloads are stored without executing markup |
+| Bounded fields | String mutators truncate identifier/URL/text fields to match schema limits |
+
+### Dependencies
+- TASK-35-1: Local SEO database migrations (`gbp_insights`, `gbp_reviews`, `gbp_posts` tables)
+- TASK-35-2: `BusinessLocation` parent model
+- TASK-35-10 / TASK-35-16: downstream review services/controllers now operate against the dedicated models
+- TASK-35-9: insights service still needs follow-up schema alignment for full production endpoint compatibility
+
+### Related Tasks
+- TASK-35-2: BusinessLocation Model
+- TASK-35-9: GBP Insights Service
+- TASK-35-10: GBP Reviews Service
+- TASK-35-14: GBP Controllers & API Endpoints
 
 ---
 ## API Integration Tests (TASK-6-20)
@@ -939,10 +1070,10 @@ SyncGBPReviewsJob::dispatch($location)->delay(now()->addMinutes(5));
 
 | Task | Status | Description |
 |------|--------|-------------|
-| TASK-35-3 | Not Implemented | GBP Models (using mocked interfaces) |
-| TASK-35-8 | Not Implemented | GBP API Client (using mocked interfaces) |
+| TASK-35-3 | Done ✅ | Dedicated GBP models now back review/location relations in production |
+| TASK-35-8 | Not Implemented | GBP API Client (still mocked / interface-driven in this historical implementation snapshot) |
 
-**Note:** Service is implemented with interface-based dependency injection, allowing it to work with mocked dependencies until TASK-35-3 and TASK-35-8 are completed.
+**Note:** The service no longer depends on temporary/mock-only GBP model relations. Interface-based dependency injection still isolates the unfinished GBP API client work (TASK-35-8).
 
 ### Related Tasks
 
