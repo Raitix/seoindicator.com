@@ -133,6 +133,34 @@ describe("GBPConnectButton (real)", () => {
     );
   });
 
+  it("falls back to the live connect-gbp contract when the legacy oauth-url endpoint is unavailable", async () => {
+    mockFetch
+      .mockResolvedValueOnce(await jsonResponse({ message: "Not found" }, false))
+      .mockResolvedValueOnce(await jsonResponse({ authorization_url: mockOAuthUrl, state: "server-state" }));
+    mockWindowOpen.mockReturnValue({ closed: false } as Window);
+
+    const user = userEvent.setup();
+    renderComponent();
+    await user.click(screen.getByTestId("gbp-connect-button"));
+
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining("/api/v1/locations/loc-456/gbp/oauth-url"),
+      expect.objectContaining({ headers: expect.any(Object) })
+    );
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/locations/loc-456/connect-gbp",
+      expect.objectContaining({ method: "POST" })
+    );
+    expect(sessionStorage.getItem(GBP_OAUTH_STATE_KEY)).toBe("server-state");
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      mockOAuthUrl,
+      "GBP OAuth",
+      expect.stringContaining("width=600")
+    );
+  });
+
   it("shows a retryable error when the popup is blocked", async () => {
     mockFetch.mockResolvedValueOnce(await jsonResponse({ oauth_url: mockOAuthUrl }));
     mockWindowOpen.mockReturnValue(null);
@@ -164,6 +192,29 @@ describe("GBPConnectButton (real)", () => {
     });
 
     expect(user).toBeDefined();
+  });
+
+  it("falls back to refreshing the connected location when account-selection endpoints are unavailable", async () => {
+    await startOAuth();
+    mockFetch
+      .mockResolvedValueOnce(await jsonResponse({ message: "Not found" }, false))
+      .mockResolvedValueOnce(
+        await jsonResponse({
+          data: {
+            id: "loc-456",
+            name: "Synced Location",
+            is_gbp_connected: true,
+            gbp_location_id: "gbp-live-123",
+          },
+        })
+      );
+
+    dispatchOAuthCallback({ success: true, state: sessionStorage.getItem(GBP_OAUTH_STATE_KEY) ?? undefined });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("gbp-connected")).toBeInTheDocument();
+      expect(screen.getByText(/Connected to Synced Location/)).toBeInTheDocument();
+    });
   });
 
   it("handles empty account responses with a user-safe error", async () => {
