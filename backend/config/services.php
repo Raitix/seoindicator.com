@@ -123,4 +123,20 @@ return [
         'cancel_url' => env('PAYPAL_CANCEL_URL'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Nominatim Geocoding API
+    |--------------------------------------------------------------------------
+    |
+    | Free OpenStreetMap-based geocoding service used by Local SEO features.
+    | Nominatim requires a descriptive User-Agent header and enforces a
+    | 1-request-per-second rate limit.
+    |
+    */
+    'nominatim' => [
+        'base_url' => env('NOMINATIM_BASE_URL', 'https://nominatim.openstreetmap.org'),
+        'contact_email' => env('NOMINATIM_CONTACT_EMAIL'),
+        'user_agent' => env('NOMINATIM_USER_AGENT'),
+    ],
+
 ];

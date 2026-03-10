@@ -5,43 +5,14 @@ namespace App\Services\LocalSEO\Contracts;
 interface NominatimServiceInterface
 {
     /**
-     * Geocode an address to coordinates.
+     * Geocode a free-form address string into coordinates.
      *
-     * @param string $address Street address
-     * @param string $city City
-     * @param string $state State/Province
-     * @param string $postalCode Postal/ZIP code
-     * @param string $country Country code (ISO 3166-1 alpha-2)
-     * @return array|null ['latitude' => float, 'longitude' => float, 'display_name' => string] or null on failure
+     * @return array{lat: float, lng: float, display_name: string}|null
      */
-    public function geocode(
-        string $address,
-        string $city,
-        string $state = '',
-        string $postalCode = '',
-        string $country = ''
-    ): ?array;
+    public function geocode(string $address): ?array;
 
     /**
-     * Reverse geocode coordinates to address.
-     *
-     * @param float $latitude
-     * @param float $longitude
-     * @return array|null Address components or null on failure
+     * Reverse geocode coordinates into a human-readable address string.
      */
-    public function reverseGeocode(float $latitude, float $longitude): ?array;
-
-    /**
-     * Check if geocoding is available.
-     *
-     * @return bool
-     */
-    public function isAvailable(): bool;
-
-    /**
-     * Clear the geocoding cache.
-     *
-     * @return void
-     */
-    public function clearCache(): void;
+    public function reverseGeocode(float $lat, float $lng): ?string;
 }

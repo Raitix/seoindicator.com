@@ -118,6 +118,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\LocalSEO\Contracts\GoogleOAuthServiceInterface::class,
             \App\Services\LocalSEO\GoogleOAuthService::class
         );
+
+        // Nominatim Geocoding Service binding (TASK-35-6, SPEC-035)
+        $this->app->bind(
+            \App\Services\LocalSEO\Contracts\NominatimServiceInterface::class,
+            \App\Services\LocalSEO\NominatimService::class
+        );
     }
 
     /**
