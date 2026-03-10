@@ -1,20 +1,37 @@
 import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import KeywordCreateForm from "@/components/keywords/KeywordCreateForm";
 import KeywordEditForm from "@/components/keywords/KeywordEditForm";
 
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: jest.fn() }),
+const mockPush = vi.fn();
+const createKeyword = vi.fn();
+const updateKeyword = vi.fn();
+const useKeywords = vi.fn();
+const useKeyword = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }));
 
-const createKeyword = jest.fn();
-const updateKeyword = jest.fn();
-const useKeywords = jest.fn();
-const useKeyword = jest.fn();
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
-jest.mock("@/lib/api/keywords", () => ({
+vi.mock("@/lib/api/keywords", () => ({
   createKeyword: (...args: unknown[]) => createKeyword(...args),
   updateKeyword: (...args: unknown[]) => updateKeyword(...args),
   useKeywords: (...args: unknown[]) => useKeywords(...args),
@@ -23,6 +40,7 @@ jest.mock("@/lib/api/keywords", () => ({
 
 describe("KeywordCreateForm", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     createKeyword.mockResolvedValue({});
     useKeywords.mockReturnValue({ keywords: [] });
   });
@@ -80,13 +98,21 @@ describe("KeywordCreateForm", () => {
     await user.type(screen.getByLabelText("Target URL"), "https://example.com");
     await user.click(screen.getByRole("button", { name: "Add keyword" }));
 
-    expect(createKeyword).toHaveBeenCalled();
+    expect(createKeyword).toHaveBeenCalledWith(1, {
+      keyword: "seo audit",
+      targetUrl: "https://example.com",
+      searchEngine: "google",
+      location: "us",
+      device: "desktop",
+    });
     expect(screen.getByLabelText("Keyword")).toHaveValue("");
+    expect(screen.getByLabelText("Target URL")).toHaveValue("");
   });
 });
 
 describe("KeywordEditForm", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     useKeyword.mockReturnValue({
       keyword: {
         id: 10,
@@ -111,7 +137,7 @@ describe("KeywordEditForm", () => {
     const user = userEvent.setup();
     render(<KeywordEditForm siteId={1} keywordId={10} />);
 
-    await user.clear(screen.getByLabelText("Target URL"));
+    await user.clear(await screen.findByLabelText("Target URL"));
     await user.type(screen.getByLabelText("Target URL"), "https://updated.com");
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
