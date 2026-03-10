@@ -17,6 +17,7 @@ describe("useLocations production routing", () => {
     vi.resetModules();
     vi.clearAllMocks();
     process.env = { ...originalEnv };
+    localStorage.clear();
     vi.stubGlobal("fetch", mockFetch);
     (useSWR as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       data: null,
@@ -82,6 +83,42 @@ describe("useLocations production routing", () => {
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({ Accept: "application/json" }),
+      })
+    );
+  });
+
+  it("location list requests include the stored bearer token for protected SPA flows", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
+    localStorage.setItem("seoindicator_token", "spa-fallback-token");
+
+    const locationsModule = await import("@/lib/hooks/useLocations");
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: [],
+        meta: {
+          current_page: 1,
+          per_page: 15,
+          total: 0,
+          last_page: 1,
+        },
+      }),
+    });
+
+    locationsModule.useLocations("42");
+
+    const swrCalls = (useSWR as unknown as ReturnType<typeof vi.fn>).mock.calls;
+    const [, fetcher] = swrCalls.at(-1) as [string, (key: string) => Promise<unknown>];
+
+    await fetcher("https://api.seoindicator.com/api/v1/sites/42/locations");
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.seoindicator.com/api/v1/sites/42/locations",
+      expect.objectContaining({
+        credentials: "include",
+        headers: expect.objectContaining({ Authorization: "Bearer spa-fallback-token" }),
       })
     );
   });
