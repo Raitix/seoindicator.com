@@ -1,0 +1,70 @@
+{
+  "task": "TASK-35-4",
+  "generatedAt": "2026-03-10T16:26:24.818092+00:00",
+  "fixture": {
+    "suffix": "bf2de282af",
+    "user1Email": "task35-4-model-bf2de282af@example.test",
+    "user2Email": "task35-4-model-other-bf2de282af@example.test"
+  },
+  "remote": {
+    "smoke": {
+      "code": 0,
+      "out": "{\"passed\":true,\"fixture\":{\"user1_id\":10072,\"user2_id\":10073,\"location1_id\":22,\"location2_id\":23,\"keyword_id\":4,\"latest_ranking_id\":10,\"competitor_id\":4,\"alert_id\":13},\"checks\":{\"localRanking\":{\"inPack\":true,\"dateRangeCount\":2,\"positionChange\":2,\"inLocalPack\":true},\"localCompetitor\":{\"mapsUrl\":\"https://www.google.com/maps/place/?q=place_id:ChIJN1t_tDeuEmsRUsoyG83frY4\",\"comparison\":{\"rating_diff\":-4.6,\"review_count_diff\":128,\"competitor_rating\":\"4.6\",\"location_rating\":0,\"competitor_reviews\":128,\"location_reviews\":0}},\"localSEOAlert\":{\"severityAliasContainsWarning\":true,\"markedRead\":true}}}",
+      "err": ""
+    },
+    "result": {
+      "passed": true,
+      "fixture": {
+        "user1_id": 10072,
+        "user2_id": 10073,
+        "location1_id": 22,
+        "location2_id": 23,
+        "keyword_id": 4,
+        "latest_ranking_id": 10,
+        "competitor_id": 4,
+        "alert_id": 13
+      },
+      "checks": {
+        "localRanking": {
+          "inPack": true,
+          "dateRangeCount": 2,
+          "positionChange": 2,
+          "inLocalPack": true
+        },
+        "localCompetitor": {
+          "mapsUrl": "https://www.google.com/maps/place/?q=place_id:ChIJN1t_tDeuEmsRUsoyG83frY4",
+          "comparison": {
+            "rating_diff": -4.6,
+            "review_count_diff": 128,
+            "competitor_rating": "4.6",
+            "location_rating": 0,
+            "competitor_reviews": 128,
+            "location_reviews": 0
+          }
+        },
+        "localSEOAlert": {
+          "severityAliasContainsWarning": true,
+          "markedRead": true
+        }
+      }
+    }
+  },
+  "cleanup": {
+    "remote": {
+      "ok": true,
+      "result": {
+        "deleted": [
+          {
+            "id": 10072,
+            "email": "task35-4-model-bf2de282af@example.test"
+          },
+          {
+            "id": 10073,
+            "email": "task35-4-model-other-bf2de282af@example.test"
+          }
+        ]
+      }
+    }
+  },
+  "verdict": "pass"
+}
