@@ -331,13 +331,114 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
      * Refresh the access token.
      *
      * @param string $refreshToken
-     * @return array|null
+     * @return array{access_token: string, refresh_token: string, expires_at: string}|null
      */
-    protected function refreshAccessToken(string $refreshToken): ?array
+    public function refreshAccessToken(string $refreshToken): ?array
     {
-        // This would make an HTTP request to Google's token endpoint
-        // Placeholder implementation - actual implementation would use HTTP client
+        // TODO TASK-35-7: implement Google token refresh flow against oauth2.googleapis.com/token
         return null;
+    }
+
+    /**
+     * Encrypt and persist GBP tokens using the task-level gbp_tokens payload.
+     *
+     * @param BusinessLocation $location
+     * @param array{access_token: string, refresh_token: string, expires_at: string} $tokens
+     * @return void
+     */
+    public function storeTokens(BusinessLocation $location, array $tokens): void
+    {
+        $payload = [
+            'access_token' => $tokens['access_token'] ?? null,
+            'refresh_token' => $tokens['refresh_token'] ?? null,
+            'expires_at' => $tokens['expires_at'] ?? null,
+        ];
+
+        $location->gbp_tokens = encrypt(json_encode($payload));
+        $location->gbp_connected = true;
+        $location->save();
+    }
+
+    /**
+     * Return a valid access token for the location, refreshing when required.
+     *
+     * @param BusinessLocation $location
+     * @return string|null
+     */
+    public function getValidAccessToken(BusinessLocation $location): ?string
+    {
+        $stored = $this->decodeStoredTokens($location);
+
+        if (!$stored || empty($stored['access_token'])) {
+            return null;
+        }
+
+        $expiresAt = !empty($stored['expires_at']) ? \Illuminate\Support\Carbon::parse($stored['expires_at']) : null;
+
+        if ($expiresAt && $expiresAt->isFuture()) {
+            return $stored['access_token'];
+        }
+
+        if (empty($stored['refresh_token'])) {
+            return null;
+        }
+
+        $refreshed = $this->refreshAccessToken($stored['refresh_token']);
+
+        if (!$refreshed || empty($refreshed['access_token'])) {
+            return null;
+        }
+
+        $this->storeTokens($location, $refreshed);
+
+        return $refreshed['access_token'];
+    }
+
+    /**
+     * Disconnect the provided location from GBP and clear stored token payload.
+     *
+     * @param BusinessLocation $location
+     * @return void
+     */
+    public function disconnectLocation(BusinessLocation $location): void
+    {
+        $stored = $this->decodeStoredTokens($location);
+
+        try {
+            if (!empty($stored['access_token'])) {
+                $this->revokeToken($stored['access_token']);
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to revoke Google token during model disconnect', [
+                'location_id' => $location->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $location->gbp_tokens = null;
+        $location->gbp_connected = false;
+        $location->save();
+    }
+
+    /**
+     * Decode the encrypted gbp_tokens payload from the location.
+     *
+     * @param BusinessLocation $location
+     * @return array<string, mixed>|null
+     */
+    protected function decodeStoredTokens(BusinessLocation $location): ?array
+    {
+        if (empty($location->gbp_tokens)) {
+            return null;
+        }
+
+        try {
+            $decoded = json_decode(decrypt($location->gbp_tokens), true);
+
+            return is_array($decoded) ? $decoded : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**
@@ -348,8 +449,7 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
      */
     protected function revokeToken(string $token): bool
     {
-        // This would make an HTTP request to Google's revoke endpoint
-        // Placeholder implementation - actual implementation would use HTTP client
+        // TODO TASK-35-7: implement Google revoke endpoint call.
         return true;
     }
 }
