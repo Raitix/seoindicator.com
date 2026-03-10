@@ -1,9 +1,11 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ExternalLink, Globe, MapPin, MessageSquare, Phone, Star, TrendingUp, ArrowLeft, CheckCircle2, Unplug } from "lucide-react";
 
+import { GBPConnectButton, type ConnectedGBP } from "@/components/local/GBPConnectButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +26,21 @@ export default function LocationDetailsPage() {
   const siteId = params.siteId as string;
   const locationId = params.locationId as string;
   const { location, isLoading, error, mutate } = useLocation(locationId);
+  const [connectedGBP, setConnectedGBP] = React.useState<ConnectedGBP | null>(null);
+
+  React.useEffect(() => {
+    if (!location?.isGbpConnected) {
+      setConnectedGBP(null);
+      return;
+    }
+
+    setConnectedGBP({
+      businessName: location.name,
+      locationId: location.gbpLocationId ?? String(location.id),
+    });
+  }, [location?.gbpLocationId, location?.id, location?.isGbpConnected, location?.name]);
+
+  const isGbpConnected = Boolean(connectedGBP ?? location?.isGbpConnected);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 px-4 py-8 sm:px-6 lg:px-8">
@@ -87,10 +104,10 @@ export default function LocationDetailsPage() {
                         </Badge>
                       ) : null}
                       <Badge
-                        className={location.isGbpConnected ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-200" : "border-slate-700 bg-slate-900 text-slate-300"}
+                        className={isGbpConnected ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-200" : "border-slate-700 bg-slate-900 text-slate-300"}
                       >
-                        {location.isGbpConnected ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> : <Unplug className="h-3.5 w-3.5" aria-hidden="true" />}
-                        {location.isGbpConnected ? "GBP connected" : "GBP not connected"}
+                        {isGbpConnected ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> : <Unplug className="h-3.5 w-3.5" aria-hidden="true" />}
+                        {isGbpConnected ? "GBP connected" : "GBP not connected"}
                       </Badge>
                     </div>
                   </div>
@@ -110,6 +127,33 @@ export default function LocationDetailsPage() {
                 <DetailRow label="Insights" value={location.insightsSummary ? `${location.insightsSummary.totalViews ?? 0} views · ${location.insightsSummary.totalQueries ?? 0} queries` : "No insights synced yet"} />
                 <DetailRow label="Review summary" value={location.reviewStats ? `${location.reviewStats.totalReviews ?? 0} reviews · ${location.reviewStats.responseRate ?? 0}% response rate` : "No review summary available"} />
                 <DetailRow label="Last updated" value={location.updatedAt ? new Date(location.updatedAt).toLocaleString() : "Unknown"} />
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-800 bg-slate-950/70 text-slate-100 shadow-xl shadow-slate-950/10">
+              <CardHeader>
+                <CardTitle>Google Business Profile</CardTitle>
+                <p className="text-sm text-slate-400">
+                  Connect this business location to Google so reviews, insights, and local ranking syncs can be enabled.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <GBPConnectButton
+                  siteId={siteId}
+                  locationId={locationId}
+                  connectedGBP={connectedGBP}
+                  onConnectionChange={(connected, data) => {
+                    setConnectedGBP(
+                      connected
+                        ? data ?? {
+                            businessName: location.name,
+                            locationId: location.gbpLocationId ?? String(location.id),
+                          }
+                        : null
+                    );
+                    void mutate();
+                  }}
+                />
               </CardContent>
             </Card>
 
