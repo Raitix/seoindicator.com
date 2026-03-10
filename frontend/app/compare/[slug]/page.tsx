@@ -150,6 +150,22 @@ function FAQSkeleton() {
   );
 }
 
+/**
+ * Skeleton for related comparisons section
+ */
+function RelatedComparisonsSkeleton() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="related-comparisons-skeleton">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="bg-slate-900/50 rounded-xl border border-slate-800 p-4">
+          <Skeleton className="h-5 w-32 mb-2" />
+          <Skeleton className="h-4 w-full" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ============================================================================
 // Static Generation Configuration
 // ============================================================================
