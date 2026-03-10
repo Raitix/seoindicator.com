@@ -66,3 +66,13 @@ As a user, I want clear legal terms and to understand how the analysis works.
 - Re-confirmed documentation coverage is present in `DOCUMENTATION.md`
 - No active-agent residue found; feature status remains `Done`
 - Fresh completion markers will be written for both `FEAT-30` and `FEAT-030` to tolerate non-padded and zero-padded triggers
+
+### [2026-03-10 DocSystemAnalyst | FEAT-30 task replay]
+**Alias-trigger housekeeping pass ✅**
+
+- Cleared the stale `logs/completed/feature/FEAT-30.json` marker before re-processing
+- Created temporary lock coverage for both `FEAT-30` and canonical `FEAT-030` during this verification window
+- Re-checked child task files: TASK-30-1, TASK-30-2, TASK-30-3, TASK-30-4, TASK-30-5, TASK-30-6, and TASK-30-7 all remain `Done`
+- Re-checked canonical specification file `SPEC-030.md`: status remains `Done`
+- Re-checked documentation anchors for Terms & Privacy, About, How It Works, Cookie Consent, Consent Integration, and Accessibility coverage; no documentation drift found
+- Feature status remains `Done`; completion markers are being refreshed for both alias and canonical IDs to absorb future non-padded triggers
