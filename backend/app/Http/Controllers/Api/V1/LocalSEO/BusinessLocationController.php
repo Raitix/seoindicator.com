@@ -439,17 +439,30 @@ HTML;
             $filters['search'] = $request->input('search');
         }
 
+        // Page
+        if ($request->filled('page')) {
+            $filters['page'] = max((int) $request->input('page'), 1);
+        }
+
         // Sorting
         if ($request->filled('sort')) {
-            $sort = $request->input('sort');
+            $sort = (string) $request->input('sort');
             $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
             $field = ltrim($sort, '-');
-            
-            // Whitelist allowed sort fields
-            $allowedFields = ['name', 'created_at', 'updated_at', 'is_gbp_connected'];
-            if (in_array($field, $allowedFields)) {
-                $filters['sort_field'] = $field;
+
+            // Map public API sort aliases to database columns
+            $sortFieldMap = [
+                'name' => 'name',
+                'created_at' => 'created_at',
+                'updated_at' => 'updated_at',
+                'is_gbp_connected' => 'gbp_connected',
+                'gbp_connected' => 'gbp_connected',
+            ];
+
+            if (array_key_exists($field, $sortFieldMap)) {
+                $filters['sort_field'] = $sortFieldMap[$field];
                 $filters['sort_direction'] = $direction;
+                $filters['sort'] = $sort;
             }
         }
 
