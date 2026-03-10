@@ -1,0 +1,107 @@
+{
+  "taskId": "TASK-35-19",
+  "capturedAt": "2026-03-10T15:40:00+02:00",
+  "agent": "ProdTester",
+  "summary": "Dynamic production dashboard routes return 200, but the deployed app still hydrates against preview route params instead of the real numeric location ID.",
+  "httpRoutes": [
+    {
+      "url": "https://seoindicator.com/locations/1/",
+      "status": 200,
+      "title": "SEOIndicator.com : AI Powered SEO Analysis"
+    },
+    {
+      "url": "https://seoindicator.com/sites/1/local/1/",
+      "status": 200,
+      "title": "SEOIndicator.com : AI Powered SEO Analysis"
+    }
+  ],
+  "browserValidation": {
+    "locationRoute": {
+      "pageUrl": "https://seoindicator.com/locations/1/",
+      "windowPathname": "/locations/1/",
+      "tokenUser": {
+        "id": 10047,
+        "email": "task3517-prod-20260310T130332Z-tccmdp@example.com"
+      },
+      "uiState": {
+        "headline": "Unable to load location dashboard",
+        "message": "Location not found"
+      },
+      "consoleRequests": [
+        "/api/v1/locations/preview",
+        "/api/v1/locations/preview/insights",
+        "/api/v1/locations/preview/reviews/stats",
+        "/api/v1/locations/preview/reviews?per_page=3",
+        "/api/v1/locations/preview/rankings",
+        "/api/v1/locations/preview/alerts?limit=3",
+        "/api/v1/locations/preview/competitors?limit=3"
+      ],
+      "apiProbes": {
+        "/api/v1/locations/1": {
+          "status": 404,
+          "body": {
+            "message": "Location not found"
+          }
+        },
+        "/api/v1/locations/preview": {
+          "status": 404,
+          "body": {
+            "message": "The route api/v1/locations/preview could not be found."
+          }
+        },
+        "/api/v1/locations/preview/insights": {
+          "status": 404,
+          "body": {
+            "message": "The route api/v1/locations/preview/insights could not be found."
+          }
+        },
+        "/api/v1/locations/preview/reviews/stats": {
+          "status": 404,
+          "body": {
+            "message": "The route api/v1/locations/preview/reviews/stats could not be found."
+          }
+        },
+        "/api/v1/locations/preview/rankings": {
+          "status": 404,
+          "body": {
+            "message": "The route api/v1/locations/preview/rankings could not be found."
+          }
+        },
+        "/api/v1/locations/preview/alerts?limit=3": {
+          "status": 404,
+          "body": {
+            "message": "The route api/v1/locations/preview/alerts could not be found."
+          }
+        },
+        "/api/v1/locations/preview/competitors?limit=3": {
+          "status": 404,
+          "body": {
+            "message": "The route api/v1/locations/preview/competitors could not be found."
+          }
+        }
+      }
+    },
+    "nestedRoute": {
+      "pageUrl": "https://seoindicator.com/sites/1/local/1/",
+      "windowPathname": "/sites/1/local/1/",
+      "uiState": {
+        "headline": "Unable to load location dashboard",
+        "message": "Location not found"
+      },
+      "consoleRequests": [
+        "/api/v1/locations/preview",
+        "/api/v1/locations/preview/insights",
+        "/api/v1/locations/preview/reviews/stats",
+        "/api/v1/locations/preview/reviews?per_page=3",
+        "/api/v1/locations/preview/rankings",
+        "/api/v1/locations/preview/alerts?limit=3",
+        "/api/v1/locations/preview/competitors?limit=3"
+      ]
+    }
+  },
+  "conclusion": [
+    "The numeric production routes are exposed, but the dashboard still resolves preview params at runtime.",
+    "Because the client requests /api/v1/locations/preview/... instead of /api/v1/locations/1/..., the dashboard cannot load real data or exercise manual sync for a numeric route.",
+    "TASK-35-19 is not production-ready and should return to development."
+  ]
+}
