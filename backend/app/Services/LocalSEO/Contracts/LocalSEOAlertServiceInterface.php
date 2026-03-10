@@ -41,5 +41,5 @@ interface LocalSEOAlertServiceInterface
     /**
      * Mark all alerts as read for a user.
      */
-    public function markAllAsRead(int $userId, ?int $locationId = null): int;
+    public function markAllAsRead(int $userId, ?int $locationId = null, ?string $severity = null): int;
 }

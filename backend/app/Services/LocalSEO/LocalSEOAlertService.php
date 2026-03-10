@@ -172,13 +172,17 @@ class LocalSEOAlertService implements LocalSEOAlertServiceInterface
     /**
      * Mark all alerts as read for a user.
      */
-    public function markAllAsRead(int $userId, ?int $locationId = null): int
+    public function markAllAsRead(int $userId, ?int $locationId = null, ?string $severity = null): int
     {
         $query = LocalSEOAlert::where('user_id', $userId)
             ->where('is_read', false);
 
         if ($locationId) {
             $query->where('location_id', $locationId);
+        }
+
+        if ($severity) {
+            $query->where('severity', $severity);
         }
 
         return $query->update([

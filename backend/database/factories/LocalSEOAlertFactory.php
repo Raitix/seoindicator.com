@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\BusinessLocation;
 use App\Models\LocalSEOAlert;
 use App\Models\User;
-use App\Models\BusinessLocation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -12,16 +12,24 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class LocalSEOAlertFactory extends Factory
 {
-    /**
-     * The name of the factory's corresponding model.
-     */
     protected $model = LocalSEOAlert::class;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    public function configure(): static
+    {
+        return $this->afterMaking(function (LocalSEOAlert $alert): void {
+            if ($alert->user_id && !User::query()->whereKey($alert->user_id)->exists()) {
+                User::factory()->create(['id' => $alert->user_id]);
+            }
+
+            if ($alert->location_id && !BusinessLocation::query()->whereKey($alert->location_id)->exists()) {
+                BusinessLocation::factory()->create([
+                    'id' => $alert->location_id,
+                    'user_id' => $alert->user_id,
+                ]);
+            }
+        });
+    }
+
     public function definition(): array
     {
         $alertType = fake()->randomElement(LocalSEOAlert::ALERT_TYPES);
@@ -41,9 +49,6 @@ class LocalSEOAlertFactory extends Factory
         ];
     }
 
-    /**
-     * Indicate that the alert is read.
-     */
     public function read(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -52,9 +57,6 @@ class LocalSEOAlertFactory extends Factory
         ]);
     }
 
-    /**
-     * Indicate that the alert is unread.
-     */
     public function unread(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -63,9 +65,6 @@ class LocalSEOAlertFactory extends Factory
         ]);
     }
 
-    /**
-     * Create a ranking improved alert.
-     */
     public function rankingImproved(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -76,9 +75,6 @@ class LocalSEOAlertFactory extends Factory
         ]);
     }
 
-    /**
-     * Create a ranking dropped alert.
-     */
     public function rankingDropped(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -89,9 +85,6 @@ class LocalSEOAlertFactory extends Factory
         ]);
     }
 
-    /**
-     * Create a negative review alert.
-     */
     public function negativeReview(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -102,9 +95,6 @@ class LocalSEOAlertFactory extends Factory
         ]);
     }
 
-    /**
-     * Create a GBP disconnected alert.
-     */
     public function gbpDisconnected(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -115,9 +105,6 @@ class LocalSEOAlertFactory extends Factory
         ]);
     }
 
-    /**
-     * Create a critical severity alert.
-     */
     public function critical(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -125,9 +112,6 @@ class LocalSEOAlertFactory extends Factory
         ]);
     }
 
-    /**
-     * Create a warning severity alert.
-     */
     public function warning(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -135,9 +119,6 @@ class LocalSEOAlertFactory extends Factory
         ]);
     }
 
-    /**
-     * Create an info severity alert.
-     */
     public function info(): static
     {
         return $this->state(fn (array $attributes) => [
