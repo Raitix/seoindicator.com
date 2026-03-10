@@ -1,0 +1,79 @@
+﻿{
+    "capturedAtUtc":  "2026-03-10T12:47:02.2352014Z",
+    "deploymentId":  "20260310T111840Z-6d975d6e",
+    "deploymentCommit":  "29e37fba6ec0944b7ec387db8281080d9a9f0f2b",
+    "results":  [
+                    {
+                        "name":  "health",
+                        "method":  "GET",
+                        "url":  "https://seoindicator.com/api/health",
+                        "status":  200,
+                        "contentType":  "application/json; charset=UTF-8",
+                        "location":  "",
+                        "bodySnippet":  "{\"status\":\"ok\",\"timestamp\":\"2026-03-10T12:46:20+00:00\",\"database\":\"connected\",\"app\":\"SEOIndicator\",\"env\":\"production\"}"
+                    },
+                    {
+                        "name":  "home",
+                        "method":  "GET",
+                        "url":  "https://seoindicator.com/",
+                        "status":  200,
+                        "contentType":  "text/html; charset=UTF-8",
+                        "location":  "",
+                        "bodySnippet":  "\u003c!DOCTYPE html\u003e\u003c!--g0LMQ_HoBZzT6iKoOH21i--\u003e\u003chtml lang=\"en\"\u003e\u003chead\u003e\u003cmeta charSet=\"utf-8\"/\u003e\u003cmeta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/\u003e\u003clink rel=\"preload\" href=\"/_next/static/media/797e433ab948586e-s.p.dbea232f.woff2\" as=\"font\" crossorigin=\"\" type=\"font/woff2\"/\u003e\u003clink rel=\"preload\" href=\"/_next/static/media/caa3a2e1cccd8315-s.p.853070df.woff2\" as=\"font\" crossorigin=\"\" type=\"fo"
+                    },
+                    {
+                        "name":  "login",
+                        "method":  "GET",
+                        "url":  "https://seoindicator.com/login",
+                        "status":  200,
+                        "contentType":  "text/html",
+                        "location":  "https://seoindicator.com/login/",
+                        "bodySnippet":  "\u003c!DOCTYPE html\u003e\u003c!--g0LMQ_HoBZzT6iKoOH21i--\u003e\u003chtml lang=\"en\"\u003e\u003chead\u003e\u003cmeta charSet=\"utf-8\"/\u003e\u003cmeta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/\u003e\u003clink rel=\"preload\" href=\"/_next/static/media/797e433ab948586e-s.p.dbea232f.woff2\" as=\"font\" crossorigin=\"\" type=\"font/woff2\"/\u003e\u003clink rel=\"preload\" href=\"/_next/static/media/caa3a2e1cccd8315-s.p.853070df.woff2\" as=\"font\" crossorigin=\"\" type=\"fo"
+                    },
+                    {
+                        "name":  "auth_user_guest",
+                        "method":  "GET",
+                        "url":  "https://seoindicator.com/api/v1/auth/user",
+                        "status":  401,
+                        "contentType":  "application/json; charset=UTF-8",
+                        "location":  "",
+                        "bodySnippet":  "{\"message\":\"Unauthenticated.\"}"
+                    },
+                    {
+                        "name":  "locations_guest",
+                        "method":  "GET",
+                        "url":  "https://seoindicator.com/api/v1/sites/999999/locations",
+                        "status":  500,
+                        "contentType":  "application/json; charset=UTF-8",
+                        "location":  "",
+                        "bodySnippet":  "{\n    \"message\": \"Server Error\"\n}"
+                    },
+                    {
+                        "name":  "connect_gbp_guest",
+                        "method":  "POST",
+                        "url":  "https://seoindicator.com/api/v1/locations/999999/connect-gbp",
+                        "status":  500,
+                        "contentType":  "application/json; charset=UTF-8",
+                        "location":  "",
+                        "bodySnippet":  "{\n    \"message\": \"Server Error\"\n}"
+                    },
+                    {
+                        "name":  "gbp_callback_fake_state_html",
+                        "method":  "GET",
+                        "url":  "https://seoindicator.com/api/v1/locations/999999/gbp-callback?code=fake\u0026state=fake",
+                        "status":  500,
+                        "contentType":  "text/html; charset=utf-8",
+                        "location":  "",
+                        "bodySnippet":  "\u003c!DOCTYPE html\u003e\n\u003chtml lang=\"en\"\u003e\n    \u003chead\u003e\n        \u003cmeta charset=\"utf-8\"\u003e\n        \u003cmeta name=\"viewport\" content=\"width=device-width, initial-scale=1\"\u003e\n\n        \u003ctitle\u003eServer Error\u003c/title\u003e\n\n        \u003cstyle\u003e\n            /*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */html{line-height:1.15;-webkit-text-size-adjust:100%}body{margin:0}a{background-color:transparent}code{font"
+                    },
+                    {
+                        "name":  "gbp_callback_fake_state_json",
+                        "method":  "GET",
+                        "url":  "https://seoindicator.com/api/v1/locations/999999/gbp-callback?code=fake\u0026state=fake",
+                        "status":  500,
+                        "contentType":  "application/json; charset=UTF-8",
+                        "location":  "",
+                        "bodySnippet":  "{\n    \"message\": \"Server Error\"\n}"
+                    }
+                ]
+}
