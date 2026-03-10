@@ -191,7 +191,8 @@ export async function fetchUser(): Promise<User | null> {
     return response.data?.user ? sanitizeUser(response.data.user) : null;
   } catch (error) {
     if ((error as AuthError).code === AuthErrorCode.UNAUTHORIZED) {
-      clearStoredAuthToken();
+      // Production SPA auth may rely on the persisted bearer-token fallback even when
+      // the auth/user probe still resolves unauthenticated for the current browser session.
       return null;
     }
 

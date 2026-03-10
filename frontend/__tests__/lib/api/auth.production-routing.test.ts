@@ -259,6 +259,25 @@ describe("auth API production routing", () => {
     );
   });
 
+  it("fetchUser does not clear the stored bearer token when auth/user still returns unauthenticated", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
+    localStorage.setItem("seoindicator_token", "spa-fallback-token");
+
+    const auth = await import("@/lib/api/auth");
+
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({
+        success: false,
+        message: "Unauthenticated.",
+      }),
+    });
+
+    await expect(auth.fetchUser()).resolves.toBeNull();
+    expect(localStorage.getItem("seoindicator_token")).toBe("spa-fallback-token");
+  });
+
   it("logout posts to the configured backend origin and clears stored SPA fallback auth state", async () => {
     process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
     localStorage.setItem("seoindicator_token", "spa-fallback-token");
