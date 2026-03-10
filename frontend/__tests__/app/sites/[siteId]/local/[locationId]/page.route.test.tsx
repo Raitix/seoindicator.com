@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUseParams = vi.fn(() => ({ siteId: "7", locationId: "123" }));
 
@@ -18,11 +18,26 @@ import SiteLocationDashboardPage from "@/app/sites/[siteId]/local/[locationId]/p
 import { generateStaticParams } from "@/app/sites/[siteId]/local/[locationId]/layout";
 
 describe("app/sites/[siteId]/local/[locationId]/page", () => {
-  it("reads the runtime site and location ids from useParams", () => {
+  beforeEach(() => {
+    mockUseParams.mockReturnValue({ siteId: "7", locationId: "123" });
+    window.history.replaceState({}, "", "/sites/7/local/123/");
+  });
+
+  it("uses the route params when real ids are already available", async () => {
     render(<SiteLocationDashboardPage />);
 
-    expect(screen.getByTestId("dashboard-props")).toHaveAttribute("data-site-id", "7");
+    expect(await screen.findByTestId("dashboard-props")).toHaveAttribute("data-site-id", "7");
     expect(screen.getByTestId("dashboard-props")).toHaveAttribute("data-location-id", "123");
+  });
+
+  it("recovers numeric site and location ids from the browser pathname when hydration keeps preview params", async () => {
+    mockUseParams.mockReturnValue({ siteId: "preview", locationId: "preview" });
+    window.history.replaceState({}, "", "/sites/8/local/456/");
+
+    render(<SiteLocationDashboardPage />);
+
+    expect(await screen.findByTestId("dashboard-props")).toHaveAttribute("data-site-id", "8");
+    expect(screen.getByTestId("dashboard-props")).toHaveAttribute("data-location-id", "456");
   });
 
   it("exports a preview shell for static export rewrites", () => {
