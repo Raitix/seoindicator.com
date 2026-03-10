@@ -1,7 +1,7 @@
 # TASK-36-2: Eloquent Models - Content Decay
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -70,6 +70,58 @@ Create Eloquent models for the four Content Decay database tables with relations
 - `backend/tests/Unit/Models/ContentDecayCandidateTest.php`
 - `backend/tests/Unit/Models/ContentDecaySignalTest.php`
 - `backend/tests/Unit/Models/ContentRefreshTaskTest.php`
+
+---
+
+## Comments
+
+### ProjectManager (2026-03-10)
+**Prioritization Complete**
+
+**Priority: HIGH** (confirmed - already set)
+- Foundation task for SPEC-036 Content Decay Detection & Refresh Planner
+- Enables ALL downstream services and frontend (TASK-36-3 through TASK-36-14)
+- Model layer is prerequisite for service layer (DetectionService, ScoringService, etc.)
+- Without models, entire feature pipeline is blocked
+
+**Risk: LOW** (confirmed - already set)
+- Standard Eloquent models with relationships, casts, scopes
+- No external API dependencies
+- Pure Laravel implementation with well-defined patterns
+- SoftDeletes provide data safety
+
+**Dependencies Analysis:**
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| TASK-36-1 (Migrations) | To Develop | Tests complete (198 tests), Developer implementation pending |
+
+**TDD Pattern Applied:**
+- PreTester CAN design model tests immediately using TDD approach
+- Tests can use in-memory SQLite or mock database layer
+- Model interfaces defined by Eloquent patterns (fillable, casts, relationships)
+- Implementation waits for TASK-36-1 to reach `To Test Locally`
+- This enables PARALLEL development - test design proceeds with migration implementation
+
+**Model Architecture:**
+| Model | Relationships | Scopes | Key Features |
+|-------|---------------|--------|--------------|
+| ContentDecayProject | BelongsTo: User, Site; HasMany: Candidate | enabled(), forUser() | Detection settings, window days |
+| ContentDecayCandidate | BelongsTo: Project; HasMany: Signal, Task | byStatus(), bySeverity(), backlog(), planned() | Status transitions, page hashing |
+| ContentDecaySignal | BelongsTo: Candidate | forCandidate(), inDateRange() | Metric delta helpers |
+| ContentRefreshTask | BelongsTo: Candidate, User | byStatus(), overdue(), todo() | Due date management |
+
+**Execution Order for SPEC-036:**
+1. TASK-36-1 (Migrations) ← In progress (tests done, impl pending)
+2. TASK-36-2 (Models) ← **This task** (can proceed to PreTester now)
+3. TASK-36-3/36-4/36-5 (Services) - Parallel after models
+4. TASK-36-6 (Detection Service) - Integrates all services
+5. TASK-36-9 (Queue Jobs) → TASK-36-10 (API) → Frontend
+
+**PreTester Queue Status:**
+- Multiple tasks at "To Write Tests"
+- Queue has capacity - task can proceed immediately
+
+**Status:** `To Write Tests` → Ready for PreTester
 
 ---
 
