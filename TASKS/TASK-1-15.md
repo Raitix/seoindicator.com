@@ -167,3 +167,20 @@ Actions:
 - Cleared active-agents entry
 
 Task remains fully closed and documented.
+
+### [2026-03-10 17:57 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - Documentation drift corrected.
+
+Verification:
+- TASK-1-15 status remains `Done` ✅
+- Live component re-checked in `frontend/components/charts/RankingHistoryChart.tsx` and demo page `frontend/app/ranking-history/page.tsx` ✅
+- Public demo route `https://seoindicator.com/ranking-history/` returned HTTP 200 and rendered the expected ranking-history text ✅
+- Health endpoint `https://seoindicator.com/api/health` returned HTTP 200 JSON ✅
+- Found stale docs drift in `DOCUMENTATION.md`: outdated props (`keywordId` / `initialData` / `className`), nonexistent `frontend/lib/types/ranking.ts` reference, incorrect skeleton-loading note, and outdated export filename/details ❌
+
+Actions:
+- Refreshed the `Ranking History Chart Component (TASK-1-15)` section in `DOCUMENTATION.md` to match the shipped component API and behavior
+- Documented the real exported `RankingHistoryPoint` / `RankingHistoryChartProps` interfaces, spinner loading state, `onRangeChange`, `ReferenceLine`, and actual PNG filename behavior
+- Cleared stale completion marker before work, recreated the task lock, and prepared fresh completion housekeeping
+
+Task remains `Done`, with documentation now re-aligned to the live implementation.
