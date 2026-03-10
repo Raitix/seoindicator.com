@@ -35872,62 +35872,75 @@ class ManifestError {
 ## Google OAuth Configuration (TASK-25-6)
 
 ### Service Description
-Google OAuth 2.0 credential configuration for user authentication. Enables "Sign in with Google" functionality using Laravel Socialite.
+Google OAuth 2.0 credential configuration for user authentication. Enables "Sign in with Google" functionality using Laravel Socialite while supporting separate local and production callback registration.
 
 ### Configuration Files
 
-**config/services.php:**
+**backend/config/services.php:**
 ```php
 'google' => [
     'client_id' => env('GOOGLE_CLIENT_ID'),
     'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     'redirect' => env('GOOGLE_REDIRECT_URI'),
+    'redirect_uris' => array_filter([
+        env('GOOGLE_REDIRECT_URI'),
+        env('GOOGLE_REDIRECT_URI_PROD'),
+    ]),
 ],
 ```
 
+### Environment File Behavior
+
+- `backend/.env` currently uses local development placeholder credentials so config wiring and format validation can be exercised without committing secrets.
+- `backend/.env.example` and `backend/.env.testing` intentionally leave `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` blank.
+- `GOOGLE_REDIRECT_URI` defaults to the local callback and `GOOGLE_REDIRECT_URI_PROD` is available for multi-environment redirect registration.
+
 ### Environment Variables
 
-| Variable | Description | Format |
-|----------|-------------|--------|
+| Variable | Description | Format / Example |
+|----------|-------------|------------------|
 | `GOOGLE_CLIENT_ID` | OAuth Client ID | `\d+-[a-zA-Z0-9-]+\.apps\.googleusercontent\.com` |
 | `GOOGLE_CLIENT_SECRET` | OAuth Client Secret | `GOCSPX-*` (min 20 chars) |
-| `GOOGLE_REDIRECT_URI` | Callback URL | `https://seoindicator.com/api/v1/auth/google/callback` |
+| `GOOGLE_REDIRECT_URI` | Primary callback URL | `http://localhost:8000/api/v1/auth/google/callback` or `https://seoindicator.com/api/v1/auth/google/callback` |
+| `GOOGLE_REDIRECT_URI_PROD` | Optional additional production callback URI | `https://seoindicator.com/api/v1/auth/google/callback` |
 
 ### Google Cloud Console Setup
 
 1. Go to https://console.cloud.google.com/apis/credentials
-2. Create/select a Google Cloud project
-3. Create OAuth 2.0 Client ID (Web application type)
+2. Create or select a Google Cloud project
+3. Create an OAuth 2.0 Client ID for a **Web application**
 4. Configure authorized JavaScript origins:
    - Local: `http://localhost:3000`
    - Production: `https://seoindicator.com`
 5. Configure authorized redirect URIs:
    - Local: `http://localhost:8000/api/v1/auth/google/callback`
    - Production: `https://seoindicator.com/api/v1/auth/google/callback`
+6. Copy the real Client ID and Client Secret into the deployed environment before enabling live Google sign-in
 
-### FREE Tier Limits
+### Operational Notes
 
-- 100 OAuth logins per day
-- No cost for basic profile/email scopes
-- Sufficient for development and small-scale production
+- The shipped code/config is in place, but live OAuth sign-in still requires real Google-issued credentials.
+- Placeholder credentials are acceptable for local format/config validation only; they do not produce a working Google consent flow.
+- The optional `redirect_uris` array exists to help keep allowed callbacks aligned across environments.
 
 ### Test Coverage
 
-| Test File | Tests | Status |
-|-----------|-------|--------|
-| GoogleOAuthConfigurationTest | 17 | ✓ Pass |
-| GoogleOAuthCredentialsFormatTest | 12 | ✓ Pass |
-| GoogleOAuthRedirectUriTest | 6 | ✓ Pass |
-| GoogleOAuthServiceSetupTest | 6 | ✓ Pass |
+| Test File | Result | Notes |
+|-----------|--------|-------|
+| `GoogleOAuthConfigurationTest` | 18/18 passing | Environment variables, config wiring, log hygiene |
+| `GoogleOAuthCredentialsFormatTest` | 12/12 passing | Credential and redirect format validation |
+| `GoogleOAuthRedirectUriTest` | 6 passing, 2 skipped | Skip cases are environment-dependent local URI checks |
+| `GoogleOAuthServiceSetupTest` | 6 passing, 1 skipped | Redirect generation skip is expected in unit scope without session store |
 
 ### Production Status
 
 | Metric | Value |
 |--------|-------|
 | **Deployed** | 2026-03-01 |
-| **Configuration** | Complete (placeholder credentials) |
-| **User Action Required** | Google Cloud Console setup |
-| **Status** | Configuration Complete |
+| **Configuration Shipped** | Yes — config wiring, env template entries, optional multi-environment redirect support |
+| **Local Dev Credentials** | Placeholder values present in `backend/.env` |
+| **User Action Required** | Create Google OAuth client and supply real credentials in the target environment |
+| **Status** | Configuration shipped; live Google sign-in remains blocked until real credentials are installed |
 
 ---
 ## Google OAuth Service (TASK-25-7)
