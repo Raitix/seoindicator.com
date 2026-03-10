@@ -374,3 +374,21 @@ Duration: 2.97s
 - TASK-8-10: To Write Tests
 
 **Status changed:** `To Document` → `Done`
+
+### [2026-03-10 15:35 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass:**
+
+**Targeted Validation:**
+- Ran `php artisan test tests/Feature/Api/V1/ProjectControllerTest.php`
+- Result: **39 passed, 3 skipped, 111 assertions**
+- Verified current controller/request/policy/routes still match TASK-8-7 scope
+
+**Documentation Drift Corrected:**
+1. Updated request/response examples to match the live `success` + `data` envelope used by `ProjectController`
+2. Corrected `notes` validation from stale `max 5000` wording to the current `max 65535`
+3. Corrected list filtering semantics from generic boolean wording to the actual `archived=true|false|all` behavior
+4. Removed the stale cascade-delete claim from the main behavior description and downgraded it to a dependency note because the current suite still skips those child-table cases
+5. Corrected authorization wording to the authenticated `/api/v1` route group with `auth` middleware and aligned the documented `Project` relationships/helpers with the current model
+6. Refreshed test coverage metadata with the current assertion count
+
+**Status:** Task remains `Done`
