@@ -88,6 +88,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\LocalSEO\GBPInsightsService::class
         );
 
+        // GBP API Client binding (TASK-35-8, TASK-35-10, SPEC-035)
+        $this->app->bind(
+            \App\Services\GBP\Contracts\GBPApiServiceInterface::class,
+            \App\Services\GBP\GBPApiService::class
+        );
+
         // GBP Reviews Service binding (TASK-35-10, TASK-35-12, TASK-35-14, SPEC-035)
         // Note: LocalSEO namespace for alert service compatibility
         $this->app->bind(
