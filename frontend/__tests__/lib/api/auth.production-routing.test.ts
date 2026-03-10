@@ -8,6 +8,7 @@ describe("auth API production routing", () => {
     vi.resetModules();
     vi.clearAllMocks();
     process.env = { ...originalEnv };
+    localStorage.clear();
     vi.stubGlobal("fetch", mockFetch);
   });
 
@@ -122,6 +123,65 @@ describe("auth API production routing", () => {
       expect.objectContaining({
         method: "POST",
         credentials: "include",
+      })
+    );
+  });
+
+  it("login stores the returned bearer token for SPA fallback auth", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
+
+    const auth = await import("@/lib/api/auth");
+
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            user: {
+              id: 1,
+              name: "Raitis",
+              email: "raitis@example.com",
+              email_verified: true,
+            },
+            token: "spa-fallback-token",
+          },
+        }),
+      });
+
+    await auth.login("raitis@example.com", "super-secret", false);
+
+    expect(localStorage.getItem("seoindicator_token")).toBe("spa-fallback-token");
+  });
+
+  it("fetchUser includes the stored bearer token when cookie auth is unavailable", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com";
+    localStorage.setItem("seoindicator_token", "spa-fallback-token");
+
+    const auth = await import("@/lib/api/auth");
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          user: {
+            id: 1,
+            name: "Raitis",
+            email: "raitis@example.com",
+            email_verified: true,
+          },
+        },
+      }),
+    });
+
+    await auth.fetchUser();
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.seoindicator.com/api/v1/auth/user",
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer spa-fallback-token" }),
       })
     );
   });
