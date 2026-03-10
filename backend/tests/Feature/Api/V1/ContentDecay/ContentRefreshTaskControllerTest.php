@@ -127,7 +127,7 @@ class ContentRefreshTaskControllerTest extends TestCase
             ->andReturn($candidate);
 
         $mockTaskService = $this->mock(ContentRefreshTaskServiceInterface::class);
-        $mockTaskService->shouldReceive('getTasksForCandidate')
+        $mockTaskService->shouldReceive('listTasks')
             ->once()
             ->andReturn([$task]);
 
@@ -299,7 +299,7 @@ class ContentRefreshTaskControllerTest extends TestCase
             ->andReturn($candidate);
 
         $mockTaskService = $this->mock(ContentRefreshTaskServiceInterface::class);
-        $mockTaskService->shouldReceive('getTasksForCandidate')
+        $mockTaskService->shouldReceive('listTasks')
             ->once()
             ->andReturn([$task]);
 
@@ -333,7 +333,7 @@ class ContentRefreshTaskControllerTest extends TestCase
             ->andReturn($candidate);
 
         $mockTaskService = $this->mock(ContentRefreshTaskServiceInterface::class);
-        $mockTaskService->shouldReceive('getTasksForCandidate')
+        $mockTaskService->shouldReceive('listTasks')
             ->once()
             ->andReturn([$task]);
 
@@ -676,7 +676,7 @@ class ContentRefreshTaskControllerTest extends TestCase
             ->andReturn($candidate);
 
         $mockTaskService = $this->mock(ContentRefreshTaskServiceInterface::class);
-        $mockTaskService->shouldReceive('getTasksForCandidate')
+        $mockTaskService->shouldReceive('listTasks')
             ->once()
             ->andReturn([]);
 

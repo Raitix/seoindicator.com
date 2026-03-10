@@ -718,6 +718,63 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Content Decay Routes (TASK-36-10, SPEC-036)
+|--------------------------------------------------------------------------
+|
+| Content Decay Detection & Refresh Planner API endpoints.
+| All routes require authentication and ownership verification.
+|
+*/
+Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
+    // Content Decay Summary & Settings
+    Route::get('sites/{siteId}/content-decay/summary', [\App\Http\Controllers\Api\V1\ContentDecayController::class, 'summary'])
+        ->name('content-decay.summary')
+        ->where('siteId', '[0-9]+');
+    Route::post('sites/{siteId}/content-decay/run', [\App\Http\Controllers\Api\V1\ContentDecayController::class, 'run'])
+        ->name('content-decay.run')
+        ->where('siteId', '[0-9]+')
+        ->middleware('throttle:5,60'); // 5 per hour for manual detection runs
+    Route::patch('sites/{siteId}/content-decay/settings', [\App\Http\Controllers\Api\V1\ContentDecayController::class, 'updateSettings'])
+        ->name('content-decay.settings.update')
+        ->where('siteId', '[0-9]+');
+
+    // Content Decay Candidates Queue
+    Route::get('sites/{siteId}/content-decay/candidates', [\App\Http\Controllers\Api\V1\ContentDecayCandidateController::class, 'index'])
+        ->name('content-decay.candidates.index')
+        ->where('siteId', '[0-9]+');
+    Route::get('content-decay/candidates/{id}', [\App\Http\Controllers\Api\V1\ContentDecayCandidateController::class, 'show'])
+        ->name('content-decay.candidates.show')
+        ->where('id', '[0-9]+');
+    Route::patch('content-decay/candidates/{id}', [\App\Http\Controllers\Api\V1\ContentDecayCandidateController::class, 'update'])
+        ->name('content-decay.candidates.update')
+        ->where('id', '[0-9]+');
+    Route::post('content-decay/candidates/{id}/restore', [\App\Http\Controllers\Api\V1\ContentDecayCandidateController::class, 'restore'])
+        ->name('content-decay.candidates.restore')
+        ->where('id', '[0-9]+');
+
+    // Content Refresh Tasks
+    Route::get('content-decay/candidates/{candidateId}/tasks', [\App\Http\Controllers\Api\V1\ContentRefreshTaskController::class, 'index'])
+        ->name('content-refresh-tasks.index')
+        ->where('candidateId', '[0-9]+');
+    Route::post('content-decay/candidates/{candidateId}/tasks', [\App\Http\Controllers\Api\V1\ContentRefreshTaskController::class, 'store'])
+        ->name('content-refresh-tasks.store')
+        ->where('candidateId', '[0-9]+');
+    Route::patch('content-refresh-tasks/{id}', [\App\Http\Controllers\Api\V1\ContentRefreshTaskController::class, 'update'])
+        ->name('content-refresh-tasks.update')
+        ->where('id', '[0-9]+');
+
+    // Content Decay Export
+    Route::get('sites/{siteId}/content-decay/export', [\App\Http\Controllers\Api\V1\ContentDecayExportController::class, 'export'])
+        ->name('content-decay.export')
+        ->where('siteId', '[0-9]+');
+    Route::post('content-decay/candidates/{id}/ai-brief', [\App\Http\Controllers\Api\V1\ContentDecayExportController::class, 'generateAiBrief'])
+        ->name('content-decay.ai-brief')
+        ->where('id', '[0-9]+')
+        ->middleware('throttle:10,60'); // 10 per hour for AI brief generation
+});
+
+/*
+|--------------------------------------------------------------------------
 | Admin Routes (TASK-27-2, SPEC-027)
 |--------------------------------------------------------------------------
 |
