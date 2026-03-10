@@ -24758,72 +24758,57 @@ interface IconResult {
 ---
 ## Unit Tests: Projects (TASK-8-9)
 
-### Test Coverage Summary
-Unit tests for the Project model, policies, and relationships. Tests ensure isolated component validation and authorization logic.
+### Current Verification Status
+Focused backend coverage exists for the Project model, project authorization, database constraints, and ProjectScope. However, the task is **not currently green** after the latest re-verification.
 
-### Test Files
+**2026-03-10 targeted rerun:** `133` passing, `1` failing, `1` skipped (`181` assertions)
 
-| Test File | Tests | Assertions | Description |
-|-----------|-------|------------|-------------|
-| `ProjectValidationTest.php` | 21 | 21 | Model field validation tests |
-| `ProjectRelationshipTest.php` | 23 | 23 | Relationship and scope tests |
-| `ProjectTest.php` | 13 | - | Core model functionality |
-| `ProjectPolicyTest.php` | 25 | - | Authorization policy tests |
-| `ProjectAuthorizationTest.php` | 21 | - | Feature-level authorization |
-| `ProjectsTableConstraintsTest.php` | 13 | - | Database constraint validation |
+### Targeted Test Files
 
-**Total: ~116 tests across all test files**
+| Test File | Tests | Current Result | Description |
+|-----------|-------|----------------|-------------|
+| `backend/tests/Unit/Models/ProjectValidationTest.php` | 21 | ✅ Pass | Model field validation coverage |
+| `backend/tests/Unit/Models/ProjectRelationshipTest.php` | 23 | ✅ Pass | Relationships, archive helpers, and local scopes |
+| `backend/tests/Unit/Models/ProjectTest.php` | 13 | ❌ 1 failing test | Core model contract (`$fillable`, casts, helpers, scopes) |
+| `backend/tests/Unit/Policies/ProjectPolicyTest.php` | 25 | ✅ Pass | Policy authorization logic |
+| `backend/tests/Feature/Authorization/ProjectAuthorizationTest.php` | 21 | ✅ Pass | Gate / policy integration coverage |
+| `backend/tests/Feature/Database/ProjectsTableConstraintsTest.php` | 13 | ✅ Pass | Foreign keys and index constraints |
+| `backend/tests/Unit/Scopes/ProjectScopeTest.php` | 19 | ✅ Pass / ⏭️ 1 skipped | Scope behavior, security expectations, and migration-dependent integration placeholder |
 
-### ProjectValidationTest Coverage
-Tests for model-level field validation:
+**Total targeted coverage:** `135` tests across `7` files
 
-| Category | Tests | Description |
-|----------|-------|-------------|
-| Name Validation | 5 | Required, empty, length constraints |
-| Domain Validation | 3 | Null, valid format, length |
-| User ID Validation | 2 | Null handling, FK constraint |
-| Behavioral Fields | 4 | Notes, is_default, archived_at |
-| Edge Cases | 7 | Special characters, unicode, whitespace |
+### Current Failure
+- Failing test: `Tests\Unit\Models\ProjectTest::test_model_has_correct_fillable_attributes`
+- Failure reason: the expected fillable array in `tests/Unit/Models/ProjectTest.php` is stale and does not include `backlinks_last_synced_at`
+- Current model contract: `App\Models\Project::$fillable` includes `user_id`, `name`, `domain`, `notes`, `is_default`, `archived_at`, `backlinks_last_synced_at`, and `account_id`
 
-### ProjectRelationshipTest Coverage
-Tests for Eloquent relationships and model scopes:
-
-| Category | Tests | Description |
-|----------|-------|-------------|
-| Direct Relationships | 4 | User, Account, GSCData, GSCConnections |
-| HasMany Relationships | 4 | Keywords, Competitors, Reports, Members |
-| BelongsToMany | 2 | Users through members pivot |
-| Cascade Delete | 3 | Deletion behavior with related records |
-| Model Scopes | 4 | Active, Archived, Default scopes |
-| Instance Methods | 6 | Archive/unarchive/isArchived methods |
-
-### ProjectPolicyTest Coverage
-Authorization tests for project access control:
-
-| Policy Method | Tests | Scenarios |
-|---------------|-------|-----------|
-| `view` | 5 | Owner, non-owner, admin, guest, archived |
-| `update` | 5 | Owner, non-owner, admin, guest, archived |
-| `delete` | 5 | Owner, non-owner, admin, guest, archived |
-| `restore` | 5 | Owner, non-owner, admin, guest, archived |
-| `forceDelete` | 5 | Owner, non-owner, admin, guest, archived |
-
-### Pending Coverage
-- **ProjectScope tests** - Waiting on TASK-8-5 implementation (global scope)
+### Coverage Notes
+- `ProjectValidationTest` still covers name/domain/user/behavior edge cases and persistence rules
+- `ProjectRelationshipTest` still covers ownership, account/GSC/member relationships, cascade-delete behavior, `active` / `archived` / `default` scopes, and archive helpers
+- `ProjectPolicyTest` and `ProjectAuthorizationTest` together validate owner/non-owner/admin access for `view`, `update`, `delete`, `restore`, `forceDelete`, `viewAny`, and `create`
+- `ProjectScopeTest` now exists; the older “pending TASK-8-5 implementation” note is obsolete
+- One integration-style scope test remains intentionally skipped until TASK-8-2 migration coverage provides the required `project_id` schema surface
 
 ### Technical Implementation
-- **Location:** `backend/tests/Unit/Models/Project/`
-- **Factory:** `ProjectFactory` with states (default, archived, forUser, withNotes)
-- **RefreshDatabase:** Each test runs in isolated transaction
+- Model tests: `backend/tests/Unit/Models/`
+- Policy tests: `backend/tests/Unit/Policies/`
+- Authorization tests: `backend/tests/Feature/Authorization/`
+- Database constraint tests: `backend/tests/Feature/Database/`
+- Scope tests: `backend/tests/Unit/Scopes/`
+- Factory: `backend/database/factories/ProjectFactory.php`
+- Isolation: `RefreshDatabase` is used across the focused suite
 
 ### Dependencies
 - TASK-8-1 (Projects Table schema)
+- TASK-8-2 (project_id migration surface for fuller scope/integration coverage)
+- TASK-8-5 (ProjectScope)
 - TASK-8-6 (Project Policies)
 
 ### Status
-- **Completed:** 2026-02-26
-- **Code Coverage:** ~95% for Project model
-- **Pending:** ProjectScope tests (TASK-8-5 dependency)
+- **Originally completed:** 2026-02-26
+- **Re-verified:** 2026-03-10
+- **Current state:** Reopened and returned to `To Develop`
+- **Reason:** Focused suite is no longer green after Project model drift
 
 ### Keywords Table
 ```sql

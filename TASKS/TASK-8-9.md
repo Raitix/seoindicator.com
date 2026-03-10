@@ -1,7 +1,7 @@
 # TASK-8-9: Unit Tests for Project Features
 
 ## STATUS
-`Done`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -24,9 +24,9 @@ Develop unit tests for all project-related models, policies, and scopes. Ensure 
    - Test `ProjectScope` for data isolation.
 
 ## Acceptance Criteria
-- [x] 100% code coverage for the `Project` model. (✅ ~95% - see notes)
-- [x] Policies validated with multiple user-project scenarios. (✅ 25 tests in ProjectPolicyTest)
-- [ ] Scope ensures complete isolation of project data. (⏳ Pending TASK-8-5)
+- [ ] Project model/unit suite is green against the current `Project` model shape. (2026-03-10 re-verification: `ProjectTest` fails because the expected fillable list omits `backlinks_last_synced_at`.)
+- [x] Policies are validated with multiple user-project scenarios. (Targeted rerun: `ProjectPolicyTest` 25/25 and `ProjectAuthorizationTest` 21/21 passing.)
+- [ ] Scope coverage reflects the current implementation state. (`ProjectScopeTest` now exists, but one integration-style scope test is still skipped pending TASK-8-2 / `project_id` migration coverage.)
 
 ## Dependencies
 - TASK-8-1: Database schema must exist.
@@ -135,3 +135,34 @@ Task verified as complete. Documentation in DOCUMENTATION.md confirmed with:
 - Code coverage: ~95% for Project model
 - Completion marker written: `logs/completion-markers/TASK-8-9-DocSystemAnalyst.txt`
 - No stale locks found
+
+### [2026-03-10 16:31 GMT+2] Agent: DocSystemAnalyst
+**Re-opened after local re-verification failure**
+
+Actions performed:
+- Cleared stale completion markers and created `TASKS/.locks/TASK-8-9.lock`
+- Re-ran the focused backend suites for:
+  - `tests/Unit/Models/ProjectValidationTest.php`
+  - `tests/Unit/Models/ProjectRelationshipTest.php`
+  - `tests/Unit/Models/ProjectTest.php`
+  - `tests/Unit/Policies/ProjectPolicyTest.php`
+  - `tests/Feature/Authorization/ProjectAuthorizationTest.php`
+  - `tests/Feature/Database/ProjectsTableConstraintsTest.php`
+  - `tests/Unit/Scopes/ProjectScopeTest.php`
+
+Result:
+- `133` passing, `1` failing, `1` skipped (`181` assertions)
+- Failing test: `Tests\Unit\Models\ProjectTest::test_model_has_correct_fillable_attributes`
+- Failure cause: expected fillable array is stale and no longer includes `backlinks_last_synced_at`, while `App\Models\Project::$fillable` does
+- `ProjectScopeTest` is no longer pending entirely; it now exists, but still contains one skipped integration-style test that depends on TASK-8-2 migration coverage
+
+Documentation drift found:
+- `DOCUMENTATION.md` still referenced the older 6-file / ~116-test state
+- The docs also claimed ProjectScope coverage was still waiting on TASK-8-5, which is no longer true
+
+Status changed:
+- `Done` → `To Develop`
+
+Handoff:
+- Developer should reconcile `tests/Unit/Models/ProjectTest.php` with the current `Project` model fillable/cast contract (or revert the model drift if the new field is unintended)
+- After the suite is green again, send the task back through local/prod verification before documentation is considered closed
