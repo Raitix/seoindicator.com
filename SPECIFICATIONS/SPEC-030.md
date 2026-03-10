@@ -322,3 +322,10 @@ All 7 tasks completed:
 - Confirmed all seven TASK-30-* items remain `Done`
 - Confirmed documentation coverage remains current; no spec changes required
 - Status remains `Done`
+
+### [2026-03-10 DocSystemAnalyst | SPEC-30 alias re-verification]
+- Trigger arrived as `SPEC-30`; canonical project file remains `SPEC-030.md`
+- Re-confirmed TASK-30-1 through TASK-30-7 are all `Done`
+- Re-confirmed documentation coverage is present for Terms & Privacy, About, How It Works, cookie consent, consent integration, and accessibility coverage
+- No specification updates were required; status remains `Done`
+- Fresh completion markers will be re-written for both `SPEC-30` and `SPEC-030` to tolerate non-padded and zero-padded triggers
