@@ -1,0 +1,32 @@
+﻿[
+    {
+        "url":  "https://seoindicator.com/sanctum/csrf-cookie",
+        "status":  204,
+        "contentType":  null,
+        "note":  "sanctum reachable"
+    },
+    {
+        "url":  "https://seoindicator.com/api/v1/auth/user",
+        "status":  401,
+        "contentType":  "application/json; charset=UTF-8",
+        "note":  "unauthenticated request reached backend JSON"
+    },
+    {
+        "url":  "https://seoindicator.com/api/v1/auth/login",
+        "status":  422,
+        "contentType":  "application/json; charset=UTF-8",
+        "note":  "login endpoint reachable and validating request"
+    },
+    {
+        "url":  "https://seoindicator.com/api/v1/auth/register",
+        "status":  422,
+        "contentType":  "application/json; charset=UTF-8",
+        "note":  "register endpoint reachable and validating request"
+    },
+    {
+        "url":  "https://seoindicator.com/api/v1/sites/1/locations",
+        "status":  401,
+        "contentType":  "application/json; charset=UTF-8",
+        "note":  "locations endpoint reachable and auth-protected"
+    }
+]

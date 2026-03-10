@@ -1,0 +1,74 @@
+{
+  "task": "TASK-35-25",
+  "timestamp_utc": "2026-03-10T15:49:00Z",
+  "summary": "Production routing fix is confirmed live. Remaining failure is separate SPA/session auth contract issue tracked in TASK-35-26.",
+  "account": {
+    "email": "task3525.prod.20260310.1745@example.com",
+    "user_id": 10059
+  },
+  "browser_flow": {
+    "register": {
+      "status": "success",
+      "result": "Registration completed and redirected back into auth flow."
+    },
+    "login": {
+      "status": "success",
+      "result": "Login stored seoindicator_token + seoindicator_user in localStorage and navigated to /dashboard/."
+    },
+    "post_login_local_storage": {
+      "seoindicator_token_present": true,
+      "seoindicator_user_present": true
+    },
+    "post_login_same_session_fetches": [
+      {
+        "url": "/api/v1/auth/user",
+        "mode": "credentials include, no Authorization header",
+        "status": 401,
+        "body": "{\"message\":\"Unauthenticated.\"}"
+      },
+      {
+        "url": "/api/v1/dashboard",
+        "mode": "credentials include, no Authorization header",
+        "status": 401,
+        "body": "{\"message\":\"Unauthenticated.\"}"
+      },
+      {
+        "url": "/api/v1/projects",
+        "mode": "credentials include, no Authorization header",
+        "status": 401,
+        "body": "{\"message\":\"Unauthenticated.\"}"
+      },
+      {
+        "url": "/api/v1/onboarding",
+        "mode": "credentials include, no Authorization header",
+        "status": 401,
+        "body": "{\"message\":\"Unauthenticated.\"}"
+      }
+    ],
+    "bearer_probes": [
+      {
+        "url": "/api/v1/auth/user",
+        "status": 200,
+        "body_prefix": "{\"success\":true,\"data\":{\"user\":{\"id\":10059"
+      },
+      {
+        "url": "/api/v1/sites/1/locations",
+        "status": 403,
+        "body": "{\n    \"message\": \"This action is unauthorized.\"\n}"
+      },
+      {
+        "url": "/api/v1/locations/1",
+        "status": 404,
+        "body": "{\n    \"message\": \"Location not found\"\n}"
+      }
+    ]
+  },
+  "conclusion": {
+    "task_35_25_routing_fix_confirmed": true,
+    "generic_hostinger_404s_still_present": false,
+    "local_seo_backend_reachable": true,
+    "real_same_session_auth_established": false,
+    "can_complete_sites_local_flow": false,
+    "blocker": "TASK-35-26 production auth/session contract is not yet deployed/effective. Fresh production accounts cannot use same-session /auth/user, /dashboard, /projects, or /onboarding, so a user-owned site cannot be bootstrapped for /sites/{siteId}/local validation."
+  }
+}
