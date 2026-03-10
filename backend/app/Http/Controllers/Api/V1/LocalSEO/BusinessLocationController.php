@@ -10,12 +10,17 @@ use App\Http\Requests\Api\V1\LocalSEO\UpdateBusinessLocationRequest;
 use App\Http\Resources\Api\V1\LocalSEO\BusinessLocationResource;
 use App\Http\Resources\Api\V1\LocalSEO\BusinessLocationListResource;
 use App\Services\LocalSEO\Contracts\BusinessLocationServiceInterface;
+use App\Services\LocalSEO\Contracts\GBPInsightsServiceInterface;
+use App\Services\LocalSEO\Contracts\GBPReviewsServiceInterface;
 use App\Services\LocalSEO\Contracts\GoogleOAuthServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
+use Throwable;
 
 /**
  * @Task TASK-35-13
@@ -101,6 +106,59 @@ class BusinessLocationController extends Controller
         $location->review_stats = $this->locationService->getReviewStats($id);
 
         return new BusinessLocationResource($location);
+    }
+
+    /**
+     * Trigger a dashboard refresh for a business location.
+     *
+     * POST /api/v1/locations/{id}/sync
+     *
+     * @RateLimit 3/hour
+     */
+    public function sync(
+        int $id,
+        GBPInsightsServiceInterface $insightsService,
+        GBPReviewsServiceInterface $reviewsService
+    ): JsonResponse {
+        $location = $this->locationService->getLocation($id);
+
+        if (!$location) {
+            abort(404, 'Location not found');
+        }
+
+        $this->authorize('syncGbp', $location);
+
+        if (!$location->gbp_connected) {
+            return response()->json([
+                'message' => 'Google Business Profile is not connected for this location.',
+            ], 409);
+        }
+
+        try {
+            $insightsJobId = $insightsService->syncInsights($id);
+            $reviewsJobId = $reviewsService->syncReviews($id);
+
+            return response()->json([
+                'message' => 'Location dashboard refresh initiated.',
+                'data' => [
+                    'insights_job_id' => $insightsJobId,
+                    'reviews_job_id' => $reviewsJobId,
+                ],
+            ], 202);
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 409);
+        } catch (Throwable $exception) {
+            Log::error('Failed to trigger business location dashboard refresh', [
+                'location_id' => $id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to refresh location data.',
+            ], 500);
+        }
     }
 
     /**
