@@ -18,17 +18,17 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
     /**
      * The Google OAuth client ID.
      */
-    protected string $clientId;
+    protected ?string $clientId = null;
 
     /**
      * The Google OAuth client secret.
      */
-    protected string $clientSecret;
+    protected ?string $clientSecret = null;
 
     /**
      * The OAuth redirect URI.
      */
-    protected string $redirectUri;
+    protected ?string $redirectUri = null;
 
     /**
      * The OAuth scopes required.
@@ -42,9 +42,9 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
      */
     public function __construct()
     {
-        $this->clientId = config('services.google.client_id');
-        $this->clientSecret = config('services.google.client_secret');
-        $this->redirectUri = config('services.google.redirect');
+        $this->clientId = $this->readConfigString('services.google.client_id');
+        $this->clientSecret = $this->readConfigString('services.google.client_secret');
+        $this->redirectUri = $this->readConfigString('services.google.redirect');
     }
 
     /**
@@ -55,6 +55,8 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
      */
     public function getAuthorizationUrl(int $locationId): array
     {
+        $this->ensureOAuthConfigured();
+
         // Generate a secure state parameter with location binding
         $state = $this->generateState($locationId);
 
@@ -314,6 +316,42 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
     }
 
     /**
+     * Read a trimmed string config value.
+     */
+    protected function readConfigString(string $key): ?string
+    {
+        $value = config($key);
+
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * Determine whether OAuth credentials are available.
+     */
+    protected function hasOAuthCredentials(): bool
+    {
+        return $this->clientId !== null && $this->clientSecret !== null;
+    }
+
+    /**
+     * Fail gracefully when OAuth credentials are unavailable.
+     */
+    protected function ensureOAuthConfigured(): void
+    {
+        if ($this->hasOAuthCredentials()) {
+            return;
+        }
+
+        throw new \RuntimeException('Google Business Profile OAuth is not configured.');
+    }
+
+    /**
      * Exchange authorization code for tokens.
      *
      * @param string $code
@@ -322,6 +360,8 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
      */
     protected function exchangeCodeForTokens(string $code, int $locationId): ?array
     {
+        $this->ensureOAuthConfigured();
+
         // This would make an HTTP request to Google's token endpoint
         // Placeholder implementation - actual implementation would use HTTP client
         return null;
@@ -335,6 +375,10 @@ class GoogleOAuthService implements GoogleOAuthServiceInterface
      */
     public function refreshAccessToken(string $refreshToken): ?array
     {
+        if (!$this->hasOAuthCredentials()) {
+            return null;
+        }
+
         // TODO TASK-35-7: implement Google token refresh flow against oauth2.googleapis.com/token
         return null;
     }
