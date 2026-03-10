@@ -15041,6 +15041,15 @@ REST API controller for public-facing SEO audit sharing functionality. Provides 
 - **Tests:** `backend/tests/Feature/Api/V1/PublicAuditControllerTest.php`
 - **Test Documentation:** `TESTS/TEST-33-5.md`
 
+### Verification Note (2026-03-10)
+Local re-verification found that the current repository state has drifted from the originally documented TASK-33-5 contract.
+
+- `php artisan test --filter=PublicAuditControllerTest` currently fails locally with `72 failed, 16 passed (88 assertions)` because the test suite mocks `RateLimiter` methods like `tooManyAttempts()`/`hit()` but does not cover the newer `RateLimiter::limiter()` call path now exercised by the `throttle:public-audit` middleware.
+- `PublicAuditController::badge()` currently returns `audit_url`, `impressions_endpoint`, `clicks_endpoint`, and a single `embed_code` string, while this documentation block and the legacy tests still describe a `badge_url` field plus structured embed snippets.
+- `PublicAuditController::show()` currently omits the documented `hash` field and uses a `mobile` category key where this section still documents `performance`.
+
+Treat this section as the original public contract plus historical production record; the current repository implementation needs reconciliation before this task can be considered freshly re-verified.
+
 ### API Endpoints
 
 | Method | Endpoint | Description | Authentication |
