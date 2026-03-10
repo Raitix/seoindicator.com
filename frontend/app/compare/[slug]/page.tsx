@@ -15,7 +15,7 @@
 
 import { Metadata } from 'next';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -40,7 +40,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  * ComparisonTable - Lazy loaded for better initial bundle size
  * Heavy component with feature comparison table
  */
-const ComparisonTable = dynamic(
+const ComparisonTable = dynamicImport(
   () => import('@/components/compare/ComparisonTable').then(mod => ({ default: mod.ComparisonTable })),
   {
     loading: () => <ComparisonTableSkeleton />,
@@ -52,7 +52,7 @@ const ComparisonTable = dynamic(
  * PricingComparison - Lazy loaded component
  * Contains pricing data for both tools
  */
-const PricingComparison = dynamic(
+const PricingComparison = dynamicImport(
   () => import('@/components/compare/PricingComparison').then(mod => ({ default: mod.PricingComparison })),
   {
     loading: () => <PricingComparisonSkeleton />,
@@ -64,7 +64,7 @@ const PricingComparison = dynamic(
  * FAQSection - Lazy loaded, below the fold
  * Contains FAQ accordion with structured data
  */
-const FAQSection = dynamic(
+const FAQSection = dynamicImport(
   () => import('@/components/compare/FAQSection').then(mod => ({ default: mod.FAQSection })),
   {
     loading: () => <FAQSkeleton />,
@@ -76,7 +76,7 @@ const FAQSection = dynamic(
  * RelatedComparisons - Lazy loaded, bottom of page
  * Links to related comparison pages
  */
-const RelatedComparisons = dynamic(
+const RelatedComparisons = dynamicImport(
   () => import('@/components/compare/RelatedComparisons').then(mod => ({ default: mod.RelatedComparisons })),
   {
     loading: () => <RelatedComparisonsSkeleton />,
