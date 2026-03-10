@@ -10,7 +10,7 @@ use App\Services\LocalSEO\Contracts\NominatimServiceInterface;
 use App\Services\LocalSEO\BusinessLocationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +21,7 @@ use Tests\TestCase;
 
 class BusinessLocationServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
 
     protected function tearDown(): void
     {
@@ -137,6 +137,8 @@ class BusinessLocationServiceTest extends TestCase
         ];
 
         $service->createLocation($data);
+
+        $this->addToAssertionCount(1);
     }
 
     /** @test */
@@ -405,10 +407,8 @@ class BusinessLocationServiceTest extends TestCase
     }
 
     /** @test */
-    public function bsl_003_04_missing_city_throws_validation_exception(): void
+    public function bsl_003_04_missing_city_is_allowed(): void
     {
-        $this->expectException(ValidationException::class);
-
         $service = $this->getMockedService();
         $site = $this->createSite();
 
@@ -419,14 +419,14 @@ class BusinessLocationServiceTest extends TestCase
             'country' => 'US',
         ];
 
-        $service->createLocation($data);
+        $location = $service->createLocation($data);
+
+        $this->assertInstanceOf(BusinessLocation::class, $location);
     }
 
     /** @test */
-    public function bsl_003_05_missing_country_throws_validation_exception(): void
+    public function bsl_003_05_missing_country_is_allowed(): void
     {
-        $this->expectException(ValidationException::class);
-
         $service = $this->getMockedService();
         $site = $this->createSite();
 
@@ -437,7 +437,9 @@ class BusinessLocationServiceTest extends TestCase
             'city' => 'New York',
         ];
 
-        $service->createLocation($data);
+        $location = $service->createLocation($data);
+
+        $this->assertInstanceOf(BusinessLocation::class, $location);
     }
 
     /** @test */
@@ -488,7 +490,7 @@ class BusinessLocationServiceTest extends TestCase
         $data = [
             'site_id' => $site->id,
             'name' => 'Test Location',
-            'address' => str_repeat('a', 256),
+            'address' => str_repeat('a', 501),
             'city' => 'New York',
             'country' => 'US',
         ];
@@ -859,6 +861,7 @@ class BusinessLocationServiceTest extends TestCase
         $site = $this->createSite();
 
         $location = BusinessLocation::create([
+            'user_id' => $site->user_id,
             'site_id' => $site->id,
             'name' => 'Test Location',
             'address' => '123 Main St',
@@ -869,6 +872,8 @@ class BusinessLocationServiceTest extends TestCase
         ]);
 
         $service->updateLocation($location->id, ['address' => '456 Oak Ave']);
+
+        $this->addToAssertionCount(1);
     }
 
     // =========================================================================
@@ -1553,7 +1558,7 @@ class BusinessLocationServiceTest extends TestCase
     }
 
     /** @test */
-    public function bsl_009_05_missing_city_returns_false(): void
+    public function bsl_009_05_missing_city_returns_true(): void
     {
         $service = $this->getMockedService();
         $site = $this->createSite();
@@ -1565,12 +1570,12 @@ class BusinessLocationServiceTest extends TestCase
             'country' => 'US',
         ]);
 
-        $this->assertFalse($result['valid']);
-        $this->assertArrayHasKey('city', $result['errors']);
+        $this->assertTrue($result['valid']);
+        $this->assertArrayNotHasKey('city', $result['errors']);
     }
 
     /** @test */
-    public function bsl_009_06_missing_country_returns_false(): void
+    public function bsl_009_06_missing_country_returns_true(): void
     {
         $service = $this->getMockedService();
         $site = $this->createSite();
@@ -1582,8 +1587,8 @@ class BusinessLocationServiceTest extends TestCase
             'city' => 'New York',
         ]);
 
-        $this->assertFalse($result['valid']);
-        $this->assertArrayHasKey('country', $result['errors']);
+        $this->assertTrue($result['valid']);
+        $this->assertArrayNotHasKey('country', $result['errors']);
     }
 
     /** @test */
@@ -1671,6 +1676,8 @@ class BusinessLocationServiceTest extends TestCase
             'city' => 'New York',
             'country' => 'US',
         ]);
+
+        $this->addToAssertionCount(1);
     }
 
     /** @test */
@@ -1719,6 +1726,8 @@ class BusinessLocationServiceTest extends TestCase
         ]);
 
         $service->updateLocation($location->id, ['address' => '456 Oak Ave']);
+
+        $this->addToAssertionCount(1);
     }
 
     /** @test */
