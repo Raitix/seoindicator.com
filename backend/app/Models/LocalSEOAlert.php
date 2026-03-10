@@ -77,6 +77,11 @@ class LocalSEOAlert extends Model
     ];
 
     /**
+     * Alias matching the original task acceptance wording.
+     */
+    public const SEVERITIES = self::SEVERITY_LEVELS;
+
+    /**
      * Get the user that owns this alert.
      */
     public function user(): BelongsTo
@@ -90,6 +95,14 @@ class LocalSEOAlert extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(BusinessLocation::class, 'location_id');
+    }
+
+    /**
+     * Alias for the task/spec naming used in acceptance criteria.
+     */
+    public function businessLocation(): BelongsTo
+    {
+        return $this->location();
     }
 
     /**
@@ -117,11 +130,43 @@ class LocalSEOAlert extends Model
     }
 
     /**
+     * Alias matching the task acceptance wording.
+     */
+    public function scopeByType($query, string $type)
+    {
+        return $query->where('alert_type', $type);
+    }
+
+    /**
      * Scope to filter by severity.
      */
     public function scopeOfSeverity($query, string $severity)
     {
         return $query->where('severity', $severity);
+    }
+
+    /**
+     * Scope to get only critical alerts.
+     */
+    public function scopeCritical($query)
+    {
+        return $query->where('severity', 'critical');
+    }
+
+    /**
+     * Scope to get only warning alerts.
+     */
+    public function scopeWarning($query)
+    {
+        return $query->where('severity', 'warning');
+    }
+
+    /**
+     * Scope to get only info alerts.
+     */
+    public function scopeInfo($query)
+    {
+        return $query->where('severity', 'info');
     }
 
     /**
