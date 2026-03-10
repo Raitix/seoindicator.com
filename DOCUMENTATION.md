@@ -11437,50 +11437,51 @@ Comprehensive SEO guide content for the Image Optimization indicator, covering f
 
 ### Content Sections
 
-| Section | Description | Word Count |
-|---------|-------------|------------|
-| What is Image Optimization? | Definition, benefits, impact on page performance | ~200 |
-| Why Image Optimization Matters | Core Web Vitals (LCP, CLS), page speed ranking factor | ~250 |
-| Image File Formats | WebP, AVIF, JPEG, PNG comparison with use cases | ~350 |
-| Compression and Resizing | Lossy vs lossless, quality settings, tools (Squoosh, TinyPNG) | ~300 |
-| Lazy Loading Implementation | Native lazy loading, Next.js Image component | ~300 |
+| Section | Coverage |
+|---------|----------|
+| What is Image Optimization? | Defines image optimization as choosing the right format, compression level, dimensions, and loading strategy to reduce file size without hurting visual quality |
+| Why Image Optimization Matters | Explains SEO and Core Web Vitals impact, especially LCP and CLS, plus mobile-performance implications |
+| Image File Formats | Compares WebP, AVIF, JPEG, and PNG with practical guidance on when to use each |
+| Compression and Resizing | Covers lossy vs lossless compression, responsive sizing, explicit dimensions, quality ranges, and free tooling |
+| Lazy Loading Implementation | Documents native `loading="lazy"`, Next.js `Image`, and the warning not to lazy-load above-the-fold/LCP imagery |
 
-**Total Content:** ~1,400 words
+**Structure:** 5 sections, 7 checklist items, 3 section-embedded code examples
 **Read Time:** 4 minutes
 
 ### Key Technical Details
 
 | Topic | Details |
 |-------|---------|
-| Core Web Vitals | LCP (Largest Contentful Paint) - images are often LCP elements |
-| CLS | Cumulative Layout Shift - images without dimensions cause layout shifts |
-| WebP | 25-35% smaller than JPEG, supported in all modern browsers |
-| AVIF | 50% smaller than JPEG, newer format with growing support |
-| Native Lazy Loading | `loading="lazy"` attribute for below-fold images |
+| Core Web Vitals | Images are often the LCP element, so oversized assets delay Largest Contentful Paint |
+| CLS Prevention | Explicit `width` and `height` attributes reserve layout space and reduce Cumulative Layout Shift |
+| WebP | Recommended default modern format; roughly 25-35% smaller than JPEG at similar quality |
+| AVIF | Higher-compression next-gen format; roughly 50% smaller than JPEG at similar quality |
+| Responsive Delivery | Encourages right-sized images plus `srcset`/modern-format fallbacks instead of shipping oversized originals |
+| Native Lazy Loading | Uses `loading="lazy"` for below-the-fold assets with no JavaScript dependency |
 
 ### Code Examples
 
 | Example | Language | Description |
 |---------|----------|-------------|
-| HTML picture element | HTML | AVIF/WebP fallback to JPEG for format support |
-| Native lazy loading | HTML | `loading="lazy"` attribute with width/height |
-| Next.js Image component | TSX | Automatic optimization, lazy loading, blur placeholder |
+| HTML picture element | HTML | AVIF/WebP sources with JPEG fallback via `<picture>` |
+| Native lazy loading | HTML | `<img>` example with `loading="lazy"` plus explicit dimensions |
+| Next.js Image component | JSX | `next/image` example showing automatic optimization + lazy loading |
 
 ### Best Practices Checklist
 
 | Priority | Item |
 |----------|------|
-| Critical | Use modern image formats (WebP or AVIF) with fallbacks |
-| Critical | Implement lazy loading for below-the-fold images |
-| Important | Specify width and height attributes to prevent CLS |
-| Important | Compress images before uploading (lossy for photos, lossless for graphics) |
-| Important | Use responsive images with srcset for different screen sizes |
-| Important | Optimize images before upload using tools like Squoosh or TinyPNG |
-| Recommended | Use Next.js Image component for automatic optimization |
+| Critical | Use WebP or AVIF format for all images |
+| Critical | Implement lazy loading for below-fold images |
+| Important | Compress images to 75-85% quality for optimal size |
+| Important | Set explicit width and height attributes to prevent CLS |
+| Important | Use responsive images with `srcset` for different devices |
+| Important | Add descriptive alt text to all images for accessibility |
+| Recommended | Consider Next.js Image component for automatic optimization |
 
 ### Related Guides
-- `page-speed` - Core Web Vitals and page performance
-- `image-alt-text` - Accessibility for images
+- `image-alt-text` - Accessibility and descriptive text for images
+- `page-speed` - Broader Core Web Vitals and page-performance guidance
 
 ### Technical Implementation
 
@@ -11489,17 +11490,23 @@ Comprehensive SEO guide content for the Image Optimization indicator, covering f
 {
   slug: 'image-optimization',
   title: 'Image Optimization for Web',
-  summary: 'Optimize images for faster loading and better Core Web Vitals...',
-  category: 'content',
-  icon: '🖼️',
+  summary: 'Optimize images for faster loading without sacrificing quality.',
+  category: 'on-page',
+  icon: '⚡',
   readTime: 4,
-  hasTool: false,
-  relatedGuides: ['page-speed', 'image-alt-text'],
-  sections: [ /* 5 sections */ ],
-  checklist: [ /* 7 items */ ],
-  codeExamples: [ /* 3 examples */ ]
+  relatedGuides: ['image-alt-text', 'page-speed'],
+  sections: [
+    { title: 'What is Image Optimization?', codeExamples: [] },
+    { title: 'Why Image Optimization Matters', codeExamples: [] },
+    { title: 'Image File Formats', codeExamples: [/* 1 example */] },
+    { title: 'Compression and Resizing', codeExamples: [] },
+    { title: 'Lazy Loading Implementation', codeExamples: [/* 2 examples */] }
+  ],
+  checklist: [ /* 7 items */ ]
 }
 ```
+
+**Implementation Note:** code examples are stored inside each section’s `codeExamples` array rather than as a top-level guide field.
 
 ### Test Coverage
 
@@ -11522,10 +11529,10 @@ Comprehensive SEO guide content for the Image Optimization indicator, covering f
 | Related Guides | RG-001 to RG-004 | page-speed, image-alt-text |
 
 ### Production Status
-- **Deployed:** 2026-03-01 (GitHub Actions)
+- **Deployed:** 2026-03-01
 - **URL:** https://seoindicator.com/seo-guides/image-optimization/
-- **Health Check:** Passing
-- **Tests:** 80/80 passing
+- **Live Verification:** Re-checked 2026-03-10 — page returns 200 and renders the full guide content
+- **Focused Tests:** Re-ran `image-optimization-content.test.ts` + `image-optimization-code-examples.test.ts` on 2026-03-10 — 80/80 passing
 - **Status:** Complete
 
 ### Dependencies
