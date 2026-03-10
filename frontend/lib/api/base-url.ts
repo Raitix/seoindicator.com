@@ -38,6 +38,29 @@ const appendApiVersion = (path: string) => {
   return `${normalizedPath}${API_VERSION_PATH}`;
 };
 
+const stripApiVersion = (path: string) => {
+  const normalizedPath = trimTrailingSlash(path) || "/";
+
+  if (normalizedPath === API_VERSION_PATH || normalizedPath === API_PREFIX) {
+    return "/";
+  }
+
+  if (normalizedPath.endsWith(API_VERSION_PATH)) {
+    return normalizedPath.slice(0, -API_VERSION_PATH.length) || "/";
+  }
+
+  if (normalizedPath.endsWith(API_PREFIX)) {
+    return normalizedPath.slice(0, -API_PREFIX.length) || "/";
+  }
+
+  return normalizedPath;
+};
+
+const formatApiRoot = (path: string) => {
+  const normalizedPath = trimTrailingSlash(path);
+  return normalizedPath && normalizedPath !== "/" ? normalizedPath : "";
+};
+
 export function getApiBaseUrl(): string {
   const configuredValue = process.env.NEXT_PUBLIC_API_URL?.trim();
 
@@ -76,19 +99,26 @@ export function getApiOrigin(): string {
   return "";
 }
 
+export function getApiRootUrl(): string {
+  const apiBase = getApiBaseUrl();
+
+  if (isAbsoluteUrl(apiBase)) {
+    const url = new URL(apiBase);
+    return `${url.origin}${formatApiRoot(stripApiVersion(url.pathname || "/"))}`;
+  }
+
+  return formatApiRoot(stripApiVersion(apiBase));
+}
+
 export function buildSanctumUrl(path = "/sanctum/csrf-cookie"): string {
   if (isAbsoluteUrl(path)) {
     return path;
   }
 
   const normalizedPath = normalizeEndpointPath(path);
-  const apiBase = getApiBaseUrl();
+  const apiRoot = getApiRootUrl();
 
-  if (isAbsoluteUrl(apiBase)) {
-    return `${getApiOrigin()}${normalizedPath}`;
-  }
-
-  return normalizedPath;
+  return apiRoot ? `${apiRoot}${normalizedPath}` : normalizedPath;
 }
 
 export { DEFAULT_API_BASE };

@@ -59,4 +59,22 @@ describe("API base URL helpers", () => {
 
     expect(buildSanctumUrl()).toBe("https://api.seoindicator.com/sanctum/csrf-cookie");
   });
+
+  it("buildSanctumUrl preserves a backend path prefix when NEXT_PUBLIC_API_URL already points at a nested /api/v1 base", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://api.seoindicator.com/backend/api/v1";
+
+    const { buildSanctumUrl, getApiBaseUrl } = await import("@/lib/api/base-url");
+
+    expect(getApiBaseUrl()).toBe("https://api.seoindicator.com/backend/api/v1");
+    expect(buildSanctumUrl()).toBe("https://api.seoindicator.com/backend/sanctum/csrf-cookie");
+  });
+
+  it("buildSanctumUrl preserves a relative backend path prefix when NEXT_PUBLIC_API_URL is configured under the same origin", async () => {
+    process.env.NEXT_PUBLIC_API_URL = "/backend/api/v1";
+
+    const { buildSanctumUrl, getApiBaseUrl } = await import("@/lib/api/base-url");
+
+    expect(getApiBaseUrl()).toBe("/backend/api/v1");
+    expect(buildSanctumUrl()).toBe("/backend/sanctum/csrf-cookie");
+  });
 });
