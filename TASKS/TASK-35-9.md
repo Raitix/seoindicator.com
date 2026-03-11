@@ -1,7 +1,7 @@
 # TASK-35-9: GBP Insights Sync Service
 
 ## STATUS
-`To Document`
+`Documentation in Progress`
 
 ## SPECIFICATION
 SPEC-035: Local SEO & Google Business Profile Tracking

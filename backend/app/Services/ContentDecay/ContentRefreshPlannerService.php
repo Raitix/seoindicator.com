@@ -79,7 +79,7 @@ class ContentRefreshPlannerService implements ContentRefreshPlannerServiceInterf
             'source' => 'gsc',
         ],
         'stale_content' => [
-            'title' => 'Refresh outdated content',
+            'title' => 'Update outdated content',
             'description' => 'This content is {age_days} days old. Update examples, screenshots, statistics, and date references to maintain relevance.',
             'due_days' => 14,
             'priority' => 'high',
