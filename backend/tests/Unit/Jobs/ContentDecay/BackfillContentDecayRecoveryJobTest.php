@@ -168,6 +168,8 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
             'page_url_hash' => hash('sha256', 'https://example.com/test'),
             'status' => 'refreshed',
             'decay_score' => 50,
+            'primary_reason_code' => 'clicks_down',
+            'reason_codes' => ['clicks_down'],
             'first_detected_at' => now(),
             'last_detected_at' => now(),
             'evidence_json' => [
@@ -181,6 +183,10 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
 
         ContentDecaySignal::create([
             'candidate_id' => $candidate->id,
+            'previous_start' => now()->subDays(60)->toDateString(),
+            'previous_end' => now()->subDays(30)->toDateString(),
+            'current_start' => now()->subDays(30)->toDateString(),
+            'current_end' => now()->toDateString(),
             'previous_clicks' => 80,
             'current_clicks' => 100,
             'previous_ctr' => 0.04,
@@ -215,6 +221,8 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
             'page_url_hash' => hash('sha256', 'https://example.com/test'),
             'status' => 'backlog', // Not refreshed
             'decay_score' => 50,
+            'primary_reason_code' => 'clicks_down',
+            'reason_codes' => ['clicks_down'],
             'first_detected_at' => now(),
             'last_detected_at' => now(),
         ]);
@@ -232,6 +240,7 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
     public function handles_candidate_not_found(): void
     {
         Log::shouldReceive('warning')->once();
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
         $job = new BackfillContentDecayRecoveryJob(999999);
         $job->handle();
@@ -256,6 +265,8 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
             'page_url_hash' => hash('sha256', 'https://example.com/test'),
             'status' => 'backlog',
             'decay_score' => 50,
+            'primary_reason_code' => 'clicks_down',
+            'reason_codes' => ['clicks_down'],
             'first_detected_at' => now(),
             'last_detected_at' => now(),
         ]);
@@ -289,6 +300,8 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
             'page_url_hash' => hash('sha256', 'https://example.com/test'),
             'status' => 'refreshed',
             'decay_score' => 50,
+            'primary_reason_code' => 'clicks_down',
+            'reason_codes' => ['clicks_down'],
             'first_detected_at' => now(),
             'last_detected_at' => now(),
             'evidence_json' => [
@@ -302,6 +315,10 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
 
         ContentDecaySignal::create([
             'candidate_id' => $candidate->id,
+            'previous_start' => now()->subDays(60)->toDateString(),
+            'previous_end' => now()->subDays(30)->toDateString(),
+            'current_start' => now()->subDays(30)->toDateString(),
+            'current_end' => now()->toDateString(),
             'previous_clicks' => 100,
             'current_clicks' => 110,
             'previous_ctr' => 0.04,
@@ -336,6 +353,8 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
             'page_url_hash' => hash('sha256', 'https://example.com/test'),
             'status' => 'refreshed',
             'decay_score' => 50,
+            'primary_reason_code' => 'clicks_down',
+            'reason_codes' => ['clicks_down'],
             'first_detected_at' => now(),
             'last_detected_at' => now(),
             'evidence_json' => [
@@ -349,6 +368,10 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
 
         ContentDecaySignal::create([
             'candidate_id' => $candidate->id,
+            'previous_start' => now()->subDays(60)->toDateString(),
+            'previous_end' => now()->subDays(30)->toDateString(),
+            'current_start' => now()->subDays(30)->toDateString(),
+            'current_end' => now()->toDateString(),
             'previous_clicks' => 100,
             'current_clicks' => 120,
             'previous_ctr' => 0.05,
@@ -383,6 +406,8 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
             'page_url_hash' => hash('sha256', 'https://example.com/test'),
             'status' => 'refreshed',
             'decay_score' => 50,
+            'primary_reason_code' => 'clicks_down',
+            'reason_codes' => ['clicks_down'],
             'first_detected_at' => now(),
             'last_detected_at' => now(),
             'evidence_json' => [
@@ -396,6 +421,10 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
 
         ContentDecaySignal::create([
             'candidate_id' => $candidate->id,
+            'previous_start' => now()->subDays(60)->toDateString(),
+            'previous_end' => now()->subDays(30)->toDateString(),
+            'current_start' => now()->subDays(30)->toDateString(),
+            'current_end' => now()->toDateString(),
             'previous_clicks' => 100,
             'current_clicks' => 120,
             'previous_ctr' => 0.05,
@@ -429,6 +458,8 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
             'page_url_hash' => hash('sha256', 'https://example.com/test'),
             'status' => 'refreshed',
             'decay_score' => 50,
+            'primary_reason_code' => 'clicks_down',
+            'reason_codes' => ['clicks_down'],
             'first_detected_at' => now(),
             'last_detected_at' => now(),
             'evidence_json' => [
@@ -442,6 +473,10 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
 
         ContentDecaySignal::create([
             'candidate_id' => $candidate->id,
+            'previous_start' => now()->subDays(60)->toDateString(),
+            'previous_end' => now()->subDays(30)->toDateString(),
+            'current_start' => now()->subDays(30)->toDateString(),
+            'current_end' => now()->toDateString(),
             'previous_clicks' => 100,
             'current_clicks' => 105,
             'previous_ctr' => 0.05,
@@ -476,6 +511,8 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
             'page_url_hash' => hash('sha256', 'https://example.com/test'),
             'status' => 'refreshed',
             'decay_score' => 50,
+            'primary_reason_code' => 'clicks_down',
+            'reason_codes' => ['clicks_down'],
             'first_detected_at' => now(),
             'last_detected_at' => now(),
             'evidence_json' => [
@@ -489,6 +526,10 @@ class BackfillContentDecayRecoveryJobTest extends TestCase
 
         ContentDecaySignal::create([
             'candidate_id' => $candidate->id,
+            'previous_start' => now()->subDays(60)->toDateString(),
+            'previous_end' => now()->subDays(30)->toDateString(),
+            'current_start' => now()->subDays(30)->toDateString(),
+            'current_end' => now()->toDateString(),
             'previous_clicks' => 100,
             'current_clicks' => 100,
             'previous_ctr' => 0.05,

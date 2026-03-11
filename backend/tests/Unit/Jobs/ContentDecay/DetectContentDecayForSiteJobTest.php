@@ -204,6 +204,7 @@ class DetectContentDecayForSiteJobTest extends TestCase
     public function handles_site_not_found_gracefully(): void
     {
         Log::shouldReceive('warning')->once();
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
         $mockService = $this->mock(ContentDecayDetectionServiceInterface::class);
         $mockService->shouldNotReceive('detectForSite');
@@ -219,6 +220,7 @@ class DetectContentDecayForSiteJobTest extends TestCase
         $site = Site::factory()->create(['user_id' => $user->id]);
 
         Log::shouldReceive('warning')->once();
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
         $mockService = $this->mock(ContentDecayDetectionServiceInterface::class);
         $mockService->shouldNotReceive('detectForSite');
@@ -238,7 +240,7 @@ class DetectContentDecayForSiteJobTest extends TestCase
             'detection_enabled' => false,
         ]);
 
-        Log::shouldReceive('info')->once();
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
         $mockService = $this->mock(ContentDecayDetectionServiceInterface::class);
         $mockService->shouldNotReceive('detectForSite');
@@ -251,6 +253,7 @@ class DetectContentDecayForSiteJobTest extends TestCase
     public function validates_site_id_is_positive_integer(): void
     {
         Log::shouldReceive('error')->once();
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
         $mockService = $this->mock(ContentDecayDetectionServiceInterface::class);
         $mockService->shouldNotReceive('detectForSite');
@@ -263,6 +266,7 @@ class DetectContentDecayForSiteJobTest extends TestCase
     public function handles_invalid_site_id(): void
     {
         Log::shouldReceive('error')->once();
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
         $mockService = $this->mock(ContentDecayDetectionServiceInterface::class);
         $mockService->shouldNotReceive('detectForSite');

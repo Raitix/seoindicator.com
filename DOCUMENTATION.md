@@ -7694,6 +7694,126 @@ The service selects the **most impactful negative change** as the primary reason
 | TASK-36-12: Decay Queue Page | Shows primary reason in candidate rows |
 
 ---
+## Content Refresh Planner Service (TASK-36-5)
+
+### Service Description
+Recommendation engine for the Content Decay Detection & Refresh Planner feature (FEAT-036) that maps reason codes to concrete refresh actions and generates prioritized task suggestions with due dates. Converts decay detection data into actionable recommendations for content optimization.
+
+### Component Locations
+- **Service:** `backend/app/Services/ContentDecay/ContentRefreshPlannerService.php`
+- **Interface:** `backend/app/Services/ContentDecay/Contracts/ContentRefreshPlannerServiceInterface.php`
+- **Tests:** `backend/tests/Unit/Services/ContentDecay/ContentRefreshPlannerServiceTest.php`
+
+### Core Method
+
+```php
+public function generateRecommendations(ContentDecayCandidate $candidate): array
+```
+
+Returns:
+- `primary_recommendation` (string) - Main action to take
+- `supporting_recommendations` (array) - Up to 3 additional actions
+- `task_suggestions` (array) - Detailed task objects with due dates
+
+### Recommendation Templates
+
+| Trigger | Title | Priority | Due Days |
+|---------|-------|----------|----------|
+| `audit_issues_present` | Fix technical SEO issues | Critical | 3 |
+| `clicks_down` | Investigate click loss | High | 7 |
+| `ctr_down` | Rewrite title and meta description | High | 7 |
+| `avg_position_down` | Refresh core content sections | Medium | 10 |
+| `tracked_rankings_down` | Optimize for tracked keywords | Medium | 10 |
+| `impressions_down` | Investigate visibility loss | Medium | 14 |
+| `stale_content` | Update outdated content | High | 14 |
+| `ai_visibility_down` | Optimize for AI visibility | Medium | 21 |
+| `competitor_gain_suspected` | Add competitor comparison | Medium | 14 |
+| `internal_link_weakness` | Strengthen internal linking | Low | 21 |
+
+### Page-Type Configuration
+
+| Page Type | Focus Areas |
+|-----------|-------------|
+| `blog` | Content refresh, examples update, topical authority |
+| `product` | Feature docs, pricing update, competitive response |
+| `landing` | CTA optimization, conversion focus, offer update |
+| `tool` | Feature docs, usage examples, help resources |
+
+### Priority Escalation Thresholds
+
+| Reason Code | Threshold | Escalate To |
+|-------------|-----------|-------------|
+| `clicks_down` | 30% drop | Critical |
+| `ctr_down` | 40% drop | Critical |
+| `avg_position_down` | 10 positions | High |
+| `tracked_rankings_down` | 5 keywords | High |
+| `impressions_down` | 50% drop | High |
+| `stale_content` | 365 days | Critical |
+| `ai_visibility_down` | 50% drop | High |
+
+### Composite Recommendation Logic
+
+When multiple triggers are present, the service generates composite recommendations:
+
+1. **Audit issues present** → Always prioritized first
+2. **CTR + Stale content** → "Comprehensive page refresh needed"
+3. **Position + Competitor** → "Competitive ranking recovery needed"
+4. **Multiple traffic triggers** → "Comprehensive traffic recovery needed"
+5. **Multiple content triggers** → "Content modernization needed"
+
+### Due Date Calculation
+
+- **Critical severity:** Due days reduced by 50%
+- **High severity:** Due days reduced by 25%
+- **Minimum due days:** 1-3 days depending on severity
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `ContentRefreshPlannerServiceTest.php` | 45 | 47 | ✅ PASS |
+
+**Test Categories:**
+- Service instantiation (5 tests)
+- Single-trigger recommendations - CTR Down (10 tests)
+- Single-trigger recommendations - Audit Issues (10 tests)
+- Single-trigger recommendations - Stale Content (10 tests)
+- Single-trigger recommendations - Position Down (10 tests)
+
+### Security Analysis
+
+| Concern | Finding | Status |
+|---------|---------|--------|
+| SQL Injection | No raw SQL - uses Eloquent models | ✅ Safe |
+| XSS | Returns structured data, no HTML output | ✅ Safe |
+| External APIs | No external calls - pure business logic | ✅ Safe |
+| Input Validation | Operates on typed model objects | ✅ Safe |
+| Template Interpolation | Simple string replacement, no eval | ✅ Safe |
+
+### Production Status
+
+| Deploy Date | 2026-03-11 |
+| Deployment Method | Local deployment pipeline |
+| Health Check | ✅ 200 OK |
+| Tests | 45/45 passing (47 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+- TASK-36-1: Database Migrations (foundation)
+- TASK-36-2: Eloquent Models (ContentDecayCandidate)
+- TASK-36-4: ContentDecayReasonService (reason codes)
+
+### Downstream Consumers
+
+| Consumer | Usage |
+|----------|-------|
+| TASK-36-6: ContentDecayDetectionService | Uses `generateRecommendations()` for task creation |
+| TASK-36-10: API Controllers | Returns recommendations in candidate responses |
+| TASK-36-11: Frontend Components | Displays task suggestions in decay UI |
+| TASK-36-12: Decay Queue Page | Shows recommendations in candidate detail view |
+
+---
 ## Content Decay Frontend Components (TASK-36-11)
 
 ### Component Description
