@@ -9,6 +9,7 @@ import React from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
+import * as nextNavigation from "next/navigation";
 
 import { SiteNav } from "@/components/layout/SiteNav";
 
@@ -29,18 +30,17 @@ jest.mock("lucide-react", () => ({
   ChevronRight: () => <span data-testid="chevron-right-icon">ChevronRight</span>,
 }));
 
-// Mock next/navigation
-jest.mock("next/navigation", () => ({
-  usePathname: jest.fn(() => "/sites/1/content-decay"),
-}));
-
 // =============================================================================
 // NDI-001: Site Navigation Tests
 // =============================================================================
 
 describe("NDI-001: Site Navigation", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.spyOn(nextNavigation, "usePathname").mockReturnValue("/sites/1/content-decay");
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   test("NDI-001.1: Content Decay link in navigation", () => {
@@ -63,7 +63,8 @@ describe("NDI-001: Site Navigation", () => {
 
   test("NDI-001.4: Link has icon", () => {
     render(<SiteNav siteId="1" />);
-    // TrendingDown icon should be present
+    // The TrendingDown icon is rendered via Lucide mock
+    // Check that the icon element exists (the mock creates a span with testid)
     expect(screen.getByTestId("trending-down-icon")).toBeInTheDocument();
   });
 
@@ -95,11 +96,14 @@ describe("NDI-001: Site Navigation", () => {
     expect(link).toHaveAttribute("aria-current", "page");
   });
 
-  test("NDI-001.8: Collapsed sidebar shows icon only", () => {
+  test("NDI-001.8: Collapsed sidebar hides text label", () => {
     render(<SiteNav siteId="1" isCollapsed={true} />);
     const link = screen.getByTestId("nav-link-content-decay");
-    // Text should not be visible when collapsed
-    expect(link).toHaveTextContent("Content Decay"); // Still in DOM but may be hidden
+    // When collapsed, the text span is not rendered (only icon visible)
+    // The link still has aria-label for accessibility
+    expect(link).toHaveAttribute("aria-label");
+    // Text "Content Decay" is NOT in the DOM when collapsed
+    expect(within(link).queryByText("Content Decay")).not.toBeInTheDocument();
   });
 
   test("NDI-001.9: Expanded sidebar shows text", () => {

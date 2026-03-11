@@ -1,7 +1,7 @@
 # FEAT-036: Content Decay Detection & Refresh Planner
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `High`

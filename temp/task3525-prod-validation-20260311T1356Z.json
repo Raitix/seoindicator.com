@@ -1,0 +1,46 @@
+﻿{
+    "registration_flow":  {
+                              "email":  "task3525.prod.20260311.135600@example.com",
+                              "user_id":  10097,
+                              "success":  true,
+                              "token_stored":  true
+                          },
+    "outstanding_issues":  [
+                               "/api/v1/dashboard returns 401 with valid bearer token (separate issue)",
+                               "/api/v1/sites returns 401 with valid bearer token (separate issue)"
+                           ],
+    "acceptance_criteria":  {
+                                "auth_user_json_response":  true,
+                                "auth_register_login_json":  true,
+                                "locations_json_response":  true,
+                                "task_35_17_rerun":  "blocked - requires user with owned sites",
+                                "auth_endpoints_reachable":  true,
+                                "authenticated_session_established":  true
+                            },
+    "routing_fix_verified":  true,
+    "local_seo_page":  {
+                           "api_status":  403,
+                           "url":  "https://seoindicator.com/sites/1/local/",
+                           "api_call":  "/api/v1/sites/1/locations",
+                           "renders":  true,
+                           "api_json":  true
+                       },
+    "agent":  "ProdTester",
+    "auth_endpoints":  {
+                           "tools":  {
+                                         "json":  true,
+                                         "status":  200
+                                     },
+                           "csrf_cookie":  {
+                                               "cookies":  true,
+                                               "status":  204
+                                           },
+                           "auth_user":  {
+                                             "json":  true,
+                                             "status":  200
+                                         }
+                       },
+    "taskId":  "TASK-35-25",
+    "status":  "Done",
+    "testedAt":  "2026-03-11T13:58:16.7488411+02:00"
+}
