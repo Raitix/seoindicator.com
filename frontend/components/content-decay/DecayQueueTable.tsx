@@ -1,7 +1,14 @@
+/**
+ * DecayQueueTable Component
+ * Table displaying decay candidates with filtering, sorting, and bulk actions
+ * 
+ * @see TASK-36-11 for implementation requirements
+ */
+
 "use client";
 
 import * as React from "react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -12,6 +19,7 @@ import {
   Square,
   Download,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,81 +30,43 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import {
-  DecayCandidate,
-  ContentDecaySeverity,
-  ContentDecayCandidateStatus,
-  ContentDecayPageType,
-  DecayQueueFilterState,
-  DEFAULT_DECAY_QUEUE_FILTERS,
-  PAGE_TYPE_CONFIG,
-} from "@/lib/types/content-decay";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SeverityBadge } from "./SeverityBadge";
 import { DecayReasonBadges } from "./DecayReasonBadges";
 import { DecayTrendMiniChart } from "./DecayTrendMiniChart";
+import {
+  type DecayCandidate,
+  type ContentDecayCandidateStatus,
+  type ContentDecaySeverity,
+  type ContentDecayPageType,
+  PAGE_TYPE_CONFIG,
+  VALID_STATUS_TRANSITIONS,
+} from "@/lib/types/content-decay";
+import { cn } from "@/lib/utils";
 
-/**
- * Props for the DecayQueueTable component
- */
 export interface DecayQueueTableProps {
   /** Array of decay candidates to display */
   candidates: DecayCandidate[];
   /** Loading state */
   isLoading?: boolean;
-  /** Optional additional CSS classes */
-  className?: string;
-  /** Callback when a row is clicked */
+  /** Number of items per page */
+  pageSize?: number;
+  /** Callback when row is clicked */
   onRowClick?: (candidate: DecayCandidate) => void;
   /** Callback when bulk status update is triggered */
-  onBulkUpdate?: (ids: number[], status: ContentDecayCandidateStatus) => void;
+  onBulkUpdate?: (ids: number[], newStatus: ContentDecayCandidateStatus) => void;
   /** Callback when export is triggered */
   onExport?: () => void;
-  /** Initial filter state */
-  initialFilters?: Partial<DecayQueueFilterState>;
-  /** Page size for pagination */
-  pageSize?: number;
+  /** Additional CSS classes */
+  className?: string;
 }
 
-/**
- * Format large numbers with K, M suffixes
- */
-function formatNumber(value: number): string {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}K`;
-  }
-  return value.toString();
-}
-
-/**
- * Truncate URL for display
- */
-function truncateUrl(url: string, maxLength: number = 50): string {
-  if (url.length <= maxLength) return url;
-  return url.substring(0, maxLength - 3) + "...";
-}
-
-/**
- * Status options for filter dropdown
- */
 const STATUS_OPTIONS: { value: ContentDecayCandidateStatus | "all"; label: string }[] = [
   { value: "all", label: "All Statuses" },
   { value: "backlog", label: "Backlog" },
@@ -107,9 +77,6 @@ const STATUS_OPTIONS: { value: ContentDecayCandidateStatus | "all"; label: strin
   { value: "ignored", label: "Ignored" },
 ];
 
-/**
- * Severity options for filter dropdown
- */
 const SEVERITY_OPTIONS: { value: ContentDecaySeverity | "all"; label: string }[] = [
   { value: "all", label: "All Severities" },
   { value: "critical", label: "Critical" },
@@ -118,113 +85,120 @@ const SEVERITY_OPTIONS: { value: ContentDecaySeverity | "all"; label: string }[]
   { value: "low", label: "Low" },
 ];
 
-/**
- * Page type options for filter dropdown
- */
 const PAGE_TYPE_OPTIONS: { value: ContentDecayPageType | "all"; label: string }[] = [
   { value: "all", label: "All Types" },
   { value: "home", label: "Homepage" },
   { value: "blog", label: "Blog" },
-  { value: "landing", label: "Landing" },
+  { value: "landing", label: "Landing Page" },
   { value: "product", label: "Product" },
   { value: "tool", label: "Tool" },
-  { value: "compare", label: "Compare" },
-  { value: "docs", label: "Docs" },
+  { value: "compare", label: "Comparison" },
+  { value: "docs", label: "Documentation" },
   { value: "other", label: "Other" },
 ];
 
-/**
- * DecayQueueTable displays a sortable, filterable table of content decay candidates
- * with support for bulk operations and pagination.
- *
- * @example
- * ```tsx
- * <DecayQueueTable
- *   candidates={candidates}
- *   onRowClick={(candidate) => console.log(candidate)}
- *   onBulkUpdate={(ids, status) => updateStatus(ids, status)}
- * />
- * ```
- */
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`;
+  }
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}K`;
+  }
+  return num.toString();
+}
+
+function truncateUrl(url: string, maxLength: number = 50): string {
+  if (url.length <= maxLength) return url;
+  const start = url.substring(0, maxLength / 2 - 2);
+  const end = url.substring(url.length - maxLength / 2 + 2);
+  return `${start}...${end}`;
+}
+
+interface FilterState {
+  status: ContentDecayCandidateStatus | "all";
+  severity: ContentDecaySeverity | "all";
+  pageType: ContentDecayPageType | "all";
+  search: string;
+}
+
+type SortKey = "decay_score" | "lost_click_estimate" | "recovery_upside_estimate" | "last_detected_at";
+type SortOrder = "asc" | "desc";
+
 export function DecayQueueTable({
   candidates,
   isLoading = false,
-  className,
+  pageSize = 10,
   onRowClick,
   onBulkUpdate,
   onExport,
-  initialFilters,
-  pageSize = 10,
+  className,
 }: DecayQueueTableProps) {
-  // State management
-  const [filters, setFilters] = useState<DecayQueueFilterState>({
-    ...DEFAULT_DECAY_QUEUE_FILTERS,
-    ...initialFilters,
+  const [filters, setFilters] = useState<FilterState>({
+    status: "all",
+    severity: "all",
+    pageType: "all",
+    search: "",
   });
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  
+  const [sortKey, setSortKey] = useState<SortKey>("decay_score");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // Filter and sort candidates
   const filteredCandidates = useMemo(() => {
-    let result = [...candidates];
+    let result = candidates.filter((c) => {
+      if (filters.status !== "all" && c.status !== filters.status) return false;
+      if (filters.severity !== "all" && c.severity !== filters.severity) return false;
+      if (filters.pageType !== "all" && c.pageType !== filters.pageType) return false;
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        if (
+          !c.pageUrl.toLowerCase().includes(searchLower) &&
+          !(c.pageTitle?.toLowerCase().includes(searchLower) ?? false)
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
 
-    // Apply status filter
-    if (filters.status !== "all") {
-      result = result.filter((c) => c.status === filters.status);
-    }
-
-    // Apply severity filter
-    if (filters.severity !== "all") {
-      result = result.filter((c) => c.severity === filters.severity);
-    }
-
-    // Apply page type filter
-    if (filters.pageType !== "all") {
-      result = result.filter((c) => c.pageType === filters.pageType);
-    }
-
-    // Apply search filter
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      result = result.filter(
-        (c) =>
-          c.pageUrl.toLowerCase().includes(searchLower) ||
-          c.pageTitle?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Apply sorting
+    // Sort
     result.sort((a, b) => {
-      let aValue: number | string = 0;
-      let bValue: number | string = 0;
-
-      switch (filters.sort) {
+      let aVal: number | string = 0;
+      let bVal: number | string = 0;
+      
+      switch (sortKey) {
         case "decay_score":
-          aValue = a.decayScore;
-          bValue = b.decayScore;
-          break;
-        case "recovery_upside_estimate":
-          aValue = a.recoveryUpsideEstimate;
-          bValue = b.recoveryUpsideEstimate;
+          aVal = a.decayScore;
+          bVal = b.decayScore;
           break;
         case "lost_click_estimate":
-          aValue = a.lostClickEstimate;
-          bValue = b.lostClickEstimate;
+          aVal = a.lostClickEstimate;
+          bVal = b.recoveryUpsideEstimate;
+          break;
+        case "recovery_upside_estimate":
+          aVal = a.recoveryUpsideEstimate;
+          bVal = b.recoveryUpsideEstimate;
           break;
         case "last_detected_at":
-          aValue = a.lastDetectedAt;
-          bValue = b.lastDetectedAt;
+          aVal = a.lastDetectedAt;
+          bVal = b.lastDetectedAt;
           break;
       }
-
-      if (filters.order === "asc") {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      
+      if (typeof aVal === "string") {
+        return sortOrder === "asc"
+          ? aVal.localeCompare(bVal as string)
+          : (bVal as string).localeCompare(aVal);
       }
-      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      
+      return sortOrder === "asc" ? aVal - (bVal as number) : (bVal as number) - aVal;
     });
 
     return result;
-  }, [candidates, filters]);
+  }, [candidates, filters, sortKey, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredCandidates.length / pageSize);
@@ -234,50 +208,56 @@ export function DecayQueueTable({
   );
 
   // Selection handlers
-  const handleSelectAll = () => {
+  const handleSelectAll = useCallback(() => {
     if (selectedIds.size === paginatedCandidates.length) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(paginatedCandidates.map((c) => c.id)));
     }
-  };
+  }, [paginatedCandidates, selectedIds.size]);
 
-  const handleSelectRow = (id: number) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
+  const handleSelectRow = useCallback((id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  // Sorting handler
+  const handleSort = useCallback((key: SortKey) => {
+    if (sortKey === key) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
-      newSelected.add(id);
+      setSortKey(key);
+      setSortOrder("desc");
     }
-    setSelectedIds(newSelected);
-  };
+  }, [sortKey]);
 
-  // Sort handler
-  const handleSort = (column: typeof filters.sort) => {
-    setFilters((prev) => ({
-      ...prev,
-      sort: column,
-      order: prev.sort === column && prev.order === "desc" ? "asc" : "desc",
-    }));
-  };
+  // Bulk update handler
+  const handleBulkUpdate = useCallback((newStatus: ContentDecayCandidateStatus) => {
+    if (onBulkUpdate && selectedIds.size > 0) {
+      onBulkUpdate(Array.from(selectedIds), newStatus);
+      setSelectedIds(new Set());
+    }
+  }, [onBulkUpdate, selectedIds]);
 
-  // Render loading skeleton
+  // Render loading state
   if (isLoading) {
     return (
       <div className={cn("space-y-4", className)}>
         <div className="flex gap-4">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-32" />
-          <Skeleton className="h-10 w-32" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-32" data-testid="skeleton" />
+          ))}
         </div>
-        <div className="rounded-md border">
+        <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 p-4 border-b last:border-0">
-              <Skeleton className="h-4 w-4" />
-              <Skeleton className="h-4 flex-1" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-16" />
-            </div>
+            <Skeleton key={i} className="h-16 w-full" data-testid="skeleton" />
           ))}
         </div>
       </div>
@@ -287,14 +267,10 @@ export function DecayQueueTable({
   // Render empty state
   if (candidates.length === 0) {
     return (
-      <div
-        className={cn("flex flex-col items-center justify-center py-12 text-center", className)}
-        role="status"
-        aria-label="No decay candidates found"
-      >
-        <p className="text-muted-foreground text-lg font-medium">No decay candidates</p>
-        <p className="text-muted-foreground text-sm mt-1">
-          Your pages are performing well or haven't been analyzed yet.
+      <div className={cn("flex flex-col items-center justify-center py-12", className)}>
+        <p className="text-lg text-muted-foreground">No decay candidates</p>
+        <p className="text-sm text-muted-foreground">
+          Pages with detected content decay will appear here
         </p>
       </div>
     );
@@ -302,11 +278,10 @@ export function DecayQueueTable({
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* Filters Row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search by URL or title..."
             value={filters.search}
@@ -315,11 +290,9 @@ export function DecayQueueTable({
               setCurrentPage(1);
             }}
             className="pl-9"
-            aria-label="Search candidates"
           />
         </div>
 
-        {/* Status Filter */}
         <Select
           value={filters.status}
           onValueChange={(value) => {
@@ -330,19 +303,18 @@ export function DecayQueueTable({
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-[140px]" aria-label="Filter by status">
+          <SelectTrigger className="w-40" aria-label="Filter by status">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            {STATUS_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
+            {STATUS_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        {/* Severity Filter */}
         <Select
           value={filters.severity}
           onValueChange={(value) => {
@@ -353,19 +325,18 @@ export function DecayQueueTable({
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-[140px]" aria-label="Filter by severity">
+          <SelectTrigger className="w-36" aria-label="Filter by severity">
             <SelectValue placeholder="Severity" />
           </SelectTrigger>
           <SelectContent>
-            {SEVERITY_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
+            {SEVERITY_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        {/* Page Type Filter */}
         <Select
           value={filters.pageType}
           onValueChange={(value) => {
@@ -376,31 +347,30 @@ export function DecayQueueTable({
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-[140px]" aria-label="Filter by page type">
+          <SelectTrigger className="w-36" aria-label="Filter by page type">
             <SelectValue placeholder="Page Type" />
           </SelectTrigger>
           <SelectContent>
-            {PAGE_TYPE_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
+            {PAGE_TYPE_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        {/* Export Button */}
         {onExport && (
-          <Button variant="outline" size="sm" onClick={onExport} className="ml-auto">
+          <Button variant="outline" size="sm" onClick={onExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
         )}
       </div>
 
-      {/* Bulk Actions */}
-      {selectedIds.size > 0 && onBulkUpdate && (
-        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-          <span className="text-sm text-muted-foreground">
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-4 rounded-lg bg-muted p-3">
+          <span className="text-sm font-medium">
             {selectedIds.size} selected
           </span>
           <DropdownMenu>
@@ -411,192 +381,193 @@ export function DecayQueueTable({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem
-                onClick={() => {
-                  onBulkUpdate(Array.from(selectedIds), "planned");
-                  setSelectedIds(new Set());
-                }}
-              >
+              <DropdownMenuItem onClick={() => handleBulkUpdate("planned")}>
                 Mark as Planned
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  onBulkUpdate(Array.from(selectedIds), "in_progress");
-                  setSelectedIds(new Set());
-                }}
-              >
-                Mark In Progress
+              <DropdownMenuItem onClick={() => handleBulkUpdate("in_progress")}>
+                Mark as In Progress
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  onBulkUpdate(Array.from(selectedIds), "ignored");
-                  setSelectedIds(new Set());
-                }}
-              >
+              <DropdownMenuItem onClick={() => handleBulkUpdate("ignored")}>
                 Ignore
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear Selection
+          </Button>
         </div>
       )}
 
       {/* Table */}
-      <div className="rounded-md border" role="grid" aria-label="Content decay candidates">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={selectedIds.size === paginatedCandidates.length && paginatedCandidates.length > 0}
-                  onCheckedChange={handleSelectAll}
-                  aria-label="Select all candidates"
-                />
-              </TableHead>
-              <TableHead
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleSort("decay_score")}
-              >
-                <div className="flex items-center gap-1">
-                  Score
-                  {filters.sort === "decay_score" && (
-                    filters.order === "desc" ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />
-                  )}
-                </div>
-              </TableHead>
-              <TableHead>Page</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Severity</TableHead>
-              <TableHead
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleSort("lost_click_estimate")}
-              >
-                <div className="flex items-center gap-1">
-                  Lost Clicks
-                  {filters.sort === "lost_click_estimate" && (
-                    filters.order === "desc" ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />
-                  )}
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleSort("recovery_upside_estimate")}
-              >
-                <div className="flex items-center gap-1">
-                  Upside
-                  {filters.sort === "recovery_upside_estimate" && (
-                    filters.order === "desc" ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />
-                  )}
-                </div>
-              </TableHead>
-              <TableHead>Reasons</TableHead>
-              <TableHead>Trend</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-12">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedCandidates.map((candidate) => (
-              <TableRow
-                key={candidate.id}
-                className={cn(
-                  "cursor-pointer",
-                  selectedIds.has(candidate.id) && "bg-muted/50"
-                )}
-                onClick={() => onRowClick?.(candidate)}
-                role="row"
-                aria-label={`Candidate: ${candidate.pageTitle || candidate.pageUrl}`}
-              >
-                <TableCell onClick={(e) => e.stopPropagation()}>
+      <div className="rounded-lg border overflow-hidden">
+        <div role="grid" aria-label="Content decay candidates" className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr className="border-b">
+                <th className="w-10 p-3">
                   <Checkbox
-                    checked={selectedIds.has(candidate.id)}
-                    onCheckedChange={() => handleSelectRow(candidate.id)}
-                    aria-label={`Select ${candidate.pageTitle || candidate.pageUrl}`}
+                    aria-label="Select all"
+                    checked={
+                      paginatedCandidates.length > 0 &&
+                      selectedIds.size === paginatedCandidates.length
+                    }
+                    onCheckedChange={handleSelectAll}
                   />
-                </TableCell>
-                <TableCell>
-                  <span className="font-medium">{candidate.decayScore.toFixed(1)}</span>
-                </TableCell>
-                <TableCell>
-                  <div className="max-w-xs">
-                    <a
-                      href={candidate.pageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline text-sm"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {truncateUrl(candidate.pageUrl)}
-                    </a>
-                    {candidate.pageTitle && (
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {candidate.pageTitle}
-                      </p>
+                </th>
+                <th
+                  className={cn(
+                    "p-3 text-left font-medium cursor-pointer hover:bg-muted",
+                    "w-20"
+                  )}
+                  onClick={() => handleSort("decay_score")}
+                >
+                  <div className="flex items-center gap-1">
+                    Score
+                    {sortKey === "decay_score" && (
+                      sortOrder === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
                     )}
                   </div>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm">{PAGE_TYPE_CONFIG[candidate.pageType]?.label || candidate.pageType}</span>
-                </TableCell>
-                <TableCell>
-                  <SeverityBadge severity={candidate.severity} size="sm" />
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm text-red-500">
+                </th>
+                <th className="p-3 text-left font-medium">Page</th>
+                <th className="p-3 text-left font-medium w-28">Type</th>
+                <th className="p-3 text-left font-medium w-28">Severity</th>
+                <th className="p-3 text-left font-medium">Reasons</th>
+                <th
+                  className={cn(
+                    "p-3 text-left font-medium cursor-pointer hover:bg-muted w-28"
+                  )}
+                  onClick={() => handleSort("lost_click_estimate")}
+                >
+                  <div className="flex items-center gap-1">
+                    Lost Clicks
+                    {sortKey === "lost_click_estimate" && (
+                      sortOrder === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  className={cn(
+                    "p-3 text-left font-medium cursor-pointer hover:bg-muted w-24"
+                  )}
+                  onClick={() => handleSort("recovery_upside_estimate")}
+                >
+                  <div className="flex items-center gap-1">
+                    Upside
+                    {sortKey === "recovery_upside_estimate" && (
+                      sortOrder === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </th>
+                <th className="p-3 text-left font-medium w-24">Status</th>
+                <th className="p-3 text-left font-medium w-20">Trend</th>
+                <th className="p-3 w-16">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedCandidates.map((candidate) => (
+                <tr
+                  key={candidate.id}
+                  role="row"
+                  aria-label={candidate.pageTitle || candidate.pageUrl}
+                  className={cn(
+                    "border-b hover:bg-muted/50 cursor-pointer",
+                    selectedIds.has(candidate.id) && "bg-muted/30"
+                  )}
+                  onClick={() => onRowClick?.(candidate)}
+                >
+                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      aria-label={`Select ${candidate.pageTitle || candidate.pageUrl}`}
+                      checked={selectedIds.has(candidate.id)}
+                      onCheckedChange={() => handleSelectRow(candidate.id)}
+                    />
+                  </td>
+                  <td className="p-3 font-mono text-xs">
+                    {candidate.decayScore.toFixed(1)}
+                  </td>
+                  <td className="p-3">
+                    <div className="space-y-1">
+                      {candidate.pageTitle && (
+                        <div className="font-medium truncate max-w-xs">
+                          {candidate.pageTitle}
+                        </div>
+                      )}
+                      <a
+                        href={candidate.pageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {truncateUrl(candidate.pageUrl)}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <span className="text-xs capitalize">
+                      {PAGE_TYPE_CONFIG[candidate.pageType]?.label ?? candidate.pageType}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    <SeverityBadge severity={candidate.severity} size="sm" />
+                  </td>
+                  <td className="p-3">
+                    <DecayReasonBadges
+                      reasons={candidate.reasonCodes}
+                      primaryReason={candidate.primaryReasonCode}
+                      maxSupporting={2}
+                      size="sm"
+                    />
+                  </td>
+                  <td className="p-3 text-red-600 font-medium">
                     -{formatNumber(candidate.lostClickEstimate)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm text-green-500">
+                  </td>
+                  <td className="p-3 text-green-600 font-medium">
                     +{formatNumber(candidate.recoveryUpsideEstimate)}
-                  </span>
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <DecayReasonBadges
-                    reasons={candidate.reasonCodes}
-                    primaryReason={candidate.primaryReasonCode}
-                    size="sm"
-                    maxSupporting={2}
-                  />
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <DecayTrendMiniChart
-                    data={candidate.trend}
-                    width={80}
-                    height={30}
-                  />
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm capitalize">{candidate.status.replace("_", " ")}</span>
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onRowClick?.(candidate)}>
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <a
-                          href={candidate.pageUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center"
-                        >
-                          Open Page
-                          <ExternalLink className="ml-2 h-4 w-4" />
-                        </a>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  </td>
+                  <td className="p-3">
+                    <span className="text-xs capitalize px-2 py-1 rounded-full bg-muted">
+                      {candidate.status.replace("_", " ")}
+                    </span>
+                  </td>
+                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                    <DecayTrendMiniChart data={candidate.trend} width={100} height={32} />
+                  </td>
+                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onRowClick?.(candidate)}>
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {VALID_STATUS_TRANSITIONS.filter(
+                          (t) => t.from === candidate.status
+                        ).map((transition) => (
+                          <DropdownMenuItem
+                            key={transition.to}
+                            onClick={() => onBulkUpdate?.([candidate.id], transition.to)}
+                          >
+                            {transition.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination */}
@@ -605,36 +576,22 @@ export function DecayQueueTable({
           <p className="text-sm text-muted-foreground">
             Showing {(currentPage - 1) * pageSize + 1} to{" "}
             {Math.min(currentPage * pageSize, filteredCandidates.length)} of{" "}
-            {filteredCandidates.length} candidates
+            {filteredCandidates.length}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
             >
               Previous
             </Button>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              const page = i + 1;
-              return (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </Button>
-              );
-            })}
-            {totalPages > 5 && <span className="text-muted-foreground">...</span>}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
             >
               Next
             </Button>
@@ -644,5 +601,3 @@ export function DecayQueueTable({
     </div>
   );
 }
-
-export default DecayQueueTable;
