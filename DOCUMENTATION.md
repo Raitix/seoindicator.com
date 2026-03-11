@@ -7367,6 +7367,333 @@ Per-site configuration and scheduling state for content decay detection.
 - `site_id` → `sites.id` (CASCADE)
 
 ---
+## Content Decay Scoring Service (TASK-36-3)
+
+### Feature Description
+Core scoring service for the Content Decay Detection & Refresh Planner feature (FEAT-036) that calculates the 0-100 decay score from normalized signals. Implements weight renormalization when optional signals are missing, confidence multipliers based on data availability, and severity classification for decay candidates.
+
+### Component Locations
+- **Service:** `backend/app/Services/ContentDecay/ContentDecayScoringService.php`
+- **Tests:** `backend/tests/Unit/Services/ContentDecay/ContentDecayScoringServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-36-3.md`
+
+### Public Methods
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `getBaseWeights()` | array | Returns the 7 base weights for decay factors |
+| `getRenormalizedWeights(array $signals)` | array | Returns weights adjusted for available signals |
+| `calculateDecayScore(array $signals)` | array | Main scoring method returning full result |
+| `normalizeClickLoss($previous, $current)` | float | Normalizes click loss to 0-1 range |
+| `normalizeImpressionLoss($previous, $current)` | float | Normalizes impression loss to 0-1 range |
+| `normalizeCtrDrop($previous, $current)` | float | Normalizes CTR drop to 0-1 range |
+| `normalizePositionDecline(int $previous, int $current)` | float | Normalizes position decline to 0-1 range |
+
+### Base Weights Configuration
+
+| Factor | Weight | Description |
+|--------|--------|-------------|
+| `click_loss` | 0.35 | Click decline relative to baseline |
+| `impression_loss` | 0.15 | Impression decline relative to baseline |
+| `ctr_drop` | 0.15 | CTR decline while impressions meaningful |
+| `position_decline` | 0.15 | GSC average position worsened |
+| `ranking_decline` | 0.10 | Tracked keyword visibility loss |
+| `audit_pressure` | 0.05 | Unresolved audit issues |
+| `staleness` | 0.05 | Content freshness penalty |
+
+**Total: 1.00 (100%)**
+
+### Score Calculation Formula
+
+```
+decay_score = 100 × weighted_sum(available_negative_signals) × confidence_multiplier
+```
+
+**Normalization Rules:**
+- `click_loss` = max((previous - current) / max(previous, 1), 0)
+- `impression_loss` = max((previous - current) / max(previous, 1), 0)
+- `ctr_drop` = max((previous - current) / max(previous, 0.01), 0)
+- `position_decline` = clamp((current - previous) / 10, 0, 1)
+- Only negative movement contributes to decay (positive changes = 0 contribution)
+
+### Weight Renormalization
+
+When optional signals are missing, weights are redistributed proportionally:
+
+**Example:** If `ranking_decline` (0.10) is missing:
+```
+remaining_weight = 1.0 - 0.10 = 0.90
+renormalized_weights = original_weights / 0.90
+```
+
+**Renormalization Triggers:**
+- Signal explicitly null: removed from weights
+- Optional signal missing from array: removed from weights
+- Optional signal with zero value: removed from weights (boosts confidence)
+- Core signals never removed when missing from array (only when explicitly null)
+
+### Confidence Multiplier
+
+| Data Sources | Confidence | Multiplier |
+|--------------|------------|------------|
+| GSC only | Low | 0.85 |
+| GSC + Rankings | Medium | 0.93 |
+| GSC + Rankings + Audit/Annotations | High | 1.00 |
+
+### Severity Bands
+
+| Score Range | Severity | Description |
+|-------------|----------|-------------|
+| 70-100 | Critical | Immediate action required |
+| 40-69 | High | Priority refresh needed |
+| 20-39 | Medium | Schedule refresh soon |
+| 0-19 | Low | Monitor for changes |
+
+### calculateDecayScore() Response Structure
+
+```json
+{
+  "decay_score": 65.5,
+  "severity": "high",
+  "detection_confidence": 0.93,
+  "contributing_factors": ["click_loss", "position_decline", "ctr_drop"],
+  "score_breakdown": {
+    "click_loss": {"normalized": 0.45, "weighted": 0.1575},
+    "impression_loss": {"normalized": 0.20, "weighted": 0.03},
+    "ctr_drop": {"normalized": 0.15, "weighted": 0.0225},
+    "position_decline": {"normalized": 0.30, "weighted": 0.045},
+    "ranking_decline": {"normalized": 0.10, "weighted": 0.01},
+    "audit_pressure": {"normalized": 0.05, "weighted": 0.0025},
+    "staleness": {"normalized": 0.08, "weighted": 0.004}
+  }
+}
+```
+
+### Key Implementation Details
+
+| Feature | Behavior |
+|---------|----------|
+| Deterministic | Same inputs always produce same outputs |
+| Secure | No SQL injection, XSS, or data leak vulnerabilities |
+| Pure function | No external dependencies or side effects |
+| Null handling | Missing signals trigger renormalization |
+| Edge cases | Handles null, INF, NAN, negative values gracefully |
+
+### Test Coverage
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| SI: Service Instantiation | 8 | Structure and weights verification |
+| CALC: Score Calculation | 35 | Various input combinations |
+| RENORM: Weight Renormalization | 30 | Missing signal handling |
+| CONF: Confidence Multiplier | 20 | Data source scenarios |
+| SEV: Severity Bands | 25 | Classification accuracy |
+| CONTRIB: Contributing Factors | 20 | Factor identification |
+| BREAKDOWN: Score Breakdown | 10 | Output structure |
+| DET: Deterministic Behavior | 15 | Reproducibility |
+| EDGE: Edge Cases | 20 | Null, INF, NAN handling |
+| INT: Integration | 10 | Service integration readiness |
+| **Total** | **195** | **382 assertions** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-11 |
+| Deployment ID | `20260311T144706Z-aeee6afe` |
+| Commit | `e29b56e90c69` |
+| Unit Tests | 195 passed, 382 assertions |
+| Production Smoke | ✅ All tests pass |
+| Security Tests | ✅ All adversarial tests pass |
+
+### Dependencies
+
+- TASK-36-1: Database Migrations (foundation)
+- TASK-36-2: Eloquent Models (signal storage)
+
+### Downstream Consumers
+
+| Consumer | Usage |
+|----------|-------|
+| TASK-36-6: ContentDecayDetectionService | Uses `calculateDecayScore()` for detection |
+| TASK-36-15: Unit Tests | Integration tests verify scoring |
+
+---
+## Content Decay Reason Service (TASK-36-4)
+
+### Feature Description
+Service for the Content Decay Detection & Refresh Planner feature (FEAT-036) that converts numeric signal deltas into human-readable reason codes and builds structured evidence payloads for UI display. Implements priority-based primary reason selection and 11 distinct decay trigger types with configurable thresholds.
+
+### Component Locations
+- **Service:** `backend/app/Services/ContentDecay/ContentDecayReasonService.php`
+- **Interface:** `backend/app/Services/ContentDecay/Contracts/ContentDecayReasonServiceInterface.php`
+- **DI Binding:** `backend/app/Providers/AppServiceProvider.php` (lines 168-169)
+- **Tests:** `backend/tests/Unit/Services/ContentDecay/ContentDecayReasonServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-36-4.md`
+
+### Public Methods
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `assignReasonCodes(array $signals): array` | array | Main method - converts signals to reason codes with evidence |
+| `getThresholds(): array` | array | Returns current threshold configuration |
+
+### Reason Codes (11 Types)
+
+| Code | Priority | Trigger Condition | Actionability |
+|------|----------|-------------------|---------------|
+| `audit_issues_present` | 1 (Highest) | Open page-level audit issues exist | HIGH - Fix issues directly |
+| `clicks_down` | 2 | Click decline exceeds threshold (default: 10%) | HIGH - Direct traffic impact |
+| `ctr_down` | 3 | CTR decline while impressions meaningful (100+) | HIGH - Optimize meta/snippet |
+| `avg_position_down` | 4 | GSC avg position worsened (≥3 positions) | MEDIUM - SEO work needed |
+| `tracked_rankings_down` | 5 | Tracked keyword visibility worsened | MEDIUM - Content optimization |
+| `impressions_down` | 6 | Impression decline exceeds threshold (default: 15%) | MEDIUM - Promote/index issues |
+| `stale_content` | 7 | Last update exceeds freshness threshold (default: 180 days) | HIGH - Update content |
+| `ai_visibility_down` | 8 | AI visibility metric declined | MEDIUM - Optimize for AI/GEO |
+| `competitor_gain_suspected` | 9 | Position loss with stable demand | LOW - External factor |
+| `internal_link_weakness` | 10 (Lowest) | Audit/internal-link data indicates weak support | HIGH - Add internal links |
+| `annotation_recently_changed` | - | Recent annotation explains volatility | Informational |
+
+### Primary Reason Selection Logic
+
+The service selects the **most impactful negative change** as the primary reason:
+
+1. **Priority Ordering:** Higher priority codes take precedence
+2. **Actionable Over Informational:** `audit_issues_present` > `annotation_recently_changed`
+3. **Mutual Exclusivity:** When `competitor_gain_suspected` triggers, `avg_position_down` is suppressed (more specific diagnosis)
+4. **Page Boundary Detection:** `avg_position_down` triggers on SERP page boundary crossing (e.g., page 1 → page 2)
+
+### assignReasonCodes() Response Structure
+
+```json
+{
+  "primary_reason_code": "clicks_down",
+  "reason_codes": ["clicks_down", "ctr_down", "avg_position_down"],
+  "evidence": [
+    {
+      "reason": "clicks_down",
+      "primary": true,
+      "evidence": {
+        "metric": "clicks",
+        "previous": 1250,
+        "current": 850,
+        "change_percent": -32.0,
+        "change_absolute": -400,
+        "window": "28 days vs 28 days",
+        "context": "Blog post about SEO tips"
+      }
+    },
+    {
+      "reason": "ctr_down",
+      "primary": false,
+      "evidence": {
+        "metric": "ctr",
+        "previous": 6.1,
+        "current": 3.9,
+        "change_percent": -36.1,
+        "change_absolute": -2.2,
+        "window": "28 days vs 28 days",
+        "context": null
+      }
+    }
+  ]
+}
+```
+
+### Evidence Payload Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `metric` | string | Which metric changed (clicks, impressions, ctr, etc.) |
+| `previous` | number | Value before decline |
+| `current` | number | Value after decline |
+| `change_percent` | float | Relative change as percentage |
+| `change_absolute` | number | Absolute difference |
+| `window` | string | Comparison window (e.g., "28 days vs 28 days") |
+| `context` | string? | Additional context (page type, title, etc.) |
+
+### Threshold Configuration
+
+| Threshold | Default | Config Key | Description |
+|-----------|---------|------------|-------------|
+| `click_loss` | 10% | `click_loss_threshold` | Minimum click decline to trigger |
+| `impression_loss` | 15% | `impression_loss_threshold` | Minimum impression decline |
+| `ctr_drop` | 0.5pp | `ctr_drop_threshold` | Minimum CTR point drop |
+| `position_decline` | 3 | `position_decline_threshold` | Minimum position worsening |
+| `staleness_days` | 180 | `staleness_threshold` | Days since last update |
+| `annotation_window_days` | 30 | `annotation_window_days` | Recent annotation window |
+| `internal_links` | 3 | `internal_links_threshold` | Minimum internal links expected |
+| `meaningful_impressions` | 100 | `meaningful_impressions` | CTR relevance threshold |
+
+### Special Cases Handled
+
+| Case | Behavior |
+|------|----------|
+| Null signal values | Gracefully handled - skips that check without crash |
+| Zero previous values | Treated as improvement case, not decline |
+| Low impression counts | CTR checks require 100+ impressions for relevance |
+| Stable demand detection | For competitor gain: clicks not provided = treat as stable |
+| Annotation boundary | Uses `diffInDays` with floor for accurate day counting |
+| Page boundary crossing | Position decline triggers on SERP page boundaries |
+
+### Key Implementation Details
+
+| Feature | Behavior |
+|---------|----------|
+| Deterministic | Same inputs always produce same outputs |
+| Pure computation | No external API calls or SQL queries |
+| Null-safe | All null/missing values handled gracefully |
+| Unicode support | Handles unicode page titles correctly |
+| Large numbers | Accurate calculations with large metric values |
+
+### Test Coverage
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| INST: Service Instantiation | 5 | Container binding, thresholds |
+| CLICKS: Clicks Down | 8 | Threshold triggers, edge cases |
+| IMP: Impressions Down | 8 | Threshold triggers, evidence |
+| CTR: CTR Down | 10 | Meaningful impressions check |
+| POS: Position Down | 8 | Null handling, page drops |
+| RANK: Rankings Down | 6 | Visibility score changes |
+| AUDIT: Audit Issues | 5 | Critical issue prioritization |
+| STALE: Stale Content | 6 | Age thresholds |
+| ANN: Annotation Changed | 5 | Time window checks |
+| AI: AI Visibility | 5 | GEO metric changes |
+| COMP: Competitor Gain | 6 | Position + stable demand |
+| LINK: Link Weakness | 5 | Internal link thresholds |
+| PRIMARY: Primary Selection | 12 | Priority ordering |
+| EVID: Evidence Payload | 10 | Structure, calculations |
+| THRESH: Configuration | 8 | Defaults, custom, config |
+| EDGE: Edge Cases | 10 | Nulls, extremes, unicode |
+| RET: Return Structure | 5 | Response format |
+| **Total** | **122** | **168 assertions** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-11 |
+| Deployment ID | `20260311T145731Z-8f86a19c` |
+| Commit | `dac05c79` |
+| Unit Tests | 122 passed, 168 assertions |
+| Production QA | ✅ All acceptance criteria verified |
+| Security | ✅ No external APIs, no SQL, pure computation |
+
+### Dependencies
+
+- TASK-36-1: Database Migrations (foundation)
+- TASK-36-2: Eloquent Models (signal storage)
+
+### Downstream Consumers
+
+| Consumer | Usage |
+|----------|-------|
+| TASK-36-6: ContentDecayDetectionService | Uses `assignReasonCodes()` for reason assignment |
+| TASK-36-11: Frontend Components | Displays reason badges with evidence tooltips |
+| TASK-36-12: Decay Queue Page | Shows primary reason in candidate rows |
+
+---
 ## Content Decay Frontend Components (TASK-36-11)
 
 ### Component Description
