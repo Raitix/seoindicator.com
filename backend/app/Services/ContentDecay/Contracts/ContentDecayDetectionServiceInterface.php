@@ -2,90 +2,142 @@
 
 namespace App\Services\ContentDecay\Contracts;
 
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Models\ContentDecayCandidate;
+use App\Models\ContentDecayProject;
+use App\Models\Site;
 
 /**
- * Interface for Content Decay Detection Service.
+ * Interface for ContentDecayDetectionService.
  *
- * Used for mocking in tests. Implements the detection pipeline:
- * - GSC data collection
- * - Signal enrichment
- * - Candidate scoring
- * - Reason code assignment
+ * The main orchestration service that gathers signals from multiple sources
+ * (GSC, rankings, audits, annotations, AI visibility), compares windows,
+ * and creates/updates decay candidates.
  */
 interface ContentDecayDetectionServiceInterface
 {
     /**
-     * Run detection for a site.
+     * Run decay detection for all projects belonging to a site.
      *
-     * @param int $siteId The site to analyze
-     * @param array $options {
-     *     @type bool $force Override cooldown period
-     *     @type int $window_days Override project window
-     * }
-     * @return array {
-     *     @type string $job_id The queued job ID
-     *     @type string $status 'queued' or 'processing'
-     * }
+     * @param Site $site The site to detect decay for
+     * @return array Detection summary with processed pages, candidates created, etc.
      */
-    public function runDetection(int $siteId, array $options = []): array;
+    public function detectForSite(Site $site): array;
 
     /**
-     * Get summary statistics for a site's decay queue.
+     * Run decay detection for a specific project.
      *
-     * @param int $siteId
-     * @return array {
-     *     @type int $total_candidates
-     *     @type int $critical_count
-     *     @type int $high_count
-     *     @type int $medium_count
-     *     @type int $estimated_lost_clicks
-     *     @type int $recovery_upside
-     *     @type int $recovered_count
-     *     @type string|null $last_scanned_at
-     * }
+     * @param ContentDecayProject $project The project to detect decay for
+     * @return array Detection summary with processed pages, candidates created, etc.
      */
-    public function getSummary(int $siteId): array;
+    public function detectForProject(ContentDecayProject $project): array;
 
     /**
-     * Update detection settings for a site.
+     * Gather signals from all available sources for a page.
      *
-     * @param int $siteId
-     * @param array $settings {
-     *     @type bool $detection_enabled
-     *     @type int $window_days (7, 14, 28, 56)
-     *     @type int $min_clicks_threshold
-     *     @type int $min_impressions_threshold
-     *     @type float $min_decay_score (0-100)
-     *     @type bool $digest_enabled
-     *     @type string $digest_frequency ('weekly', 'monthly')
-     *     @type array $settings_json
-     * }
-     * @return array Updated settings
+     * Sources:
+     * - GSC (required): clicks, impressions, CTR, avg position
+     * - Rank tracking (optional): tracked keyword visibility
+     * - Site audit (optional): unresolved issues for page
+     * - Annotations (optional): recent update annotations
+     * - AI visibility (optional): mention rate delta
+     *
+     * @param string $pageUrl The URL to gather signals for
+     * @param ContentDecayProject $project The project context
+     * @return array Signals array with source keys
      */
-    public function updateSettings(int $siteId, array $settings): array;
+    public function gatherSignals(string $pageUrl, ContentDecayProject $project): array;
 
     /**
-     * Check if detection is enabled for a site.
+     * Compare current vs previous window signals.
      *
-     * @param int $siteId
-     * @return bool
+     * @param array $signals The signals array from gatherSignals()
+     * @return array Comparison with deltas, percentages, and directions
      */
-    public function isDetectionEnabled(int $siteId): bool;
+    public function compareWindows(array $signals): array;
 
     /**
-     * Get the last scan timestamp for a site.
+     * Create or update a decay candidate record.
      *
-     * @param int $siteId
-     * @return string|null ISO 8601 timestamp or null if never scanned
+     * @param array $detectionData Detection data including:
+     *   - project_id (int)
+     *   - page_url (string)
+     *   - decay_score (float)
+     *   - severity (string)
+     *   - detection_confidence (float)
+     *   - reason_codes (array)
+     *   - signal_sources (array)
+     *   - evidence_json (array)
+     * @return ContentDecayCandidate|null The created/updated candidate, or null if skipped
      */
-    public function getLastScanAt(int $siteId): ?string;
+    public function upsertCandidate(array $detectionData): ?ContentDecayCandidate;
 
     /**
-     * Get the project for a site (creates if not exists).
+     * Check if a page is eligible for decay detection.
      *
-     * @param int $siteId
-     * @return object|null The ContentDecayProject model
+     * Eligibility criteria:
+     * - Has GSC data for both windows
+     * - Previous impressions >= threshold (default: 100) OR clicks >= threshold (default: 10)
+     * - Page has existed long enough for 2 full windows
+     * - Page is not in ignore state
+     *
+     * @param array $gscData The GSC data for the page
+     * @param array $options Optional eligibility options
+     * @return bool True if eligible, false otherwise
      */
-    public function getProjectForSite(int $siteId): ?object;
+    public function isPageEligible(array $gscData, array $options = []): bool;
+
+    /**
+     * Check if cooldown is active for a candidate.
+     *
+     * Cooldown applies when:
+     * - Candidate was marked as "refreshed" within the last 14 days
+     * - High-confidence flag when annotation indicates recent content update
+     *
+     * @param ContentDecayCandidate $candidate The candidate to check
+     * @return bool True if cooldown is active, false otherwise
+     */
+    public function isCooldownActive(ContentDecayCandidate $candidate): bool;
+
+    /**
+     * Check if comparison is below low-signal threshold.
+     *
+     * @param array $comparison The window comparison data
+     * @return bool True if below threshold, false otherwise
+     */
+    public function isBelowLowSignalThreshold(array $comparison): bool;
+
+    /**
+     * Get the current configuration.
+     *
+     * @return array Configuration array
+     */
+    public function getConfiguration(): array;
+
+    /**
+     * Get the last used window days setting.
+     *
+     * @return int Window days
+     */
+    public function getLastUsedWindowDays(): int;
+
+    /**
+     * Get the scoring service instance.
+     *
+     * @return ContentDecayScoringServiceInterface
+     */
+    public function getScoringService(): ContentDecayScoringServiceInterface;
+
+    /**
+     * Get the reason service instance.
+     *
+     * @return ContentDecayReasonServiceInterface
+     */
+    public function getReasonService(): ContentDecayReasonServiceInterface;
+
+    /**
+     * Get the planner service instance.
+     *
+     * @return ContentRefreshPlannerServiceInterface
+     */
+    public function getPlannerService(): ContentRefreshPlannerServiceInterface;
 }
