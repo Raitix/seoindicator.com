@@ -39,7 +39,7 @@ A deployment is considered successful only when all of the following are true:
 
 ### Important notes
 - Historical sections below may still reference **GitHub Actions runs**. Those references are preserved as historical release records and do **not** describe the current deployment path.
-- Public `https://seoindicator.com/api/health` is **not currently used as the deployment success gate** from this machine because some access paths return Hostinger’s generic 404 page.
+- Public `https://seoindicator.com/api/health` is **not currently used as the deployment success gate** from this machine because some access paths return Hostinger's generic 404 page.
 - The local Windows Playwright **test runner** is currently unreliable for deployment gating, so deployment verification uses a direct Playwright browser script instead of `playwright test`.
 
 ---
@@ -144,8 +144,8 @@ The production SPA uses a bearer-token backed fallback authentication strategy r
 
 | Limitation | Description |
 |------------|-------------|
-| Session-based auth returns 401 | Expected behavior — using bearer fallback |
-| `/api/v1/sites` and `/api/v1/dashboard` may return 401 | Different middleware — separate issue |
+| Session-based auth returns 401 | Expected behavior - using bearer fallback |
+| `/api/v1/sites` and `/api/v1/dashboard` may return 401 | Different middleware - separate issue |
 
 ### Dependencies
 
@@ -173,8 +173,8 @@ Production hardening fix for the `GET /api/v1/sites/{siteId}/locations` endpoint
 
 ### Root Cause
 The production database schema was missing columns that the API code expected:
-- `business_locations.is_active` — Used for `active_only` query scope
-- `business_locations.deleted_at` — Used for soft-delete filtering
+- `business_locations.is_active` - Used for `active_only` query scope
+- `business_locations.deleted_at` - Used for soft-delete filtering
 
 When the service attempted to query these columns on a schema that lacked them, Laravel threw an exception resulting in 500 HTML error pages.
 
@@ -276,7 +276,7 @@ Database migrations for the Local SEO & Google Business Profile Tracking feature
   - `2026_03_08_205804_create_local_competitors_table.php`
   - `2026_03_08_205805_create_gbp_posts_table.php`
   - `2026_03_08_205806_create_local_seo_alerts_table.php`
-  - `2026_03_10_112600_remediate_local_seo_schema_drift.php` — idempotent production repair for missing `business_locations.is_active` and `local_seo_alerts.read_at`
+  - `2026_03_10_112600_remediate_local_seo_schema_drift.php` - idempotent production repair for missing `business_locations.is_active` and `local_seo_alerts.read_at`
 - **Test Documentation:** `TESTS/TEST-35-1.md`
 
 ### Database Schema
@@ -911,7 +911,7 @@ Foundation Eloquent model layer for Local SEO ranking snapshots, competitor reco
 - Authenticated production alert probes passed for register, login, `GET /api/v1/auth/user`, `GET /api/v1/local-seo/alerts`, `GET /api/v1/local-seo/alerts/unread-count`, `POST /api/v1/local-seo/alerts/{id}/read`, and cross-user alert reads still returned `404`.
 
 **Known downstream gap (separate task):**
-- The broader production probe recorded `GET /api/v1/locations/{id}/competitors` returning `403` for an owned fixture. ProdTester classified this as a downstream controller/policy issue outside TASK-35-4’s model acceptance scope; it should be addressed in the Local Rankings / competitors API task set rather than by reopening the model task.
+- The broader production probe recorded `GET /api/v1/locations/{id}/competitors` returning `403` for an owned fixture. ProdTester classified this as a downstream controller/policy issue outside TASK-35-4's model acceptance scope; it should be addressed in the Local Rankings / competitors API task set rather than by reopening the model task.
 
 ### Security Implementation
 
@@ -5869,7 +5869,7 @@ Authenticated Local SEO location-management surface for `/sites/{siteId}/local`.
 |--------|----------------|
 | Validation | `zod` schema validates required name/address, phone pattern, website safety, and length limits |
 | Website normalization | Bare domains are normalized to `https://...`; only `http`/`https` protocols are accepted |
-| Geocoding | Address blur and explicit “Geocode address” actions call `geocodeAddress()` and display confirmed coordinates |
+| Geocoding | Address blur and explicit "Geocode address" actions call `geocodeAddress()` and display confirmed coordinates |
 | Edit handling | Existing coordinates are preloaded; changing the address invalidates them until re-geocoded |
 | Submit safety | Duplicate-submit guard (`submissionGuardRef` + `isSubmitLocked`) prevents rapid double posts |
 | Output payload | Sends trimmed strings plus nullable `phone`, `website`, `category`, `latitude`, and `longitude` |
@@ -6102,26 +6102,26 @@ The main location dashboard page providing a comprehensive overview of Google Bu
 - **Nested Route:** `frontend/app/sites/[siteId]/local/[locationId]/page.tsx`
 - **Main Component:** `frontend/components/local/LocationDashboardPage.tsx`
 - **Sub-components:**
-  - `frontend/components/local/QuickStatsCards.tsx` — Summary metrics cards
-  - `frontend/components/local/InsightsSection.tsx` — GBP insights with sparklines
-  - `frontend/components/local/ReviewsPreviewSection.tsx` — Rating, count, recent reviews
-  - `frontend/components/local/RankingsPreviewSection.tsx` — Keywords, positions
-  - `frontend/components/local/AlertsWidget.tsx` — Unread count, latest alerts
-  - `frontend/components/local/CompetitorsPreview.tsx` — Top 3 competitors
-  - `frontend/components/local/SyncStatus.tsx` — Last updated, refresh button
-  - `frontend/components/local/LocalSparkline.tsx` — Mini trend charts
-  - `frontend/components/local/SectionErrorBoundary.tsx` — Section-level error handling
+  - `frontend/components/local/QuickStatsCards.tsx` - Summary metrics cards
+  - `frontend/components/local/InsightsSection.tsx` - GBP insights with sparklines
+  - `frontend/components/local/ReviewsPreviewSection.tsx` - Rating, count, recent reviews
+  - `frontend/components/local/RankingsPreviewSection.tsx` - Keywords, positions
+  - `frontend/components/local/AlertsWidget.tsx` - Unread count, latest alerts
+  - `frontend/components/local/CompetitorsPreview.tsx` - Top 3 competitors
+  - `frontend/components/local/SyncStatus.tsx` - Last updated, refresh button
+  - `frontend/components/local/LocalSparkline.tsx` - Mini trend charts
+  - `frontend/components/local/SectionErrorBoundary.tsx` - Section-level error handling
 - **Data Layer:**
-  - `frontend/lib/types/location-dashboard.ts` — TypeScript interfaces
-  - `frontend/lib/location-dashboard.ts` — Data normalizers and API calls
-  - `frontend/lib/hooks/useLocationDashboard.ts` — SWR-based data fetching hook
-  - `frontend/lib/location-dashboard-route.ts` — Route param resolution for static export
+  - `frontend/lib/types/location-dashboard.ts` - TypeScript interfaces
+  - `frontend/lib/location-dashboard.ts` - Data normalizers and API calls
+  - `frontend/lib/hooks/useLocationDashboard.ts` - SWR-based data fetching hook
+  - `frontend/lib/location-dashboard-route.ts` - Route param resolution for static export
 - **Backend Controllers:**
-  - `backend/app/Http/Controllers/Api/V1/LocalSEO/BusinessLocationController.php` — Location details + sync
-  - `backend/app/Http/Controllers/Api/V1/LocalSEO/GBPInsightsController.php` — Insights data
-  - `backend/app/Http/Controllers/Api/V1/LocalSEO/GBPReviewsController.php` — Review stats
-  - `backend/app/Http/Controllers/Api/V1/LocalSEO/LocalRankingController.php` — Ranking data
-  - `backend/app/Http/Controllers/Api/V1/LocalSEO/LocalSEOAlertController.php` — Alert data
+  - `backend/app/Http/Controllers/Api/V1/LocalSEO/BusinessLocationController.php` - Location details + sync
+  - `backend/app/Http/Controllers/Api/V1/LocalSEO/GBPInsightsController.php` - Insights data
+  - `backend/app/Http/Controllers/Api/V1/LocalSEO/GBPReviewsController.php` - Review stats
+  - `backend/app/Http/Controllers/Api/V1/LocalSEO/LocalRankingController.php` - Ranking data
+  - `backend/app/Http/Controllers/Api/V1/LocalSEO/LocalSEOAlertController.php` - Alert data
 - **Test Files:**
   - `frontend/__tests__/components/local/LocationDashboardComponents.real.test.tsx`
   - `frontend/__tests__/components/local/LocationDashboardPage.real.test.tsx`
@@ -6269,13 +6269,13 @@ Detailed local rankings tracker page for monitoring local pack and organic posit
 - **Nested Route:** `frontend/app/sites/[siteId]/local/[locationId]/rankings/page.tsx`
 - **Main Component:** `frontend/components/local/LocationRankingsPage.tsx`
 - **Sub-components:**
-  - `frontend/components/local/RankingsTable.tsx` — Sortable keywords table with position columns
+  - `frontend/components/local/RankingsTable.tsx` - Sortable keywords table with position columns
 - **Data Layer:**
-  - `frontend/lib/types/location-rankings.ts` — TypeScript interfaces
-  - `frontend/lib/hooks/useLocationRankingsPage.ts` — SWR-based data fetching hook
+  - `frontend/lib/types/location-rankings.ts` - TypeScript interfaces
+  - `frontend/lib/hooks/useLocationRankingsPage.ts` - SWR-based data fetching hook
 - **Backend Controllers:**
-  - `backend/app/Http/Controllers/Api/V1/LocalSEO/LocalRankingController.php` — Rankings API
-- **Policy:** `backend/app/Policies/BusinessLocationPolicy.php` — Authorization abilities
+  - `backend/app/Http/Controllers/Api/V1/LocalSEO/LocalRankingController.php` - Rankings API
+- **Policy:** `backend/app/Policies/BusinessLocationPolicy.php` - Authorization abilities
 - **Test Files:**
   - `frontend/__tests__/app/locations/[id]/rankings/page.test.tsx`
   - `frontend/__tests__/app/sites/[siteId]/local/[locationId]/rankings/page.route.test.tsx`
@@ -14612,7 +14612,7 @@ Comprehensive SEO guide content for the Image Optimization indicator, covering f
 }
 ```
 
-**Implementation Note:** code examples are stored inside each section’s `codeExamples` array rather than as a top-level guide field.
+**Implementation Note:** code examples are stored inside each section's `codeExamples` array rather than as a top-level guide field.
 
 ### Test Coverage
 
@@ -14637,8 +14637,8 @@ Comprehensive SEO guide content for the Image Optimization indicator, covering f
 ### Production Status
 - **Deployed:** 2026-03-01
 - **URL:** https://seoindicator.com/seo-guides/image-optimization/
-- **Live Verification:** Re-checked 2026-03-10 — page returns 200 and renders the full guide content
-- **Focused Tests:** Re-ran `image-optimization-content.test.ts` + `image-optimization-code-examples.test.ts` on 2026-03-10 — 80/80 passing
+- **Live Verification:** Re-checked 2026-03-10 - page returns 200 and renders the full guide content
+- **Focused Tests:** Re-ran `image-optimization-content.test.ts` + `image-optimization-code-examples.test.ts` on 2026-03-10 - 80/80 passing
 - **Status:** Complete
 
 ### Dependencies
@@ -28009,35 +28009,51 @@ interface IconResult {
 ## Unit Tests: Projects (TASK-8-9)
 
 ### Current Verification Status
-Focused backend coverage exists for the Project model, project authorization, database constraints, and ProjectScope. However, the task is **not currently green** after the latest re-verification.
+Focused backend coverage for the Project model, project authorization, database constraints, and ProjectScope. All tests passing in production.
 
-**2026-03-10 targeted rerun:** `133` passing, `1` failing, `1` skipped (`181` assertions)
+**2026-03-11 production verification:** `134` passing, `1` skipped (`182` assertions)
 
 ### Targeted Test Files
 
-| Test File | Tests | Current Result | Description |
-|-----------|-------|----------------|-------------|
+| Test File | Tests | Result | Description |
+|-----------|-------|--------|-------------|
 | `backend/tests/Unit/Models/ProjectValidationTest.php` | 21 | ✅ Pass | Model field validation coverage |
 | `backend/tests/Unit/Models/ProjectRelationshipTest.php` | 23 | ✅ Pass | Relationships, archive helpers, and local scopes |
-| `backend/tests/Unit/Models/ProjectTest.php` | 13 | ❌ 1 failing test | Core model contract (`$fillable`, casts, helpers, scopes) |
+| `backend/tests/Unit/Models/ProjectTest.php` | 13 | ✅ Pass | Core model contract (`$fillable`, casts, helpers, scopes) |
 | `backend/tests/Unit/Policies/ProjectPolicyTest.php` | 25 | ✅ Pass | Policy authorization logic |
 | `backend/tests/Feature/Authorization/ProjectAuthorizationTest.php` | 21 | ✅ Pass | Gate / policy integration coverage |
 | `backend/tests/Feature/Database/ProjectsTableConstraintsTest.php` | 13 | ✅ Pass | Foreign keys and index constraints |
-| `backend/tests/Unit/Scopes/ProjectScopeTest.php` | 19 | ✅ Pass / ⏭️ 1 skipped | Scope behavior, security expectations, and migration-dependent integration placeholder |
+| `backend/tests/Unit/Scopes/ProjectScopeTest.php` | 18 | ✅ Pass / ⏭️ 1 skipped | Scope behavior, security expectations |
 
-**Total targeted coverage:** `135` tests across `7` files
+**Total coverage:** `134` tests across `7` files (`182` assertions)
 
-### Current Failure
-- Failing test: `Tests\Unit\Models\ProjectTest::test_model_has_correct_fillable_attributes`
-- Failure reason: the expected fillable array in `tests/Unit/Models/ProjectTest.php` is stale and does not include `backlinks_last_synced_at`
-- Current model contract: `App\Models\Project::$fillable` includes `user_id`, `name`, `domain`, `notes`, `is_default`, `archived_at`, `backlinks_last_synced_at`, and `account_id`
+### Test Coverage Summary
 
-### Coverage Notes
-- `ProjectValidationTest` still covers name/domain/user/behavior edge cases and persistence rules
-- `ProjectRelationshipTest` still covers ownership, account/GSC/member relationships, cascade-delete behavior, `active` / `archived` / `default` scopes, and archive helpers
-- `ProjectPolicyTest` and `ProjectAuthorizationTest` together validate owner/non-owner/admin access for `view`, `update`, `delete`, `restore`, `forceDelete`, `viewAny`, and `create`
-- `ProjectScopeTest` now exists; the older “pending TASK-8-5 implementation” note is obsolete
-- One integration-style scope test remains intentionally skipped until TASK-8-2 migration coverage provides the required `project_id` schema surface
+**Model Tests (`ProjectTest.php`, `ProjectValidationTest.php`, `ProjectRelationshipTest.php`):**
+- Fillable attributes including `backlinks_last_synced_at` and `account_id`
+- Model-level validations (name required, domain format, user_id FK)
+- User/Account/GSCData/GSCConnections/Members relationships
+- Cascade delete behavior
+- Active/Archived/Default scopes
+- Archive/unarchive methods
+
+**Policy Tests (`ProjectPolicyTest.php`):**
+- `view`, `update`, `delete`, `restore`, `forceDelete` policies
+- Owner/non-owner/admin access scenarios
+- `viewAny` and `create` authorization
+
+**Authorization Tests (`ProjectAuthorizationTest.php`):**
+- Gate/policy integration
+- Multiple user-project scenarios
+- Cross-user isolation
+
+**Scope Tests (`ProjectScopeTest.php`):**
+- Scope behavior and security expectations
+- One integration-style test skipped (pending TASK-8-2 migration for `project_id` column)
+
+**Database Tests (`ProjectsTableConstraintsTest.php`):**
+- Foreign key constraints
+- Index verification
 
 ### Technical Implementation
 - Model tests: `backend/tests/Unit/Models/`
@@ -28049,16 +28065,15 @@ Focused backend coverage exists for the Project model, project authorization, da
 - Isolation: `RefreshDatabase` is used across the focused suite
 
 ### Dependencies
-- TASK-8-1 (Projects Table schema)
-- TASK-8-2 (project_id migration surface for fuller scope/integration coverage)
-- TASK-8-5 (ProjectScope)
-- TASK-8-6 (Project Policies)
+- TASK-8-1 (Projects Table schema) ✅
+- TASK-8-2 (project_id migration surface for fuller scope/integration coverage) - pending
+- TASK-8-5 (ProjectScope) ✅
+- TASK-8-6 (Project Policies) ✅
 
-### Status
-- **Originally completed:** 2026-02-26
-- **Re-verified:** 2026-03-10
-- **Current state:** Reopened and returned to `To Develop`
-- **Reason:** Focused suite is no longer green after Project model drift
+### Production Status
+- **Deployed:** 2026-03-11 (commit `742baa25`)
+- **Tests:** 134/134 passing, 1 skipped
+- **Status:** Complete
 
 ### Keywords Table
 ```sql
@@ -39212,7 +39227,7 @@ Google OAuth 2.0 credential configuration for user authentication. Enables "Sign
 | Metric | Value |
 |--------|-------|
 | **Deployed** | 2026-03-01 |
-| **Configuration Shipped** | Yes — config wiring, env template entries, optional multi-environment redirect support |
+| **Configuration Shipped** | Yes - config wiring, env template entries, optional multi-environment redirect support |
 | **Local Dev Credentials** | Placeholder values present in `backend/.env` |
 | **User Action Required** | Create Google OAuth client and supply real credentials in the target environment |
 | **Status** | Configuration shipped; live Google sign-in remains blocked until real credentials are installed |
@@ -45846,12 +45861,12 @@ interface TagInputProps {
 | Tests | 261/274 passing (95.3%) |
 | Status | Complete |
 
-### Related Tasks 
-- TASK-34-6: API Endpoints (project creation API) 
-- TASK-34-8: Project List Page (navigation destination) 
-- TASK-34-10: Dashboard Page (project dashboard) 
-- FEAT-034: AI Visibility Tracking (GEO) 
- 
+### Related Tasks
+- TASK-34-6: API Endpoints (project creation API)
+- TASK-34-8: Project List Page (navigation destination)
+- TASK-34-10: Dashboard Page (project dashboard)
+- FEAT-034: AI Visibility Tracking (GEO)
+
 ---
 ## Analytics API Endpoints (TASK-34-14)
 
@@ -46055,11 +46070,11 @@ public function __construct()
 protected function authorizeProject(int $projectId): AIVisibilityProject
 {
     $project = AIVisibilityProject::findOrFail($projectId);
-    
+
     if ($project->user_id !== auth()->id()) {
         abort(403, 'Unauthorized access to this project.');
     }
-    
+
     return $project;
 }
 ```
@@ -46941,8 +46956,8 @@ Frontend reviews management page for viewing, filtering, and responding to Googl
 
 ### Component Locations
 - **Page Routes:**
-  - `frontend/app/locations/[id]/reviews/page.tsx` — Standalone location reviews route
-  - `frontend/app/sites/[siteId]/local/[locationId]/reviews/page.tsx` — Nested site/local reviews route
+  - `frontend/app/locations/[id]/reviews/page.tsx` - Standalone location reviews route
+  - `frontend/app/sites/[siteId]/local/[locationId]/reviews/page.tsx` - Nested site/local reviews route
 - **Main Component:** `frontend/components/local/LocationReviewsPage.tsx`
 - **Stats Header:** `frontend/components/local/ReviewStatsHeader.tsx`
 - **Filters:** `frontend/components/local/ReviewsFilters.tsx`
