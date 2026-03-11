@@ -1,7 +1,7 @@
 # TASK-36-5: ContentRefreshPlannerService
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -222,3 +222,66 @@ Created comprehensive test suite for ContentRefreshPlannerService:
 ---
 
 *Created by SpecSystemAnalyst agent on 2026-03-10*
+
+---
+
+### Developer (2026-03-11 15:20)
+**Implementation Complete ✅**
+
+Created `ContentRefreshPlannerService` implementing all acceptance criteria:
+
+**Files Created:**
+- `backend/app/Services/ContentDecay/ContentRefreshPlannerService.php` - Main service implementation
+
+**Implementation Features:**
+
+1. **`generateRecommendations()` method** - Core method accepting `ContentDecayCandidate` and returning:
+   - `primary_recommendation` (string)
+   - `supporting_recommendations` (array, max 3 items)
+   - `task_suggestions` (array of task objects)
+
+2. **Recommendation Templates** - All 10 trigger types supported:
+   - `audit_issues_present` → technical_fix (critical, 3 days)
+   - `clicks_down` → traffic_recovery (high, 7 days)
+   - `ctr_down` → meta_update (high, 7 days)
+   - `avg_position_down` → ranking_recovery (medium, 10 days)
+   - `tracked_rankings_down` → keyword_optimization (medium, 10 days)
+   - `impressions_down` → visibility_recovery (medium, 14 days)
+   - `stale_content` → content_refresh (high, 14 days)
+   - `ai_visibility_down` → geo_optimization (medium, 21 days)
+   - `competitor_gain_suspected` → competitive_response (medium, 14 days)
+   - `internal_link_weakness` → internal_linking (low, 21 days)
+
+3. **Placeholder Interpolation** - Templates support:
+   - `{count}` - Issue/keyword counts
+   - `{percent}` - Percentage changes
+   - `{age_days}` - Content age
+   - `{positions}` - Position changes
+
+4. **Priority Escalation**:
+   - Severity-based escalation (critical → all tasks critical)
+   - Evidence magnitude thresholds (e.g., 40%+ CTR drop → critical)
+   - High severity reduces due days by 25%
+
+5. **Composite Recommendations**:
+   - Multiple triggers combine into unified guidance
+   - Audit issues always prioritized first
+   - Supporting recommendations limited to 3
+
+6. **Page-Type Variations**:
+   - `blog` - Content refresh focus
+   - `product` - Competitive/comparison focus  
+   - `landing` - CTA and conversion focus
+   - `tool` - Feature documentation focus
+
+**Test Results:**
+- All 45 tests pass (47 assertions)
+- Tests cover: instantiation, single triggers (CTR, audit, stale, position), edge cases
+
+**Technical Notes:**
+- Uses Laravel's `ContentDecayCandidate` model with proper type hinting
+- Carbon for date calculations
+- No external dependencies (pure business logic)
+- Configurable templates and thresholds
+
+**Status:** `To Develop` → `To Test Locally`
