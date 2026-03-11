@@ -1,7 +1,7 @@
 # TASK-8-9: Unit Tests for Project Features
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
