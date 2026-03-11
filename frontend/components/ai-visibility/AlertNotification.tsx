@@ -4,12 +4,13 @@ import React from 'react';
 import { TrendingUp, TrendingDown, AlertTriangle, Meh, Check, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Alert, AlertType } from '@/lib/ai-visibility/types';
+import { generateAlertMessage, generateRecommendations } from '@/lib/ai-visibility/types';
 
 interface AlertNotificationProps {
   alert?: Alert;
-  onClick?: (id: string) => void;
-  onMarkRead?: (id: string) => void;
-  onResolve?: (id: string) => void;
+  onClick?: (id: number) => void;
+  onMarkRead?: (id: number) => void;
+  onResolve?: (id: number) => void;
   isLoading?: boolean;
   variant?: 'default' | 'compact' | 'full';
   disabled?: boolean;
@@ -54,7 +55,9 @@ const alertTypeConfig: Record<AlertType, {
   },
 };
 
-function formatTimeAgo(dateString: string): string {
+function formatTimeAgo(dateString: string | null): string {
+  if (!dateString) return 'Unknown';
+  
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -134,6 +137,10 @@ export function AlertNotification({
   const config = alertTypeConfig[alert.alert_type];
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
 
+  // Generate message and recommendations from backend data
+  const message = generateAlertMessage(alert);
+  const recommendations = generateRecommendations(alert);
+
   const handleClick = (e: React.MouseEvent) => {
     if (disabled) return;
     onClick?.(alert.id);
@@ -161,14 +168,18 @@ export function AlertNotification({
     }
   };
 
+  // Use change_percent from backend (not percentage_change)
   const percentageChangeClass = 
-    alert.percentage_change > 0 
+    alert.change_percent > 0 
       ? 'text-emerald-600' 
-      : alert.percentage_change < 0 
+      : alert.change_percent < 0 
         ? 'text-rose-600' 
         : 'text-slate-500';
 
-  const percentagePrefix = alert.percentage_change > 0 ? '+' : '';
+  const percentagePrefix = alert.change_percent > 0 ? '+' : '';
+
+  // Use triggered_at for time display, fallback to created_at
+  const timeAgo = formatTimeAgo(alert.triggered_at || alert.created_at);
 
   return (
     <div
@@ -223,8 +234,8 @@ export function AlertNotification({
                 )}
               >
                 {variant === 'compact' 
-                  ? truncateText(alert.message, 60) 
-                  : truncateText(alert.message, 150)}
+                  ? truncateText(message, 60) 
+                  : truncateText(message, 150)}
               </p>
             </div>
 
@@ -242,7 +253,7 @@ export function AlertNotification({
             {/* Time Ago */}
             <span className="flex items-center gap-1 text-xs text-slate-500">
               <Clock className="h-3 w-3" />
-              {formatTimeAgo(alert.created_at)}
+              {timeAgo}
             </span>
 
             {/* Percentage Change */}
@@ -250,7 +261,7 @@ export function AlertNotification({
               data-testid="percentage-change"
               className={cn('text-xs font-medium', percentageChangeClass)}
             >
-              {percentagePrefix}{alert.percentage_change}%
+              {percentagePrefix}{alert.change_percent.toFixed(1)}%
             </span>
 
             {/* Resolved Badge */}
@@ -263,9 +274,9 @@ export function AlertNotification({
           </div>
 
           {/* Recommendations Preview (full variant only) */}
-          {variant === 'full' && alert.recommendations.length > 0 && (
+          {variant === 'full' && recommendations.length > 0 && (
             <div data-testid="recommendations-preview" className="mt-3 space-y-1">
-              {alert.recommendations.map((rec, i) => (
+              {recommendations.map((rec, i) => (
                 <p key={i} className="text-xs text-slate-500 dark:text-slate-400">
                   • {rec}
                 </p>

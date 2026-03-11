@@ -10,8 +10,8 @@ interface AlertBellProps {
   alerts?: Alert[];
   unreadCount?: number;
   onViewAll?: () => void;
-  onAlertClick?: (id: string) => void;
-  onMarkRead?: (id: string) => void;
+  onAlertClick?: (id: number) => void;
+  onMarkRead?: (id: number) => void;
   onRefetch?: () => void;
   isLoading?: boolean;
   pollingInterval?: number;
@@ -32,7 +32,7 @@ export function AlertBell({
   desktopNotificationsEnabled = false,
 }: AlertBellProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [prevAlertsLength, setPrevAlertsLength] = useState(0);
+  const [prevUnreadCount, setPrevUnreadCount] = useState(0);
   const [badgeAnimating, setBadgeAnimating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -47,17 +47,17 @@ export function AlertBell({
 
   // Badge animation on count change
   useEffect(() => {
-    if (unreadCount !== prevAlertsLength) {
+    if (unreadCount !== prevUnreadCount) {
       setBadgeAnimating(true);
       const timer = setTimeout(() => setBadgeAnimating(false), 500);
-      setPrevAlertsLength(unreadCount);
+      setPrevUnreadCount(unreadCount);
       return () => clearTimeout(timer);
     }
-  }, [unreadCount, prevAlertsLength]);
+  }, [unreadCount, prevUnreadCount]);
 
   // New alert notification
   useEffect(() => {
-    if (alerts.length > prevAlertsLength && alerts.length > 0) {
+    if (alerts.length > 0 && unreadCount > prevUnreadCount && unreadCount > 0) {
       const newAlert = alerts[0];
       
       // Sound notification
@@ -75,8 +75,13 @@ export function AlertBell({
       // Desktop notification
       if (desktopNotificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         try {
-          new Notification('New Alert', {
-            body: newAlert.message,
+          // Create a simple message from alert type
+          const message = newAlert.change_percent >= 0 
+            ? `${newAlert.project_name} visibility increased by ${Math.abs(newAlert.change_percent).toFixed(1)}%`
+            : `${newAlert.project_name} visibility decreased by ${Math.abs(newAlert.change_percent).toFixed(1)}%`;
+            
+          new Notification('New AI Visibility Alert', {
+            body: message,
             icon: '/favicon.ico',
           });
         } catch {
@@ -84,7 +89,7 @@ export function AlertBell({
         }
       }
     }
-  }, [alerts.length, prevAlertsLength, soundEnabled, desktopNotificationsEnabled]);
+  }, [alerts, unreadCount, prevUnreadCount, soundEnabled, desktopNotificationsEnabled]);
 
   // Click outside to close
   useEffect(() => {
@@ -131,7 +136,7 @@ export function AlertBell({
   }, []);
 
   const handleAlertClick = useCallback(
-    (id: string) => {
+    (id: number) => {
       onAlertClick?.(id);
       setIsOpen(false);
     },
@@ -205,14 +210,14 @@ export function AlertBell({
           className={cn(
             'absolute z-50 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700',
             'animate-fade-in',
-            dropdownPosition === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2',
+            dropdownPosition === 'bottom' ? 'top-full mt-2 right-0' : 'bottom-full mb-2 right-0',
             isMobile && 'left-0 right-0 w-full'
           )}
           role="menu"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700">
-            <h3 className="font-medium text-slate-900 dark:text-slate-100">Recent Alerts</h3>
+            <h3 className="font-medium text-slate-900 dark:text-slate-100">AI Visibility Alerts</h3>
             <button
               onClick={() => setIsOpen(false)}
               className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
@@ -265,7 +270,7 @@ export function AlertBell({
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg"
               role="link"
             >
-              View All
+              View All Alerts
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
@@ -273,7 +278,7 @@ export function AlertBell({
       )}
 
       {/* Toast for new alerts */}
-      {isOpen && alerts.length > prevAlertsLength && (
+      {isOpen && unreadCount > prevUnreadCount && (
         <div
           role="alert"
           className="absolute top-full mt-2 right-0 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg animate-slide-in"
