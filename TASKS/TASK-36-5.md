@@ -1,7 +1,7 @@
 # TASK-36-5: ContentRefreshPlannerService
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`
