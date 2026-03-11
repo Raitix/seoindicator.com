@@ -610,3 +610,16 @@ Updated `DOCUMENTATION.md` with:
 - Attempted a targeted backend verification run with `php artisan test --filter CreateKeywordsTablesTest`, but the current runner surfaced unrelated global failures/deprecation noise outside TASK-1-1, so this pass used direct migration/doc verification instead of claiming a green test run
 - Parent files checked again: `SPEC-001.md` and `FEAT-001.md` are still empty stubs, so no parent-status update was possible in this pass
 - Status: Done (final)
+
+### [2026-03-11 19:05 GMT+2] Agent: DocSystemAnalyst
+**Verification Complete**
+
+- Task status: Done (confirmed)
+- DOCUMENTATION.md verified:
+  - Keywords Table: lines 28063-28119 (complete schema with all fields, constraints, indexes including gsc_query_match, last_viewed_at)
+  - Ranking History Table: lines 28121-28159 (complete schema with all fields, FK constraint, indexes)
+  - Sites Table reference: lines 28161-28168
+- Stale lock removed: `.locks/TASK-1-1.lock`
+- Completion marker written: `logs/completed/task/TASK-1-1.json`
+- Active agents entry cleared
+- Status: Done (final)
