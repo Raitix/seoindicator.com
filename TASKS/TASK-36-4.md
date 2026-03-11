@@ -1,7 +1,7 @@
 # TASK-36-4: ContentDecayReasonService
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -265,3 +265,25 @@ All 122 unit tests passed (168 assertions) in 16.07s.
 **Decision:** PASS → Ready for DevOps deployment
 
 **Status:** `To Test Locally` → `To Deploy`
+
+### DevOps (2026-03-11 17:00 GMT+2)
+**Deployment Complete - SUCCESS**
+
+Deployed commit `dac05c79` to production.
+
+**Deployment Details:**
+| Step | Status | Duration |
+|------|--------|----------|
+| Fetch origin | ✅ | 2s |
+| Build frontend | ✅ | 71s |
+| Deploy to production | ✅ | 76s |
+| Smoke tests | ✅ | 8s |
+
+**Verification:**
+- ✅ Homepage loaded successfully
+- ✅ Login page loaded successfully
+- ✅ Deployment log: `20260311T145731Z-8f86a19c.json`
+
+**Note:** Had to install missing `satori` npm dependency before deployment (used for OG image generation).
+
+**Status:** `To Deploy` → `To Test Prod`
