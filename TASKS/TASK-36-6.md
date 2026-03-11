@@ -1,7 +1,7 @@
 # TASK-36-6: ContentDecayDetectionService
 
 ## STATUS
-`Testing Prod`
+`Done`
 
 ## PRIORITY
 `High`
@@ -397,3 +397,38 @@ Created comprehensive test suite for ContentDecayDetectionService - the main orc
 - AnnotationCategoryTest failures unrelated to this task
 
 **Status:** `To Test Prod` → Ready for ProdTester
+
+---
+
+### ProdTester (2026-03-11 19:15 GMT+2)
+**Production Testing Complete ✅**
+
+**Test Execution Summary:**
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| Unit Tests | 48 | 67 | ✅ PASSED |
+| Feature Tests | 10 | 28 | ✅ PASSED |
+| Production Smoke | 2 | - | ✅ PASSED |
+| **Total** | **60** | **95** | ✅ **ALL PASSED** |
+
+**Production Validation:**
+| Check | Result |
+|-------|--------|
+| Service class deployed | ✅ `ContentDecayDetectionService.php` exists |
+| Container binding | ✅ Interface bound in AppServiceProvider |
+| Dependencies injected | ✅ ScoringService, ReasonService, PlannerService |
+| Production homepage | ✅ 200 OK |
+| Production login page | ✅ 200 OK |
+| Deployment log | ✅ `20260311T165726Z-7eec72b4` success |
+
+**Test Categories Verified:**
+1. ✅ Service Instantiation (SI-001 to SI-010)
+2. ✅ gatherSignals() with graceful degradation
+3. ✅ compareWindows() delta/percentage calculations
+4. ✅ Eligibility filtering thresholds
+5. ✅ Cooldown/suppression rules
+6. ✅ upsertCandidate() create/update logic
+7. ✅ Security tests (SQL injection, XSS)
+8. ✅ Full integration flow
+
+**Status:** `Done` → Task Complete
