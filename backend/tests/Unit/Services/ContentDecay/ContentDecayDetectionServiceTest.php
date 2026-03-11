@@ -152,7 +152,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, []);
@@ -172,7 +172,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
             'settings_json' => ['window_days' => 14, 'min_impressions' => 50],
         ]);
 
@@ -209,7 +209,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $gscData = [
@@ -234,7 +234,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $gscData = [
@@ -272,7 +272,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $gscData = [
@@ -295,7 +295,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $gscData = [
@@ -333,7 +333,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $gscData = [
@@ -356,7 +356,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => false, // Disabled
+            'detection_enabled' => false, // Disabled
         ]);
 
         $service = $this->createMockServiceWithGscData($site, []);
@@ -374,7 +374,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, []);
@@ -393,7 +393,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         Log::shouldReceive('error')->once();
@@ -413,7 +413,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $gscData = [
@@ -441,7 +441,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         // Create existing candidate that should be archived
@@ -482,7 +482,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $existingCandidate = ContentDecayCandidate::factory()->create([
@@ -526,7 +526,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $existingCandidate = ContentDecayCandidate::factory()->create([
@@ -556,7 +556,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         Log::shouldReceive('info')->atLeast()->once();
@@ -574,7 +574,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, []);
@@ -593,7 +593,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $gscData = [
@@ -630,7 +630,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, []);
@@ -649,7 +649,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
             'settings_json' => [
                 'window_days' => 14,
                 'min_impressions_threshold' => 50,
@@ -671,7 +671,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
             'settings_json' => ['window_days' => 7],
         ]);
 
@@ -690,7 +690,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
             'last_scanned_at' => null,
         ]);
 
@@ -710,7 +710,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => false,
+            'detection_enabled' => false,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, []);
@@ -728,7 +728,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, []);
@@ -751,7 +751,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, []);
@@ -774,7 +774,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, [
@@ -797,7 +797,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, [
@@ -817,7 +817,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, [
@@ -837,7 +837,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         // No rankings data available
@@ -858,7 +858,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, [
@@ -878,7 +878,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, [
@@ -899,7 +899,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, [
@@ -1105,7 +1105,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockService();
@@ -1139,7 +1139,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         // Create existing candidate
@@ -1468,7 +1468,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscError($site);
@@ -1486,7 +1486,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, [
@@ -1507,7 +1507,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, [
@@ -1528,7 +1528,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
@@ -1565,7 +1565,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, [
@@ -1676,7 +1676,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockServiceWithGscData($site, []);
@@ -1694,7 +1694,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
