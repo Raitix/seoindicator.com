@@ -1,7 +1,7 @@
 # TASK-36-6: ContentDecayDetectionService
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
