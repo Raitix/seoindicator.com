@@ -1,7 +1,7 @@
 # TASK-36-3: ContentDecayScoringService
 
 ## STATUS
-`To Test Prod`
+`To Document`
 
 ## PRIORITY
 `High`
@@ -299,3 +299,80 @@ class ContentDecayScoringService {
 - ✅ Output structure compatible with DetectionService
 
 **Status:** `To Test Locally` → `To Deploy`
+
+---
+
+### ProdTester (2026-03-11)
+**Production Testing Complete - PASS**
+
+**Deployment Verification:**
+- **Deployment ID:** `20260311T144706Z-aeee6afe`
+- **Commit:** `e29b56e90c69`
+- **Deployment Result:** `success`
+- **Production Smoke:** Homepage + Login Playwright smoke passed
+
+**Health Check:**
+```
+GET https://seoindicator.com/api/health
+Status: 200 OK
+Response: {"status":"ok","timestamp":"2026-03-11T14:55:14+00:00","database":"connected","app":"SEOIndicator","env":"production"}
+```
+
+**Unit Test Results (Against Production Code):**
+- **195 tests passed** (ContentDecayScoringService)
+- **382 assertions**
+- 3 failures in unrelated test (AnnotationCategoryTest - enum not yet implemented)
+- Duration: 17.75s
+
+**Smoke Test Results:**
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Service instantiation | No exceptions | PASS | ✅ |
+| Base weights sum | 1.0 | 1.0 | ✅ |
+| Zero signals decay | score=0, severity=low | score=0, severity=low | ✅ |
+| GSC-only confidence | 0.85 | 0.85 | ✅ |
+| GSC+rankings confidence | 0.93 | 0.93 | ✅ |
+| Full data confidence | 1.0 | 1.0 | ✅ |
+| Deterministic behavior | Same output x3 | Identical | ✅ |
+| Score range [0-100] | In range | Max=100 | ✅ |
+| Contributing factors | Array present | Array with factors | ✅ |
+| Score breakdown | Array present | Array with breakdown | ✅ |
+| Weight renormalization | Sum=1.0 | Sum=1.0 | ✅ |
+
+**Adversarial Security Tests:**
+| Test | Result | Notes |
+|------|--------|-------|
+| Injection in signal key | ✅ PASS | Unknown keys ignored |
+| Extremely long decimal | ✅ PASS | Precision handled |
+| Negative infinity (INF) | ✅ PASS | Treated as 0 |
+| Positive infinity (INF) | ✅ PASS | Clamped to valid range |
+| NaN value | ✅ PASS | Handled gracefully |
+| Array as value | ✅ PASS | Handled gracefully |
+| Nested structures | ✅ PASS | Ignored nested |
+| Null value (missing signal) | ✅ PASS | Renormalization applied |
+| All null values | ✅ PASS | Returns zero decay |
+| Output security | ✅ PASS | No sensitive data leaked |
+| Multi-instance determinism | ✅ PASS | Same result across instances |
+| XSS payload in key | ✅ PASS | Script tags ignored |
+| SQL injection in key | ✅ PASS | Injection ignored |
+| Very large array (1000 keys) | ✅ PASS | Completed in 0.01ms |
+| Score breakdown structure | ✅ PASS | All required keys present |
+
+**Service Characteristics:**
+- **Pure calculation service** - No external dependencies
+- **No API endpoints** - Internal service used by DetectionService
+- **Deterministic** - Same inputs always produce same outputs
+- **Secure** - No SQL injection, XSS, or data leak vulnerabilities
+- **Performant** - 1000+ key array processed in <1ms
+
+**Acceptance Criteria Final Verification:**
+- [x] `ContentDecayScoringService` class deployed to production
+- [x] `calculateDecayScore()` method returns correct structure
+- [x] Weight renormalization working when signals missing
+- [x] Confidence multiplier logic (0.85/0.93/1.00)
+- [x] Severity bands (low/medium/high/critical)
+- [x] Only negative movement contributes to decay
+- [x] Score is deterministic and reproducible
+- [x] All security tests pass
+
+**Status:** `To Test Prod` → `To Document`

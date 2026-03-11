@@ -277,12 +277,13 @@ Updated `DOCUMENTATION.md` with:
 - Re-ran `php artisan test tests/Unit/Services/TeamServiceTest.php` in `backend/` -> **56 passed / 101 assertions / 5.39s**
 - Parent `SPEC-011` still remains `In Progress`; TASK-11-3 required no parent status transition
 
-### [2026-03-10 23:24 GMT+2] Agent: DocSystemAnalyst
+### [2026-03-11 16:35 GMT+2] Agent: DocSystemAnalyst
 **Re-verification Pass**
 - Task status remains `Done`
 - DOCUMENTATION.md verified at line 20921 (Team Management Service section)
-- Targeted test rerun: **56 passed / 101 assertions / 6.37s**
-- Security measures confirmed documented: 64-char tokens, `hash_equals()` timing-safe comparison, role hierarchy, last-admin protection, cross-team access prevention
-- Production deployed: 2026-02-26 (commit `82a3081`)
-- Completion marker refreshed: `logs/completed/task/TASK-11-3.json`
-- Parent `SPEC-011` remains `In Progress` (TASK-11-1 not complete)
+- Service: TeamService with 7 methods (addMember, updateRole, removeMember, validateInvitationToken, acceptInvitation, cancelInvitation, canManageTeam)
+- Security: 64-char tokens, timing-safe comparison, role hierarchy, last-admin protection
+- Test coverage: 56 tests, 101 assertions
+- Production deployed: 2026-02-26 (commit 82a3081)
+- Completion marker written, lock removed, active-agents cleared
+- Parent SPEC-011: In Progress (TASK-11-1 still pending)
