@@ -203,8 +203,10 @@ const MockRecoveryBoardPage = () => {
       </div>
 
       {/* Kanban Board */}
-      <div data-testid="kanban-board" data-testid-dnd="context" className="flex gap-4 overflow-x-auto pb-4">
-        {columns.map((column) => (
+      <div data-testid="dnd-context">
+        <div data-testid="drag-overlay" />
+        <div data-testid="kanban-board" className="flex gap-4 overflow-x-auto pb-4">
+          {columns.map((column) => (
           <div
             key={column.id}
             data-testid={`column-${column.id}`}
@@ -290,6 +292,7 @@ const MockRecoveryBoardPage = () => {
             )}
           </div>
         ))}
+        </div>
       </div>
 
       {/* Loading State */}

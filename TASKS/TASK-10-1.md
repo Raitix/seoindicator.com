@@ -341,3 +341,16 @@ CREATE TABLE visibility_scores (
 - **Stale lock removed:** `.locks/TASK-10-1.lock`
 - **Completion marker:** Written to `logs/completed/task/TASK-10-1.json`
 - **Active agents:** Cleared (removed TASK-10-1 entry)
+
+### [2026-03-11 10:58 GMT+2] DocSystemAnalyst: Re-verification Complete ✅
+- **Documentation Verified:** Line 21529 in DOCUMENTATION.md (Visibility Scores Table section)
+- **Task Status:** Done (confirmed)
+- **SPEC-010 Status:** Done
+- **FEAT-010 Status:** Done
+- **Schema:** visibility_scores table with project_id, score (0-100), position/serp/volume/pwa components, keywords_count, calculated_at
+- **Model:** VisibilityScore with scopes (forProject, dateRange, latestPerProject), static methods (getLatestForProject, getTrendForProject)
+- **Factory states:** high (70-100), medium (40-69), low (0-39)
+- **Test coverage:** 19 tests, 47 assertions
+- **No stale lock found**
+- **Completion marker:** Written to `logs/completed/task/TASK-10-1.json`
+- **Active agents:** Entry cleared
