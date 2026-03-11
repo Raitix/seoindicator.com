@@ -2,22 +2,34 @@
  * Navigation Integration Tests
  * TASK-36-14: Navigation & Dashboard Integration
  * 
- * @jest-environment jsdom
+ * @vitest-environment jsdom
  */
 
 import React from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
-import * as nextNavigation from "next/navigation";
+import { vi, describe, test, expect } from "vitest";
 
-import { SiteNav } from "@/components/layout/SiteNav";
+// =============================================================================
+// Mock next/navigation
+// =============================================================================
+let mockPathname = "/sites/1/content-decay";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => mockPathname,
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+  }),
+}));
 
 // =============================================================================
 // Mock Lucide Icons
 // =============================================================================
 
-jest.mock("lucide-react", () => ({
+vi.mock("lucide-react", () => ({
   LayoutDashboard: () => <span data-testid="dashboard-icon">Dashboard</span>,
   Key: () => <span data-testid="key-icon">Key</span>,
   Search: () => <span data-testid="search-icon">Search</span>,
@@ -30,19 +42,14 @@ jest.mock("lucide-react", () => ({
   ChevronRight: () => <span data-testid="chevron-right-icon">ChevronRight</span>,
 }));
 
+// Import after mocks
+import { SiteNav } from "@/components/layout/SiteNav";
+
 // =============================================================================
 // NDI-001: Site Navigation Tests
 // =============================================================================
 
 describe("NDI-001: Site Navigation", () => {
-  beforeEach(() => {
-    jest.spyOn(nextNavigation, "usePathname").mockReturnValue("/sites/1/content-decay");
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
   test("NDI-001.1: Content Decay link in navigation", () => {
     render(<SiteNav siteId="1" />);
     const link = screen.getByTestId("nav-link-content-decay");
@@ -200,7 +207,7 @@ describe("NDI-002: Navigation Order", () => {
 
 describe("NDI-003: Collapsed State", () => {
   test("NDI-003.1: Collapse toggle works", async () => {
-    const onCollapsedChange = jest.fn();
+    const onCollapsedChange = vi.fn();
     render(<SiteNav siteId="1" isCollapsed={false} onCollapsedChange={onCollapsedChange} />);
     
     // Find and click the collapse button
@@ -211,7 +218,7 @@ describe("NDI-003: Collapsed State", () => {
   });
 
   test("NDI-003.2: Expand toggle works", async () => {
-    const onCollapsedChange = jest.fn();
+    const onCollapsedChange = vi.fn();
     render(<SiteNav siteId="1" isCollapsed={true} onCollapsedChange={onCollapsedChange} />);
     
     const expandBtn = screen.getByRole("button", { name: /expand/i });
