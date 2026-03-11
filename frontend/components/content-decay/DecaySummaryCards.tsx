@@ -1,162 +1,155 @@
-"use client";
+/**
+ * DecaySummaryCards Component
+ * Displays summary statistics for content decay in card format
+ * 
+ * @see TASK-36-11 for implementation requirements
+ */
 
 import * as React from "react";
-import { AlertTriangle, TrendingDown, TrendingUp, RefreshCw, FileText } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertTriangle,
+  TrendingDown,
+  TrendingUp,
+  RefreshCw,
+  FileText,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { DecaySummaryData } from "@/lib/types/content-decay";
 import { cn } from "@/lib/utils";
-import { DecaySummaryData } from "@/lib/types/content-decay";
 
-/**
- * Props for the DecaySummaryCards component
- */
 export interface DecaySummaryCardsProps {
-  /** Summary statistics for content decay */
-  summary: DecaySummaryData | null;
+  /** Summary statistics data */
+  summary: DecaySummaryData | null | undefined;
   /** Loading state */
   isLoading?: boolean;
-  /** Optional additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
 }
 
-/**
- * Format large numbers with K, M suffixes
- */
-function formatNumber(value: number): string {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`;
+function formatNumber(num: number): string {
+  if (num >= 1000000000) {
+    return `${(num / 1000000000).toFixed(1)}B`;
   }
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}K`;
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`;
   }
-  return value.toString();
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}K`;
+  }
+  return num.toString();
 }
 
-/**
- * Individual summary card component
- */
 interface SummaryCardProps {
   title: string;
-  value: string | number;
-  icon: React.ElementType;
-  iconColor: string;
-  description?: string;
-  isLoading: boolean;
+  value: number | string;
+  icon: React.ReactNode;
   ariaLabel: string;
+  valueClassName?: string;
+  isLoading?: boolean;
 }
 
 function SummaryCard({
   title,
   value,
-  icon: Icon,
-  iconColor,
-  description,
-  isLoading,
+  icon,
   ariaLabel,
+  valueClassName,
+  isLoading,
 }: SummaryCardProps) {
   return (
-    <Card className="relative overflow-hidden" role="article" aria-label={ariaLabel}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        <Icon className={cn("h-4 w-4", iconColor)} aria-hidden="true" />
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <Skeleton className="h-8 w-20" />
-        ) : (
-          <div className="text-2xl font-bold">{value}</div>
-        )}
-        {description && !isLoading && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        )}
-      </CardContent>
-    </Card>
+    <article
+      role="article"
+      aria-label={ariaLabel}
+      className="rounded-lg border bg-card p-4 shadow-sm"
+    >
+      <div className="flex items-center justify-between space-y-0 pb-2">
+        <span className="text-sm font-medium text-muted-foreground">{title}</span>
+        <span className="text-muted-foreground">{icon}</span>
+      </div>
+      {isLoading ? (
+        <Skeleton className="h-8 w-20" data-testid="skeleton" />
+      ) : (
+        <div
+          className={cn(
+            "text-2xl font-bold tabular-nums",
+            valueClassName
+          )}
+        >
+          {value}
+        </div>
+      )}
+    </article>
   );
 }
 
-/**
- * DecaySummaryCards displays a grid of summary statistics for the content
- * decay detection feature, including total candidates, critical count,
- * lost clicks, recovery upside, and recovered pages.
- *
- * @example
- * ```tsx
- * const summary = {
- *   totalCandidates: 45,
- *   criticalCount: 8,
- *   estimatedLostClicks: 1234,
- *   recoveryUpside: 5678,
- *   recoveredCount: 12
- * };
- *
- * <DecaySummaryCards summary={summary} />
- * ```
- */
 export function DecaySummaryCards({
   summary,
   isLoading = false,
   className,
 }: DecaySummaryCardsProps) {
-  const cards = [
+  // Default to zeros for null/undefined summary
+  const data: DecaySummaryData = summary ?? {
+    totalCandidates: 0,
+    criticalCount: 0,
+    highCount: 0,
+    mediumCount: 0,
+    lowCount: 0,
+    estimatedLostClicks: 0,
+    recoveryUpside: 0,
+    recoveredCount: 0,
+    lastScannedAt: null,
+  };
+
+  const cards: SummaryCardProps[] = [
     {
       title: "Total Candidates",
-      value: summary?.totalCandidates ?? 0,
-      icon: FileText,
-      iconColor: "text-blue-500",
-      ariaLabel: `Total candidates: ${summary?.totalCandidates ?? 0} pages needing attention`,
+      value: data.totalCandidates,
+      icon: <FileText className="h-4 w-4" data-testid="file-text-icon" />,
+      ariaLabel: `Total candidates: ${data.totalCandidates}`,
     },
     {
       title: "Critical",
-      value: summary?.criticalCount ?? 0,
-      icon: AlertTriangle,
-      iconColor: "text-red-500",
-      ariaLabel: `Critical severity: ${summary?.criticalCount ?? 0} pages`,
-      highlight: (summary?.criticalCount ?? 0) > 0,
+      value: data.criticalCount,
+      icon: <AlertTriangle className="h-4 w-4 text-red-500" data-testid="alert-triangle-icon" />,
+      ariaLabel: `Critical severity: ${data.criticalCount}`,
+      valueClassName: data.criticalCount > 0 ? "text-red-600" : undefined,
     },
     {
       title: "Lost Clicks",
-      value: formatNumber(summary?.estimatedLostClicks ?? 0),
-      icon: TrendingDown,
-      iconColor: "text-red-400",
-      ariaLabel: `Estimated lost clicks: ${formatNumber(summary?.estimatedLostClicks ?? 0)}`,
+      value: formatNumber(data.estimatedLostClicks),
+      icon: <TrendingDown className="h-4 w-4 text-red-500" data-testid="trending-down-icon" />,
+      ariaLabel: `Estimated lost clicks: ${formatNumber(data.estimatedLostClicks)}`,
+      valueClassName: "text-red-600",
     },
     {
       title: "Recovery Upside",
-      value: formatNumber(summary?.recoveryUpside ?? 0),
-      icon: TrendingUp,
-      iconColor: "text-green-500",
-      ariaLabel: `Potential recovery upside: ${formatNumber(summary?.recoveryUpside ?? 0)} clicks`,
+      value: formatNumber(data.recoveryUpside),
+      icon: <TrendingUp className="h-4 w-4 text-green-500" data-testid="trending-up-icon" />,
+      ariaLabel: `Potential recovery upside: ${formatNumber(data.recoveryUpside)}`,
+      valueClassName: "text-green-600",
     },
     {
       title: "Recovered",
-      value: summary?.recoveredCount ?? 0,
-      icon: RefreshCw,
-      iconColor: "text-emerald-500",
-      ariaLabel: `Successfully recovered pages: ${summary?.recoveredCount ?? 0}`,
+      value: data.recoveredCount,
+      icon: <RefreshCw className="h-4 w-4 text-green-500" data-testid="refresh-cw-icon" />,
+      ariaLabel: `Successfully recovered pages: ${data.recoveredCount}`,
+      valueClassName: "text-green-600",
     },
   ];
 
   return (
-    <div
-      className={cn("grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5", className)}
+    <section
       role="region"
       aria-label="Content decay summary statistics"
+      className={cn("grid gap-4 md:grid-cols-5", className)}
     >
-      {cards.map((card) => (
+      {cards.map((card, index) => (
         <SummaryCard
-          key={card.title}
-          title={card.title}
-          value={card.value}
-          icon={card.icon}
-          iconColor={card.iconColor}
+          key={index}
+          {...card}
           isLoading={isLoading}
-          ariaLabel={card.ariaLabel}
         />
       ))}
-    </div>
+    </section>
   );
 }
-
-export default DecaySummaryCards;

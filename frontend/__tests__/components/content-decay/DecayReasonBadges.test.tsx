@@ -122,7 +122,8 @@ describe("DecayReasonBadges", () => {
       const { container } = render(
         <DecayReasonBadges reasons={mockReasons} className="custom-class" />
       );
-      expect(container.firstChild).toHaveClass("custom-class");
+      const innerDiv = container.querySelector('[data-testid="reason-badges-container"]');
+      expect(innerDiv).toHaveClass("custom-class");
     });
   });
 
