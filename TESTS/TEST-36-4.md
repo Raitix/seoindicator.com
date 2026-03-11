@@ -4,7 +4,7 @@
 - **Task:** TASK-36-4: ContentDecayReasonService
 - **Specification:** SPEC-036: Content Decay Detection & Refresh Planner
 - **Feature:** FEAT-036: Content Decay Detection & Refresh Planner
-- **Status:** To Write Tests
+- **Status:** To Develop
 
 ---
 
@@ -18,7 +18,7 @@ This document describes the test coverage for `ContentDecayReasonService`, the s
 
 | Test File | Tests | Assertions | Status |
 |-----------|-------|------------|--------|
-| `ContentDecayReasonServiceTest.php` | 112 | 200+ | Pending |
+| `ContentDecayReasonServiceTest.php` | 112 | 200+ | Ready |
 
 ---
 

@@ -1,7 +1,7 @@
 # TASK-36-4: ContentDecayReasonService
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -97,6 +97,43 @@ Create the reason code assignment service that converts numeric deltas into huma
 ---
 
 ## Comments
+
+### PreTester (2026-03-11)
+**Test Design Complete**
+
+Created comprehensive test suite with 112 test scenarios in `ContentDecayReasonServiceTest.php`.
+
+**Test Categories:**
+| Category | Tests | Coverage |
+|----------|-------|----------|
+| INST (Service Instantiation) | 5 | Container binding, thresholds |
+| CLICKS (Clicks Down) | 8 | Threshold triggers, edge cases |
+| IMP (Impressions Down) | 8 | Threshold triggers, evidence |
+| CTR (CTR Down) | 10 | Meaningful impressions check |
+| POS (Position Down) | 8 | Null handling, page drops |
+| RANK (Rankings Down) | 6 | Visibility score changes |
+| AUDIT (Audit Issues) | 5 | Critical issue prioritization |
+| STALE (Stale Content) | 6 | Age thresholds |
+| ANN (Annotation Changed) | 5 | Time window checks |
+| AI (AI Visibility) | 5 | GEO metric changes |
+| COMP (Competitor Gain) | 6 | Position + stable demand |
+| LINK (Link Weakness) | 5 | Internal link thresholds |
+| PRIMARY (Primary Selection) | 12 | Priority ordering |
+| EVID (Evidence Payload) | 10 | Structure, calculations |
+| THRESH (Configuration) | 8 | Defaults, custom, config |
+| EDGE (Edge Cases) | 10 | Nulls, extremes, unicode |
+| RET (Return Structure) | 5 | Response format |
+
+**Key Test Patterns:**
+- Tests use mock signal arrays (no Eloquent model dependency)
+- Each reason code has dedicated threshold tests
+- Primary selection tests verify priority ordering
+- Evidence tests verify calculation accuracy (percent/absolute changes)
+
+**Documentation:**
+- `TESTS/TEST-36-4.md` updated with full scenario documentation
+
+**Status:** `To Develop` → Ready for Developer implementation
 
 ### ProjectManager (2026-03-10)
 **Prioritization Complete**
