@@ -1,7 +1,7 @@
 # TASK-8-9: Unit Tests for Project Features
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -256,3 +256,16 @@ All acceptance criteria verified:
 - [x] Scope coverage reflects current implementation
 
 **Status changed:** `To Test Prod` → `To Document`
+
+### [2026-03-11 23:10 GMT+2] Agent: DocSystemAnalyst
+**Documentation Updated** ✅
+
+Updated DOCUMENTATION.md section for TASK-8-9:
+- Changed from "not currently green" to "All tests passing in production"
+- Updated test counts: 134 passing, 1 skipped (182 assertions)
+- Updated all test file results to ✅ Pass
+- Removed outdated failure information
+- Added production deployment info (commit `742baa25`)
+- Set status to `Done`
+
+**Task Complete** - Unit tests for Project model, policies, and scopes are green and deployed.
