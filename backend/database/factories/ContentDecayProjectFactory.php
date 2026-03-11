@@ -38,6 +38,7 @@ class ContentDecayProjectFactory extends Factory
             'digest_frequency' => 'weekly',
             'settings_json' => null,
             'last_scanned_at' => null,
+            'last_digest_sent_at' => null,
         ];
     }
 

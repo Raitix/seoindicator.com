@@ -43,6 +43,7 @@ class ProjectTest extends TestCase
             'notes',
             'is_default',
             'archived_at',
+            'backlinks_last_synced_at',
             'account_id',
         ];
 
@@ -60,6 +61,7 @@ class ProjectTest extends TestCase
 
         $this->assertEquals('boolean', $casts['is_default']);
         $this->assertEquals('datetime', $casts['archived_at']);
+        $this->assertEquals('datetime', $casts['backlinks_last_synced_at']);
     }
 
     /**
