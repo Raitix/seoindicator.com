@@ -97,7 +97,7 @@ const formatFullDate = (value: string): string => {
 const CustomTooltip: React.FC<{
   active?: boolean;
   payload?: readonly {
-    dataKey?: string | number;
+    dataKey?: string | number | ((obj: any) => any);
     value: number | null;
     color: string;
   }[];
