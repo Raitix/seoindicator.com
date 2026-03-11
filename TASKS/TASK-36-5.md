@@ -1,7 +1,7 @@
 # TASK-36-5: ContentRefreshPlannerService
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -132,6 +132,15 @@ Create the recommendation engine that maps reason codes to concrete refresh acti
 - Cleared stale completion marker from interrupted run
 - ContentRefreshPlannerService implementation verified at commit 9340f858
 - Running production deployment
+
+---
+
+### DevOps (2026-03-11 18:25)
+**Deployment Started**
+
+- Status updated to `In Deployment`
+- ContentRefreshPlannerService implementation verified
+- Running production deployment via `scripts/deploy-prod.ps1`
 
 ---
 
