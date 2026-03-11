@@ -1,13 +1,33 @@
+/**
+ * Content Decay Recovery Report Page
+ * Shows recovery statistics, timeline, and before/after comparisons
+ * 
+ * Task: TASK-36-13 - Frontend Pages - Refresh Queue & Board
+ * Spec: SPEC-036 - Content Decay Detection & Refresh Planner
+ */
+
 "use client";
 
-import { Suspense, useState, useMemo } from "react";
+import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Metadata } from "next";
-import { ArrowLeft, Download, TrendingUp, BarChart3, Calendar, ArrowUpRight } from "lucide-react";
+import {
+  Settings,
+  LayoutDashboard,
+  KanbanSquare,
+  BarChart3,
+  Download,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  Target,
+  Calendar,
+  ExternalLink,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -15,137 +35,300 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RecoveryComparisonCard } from "@/components/content-decay";
 import {
-  useContentDecayRecovery,
-  useExportContentDecay,
-} from "@/lib/hooks/useContentDecay";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { RecoveryComparisonCard } from "@/components/content-decay/RecoveryComparisonCard";
+import { useContentDecayRecovery } from "@/lib/hooks/useContentDecay";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = {
-  title: "Recovery Report | SEOIndicator",
-  description: "Track content recovery progress and outcomes.",
-};
+// ============================================================
+// Loading Skeleton
+// ============================================================
 
-function formatNumber(num: number): string {
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toString();
+function PageSkeleton() {
+  return (
+    <div className="space-y-6 p-6" data-testid="page-skeleton">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-10 w-64" />
+      </div>
+      <div className="grid grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24" data-testid="skeleton" />
+        ))}
+      </div>
+      <Skeleton className="h-64" />
+      <Skeleton className="h-96" />
+    </div>
+  );
 }
 
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
+// ============================================================
+// Navigation Tabs
+// ============================================================
+
+interface NavTabsProps {
+  siteId: string;
+  activeTab: string;
 }
 
-function StatCard({
-  title,
-  value,
-  icon,
-  trend,
-  description,
-}: {
+function NavTabs({ siteId, activeTab }: NavTabsProps) {
+  const router = useRouter();
+
+  return (
+    <Tabs value={activeTab} className="w-auto">
+      <TabsList>
+        <TabsTrigger
+          value="queue"
+          onClick={() => router.push(`/sites/${siteId}/content-decay`)}
+          className="gap-1.5"
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          Queue
+        </TabsTrigger>
+        <TabsTrigger
+          value="board"
+          onClick={() => router.push(`/sites/${siteId}/content-decay/board`)}
+          className="gap-1.5"
+        >
+          <KanbanSquare className="h-4 w-4" />
+          Board
+        </TabsTrigger>
+        <TabsTrigger
+          value="recovery"
+          onClick={() => router.push(`/sites/${siteId}/content-decay/recovery`)}
+          className="gap-1.5"
+        >
+          <BarChart3 className="h-4 w-4" />
+          Recovery
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+}
+
+// ============================================================
+// Summary Stat Card
+// ============================================================
+
+interface StatCardProps {
   title: string;
   value: string | number;
   icon: React.ReactNode;
-  trend?: "up" | "down" | "neutral";
   description?: string;
-}) {
+  trend?: "up" | "down" | "neutral";
+  className?: string;
+}
+
+function StatCard({ title, value, icon, description, trend, className }: StatCardProps) {
   return (
-    <Card role="article" aria-label={title}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        <span className="text-muted-foreground">{icon}</span>
-      </CardHeader>
-      <CardContent>
-        <div
-          className={cn(
-            "text-2xl font-bold tabular-nums",
-            trend === "up" && "text-green-500",
-            trend === "down" && "text-red-500"
-          )}
-          data-testid={`stat-value-${title.toLowerCase().replace(/\s+/g, "-")}`}
-        >
-          {value}
+    <Card className={cn("bg-slate-800/50 border-slate-700", className)}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-slate-400">{title}</span>
+          {icon}
         </div>
-        {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        )}
+        <div className="mt-2">
+          <span
+            className={cn(
+              "text-2xl font-bold",
+              trend === "up" && "text-green-400",
+              trend === "down" && "text-red-400"
+            )}
+          >
+            {value}
+          </span>
+          {description && (
+            <p className="text-xs text-slate-500 mt-1">{description}</p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
 }
 
-function TimelineChart({
-  data,
-}: {
-  data: Array<{ date: string; recovered: number; clicks: number }>;
-}) {
+// ============================================================
+// Timeline Chart (Simple Bar Visualization)
+// ============================================================
+
+interface TimelineChartProps {
+  data: Array<{
+    date: string;
+    recovered: number;
+    clicks: number;
+  }>;
+}
+
+function TimelineChart({ data }: TimelineChartProps) {
   if (!data || data.length === 0) {
     return (
-      <div className="text-center text-muted-foreground py-8" data-testid="no-timeline-data">
+      <div className="text-center text-slate-500 py-12">
         No timeline data available
       </div>
     );
   }
 
-  const maxRecovered = Math.max(...data.map((d) => d.recovered), 1);
-  const maxClicks = Math.max(...data.map((d) => d.clicks), 1);
+  const maxValue = Math.max(...data.map((d) => d.recovered), 1);
 
   return (
-    <div
-      className="space-y-4"
-      data-testid="timeline-chart"
-      role="img"
-      aria-label="Recovery timeline chart"
-    >
-      {/* Simple bar chart representation */}
-      <div className="flex items-end gap-2 h-40 border-b border-slate-800 pb-4">
-        {data.slice(-14).map((point, i) => {
-          const heightPercent = (point.recovered / maxRecovered) * 100;
+    <div className="space-y-4">
+      {/* Chart */}
+      <div className="flex items-end gap-2 h-40" data-testid="timeline-chart">
+        {data.slice(-14).map((item, index) => {
+          const height = (item.recovered / maxValue) * 100;
           return (
             <div
-              key={i}
+              key={index}
               className="flex-1 flex flex-col items-center gap-1"
-              data-testid={`timeline-bar-${i}`}
+              data-testid={`bar-${index}`}
             >
               <div
-                className="w-full bg-green-500/30 hover:bg-green-500/50 transition-colors rounded-t relative group"
-                style={{ height: `${Math.max(heightPercent, 5)}%` }}
-              >
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap">
-                  {point.recovered} recovered
-                </div>
-              </div>
+                className="w-full bg-green-500/80 rounded-t"
+                style={{ height: `${Math.max(height, 4)}%` }}
+                title={`${item.recovered} recovered on ${item.date}`}
+              />
+              <span className="text-xs text-slate-500 truncate w-full text-center">
+                {new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </span>
             </div>
           );
         })}
       </div>
 
-      {/* X-axis labels */}
-      <div className="flex gap-2 text-xs text-muted-foreground">
-        {data.slice(-14).map((point, i) => (
-          <div key={i} className="flex-1 text-center truncate">
-            {i % 3 === 0 ? formatDate(point.date).split(",")[0] : ""}
-          </div>
-        ))}
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 text-xs text-slate-400">
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 bg-green-500/80 rounded" />
+          <span>Pages Recovered</span>
+        </div>
       </div>
     </div>
   );
 }
 
-function RecoveryStories({
-  stories,
-}: {
+// ============================================================
+// Comparison Table
+// ============================================================
+
+interface ComparisonTableProps {
+  comparisons: Array<{
+    id: number;
+    pageUrl: string;
+    pageTitle: string;
+    pageType: string;
+    before: {
+      clicks: number;
+      impressions: number;
+      ctr: number;
+      position: number;
+    };
+    after: {
+      clicks: number;
+      impressions: number;
+      ctr: number;
+      position: number;
+    };
+    delta: {
+      clicks: number;
+      impressions: number;
+      ctr: number;
+      position: number;
+    };
+  }>;
+}
+
+function ComparisonTable({ comparisons }: ComparisonTableProps) {
+  if (!comparisons || comparisons.length === 0) {
+    return (
+      <div className="text-center text-slate-500 py-12">
+        No recovery comparisons available
+      </div>
+    );
+  }
+
+  const formatNumber = (n: number) => n.toLocaleString();
+  const formatPercent = (n: number) => `${(n * 100).toFixed(2)}%`;
+
+  return (
+    <div className="rounded-lg border border-slate-700 overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-slate-800/50 hover:bg-slate-800/50">
+            <TableHead className="text-slate-300">Page</TableHead>
+            <TableHead className="text-slate-300 text-right">Before Clicks</TableHead>
+            <TableHead className="text-slate-300 text-right">After Clicks</TableHead>
+            <TableHead className="text-slate-300 text-right">Clicks Change</TableHead>
+            <TableHead className="text-slate-300 text-right">Position Change</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {comparisons.map((item) => (
+            <TableRow key={item.id} className="border-slate-700">
+              <TableCell>
+                <div className="max-w-xs">
+                  <p className="text-sm font-medium text-slate-200 truncate">
+                    {item.pageTitle || "Untitled"}
+                  </p>
+                  <a
+                    href={item.pageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-slate-400 hover:text-slate-300 flex items-center gap-1"
+                  >
+                    {item.pageUrl.length > 40
+                      ? item.pageUrl.substring(0, 40) + "..."
+                      : item.pageUrl}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              </TableCell>
+              <TableCell className="text-right text-slate-400">
+                {formatNumber(item.before.clicks)}
+              </TableCell>
+              <TableCell className="text-right text-slate-300 font-medium">
+                {formatNumber(item.after.clicks)}
+              </TableCell>
+              <TableCell className="text-right">
+                <span
+                  className={cn(
+                    "font-medium",
+                    item.delta.clicks >= 0 ? "text-green-400" : "text-red-400"
+                  )}
+                >
+                  {item.delta.clicks >= 0 ? "+" : ""}
+                  {formatNumber(item.delta.clicks)}
+                </span>
+              </TableCell>
+              <TableCell className="text-right">
+                <span
+                  className={cn(
+                    "font-medium",
+                    item.delta.position <= 0 ? "text-green-400" : "text-red-400"
+                  )}
+                >
+                  {item.delta.position <= 0 ? "+" : ""}
+                  {Math.abs(item.delta.position).toFixed(1)}
+                </span>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+// ============================================================
+// Recovery Stories
+// ============================================================
+
+interface RecoveryStoriesProps {
   stories: Array<{
     id: number;
     pageUrl: string;
@@ -155,50 +338,69 @@ function RecoveryStories({
     daysToRecovery: number;
     summary: string;
   }>;
-}) {
+}
+
+function RecoveryStories({ stories }: RecoveryStoriesProps) {
   if (!stories || stories.length === 0) {
     return (
-      <div className="text-center text-muted-foreground py-8" data-testid="no-stories">
-        No recovery stories yet
+      <div className="text-center text-slate-500 py-12">
+        No recovery stories available yet
       </div>
     );
   }
 
   return (
-    <div className="space-y-4" data-testid="recovery-stories" role="list">
-      {stories.slice(0, 5).map((story) => (
+    <div className="grid gap-4 md:grid-cols-2" data-testid="recovery-stories">
+      {stories.slice(0, 4).map((story) => (
         <Card
           key={story.id}
-          role="listitem"
-          className="hover:border-primary/50 transition-colors"
+          className="bg-slate-800/50 border-slate-700"
           data-testid={`story-${story.id}`}
         >
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <h4 className="font-medium truncate">{story.pageTitle || "Untitled"}</h4>
-                <a
-                  href={story.pageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-primary truncate block"
-                >
-                  {story.pageUrl}
-                </a>
-                <p className="text-sm text-muted-foreground mt-2">{story.summary}</p>
+          <CardContent className="p-4 space-y-3">
+            {/* Title */}
+            <div>
+              <h4 className="text-sm font-medium text-slate-200 truncate">
+                {story.pageTitle || "Untitled"}
+              </h4>
+              <a
+                href={story.pageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-slate-400 hover:text-slate-300 flex items-center gap-1"
+              >
+                View page <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="text-center p-2 rounded bg-slate-700/50">
+                <div className="text-lg font-bold text-green-400">
+                  +{story.clicksRecovered.toLocaleString()}
+                </div>
+                <div className="text-xs text-slate-400">Clicks Recovered</div>
               </div>
-              <div className="text-right shrink-0">
-                <div className="text-green-500 font-bold">
-                  +{formatNumber(story.clicksRecovered)}
+              <div className="text-center p-2 rounded bg-slate-700/50">
+                <div className="text-lg font-bold text-slate-200">
+                  {Math.round(story.recoveryRate * 100)}%
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {Math.round(story.recoveryRate * 100)}% recovered
+                <div className="text-xs text-slate-400">Recovery Rate</div>
+              </div>
+              <div className="text-center p-2 rounded bg-slate-700/50">
+                <div className="text-lg font-bold text-slate-200">
+                  {story.daysToRecovery}
                 </div>
-                <Badge variant="outline" className="mt-1">
-                  {story.daysToRecovery} days
-                </Badge>
+                <div className="text-xs text-slate-400">Days</div>
               </div>
             </div>
+
+            {/* Summary */}
+            {story.summary && (
+              <p className="text-xs text-slate-400 line-clamp-2">
+                {story.summary}
+              </p>
+            )}
           </CardContent>
         </Card>
       ))}
@@ -206,132 +408,107 @@ function RecoveryStories({
   );
 }
 
-function ComparisonTable({
-  comparisons,
-}: {
-  comparisons: Array<{
-    id: number;
-    pageUrl: string;
-    pageTitle: string;
-    pageType: string;
-    before: { clicks: number; impressions: number; ctr: number; position: number };
-    after: { clicks: number; impressions: number; ctr: number; position: number };
-    delta: { clicks: number; impressions: number; ctr: number; position: number };
-  }>;
-}) {
-  if (!comparisons || comparisons.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground py-8" data-testid="no-comparisons">
-        No comparison data available
-      </div>
-    );
-  }
-
-  return (
-    <div className="overflow-x-auto" data-testid="comparison-table">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-800">
-            <th className="text-left p-3 font-medium text-muted-foreground">Page</th>
-            <th className="text-right p-3 font-medium text-muted-foreground">Before</th>
-            <th className="text-right p-3 font-medium text-muted-foreground">After</th>
-            <th className="text-right p-3 font-medium text-muted-foreground">Change</th>
-          </tr>
-        </thead>
-        <tbody>
-          {comparisons.slice(0, 10).map((comp) => (
-            <tr
-              key={comp.id}
-              className="border-b border-slate-800/50 hover:bg-slate-900/50"
-              data-testid={`comparison-row-${comp.id}`}
-            >
-              <td className="p-3">
-                <div className="font-medium truncate max-w-xs">{comp.pageTitle || "Untitled"}</div>
-                <a
-                  href={comp.pageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-muted-foreground hover:text-primary truncate block"
-                >
-                  {comp.pageUrl}
-                </a>
-              </td>
-              <td className="p-3 text-right text-muted-foreground">
-                {formatNumber(comp.before.clicks)} clicks
-              </td>
-              <td className="p-3 text-right font-medium">
-                {formatNumber(comp.after.clicks)} clicks
-              </td>
-              <td className="p-3 text-right">
-                <span
-                  className={cn(
-                    "font-medium",
-                    comp.delta.clicks >= 0 ? "text-green-500" : "text-red-500"
-                  )}
-                >
-                  {comp.delta.clicks >= 0 ? "+" : ""}{formatNumber(comp.delta.clicks)}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+// ============================================================
+// Recovery Report Content
+// ============================================================
 
 function RecoveryReportContent({ siteId }: { siteId: string }) {
   const router = useRouter();
-  const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
 
-  // Calculate date range
-  const dateParams = useMemo(() => {
+  // Date range state
+  const [dateRange, setDateRange] = React.useState<"7d" | "30d" | "90d" | "all">("30d");
+
+  // Calculate date range for API
+  const dateRangeParams = React.useMemo(() => {
     if (dateRange === "all") return undefined;
+
     const end = new Date();
     const start = new Date();
-    const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
-    start.setDate(start.getDate() - days);
+
+    switch (dateRange) {
+      case "7d":
+        start.setDate(end.getDate() - 7);
+        break;
+      case "30d":
+        start.setDate(end.getDate() - 30);
+        break;
+      case "90d":
+        start.setDate(end.getDate() - 90);
+        break;
+    }
+
     return {
       start: start.toISOString().split("T")[0],
       end: end.toISOString().split("T")[0],
     };
   }, [dateRange]);
 
-  const { recovery, isLoading } = useContentDecayRecovery(siteId, dateParams);
-  const { exportData, isExporting } = useExportContentDecay(siteId);
+  // Hooks
+  const { recovery, isLoading } = useContentDecayRecovery(siteId, dateRangeParams);
 
-  const handleExport = async () => {
-    await exportData("pdf");
+  // Export handler (placeholder)
+  const handleExport = () => {
+    // Would call export API
+    console.log("Export recovery report");
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900">
+        <PageSkeleton />
+      </div>
+    );
+  }
+
+  const summary = recovery?.summary ?? {
+    totalRecovered: 0,
+    totalClicksRecovered: 0,
+    avgRecoveryRate: 0,
+    avgDaysToRecovery: 0,
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push(`/sites/${siteId}/content-decay`)}
-            data-testid="back-button"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Queue
-          </Button>
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900">
+      <div className="container mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">Recovery Report</h1>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <BarChart3 className="h-6 w-6 text-green-500" />
+              Recovery Report
+            </h1>
             <p className="text-sm text-slate-400">
-              Track your content recovery outcomes
+              Track content recovery progress and results
             </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <NavTabs siteId={siteId} activeTab="recovery" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/sites/${siteId}/content-decay/settings`)}
+              className="border-slate-700 text-slate-300"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="border-slate-700 text-slate-300"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export PDF
+            </Button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Select
-            value={dateRange}
-            onValueChange={(v) => setDateRange(v as typeof dateRange)}
-          >
-            <SelectTrigger className="w-32" aria-label="Select date range">
+        {/* Date Range Filter */}
+        <div className="flex items-center gap-2 mb-6">
+          <Calendar className="h-4 w-4 text-slate-400" />
+          <Select value={dateRange} onValueChange={(v) => setDateRange(v as typeof dateRange)}>
+            <SelectTrigger className="w-32 bg-slate-800 border-slate-700 text-slate-200">
               <SelectValue placeholder="Date Range" />
             </SelectTrigger>
             <SelectContent>
@@ -341,108 +518,61 @@ function RecoveryReportContent({ siteId }: { siteId: string }) {
               <SelectItem value="all">All time</SelectItem>
             </SelectContent>
           </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={isExporting}
-            data-testid="export-button"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export PDF
-          </Button>
         </div>
-      </div>
 
-      {/* Summary Statistics */}
-      <section aria-label="Recovery statistics" data-testid="stats-section">
-        <div className="grid gap-4 md:grid-cols-4">
-          {isLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 w-full" data-testid="skeleton" />
-            ))
-          ) : (
-            <>
-              <StatCard
-                title="Total Recovered"
-                value={recovery?.summary?.totalRecovered ?? 0}
-                icon={<TrendingUp className="h-4 w-4 text-green-500" />}
-                trend="up"
-                description="Pages successfully recovered"
-              />
-              <StatCard
-                title="Clicks Recovered"
-                value={formatNumber(recovery?.summary?.totalClicksRecovered ?? 0)}
-                icon={<ArrowUpRight className="h-4 w-4 text-green-500" />}
-                trend="up"
-                description="Estimated traffic restored"
-              />
-              <StatCard
-                title="Avg Recovery Rate"
-                value={`${Math.round((recovery?.summary?.avgRecoveryRate ?? 0) * 100)}%`}
-                icon={<BarChart3 className="h-4 w-4 text-blue-500" />}
-                description="Average performance restored"
-              />
-              <StatCard
-                title="Avg Days to Recovery"
-                value={recovery?.summary?.avgDaysToRecovery ?? 0}
-                icon={<Calendar className="h-4 w-4 text-purple-500" />}
-                description="Average time to recover"
-              />
-            </>
-          )}
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" data-testid="summary-stats">
+          <StatCard
+            title="Total Recovered"
+            value={summary.totalRecovered}
+            icon={<TrendingUp className="h-4 w-4 text-green-500" />}
+            trend="up"
+          />
+          <StatCard
+            title="Clicks Recovered"
+            value={summary.totalClicksRecovered.toLocaleString()}
+            icon={<Target className="h-4 w-4 text-blue-500" />}
+            trend="up"
+          />
+          <StatCard
+            title="Avg Recovery Rate"
+            value={`${Math.round(summary.avgRecoveryRate * 100)}%`}
+            icon={<BarChart3 className="h-4 w-4 text-purple-500" />}
+          />
+          <StatCard
+            title="Avg Days to Recovery"
+            value={summary.avgDaysToRecovery.toFixed(1)}
+            icon={<Clock className="h-4 w-4 text-amber-500" />}
+          />
         </div>
-      </section>
 
-      {/* Timeline Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recovery Timeline</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <Skeleton className="h-40 w-full" data-testid="skeleton" />
-          ) : (
-            <TimelineChart data={recovery?.timeline ?? []} />
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Two Column Layout */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Before/After Comparison */}
-        <Card>
+        {/* Timeline Chart */}
+        <Card className="bg-slate-800/50 border-slate-700 mb-6">
           <CardHeader>
-            <CardTitle className="text-lg">Before/After Comparison</CardTitle>
+            <CardTitle className="text-slate-200">Recovery Timeline</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" data-testid="skeleton" />
-                ))}
-              </div>
-            ) : (
-              <ComparisonTable comparisons={recovery?.comparisons ?? []} />
-            )}
+            <TimelineChart data={recovery?.timeline ?? []} />
+          </CardContent>
+        </Card>
+
+        {/* Comparison Table */}
+        <Card className="bg-slate-800/50 border-slate-700 mb-6">
+          <CardHeader>
+            <CardTitle className="text-slate-200">Before/After Comparison</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ComparisonTable comparisons={recovery?.comparisons ?? []} />
           </CardContent>
         </Card>
 
         {/* Recovery Stories */}
-        <Card>
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-lg">Recovery Stories</CardTitle>
+            <CardTitle className="text-slate-200">Recovery Stories</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-24 w-full" data-testid="skeleton" />
-                ))}
-              </div>
-            ) : (
-              <RecoveryStories stories={recovery?.stories ?? []} />
-            )}
+            <RecoveryStories stories={recovery?.stories ?? []} />
           </CardContent>
         </Card>
       </div>
@@ -450,41 +580,21 @@ function RecoveryReportContent({ siteId }: { siteId: string }) {
   );
 }
 
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <Skeleton className="h-10 w-48" data-testid="skeleton" />
-        <div className="flex gap-2">
-          <Skeleton className="h-10 w-32" data-testid="skeleton" />
-          <Skeleton className="h-10 w-32" data-testid="skeleton" />
-        </div>
-      </div>
-      <div className="grid gap-4 md:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 w-full" data-testid="skeleton" />
-        ))}
-      </div>
-      <Skeleton className="h-48 w-full" data-testid="skeleton" />
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Skeleton className="h-64 w-full" data-testid="skeleton" />
-        <Skeleton className="h-64 w-full" data-testid="skeleton" />
-      </div>
-    </div>
-  );
-}
+// ============================================================
+// Page Component
+// ============================================================
 
 export default function RecoveryReportPage() {
   const params = useParams();
   const siteId = params.siteId as string;
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 px-4 py-10">
-      <div className="mx-auto w-full max-w-7xl">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <RecoveryReportContent siteId={siteId} />
-        </Suspense>
+  if (!siteId) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <p className="text-slate-400">Site not found</p>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <RecoveryReportContent siteId={siteId} />;
 }

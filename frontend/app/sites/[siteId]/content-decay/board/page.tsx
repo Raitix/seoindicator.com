@@ -1,13 +1,30 @@
+/**
+ * Content Decay Recovery Board Page
+ * Kanban-style board for managing content decay candidates through the recovery workflow
+ * 
+ * Task: TASK-36-13 - Frontend Pages - Refresh Queue & Board
+ * Spec: SPEC-036 - Content Decay Detection & Refresh Planner
+ */
+
 "use client";
 
-import { Suspense, useState, useMemo } from "react";
+import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Metadata } from "next";
-import { ArrowLeft, Filter, AlertTriangle, TrendingDown, Clock } from "lucide-react";
+import {
+  Settings,
+  LayoutDashboard,
+  KanbanSquare,
+  BarChart3,
+  AlertTriangle,
+  Filter,
+  GripVertical,
+  ExternalLink,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -22,146 +39,211 @@ import {
   SheetTitle,
   SheetClose,
 } from "@/components/ui/sheet";
-import { X, ExternalLink } from "lucide-react";
+import { SeverityBadge } from "@/components/content-decay/SeverityBadge";
+import { DecayReasonBadges } from "@/components/content-decay/DecayReasonBadges";
+import { StatusWorkflowButtons } from "@/components/content-decay/StatusWorkflowButtons";
 import {
-  SeverityBadge,
-  DecayReasonBadges,
-  StatusWorkflowButtons,
-} from "@/components/content-decay";
-import {
+  useContentDecaySummary,
   useContentDecayCandidates,
   useContentDecayCandidate,
   useUpdateCandidateStatus,
-  useContentRefreshTasks,
 } from "@/lib/hooks/useContentDecay";
 import type {
   DecayCandidate,
   ContentDecayCandidateStatus,
   ContentDecaySeverity,
   ContentDecayPageType,
+  SEVERITY_CONFIG,
 } from "@/lib/types/content-decay";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = {
-  title: "Recovery Board | SEOIndicator",
-  description: "Kanban-style board for managing content decay recovery workflow.",
-};
+// ============================================================
+// Column Configuration
+// ============================================================
 
-const KANBAN_COLUMNS: { id: ContentDecayCandidateStatus; title: string; color: string }[] = [
-  { id: "backlog", title: "Backlog", color: "bg-slate-500" },
-  { id: "planned", title: "Planned", color: "bg-blue-500" },
-  { id: "in_progress", title: "In Progress", color: "bg-yellow-500" },
-  { id: "refreshed", title: "Refreshed", color: "bg-purple-500" },
-  { id: "recovered", title: "Recovered", color: "bg-green-500" },
+const COLUMNS: Array<{
+  id: ContentDecayCandidateStatus;
+  title: string;
+  color: string;
+}> = [
+  { id: "backlog", title: "Backlog", color: "border-slate-500" },
+  { id: "planned", title: "Planned", color: "border-blue-500" },
+  { id: "in_progress", title: "In Progress", color: "border-yellow-500" },
+  { id: "refreshed", title: "Refreshed", color: "border-purple-500" },
+  { id: "recovered", title: "Recovered", color: "border-green-500" },
 ];
 
-function formatNumber(num: number): string {
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toString();
+// ============================================================
+// Loading Skeleton
+// ============================================================
+
+function PageSkeleton() {
+  return (
+    <div className="space-y-6 p-6" data-testid="page-skeleton">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-10 w-64" />
+      </div>
+      <div className="grid grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-24" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-function KanbanCard({
-  candidate,
-  onClick,
-}: {
+// ============================================================
+// Navigation Tabs
+// ============================================================
+
+interface NavTabsProps {
+  siteId: string;
+  activeTab: string;
+}
+
+function NavTabs({ siteId, activeTab }: NavTabsProps) {
+  const router = useRouter();
+
+  return (
+    <Tabs value={activeTab} className="w-auto">
+      <TabsList>
+        <TabsTrigger
+          value="queue"
+          onClick={() => router.push(`/sites/${siteId}/content-decay`)}
+          className="gap-1.5"
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          Queue
+        </TabsTrigger>
+        <TabsTrigger
+          value="board"
+          onClick={() => router.push(`/sites/${siteId}/content-decay/board`)}
+          className="gap-1.5"
+        >
+          <KanbanSquare className="h-4 w-4" />
+          Board
+        </TabsTrigger>
+        <TabsTrigger
+          value="recovery"
+          onClick={() => router.push(`/sites/${siteId}/content-decay/recovery`)}
+          className="gap-1.5"
+        >
+          <BarChart3 className="h-4 w-4" />
+          Recovery
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+}
+
+// ============================================================
+// Candidate Card
+// ============================================================
+
+interface CandidateCardProps {
   candidate: DecayCandidate;
   onClick: () => void;
-}) {
+}
+
+function CandidateCard({ candidate, onClick }: CandidateCardProps) {
   return (
     <Card
-      role="button"
-      tabIndex={0}
-      aria-label={`${candidate.pageTitle || candidate.pageUrl} - ${candidate.severity} severity`}
-      className="cursor-pointer hover:border-primary/50 transition-colors"
+      data-testid={`candidate-card-${candidate.id}`}
+      className="cursor-pointer hover:border-primary/50 transition-colors bg-slate-900 border-slate-700"
       onClick={onClick}
-      onKeyDown={(e) => e.key === "Enter" && onClick()}
-      data-testid={`kanban-card-${candidate.id}`}
     >
       <CardContent className="p-3 space-y-2">
         {/* Title */}
-        <div className="font-medium text-sm truncate" data-testid="card-title">
-          {candidate.pageTitle || "Untitled"}
-        </div>
-
-        {/* URL */}
-        <a
-          href={candidate.pageUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-muted-foreground hover:text-primary truncate block"
-          onClick={(e) => e.stopPropagation()}
-          data-testid="card-url"
-        >
-          {candidate.pageUrl}
-        </a>
-
-        {/* Badges */}
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-slate-200 truncate">
+              {candidate.pageTitle || "Untitled"}
+            </p>
+            <a
+              href={candidate.pageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-slate-400 hover:text-slate-300 flex items-center gap-1 truncate"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {candidate.pageUrl.length > 30
+                ? candidate.pageUrl.substring(0, 30) + "..."
+                : candidate.pageUrl}
+              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+            </a>
+          </div>
           <SeverityBadge severity={candidate.severity} size="sm" />
-          <DecayReasonBadges
-            reasons={candidate.reasonCodes}
-            primaryReason={candidate.primaryReasonCode}
-            maxSupporting={1}
-            size="sm"
-          />
         </div>
 
         {/* Metrics */}
         <div className="flex items-center justify-between text-xs">
-          <span className="text-red-500 flex items-center gap-1">
-            <TrendingDown className="h-3 w-3" />
-            {formatNumber(candidate.lostClickEstimate)}
+          <span className="text-red-400">
+            -{candidate.lostClickEstimate.toLocaleString()} clicks
           </span>
-          <span className="text-muted-foreground flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            {candidate.decayScore.toFixed(1)}
+          <span className="text-green-400">
+            +{candidate.recoveryUpsideEstimate.toLocaleString()} upside
           </span>
         </div>
+
+        {/* Reasons */}
+        <DecayReasonBadges
+          reasons={candidate.reasonCodes}
+          primaryReason={candidate.primaryReasonCode}
+          maxSupporting={1}
+          size="sm"
+        />
       </CardContent>
     </Card>
   );
 }
 
-function KanbanColumn({
-  column,
-  candidates,
-  onCardClick,
-}: {
-  column: typeof KANBAN_COLUMNS[0];
+// ============================================================
+// Kanban Column
+// ============================================================
+
+interface KanbanColumnProps {
+  column: (typeof COLUMNS)[number];
   candidates: DecayCandidate[];
   onCardClick: (candidate: DecayCandidate) => void;
-}) {
+}
+
+function KanbanColumn({ column, candidates, onCardClick }: KanbanColumnProps) {
   return (
     <div
+      data-testid={`column-${column.id}`}
       className="flex flex-col min-w-[280px] max-w-[320px]"
-      data-testid={`kanban-column-${column.id}`}
-      role="region"
-      aria-label={`${column.title} column`}
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <div className="flex items-center gap-2">
-          <div className={cn("w-3 h-3 rounded-full", column.color)} />
-          <h3 className="font-medium text-white">{column.title}</h3>
-        </div>
-        <Badge variant="secondary" className="text-xs" data-testid="column-count">
+      <div
+        className={cn(
+          "flex items-center justify-between p-3 rounded-t-lg border-t-2 bg-slate-800/50",
+          column.color
+        )}
+      >
+        <h3 className="text-sm font-medium text-slate-200">{column.title}</h3>
+        <Badge variant="secondary" className="text-xs">
           {candidates.length}
         </Badge>
       </div>
 
-      {/* Cards Container */}
+      {/* Column Content */}
       <div
-        className="flex-1 space-y-2 overflow-y-auto max-h-[calc(100vh-300px)] p-1"
-        data-testid="column-cards"
+        className="flex-1 p-2 space-y-2 bg-slate-800/30 rounded-b-lg border border-t-0 border-slate-700 min-h-[400px]"
+        role="list"
+        aria-label={`${column.title} candidates`}
       >
         {candidates.length === 0 ? (
-          <div className="text-center text-muted-foreground text-sm py-8 border border-dashed rounded-lg">
-            No items
+          <div className="text-center text-slate-500 text-sm py-8">
+            No candidates
           </div>
         ) : (
           candidates.map((candidate) => (
-            <KanbanCard
+            <CandidateCard
               key={candidate.id}
               candidate={candidate}
               onClick={() => onCardClick(candidate)}
@@ -173,28 +255,45 @@ function KanbanColumn({
   );
 }
 
+// ============================================================
+// Recovery Board Content
+// ============================================================
+
 function RecoveryBoardContent({ siteId }: { siteId: string }) {
   const router = useRouter();
-  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [severityFilter, setSeverityFilter] = useState<ContentDecaySeverity | "all">("all");
-  const [pageTypeFilter, setPageTypeFilter] = useState<ContentDecayPageType | "all">("all");
 
-  // Data hooks
-  const { candidates, isLoading } = useContentDecayCandidates(siteId, {
+  // Filter state
+  const [severityFilter, setSeverityFilter] = React.useState<ContentDecaySeverity | "all">("all");
+  const [pageTypeFilter, setPageTypeFilter] = React.useState<ContentDecayPageType | "all">("all");
+
+  // Hooks
+  const {
+    summary,
+    isLoading: isSummaryLoading,
+  } = useContentDecaySummary(siteId);
+
+  const {
+    candidates,
+    isLoading: isCandidatesLoading,
+    mutate: mutateCandidates,
+  } = useContentDecayCandidates(siteId, {
     status: "all",
     severity: severityFilter,
     pageType: pageTypeFilter,
-    search: "",
-    sort: "decay_score",
-    order: "desc",
   });
-  const { candidate: selectedCandidate, isLoading: isCandidateLoading } = useContentDecayCandidate(selectedCandidateId ?? 0);
-  const { tasks } = useContentRefreshTasks(selectedCandidateId ?? 0);
+
+  // Selected candidate for detail sheet
+  const [selectedCandidateId, setSelectedCandidateId] = React.useState<number | null>(null);
+
+  const {
+    candidate: selectedCandidate,
+    isLoading: isCandidateLoading,
+  } = useContentDecayCandidate(selectedCandidateId ?? 0);
+
   const { updateStatus, isUpdating } = useUpdateCandidateStatus(selectedCandidateId ?? 0);
 
   // Group candidates by status
-  const candidatesByStatus = useMemo(() => {
+  const candidatesByStatus = React.useMemo(() => {
     const grouped: Record<ContentDecayCandidateStatus, DecayCandidate[]> = {
       backlog: [],
       planned: [],
@@ -205,7 +304,7 @@ function RecoveryBoardContent({ siteId }: { siteId: string }) {
     };
 
     candidates.forEach((candidate) => {
-      if (grouped[candidate.status]) {
+      if (candidate.status in grouped) {
         grouped[candidate.status].push(candidate);
       }
     });
@@ -216,51 +315,70 @@ function RecoveryBoardContent({ siteId }: { siteId: string }) {
   // Handlers
   const handleCardClick = (candidate: DecayCandidate) => {
     setSelectedCandidateId(candidate.id);
-    setIsDrawerOpen(true);
   };
 
-  const handleDrawerClose = () => {
-    setIsDrawerOpen(false);
+  const handleCloseSheet = () => {
     setSelectedCandidateId(null);
   };
 
   const handleStatusChange = async (status: ContentDecayCandidateStatus) => {
     const result = await updateStatus(status);
     if (result.success) {
-      handleDrawerClose();
+      mutateCandidates();
     }
   };
 
+  const isLoading = isSummaryLoading || isCandidatesLoading;
+
+  // Stats at bottom
+  const stats = React.useMemo(() => {
+    return {
+      total: candidates.length,
+      critical: candidates.filter((c) => c.severity === "critical").length,
+      high: candidates.filter((c) => c.severity === "high").length,
+    };
+  }, [candidates]);
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push(`/sites/${siteId}/content-decay`)}
-            data-testid="back-button"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Queue
-          </Button>
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900">
+      <div className="container mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">Recovery Board</h1>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <KanbanSquare className="h-6 w-6 text-blue-500" />
+              Recovery Board
+            </h1>
             <p className="text-sm text-slate-400">
-              Kanban workflow for content recovery
+              Drag candidates through the recovery workflow
             </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <NavTabs siteId={siteId} activeTab="board" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/sites/${siteId}/content-decay/settings`)}
+              className="border-slate-700 text-slate-300"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-slate-400" />
+            <span className="text-sm text-slate-400">Filters:</span>
+          </div>
+
           <Select
             value={severityFilter}
             onValueChange={(v) => setSeverityFilter(v as ContentDecaySeverity | "all")}
           >
-            <SelectTrigger className="w-32" aria-label="Filter by severity">
+            <SelectTrigger className="w-32 bg-slate-800 border-slate-700 text-slate-200">
               <SelectValue placeholder="Severity" />
             </SelectTrigger>
             <SelectContent>
@@ -271,11 +389,12 @@ function RecoveryBoardContent({ siteId }: { siteId: string }) {
               <SelectItem value="low">Low</SelectItem>
             </SelectContent>
           </Select>
+
           <Select
             value={pageTypeFilter}
             onValueChange={(v) => setPageTypeFilter(v as ContentDecayPageType | "all")}
           >
-            <SelectTrigger className="w-36" aria-label="Filter by page type">
+            <SelectTrigger className="w-36 bg-slate-800 border-slate-700 text-slate-200">
               <SelectValue placeholder="Page Type" />
             </SelectTrigger>
             <SelectContent>
@@ -284,167 +403,139 @@ function RecoveryBoardContent({ siteId }: { siteId: string }) {
               <SelectItem value="landing">Landing</SelectItem>
               <SelectItem value="product">Product</SelectItem>
               <SelectItem value="tool">Tool</SelectItem>
-              <SelectItem value="compare">Comparison</SelectItem>
-              <SelectItem value="docs">Documentation</SelectItem>
+              <SelectItem value="docs">Docs</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      {/* Kanban Board */}
-      <div
-        className="flex gap-4 overflow-x-auto pb-4"
-        role="region"
-        aria-label="Kanban board"
-        data-testid="kanban-board"
-      >
+        {/* Kanban Board */}
         {isLoading ? (
-          // Loading skeletons
-          KANBAN_COLUMNS.map((col) => (
-            <div key={col.id} className="min-w-[280px] max-w-[320px]">
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <Skeleton className="w-3 h-3 rounded-full" data-testid="skeleton" />
-                <Skeleton className="h-5 w-24" data-testid="skeleton" />
-              </div>
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-32 w-full" data-testid="skeleton" />
-                ))}
-              </div>
-            </div>
-          ))
+          <PageSkeleton />
         ) : (
-          KANBAN_COLUMNS.map((column) => (
-            <KanbanColumn
-              key={column.id}
-              column={column}
-              candidates={candidatesByStatus[column.id]}
-              onCardClick={handleCardClick}
-            />
-          ))
-        )}
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 border-t border-slate-800 pt-4">
-        {KANBAN_COLUMNS.map((col) => (
-          <div key={col.id} className="text-center">
-            <div className={cn("w-3 h-3 rounded-full mx-auto mb-1", col.color)} />
-            <div className="text-lg font-bold text-white" data-testid={`stat-${col.id}`}>
-              {candidatesByStatus[col.id].length}
-            </div>
-            <div className="text-xs text-muted-foreground">{col.title}</div>
+          <div
+            className="flex gap-4 overflow-x-auto pb-4"
+            role="region"
+            aria-label="Kanban board"
+          >
+            {COLUMNS.map((column) => (
+              <KanbanColumn
+                key={column.id}
+                column={column}
+                candidates={candidatesByStatus[column.id] || []}
+                onCardClick={handleCardClick}
+              />
+            ))}
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* Detail Sheet */}
-      <Sheet open={isDrawerOpen} onOpenChange={(open) => !open && handleDrawerClose()}>
-        <SheetContent
-          className="w-[400px] sm:max-w-[500px]"
-          data-testid="detail-sheet"
+        {/* Quick Stats */}
+        <div className="mt-6 p-4 rounded-lg bg-slate-800/50 border border-slate-700">
+          <div className="flex items-center gap-6 text-sm">
+            <div>
+              <span className="text-slate-400">Total Candidates:</span>
+              <span className="ml-2 font-medium text-slate-200">{stats.total}</span>
+            </div>
+            <div>
+              <span className="text-slate-400">Critical:</span>
+              <span className="ml-2 font-medium text-red-400">{stats.critical}</span>
+            </div>
+            <div>
+              <span className="text-slate-400">High:</span>
+              <span className="ml-2 font-medium text-orange-400">{stats.high}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Candidate Detail Sheet */}
+        <Sheet
+          open={selectedCandidateId !== null}
+          onOpenChange={(open) => !open && handleCloseSheet()}
         >
-          <SheetHeader>
-            <div className="flex items-start justify-between">
-              <SheetTitle className="text-left truncate pr-4">
-                {selectedCandidate?.pageTitle || selectedCandidate?.pageUrl || "Candidate Details"}
+          <SheetContent className="w-[500px] sm:max-w-[600px] bg-slate-900 border-slate-700">
+            <SheetHeader>
+              <SheetTitle className="text-slate-200">
+                {selectedCandidate?.pageTitle || "Candidate Details"}
               </SheetTitle>
               <SheetClose asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <X className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="absolute right-4 top-4">
+                  <span className="sr-only">Close</span>
                 </Button>
               </SheetClose>
-            </div>
-          </SheetHeader>
+            </SheetHeader>
 
-          {selectedCandidate && (
-            <div className="space-y-4 mt-4">
-              {/* Quick Info */}
-              <div className="flex items-center gap-2">
-                <SeverityBadge severity={selectedCandidate.severity} />
-                <Badge variant="outline">{selectedCandidate.status.replace("_", " ")}</Badge>
+            {isCandidateLoading ? (
+              <div className="space-y-4 pt-4">
+                <Skeleton className="h-8 w-3/4" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
               </div>
+            ) : selectedCandidate ? (
+              <div className="space-y-4 pt-4">
+                {/* URL */}
+                <a
+                  href={selectedCandidate.pageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-slate-400 hover:text-slate-300 flex items-center gap-1"
+                >
+                  {selectedCandidate.pageUrl}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
 
-              {/* URL */}
-              <a
-                href={selectedCandidate.pageUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
-              >
-                {selectedCandidate.pageUrl}
-                <ExternalLink className="h-3 w-3" />
-              </a>
-
-              {/* Metrics */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Lost Clicks:</span>
-                  <div className="text-red-500 font-medium">
-                    {formatNumber(selectedCandidate.lostClickEstimate)}
-                  </div>
+                {/* Severity & Metrics */}
+                <div className="flex items-center gap-4">
+                  <SeverityBadge severity={selectedCandidate.severity} />
+                  <span className="text-sm text-red-400">
+                    -{selectedCandidate.lostClickEstimate.toLocaleString()} clicks
+                  </span>
+                  <span className="text-sm text-green-400">
+                    +{selectedCandidate.recoveryUpsideEstimate.toLocaleString()} upside
+                  </span>
                 </div>
+
+                {/* Reasons */}
                 <div>
-                  <span className="text-muted-foreground">Recovery Upside:</span>
-                  <div className="text-green-500 font-medium">
-                    {formatNumber(selectedCandidate.recoveryUpsideEstimate)}
-                  </div>
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">Reasons</h4>
+                  <DecayReasonBadges
+                    reasons={selectedCandidate.reasonCodes}
+                    primaryReason={selectedCandidate.primaryReasonCode}
+                  />
+                </div>
+
+                {/* Status Workflow */}
+                <div className="pt-4 border-t border-slate-700">
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">Status</h4>
+                  <StatusWorkflowButtons
+                    status={selectedCandidate.status}
+                    onStatusChange={handleStatusChange}
+                    isLoading={isUpdating}
+                  />
                 </div>
               </div>
-
-              {/* Status Actions */}
-              <div className="border-t pt-4">
-                <StatusWorkflowButtons
-                  status={selectedCandidate.status}
-                  onStatusChange={handleStatusChange}
-                  isUpdating={isUpdating}
-                />
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <Skeleton className="h-10 w-48" data-testid="skeleton" />
-        <div className="flex gap-2">
-          <Skeleton className="h-10 w-32" data-testid="skeleton" />
-          <Skeleton className="h-10 w-32" data-testid="skeleton" />
-        </div>
-      </div>
-      <div className="flex gap-4 overflow-x-auto">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="min-w-[280px]">
-            <Skeleton className="h-8 w-24 mb-3" data-testid="skeleton" />
-            <div className="space-y-2">
-              {Array.from({ length: 3 }).map((_, j) => (
-                <Skeleton key={j} className="h-32 w-full" data-testid="skeleton" />
-              ))}
-            </div>
-          </div>
-        ))}
+            ) : null}
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   );
 }
+
+// ============================================================
+// Page Component
+// ============================================================
 
 export default function RecoveryBoardPage() {
   const params = useParams();
   const siteId = params.siteId as string;
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 px-4 py-10">
-      <div className="mx-auto w-full max-w-full">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <RecoveryBoardContent siteId={siteId} />
-        </Suspense>
+  if (!siteId) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <p className="text-slate-400">Site not found</p>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <RecoveryBoardContent siteId={siteId} />;
 }
