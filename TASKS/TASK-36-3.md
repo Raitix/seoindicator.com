@@ -1,7 +1,7 @@
 # TASK-36-3: ContentDecayScoringService
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -376,3 +376,25 @@ Response: {"status":"ok","timestamp":"2026-03-11T14:55:14+00:00","database":"con
 - [x] All security tests pass
 
 **Status:** `To Test Prod` → `To Document`
+
+---
+
+### DocSystemAnalyst (2026-03-11)
+**Documentation Complete**
+
+**Documentation Added:**
+- Comprehensive Content Decay Scoring Service section in DOCUMENTATION.md (after TASK-36-1 Migrations)
+- Service interface: 7 public methods documented
+- Base weights configuration table
+- Score calculation formula and normalization rules
+- Weight renormalization logic with example
+- Confidence multiplier table (3 data source scenarios)
+- Severity bands classification
+- calculateDecayScore() response structure with example JSON
+- Key implementation details table
+- Test coverage summary (195 tests, 382 assertions)
+- Production status with deployment ID and commit
+
+**Commit:** Added documentation to PROJECT-SEOINDICATOR repo
+
+**Status:** `To Document` → `Done` ✅
