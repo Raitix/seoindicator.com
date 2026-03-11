@@ -308,5 +308,9 @@ export default function ContentDecayPage() {
     );
   }
 
-  return <RefreshQueueContent siteId={siteId} />;
+  return (
+    <React.Suspense fallback={<PageSkeleton />}>
+      <RefreshQueueContent siteId={siteId} />
+    </React.Suspense>
+  );
 }
