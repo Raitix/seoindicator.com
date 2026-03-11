@@ -1,7 +1,7 @@
 # TASK-36-4: ContentDecayReasonService
 
 ## STATUS
-`Testing Prod`
+`Done`
 
 ## PRIORITY
 `High`
@@ -287,3 +287,63 @@ Deployed commit `dac05c79` to production.
 **Note:** Had to install missing `satori` npm dependency before deployment (used for OG image generation).
 
 **Status:** `To Deploy` → `To Test Prod`
+
+### ProdTester (2026-03-11 17:05 GMT+2)
+**Production QA Complete - PASS**
+
+**Validation Summary:**
+| Test Category | Result | Details |
+|---------------|--------|---------|
+| Unit Tests | ✅ 122 passed (168 assertions) | ContentDecayReasonServiceTest |
+| Smoke Tests | ✅ 15 passed (70 assertions) | Production smoke suite |
+| Health Check | ✅ 200 OK | Production API healthy |
+| DI Container | ✅ Verified | Service properly bound to interface |
+
+**Production Verification:**
+- ✅ Service registered in DI container (`ContentDecayReasonServiceInterface` → `ContentDecayReasonService`)
+- ✅ Interface exists at `Contracts/ContentDecayReasonServiceInterface.php`
+- ✅ All 11 reason codes trigger correctly
+- ✅ Priority ordering verified (audit_issues > clicks_down > ctr_down > ...)
+- ✅ Threshold defaults match specification
+- ✅ Custom threshold override works
+- ✅ Null values handled gracefully (no crashes)
+- ✅ Evidence payload structure correct
+- ✅ Primary evidence marking correct
+- ✅ Competitor gain suppresses avg_position_down (mutual exclusivity)
+- ✅ CTR requires meaningful impressions (100+ threshold)
+- ✅ Page boundary detection for position changes
+
+**Adversarial Testing:**
+- Null signals → Returns empty result (no crash)
+- Zero previous values → Skipped (improvement case)
+- Unicode content → Handled correctly
+- Large number values → Calculations accurate
+- Multiple reason codes → Primary selected by priority
+
+**Security:**
+- No external API calls (pure computation service)
+- No SQL queries (operates on signal arrays)
+- No XSS risk (data processing only)
+- Input validation via null checks and type coercion
+
+**Decision:** PASS → Ready for documentation
+
+**Status:** `To Test Prod` → `To Document`
+
+### DocSystemAnalyst (2026-03-11 17:20 GMT+2)
+**Documentation Complete - PASS**
+
+Added comprehensive documentation section to DOCUMENTATION.md (inserted after TASK-36-3 Scoring Service).
+
+**Documentation Coverage:**
+- Service interface and public methods
+- 11 reason codes with priority ordering and actionability ratings
+- Primary reason selection logic with mutual exclusivity rules
+- Evidence payload structure with all fields documented
+- Threshold configuration with defaults
+- Special cases handled (nulls, zero values, page boundaries)
+- Test coverage summary (122 tests, 168 assertions)
+- Production status with deployment details
+- Dependencies and downstream consumers
+
+**Status:** `To Document` → `Done`
