@@ -931,7 +931,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
 
         $service = new class($scoringService, $reasonService, $plannerService) extends ContentDecayDetectionService {
-            protected function fetchGscData($site): array
+            protected function fetchGscData(\App\Models\Site $site, array $windowDates): array
             {
                 return [];
             }

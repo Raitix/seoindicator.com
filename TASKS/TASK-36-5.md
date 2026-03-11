@@ -1,7 +1,7 @@
 # TASK-36-5: ContentRefreshPlannerService
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -112,6 +112,17 @@ Create the recommendation engine that maps reason codes to concrete refresh acti
 - Tests verified: 45 tests pass for ContentRefreshPlannerService
 - Note: 3 unrelated test failures in AnnotationCategoryTest (missing enum class - not part of this task)
 - Committing status update and proceeding with deployment
+
+---
+
+### DevOps (2026-03-11 18:15)
+**Deployment Resumed**
+
+- Cleared stale completion marker
+- Tests verified: 45 tests pass (47 assertions) for ContentRefreshPlannerService
+- Implementation file confirmed: `backend/app/Services/ContentDecay/ContentRefreshPlannerService.php`
+- Test file confirmed: `backend/tests/Unit/Services/ContentDecay/ContentRefreshPlannerServiceTest.php`
+- Committing all pending changes and deploying to production
 
 ---
 
