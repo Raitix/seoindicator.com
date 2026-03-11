@@ -1,7 +1,7 @@
 # TASK-8-9: Unit Tests for Project Features
 
 ## STATUS
-`To Test Prod`
+`To Document`
 
 ## PRIORITY
 `High`
@@ -233,3 +233,26 @@ Deployed commit `742baa25` to production via local deployment flow.
 **Deployment Log:** `C:\Users\Raitis\.openclaw\logs\deployments\20260311T205530Z-d4cfb043.json`
 
 **Status changed:** `To Deploy` → `To Test Prod`
+
+### [2026-03-11 23:07 GMT+2] Agent: ProdTester
+**Production Tests Complete** ✅
+
+Ran focused test suite for Project-related tests in production:
+- `ProjectTest.php`: 13 passed
+- `ProjectValidationTest.php`: 21 passed
+- `ProjectRelationshipTest.php`: 23 passed
+- `ProjectPolicyTest.php`: 25 passed
+- `ProjectAuthorizationTest.php`: 21 passed
+- `ProjectsTableConstraintsTest.php`: 13 passed
+- `ProjectScopeTest.php`: 18 passed, 1 skipped
+
+**Total: 134 passed, 1 skipped (182 assertions)**
+
+The skipped test (`integration scope filters actual database records`) is documented and expected - requires TASK-8-2 migration for `project_id` column.
+
+All acceptance criteria verified:
+- [x] Project model/unit suite green against current model shape
+- [x] Policies validated with multiple user-project scenarios
+- [x] Scope coverage reflects current implementation
+
+**Status changed:** `To Test Prod` → `To Document`
