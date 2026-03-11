@@ -2,13 +2,15 @@
 
 namespace App\Services\ContentDecay;
 
+use App\Services\ContentDecay\Contracts\ContentDecayScoringServiceInterface;
+
 /**
  * Content Decay Scoring Service
  *
  * Calculates 0-100 decay scores from normalized signals with weight renormalization
  * when optional signals are missing or have no contribution.
  */
-class ContentDecayScoringService
+class ContentDecayScoringService implements ContentDecayScoringServiceInterface
 {
     /**
      * Base weights for decay factors.
