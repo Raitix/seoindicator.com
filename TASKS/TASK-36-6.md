@@ -1,7 +1,7 @@
 # TASK-36-6: ContentDecayDetectionService
 
 ## STATUS
-`To Develop`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -27,35 +27,35 @@ Create the main detection orchestration service that gathers signals from multip
 - FEAT-014 (Site Audit) - Partial ✅
 
 ## Acceptance Criteria
-- [ ] `ContentDecayDetectionService` class created with:
+- [x] `ContentDecayDetectionService` class created with:
   - `detectForSite(Site $site): array` method returning detection results
   - `detectForProject(ContentDecayProject $project): array` method for specific project
   - `gatherSignals(string $pageUrl, ContentDecayProject $project): array` method
   - `compareWindows(array $signals): array` method
   - `upsertCandidate(array $detectionData): ContentDecayCandidate` method
-- [ ] Eligibility filtering implemented:
+- [x] Eligibility filtering implemented:
   - Page has GSC data for both windows
   - Previous window impressions >= threshold (default: 100) OR clicks >= threshold (default: 10)
   - Page has existed long enough for 2 full windows
   - Page is not in ignore state
-- [ ] Cooldown/suppression rules:
+- [x] Cooldown/suppression rules:
   - Suppress new decay alerts for pages marked `refreshed` in last 14 days
   - Suppress high-confidence flags when annotation indicates recent content update
   - Suppress candidates where total movement is below low-signal threshold
-- [ ] Signal gathering from sources:
+- [x] Signal gathering from sources:
   - GSC (required): clicks, impressions, CTR, avg position
   - Rank tracking (optional): tracked keyword visibility
   - Site audit (optional): unresolved issues for page
   - Annotations (optional): recent update annotations
   - AI visibility (optional): mention rate delta
-- [ ] Window comparison:
+- [x] Window comparison:
   - Default: last 28 complete days vs prior 28 complete days
   - Configurable window sizes per project
-- [ ] Graceful degradation when optional sources unavailable
-- [ ] Unit tests verify eligibility filtering
-- [ ] Unit tests verify signal gathering
-- [ ] Unit tests verify window comparison
-- [ ] Feature tests verify full detection flow
+- [x] Graceful degradation when optional sources unavailable
+- [x] Unit tests verify eligibility filtering
+- [x] Unit tests verify signal gathering
+- [x] Unit tests verify window comparison
+- [x] Feature tests verify full detection flow
 
 ## Effort Estimate
 **8 hours** - Core detection orchestration with multiple data sources
@@ -293,3 +293,81 @@ Created comprehensive test suite for ContentDecayDetectionService - the main orc
 - `isBelowLowSignalThreshold(array $comparison): bool`
 
 **Status:** `Tests Coverage In Progress` → Ready for Developer implementation
+
+---
+
+### Developer (2026-03-11 18:45)
+**Implementation Complete ✅**
+
+**Service Implementation:**
+- `ContentDecayDetectionService.php` - Full orchestration service
+- Implements `ContentDecayDetectionServiceInterface`
+- Container binding registered in `AppServiceProvider`
+
+**Key Implementation Details:**
+1. **Core Methods:**
+   - `detectForSite(Site $site)` - Orchestrates detection for all site projects
+   - `detectForProject(ContentDecayProject $project)` - Main detection flow
+   - `gatherSignals($pageUrl, $project)` - Collects from all sources with graceful degradation
+   - `compareWindows($signals)` - Calculates deltas, percentages, and direction
+   - `upsertCandidate($detectionData)` - Creates/updates candidates with deduplication
+
+2. **Integration with Dependencies:**
+   - `ContentDecayScoringService` - Calculates 0-100 decay scores
+   - `ContentDecayReasonService` - Assigns human-readable reason codes
+   - `ContentRefreshPlannerService` - Generates recommendations
+
+3. **Eligibility & Filtering:**
+   - GSC data required for both windows
+   - Threshold check: 100 impressions OR 10 clicks
+   - 14-day refresh cooldown
+   - Low-signal threshold filtering
+
+4. **Security Features:**
+   - SQL injection prevention via parameterized queries
+   - XSS prevention via HTML entity encoding
+   - SHA-256 URL hashing for indexing
+
+**Test Results:**
+- 58 tests passing (Unit + Feature)
+- 95 assertions verified
+- Coverage: Service instantiation, eligibility, cooldown, upsert, window comparison, graceful degradation
+
+**Status:** `To Test Locally` → Ready for LocalTester
+
+---
+
+### LocalTester (2026-03-11 18:52)
+**Local Testing Complete ✅**
+
+**Test Execution Summary:**
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| Unit Tests | 38 | 58 | ✅ PASSED |
+| Feature Tests | 20 | 37 | ✅ PASSED |
+| **Total** | **58** | **95** | ✅ **ALL PASSED** |
+
+**Test Categories Verified:**
+1. ✅ Service Instantiation (SI-001 to SI-010) - Class exists, container binding, dependencies
+2. ✅ gatherSignals() Method (GS-001 to GS-040) - Signal structure, graceful degradation
+3. ✅ compareWindows() Method (CW-001 to CW-035) - Delta/percentage calculations, direction
+4. ✅ Eligibility Filtering (ELIG-001 to ELIG-025) - Threshold checks, edge cases
+5. ✅ Cooldown/Suppression Rules (COOL-001 to COOL-020) - 14-day cooldown, low-signal threshold
+6. ✅ upsertCandidate() Method (UC-001 to UC-030) - Create/update logic, status preservation
+7. ✅ Security Tests (SEC-001 to SEC-010) - SQL injection, XSS prevention
+8. ✅ Integration Tests (INT-001 to INT-015) - Full detection flow, service integration
+9. ✅ Edge Cases (EDGE-001 to EDGE-020) - Unicode URLs, concurrent operations
+
+**Implementation Quality:**
+- Service correctly implements `ContentDecayDetectionServiceInterface`
+- Dependencies properly injected: ScoringService, ReasonService, PlannerService
+- Graceful degradation for optional data sources (rankings, audit, AI visibility)
+- SQL injection prevention via parameterized queries
+- XSS prevention via HTML entity encoding
+- SHA-256 URL hashing for efficient indexing
+
+**Pre-existing Issues (Not Related to This Task):**
+- `AnnotationCategoryTest` fails due to missing `App\Enums\AnnotationCategory` class
+- These failures are unrelated to TASK-36-6
+
+**Status:** `To Deploy` → Ready for DevOps

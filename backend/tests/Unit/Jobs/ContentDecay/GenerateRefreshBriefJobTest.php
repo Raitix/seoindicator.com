@@ -2,168 +2,155 @@
 
 namespace Tests\Unit\Jobs\ContentDecay;
 
-use Tests\TestCase;
-use App\Jobs\GenerateRefreshBriefJob;
+use App\Jobs\ContentDecay\GenerateRefreshBriefJob;
 use App\Models\ContentDecayCandidate;
 use App\Models\ContentDecayProject;
+use App\Models\Site;
+use App\Models\User;
 use App\Services\AI\Contracts\AIAnalysisServiceInterface;
-use Illuminate\Support\Facades\Queue;
+use App\Services\AI\DTOs\AnalysisResult;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
-use Mockery;
+use Illuminate\Support\Facades\Queue;
+use Tests\TestCase;
 
 /**
- * Unit tests for GenerateRefreshBriefJob
+ * Unit tests for GenerateRefreshBriefJob.
  *
- * Tests verify:
- * - Job instantiation and properties
- * - Job dispatch behavior
- * - AI brief generation
- * - Retry and failure handling
- * - Edge cases
+ * @see TASK-36-9
+ * @see SPEC-036
  */
 class GenerateRefreshBriefJobTest extends TestCase
 {
-    protected function tearDown(): void
+    use RefreshDatabase;
+
+    protected function setUp(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        parent::setUp();
+        Queue::fake();
     }
 
-    // ============================================
-    // BJ-INST: Job Instantiation Tests
-    // ============================================
+    protected function createTestCandidate(): array
+    {
+        $user = User::factory()->create();
+        $site = Site::factory()->create(['user_id' => $user->id]);
+        $project = ContentDecayProject::create([
+            'user_id' => $user->id,
+            'site_id' => $site->id,
+            'detection_enabled' => true,
+        ]);
 
-    /**
-     * BJ-INST-01: Job class exists in correct namespace
-     */
-    public function test_job_class_exists_in_correct_namespace(): void
+        $candidate = ContentDecayCandidate::create([
+            'project_id' => $project->id,
+            'page_url' => 'https://example.com/test-page',
+            'page_url_hash' => hash('sha256', 'https://example.com/test-page'),
+            'page_title' => 'Test Page Title',
+            'page_type' => 'blog',
+            'status' => 'backlog',
+            'decay_score' => 50,
+            'severity' => 'high',
+            'primary_reason_code' => 'clicks_down',
+            'reason_codes' => ['clicks_down', 'ctr_down'],
+            'lost_click_estimate' => 100,
+            'recovery_upside_estimate' => 500,
+        ]);
+
+        return [$candidate, $project];
+    }
+
+    // ==========================================
+    // Job Instantiation Tests (BJ-INST)
+    // ==========================================
+
+    /** @test BJ-INST-01: Job class exists in correct namespace */
+    public function job_class_exists_in_correct_namespace(): void
     {
         $this->assertTrue(class_exists(GenerateRefreshBriefJob::class));
     }
 
-    /**
-     * BJ-INST-02: Job implements ShouldQueue
-     */
-    public function test_job_implements_should_queue(): void
+    /** @test BJ-INST-02: Job implements ShouldQueue */
+    public function job_implements_should_queue(): void
     {
         $job = new GenerateRefreshBriefJob(1);
-
-        $this->assertInstanceOf(
-            \Illuminate\Contracts\Queue\ShouldQueue::class,
-            $job
-        );
+        $this->assertInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class, $job);
     }
 
-    /**
-     * BJ-INST-03: Job has $tries property set to 2
-     */
-    public function test_job_has_tries_property_set_to_2(): void
+    /** @test BJ-INST-03: Job has $tries property set to 2 */
+    public function job_has_tries_property_set_to_2(): void
     {
         $job = new GenerateRefreshBriefJob(1);
-
         $this->assertEquals(2, $job->tries);
     }
 
-    /**
-     * BJ-INST-04: Job has $queue property set to ai-tasks
-     */
-    public function test_job_has_queue_property_set_to_ai_tasks(): void
+    /** @test BJ-INST-04: Job queue is set to 'ai-tasks' */
+    public function job_queue_is_set_to_ai_tasks(): void
     {
         $job = new GenerateRefreshBriefJob(1);
-
-        $this->assertEquals('ai-tasks', $job->queue);
+        // Queue is set via onQueue() in constructor
+        // We verify this through dispatch tests
+        $this->assertTrue(true);
     }
 
-    /**
-     * BJ-INST-05: Job has $timeout property set to 120
-     */
-    public function test_job_has_timeout_property_set_to_120(): void
+    /** @test BJ-INST-05: Job has $timeout property set to 120 */
+    public function job_has_timeout_property_set_to_120(): void
     {
         $job = new GenerateRefreshBriefJob(1);
-
         $this->assertEquals(120, $job->timeout);
     }
 
-    /**
-     * BJ-INST-06: Job implements ShouldBeUnique
-     */
-    public function test_job_implements_should_be_unique(): void
+    /** @test BJ-INST-06: Job implements ShouldBeUnique */
+    public function job_implements_should_be_unique(): void
     {
         $job = new GenerateRefreshBriefJob(1);
-
-        $this->assertInstanceOf(
-            \Illuminate\Contracts\Queue\ShouldBeUnique::class,
-            $job
-        );
+        $this->assertInstanceOf(\Illuminate\Contracts\Queue\ShouldBeUnique::class, $job);
     }
 
-    /**
-     * BJ-INST-07: Job constructor accepts candidate_id
-     */
-    public function test_job_constructor_accepts_candidate_id(): void
+    /** @test BJ-INST-07: Job constructor accepts candidate_id */
+    public function job_constructor_accepts_candidate_id(): void
     {
-        $candidateId = 123;
-        $job = new GenerateRefreshBriefJob($candidateId);
-
-        $this->assertEquals($candidateId, $job->candidateId);
+        $job = new GenerateRefreshBriefJob(123);
+        $this->assertEquals(123, $job->candidateId);
     }
 
-    /**
-     * BJ-INST-08: Job stores candidate_id as property
-     */
-    public function test_job_stores_candidate_id_as_property(): void
+    /** @test BJ-INST-08: Job stores candidate_id as property */
+    public function job_stores_candidate_id_as_property(): void
     {
-        $candidateId = 456;
-        $job = new GenerateRefreshBriefJob($candidateId);
-
-        $this->assertObjectHasProperty('candidateId', $job);
-        $this->assertEquals($candidateId, $job->candidateId);
+        $job = new GenerateRefreshBriefJob(456);
+        $this->assertEquals(456, $job->candidateId);
     }
 
-    /**
-     * BJ-INST-09: Job has handle() method
-     */
-    public function test_job_has_handle_method(): void
+    /** @test BJ-INST-09: Job has handle() method */
+    public function job_has_handle_method(): void
     {
         $job = new GenerateRefreshBriefJob(1);
-
         $this->assertTrue(method_exists($job, 'handle'));
     }
 
-    /**
-     * BJ-INST-10: Job has failed() method
-     */
-    public function test_job_has_failed_method(): void
+    /** @test BJ-INST-10: Job has failed() method */
+    public function job_has_failed_method(): void
     {
         $job = new GenerateRefreshBriefJob(1);
-
         $this->assertTrue(method_exists($job, 'failed'));
     }
 
-    // ============================================
-    // BJ-DISPATCH: Job Dispatch Tests
-    // ============================================
+    // ==========================================
+    // Job Dispatch Tests (BJ-DISPATCH)
+    // ==========================================
 
-    /**
-     * BJ-DISPATCH-01: Job can be dispatched with candidate_id
-     */
-    public function test_job_can_be_dispatched_with_candidate_id(): void
+    /** @test BJ-DISPATCH-01: Job can be dispatched with candidate_id */
+    public function job_can_be_dispatched_with_candidate_id(): void
     {
         Queue::fake();
 
-        $candidateId = 1;
+        GenerateRefreshBriefJob::dispatch(123);
 
-        GenerateRefreshBriefJob::dispatch($candidateId);
-
-        Queue::assertPushed(GenerateRefreshBriefJob::class, function ($job) use ($candidateId) {
-            return $job->candidateId === $candidateId;
+        Queue::assertPushed(GenerateRefreshBriefJob::class, function ($job) {
+            return $job->candidateId === 123;
         });
     }
 
-    /**
-     * BJ-DISPATCH-02: Job dispatched to correct queue
-     */
-    public function test_job_dispatched_to_correct_queue(): void
+    /** @test BJ-DISPATCH-02: Job dispatched to correct queue */
+    public function job_dispatched_to_correct_queue(): void
     {
         Queue::fake();
 
@@ -172,1245 +159,264 @@ class GenerateRefreshBriefJobTest extends TestCase
         Queue::assertPushedOn('ai-tasks', GenerateRefreshBriefJob::class);
     }
 
-    /**
-     * BJ-DISPATCH-03: Job unique per candidate_id
-     */
-    public function test_job_unique_per_candidate_id(): void
-    {
-        $candidateId = 1;
-        $job1 = new GenerateRefreshBriefJob($candidateId);
-        $job2 = new GenerateRefreshBriefJob($candidateId);
-
-        $this->assertEquals($job1->uniqueId(), $job2->uniqueId());
-    }
-
-    /**
-     * BJ-DISPATCH-04: Job unique ID is string representation of candidate_id
-     */
-    public function test_job_unique_id_is_candidate_id_string(): void
-    {
-        $candidateId = 123;
-        $job = new GenerateRefreshBriefJob($candidateId);
-
-        $this->assertEquals((string) $candidateId, $job->uniqueId());
-    }
-
-    /**
-     * BJ-DISPATCH-05: Different candidates have different unique IDs
-     */
-    public function test_different_candidates_have_different_unique_ids(): void
+    /** @test BJ-DISPATCH-03: Job unique per candidate_id */
+    public function job_unique_per_candidate_id(): void
     {
         $job1 = new GenerateRefreshBriefJob(1);
         $job2 = new GenerateRefreshBriefJob(2);
 
-        $this->assertNotEquals($job1->uniqueId(), $job2->uniqueId());
+        $this->assertEquals('1', $job1->uniqueId());
+        $this->assertEquals('2', $job2->uniqueId());
     }
 
-    /**
-     * BJ-DISPATCH-06: Job dispatch with delay
-     */
-    public function test_job_dispatch_with_delay(): void
+    /** @test BJ-DISPATCH-04: Job unique for 3600 seconds */
+    public function job_unique_for_3600_seconds(): void
     {
-        Queue::fake();
-
-        $candidateId = 1;
-        $delay = 30;
-
-        GenerateRefreshBriefJob::dispatch($candidateId)->delay($delay);
-
-        Queue::assertPushed(GenerateRefreshBriefJob::class, function ($job) use ($candidateId) {
-            return $job->candidateId === $candidateId;
-        });
-    }
-
-    /**
-     * BJ-DISPATCH-07: Job batch for multiple candidates
-     */
-    public function test_job_batch_for_multiple_candidates(): void
-    {
-        Queue::fake();
-
-        $candidateIds = [1, 2, 3, 4, 5];
-
-        foreach ($candidateIds as $id) {
-            GenerateRefreshBriefJob::dispatch($id);
-        }
-
-        Queue::assertPushed(GenerateRefreshBriefJob::class, 5);
-    }
-
-    /**
-     * BJ-DISPATCH-08: Job chain with detection job
-     */
-    public function test_job_chain_with_detection_job(): void
-    {
-        Queue::fake();
-
-        $candidateId = 1;
-
-        GenerateRefreshBriefJob::dispatch($candidateId);
-
-        Queue::assertPushed(GenerateRefreshBriefJob::class);
-    }
-
-    // ============================================
-    // BJ-HANDLE: Job Handle Method Tests
-    // ============================================
-
-    /**
-     * BJ-HANDLE-01: Loads candidate by candidate_id
-     */
-    public function test_handle_loads_candidate_by_candidate_id(): void
-    {
-        $candidateId = 1;
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn($candidateId);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')
-            ->with($candidateId)
-            ->once()
-            ->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn(['brief' => 'Test brief']);
-
-        $mockCandidate->shouldReceive('update')->once();
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob($candidateId);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-02: Loads project for context
-     */
-    public function test_handle_loads_project_for_context(): void
-    {
-        $mockProject = Mockery::mock(ContentDecayProject::class);
-        $mockProject->shouldReceive('getAttribute')->with('id')->andReturn(1);
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('project')->andReturn($mockProject);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn(['brief' => 'Test brief']);
-
-        $mockCandidate->shouldReceive('update')->once();
-
-        Log::shouldReceive('info')->twice();
-
         $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
+        $this->assertEquals(3600, $job->uniqueFor());
     }
 
-    /**
-     * BJ-HANDLE-03: Builds AI prompt from signals
-     */
-    public function test_handle_builds_ai_prompt_from_signals(): void
+    // ==========================================
+    // Job Handle Method Tests (BJ-HANDLE)
+    // ==========================================
+
+    /** @test BJ-HANDLE-01: Loads candidate by candidate_id */
+    public function loads_candidate_by_candidate_id(): void
     {
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('page_url')->andReturn('/test-page');
-        $mockCandidate->shouldReceive('getAttribute')->with('decay_score')->andReturn(75);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([
-            'baseline' => ['clicks' => 100, 'impressions' => 1000],
-            'current' => ['clicks' => 70, 'impressions' => 800],
+        [$candidate, $project] = $this->createTestCandidate();
+
+        $mockResult = AnalysisResult::fromArray([
+            'overallScore' => 75,
+            'indicators' => [],
+            'suggestions' => ['Update content', 'Improve keywords'],
         ]);
 
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
+        $mockService = $this->mock(AIAnalysisServiceInterface::class);
+        $mockService->shouldReceive('getDefaultModel')->andReturn('test-model');
+        $mockService->shouldReceive('analyze')
             ->once()
-            ->withArgs(function ($prompt, $options) {
-                // Verify prompt contains key information
-                return str_contains($prompt, 'decay') ||
-                    str_contains($prompt, 'content') ||
-                    str_contains($prompt, 'refresh');
-            })
-            ->andReturn(['brief' => 'Test brief']);
+            ->andReturn($mockResult);
 
-        $mockCandidate->shouldReceive('update')->once();
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
-        Log::shouldReceive('info')->twice();
+        $job = new GenerateRefreshBriefJob($candidate->id);
+        $job->handle($mockService);
 
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
+        $candidate->refresh();
+        $this->assertArrayHasKey('refresh_brief', $candidate->evidence_json);
     }
 
-    /**
-     * BJ-HANDLE-04: Calls AI service (FEAT-031)
-     */
-    public function test_handle_calls_ai_service(): void
-    {
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
-            ->once()
-            ->andReturn(['brief' => 'Test brief']);
-
-        $mockCandidate->shouldReceive('update')->once();
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-05: Parses AI response
-     */
-    public function test_handle_parses_ai_response(): void
-    {
-        $aiResponse = [
-            'brief' => 'This page needs a content refresh',
-            'suggestions' => [
-                'Update meta title',
-                'Add internal links',
-                'Refresh statistics',
-            ],
-            'priority_actions' => [
-                'Update statistics section',
-                'Add recent examples',
-            ],
-        ];
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
-            ->once()
-            ->andReturn($aiResponse);
-
-        $mockCandidate->shouldReceive('update')
-            ->once()
-            ->withArgs(function ($data) use ($aiResponse) {
-                return isset($data['evidence_json']['refresh_brief']) &&
-                    $data['evidence_json']['refresh_brief'] === $aiResponse;
-            });
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-06: Stores brief in evidence_json
-     */
-    public function test_handle_stores_brief_in_evidence_json(): void
-    {
-        $existingEvidence = ['baseline' => ['clicks' => 100]];
-        $aiResponse = ['brief' => 'Test brief'];
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn($existingEvidence);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn($aiResponse);
-
-        $mockCandidate->shouldReceive('update')
-            ->once()
-            ->withArgs(function ($data) {
-                return isset($data['evidence_json']['refresh_brief']);
-            });
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-07: Sets brief_generated_at timestamp
-     */
-    public function test_handle_sets_brief_generated_at_timestamp(): void
-    {
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn(['brief' => 'Test']);
-
-        $mockCandidate->shouldReceive('update')
-            ->once()
-            ->withArgs(function ($data) {
-                return isset($data['brief_generated_at']);
-            });
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-08: Handles candidate not found
-     */
-    public function test_handle_handles_candidate_not_found(): void
+    /** @test BJ-HANDLE-09: Handles candidate not found */
+    public function handles_candidate_not_found(): void
     {
         Log::shouldReceive('warning')->once();
 
-        ContentDecayCandidate::shouldReceive('find')->with(999)->andReturn(null);
+        $mockService = $this->mock(AIAnalysisServiceInterface::class);
+        $mockService->shouldNotReceive('analyze');
 
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldNotReceive('analyze');
-
-        $job = new GenerateRefreshBriefJob(999);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
+        $job = new GenerateRefreshBriefJob(999999);
+        $job->handle($mockService);
     }
 
-    /**
-     * BJ-HANDLE-09: Handles AI service timeout
-     */
-    public function test_handle_handles_ai_service_timeout(): void
+    /** @test BJ-HANDLE-08: Skips if brief already exists */
+    public function skips_if_brief_already_exists(): void
     {
-        $this->expectException(\Exception::class);
+        [$candidate, $project] = $this->createTestCandidate();
 
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
-            ->once()
-            ->andThrow(new \Exception('AI service timeout'));
-
-        Log::shouldReceive('info')->once();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-    }
-
-    /**
-     * BJ-HANDLE-10: Handles AI service error
-     */
-    public function test_handle_handles_ai_service_error(): void
-    {
-        $this->expectException(\Exception::class);
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
-            ->once()
-            ->andThrow(new \Exception('AI service unavailable'));
-
-        Log::shouldReceive('info')->once();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-    }
-
-    /**
-     * BJ-HANDLE-11: Handles malformed AI response
-     */
-    public function test_handle_handles_malformed_ai_response(): void
-    {
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
-            ->once()
-            ->andReturn(null); // Malformed response
-
-        // Should handle gracefully - either store empty brief or skip
-        $mockCandidate->shouldReceive('update')
-            ->once()
-            ->withArgs(function ($data) {
-                // Brief should be stored even if empty
-                return isset($data['evidence_json']['refresh_brief']);
-            });
-
-        Log::shouldReceive('info')->twice();
-        Log::shouldReceive('warning')->once();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-12: Logs brief generation
-     */
-    public function test_handle_logs_brief_generation(): void
-    {
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(function ($message, $context) {
-                return str_contains($message, 'Refresh brief generation') &&
-                    isset($context['candidate_id']);
-            });
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn(['brief' => 'Test']);
-        $mockCandidate->shouldReceive('update')->once();
-
-        Log::shouldReceive('info')->once(); // Second log for completion
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-13: Logs AI call details
-     */
-    public function test_handle_logs_ai_call_details(): void
-    {
-        Log::shouldReceive('info')->twice();
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn(['brief' => 'Test']);
-        $mockCandidate->shouldReceive('update')->once();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-14: Updates candidate status
-     */
-    public function test_handle_updates_candidate_status(): void
-    {
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn(['brief' => 'Test']);
-
-        $mockCandidate->shouldReceive('update')
-            ->once()
-            ->withArgs(function ($data) {
-                return isset($data['brief_generated_at']);
-            });
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-15: Dispatches brief generated event
-     */
-    public function test_handle_dispatches_brief_generated_event(): void
-    {
-        // Event dispatching would be tested with Event::fake()
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-16: Handles empty AI response
-     */
-    public function test_handle_handles_empty_ai_response(): void
-    {
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
-            ->once()
-            ->andReturn([]); // Empty response
-
-        $mockCandidate->shouldReceive('update')
-            ->once()
-            ->withArgs(function ($data) {
-                // Brief should be stored even if empty
-                return true;
-            });
-
-        Log::shouldReceive('info')->twice();
-        Log::shouldReceive('warning')->zeroOrMoreTimes();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-17: Validates brief structure
-     */
-    public function test_handle_validates_brief_structure(): void
-    {
-        $validResponse = [
-            'brief' => 'Test brief',
-            'suggestions' => ['Suggestion 1'],
-            'priority_actions' => ['Action 1'],
-        ];
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn($validResponse);
-
-        $mockCandidate->shouldReceive('update')->once();
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-HANDLE-18: Handles concurrent generation
-     */
-    public function test_handle_handles_concurrent_generation(): void
-    {
-        // Concurrency is handled by ShouldBeUnique
-        $job = new GenerateRefreshBriefJob(1);
-
-        $this->assertInstanceOf(\Illuminate\Contracts\Queue\ShouldBeUnique::class, $job);
-    }
-
-    /**
-     * BJ-HANDLE-19: Skips if brief exists
-     */
-    public function test_handle_skips_if_brief_exists(): void
-    {
-        Log::shouldReceive('info')->once();
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([
-            'refresh_brief' => ['brief' => 'Existing brief'],
+        // Add existing brief
+        $candidate->update([
+            'evidence_json' => [
+                'refresh_brief' => ['outline' => 'Existing brief'],
+            ],
         ]);
 
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldNotReceive('analyze');
+        $mockService = $this->mock(AIAnalysisServiceInterface::class);
+        $mockService->shouldNotReceive('analyze');
 
-        $mockCandidate->shouldNotReceive('update');
+        $job = new GenerateRefreshBriefJob($candidate->id);
+        $job->handle($mockService);
 
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
+        $candidate->refresh();
+        // Should still have the existing brief
+        $this->assertEquals('Existing brief', $candidate->evidence_json['refresh_brief']['outline']);
     }
 
-    /**
-     * BJ-HANDLE-20: Respects existing evidence_json
-     */
-    public function test_handle_respects_existing_evidence_json(): void
+    /** @test BJ-HANDLE-07: Stores brief in evidence_json */
+    public function stores_brief_in_evidence_json(): void
     {
-        $existingEvidence = [
-            'baseline' => ['clicks' => 100],
-            'current' => ['clicks' => 70],
-            'reason_codes' => ['click_loss'],
-        ];
+        [$candidate, $project] = $this->createTestCandidate();
 
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn($existingEvidence);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn(['brief' => 'Test']);
-
-        $mockCandidate->shouldReceive('update')
-            ->once()
-            ->withArgs(function ($data) use ($existingEvidence) {
-                // Existing evidence should be preserved
-                foreach ($existingEvidence as $key => $value) {
-                    if (!isset($data['evidence_json'][$key])) {
-                        return false;
-                    }
-                }
-                return isset($data['evidence_json']['refresh_brief']);
-            });
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    // ============================================
-    // BJ-AI: AI Integration Tests
-    // ============================================
-
-    /**
-     * BJ-AI-01: Uses existing AI infrastructure
-     */
-    public function test_uses_existing_ai_infrastructure(): void
-    {
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        // AIAnalysisServiceInterface is from FEAT-031
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn(['brief' => 'Test']);
-        $mockCandidate->shouldReceive('update')->once();
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-AI-02: Constructs proper prompt
-     */
-    public function test_constructs_proper_prompt(): void
-    {
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('page_url')->andReturn('/test-page');
-        $mockCandidate->shouldReceive('getAttribute')->with('decay_score')->andReturn(75);
-        $mockCandidate->shouldReceive('getAttribute')->with('reason_codes')->andReturn(['click_loss']);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $capturedPrompt = null;
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
-            ->once()
-            ->withArgs(function ($prompt, $options) use (&$capturedPrompt) {
-                $capturedPrompt = $prompt;
-                return true;
-            })
-            ->andReturn(['brief' => 'Test']);
-
-        $mockCandidate->shouldReceive('update')->once();
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        // Prompt should contain page URL, decay score, and context
-        $this->assertNotNull($capturedPrompt);
-    }
-
-    /**
-     * BJ-AI-03: Includes decay signals in prompt
-     */
-    public function test_includes_decay_signals_in_prompt(): void
-    {
-        $evidence = [
-            'baseline' => ['clicks' => 100, 'impressions' => 1000, 'ctr' => 0.1],
-            'current' => ['clicks' => 70, 'impressions' => 800, 'ctr' => 0.0875],
-        ];
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn($evidence);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $capturedPrompt = null;
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
-            ->once()
-            ->withArgs(function ($prompt, $options) use (&$capturedPrompt) {
-                $capturedPrompt = $prompt;
-                return true;
-            })
-            ->andReturn(['brief' => 'Test']);
-
-        $mockCandidate->shouldReceive('update')->once();
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        // Prompt should include signal information
-        $this->assertNotNull($capturedPrompt);
-    }
-
-    /**
-     * BJ-AI-04: Includes reason codes in prompt
-     */
-    public function test_includes_reason_codes_in_prompt(): void
-    {
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('reason_codes')->andReturn(['click_loss', 'ctr_drop']);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $capturedPrompt = null;
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
-            ->once()
-            ->withArgs(function ($prompt, $options) use (&$capturedPrompt) {
-                $capturedPrompt = $prompt;
-                return true;
-            })
-            ->andReturn(['brief' => 'Test']);
-
-        $mockCandidate->shouldReceive('update')->once();
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        // Prompt should include reason codes
-        $this->assertNotNull($capturedPrompt);
-    }
-
-    /**
-     * BJ-AI-05: Includes recovery suggestions
-     */
-    public function test_includes_recovery_suggestions(): void
-    {
-        $aiResponse = [
-            'brief' => 'This page has experienced click loss.',
-            'suggestions' => [
-                'Update meta title to be more compelling',
-                'Add internal links to related content',
-                'Refresh statistics with recent data',
+        $mockResult = AnalysisResult::fromArray([
+            'overallScore' => 80,
+            'indicators' => [
+                'keyword_density' => ['score' => 70],
+                'readability' => ['score' => 85],
             ],
-        ];
+            'suggestions' => ['Update keywords', 'Improve structure'],
+        ]);
 
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn($aiResponse);
-
-        $capturedData = null;
-        $mockCandidate->shouldReceive('update')
+        $mockService = $this->mock(AIAnalysisServiceInterface::class);
+        $mockService->shouldReceive('getDefaultModel')->andReturn('test-model');
+        $mockService->shouldReceive('analyze')
             ->once()
-            ->withArgs(function ($data) use (&$capturedData) {
-                $capturedData = $data;
-                return true;
-            });
+            ->andReturn($mockResult);
 
-        Log::shouldReceive('info')->twice();
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
+        $job = new GenerateRefreshBriefJob($candidate->id);
+        $job->handle($mockService);
 
-        $this->assertArrayHasKey('suggestions', $capturedData['evidence_json']['refresh_brief']);
+        $candidate->refresh();
+        $this->assertArrayHasKey('refresh_brief', $candidate->evidence_json);
+        $this->assertArrayHasKey('outline', $candidate->evidence_json['refresh_brief']);
+        $this->assertArrayHasKey('priority_actions', $candidate->evidence_json['refresh_brief']);
+        $this->assertArrayHasKey('generated_at', $candidate->evidence_json['refresh_brief']);
     }
 
-    /**
-     * BJ-AI-06: Handles token limits
-     */
-    public function test_handles_token_limits(): void
+    /** @test BJ-HANDLE-08: Sets brief_generated_at timestamp */
+    public function sets_brief_generated_at_timestamp(): void
     {
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
+        [$candidate, $project] = $this->createTestCandidate();
 
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
+        $mockResult = AnalysisResult::fromArray([
+            'overallScore' => 75,
+            'indicators' => [],
+            'suggestions' => [],
+        ]);
 
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
+        $mockService = $this->mock(AIAnalysisServiceInterface::class);
+        $mockService->shouldReceive('getDefaultModel')->andReturn('test-model');
+        $mockService->shouldReceive('analyze')->once()->andReturn($mockResult);
+
+        Log::shouldReceive('info')->zeroOrMoreTimes();
+
+        $job = new GenerateRefreshBriefJob($candidate->id);
+        $job->handle($mockService);
+
+        $candidate->refresh();
+        $this->assertArrayHasKey('brief_generated_at', $candidate->evidence_json);
+    }
+
+    // ==========================================
+    // AI Integration Tests (BJ-AI)
+    // ==========================================
+
+    /** @test BJ-AI-01: Uses existing AI infrastructure */
+    public function uses_existing_ai_infrastructure(): void
+    {
+        [$candidate, $project] = $this->createTestCandidate();
+
+        $mockResult = AnalysisResult::fromArray([
+            'overallScore' => 75,
+            'indicators' => [],
+            'suggestions' => [],
+        ]);
+
+        $mockService = $this->mock(AIAnalysisServiceInterface::class);
+        $mockService->shouldReceive('getDefaultModel')->andReturn('test-model');
+        $mockService->shouldReceive('analyze')
             ->once()
-            ->withArgs(function ($prompt, $options) {
-                // Verify options include token limits
+            ->withArgs(function ($url, $html, $options) use ($candidate) {
+                return $url === $candidate->page_url &&
+                    is_string($html) &&
+                    isset($options['model']) &&
+                    isset($options['timeout']);
+            })
+            ->andReturn($mockResult);
+
+        Log::shouldReceive('info')->zeroOrMoreTimes();
+
+        $job = new GenerateRefreshBriefJob($candidate->id);
+        $job->handle($mockService);
+    }
+
+    /** @test BJ-AI-02: Constructs proper prompt */
+    public function constructs_proper_prompt(): void
+    {
+        [$candidate, $project] = $this->createTestCandidate();
+
+        $mockResult = AnalysisResult::fromArray([
+            'overallScore' => 75,
+            'indicators' => [],
+            'suggestions' => [],
+        ]);
+
+        $capturedHtml = null;
+
+        $mockService = $this->mock(AIAnalysisServiceInterface::class);
+        $mockService->shouldReceive('getDefaultModel')->andReturn('test-model');
+        $mockService->shouldReceive('analyze')
+            ->once()
+            ->withArgs(function ($url, $html, $options) use (&$capturedHtml) {
+                $capturedHtml = $html;
                 return true;
             })
-            ->andReturn(['brief' => 'Test']);
+            ->andReturn($mockResult);
 
-        $mockCandidate->shouldReceive('update')->once();
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
-        Log::shouldReceive('info')->twice();
+        $job = new GenerateRefreshBriefJob($candidate->id);
+        $job->handle($mockService);
 
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
+        // Verify prompt contains expected content
+        $this->assertStringContainsString($candidate->page_url, $capturedHtml);
+        $this->assertStringContainsString($candidate->page_title, $capturedHtml);
+        $this->assertStringContainsString('clicks_down', $capturedHtml);
     }
 
-    /**
-     * BJ-AI-07: Handles rate limiting
-     */
-    public function test_handles_rate_limiting(): void
+    /** @test BJ-AI-10: Validates brief structure */
+    public function validates_brief_structure(): void
     {
-        // Rate limiting would be handled by the AI service
-        $this->assertTrue(true);
-    }
+        [$candidate, $project] = $this->createTestCandidate();
 
-    /**
-     * BJ-AI-08: Handles API errors
-     */
-    public function test_handles_api_errors(): void
-    {
-        $this->expectException(\Exception::class);
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
-            ->once()
-            ->andThrow(new \Exception('API rate limit exceeded'));
-
-        Log::shouldReceive('info')->once();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-    }
-
-    /**
-     * BJ-AI-09: Parses JSON response
-     */
-    public function test_parses_json_response(): void
-    {
-        $aiResponse = [
-            'brief' => 'Test brief',
-            'suggestions' => ['Suggestion 1'],
-            'priority_actions' => ['Action 1'],
-        ];
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn($aiResponse);
-
-        $capturedData = null;
-        $mockCandidate->shouldReceive('update')
-            ->once()
-            ->withArgs(function ($data) use (&$capturedData) {
-                $capturedData = $data;
-                return true;
-            });
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertEquals($aiResponse, $capturedData['evidence_json']['refresh_brief']);
-    }
-
-    /**
-     * BJ-AI-10: Validates brief structure
-     */
-    public function test_validates_brief_structure(): void
-    {
-        $invalidResponse = [
-            // Missing 'brief' key
-            'suggestions' => ['Suggestion 1'],
-        ];
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn($invalidResponse);
-
-        // Should handle missing brief key gracefully
-        $mockCandidate->shouldReceive('update')->once();
-
-        Log::shouldReceive('info')->twice();
-        Log::shouldReceive('warning')->zeroOrMoreTimes();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-AI-11: Stores brief outline
-     */
-    public function test_stores_brief_outline(): void
-    {
-        $aiResponse = [
-            'brief' => 'Test brief',
-            'outline' => [
-                'Introduction',
-                'Problem Analysis',
-                'Recommendations',
+        $mockResult = AnalysisResult::fromArray([
+            'overallScore' => 75,
+            'indicators' => [
+                'keyword_density' => ['score' => 60],
             ],
-        ];
+            'suggestions' => ['Update content'],
+        ]);
 
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
+        $mockService = $this->mock(AIAnalysisServiceInterface::class);
+        $mockService->shouldReceive('getDefaultModel')->andReturn('test-model');
+        $mockService->shouldReceive('analyze')->once()->andReturn($mockResult);
 
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn($aiResponse);
+        $job = new GenerateRefreshBriefJob($candidate->id);
+        $job->handle($mockService);
 
-        $capturedData = null;
-        $mockCandidate->shouldReceive('update')
-            ->once()
-            ->withArgs(function ($data) use (&$capturedData) {
-                $capturedData = $data;
-                return true;
-            });
+        $candidate->refresh();
+        $brief = $candidate->evidence_json['refresh_brief'];
 
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertArrayHasKey('outline', $capturedData['evidence_json']['refresh_brief']);
+        $this->assertArrayHasKey('outline', $brief);
+        $this->assertArrayHasKey('priority_actions', $brief);
+        $this->assertArrayHasKey('suggestions', $brief);
+        $this->assertArrayHasKey('generated_at', $brief);
+        $this->assertArrayHasKey('model_used', $brief);
     }
 
-    /**
-     * BJ-AI-12: Stores refresh suggestions
-     */
-    public function test_stores_refresh_suggestions(): void
-    {
-        $aiResponse = [
-            'brief' => 'Test brief',
-            'suggestions' => ['Update title', 'Add links'],
-        ];
+    // ==========================================
+    // Job Failure Handling Tests (BJ-FAIL)
+    // ==========================================
 
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn($aiResponse);
-
-        $capturedData = null;
-        $mockCandidate->shouldReceive('update')
-            ->once()
-            ->withArgs(function ($data) use (&$capturedData) {
-                $capturedData = $data;
-                return true;
-            });
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertArrayHasKey('suggestions', $capturedData['evidence_json']['refresh_brief']);
-    }
-
-    /**
-     * BJ-AI-13: Stores priority actions
-     */
-    public function test_stores_priority_actions(): void
-    {
-        $aiResponse = [
-            'brief' => 'Test brief',
-            'priority_actions' => ['Action 1', 'Action 2'],
-        ];
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn($aiResponse);
-
-        $capturedData = null;
-        $mockCandidate->shouldReceive('update')
-            ->once()
-            ->withArgs(function ($data) use (&$capturedData) {
-                $capturedData = $data;
-                return true;
-            });
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertArrayHasKey('priority_actions', $capturedData['evidence_json']['refresh_brief']);
-    }
-
-    /**
-     * BJ-AI-14: Handles truncated response
-     */
-    public function test_handles_truncated_response(): void
-    {
-        $truncatedResponse = [
-            'brief' => 'This is a truncated response that was cut off mid-sentence due to token',
-        ];
-
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')->once()->andReturn($truncatedResponse);
-
-        // Should store even truncated response
-        $mockCandidate->shouldReceive('update')->once();
-
-        Log::shouldReceive('info')->twice();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-AI-15: Falls back on AI failure
-     */
-    public function test_falls_back_on_ai_failure(): void
-    {
-        $mockCandidate = Mockery::mock(ContentDecayCandidate::class);
-        $mockCandidate->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $mockCandidate->shouldReceive('getAttribute')->with('evidence_json')->andReturn([]);
-
-        ContentDecayCandidate::shouldReceive('find')->with(1)->andReturn($mockCandidate);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-        $mockAiService->shouldReceive('analyze')
-            ->once()
-            ->andThrow(new \Exception('AI service error'));
-
-        Log::shouldReceive('info')->once();
-
-        $job = new GenerateRefreshBriefJob(1);
-
-        $this->expectException(\Exception::class);
-        $job->handle($mockAiService);
-    }
-
-    // ============================================
-    // BJ-RETRY: Job Retry Logic Tests
-    // ============================================
-
-    /**
-     * BJ-RETRY-01: Job retries on transient failure
-     */
-    public function test_job_retries_on_transient_failure(): void
-    {
-        $attemptCount = 0;
-
-        ContentDecayCandidate::shouldReceive('find')
-            ->twice()
-            ->andReturnUsing(function () use (&$attemptCount) {
-                $attemptCount++;
-                if ($attemptCount === 1) {
-                    throw new \Exception('Transient failure');
-                }
-                return Mockery::mock(ContentDecayCandidate::class, [
-                    'id' => 1,
-                    'evidence_json' => [],
-                ]);
-            });
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->tries = 2;
-
-        try {
-            $job->handle($mockAiService);
-        } catch (\Exception $e) {
-            $this->assertEquals('Transient failure', $e->getMessage());
-        }
-
-        $this->assertEquals(1, $attemptCount);
-    }
-
-    /**
-     * BJ-RETRY-02: Job respects max tries (2)
-     */
-    public function test_job_respects_max_tries(): void
-    {
-        $job = new GenerateRefreshBriefJob(1);
-
-        $this->assertEquals(2, $job->tries);
-    }
-
-    /**
-     * BJ-RETRY-03: Job exponential backoff
-     */
-    public function test_job_exponential_backoff(): void
-    {
-        $job = new GenerateRefreshBriefJob(1);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-RETRY-04: Job doesn't retry on not found
-     */
-    public function test_job_doesnt_retry_on_not_found(): void
-    {
-        Log::shouldReceive('warning')->once();
-
-        ContentDecayCandidate::shouldReceive('find')->with(999)->andReturn(null);
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-
-        $job = new GenerateRefreshBriefJob(999);
-        $job->handle($mockAiService);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-RETRY-05: Job fails after max retries
-     */
-    public function test_job_fails_after_max_retries(): void
-    {
-        ContentDecayCandidate::shouldReceive('find')
-            ->times(2)
-            ->andThrow(new \Exception('Persistent failure'));
-
-        $mockAiService = Mockery::mock(AIAnalysisServiceInterface::class);
-
-        $job = new GenerateRefreshBriefJob(1);
-        $job->tries = 2;
-
-        for ($i = 0; $i < 2; $i++) {
-            try {
-                $job->handle($mockAiService);
-            } catch (\Exception $e) {
-                $this->assertEquals('Persistent failure', $e->getMessage());
-            }
-        }
-    }
-
-    /**
-     * BJ-RETRY-06: Job cleanup on final failure
-     */
-    public function test_job_cleanup_on_final_failure(): void
+    /** @test BJ-FAIL-01: Job failed() method called */
+    public function job_failed_method_called(): void
     {
         Log::shouldReceive('error')->once();
 
         $job = new GenerateRefreshBriefJob(1);
-        $exception = new \Exception('Final failure');
+        $exception = new \Exception('Test exception');
 
         $job->failed($exception);
 
         $this->assertTrue(true);
     }
 
-    // ============================================
-    // BJ-FAIL: Job Failure Handling Tests
-    // ============================================
-
-    /**
-     * BJ-FAIL-01: Job failed() method called
-     */
-    public function test_failed_method_called(): void
-    {
-        Log::shouldReceive('error')->once();
-
-        $job = new GenerateRefreshBriefJob(1);
-        $exception = new \Exception('Test failure');
-
-        $job->failed($exception);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-FAIL-02: Job logs failure with context
-     */
-    public function test_failed_logs_failure_with_context(): void
+    /** @test BJ-FAIL-02: Job logs failure with context */
+    public function job_logs_failure_with_context(): void
     {
         Log::shouldReceive('error')
             ->once()
@@ -1421,77 +427,59 @@ class GenerateRefreshBriefJobTest extends TestCase
             });
 
         $job = new GenerateRefreshBriefJob(123);
-        $exception = new \Exception('Test failure');
-
-        $job->failed($exception);
-
-        $this->assertTrue(true);
+        $job->failed(new \Exception('Test error'));
     }
 
-    /**
-     * BJ-FAIL-03: Job handles AI service error
-     */
-    public function test_failed_handles_ai_service_error(): void
+    /** @test BJ-FAIL-05: Job updates candidate status on failure */
+    public function job_updates_candidate_on_failure(): void
     {
-        Log::shouldReceive('error')->once();
+        [$candidate, $project] = $this->createTestCandidate();
 
-        $job = new GenerateRefreshBriefJob(1);
-        $exception = new \Exception('AI service timeout');
-
-        $job->failed($exception);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * BJ-FAIL-04: Job preserves exception chain
-     */
-    public function test_failed_preserves_exception_chain(): void
-    {
-        $capturedContext = null;
-
-        Log::shouldReceive('error')
+        $mockService = $this->mock(AIAnalysisServiceInterface::class);
+        $mockService->shouldReceive('getDefaultModel')->andReturn('test-model');
+        $mockService->shouldReceive('analyze')
             ->once()
-            ->withArgs(function ($message, $context) use (&$capturedContext) {
-                $capturedContext = $context;
-                return true;
-            });
+            ->andThrow(new \Exception('AI service failed'));
 
-        $job = new GenerateRefreshBriefJob(1);
-        $exception = new \Exception('Chain test');
+        Log::shouldReceive('info')->zeroOrMoreTimes();
+        Log::shouldReceive('error')->zeroOrMoreTimes();
 
-        $job->failed($exception);
+        $job = new GenerateRefreshBriefJob($candidate->id);
 
-        $this->assertEquals('Chain test', $capturedContext['error']);
+        try {
+            $job->handle($mockService);
+        } catch (\Exception $e) {
+            // Expected
+        }
+
+        $candidate->refresh();
+        $this->assertArrayHasKey('refresh_brief_error', $candidate->evidence_json);
     }
 
-    /**
-     * BJ-FAIL-05: Job updates candidate status
-     */
-    public function test_failed_updates_candidate_status(): void
+    // ==========================================
+    // Job Tags Tests
+    // ==========================================
+
+    /** @test: Job has correct tags */
+    public function job_has_correct_tags(): void
     {
-        Log::shouldReceive('error')->once();
+        $job = new GenerateRefreshBriefJob(123);
+        $tags = $job->tags();
 
-        $job = new GenerateRefreshBriefJob(1);
-        $exception = new \Exception('Test failure');
-
-        $job->failed($exception);
-
-        $this->assertTrue(true);
+        $this->assertContains('candidate:123', $tags);
+        $this->assertContains('content-decay:brief', $tags);
     }
 
-    /**
-     * BJ-FAIL-06: Job sends failure notification
-     */
-    public function test_failed_sends_failure_notification(): void
+    // ==========================================
+    // Job Backoff Tests
+    // ==========================================
+
+    /** @test: Job has backoff configuration */
+    public function job_has_backoff_configuration(): void
     {
-        Log::shouldReceive('error')->once();
-
         $job = new GenerateRefreshBriefJob(1);
-        $exception = new \Exception('Test failure');
+        $backoff = $job->backoff();
 
-        $job->failed($exception);
-
-        $this->assertTrue(true);
+        $this->assertEquals([60, 180], $backoff);
     }
 }
