@@ -97,7 +97,7 @@ const formatFullDate = (value: string): string => {
 const CustomTooltip: React.FC<{
   active?: boolean;
   payload?: readonly {
-    dataKey: string;
+    dataKey?: string | number;
     value: number | null;
     color: string;
   }[];
@@ -114,16 +114,17 @@ const CustomTooltip: React.FC<{
       <p className="font-medium text-sm mb-2 text-muted-foreground">{dateLabel}</p>
       <div className="space-y-1.5">
         {payload.map((entry) => {
-          const isUser = entry.dataKey === "userPosition";
+          const dataKey = typeof entry.dataKey === 'function' ? '' : String(entry.dataKey ?? '');
+          const isUser = dataKey === "userPosition";
           if (isUser && !showUser) return null;
 
           const displayName = isUser
             ? "You"
-            : competitorNames[entry.dataKey] || entry.dataKey;
+            : competitorNames[dataKey] || dataKey;
           const position = entry.value;
 
           return (
-            <div key={entry.dataKey} className="flex items-center justify-between gap-4">
+            <div key={dataKey} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 rounded-full"
