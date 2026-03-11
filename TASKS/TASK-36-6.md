@@ -1,7 +1,7 @@
 # TASK-36-6: ContentDecayDetectionService
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -371,3 +371,13 @@ Created comprehensive test suite for ContentDecayDetectionService - the main orc
 - These failures are unrelated to TASK-36-6
 
 **Status:** `To Deploy` → Ready for DevOps
+
+---
+
+### DevOps (2026-03-11 18:54 GMT+2)
+**Deployment Started**
+
+- Commit: `e26c853b`
+- Tests verified: 58 passed, 95 assertions
+- Pre-existing AnnotationCategoryTest failures unrelated to this task
+- Running deployment to production...
