@@ -1,233 +1,316 @@
 /**
  * Tests for Content Decay Recovery Report Page
- * Task: TASK-36-13
  * 
- * @jest-environment jsdom
+ * Task: TASK-36-13 - Frontend Pages - Refresh Queue & Board
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { useParams, useRouter } from "next/navigation";
 import RecoveryReportPage from "@/app/sites/[siteId]/content-decay/recovery/page";
 
-// Mock Next.js navigation
+// Mock Next.js hooks
 vi.mock("next/navigation", () => ({
-  useParams: () => ({ siteId: "123" }),
-  useRouter: () => ({
-    push: vi.fn(),
-  }),
+  useParams: vi.fn(),
+  useRouter: vi.fn(),
 }));
 
-// Mock SWR hooks
+// Mock hooks
 vi.mock("@/lib/hooks/useContentDecay", () => ({
-  useContentDecayRecovery: () => ({
+  useContentDecayRecovery: vi.fn(() => ({
     recovery: {
       summary: {
         totalRecovered: 15,
-        totalClicksRecovered: 12000,
-        avgRecoveryRate: 0.75,
-        avgDaysToRecovery: 21,
+        totalClicksRecovered: 3500,
+        avgRecoveryRate: 0.72,
+        avgDaysToRecovery: 14.5,
       },
       timeline: [
-        { date: "2026-03-01", recovered: 2, clicks: 800 },
-        { date: "2026-03-05", recovered: 3, clicks: 1200 },
-        { date: "2026-03-10", recovered: 5, clicks: 2000 },
+        { date: "2026-03-01", recovered: 2, clicks: 500 },
+        { date: "2026-03-02", recovered: 3, clicks: 700 },
+        { date: "2026-03-03", recovered: 1, clicks: 200 },
       ],
       comparisons: [
         {
           id: 1,
-          pageUrl: "https://example.com/recovered-1",
+          pageUrl: "https://example.com/page-1",
           pageTitle: "Recovered Page 1",
           pageType: "blog",
-          before: { clicks: 500, impressions: 10000, ctr: 0.05, position: 8.5 },
-          after: { clicks: 800, impressions: 15000, ctr: 0.053, position: 6.2 },
-          delta: { clicks: 300, impressions: 5000, ctr: 0.003, position: -2.3 },
+          before: { clicks: 100, impressions: 1000, ctr: 0.1, position: 10 },
+          after: { clicks: 250, impressions: 2000, ctr: 0.125, position: 5 },
+          delta: { clicks: 150, impressions: 1000, ctr: 0.025, position: -5 },
         },
       ],
       stories: [
         {
           id: 1,
-          pageUrl: "https://example.com/story-1",
-          pageTitle: "Success Story 1",
-          clicksRecovered: 450,
-          recoveryRate: 0.85,
-          daysToRecovery: 14,
-          summary: "Updated content and improved internal linking.",
+          pageUrl: "https://example.com/page-1",
+          pageTitle: "Recovered Page 1",
+          clicksRecovered: 150,
+          recoveryRate: 0.75,
+          daysToRecovery: 12,
+          summary: "Updated content and improved rankings",
         },
       ],
     },
     isLoading: false,
-  }),
-  useExportContentDecay: () => ({
-    exportData: vi.fn(() => Promise.resolve({ success: true })),
-    isExporting: false,
-  }),
+  })),
 }));
 
-describe("Recovery Report Page", () => {
+// Mock components
+vi.mock("@/components/content-decay/RecoveryComparisonCard", () => ({
+  RecoveryComparisonCard: ({ comparison }: any) => (
+    <div data-testid="recovery-comparison-card">
+      Comparison Card: {comparison ? "Has Data" : "No Data"}
+    </div>
+  ),
+}));
+
+describe("Content Decay Recovery Report Page", () => {
+  const mockRouter = {
+    push: vi.fn(),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    (useParams as any).mockReturnValue({ siteId: "test-site-123" });
+    (useRouter as any).mockReturnValue(mockRouter);
   });
 
   describe("Page Rendering", () => {
-    it("renders the page title", () => {
+    it("should render the page header", () => {
       render(<RecoveryReportPage />);
       expect(screen.getByText("Recovery Report")).toBeInTheDocument();
     });
 
-    it("renders the page description", () => {
+    it("should render the page description", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByText(/Track your content recovery/i)).toBeInTheDocument();
+      expect(screen.getByText(/Track content recovery progress/)).toBeInTheDocument();
     });
 
-    it("renders the back button", () => {
+    it("should render navigation tabs", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByTestId("back-button")).toBeInTheDocument();
+      expect(screen.getByText("Queue")).toBeInTheDocument();
+      expect(screen.getByText("Board")).toBeInTheDocument();
+      expect(screen.getByText("Recovery")).toBeInTheDocument();
     });
 
-    it("renders the export button", () => {
+    it("should render date range filter", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByTestId("export-button")).toBeInTheDocument();
+      expect(screen.getByText("Last 30 days")).toBeInTheDocument();
+    });
+
+    it("should render export button", () => {
+      render(<RecoveryReportPage />);
+      expect(screen.getByText("Export PDF")).toBeInTheDocument();
     });
   });
 
   describe("Summary Statistics", () => {
-    it("renders stats section", () => {
+    it("should display total recovered count", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByTestId("stats-section")).toBeInTheDocument();
+      expect(screen.getByText("Total Recovered")).toBeInTheDocument();
     });
 
-    it("displays total recovered count", () => {
+    it("should display clicks recovered", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByTestId("stat-value-total-recovered")).toBeInTheDocument();
+      expect(screen.getByText("Clicks Recovered")).toBeInTheDocument();
     });
 
-    it("displays clicks recovered", () => {
+    it("should display average recovery rate", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByTestId("stat-value-clicks-recovered")).toBeInTheDocument();
+      expect(screen.getByText("Avg Recovery Rate")).toBeInTheDocument();
     });
 
-    it("displays average recovery rate", () => {
+    it("should display average days to recovery", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByTestId("stat-value-avg-recovery-rate")).toBeInTheDocument();
+      expect(screen.getByText("Avg Days to Recovery")).toBeInTheDocument();
     });
 
-    it("displays average days to recovery", () => {
+    it("should show summary stats section", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByTestId("stat-value-avg-days-to-recovery")).toBeInTheDocument();
+      expect(screen.getByTestId("summary-stats")).toBeInTheDocument();
     });
   });
 
   describe("Timeline Chart", () => {
-    it("renders timeline chart", () => {
+    it("should render timeline chart section", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByTestId("timeline-chart")).toBeInTheDocument();
+      expect(screen.getByText("Recovery Timeline")).toBeInTheDocument();
     });
 
-    it("displays timeline bars", () => {
+    it("should render chart bars", () => {
       render(<RecoveryReportPage />);
-      const bars = screen.getAllByTestId(/timeline-bar-/);
-      expect(bars.length).toBeGreaterThan(0);
+      expect(screen.getByTestId("timeline-chart")).toBeInTheDocument();
     });
   });
 
   describe("Comparison Table", () => {
-    it("renders comparison table", () => {
+    it("should render comparison table section", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByTestId("comparison-table")).toBeInTheDocument();
+      expect(screen.getByText("Before/After Comparison")).toBeInTheDocument();
     });
 
-    it("displays comparison rows", () => {
+    it("should display recovered page titles", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByTestId("comparison-row-1")).toBeInTheDocument();
+      expect(screen.getByText("Recovered Page 1")).toBeInTheDocument();
+    });
+
+    it("should display before/after click values", () => {
+      render(<RecoveryReportPage />);
+      expect(screen.getByText("100")).toBeInTheDocument();
+      expect(screen.getByText("250")).toBeInTheDocument();
     });
   });
 
   describe("Recovery Stories", () => {
-    it("renders recovery stories section", () => {
+    it("should render recovery stories section", () => {
+      render(<RecoveryReportPage />);
+      expect(screen.getByText("Recovery Stories")).toBeInTheDocument();
+    });
+
+    it("should display story cards", () => {
       render(<RecoveryReportPage />);
       expect(screen.getByTestId("recovery-stories")).toBeInTheDocument();
     });
 
-    it("displays story cards", () => {
+    it("should display clicks recovered in story", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByTestId("story-1")).toBeInTheDocument();
+      expect(screen.getByText(/\+150/)).toBeInTheDocument();
     });
   });
 
   describe("Date Range Filter", () => {
-    it("renders date range selector", () => {
+    it("should have 7 days option", async () => {
       render(<RecoveryReportPage />);
-      const selectTrigger = screen.getByRole("combobox", { name: /date range/i });
-      expect(selectTrigger).toBeInTheDocument();
+      const trigger = screen.getByRole("combobox", { name: /date range/i });
+      fireEvent.click(trigger);
+      await waitFor(() => {
+        expect(screen.getByText("Last 7 days")).toBeInTheDocument();
+      });
+    });
+
+    it("should have 90 days option", async () => {
+      render(<RecoveryReportPage />);
+      const trigger = screen.getByRole("combobox", { name: /date range/i });
+      fireEvent.click(trigger);
+      await waitFor(() => {
+        expect(screen.getByText("Last 90 days")).toBeInTheDocument();
+      });
+    });
+
+    it("should have all time option", async () => {
+      render(<RecoveryReportPage />);
+      const trigger = screen.getByRole("combobox", { name: /date range/i });
+      fireEvent.click(trigger);
+      await waitFor(() => {
+        expect(screen.getByText("All time")).toBeInTheDocument();
+      });
     });
   });
 
-  describe("Export Functionality", () => {
-    it("export button is clickable", () => {
+  describe("Navigation", () => {
+    it("should navigate to queue when Queue tab is clicked", async () => {
       render(<RecoveryReportPage />);
-      const button = screen.getByTestId("export-button");
-      expect(button).not.toBeDisabled();
+      const queueTab = screen.getByText("Queue").closest("button");
+      if (queueTab) {
+        fireEvent.click(queueTab);
+      }
+      expect(mockRouter.push).toHaveBeenCalledWith("/sites/test-site-123/content-decay");
+    });
+
+    it("should navigate to board when Board tab is clicked", async () => {
+      render(<RecoveryReportPage />);
+      const boardTab = screen.getByText("Board").closest("button");
+      if (boardTab) {
+        fireEvent.click(boardTab);
+      }
+      expect(mockRouter.push).toHaveBeenCalledWith("/sites/test-site-123/content-decay/board");
+    });
+  });
+
+  describe("Site ID Handling", () => {
+    it("should show not found when siteId is missing", () => {
+      (useParams as any).mockReturnValue({});
+      render(<RecoveryReportPage />);
+      expect(screen.getByText("Site not found")).toBeInTheDocument();
     });
   });
 
   describe("Accessibility", () => {
-    it("has proper heading hierarchy", () => {
+    it("should have proper heading hierarchy", () => {
       render(<RecoveryReportPage />);
-      const heading = screen.getByRole("heading", { level: 1 });
-      expect(heading).toHaveTextContent("Recovery Report");
+      const h1 = screen.getByRole("heading", { level: 1 });
+      expect(h1).toHaveTextContent("Recovery Report");
     });
 
-    it("stats section has aria-label", () => {
+    it("should have accessible table headers", () => {
       render(<RecoveryReportPage />);
-      expect(screen.getByLabelText(/Recovery statistics/i)).toBeInTheDocument();
-    });
-
-    it("timeline chart has accessible role", () => {
-      render(<RecoveryReportPage />);
-      expect(screen.getByRole("img", { name: /Recovery timeline chart/i })).toBeInTheDocument();
-    });
-  });
-
-  describe("Responsive Design", () => {
-    it("uses responsive grid for stats", () => {
-      render(<RecoveryReportPage />);
-      const statsSection = screen.getByTestId("stats-section");
-      expect(statsSection?.firstChild).toHaveClass("grid");
-    });
-
-    it("uses responsive grid for two-column layout", () => {
-      render(<RecoveryReportPage />);
-      const cards = screen.getAllByText(/Before\/After|Recovery Stories/);
-      expect(cards.length).toBeGreaterThan(0);
+      const tableHeaders = screen.getAllByRole("columnheader");
+      expect(tableHeaders.length).toBeGreaterThan(0);
     });
   });
 
   describe("Loading States", () => {
-    it("shows skeletons when loading", () => {
-      vi.mock("@/lib/hooks/useContentDecay", () => ({
-        useContentDecayRecovery: () => ({ recovery: null, isLoading: true }),
-        useExportContentDecay: () => ({ exportData: vi.fn(), isExporting: false }),
-      }));
-      
+    it("should render loading skeleton when loading", async () => {
+      const { useContentDecayRecovery } = await import("@/lib/hooks/useContentDecay");
+      (useContentDecayRecovery as any).mockReturnValue({
+        recovery: null,
+        isLoading: true,
+      });
+
       render(<RecoveryReportPage />);
-      const skeletons = screen.queryAllByTestId("skeleton");
-      expect(skeletons.length).toBeGreaterThanOrEqual(0);
+      expect(screen.getByTestId("page-skeleton")).toBeInTheDocument();
     });
   });
 
   describe("Empty States", () => {
-    it("shows empty state when no timeline data", () => {
-      vi.mock("@/lib/hooks/useContentDecay", () => ({
-        useContentDecayRecovery: () => ({
-          recovery: { summary: {}, timeline: [], comparisons: [], stories: [] },
-          isLoading: false,
-        }),
-        useExportContentDecay: () => ({ exportData: vi.fn(), isExporting: false }),
-      }));
-      
+    it("should handle empty timeline data", async () => {
+      const { useContentDecayRecovery } = await import("@/lib/hooks/useContentDecay");
+      (useContentDecayRecovery as any).mockReturnValue({
+        recovery: {
+          summary: { totalRecovered: 0, totalClicksRecovered: 0, avgRecoveryRate: 0, avgDaysToRecovery: 0 },
+          timeline: [],
+          comparisons: [],
+          stories: [],
+        },
+        isLoading: false,
+      });
+
       render(<RecoveryReportPage />);
-      // Empty state should be shown
-      expect(screen.queryByTestId("no-timeline-data")).toBeTruthy();
+      expect(screen.getByText(/No timeline data available/)).toBeInTheDocument();
+    });
+
+    it("should handle empty comparisons", async () => {
+      const { useContentDecayRecovery } = await import("@/lib/hooks/useContentDecay");
+      (useContentDecayRecovery as any).mockReturnValue({
+        recovery: {
+          summary: { totalRecovered: 0, totalClicksRecovered: 0, avgRecoveryRate: 0, avgDaysToRecovery: 0 },
+          timeline: [],
+          comparisons: [],
+          stories: [],
+        },
+        isLoading: false,
+      });
+
+      render(<RecoveryReportPage />);
+      expect(screen.getByText(/No recovery comparisons available/)).toBeInTheDocument();
+    });
+
+    it("should handle empty stories", async () => {
+      const { useContentDecayRecovery } = await import("@/lib/hooks/useContentDecay");
+      (useContentDecayRecovery as any).mockReturnValue({
+        recovery: {
+          summary: { totalRecovered: 0, totalClicksRecovered: 0, avgRecoveryRate: 0, avgDaysToRecovery: 0 },
+          timeline: [],
+          comparisons: [],
+          stories: [],
+        },
+        isLoading: false,
+      });
+
+      render(<RecoveryReportPage />);
+      expect(screen.getByText(/No recovery stories available/)).toBeInTheDocument();
     });
   });
 });

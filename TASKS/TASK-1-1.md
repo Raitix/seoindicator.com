@@ -580,6 +580,19 @@ Updated `DOCUMENTATION.md` with:
 - Parent files checked again: `SPEC-001.md` and `FEAT-001.md` are still empty stubs, so no parent-status update was possible in this pass
 - Status: Done (final)
 
+### [2026-03-11 13:25 GMT+2] Agent: DocSystemAnalyst
+**Verification Complete**
+
+- Task status: Done (confirmed)
+- DOCUMENTATION.md verified:
+  - Keywords Table: lines 26032-26070 (complete schema with all fields, constraints, indexes including gsc_query_match, last_viewed_at)
+  - Ranking History Table: lines 26083-26112 (complete schema with all fields, FK constraint)
+  - Sites Table reference: included in FK constraint
+- Stale lock removed: `.locks/TASK-1-1.lock`
+- Completion marker written: `logs/completed/task/TASK-1-1.json`
+- Active agents entry cleared
+- Status: Done (final)
+
 ### [2026-03-10 16:37 GMT+2] Agent: DocSystemAnalyst
 **Re-verification + Schema Doc Refresh**
 
