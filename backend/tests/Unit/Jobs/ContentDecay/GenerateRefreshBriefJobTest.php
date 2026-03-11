@@ -53,6 +53,8 @@ class GenerateRefreshBriefJobTest extends TestCase
             'reason_codes' => ['clicks_down', 'ctr_down'],
             'lost_click_estimate' => 100,
             'recovery_upside_estimate' => 500,
+            'first_detected_at' => now(),
+            'last_detected_at' => now(),
         ]);
 
         return [$candidate, $project];
@@ -187,6 +189,7 @@ class GenerateRefreshBriefJobTest extends TestCase
 
         $mockResult = AnalysisResult::fromArray([
             'overallScore' => 75,
+            'overallSummary' => 'Test summary',
             'indicators' => [],
             'suggestions' => ['Update content', 'Improve keywords'],
         ]);
@@ -210,6 +213,7 @@ class GenerateRefreshBriefJobTest extends TestCase
     public function handles_candidate_not_found(): void
     {
         Log::shouldReceive('warning')->once();
+        Log::shouldReceive('info')->zeroOrMoreTimes();
 
         $mockService = $this->mock(AIAnalysisServiceInterface::class);
         $mockService->shouldNotReceive('analyze');
@@ -250,6 +254,7 @@ class GenerateRefreshBriefJobTest extends TestCase
 
         $mockResult = AnalysisResult::fromArray([
             'overallScore' => 80,
+            'overallSummary' => 'Test summary',
             'indicators' => [
                 'keyword_density' => ['score' => 70],
                 'readability' => ['score' => 85],
@@ -282,6 +287,7 @@ class GenerateRefreshBriefJobTest extends TestCase
 
         $mockResult = AnalysisResult::fromArray([
             'overallScore' => 75,
+            'overallSummary' => 'Test summary for timestamp test',
             'indicators' => [],
             'suggestions' => [],
         ]);
@@ -310,6 +316,7 @@ class GenerateRefreshBriefJobTest extends TestCase
 
         $mockResult = AnalysisResult::fromArray([
             'overallScore' => 75,
+            'overallSummary' => 'Test summary for AI infrastructure',
             'indicators' => [],
             'suggestions' => [],
         ]);
@@ -339,6 +346,7 @@ class GenerateRefreshBriefJobTest extends TestCase
 
         $mockResult = AnalysisResult::fromArray([
             'overallScore' => 75,
+            'overallSummary' => 'Test summary for prompt construction',
             'indicators' => [],
             'suggestions' => [],
         ]);
@@ -373,6 +381,7 @@ class GenerateRefreshBriefJobTest extends TestCase
 
         $mockResult = AnalysisResult::fromArray([
             'overallScore' => 75,
+            'overallSummary' => 'Test summary for validation',
             'indicators' => [
                 'keyword_density' => ['score' => 60],
             ],
