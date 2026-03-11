@@ -7210,6 +7210,119 @@ End-to-end test suite for the Public SEO Audit Reports & Embeddable Score Widget
 - TASK-33-33: Integration Tests for Public Audit Flow
 
 ---
+## Report Download Endpoint (TASK-4-9)
+
+### API Description
+REST API endpoint for downloading generated SEO reports in PDF or CSV format. Serves report files with proper Content-Type and Content-Disposition headers, with authorization checks ensuring users can only download reports for sites they own.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/ReportController.php`
+- **Route:** `backend/routes/api.php`
+- **Policy:** `backend/app/Policies/ReportPolicy.php`
+- **Tests:** `backend/tests/Feature/Api/V1/ReportControllerTest.php`
+- **Test Documentation:** `TESTS/SPEC-004-9.md`
+
+### API Endpoint
+
+| Method | Endpoint | Auth | Rate Limit | Description |
+|--------|----------|------|------------|-------------|
+| GET | `/api/v1/reports/{reportId}/download` | Required | 60/min | Download generated report file |
+
+### Request Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `reportId` | integer | Report ID (route parameter) |
+
+### Response Codes
+
+| Code | Description |
+|------|-------------|
+| 200 | File download (PDF or CSV) |
+| 401 | Unauthenticated |
+| 403 | Forbidden - User doesn't own the site |
+| 404 | Report not found |
+| 400 | Report not ready (pending/failed) |
+
+### Response Headers
+
+**PDF Response:**
+```
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="weekly-seo-report-2026-02-20.pdf"
+Content-Length: 245000
+```
+
+**CSV Response:**
+```
+Content-Type: text/csv
+Content-Disposition: attachment; filename="weekly-seo-report-2026-02-20.csv"
+Content-Length: 15000
+```
+
+### Authorization
+
+- All endpoints protected with `auth` middleware
+- Controller verifies `$report->site->user_id === $user->id`
+- Returns 403 FORBIDDEN for unauthorized access
+- ReportPolicy with `download()` method for policy-based authorization
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel auth middleware |
+| Authorization | Controller ownership check + ReportPolicy |
+| SQL Injection | Parameterized queries via Eloquent |
+| Path Traversal | Report ID validation, Storage facade |
+| File Access | Only generated files accessible |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `ReportControllerTest.php` | 29 | 79 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authorization | 11 | 401/403 for unauthorized, owner access |
+| Download Success | 4 | File download, Content-Type, Content-Disposition |
+| Error Handling | 4 | 404 for missing, 400 for pending |
+| PDF/CSV Generation | 6 | Format validation, file creation |
+| Validation | 4 | Input validation tests |
+
+### Production Verification
+
+| Check | Result |
+|-------|--------|
+| Health Check | ✅ 200 OK |
+| Unauthenticated Access | ✅ 401 |
+| Invalid Token | ✅ 401 |
+| SQL Injection | ✅ Blocked (401) |
+| Non-existent Report | ✅ 401 (auth first) |
+| Delete Endpoint Auth | ✅ 401 |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-26 |
+| GitHub Actions Run | #22448035340 |
+| Health Check | ✅ 200 OK |
+| Tests | 29/29 passing (79 assertions) |
+| Status | Complete |
+
+### Dependencies
+- TASK-4-2 (Report model) - Done ✅
+- TASK-4-22 (Authorization fix) - Done ✅
+
+### Related Tasks
+- TASK-4-7: Reports CRUD API
+- TASK-4-8: Report generation endpoint
+- TASK-4-10: Template management API
+
+---
 ## Content Decay Database Migrations (TASK-36-1)
 
 ### Migration Description
@@ -7252,6 +7365,239 @@ Per-site configuration and scheduling state for content decay detection.
 **Foreign Keys:**
 - `user_id` → `users.id` (CASCADE)
 - `site_id` → `sites.id` (CASCADE)
+
+---
+## Content Decay Frontend Components (TASK-36-11)
+
+### Component Description
+React components for the Content Decay Detection & Refresh Planner feature (FEAT-036) that display decay summary metrics, candidate queue management, reason badges with evidence tooltips, trend mini-charts, and severity indicators. Five core UI components provide the user-facing interface for the content decay workflow.
+
+### Component Locations
+- **Components Directory:** `frontend/components/content-decay/`
+- **Individual Components:**
+  - `DecaySummaryCards.tsx` - Summary metrics display
+  - `DecayQueueTable.tsx` - Sortable/filterable candidates table
+  - `DecayReasonBadges.tsx` - Reason code badges with tooltips
+  - `DecayTrendMiniChart.tsx` - Sparkline trend visualization
+  - `SeverityBadge.tsx` - Severity level indicator
+- **Types:** `frontend/components/content-decay/types.ts`
+- **Exports:** `frontend/components/content-decay/index.ts`
+- **Tests:** `frontend/__tests__/components/content-decay/` (5 test files)
+- **Test Documentation:** `TESTS/TEST-36-11.md`
+
+### Core Functionalities
+
+| Component | Purpose | Key Features |
+|-----------|---------|--------------|
+| DecaySummaryCards | Summary metrics | 5 cards (Total, Critical, Lost Clicks, Recovery Upside, Recovered), loading skeletons |
+| DecayQueueTable | Queue management | Sortable columns, filters, search, pagination, bulk actions, row click detail |
+| DecayReasonBadges | Reason visualization | Primary badge, supporting badges, color coding, evidence tooltips |
+| DecayTrendMiniChart | Trend visualization | Sparkline chart, clicks/impressions lines, hover tooltips |
+| SeverityBadge | Severity display | 4 color variants, icon indicators, text labels |
+
+### Component Props
+
+**DecaySummaryCards:**
+```typescript
+interface DecaySummaryCardsProps {
+  data: DecaySummaryData | null;
+  isLoading?: boolean;
+  className?: string;
+}
+
+interface DecaySummaryData {
+  totalCandidates: number;
+  criticalCount: number;
+  estimatedLostClicks: number;
+  recoveryUpside: number;
+  recoveredPagesCount: number;
+}
+```
+
+**DecayQueueTable:**
+```typescript
+interface DecayQueueTableProps {
+  data: DecayCandidate[];
+  isLoading?: boolean;
+  onRowClick?: (candidate: DecayCandidate) => void;
+  onStatusChange?: (ids: number[], status: string) => void;
+  onExport?: () => void;
+  className?: string;
+}
+
+interface DecayCandidate {
+  id: number;
+  pageUrl: string;
+  pageTitle: string;
+  pageType: string;
+  decayScore: number;
+  severity: SeverityLevel;
+  lostClicks: number;
+  recoveryUpside: number;
+  status: 'backlog' | 'planned' | 'in_progress' | 'refreshed' | 'recovered' | 'ignored';
+  reasonCodes: DecayReason[];
+  trendData?: DecayTrendData;
+}
+```
+
+**DecayReasonBadges:**
+```typescript
+interface DecayReasonBadgesProps {
+  reasons: DecayReason[];
+  primaryReason?: string;
+  maxVisible?: number;
+  className?: string;
+}
+
+interface DecayReason {
+  code: string;
+  label: string;
+  evidence?: string;
+}
+```
+
+**DecayTrendMiniChart:**
+```typescript
+interface DecayTrendMiniChartProps {
+  data: DecayTrendData;
+  width?: number;
+  height?: number;
+  showLegend?: boolean;
+  className?: string;
+}
+
+interface DecayTrendData {
+  previousWindow: { clicks: number[]; impressions: number[] };
+  currentWindow: { clicks: number[]; impressions: number[] };
+  labels: string[];
+}
+```
+
+**SeverityBadge:**
+```typescript
+interface SeverityBadgeProps {
+  severity: SeverityLevel;
+  showIcon?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
+```
+
+### Severity Color Mapping
+
+| Severity | Background | Text | Icon |
+|----------|------------|------|------|
+| `critical` | bg-red-500 | text-white | AlertTriangle |
+| `high` | bg-orange-500 | text-white | AlertCircle |
+| `medium` | bg-yellow-500 | text-black | MinusCircle |
+| `low` | bg-gray-300 | text-black | Info |
+
+### Reason Badge Color Mapping
+
+| Reason Code | Color | Badge Style |
+|-------------|-------|-------------|
+| `clicks_down` | Red | bg-red-100 text-red-800 |
+| `impressions_down` | Orange | bg-orange-100 text-orange-800 |
+| `ctr_down` | Yellow | bg-yellow-100 text-yellow-800 |
+| `avg_position_down` | Blue | bg-blue-100 text-blue-800 |
+| `audit_issues_present` | Purple | bg-purple-100 text-purple-800 |
+| `stale_content` | Gray | bg-gray-100 text-gray-800 |
+| `ai_visibility_down` | Indigo | bg-indigo-100 text-indigo-800 |
+
+### DecayQueueTable Features
+
+| Feature | Description |
+|---------|-------------|
+| **Columns** | Page URL, Title, Type, Score, Severity, Lost Clicks, Upside, Status, Actions |
+| **Sorting** | Click column headers to sort ascending/descending |
+| **Filtering** | Status, severity, page type dropdowns |
+| **Search** | Filter by URL or title text |
+| **Pagination** | Configurable page size with navigation controls |
+| **Bulk Actions** | Select multiple rows for status updates |
+| **Row Click** | Opens candidate detail drawer |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `SeverityBadge.test.tsx` | 22 | ✅ PASS |
+| `DecayReasonBadges.test.tsx` | 21 | ✅ PASS |
+| `DecaySummaryCards.test.tsx` | 21 | ✅ PASS |
+| `DecayTrendMiniChart.test.tsx` | 18 | ✅ PASS |
+| `DecayQueueTable.test.tsx` | 34 | ✅ PASS |
+| **Total** | **116** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Description |
+|----------|-------------|
+| Rendering | Component structure, props display |
+| Loading States | Skeleton components, loading indicators |
+| Accessibility | ARIA labels, roles, keyboard navigation |
+| Interactions | Click, sort, filter, pagination |
+| Edge Cases | Empty data, large numbers, invalid inputs |
+| Number Formatting | K, M, B suffix formatting |
+| Color Coding | CSS class assertions for severity colors |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Roles | role="table", role="row", role="cell" |
+| ARIA Labels | aria-label on interactive elements |
+| Keyboard Navigation | Tab, Enter, Space support |
+| Screen Reader | Descriptive labels for all icons |
+| Focus Management | Focus visible indicators |
+
+### Styling
+
+- Uses Tailwind CSS for styling
+- shadcn/ui components for base primitives (Button, Tooltip, Skeleton)
+- Responsive design with mobile-first approach
+- Dark theme compatible
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-11 |
+| Commit | `7724ecfa` |
+| Deployment ID | `20260311T085831Z-dda0308a` |
+| Deployment Method | Local/self-hosted deployment pipeline |
+| Health Check | ✅ 200 OK |
+| Tests | 116/116 passing |
+| Status | Complete |
+
+### Production Validation
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| DecaySummaryCards | ✅ | Renders 5 summary cards correctly |
+| DecayQueueTable | ✅ | Table with tabs, filters, actions |
+| DecayReasonBadges | ✅ | Badge display in component tree |
+| DecayTrendMiniChart | ✅ | Chart component available |
+| SeverityBadge | ✅ | Severity indicators functional |
+
+### Page Integration
+
+| Route | Component Usage |
+|-------|-----------------|
+| `/sites/{siteId}/content-decay` | Uses DecaySummaryCards + DecayQueueTable |
+| Candidate detail drawer | Uses DecayReasonBadges + DecayTrendMiniChart + SeverityBadge |
+
+### Dependencies
+
+| Dependency | Status | Description |
+|------------|--------|-------------|
+| TASK-36-10 | Done ✅ | API Controllers for data fetching |
+
+### Related Tasks
+
+- TASK-36-10: API Controllers (backend endpoints)
+- TASK-36-12: Candidate Detail & Tasks Components (detail drawer)
+- TASK-36-13: Frontend Pages (page integration)
+- TASK-36-14: Navigation & Dashboard Integration
 
 #### content_decay_candidates
 One tracked decay item per page per site/project.
