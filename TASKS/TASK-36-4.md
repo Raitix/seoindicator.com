@@ -1,7 +1,7 @@
 # TASK-36-4: ContentDecayReasonService
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`
