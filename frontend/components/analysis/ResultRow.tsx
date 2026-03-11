@@ -1,22 +1,24 @@
 /**
- * ResultRow Component - TASK-19-12
+ * ResultRow Component - TASK-19-12, TASK-20-25
  *
  * Individual row component for displaying a single indicator result.
  *
  * Features:
  * - Status indicator with color coding
- * - Indicator name display
+ * - Indicator name display with link to SEO guide (TASK-20-25)
  * - Score/percentage display
  * - Expandable details section
  * - Smooth animations for state changes
  * - Accessibility: ARIA labels, keyboard navigation
  *
  * @see TASK-19-12
+ * @see TASK-20-25
  */
 
 'use client';
 
 import React, { memo, useCallback } from 'react';
+import Link from 'next/link';
 import {
   IndicatorResult,
   INDICATOR_STATUS_LABELS,
@@ -29,6 +31,7 @@ import {
 } from '@/lib/api/analysis-job';
 import { ResultRowProps } from '@/lib/types/analysis-job';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { getGuideSlugForIndicator } from '@/lib/guides/indicator-to-guide';
 
 // Status indicator component
 const StatusIndicator = memo(function StatusIndicator({
@@ -169,6 +172,39 @@ const DetailsSection = memo(function DetailsSection({
   );
 });
 
+// Indicator name with optional link to guide (TASK-20-25)
+const IndicatorNameWithLink = memo(function IndicatorNameWithLink({
+  indicator,
+  displayName,
+}: {
+  indicator: string;
+  displayName: string;
+}) {
+  const guideSlug = getGuideSlugForIndicator(indicator);
+
+  // If no guide exists, render as plain text
+  if (!guideSlug) {
+    return (
+      <span className="font-medium text-foreground truncate" title={displayName}>
+        {displayName}
+      </span>
+    );
+  }
+
+  // Render as a link to the SEO guide
+  return (
+    <Link
+      href={`/seo-guides/${guideSlug}`}
+      className="font-medium text-foreground hover:text-primary underline-offset-2 hover:underline truncate"
+      aria-label={`View guide for ${displayName}`}
+      onClick={(e) => e.stopPropagation()} // Prevent row click when clicking link
+      title={displayName}
+    >
+      {displayName}
+    </Link>
+  );
+});
+
 // Main ResultRow component
 function ResultRowComponent({
   result,
@@ -248,9 +284,10 @@ function ResultRowComponent({
       {/* Status + Name */}
       <div className="flex items-center gap-3 min-w-0">
         <StatusIndicator status={result.status} />
-        <span className="font-medium text-foreground truncate" title={indicatorName}>
-          {indicatorName}
-        </span>
+        <IndicatorNameWithLink
+          indicator={result.indicator}
+          displayName={indicatorName}
+        />
         <span className="sr-only">{statusLabel}</span>
       </div>
 
