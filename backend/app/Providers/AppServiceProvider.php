@@ -136,6 +136,32 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\LocalSEO\Contracts\NominatimServiceInterface::class,
             \App\Services\LocalSEO\NominatimService::class
         );
+
+        // Content Decay Service bindings (TASK-36-10, SPEC-036)
+        $this->app->bind(
+            \App\Services\ContentDecay\Contracts\ContentDecayServiceInterface::class,
+            \App\Services\ContentDecay\ContentDecayService::class
+        );
+
+        $this->app->bind(
+            \App\Services\ContentDecay\Contracts\ContentDecayCandidateServiceInterface::class,
+            \App\Services\ContentDecay\ContentDecayCandidateService::class
+        );
+
+        $this->app->bind(
+            \App\Services\ContentDecay\Contracts\ContentDecayDetectionServiceInterface::class,
+            \App\Services\ContentDecay\ContentDecayDetectionService::class
+        );
+
+        $this->app->bind(
+            \App\Services\ContentDecay\Contracts\ContentRefreshTaskServiceInterface::class,
+            \App\Services\ContentDecay\ContentRefreshTaskService::class
+        );
+
+        $this->app->bind(
+            \App\Services\ContentDecay\Contracts\ContentDecayExportServiceInterface::class,
+            \App\Services\ContentDecay\ContentDecayExportService::class
+        );
     }
 
     /**

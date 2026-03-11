@@ -110,7 +110,10 @@ class ContentRefreshTaskControllerTest extends TestCase
             ->once()
             ->andReturn(null);
 
-        $response = $this->getJson('/api/v1/content-refresh-tasks/1');
+        // Use PATCH endpoint since there's no GET endpoint for single task
+        $response = $this->patchJson('/api/v1/content-refresh-tasks/1', [
+            'status' => 'done',
+        ]);
 
         $response->assertStatus(404);
     }
@@ -129,7 +132,7 @@ class ContentRefreshTaskControllerTest extends TestCase
         $mockTaskService = $this->mock(ContentRefreshTaskServiceInterface::class);
         $mockTaskService->shouldReceive('listTasks')
             ->once()
-            ->andReturn([$task]);
+            ->andReturn(collect([$task]));
 
         $response = $this->getJson('/api/v1/content-decay/candidates/1/tasks');
 
@@ -146,11 +149,7 @@ class ContentRefreshTaskControllerTest extends TestCase
         ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockTask();
         Sanctum::actingAs($user);
 
-        $mockCandidateService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockCandidateService->shouldReceive('getCandidate')
-            ->once()
-            ->andReturn($candidate);
-
+        // Note: Validation happens in FormRequest before controller, so no service mock needed
         $response = $this->postJson('/api/v1/content-decay/candidates/1/tasks', [
             'recommendation_type' => 'content_refresh',
         ]);
@@ -165,11 +164,7 @@ class ContentRefreshTaskControllerTest extends TestCase
         ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockTask();
         Sanctum::actingAs($user);
 
-        $mockCandidateService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockCandidateService->shouldReceive('getCandidate')
-            ->once()
-            ->andReturn($candidate);
-
+        // Note: Validation happens in FormRequest before controller, so no service mock needed
         $response = $this->postJson('/api/v1/content-decay/candidates/1/tasks', [
             'title' => 'Test task',
         ]);
@@ -184,11 +179,7 @@ class ContentRefreshTaskControllerTest extends TestCase
         ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockTask();
         Sanctum::actingAs($user);
 
-        $mockCandidateService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockCandidateService->shouldReceive('getCandidate')
-            ->once()
-            ->andReturn($candidate);
-
+        // Note: Validation happens in FormRequest before controller, so no service mock needed
         $response = $this->postJson('/api/v1/content-decay/candidates/1/tasks', [
             'title' => 'Test task',
             'recommendation_type' => 'invalid_type',
@@ -204,11 +195,7 @@ class ContentRefreshTaskControllerTest extends TestCase
         ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockTask();
         Sanctum::actingAs($user);
 
-        $mockCandidateService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockCandidateService->shouldReceive('getCandidate')
-            ->once()
-            ->andReturn($candidate);
-
+        // Note: Validation happens in FormRequest before controller, so no service mock needed
         $response = $this->postJson('/api/v1/content-decay/candidates/1/tasks', [
             'title' => 'Test task',
             'recommendation_type' => 'content_refresh',
@@ -225,11 +212,7 @@ class ContentRefreshTaskControllerTest extends TestCase
         ['user' => $user, 'site' => $site, 'candidate' => $candidate] = $this->createMockTask();
         Sanctum::actingAs($user);
 
-        $mockCandidateService = $this->mock(ContentDecayCandidateServiceInterface::class);
-        $mockCandidateService->shouldReceive('getCandidate')
-            ->once()
-            ->andReturn($candidate);
-
+        // Note: Validation happens in FormRequest before controller, so no service mock needed
         $response = $this->postJson('/api/v1/content-decay/candidates/1/tasks', [
             'title' => 'Test task',
             'recommendation_type' => 'content_refresh',
@@ -301,7 +284,7 @@ class ContentRefreshTaskControllerTest extends TestCase
         $mockTaskService = $this->mock(ContentRefreshTaskServiceInterface::class);
         $mockTaskService->shouldReceive('listTasks')
             ->once()
-            ->andReturn([$task]);
+            ->andReturn(collect([$task]));
 
         $response = $this->getJson('/api/v1/content-decay/candidates/1/tasks');
 
@@ -324,7 +307,11 @@ class ContentRefreshTaskControllerTest extends TestCase
     /** @test */
     public function list_tasks_includes_nested_owner_relationship(): void
     {
-        ['user' => $user, 'site' => $site, 'candidate' => $candidate, 'task' => $task] = $this->createMockTask(['owner_user_id' => $user->id]);
+        $mockData = $this->createMockTask();
+        $user = $mockData['user'];
+        $candidate = $mockData['candidate'];
+        $task = (object) array_merge((array) $mockData['task'], ['owner_user_id' => $user->id]);
+
         Sanctum::actingAs($user);
 
         $mockCandidateService = $this->mock(ContentDecayCandidateServiceInterface::class);
@@ -335,7 +322,7 @@ class ContentRefreshTaskControllerTest extends TestCase
         $mockTaskService = $this->mock(ContentRefreshTaskServiceInterface::class);
         $mockTaskService->shouldReceive('listTasks')
             ->once()
-            ->andReturn([$task]);
+            ->andReturn(collect([$task]));
 
         $response = $this->getJson('/api/v1/content-decay/candidates/1/tasks');
 
@@ -678,7 +665,7 @@ class ContentRefreshTaskControllerTest extends TestCase
         $mockTaskService = $this->mock(ContentRefreshTaskServiceInterface::class);
         $mockTaskService->shouldReceive('listTasks')
             ->once()
-            ->andReturn([]);
+            ->andReturn(collect([]));
 
         $response = $this->getJson('/api/v1/content-decay/candidates/1/tasks');
 

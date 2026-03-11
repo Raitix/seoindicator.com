@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\ContentDecay\ExportCandidatesRequest;
 use App\Models\Site;
 use App\Services\ContentDecay\Contracts\ContentDecayCandidateServiceInterface;
 use App\Services\ContentDecay\Contracts\ContentDecayExportServiceInterface;
@@ -24,7 +25,7 @@ class ContentDecayExportController extends Controller
      */
     public function export(
         int $siteId,
-        Request $request,
+        ExportCandidatesRequest $request,
         ContentDecayExportServiceInterface $service
     ): JsonResponse|StreamedResponse {
         $site = Site::find($siteId);
@@ -50,21 +51,10 @@ class ContentDecayExportController extends Controller
             ], 403);
         }
 
-        // Validate format parameter
-        $format = $request->query('format', 'csv');
-        $validFormats = ['csv', 'pdf', 'xls'];
+        // Get validated format (defaults to 'csv')
+        $format = $request->validated('format', 'csv');
 
-        if (!in_array($format, $validFormats)) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'VALIDATION_ERROR',
-                    'message' => 'Invalid export format.',
-                ],
-            ], 422);
-        }
-
-        // Build filters
+        // Build filters from validated request
         $filters = $this->buildFilters($request);
 
         $result = $service->exportQueue($siteId, $format, $filters);

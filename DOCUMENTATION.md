@@ -25224,6 +25224,127 @@ The score is calculated by `PWAScorerService` based on:
 - TASK-24-7: PWASuggestionService
 
 ---
+## PWASuggestionService (TASK-24-7)
+
+### Service Description
+Service for generating actionable improvement suggestions based on PWA analysis results. Transforms validation gaps into user-friendly guidance with priority levels and links to relevant documentation. Part of the PWA / Web App Manifest Indicator feature (FEAT-024).
+
+### Component Location
+- **Service:** `backend/app/Services/PWASuggestionService.php`
+- **Tests:** `backend/tests/Unit/Services/PWASuggestionServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-24-7.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `generateSuggestions(PWAAnalysis $analysis): array` | Generate all suggestions for an analysis |
+| `getSuggestionForField(string $field, bool $present): ?array` | Get suggestion for missing manifest field |
+| `getSuggestionForIcon(string $size, bool $present): ?array` | Get suggestion for missing icon size |
+
+### Suggestion Structure
+
+```php
+[
+    'priority' => 'high',        // 'high', 'medium', or 'low'
+    'field' => 'name',           // Field name or icon size (e.g., 'icon_192')
+    'message' => 'Add a name field to your manifest',
+    'guide' => '#manifest-name'  // Anchor link to guide section
+]
+```
+
+### Priority Mapping
+
+| Priority | Triggers |
+|----------|----------|
+| **High** | No manifest, invalid manifest, missing required fields (name, short_name, start_url, display), missing required icons (192x192, 512x512) |
+| **Medium** | Missing theme_color, background_color, missing 180x180 icon |
+| **Low** | Missing description |
+
+### Field Suggestions
+
+| Field | Priority | Message | Guide Anchor |
+|-------|----------|---------|--------------|
+| `name` | High | Add a name field to your manifest | `#manifest-name` |
+| `short_name` | High | Add a short_name field to your manifest | `#manifest-short-name` |
+| `start_url` | High | Add a start_url field to your manifest | `#manifest-start-url` |
+| `display` | High | Add a display field to your manifest | `#manifest-display` |
+| `theme_color` | Medium | Add a theme_color to customize the browser UI | `#manifest-theme-color` |
+| `background_color` | Medium | Add a background_color for the splash screen | `#manifest-background-color` |
+| `description` | Low | Add a description for better app store listings | `#manifest-description` |
+
+### Icon Suggestions
+
+| Icon Size | Priority | Message | Guide Anchor |
+|-----------|----------|---------|--------------|
+| 192x192 | High | Add a 192x192 icon for Android devices | `#icons-192` |
+| 512x512 | High | Add a 512x512 icon for Android splash screens | `#icons-512` |
+| 180x180 | Medium | Add a 180x180 icon for Apple touch devices | `#icons-180` |
+
+### Technical Implementation
+
+| Component | File |
+|-----------|------|
+| Service | `backend/app/Services/PWASuggestionService.php` |
+| Constants | `FIELD_SUGGESTIONS`, `ICON_SUGGESTIONS` |
+
+**Key Methods:**
+- `generateSuggestions()` - Iterates manifest fields and icons, collects missing items
+- `getSuggestionForField()` - Returns suggestion template for missing field
+- `getSuggestionForIcon()` - Returns suggestion template for missing icon
+- `sortByPriority()` - Sorts suggestions high → medium → low
+
+### Security Implementation
+
+| Security Measure | Description |
+|------------------|-------------|
+| Input Validation | Whitelist-based (only known fields/sizes accepted) |
+| No SQL Queries | Uses constant templates, no database access |
+| No XSS Vectors | Returns structured arrays, not HTML |
+| No Sensitive Data | Only operates on PWA analysis data |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `PWASuggestionServiceTest.php` | 51 | 200 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Generate Suggestions - No Manifest | 2 | No manifest, invalid manifest |
+| Generate Suggestions - Required Fields | 4 | Missing name, short_name, start_url, display |
+| Generate Suggestions - Recommended Fields | 3 | Missing theme_color, background_color, description |
+| Generate Suggestions - Icons | 6 | Missing icons, complete PWA, sorting |
+| Get Suggestion For Field | 10 | All field types, present field, invalid field |
+| Get Suggestion For Icon | 6 | All icon sizes, present icon, invalid size |
+| Edge Cases | 5 | Empty analysis, null manifest, all present |
+| Suggestion Content | 4 | Human-readable message, valid guide format |
+| Sorting | 4 | High first, medium after high, low last |
+| Integration | 3 | Container resolution, real model |
+| Additional Field Suggestions | 4 | Manifest guide, invalid manifest message |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-05 (commit 4b9982cd) |
+| **Health Check** | Passing |
+| **Tests** | 51 tests, 200 assertions |
+| **Status** | Complete |
+
+### Dependencies
+
+- TASK-24-1: PWA Analyses Table (database migration)
+- TASK-24-2: PWAAnalysis model/repository
+
+### Related Tasks
+
+- TASK-24-6: PWAScorerService (uses analysis data)
+- TASK-24-8: PWA Analysis API Endpoints (uses suggestions in response)
+- TASK-24-12: PWA Recommendations Component (displays suggestions)
+
+---
 ## PWA Dashboard Components (TASK-24-10)
 
 ### Component Description

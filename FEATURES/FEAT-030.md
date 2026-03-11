@@ -108,3 +108,17 @@ As a user, I want clear legal terms and to understand how the analysis works.
   - Cleared active-agents entry: `docsystemanalyst-FEAT-30-20260310-234359`
 - Feature status remains `Done`
 
+### [2026-03-11 09:58 GMT+2 DocSystemAnalyst]
+**Alias trigger re-verification complete ✅**
+
+- Trigger: Task file referenced `FEAT-30` (non-padded); canonical file is `FEATURES/FEAT-030.md`
+- Verified all 7 tasks (TASK-30-1 through TASK-30-7): All `Done` ✅
+- Verified SPEC-030 status: `Done` ✅
+- Verified DOCUMENTATION.md coverage at line 7834+ (Cookie Consent Component, Terms & Privacy, About, How It Works) ✅
+- Actions completed:
+  - Wrote completion markers: `logs/completed/feature/FEAT-30.json` + `FEAT-030.json`
+  - Removed temporary locks: `FEATURES/.locks/FEAT-30.lock` + `FEAT-030.lock`
+  - Cleared active-agents entry: `docsystemanalyst-FEAT-30-20260311-095839`
+- Feature status remains `Done`
+- **ORCHESTRATOR BUG:** 85+ verifications to date due to naming mismatch ("FEAT-30" vs "FEAT-030")
+
