@@ -158,6 +158,109 @@ The production SPA uses a bearer-token backed fallback authentication strategy r
 - TASK-35-27: Locations API 500 issue (separate)
 
 ---
+## Production Business Location API 500 Fix (TASK-35-27)
+
+### Feature Description
+Production hardening fix for the `GET /api/v1/sites/{siteId}/locations` endpoint. The endpoint was returning 500 HTML server error pages instead of proper JSON responses due to schema drift on the `business_locations` table. The fix implements defensive schema drift tolerance for missing `is_active` and `deleted_at` columns.
+
+### Component Locations
+- **Service:** `backend/app/Services/LocalSEO/BusinessLocationService.php`
+- **Controller:** `backend/app/Http/Controllers/Api/V1/BusinessLocationController.php`
+- **Test Documentation:** `TESTS/TEST-35-27.md`
+- **Backend Tests:** `backend/tests/Feature/Api/V1/LocalSEO/BusinessLocationControllerProductionRegressionTest.php`
+- **Service Tests:** `backend/tests/Unit/Services/LocalSEO/BusinessLocationServiceTest.php`
+- **Frontend Tests:** `frontend/__tests__/components/local/LocationManagementPage.endpoint-states.test.tsx`
+
+### Root Cause
+The production database schema was missing columns that the API code expected:
+- `business_locations.is_active` — Used for `active_only` query scope
+- `business_locations.deleted_at` — Used for soft-delete filtering
+
+When the service attempted to query these columns on a schema that lacked them, Laravel threw an exception resulting in 500 HTML error pages.
+
+### Solution
+
+**Schema Drift Tolerance in BusinessLocationService:**
+- Modified `active_only` queries to first check if `is_active` column exists
+- Modified queries to tolerate missing `deleted_at` column
+- Added fallback behavior when columns are missing
+
+**Hardening Pattern:**
+```php
+// Check for column existence before querying
+if (Schema::hasColumn('business_locations', 'is_active')) {
+    $query->where('is_active', true);
+}
+
+// Soft delete tolerance
+if (Schema::hasColumn('business_locations', 'deleted_at')) {
+    $query->whereNull('deleted_at');
+}
+```
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sites/{siteId}/locations` | List business locations for a site |
+
+### Production Validation Results
+
+| Scenario | Expected | Actual | Status |
+|----------|----------|--------|--------|
+| Guest request | 401 JSON | `{"message":"Unauthenticated."}` | ✅ |
+| Auth request to non-owned site | 403 JSON | `{"message":"This action is unauthorized."}` | ✅ |
+| Auth request to missing site (999999) | 404 JSON | `{"message":"No query results for model..."}` | ✅ |
+| Frontend page `/sites/1/local/` | 200 HTML | Renders loading state | ✅ |
+
+### Response Codes
+
+| Code | Condition |
+|------|-----------|
+| 200 | Successful list (may be empty) |
+| 401 | Unauthenticated request |
+| 403 | User does not own site |
+| 404 | Site not found |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| Authentication | `auth` middleware |
+| Authorization | Site ownership via `site->user_id` |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| Schema Drift | Defensive column checks |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| Backend Production Regression | 18 | 50 | ✅ PASS |
+| Service Unit (schema drift) | 1 | 2 | ✅ PASS |
+| Frontend Endpoint States | 6 | - | ✅ PASS |
+| **Total** | **25** | **52** | **✅ ALL PASS** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-10 |
+| Deployment Commit | `91c9bde1` |
+| Production Validation | 2026-03-11 14:28 GMT+2 |
+| Status | Complete |
+
+### Dependencies
+
+- TASK-35-13: Business Location API Controller
+- TASK-35-25: Fix Production API Routing for Authenticated Local SEO Flow
+- TASK-35-1: Local SEO Database Migrations
+
+### Related Tasks
+
+- TASK-35-17: Local SEO Location Management Page
+- TASK-35-26: SPA Authentication Contract
+
+---
 ## Local SEO Database Migrations (TASK-35-1)
 
 ### Migration Description
