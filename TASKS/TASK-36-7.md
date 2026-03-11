@@ -1,7 +1,7 @@
 # TASK-36-7: ContentDecayDigestService
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -79,6 +79,108 @@ Recovered Pages:
 ---
 
 ## Comments
+
+### PreTester (2026-03-11)
+**Test Suite Created ✅**
+
+Created comprehensive test suite for ContentDecayDigestService - the weekly/monthly summary service:
+
+**Test Documentation:**
+- `TESTS/TEST-36-7.md` - Full test specification with 200+ test scenarios
+
+**Test Files Created:**
+| File | Location | Tests |
+|------|----------|-------|
+| ContentDecayDigestServiceTest.php | tests/Unit/Services/ContentDecay/ | 90+ unit tests |
+| ContentDecayDigestServiceTest.php | tests/Feature/Services/ContentDecay/ | 20+ feature tests |
+| **Total** | | **110+ tests** |
+
+**Service Interface Created:**
+- `Contracts/ContentDecayDigestServiceInterface.php` - Full interface definition
+
+**Test Categories Covered:**
+1. **Service Instantiation (10 tests)** - SI-001 to SI-010
+   - Class existence, container binding, dependencies, methods
+
+2. **generateDigest() Method (35 tests)** - GD-001 to GD-035
+   - Weekly/monthly frequency, date filtering, severity filtering
+   - New candidates, recovered candidates, summary statistics
+
+3. **shouldSendDigest() Method (25 tests)** - SSD-001 to SSD-025
+   - Frequency checks, due date logic, digest enabled/disabled
+
+4. **getNewCandidates() Method (30 tests)** - NC-001 to NC-030
+   - Date range filtering, status filtering, ordering, pagination
+
+5. **getRecoveredCandidates() Method (25 tests)** - RC-001 to RC-025
+   - Recovered status filtering, date range, ordering
+
+6. **formatDigestPayload() Method (20 tests)** - FDP-001 to FDP-020
+   - Payload structure, all required fields, JSON serialization
+
+7. **sendDigest() Method (25 tests)** - SD-001 to SD-025
+   - Notification integration, email/in-app/webhook channels
+
+8. **Exclusion Logic (20 tests)** - EX-001 to EX-020
+   - Ignored candidates, low severity, stale noise, thresholds
+
+9. **Performance Tests (10 tests)** - PERF-001 to PERF-010
+   - Timing benchmarks, memory usage, batch processing
+
+10. **Security Tests (10 tests)** - SEC-001 to SEC-010
+    - SQL injection, XSS, user isolation, input validation
+
+11. **Integration Tests (15 tests)** - INT-001 to INT-015
+    - Full workflow, database persistence, notification dispatch
+    - Severity/page type breakdowns, estimated upside calculation
+
+12. **Edge Cases (20 tests)** - EDGE-001 to EDGE-020
+    - Empty project, unicode URLs, long URLs, special characters
+
+**Key Implementation Notes for Developer:**
+- Service aggregates decay candidates for weekly/monthly notifications
+- Filters by status (excludes `ignored`), severity (threshold configurable)
+- Calculates total lost clicks and recovery upside
+- Returns top 5 candidates by decay score (configurable limit)
+- Integrates with existing notification system (FEAT-002)
+- Email template should follow existing patterns from FEAT-002
+
+**Interface Methods:**
+- `generateDigest(ContentDecayProject $project, array $options = []): array`
+- `shouldSendDigest(ContentDecayProject $project): bool`
+- `sendDigest(ContentDecayProject $project, array $payload): bool`
+- `getDigestPeriod(ContentDecayProject $project): array`
+- `getNewCandidates(ContentDecayProject $project, string $startDate, string $endDate, array $options = []): Collection`
+- `getRecoveredCandidates(ContentDecayProject $project, string $startDate, string $endDate, array $options = []): Collection`
+- `formatDigestPayload(ContentDecayProject $project, $newCandidates, $recoveredCandidates, array $options = []): array`
+
+**Digest Payload Structure:**
+```php
+[
+    'digest_id' => 'digest-abc123',
+    'project_id' => 1,
+    'site_id' => 1,
+    'generated_at' => '2026-03-11T12:00:00Z',
+    'period_start' => '2026-03-04',
+    'period_end' => '2026-03-11',
+    'new_candidates' => [...],
+    'recovered_candidates' => [...],
+    'summary' => [
+        'total_new' => 5,
+        'total_recovered' => 2,
+        'critical_count' => 1,
+        'high_count' => 3,
+        'estimated_upside_clicks' => 1500,
+        'severity_breakdown' => [...],
+        'page_type_breakdown' => [...],
+    ],
+    'actionable_recommendations' => [...],
+]
+```
+
+**Status:** `To Write Tests` → Ready for Developer implementation
+
+---
 
 ### ProjectManager (2026-03-10 23:35 GMT+2)
 **Prioritization Complete**
