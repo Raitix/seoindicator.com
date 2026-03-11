@@ -40,6 +40,7 @@ vi.mock("lucide-react", () => ({
   CheckSquare: () => <span>☑</span>,
   Square: () => <span>☐</span>,
   Download: () => <span>⬇</span>,
+  Check: () => <span>✓</span>,
 }));
 
 // Mock Skeleton
@@ -417,9 +418,8 @@ describe("DecayQueueTable", () => {
     it("has actions dropdown for each row", () => {
       render(<DecayQueueTable candidates={mockCandidates} />);
       
-      const actionButtons = screen.getAllByRole("button", { name: "" }).filter(
-        (btn) => btn.textContent?.includes("⋯")
-      );
+      // The action buttons have the "⋯" as their accessible name
+      const actionButtons = screen.getAllByRole("button", { name: "⋯" });
       expect(actionButtons.length).toBe(2);
     });
 
