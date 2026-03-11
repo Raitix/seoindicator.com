@@ -44903,3 +44903,208 @@ interface ExporterInterface
 | FEAT-029 | Export Results (PDF infrastructure - deferred) |
 
 ---
+## Reviews Management Page (TASK-35-21)
+
+### Page Description
+Frontend reviews management page for viewing, filtering, and responding to Google Business Profile (GBP) reviews. Part of the Local SEO & Google Business Profile Tracking feature (FEAT-035). The page provides a comprehensive reviews workspace with statistics, filtering, pagination, sentiment analysis, and owner response functionality.
+
+### Component Locations
+- **Page Routes:**
+  - `frontend/app/locations/[id]/reviews/page.tsx` — Standalone location reviews route
+  - `frontend/app/sites/[siteId]/local/[locationId]/reviews/page.tsx` — Nested site/local reviews route
+- **Main Component:** `frontend/components/local/LocationReviewsPage.tsx`
+- **Stats Header:** `frontend/components/local/ReviewStatsHeader.tsx`
+- **Filters:** `frontend/components/local/ReviewsFilters.tsx`
+- **Reviews List:** `frontend/components/local/ReviewsList.tsx`
+- **Review Card:** `frontend/components/local/ReviewCard.tsx`
+- **Response Modal:** `frontend/components/local/ReviewResponseModal.tsx`
+- **Hook:** `frontend/lib/hooks/useLocationReviewsPage.ts`
+- **Types:** `frontend/lib/types/location-reviews.ts`
+- **Test Documentation:** `TESTS/TEST-35-21.md`
+- **Production Validation Evidence:** `temp/task3521-prod-validation-20260311T140641Z.json`
+
+### Route Structure
+
+| Route | Description | Auth Required |
+|-------|-------------|---------------|
+| `/locations/{id}/reviews` | Standalone reviews page | Yes |
+| `/sites/{siteId}/local/{locationId}/reviews` | Nested reviews page within site context | Yes |
+| `/locations/preview/reviews` | Preview shell for static export | No (client-side auth) |
+| `/sites/preview/local/preview/reviews` | Nested preview shell | No (client-side auth) |
+
+### API Endpoints Consumed
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/v1/locations/{id}/reviews` | Paginated reviews list with filters |
+| GET | `/api/v1/locations/{id}/reviews/stats` | Review statistics (avg rating, distribution, sentiment) |
+| POST | `/api/v1/locations/{id}/reviews/{reviewId}/respond` | Submit owner response |
+| POST | `/api/v1/locations/{id}/reviews/sync` | Trigger GBP review sync |
+
+### Stats Header Features
+
+| Feature | Description |
+|---------|-------------|
+| Average Rating | Star display with numerical value |
+| Total Review Count | Total reviews for location |
+| Rating Distribution | Bar chart for 1-5 stars with percentages |
+| Sentiment Breakdown | Positive/negative/neutral counts with percentages |
+| Response Metrics | Response rate and unresponded count |
+
+### Filter Options
+
+| Filter | Type | Options |
+|--------|------|---------|
+| Rating | Multi-select | 1-5 stars |
+| Sentiment | Select | All, Positive, Neutral, Negative |
+| Response Status | Select | All, Has Response, No Response |
+| Date Range | Date picker | From/To dates |
+
+### Sort Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| Newest First | ✅ | Sort by review date descending |
+| Oldest First | | Sort by review date ascending |
+| Highest Rating | | Sort by rating descending |
+| Lowest Rating | | Sort by rating ascending |
+
+### Review Card Features
+
+| Feature | Description |
+|---------|-------------|
+| Author Info | Name, avatar (if available) |
+| Rating | Star display (1-5) |
+| Review Date | Formatted date string |
+| Review Text | Full text with expand/collapse for long reviews |
+| Sentiment Badge | Color-coded: green (positive), yellow (neutral), red (negative) |
+| Owner Response | Displayed if present with response date |
+| Actions | Respond button, View on Google link |
+
+### Response Modal Features
+
+| Feature | Description |
+|---------|-------------|
+| Text Area | Max 4096 characters with character counter |
+| Original Review Preview | Shows review being responded to |
+| Response Templates | Pre-defined templates for common scenarios |
+| Submit Button | Loading state during submission |
+| Cancel Button | Close modal without saving |
+| Pending State | Shows "Pending" while response is being submitted |
+
+### Sentiment Color Coding
+
+| Sentiment | Color | Tailwind Classes |
+|-----------|-------|------------------|
+| Positive | Green | `bg-green-100 text-green-800` |
+| Neutral | Yellow | `bg-yellow-100 text-yellow-800` |
+| Negative | Red | `bg-red-100 text-red-800` |
+
+### Pagination
+
+| Setting | Value |
+|---------|-------|
+| Items per page | 20 |
+| Pagination style | Page numbers + prev/next |
+| Total count display | Shows "Showing X-Y of Z reviews" |
+
+### Bulk Actions (Optional)
+
+| Action | Description |
+|--------|-------------|
+| Select Multiple | Checkbox selection for reviews |
+| Export Selected | CSV export of selected reviews |
+
+### Loading States
+
+| State | Display |
+|-------|---------|
+| Initial Load | Skeleton loaders for stats and review cards |
+| Filter Change | Loading overlay on reviews list |
+| Response Submit | Button disabled with spinner |
+| Sync in Progress | Sync button shows loading state |
+
+### Static Export Route Recovery
+
+The reviews pages use client-side route recovery for static export compatibility:
+
+| Scenario | Behavior |
+|----------|----------|
+| Numeric ID route (`/locations/1/reviews`) | `.htaccess` rewrite to preview shell, client-side ID extraction |
+| Preview shell route (`/locations/preview/reviews`) | Direct serve, client-side auth check |
+| Hydration mismatch | Recovery from `useParams()` or `window.location.pathname` |
+
+**.htaccess Rewrite Rules:**
+```apache
+RewriteRule ^locations/[0-9]+/reviews/?$ /locations/preview/reviews/ [L]
+RewriteRule ^sites/[0-9]+/local/[0-9]+/reviews/?$ /sites/preview/local/preview/reviews/ [L]
+```
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `__tests__/app/locations/[id]/reviews/page.test.tsx` | 15 | ✅ PASS |
+| `__tests__/components/local/LocationReviewsPage.real.test.tsx` | 2 | ✅ PASS |
+| `__tests__/app/locations/[id]/reviews/page.route.test.tsx` | 3 | ✅ PASS |
+| `__tests__/app/sites/[siteId]/local/[locationId]/reviews/page.route.test.tsx` | 3 | ✅ PASS |
+| Backend: `GBPReviewsControllerTest.php` | 75 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Page Integration | 15 | Data fetching, navigation, auth states |
+| Route Recovery | 6 | Preview shell export, numeric ID recovery |
+| Real Component | 2 | Response modal flow, no render loops |
+| API Controller | 75 | CRUD, filtering, pagination, authorization |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Session-based auth required for all routes |
+| Authorization | User must own location to view/respond to reviews |
+| Input Validation | Response text max 4096 chars, sanitized |
+| CSRF Protection | Laravel Sanctum CSRF token |
+| Rate Limiting | API endpoints rate-limited per user |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-11 |
+| Commit | `10e4e251` |
+| Deployment Log | `20260311T114844Z-ad84f33d.json` |
+| Deployment Result | `success` |
+| Production Validation | All 8 tests passed |
+
+### Key Fixes Deployed
+
+| Issue | Resolution |
+|-------|------------|
+| Numeric ID routes returning 404 | `.htaccess` rewrite rules added for review routes |
+| TypeScript errors in CandidateDetailDrawer | Fixed DecayTrendMiniChart and RecoveryComparisonCard props |
+| useSearchParams Suspense boundary | Wrapped in Suspense for Next.js 16 compatibility |
+| Render loop in LocationReviewsPage | Fixed selection-reset useEffect to use stable identity |
+
+### Dependencies
+
+| Task | Description | Status |
+|------|-------------|--------|
+| TASK-35-1 | Local SEO database migrations (`gbp_reviews` table) | Done |
+| TASK-35-3 | GBPReview model | Done |
+| TASK-35-10 | GBP Reviews Service | Done |
+| TASK-35-14 | GBP Insights & Reviews API Controllers | Done |
+| TASK-35-19 | Location Dashboard Page (navigation context) | Done |
+
+### Related Tasks
+
+| Task | Description |
+|------|-------------|
+| TASK-35-19 | Location Dashboard Page |
+| TASK-35-22 | Local Rankings Page |
+| TASK-35-23 | Local SEO Alerts Page |
+| TASK-35-10 | GBP Reviews Service (backend) |
+| TASK-35-14 | GBP Reviews API Controller |
+
+---
