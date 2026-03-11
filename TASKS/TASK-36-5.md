@@ -1,7 +1,7 @@
 # TASK-36-5: ContentRefreshPlannerService
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -141,6 +141,23 @@ Create the recommendation engine that maps reason codes to concrete refresh acti
 - Status updated to `In Deployment`
 - ContentRefreshPlannerService implementation verified
 - Running production deployment via `scripts/deploy-prod.ps1`
+
+---
+
+### DevOps (2026-03-11 18:25)
+**Deployment Complete ✅**
+
+- Backend deployed via SSH (frontend build skipped - backend-only service)
+- Git pull: d47dc498..91112fe1 (TASK-36-5 changes)
+- Composer install completed
+- Migrations: up to date
+- Config cache: refreshed
+- Route cache: refreshed
+- Production smoke checks: PASSED
+  - Homepage loaded ✓
+  - Login page loaded ✓
+
+**Status:** `In Deployment` → `To Test Prod`
 
 ---
 
