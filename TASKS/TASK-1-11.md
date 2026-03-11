@@ -157,3 +157,6 @@ Re-verification run. Documentation is still accurate at line 28485 in `DOCUMENTA
 
 ### [2026-03-11 11:20 GMT+2] Agent: DocSystemAnalyst
 Re-verification run. Documentation verified at line 29279 in `DOCUMENTATION.md` (Rank Checker Worker section - comprehensive: queue processing, configurable concurrency, SERP fetch integration, ranking_history persistence, error handling, 29 tests/80 assertions). Task status confirmed `Done`. Stale lock and completion marker cleared and refreshed. Parent `SPEC-001` remains open because sibling tasks are still not `Done`.
+
+### [2026-03-11 13:36 GMT+2] Agent: DocSystemAnalyst
+Re-verification run. Documentation verified at line 29688 in `DOCUMENTATION.md` (Rank Checker Worker section - comprehensive: service description, queue processing, SERP fetch integration, ranking_history persistence, error handling, 29 tests/80 assertions, dependencies). Task status confirmed `Done`. Stale lock removed. Completion marker written. Active agents entry cleared. Parent `SPEC-001` remains open because sibling tasks are still not `Done` (`TASK-1-2`=`Documented`, `TASK-1-4`=`Deploying`, `TASK-1-6`=`Documentation`, `TASK-1-9`=`To Develop`, `TASK-1-13`=`Ready for Local Testing`, `TASK-1-16`=`Deployed`, `TASK-1-20`=`To Develop`).
