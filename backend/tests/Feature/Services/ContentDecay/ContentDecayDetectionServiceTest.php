@@ -152,8 +152,6 @@ class ContentDecayDetectionServiceTest extends TestCase
             ->andReturn(['primary_reason_code' => 'clicks_down', 'reason_codes' => ['clicks_down'], 'evidence' => []]);
 
         $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
-        $plannerService->shouldReceive('generateRecommendations')
-            ->andReturn(['primary_recommendation' => 'Refresh']);
 
         $service = $this->createTestService($scoringService, $reasonService, $plannerService, [
             'https://example.com/page1' => [
@@ -169,7 +167,8 @@ class ContentDecayDetectionServiceTest extends TestCase
         
         $candidate = ContentDecayCandidate::where('project_id', $project->id)->first();
         $this->assertNotNull($candidate, 'Candidate should be created');
-        $this->assertEquals((string) $expectedScore, (string) $candidate->decay_score);
+        // Compare as float with tolerance for decimal precision
+        $this->assertEqualsWithDelta($expectedScore, (float) $candidate->decay_score, 0.01);
         $this->assertEquals($expectedSeverity, $candidate->severity);
     }
 
@@ -244,11 +243,8 @@ class ContentDecayDetectionServiceTest extends TestCase
         $reasonService->shouldReceive('assignReasonCodes')
             ->andReturn(['primary_reason_code' => 'clicks_down', 'reason_codes' => ['clicks_down'], 'evidence' => []]);
 
-        // The planner service is called during detection (but recommendation is from reason service)
+        // The planner service is not called during detection (recommendations come from reason service)
         $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
-        $plannerService->shouldReceive('generateRecommendations')
-            ->once()
-            ->andReturn(['primary_recommendation' => 'Refresh content']);
 
         $service = $this->createTestService($scoringService, $reasonService, $plannerService, [
             'https://example.com/page1' => [
@@ -259,7 +255,7 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $result = $service->detectForSite($site);
 
-        // The recommendation in the result is the primary_reason_code
+        // Verify candidate was created and has the primary_reason_code as recommendation
         $this->assertGreaterThanOrEqual(0, $result['candidates_created']);
         if ($result['candidates_created'] > 0) {
             $this->assertEquals('clicks_down', $result['pages'][0]['recommendation'] ?? null);

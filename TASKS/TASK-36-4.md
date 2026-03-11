@@ -1,7 +1,7 @@
 # TASK-36-4: ContentDecayReasonService
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`
