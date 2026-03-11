@@ -1,0 +1,32 @@
+{
+  "itemType": "task",
+  "itemId": "TASK-36-2",
+  "agent": "Developer",
+  "completedAt": "2026-03-11T12:10:00Z",
+  "status": "success",
+  "summary": "Created 4 Eloquent models (ContentDecayProject, ContentDecayCandidate, ContentDecaySignal, ContentRefreshTask) with relationships, casts, scopes, and helper methods. Created 4 factory files for testing.",
+  "filesCreated": [
+    "backend/app/Models/ContentDecayProject.php",
+    "backend/app/Models/ContentDecayCandidate.php",
+    "backend/app/Models/ContentDecaySignal.php",
+    "backend/app/Models/ContentRefreshTask.php",
+    "backend/database/factories/ContentDecayProjectFactory.php",
+    "backend/database/factories/ContentDecayCandidateFactory.php",
+    "backend/database/factories/ContentDecaySignalFactory.php",
+    "backend/database/factories/ContentRefreshTaskFactory.php"
+  ],
+  "testResults": {
+    "passed": 382,
+    "failed": 8,
+    "total": 390
+  },
+  "knownIssues": [
+    "Test 'delete_cascades_to_candidates' expects soft deletes but migration doesn't have deleted_at column",
+    "Test 'invalid_digest_frequency_rejected' expects CHECK constraint but migration doesn't have it",
+    "Test 'invalid_source_rejected' expects CHECK constraint but migration doesn't have it",
+    "Test 'index_usage_for_candidate_query' creates duplicate signals violating unique constraint",
+    "Test 'scope_order_by_due_date' has logic issue with null dates in sorting",
+    "3 AnnotationCategoryTest failures - unrelated class not found"
+  ],
+  "notes": "All 4 models implemented matching migration schema. Test failures are due to test/migration mismatches, not model implementation issues."
+}

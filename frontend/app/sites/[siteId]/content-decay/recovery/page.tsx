@@ -506,9 +506,14 @@ function RecoveryReportContent({ siteId }: { siteId: string }) {
 
         {/* Date Range Filter */}
         <div className="flex items-center gap-2 mb-6">
-          <Calendar className="h-4 w-4 text-slate-400" />
+          <Calendar className="h-4 w-4 text-slate-400" aria-hidden="true" />
+          <label htmlFor="date-range-select" className="sr-only">Date range</label>
           <Select value={dateRange} onValueChange={(v) => setDateRange(v as typeof dateRange)}>
-            <SelectTrigger className="w-32 bg-slate-800 border-slate-700 text-slate-200">
+            <SelectTrigger 
+              id="date-range-select"
+              className="w-32 bg-slate-800 border-slate-700 text-slate-200"
+              aria-label="Date range"
+            >
               <SelectValue placeholder="Date Range" />
             </SelectTrigger>
             <SelectContent>

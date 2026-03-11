@@ -1,7 +1,7 @@
 # TASK-36-2: Eloquent Models - Content Decay
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`

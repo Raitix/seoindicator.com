@@ -8,9 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Content Decay Project Model for SPEC-036.
- *
+ * Content Decay Project model.
+ * 
  * Stores project-level settings for monitoring content decay on sites.
+ * One project per site (unique constraint).
+ *
+ * @see SPEC-036: Content Decay Detection & Refresh Planner
+ * @see TASK-36-2: Eloquent Models - Content Decay
  */
 class ContentDecayProject extends Model
 {
@@ -48,19 +52,14 @@ class ContentDecayProject extends Model
         'min_impressions_threshold' => 'integer',
         'min_decay_score' => 'decimal:2',
         'digest_enabled' => 'boolean',
+        'digest_frequency' => 'string',
         'settings_json' => 'array',
         'last_scanned_at' => 'datetime',
     ];
 
-    /**
-     * Valid window days options.
-     */
-    public const VALID_WINDOW_DAYS = [7, 14, 28, 56];
-
-    /**
-     * Valid digest frequencies.
-     */
-    public const VALID_DIGEST_FREQUENCIES = ['weekly', 'monthly'];
+    // ==========================================
+    // Relationships
+    // ==========================================
 
     /**
      * Get the user that owns this project.
@@ -71,7 +70,7 @@ class ContentDecayProject extends Model
     }
 
     /**
-     * Get the site for this project.
+     * Get the site this project belongs to.
      */
     public function site(): BelongsTo
     {
@@ -79,69 +78,95 @@ class ContentDecayProject extends Model
     }
 
     /**
-     * Get the candidates for this project.
+     * Get the decay candidates for this project.
      */
     public function candidates(): HasMany
     {
         return $this->hasMany(ContentDecayCandidate::class, 'project_id');
     }
 
-    /**
-     * Get candidates by status.
-     */
-    public function candidatesByStatus(string $status): HasMany
-    {
-        return $this->candidates()->where('status', $status);
-    }
+    // ==========================================
+    // Scopes
+    // ==========================================
 
     /**
-     * Get candidates by severity.
+     * Scope to get only projects with detection enabled.
      */
-    public function candidatesBySeverity(string $severity): HasMany
-    {
-        return $this->candidates()->where('severity', $severity);
-    }
-
-    /**
-     * Scope for projects with detection enabled.
-     */
-    public function scopeDetectionEnabled($query)
+    public function scopeEnabled($query)
     {
         return $query->where('detection_enabled', true);
     }
 
     /**
-     * Scope for projects needing scan (based on last_scanned_at).
+     * Scope to get projects for a specific user.
      */
-    public function scopeNeedingScan($query, int $cooldownHours = 24)
+    public function scopeForUser($query, int $userId)
     {
-        return $query->where(function ($q) use ($cooldownHours) {
-            $q->whereNull('last_scanned_at')
-                ->orWhere('last_scanned_at', '<', now()->subHours($cooldownHours));
-        });
+        return $query->where('user_id', $userId);
     }
 
     /**
-     * Update last scanned timestamp.
+     * Scope to get projects with digest enabled.
      */
-    public function markAsScanned(): void
+    public function scopeDigestEnabled($query)
     {
-        $this->update(['last_scanned_at' => now()]);
+        return $query->where('digest_enabled', true);
     }
 
     /**
-     * Get settings with defaults.
+     * Scope to get projects that need scanning.
      */
-    public function getSettings(): array
+    public function scopeNeedsScan($query)
     {
-        return array_merge([
-            'detection_enabled' => $this->detection_enabled,
-            'window_days' => $this->window_days,
-            'min_clicks_threshold' => $this->min_clicks_threshold,
-            'min_impressions_threshold' => $this->min_impressions_threshold,
-            'min_decay_score' => $this->min_decay_score,
-            'digest_enabled' => $this->digest_enabled,
-            'digest_frequency' => $this->digest_frequency,
-        ], $this->settings_json ?? []);
+        return $query->whereNull('last_scanned_at')
+            ->orWhere('last_scanned_at', '<=', now()->subDay());
+    }
+
+    // ==========================================
+    // Helper Methods
+    // ==========================================
+
+    /**
+     * Check if detection is enabled.
+     */
+    public function isDetectionEnabled(): bool
+    {
+        return (bool) $this->detection_enabled;
+    }
+
+    /**
+     * Get the window days for decay comparison.
+     */
+    public function getWindowDays(): int
+    {
+        return (int) $this->window_days;
+    }
+
+    /**
+     * Get detection thresholds as an array.
+     */
+    public function getThresholds(): array
+    {
+        return [
+            'min_clicks' => $this->min_clicks_threshold,
+            'min_impressions' => $this->min_impressions_threshold,
+            'min_decay_score' => (float) $this->min_decay_score,
+        ];
+    }
+
+    /**
+     * Determine if digest should be sent.
+     */
+    public function shouldSendDigest(): bool
+    {
+        return $this->digest_enabled && in_array($this->digest_frequency, ['weekly', 'monthly']);
+    }
+
+    /**
+     * Get a value from the settings JSON.
+     */
+    public function getSettingsValue(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->settings_json, $key, $default);
     }
 }

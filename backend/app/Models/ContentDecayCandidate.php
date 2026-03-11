@@ -8,9 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Content Decay Candidate Model for SPEC-036.
- *
+ * Content Decay Candidate model.
+ * 
  * Stores individual pages detected as having content decay.
+ *
+ * @see SPEC-036: Content Decay Detection & Refresh Planner
+ * @see TASK-36-2: Eloquent Models - Content Decay
  */
 class ContentDecayCandidate extends Model
 {
@@ -70,55 +73,29 @@ class ContentDecayCandidate extends Model
     ];
 
     /**
-     * Valid status values.
+     * The attributes that should be hidden for serialization.
      */
-    public const STATUS_BACKLOG = 'backlog';
-    public const STATUS_PLANNED = 'planned';
-    public const STATUS_IN_PROGRESS = 'in_progress';
-    public const STATUS_REFRESHED = 'refreshed';
-    public const STATUS_RECOVERED = 'recovered';
-    public const STATUS_IGNORED = 'ignored';
-
-    public const VALID_STATUSES = [
-        self::STATUS_BACKLOG,
-        self::STATUS_PLANNED,
-        self::STATUS_IN_PROGRESS,
-        self::STATUS_REFRESHED,
-        self::STATUS_RECOVERED,
-        self::STATUS_IGNORED,
+    protected $hidden = [
+        'page_url_hash',
     ];
 
-    /**
-     * Valid severity values.
-     */
-    public const SEVERITY_LOW = 'low';
-    public const SEVERITY_MEDIUM = 'medium';
-    public const SEVERITY_HIGH = 'high';
-    public const SEVERITY_CRITICAL = 'critical';
+    // ==========================================
+    // Boot
+    // ==========================================
 
-    public const VALID_SEVERITIES = [
-        self::SEVERITY_LOW,
-        self::SEVERITY_MEDIUM,
-        self::SEVERITY_HIGH,
-        self::SEVERITY_CRITICAL,
-    ];
+    protected static function booted(): void
+    {
+        static::creating(function (self $candidate): void {
+            // Auto-generate page_url_hash if not set
+            if (empty($candidate->page_url_hash) && !empty($candidate->page_url)) {
+                $candidate->page_url_hash = hash('sha256', $candidate->page_url);
+            }
+        });
+    }
 
-    /**
-     * Valid page types.
-     */
-    public const VALID_PAGE_TYPES = ['blog', 'product', 'landing', 'category', 'other'];
-
-    /**
-     * Status transitions map.
-     */
-    public const STATUS_TRANSITIONS = [
-        self::STATUS_BACKLOG => [self::STATUS_PLANNED, self::STATUS_IGNORED],
-        self::STATUS_PLANNED => [self::STATUS_IN_PROGRESS, self::STATUS_BACKLOG, self::STATUS_IGNORED],
-        self::STATUS_IN_PROGRESS => [self::STATUS_REFRESHED, self::STATUS_PLANNED],
-        self::STATUS_REFRESHED => [self::STATUS_RECOVERED, self::STATUS_IN_PROGRESS],
-        self::STATUS_RECOVERED => [], // Terminal state
-        self::STATUS_IGNORED => [self::STATUS_BACKLOG], // Can be restored
-    ];
+    // ==========================================
+    // Relationships
+    // ==========================================
 
     /**
      * Get the project this candidate belongs to.
@@ -139,13 +116,17 @@ class ContentDecayCandidate extends Model
     /**
      * Get the refresh tasks for this candidate.
      */
-    public function tasks(): HasMany
+    public function refreshTasks(): HasMany
     {
         return $this->hasMany(ContentRefreshTask::class, 'candidate_id');
     }
 
+    // ==========================================
+    // Scopes
+    // ==========================================
+
     /**
-     * Scope for candidates by status.
+     * Scope to filter by status.
      */
     public function scopeByStatus($query, string $status)
     {
@@ -153,7 +134,7 @@ class ContentDecayCandidate extends Model
     }
 
     /**
-     * Scope for candidates by severity.
+     * Scope to filter by severity.
      */
     public function scopeBySeverity($query, string $severity)
     {
@@ -161,127 +142,228 @@ class ContentDecayCandidate extends Model
     }
 
     /**
-     * Scope for candidates by page type.
+     * Scope to filter by page type.
      */
-    public function scopeByPageType($query, string $pageType)
+    public function scopeByPageType($query, string $type)
     {
-        return $query->where('page_type', $pageType);
+        return $query->where('page_type', $type);
     }
 
     /**
-     * Scope for candidates with minimum decay score.
+     * Scope to filter by minimum decay score.
      */
-    public function scopeMinScore($query, float $minScore)
+    public function scopeMinimumScore($query, float $score)
     {
-        return $query->where('decay_score', '>=', $minScore);
+        return $query->where('decay_score', '>=', $score);
     }
 
     /**
-     * Scope for candidates with minimum lost clicks.
+     * Scope to get backlog candidates.
      */
-    public function scopeMinLostClicks($query, int $minClicks)
+    public function scopeBacklog($query)
     {
-        return $query->where('lost_click_estimate', '>=', $minClicks);
+        return $query->where('status', 'backlog');
     }
 
     /**
-     * Scope for searching by URL or title.
+     * Scope to get planned candidates.
      */
-    public function scopeSearch($query, string $search)
+    public function scopePlanned($query)
     {
-        return $query->where(function ($q) use ($search) {
-            $q->where('page_url', 'like', "%{$search}%")
-                ->orWhere('page_title', 'like', "%{$search}%");
-        });
+        return $query->where('status', 'planned');
     }
 
     /**
-     * Check if a status transition is valid.
+     * Scope to get in-progress candidates.
      */
-    public function canTransitionTo(string $newStatus): bool
+    public function scopeInProgress($query)
     {
-        if (!in_array($newStatus, self::VALID_STATUSES)) {
-            return false;
-        }
-
-        return in_array($newStatus, self::STATUS_TRANSITIONS[$this->status] ?? []);
+        return $query->where('status', 'in_progress');
     }
 
     /**
-     * Transition to a new status with timestamp.
+     * Scope to get refreshed candidates.
      */
-    public function transitionTo(string $newStatus): bool
+    public function scopeRefreshed($query)
     {
-        if (!$this->canTransitionTo($newStatus)) {
-            return false;
-        }
-
-        $updates = ['status' => $newStatus];
-        $now = now();
-
-        switch ($newStatus) {
-            case self::STATUS_PLANNED:
-                $updates['planned_at'] = $now;
-                break;
-            case self::STATUS_IN_PROGRESS:
-                $updates['started_at'] = $now;
-                break;
-            case self::STATUS_REFRESHED:
-                $updates['refreshed_at'] = $now;
-                break;
-            case self::STATUS_RECOVERED:
-                $updates['recovered_at'] = $now;
-                break;
-            case self::STATUS_IGNORED:
-                $updates['ignored_at'] = $now;
-                break;
-            case self::STATUS_BACKLOG:
-                // Clear all status timestamps when returning to backlog
-                $updates['planned_at'] = null;
-                $updates['started_at'] = null;
-                $updates['refreshed_at'] = null;
-                $updates['recovered_at'] = null;
-                $updates['ignored_at'] = null;
-                break;
-        }
-
-        $this->update($updates);
-        return true;
+        return $query->where('status', 'refreshed');
     }
 
     /**
-     * Check if candidate can be restored.
+     * Scope to get recovered candidates.
      */
-    public function canBeRestored(): bool
+    public function scopeRecovered($query)
     {
-        return $this->status === self::STATUS_IGNORED;
+        return $query->where('status', 'recovered');
     }
 
     /**
-     * Restore an ignored candidate to backlog.
+     * Scope to get ignored candidates.
      */
-    public function restore(): bool
+    public function scopeIgnored($query)
     {
-        if (!$this->canBeRestored()) {
-            return false;
-        }
+        return $query->where('status', 'ignored');
+    }
 
-        return $this->transitionTo(self::STATUS_BACKLOG);
+    // ==========================================
+    // Accessors
+    // ==========================================
+
+    /**
+     * Get the is_recovered attribute.
+     */
+    public function getIsRecoveredAttribute(): bool
+    {
+        return $this->status === 'recovered';
     }
 
     /**
-     * Generate URL hash for indexing.
+     * Get the severity label.
      */
-    public static function generateUrlHash(string $url): string
+    public function getSeverityLabelAttribute(): string
     {
-        return hash('sha256', $url);
+        return match ($this->severity) {
+            'critical' => 'Critical',
+            'high' => 'High',
+            'medium' => 'Medium',
+            'low' => 'Low',
+            default => 'Unknown',
+        };
     }
 
     /**
-     * Get the site through project relationship.
+     * Get the status label.
      */
-    public function site(): BelongsTo
+    public function getStatusLabelAttribute(): string
     {
-        return $this->project->site();
+        return match ($this->status) {
+            'backlog' => 'Backlog',
+            'planned' => 'Planned',
+            'in_progress' => 'In Progress',
+            'refreshed' => 'Refreshed',
+            'recovered' => 'Recovered',
+            'ignored' => 'Ignored',
+            default => 'Unknown',
+        };
+    }
+
+    /**
+     * Get the decay score formatted.
+     */
+    public function getDecayScoreFormattedAttribute(): string
+    {
+        return number_format((float) $this->decay_score, 2);
+    }
+
+    /**
+     * Get the primary reason label.
+     */
+    public function getPrimaryReasonLabelAttribute(): string
+    {
+        return match ($this->primary_reason_code) {
+            'clicks_down' => 'Clicks Declined',
+            'impressions_down' => 'Impressions Declined',
+            'ctr_down' => 'CTR Declined',
+            'avg_position_down' => 'Position Declined',
+            'rank_visibility_down' => 'Rank Visibility Declined',
+            'ai_visibility_down' => 'AI Visibility Declined',
+            default => $this->primary_reason_code,
+        };
+    }
+
+    // ==========================================
+    // Helper Methods
+    // ==========================================
+
+    /**
+     * Mark the candidate as planned.
+     */
+    public function markAsPlanned(): void
+    {
+        $this->update([
+            'status' => 'planned',
+            'planned_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mark the candidate as in progress.
+     */
+    public function markAsInProgress(): void
+    {
+        $this->update([
+            'status' => 'in_progress',
+            'started_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mark the candidate as refreshed.
+     */
+    public function markAsRefreshed(): void
+    {
+        $this->update([
+            'status' => 'refreshed',
+            'refreshed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mark the candidate as recovered.
+     */
+    public function markAsRecovered(): void
+    {
+        $this->update([
+            'status' => 'recovered',
+            'recovered_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mark the candidate as ignored.
+     */
+    public function markAsIgnored(): void
+    {
+        $this->update([
+            'status' => 'ignored',
+            'ignored_at' => now(),
+        ]);
+    }
+
+    /**
+     * Check if the candidate has a specific reason code.
+     */
+    public function hasReasonCode(string $code): bool
+    {
+        return in_array($code, $this->reason_codes ?? []);
+    }
+
+    /**
+     * Get a value from the evidence JSON.
+     */
+    public function getEvidenceValue(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->evidence_json, $key, $default);
+    }
+
+    /**
+     * Check if the candidate is actionable (not ignored or recovered).
+     */
+    public function isActionable(): bool
+    {
+        return !in_array($this->status, ['ignored', 'recovered']);
+    }
+
+    // ==========================================
+    // Mutators
+    // ==========================================
+
+    /**
+     * Set the page_url_hash attribute.
+     * Auto-generates hash from page_url if not provided.
+     */
+    public function setPageUrlHashAttribute($value): void
+    {
+        $this->attributes['page_url_hash'] = $value ?? hash('sha256', $this->page_url ?? '');
     }
 }

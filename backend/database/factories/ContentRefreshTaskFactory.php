@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\ContentRefreshTask;
 use App\Models\ContentDecayCandidate;
+use App\Models\ContentRefreshTask;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -25,49 +25,32 @@ class ContentRefreshTaskFactory extends Factory
     public function definition(): array
     {
         $recommendationTypes = [
-            'meta_update',
-            'content_refresh',
-            'technical_fix',
-            'link_building',
-            'keyword_optimization',
-            'schema_addition',
-            'image_optimization',
-            'structure_improvement',
-        ];
-
-        $titles = [
-            'Update meta description for better CTR',
-            'Refresh outdated content sections',
-            'Fix broken internal links',
-            'Add relevant internal links',
-            'Optimize target keywords in H1-H3',
-            'Add FAQ schema markup',
-            'Compress and optimize images',
-            'Improve content structure with subheadings',
-            'Update statistics and data',
-            'Add comparison tables',
+            'update_content',
+            'add_keywords',
+            'fix_technical',
+            'update_meta',
+            'add_internal_links',
+            'consolidate',
+            'redirect',
+            'other',
         ];
 
         return [
             'candidate_id' => ContentDecayCandidate::factory(),
-            'title' => fake()->randomElement($titles),
+            'title' => fake()->sentence(4),
             'recommendation_type' => fake()->randomElement($recommendationTypes),
-            'description' => fake()->optional(70)->paragraph(),
-            'notes' => fake()->optional(40)->sentence(),
-            'owner_user_id' => fake()->optional(60)->randomElement(User::pluck('id')->toArray() ?: [null]),
-            'due_date' => fake()->optional(50)->dateTimeBetween('now', '+30 days')?->format('Y-m-d'),
-            'status' => 'todo',
-            'source' => fake()->randomElement(['system', 'manual', 'ai']),
-            'metadata_json' => fake()->optional(40)->passthrough([
-                'priority' => fake()->randomElement(['low', 'medium', 'high']),
-                'estimated_time' => fake()->randomElement(['30 min', '1 hour', '2 hours', '4 hours']),
-                'impact' => fake()->randomElement(['low', 'medium', 'high']),
-            ]),
+            'description' => fake()->optional(0.7)->paragraph(),
+            'notes' => fake()->optional(0.3)->sentence(),
+            'owner_user_id' => null,
+            'due_date' => fake()->optional(0.6)->dateTimeBetween('now', '+14 days')?->format('Y-m-d'),
+            'status' => 'pending',
+            'source' => 'system',
+            'metadata_json' => null,
         ];
     }
 
     /**
-     * Indicate task is in progress.
+     * Indicate the task is in progress.
      */
     public function inProgress(): static
     {
@@ -77,102 +60,97 @@ class ContentRefreshTaskFactory extends Factory
     }
 
     /**
-     * Indicate task is done.
+     * Indicate the task is completed.
+     */
+    public function completed(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'completed',
+        ]);
+    }
+
+    /**
+     * Alias for completed() - backward compatibility.
      */
     public function done(): static
     {
+        return $this->completed();
+    }
+
+    /**
+     * Indicate the task is cancelled.
+     */
+    public function cancelled(): static
+    {
         return $this->state(fn (array $attributes) => [
-            'status' => 'done',
+            'status' => 'cancelled',
         ]);
     }
 
     /**
-     * Indicate task is skipped.
+     * Alias for cancelled() - backward compatibility.
      */
     public function skipped(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'status' => 'skipped',
-        ]);
+        return $this->cancelled();
     }
 
     /**
-     * Indicate task is overdue.
+     * Indicate the task is overdue.
      */
     public function overdue(): static
     {
         return $this->state(fn (array $attributes) => [
-            'due_date' => fake()->dateTimeBetween('-30 days', '-1 day')?->format('Y-m-d'),
-            'status' => 'todo',
+            'due_date' => now()->subDays(3)->format('Y-m-d'),
+            'status' => 'pending',
         ]);
     }
 
     /**
-     * Indicate task is due soon (within 7 days).
+     * Indicate the task is due soon.
      */
     public function dueSoon(): static
     {
         return $this->state(fn (array $attributes) => [
-            'due_date' => fake()->dateTimeBetween('now', '+7 days')?->format('Y-m-d'),
-            'status' => 'todo',
+            'due_date' => now()->addDays(2)->format('Y-m-d'),
+            'status' => 'pending',
         ]);
     }
 
     /**
-     * Indicate task has no due date.
-     */
-    public function noDueDate(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'due_date' => null,
-        ]);
-    }
-
-    /**
-     * Indicate task is system-generated.
-     */
-    public function systemSource(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'source' => 'system',
-        ]);
-    }
-
-    /**
-     * Indicate task is manually created.
-     */
-    public function manualSource(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'source' => 'manual',
-        ]);
-    }
-
-    /**
-     * Indicate task is AI-generated.
-     */
-    public function aiSource(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'source' => 'ai',
-        ]);
-    }
-
-    /**
-     * Indicate task is high priority.
+     * Indicate the task has high priority metadata.
      */
     public function highPriority(): static
     {
         return $this->state(fn (array $attributes) => [
-            'metadata_json' => [
-                'priority' => 'high',
-                'impact' => 'high',
-            ],
+            'metadata_json' => ['priority' => 'high'],
         ]);
     }
 
     /**
-     * Indicate task has an owner.
+     * Indicate the task is for a meta update.
+     */
+    public function metaUpdate(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'recommendation_type' => 'update_meta',
+            'title' => 'Update meta description and title',
+        ]);
+    }
+
+    /**
+     * Indicate the task is for content refresh.
+     */
+    public function contentRefresh(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'recommendation_type' => 'update_content',
+            'title' => 'Refresh outdated content',
+        ]);
+    }
+
+    /**
+     * Indicate the task has an owner.
      */
     public function withOwner(): static
     {
@@ -182,55 +160,22 @@ class ContentRefreshTaskFactory extends Factory
     }
 
     /**
-     * Indicate task is meta update type.
+     * Indicate manual source.
      */
-    public function metaUpdate(): static
+    public function manual(): static
     {
         return $this->state(fn (array $attributes) => [
-            'recommendation_type' => 'meta_update',
-            'title' => 'Update meta description for better CTR',
+            'source' => 'manual',
         ]);
     }
 
     /**
-     * Indicate task is content refresh type.
+     * Indicate AI source.
      */
-    public function contentRefresh(): static
+    public function aiSuggestion(): static
     {
         return $this->state(fn (array $attributes) => [
-            'recommendation_type' => 'content_refresh',
-            'title' => 'Refresh outdated content sections',
-        ]);
-    }
-
-    /**
-     * Indicate task is technical fix type.
-     */
-    public function technicalFix(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'recommendation_type' => 'technical_fix',
-            'title' => 'Fix technical SEO issues',
-        ]);
-    }
-
-    /**
-     * Configure for a specific candidate.
-     */
-    public function forCandidate(int $candidateId): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'candidate_id' => $candidateId,
-        ]);
-    }
-
-    /**
-     * Configure for a specific owner.
-     */
-    public function forOwner(int $userId): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'owner_user_id' => $userId,
+            'source' => 'ai',
         ]);
     }
 }

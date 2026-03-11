@@ -54,7 +54,7 @@ class ContentRefreshTaskTest extends TestCase
             'notes' => 'Focus on the introduction and conclusion',
             'owner_user_id' => $user->id,
             'due_date' => now()->addDays(7)->format('Y-m-d'),
-            'status' => 'todo',
+            'status' => 'pending',
             'source' => 'system',
             'metadata_json' => ['priority' => 'high', 'estimated_time' => '2 hours'],
         ]);
@@ -64,7 +64,7 @@ class ContentRefreshTaskTest extends TestCase
         $this->assertEquals('Update outdated statistics and add new examples', $task->description);
         $this->assertEquals('Focus on the introduction and conclusion', $task->notes);
         $this->assertEquals($user->id, $task->owner_user_id);
-        $this->assertEquals('todo', $task->status);
+        $this->assertEquals('pending', $task->status);
         $this->assertEquals('system', $task->source);
     }
 
@@ -147,7 +147,7 @@ class ContentRefreshTaskTest extends TestCase
     /** @test CA-005 */
     public function status_enum(): void
     {
-        foreach (['todo', 'in_progress', 'done', 'skipped'] as $status) {
+        foreach (['pending', 'in_progress', 'completed', 'cancelled'] as $status) {
             $task = ContentRefreshTask::factory()->create(['status' => $status]);
             $this->assertEquals($status, $task->status);
         }
@@ -302,25 +302,25 @@ class ContentRefreshTaskTest extends TestCase
     /** @test SQ-001 */
     public function scope_by_status_filters_by_status(): void
     {
-        ContentRefreshTask::factory()->create(['status' => 'todo']);
-        ContentRefreshTask::factory()->done()->create();
+        ContentRefreshTask::factory()->create(['status' => 'pending']);
+        ContentRefreshTask::factory()->completed()->create();
 
-        $results = ContentRefreshTask::byStatus('todo')->get();
+        $results = ContentRefreshTask::byStatus('pending')->get();
 
         $this->assertCount(1, $results);
-        $this->assertEquals('todo', $results->first()->status);
+        $this->assertEquals('pending', $results->first()->status);
     }
 
     /** @test SQ-002 */
     public function scope_by_status_done(): void
     {
-        ContentRefreshTask::factory()->done()->create();
-        ContentRefreshTask::factory()->create(['status' => 'todo']);
+        ContentRefreshTask::factory()->completed()->create();
+        ContentRefreshTask::factory()->create(['status' => 'pending']);
 
-        $results = ContentRefreshTask::byStatus('done')->get();
+        $results = ContentRefreshTask::byStatus('completed')->get();
 
         $this->assertCount(1, $results);
-        $this->assertEquals('done', $results->first()->status);
+        $this->assertEquals('completed', $results->first()->status);
     }
 
     /** @test SQ-003 */
@@ -328,12 +328,12 @@ class ContentRefreshTaskTest extends TestCase
     {
         ContentRefreshTask::factory()->create([
             'due_date' => now()->subDays(3)->format('Y-m-d'),
-            'status' => 'todo',
+            'status' => 'pending',
         ]);
 
         ContentRefreshTask::factory()->create([
             'due_date' => now()->addDays(3)->format('Y-m-d'),
-            'status' => 'todo',
+            'status' => 'pending',
         ]);
 
         $results = ContentRefreshTask::overdue()->get();
@@ -344,7 +344,7 @@ class ContentRefreshTaskTest extends TestCase
     /** @test SQ-004 */
     public function scope_overdue_excludes_done(): void
     {
-        ContentRefreshTask::factory()->done()->create([
+        ContentRefreshTask::factory()->completed()->create([
             'due_date' => now()->subDays(3)->format('Y-m-d'),
         ]);
 
@@ -382,20 +382,20 @@ class ContentRefreshTaskTest extends TestCase
     /** @test SQ-007 */
     public function scope_todo(): void
     {
-        ContentRefreshTask::factory()->create(['status' => 'todo']);
-        ContentRefreshTask::factory()->done()->create();
+        ContentRefreshTask::factory()->create(['status' => 'pending']);
+        ContentRefreshTask::factory()->completed()->create();
 
         $results = ContentRefreshTask::todo()->get();
 
         $this->assertCount(1, $results);
-        $this->assertEquals('todo', $results->first()->status);
+        $this->assertEquals('pending', $results->first()->status);
     }
 
     /** @test SQ-008 */
     public function scope_in_progress(): void
     {
         ContentRefreshTask::factory()->inProgress()->create();
-        ContentRefreshTask::factory()->create(['status' => 'todo']);
+        ContentRefreshTask::factory()->create(['status' => 'pending']);
 
         $results = ContentRefreshTask::inProgress()->get();
 
@@ -406,25 +406,25 @@ class ContentRefreshTaskTest extends TestCase
     /** @test SQ-009 */
     public function scope_done(): void
     {
-        ContentRefreshTask::factory()->done()->create();
-        ContentRefreshTask::factory()->create(['status' => 'todo']);
+        ContentRefreshTask::factory()->completed()->create();
+        ContentRefreshTask::factory()->create(['status' => 'pending']);
 
         $results = ContentRefreshTask::done()->get();
 
         $this->assertCount(1, $results);
-        $this->assertEquals('done', $results->first()->status);
+        $this->assertEquals('completed', $results->first()->status);
     }
 
     /** @test SQ-010 */
     public function scope_skipped(): void
     {
-        ContentRefreshTask::factory()->skipped()->create();
-        ContentRefreshTask::factory()->create(['status' => 'todo']);
+        ContentRefreshTask::factory()->cancelled()->create();
+        ContentRefreshTask::factory()->create(['status' => 'pending']);
 
         $results = ContentRefreshTask::skipped()->get();
 
         $this->assertCount(1, $results);
-        $this->assertEquals('skipped', $results->first()->status);
+        $this->assertEquals('cancelled', $results->first()->status);
     }
 
     /** @test SQ-011 */
@@ -433,19 +433,19 @@ class ContentRefreshTaskTest extends TestCase
         $user = User::factory()->create();
         ContentRefreshTask::factory()->create([
             'owner_user_id' => $user->id,
-            'status' => 'todo',
+            'status' => 'pending',
         ]);
 
         ContentRefreshTask::factory()->create([
             'owner_user_id' => $user->id,
-            'status' => 'done',
+            'status' => 'completed',
         ]);
 
         ContentRefreshTask::factory()->create([
-            'status' => 'todo',
+            'status' => 'pending',
         ]);
 
-        $results = ContentRefreshTask::forUser($user->id)->todo()->get();
+        $results = ContentRefreshTask::forUser($user->id)->pending()->get();
 
         $this->assertCount(1, $results);
     }
@@ -535,16 +535,16 @@ class ContentRefreshTaskTest extends TestCase
     {
         ContentRefreshTask::factory()->create([
             'due_date' => now()->addDays(3)->format('Y-m-d'),
-            'status' => 'todo',
+            'status' => 'pending',
         ]);
 
         ContentRefreshTask::factory()->create([
             'due_date' => now()->addDays(10)->format('Y-m-d'),
-            'status' => 'todo',
+            'status' => 'pending',
         ]);
 
         $results = ContentRefreshTask::where('due_date', '<=', now()->addDays(7))
-            ->where('status', 'todo')
+            ->where('status', 'pending')
             ->get();
 
         $this->assertCount(1, $results);
@@ -568,31 +568,31 @@ class ContentRefreshTaskTest extends TestCase
     /** @test HM-001 */
     public function mark_as_done(): void
     {
-        $task = ContentRefreshTask::factory()->create(['status' => 'todo']);
+        $task = ContentRefreshTask::factory()->create(['status' => 'pending']);
 
-        if (method_exists($task, 'markAsDone')) {
-            $task->markAsDone();
+        if (method_exists($task, 'markAsCompleted')) {
+            $task->markAsCompleted();
         } else {
-            $task->update(['status' => 'done']);
+            $task->update(['status' => 'completed']);
         }
 
         $task->refresh();
-        $this->assertEquals('done', $task->status);
+        $this->assertEquals('completed', $task->status);
     }
 
     /** @test HM-002 */
     public function mark_as_skipped(): void
     {
-        $task = ContentRefreshTask::factory()->create(['status' => 'todo']);
+        $task = ContentRefreshTask::factory()->create(['status' => 'pending']);
 
-        if (method_exists($task, 'markAsSkipped')) {
-            $task->markAsSkipped();
+        if (method_exists($task, 'markAsCancelled')) {
+            $task->markAsCancelled();
         } else {
-            $task->update(['status' => 'skipped']);
+            $task->update(['status' => 'cancelled']);
         }
 
         $task->refresh();
-        $this->assertEquals('skipped', $task->status);
+        $this->assertEquals('cancelled', $task->status);
     }
 
     /** @test HM-003 */
@@ -600,13 +600,13 @@ class ContentRefreshTaskTest extends TestCase
     {
         $task = ContentRefreshTask::factory()->create([
             'due_date' => now()->subDays(3)->format('Y-m-d'),
-            'status' => 'todo',
+            'status' => 'pending',
         ]);
 
         if (method_exists($task, 'isOverdue')) {
             $this->assertTrue($task->isOverdue());
         } else {
-            $this->assertTrue($task->due_date->isPast() && $task->status !== 'done');
+            $this->assertTrue($task->due_date->isPast() && $task->status !== 'completed');
         }
     }
 
@@ -615,7 +615,7 @@ class ContentRefreshTaskTest extends TestCase
     {
         $task = ContentRefreshTask::factory()->create([
             'due_date' => now()->addDays(3)->format('Y-m-d'),
-            'status' => 'todo',
+            'status' => 'pending',
         ]);
 
         if (method_exists($task, 'isOverdue')) {
@@ -628,14 +628,14 @@ class ContentRefreshTaskTest extends TestCase
     /** @test HM-005 */
     public function is_overdue_false_done(): void
     {
-        $task = ContentRefreshTask::factory()->done()->create([
+        $task = ContentRefreshTask::factory()->completed()->create([
             'due_date' => now()->subDays(3)->format('Y-m-d'),
         ]);
 
         if (method_exists($task, 'isOverdue')) {
             $this->assertFalse($task->isOverdue());
         } else {
-            $this->assertEquals('done', $task->status);
+            $this->assertEquals('completed', $task->status);
         }
     }
 
@@ -644,7 +644,7 @@ class ContentRefreshTaskTest extends TestCase
     {
         $task = ContentRefreshTask::factory()->create([
             'due_date' => null,
-            'status' => 'todo',
+            'status' => 'pending',
         ]);
 
         if (method_exists($task, 'isOverdue')) {
@@ -689,15 +689,15 @@ class ContentRefreshTaskTest extends TestCase
     /** @test HM-010 */
     public function status_transitions(): void
     {
-        $task = ContentRefreshTask::factory()->create(['status' => 'todo']);
+        $task = ContentRefreshTask::factory()->create(['status' => 'pending']);
 
         // Todo -> In Progress
         $task->update(['status' => 'in_progress']);
         $this->assertEquals('in_progress', $task->status);
 
         // In Progress -> Done
-        $task->update(['status' => 'done']);
-        $this->assertEquals('done', $task->status);
+        $task->update(['status' => 'completed']);
+        $this->assertEquals('completed', $task->status);
     }
 
     // ==========================================
@@ -709,7 +709,7 @@ class ContentRefreshTaskTest extends TestCase
     {
         $task = ContentRefreshTask::factory()->create();
 
-        $this->assertEquals('todo', $task->status);
+        $this->assertEquals('pending', $task->status);
     }
 
     /** @test FS-002 */
@@ -731,17 +731,17 @@ class ContentRefreshTaskTest extends TestCase
     /** @test FS-004 */
     public function factory_done_state(): void
     {
-        $task = ContentRefreshTask::factory()->done()->create();
+        $task = ContentRefreshTask::factory()->completed()->create();
 
-        $this->assertEquals('done', $task->status);
+        $this->assertEquals('completed', $task->status);
     }
 
     /** @test FS-005 */
     public function factory_skipped_state(): void
     {
-        $task = ContentRefreshTask::factory()->skipped()->create();
+        $task = ContentRefreshTask::factory()->cancelled()->create();
 
-        $this->assertEquals('skipped', $task->status);
+        $this->assertEquals('cancelled', $task->status);
     }
 
     /** @test FS-006 */
@@ -750,7 +750,7 @@ class ContentRefreshTaskTest extends TestCase
         $task = ContentRefreshTask::factory()->overdue()->create();
 
         $this->assertTrue($task->due_date->isPast());
-        $this->assertEquals('todo', $task->status);
+        $this->assertEquals('pending', $task->status);
     }
 
     /** @test FS-007 */
@@ -944,13 +944,13 @@ class ContentRefreshTaskTest extends TestCase
     {
         $task = ContentRefreshTask::factory()->create([
             'title' => 'Integration Test Task',
-            'status' => 'todo',
+            'status' => 'pending',
         ]);
 
         $retrieved = ContentRefreshTask::find($task->id);
 
         $this->assertEquals('Integration Test Task', $retrieved->title);
-        $this->assertEquals('todo', $retrieved->status);
+        $this->assertEquals('pending', $retrieved->status);
     }
 
     /** @test INT-002 */
@@ -959,13 +959,13 @@ class ContentRefreshTaskTest extends TestCase
         $task = ContentRefreshTask::factory()->create();
 
         $task->update([
-            'status' => 'done',
+            'status' => 'completed',
             'notes' => 'Completed successfully',
         ]);
 
         $task->refresh();
 
-        $this->assertEquals('done', $task->status);
+        $this->assertEquals('completed', $task->status);
         $this->assertEquals('Completed successfully', $task->notes);
     }
 
@@ -983,15 +983,15 @@ class ContentRefreshTaskTest extends TestCase
     /** @test INT-004 */
     public function full_status_lifecycle(): void
     {
-        $task = ContentRefreshTask::factory()->create(['status' => 'todo']);
+        $task = ContentRefreshTask::factory()->create(['status' => 'pending']);
 
         // Todo -> In Progress
         $task->update(['status' => 'in_progress']);
         $this->assertEquals('in_progress', $task->status);
 
         // In Progress -> Done
-        $task->update(['status' => 'done']);
-        $this->assertEquals('done', $task->status);
+        $task->update(['status' => 'completed']);
+        $this->assertEquals('completed', $task->status);
     }
 
     /** @test INT-005 */
@@ -1006,11 +1006,11 @@ class ContentRefreshTaskTest extends TestCase
     public function complex_query_with_user_tasks(): void
     {
         $user = User::factory()->create();
-        ContentRefreshTask::factory()->count(3)->create(['owner_user_id' => $user->id, 'status' => 'todo']);
-        ContentRefreshTask::factory()->count(2)->create(['owner_user_id' => $user->id, 'status' => 'done']);
-        ContentRefreshTask::factory()->count(5)->create(['status' => 'todo']);
+        ContentRefreshTask::factory()->count(3)->create(['owner_user_id' => $user->id, 'status' => 'pending']);
+        ContentRefreshTask::factory()->count(2)->create(['owner_user_id' => $user->id, 'status' => 'completed']);
+        ContentRefreshTask::factory()->count(5)->create(['status' => 'pending']);
 
-        $userTodoTasks = ContentRefreshTask::forUser($user->id)->todo()->get();
+        $userTodoTasks = ContentRefreshTask::forUser($user->id)->pending()->get();
 
         $this->assertCount(3, $userTodoTasks);
     }

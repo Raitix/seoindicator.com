@@ -31,16 +31,13 @@ class ContentDecayProjectFactory extends Factory
             'site_id' => Site::factory()->state(fn () => ['user_id' => $user]),
             'detection_enabled' => true,
             'window_days' => 28,
-            'min_clicks_threshold' => fake()->numberBetween(5, 20),
-            'min_impressions_threshold' => fake()->numberBetween(50, 200),
-            'min_decay_score' => fake()->randomFloat(2, 15.00, 30.00),
+            'min_clicks_threshold' => 10,
+            'min_impressions_threshold' => 100,
+            'min_decay_score' => 20.00,
             'digest_enabled' => true,
-            'digest_frequency' => fake()->randomElement(['weekly', 'monthly']),
-            'settings_json' => fake()->optional(30)->passthrough([
-                'custom_thresholds' => fake()->boolean(),
-                'auto_planning' => fake()->boolean(),
-            ]),
-            'last_scanned_at' => fake()->optional(70)->dateTimeBetween('-7 days', 'now'),
+            'digest_frequency' => 'weekly',
+            'settings_json' => null,
+            'last_scanned_at' => null,
         ];
     }
 
@@ -85,7 +82,7 @@ class ContentDecayProjectFactory extends Factory
     }
 
     /**
-     * Indicate a 7-day window.
+     * Indicate 7-day window.
      */
     public function window7Days(): static
     {
@@ -95,7 +92,7 @@ class ContentDecayProjectFactory extends Factory
     }
 
     /**
-     * Indicate a 14-day window.
+     * Indicate 14-day window.
      */
     public function window14Days(): static
     {
@@ -105,7 +102,7 @@ class ContentDecayProjectFactory extends Factory
     }
 
     /**
-     * Indicate a 56-day window.
+     * Indicate 56-day window.
      */
     public function window56Days(): static
     {
@@ -115,7 +112,7 @@ class ContentDecayProjectFactory extends Factory
     }
 
     /**
-     * Indicate that project has never been scanned.
+     * Indicate never scanned.
      */
     public function neverScanned(): static
     {
@@ -125,34 +122,12 @@ class ContentDecayProjectFactory extends Factory
     }
 
     /**
-     * Indicate that project was scanned recently.
+     * Indicate recently scanned.
      */
     public function recentlyScanned(): static
     {
         return $this->state(fn (array $attributes) => [
-            'last_scanned_at' => now()->subHours(fake()->numberBetween(1, 12)),
+            'last_scanned_at' => now(),
         ]);
-    }
-
-    /**
-     * Configure the model factory.
-     */
-    public function configure(): static
-    {
-        return $this->afterMaking(function (ContentDecayProject $project): void {
-            // Ensure site belongs to the same user
-            if (!$project->relationLoaded('site') && $project->site_id && !$project->site) {
-                $project->setRelation('site', Site::query()->find($project->site_id));
-            }
-
-            if ($project->site && !$project->user_id) {
-                $project->user_id = $project->site->user_id;
-            }
-        })->afterCreating(function (ContentDecayProject $project): void {
-            // Sync site user_id if needed
-            if ($project->site && $project->site->user_id !== $project->user_id) {
-                $project->site->update(['user_id' => $project->user_id]);
-            }
-        });
     }
 }

@@ -23,50 +23,26 @@ class ContentDecayCandidateFactory extends Factory
      */
     public function definition(): array
     {
-        $pageUrl = fake()->url() . '/page/' . fake()->slug();
+        $url = fake()->url() . '/' . fake()->slug();
 
         return [
             'project_id' => ContentDecayProject::factory(),
-            'page_url' => $pageUrl,
-            'page_url_hash' => hash('sha256', $pageUrl),
-            'page_title' => fake()->sentence(6),
-            'page_type' => fake()->randomElement(['blog', 'landing', 'product', 'tool', 'compare', 'docs', 'home', 'other']),
-            'severity' => fake()->randomElement(['low', 'medium', 'high', 'critical']),
-            'decay_score' => fake()->randomFloat(2, 0, 100),
-            'detection_confidence' => fake()->randomFloat(2, 0.70, 1.00),
-            'lost_click_estimate' => fake()->numberBetween(0, 1000),
-            'recovery_upside_estimate' => fake()->numberBetween(0, 1500),
-            'primary_reason_code' => fake()->randomElement([
-                'clicks_down',
-                'impressions_down',
-                'ctr_down',
-                'avg_position_down',
-                'tracked_rankings_down',
-                'audit_issues_present',
-                'stale_content',
-            ]),
-            'reason_codes' => fake()->randomElements([
-                'clicks_down',
-                'impressions_down',
-                'ctr_down',
-                'avg_position_down',
-                'tracked_rankings_down',
-                'audit_issues_present',
-                'stale_content',
-                'ai_visibility_down',
-                'competitor_gain_suspected',
-                'internal_link_weakness',
-            ], fake()->numberBetween(1, 4)),
-            'signal_sources' => fake()->randomElements(['gsc', 'rankings', 'audit', 'annotations', 'ai_visibility'], fake()->numberBetween(1, 3)),
-            'evidence_json' => [
-                'clicks_before' => fake()->numberBetween(500, 2000),
-                'clicks_after' => fake()->numberBetween(100, 500),
-                'impressions_before' => fake()->numberBetween(5000, 20000),
-                'impressions_after' => fake()->numberBetween(2000, 10000),
-            ],
+            'page_url' => $url,
+            'page_url_hash' => hash('sha256', $url),
+            'page_title' => fake()->sentence(),
+            'page_type' => fake()->randomElement(['blog', 'product', 'landing', 'category', 'other']),
+            'severity' => 'medium',
+            'decay_score' => fake()->randomFloat(2, 20, 80),
+            'detection_confidence' => fake()->randomFloat(2, 70, 99),
+            'lost_click_estimate' => fake()->optional()->numberBetween(10, 1000),
+            'recovery_upside_estimate' => fake()->optional()->numberBetween(50, 2000),
+            'primary_reason_code' => fake()->randomElement(['clicks_down', 'impressions_down', 'ctr_down', 'avg_position_down']),
+            'reason_codes' => ['clicks_down'],
+            'signal_sources' => ['gsc'],
+            'evidence_json' => null,
             'status' => 'backlog',
-            'first_detected_at' => fake()->dateTimeBetween('-30 days', '-1 day'),
-            'last_detected_at' => fake()->dateTimeBetween('-7 days', 'now'),
+            'first_detected_at' => now()->subDays(fake()->numberBetween(1, 30)),
+            'last_detected_at' => now(),
             'planned_at' => null,
             'started_at' => null,
             'refreshed_at' => null,
@@ -76,63 +52,63 @@ class ContentDecayCandidateFactory extends Factory
     }
 
     /**
-     * Indicate candidate is in planned status.
+     * Indicate the candidate is planned.
      */
     public function planned(): static
     {
         return $this->state(fn (array $attributes) => [
             'status' => 'planned',
-            'planned_at' => fake()->dateTimeBetween('-7 days', 'now'),
+            'planned_at' => now(),
         ]);
     }
 
     /**
-     * Indicate candidate is in progress.
+     * Indicate the candidate is in progress.
      */
     public function inProgress(): static
     {
         return $this->state(fn (array $attributes) => [
             'status' => 'in_progress',
-            'planned_at' => fake()->dateTimeBetween('-14 days', '-7 days'),
-            'started_at' => fake()->dateTimeBetween('-7 days', 'now'),
+            'planned_at' => now()->subDays(2),
+            'started_at' => now(),
         ]);
     }
 
     /**
-     * Indicate candidate is refreshed.
+     * Indicate the candidate is refreshed.
      */
     public function refreshed(): static
     {
         return $this->state(fn (array $attributes) => [
             'status' => 'refreshed',
-            'planned_at' => fake()->dateTimeBetween('-21 days', '-14 days'),
-            'started_at' => fake()->dateTimeBetween('-14 days', '-7 days'),
-            'refreshed_at' => fake()->dateTimeBetween('-7 days', 'now'),
+            'planned_at' => now()->subDays(5),
+            'started_at' => now()->subDays(3),
+            'refreshed_at' => now(),
         ]);
     }
 
     /**
-     * Indicate candidate is recovered.
+     * Indicate the candidate is recovered.
      */
     public function recovered(): static
     {
         return $this->state(fn (array $attributes) => [
             'status' => 'recovered',
-            'planned_at' => fake()->dateTimeBetween('-30 days', '-21 days'),
-            'started_at' => fake()->dateTimeBetween('-21 days', '-14 days'),
-            'refreshed_at' => fake()->dateTimeBetween('-14 days', '-7 days'),
-            'recovered_at' => fake()->dateTimeBetween('-7 days', 'now'),
+            'planned_at' => now()->subDays(7),
+            'started_at' => now()->subDays(5),
+            'refreshed_at' => now()->subDays(2),
+            'recovered_at' => now(),
         ]);
     }
 
     /**
-     * Indicate candidate is ignored.
+     * Indicate the candidate is ignored.
      */
     public function ignored(): static
     {
         return $this->state(fn (array $attributes) => [
             'status' => 'ignored',
-            'ignored_at' => fake()->dateTimeBetween('-14 days', 'now'),
+            'ignored_at' => now(),
         ]);
     }
 
@@ -143,7 +119,7 @@ class ContentDecayCandidateFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'severity' => 'critical',
-            'decay_score' => fake()->randomFloat(2, 70, 100),
+            'decay_score' => fake()->randomFloat(2, 80, 100),
         ]);
     }
 
@@ -154,7 +130,7 @@ class ContentDecayCandidateFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'severity' => 'high',
-            'decay_score' => fake()->randomFloat(2, 40, 69),
+            'decay_score' => fake()->randomFloat(2, 60, 79),
         ]);
     }
 
@@ -165,7 +141,7 @@ class ContentDecayCandidateFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'severity' => 'medium',
-            'decay_score' => fake()->randomFloat(2, 20, 39),
+            'decay_score' => fake()->randomFloat(2, 40, 59),
         ]);
     }
 
@@ -176,72 +152,7 @@ class ContentDecayCandidateFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'severity' => 'low',
-            'decay_score' => fake()->randomFloat(2, 0, 19),
+            'decay_score' => fake()->randomFloat(2, 0, 39),
         ]);
-    }
-
-    /**
-     * Indicate high decay score.
-     */
-    public function highDecayScore(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'decay_score' => fake()->randomFloat(2, 75, 100),
-            'severity' => 'critical',
-        ]);
-    }
-
-    /**
-     * Indicate blog page type.
-     */
-    public function blogPage(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'page_type' => 'blog',
-        ]);
-    }
-
-    /**
-     * Indicate product page type.
-     */
-    public function productPage(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'page_type' => 'product',
-        ]);
-    }
-
-    /**
-     * Indicate landing page type.
-     */
-    public function landingPage(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'page_type' => 'landing',
-        ]);
-    }
-
-    /**
-     * Indicate high lost clicks.
-     */
-    public function highLostClicks(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'lost_click_estimate' => fake()->numberBetween(500, 2000),
-            'recovery_upside_estimate' => fake()->numberBetween(750, 3000),
-        ]);
-    }
-
-    /**
-     * Configure the model factory.
-     */
-    public function configure(): static
-    {
-        return $this->afterMaking(function (ContentDecayCandidate $candidate): void {
-            // Auto-generate page_url_hash if not set
-            if ($candidate->page_url && !$candidate->page_url_hash) {
-                $candidate->page_url_hash = hash('sha256', $candidate->page_url);
-            }
-        });
     }
 }

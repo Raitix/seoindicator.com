@@ -244,3 +244,33 @@ strlen($hash) === 32; // correct length
 ---
 
 Last updated: 2026-03-06
+
+---
+
+## 2026-03-11: TASK-35-25 Production API Routing Fix
+- Routing layer issues manifest as Hostinger/LiteSpeed 404 HTML instead of Laravel JSON
+- Always verify API responses are JSON (not HTML) before testing auth/logic
+- Bearer token authentication can work independently of session auth
+- Different endpoints may use different auth middleware (sanctum vs session)
+
+**Routing Fix Verification Pattern:**
+1. Test `/api/v1/auth/user` with and without bearer token
+2. Test `/sanctum/csrf-cookie` for cookie-based auth endpoints
+3. Verify protected endpoints return 401/403 JSON (not 404 HTML)
+4. Check localStorage for `seoindicator_token` and `seoindicator_user` after login/register
+
+**SPA Auth Fallback Verification:**
+1. Register new user via browser
+2. Check localStorage for token storage
+3. Verify `/api/v1/auth/user` returns 200 with bearer token
+4. Navigate to protected route (e.g., `/sites/1/local/`)
+5. Verify page renders with proper error messages (not redirect loops)
+
+**Common API Auth Issues:**
+- `/api/v1/dashboard` may use session auth only (not bearer token)
+- `/api/v1/sites` may require different auth middleware
+- These are NOT routing issues - they're auth middleware configuration differences
+
+---
+
+Last updated: 2026-03-11
