@@ -43,6 +43,121 @@ A deployment is considered successful only when all of the following are true:
 - The local Windows Playwright **test runner** is currently unreliable for deployment gating, so deployment verification uses a direct Playwright browser script instead of `playwright test`.
 
 ---
+## SPA Authentication Contract (TASK-35-26)
+
+### Feature Description
+Production authentication contract for the Single Page Application (SPA) frontend that enables persistent login state for protected routes including Local SEO pages (`/sites/{siteId}/local`). Implements localStorage + bearer token fallback to ensure authenticated sessions survive page reloads and navigation.
+
+### Component Locations
+- **Frontend Auth Context:** `frontend/lib/contexts/AuthContext.tsx`
+- **Frontend Auth API:** `frontend/lib/api/auth.ts`
+- **Backend Auth Controller:** `backend/app/Http/Controllers/Api/V1/AuthController.php`
+- **Frontend Tests:** `frontend/__tests__/contexts/AuthContext.production-spa-auth.test.tsx`, `frontend/__tests__/lib/api/auth.production-routing.test.ts`
+- **Backend Tests:** `backend/tests/Feature/Controllers/Api/V1/AuthControllerTest.php`
+
+### Authentication Mode
+**localStorage + Bearer Token Fallback**
+
+The production SPA uses a bearer-token backed fallback authentication strategy rather than pure Sanctum session cookies. This ensures the SPA can maintain authenticated state even when session-based auth returns 401.
+
+### Auth Flow
+
+| Action | Endpoint | Response | LocalStorage |
+|--------|----------|----------|--------------|
+| Register | `POST /api/v1/auth/register` | 201 with `data.token` + user | `seoindicator_user`, `seoindicator_token` |
+| Login | `POST /api/v1/auth/login` | 200 with `data.token` + user | `seoindicator_user`, `seoindicator_token` |
+| Get User | `GET /api/v1/auth/user` | 200 JSON (Bearer auth) | Reads from `seoindicator_token` |
+| Logout | `POST /api/v1/auth/logout` | 200 | Clears `seoindicator_user`, `seoindicator_token` |
+
+### Token Storage
+
+| Key | Type | Purpose |
+|-----|------|---------|
+| `seoindicator_user` | JSON string | Cached user object |
+| `seoindicator_token` | String | Bearer token for API auth |
+| `seoindicator_redirect` | String | Post-login redirect path |
+
+### Protected Route Behavior
+
+1. **Hydration:** On protected route load, AuthContext checks for `seoindicator_user` and `seoindicator_token`
+2. **Token Present:** If token exists, user stays authenticated even if `/api/v1/auth/user` returns 401
+3. **Token Absent:** If no token, redirects to `/login`
+4. **Logout:** Clears both localStorage keys and calls logout endpoint
+
+### API Response Format
+
+**Login/Register Success:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": { "id": 1, "name": "...", "email": "..." },
+    "token": "1|abcdef123456..."
+  }
+}
+```
+
+**Get User Success (Bearer Auth):**
+```json
+{
+  "id": 1,
+  "name": "...",
+  "email": "..."
+}
+```
+
+### Key Implementation Details
+
+| Component | Behavior |
+|-----------|----------|
+| `AuthContext` | Preserves stored user when bearer token exists but `/auth/user` returns unauthenticated |
+| `auth.ts` | Does not tear down `seoindicator_token` on 401 from `/auth/user`; lets protected APIs decide |
+| `AuthController@register` | Returns `data.token` alongside user payload |
+| `AuthController@login` | Returns `data.token` alongside user payload |
+
+### Root Cause Fix (2026-03-10)
+
+**Problem:** Registration endpoint returned only user payload without bearer token. SPA appeared authenticated immediately after register but `seoindicator_token` was empty, causing next protected-route hydration to clear auth and redirect to `/login`.
+
+**Solution:** Updated `AuthController.php` to mint and return Sanctum bearer token on registration, matching the login response shape (`data.token`).
+
+### Test Coverage
+
+| Test Suite | Tests | Status |
+|------------|-------|--------|
+| `AuthContext.production-spa-auth.test.tsx` | 3 | ✅ PASS |
+| `auth.production-routing.test.ts` | 9 | ✅ PASS |
+| `AuthControllerTest.php` | 37 | ✅ PASS |
+| **Total** | **49** | **✅ ALL PASS** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-10 |
+| Deployment ID | `20260310T200506Z-847d8ce4` |
+| Commit | `cb2eaeec628b9bc72cc120467c3f6f6c52541aab` |
+| Production Validation | ✅ All acceptance criteria verified |
+| Status | Complete |
+
+### Known Limitations
+
+| Limitation | Description |
+|------------|-------------|
+| Session-based auth returns 401 | Expected behavior — using bearer fallback |
+| `/api/v1/sites` and `/api/v1/dashboard` may return 401 | Different middleware — separate issue |
+
+### Dependencies
+
+- TASK-25-17: Frontend Auth Context & Provider
+- TASK-35-25: Fix Production API Routing for Authenticated Local SEO Flow
+
+### Related Tasks
+
+- TASK-35-17: Local SEO Location Management Page (protected route consumer)
+- TASK-35-27: Locations API 500 issue (separate)
+
+---
 ## Local SEO Database Migrations (TASK-35-1)
 
 ### Migration Description
