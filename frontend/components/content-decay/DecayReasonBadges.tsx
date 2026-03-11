@@ -1,4 +1,9 @@
-"use client";
+/**
+ * DecayReasonBadges Component
+ * Displays primary and supporting decay reason badges with color coding
+ * 
+ * @see TASK-36-11 for implementation requirements
+ */
 
 import * as React from "react";
 import {
@@ -7,149 +12,108 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import {
-  DecayReason,
-  ContentDecayReasonCode,
   DECAY_REASON_CONFIG,
+  type DecayReason,
+  type ContentDecayReasonCode,
 } from "@/lib/types/content-decay";
+import { cn } from "@/lib/utils";
 
-/**
- * Props for the DecayReasonBadges component
- */
 export interface DecayReasonBadgesProps {
   /** Array of decay reasons with evidence */
-  reasons: DecayReason[];
-  /** The primary reason code (will be highlighted) */
-  primaryReason?: ContentDecayReasonCode;
-  /** Optional additional CSS classes */
-  className?: string;
+  reasons: DecayReason[] | null | undefined;
+  /** The primary reason code to highlight */
+  primaryReason?: ContentDecayReasonCode | null;
   /** Maximum number of supporting badges to show */
   maxSupporting?: number;
-  /** Size variant for badges */
+  /** Size variant */
   size?: "sm" | "md";
+  /** Additional CSS classes */
+  className?: string;
 }
 
-/**
- * DecayReasonBadges displays a primary reason badge with supporting reason badges,
- * each with tooltips showing evidence details.
- *
- * @example
- * ```tsx
- * const reasons = [
- *   { type: "clicks_down", evidence: "Down 45% vs last period" },
- *   { type: "impressions_down", evidence: "Impressions dropped 23%" }
- * ];
- *
- * <DecayReasonBadges
- *   reasons={reasons}
- *   primaryReason="clicks_down"
- * />
- * ```
- */
+const SIZE_CLASSES = {
+  sm: "text-xs px-1.5 py-0.5",
+  md: "text-xs px-2 py-1",
+} as const;
+
+function formatReasonLabel(type: ContentDecayReasonCode): string {
+  const config = DECAY_REASON_CONFIG[type];
+  return config?.label ?? type.replace(/_/g, " ");
+}
+
+function getReasonColorClass(type: ContentDecayReasonCode): string {
+  const config = DECAY_REASON_CONFIG[type];
+  return config?.colorClass ?? "bg-gray-100 text-gray-800 border-gray-200";
+}
+
 export function DecayReasonBadges({
   reasons,
   primaryReason,
-  className,
   maxSupporting = 3,
   size = "md",
+  className,
 }: DecayReasonBadgesProps) {
-  // Handle empty reasons
+  // Handle null/undefined/empty reasons
   if (!reasons || reasons.length === 0) {
     return null;
   }
 
-  // Separate primary and supporting reasons
+  // Separate primary from supporting reasons
   const primaryReasons = primaryReason
     ? reasons.filter((r) => r.type === primaryReason)
     : reasons.slice(0, 1);
+  
   const supportingReasons = primaryReason
     ? reasons.filter((r) => r.type !== primaryReason).slice(0, maxSupporting)
     : reasons.slice(1, maxSupporting + 1);
 
-  const sizeClasses = size === "sm" ? "text-xs px-1.5 py-0.5" : "text-xs px-2 py-0.5";
-
   return (
     <TooltipProvider>
-      <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
-        {/* Primary badge(s) */}
+      <div className={cn("flex flex-wrap gap-1.5", className)} data-testid="reason-badges-container">
         {primaryReasons.map((reason, index) => (
-          <ReasonBadge
-            key={`primary-${reason.type}-${index}`}
-            reason={reason}
-            isPrimary
-            size={size}
-            sizeClasses={sizeClasses}
-          />
+          <Tooltip key={`primary-${reason.type}-${index}`}>
+            <TooltipTrigger asChild>
+              <span
+                role="status"
+                aria-label={`${formatReasonLabel(reason.type)}: ${reason.evidence}`}
+                className={cn(
+                  "inline-flex items-center rounded-md border font-medium",
+                  getReasonColorClass(reason.type),
+                  SIZE_CLASSES[size],
+                  "ring-1 ring-offset-1"
+                )}
+              >
+                {formatReasonLabel(reason.type)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p className="text-sm">{reason.evidence}</p>
+            </TooltipContent>
+          </Tooltip>
         ))}
-
-        {/* Supporting badges */}
+        
         {supportingReasons.map((reason, index) => (
-          <ReasonBadge
-            key={`supporting-${reason.type}-${index}`}
-            reason={reason}
-            isPrimary={false}
-            size={size}
-            sizeClasses={sizeClasses}
-          />
+          <Tooltip key={`supporting-${reason.type}-${index}`}>
+            <TooltipTrigger asChild>
+              <span
+                role="status"
+                aria-label={`${formatReasonLabel(reason.type)}: ${reason.evidence}`}
+                className={cn(
+                  "inline-flex items-center rounded-md border font-medium opacity-75",
+                  getReasonColorClass(reason.type),
+                  SIZE_CLASSES[size]
+                )}
+              >
+                {formatReasonLabel(reason.type)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p className="text-sm">{reason.evidence}</p>
+            </TooltipContent>
+          </Tooltip>
         ))}
       </div>
     </TooltipProvider>
   );
 }
-
-/**
- * Individual reason badge with tooltip
- */
-interface ReasonBadgeProps {
-  reason: DecayReason;
-  isPrimary: boolean;
-  size: "sm" | "md";
-  sizeClasses: string;
-}
-
-function ReasonBadge({ reason, isPrimary, size, sizeClasses }: ReasonBadgeProps) {
-  const config = DECAY_REASON_CONFIG[reason.type] || {
-    label: reason.type.replace(/_/g, " "),
-    colorClass: "bg-gray-100 text-gray-800 border-gray-200",
-    description: reason.evidence,
-  };
-
-  const badge = (
-    <Badge
-      className={cn(
-        config.colorClass,
-        sizeClasses,
-        "font-medium border transition-colors",
-        isPrimary && "font-semibold ring-1 ring-offset-1 ring-offset-background",
-        isPrimary && reason.type === "clicks_down" && "ring-red-300",
-        isPrimary && reason.type === "impressions_down" && "ring-orange-300",
-        isPrimary && reason.type === "ctr_down" && "ring-yellow-300",
-        isPrimary && reason.type === "avg_position_down" && "ring-blue-300"
-      )}
-      role="status"
-      aria-label={`${config.label}: ${reason.evidence}`}
-    >
-      {config.label}
-    </Badge>
-  );
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{badge}</TooltipTrigger>
-      <TooltipContent
-        side="top"
-        className="max-w-xs text-sm"
-        role="tooltip"
-      >
-        <div className="space-y-1">
-          <p className="font-medium">{config.label}</p>
-          <p className="text-muted-foreground text-xs">{reason.evidence}</p>
-        </div>
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-export default DecayReasonBadges;

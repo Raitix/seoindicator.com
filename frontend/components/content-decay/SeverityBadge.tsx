@@ -1,97 +1,71 @@
-"use client";
+/**
+ * SeverityBadge Component
+ * Displays severity level with color-coded styling and icon indicator
+ * 
+ * @see TASK-36-11 for implementation requirements
+ */
 
 import * as React from "react";
 import { AlertTriangle, AlertCircle, Info, Minus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { SEVERITY_CONFIG, type ContentDecaySeverity } from "@/lib/types/content-decay";
 import { cn } from "@/lib/utils";
-import {
-  ContentDecaySeverity,
-  SEVERITY_CONFIG,
-} from "@/lib/types/content-decay";
 
-/**
- * Props for the SeverityBadge component
- */
 export interface SeverityBadgeProps {
-  /** The severity level to display */
+  /** Severity level */
   severity: ContentDecaySeverity;
-  /** Optional additional CSS classes */
-  className?: string;
-  /** Whether to show only the icon without text */
+  /** Show icon only without text label */
   iconOnly?: boolean;
   /** Size variant */
   size?: "sm" | "md" | "lg";
+  /** Additional CSS classes */
+  className?: string;
 }
 
-/**
- * Icon mapping for severity levels
- */
-const SEVERITY_ICONS: Record<ContentDecaySeverity, React.ElementType> = {
+const ICON_MAP = {
   critical: AlertTriangle,
   high: AlertCircle,
   medium: Info,
   low: Minus,
-};
+} as const;
 
-/**
- * Size configurations for the badge
- */
-const SIZE_CONFIG = {
-  sm: "text-xs px-1.5 py-0.5",
-  md: "text-xs px-2 py-0.5",
-  lg: "text-sm px-2.5 py-1",
-};
+const SIZE_CLASSES = {
+  sm: "text-xs px-1.5 py-0.5 gap-1",
+  md: "text-xs px-2 py-1 gap-1.5",
+  lg: "text-sm px-2.5 py-1.5 gap-2",
+} as const;
 
-/**
- * SeverityBadge displays a color-coded badge indicating the severity level
- * of a content decay candidate.
- *
- * @example
- * ```tsx
- * <SeverityBadge severity="critical" />
- * <SeverityBadge severity="high" size="lg" />
- * <SeverityBadge severity="medium" iconOnly />
- * ```
- */
+const ICON_SIZES = {
+  sm: "h-3 w-3",
+  md: "h-3.5 w-3.5",
+  lg: "h-4 w-4",
+} as const;
+
 export function SeverityBadge({
   severity,
-  className,
   iconOnly = false,
   size = "md",
+  className,
 }: SeverityBadgeProps) {
-  // Normalize severity to valid value
-  const normalizedSeverity: ContentDecaySeverity = [
-    "critical",
-    "high",
-    "medium",
-    "low",
-  ].includes(severity)
-    ? severity
-    : "low";
-
-  const config = SEVERITY_CONFIG[normalizedSeverity];
-  const Icon = SEVERITY_ICONS[normalizedSeverity];
-
+  // Fallback to low for invalid severity values
+  const validSeverity: ContentDecaySeverity = 
+    ["critical", "high", "medium", "low"].includes(severity) ? severity : "low";
+  
+  const config = SEVERITY_CONFIG[validSeverity];
+  const Icon = ICON_MAP[validSeverity];
+  
   return (
-    <Badge
-      className={cn(
-        config.colorClass,
-        SIZE_CONFIG[size],
-        "gap-1 font-medium",
-        className
-      )}
+    <span
       role="status"
       aria-label={`Severity: ${config.label}`}
+      className={cn(
+        "inline-flex items-center rounded-md font-medium",
+        config.colorClass,
+        SIZE_CLASSES[size],
+        className
+      )}
     >
-      <Icon
-        className={cn(
-          size === "sm" ? "h-3 w-3" : size === "lg" ? "h-4 w-4" : "h-3.5 w-3.5"
-        )}
-        aria-hidden="true"
-      />
+      <Icon className={ICON_SIZES[size]} aria-hidden="true" />
       {!iconOnly && <span>{config.label}</span>}
-    </Badge>
+    </span>
   );
 }
-
-export default SeverityBadge;
