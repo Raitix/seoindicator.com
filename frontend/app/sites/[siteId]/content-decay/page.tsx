@@ -1,31 +1,16 @@
-/**
- * Content Decay Refresh Queue Page
- * 
- * Task: TASK-36-13 - Frontend Pages - Refresh Queue & Board
- * Spec: SPEC-036 - Content Decay Detection & Refresh Planner
- * 
- * Main page for viewing and managing content decay candidates
- */
+"use client";
 
-'use client';
-
-import * as React from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { RefreshCw, Download, Settings, Plus } from 'lucide-react';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
+import { Suspense, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Metadata } from "next";
+import { Play, Download, Settings, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DecaySummaryCards,
   DecayQueueTable,
   CandidateDetailDrawer,
-} from '@/components/content-decay';
-import type {
-  DecayCandidate,
-  ContentDecayCandidateStatus,
-  ContentRefreshTask,
-  ContentRefreshTaskCreateInput,
-} from '@/lib/types/content-decay';
+} from "@/components/content-decay";
 import {
   useContentDecaySummary,
   useContentDecayCandidates,
@@ -34,26 +19,34 @@ import {
   useUpdateCandidateStatus,
   useExportContentDecay,
   useContentRefreshTasks,
-  useCreateRefreshTask,
-  useUpdateCandidateStatus as useRestoreCandidate,
-} from '@/lib/hooks/useContentDecay';
+} from "@/lib/hooks/useContentDecay";
+import type {
+  DecayCandidate,
+  ContentDecayCandidateStatus,
+  ContentRefreshTaskCreateInput,
+} from "@/lib/types/content-decay";
 
-// ============================================================
-// Page Component
-// ============================================================
+export const metadata: Metadata = {
+  title: "Content Decay - Refresh Queue | SEOIndicator",
+  description: "Monitor and manage content decay candidates for your site.",
+};
 
-export default function ContentDecayPage() {
-  const params = useParams();
+function RefreshQueueContent({ siteId }: { siteId: string }) {
   const router = useRouter();
-  const siteId = params.siteId as string;
-
-  // State for drawer
-  const [selectedCandidateId, setSelectedCandidateId] = React.useState<number | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    status: "all" as const,
+    severity: "all" as const,
+    pageType: "all" as const,
+    search: "",
+    sort: "decay_score" as const,
+    order: "desc" as const,
+  });
 
   // Data hooks
   const { summary, isLoading: isSummaryLoading, mutate: mutateSummary } = useContentDecaySummary(siteId);
-  const { candidates, meta, isLoading: isCandidatesLoading, mutate: mutateCandidates } = useContentDecayCandidates(siteId);
+  const { candidates, meta, isLoading: isCandidatesLoading, mutate: mutateCandidates } = useContentDecayCandidates(siteId, filters);
   const { candidate: selectedCandidate, isLoading: isCandidateLoading } = useContentDecayCandidate(selectedCandidateId ?? 0);
   const { tasks, mutate: mutateTasks } = useContentRefreshTasks(selectedCandidateId ?? 0);
 
@@ -61,122 +54,136 @@ export default function ContentDecayPage() {
   const { runScan, isRunning } = useRunContentDecayScan(siteId);
   const { updateStatus, isUpdating } = useUpdateCandidateStatus(selectedCandidateId ?? 0);
   const { exportData, isExporting } = useExportContentDecay(siteId);
-  const { createTask, isCreating: isCreatingTask } = useCreateRefreshTask(selectedCandidateId ?? 0);
 
   // Handlers
-  const handleRowClick = React.useCallback((candidate: DecayCandidate) => {
+  const handleRowClick = (candidate: DecayCandidate) => {
     setSelectedCandidateId(candidate.id);
     setIsDrawerOpen(true);
-  }, []);
+  };
 
-  const handleCloseDrawer = React.useCallback(() => {
+  const handleDrawerClose = () => {
     setIsDrawerOpen(false);
     setSelectedCandidateId(null);
-  }, []);
+  };
 
-  const handleStatusChange = React.useCallback(async (status: ContentDecayCandidateStatus) => {
+  const handleStatusChange = async (status: ContentDecayCandidateStatus) => {
     const result = await updateStatus(status);
     if (result.success) {
-      toast.success(`Status updated to ${status.replace('_', ' ')}`);
       mutateCandidates();
       mutateSummary();
-    } else {
-      toast.error('Failed to update status');
+      handleDrawerClose();
     }
-  }, [updateStatus, mutateCandidates, mutateSummary]);
+  };
 
-  const handleBulkUpdate = React.useCallback(async (ids: number[], newStatus: ContentDecayCandidateStatus) => {
-    // Bulk update would need a separate hook - for now, update one by one
-    toast.info(`Bulk update: ${ids.length} items to ${newStatus}`);
-  }, []);
+  const handleBulkUpdate = async (ids: number[], newStatus: ContentDecayCandidateStatus) => {
+    // For bulk updates, we'd need a separate hook - simplified here
+    console.log("Bulk update:", ids, newStatus);
+  };
 
-  const handleRunScan = React.useCallback(async () => {
+  const handleRunScan = async () => {
     const result = await runScan();
     if (result.success) {
-      toast.success('Content decay scan started');
       mutateSummary();
       mutateCandidates();
-    } else {
-      toast.error(result.message || 'Failed to start scan');
     }
-  }, [runScan, mutateSummary, mutateCandidates]);
+  };
 
-  const handleExport = React.useCallback(async () => {
-    const result = await exportData('csv');
-    if (result.success) {
-      toast.success('Export downloaded');
-    } else {
-      toast.error('Failed to export data');
-    }
-  }, [exportData]);
+  const handleExport = async () => {
+    await exportData("csv");
+  };
 
-  const handleCreateTask = React.useCallback(async (task: ContentRefreshTaskCreateInput) => {
-    const result = await createTask(task);
-    if (result.success) {
-      toast.success('Task created');
-      mutateTasks();
-    } else {
-      toast.error('Failed to create task');
-    }
-  }, [createTask, mutateTasks]);
+  const handleCreateTask = async (task: ContentRefreshTaskCreateInput) => {
+    console.log("Create task:", task);
+    mutateTasks();
+  };
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      {/* Breadcrumb */}
-      <nav className="mb-4 text-sm text-muted-foreground" aria-label="Breadcrumb">
-        <ol className="flex items-center gap-2">
-          <li>
-            <Link href="/sites" className="hover:text-foreground">
-              Sites
-            </Link>
-          </li>
-          <li>/</li>
-          <li>
-            <Link href={`/sites/${siteId}`} className="hover:text-foreground">
-              Site {siteId}
-            </Link>
-          </li>
-          <li>/</li>
-          <li className="text-foreground font-medium">Content Decay</li>
-        </ol>
-      </nav>
-
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Content Decay</h1>
-          <p className="text-muted-foreground">
-            Monitor and recover declining content performance
+          <h1 className="text-2xl font-bold text-white">Content Decay</h1>
+          <p className="text-sm text-slate-400">
+            Monitor and manage pages with declining performance
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={handleRunScan} disabled={isRunning}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRunning ? 'animate-spin' : ''}`} />
-            {isRunning ? 'Scanning...' : 'Scan Now'}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRunScan}
+            disabled={isRunning}
+            data-testid="run-scan-button"
+          >
+            {isRunning ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Play className="h-4 w-4 mr-2" />
+            )}
+            Run Scan
           </Button>
-          <Button variant="outline" onClick={handleExport} disabled={isExporting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={isExporting}
+            data-testid="export-button"
+          >
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Link href={`/sites/${siteId}/content-decay/settings`}>
-            <Button variant="outline">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/sites/${siteId}/content-decay/settings`)}
+            data-testid="settings-button"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Button>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="mb-6">
+      <section aria-label="Summary statistics" data-testid="summary-section">
         <DecaySummaryCards
-          summary={summary}
+          summary={summary ?? undefined}
           isLoading={isSummaryLoading}
         />
+      </section>
+
+      {/* Navigation Tabs */}
+      <div className="flex gap-2 border-b border-slate-800 pb-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-white border-b-2 border-primary"
+          data-testid="tab-queue"
+        >
+          Queue
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-slate-400"
+          onClick={() => router.push(`/sites/${siteId}/content-decay/board`)}
+          data-testid="tab-board"
+        >
+          Board
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-slate-400"
+          onClick={() => router.push(`/sites/${siteId}/content-decay/recovery`)}
+          data-testid="tab-recovery"
+        >
+          Recovery
+        </Button>
       </div>
 
       {/* Queue Table */}
-      <div className="mb-6">
+      <section aria-label="Decay candidates queue" data-testid="queue-section">
         <DecayQueueTable
           candidates={candidates}
           isLoading={isCandidatesLoading}
@@ -184,40 +191,59 @@ export default function ContentDecayPage() {
           onBulkUpdate={handleBulkUpdate}
           onExport={handleExport}
         />
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="flex gap-4 border-b mb-6">
-        <Link
-          href={`/sites/${siteId}/content-decay`}
-          className="px-4 py-2 border-b-2 border-primary font-medium"
-        >
-          Queue
-        </Link>
-        <Link
-          href={`/sites/${siteId}/content-decay/board`}
-          className="px-4 py-2 text-muted-foreground hover:text-foreground"
-        >
-          Board
-        </Link>
-        <Link
-          href={`/sites/${siteId}/content-decay/recovery`}
-          className="px-4 py-2 text-muted-foreground hover:text-foreground"
-        >
-          Recovery
-        </Link>
-      </div>
+      </section>
 
       {/* Candidate Detail Drawer */}
       <CandidateDetailDrawer
         candidate={selectedCandidate}
         tasks={tasks}
         isOpen={isDrawerOpen}
-        onClose={handleCloseDrawer}
+        onClose={handleDrawerClose}
         onStatusChange={handleStatusChange}
         onCreateTask={handleCreateTask}
         isLoading={isCandidateLoading}
       />
-    </main>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <Skeleton className="h-10 w-48" />
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-24" />
+          <Skeleton className="h-10 w-24" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+      </div>
+      <div className="grid grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full" data-testid="skeleton" />
+        ))}
+      </div>
+      <Skeleton className="h-10 w-full" />
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full" data-testid="skeleton" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function ContentDecayPage() {
+  const params = useParams();
+  const siteId = params.siteId as string;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 px-4 py-10">
+      <div className="mx-auto w-full max-w-7xl">
+        <Suspense fallback={<LoadingSkeleton />}>
+          <RefreshQueueContent siteId={siteId} />
+        </Suspense>
+      </div>
+    </div>
   );
 }
