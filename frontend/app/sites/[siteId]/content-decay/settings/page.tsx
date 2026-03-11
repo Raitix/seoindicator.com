@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Content Decay Settings Page
  * Configuration page for content decay detection settings
  * 
@@ -485,7 +485,7 @@ function SettingsContent({ siteId }: { siteId: string }) {
           >
             {isSaving ? (
               <>
-                <span className="animate-spin mr-2">⏳</span>
+                <span className="animate-spin mr-2">ΓÅ│</span>
                 Saving...
               </>
             ) : (
