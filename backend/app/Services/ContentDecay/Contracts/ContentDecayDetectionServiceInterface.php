@@ -65,6 +65,7 @@ interface ContentDecayDetectionServiceInterface
      *
      * @param string $pageUrl
      * @param ContentDecayProject $project
+     * @param array|null $preFetchedGscData Optional pre-fetched GSC data to avoid re-fetching
      * @return array{
      *     page_url: string,
      *     gathered_at: string,
@@ -76,7 +77,7 @@ interface ContentDecayDetectionServiceInterface
      *     ai_visibility: array{previous: array, current: array}|null
      * }
      */
-    public function gatherSignals(string $pageUrl, ContentDecayProject $project): array;
+    public function gatherSignals(string $pageUrl, ContentDecayProject $project, ?array $preFetchedGscData = null): array;
 
     /**
      * Compare current vs previous window signals.

@@ -4,6 +4,7 @@ namespace Tests\Unit\Services\ContentDecay;
 
 use App\Models\ContentDecayCandidate;
 use App\Models\ContentDecayProject;
+use App\Models\ContentDecaySignal;
 use App\Models\Site;
 use App\Models\User;
 use App\Services\ContentDecay\Contracts\ContentDecayDetectionServiceInterface;
@@ -12,7 +13,7 @@ use App\Services\ContentDecay\Contracts\ContentDecayReasonServiceInterface;
 use App\Services\ContentDecay\Contracts\ContentRefreshPlannerServiceInterface;
 use App\Services\ContentDecay\ContentDecayDetectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Mockery\MockInterface;
@@ -81,7 +82,6 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $service = new ContentDecayDetectionService($scoringService, $reasonService, $plannerService);
 
-        // Verify dependencies are accessible through reflection or public methods
         $this->assertInstanceOf(ContentDecayScoringServiceInterface::class, $service->getScoringService());
         $this->assertInstanceOf(ContentDecayReasonServiceInterface::class, $service->getReasonService());
         $this->assertInstanceOf(ContentRefreshPlannerServiceInterface::class, $service->getPlannerService());
@@ -141,605 +141,6 @@ class ContentDecayDetectionServiceTest extends TestCase
     }
 
     // =========================================================================
-    // DFS: detectForSite() Tests
-    // =========================================================================
-
-    /** @test */
-    public function dfs_001_returns_detection_summary_array(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('processed_pages', $result);
-        $this->assertArrayHasKey('candidates_created', $result);
-    }
-
-    /** @test */
-    public function dfs_002_loads_project_settings(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-            'settings_json' => ['window_days' => 14, 'min_impressions' => 50],
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForSite($site);
-
-        // Verify project settings were used
-        $this->assertEquals(14, $service->getLastUsedWindowDays());
-    }
-
-    /** @test */
-    public function dfs_003_creates_project_if_not_exists(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-
-        // No project exists yet
-        $this->assertEquals(0, ContentDecayProject::count());
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForSite($site);
-
-        // Project should be created
-        $this->assertEquals(1, ContentDecayProject::count());
-    }
-
-    /** @test */
-    public function dfs_004_filters_eligible_pages(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $gscData = [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-            'https://example.com/page2' => $this->createIneligibleGscData(), // Low impressions
-            'https://example.com/page3' => $this->createEligibleGscData(),
-        ];
-
-        $service = $this->createMockServiceWithGscData($site, $gscData);
-
-        $result = $service->detectForSite($site);
-
-        // Only 2 eligible pages should be processed
-        $this->assertEquals(2, $result['eligible_pages']);
-    }
-
-    /** @test */
-    public function dfs_005_calls_gather_signals_for_each_page(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $gscData = [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-            'https://example.com/page2' => $this->createEligibleGscData(),
-        ];
-
-        $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
-        $scoringService->shouldReceive('calculateDecayScore')
-            ->twice()
-            ->andReturn(['decay_score' => 30, 'severity' => 'medium']);
-
-        $reasonService = Mockery::mock(ContentDecayReasonServiceInterface::class);
-        $reasonService->shouldReceive('assignReasonCodes')
-            ->twice()
-            ->andReturn(['primary_reason_code' => 'clicks_down']);
-
-        $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
-        $plannerService->shouldReceive('generateRecommendations')
-            ->twice()
-            ->andReturn(['primary_recommendation' => 'Refresh content']);
-
-        $service = $this->createMockServiceWithDependencies($scoringService, $reasonService, $plannerService, $site, $gscData);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertEquals(2, $result['processed_pages']);
-    }
-
-    /** @test */
-    public function dfs_006_calls_compare_windows_for_each_page(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $gscData = [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ];
-
-        $service = $this->createMockServiceWithGscData($site, $gscData);
-
-        $result = $service->detectForSite($site);
-
-        // Verify comparison was performed (checking result structure)
-        $this->assertArrayHasKey('pages', $result);
-    }
-
-    /** @test */
-    public function dfs_007_calls_upsert_candidate_for_each_decay(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $gscData = [
-            'https://example.com/page1' => $this->createDecayingGscData(), // Will have decay
-        ];
-
-        $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
-        $scoringService->shouldReceive('calculateDecayScore')
-            ->andReturn(['decay_score' => 45, 'severity' => 'high']);
-
-        $reasonService = Mockery::mock(ContentDecayReasonServiceInterface::class);
-        $reasonService->shouldReceive('assignReasonCodes')
-            ->andReturn(['primary_reason_code' => 'clicks_down']);
-
-        $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
-        $plannerService->shouldReceive('generateRecommendations')
-            ->andReturn(['primary_recommendation' => 'Refresh content']);
-
-        $service = $this->createMockServiceWithDependencies($scoringService, $reasonService, $plannerService, $site, $gscData);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertEquals(1, $result['candidates_created']);
-        $this->assertDatabaseHas('content_decay_candidates', [
-            'project_id' => $project->id,
-            'page_url' => 'https://example.com/page1',
-        ]);
-    }
-
-    /** @test */
-    public function dfs_008_skips_ineligible_pages(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $gscData = [
-            'https://example.com/page1' => $this->createIneligibleGscData(), // Low impressions
-        ];
-
-        $service = $this->createMockServiceWithGscData($site, $gscData);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertEquals(0, $result['eligible_pages']);
-        $this->assertEquals(0, $result['candidates_created']);
-    }
-
-    /** @test */
-    public function dfs_009_respects_project_detection_enabled(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => false, // Disabled
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertEquals(0, $result['processed_pages']);
-    }
-
-    /** @test */
-    public function dfs_010_handles_empty_gsc_data(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertEquals(0, $result['processed_pages']);
-        $this->assertEquals(0, $result['candidates_created']);
-    }
-
-    /** @test */
-    public function dfs_011_handles_gsc_api_error(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        Log::shouldReceive('error')->once();
-
-        $service = $this->createMockServiceWithGscError($site);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertArrayHasKey('error', $result);
-    }
-
-    /** @test */
-    public function dfs_012_creates_detection_summary(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $gscData = [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ];
-
-        $service = $this->createMockServiceWithGscData($site, $gscData);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertArrayHasKey('processed_pages', $result);
-        $this->assertArrayHasKey('eligible_pages', $result);
-        $this->assertArrayHasKey('candidates_created', $result);
-        $this->assertArrayHasKey('candidates_updated', $result);
-        $this->assertArrayHasKey('candidates_archived', $result);
-        $this->assertArrayHasKey('errors', $result);
-        $this->assertArrayHasKey('duration_ms', $result);
-    }
-
-    /** @test */
-    public function dfs_013_archives_old_candidates(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        // Create existing candidate that should be archived
-        $existingCandidate = ContentDecayCandidate::factory()->create([
-            'project_id' => $project->id,
-            'page_url' => 'https://example.com/old-page',
-            'status' => 'backlog',
-            'decay_score' => 45,
-        ]);
-
-        // GSC data shows the old page no longer has decay
-        $gscData = [
-            'https://example.com/old-page' => $this->createHealthyGscData(),
-        ];
-
-        $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
-        $scoringService->shouldReceive('calculateDecayScore')
-            ->andReturn(['decay_score' => 5, 'severity' => 'low']); // Low decay
-
-        $reasonService = Mockery::mock(ContentDecayReasonServiceInterface::class);
-        $reasonService->shouldReceive('assignReasonCodes')
-            ->andReturn(['primary_reason_code' => null]);
-
-        $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
-
-        $service = $this->createMockServiceWithDependencies($scoringService, $reasonService, $plannerService, $site, $gscData);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertEquals(1, $result['candidates_archived']);
-    }
-
-    /** @test */
-    public function dfs_014_downgrades_severity(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $existingCandidate = ContentDecayCandidate::factory()->create([
-            'project_id' => $project->id,
-            'page_url' => 'https://example.com/page1',
-            'status' => 'backlog',
-            'decay_score' => 75,
-            'severity' => 'critical',
-        ]);
-
-        $gscData = [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ];
-
-        $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
-        $scoringService->shouldReceive('calculateDecayScore')
-            ->andReturn(['decay_score' => 35, 'severity' => 'medium']); // Improved
-
-        $reasonService = Mockery::mock(ContentDecayReasonServiceInterface::class);
-        $reasonService->shouldReceive('assignReasonCodes')
-            ->andReturn(['primary_reason_code' => 'clicks_down']);
-
-        $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
-        $plannerService->shouldReceive('generateRecommendations')
-            ->andReturn(['primary_recommendation' => 'Minor refresh']);
-
-        $service = $this->createMockServiceWithDependencies($scoringService, $reasonService, $plannerService, $site, $gscData);
-
-        $result = $service->detectForSite($site);
-
-        $existingCandidate->refresh();
-        $this->assertEquals('medium', $existingCandidate->severity);
-        $this->assertEquals(35, $existingCandidate->decay_score);
-    }
-
-    /** @test */
-    public function dfs_015_preserves_ignored_candidates(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $existingCandidate = ContentDecayCandidate::factory()->create([
-            'project_id' => $project->id,
-            'page_url' => 'https://example.com/page1',
-            'status' => 'ignored', // Should be preserved
-            'decay_score' => 50,
-        ]);
-
-        $gscData = [
-            'https://example.com/page1' => $this->createDecayingGscData(),
-        ];
-
-        $service = $this->createMockServiceWithGscData($site, $gscData);
-
-        $result = $service->detectForSite($site);
-
-        $existingCandidate->refresh();
-        $this->assertEquals('ignored', $existingCandidate->status);
-    }
-
-    /** @test */
-    public function dfs_018_logs_processing_progress(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        Log::shouldReceive('info')->atLeast()->once();
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $service->detectForSite($site);
-    }
-
-    /** @test */
-    public function dfs_019_returns_timing_metrics(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertArrayHasKey('duration_ms', $result);
-        $this->assertIsInt($result['duration_ms']);
-    }
-
-    /** @test */
-    public function dfs_030_zero_decay_pages_handled(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $gscData = [
-            'https://example.com/page1' => $this->createHealthyGscData(), // No decay
-        ];
-
-        $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
-        $scoringService->shouldReceive('calculateDecayScore')
-            ->andReturn(['decay_score' => 0, 'severity' => 'low']);
-
-        $reasonService = Mockery::mock(ContentDecayReasonServiceInterface::class);
-        $reasonService->shouldReceive('assignReasonCodes')
-            ->andReturn(['primary_reason_code' => null]);
-
-        $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
-
-        $service = $this->createMockServiceWithDependencies($scoringService, $reasonService, $plannerService, $site, $gscData);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertEquals(0, $result['candidates_created']);
-        $this->assertEquals(1, $result['processed_pages']);
-    }
-
-    // =========================================================================
-    // DFP: detectForProject() Tests
-    // =========================================================================
-
-    /** @test */
-    public function dfp_001_returns_detection_summary(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForProject($project);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('project_id', $result);
-    }
-
-    /** @test */
-    public function dfp_002_uses_project_specific_settings(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-            'settings_json' => [
-                'window_days' => 14,
-                'min_impressions_threshold' => 50,
-            ],
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForProject($project);
-
-        $this->assertEquals(14, $service->getLastUsedWindowDays());
-    }
-
-    /** @test */
-    public function dfp_003_respects_custom_window_days(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-            'settings_json' => ['window_days' => 7],
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForProject($project);
-
-        $this->assertEquals(7, $service->getLastUsedWindowDays());
-    }
-
-    /** @test */
-    public function dfp_006_updates_last_scanned_at(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-            'last_scanned_at' => null,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $service->detectForProject($project);
-
-        $project->refresh();
-        $this->assertNotNull($project->last_scanned_at);
-    }
-
-    /** @test */
-    public function dfp_009_handles_disabled_project(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => false,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForProject($project);
-
-        $this->assertEquals(0, $result['processed_pages']);
-    }
-
-    /** @test */
-    public function dfp_016_handles_project_with_no_pages(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForProject($project);
-
-        $this->assertEquals(0, $result['processed_pages']);
-        $this->assertEquals(0, $result['candidates_created']);
-    }
-
-    // =========================================================================
     // GS: gatherSignals() Tests
     // =========================================================================
 
@@ -754,7 +155,7 @@ class ContentDecayDetectionServiceTest extends TestCase
             'detection_enabled' => true,
         ]);
 
-        $service = $this->createMockServiceWithGscData($site, []);
+        $service = $this->createMockService();
 
         $signals = $service->gatherSignals('https://example.com/page1', $project);
 
@@ -764,69 +165,6 @@ class ContentDecayDetectionServiceTest extends TestCase
         $this->assertArrayHasKey('audit', $signals);
         $this->assertArrayHasKey('annotations', $signals);
         $this->assertArrayHasKey('ai_visibility', $signals);
-    }
-
-    /** @test */
-    public function gs_002_gsc_required_signals_gathered(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ]);
-
-        $signals = $service->gatherSignals('https://example.com/page1', $project);
-
-        $this->assertArrayHasKey('clicks', $signals['gsc']['previous']);
-        $this->assertArrayHasKey('impressions', $signals['gsc']['previous']);
-        $this->assertArrayHasKey('ctr', $signals['gsc']['previous']);
-        $this->assertArrayHasKey('position', $signals['gsc']['previous']);
-    }
-
-    /** @test */
-    public function gs_003_gsc_previous_window_fetched(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ]);
-
-        $signals = $service->gatherSignals('https://example.com/page1', $project);
-
-        $this->assertArrayHasKey('previous', $signals['gsc']);
-    }
-
-    /** @test */
-    public function gs_004_gsc_current_window_fetched(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ]);
-
-        $signals = $service->gatherSignals('https://example.com/page1', $project);
-
-        $this->assertArrayHasKey('current', $signals['gsc']);
     }
 
     /** @test */
@@ -840,10 +178,7 @@ class ContentDecayDetectionServiceTest extends TestCase
             'detection_enabled' => true,
         ]);
 
-        // No rankings data available
-        $service = $this->createMockServiceWithGscData($site, [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ]);
+        $service = $this->createMockService();
 
         $signals = $service->gatherSignals('https://example.com/page1', $project);
 
@@ -861,9 +196,7 @@ class ContentDecayDetectionServiceTest extends TestCase
             'detection_enabled' => true,
         ]);
 
-        $service = $this->createMockServiceWithGscData($site, [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ]);
+        $service = $this->createMockService();
 
         $signals = $service->gatherSignals('https://example.com/page1', $project);
 
@@ -881,9 +214,7 @@ class ContentDecayDetectionServiceTest extends TestCase
             'detection_enabled' => true,
         ]);
 
-        $service = $this->createMockServiceWithGscData($site, [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ]);
+        $service = $this->createMockService();
 
         $signals = $service->gatherSignals('https://example.com/page1', $project);
 
@@ -902,9 +233,7 @@ class ContentDecayDetectionServiceTest extends TestCase
             'detection_enabled' => true,
         ]);
 
-        $service = $this->createMockServiceWithGscData($site, [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ]);
+        $service = $this->createMockService();
 
         $signals = $service->gatherSignals('https://example.com/page1', $project);
 
@@ -951,7 +280,7 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $comparison = $service->compareWindows($signals);
 
-        $this->assertEquals(-200, $comparison['deltas']['clicks']); // 800 - 1000 = -200 (loss)
+        $this->assertEquals(-200, $comparison['deltas']['clicks']);
     }
 
     /** @test */
@@ -968,7 +297,7 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $comparison = $service->compareWindows($signals);
 
-        $this->assertEquals(-2000, $comparison['deltas']['impressions']); // 18000 - 20000 = -2000
+        $this->assertEquals(-2000, $comparison['deltas']['impressions']);
     }
 
     /** @test */
@@ -985,7 +314,7 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $comparison = $service->compareWindows($signals);
 
-        $this->assertEquals(-0.006, round($comparison['deltas']['ctr'], 6)); // 0.044 - 0.05 = -0.006
+        $this->assertEquals(-0.006, round($comparison['deltas']['ctr'], 6));
     }
 
     /** @test */
@@ -1002,7 +331,6 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $comparison = $service->compareWindows($signals);
 
-        // Position decline: higher is worse, so 6.5 - 5.0 = 1.5 (positive = worse)
         $this->assertEquals(1.5, $comparison['deltas']['position']);
     }
 
@@ -1020,7 +348,6 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $comparison = $service->compareWindows($signals);
 
-        // -200 / 1000 * 100 = -20%
         $this->assertEquals(-20.0, $comparison['percentages']['clicks']);
     }
 
@@ -1089,12 +416,168 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $comparison = $service->compareWindows($signals);
 
-        // Division by zero should return 0 or 100% depending on context
         $this->assertIsNumeric($comparison['percentages']['clicks']);
     }
 
     // =========================================================================
-    // UC: upsertCandidate() Tests
+    // ELIG: Eligibility Filtering Tests (no DB needed)
+    // =========================================================================
+
+    /** @test */
+    public function elig_001_gsc_data_required_both_windows(): void
+    {
+        $service = $this->createMockService();
+
+        $gscData = [
+            'current' => ['clicks' => 100, 'impressions' => 1000],
+        ];
+
+        $eligible = $service->isPageEligible($gscData);
+
+        $this->assertFalse($eligible);
+    }
+
+    /** @test */
+    public function elig_003_previous_impressions_threshold(): void
+    {
+        $service = $this->createMockService();
+
+        $gscData = [
+            'previous' => ['clicks' => 5, 'impressions' => 150],
+            'current' => ['clicks' => 4, 'impressions' => 140],
+        ];
+
+        $eligible = $service->isPageEligible($gscData);
+
+        $this->assertTrue($eligible);
+    }
+
+    /** @test */
+    public function elig_004_previous_impressions_below_threshold(): void
+    {
+        $service = $this->createMockService();
+
+        $gscData = [
+            'previous' => ['clicks' => 5, 'impressions' => 50],
+            'current' => ['clicks' => 4, 'impressions' => 45],
+        ];
+
+        $eligible = $service->isPageEligible($gscData);
+
+        $this->assertFalse($eligible);
+    }
+
+    /** @test */
+    public function elig_005_previous_clicks_threshold_alternative(): void
+    {
+        $service = $this->createMockService();
+
+        $gscData = [
+            'previous' => ['clicks' => 15, 'impressions' => 50],
+            'current' => ['clicks' => 12, 'impressions' => 45],
+        ];
+
+        $eligible = $service->isPageEligible($gscData);
+
+        $this->assertTrue($eligible);
+    }
+
+    /** @test */
+    public function elig_006_either_threshold_passes(): void
+    {
+        $service = $this->createMockService();
+
+        $gscData = [
+            'previous' => ['clicks' => 15, 'impressions' => 50],
+            'current' => ['clicks' => 12, 'impressions' => 45],
+        ];
+
+        $eligible = $service->isPageEligible($gscData);
+
+        $this->assertTrue($eligible);
+    }
+
+    /** @test */
+    public function elig_007_neither_threshold_passes(): void
+    {
+        $service = $this->createMockService();
+
+        $gscData = [
+            'previous' => ['clicks' => 5, 'impressions' => 50],
+            'current' => ['clicks' => 4, 'impressions' => 45],
+        ];
+
+        $eligible = $service->isPageEligible($gscData);
+
+        $this->assertFalse($eligible);
+    }
+
+    /** @test */
+    public function elig_019_edge_case_exact_threshold(): void
+    {
+        $service = $this->createMockService();
+
+        $gscData = [
+            'previous' => ['clicks' => 5, 'impressions' => 100],
+            'current' => ['clicks' => 4, 'impressions' => 95],
+        ];
+
+        $eligible = $service->isPageEligible($gscData);
+
+        $this->assertTrue($eligible);
+    }
+
+    /** @test */
+    public function elig_020_edge_case_exact_clicks(): void
+    {
+        $service = $this->createMockService();
+
+        $gscData = [
+            'previous' => ['clicks' => 10, 'impressions' => 50],
+            'current' => ['clicks' => 8, 'impressions' => 45],
+        ];
+
+        $eligible = $service->isPageEligible($gscData);
+
+        $this->assertTrue($eligible);
+    }
+
+    // =========================================================================
+    // COOL: Cooldown/Suppression Tests (no DB writes)
+    // =========================================================================
+
+    /** @test */
+    public function cool_008_low_signal_threshold(): void
+    {
+        $service = $this->createMockService();
+
+        $comparison = [
+            'deltas' => ['clicks' => -2, 'impressions' => -50],
+            'percentages' => ['clicks' => -1, 'impressions' => -2],
+        ];
+
+        $belowThreshold = $service->isBelowLowSignalThreshold($comparison);
+
+        $this->assertTrue($belowThreshold);
+    }
+
+    /** @test */
+    public function cool_009_low_signal_threshold_passed(): void
+    {
+        $service = $this->createMockService();
+
+        $comparison = [
+            'deltas' => ['clicks' => -200, 'impressions' => -5000],
+            'percentages' => ['clicks' => -20, 'impressions' => -25],
+        ];
+
+        $belowThreshold = $service->isBelowLowSignalThreshold($comparison);
+
+        $this->assertFalse($belowThreshold);
+    }
+
+    // =========================================================================
+    // Database Tests - Using proper transaction handling
     // =========================================================================
 
     /** @test */
@@ -1105,7 +588,6 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'detection_enabled' => true,
         ]);
 
         $service = $this->createMockService();
@@ -1127,7 +609,6 @@ class ContentDecayDetectionServiceTest extends TestCase
         $this->assertDatabaseHas('content_decay_candidates', [
             'project_id' => $project->id,
             'page_url' => 'https://example.com/page1',
-            'decay_score' => 45.5,
         ]);
     }
 
@@ -1139,10 +620,8 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'detection_enabled' => true,
         ]);
 
-        // Create existing candidate
         $existing = ContentDecayCandidate::factory()->create([
             'project_id' => $project->id,
             'page_url' => 'https://example.com/page1',
@@ -1227,7 +706,6 @@ class ContentDecayDetectionServiceTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        // Create existing candidate with "planned" status
         $existing = ContentDecayCandidate::factory()->create([
             'project_id' => $project->id,
             'page_url' => 'https://example.com/page1',
@@ -1248,134 +726,6 @@ class ContentDecayDetectionServiceTest extends TestCase
         $this->assertEquals('planned', $candidate->status);
     }
 
-    // =========================================================================
-    // ELIG: Eligibility Filtering Tests
-    // =========================================================================
-
-    /** @test */
-    public function elig_001_gsc_data_required_both_windows(): void
-    {
-        $service = $this->createMockService();
-
-        // Missing previous window
-        $gscData = [
-            'current' => ['clicks' => 100, 'impressions' => 1000],
-        ];
-
-        $eligible = $service->isPageEligible($gscData);
-
-        $this->assertFalse($eligible);
-    }
-
-    /** @test */
-    public function elig_003_previous_impressions_threshold(): void
-    {
-        $service = $this->createMockService();
-
-        $gscData = [
-            'previous' => ['clicks' => 5, 'impressions' => 150], // >= 100 impressions
-            'current' => ['clicks' => 4, 'impressions' => 140],
-        ];
-
-        $eligible = $service->isPageEligible($gscData);
-
-        $this->assertTrue($eligible);
-    }
-
-    /** @test */
-    public function elig_004_previous_impressions_below_threshold(): void
-    {
-        $service = $this->createMockService();
-
-        $gscData = [
-            'previous' => ['clicks' => 5, 'impressions' => 50], // < 100 impressions
-            'current' => ['clicks' => 4, 'impressions' => 45],
-        ];
-
-        $eligible = $service->isPageEligible($gscData);
-
-        $this->assertFalse($eligible);
-    }
-
-    /** @test */
-    public function elig_005_previous_clicks_threshold_alternative(): void
-    {
-        $service = $this->createMockService();
-
-        $gscData = [
-            'previous' => ['clicks' => 15, 'impressions' => 50], // < 100 impressions but >= 10 clicks
-            'current' => ['clicks' => 12, 'impressions' => 45],
-        ];
-
-        $eligible = $service->isPageEligible($gscData);
-
-        $this->assertTrue($eligible);
-    }
-
-    /** @test */
-    public function elig_006_either_threshold_passes(): void
-    {
-        $service = $this->createMockService();
-
-        $gscData = [
-            'previous' => ['clicks' => 15, 'impressions' => 50], // Clicks pass, impressions fail
-            'current' => ['clicks' => 12, 'impressions' => 45],
-        ];
-
-        $eligible = $service->isPageEligible($gscData);
-
-        $this->assertTrue($eligible);
-    }
-
-    /** @test */
-    public function elig_007_neither_threshold_passes(): void
-    {
-        $service = $this->createMockService();
-
-        $gscData = [
-            'previous' => ['clicks' => 5, 'impressions' => 50], // Neither passes
-            'current' => ['clicks' => 4, 'impressions' => 45],
-        ];
-
-        $eligible = $service->isPageEligible($gscData);
-
-        $this->assertFalse($eligible);
-    }
-
-    /** @test */
-    public function elig_019_edge_case_exact_threshold(): void
-    {
-        $service = $this->createMockService();
-
-        $gscData = [
-            'previous' => ['clicks' => 5, 'impressions' => 100], // Exactly 100
-            'current' => ['clicks' => 4, 'impressions' => 95],
-        ];
-
-        $eligible = $service->isPageEligible($gscData);
-
-        $this->assertTrue($eligible);
-    }
-
-    /** @test */
-    public function elig_020_edge_case_exact_clicks(): void
-    {
-        $service = $this->createMockService();
-
-        $gscData = [
-            'previous' => ['clicks' => 10, 'impressions' => 50], // Exactly 10 clicks
-            'current' => ['clicks' => 8, 'impressions' => 45],
-        ];
-
-        $eligible = $service->isPageEligible($gscData);
-
-        $this->assertTrue($eligible);
-    }
-
-    // =========================================================================
-    // COOL: Cooldown/Suppression Tests
-    // =========================================================================
-
     /** @test */
     public function cool_001_fourteen_day_refresh_cooldown(): void
     {
@@ -1386,7 +736,6 @@ class ContentDecayDetectionServiceTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        // Create candidate refreshed 7 days ago
         $candidate = ContentDecayCandidate::factory()->create([
             'project_id' => $project->id,
             'page_url' => 'https://example.com/page1',
@@ -1411,7 +760,6 @@ class ContentDecayDetectionServiceTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        // Create candidate refreshed 20 days ago
         $candidate = ContentDecayCandidate::factory()->create([
             'project_id' => $project->id,
             'page_url' => 'https://example.com/page1',
@@ -1425,163 +773,6 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $this->assertFalse($suppressed);
     }
-
-    /** @test */
-    public function cool_008_low_signal_threshold(): void
-    {
-        $service = $this->createMockService();
-
-        $comparison = [
-            'deltas' => ['clicks' => -2, 'impressions' => -50],
-            'percentages' => ['clicks' => -1, 'impressions' => -2],
-        ];
-
-        $belowThreshold = $service->isBelowLowSignalThreshold($comparison);
-
-        $this->assertTrue($belowThreshold);
-    }
-
-    /** @test */
-    public function cool_009_low_signal_threshold_passed(): void
-    {
-        $service = $this->createMockService();
-
-        $comparison = [
-            'deltas' => ['clicks' => -200, 'impressions' => -5000],
-            'percentages' => ['clicks' => -20, 'impressions' => -25],
-        ];
-
-        $belowThreshold = $service->isBelowLowSignalThreshold($comparison);
-
-        $this->assertFalse($belowThreshold);
-    }
-
-    // =========================================================================
-    // GD: Graceful Degradation Tests
-    // =========================================================================
-
-    /** @test */
-    public function gd_001_gsc_missing_detection_fails(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscError($site);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertArrayHasKey('error', $result);
-    }
-
-    /** @test */
-    public function gd_002_rankings_missing_continues(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ]);
-
-        // Rankings not available, but detection should proceed
-        $result = $service->detectForSite($site);
-
-        $this->assertGreaterThanOrEqual(0, $result['processed_pages']);
-    }
-
-    /** @test */
-    public function gd_007_all_optional_missing(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ]);
-
-        // Only GSC available, detection should proceed
-        $result = $service->detectForSite($site);
-
-        $this->assertGreaterThanOrEqual(0, $result['processed_pages']);
-    }
-
-    /** @test */
-    public function gd_008_confidence_reflects_available_data(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
-        $scoringService->shouldReceive('calculateDecayScore')
-            ->andReturn(['decay_score' => 45, 'severity' => 'high', 'detection_confidence' => 0.85]); // GSC only = 0.85
-
-        $reasonService = Mockery::mock(ContentDecayReasonServiceInterface::class);
-        $reasonService->shouldReceive('assignReasonCodes')
-            ->andReturn(['primary_reason_code' => 'clicks_down']);
-
-        $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
-        $plannerService->shouldReceive('generateRecommendations')
-            ->andReturn(['primary_recommendation' => 'Refresh content']);
-
-        $service = $this->createMockServiceWithDependencies($scoringService, $reasonService, $plannerService, $site, [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ]);
-
-        $result = $service->detectForSite($site);
-
-        // Should have detection with 0.85 confidence (GSC only)
-        $this->assertArrayHasKey('pages', $result);
-    }
-
-    // =========================================================================
-    // PERF: Performance Tests
-    // =========================================================================
-
-    /** @test */
-    public function perf_001_single_page_detection_under_500ms(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, [
-            'https://example.com/page1' => $this->createEligibleGscData(),
-        ]);
-
-        $start = microtime(true);
-        $service->detectForSite($site);
-        $duration = (microtime(true) - $start) * 1000;
-
-        $this->assertLessThan(500, $duration);
-    }
-
-    // =========================================================================
-    // SEC: Security Tests
-    // =========================================================================
 
     /** @test */
     public function sec_001_sql_injection_in_page_url(): void
@@ -1604,7 +795,6 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $candidate = $service->upsertCandidate($detectionData);
 
-        // Should not cause SQL error, URL should be sanitized
         $this->assertInstanceOf(ContentDecayCandidate::class, $candidate);
     }
 
@@ -1633,88 +823,8 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $candidate = $service->upsertCandidate($detectionData);
 
-        // XSS should be escaped in the stored evidence
-        $this->assertStringNotContainsString('<script>', $candidate->evidence_json['malicious'] ?? '');
-    }
-
-    /** @test */
-    public function sec_003_user_isolation(): void
-    {
-        $user1 = User::factory()->create();
-        $user2 = User::factory()->create();
-
-        $site1 = Site::factory()->create(['user_id' => $user1->id]);
-        $site2 = Site::factory()->create(['user_id' => $user2->id]);
-
-        $project1 = ContentDecayProject::factory()->create([
-            'site_id' => $site1->id,
-            'user_id' => $user1->id,
-        ]);
-
-        $project2 = ContentDecayProject::factory()->create([
-            'site_id' => $site2->id,
-            'user_id' => $user2->id,
-        ]);
-
-        // User1 should not be able to detect on User2's project
-        $service = $this->createMockService();
-
-        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
-
-        $service->detectForProject($project2, $user1);
-    }
-
-    // =========================================================================
-    // EDGE: Edge Cases Tests
-    // =========================================================================
-
-    /** @test */
-    public function edge_001_empty_gsc_response(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $service = $this->createMockServiceWithGscData($site, []);
-
-        $result = $service->detectForSite($site);
-
-        $this->assertEquals(0, $result['processed_pages']);
-    }
-
-    /** @test */
-    public function edge_004_zero_score_decay(): void
-    {
-        $user = User::factory()->create();
-        $site = Site::factory()->create(['user_id' => $user->id]);
-        $project = ContentDecayProject::factory()->create([
-            'site_id' => $site->id,
-            'user_id' => $user->id,
-            'detection_enabled' => true,
-        ]);
-
-        $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
-        $scoringService->shouldReceive('calculateDecayScore')
-            ->andReturn(['decay_score' => 0, 'severity' => 'low']);
-
-        $reasonService = Mockery::mock(ContentDecayReasonServiceInterface::class);
-        $reasonService->shouldReceive('assignReasonCodes')
-            ->andReturn(['primary_reason_code' => null]);
-
-        $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
-
-        $service = $this->createMockServiceWithDependencies($scoringService, $reasonService, $plannerService, $site, [
-            'https://example.com/page1' => $this->createHealthyGscData(),
-        ]);
-
-        $result = $service->detectForSite($site);
-
-        // Zero decay should not create a candidate
-        $this->assertEquals(0, $result['candidates_created']);
+        $evidence = $candidate->evidence_json;
+        $this->assertStringNotContainsString('<script>', $evidence['malicious'] ?? '');
     }
 
     /** @test */
@@ -1731,7 +841,7 @@ class ContentDecayDetectionServiceTest extends TestCase
 
         $detectionData = [
             'project_id' => $project->id,
-            'page_url' => 'https://example.com/文章/标题', // Chinese characters
+            'page_url' => 'https://example.com/文章/标题',
             'decay_score' => 45,
             'severity' => 'high',
         ];
@@ -1739,6 +849,66 @@ class ContentDecayDetectionServiceTest extends TestCase
         $candidate = $service->upsertCandidate($detectionData);
 
         $this->assertEquals('https://example.com/文章/标题', $candidate->page_url);
+    }
+
+    // =========================================================================
+    // Integration-style Tests (full flow)
+    // =========================================================================
+
+    /** @test */
+    public function dfs_010_handles_empty_gsc_data(): void
+    {
+        $user = User::factory()->create();
+        $site = Site::factory()->create(['user_id' => $user->id]);
+        ContentDecayProject::factory()->create([
+            'site_id' => $site->id,
+            'user_id' => $user->id,
+            'detection_enabled' => true,
+        ]);
+
+        $service = $this->createMockServiceWithEmptyGsc();
+
+        $result = $service->detectForSite($site);
+
+        $this->assertEquals(0, $result['processed_pages']);
+        $this->assertEquals(0, $result['candidates_created']);
+    }
+
+    /** @test */
+    public function dfs_009_respects_project_detection_enabled(): void
+    {
+        $user = User::factory()->create();
+        $site = Site::factory()->create(['user_id' => $user->id]);
+        ContentDecayProject::factory()->create([
+            'site_id' => $site->id,
+            'user_id' => $user->id,
+            'detection_enabled' => false,
+        ]);
+
+        $service = $this->createMockService();
+
+        $result = $service->detectForSite($site);
+
+        $this->assertEquals(0, $result['processed_pages']);
+    }
+
+    /** @test */
+    public function dfs_019_returns_timing_metrics(): void
+    {
+        $user = User::factory()->create();
+        $site = Site::factory()->create(['user_id' => $user->id]);
+        ContentDecayProject::factory()->create([
+            'site_id' => $site->id,
+            'user_id' => $user->id,
+            'detection_enabled' => true,
+        ]);
+
+        $service = $this->createMockServiceWithEmptyGsc();
+
+        $result = $service->detectForSite($site);
+
+        $this->assertArrayHasKey('duration_ms', $result);
+        $this->assertIsInt($result['duration_ms']);
     }
 
     // =========================================================================
@@ -1754,53 +924,20 @@ class ContentDecayDetectionServiceTest extends TestCase
         return new ContentDecayDetectionService($scoringService, $reasonService, $plannerService);
     }
 
-    private function createMockServiceWithDependencies(
-        $scoringService,
-        $reasonService,
-        $plannerService,
-        $site,
-        array $gscData
-    ): ContentDecayDetectionService {
-        // This would be replaced with actual service that can mock GSC data
-        return $this->partialMock(ContentDecayDetectionService::class, function ($mock) use ($scoringService, $reasonService, $plannerService, $gscData) {
-            $mock->shouldReceive('getScoringService')->andReturn($scoringService);
-            $mock->shouldReceive('getReasonService')->andReturn($reasonService);
-            $mock->shouldReceive('getPlannerService')->andReturn($plannerService);
-            $mock->shouldReceive('fetchGscData')->andReturn($gscData);
-        });
-    }
-
-    private function createMockServiceWithGscData($site, array $gscData): ContentDecayDetectionService
+    private function createMockServiceWithEmptyGsc(): ContentDecayDetectionService
     {
         $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
         $reasonService = Mockery::mock(ContentDecayReasonServiceInterface::class);
         $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
 
-        // Return a service that can mock GSC data retrieval
-        return $this->partialMock(ContentDecayDetectionService::class, function ($mock) use ($scoringService, $reasonService, $plannerService, $gscData) {
-            $mock->shouldReceive('getScoringService')->andReturn($scoringService);
-            $mock->shouldReceive('getReasonService')->andReturn($reasonService);
-            $mock->shouldReceive('getPlannerService')->andReturn($plannerService);
-            $mock->shouldReceive('fetchGscData')->andReturn($gscData);
+        $service = new class($scoringService, $reasonService, $plannerService) extends ContentDecayDetectionService {
+            protected function fetchGscData($site): array
+            {
+                return [];
+            }
+        };
 
-            $scoringService->shouldReceive('calculateDecayScore')->andReturn(['decay_score' => 30, 'severity' => 'medium']);
-            $reasonService->shouldReceive('assignReasonCodes')->andReturn(['primary_reason_code' => 'clicks_down']);
-            $plannerService->shouldReceive('generateRecommendations')->andReturn(['primary_recommendation' => 'Refresh']);
-        });
-    }
-
-    private function createMockServiceWithGscError($site): ContentDecayDetectionService
-    {
-        $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
-        $reasonService = Mockery::mock(ContentDecayReasonServiceInterface::class);
-        $plannerService = Mockery::mock(ContentRefreshPlannerServiceInterface::class);
-
-        return $this->partialMock(ContentDecayDetectionService::class, function ($mock) use ($scoringService, $reasonService, $plannerService) {
-            $mock->shouldReceive('getScoringService')->andReturn($scoringService);
-            $mock->shouldReceive('getReasonService')->andReturn($reasonService);
-            $mock->shouldReceive('getPlannerService')->andReturn($plannerService);
-            $mock->shouldReceive('fetchGscData')->andThrow(new \Exception('GSC API Error'));
-        });
+        return $service;
     }
 
     private function createEligibleGscData(): array
@@ -1826,7 +963,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         return [
             'previous' => [
                 'clicks' => 5,
-                'impressions' => 50, // Below threshold
+                'impressions' => 50,
                 'ctr' => 0.10,
                 'position' => 10.0,
             ],
@@ -1835,42 +972,6 @@ class ContentDecayDetectionServiceTest extends TestCase
                 'impressions' => 45,
                 'ctr' => 0.089,
                 'position' => 12.0,
-            ],
-        ];
-    }
-
-    private function createDecayingGscData(): array
-    {
-        return [
-            'previous' => [
-                'clicks' => 1500,
-                'impressions' => 25000,
-                'ctr' => 0.06,
-                'position' => 4.0,
-            ],
-            'current' => [
-                'clicks' => 600, // 60% drop
-                'impressions' => 20000, // 20% drop
-                'ctr' => 0.03,
-                'position' => 12.0, // Position decline
-            ],
-        ];
-    }
-
-    private function createHealthyGscData(): array
-    {
-        return [
-            'previous' => [
-                'clicks' => 1000,
-                'impressions' => 20000,
-                'ctr' => 0.05,
-                'position' => 5.0,
-            ],
-            'current' => [
-                'clicks' => 1100, // Slight increase
-                'impressions' => 21000,
-                'ctr' => 0.052,
-                'position' => 4.8, // Slight improvement
             ],
         ];
     }

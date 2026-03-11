@@ -168,6 +168,18 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\ContentDecay\Contracts\ContentDecayReasonServiceInterface::class,
             \App\Services\ContentDecay\ContentDecayReasonService::class
         );
+
+        // Content Decay Scoring Service binding (TASK-36-3, SPEC-036)
+        $this->app->bind(
+            \App\Services\ContentDecay\Contracts\ContentDecayScoringServiceInterface::class,
+            \App\Services\ContentDecay\ContentDecayScoringService::class
+        );
+
+        // Content Refresh Planner Service binding (TASK-36-5, SPEC-036)
+        $this->app->bind(
+            \App\Services\ContentDecay\Contracts\ContentRefreshPlannerServiceInterface::class,
+            \App\Services\ContentDecay\ContentRefreshPlannerService::class
+        );
     }
 
     /**
