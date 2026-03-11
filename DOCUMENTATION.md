@@ -936,6 +936,158 @@ Foundation Eloquent model layer for Local SEO ranking snapshots, competitor reco
 - TASK-35-17 to TASK-35-23: Frontend Local SEO surfaces that read rankings / competitors / alerts
 
 ---
+## Nominatim Geocoding Service (TASK-35-6)
+
+### Service Description
+Free geocoding service using OpenStreetMap's Nominatim API. `NominatimService` provides forward geocoding (address → coordinates) and reverse geocoding (coordinates → address) with automatic rate limiting and 30-day caching. This service replaces paid geocoding providers like Google Geocoding API, enabling cost-free location services for the Local SEO feature.
+
+### Component Locations
+- **Service:** `backend/app/Services/LocalSEO/NominatimService.php`
+- **Interface:** `backend/app/Services/LocalSEO/Contracts/NominatimServiceInterface.php`
+- **Unit Tests:** `backend/tests/Unit/Services/LocalSEO/NominatimServiceTest.php`
+- **Feature Tests:** `backend/tests/Feature/Services/LocalSEO/NominatimServiceIntegrationTest.php`
+- **Test Documentation:** `TESTS/TEST-35-6.md`
+
+### Service Interface
+
+| Method | Signature | Returns |
+|--------|-----------|---------|
+| `geocode` | `geocode(string $address): ?array` | `['lat' => float, 'lng' => float, 'display_name' => string]` or `null` |
+| `reverseGeocode` | `reverseGeocode(float $lat, float $lng): ?string` | Address string or `null` |
+
+### Forward Geocoding
+
+Converts a human-readable address to GPS coordinates.
+
+```php
+$coords = $nominatimService->geocode('Stockholm, Sweden');
+// Returns: ['lat' => 59.3251172, 'lng' => 18.0710935, 'display_name' => 'Stockholm, Stockholms län, Sverige']
+```
+
+### Reverse Geocoding
+
+Converts GPS coordinates back to a human-readable address.
+
+```php
+$address = $nominatimService->reverseGeocode(59.3251172, 18.0710935);
+// Returns: "Stockholm, Stockholms län, Sverige"
+```
+
+### Rate Limiting
+
+| Constraint | Value | Implementation |
+|------------|-------|----------------|
+| Max requests | 1 per second | Static `$lastRequestTime` tracker with `usleep()` |
+
+The Nominatim API requires a maximum of 1 request per second. The service enforces this with a static timestamp check and `usleep()` delay for uncached requests.
+
+### Caching
+
+| Cache Key Format | TTL | Purpose |
+|------------------|-----|---------|
+| `geocode:{md5($address)}` | 30 days | Forward geocoding results |
+| `reverse_geocode:{md5("{$lat},{$lng}")}` | 30 days | Reverse geocoding results |
+
+Cache hits return instantly without hitting the Nominatim API, bypassing rate limiting entirely.
+
+### Configuration
+
+| Config Path | Default | Description |
+|-------------|---------|-------------|
+| `services.nominatim.base_url` | `https://nominatim.openstreetmap.org` | Nominatim API endpoint |
+| `services.nominatim.user_agent` | `{app.name} ({contact_email})` | User-Agent header (required by ToS) |
+| `services.nominatim.contact_email` | - | Contact email for User-Agent |
+
+### Error Handling
+
+| Error Type | Behavior |
+|------------|----------|
+| HTTP 5xx | Returns `null` |
+| Connection failure | Returns `null` |
+| Empty response | Returns `null` |
+| Invalid address | Returns `null` |
+
+The service fails gracefully without throwing exceptions, allowing consumers to handle missing coordinates without try-catch.
+
+### Nominatim ToS Compliance
+
+| Requirement | Implementation |
+|-------------|----------------|
+| User-Agent header | Built from `app.name` + `services.nominatim.contact_email` |
+| Rate limiting | 1 request/second enforced |
+| No commercial use restrictions | Nominatim is free for all uses |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| Unit Tests | 21 | - | ✅ PASS |
+| Feature Tests | 6 | - | ✅ PASS |
+| **Total** | **27** | **47** | **✅ ALL PASS** |
+
+**Coverage Areas:**
+- Forward geocoding with real API responses
+- Reverse geocoding with real API responses
+- Cache key format verification
+- Cache TTL behavior (30 days)
+- Rate limiting verification (≥0.9s delay)
+- User-Agent header presence
+- HTTP error handling (5xx → null)
+- Connection failure handling
+- Empty response handling
+- Config propagation (base_url)
+- Container binding (interface → implementation)
+
+### Production Validation
+
+| Test | Result | Details |
+|------|--------|---------|
+| Service resolution | ✅ PASS | `NominatimService` correctly bound to interface |
+| Forward geocoding | ✅ PASS | Stockholm: `lat: 59.3251172, lng: 18.0710935` |
+| Reverse geocoding | ✅ PASS | Returned full address from coordinates |
+| Rate limiting | ✅ PASS | 1671ms / 1197ms (both >= 900ms threshold) |
+| Caching | ✅ PASS | Cache hit: 2.21ms (vs ~1200ms uncached) |
+| Error handling | ✅ PASS | Invalid address returned `null` |
+| Config endpoint | ✅ PASS | `base_url: https://nominatim.openstreetmap.org` |
+| BusinessLocationService integration | ✅ PASS | Geocoding works end-to-end |
+
+**Integration Test:**
+- Created location with address: "Central Park, New York, USA"
+- Geocoding automatically set coordinates: `lat: 40.78277300, lng: -73.96536300`
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-10 |
+| Deployment ID | `20260310T213319Z-104c5cd6` |
+| Commit | `c05ac6785ad4838f5438e7be2761f9e3b4b45da7` |
+| Production Validation | ✅ All acceptance criteria verified |
+| Status | Complete |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| No API key required | Free service, no credentials to protect |
+| Input validation | Address string sanitized before API call |
+| Rate limiting | Prevents IP bans from Nominatim |
+| Graceful failures | Returns `null` instead of leaking errors |
+
+### Dependencies
+
+- None (utility service)
+
+### Consumers
+
+- TASK-35-5: `BusinessLocationService` uses `NominatimService` for automatic geocoding when creating/updating locations
+
+### Related Tasks
+
+- TASK-35-5: BusinessLocationService (primary consumer)
+- TASK-35-17: Local SEO Location Management Page (indirect consumer via BusinessLocationService)
+
+---
 ## BusinessLocationService (TASK-35-5)
 
 ### Service Description
