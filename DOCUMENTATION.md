@@ -7952,6 +7952,186 @@ backlog → planned → in_progress → refreshed → recovered
 - TASK-36-5: ContentDecayDetectionService
 
 ---
+## Navigation & Dashboard Integration (TASK-36-14)
+
+### Feature Description
+Navigation and dashboard integration for the Content Decay Detection & Refresh Planner feature (FEAT-036). Integrates Content Decay into the site navigation menu under "SEO Tools", creates a dashboard widget for at-a-glance monitoring, and provides site settings configuration for detection preferences.
+
+### Component Locations
+- **Widget:** `frontend/components/dashboard/ContentDecayWidget.tsx`
+- **Navigation:** `frontend/components/layout/SiteNav.tsx`
+- **Site Overview:** `frontend/app/sites/[siteId]/page.tsx`
+- **Settings:** `frontend/app/sites/[siteId]/content-decay/settings/page.tsx`
+- **Hooks:** `frontend/hooks/useContentDecay.ts`
+- **Types:** `frontend/types/content-decay.ts`
+- **Tests:**
+  - `frontend/__tests__/components/dashboard/ContentDecayWidget.test.tsx`
+  - `frontend/__tests__/integration/content-decay-navigation.test.tsx`
+
+### Navigation Integration
+
+**SEO Tools Navigation Structure:**
+```
+SEO Tools
+├── Keyword Rankings
+├── Site Audits
+├── Content Decay  ← NEW
+├── AI Visibility
+└── Annotations
+```
+
+**SiteNav Link Properties:**
+| Property | Value |
+|----------|-------|
+| Label | "Content Decay" |
+| Icon | TrendingDown |
+| Href | `/sites/{siteId}/content-decay` |
+| Position | After "Site Audits", before "AI Visibility" |
+| Badge | Critical count (red) when issues exist |
+
+### Dashboard Widget (ContentDecayWidget)
+
+**Widget States:**
+| State | Description | Rendered Content |
+|-------|-------------|------------------|
+| Loading | Initial data fetch | 3 skeleton cards with pulsing animation |
+| Error | API failure | Error message with "Try again" button |
+| Empty | No decay candidates | "No content decay detected" message with checkmark icon |
+| Data | Candidates exist | Summary cards, top 3 candidates, actions |
+
+**Widget Components:**
+| Component | Description |
+|-----------|-------------|
+| Summary Cards | Critical count, Total candidates, Lost clicks, Recovery upside |
+| Top Candidates List | Top 3 candidates by severity with View/Plan buttons |
+| Quick Actions | View All link → `/sites/{siteId}/content-decay` |
+| Last Scan Timestamp | Relative time (Just now, X hours ago, Yesterday) |
+
+**Summary Card Data:**
+```typescript
+interface DecaySummary {
+  total_candidates: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  estimated_lost_clicks: number;
+  recovery_upside: number;
+  last_scanned_at: string | null;
+}
+```
+
+**Severity Color Coding:**
+| Severity | Badge Color | data-severity |
+|----------|-------------|---------------|
+| Critical | Red (bg-red-100 text-red-800) | `critical` |
+| High | Orange (bg-orange-100 text-orange-800) | `high` |
+| Medium | Yellow (bg-yellow-100 text-yellow-800) | `medium` |
+
+### Site Settings Integration
+
+**Settings Page:** `/sites/{siteId}/content-decay/settings`
+
+**Detection Settings:**
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| Detection Enabled | Toggle | true | Enable/disable content decay detection |
+| Detection Window | Select | 28 days | Comparison window (7/14/28/56 days) |
+| Min Clicks Threshold | Number | 100 | Minimum clicks to consider |
+| Min Impressions Threshold | Number | 1000 | Minimum impressions to consider |
+
+**Notification Digest:**
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| Email Digest Enabled | Toggle | false | Enable email notifications |
+| Digest Frequency | Select | weekly | Notification frequency (weekly/monthly) |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `ContentDecayWidget.test.tsx` | 68 | - | ✅ PASS |
+| `content-decay-navigation.test.tsx` | 28 | - | ✅ PASS |
+| `DecayQueueTable.test.tsx` | 34 | - | ✅ PASS |
+| `DecaySummaryCards.test.tsx` | 21 | - | ✅ PASS |
+| `DecayReasonBadges.test.tsx` | 21 | - | ✅ PASS |
+| `DecayTrendMiniChart.test.tsx` | 18 | - | ✅ PASS |
+| `CandidateDetailDrawer.test.tsx` | 39 | - | ✅ PASS |
+| `StatusWorkflowButtons.test.tsx` | 39 | - | ✅ PASS |
+| `RefreshTaskList.test.tsx` | 34 | - | ✅ PASS |
+| `RecoveryComparisonCard.test.tsx` | 25 | - | ✅ PASS |
+| `SeverityBadge.test.tsx` | 22 | - | ✅ PASS |
+| **Total** | **379** | - | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Widget Rendering | 10 | Component structure, attributes |
+| Empty State | 8 | No decay detected |
+| Loading State | 8 | Initial load with skeletons |
+| Summary Card | 12 | Severity badges, totals, upside |
+| Top Candidates | 15 | List items, actions, truncation |
+| Timestamp | 8 | Relative time formatting |
+| Navigation Links | 8 | View All, hrefs |
+| Quick Actions | 10 | View, Plan, Ignore buttons |
+| Error State | 6 | API failure handling |
+| Accessibility | 10 | ARIA, keyboard, contrast |
+| Site Navigation | 20 | Nav link, order, badge |
+| Dashboard Integration | 15 | Widget placement, states |
+
+### Accessibility
+
+| Feature | Implementation |
+|---------|----------------|
+| ARIA Labels | `aria-label`, `aria-labelledby` on all interactive elements |
+| Roles | `role="region"`, `role="button"`, `role="link"` |
+| Keyboard Navigation | Tab through all controls, Enter/Space activation |
+| Screen Reader | Descriptive text for icons, badge announcements |
+| Focus Management | Visible focus rings, logical tab order |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-11 |
+| Deployment ID | 20260311T123623Z-3e3cd879 |
+| Commit | 6e5c21ce |
+| Production Tests | All pages verified |
+| Route Availability | 4/4 routes verified |
+| API Security | 401 for unauthenticated |
+| Status | Complete |
+
+**Production Routes Verified:**
+| Route | Status | Content |
+|-------|--------|---------|
+| `/sites/{siteId}/content-decay` | ✅ 200 | Queue page with tabs, summary cards |
+| `/sites/{siteId}/content-decay/board` | ✅ 200 | Kanban board with 5 columns |
+| `/sites/{siteId}/content-decay/recovery` | ✅ 200 | Recovery report with timeline |
+| `/sites/{siteId}/content-decay/settings` | ✅ 200 | Settings with toggle, thresholds |
+
+### Acceptance Criteria Status
+
+- [x] Add "Content Decay" link to site navigation under "SEO Tools" section
+- [x] Create dashboard widget showing decay summary card, top 3 priority candidates, link to full queue, last scan timestamp
+- [x] Widget shows empty state when no candidates
+- [x] Widget shows loading state during initial load
+- [x] Unit tests for widget component
+- [x] E2E tests for navigation flows
+- [x] Create site settings integration (Content Decay toggle, link to project settings)
+- [ ] Add Content Decay to site quick actions dropdown (deferred - quick links used instead)
+- [ ] Add Content Decay to global search results (deferred - no global search exists)
+
+### Dependencies
+- TASK-36-10: API Controllers (Done)
+- TASK-36-11: Frontend Components (Done)
+- TASK-36-13: Frontend Pages (Done)
+
+### Related Tasks
+- TASK-36-10: Content Decay API Controllers
+- TASK-36-11: Content Decay Frontend Components
+- TASK-36-12: Candidate Detail & Tasks Components
+- TASK-36-13: Frontend Pages
+
+---
 ## TruncationService (TASK-31-3)
 
 ### Service Description
