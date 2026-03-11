@@ -47,7 +47,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
             'settings_json' => [
                 'window_days' => 28,
                 'min_impressions_threshold' => 100,
@@ -155,7 +155,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $expectedScore = 67.5;
@@ -210,7 +210,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $expectedReasons = ['clicks_down', 'position_down', 'ctr_down'];
@@ -262,7 +262,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $expectedRecommendation = 'Rewrite meta tags and refresh content';
@@ -317,7 +317,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
@@ -374,7 +374,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
@@ -418,7 +418,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         // First, set up a scenario that will partially succeed then fail
@@ -482,7 +482,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
             'digest_frequency' => 'weekly',
         ]);
 
@@ -527,7 +527,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         // Create existing candidate with decay
@@ -583,7 +583,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
@@ -638,7 +638,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         $scoringService = Mockery::mock(ContentDecayScoringServiceInterface::class);
@@ -697,7 +697,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
         ]);
 
         // Create existing candidate with "planned" status
@@ -756,7 +756,7 @@ class ContentDecayDetectionServiceTest extends TestCase
         $project = ContentDecayProject::factory()->create([
             'site_id' => $site->id,
             'user_id' => $user->id,
-            'is_enabled' => true,
+            'detection_enabled' => true,
             'settings_json' => [
                 'min_impressions_threshold' => 50, // Lower than default
                 'min_clicks_threshold' => 5,      // Lower than default

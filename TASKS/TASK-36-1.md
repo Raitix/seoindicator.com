@@ -1,7 +1,7 @@
 # TASK-36-1: Database Migrations - Content Decay Tables
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -235,6 +235,27 @@ Created comprehensive test suite for Content Decay database migrations:
 **Decision: PASS → Ready for Documentation**
 
 **Status:** `To Test Prod` → `To Document`
+
+---
+
+### DocSystemAnalyst (2026-03-11 15:25 UTC+2)
+**Documentation Complete ✅**
+
+**DOCUMENTATION.md Updated:**
+- Added new section: "Content Decay Database Migrations (TASK-36-1)"
+- Documented all 4 tables with column descriptions, types, indexes, and foreign keys
+- Included test coverage summary (23 tests, 67 assertions)
+- Added production status and related task references
+
+**Documentation Highlights:**
+| Table | Columns | Key Features |
+|-------|---------|--------------|
+| `content_decay_projects` | 14 | Per-site configuration, detection settings, digest config |
+| `content_decay_candidates` | 25 | Decay tracking, workflow states, reason codes |
+| `content_decay_signals` | 23 | Historical snapshots, comparison windows |
+| `content_refresh_tasks` | 13 | Task management, assignments, due dates |
+
+**Status:** `To Document` → `Done`
 
 ---
 
