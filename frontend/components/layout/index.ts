@@ -17,3 +17,7 @@ export { default as CookieConsent } from "./CookieConsent";
 export type { CookieConsentProps } from "./CookieConsent";
 
 export { default as Footer } from "./Footer";
+
+// Site Navigation - TASK-36-14
+export { SiteNav } from "./SiteNav";
+export type { SiteNavProps, SiteNavItem } from "./SiteNav";
