@@ -1,7 +1,7 @@
 # TASK-36-5: ContentRefreshPlannerService
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -445,3 +445,24 @@ PASS  Tests\Unit\Services\ContentDecay\ContentRefreshPlannerServiceTest
 - Health check confirms deployment integrity
 
 **Status:** `To Test Prod` → `To Document`
+
+---
+
+### DocSystemAnalyst (2026-03-11 18:45)
+**Documentation Complete ✅**
+
+- Added comprehensive documentation to DOCUMENTATION.md
+- Section: "Content Refresh Planner Service (TASK-36-5)"
+- Documentation includes:
+  - Service description and component locations
+  - Core `generateRecommendations()` method with return structure
+  - 10 recommendation templates with priority/due days
+  - Page-type configurations (blog, product, landing, tool)
+  - Priority escalation thresholds
+  - Composite recommendation logic
+  - Security analysis (SQL injection, XSS, external APIs all safe)
+  - Test coverage: 45 tests, 47 assertions
+  - Production status: Deployed 2026-03-11
+- Completion marker written: `logs/completed/task/TASK-36-5.json`
+
+**Status:** `To Document` → `Done`
