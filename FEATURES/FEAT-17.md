@@ -8,6 +8,19 @@
 
 ## Comments
 ### 2026-03-11 - DocSystemAnalyst
+**Re-verification Complete (16:20 GMT+2)**
+- Orchestrator trigger referenced `FEAT-17`; feature file is `FEAT-17.md` (non-padded naming)
+- Feature status confirmed: `Done` (Phase 1 MVP complete; Phases 2-4 planned)
+- SPEC-17 status confirmed: `Done` (Phase 1 MVP complete)
+- Phase 1 tasks (`TASK-17-1` through `TASK-17-7`): All `Done` ✅
+- Future-scope tasks (`TASK-17-8` through `TASK-17-20`): `To Write Tests` (planned Phase 2-4)
+- `DOCUMENTATION.md` verified at line 20115 (`## User Onboarding & Activation Flow (FEAT-017)`)
+- Stale lock removed: `FEAT-17.lock`
+- Completion marker written: `logs/completed/feature/FEAT-17.json`
+- Active-agents entry cleared
+- **ORCHESTRATOR BUG:** naming mismatch continues to cause duplicate documentation passes (90+ verifications to date)
+
+### 2026-03-11 - DocSystemAnalyst
 **Re-verification Complete (14:03 GMT+2)**
 - Orchestrator trigger referenced `FEAT-17`; canonical feature file is `FEAT-17.md` (non-padded)
 - Feature status confirmed: `Done` (Phase 1 MVP complete; Phases 2-4 planned)
