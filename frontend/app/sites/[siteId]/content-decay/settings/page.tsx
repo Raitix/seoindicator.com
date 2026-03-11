@@ -175,6 +175,19 @@ function SettingsContent({ siteId }: { siteId: string }) {
 
   const { saveSettings, isSaving } = useSaveContentDecaySettings(siteId);
 
+  // Memoize settings to prevent infinite loops when mock returns new object each render
+  const settingsKey = React.useMemo(() => {
+    if (!settings) return null;
+    return JSON.stringify({
+      detectionEnabled: settings.detectionEnabled,
+      windowDays: settings.windowDays,
+      minClicksThreshold: settings.minClicksThreshold,
+      minImpressionsThreshold: settings.minImpressionsThreshold,
+      digestEnabled: settings.digestEnabled,
+      digestFrequency: settings.digestFrequency,
+    });
+  }, [settings]);
+
   // Load existing settings into form
   React.useEffect(() => {
     if (settings) {
@@ -188,7 +201,8 @@ function SettingsContent({ siteId }: { siteId: string }) {
       });
       setHasChanges(false);
     }
-  }, [settings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsKey]);
 
   // Update form field
   const updateField = <K extends keyof typeof formData>(

@@ -1,0 +1,43 @@
+{
+    "timestamp":  "2026-03-11T13:33:26.8479371+02:00",
+    "tests":  [
+                  {
+                      "status":  "204",
+                      "name":  "csrf-cookie",
+                      "passed":  true
+                  },
+                  {
+                      "name":  "register-token",
+                      "response":  "{\"success\":false,\"message\":\"The given data was invalid.\",\"errors\":{\"name\":[\"The name field is required.\"],\"email\":[\"The email field is required.\"],\"password\":[\"The password field is required.\"]}}",
+                      "passed":  false
+                  },
+                  {
+                      "name":  "login-token",
+                      "response":  "{\"success\":false,\"message\":\"The given data was invalid.\",\"errors\":{\"email\":[\"The email field is required.\"],\"password\":[\"The password field is required.\"]}}",
+                      "passed":  false
+                  },
+                  {
+                      "name":  "auth-user-bearer",
+                      "skipped":  true,
+                      "passed":  false
+                  },
+                  {
+                      "name":  "locations-bearer",
+                      "skipped":  true,
+                      "passed":  false
+                  },
+                  {
+                      "name":  "login-page",
+                      "passed":  true
+                  },
+                  {
+                      "name":  "local-page",
+                      "passed":  true
+                  }
+              ],
+    "summary":  {
+                    "success":  false,
+                    "total":  7,
+                    "passed":  3
+                }
+}
