@@ -70,6 +70,19 @@ const MockCandidateDetailDrawer: React.FC<{
   isLoading,
   error,
 }) => {
+  const [activeTab, setActiveTab] = React.useState("overview");
+
+  // Handle ESC key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   if (isLoading) {
@@ -133,8 +146,8 @@ const MockCandidateDetailDrawer: React.FC<{
       </div>
 
       {/* Estimates */}
-      <div data-testid="lost-clicks">{candidate.lostClickEstimate.toLocaleString()} Lost Clicks</div>
-      <div data-testid="recovery-upside">{candidate.recoveryUpsideEstimate.toLocaleString()} Upside</div>
+      <div data-testid="lost-clicks">{candidate.lostClickEstimate.toLocaleString("en-US")} Lost Clicks</div>
+      <div data-testid="recovery-upside">{candidate.recoveryUpsideEstimate.toLocaleString("en-US")} Upside</div>
 
       {/* Dates */}
       <div data-testid="first-detected">{candidate.firstDetectedAt}</div>
@@ -147,19 +160,19 @@ const MockCandidateDetailDrawer: React.FC<{
 
       {/* Tabs */}
       <div data-testid="tabs-container">
-        <button data-testid="tab-overview" aria-selected="true">
+        <button data-testid="tab-overview" aria-selected={activeTab === "overview"} onClick={() => setActiveTab("overview")}>
           Overview
         </button>
-        <button data-testid="tab-signals" aria-selected="false">
+        <button data-testid="tab-signals" aria-selected={activeTab === "signals"} onClick={() => setActiveTab("signals")}>
           Signals
         </button>
-        <button data-testid="tab-tasks" aria-selected="false">
+        <button data-testid="tab-tasks" aria-selected={activeTab === "tasks"} onClick={() => setActiveTab("tasks")}>
           Tasks ({tasks.length})
         </button>
-        <button data-testid="tab-notes" aria-selected="false">
+        <button data-testid="tab-notes" aria-selected={activeTab === "notes"} onClick={() => setActiveTab("notes")}>
           Notes
         </button>
-        <button data-testid="tab-ai-brief" aria-selected="false">
+        <button data-testid="tab-ai-brief" aria-selected={activeTab === "ai-brief"} onClick={() => setActiveTab("ai-brief")}>
           AI Brief
         </button>
       </div>
