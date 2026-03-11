@@ -40,6 +40,7 @@ class ContentDecayProject extends Model
         'digest_frequency',
         'settings_json',
         'last_scanned_at',
+        'last_digest_sent_at',
     ];
 
     /**
@@ -55,6 +56,7 @@ class ContentDecayProject extends Model
         'digest_frequency' => 'string',
         'settings_json' => 'array',
         'last_scanned_at' => 'datetime',
+        'last_digest_sent_at' => 'datetime',
     ];
 
     // ==========================================
