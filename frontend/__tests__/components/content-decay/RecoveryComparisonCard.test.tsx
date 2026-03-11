@@ -177,7 +177,7 @@ describe("RecoveryComparisonCard", () => {
 
     const delta = screen.getAllByTestId("metric-delta")[0]; // clicks delta
     expect(delta).toHaveAttribute("data-color", "red");
-    expect(screen.getByTestId("icon-trending-down")).toBeInTheDocument();
+    expect(screen.getAllByTestId("icon-trending-down").length).toBeGreaterThan(0);
   });
 
   // RCC-03: Shows positive clicks delta
@@ -186,7 +186,7 @@ describe("RecoveryComparisonCard", () => {
 
     const delta = screen.getAllByTestId("metric-delta")[0]; // clicks delta
     expect(delta).toHaveAttribute("data-color", "green");
-    expect(screen.getByTestId("icon-trending-up")).toBeInTheDocument();
+    expect(screen.getAllByTestId("icon-trending-up").length).toBeGreaterThan(0);
   });
 
   // RCC-04: Shows impressions delta
@@ -279,7 +279,8 @@ describe("RecoveryComparisonCard", () => {
 
     const clicksDelta = screen.getAllByTestId("metric-delta")[0];
     expect(clicksDelta).toHaveAttribute("data-color", "gray");
-    expect(screen.getByTestId("icon-minus")).toBeInTheDocument();
+    // All metrics have zero delta, so there are multiple minus icons
+    expect(screen.getAllByTestId("icon-minus").length).toBeGreaterThan(0);
   });
 
   // RCC-14: Large number formatting
@@ -302,8 +303,9 @@ describe("RecoveryComparisonCard", () => {
   it("shows trend icon for each metric", () => {
     render(<MockRecoveryComparisonCard comparison={mockComparison} />);
 
-    // At least one trending up icon should be present (for clicks)
-    expect(screen.getByTestId("icon-trending-up")).toBeInTheDocument();
+    // Multiple trending up icons should be present (for positive deltas)
+    const trendingUpIcons = screen.getAllByTestId("icon-trending-up");
+    expect(trendingUpIcons.length).toBeGreaterThan(0);
   });
 
   // RCC-16: Loading state

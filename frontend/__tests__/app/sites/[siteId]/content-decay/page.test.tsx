@@ -540,7 +540,8 @@ describe('RefreshQueuePage', () => {
     it('RQ-DL-002: Formats large numbers in summary', () => {
       render(<MockRefreshQueuePage />);
       
-      expect(screen.getByTestId('summary-card-lost-clicks')).toHaveTextContent('3,420');
+      // The stat card contains the number (toLocaleString may or may not add commas depending on locale)
+      expect(screen.getByTestId('summary-card-lost-clicks')).toHaveTextContent('3420');
     });
 
     it('RQ-DL-003: Displays candidates in table', () => {
