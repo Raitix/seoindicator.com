@@ -1,7 +1,7 @@
 # TASK-36-9: Queue Jobs - Content Decay Detection
 
 ## STATUS
-`To Develop`
+`Done`
 
 ## PRIORITY
 `High`
@@ -23,7 +23,7 @@ Create queue jobs for background detection, recovery detection, digest generatio
 - FEAT-019 (Job Queue) - Done ✅
 
 ## Acceptance Criteria
-- [ ] `DetectContentDecayForSiteJob` created with:
+- [x] `DetectContentDecayForSiteJob` created with:
   - Accepts `site_id` parameter
   - Loads site and project settings
   - Calls ContentDecayDetectionService
@@ -32,19 +32,19 @@ Create queue jobs for background detection, recovery detection, digest generatio
   - Queue: `content-decay`
   - Tries: 3
   - Timeout: 600 seconds (10 minutes)
-- [ ] `BackfillContentDecayRecoveryJob` created with:
+- [x] `BackfillContentDecayRecoveryJob` created with:
   - Accepts `candidate_id` parameter
   - Evaluates refreshed candidates for recovery status
   - Updates candidate status to `recovered` if criteria met
   - Queue: `content-decay`
   - Tries: 3
-- [ ] `SendContentDecayDigestJob` created with:
+- [x] `SendContentDecayDigestJob` created with:
   - Accepts `project_id` parameter
   - Generates digest via ContentDecayDigestService
   - Sends notification to project owner
   - Queue: `notifications`
   - Tries: 3
-- [ ] `GenerateRefreshBriefJob` created with:
+- [x] `GenerateRefreshBriefJob` created with:
   - Accepts `candidate_id` parameter
   - Uses existing AI infrastructure (FEAT-031)
   - Generates refresh outline with suggestions
@@ -52,10 +52,10 @@ Create queue jobs for background detection, recovery detection, digest generatio
   - Queue: `ai-tasks`
   - Tries: 2
   - Timeout: 120 seconds
-- [ ] All jobs implement `ShouldBeUnique` where appropriate
-- [ ] All jobs have proper error handling and logging
-- [ ] Unit tests verify job execution
-- [ ] Feature tests verify job queue integration
+- [x] All jobs implement `ShouldBeUnique` where appropriate
+- [x] All jobs have proper error handling and logging
+- [x] Unit tests verify job execution
+- [x] Feature tests verify job queue integration
 
 ## Effort Estimate
 **4 hours** - Four queue jobs with error handling
