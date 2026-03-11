@@ -6,6 +6,7 @@ use App\Models\ContentDecayCandidate;
 use App\Models\ContentDecayProject;
 use App\Models\ContentDecaySignal;
 use App\Models\Site;
+use App\Models\GSCData;
 use App\Services\ContentDecay\Contracts\ContentDecayDetectionServiceInterface;
 use App\Services\ContentDecay\Contracts\ContentDecayScoringServiceInterface;
 use App\Services\ContentDecay\Contracts\ContentDecayReasonServiceInterface;
@@ -16,11 +17,12 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
- * Content Decay Detection Service.
+ * Content Decay Detection Service
  *
- * Main orchestration service that gathers signals from multiple sources
- * (GSC, rankings, audits, annotations, AI visibility), compares windows,
- * and creates/updates decay candidates.
+ * Main orchestration service that:
+ * - Gathers signals from multiple sources (GSC, rankings, audit, annotations, AI visibility)
+ * - Compares windows (current vs previous)
+ * - Creates/updates decay candidates
  *
  * @see TASK-36-6
  * @see SPEC-036
@@ -35,29 +37,38 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
         'min_impressions_threshold' => 100,
         'min_clicks_threshold' => 10,
         'refresh_cooldown_days' => 14,
-        'low_signal_threshold' => 5.0,
-        'max_pages_per_run' => 1000,
+        'low_signal_threshold' => 5,
     ];
 
     /**
-     * Low signal threshold for suppression.
+     * Decay score threshold for creating candidates.
      */
-    protected const LOW_SIGNAL_THRESHOLD = 5.0;
+    protected const MIN_DECAY_SCORE_FOR_CANDIDATE = 10.0;
 
     /**
-     * @var ContentDecayScoringServiceInterface
+     * Score threshold for "recovered" status.
+     */
+    protected const RECOVERY_SCORE_THRESHOLD = 15.0;
+
+    /**
+     * Scoring service instance.
      */
     protected ContentDecayScoringServiceInterface $scoringService;
 
     /**
-     * @var ContentDecayReasonServiceInterface
+     * Reason service instance.
      */
     protected ContentDecayReasonServiceInterface $reasonService;
 
     /**
-     * @var ContentRefreshPlannerServiceInterface
+     * Planner service instance.
      */
     protected ContentRefreshPlannerServiceInterface $plannerService;
+
+    /**
+     * Configuration cache.
+     */
+    protected array $config;
 
     /**
      * Create a new ContentDecayDetectionService instance.
@@ -70,6 +81,7 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
         $this->scoringService = $scoringService;
         $this->reasonService = $reasonService;
         $this->plannerService = $plannerService;
+        $this->config = self::DEFAULT_CONFIG;
     }
 
     /**
@@ -97,11 +109,11 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
     }
 
     /**
-     * Get the default configuration.
+     * Get the current configuration.
      */
     public function getConfiguration(): array
     {
-        return self::DEFAULT_CONFIG;
+        return $this->config;
     }
 
     /**
@@ -110,6 +122,7 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
     public function detectForSite(Site $site): array
     {
         $startTime = microtime(true);
+
         $result = [
             'processed_pages' => 0,
             'eligible_pages' => 0,
@@ -122,42 +135,119 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
         ];
 
         try {
-            // Load or create project for site
-            $project = ContentDecayProject::firstOrCreate(
-                ['site_id' => $site->id],
-                [
-                    'user_id' => $site->user_id,
-                    'detection_enabled' => true,
-                    'window_days' => self::DEFAULT_CONFIG['window_days'],
-                ]
-            );
+            // Get or create project for this site
+            $project = $this->getOrCreateProject($site);
 
-            // Check if detection is enabled
-            if (!$project->detection_enabled) {
+            if (!$project || !$project->detection_enabled) {
+                $result['duration_ms'] = $this->getDurationMs($startTime);
                 return $result;
             }
 
-            // Run detection for the project
-            $projectResult = $this->detectForProject($project);
+            // Fetch GSC data for the site
+            $gscData = $this->fetchGscData($site);
 
-            $result['processed_pages'] = $projectResult['processed_pages'];
-            $result['eligible_pages'] = $projectResult['eligible_pages'];
-            $result['candidates_created'] = $projectResult['candidates_created'];
-            $result['candidates_updated'] = $projectResult['candidates_updated'];
-            $result['candidates_archived'] = $projectResult['candidates_archived'];
-            $result['errors'] = $projectResult['errors'];
-            $result['pages'] = $projectResult['pages'];
+            if (empty($gscData)) {
+                $result['duration_ms'] = $this->getDurationMs($startTime);
+                return $result;
+            }
 
+            // Merge project thresholds with defaults
+            $thresholds = $this->getProjectThresholds($project);
+
+            // Process each page
+            foreach ($gscData as $pageUrl => $pageGscData) {
+                $result['processed_pages']++;
+
+                // Check eligibility
+                if (!$this->isPageEligible($pageGscData, $thresholds)) {
+                    continue;
+                }
+
+                $result['eligible_pages']++;
+
+                // Check for existing candidate to apply cooldown
+                $existingCandidate = ContentDecayCandidate::where('project_id', $project->id)
+                    ->where('page_url', $pageUrl)
+                    ->first();
+
+                if ($existingCandidate && $this->isCooldownActive($existingCandidate)) {
+                    continue;
+                }
+
+                // Gather signals
+                $signals = $this->gatherSignals($pageUrl, $project, $pageGscData);
+
+                // Compare windows
+                $comparison = $this->compareWindows($signals);
+
+                // Check low-signal threshold
+                if ($this->isBelowLowSignalThreshold($comparison)) {
+                    continue;
+                }
+
+                // Calculate decay score
+                $scoreResult = $this->calculateDecayScore($signals, $comparison);
+
+                // Check if decay is significant
+                if ($scoreResult['decay_score'] < self::MIN_DECAY_SCORE_FOR_CANDIDATE) {
+                    // If there's an existing candidate and decay is low, mark as recovered
+                    if ($existingCandidate) {
+                        $existingCandidate->update(['status' => 'recovered', 'recovered_at' => now()]);
+                        $result['candidates_archived']++;
+                    }
+                    continue;
+                }
+
+                // Assign reason codes
+                $reasonResult = $this->assignReasonCodes($signals, $comparison);
+
+                // Upsert candidate
+                $candidate = $this->upsertCandidate([
+                    'project_id' => $project->id,
+                    'page_url' => $pageUrl,
+                    'decay_score' => $scoreResult['decay_score'],
+                    'severity' => $scoreResult['severity'],
+                    'detection_confidence' => $scoreResult['detection_confidence'],
+                    'reason_codes' => $reasonResult['reason_codes'],
+                    'primary_reason_code' => $reasonResult['primary_reason_code'],
+                    'signal_sources' => $this->extractSignalSources($signals),
+                    'evidence_json' => $reasonResult['evidence'],
+                ]);
+
+                if ($candidate) {
+                    if ($candidate->wasRecentlyCreated) {
+                        $result['candidates_created']++;
+                    } else {
+                        $result['candidates_updated']++;
+                    }
+
+                    $result['pages'][] = [
+                        'page_url' => $pageUrl,
+                        'decay_score' => $scoreResult['decay_score'],
+                        'severity' => $scoreResult['severity'],
+                        'status' => $candidate->status,
+                        'reason_codes' => $reasonResult['reason_codes'],
+                        'recommendation' => $reasonResult['primary_reason_code'],
+                    ];
+
+                    // Create signal record
+                    $this->createSignalRecord($candidate, $signals, $comparison);
+                }
+            }
+
+            // Update project's last scanned timestamp
+            $project->update(['last_scanned_at' => now()]);
         } catch (\Throwable $e) {
             Log::error('Content decay detection failed', [
                 'site_id' => $site->id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
-            $result['errors'] = 1;
+            $result['errors']++;
             $result['error'] = $e->getMessage();
         }
 
-        $result['duration_ms'] = (int) ((microtime(true) - $startTime) * 1000);
+        $result['duration_ms'] = $this->getDurationMs($startTime);
 
         return $result;
     }
@@ -168,6 +258,7 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
     public function detectForProject(ContentDecayProject $project): array
     {
         $startTime = microtime(true);
+
         $result = [
             'project_id' => $project->id,
             'processed_pages' => 0,
@@ -180,44 +271,38 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
             'pages' => [],
         ];
 
-        // Check if detection is enabled
-        if (!$project->detection_enabled) {
-            return $result;
-        }
-
         try {
-            // Fetch GSC data for the site
-            $gscData = $this->fetchGscData($project->site);
-
-            if (empty($gscData)) {
+            if (!$project->detection_enabled) {
+                $result['duration_ms'] = $this->getDurationMs($startTime);
                 return $result;
             }
 
-            $windowDays = $project->window_days ?? self::DEFAULT_CONFIG['window_days'];
-            $thresholds = $project->getThresholds();
+            $site = $project->site;
 
-            foreach ($gscData as $pageUrl => $pageData) {
+            if (!$site) {
+                $result['duration_ms'] = $this->getDurationMs($startTime);
+                return $result;
+            }
+
+            // Fetch GSC data
+            $gscData = $this->fetchGscData($site);
+
+            if (empty($gscData)) {
+                $result['duration_ms'] = $this->getDurationMs($startTime);
+                return $result;
+            }
+
+            $thresholds = $this->getProjectThresholds($project);
+
+            foreach ($gscData as $pageUrl => $pageGscData) {
                 $result['processed_pages']++;
 
-                // Check eligibility
-                if (!$this->isPageEligible($pageData, ['thresholds' => $thresholds])) {
+                if (!$this->isPageEligible($pageGscData, $thresholds)) {
                     continue;
                 }
 
                 $result['eligible_pages']++;
 
-                // Gather signals (pass existing GSC data to avoid re-fetching)
-                $signals = $this->gatherSignals($pageUrl, $project, $pageData);
-
-                // Compare windows
-                $comparison = $this->compareWindows($signals);
-
-                // Check low-signal threshold
-                if ($this->isBelowLowSignalThreshold($comparison)) {
-                    continue;
-                }
-
-                // Check for existing candidate (cooldown check)
                 $existingCandidate = ContentDecayCandidate::where('project_id', $project->id)
                     ->where('page_url', $pageUrl)
                     ->first();
@@ -226,77 +311,68 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
                     continue;
                 }
 
-                // Calculate decay score
-                $normalizedSignals = $this->normalizeSignals($signals, $comparison);
-                $scoreResult = $this->scoringService->calculateDecayScore($normalizedSignals);
+                $signals = $this->gatherSignals($pageUrl, $project, $pageGscData);
+                $comparison = $this->compareWindows($signals);
 
-                $minDecayScore = $thresholds['min_decay_score'] ?? 20;
-                $hasSignificantDecay = $scoreResult['decay_score'] >= $minDecayScore;
+                if ($this->isBelowLowSignalThreshold($comparison)) {
+                    continue;
+                }
 
-                // Handle recovery detection for existing candidates
-                if ($existingCandidate && !$hasSignificantDecay) {
-                    // Mark as recovered if the decay score is below threshold
-                    if (in_array($existingCandidate->status, ['backlog', 'planned', 'in_progress'])) {
-                        $existingCandidate->update([
-                            'status' => 'recovered',
-                            'decay_score' => $scoreResult['decay_score'],
-                            'last_detected_at' => now(),
-                        ]);
+                $scoreResult = $this->calculateDecayScore($signals, $comparison);
+
+                if ($scoreResult['decay_score'] < self::MIN_DECAY_SCORE_FOR_CANDIDATE) {
+                    if ($existingCandidate) {
+                        $existingCandidate->update(['status' => 'recovered', 'recovered_at' => now()]);
                         $result['candidates_archived']++;
                     }
                     continue;
                 }
 
-                // Skip if no significant decay
-                if (!$hasSignificantDecay) {
-                    continue;
-                }
+                $reasonResult = $this->assignReasonCodes($signals, $comparison);
 
-                // Assign reason codes
-                $reasonResult = $this->reasonService->assignReasonCodes($this->buildReasonSignals($signals, $comparison));
-
-                // Upsert candidate
                 $candidate = $this->upsertCandidate([
                     'project_id' => $project->id,
                     'page_url' => $pageUrl,
-                    'page_title' => $pageData['title'] ?? null,
                     'decay_score' => $scoreResult['decay_score'],
                     'severity' => $scoreResult['severity'],
                     'detection_confidence' => $scoreResult['detection_confidence'],
                     'reason_codes' => $reasonResult['reason_codes'],
                     'primary_reason_code' => $reasonResult['primary_reason_code'],
-                    'signal_sources' => array_keys(array_filter($signals, fn($v) => $v !== null && $v !== [])),
+                    'signal_sources' => $this->extractSignalSources($signals),
                     'evidence_json' => $reasonResult['evidence'],
                 ]);
 
-                if ($candidate->wasRecentlyCreated) {
-                    $result['candidates_created']++;
-                } else {
-                    $result['candidates_updated']++;
-                }
+                if ($candidate) {
+                    if ($candidate->wasRecentlyCreated) {
+                        $result['candidates_created']++;
+                    } else {
+                        $result['candidates_updated']++;
+                    }
 
-                $result['pages'][] = [
-                    'page_url' => $pageUrl,
-                    'decay_score' => $scoreResult['decay_score'],
-                    'severity' => $scoreResult['severity'],
-                    'status' => $candidate->status,
-                    'reason_codes' => $reasonResult['reason_codes'],
-                    'recommendation' => $reasonResult['primary_reason_code'] ?? 'No action required',
-                ];
+                    $result['pages'][] = [
+                        'page_url' => $pageUrl,
+                        'decay_score' => $scoreResult['decay_score'],
+                        'severity' => $scoreResult['severity'],
+                        'status' => $candidate->status,
+                        'reason_codes' => $reasonResult['reason_codes'],
+                        'recommendation' => $reasonResult['primary_reason_code'],
+                    ];
+
+                    $this->createSignalRecord($candidate, $signals, $comparison);
+                }
             }
 
-            // Update last scanned timestamp
             $project->update(['last_scanned_at' => now()]);
-
         } catch (\Throwable $e) {
-            Log::error('Content decay detection failed for project', [
+            Log::error('Content decay detection for project failed', [
                 'project_id' => $project->id,
                 'error' => $e->getMessage(),
             ]);
-            $result['errors'] = 1;
+            $result['errors']++;
+            $result['error'] = $e->getMessage();
         }
 
-        $result['duration_ms'] = (int) ((microtime(true) - $startTime) * 1000);
+        $result['duration_ms'] = $this->getDurationMs($startTime);
 
         return $result;
     }
@@ -306,13 +382,13 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
      */
     public function gatherSignals(string $pageUrl, ContentDecayProject $project, ?array $preFetchedGscData = null): array
     {
-        $windowDays = $project->window_days ?? self::DEFAULT_CONFIG['window_days'];
-
+        $windowDays = $project->window_days ?? $this->config['window_days'];
+        
         // Calculate window dates
-        $currentEnd = Carbon::yesterday()->endOfDay();
-        $currentStart = $currentEnd->copy()->subDays($windowDays - 1)->startOfDay();
-        $previousEnd = $currentStart->copy()->subDay()->endOfDay();
-        $previousStart = $previousEnd->copy()->subDays($windowDays - 1)->startOfDay();
+        $currentEnd = Carbon::yesterday();
+        $currentStart = $currentEnd->copy()->subDays($windowDays - 1);
+        $previousEnd = $currentStart->copy()->subDay();
+        $previousStart = $previousEnd->copy()->subDays($windowDays - 1);
 
         $signals = [
             'page_url' => $pageUrl,
@@ -330,52 +406,35 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
             'ai_visibility' => null,
         ];
 
-        // Use pre-fetched GSC data if provided, otherwise fetch it
+        // GSC data (required) - use pre-fetched if available
         if ($preFetchedGscData !== null) {
             $signals['gsc'] = $preFetchedGscData;
         } else {
-            // Fetch GSC data (required)
-            $signals['gsc'] = $this->fetchGscPageData($pageUrl, $project->site, $previousStart, $currentEnd);
+            $signals['gsc'] = $this->fetchGscDataForPage($pageUrl, $project, $previousStart, $currentEnd);
         }
 
-        // Fetch rankings data (optional - graceful degradation)
-        try {
-            $signals['rankings'] = $this->fetchRankingsData($pageUrl, $project, $previousStart, $currentEnd);
-        } catch (\Throwable $e) {
-            Log::warning('Rankings data unavailable for page', [
-                'page_url' => $pageUrl,
-                'error' => $e->getMessage(),
-            ]);
+        // Rankings (optional) - graceful skip if unavailable
+        $rankingsData = $this->fetchRankingsDataForPage($pageUrl, $project, $previousStart, $currentEnd);
+        if ($rankingsData !== null) {
+            $signals['rankings'] = $rankingsData;
         }
 
-        // Fetch audit data (optional - graceful degradation)
-        try {
-            $signals['audit'] = $this->fetchAuditData($pageUrl, $project->site);
-        } catch (\Throwable $e) {
-            Log::warning('Audit data unavailable for page', [
-                'page_url' => $pageUrl,
-                'error' => $e->getMessage(),
-            ]);
+        // Audit (optional) - graceful skip if unavailable
+        $auditData = $this->fetchAuditDataForPage($pageUrl, $project);
+        if ($auditData !== null) {
+            $signals['audit'] = $auditData;
         }
 
-        // Fetch annotations (optional - graceful degradation)
-        try {
-            $signals['annotations'] = $this->fetchAnnotationData($pageUrl, $project);
-        } catch (\Throwable $e) {
-            Log::warning('Annotation data unavailable for page', [
-                'page_url' => $pageUrl,
-                'error' => $e->getMessage(),
-            ]);
+        // Annotations (optional) - graceful skip if unavailable
+        $annotationsData = $this->fetchAnnotationsForPage($pageUrl, $project);
+        if ($annotationsData !== null) {
+            $signals['annotations'] = $annotationsData;
         }
 
-        // Fetch AI visibility (optional - graceful degradation)
-        try {
-            $signals['ai_visibility'] = $this->fetchAiVisibilityData($pageUrl, $project, $previousStart, $currentEnd);
-        } catch (\Throwable $e) {
-            Log::warning('AI visibility data unavailable for page', [
-                'page_url' => $pageUrl,
-                'error' => $e->getMessage(),
-            ]);
+        // AI visibility (optional) - graceful skip if unavailable
+        $aiVisibilityData = $this->fetchAiVisibilityForPage($pageUrl, $project, $previousStart, $currentEnd);
+        if ($aiVisibilityData !== null) {
+            $signals['ai_visibility'] = $aiVisibilityData;
         }
 
         return $signals;
@@ -395,73 +454,76 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
 
         $gsc = $signals['gsc'] ?? null;
 
-        if ($gsc && isset($gsc['previous']) && isset($gsc['current'])) {
-            $prev = $gsc['previous'];
-            $curr = $gsc['current'];
-
-            // Clicks
-            if (isset($prev['clicks']) && isset($curr['clicks'])) {
-                $comparison['deltas']['clicks'] = $curr['clicks'] - $prev['clicks'];
-                $comparison['percentages']['clicks'] = $prev['clicks'] > 0
-                    ? round((($curr['clicks'] - $prev['clicks']) / $prev['clicks']) * 100, 2)
-                    : 0;
-                $comparison['direction']['clicks'] = $this->determineDirection($comparison['deltas']['clicks']);
-            }
-
-            // Impressions
-            if (isset($prev['impressions']) && isset($curr['impressions'])) {
-                $comparison['deltas']['impressions'] = $curr['impressions'] - $prev['impressions'];
-                $comparison['percentages']['impressions'] = $prev['impressions'] > 0
-                    ? round((($curr['impressions'] - $prev['impressions']) / $prev['impressions']) * 100, 2)
-                    : 0;
-                $comparison['direction']['impressions'] = $this->determineDirection($comparison['deltas']['impressions']);
-            }
-
-            // CTR
-            if (isset($prev['ctr']) && isset($curr['ctr'])) {
-                $comparison['deltas']['ctr'] = round($curr['ctr'] - $prev['ctr'], 6);
-                $comparison['percentages']['ctr'] = $prev['ctr'] > 0
-                    ? round((($curr['ctr'] - $prev['ctr']) / $prev['ctr']) * 100, 2)
-                    : 0;
-                $comparison['direction']['ctr'] = $this->determineDirection($comparison['deltas']['ctr']);
-            }
-
-            // Position (higher is worse)
-            if (isset($prev['position']) && isset($curr['position'])) {
-                $comparison['deltas']['position'] = round($curr['position'] - $prev['position'], 2);
-                $comparison['percentages']['position'] = $prev['position'] > 0
-                    ? round((($curr['position'] - $prev['position']) / $prev['position']) * 100, 2)
-                    : 0;
-                // Position direction is reversed (higher position number = worse)
-                $comparison['direction']['position'] = $comparison['deltas']['position'] > 0 ? 'down' : ($comparison['deltas']['position'] < 0 ? 'up' : 'stable');
-            }
+        if (!$gsc) {
+            return $comparison;
         }
 
-        // Rankings visibility
+        $previous = $gsc['previous'] ?? [];
+        $current = $gsc['current'] ?? [];
+
+        // Clicks
+        $prevClicks = $previous['clicks'] ?? 0;
+        $currClicks = $current['clicks'] ?? 0;
+        $comparison['deltas']['clicks'] = $currClicks - $prevClicks;
+        $comparison['percentages']['clicks'] = $prevClicks > 0 
+            ? round((($currClicks - $prevClicks) / $prevClicks) * 100, 2) 
+            : 0;
+        $comparison['direction']['clicks'] = $this->determineDirection($prevClicks, $currClicks);
+
+        // Impressions
+        $prevImpressions = $previous['impressions'] ?? 0;
+        $currImpressions = $current['impressions'] ?? 0;
+        $comparison['deltas']['impressions'] = $currImpressions - $prevImpressions;
+        $comparison['percentages']['impressions'] = $prevImpressions > 0 
+            ? round((($currImpressions - $prevImpressions) / $prevImpressions) * 100, 2) 
+            : 0;
+        $comparison['direction']['impressions'] = $this->determineDirection($prevImpressions, $currImpressions);
+
+        // CTR
+        $prevCtr = $previous['ctr'] ?? 0;
+        $currCtr = $current['ctr'] ?? 0;
+        $comparison['deltas']['ctr'] = round($currCtr - $prevCtr, 6);
+        $comparison['percentages']['ctr'] = $prevCtr > 0 
+            ? round((($currCtr - $prevCtr) / $prevCtr) * 100, 2) 
+            : 0;
+        $comparison['direction']['ctr'] = $this->determineDirection($prevCtr, $currCtr);
+
+        // Position (higher is worse)
+        $prevPosition = $previous['position'] ?? 0;
+        $currPosition = $current['position'] ?? 0;
+        $comparison['deltas']['position'] = round($currPosition - $prevPosition, 2);
+        $comparison['percentages']['position'] = $prevPosition > 0 
+            ? round((($currPosition - $prevPosition) / $prevPosition) * 100, 2) 
+            : 0;
+        // Position direction is reversed (higher number = worse = "down")
+        $comparison['direction']['position'] = $currPosition > $prevPosition ? 'down' 
+            : ($currPosition < $prevPosition ? 'up' : 'stable');
+
+        // Rankings visibility (optional)
         $rankings = $signals['rankings'] ?? null;
-        if ($rankings && isset($rankings['previous']) && isset($rankings['current'])) {
-            $prevVis = $rankings['previous']['visibility'] ?? null;
-            $currVis = $rankings['current']['visibility'] ?? null;
-            if ($prevVis !== null && $currVis !== null) {
-                $comparison['deltas']['rank_visibility'] = round($currVis - $prevVis, 2);
-                $comparison['percentages']['rank_visibility'] = $prevVis > 0
-                    ? round((($currVis - $prevVis) / $prevVis) * 100, 2)
+        if ($rankings) {
+            $prevVisibility = $rankings['previous']['visibility'] ?? null;
+            $currVisibility = $rankings['current']['visibility'] ?? null;
+            if ($prevVisibility !== null && $currVisibility !== null) {
+                $comparison['deltas']['visibility'] = round($currVisibility - $prevVisibility, 2);
+                $comparison['percentages']['visibility'] = $prevVisibility > 0 
+                    ? round((($currVisibility - $prevVisibility) / $prevVisibility) * 100, 2) 
                     : 0;
-                $comparison['direction']['rank_visibility'] = $this->determineDirection($comparison['deltas']['rank_visibility']);
+                $comparison['direction']['visibility'] = $this->determineDirection($prevVisibility, $currVisibility);
             }
         }
 
-        // AI visibility
+        // AI visibility (optional)
         $aiVisibility = $signals['ai_visibility'] ?? null;
-        if ($aiVisibility && isset($aiVisibility['previous']) && isset($aiVisibility['current'])) {
-            $prevMention = $aiVisibility['previous']['mention_rate'] ?? null;
-            $currMention = $aiVisibility['current']['mention_rate'] ?? null;
-            if ($prevMention !== null && $currMention !== null) {
-                $comparison['deltas']['ai_mention_rate'] = round($currMention - $prevMention, 4);
-                $comparison['percentages']['ai_mention_rate'] = $prevMention > 0
-                    ? round((($currMention - $prevMention) / $prevMention) * 100, 2)
+        if ($aiVisibility) {
+            $prevAi = $aiVisibility['previous']['mention_rate'] ?? null;
+            $currAi = $aiVisibility['current']['mention_rate'] ?? null;
+            if ($prevAi !== null && $currAi !== null) {
+                $comparison['deltas']['ai_mention_rate'] = round($currAi - $prevAi, 4);
+                $comparison['percentages']['ai_mention_rate'] = $prevAi > 0 
+                    ? round((($currAi - $prevAi) / $prevAi) * 100, 2) 
                     : 0;
-                $comparison['direction']['ai_mention_rate'] = $this->determineDirection($comparison['deltas']['ai_mention_rate']);
+                $comparison['direction']['ai_mention_rate'] = $this->determineDirection($prevAi, $currAi);
             }
         }
 
@@ -480,66 +542,80 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
             return null;
         }
 
-        // Sanitize page URL
-        $pageUrl = $this->sanitizeUrl($pageUrl);
+        // Sanitize URL to prevent SQL injection
+        $pageUrl = filter_var($pageUrl, FILTER_SANITIZE_URL);
 
-        // Sanitize evidence JSON
-        $evidenceJson = $detectionData['evidence_json'] ?? [];
-        if (is_array($evidenceJson)) {
-            $evidenceJson = $this->sanitizeEvidence($evidenceJson);
-        }
+        // Generate hash for page URL
+        $pageUrlHash = hash('sha256', $pageUrl);
 
-        // Use a callback that can be executed within or outside a transaction
-        $upsert = function () use ($detectionData, $pageUrl, $evidenceJson, $projectId) {
-            // Find existing candidate by project and page URL
-            $candidate = ContentDecayCandidate::where('project_id', $projectId)
-                ->where('page_url', $pageUrl)
-                ->first();
+        // Look for existing candidate
+        $candidate = ContentDecayCandidate::where('project_id', $projectId)
+            ->where('page_url_hash', $pageUrlHash)
+            ->first();
 
+        $isNew = false;
+
+        DB::beginTransaction();
+        try {
             if ($candidate) {
-                // Update existing candidate, preserving status
-                $candidate->update([
-                    'decay_score' => $detectionData['decay_score'] ?? $candidate->decay_score,
-                    'severity' => $detectionData['severity'] ?? $candidate->severity,
-                    'detection_confidence' => $detectionData['detection_confidence'] ?? $candidate->detection_confidence,
-                    'primary_reason_code' => $detectionData['primary_reason_code'] ?? $candidate->primary_reason_code,
-                    'reason_codes' => $detectionData['reason_codes'] ?? $candidate->reason_codes,
-                    'signal_sources' => $detectionData['signal_sources'] ?? $candidate->signal_sources,
-                    'evidence_json' => $evidenceJson ?? $candidate->evidence_json,
+                // Update existing candidate (preserve status)
+                $updateData = [
+                    'decay_score' => $detectionData['decay_score'] ?? 0,
+                    'severity' => $detectionData['severity'] ?? 'low',
+                    'detection_confidence' => $detectionData['detection_confidence'] ?? 0.85,
+                    'reason_codes' => $detectionData['reason_codes'] ?? [],
+                    'primary_reason_code' => $detectionData['primary_reason_code'] ?? null,
+                    'signal_sources' => $detectionData['signal_sources'] ?? [],
+                    'evidence_json' => $this->sanitizeEvidence($detectionData['evidence_json'] ?? []),
                     'last_detected_at' => now(),
-                    'page_title' => $detectionData['page_title'] ?? $candidate->page_title,
-                ]);
+                ];
 
-                return $candidate;
+                // Don't overwrite status if it's not 'backlog'
+                // Also don't overwrite if it's 'ignored' or 'recovered'
+                if (!in_array($candidate->status, ['ignored', 'recovered'])) {
+                    // Keep existing status unless it's recovered
+                    if ($candidate->status !== 'recovered') {
+                        // Keep the status as is
+                        unset($updateData['status']);
+                    }
+                }
+
+                $candidate->update($updateData);
+            } else {
+                // Create new candidate
+                $isNew = true;
+                $candidate = ContentDecayCandidate::create([
+                    'project_id' => $projectId,
+                    'page_url' => $pageUrl,
+                    'page_url_hash' => $pageUrlHash,
+                    'decay_score' => $detectionData['decay_score'] ?? 0,
+                    'severity' => $detectionData['severity'] ?? 'low',
+                    'detection_confidence' => $detectionData['detection_confidence'] ?? 0.85,
+                    'reason_codes' => $detectionData['reason_codes'] ?? [],
+                    'primary_reason_code' => $detectionData['primary_reason_code'] ?? null,
+                    'signal_sources' => $detectionData['signal_sources'] ?? [],
+                    'evidence_json' => $this->sanitizeEvidence($detectionData['evidence_json'] ?? []),
+                    'status' => 'backlog',
+                    'first_detected_at' => now(),
+                    'last_detected_at' => now(),
+                ]);
             }
 
-            // Create new candidate
-            return ContentDecayCandidate::create([
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Failed to upsert decay candidate', [
                 'project_id' => $projectId,
                 'page_url' => $pageUrl,
-                'page_url_hash' => hash('sha256', $pageUrl),
-                'page_title' => $detectionData['page_title'] ?? null,
-                'page_type' => $this->determinePageType($pageUrl),
-                'severity' => $detectionData['severity'] ?? 'medium',
-                'decay_score' => $detectionData['decay_score'] ?? 0,
-                'detection_confidence' => $detectionData['detection_confidence'] ?? 0.85,
-                'primary_reason_code' => $detectionData['primary_reason_code'] ?? 'unknown',
-                'reason_codes' => $detectionData['reason_codes'] ?? [],
-                'signal_sources' => $detectionData['signal_sources'] ?? ['gsc'],
-                'evidence_json' => $evidenceJson,
-                'status' => 'backlog',
-                'first_detected_at' => now(),
-                'last_detected_at' => now(),
+                'error' => $e->getMessage(),
             ]);
-        };
-
-        // Check if we're already in a transaction (e.g., RefreshDatabase in tests)
-        // If so, execute directly without starting a new transaction
-        if (DB::transactionLevel() > 0) {
-            return $upsert();
+            return null;
         }
 
-        return DB::transaction($upsert);
+        // Mark as recently created for the caller
+        $candidate->wasRecentlyCreated = $isNew;
+
+        return $candidate;
     }
 
     /**
@@ -552,24 +628,19 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
             return false;
         }
 
-        $prev = $gscData['previous'];
-        $minImpressions = $options['min_impressions_threshold'] ?? self::DEFAULT_CONFIG['min_impressions_threshold'];
-        $minClicks = $options['min_clicks_threshold'] ?? self::DEFAULT_CONFIG['min_clicks_threshold'];
+        $previous = $gscData['previous'];
+        $minImpressions = $options['min_impressions'] ?? $this->config['min_impressions_threshold'];
+        $minClicks = $options['min_clicks'] ?? $this->config['min_clicks_threshold'];
 
-        // Check thresholds from options or defaults
-        $thresholds = $options['thresholds'] ?? [];
-        if (isset($thresholds['min_impressions'])) {
-            $minImpressions = $thresholds['min_impressions'];
+        $prevImpressions = $previous['impressions'] ?? 0;
+        $prevClicks = $previous['clicks'] ?? 0;
+
+        // Must meet threshold (impressions OR clicks)
+        if ($prevImpressions < $minImpressions && $prevClicks < $minClicks) {
+            return false;
         }
-        if (isset($thresholds['min_clicks'])) {
-            $minClicks = $thresholds['min_clicks'];
-        }
 
-        $prevImpressions = $prev['impressions'] ?? 0;
-        $prevClicks = $prev['clicks'] ?? 0;
-
-        // Must meet at least one threshold
-        return $prevImpressions >= $minImpressions || $prevClicks >= $minClicks;
+        return true;
     }
 
     /**
@@ -577,18 +648,21 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
      */
     public function isCooldownActive(ContentDecayCandidate $candidate): bool
     {
-        // Only check cooldown for refreshed status
+        // Only apply cooldown to refreshed candidates
         if ($candidate->status !== 'refreshed') {
             return false;
         }
 
         $refreshedAt = $candidate->refreshed_at;
+
         if (!$refreshedAt) {
             return false;
         }
 
-        $cooldownDays = self::DEFAULT_CONFIG['refresh_cooldown_days'];
-        return $refreshedAt->gt(now()->subDays($cooldownDays));
+        $cooldownDays = $this->config['refresh_cooldown_days'];
+        $cooldownEnds = $refreshedAt->copy()->addDays($cooldownDays);
+
+        return now()->lt($cooldownEnds);
     }
 
     /**
@@ -596,248 +670,308 @@ class ContentDecayDetectionService implements ContentDecayDetectionServiceInterf
      */
     public function isBelowLowSignalThreshold(array $comparison): bool
     {
+        $threshold = $this->config['low_signal_threshold'];
+
+        // Check if all percentage changes are below threshold
         $percentages = $comparison['percentages'] ?? [];
 
-        // Calculate total movement magnitude
-        $totalMovement = 0;
-        foreach ($percentages as $metric => $percent) {
-            $totalMovement += abs($percent);
+        $maxChange = 0;
+        foreach ($percentages as $metric => $value) {
+            $absValue = abs($value);
+            if ($absValue > $maxChange) {
+                $maxChange = $absValue;
+            }
         }
 
-        return $totalMovement < self::LOW_SIGNAL_THRESHOLD;
+        return $maxChange < $threshold;
+    }
+
+    // =========================================================================
+    // Protected Helper Methods
+    // =========================================================================
+
+    /**
+     * Get or create a project for a site.
+     */
+    protected function getOrCreateProject(Site $site): ?ContentDecayProject
+    {
+        $project = ContentDecayProject::where('site_id', $site->id)->first();
+
+        if (!$project) {
+            $project = ContentDecayProject::create([
+                'user_id' => $site->user_id,
+                'site_id' => $site->id,
+                'detection_enabled' => true,
+                'window_days' => $this->config['window_days'],
+            ]);
+        }
+
+        return $project;
     }
 
     /**
      * Fetch GSC data for a site.
-     * Override this method in tests or use dependency injection.
+     * Override this method in tests to provide mock data.
      */
     protected function fetchGscData(Site $site): array
     {
-        // Placeholder - in real implementation, this would call GSC API
-        // Returns array of [page_url => ['previous' => [...], 'current' => [...]]]
+        // In production, this would fetch from GSCData model or API
+        // For now, return empty array (to be overridden in tests)
         return [];
     }
 
     /**
      * Fetch GSC data for a specific page.
      */
-    protected function fetchGscPageData(string $pageUrl, ?Site $site, Carbon $previousStart, Carbon $currentEnd): ?array
+    protected function fetchGscDataForPage(string $pageUrl, ContentDecayProject $project, Carbon $previousStart, Carbon $currentEnd): ?array
     {
-        // Placeholder - in real implementation, this would call GSC API
+        // In production, query GSCData model
+        // This is a placeholder that returns null
         return null;
     }
 
     /**
      * Fetch rankings data for a page.
      */
-    protected function fetchRankingsData(string $pageUrl, ContentDecayProject $project, Carbon $previousStart, Carbon $currentEnd): ?array
+    protected function fetchRankingsDataForPage(string $pageUrl, ContentDecayProject $project, Carbon $previousStart, Carbon $currentEnd): ?array
     {
-        // Placeholder - in real implementation, this would call rankings API
+        // Optional data source - return null if unavailable
         return null;
     }
 
     /**
      * Fetch audit data for a page.
      */
-    protected function fetchAuditData(string $pageUrl, ?Site $site): ?array
+    protected function fetchAuditDataForPage(string $pageUrl, ContentDecayProject $project): ?array
     {
-        // Placeholder - in real implementation, this would call audit service
+        // Optional data source - return null if unavailable
         return null;
     }
 
     /**
-     * Fetch annotation data for a page.
+     * Fetch annotations for a page.
      */
-    protected function fetchAnnotationData(string $pageUrl, ContentDecayProject $project): ?array
+    protected function fetchAnnotationsForPage(string $pageUrl, ContentDecayProject $project): ?array
     {
-        // Placeholder - in real implementation, this would call annotation service
+        // Optional data source - return null if unavailable
         return null;
     }
 
     /**
      * Fetch AI visibility data for a page.
      */
-    protected function fetchAiVisibilityData(string $pageUrl, ContentDecayProject $project, Carbon $previousStart, Carbon $currentEnd): ?array
+    protected function fetchAiVisibilityForPage(string $pageUrl, ContentDecayProject $project, Carbon $previousStart, Carbon $currentEnd): ?array
     {
-        // Placeholder - in real implementation, this would call AI visibility API
+        // Optional data source - return null if unavailable
         return null;
     }
 
     /**
-     * Determine direction from delta.
+     * Get project thresholds merged with defaults.
      */
-    protected function determineDirection(float|int $delta): string
+    protected function getProjectThresholds(ContentDecayProject $project): array
     {
-        if ($delta > 0) {
-            return 'up';
-        }
-        if ($delta < 0) {
-            return 'down';
-        }
-        return 'stable';
-    }
-
-    /**
-     * Normalize signals for scoring service.
-     */
-    protected function normalizeSignals(array $signals, array $comparison): array
-    {
-        $gsc = $signals['gsc'] ?? [];
+        $projectThresholds = $project->getThresholds();
 
         return [
-            'click_loss' => isset($gsc['previous']['clicks']) && isset($gsc['current']['clicks'])
-                ? $this->scoringService->normalizeClickLoss(
-                    $gsc['previous']['clicks'],
-                    $gsc['current']['clicks']
-                )
-                : null,
-            'impression_loss' => isset($gsc['previous']['impressions']) && isset($gsc['current']['impressions'])
-                ? $this->scoringService->normalizeImpressionLoss(
-                    $gsc['previous']['impressions'],
-                    $gsc['current']['impressions']
-                )
-                : null,
-            'ctr_drop' => isset($gsc['previous']['ctr']) && isset($gsc['current']['ctr'])
-                ? $this->scoringService->normalizeCtrDrop(
-                    $gsc['previous']['ctr'] * 100, // Convert to percentage
-                    $gsc['current']['ctr'] * 100
-                )
-                : null,
-            'position_decline' => isset($gsc['previous']['position']) && isset($gsc['current']['position'])
-                ? $this->scoringService->normalizePositionDecline(
-                    (int) $gsc['previous']['position'],
-                    (int) $gsc['current']['position']
-                )
-                : null,
-            'ranking_decline' => isset($comparison['deltas']['rank_visibility'])
-                ? max(0, -$comparison['deltas']['rank_visibility'] / 100)
-                : null,
-            'audit_pressure' => isset($signals['audit']['unresolved_issues'])
-                ? min(1, $signals['audit']['unresolved_issues'] / 10)
-                : null,
-            'staleness' => isset($signals['audit']['content_age_days'])
-                ? min(1, $signals['audit']['content_age_days'] / 365)
-                : null,
+            'min_impressions' => $projectThresholds['min_impressions'] ?? $this->config['min_impressions_threshold'],
+            'min_clicks' => $projectThresholds['min_clicks'] ?? $this->config['min_clicks_threshold'],
         ];
     }
 
     /**
-     * Build signals array for reason service.
+     * Calculate decay score using scoring service.
      */
-    protected function buildReasonSignals(array $signals, array $comparison): array
+    protected function calculateDecayScore(array $signals, array $comparison): array
     {
         $gsc = $signals['gsc'] ?? [];
-        $result = [];
+        $previous = $gsc['previous'] ?? [];
+        $current = $gsc['current'] ?? [];
 
-        if (isset($gsc['previous']) && isset($gsc['current'])) {
-            $result['clicks'] = [
-                'previous' => $gsc['previous']['clicks'] ?? null,
-                'current' => $gsc['current']['clicks'] ?? null,
-            ];
-            $result['impressions'] = [
-                'previous' => $gsc['previous']['impressions'] ?? null,
-                'current' => $gsc['current']['impressions'] ?? null,
-            ];
-            $result['ctr'] = [
-                'previous' => isset($gsc['previous']['ctr']) ? $gsc['previous']['ctr'] * 100 : null,
-                'current' => isset($gsc['current']['ctr']) ? $gsc['current']['ctr'] * 100 : null,
-            ];
-            $result['avg_position'] = [
-                'previous' => $gsc['previous']['position'] ?? null,
-                'current' => $gsc['current']['position'] ?? null,
-            ];
+        // Normalize signals for scoring service
+        $normalizedSignals = [
+            'click_loss' => $this->scoringService->normalizeClickLoss(
+                $previous['clicks'] ?? 0,
+                $current['clicks'] ?? 0
+            ),
+            'impression_loss' => $this->scoringService->normalizeImpressionLoss(
+                $previous['impressions'] ?? 0,
+                $current['impressions'] ?? 0
+            ),
+            'ctr_drop' => $this->scoringService->normalizeCtrDrop(
+                ($previous['ctr'] ?? 0) * 100, // Convert to percentage
+                ($current['ctr'] ?? 0) * 100
+            ),
+            'position_decline' => $this->scoringService->normalizePositionDecline(
+                (int) round($previous['position'] ?? 0),
+                (int) round($current['position'] ?? 0)
+            ),
+        ];
+
+        // Add optional signals if available
+        $rankings = $signals['rankings'] ?? null;
+        if ($rankings) {
+            $prevVis = $rankings['previous']['visibility'] ?? null;
+            $currVis = $rankings['current']['visibility'] ?? null;
+            if ($prevVis !== null && $currVis !== null && $prevVis > 0) {
+                $normalizedSignals['ranking_decline'] = max(0, ($prevVis - $currVis) / $prevVis);
+            }
         }
 
-        // Add window info
-        if (isset($signals['window'])) {
-            $result['window'] = $signals['window'];
+        $audit = $signals['audit'] ?? null;
+        if ($audit && isset($audit['unresolved_issues'])) {
+            $normalizedSignals['audit_pressure'] = min(1, $audit['unresolved_issues'] / 10);
         }
 
-        // Add audit issues
-        if (isset($signals['audit']['unresolved_issues'])) {
-            $result['unresolved_audit_issues'] = $signals['audit']['unresolved_issues'];
-        }
+        return $this->scoringService->calculateDecayScore($normalizedSignals);
+    }
 
-        // Add rankings
-        if (isset($signals['rankings']['previous']) || isset($signals['rankings']['current'])) {
-            $result['tracked_rank_visibility'] = [
+    /**
+     * Assign reason codes using reason service.
+     */
+    protected function assignReasonCodes(array $signals, array $comparison): array
+    {
+        // Prepare signals for reason service
+        $reasonSignals = [
+            'clicks' => [
+                'previous' => $signals['gsc']['previous']['clicks'] ?? null,
+                'current' => $signals['gsc']['current']['clicks'] ?? null,
+            ],
+            'impressions' => [
+                'previous' => $signals['gsc']['previous']['impressions'] ?? null,
+                'current' => $signals['gsc']['current']['impressions'] ?? null,
+            ],
+            'ctr' => [
+                'previous' => ($signals['gsc']['previous']['ctr'] ?? 0) * 100,
+                'current' => ($signals['gsc']['current']['ctr'] ?? 0) * 100,
+            ],
+            'avg_position' => [
+                'previous' => $signals['gsc']['previous']['position'] ?? null,
+                'current' => $signals['gsc']['current']['position'] ?? null,
+            ],
+            'window' => $signals['window'] ?? [],
+        ];
+
+        // Add optional signals
+        if (isset($signals['rankings'])) {
+            $reasonSignals['tracked_rank_visibility'] = [
                 'previous' => $signals['rankings']['previous']['visibility'] ?? null,
                 'current' => $signals['rankings']['current']['visibility'] ?? null,
             ];
         }
 
-        // Add AI visibility
-        if (isset($signals['ai_visibility']['previous']) || isset($signals['ai_visibility']['current'])) {
-            $result['ai_visibility'] = [
+        if (isset($signals['audit'])) {
+            $reasonSignals['unresolved_audit_issues'] = $signals['audit']['unresolved_issues'] ?? 0;
+        }
+
+        if (isset($signals['ai_visibility'])) {
+            $reasonSignals['ai_visibility'] = [
                 'previous' => $signals['ai_visibility']['previous']['mention_rate'] ?? null,
                 'current' => $signals['ai_visibility']['current']['mention_rate'] ?? null,
             ];
         }
 
-        // Add content age
-        if (isset($signals['audit']['content_age_days'])) {
-            $result['content_age_days'] = $signals['audit']['content_age_days'];
-        }
+        $result = $this->reasonService->assignReasonCodes($reasonSignals);
 
-        return $result;
+        return [
+            'primary_reason_code' => $result['primary_reason_code'] ?? null,
+            'reason_codes' => $result['reason_codes'] ?? [],
+            'evidence' => $result['evidence'] ?? [],
+        ];
     }
 
     /**
-     * Sanitize URL to prevent injection.
+     * Extract signal sources from gathered signals.
      */
-    protected function sanitizeUrl(string $url): string
+    protected function extractSignalSources(array $signals): array
     {
-        // Validate URL format - don't strip Unicode characters
-        // filter_var with FILTER_SANITIZE_URL strips multibyte chars, so we use validation only
-        if (filter_var($url, FILTER_VALIDATE_URL) !== false) {
-            return $url;
+        $sources = ['gsc']; // GSC is always required
+
+        if (!empty($signals['rankings'])) {
+            $sources[] = 'rankings';
         }
-        
-        // For URLs with Unicode paths (IRI), try to validate the structure
-        // by checking for common URL components
-        if (preg_match('#^https?://[^\s]+$#i', $url)) {
-            return $url;
+
+        if (!empty($signals['audit'])) {
+            $sources[] = 'audit';
         }
-        
-        return $url;
+
+        if (!empty($signals['annotations'])) {
+            $sources[] = 'annotations';
+        }
+
+        if (!empty($signals['ai_visibility'])) {
+            $sources[] = 'ai_visibility';
+        }
+
+        return $sources;
     }
 
     /**
-     * Sanitize evidence array to prevent XSS.
+     * Create a signal record for a candidate.
+     */
+    protected function createSignalRecord(ContentDecayCandidate $candidate, array $signals, array $comparison): void
+    {
+        $window = $signals['window'] ?? [];
+        $gsc = $signals['gsc'] ?? [];
+
+        ContentDecaySignal::create([
+            'candidate_id' => $candidate->id,
+            'previous_start' => $window['previous_start'] ?? null,
+            'previous_end' => $window['previous_end'] ?? null,
+            'current_start' => $window['current_start'] ?? null,
+            'current_end' => $window['current_end'] ?? null,
+            'previous_clicks' => $gsc['previous']['clicks'] ?? 0,
+            'current_clicks' => $gsc['current']['clicks'] ?? 0,
+            'previous_impressions' => $gsc['previous']['impressions'] ?? 0,
+            'current_impressions' => $gsc['current']['impressions'] ?? 0,
+            'previous_ctr' => $gsc['previous']['ctr'] ?? 0,
+            'current_ctr' => $gsc['current']['ctr'] ?? 0,
+            'previous_avg_position' => $gsc['previous']['position'] ?? null,
+            'current_avg_position' => $gsc['current']['position'] ?? null,
+            'created_at' => now(),
+        ]);
+    }
+
+    /**
+     * Determine direction based on previous and current values.
+     */
+    protected function determineDirection(float $previous, float $current): string
+    {
+        $epsilon = 0.0001; // Small threshold for "stable"
+
+        if (abs($current - $previous) < $epsilon) {
+            return 'stable';
+        }
+
+        return $current > $previous ? 'up' : 'down';
+    }
+
+    /**
+     * Sanitize evidence to prevent XSS.
      */
     protected function sanitizeEvidence(array $evidence): array
     {
-        array_walk_recursive($evidence, function (&$value) {
-            if (is_string($value)) {
-                // Strip script tags and encode HTML entities
-                $value = strip_tags($value);
-                $value = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-            }
-        });
+        $sanitized = [];
 
-        return $evidence;
+        foreach ($evidence as $key => $value) {
+            if (is_array($value)) {
+                $sanitized[$key] = $this->sanitizeEvidence($value);
+            } elseif (is_string($value)) {
+                // Strip script tags and other dangerous content
+                $sanitized[$key] = htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            } else {
+                $sanitized[$key] = $value;
+            }
+        }
+
+        return $sanitized;
     }
 
     /**
-     * Determine page type from URL.
+     * Get duration in milliseconds.
      */
-    protected function determinePageType(string $url): string
+    protected function getDurationMs(float $startTime): int
     {
-        $path = parse_url($url, PHP_URL_PATH) ?? '';
-
-        if (str_contains($path, '/blog/') || str_contains($path, '/article/') || str_contains($path, '/post/')) {
-            return 'blog';
-        }
-        if (str_contains($path, '/product/') || str_contains($path, '/shop/') || str_contains($path, '/item/')) {
-            return 'product';
-        }
-        if (str_contains($path, '/landing/') || str_contains($path, '/lp/') || preg_match('/\/[a-z-]+$/', $path)) {
-            return 'landing';
-        }
-        if (str_contains($path, '/category/') || str_contains($path, '/tag/') || str_contains($path, '/collection/')) {
-            return 'category';
-        }
-
-        return 'other';
+        return (int) round((microtime(true) - $startTime) * 1000);
     }
 }
