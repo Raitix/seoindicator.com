@@ -1,7 +1,7 @@
 # TASK-36-3: ContentDecayScoringService
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
