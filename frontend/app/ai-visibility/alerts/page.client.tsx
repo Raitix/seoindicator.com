@@ -2,6 +2,7 @@
  * TASK-34-21: AI Visibility Alerts Page (Client Component)
  * 
  * Client-side logic for the AI Visibility alerts page.
+ * Updated to align with backend API contract.
  * 
  * @see PROJECT-SEOINDICATOR/TASKS/TASK-34-21.md
  */
@@ -39,7 +40,7 @@ export function AlertsPageClient() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  const [selectedAlertId, setSelectedAlertId] = React.useState<string | null>(null);
+  const [selectedAlertId, setSelectedAlertId] = React.useState<number | null>(null);
   const [page, setPage] = React.useState(1);
   const [filters, setFilters] = React.useState<AlertFilters>({});
   const [isMobile, setIsMobile] = React.useState(false);
@@ -76,7 +77,7 @@ export function AlertsPageClient() {
     const isRead = searchParams.get('read');
 
     setFilters({
-      project_id: projectId || null,
+      project_id: projectId ? Number(projectId) : null,
       alert_types: alertTypes ? (alertTypes.split(',') as AlertType[]) : undefined,
       is_read: isRead === 'false' ? false : isRead === 'true' ? true : null,
     });
@@ -117,39 +118,39 @@ export function AlertsPageClient() {
   }, [alerts]);
 
   // Handlers
-  const handleAlertClick = (id: string) => {
+  const handleAlertClick = (id: number) => {
     setSelectedAlertId(id);
   };
 
-  const handleMarkRead = async (id: string) => {
+  const handleMarkRead = async (id: number) => {
     try {
-      await markRead(id);
+      await markRead(String(id));
     } catch (err) {
       console.error('Failed to mark alert as read:', err);
     }
   };
 
-  const handleResolve = async (id: string) => {
+  const handleResolve = async (id: number) => {
     try {
-      await resolve(id);
+      await resolve(String(id));
       setSelectedAlertId(null);
     } catch (err) {
       console.error('Failed to resolve alert:', err);
     }
   };
 
-  const handleDismiss = async (id: string) => {
+  const handleDismiss = async (id: number) => {
     try {
-      await dismiss(id);
+      await dismiss(String(id));
       setSelectedAlertId(null);
     } catch (err) {
       console.error('Failed to dismiss alert:', err);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     try {
-      await deleteAlert(id);
+      await deleteAlert(String(id));
       setSelectedAlertId(null);
     } catch (err) {
       console.error('Failed to delete alert:', err);
@@ -168,7 +169,7 @@ export function AlertsPageClient() {
     const params = new URLSearchParams();
     
     if (newFilters.project_id) {
-      params.set('project_id', newFilters.project_id as string);
+      params.set('project_id', String(newFilters.project_id));
     }
     if (newFilters.alert_types?.length) {
       params.set('types', newFilters.alert_types.join(','));
@@ -186,28 +187,28 @@ export function AlertsPageClient() {
     setPage(newPage);
   };
 
-  const handleViewProject = (projectId: string) => {
+  const handleViewProject = (projectId: number) => {
     router.push(`/ai-visibility/${projectId}`);
     setSelectedAlertId(null);
   };
 
-  const handleSavePreferences = async (prefs: AlertPreferences) => {
+  const handleSavePreferences = async (prefs: Partial<AlertPreferences>) => {
     await updatePreferences(prefs);
   };
 
   const handleTestWebhook = async (url: string) => {
-    await testWebhook(url);
+    return testWebhook(url);
   };
 
-  const handleDismissToast = (id: string) => {
+  const handleDismissToast = (id: number) => {
     setToastAlerts((prev) => prev.filter((a) => a.id !== id));
   };
 
   const selectedAlert = alerts.find((a) => a.id === selectedAlertId) || null;
 
-  // Mock projects for filter dropdown
+  // Extract unique projects from alerts for filter dropdown
   const projects = React.useMemo(() => {
-    const uniqueProjects = new Map<string, string>();
+    const uniqueProjects = new Map<number, string>();
     alerts.forEach((a) => {
       uniqueProjects.set(a.project_id, a.project_name);
     });
@@ -264,6 +265,14 @@ export function AlertsPageClient() {
             <ChevronRight className="h-4 w-4 text-slate-400" />
           </li>
           <li>
+            <a href="/ai-visibility" className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+              AI Visibility
+            </a>
+          </li>
+          <li>
+            <ChevronRight className="h-4 w-4 text-slate-400" />
+          </li>
+          <li>
             <span className="text-slate-900 dark:text-slate-100 font-medium">Alerts</span>
           </li>
         </ol>
@@ -284,7 +293,7 @@ export function AlertsPageClient() {
             <div>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Bell className="h-6 w-6" />
-                Alerts
+                AI Visibility Alerts
               </h1>
               <p className="text-slate-500 dark:text-slate-400 mt-1">
                 Stay informed about important changes in your AI Visibility tracking
