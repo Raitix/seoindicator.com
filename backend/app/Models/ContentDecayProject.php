@@ -144,13 +144,26 @@ class ContentDecayProject extends Model
 
     /**
      * Get detection thresholds as an array.
+     * 
+     * Merges column values with settings_json for flexibility.
+     * Column values take precedence over settings_json values.
      */
     public function getThresholds(): array
     {
+        $settings = $this->settings_json ?? [];
+        
         return [
-            'min_clicks' => $this->min_clicks_threshold,
-            'min_impressions' => $this->min_impressions_threshold,
-            'min_decay_score' => (float) $this->min_decay_score,
+            'min_clicks' => $this->min_clicks_threshold 
+                ?? $settings['min_clicks_threshold'] 
+                ?? $settings['min_clicks'] 
+                ?? 10,
+            'min_impressions' => $this->min_impressions_threshold 
+                ?? $settings['min_impressions_threshold'] 
+                ?? $settings['min_impressions'] 
+                ?? 100,
+            'min_decay_score' => (float) ($this->min_decay_score 
+                ?? $settings['min_decay_score'] 
+                ?? 0),
         ];
     }
 
