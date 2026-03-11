@@ -98,8 +98,8 @@ const CustomTooltip: React.FC<{
   active?: boolean;
   payload?: readonly {
     dataKey?: string | number | ((obj: any) => any);
-    value: unknown;
-    color: string;
+    value?: unknown;
+    color?: string;
   }[];
   label?: string | number;
   competitorNames: Record<string, string>;
@@ -113,7 +113,7 @@ const CustomTooltip: React.FC<{
     <div className="bg-background border rounded-lg shadow-lg p-3 min-w-[180px]">
       <p className="font-medium text-sm mb-2 text-muted-foreground">{dateLabel}</p>
       <div className="space-y-1.5">
-        {payload.map((entry) => {
+        {payload.map((entry, index) => {
           const dataKey = typeof entry.dataKey === 'function' ? '' : String(entry.dataKey ?? '');
           const isUser = dataKey === "userPosition";
           if (isUser && !showUser) return null;
@@ -122,13 +122,14 @@ const CustomTooltip: React.FC<{
             ? "You"
             : competitorNames[dataKey] || dataKey;
           const position = entry.value;
+          const color = entry.color ?? COMPETITOR_COLORS[index % COMPETITOR_COLORS.length];
 
           return (
             <div key={dataKey} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: entry.color }}
+                  style={{ backgroundColor: color }}
                 />
                 <span className="text-sm">{displayName}</span>
               </div>
