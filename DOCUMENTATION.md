@@ -10843,6 +10843,148 @@ interface PaymentGatewayInterface
 - TASK-26-5: CreditService (used after capture)
 
 ---
+## Google OAuth Service for GBP (TASK-35-7)
+
+### Service Description
+OAuth 2.0 service for Google Business Profile (GBP) integration. Handles the complete OAuth flow including authorization URL generation, callback handling, token storage with encryption, automatic token refresh, and secure disconnect. This is a **HIGH RISK** security-sensitive service requiring careful token handling.
+
+### Component Locations
+- **Service:** `backend/app/Services/LocalSEO/GoogleOAuthService.php`
+- **Interface:** `backend/app/Services/LocalSEO/Contracts/GoogleOAuthServiceInterface.php`
+- **Unit Tests:** `backend/tests/Unit/Services/LocalSEO/GoogleOAuthServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-35-7.md`
+
+### Service Interface
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `getAuthorizationUrl` | `getAuthorizationUrl(int $locationId): array` | Generates Google OAuth URL with CSRF state parameter |
+| `handleCallback` | `handleCallback(string $code, string $state): array` | Exchanges authorization code for tokens |
+| `validateState` | `validateState(string $state): bool` | Validates CSRF state parameter |
+| `refreshAccessToken` | `refreshAccessToken(string $refreshToken): ?array` | Refreshes expired access tokens |
+| `refreshToken` | `refreshToken(int $locationId): bool` | Refresh token for a specific location |
+| `storeTokens` | `storeTokens(BusinessLocation $location, array $tokens): void` | Encrypts and stores tokens in `gbp_tokens` column |
+| `getValidAccessToken` | `getValidAccessToken(BusinessLocation $location): ?string` | Returns valid access token (refreshes if expired) |
+| `disconnect` | `disconnect(int $locationId): void` | Revokes tokens and clears local storage by ID |
+| `disconnectLocation` | `disconnectLocation(BusinessLocation $location): void` | Revokes tokens and clears local storage by model |
+| `isTokenValid` | `isTokenValid(int $locationId): bool` | Checks if OAuth token is valid |
+
+### OAuth Flow
+
+```
+1. User clicks "Connect Google Business Profile"
+2. getAuthorizationUrl() generates OAuth URL with state parameter
+3. State stored in session (single-use, 40-char random)
+4. User grants permissions on Google consent screen
+5. Google redirects back with authorization code
+6. handleCallback() validates state, exchanges code for tokens
+7. Tokens encrypted and stored in gbp_tokens column
+8. gbp_connected flag set to true
+```
+
+### OAuth Configuration
+
+| Config Key | Description |
+|------------|-------------|
+| `services.google.client_id` | Google OAuth client ID |
+| `services.google.client_secret` | Google OAuth client secret |
+| `services.google.redirect` | OAuth redirect URI base |
+
+### OAuth Scopes
+
+| Scope | Purpose |
+|-------|---------|
+| `https://www.googleapis.com/auth/business.manage` | Manage Google Business Profile |
+
+### Token Storage Schema
+
+```php
+// Encrypted JSON in business_locations.gbp_tokens column
+{
+    "access_token": "ya29...",
+    "refresh_token": "1//...",
+    "expires_at": "2026-03-11T15:30:00Z"
+}
+```
+
+### Security Implementation
+
+| Security Measure | Implementation | Status |
+|------------------|----------------|--------|
+| Token encryption | Laravel's `encrypt()` function | ✅ |
+| CSRF protection | 40-char state parameter in session (single-use) | ✅ |
+| Tokens hidden from API | `$hidden` array in BusinessLocation model | ✅ |
+| High-entropy state | `Str::random(40)` generates unique state | ✅ |
+| Idempotent disconnect | `revokeToken()` returns true on failure | ✅ |
+| Token refresh | Automatic refresh when expired | ✅ |
+
+### Error Handling
+
+| Error Type | Behavior |
+|------------|----------|
+| Invalid state | Returns `['success' => false, 'error' => 'Invalid state parameter']` |
+| Token exchange failure | Logs error, returns `null` |
+| Token refresh failure | Logs warning, returns `null` |
+| Revocation failure | Logs warning, allows local cleanup to proceed |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `GoogleOAuthServiceTest.php` | 21 | 58 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authorization URL | 4 | URL generation, state storage, scope verification |
+| State Validation | 3 | CSRF state validation, single-use behavior |
+| Token Exchange | 4 | Code exchange, token normalization |
+| Token Storage | 3 | Encryption verification, JSON format |
+| Access Token Retrieval | 3 | Valid token return, automatic refresh |
+| Token Refresh | 3 | Refresh flow, preserve original refresh token |
+| Disconnect | 2 | Token revocation, local cleanup |
+| Error Handling | 2 | Network failures, invalid responses |
+
+### Production Security Validation
+
+| Security Requirement | Status | Verification |
+|---------------------|--------|--------------|
+| Token encryption using Laravel's `encrypt()` | ✅ PASS | `storeTokens()` encrypts JSON payload |
+| CSRF state in session (single-use) | ✅ PASS | State cleared after validation |
+| Tokens hidden from API responses | ✅ PASS | `$hidden` array in BusinessLocation model |
+| High-entropy state generation (40 chars) | ✅ PASS | `Str::random(40)` in `generateState()` |
+| Idempotent disconnect | ✅ PASS | `revokeToken()` returns true on failure |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-10 |
+| **Commit** | DevOps deployment completed |
+| **Tests** | 21/21 passing (58 assertions) |
+| **Status** | Complete |
+| **Risk Level** | HIGH (security-sensitive) |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-35-2 | Done ✅ | BusinessLocation Model (token storage) |
+| TASK-35-1 | Done ✅ | Local SEO Migrations (gbp_tokens column) |
+
+### Consumers
+
+- TASK-35-13: GBP Controller (uses OAuth flow)
+- TASK-35-18: GBP Connect Button (frontend component)
+
+### Related Tasks
+
+- TASK-35-1: Local SEO Database Migrations
+- TASK-35-2: BusinessLocation Model
+- TASK-35-13: GBP Controller
+- TASK-35-14: GBP Insights & Reviews API Controllers
+
+---
 ## LocalRankService (TASK-35-11)
 
 ### Service Description
