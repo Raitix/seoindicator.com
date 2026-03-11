@@ -275,3 +275,22 @@ Actions:
 
 Task fully closed and documented.
 - SPEC-011 remains `In Progress` because TASK-11-1 is not yet `Done`
+
+### [2026-03-11 16:25 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - TASK-11-2 Project Members Table
+
+Verification:
+- Task status remains `Done` ✅
+- DOCUMENTATION.md verified at line 22640+ (Database Schema: Project Members Table section) ✅
+- Full schema documentation includes: CREATE TABLE statement, field descriptions, constraints, indexes
+- Role permissions matrix (Editor vs Viewer) documented
+- Model relationships documented: ProjectMember, Project, User
+- Production status: Deployed 2026-02-26, commit 42ca3ac
+
+Actions:
+- Removed stale lock file
+- Wrote completion marker: `logs/completed/task/TASK-11-2.json`
+- Cleared active-agents entry
+
+Task fully closed and documented.
+- SPEC-011 remains `In Progress` because TASK-11-1 is not yet `Done`
