@@ -1,7 +1,7 @@
 # TASK-8-9: Unit Tests for Project Features
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -189,3 +189,26 @@ The expected fillable array in `ProjectTest.php` correctly includes:
 The skipped integration test is documented and expected - it requires TASK-8-2 migration for `project_id` column.
 
 **Status changed:** `To Develop` → `To Test Locally`
+
+### [2026-03-11 22:49 GMT+2] Agent: LocalTester
+**Local Verification Complete** ✅
+
+Ran focused test suite for Project-related tests:
+- `ProjectTest.php`: 13 passed (24 assertions)
+- `ProjectValidationTest.php`: 21 passed
+- `ProjectRelationshipTest.php`: 23 passed
+- `ProjectPolicyTest.php`: 25 passed
+- `ProjectAuthorizationTest.php`: 21 passed
+- `ProjectsTableConstraintsTest.php`: 13 passed
+- `ProjectScopeTest.php`: 18 passed, 1 skipped
+
+**Total: 134 passed, 1 skipped (182 assertions)**
+
+The skipped test (`integration scope filters actual database records`) is documented and expected - requires TASK-8-2 migration for `project_id` column.
+
+All acceptance criteria verified:
+- [x] Project model/unit suite green against current model shape
+- [x] Policies validated with multiple user-project scenarios
+- [x] Scope coverage reflects current implementation
+
+**Status changed:** `To Test Locally` → `To Deploy`
