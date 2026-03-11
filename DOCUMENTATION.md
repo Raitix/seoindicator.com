@@ -5889,6 +5889,189 @@ interface LocationDashboardData {
 - TASK-35-22: Local Rankings Tracker Page (detailed rankings view)
 
 ---
+## Local Rankings Tracker Page (TASK-35-22)
+
+### Component Description
+Detailed local rankings tracker page for monitoring local pack and organic positions for keywords at specific business locations. Provides comprehensive ranking visibility with quota management, historical trends, competitor comparison, local pack visualization, and export functionality.
+
+### Component Locations
+- **Standalone Route:** `frontend/app/locations/[id]/rankings/page.tsx`
+- **Nested Route:** `frontend/app/sites/[siteId]/local/[locationId]/rankings/page.tsx`
+- **Main Component:** `frontend/components/local/LocationRankingsPage.tsx`
+- **Sub-components:**
+  - `frontend/components/local/RankingsTable.tsx` — Sortable keywords table with position columns
+- **Data Layer:**
+  - `frontend/lib/types/location-rankings.ts` — TypeScript interfaces
+  - `frontend/lib/hooks/useLocationRankingsPage.ts` — SWR-based data fetching hook
+- **Backend Controllers:**
+  - `backend/app/Http/Controllers/Api/V1/LocalSEO/LocalRankingController.php` — Rankings API
+- **Policy:** `backend/app/Policies/BusinessLocationPolicy.php` — Authorization abilities
+- **Test Files:**
+  - `frontend/__tests__/app/locations/[id]/rankings/page.test.tsx`
+  - `frontend/__tests__/app/sites/[siteId]/local/[locationId]/rankings/page.route.test.tsx`
+  - `frontend/__tests__/config/static-export-local-rankings-rewrites.test.ts`
+  - `frontend/__tests__/components/local/LocationRankingsPage.real.test.tsx`
+  - `frontend/__tests__/components/local/RankingsTable.test.tsx`
+- **Test Documentation:** `TESTS/TEST-35-22.md`
+
+### Page Routes
+
+| Route | Description |
+|-------|-------------|
+| `/locations/{id}/rankings` | Standalone rankings tracker |
+| `/sites/{siteId}/local/{locationId}/rankings` | Nested route within site context |
+
+### Static Export Compatibility
+The rankings routes use Next.js `output: export` mode with placeholder `generateStaticParams()` entries (`preview`) for static export. A client-side route-id resolver extracts the real numeric ID from `window.location.pathname` when the exported shell hydrates, ensuring production numeric routes correctly request `/api/v1/locations/{id}/rankings/...` instead of `/api/v1/locations/preview/rankings/...`.
+
+Apache rewrite rules in `frontend/public/.htaccess` map numeric production routes to the exported preview shells:
+```apache
+RewriteRule ^locations/([0-9]+)/rankings/?$ /locations/preview/rankings/ [L]
+RewriteRule ^sites/([0-9]+)/local/([0-9]+)/rankings/?$ /sites/preview/local/preview/rankings/ [L]
+```
+
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **Quota Indicator** | Shows checks used / checks available with visual progress bar; resets monthly |
+| **Keywords Table** | Columns: keyword, local pack position, organic position, change, last checked |
+| **Position Color Coding** | Green = in pack (1-3), Yellow = close (4-10), Red = not found |
+| **Position Change Indicators** | Up/down arrows showing rank changes |
+| **Ranking History Chart** | Line chart for selected keyword with pack/organic toggle |
+| **Check Ranking Button** | Triggers ranking check with loading state and quota validation |
+| **Competitor Comparison** | Side-by-side cards showing competitor position, rating, review count |
+| **Position Change Alerts** | Highlights keywords with significant changes, links to alert details |
+| **Local Pack Visualization** | Shows current pack positions (1-3), indicates if location is in pack |
+| **Export Functionality** | Export to CSV and Excel formats |
+
+### Component Props
+
+```typescript
+interface LocationRankingsPageProps {
+  locationId: string | number;
+  siteId?: string | number;  // Optional, for nested route context
+}
+
+interface RankingKeyword {
+  id: number;
+  keyword: string;
+  localPackPosition: number | null;
+  organicPosition: number | null;
+  previousPackPosition: number | null;
+  previousOrganicPosition: number | null;
+  lastCheckedAt: string;
+  change: number; // Position change (negative = improved)
+}
+
+interface QuotaStatus {
+  used: number;
+  total: number;
+  resetDate: string;
+}
+```
+
+### Rankings Table Columns
+
+| Column | Description | Sorting |
+|--------|-------------|---------|
+| **Keyword** | Tracked search term | Alphabetical |
+| **Local Pack Position** | Position in Google's local pack (1-3) | Numeric |
+| **Organic Position** | Position in organic search results | Numeric |
+| **Change** | Position change indicator (↑↓) | By magnitude |
+| **Last Checked** | Timestamp of last ranking check | Chronological |
+
+### Position Color Coding
+
+| Position Range | Color | CSS Class | Meaning |
+|----------------|-------|-----------|---------|
+| 1-3 (in pack) | Green | `text-green-500` | Featured in local pack |
+| 4-10 | Yellow | `text-yellow-500` | Close to pack, optimization opportunity |
+| 11-100 | Red | `text-red-500` | Not in pack, needs improvement |
+| Not found | Gray | `text-gray-400` | Outside top 100 |
+
+### Backend API Endpoints
+
+| Endpoint | Method | Purpose | Authorization |
+|----------|--------|---------|---------------|
+| `/api/v1/locations/{id}/rankings` | GET | Current rankings data | `viewRankings` |
+| `/api/v1/locations/{id}/rankings/history` | GET | Historical ranking data | `viewRankings` |
+| `/api/v1/locations/{id}/rankings/quota` | GET | Quota usage status | `viewQuota` |
+| `/api/v1/locations/{id}/rankings/check` | POST | Trigger ranking check for all keywords | `checkRankings` |
+| `/api/v1/locations/{id}/rankings/check/{keywordId}` | POST | Trigger single keyword check | `checkRankings` |
+| `/api/v1/locations/{id}/competitors` | GET | List tracked competitors | `viewCompetitors` |
+| `/api/v1/locations/{id}/competitors` | POST | Add competitor | `addCompetitor` |
+| `/api/v1/locations/{id}/competitors/{competitorId}` | DELETE | Remove competitor | `deleteCompetitor` |
+
+### Policy Authorization Abilities
+
+The `BusinessLocationPolicy` provides these abilities for rankings access:
+
+| Ability | Who Can Access |
+|---------|----------------|
+| `viewRankings` | Location owner or account admin |
+| `checkRankings` | Location owner or account admin |
+| `viewQuota` | Location owner or account admin |
+| `viewCompetitors` | Location owner or account admin |
+| `addCompetitor` | Location owner or account admin |
+| `deleteCompetitor` | Location owner or account admin |
+
+### Frontend Behavior
+
+| Area | Implementation |
+|------|----------------|
+| Route resolution | Client-side pathname parsing extracts real numeric IDs from production URLs |
+| Data fetching | SWR-based hook with section-level loading states |
+| Sorting | Table columns sortable by clicking column headers |
+| Pagination | Client-side pagination for large keyword lists |
+| Quota enforcement | Check button disabled when quota exceeded |
+| Export | CSV/Excel download via blob generation |
+
+### Test Coverage
+
+| Suite | Tests | Assertions | Status |
+|-------|-------|------------|--------|
+| Main page tests | 8 | - | ✅ PASS |
+| Route tests | 5 | - | ✅ PASS |
+| Component tests | 15 | - | ✅ PASS |
+| Backend controller | 53 | 143 | ✅ PASS |
+| Static export rewrites | - | - | ✅ PASS |
+
+### Production Validation
+
+| Metric | Value |
+|--------|-------|
+| First Deploy Date | 2026-03-10 |
+| Verification Date | 2026-03-11 |
+| Public Host | `https://seoindicator.com` |
+| Deployment Commit | `6c3f3186aa752147de5506a9c7546c5e16da9557` |
+| Routes Verified | `/locations/{id}/rankings/` → `200`, `/sites/{siteId}/local/{locationId}/rankings/` → `200` |
+| API Auth | Unauthenticated requests return `401` |
+| Status | Complete |
+
+### Production Bug Fixes
+
+| Issue | Resolution |
+|-------|------------|
+| Numeric routes returned 404 | Added Apache rewrites in `.htaccess` for rankings routes |
+| Page hydrated with `preview` param | Client-side pathname resolver extracts real numeric IDs |
+| API endpoints returned 403 for owners | Added missing policy abilities (`viewRankings`, `checkRankings`, `viewQuota`, `viewCompetitors`, `addCompetitor`, `deleteCompetitor`) to `BusinessLocationPolicy` |
+| First deployment commit drift | Redeployed with correct commit containing all fixes |
+
+### Dependencies
+
+| Dependency | Status | Description |
+|------------|--------|-------------|
+| TASK-35-15 | Done | Local Rankings API Controller provides backend endpoints |
+| TASK-35-19 | Done | Location Dashboard Page provides navigation entry point |
+
+### Related Tasks
+- TASK-35-15: Local Rankings API Controller (backend)
+- TASK-35-19: Location Dashboard Page (parent surface)
+- TASK-35-21: Reviews Management Page (sibling detail page)
+- TASK-35-17: Location Management Page (locations list)
+
+---
 ## PricingComparison Component (TASK-32-6)
 
 ### Component Description

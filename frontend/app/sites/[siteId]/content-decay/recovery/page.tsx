@@ -269,8 +269,8 @@ export default function RecoveryReportPage() {
               <YAxis />
               <Tooltip
                 labelFormatter={(v) => new Date(v).toLocaleDateString()}
-                formatter={(value: number, name: string) => [
-                  name === 'recovered' ? `${value} pages` : value.toLocaleString(),
+                formatter={(value, name) => [
+                  name === 'recovered' ? `${value ?? 0} pages` : (value as number)?.toLocaleString?.() ?? value,
                   name === 'recovered' ? 'Recovered' : 'Clicks'
                 ]}
               />
