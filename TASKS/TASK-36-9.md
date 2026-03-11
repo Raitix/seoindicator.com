@@ -1,7 +1,7 @@
 # TASK-36-9: Queue Jobs - Content Decay Detection
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -178,3 +178,95 @@ $schedule->job(new SendContentDecayDigestJob($projectId))
 ---
 
 *Created by SpecSystemAnalyst agent on 2026-03-10*
+
+---
+
+## Comments
+
+### PreTester (2026-03-11 14:05 GMT+2)
+**Test Suite Design Complete ✅**
+
+Created comprehensive test suite for all four queue jobs:
+
+**Test Documentation:**
+- `TESTS/TEST-36-9.md` - Full test specification with 280+ test scenarios
+
+**Test Files Created:**
+| File | Location | Tests |
+|------|----------|-------|
+| DetectContentDecayForSiteJobTest.php | tests/Unit/Jobs/ContentDecay/ | 85+ tests |
+| BackfillContentDecayRecoveryJobTest.php | tests/Unit/Jobs/ContentDecay/ | 70+ tests |
+| SendContentDecayDigestJobTest.php | tests/Unit/Jobs/ContentDecay/ | 65+ tests |
+| GenerateRefreshBriefJobTest.php | tests/Unit/Jobs/ContentDecay/ | 60+ tests |
+| **Total** | | **280+ tests** |
+
+**Interface Created:**
+- `Contracts/ContentDecayDigestServiceInterface.php` - Full interface definition
+
+**Test Categories Covered:**
+
+**1. DetectContentDecayForSiteJob:**
+- Job instantiation and properties
+- Job dispatch to correct queue
+- Handle method execution
+- Site/project loading
+- Detection service integration
+- Retry logic (3 tries, 600s timeout)
+- Failure handling
+- Uniqueness behavior
+- Edge cases (empty data, large sites, missing dependencies)
+
+**2. BackfillContentDecayRecoveryJob:**
+- Job instantiation and properties
+- Recovery criteria evaluation (2 of 3 must be met):
+  - Clicks improved > 10%
+  - CTR improved > 5%
+  - Position improved >= 2 positions
+- Candidate status updates
+- Evidence JSON updates
+- Retry and failure handling
+
+**3. SendContentDecayDigestJob:**
+- Job instantiation and properties
+- Digest generation and sending
+- Project/user loading
+- Digest content validation:
+  - new_decay_count
+  - critical_count
+  - recovered_count
+  - total_lost_clicks
+  - total_upside
+  - top_candidates (max 5)
+  - recovered_pages
+- Retry and failure handling
+
+**4. GenerateRefreshBriefJob:**
+- Job instantiation and properties
+- AI service integration (FEAT-031)
+- Prompt construction from signals
+- Brief storage in evidence_json
+- Brief structure validation
+- Retry logic (2 tries, 120s timeout)
+- AI error handling
+
+**Key Implementation Notes for Developer:**
+
+| Job | Queue | Tries | Timeout | Unique |
+|-----|-------|-------|---------|--------|
+| DetectContentDecayForSiteJob | content-decay | 3 | 600s | Yes (per site) |
+| BackfillContentDecayRecoveryJob | content-decay | 3 | 300s | Yes (per candidate) |
+| SendContentDecayDigestJob | notifications | 3 | 120s | Yes (per project) |
+| GenerateRefreshBriefJob | ai-tasks | 2 | 120s | Yes (per candidate) |
+
+**Mock Helper Methods Provided:**
+- `createMockSite()` - Mock site for job testing
+- `createMockProject()` - Mock project with settings
+- `createMockCandidate()` - Mock candidate with signals
+- `createMockUser()` - Mock user for notifications
+
+**Service Interfaces Required:**
+- `ContentDecayDetectionServiceInterface` - Already exists ✅
+- `ContentDecayDigestServiceInterface` - Created ✅
+- `AIAnalysisServiceInterface` - Already exists ✅
+
+**Status:** `To Develop` → Ready for Developer implementation

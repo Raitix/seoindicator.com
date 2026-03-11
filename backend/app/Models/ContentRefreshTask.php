@@ -7,9 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Content Refresh Task Model for SPEC-036.
- *
+ * Content Refresh Task model.
+ * 
  * Stores individual refresh tasks for decay candidates.
+ *
+ * @see SPEC-036: Content Decay Detection & Refresh Planner
+ * @see TASK-36-2: Eloquent Models - Content Decay
  */
 class ContentRefreshTask extends Model
 {
@@ -45,65 +48,16 @@ class ContentRefreshTask extends Model
     ];
 
     /**
-     * Valid status values.
+     * The default values for attributes.
      */
-    public const STATUS_PENDING = 'pending';
-    public const STATUS_IN_PROGRESS = 'in_progress';
-    public const STATUS_COMPLETED = 'completed';
-    public const STATUS_CANCELLED = 'cancelled';
-
-    public const VALID_STATUSES = [
-        self::STATUS_PENDING,
-        self::STATUS_IN_PROGRESS,
-        self::STATUS_COMPLETED,
-        self::STATUS_CANCELLED,
+    protected $attributes = [
+        'status' => 'pending',
+        'source' => 'system',
     ];
 
-    /**
-     * Valid recommendation types.
-     */
-    public const RECOMMENDATION_UPDATE_CONTENT = 'update_content';
-    public const RECOMMENDATION_ADD_KEYWORDS = 'add_keywords';
-    public const RECOMMENDATION_FIX_TECHNICAL = 'fix_technical';
-    public const RECOMMENDATION_UPDATE_META = 'update_meta';
-    public const RECOMMENDATION_ADD_INTERNAL_LINKS = 'add_internal_links';
-    public const RECOMMENDATION_CONSOLIDATE = 'consolidate';
-    public const RECOMMENDATION_REDIRECT = 'redirect';
-    public const RECOMMENDATION_OTHER = 'other';
-
-    public const VALID_RECOMMENDATION_TYPES = [
-        self::RECOMMENDATION_UPDATE_CONTENT,
-        self::RECOMMENDATION_ADD_KEYWORDS,
-        self::RECOMMENDATION_FIX_TECHNICAL,
-        self::RECOMMENDATION_UPDATE_META,
-        self::RECOMMENDATION_ADD_INTERNAL_LINKS,
-        self::RECOMMENDATION_CONSOLIDATE,
-        self::RECOMMENDATION_REDIRECT,
-        self::RECOMMENDATION_OTHER,
-    ];
-
-    /**
-     * Valid source values.
-     */
-    public const SOURCE_SYSTEM = 'system';
-    public const SOURCE_MANUAL = 'manual';
-    public const SOURCE_AI_SUGGESTION = 'ai_suggestion';
-
-    public const VALID_SOURCES = [
-        self::SOURCE_SYSTEM,
-        self::SOURCE_MANUAL,
-        self::SOURCE_AI_SUGGESTION,
-    ];
-
-    /**
-     * Status transitions map.
-     */
-    public const STATUS_TRANSITIONS = [
-        self::STATUS_PENDING => [self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
-        self::STATUS_IN_PROGRESS => [self::STATUS_COMPLETED, self::STATUS_PENDING, self::STATUS_CANCELLED],
-        self::STATUS_COMPLETED => [], // Terminal state
-        self::STATUS_CANCELLED => [self::STATUS_PENDING], // Can be reactivated
-    ];
+    // ==========================================
+    // Relationships
+    // ==========================================
 
     /**
      * Get the candidate this task belongs to.
@@ -114,15 +68,19 @@ class ContentRefreshTask extends Model
     }
 
     /**
-     * Get the user assigned to this task.
+     * Get the user who owns this task.
      */
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_user_id');
     }
 
+    // ==========================================
+    // Scopes
+    // ==========================================
+
     /**
-     * Scope for tasks by status.
+     * Scope to filter by status.
      */
     public function scopeByStatus($query, string $status)
     {
@@ -130,126 +88,131 @@ class ContentRefreshTask extends Model
     }
 
     /**
-     * Scope for tasks by owner.
+     * Scope to get overdue tasks.
      */
-    public function scopeByOwner($query, int $userId)
+    public function scopeOverdue($query)
+    {
+        return $query->where('due_date', '<', now())
+            ->whereNotIn('status', ['completed', 'cancelled']);
+    }
+
+    /**
+     * Scope to filter by owner.
+     */
+    public function scopeForUser($query, int $userId)
     {
         return $query->where('owner_user_id', $userId);
     }
 
     /**
-     * Scope for overdue tasks.
+     * Scope to get pending tasks.
      */
-    public function scopeOverdue($query)
+    public function scopePending($query)
     {
-        return $query->where('due_date', '<', now())
-            ->whereNotIn('status', [self::STATUS_COMPLETED, self::STATUS_CANCELLED]);
+        return $query->where('status', 'pending');
     }
 
     /**
-     * Scope for tasks due within a date range.
+     * Alias for scopePending - backward compatibility.
      */
-    public function scopeDueBetween($query, string $from, string $to)
+    public function scopeTodo($query)
     {
-        return $query->whereBetween('due_date', [$from, $to]);
+        return $this->scopePending($query);
     }
 
     /**
-     * Scope for tasks ordered by due date.
+     * Scope to get in-progress tasks.
      */
-    public function scopeOrderByDueDate($query, string $direction = 'asc')
+    public function scopeInProgress($query)
     {
-        return $query->orderBy('due_date', $direction);
+        return $query->where('status', 'in_progress');
     }
 
     /**
-     * Check if a status transition is valid.
+     * Scope to get completed tasks.
      */
-    public function canTransitionTo(string $newStatus): bool
+    public function scopeCompleted($query)
     {
-        if (!in_array($newStatus, self::VALID_STATUSES)) {
-            return false;
-        }
-
-        return in_array($newStatus, self::STATUS_TRANSITIONS[$this->status] ?? []);
+        return $query->where('status', 'completed');
     }
 
     /**
-     * Transition to a new status.
+     * Alias for scopeCompleted - backward compatibility.
      */
-    public function transitionTo(string $newStatus): bool
+    public function scopeDone($query)
     {
-        if (!$this->canTransitionTo($newStatus)) {
-            return false;
-        }
-
-        $this->update(['status' => $newStatus]);
-        return true;
+        return $this->scopeCompleted($query);
     }
 
     /**
-     * Check if task is overdue.
+     * Scope to get cancelled tasks.
+     */
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', 'cancelled');
+    }
+
+    /**
+     * Alias for scopeCancelled - backward compatibility.
+     */
+    public function scopeSkipped($query)
+    {
+        return $this->scopeCancelled($query);
+    }
+
+    // ==========================================
+    // Helper Methods
+    // ==========================================
+
+    /**
+     * Mark the task as completed.
+     */
+    public function markAsCompleted(): void
+    {
+        $this->update(['status' => 'completed']);
+    }
+
+    /**
+     * Alias for markAsCompleted - backward compatibility.
+     */
+    public function markAsDone(): void
+    {
+        $this->markAsCompleted();
+    }
+
+    /**
+     * Mark the task as cancelled.
+     */
+    public function markAsCancelled(): void
+    {
+        $this->update(['status' => 'cancelled']);
+    }
+
+    /**
+     * Alias for markAsCancelled - backward compatibility.
+     */
+    public function markAsSkipped(): void
+    {
+        $this->markAsCancelled();
+    }
+
+    /**
+     * Check if the task is overdue.
      */
     public function isOverdue(): bool
     {
-        return $this->due_date !== null
-            && $this->due_date->isPast()
-            && !in_array($this->status, [self::STATUS_COMPLETED, self::STATUS_CANCELLED]);
+        if ($this->due_date === null) {
+            return false;
+        }
+
+        return $this->due_date->isPast() && !in_array($this->status, ['completed', 'cancelled']);
     }
 
     /**
-     * Check if task is completed.
+     * Get a value from the metadata JSON.
      */
-    public function isCompleted(): bool
+    public function getMetadataValue(string $key, mixed $default = null): mixed
     {
-        return $this->status === self::STATUS_COMPLETED;
-    }
-
-    /**
-     * Check if task is pending.
-     */
-    public function isPending(): bool
-    {
-        return $this->status === self::STATUS_PENDING;
-    }
-
-    /**
-     * Check if task is in progress.
-     */
-    public function isInProgress(): bool
-    {
-        return $this->status === self::STATUS_IN_PROGRESS;
-    }
-
-    /**
-     * Check if task is cancelled.
-     */
-    public function isCancelled(): bool
-    {
-        return $this->status === self::STATUS_CANCELLED;
-    }
-
-    /**
-     * Mark task as in progress.
-     */
-    public function markInProgress(): bool
-    {
-        return $this->transitionTo(self::STATUS_IN_PROGRESS);
-    }
-
-    /**
-     * Mark task as completed.
-     */
-    public function markCompleted(): bool
-    {
-        return $this->transitionTo(self::STATUS_COMPLETED);
-    }
-
-    /**
-     * Mark task as cancelled.
-     */
-    public function markCancelled(): bool
-    {
-        return $this->transitionTo(self::STATUS_CANCELLED);
+        return data_get($this->metadata_json, $key, $default);
     }
 }
