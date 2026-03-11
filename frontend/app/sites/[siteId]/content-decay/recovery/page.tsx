@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Content Decay Recovery Report Page
  * Shows recovery statistics, timeline, and before/after comparisons
  * 

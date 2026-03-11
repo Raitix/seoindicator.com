@@ -101,12 +101,19 @@ class ContentDecayReasonService implements ContentDecayReasonServiceInterface
         $this->checkAuditIssues($signals, $reasonCodes, $evidence);
         $this->checkClicksDown($signals, $reasonCodes, $evidence);
         $this->checkCtrDown($signals, $reasonCodes, $evidence);
-        $this->checkPositionDown($signals, $reasonCodes, $evidence);
+        
+        // Check for competitor gain first - if triggered, skip avg_position_down
+        // (competitor_gain_suspected is a more specific diagnosis of position loss)
+        $competitorGainTriggered = $this->checkCompetitorGainSuspected($signals, $reasonCodes, $evidence);
+        
+        if (!$competitorGainTriggered) {
+            $this->checkPositionDown($signals, $reasonCodes, $evidence);
+        }
+        
         $this->checkTrackedRankingsDown($signals, $reasonCodes, $evidence);
         $this->checkImpressionsDown($signals, $reasonCodes, $evidence);
         $this->checkStaleContent($signals, $reasonCodes, $evidence);
         $this->checkAiVisibilityDown($signals, $reasonCodes, $evidence);
-        $this->checkCompetitorGainSuspected($signals, $reasonCodes, $evidence);
         $this->checkInternalLinkWeakness($signals, $reasonCodes, $evidence);
         $this->checkAnnotationRecentlyChanged($signals, $reasonCodes, $evidence);
 
@@ -253,7 +260,11 @@ class ContentDecayReasonService implements ContentDecayReasonServiceInterface
         $positionChange = $current - $previous;
         $threshold = $this->thresholds['position_decline'];
 
-        if ($positionChange >= $threshold) {
+        // Check for threshold met OR page boundary crossing
+        $crossedPageBoundary = $this->crossedPageBoundary($previous, $current);
+        $thresholdMet = $positionChange >= $threshold;
+
+        if ($thresholdMet || $crossedPageBoundary) {
             $reasonCodes[] = 'avg_position_down';
             $evidence[] = [
                 'reason' => 'avg_position_down',
@@ -269,6 +280,18 @@ class ContentDecayReasonService implements ContentDecayReasonServiceInterface
                 ],
             ];
         }
+    }
+
+    /**
+     * Check if position crossed a SERP page boundary.
+     * Page 1: positions 1-10, Page 2: positions 11-20, etc.
+     */
+    protected function crossedPageBoundary(float $previous, float $current): bool
+    {
+        $previousPage = (int) ceil($previous / 10);
+        $currentPage = (int) ceil($current / 10);
+
+        return $currentPage > $previousPage;
     }
 
     /**
@@ -413,38 +436,42 @@ class ContentDecayReasonService implements ContentDecayReasonServiceInterface
      *
      * Triggered when position worsens but impressions/clicks remain stable,
      * suggesting competitor displacement rather than demand change.
+     *
+     * @return bool True if competitor gain was triggered
      */
-    protected function checkCompetitorGainSuspected(array $signals, array &$reasonCodes, array &$evidence): void
+    protected function checkCompetitorGainSuspected(array $signals, array &$reasonCodes, array &$evidence): bool
     {
         $prevPosition = Arr::get($signals, 'avg_position.previous');
         $currPosition = Arr::get($signals, 'avg_position.current');
-        $prevImpressions = Arr::get($signals, 'impressions.previous', 0);
-        $currImpressions = Arr::get($signals, 'impressions.current', 0);
-        $prevClicks = Arr::get($signals, 'clicks.previous', 0);
-        $currClicks = Arr::get($signals, 'clicks.current', 0);
+        $prevImpressions = Arr::get($signals, 'impressions.previous');
+        $currImpressions = Arr::get($signals, 'impressions.current');
+        $prevClicks = Arr::get($signals, 'clicks.previous');
+        $currClicks = Arr::get($signals, 'clicks.current');
 
         if ($prevPosition === null || $currPosition === null) {
-            return;
+            return false;
         }
 
         // Position must worsen
         if ($currPosition <= $prevPosition) {
-            return;
+            return false;
         }
 
         // Position change must be significant
         $positionChange = $currPosition - $prevPosition;
         if ($positionChange < $this->thresholds['position_decline']) {
-            return;
+            return false;
         }
 
         // Impressions should be relatively stable (within 20%)
-        $impressionStable = $prevImpressions > 0
+        // If impressions not provided, cannot determine stability
+        $impressionStable = ($prevImpressions !== null && $prevImpressions > 0)
             && abs(($currImpressions - $prevImpressions) / $prevImpressions) < 0.20;
 
         // Clicks should be relatively stable (within 20%)
-        $clicksStable = $prevClicks > 0
-            && abs(($currClicks - $prevClicks) / $prevClicks) < 0.20;
+        // If clicks not provided, treat as stable (no data to indicate instability)
+        $clicksStable = ($prevClicks === null || $prevClicks == 0)
+            || abs(($currClicks - $prevClicks) / $prevClicks) < 0.20;
 
         // If impressions and clicks are stable but position worsened,
         // competitor likely gained our position
@@ -463,7 +490,10 @@ class ContentDecayReasonService implements ContentDecayReasonServiceInterface
                     'context' => $this->formatContext($signals, 'competitor_gain'),
                 ],
             ];
+            return true;
         }
+
+        return false;
     }
 
     /**
@@ -511,7 +541,11 @@ class ContentDecayReasonService implements ContentDecayReasonServiceInterface
         $annotationDate = \Carbon\Carbon::parse($lastAnnotation);
         $windowDays = $this->thresholds['annotation_window_days'];
 
-        if ($annotationDate->diffInDays(now()) <= $windowDays) {
+        // Use diffInDays with floor to handle boundary cases correctly
+        // diffInDays returns the number of complete 24-hour periods
+        $daysSinceAnnotation = (int) floor($annotationDate->diffInDays(now(), true));
+
+        if ($daysSinceAnnotation <= $windowDays) {
             $reasonCodes[] = 'annotation_recently_changed';
             $evidence[] = [
                 'reason' => 'annotation_recently_changed',
