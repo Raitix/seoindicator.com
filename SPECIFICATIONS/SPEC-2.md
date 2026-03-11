@@ -880,3 +880,21 @@ Actions:
 - No stale locks found
 
 Specification fully complete and documented. No changes required.
+
+### [2026-03-11 12:43 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - Orchestrator-triggered processing for `SPEC-2`.
+
+Verification:
+- Canonical specification file: `SPECIFICATIONS/SPEC-002.md` ✅
+- SPEC-002 status: `Done` ✅
+- FEAT-002 status: `Done` ✅
+- All 14 child tasks (TASK-002-1 through TASK-002-14): `Done` ✅
+- DOCUMENTATION.md: Present at line 18642 (`## Ranking Change Alert System (FEAT-002)`) ✅
+
+Actions:
+- Cleared stale completion markers
+- Written completion markers: `SPEC-2.json` + `SPEC-002.json`
+- Removed stale lock files
+- Cleared active-agents entry
+
+**ORCHESTRATOR BUG:** Task triggers continue using `SPEC-2` while the canonical ID is `SPEC-002` (zero-padded). This naming mismatch causes repeated spawns (82+ verifications to date). Specification remains fully complete - no documentation updates required.
