@@ -34,7 +34,7 @@ class ContentRefreshPlannerServiceTest extends TestCase
     /**
      * Create a mock ContentDecayCandidate for testing.
      */
-    private function createMockCandidate(array $attributes = []): object
+    private function createMockCandidate(array $attributes = []): ContentDecayCandidate
     {
         $defaults = [
             'id' => 1,
@@ -55,24 +55,15 @@ class ContentRefreshPlannerServiceTest extends TestCase
 
         $data = array_merge($defaults, $attributes);
 
-        return new class($data) {
-            public array $data;
+        // Create a model instance without persisting to database
+        $candidate = ContentDecayCandidate::make($data);
+        
+        // Manually set array-casted attributes that need to be arrays
+        $candidate->reason_codes = $data['reason_codes'] ?? [];
+        $candidate->signal_sources = $data['signal_sources'] ?? [];
+        $candidate->evidence_json = $data['evidence_json'] ?? [];
 
-            public function __construct(array $data)
-            {
-                $this->data = $data;
-            }
-
-            public function __get(string $name)
-            {
-                return $this->data[$name] ?? null;
-            }
-
-            public function toArray(): array
-            {
-                return $this->data;
-            }
-        };
+        return $candidate;
     }
 
     private function createCtrEvidence(float $previous, float $current): array
