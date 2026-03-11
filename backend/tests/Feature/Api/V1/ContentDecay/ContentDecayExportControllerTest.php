@@ -189,14 +189,15 @@ https://example.com/page1,75.5,high,backlog');
         $mockService = $this->mock(ContentDecayExportServiceInterface::class);
         $mockService->shouldReceive('exportQueue')
             ->once()
-            ->withArgs(function ($siteId, $filters) {
+            ->withArgs(function ($siteId, $format, $filters) use ($site) {
                 return $siteId === $site->id
+                    && $format === 'csv'
                     && isset($filters['status'])
-                    && $filters['status'] === 'critical';
+                    && $filters['status'] === 'planned';
             })
             ->andReturn('page_url,decay_score,severity,status');
 
-        $response = $this->getJson("/api/v1/sites/{$site->id}/content-decay/export?format=csv&status=critical");
+        $response = $this->getJson("/api/v1/sites/{$site->id}/content-decay/export?format=csv&status=planned");
 
         $response->assertStatus(200);
     }
@@ -242,7 +243,7 @@ https://example.com/page1,75.5,high,backlog');
         $mockExportService = $this->mock(ContentDecayExportServiceInterface::class);
         $mockExportService->shouldReceive('generateAiBrief')
             ->once()
-            ->andReturn('job-uuid-ai-brief');
+            ->andReturn(['job_id' => 'job-uuid-ai-brief', 'status' => 'queued']);
 
         $response = $this->postJson('/api/v1/content-decay/candidates/1/ai-brief');
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\ContentDecay\ListCandidatesRequest;
 use App\Http\Requests\Api\V1\ContentDecay\UpdateCandidateRequest;
 use App\Models\Site;
 use App\Services\ContentDecay\Contracts\ContentDecayCandidateServiceInterface;
@@ -21,7 +22,7 @@ class ContentDecayCandidateController extends Controller
      *
      * List candidates with filtering and pagination.
      */
-    public function index(int $siteId, Request $request, ContentDecayCandidateServiceInterface $service): JsonResponse
+    public function index(int $siteId, ListCandidatesRequest $request, ContentDecayCandidateServiceInterface $service): JsonResponse
     {
         $site = Site::find($siteId);
 
@@ -46,10 +47,10 @@ class ContentDecayCandidateController extends Controller
             ], 403);
         }
 
-        // Build filters from request
+        // Build filters from validated request
         $filters = $this->buildFilters($request);
 
-        $perPage = (int) $request->query('per_page', 15);
+        $perPage = (int) $request->validated('per_page', 15);
         $perPage = max(1, min(100, $perPage));
 
         $paginator = $service->listCandidates($siteId, $filters, $perPage);
