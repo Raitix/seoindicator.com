@@ -162,6 +162,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\ContentDecay\Contracts\ContentDecayExportServiceInterface::class,
             \App\Services\ContentDecay\ContentDecayExportService::class
         );
+
+        // Content Decay Reason Service binding (TASK-36-4, SPEC-036)
+        $this->app->bind(
+            \App\Services\ContentDecay\Contracts\ContentDecayReasonServiceInterface::class,
+            \App\Services\ContentDecay\ContentDecayReasonService::class
+        );
     }
 
     /**
