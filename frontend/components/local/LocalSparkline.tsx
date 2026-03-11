@@ -35,10 +35,13 @@ export function LocalSparkline({
         <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
           <Tooltip
             cursor={false}
-            formatter={(value: number | string | undefined) => [
-              typeof value === "number" ? value.toLocaleString() : String(value ?? 0),
-              label,
-            ]}
+            formatter={(value) => {
+              const v = Array.isArray(value) ? value[0] : value;
+              return [
+                typeof v === "number" ? v.toLocaleString() : String(v ?? 0),
+                label,
+              ];
+            }}
             contentStyle={{
               borderRadius: 12,
               border: "1px solid rgba(51, 65, 85, 1)",
