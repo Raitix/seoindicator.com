@@ -1,7 +1,7 @@
 # TASK-36-4: ContentDecayReasonService
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -21,12 +21,12 @@ Create the reason code assignment service that converts numeric deltas into huma
 - TASK-36-2 (Eloquent Models) - To Write Tests
 
 ## Acceptance Criteria
-- [ ] `ContentDecayReasonService` class created with:
+- [x] `ContentDecayReasonService` class created with:
   - `assignReasonCodes(array $signals): array` method returning:
     - `primary_reason_code` (string)
     - `reason_codes` (array of all applicable codes)
     - `evidence` (structured evidence for UI)
-- [ ] Reason codes supported:
+- [x] Reason codes supported:
   - `clicks_down` - Click decline exceeds threshold
   - `impressions_down` - Impression decline exceeds threshold
   - `ctr_down` - CTR decline while impressions remain meaningful
@@ -38,24 +38,24 @@ Create the reason code assignment service that converts numeric deltas into huma
   - `ai_visibility_down` - AI visibility metric declined
   - `competitor_gain_suspected` - Position loss with stable demand
   - `internal_link_weakness` - Audit/internal-link data indicates weak support
-- [ ] Primary reason selection logic:
+- [x] Primary reason selection logic:
   - Select the most impactful negative change
   - Prioritize actionable reasons over informational ones
-- [ ] Evidence payload structure:
+- [x] Evidence payload structure:
   - `metric` (which metric changed)
   - `previous_value` (before)
   - `current_value` (after)
   - `change_percent` (relative change)
   - `change_absolute` (absolute change)
   - `context` (additional context like page type)
-- [ ] Threshold configuration:
+- [x] Threshold configuration:
   - Click loss threshold (default: 10%)
   - Impression loss threshold (default: 15%)
   - CTR drop threshold (default: 0.5 percentage points)
   - Position decline threshold (default: 3 positions)
   - Staleness threshold (default: 180 days)
-- [ ] Unit tests verify all reason code triggers
-- [ ] Unit tests verify primary reason selection
+- [x] Unit tests verify all reason code triggers
+- [x] Unit tests verify primary reason selection
 
 ## Effort Estimate
 **3 hours** - Reason code logic and evidence building
@@ -196,3 +196,45 @@ Created comprehensive test suite with 112 test scenarios in `ContentDecayReasonS
 - Tests designed with mocks, implementation can proceed in parallel
 
 **Status:** `To Write Tests` → Ready for PreTester
+
+### Developer (2026-03-11)
+**Implementation Complete**
+
+All 122 unit tests passing (168 assertions).
+
+**Key Implementation Details:**
+
+1. **Service Class**: `ContentDecayReasonService` implemented with:
+   - `assignReasonCodes(array $signals): array` method
+   - `getThresholds(): array` method for configuration access
+   - Interface `ContentDecayReasonServiceInterface` with proper DI binding
+
+2. **Reason Code Logic**:
+   - All 11 reason codes implemented with proper threshold checks
+   - Priority ordering per specification (audit_issues highest, internal_link_weakness lowest)
+   - Mutual exclusivity: when `competitor_gain_suspected` triggers, `avg_position_down` is suppressed (more specific diagnosis)
+   - Page boundary detection: `avg_position_down` triggers on SERP page boundary crossing (e.g., page 1 → page 2)
+
+3. **Evidence Payload**:
+   - Structured with `reason`, `primary`, and `evidence` fields
+   - Evidence includes: metric, previous, current, change_percent, change_absolute, window, context
+   - Primary evidence marked with `primary: true`
+
+4. **Threshold Configuration**:
+   - Defaults: click_loss=10%, impression_loss=15%, ctr_drop=0.5pp, position_decline=3, staleness_days=180
+   - Configurable via constructor, config file, or environment variables
+   - `internal_links` and `annotation_window_days` thresholds added
+
+5. **Special Cases Handled**:
+   - Null values gracefully handled (no crash, skip the check)
+   - Zero previous values (improvement case, not decline)
+   - Low impression counts for CTR relevance
+   - Stable demand detection for competitor gain (clicks not provided = treat as stable)
+   - Annotation boundary cases using `diffInDays` with floor for accurate day counting
+
+**Files Modified:**
+- `backend/app/Services/ContentDecay/ContentDecayReasonService.php` - Main service
+- `backend/app/Services/ContentDecay/Contracts/ContentDecayReasonServiceInterface.php` - Interface
+- `backend/app/Providers/AppServiceProvider.php` - DI binding added
+
+**Status:** `To Develop` → `To Test Locally`
