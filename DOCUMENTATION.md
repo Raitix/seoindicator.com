@@ -1723,9 +1723,9 @@ SyncGBPReviewsJob::dispatch($location)->delay(now()->addMinutes(5));
 | Task | Status | Description |
 |------|--------|-------------|
 | TASK-35-3 | Done ✅ | Dedicated GBP models now back review/location relations in production |
-| TASK-35-8 | Not Implemented | GBP API Client (still mocked / interface-driven in this historical implementation snapshot) |
+| TASK-35-8 | Done ✅ | GBP API Client Service with rate limiting, token refresh, and error handling |
 
-**Note:** The service no longer depends on temporary/mock-only GBP model relations. Interface-based dependency injection still isolates the unfinished GBP API client work (TASK-35-8).
+**Note:** The service no longer depends on temporary/mock-only GBP model relations. Interface-based dependency injection connects to the fully implemented GBP API client.
 
 ### Related Tasks
 
@@ -10983,6 +10983,156 @@ OAuth 2.0 service for Google Business Profile (GBP) integration. Handles the com
 - TASK-35-2: BusinessLocation Model
 - TASK-35-13: GBP Controller
 - TASK-35-14: GBP Insights & Reviews API Controllers
+
+---
+## GBP API Client Service (TASK-35-8)
+
+### Service Description
+Google Business Profile (GBP) API client service for interacting with the Google My Business API. Provides methods to fetch account information, locations, insights, reviews, and respond to reviews. Implements rate limiting with exponential backoff, automatic token refresh on 401 responses, and comprehensive error handling for API errors.
+
+### Component Locations
+- **Service:** `backend/app/Services/GBP/GBPApiService.php`
+- **Interface:** `backend/app/Services/GBP/Contracts/GBPApiServiceInterface.php`
+- **Unit Tests:** `backend/tests/Unit/Services/GBP/GBPApiServiceTest.php`
+- **Edge Case Tests:** `backend/tests/Unit/Services/GBP/GBPApiServiceEdgeCaseTest.php`
+- **Sandbox Tests:** `backend/tests/Feature/Services/GBP/GBPApiServiceSandboxTest.php`
+- **Test Documentation:** `TESTS/TEST-35-8.md`
+
+### Service Interface
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `getAccounts` | `getAccounts(string $accessToken): array` | Lists all GBP accounts user has access to |
+| `getLocations` | `getLocations(string $accountId, string $accessToken): array` | Lists all locations under an account |
+| `getLocation` | `getLocation(string $locationName, string $accessToken): array` | Gets detailed location info |
+| `getInsights` | `getInsights(string $locationName, string $accessToken, array $dateRange): array` | Fetches GBP insights data |
+| `getReviews` | `getReviews(string $locationName, string $accessToken, int $pageSize = 50): array` | Fetches paginated reviews |
+| `respondToReview` | `respondToReview(string $locationName, string $reviewId, string $reply, string $accessToken): bool` | Posts owner response to review |
+| `registerRefreshToken` | `registerRefreshToken(string $accessToken, string $refreshToken): void` | Registers refresh token for automatic token refresh |
+
+### API Configuration
+
+| Config Key | Description |
+|------------|-------------|
+| `services.gbp.base_url` | GBP API base URL (default: `https://mybusiness.googleapis.com/v4`) |
+
+### Location Name Format
+The `locationName` parameter uses the format: `accounts/{accountId}/locations/{locationId}`
+
+### Location Data Normalization
+
+The service normalizes GBP API location data to a standard format:
+
+| GBP API Field | Normalized Field | Description |
+|---------------|------------------|-------------|
+| `locationKey.placeId` | `place_id` | Google Place ID |
+| `title` | `name` | Business name |
+| `storefrontAddress` | `address` | Combined address string |
+
+### Rate Limiting
+
+| Feature | Implementation |
+|---------|----------------|
+| Backoff Strategy | Exponential backoff |
+| Base Delay | 1000ms |
+| Maximum Retries | 3 attempts |
+| Retryable Status | 429 (Rate Limited) |
+
+### Token Refresh
+
+The service implements automatic token refresh on 401 responses:
+
+| Step | Action |
+|------|--------|
+| 1 | API request returns 401 |
+| 2 | Service resolves refresh token from internal map |
+| 3 | Calls `GoogleOAuthServiceInterface::refreshAccessToken()` |
+| 4 | Retries original request with new access token |
+| 5 | Returns response or throws on refresh failure |
+
+**Note:** The public service contract only receives an access token. The `registerRefreshToken()` method allows external code to populate the internal token map for automatic refresh support.
+
+### Error Handling
+
+| HTTP Status | Behavior |
+|-------------|----------|
+| 401 Unauthorized | Attempts token refresh, single retry |
+| 403 Forbidden | Throws `RuntimeException` with error message |
+| 404 Not Found | Throws `RuntimeException` with error message |
+| 429 Rate Limited | Exponential backoff retry (max 3 attempts) |
+| 5xx Server Error | Throws `RuntimeException` with error message |
+| Connection Error | Throws `RuntimeException` after retries exhausted |
+
+### Input Validation
+
+| Method | Validation Rules |
+|--------|------------------|
+| `respondToReview` | Reply cannot be empty or whitespace-only |
+| `getInsights` | Date range must have `start` and `end` fields |
+| `getInsights` | Location name must match `accounts/{accountId}/locations/{locationId}` format |
+
+### Security Implementation
+
+| Security Measure | Implementation | Status |
+|------------------|----------------|--------|
+| Token map in memory | Not serialized/exposed | ✅ |
+| Bearer token via Laravel HTTP client | Proper Authorization header | ✅ |
+| Exponential backoff | Prevents API quota exhaustion | ✅ |
+| No sensitive data in error messages | Generic error messages | ✅ |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| `GBPApiServiceTest.php` | 14 | 31 | ✅ PASS |
+| `GBPApiServiceEdgeCaseTest.php` | 11 | 22 | ✅ PASS |
+| `GBPApiServiceSandboxTest.php` | 1 (skipped) | - | ✅ (env-gated) |
+| **Total** | **25** | **53** | ✅ ALL PASS |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Class/Interface Binding | 3 | Container resolution, interface implementation |
+| Path Normalization | 2 | Account path format handling |
+| Accounts API | 2 | Account listing, error handling |
+| Locations API | 3 | Location listing, normalization, error handling |
+| Insights API | 3 | Insights fetch, date validation, location format |
+| Reviews API | 3 | Review listing, pagination, error handling |
+| Review Response | 2 | Reply posting, empty reply validation |
+| 401 Refresh Retry | 2 | Automatic token refresh on 401 |
+| 429 Rate Limiting | 2 | Exponential backoff behavior |
+| Error Handling | 5 | 403, 404, max retries, missing refresh token |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-10 |
+| Deployment ID | `20260310T195535Z-6e3a9e38` |
+| Commit | `6c3f3186` |
+| Production Smoke Checks | ✅ PASSED |
+| Tests | 174 passed / 1 skipped (350 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-35-7 | Done ✅ | Google OAuth Service (token refresh support) |
+
+### Consumers
+
+- TASK-35-9: GBP Insights Service (insights data fetching)
+- TASK-35-10: GBP Reviews Service (review fetching and response)
+- TASK-35-14: GBP Controllers & API Endpoints
+
+### Related Tasks
+
+- TASK-35-7: Google OAuth Service
+- TASK-35-9: GBP Insights Service
+- TASK-35-10: GBP Reviews Service
+- TASK-35-14: GBP Controllers & API Endpoints
 
 ---
 ## LocalRankService (TASK-35-11)
