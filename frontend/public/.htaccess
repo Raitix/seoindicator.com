@@ -30,21 +30,36 @@ RewriteRule ^(api|sanctum)(/.*)?$ backend/public/index.php [L,QSA]
 # The Next.js frontend is statically exported, so numeric Local SEO routes
 # need to reuse exported preview shells. Client pages recover the real ids
 # from the browser URL during hydration.
+
+# Location dashboard routes
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^locations/[0-9]+/?$ /locations/preview/ [L]
 
+# Location rankings routes
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^locations/[0-9]+/rankings/?$ /locations/preview/rankings/ [L]
 
+# Location reviews routes
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^locations/[0-9]+/reviews/?$ /locations/preview/reviews/ [L]
+
+# Site location dashboard routes
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^sites/[0-9]+/local/[0-9]+/?$ /sites/preview/local/preview/ [L]
 
+# Site location rankings routes
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^sites/[0-9]+/local/[0-9]+/rankings/?$ /sites/preview/local/preview/rankings/ [L]
+
+# Site location reviews routes
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^sites/[0-9]+/local/[0-9]+/reviews/?$ /sites/preview/local/preview/reviews/ [L]
 
 # ============================================================
 # SEO GUIDES: Clean URL Routing
