@@ -434,16 +434,18 @@ export function CandidateDetailDrawer({
                     <div data-testid="clicks-trend">
                       <div className="text-xs text-muted-foreground mb-1">Clicks Trend</div>
                       <DecayTrendMiniChart
-                        data={candidate.trend.currentWindow.clicks}
-                        previousData={candidate.trend.previousWindow.clicks}
+                        data={candidate.trend}
+                        showClicks={true}
+                        showImpressions={false}
                         height={60}
                       />
                     </div>
                     <div data-testid="impressions-trend">
                       <div className="text-xs text-muted-foreground mb-1">Impressions Trend</div>
                       <DecayTrendMiniChart
-                        data={candidate.trend.currentWindow.impressions}
-                        previousData={candidate.trend.previousWindow.impressions}
+                        data={candidate.trend}
+                        showClicks={false}
+                        showImpressions={true}
                         height={60}
                       />
                     </div>
@@ -455,7 +457,7 @@ export function CandidateDetailDrawer({
             {/* Signals Tab */}
             <TabsContent value="signals" className="p-4 m-0">
               {candidate.signals ? (
-                <RecoveryComparisonCard comparison={comparison} />
+                <RecoveryComparisonCard comparison={comparison ?? null} />
               ) : (
                 <div className="text-center text-muted-foreground py-8">
                   No signal data available
