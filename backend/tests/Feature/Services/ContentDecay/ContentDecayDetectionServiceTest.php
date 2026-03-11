@@ -583,7 +583,7 @@ class ContentDecayDetectionServiceTest extends TestCase
                 $this->testGscData = $gscData;
             }
 
-            protected function fetchGscData($site): array
+            protected function fetchGscData($site, array $windowDates): array
             {
                 return $this->testGscData;
             }
