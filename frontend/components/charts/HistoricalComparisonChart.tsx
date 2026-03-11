@@ -98,7 +98,7 @@ const CustomTooltip: React.FC<{
   active?: boolean;
   payload?: readonly {
     dataKey?: string | number | ((obj: any) => any);
-    value: string | number | (readonly [string, number])[] | null | undefined;
+    value: unknown;
     color: string;
   }[];
   label?: string | number;
