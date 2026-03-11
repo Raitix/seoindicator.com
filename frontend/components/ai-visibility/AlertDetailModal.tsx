@@ -17,15 +17,16 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Alert, AlertType } from '@/lib/ai-visibility/types';
+import { generateAlertMessage, generateRecommendations } from '@/lib/ai-visibility/types';
 
 interface AlertDetailModalProps {
   isOpen: boolean;
   alert: Alert | null;
   onClose: () => void;
-  onResolve?: (id: string) => void;
-  onDismiss?: (id: string) => void;
-  onViewProject?: (projectId: string) => void;
-  onDelete?: (id: string) => void;
+  onResolve?: (id: number) => void;
+  onDismiss?: (id: number) => void;
+  onViewProject?: (projectId: number) => void;
+  onDelete?: (id: number) => void;
   isLoading?: boolean;
   error?: string | null;
 }
@@ -67,7 +68,8 @@ const alertTypeConfig: Record<AlertType, {
   },
 };
 
-function formatDate(dateString: string): string {
+function formatDate(dateString: string | null): string {
+  if (!dateString) return 'Unknown';
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -140,7 +142,8 @@ export function AlertDetailModal({
 
   const handleCopyRecommendations = useCallback(() => {
     if (!alert) return;
-    const text = alert.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n');
+    const recommendations = generateRecommendations(alert);
+    const text = recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n');
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -195,13 +198,19 @@ export function AlertDetailModal({
   if (!isOpen) return null;
 
   const config = alert ? alertTypeConfig[alert.alert_type] : null;
+  
+  // Use change_percent from backend
   const percentageChangeClass =
-    alert && alert.percentage_change > 0
+    alert && alert.change_percent > 0
       ? 'text-emerald-600'
-      : alert && alert.percentage_change < 0
+      : alert && alert.change_percent < 0
         ? 'text-rose-600'
         : 'text-slate-500';
-  const percentagePrefix = alert && alert.percentage_change > 0 ? '+' : '';
+  const percentagePrefix = alert && alert.change_percent > 0 ? '+' : '';
+
+  // Generate message and recommendations from alert data
+  const message = alert ? generateAlertMessage(alert) : '';
+  const recommendations = alert ? generateRecommendations(alert) : [];
 
   return (
     <div
@@ -285,7 +294,7 @@ export function AlertDetailModal({
 
               {/* Message */}
               <p className="text-lg text-slate-900 dark:text-slate-100 mb-4">
-                {alert.message}
+                {message}
               </p>
 
               {/* Values */}
@@ -304,10 +313,17 @@ export function AlertDetailModal({
                     data-testid="percentage-change"
                     className={cn('text-xl font-semibold', percentageChangeClass)}
                   >
-                    {percentagePrefix}{alert.percentage_change}%
+                    {percentagePrefix}{alert.change_percent.toFixed(1)}%
                   </p>
                 </div>
               </div>
+
+              {/* Threshold (if applicable) */}
+              {alert.threshold && (
+                <div className="mb-6 text-sm text-slate-500 dark:text-slate-400">
+                  <span className="font-medium">Threshold:</span> {alert.threshold}%
+                </div>
+              )}
 
               {/* Project Link */}
               <div className="mb-6">
@@ -327,11 +343,11 @@ export function AlertDetailModal({
               {/* Timestamp */}
               <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-6">
                 <Clock className="h-4 w-4" />
-                {formatDate(alert.created_at)}
+                Triggered: {formatDate(alert.triggered_at || alert.created_at)}
               </div>
 
               {/* Recommendations */}
-              {alert.recommendations.length > 0 && (
+              {recommendations.length > 0 && (
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-slate-900 dark:text-slate-100">
@@ -349,7 +365,7 @@ export function AlertDetailModal({
                     data-testid="recommendations-list"
                     className="space-y-2 max-h-40 overflow-y-auto"
                   >
-                    {alert.recommendations.map((rec, i) => (
+                    {recommendations.map((rec, i) => (
                       <li
                         key={i}
                         className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400"

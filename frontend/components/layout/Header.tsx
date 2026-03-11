@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useUnreadCount } from "@/lib/api/notifications";
+import { useAIVisibilityUnreadCount } from "@/hooks/useAIVisibilityUnreadCount";
 import { MobileNav, NavItem, UserInfo } from "./MobileNav";
 import {
   LayoutDashboard,
@@ -15,6 +16,7 @@ import {
   User,
   LogOut,
   ChevronDown,
+  Eye,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -57,6 +59,7 @@ export interface HeaderProps {
 // Navigation items configuration
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "AI Visibility", href: "/ai-visibility", icon: Eye },
   { label: "Keywords", href: "/keywords", icon: Key },
   { label: "Competitors", href: "/competitors", icon: FolderKanban },
   { label: "Reports", href: "/reports", icon: FileBarChart },
@@ -72,6 +75,7 @@ export default function Header({
   const pathname = usePathname();
   const router = useRouter();
   const { count: unreadCount, mutate: refreshCount } = useUnreadCount();
+  const { count: aiVisibilityUnreadCount, mutate: refreshAIVisibilityCount } = useAIVisibilityUnreadCount();
 
   // Prepare user info for mobile nav
   const user: UserInfo | null = userName
@@ -85,21 +89,29 @@ export default function Header({
   // Refresh unread count on navigation
   useEffect(() => {
     refreshCount();
-  }, [pathname, refreshCount]);
+    refreshAIVisibilityCount();
+  }, [pathname, refreshCount, refreshAIVisibilityCount]);
 
   const handleNotificationClick = () => {
     router.push("/notifications");
   };
 
+  const handleAIVisibilityAlertsClick = () => {
+    router.push("/ai-visibility/alerts");
+  };
+
   const isActive = (path: string) => {
     if (path === "/dashboard") {
-      return pathname?.startsWith("/dashboard") && !pathname?.startsWith("/keywords");
+      return pathname?.startsWith("/dashboard") && !pathname?.startsWith("/keywords") && !pathname?.startsWith("/ai-visibility");
     }
     return pathname?.startsWith(path);
   };
 
-  // Update nav items with badge for notifications
+  // Update nav items with badge for AI Visibility alerts
   const navItemsWithBadge = navItems.map((item) => {
+    if (item.href === "/ai-visibility" && aiVisibilityUnreadCount > 0) {
+      return { ...item, badge: aiVisibilityUnreadCount };
+    }
     if (item.href === "/notifications" && unreadCount > 0) {
       return { ...item, badge: unreadCount };
     }
@@ -159,6 +171,24 @@ export default function Header({
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-1">
+            {/* AI Visibility Alerts Bell */}
+            <div className="relative">
+              <button
+                onClick={handleAIVisibilityAlertsClick}
+                className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                aria-label={`AI Visibility Alerts${aiVisibilityUnreadCount > 0 ? ` (${aiVisibilityUnreadCount} unread)` : ""}`}
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <Eye className="w-5 h-5" aria-hidden="true" />
+                {aiVisibilityUnreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-blue-500 rounded-full" aria-hidden="true">
+                    {aiVisibilityUnreadCount > 99 ? "99+" : aiVisibilityUnreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
             {/* Notification Bell */}
             <div className="relative">
               <button
@@ -170,7 +200,7 @@ export default function Header({
               >
                 <Bell className="w-5 h-5" aria-hidden="true" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse" aria-hidden="true">
+                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-red-500 rounded-full" aria-hidden="true">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
