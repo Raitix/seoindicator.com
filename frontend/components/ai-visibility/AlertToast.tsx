@@ -10,10 +10,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Alert, AlertType } from '@/lib/ai-visibility/types';
+import { generateAlertMessage } from '@/lib/ai-visibility/types';
 
 interface AlertToastProps {
   alert: Alert;
-  onOpenDetail?: (id: string) => void;
+  onOpenDetail?: (id: number) => void;
   onDismiss: () => void;
   autoDismissMs?: number;
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
@@ -41,7 +42,9 @@ const alertTypeConfig: Record<AlertType, {
   },
 };
 
-function formatTimeAgo(dateString: string): string {
+function formatTimeAgo(dateString: string | null): string {
+  if (!dateString) return 'Unknown';
+  
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -75,6 +78,9 @@ export function AlertToast({
   const remainingRef = useRef<number>(autoDismissMs);
 
   const config = alertTypeConfig[alert.alert_type];
+  
+  // Generate message from alert data
+  const message = generateAlertMessage(alert);
 
   const dismiss = useCallback(() => {
     setIsDismissed(true);
@@ -180,10 +186,10 @@ export function AlertToast({
               {alert.project_name}
             </p>
             <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mt-0.5">
-              {alert.message}
+              {message}
             </p>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              {formatTimeAgo(alert.created_at)}
+              {formatTimeAgo(alert.triggered_at || alert.created_at)}
             </p>
           </div>
 
@@ -219,8 +225,8 @@ export function AlertToast({
 // Toast Container for managing multiple toasts
 interface AlertToastContainerProps {
   toasts: Alert[];
-  onOpenDetail?: (id: string) => void;
-  onDismiss: (id: string) => void;
+  onOpenDetail?: (id: number) => void;
+  onDismiss: (id: number) => void;
   maxToasts?: number;
 }
 

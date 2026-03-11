@@ -7,9 +7,9 @@ import type { AlertPreferences, AlertType } from '@/lib/ai-visibility/types';
 
 interface AlertPreferencesFormProps {
   preferences?: AlertPreferences;
-  onSave?: (preferences: AlertPreferences) => Promise<void>;
+  onSave?: (preferences: Partial<AlertPreferences>) => Promise<void>;
   onCancel?: () => void;
-  onTestWebhook?: (url: string) => Promise<void>;
+  onTestWebhook?: (url: string) => Promise<{ success: boolean; message?: string }>;
   onReset?: () => void;
   isLoading?: boolean;
   isSaving?: boolean;
@@ -39,7 +39,7 @@ const ALERT_TYPE_OPTIONS: { value: AlertType; label: string; description: string
 ];
 
 const DEFAULT_PREFERENCES: AlertPreferences = {
-  email_notifications: true,
+  email_notifications_enabled: true,
   webhook_url: null,
   alert_types: ['mention_spike', 'mention_drop', 'competitor_gain', 'sentiment_change'],
 };
@@ -59,6 +59,7 @@ export function AlertPreferencesForm({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [webhookTestStatus, setWebhookTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [webhookTestMessage, setWebhookTestMessage] = useState<string | null>(null);
 
   // Reset form when preferences change
   useEffect(() => {
@@ -75,7 +76,7 @@ export function AlertPreferencesForm({
   const handleEmailToggle = useCallback(() => {
     setFormData((prev) => ({
       ...prev,
-      email_notifications: !prev.email_notifications,
+      email_notifications_enabled: !prev.email_notifications_enabled,
     }));
     setErrors((prev) => ({ ...prev, email: '' }));
   }, []);
@@ -88,6 +89,7 @@ export function AlertPreferencesForm({
     }));
     setErrors((prev) => ({ ...prev, webhook_url: '' }));
     setWebhookTestStatus('idle');
+    setWebhookTestMessage(null);
   }, []);
 
   const handleClearWebhook = useCallback(() => {
@@ -97,6 +99,7 @@ export function AlertPreferencesForm({
     }));
     setErrors((prev) => ({ ...prev, webhook_url: '' }));
     setWebhookTestStatus('idle');
+    setWebhookTestMessage(null);
   }, []);
 
   const handleAlertTypeToggle = useCallback((type: AlertType) => {
@@ -167,13 +170,27 @@ export function AlertPreferencesForm({
     if (!formData.webhook_url) return;
 
     setWebhookTestStatus('loading');
+    setWebhookTestMessage(null);
     try {
-      await onTestWebhook?.(formData.webhook_url);
-      setWebhookTestStatus('success');
-      setTimeout(() => setWebhookTestStatus('idle'), 3000);
-    } catch {
+      const result = await onTestWebhook?.(formData.webhook_url);
+      if (result?.success) {
+        setWebhookTestStatus('success');
+        setWebhookTestMessage(result.message || 'Webhook test successful');
+      } else {
+        setWebhookTestStatus('error');
+        setWebhookTestMessage(result?.message || 'Webhook test failed');
+      }
+      setTimeout(() => {
+        setWebhookTestStatus('idle');
+        setWebhookTestMessage(null);
+      }, 3000);
+    } catch (err) {
       setWebhookTestStatus('error');
-      setTimeout(() => setWebhookTestStatus('idle'), 3000);
+      setWebhookTestMessage(err instanceof Error ? err.message : 'Webhook test failed');
+      setTimeout(() => {
+        setWebhookTestStatus('idle');
+        setWebhookTestMessage(null);
+      }, 3000);
     }
   }, [formData.webhook_url, onTestWebhook]);
 
@@ -235,11 +252,11 @@ export function AlertPreferencesForm({
           <button
             id="email-notifications"
             role="switch"
-            aria-checked={formData.email_notifications}
+            aria-checked={formData.email_notifications_enabled}
             onClick={handleEmailToggle}
             className={cn(
               'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-              formData.email_notifications
+              formData.email_notifications_enabled
                 ? 'bg-blue-500'
                 : 'bg-slate-200 dark:bg-slate-700'
             )}
@@ -247,7 +264,7 @@ export function AlertPreferencesForm({
             <span
               className={cn(
                 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                formData.email_notifications ? 'translate-x-6' : 'translate-x-1'
+                formData.email_notifications_enabled ? 'translate-x-6' : 'translate-x-1'
               )}
             />
           </button>
@@ -298,33 +315,43 @@ export function AlertPreferencesForm({
           </p>
         )}
         {formData.webhook_url && onTestWebhook && (
-          <button
-            onClick={handleTestWebhook}
-            disabled={webhookTestStatus === 'loading'}
-            className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
-          >
-            {webhookTestStatus === 'loading' ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Testing...
-              </>
-            ) : webhookTestStatus === 'success' ? (
-              <>
-                <Check className="h-4 w-4 text-emerald-500" />
-                Webhook test successful
-              </>
-            ) : webhookTestStatus === 'error' ? (
-              <>
-                <AlertCircle className="h-4 w-4 text-red-500" />
-                Webhook test failed
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4" />
-                Test webhook
-              </>
+          <div className="space-y-1">
+            <button
+              onClick={handleTestWebhook}
+              disabled={webhookTestStatus === 'loading'}
+              className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              {webhookTestStatus === 'loading' ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Testing...
+                </>
+              ) : webhookTestStatus === 'success' ? (
+                <>
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  {webhookTestMessage || 'Webhook test successful'}
+                </>
+              ) : webhookTestStatus === 'error' ? (
+                <>
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  {webhookTestMessage || 'Webhook test failed'}
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Test webhook
+                </>
+              )}
+            </button>
+            {webhookTestMessage && webhookTestStatus !== 'loading' && (
+              <p className={cn(
+                'text-xs',
+                webhookTestStatus === 'success' ? 'text-emerald-500' : 'text-red-500'
+              )}>
+                {webhookTestMessage}
+              </p>
             )}
-          </button>
+          </div>
         )}
       </div>
 

@@ -18,10 +18,10 @@ import type { Alert, AlertType } from '@/lib/ai-visibility/types';
 
 interface AlertListProps {
   alerts: Alert[];
-  projects?: { id: string; name: string }[];
-  onAlertClick?: (id: string) => void;
-  onMarkRead?: (id: string) => void;
-  onResolve?: (id: string) => void;
+  projects?: { id: number; name: string }[];
+  onAlertClick?: (id: number) => void;
+  onMarkRead?: (id: number) => void;
+  onResolve?: (id: number) => void;
   onMarkAllRead?: () => void;
   onFilterChange?: (filters: AlertFilters) => void;
   onSortChange?: (sort: string) => void;
@@ -29,7 +29,7 @@ interface AlertListProps {
   onLoadMore?: () => void;
   onRefetch?: () => void;
   onRetry?: () => void;
-  onBulkMarkRead?: (ids: string[]) => void;
+  onBulkMarkRead?: (ids: number[]) => void;
   onUrlChange?: () => void;
   filters?: AlertFilters;
   initialFilters?: AlertFilters;
@@ -50,7 +50,7 @@ interface AlertListProps {
 }
 
 interface AlertFilters {
-  project_id?: string | null;
+  project_id?: number | null;
   alert_types?: AlertType[];
   is_read?: boolean | null;
 }
@@ -94,7 +94,7 @@ export function AlertList({
   );
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
   const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
-  const [selectedAlerts, setSelectedAlerts] = useState<Set<string>>(new Set());
+  const [selectedAlerts, setSelectedAlerts] = useState<Set<number>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const listRef = React.useRef<HTMLDivElement>(null);
@@ -158,7 +158,7 @@ export function AlertList({
   }, [internalFilters]);
 
   const handleAlertClick = useCallback(
-    (id: string) => {
+    (id: number) => {
       if (enableSelection && selectedAlerts.has(id)) {
         const newSet = new Set(selectedAlerts);
         newSet.delete(id);
@@ -448,7 +448,7 @@ export function AlertList({
                 <label className="text-sm text-slate-600 dark:text-slate-400">Project</label>
                 <select
                   value={internalFilters.project_id || ''}
-                  onChange={(e) => handleFilterChange({ project_id: e.target.value || null })}
+                  onChange={(e) => handleFilterChange({ project_id: e.target.value ? Number(e.target.value) : null })}
                   className="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800"
                 >
                   <option value="">All Projects</option>
