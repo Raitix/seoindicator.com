@@ -51,3 +51,7 @@ export type {
 
 export { BadgeStatsCard, BadgeStatsCardSkeleton, formatNumber } from "./BadgeStatsCard";
 export type { BadgeStatsCardProps } from "./BadgeStatsCard";
+
+// Content Decay Widget - TASK-36-14
+export { ContentDecayWidget } from "./ContentDecayWidget";
+export type { ContentDecayWidgetProps } from "./ContentDecayWidget";

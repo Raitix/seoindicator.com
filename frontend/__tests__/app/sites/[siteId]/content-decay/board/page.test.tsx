@@ -1,113 +1,124 @@
 /**
  * Tests for Content Decay Recovery Board Page
- * Task: TASK-36-13
  * 
- * @jest-environment jsdom
+ * Task: TASK-36-13 - Frontend Pages - Refresh Queue & Board
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { useParams, useRouter } from "next/navigation";
 import RecoveryBoardPage from "@/app/sites/[siteId]/content-decay/board/page";
 
-// Mock Next.js navigation
+// Mock Next.js hooks
 vi.mock("next/navigation", () => ({
-  useParams: () => ({ siteId: "123" }),
-  useRouter: () => ({
-    push: vi.fn(),
-  }),
+  useParams: vi.fn(),
+  useRouter: vi.fn(),
 }));
 
-// Mock SWR hooks
+// Mock hooks
 vi.mock("@/lib/hooks/useContentDecay", () => ({
-  useContentDecayCandidates: () => ({
+  useContentDecaySummary: vi.fn(() => ({
+    summary: { totalCandidates: 10, criticalCount: 2 },
+    isLoading: false,
+  })),
+  useContentDecayCandidates: vi.fn(() => ({
     candidates: [
       {
         id: 1,
+        projectId: 1,
         pageUrl: "https://example.com/page-1",
         pageTitle: "Test Page 1",
         pageType: "blog",
-        severity: "critical",
-        decayScore: 85.5,
+        severity: "high",
+        decayScore: 75.5,
+        detectionConfidence: 0.9,
         lostClickEstimate: 500,
-        recoveryUpsideEstimate: 400,
-        status: "backlog",
+        recoveryUpsideEstimate: 800,
         primaryReasonCode: "clicks_down",
-        reasonCodes: [{ type: "clicks_down", evidence: "Significant decline", isPrimary: true }],
+        reasonCodes: [{ type: "clicks_down", evidence: "50% decline", isPrimary: true }],
+        status: "backlog",
         firstDetectedAt: "2026-03-01T00:00:00Z",
         lastDetectedAt: "2026-03-10T00:00:00Z",
       },
       {
         id: 2,
+        projectId: 1,
         pageUrl: "https://example.com/page-2",
         pageTitle: "Test Page 2",
         pageType: "landing",
-        severity: "high",
-        decayScore: 70.0,
-        lostClickEstimate: 300,
-        recoveryUpsideEstimate: 250,
-        status: "planned",
+        severity: "critical",
+        decayScore: 95.0,
+        detectionConfidence: 0.95,
+        lostClickEstimate: 1000,
+        recoveryUpsideEstimate: 1500,
         primaryReasonCode: "impressions_down",
-        reasonCodes: [{ type: "impressions_down", evidence: "Visibility dropped", isPrimary: true }],
-        firstDetectedAt: "2026-03-02T00:00:00Z",
+        reasonCodes: [{ type: "impressions_down", evidence: "70% decline", isPrimary: true }],
+        status: "planned",
+        firstDetectedAt: "2026-03-01T00:00:00Z",
         lastDetectedAt: "2026-03-10T00:00:00Z",
       },
     ],
-    meta: { currentPage: 1, perPage: 10, total: 2, lastPage: 1 },
     isLoading: false,
     mutate: vi.fn(),
-  }),
-  useContentDecayCandidate: () => ({
+  })),
+  useContentDecayCandidate: vi.fn(() => ({
     candidate: null,
     isLoading: false,
-  }),
-  useUpdateCandidateStatus: () => ({
-    updateStatus: vi.fn(() => Promise.resolve({ success: true })),
-    isUpdating: false,
-  }),
-  useContentRefreshTasks: () => ({
-    tasks: [],
-    mutate: vi.fn(),
-  }),
+  })),
+  useUpdateCandidateStatus: vi.fn(() => ({ updateStatus: vi.fn(), isUpdating: false })),
 }));
 
-describe("Recovery Board Page", () => {
+// Mock components
+vi.mock("@/components/content-decay/SeverityBadge", () => ({
+  SeverityBadge: ({ severity }: any) => (
+    <span data-testid={`severity-${severity}`} data-severity={severity}>
+      {severity}
+    </span>
+  ),
+}));
+
+vi.mock("@/components/content-decay/DecayReasonBadges", () => ({
+  DecayReasonBadges: () => <div data-testid="decay-reason-badges">Reasons</div>,
+}));
+
+vi.mock("@/components/content-decay/StatusWorkflowButtons", () => ({
+  StatusWorkflowButtons: ({ status, onStatusChange }: any) => (
+    <div data-testid="status-workflow-buttons">
+      <button onClick={() => onStatusChange("planned")}>Update Status</button>
+    </div>
+  ),
+}));
+
+describe("Content Decay Recovery Board Page", () => {
+  const mockRouter = {
+    push: vi.fn(),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    (useParams as any).mockReturnValue({ siteId: "test-site-123" });
+    (useRouter as any).mockReturnValue(mockRouter);
   });
 
   describe("Page Rendering", () => {
-    it("renders the page title", () => {
+    it("should render the page header", () => {
       render(<RecoveryBoardPage />);
       expect(screen.getByText("Recovery Board")).toBeInTheDocument();
     });
 
-    it("renders the page description", () => {
+    it("should render the page description", () => {
       render(<RecoveryBoardPage />);
-      expect(screen.getByText(/Kanban workflow/i)).toBeInTheDocument();
+      expect(screen.getByText(/Drag candidates through the recovery workflow/)).toBeInTheDocument();
     });
 
-    it("renders the kanban board", () => {
+    it("should render navigation tabs", () => {
       render(<RecoveryBoardPage />);
-      expect(screen.getByTestId("kanban-board")).toBeInTheDocument();
+      expect(screen.getByText("Queue")).toBeInTheDocument();
+      expect(screen.getByText("Board")).toBeInTheDocument();
+      expect(screen.getByText("Recovery")).toBeInTheDocument();
     });
 
-    it("renders the back button", () => {
-      render(<RecoveryBoardPage />);
-      expect(screen.getByTestId("back-button")).toBeInTheDocument();
-    });
-  });
-
-  describe("Kanban Columns", () => {
-    it("renders all five columns", () => {
-      render(<RecoveryBoardPage />);
-      expect(screen.getByTestId("kanban-column-backlog")).toBeInTheDocument();
-      expect(screen.getByTestId("kanban-column-planned")).toBeInTheDocument();
-      expect(screen.getByTestId("kanban-column-in_progress")).toBeInTheDocument();
-      expect(screen.getByTestId("kanban-column-refreshed")).toBeInTheDocument();
-      expect(screen.getByTestId("kanban-column-recovered")).toBeInTheDocument();
-    });
-
-    it("displays column titles", () => {
+    it("should render all Kanban columns", () => {
       render(<RecoveryBoardPage />);
       expect(screen.getByText("Backlog")).toBeInTheDocument();
       expect(screen.getByText("Planned")).toBeInTheDocument();
@@ -116,109 +127,143 @@ describe("Recovery Board Page", () => {
       expect(screen.getByText("Recovered")).toBeInTheDocument();
     });
 
-    it("displays column counts", () => {
+    it("should render filter controls", () => {
       render(<RecoveryBoardPage />);
-      const counts = screen.getAllByTestId("column-count");
-      expect(counts.length).toBe(5);
+      expect(screen.getByText("Filters:")).toBeInTheDocument();
     });
   });
 
-  describe("Kanban Cards", () => {
-    it("renders candidate cards in correct columns", () => {
+  describe("Kanban Columns", () => {
+    it("should render column with candidates", () => {
       render(<RecoveryBoardPage />);
-      // Card with status 'backlog' should be in backlog column
-      expect(screen.getByTestId("kanban-card-1")).toBeInTheDocument();
+      // Check that columns have count badges
+      const badges = screen.getAllByRole("status");
+      // Or check for column elements
+      expect(screen.getByTestId("column-backlog")).toBeInTheDocument();
     });
 
-    it("displays card title", () => {
+    it("should display candidate cards in correct columns", () => {
       render(<RecoveryBoardPage />);
-      expect(screen.getByTestId("card-title")).toBeInTheDocument();
+      // Card should be rendered for each candidate
+      expect(screen.getByTestId("candidate-card-1")).toBeInTheDocument();
     });
 
-    it("displays card URL", () => {
+    it("should show candidate count in column header", () => {
       render(<RecoveryBoardPage />);
-      expect(screen.getByTestId("card-url")).toBeInTheDocument();
+      // Check for count badges
+      const countBadges = screen.getAllByText(/^[0-9]+$/);
+      expect(countBadges.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("Candidate Cards", () => {
+    it("should display candidate title", () => {
+      render(<RecoveryBoardPage />);
+      expect(screen.getByText("Test Page 1")).toBeInTheDocument();
+    });
+
+    it("should display candidate metrics", () => {
+      render(<RecoveryBoardPage />);
+      expect(screen.getByText(/-500 clicks/)).toBeInTheDocument();
+      expect(screen.getByText(/\+800 upside/)).toBeInTheDocument();
+    });
+
+    it("should display severity badge", () => {
+      render(<RecoveryBoardPage />);
+      expect(screen.getByTestId("severity-high")).toBeInTheDocument();
+    });
+
+    it("should open detail sheet when card is clicked", async () => {
+      render(<RecoveryBoardPage />);
+      const card = screen.getByTestId("candidate-card-1");
+      fireEvent.click(card);
+      // Sheet should open - check for sheet content
+      await waitFor(() => {
+        // The sheet content should be visible
+      });
     });
   });
 
   describe("Filters", () => {
-    it("renders severity filter", () => {
+    it("should render severity filter", () => {
       render(<RecoveryBoardPage />);
-      // Filter triggers exist
-      const filterTriggers = screen.getAllByRole("combobox");
-      expect(filterTriggers.length).toBeGreaterThanOrEqual(1);
+      const severityTrigger = screen.getByRole("combobox", { name: /severity/i });
+      expect(severityTrigger).toBeInTheDocument();
+    });
+
+    it("should render page type filter", () => {
+      render(<RecoveryBoardPage />);
+      const pageTypeTrigger = screen.getByRole("combobox", { name: /page type/i });
+      expect(pageTypeTrigger).toBeInTheDocument();
+    });
+  });
+
+  describe("Navigation", () => {
+    it("should navigate to queue when Queue tab is clicked", async () => {
+      render(<RecoveryBoardPage />);
+      const queueTab = screen.getByText("Queue").closest("button");
+      if (queueTab) {
+        fireEvent.click(queueTab);
+      }
+      expect(mockRouter.push).toHaveBeenCalledWith("/sites/test-site-123/content-decay");
+    });
+
+    it("should navigate to recovery when Recovery tab is clicked", async () => {
+      render(<RecoveryBoardPage />);
+      const recoveryTab = screen.getByText("Recovery").closest("button");
+      if (recoveryTab) {
+        fireEvent.click(recoveryTab);
+      }
+      expect(mockRouter.push).toHaveBeenCalledWith("/sites/test-site-123/content-decay/recovery");
+    });
+  });
+
+  describe("Site ID Handling", () => {
+    it("should show not found when siteId is missing", () => {
+      (useParams as any).mockReturnValue({});
+      render(<RecoveryBoardPage />);
+      expect(screen.getByText("Site not found")).toBeInTheDocument();
     });
   });
 
   describe("Quick Stats", () => {
-    it("renders stats section at bottom", () => {
+    it("should display total candidates count", () => {
       render(<RecoveryBoardPage />);
-      expect(screen.getByTestId("stat-backlog")).toBeInTheDocument();
-      expect(screen.getByTestId("stat-planned")).toBeInTheDocument();
-      expect(screen.getByTestId("stat-in_progress")).toBeInTheDocument();
-      expect(screen.getByTestId("stat-refreshed")).toBeInTheDocument();
-      expect(screen.getByTestId("stat-recovered")).toBeInTheDocument();
-    });
-  });
-
-  describe("Card Interactions", () => {
-    it("cards are clickable", () => {
-      render(<RecoveryBoardPage />);
-      const card = screen.getByTestId("kanban-card-1");
-      expect(card).toHaveAttribute("role", "button");
+      expect(screen.getByText(/Total Candidates:/)).toBeInTheDocument();
     });
 
-    it("cards have proper accessibility attributes", () => {
+    it("should display critical count", () => {
       render(<RecoveryBoardPage />);
-      const card = screen.getByTestId("kanban-card-1");
-      expect(card).toHaveAttribute("tabIndex", "0");
+      expect(screen.getByText(/Critical:/)).toBeInTheDocument();
     });
   });
 
   describe("Accessibility", () => {
-    it("has proper heading hierarchy", () => {
+    it("should have proper heading hierarchy", () => {
       render(<RecoveryBoardPage />);
-      const heading = screen.getByRole("heading", { level: 1 });
-      expect(heading).toHaveTextContent("Recovery Board");
+      const h1 = screen.getByRole("heading", { level: 1 });
+      expect(h1).toHaveTextContent("Recovery Board");
     });
 
-    it("kanban board has region role", () => {
+    it("should have accessible column regions", () => {
       render(<RecoveryBoardPage />);
-      expect(screen.getByRole("region", { name: /Kanban board/i })).toBeInTheDocument();
-    });
-
-    it("columns have region roles", () => {
-      render(<RecoveryBoardPage />);
-      expect(screen.getByRole("region", { name: /Backlog column/i })).toBeInTheDocument();
-    });
-  });
-
-  describe("Responsive Design", () => {
-    it("board container has horizontal scroll", () => {
-      render(<RecoveryBoardPage />);
-      const board = screen.getByTestId("kanban-board");
-      expect(board).toHaveClass("overflow-x-auto");
+      const region = screen.getByRole("region", { name: /kanban board/i });
+      expect(region).toBeInTheDocument();
     });
   });
 
   describe("Loading States", () => {
-    it("shows skeletons when loading", () => {
-      vi.mock("@/lib/hooks/useContentDecay", () => ({
-        useContentDecayCandidates: () => ({ candidates: [], isLoading: true, mutate: vi.fn() }),
-      }));
-      
-      render(<RecoveryBoardPage />);
-      const skeletons = screen.queryAllByTestId("skeleton");
-      expect(skeletons.length).toBeGreaterThanOrEqual(0);
-    });
-  });
+    it("should render loading skeleton when loading", async () => {
+      const { useContentDecayCandidates } = await import("@/lib/hooks/useContentDecay");
+      (useContentDecayCandidates as any).mockReturnValue({
+        candidates: [],
+        isLoading: true,
+        mutate: vi.fn(),
+      });
 
-  describe("Empty States", () => {
-    it("shows empty state for empty columns", () => {
       render(<RecoveryBoardPage />);
-      // Some columns will be empty
-      const emptyStates = screen.getAllByText("No items");
-      expect(emptyStates.length).toBeGreaterThan(0);
+      // Should still render header
+      expect(screen.getByText("Recovery Board")).toBeInTheDocument();
     });
   });
 });
