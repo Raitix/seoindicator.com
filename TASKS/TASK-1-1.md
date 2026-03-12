@@ -624,14 +624,14 @@ Updated `DOCUMENTATION.md` with:
 - Active agents entry cleared
 - Status: Done (final)
 
-### [2026-03-11 23:00 +02:00] Agent: DocSystemAnalyst
-**Verification & Cleanup Complete**
+### [2026-03-12 17:18 GMT+2] Agent: DocSystemAnalyst
+**Verification Complete**
 
 - Task status: Done (confirmed)
-- DOCUMENTATION.md verified: Keywords + ranking_history schema documented
-- Parent files (SPEC-1.md, FEAT-1.md) are empty stubs - no status update possible
-- Not all TASK-1-* tasks are Done (TASK-1-13, TASK-1-18, TASK-1-20, TASK-1-21, TASK-1-4, TASK-1-6, TASK-1-9 still in progress)
-- Stale lock removed
-- Completion marker written: logs/completed/task/TASK-1-1.json
+- DOCUMENTATION.md verified:
+  - Keywords table references at lines 497, 6402, 6438, 7425, 21797
+  - ranking_history table at lines 28864, 32487
+- Stale lock removed: `.locks/TASK-1-1.lock`
+- Completion marker written: `logs/completed/task/TASK-1-1.json`
 - Active agents entry cleared
 - Status: Done (final)

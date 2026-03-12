@@ -157,7 +157,7 @@ export function generateToolMetadata(
       images: og.image ? [{ url: og.image, alt: og.imageAlt || '' }] : undefined,
     },
     twitter: {
-      card: twitter.card,
+      card: twitter.card as 'summary_large_image',
       title: twitter.title,
       description: twitter.description,
       images: twitter.image ? [twitter.image] : undefined,
@@ -211,7 +211,7 @@ export function generateToolsLandingMetadata(): {
       images: og.image ? [{ url: og.image, alt: og.imageAlt || '' }] : undefined,
     },
     twitter: {
-      card: twitter.card,
+      card: twitter.card as 'summary_large_image',
       title: twitter.title,
       description: twitter.description,
       images: twitter.image ? [twitter.image] : undefined,
