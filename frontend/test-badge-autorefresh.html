@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Badge Auto-Refresh Test</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .badge-container { margin: 10px 0; }
+        #console-log { background: #1a1a1a; color: #0f0; padding: 10px; font-family: monospace; font-size: 12px; height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>Badge Auto-Refresh Production Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Badge API Availability</h2>
+        <div id="api-check"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. localStorage Availability</h2>
+        <div id="storage-check"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. prefers-reduced-motion Check</h2>
+        <div id="motion-check"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Console Log</h2>
+        <div id="console-log"></div>
+    </div>
+    
+    <script src="https://seoindicator.com/badge.js"></script>
+    <script>
+        const consoleDiv = document.getElementById('console-log');
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+            consoleDiv.innerHTML += msg + '<br>';
+        };
+        
+        // Test 1: Badge API
+        const apiCheck = document.getElementById('api-check');
+        if (window.SEOIndicatorBadge) {
+            apiCheck.innerHTML = '<span style="color:green">✓ SEOIndicatorBadge loaded</span><br>' +
+                'Version: ' + (window.SEOIndicatorBadge.version || 'unknown') + '<br>' +
+                'Methods: ' + Object.keys(window.SEOIndicatorBadge).join(', ');
+        } else {
+            apiCheck.innerHTML = '<span style="color:red">✗ SEOIndicatorBadge not loaded</span>';
+        }
+        
+        // Test 2: localStorage
+        const storageCheck = document.getElementById('storage-check');
+        try {
+            const testKey = '__seoindicator_test__';
+            localStorage.setItem(testKey, '1');
+            localStorage.removeItem(testKey);
+            storageCheck.innerHTML = '<span style="color:green">✓ localStorage available</span>';
+        } catch (e) {
+            storageCheck.innerHTML = '<span style="color:red">✗ localStorage unavailable: ' + e.message + '</span>';
+        }
+        
+        // Test 3: prefers-reduced-motion
+        const motionCheck = document.getElementById('motion-check');
+        if (window.matchMedia) {
+            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+            motionCheck.innerHTML = '<span style="color:green">✓ matchMedia available</span><br>' +
+                'prefers-reduced-motion: ' + (reducedMotion.matches ? 'yes' : 'no');
+        } else {
+            motionCheck.innerHTML = '<span style="color:red">✗ matchMedia unavailable</span>';
+        }
+        
+        console.log('Test page loaded');
+        console.log('SEOIndicatorBadge:', window.SEOIndicatorBadge);
+    </script>
+</body>
+</html>

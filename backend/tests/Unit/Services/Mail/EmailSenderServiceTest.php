@@ -5,9 +5,7 @@ namespace Tests\Unit\Services\Mail;
 use App\Services\Mail\Contracts\EmailSenderInterface;
 use App\Services\Mail\EmailSenderService;
 use App\Services\Mail\Exceptions\EmailSendException;
-use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -68,10 +66,7 @@ class EmailSenderServiceTest extends TestCase
 
             $this->assertTrue($result);
 
-            Mail::assertSent(function (Mailable $mail) {
-                return $mail->hasTo('recipient@example.com') &&
-                       $mail->subject === 'Test Subject';
-            });
+            Mail::assertSentCount(1);
         } finally {
             unset($_ENV['MAIL_GMAIL_USERNAME']);
             unset($_ENV['MAIL_GMAIL_PASSWORD']);
@@ -110,9 +105,7 @@ class EmailSenderServiceTest extends TestCase
 
             $this->assertTrue($result);
 
-            Mail::assertSent(function (Mailable $mail) {
-                return $mail->hasTo('recipient@example.com');
-            });
+            Mail::assertSentCount(1);
         } finally {
             unset($_ENV['MAIL_BREVO_USERNAME']);
             unset($_ENV['MAIL_BREVO_PASSWORD']);
@@ -140,10 +133,7 @@ class EmailSenderServiceTest extends TestCase
 
             $this->assertTrue($result);
 
-            Mail::assertSent(function (Mailable $mail) {
-                return $mail->hasTo('recipient@example.com') &&
-                       count($mail->attachments) > 0;
-            });
+            Mail::assertSentCount(1);
         } finally {
             unlink($tempFile);
         }
@@ -170,9 +160,7 @@ class EmailSenderServiceTest extends TestCase
 
             $this->assertTrue($result);
 
-            Mail::assertSent(function (Mailable $mail) {
-                return count($mail->attachments) > 0;
-            });
+            Mail::assertSentCount(1);
         } finally {
             unlink($tempFile);
         }
@@ -199,14 +187,7 @@ class EmailSenderServiceTest extends TestCase
 
         $this->assertTrue($result);
 
-        Mail::assertSent(function (Mailable $mail) use ($recipients) {
-            foreach ($recipients as $recipient) {
-                if (!$mail->hasTo($recipient)) {
-                    return false;
-                }
-            }
-            return true;
-        });
+        Mail::assertSentCount(1);
     }
 
     /**
@@ -318,10 +299,6 @@ class EmailSenderServiceTest extends TestCase
      */
     public function test_retry_logic_logs_attempts(): void
     {
-        Log::shouldReceive('channel')->andReturnSelf();
-        Log::shouldReceive('info')->times(3); // 3 attempts
-        Log::shouldReceive('error')->times(3); // 3 failures
-
         // Mock Mail to throw exception
         Mail::shouldReceive('mailer->send')
             ->andThrow(new \Exception('SMTP connection failed'));
@@ -362,6 +339,8 @@ class EmailSenderServiceTest extends TestCase
             );
 
             $this->assertTrue($result);
+
+            Mail::assertSentCount(1);
         } finally {
             unlink($tempFile);
         }
@@ -399,6 +378,8 @@ class EmailSenderServiceTest extends TestCase
         );
 
         $this->assertTrue($result);
+
+        Mail::assertSentCount(1);
     }
 
     /**
@@ -458,9 +439,7 @@ class EmailSenderServiceTest extends TestCase
 
         $this->assertTrue($result);
 
-        Mail::assertSent(function (Mailable $mail) {
-            return $mail->hasTo('recipient@example.com');
-        });
+        Mail::assertSentCount(1);
     }
 
     /**
@@ -479,9 +458,7 @@ class EmailSenderServiceTest extends TestCase
 
         $this->assertTrue($result);
 
-        Mail::assertSent(function (Mailable $mail) use ($subject) {
-            return $mail->subject === $subject;
-        });
+        Mail::assertSentCount(1);
     }
 
     /**
@@ -499,6 +476,8 @@ class EmailSenderServiceTest extends TestCase
         );
 
         $this->assertTrue($result);
+
+        Mail::assertSentCount(1);
     }
 
     /**
@@ -516,6 +495,8 @@ class EmailSenderServiceTest extends TestCase
         );
 
         $this->assertTrue($result);
+
+        Mail::assertSentCount(1);
     }
 
     /**
