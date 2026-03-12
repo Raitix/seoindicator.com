@@ -1,7 +1,7 @@
 # SPEC-004-18: Email Templates
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Low`
@@ -99,3 +99,6 @@ Duration: 2.65s
 - [x] Unsubscribe link support
 
 **Decision:** PASS → Ready for deployment
+
+### [2026-03-12 22:58] Agent: DevOps
+Starting production deployment for Email Templates (TASK-4-18).
