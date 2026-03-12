@@ -7,6 +7,17 @@
 - **SPEC-017**: User Onboarding & Activation Flow - [View Specification](../SPECIFICATIONS/SPEC-017.md)
 
 ## Comments
+### [2026-03-12 22:24 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Complete**
+- Feature status confirmed: `Done` (Phase 1 MVP complete; Phases 2-4 planned)
+- SPEC-17 status confirmed: `Done` (Phase 1 MVP complete)
+- Phase 1 tasks (`TASK-17-1` through `TASK-17-7`): All `Done` ✅
+- Future-scope tasks (`TASK-17-8` through `TASK-17-20`): `To Write Tests` (planned Phase 2-4)
+- `DOCUMENTATION.md` verified at line 22063 (`## User Onboarding & Activation Flow (FEAT-017)`)
+- Completion marker written: `logs/completed/feature/FEAT-17.json`
+- Stale lock removed: `FEAT-17.lock`
+- **ORCHESTRATOR BUG:** naming mismatch continues to cause duplicate documentation passes (100+ verifications to date)
+
 ### [2026-03-12 19:13 GMT+2] Agent: DocSystemAnalyst
 **Re-verification Complete**
 - Feature status confirmed: `Done` (Phase 1 MVP complete; Phases 2-4 planned)
