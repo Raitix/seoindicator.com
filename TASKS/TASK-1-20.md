@@ -1,7 +1,7 @@
 # SPEC-001-20: Performance Optimization
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 ## PRIORITY
 `Low`
 
@@ -423,3 +423,35 @@ Impact: With 500 keywords × 30 days history = 15,000 rows loaded unnecessarily.
 
 ### [2026-02-20 09:44] Agent: SpecSystemAnalyst
 Created task for performance optimization. Priority Low - polish after core functionality works.
+
+### [2026-03-12 13:15] Agent: Developer
+**Performance Optimization Implemented**
+
+**Changes Made:**
+1. **KeywordController::index()** - Already had N+1 fix using `getLatestRankingsForKeywords()` with window function
+2. **DashboardController::index()** - Fixed memory issue:
+   - Old: Loaded ALL rankings into memory, then grouped in PHP
+   - New: Uses window function (MySQL) or Eloquent (SQLite) to fetch only latest 2 rankings per keyword
+
+**Database-Agnostic Approach:**
+- MySQL (production): Uses `ROW_NUMBER() OVER` window function for efficient query
+- SQLite (tests): Uses Eloquent query builder for compatibility
+- Checks `\DB::getDriverName()` to select appropriate method
+
+**Files Modified:**
+- `backend/app/Http/Controllers/Api/V1/DashboardController.php`
+  - Added `getLatestRankingsForKeywords()` method
+  - Added `getLatestRankingsWithWindowFunction()` for MySQL
+  - Added `getLatestRankingsWithEloquent()` for SQLite
+- `backend/app/Http/Controllers/Api/V1/KeywordController.php`
+  - Refactored `getLatestRankingsForKeywords()` to use database-agnostic approach
+
+**Test Results:**
+- DashboardControllerTest: 55 tests passed (161 assertions)
+- KeywordControllerTest: 24 tests passed (index method tests - all related to optimization)
+
+**Remaining Items for LocalTester:**
+- Verify keyword list loads in <500ms with 100+ keywords
+- Verify dashboard loads in <300ms
+- Check if additional indexes are needed
+- Profile slow queries in production-like environment
