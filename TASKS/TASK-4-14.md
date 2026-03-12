@@ -1,7 +1,7 @@
 # SPEC-004-14: Branding API
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `Low`
