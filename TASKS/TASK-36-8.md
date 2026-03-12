@@ -1,7 +1,7 @@
 # TASK-36-8: ContentDecayExportService
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `Medium`
