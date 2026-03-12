@@ -430,6 +430,11 @@ class ContentDecayDigestServiceTest extends TestCase
         $this->assertTrue($project->digest_enabled, 'digest_enabled should be true');
         $this->assertTrue($project->detection_enabled, 'detection_enabled should be true');
         $this->assertEquals('weekly', $project->digest_frequency, 'digest_frequency should be weekly');
+        $this->assertNotNull($project->last_digest_sent_at, 'last_digest_sent_at should not be null');
+
+        // Check days difference (use abs() to match service behavior)
+        $daysSince = abs(now()->diffInDays($project->last_digest_sent_at));
+        $this->assertGreaterThanOrEqual(7, $daysSince, "Days since last digest should be >= 7, got {$daysSince}");
 
         $shouldSend = $this->service->shouldSendDigest($project);
 
