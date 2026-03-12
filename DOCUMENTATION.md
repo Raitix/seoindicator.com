@@ -7987,6 +7987,158 @@ When multiple triggers are present, the service generates composite recommendati
 | TASK-36-12: Decay Queue Page | Shows recommendations in candidate detail view |
 
 ---
+## Content Decay Digest Service (TASK-36-7)
+
+### Feature Description
+Weekly/monthly digest service for the Content Decay Detection & Refresh Planner feature (FEAT-036) that summarizes newly detected decay candidates and recovered pages for notification delivery. Generates structured digest payloads with summary statistics, top priority candidates, and actionable recommendations.
+
+### Component Locations
+- **Service:** `backend/app/Services/ContentDecay/ContentDecayDigestService.php`
+- **Interface:** `backend/app/Services/ContentDecay/Contracts/ContentDecayDigestServiceInterface.php`
+- **Mailable:** `backend/app/Mail/ContentDecayDigestEmail.php`
+- **Email Template:** `backend/resources/views/emails/content-decay-digest.blade.php`
+- **Unit Tests:** `backend/tests/Unit/Services/ContentDecay/ContentDecayDigestServiceTest.php`
+- **Feature Tests:** `backend/tests/Feature/Services/ContentDecay/ContentDecayDigestServiceTest.php`
+
+### Core Methods
+
+| Method | Description |
+|--------|-------------|
+| `generateDigest(ContentDecayProject $project)` | Generate structured digest payload with candidates, statistics, and recommendations |
+| `sendDigest(User $user, array $digest)` | Queue email and create in-app notification for user |
+| `shouldSendDigest(ContentDecayProject $project)` | Check if digest is due based on frequency and last sent date |
+| `getDigestPeriod(ContentDecayProject $project)` | Calculate date range for digest period (weekly/monthly) |
+| `getNewCandidates(ContentDecayProject, startDate, endDate)` | Fetch new decay candidates within period |
+| `getRecoveredCandidates(ContentDecayProject, startDate, endDate)` | Fetch recovered candidates within period |
+| `formatDigestPayload(ContentDecayProject, candidates, recovered)` | Format final digest array structure |
+
+### Digest Payload Structure
+
+```php
+[
+    'digest_id' => 'digest-abc123',
+    'project_id' => 1,
+    'site_id' => 1,
+    'generated_at' => '2026-03-12T12:00:00Z',
+    'period_start' => '2026-03-05',
+    'period_end' => '2026-03-12',
+    'frequency' => 'weekly',
+    'new_candidates' => [...],     // Candidates detected in period
+    'recovered_candidates' => [...], // Pages recovered in period
+    'summary' => [
+        'total_new' => 5,
+        'total_recovered' => 2,
+        'critical_count' => 1,
+        'high_count' => 3,
+        'medium_count' => 1,
+        'low_count' => 0,
+        'total_lost_clicks' => 1500,
+        'estimated_upside_clicks' => 2200,
+        'severity_breakdown' => [...],
+        'page_type_breakdown' => [...],
+    ],
+    'top_candidates' => [...],     // Top 5 by decay score
+    'actionable_recommendations' => [...],
+    'generation_time_ms' => 45.23,
+]
+```
+
+### Digest Frequency
+
+| Frequency | Period Days | Description |
+|-----------|-------------|-------------|
+| `weekly` | 7 | Default frequency, weekly digest |
+| `monthly` | 30 | Extended period digest |
+
+### Filtering Logic
+
+| Filter | Description |
+|--------|-------------|
+| Status Filter | Excludes `ignored` candidates |
+| Minimum Score | Respects `min_decay_score` project setting |
+| Date Range | Only candidates detected/recovered within period |
+| Top Candidates | Limited to 5 by decay score |
+
+### Notification Integration
+
+- **Email:** Queued via `Mail::queue()` with `ContentDecayDigestEmail` mailable
+- **In-App:** Creates `Notification` record with type `content_decay_digest`
+- **FEAT-002 Integration:** Uses existing notification infrastructure
+
+### Candidate Format
+
+```php
+[
+    'id' => 1,
+    'page_url' => '/blog/example...',
+    'page_title' => 'Example Page',
+    'page_type' => 'blog',
+    'decay_score' => 75.5,
+    'severity' => 'high',
+    'reason_codes' => ['clicks_down', 'ctr_down'],
+    'primary_reason' => 'clicks_down',
+    'lost_clicks' => 300,
+    'recovery_upside' => 450,
+    'first_detected_at' => '2026-03-10T08:00:00Z',
+    'status' => 'backlog',
+]
+```
+
+### Security
+
+| Measure | Implementation |
+|---------|---------------|
+| User Isolation | Project ownership verified before digest generation |
+| Input Validation | Date range validation, status whitelist |
+| XSS Prevention | URL truncation, safe string handling |
+| SQL Injection | Eloquent ORM with parameterized queries |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| Unit Tests | 57 | 107 | ✅ PASS |
+| Feature Tests | 21 | 65 | ✅ PASS |
+| **Total** | **78** | **172** | **✅ ALL PASS** |
+
+**Test Categories:**
+- Service Instantiation (SI): Class structure, container binding, interface implementation
+- generateDigest (GD): Weekly/monthly frequency, filtering, statistics, edge cases
+- shouldSendDigest (SSD): Frequency checks, due date logic, enabled/disabled states
+- getNewCandidates (NC): Status filtering, ordering, severity threshold
+- getRecoveredCandidates (RC): Status filtering, ordering
+- getDigestPeriod (DP): Period calculation
+- sendDigest (SD): Notification dispatch, in-app notification creation
+- Exclusion Logic (EX): Ignored candidates, score threshold
+- Edge Cases (EDGE): Empty project, unicode URLs, long URLs, invalid frequency
+- Integration (INT): Full workflow, database persistence, notification dispatch
+- Email Template (EMAIL): Rendering, subject formatting, empty digest handling
+- Performance (PERF): Single/small/medium candidate sets
+- Security (SEC): SQL injection, XSS, user isolation, payload limits
+
+### Production Deployment
+
+- **Deployed:** 2026-03-12
+- **Deployment ID:** `20260312T085726Z-1c584bd6`
+- **Commit:** `65be9f77`
+
+### Dependencies
+
+| Dependency | Status | Usage |
+|------------|--------|-------|
+| TASK-36-2 (Eloquent Models) | Done | ContentDecayProject, ContentDecayCandidate models |
+| TASK-36-6 (DetectionService) | Done | Detection status integration |
+| FEAT-002 (Alerts/Notifications) | Done | Notification infrastructure |
+
+### Downstream Consumers
+
+| Consumer | Usage |
+|----------|-------|
+| Queue Jobs | Scheduled digest generation and delivery |
+| API Controllers | Manual digest trigger endpoints |
+| Frontend | Digest preview in settings UI |
+
+---
 ## Content Decay Frontend Components (TASK-36-11)
 
 ### Component Description
@@ -47467,5 +47619,312 @@ Backend service for synchronizing Google Business Profile (GBP) Insights data fr
 - TASK-35-14: GBP Insights & Reviews API Controllers (API consumers)
 - TASK-35-17: Location Management Page (frontend sync trigger)
 - TASK-35-19: Location Dashboard Page (insights display)
+
+---
+## Content Decay Eloquent Models (TASK-36-2)
+
+### Model Description
+Four Eloquent models for the Content Decay Detection & Refresh Planner feature (FEAT-036) that provide the ORM layer for content decay projects, candidates, signals, and refresh tasks. Implements relationships, attribute casting, query scopes, and helper methods for the complete content decay workflow.
+
+### Component Locations
+- **Models:**
+  - `backend/app/Models/ContentDecayProject.php`
+  - `backend/app/Models/ContentDecayCandidate.php`
+  - `backend/app/Models/ContentDecaySignal.php`
+  - `backend/app/Models/ContentRefreshTask.php`
+- **Factories:**
+  - `backend/database/factories/ContentDecayProjectFactory.php`
+  - `backend/database/factories/ContentDecayCandidateFactory.php`
+  - `backend/database/factories/ContentDecaySignalFactory.php`
+  - `backend/database/factories/ContentRefreshTaskFactory.php`
+- **Tests:**
+  - `backend/tests/Unit/Models/ContentDecayProjectTest.php`
+  - `backend/tests/Unit/Models/ContentDecayCandidateTest.php`
+  - `backend/tests/Unit/Models/ContentDecaySignalTest.php`
+  - `backend/tests/Unit/Models/ContentRefreshTaskTest.php`
+
+### Model Summary
+
+| Model | Purpose | Relationships | Key Features |
+|-------|---------|---------------|--------------|
+| ContentDecayProject | Per-site detection configuration | BelongsTo: User, Site; HasMany: Candidates | Detection settings, digest config |
+| ContentDecayCandidate | Tracked decay item per page | BelongsTo: Project; HasMany: Signals, Tasks | Status workflow, severity levels |
+| ContentDecaySignal | Historical comparison snapshot | BelongsTo: Candidate | Metric deltas, evidence storage |
+| ContentRefreshTask | User-manageable work item | BelongsTo: Candidate, User | Due dates, task sources |
+
+### ContentDecayProject Model
+
+**Relationships:**
+| Method | Type | Related Model |
+|--------|------|---------------|
+| `user()` | BelongsTo | User |
+| `site()` | BelongsTo | Site |
+| `candidates()` | HasMany | ContentDecayCandidate |
+
+**Attribute Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `detection_enabled` | boolean |
+| `window_days` | integer |
+| `min_clicks_threshold` | integer |
+| `min_impressions_threshold` | integer |
+| `min_decay_score` | decimal:2 |
+| `digest_enabled` | boolean |
+| `settings_json` | array |
+| `last_scanned_at` | datetime |
+
+**Query Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `enabled()` | Filter where detection_enabled = true |
+| `forUser($userId)` | Filter by user_id |
+
+**Helper Methods:**
+| Method | Return | Description |
+|--------|--------|-------------|
+| `isDetectionEnabled()` | bool | Check if detection is enabled |
+| `getWindowDays()` | int | Get comparison window in days |
+
+### ContentDecayCandidate Model
+
+**Relationships:**
+| Method | Type | Related Model |
+|--------|------|---------------|
+| `project()` | BelongsTo | ContentDecayProject |
+| `signals()` | HasMany | ContentDecaySignal |
+| `tasks()` | HasMany | ContentRefreshTask |
+
+**Attribute Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `decay_score` | decimal:2 |
+| `detection_confidence` | decimal:2 |
+| `lost_click_estimate` | integer |
+| `recovery_upside_estimate` | integer |
+| `reason_codes` | array |
+| `signal_sources` | array |
+| `evidence_json` | array |
+
+**Query Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `byStatus($status)` | Filter by workflow status |
+| `bySeverity($severity)` | Filter by severity level |
+| `byPageType($type)` | Filter by page type |
+| `minimumScore($score)` | Filter by minimum decay score |
+| `backlog()` | Status = 'backlog' |
+| `planned()` | Status = 'planned' |
+| `inProgress()` | Status = 'in_progress' |
+| `refreshed()` | Status = 'refreshed' |
+| `recovered()` | Status = 'recovered' |
+| `ignored()` | Status = 'ignored' |
+
+**Accessors:**
+| Accessor | Description |
+|----------|-------------|
+| `page_url_hash` | Auto-hashed from page_url |
+| `is_recovered` | Check if status = 'recovered' |
+
+**Status Transition Methods:**
+| Method | New Status | Timestamp Set |
+|--------|------------|---------------|
+| `markAsPlanned()` | planned | `planned_at` |
+| `markAsInProgress()` | in_progress | `started_at` |
+| `markAsRefreshed()` | refreshed | `refreshed_at` |
+| `markAsRecovered()` | recovered | `recovered_at` |
+| `markAsIgnored()` | ignored | `ignored_at` |
+
+### ContentDecaySignal Model
+
+**Relationships:**
+| Method | Type | Related Model |
+|--------|------|---------------|
+| `candidate()` | BelongsTo | ContentDecayCandidate |
+
+**Attribute Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `previous_ctr` | decimal:4 |
+| `current_ctr` | decimal:4 |
+| `previous_avg_position` | decimal:2 |
+| `current_avg_position` | decimal:2 |
+| `evidence_json` | array |
+
+**Query Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `forCandidate($candidateId)` | Filter by candidate_id |
+| `inDateRange($start, $end)` | Filter by date range |
+
+**Delta Calculation Methods:**
+| Method | Return | Description |
+|--------|--------|-------------|
+| `getClickDelta()` | int | current_clicks - previous_clicks |
+| `getImpressionDelta()` | int | current_impressions - previous_impressions |
+| `getCtrDelta()` | float | current_ctr - previous_ctr |
+| `getPositionDelta()` | float | current_avg_position - previous_avg_position |
+
+### ContentRefreshTask Model
+
+**Relationships:**
+| Method | Type | Related Model |
+|--------|------|---------------|
+| `candidate()` | BelongsTo | ContentDecayCandidate |
+| `owner()` | BelongsTo | User |
+
+**Attribute Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `due_date` | date |
+| `metadata_json` | array |
+
+**Query Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `byStatus($status)` | Filter by task status |
+| `overdue()` | Filter tasks past due date |
+| `forUser($userId)` | Filter by owner_user_id |
+| `todo()` | Status = 'todo' |
+| `inProgress()` | Status = 'in_progress' |
+| `done()` | Status = 'done' |
+| `skipped()` | Status = 'skipped' |
+
+**Helper Methods:**
+| Method | Return | Description |
+|--------|--------|-------------|
+| `markAsDone()` | void | Set status to 'done' |
+| `markAsSkipped()` | void | Set status to 'skipped' |
+| `isOverdue()` | bool | Check if past due date |
+
+### Factory States
+
+**ContentDecayProjectFactory:**
+| State | Description |
+|-------|-------------|
+| `disabled` | detection_enabled = false |
+| `noDigest` | digest_enabled = false |
+| `weeklyDigest` | digest_frequency = 'weekly' |
+| `monthlyDigest` | digest_frequency = 'monthly' |
+| `window7Days` | window_days = 7 |
+| `window14Days` | window_days = 14 |
+| `window56Days` | window_days = 56 |
+| `neverScanned` | last_scanned_at = null |
+| `recentlyScanned` | last_scanned_at = recent |
+
+**ContentDecayCandidateFactory:**
+| State | Description |
+|-------|-------------|
+| `planned` | status = 'planned' |
+| `inProgress` | status = 'in_progress' |
+| `refreshed` | status = 'refreshed' |
+| `recovered` | status = 'recovered' |
+| `ignored` | status = 'ignored' |
+| `criticalSeverity` | severity = 'critical' |
+| `highSeverity` | severity = 'high' |
+| `mediumSeverity` | severity = 'medium' |
+| `lowSeverity` | severity = 'low' |
+
+**ContentDecaySignalFactory:**
+| State | Description |
+|-------|-------------|
+| `clickDecline` | Significant click loss |
+| `impressionDecline` | Significant impression loss |
+| `ctrDecline` | CTR drop |
+| `positionDecline` | Position worsened |
+| `severeDecay` | All metrics declining |
+
+**ContentRefreshTaskFactory:**
+| State | Description |
+|-------|-------------|
+| `inProgress` | status = 'in_progress' |
+| `done` | status = 'done' |
+| `skipped` | status = 'skipped' |
+| `overdue` | due_date in past |
+| `dueSoon` | due_date within 3 days |
+| `highPriority` | Priority task |
+| `metaUpdate` | recommendation_type = 'meta_update' |
+| `contentRefresh` | recommendation_type = 'content_refresh' |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `ContentDecayProjectTest.php` | 82 passed, 1 skipped | 119 | ✅ PASS |
+| `ContentDecayCandidateTest.php` | 126 passed | 195 | ✅ PASS |
+| `ContentDecaySignalTest.php` | 90 passed | 123 | ✅ PASS |
+| `ContentRefreshTaskTest.php` | 87 passed, 1 skipped | 119 | ✅ PASS |
+| **Total** | **385 passed, 2 skipped** | **556** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Model Instantiation | 20 | Constructor, fillable, guarded |
+| Attribute Casts | 40 | decimal, boolean, array, enum, date/datetime |
+| Relationships | 30 | BelongsTo, HasMany |
+| Query Scopes | 80 | Status, severity, user, date filters |
+| Helper Methods | 50 | Status transitions, delta calculations |
+| Accessors | 20 | Computed attributes |
+| Factory States | 40 | All workflow states |
+| Edge Cases | 30 | Nulls, large values, unicode, emojis |
+| Security | 25 | SQL injection, XSS, invalid enum values |
+| Integration | 40 | CRUD, cascade deletes, complex queries |
+| Performance | 20 | N+1 prevention, index usage |
+
+### Status Workflow
+
+```
+backlog → planned → in_progress → refreshed → recovered
+    ↓          ↓          ↓            ↓
+  ignored   ignored   ignored      ignored
+```
+
+| Status | Description | Timestamp Field |
+|--------|-------------|-----------------|
+| `backlog` | Initial state, pending action | `first_detected_at` |
+| `planned` | Scheduled for refresh | `planned_at` |
+| `in_progress` | Currently being worked on | `started_at` |
+| `refreshed` | Content has been updated | `refreshed_at` |
+| `recovered` | Performance recovered | `recovered_at` |
+| `ignored` | Excluded from queue | `ignored_at` |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-12 |
+| Deployment ID | `20260312T085726Z-1c584bd6` |
+| Commit | `65be9f773a61` |
+| Production Tests | 385 passed, 2 skipped (SQLite ENUM expected) |
+| Status | Complete |
+
+### Migration Fix Applied
+
+During production deployment, a MySQL strict mode issue was discovered and fixed:
+- Changed `first_detected_at` and `last_detected_at` to use `->useCurrent()` default
+- All four migrations now run successfully on MySQL
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-36-1 | Done ✅ | Database migrations |
+
+### Downstream Consumers
+
+| Consumer | Usage |
+|----------|-------|
+| TASK-36-3 | ContentDecayScoringService uses models |
+| TASK-36-4 | ContentDecayReasonService uses models |
+| TASK-36-5 | ContentRefreshPlannerService uses models |
+| TASK-36-6 | ContentDecayDetectionService uses models |
+| TASK-36-10 | API Controllers use models |
+
+### Related Tasks
+
+- TASK-36-1: Database Migrations (foundation)
+- TASK-36-3: ContentDecayScoringService
+- TASK-36-4: ContentDecayReasonService
+- TASK-36-5: ContentRefreshPlannerService
+- TASK-36-6: ContentDecayDetectionService
 
 ---
