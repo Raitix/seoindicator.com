@@ -35272,6 +35272,114 @@ CREATE TABLE annotations (
 - TASK-9-10: End-to-End Integration Tests
 
 ---
+## AnnotationCategory Enum (TASK-9-2)
+
+### Service Description
+PHP 8.1+ backed string enum defining annotation categories for SEO event tracking. Provides type-safe category handling with human-readable labels and emoji icons for UI display.
+
+### Enum Location
+`backend/app/Enums/AnnotationCategory.php`
+
+### Enum Cases
+| Case | Value | Label | Icon | Use Case |
+|------|-------|-------|------|----------|
+| `CONTENT_UPDATE` | `content_update` | Content Update | ✏️ | Page content changes, new content |
+| `LINK_BUILDING` | `link_building` | Link Building | 🔗 | New backlinks acquired |
+| `TECHNICAL_FIX` | `technical_fix` | Technical Fix | 🔧 | Site speed, redirects, schema |
+| `ALGORITHM_UPDATE` | `algorithm_update` | Algorithm Update | 🤖 | Google algorithm changes |
+| `COMPETITOR_ACTION` | `competitor_action` | Competitor Action | 👀 | Competitor changes observed |
+| `SEASONAL` | `seasonal` | Seasonal | 📅 | Seasonal traffic/events |
+| `MANUAL_ACTION` | `manual_action` | Manual Action | ⚠️ | Google penalty or warning |
+| `OTHER` | `other` | Other | 📝 | General notes (default) |
+
+### Methods
+
+**`label(): string`**
+- Returns human-readable Title Case label for display purposes
+- Example: `AnnotationCategory::CONTENT_UPDATE->label()` → `"Content Update"`
+
+**`icon(): string`**
+- Returns single emoji icon for UI display
+- Example: `AnnotationCategory::CONTENT_UPDATE->icon()` → `"✏️"`
+
+### Usage Examples
+
+```php
+use App\Enums\AnnotationCategory;
+
+// Get all cases for dropdown
+$categories = AnnotationCategory::cases();
+
+// Create from string value
+$category = AnnotationCategory::from('content_update');
+
+// Safe parsing (returns null on invalid value)
+$category = AnnotationCategory::tryFrom('invalid'); // null
+
+// Access label and icon
+echo $category->label(); // "Content Update"
+echo $category->icon();  // "✏️"
+
+// Get value for database storage
+echo $category->value;   // "content_update"
+```
+
+### Frontend Integration
+
+```typescript
+// Type-safe category dropdown
+const CATEGORIES = AnnotationCategory.values().map(c => ({
+  value: c.value,
+  label: c.label(),
+  icon: c.icon()
+}));
+```
+
+### Security Implementation
+| Security Measure | Implementation |
+|------------------|----------------|
+| Type Safety | PHP 8.1+ backed enum with strict typing |
+| SQL Injection | Enum values are predefined constants |
+| XSS | Labels contain no HTML; icons are single emoji characters |
+| Invalid Input | `tryFrom()` returns null for invalid values |
+
+### Test Coverage
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| AnnotationCategoryTest | 64 | 245 | ✅ Passing |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| ENUM-STRUCTURE | 3 | Enum existence, backed type, case count |
+| ENUM-CASES | 8 | Each case existence and value |
+| ENUM-LABEL | 10 | Label method, uniqueness, title case |
+| ENUM-ICON | 10 | Icon method, uniqueness, emoji format |
+| ENUM-BACKED | 5 | from(), tryFrom(), value format |
+| ENUM-CASE-SENSITIVITY | 3 | Case sensitivity handling |
+| ENUM-SECURITY | 3 | HTML safety, database safety |
+| ENUM-SERIALIZATION | 2 | JSON encode/decode |
+| ENUM-CONSISTENCY | 3 | Naming conventions |
+| ENUM-INTEGRATION | 3 | Match expression, array keys |
+| ENUM-EDGE | 4 | Empty, whitespace, null, numeric |
+| AC | 3 | Acceptance criteria verification |
+
+### Production Status
+- **Deployed**: 2026-03-12 (commit 5d102bac)
+- **File**: `backend/app/Enums/AnnotationCategory.php`
+- **Health Check**: Passing
+- **Tests**: 64/64 passing (245 assertions)
+- **Status**: Complete
+
+### Dependencies
+- None (standalone enum)
+
+### Related Tasks
+- TASK-9-1: Annotations Table (uses category VARCHAR(50))
+- TASK-9-3: Annotation Model (uses enum for accessors)
+- TASK-9-6: Input Validation (validates against enum values)
+
+---
 ## Fuzzy Query Matching for GSC Data (TASK-12-6)
 
 ### Service Description
@@ -35831,6 +35939,148 @@ API endpoint for generating new keyword suggestions by triggering the suggestion
 ### Related Tasks
 - TASK-5-7: Suggestions CRUD API endpoints
 - TASK-5-9: Track/Dismiss endpoints
+
+---
+## AnnotationForm Component (TASK-9-8)
+
+### Service Description
+React form component for creating and editing keyword annotations. Supports both create and edit modes with form validation, category dropdown, and accessibility features.
+
+### Component Location
+`frontend/components/annotations/AnnotationForm.tsx`
+
+**Exported from:** `frontend/components/annotations/index.ts`
+
+### Props Interface
+
+```typescript
+interface AnnotationFormProps {
+  keywordId: number;                              // ID of the associated keyword
+  annotation?: Annotation;                        // Optional: Used for edit mode
+  onSave: (data: CreateAnnotationDTO) => void;    // Callback triggered upon save
+  onCancel: () => void;                           // Callback for closing the form
+}
+```
+
+### Form Fields
+
+| Field | Type | Required | Validation | Description |
+|-------|------|----------|------------|-------------|
+| `date` | date | Yes | Valid date format | Date of the annotation event |
+| `title` | string | Yes | Max 255 chars | Short title describing the event |
+| `category` | enum | No | Valid category value | Category tag (default: 'other') |
+| `description` | string | No | None | Detailed description (optional) |
+
+### Category Options (9 categories)
+
+| Value | Label | Icon | Use Case |
+|-------|-------|------|----------|
+| `algorithm-update` | Algorithm Update | 🔄 | Google algorithm changes |
+| `content-update` | Content Update | 📝 | Page content changes |
+| `technical-change` | Technical Change | 🔧 | Site speed, redirects, schema |
+| `link-building` | Link Building | 🔗 | New backlinks acquired |
+| `competition` | Competitor Activity | 👀 | Competitor changes observed |
+| `seasonal` | Seasonal Trend | 📅 | Seasonal traffic/events |
+| `manual-action` | Manual Action | ⚠️ | Google penalty or warning |
+| `recovery` | Recovery | ✅ | Recovery from issues |
+| `other` | Other | 📌 | General notes (default) |
+
+### Component Behavior
+
+**Create Mode (no `annotation` prop):**
+- All fields start empty (date defaults to today)
+- On save, form resets to initial state
+- Submit button shows "Create"
+
+**Edit Mode (`annotation` prop provided):**
+- Fields pre-populated with annotation data
+- On save, form retains values
+- Submit button shows "Update"
+- Form resets when annotation prop changes
+
+### Validation Rules
+
+| Field | Validation | Error Message |
+|-------|------------|---------------|
+| `date` | Required, valid date | "Date is required", "Please provide a valid date" |
+| `title` | Required, max 255 chars | "Title is required", "Title must be 255 characters or less" |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|----------------|
+| Labels | Proper `<label>` elements with `htmlFor` |
+| Focus Management | Focus ring on all interactive elements |
+| Error Display | Red border + error text below field |
+| Button States | Disabled state with visual feedback |
+
+### Usage Example
+
+```tsx
+import { AnnotationForm } from '@/components/annotations';
+
+// Create mode
+<AnnotationForm
+  keywordId={keyword.id}
+  onSave={handleSave}
+  onCancel={handleCancel}
+/>
+
+// Edit mode
+<AnnotationForm
+  keywordId={keyword.id}
+  annotation={existingAnnotation}
+  onSave={handleSave}
+  onCancel={handleCancel}
+/>
+```
+
+### Dependencies
+
+| Dependency | Purpose |
+|------------|---------|
+| `react-hook-form` | Form state management |
+| `date-fns` | Date formatting |
+| `@/lib/types/annotations` | Type definitions |
+| `@/lib/utils` | `cn` utility for conditional classes |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | No `dangerouslySetInnerHTML`, text content only |
+| Input Validation | Client-side validation via react-hook-form |
+| Max Length | Title limited to 255 characters |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| AnnotationForm.test.tsx | 76 | All passing |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 5 | Form field rendering, labels, buttons |
+| Create Mode | 6 | Default values, form reset, create button |
+| Edit Mode | 8 | Pre-populated fields, update button |
+| Validation | 12 | Required fields, date validation, max length |
+| User Interactions | 10 | Form submission, cancel, input changes |
+| Accessibility | 6 | Labels, ARIA, keyboard navigation |
+| Edge Cases | 10 | Empty annotation, null description |
+| Props Validation | 5 | Required props, optional props |
+| Styling | 5 | Error states, focus states |
+| Category Options | 5 | Dropdown options count, labels |
+| Acceptance Criteria | 4 | All 3 criteria verified |
+
+### Production Status
+- **Deployed**: 2026-03-12 (commit 88a9d0ed)
+- **Tests**: 76/76 passing
+- **Status**: Complete
+
+### Related Components
+- `AnnotationList` (TASK-9-7) - Displays list of annotations
+- `AnnotationController` (TASK-9-4) - Backend API endpoints
 
 ---
 ## AnnotationController API (TASK-9-4)

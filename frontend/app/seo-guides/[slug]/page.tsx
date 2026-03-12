@@ -57,6 +57,7 @@ export async function generateMetadata({
   const title = `${guide.title} | SEO Guides`;
   const description = guide.summary;
   const url = `https://seoindicator.com/seo-guides/${guide.slug}/`;
+  const ogImageUrl = `https://seoindicator.com/guides/og/og-${guide.slug}.png`;
 
   return {
     title,
@@ -70,11 +71,20 @@ export async function generateMetadata({
       type: 'article',
       url,
       siteName: 'SEOIndicator',
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${guide.title} Guide`,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      images: [ogImageUrl],
     },
   };
 }
