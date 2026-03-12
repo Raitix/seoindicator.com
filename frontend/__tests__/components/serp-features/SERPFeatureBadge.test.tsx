@@ -411,7 +411,7 @@ describe("SERPFeatureBadge - Performance", () => {
   it("PF-001: renders many features efficiently", () => {
     const startTime = performance.now();
 
-    const { container } = render(<SERPFeatureBadge features={manyFeatures} />);
+    const { container } = render(<SERPFeatureBadge features={manyFeatures} maxVisible={10} />);
 
     const endTime = performance.now();
     const renderTime = endTime - startTime;
