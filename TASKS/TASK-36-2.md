@@ -1,7 +1,7 @@
 # TASK-36-2: Eloquent Models - Content Decay
 
 ## STATUS
-`To Test Prod`
+`To Document`
 
 ## PRIORITY
 `High`
@@ -345,6 +345,61 @@ Created comprehensive test suite for all 4 Content Decay Eloquent models:
 **Production URL:** https://seoindicator.com
 
 **Status:** `To Deploy` → `To Test Prod`
+
+---
+
+### ProdTester (2026-03-12)
+**Production Validation Complete ✅**
+
+**Migration Issue Found & Fixed:**
+During production testing, discovered that Content Decay migrations were pending (not run during deployment):
+- `content_decay_projects` - pending
+- `content_decay_candidates` - pending
+- `content_decay_signals` - pending
+- `content_refresh_tasks` - pending
+
+**Root Cause:** MySQL strict mode issue with `timestamp` columns without default values in `content_decay_candidates` table.
+
+**Fix Applied:** Updated migration file `2026_03_10_210002_create_content_decay_candidates_table.php`:
+- Changed `$table->timestamp('first_detected_at')` to `$table->timestamp('first_detected_at')->useCurrent()`
+- Changed `$table->timestamp('last_detected_at')` to `$table->timestamp('last_detected_at')->useCurrent()`
+
+**Migrations Executed:**
+| Migration | Status |
+|-----------|--------|
+| `create_content_decay_projects_table` | ✅ SUCCESS |
+| `create_content_decay_candidates_table` | ✅ SUCCESS (after fix) |
+| `create_content_decay_signals_table` | ✅ SUCCESS |
+| `create_content_refresh_tasks_table` | ✅ SUCCESS |
+| `add_last_digest_sent_at_to_content_decay_projects` | ✅ SUCCESS |
+
+**Production Test Results:**
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| ContentDecayProjectTest | 82 passed, 1 skipped | 119 | ✅ PASS |
+| ContentDecayCandidateTest | 126 passed | 195 | ✅ PASS |
+| ContentDecaySignalTest | 90 passed | 123 | ✅ PASS |
+| ContentRefreshTaskTest | 87 passed, 1 skipped | 119 | ✅ PASS |
+| **Total** | **385 passed, 2 skipped** | **556** | ✅ **ALL PASS** |
+
+**Model Verification:**
+| Model | Relationships | Casts | Scopes | Helpers | Tables |
+|-------|---------------|-------|--------|---------|--------|
+| ContentDecayProject | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ContentDecayCandidate | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ContentDecaySignal | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ContentRefreshTask | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+**Acceptance Criteria Status:**
+- [x] ContentDecayProject model with all relationships, casts, scopes, and helpers
+- [x] ContentDecayCandidate model with all relationships, casts, scopes, accessors, and helpers
+- [x] ContentDecaySignal model with all relationships, casts, scopes, and helpers
+- [x] ContentRefreshTask model with all relationships, casts, scopes, and helpers
+- [x] All models have proper $fillable/$guarded arrays
+- [x] Unit tests verify relationships, scopes, and helper methods (385 tests passed)
+
+**Status:** `To Test Prod` → `To Document`
 
 ---
 

@@ -47,6 +47,9 @@ class SerpFeaturesApiIntegrationTest extends TestCase
             'password' => bcrypt('password'),
         ]);
 
+        // Authenticate user for API endpoint tests
+        $this->actingAs($this->user);
+
         $this->site = Site::create([
             'user_id' => $this->user->id,
             'url' => 'https://test-example.com',

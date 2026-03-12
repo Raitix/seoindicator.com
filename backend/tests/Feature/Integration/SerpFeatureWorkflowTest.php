@@ -236,8 +236,10 @@ class SerpFeatureWorkflowTest extends TestCase
 
         // Assert: Event dispatched
         Event::assertDispatched('serp-feature.gained', function ($eventName, $payload) {
-            return $payload['feature_type'] === 'featured_snippet'
-                && $payload['action'] === 'gained';
+            // Payload is wrapped in an array by the dispatcher
+            $data = $payload[0] ?? $payload;
+            return $data['feature_type'] === 'featured_snippet'
+                && $data['action'] === 'gained';
         });
     }
 
@@ -259,8 +261,10 @@ class SerpFeatureWorkflowTest extends TestCase
 
         // Assert: Event dispatched
         Event::assertDispatched('serp-feature.lost', function ($eventName, $payload) {
-            return $payload['feature_type'] === 'local_pack'
-                && $payload['action'] === 'lost';
+            // Payload is wrapped in an array by the dispatcher
+            $data = $payload[0] ?? $payload;
+            return $data['feature_type'] === 'local_pack'
+                && $data['action'] === 'lost';
         });
     }
 
