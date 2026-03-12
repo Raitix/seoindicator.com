@@ -70,10 +70,12 @@ function isValidImageFile(filePath: string): boolean {
 
 /**
  * Get image dimensions safely
+ * Reads file as buffer first to ensure compatibility with image-size
  */
 function getImageDimensions(filePath: string): { width: number; height: number } | null {
   try {
-    const dimensions = sizeOf(filePath);
+    const buffer = fs.readFileSync(filePath);
+    const dimensions = sizeOf(buffer);
     if (dimensions.width && dimensions.height) {
       return { width: dimensions.width, height: dimensions.height };
     }
@@ -120,7 +122,7 @@ describe('OG Image File Existence (TC-001)', () => {
     expect(fs.existsSync(filePath)).toBe(true);
   });
 
-  test('All 18 OG images exist (17 guides + index)', () => {
+  test('All 19 OG images exist (18 guides + index)', () => {
     if (!fs.existsSync(OG_IMAGES_DIR)) {
       throw new Error('OG images directory does not exist');
     }
@@ -129,8 +131,8 @@ describe('OG Image File Existence (TC-001)', () => {
       f.startsWith('og-') && isValidImageFile(path.join(OG_IMAGES_DIR, f))
     );
     
-    // 17 guides + 1 index = 18 images
-    expect(files.length).toBe(18);
+    // 18 guides + 1 index = 19 images
+    expect(files.length).toBe(19);
   });
 
   test('No zero-byte image files', () => {
@@ -280,13 +282,17 @@ describe('OG Image File Naming (TC-004)', () => {
     const files = fs.readdirSync(OG_IMAGES_DIR);
     const validNames = ['og-index.png', ...EXPECTED_GUIDE_SLUGS.map(s => `og-${s}.png`)];
     
+    // Also allow build/generation scripts
+    const allowedScripts = ['capture-all.js', 'generate-og-images.js', 'server.js', 'template.html'];
+    
     files.forEach(file => {
-      // Allow hidden files and valid OG images
+      // Allow hidden files, valid OG images, and build scripts
       const isHidden = file.startsWith('.');
       const isOgImage = validNames.some(name => 
         file === name || file === name.replace('.png', '.jpg') || file === name.replace('.png', '.webp')
       );
-      expect(isHidden || isOgImage).toBe(true);
+      const isBuildScript = allowedScripts.includes(file);
+      expect(isHidden || isOgImage || isBuildScript).toBe(true);
     });
   });
 

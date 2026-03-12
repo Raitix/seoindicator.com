@@ -236,18 +236,22 @@ function TOCSidebar({
       <ul data-testid="toc-list" className="space-y-2">
         {items.map((item) => (
           <li key={item.id} data-testid={`toc-item-${item.id}`}>
-            <button
+            <a
+              href={`#section-${item.id}`}
               data-testid={`toc-link-${item.id}`}
-              onClick={() => onItemClick(item.id)}
+              onClick={(e) => {
+                e.preventDefault();
+                onItemClick(item.id);
+              }}
               aria-current={activeSection === item.id ? 'true' : undefined}
-              className={`w-full text-left px-3 py-2 rounded transition-colors ${
+              className={`block px-3 py-2 rounded transition-colors ${
                 activeSection === item.id
                   ? 'bg-primary/10 text-primary font-medium'
                   : 'hover:bg-gray-100 text-gray-700'
               }`}
             >
               {item.title}
-            </button>
+            </a>
           </li>
         ))}
       </ul>
