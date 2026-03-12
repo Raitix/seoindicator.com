@@ -46,8 +46,8 @@ return new class extends Migration
             $table->enum('status', ['backlog', 'planned', 'in_progress', 'refreshed', 'recovered', 'ignored'])->default('backlog');
             
             // Timestamps for status transitions
-            $table->timestamp('first_detected_at');
-            $table->timestamp('last_detected_at');
+            $table->timestamp('first_detected_at')->useCurrent();
+            $table->timestamp('last_detected_at')->useCurrent();
             $table->timestamp('planned_at')->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('refreshed_at')->nullable();
