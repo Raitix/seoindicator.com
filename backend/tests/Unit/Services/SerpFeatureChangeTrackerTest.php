@@ -37,6 +37,8 @@ class SerpFeatureChangeTrackerTest extends TestCase
     public function it_detects_gained_feature_when_previously_absent(): void
     {
         // Arrange
+        Event::fake(); // Prevent real listeners from being triggered
+
         $keywordId = 1;
         $currentFeatures = [
             ['type' => 'featured_snippet', 'is_present' => true, 'url' => 'https://example.com']
@@ -68,6 +70,8 @@ class SerpFeatureChangeTrackerTest extends TestCase
     public function it_detects_multiple_gained_features(): void
     {
         // Arrange
+        Event::fake(); // Prevent real listeners from being triggered
+
         $keywordId = 1;
         $currentFeatures = [
             ['type' => 'featured_snippet', 'is_present' => true, 'url' => 'https://example.com/snippet'],
@@ -113,9 +117,11 @@ class SerpFeatureChangeTrackerTest extends TestCase
         $this->tracker->trackChanges($keywordId, $currentFeatures, $previousFeatures);
 
         // Assert
+        // Event data is wrapped in an array: [[...event data...]]
         Event::assertDispatched('serp-feature.gained', function ($event, $data) use ($keywordId) {
-            return $data['keyword_id'] === $keywordId
-                && $data['feature_type'] === 'featured_snippet';
+            $eventData = $data[0] ?? $data;
+            return $eventData['keyword_id'] === $keywordId
+                && $eventData['feature_type'] === 'featured_snippet';
         });
     }
 
@@ -127,6 +133,8 @@ class SerpFeatureChangeTrackerTest extends TestCase
     public function it_detects_lost_feature_when_previously_present(): void
     {
         // Arrange
+        Event::fake(); // Prevent real listeners from being triggered
+
         $keywordId = 1;
         $currentFeatures = [
             ['type' => 'featured_snippet', 'is_present' => false]
@@ -158,6 +166,8 @@ class SerpFeatureChangeTrackerTest extends TestCase
     public function it_detects_multiple_lost_features(): void
     {
         // Arrange
+        Event::fake(); // Prevent real listeners from being triggered
+
         $keywordId = 1;
         $currentFeatures = [
             ['type' => 'featured_snippet', 'is_present' => false],
@@ -200,9 +210,11 @@ class SerpFeatureChangeTrackerTest extends TestCase
         $this->tracker->trackChanges($keywordId, $currentFeatures, $previousFeatures);
 
         // Assert
+        // Event data is wrapped in an array: [[...event data...]]
         Event::assertDispatched('serp-feature.lost', function ($event, $data) use ($keywordId) {
-            return $data['keyword_id'] === $keywordId
-                && $data['feature_type'] === 'featured_snippet';
+            $eventData = $data[0] ?? $data;
+            return $eventData['keyword_id'] === $keywordId
+                && $eventData['feature_type'] === 'featured_snippet';
         });
     }
 
@@ -234,6 +246,8 @@ class SerpFeatureChangeTrackerTest extends TestCase
     public function it_distinguishes_first_check_from_subsequent_checks(): void
     {
         // Arrange
+        Event::fake(); // Prevent real listeners from being triggered
+
         $keywordId = 1;
 
         // First check - no changes
@@ -717,11 +731,13 @@ class SerpFeatureChangeTrackerTest extends TestCase
         $this->tracker->trackChanges($keywordId, $currentFeatures, $previousFeatures);
 
         // Assert
+        // Event data is wrapped in an array: [[...event data...]]
         Event::assertDispatched('serp-feature.gained', function ($event, $data) {
-            return isset($data['keyword_id'])
-                && isset($data['feature_type'])
-                && isset($data['current_url'])
-                && isset($data['detected_at']);
+            $eventData = $data[0] ?? $data;
+            return isset($eventData['keyword_id'])
+                && isset($eventData['feature_type'])
+                && isset($eventData['current_url'])
+                && isset($eventData['detected_at']);
         });
     }
 

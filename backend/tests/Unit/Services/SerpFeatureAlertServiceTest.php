@@ -82,11 +82,11 @@ class SerpFeatureAlertServiceTest extends TestCase
         $templates = SerpFeatureAlertService::getTemplates();
 
         // Gained template should have feature name and keyword
-        $this->assertStringContainsString('{{featureName}}', $templates['serp_feature_gained']['subject']);
+        $this->assertStringContainsString('{{feature_name}}', $templates['serp_feature_gained']['subject']);
         $this->assertStringContainsString('{{keyword}}', $templates['serp_feature_gained']['body']);
 
         // Lost template should have feature name and keyword
-        $this->assertStringContainsString('{{featureName}}', $templates['serp_feature_lost']['subject']);
+        $this->assertStringContainsString('{{feature_name}}', $templates['serp_feature_lost']['subject']);
         $this->assertStringContainsString('{{keyword}}', $templates['serp_feature_lost']['body']);
     }
 
@@ -106,8 +106,8 @@ class SerpFeatureAlertServiceTest extends TestCase
         $this->assertEquals($this->keyword->id, $alert['keyword_id']);
         $this->assertEquals('featured_snippet', $alert['feature_type']);
         $this->assertEquals('Featured Snippet', $alert['feature_name']);
-        $this->assertStringContainsString('seo tools', $alert['subject']);
         $this->assertStringContainsString('Featured Snippet', $alert['subject']);
+        $this->assertStringContainsString('seo tools', $alert['body']); // keyword is in body, not subject
     }
 
     public function test_generate_alert_local_pack_lost(): void
@@ -150,7 +150,7 @@ class SerpFeatureAlertServiceTest extends TestCase
 
         $this->assertNotNull($alert);
         $this->assertEquals('seo tools', $alert['keyword']);
-        $this->assertStringContainsString('seo tools', $alert['subject']);
+        $this->assertStringContainsString('seo tools', $alert['body']); // keyword is in body, not subject
     }
 
     public function test_generate_alert_includes_timestamp(): void

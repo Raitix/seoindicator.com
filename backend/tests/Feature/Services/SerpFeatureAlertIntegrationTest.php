@@ -61,8 +61,10 @@ class SerpFeatureAlertIntegrationTest extends TestCase
     public function test_event_emitted_on_feature_gained(): void
     {
         $events = [];
-        Event::listen('serp-feature.gained', function ($event) use (&$events) {
-            $events[] = $event;
+        Event::listen('serp-feature.gained', function (...$eventData) use (&$events) {
+            // Laravel passes array items as individual arguments
+            // Reconstruct the event array
+            $events[] = is_array($eventData[0] ?? null) ? $eventData[0] : $eventData;
         });
 
         $changes = $this->tracker->trackChanges(
@@ -84,8 +86,10 @@ class SerpFeatureAlertIntegrationTest extends TestCase
     public function test_event_emitted_on_feature_lost(): void
     {
         $events = [];
-        Event::listen('serp-feature.lost', function ($event) use (&$events) {
-            $events[] = $event;
+        Event::listen('serp-feature.lost', function (...$eventData) use (&$events) {
+            // Laravel passes array items as individual arguments
+            // Reconstruct the event array
+            $events[] = is_array($eventData[0] ?? null) ? $eventData[0] : $eventData;
         });
 
         $changes = $this->tracker->trackChanges(
@@ -107,8 +111,10 @@ class SerpFeatureAlertIntegrationTest extends TestCase
     public function test_event_contains_correct_data(): void
     {
         $capturedEvent = null;
-        Event::listen('serp-feature.gained', function ($event) use (&$capturedEvent) {
-            $capturedEvent = $event;
+        Event::listen('serp-feature.gained', function (...$eventData) use (&$capturedEvent) {
+            // Laravel passes array items as individual arguments
+            // Reconstruct the event array
+            $capturedEvent = is_array($eventData[0] ?? null) ? $eventData[0] : $eventData;
         });
 
         $this->tracker->trackChanges(

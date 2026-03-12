@@ -10,6 +10,20 @@
 import { Metadata } from 'next';
 import { AlertDetailPageClient } from './page.client';
 
+// Disable dynamic params for static export compatibility
+export const dynamicParams = false;
+
+/**
+ * Generate static params for static export compatibility.
+ * Returns a placeholder id to satisfy Next.js static export requirement.
+ * The actual id lookup is done client-side via AlertDetailPageClient.
+ */
+export function generateStaticParams() {
+  // Return a placeholder to satisfy Next.js static export
+  // The client-side component handles actual id routing
+  return [{ id: '_' }];
+}
+
 interface AlertDetailPageProps {
   params: Promise<{
     id: string;
