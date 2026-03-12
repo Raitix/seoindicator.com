@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AlertNotification } from './AlertNotification';
-import type { Alert, AlertType } from '@/lib/ai-visibility/types';
+import type { Alert, AlertType, AlertFilters } from '@/lib/ai-visibility/types';
 
 interface AlertListProps {
   alerts: Alert[];
@@ -47,12 +47,6 @@ interface AlertListProps {
   pollingInterval?: number;
   totalBeforeFilter?: number;
   enableSelection?: boolean;
-}
-
-interface AlertFilters {
-  project_id?: number | null;
-  alert_types?: AlertType[];
-  is_read?: boolean | null;
 }
 
 const ALERT_TYPE_OPTIONS: { value: AlertType; label: string }[] = [
