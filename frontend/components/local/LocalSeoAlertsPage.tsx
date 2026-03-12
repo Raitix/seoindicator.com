@@ -10,6 +10,14 @@ import { LocalSeoAlertDetailModal } from "@/components/local/LocalSeoAlertDetail
 import { LocalSeoUnreadCountBadge } from "@/components/local/LocalSeoUnreadCountBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { buildLocationDashboardLinks } from "@/lib/location-dashboard";
 import { useLocalSeoAlertsPage } from "@/lib/hooks/useLocalSeoAlertsPage";
 import {
@@ -22,15 +30,17 @@ import {
 export interface LocalSeoAlertsPageProps {
   locationId?: string;
   siteId?: string;
+  availableLocations?: Array<{ id: string; name: string }>;
 }
 
-export function LocalSeoAlertsPage({ locationId, siteId }: LocalSeoAlertsPageProps) {
+export function LocalSeoAlertsPage({ locationId, siteId, availableLocations = [] }: LocalSeoAlertsPageProps) {
   const [filters, setFilters] = React.useState<LocalSeoAlertFilterState>({
     ...defaultLocalSeoAlertFilters,
     locationId: locationId ?? "",
   });
   const [page] = React.useState(1);
   const [selectedAlert, setSelectedAlert] = React.useState<LocalSeoAlert | null>(null);
+  const [showMarkAllConfirm, setShowMarkAllConfirm] = React.useState(false);
 
   const {
     alerts,
@@ -57,7 +67,10 @@ export function LocalSeoAlertsPage({ locationId, siteId }: LocalSeoAlertsPagePro
   const handleMarkAllRead = React.useCallback(async () => {
     const response = await markAllRead();
     toast.success(`Marked ${response?.count ?? 0} alert(s) as read`);
+    setShowMarkAllConfirm(false);
   }, [markAllRead]);
+
+  const isScoped = Boolean(locationId);
 
   return (
     <div className="space-y-6" data-testid="local-seo-alerts-page">
@@ -86,7 +99,7 @@ export function LocalSeoAlertsPage({ locationId, siteId }: LocalSeoAlertsPagePro
               <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
               Refresh
             </Button>
-            <Button type="button" onClick={() => void handleMarkAllRead()}>
+            <Button type="button" onClick={() => setShowMarkAllConfirm(true)}>
               <CheckCheck className="mr-2 h-4 w-4" aria-hidden="true" />
               Mark all as read
             </Button>
@@ -96,7 +109,26 @@ export function LocalSeoAlertsPage({ locationId, siteId }: LocalSeoAlertsPagePro
 
       <Card>
         <CardContent className="space-y-4 p-4">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-5">
+            {!isScoped ? (
+              <label className="space-y-2 text-sm text-slate-300">
+                <span>Location</span>
+                <select
+                  aria-label="Filter alerts by location"
+                  className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"
+                  value={filters.locationId}
+                  onChange={(event) => setFilters((current) => ({ ...current, locationId: event.target.value }))}
+                >
+                  <option value="">All locations</option>
+                  {availableLocations.map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
             <label className="space-y-2 text-sm text-slate-300">
               <span>Severity</span>
               <select
@@ -205,6 +237,25 @@ export function LocalSeoAlertsPage({ locationId, siteId }: LocalSeoAlertsPagePro
         onClose={() => setSelectedAlert(null)}
         onMarkRead={(alert) => void handleMarkRead(alert)}
       />
+
+      <Dialog open={showMarkAllConfirm} onOpenChange={setShowMarkAllConfirm}>
+        <DialogContent aria-describedby="mark-all-read-description">
+          <DialogHeader>
+            <DialogTitle>Mark all alerts as read?</DialogTitle>
+            <DialogDescription id="mark-all-read-description">
+              This will mark all currently filtered alerts as read. You cannot undo this action.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowMarkAllConfirm(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={() => void handleMarkAllRead()}>
+              Confirm mark all as read
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

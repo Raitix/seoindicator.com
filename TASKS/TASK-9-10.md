@@ -1,7 +1,6 @@
 # TASK-9-10: End-to-End Integration Tests
 
-## STATUS
-`Done`
+## STATUS`n`To Test Locally`
 
 ## PRIORITY
 `High`
