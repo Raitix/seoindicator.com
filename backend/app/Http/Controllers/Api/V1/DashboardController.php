@@ -36,12 +36,11 @@ class DashboardController extends Controller
             $keywords = Keyword::where('site_id', $siteId)->get();
             $keywordIds = $keywords->pluck('id')->all();
 
+            // Use window function to fetch only latest 2 rankings per keyword
+            // This avoids loading entire ranking history into memory
             $rankings = $keywordIds
-                ? Ranking::whereIn('keyword_id', $keywordIds)
-                    ->orderBy('checked_at', 'desc')
-                    ->get()
-                    ->groupBy('keyword_id')
-                : collect();
+                ? $this->getLatestRankingsForKeywords($keywordIds)
+                : [];
 
             $totalKeywords = $keywords->count();
             $activeKeywords = $keywords->where('status', 'active')->count();
@@ -61,9 +60,9 @@ class DashboardController extends Controller
             $topKeywords = [];
 
             foreach ($keywords as $keyword) {
-                $keywordRankings = $rankings->get($keyword->id, collect());
-                $latest = $keywordRankings->get(0);
-                $previous = $keywordRankings->get(1);
+                $keywordRankings = $rankings[$keyword->id] ?? [];
+                $latest = $keywordRankings[0] ?? null;
+                $previous = $keywordRankings[1] ?? null;
 
                 if ($latest && $latest->position !== null) {
                     $rankedKeywords++;
@@ -143,5 +142,99 @@ class DashboardController extends Controller
             'success' => true,
             'data' => $data,
         ], 200, [], JSON_PRESERVE_ZERO_FRACTION);
+    }
+
+    /**
+     * Batch fetch the latest 2 rankings for multiple keywords.
+     * Uses database-agnostic approach for MySQL and SQLite compatibility.
+     * This avoids loading the entire ranking history into memory.
+     *
+     * @param array $keywordIds
+     * @return array<int, array{0:Ranking|null,1:Ranking|null}>
+     */
+    protected function getLatestRankingsForKeywords(array $keywordIds): array
+    {
+        if (empty($keywordIds)) {
+            return [];
+        }
+
+        $driver = \DB::getDriverName();
+
+        // Use window function for MySQL (efficient in production)
+        if ($driver === 'mysql') {
+            return $this->getLatestRankingsWithWindowFunction($keywordIds);
+        }
+
+        // Use Eloquent for SQLite (compatible with tests)
+        return $this->getLatestRankingsWithEloquent($keywordIds);
+    }
+
+    /**
+     * Get latest rankings using window function (MySQL).
+     *
+     * @param array $keywordIds
+     * @return array<int, array{0:Ranking|null,1:Ranking|null}>
+     */
+    protected function getLatestRankingsWithWindowFunction(array $keywordIds): array
+    {
+        $rankings = \DB::select("
+            SELECT * FROM (
+                SELECT 
+                    id, keyword_id, position, url, checked_at, created_at, updated_at,
+                    ROW_NUMBER() OVER (PARTITION BY keyword_id ORDER BY checked_at DESC) as rn
+                FROM rankings
+                WHERE keyword_id IN (" . implode(',', array_map('intval', $keywordIds)) . ")
+            ) ranked
+            WHERE rn <= 2
+        ");
+
+        $grouped = [];
+        foreach ($keywordIds as $keywordId) {
+            $grouped[$keywordId] = [];
+        }
+
+        foreach ($rankings as $row) {
+            $ranking = new Ranking();
+            $ranking->id = $row->id;
+            $ranking->keyword_id = $row->keyword_id;
+            $ranking->position = $row->position;
+            $ranking->url = $row->url;
+            $ranking->checked_at = $row->checked_at;
+            $ranking->created_at = $row->created_at;
+            $ranking->updated_at = $row->updated_at;
+
+            $grouped[$row->keyword_id][] = $ranking;
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * Get latest rankings using Eloquent (SQLite/tests).
+     *
+     * @param array $keywordIds
+     * @return array<int, array{0:Ranking|null,1:Ranking|null}>
+     */
+    protected function getLatestRankingsWithEloquent(array $keywordIds): array
+    {
+        // Load rankings ordered by keyword and date
+        $rankings = Ranking::whereIn('keyword_id', $keywordIds)
+            ->orderBy('keyword_id')
+            ->orderBy('checked_at', 'desc')
+            ->get();
+
+        // Group and take only first 2 per keyword
+        $grouped = [];
+        foreach ($keywordIds as $keywordId) {
+            $grouped[$keywordId] = [];
+        }
+
+        foreach ($rankings as $ranking) {
+            if (count($grouped[$ranking->keyword_id]) < 2) {
+                $grouped[$ranking->keyword_id][] = $ranking;
+            }
+        }
+
+        return $grouped;
     }
 }

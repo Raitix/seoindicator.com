@@ -108,9 +108,14 @@ class KeywordController extends Controller
         // Get SERP features for all keywords
         $keywordIds = $keywords->pluck('id')->toArray();
         $serpFeaturesByKeyword = $this->getSerpFeaturesByKeywords($keywordIds);
+        
+        // Batch fetch latest rankings for all keywords (fixes N+1 query)
+        $rankingsByKeyword = $this->getLatestRankingsForKeywords($keywordIds);
 
-        $formatted = $keywords->map(function (Keyword $keyword) use ($serpFeaturesByKeyword) {
-            [$current, $previous] = $this->getLatestRankings($keyword);
+        $formatted = $keywords->map(function (Keyword $keyword) use ($serpFeaturesByKeyword, $rankingsByKeyword) {
+            $rankings = $rankingsByKeyword[$keyword->id] ?? [];
+            $current = $rankings[0] ?? null;
+            $previous = $rankings[1] ?? null;
             $features = $serpFeaturesByKeyword[$keyword->id] ?? [];
             return $this->formatKeywordWithFeatures($keyword, $current, $previous, $features);
         });
@@ -427,6 +432,99 @@ class KeywordController extends Controller
             ->get();
 
         return [$rankings->get(0), $rankings->get(1)];
+    }
+
+    /**
+     * Batch fetch the latest 2 rankings for multiple keywords.
+     * Uses database-agnostic approach for MySQL and SQLite compatibility.
+     *
+     * @param array $keywordIds
+     * @return array<int, array{0:Ranking|null,1:Ranking|null}>
+     */
+    protected function getLatestRankingsForKeywords(array $keywordIds): array
+    {
+        if (empty($keywordIds)) {
+            return [];
+        }
+
+        $driver = \DB::getDriverName();
+
+        // Use window function for MySQL (efficient in production)
+        if ($driver === 'mysql') {
+            return $this->getLatestRankingsWithWindowFunction($keywordIds);
+        }
+
+        // Use Eloquent for SQLite (compatible with tests)
+        return $this->getLatestRankingsWithEloquent($keywordIds);
+    }
+
+    /**
+     * Get latest rankings using window function (MySQL).
+     *
+     * @param array $keywordIds
+     * @return array<int, array{0:Ranking|null,1:Ranking|null}>
+     */
+    protected function getLatestRankingsWithWindowFunction(array $keywordIds): array
+    {
+        $rankings = \DB::select("
+            SELECT * FROM (
+                SELECT 
+                    id, keyword_id, position, url, checked_at, created_at, updated_at,
+                    ROW_NUMBER() OVER (PARTITION BY keyword_id ORDER BY checked_at DESC) as rn
+                FROM rankings
+                WHERE keyword_id IN (" . implode(',', array_map('intval', $keywordIds)) . ")
+            ) ranked
+            WHERE rn <= 2
+        ");
+
+        $grouped = [];
+        foreach ($keywordIds as $keywordId) {
+            $grouped[$keywordId] = [];
+        }
+
+        foreach ($rankings as $row) {
+            $ranking = new Ranking();
+            $ranking->id = $row->id;
+            $ranking->keyword_id = $row->keyword_id;
+            $ranking->position = $row->position;
+            $ranking->url = $row->url;
+            $ranking->checked_at = $row->checked_at;
+            $ranking->created_at = $row->created_at;
+            $ranking->updated_at = $row->updated_at;
+
+            $grouped[$row->keyword_id][] = $ranking;
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * Get latest rankings using Eloquent (SQLite/tests).
+     *
+     * @param array $keywordIds
+     * @return array<int, array{0:Ranking|null,1:Ranking|null}>
+     */
+    protected function getLatestRankingsWithEloquent(array $keywordIds): array
+    {
+        // Load rankings ordered by keyword and date
+        $rankings = Ranking::whereIn('keyword_id', $keywordIds)
+            ->orderBy('keyword_id')
+            ->orderBy('checked_at', 'desc')
+            ->get();
+
+        // Group and take only first 2 per keyword
+        $grouped = [];
+        foreach ($keywordIds as $keywordId) {
+            $grouped[$keywordId] = [];
+        }
+
+        foreach ($rankings as $ranking) {
+            if (count($grouped[$ranking->keyword_id]) < 2) {
+                $grouped[$ranking->keyword_id][] = $ranking;
+            }
+        }
+
+        return $grouped;
     }
 
     /**
