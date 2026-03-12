@@ -175,6 +175,15 @@ const mockGuideError = {
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
+// Mock clipboard API
+const mockClipboard = {
+  writeText: jest.fn(() => Promise.resolve()),
+};
+Object.defineProperty(navigator, 'clipboard', {
+  value: mockClipboard,
+  writable: true,
+});
+
 // Mock component for TDD - represents expected final implementation
 function MockPWAGuidePage() {
   const [guide, setGuide] = React.useState<typeof mockGuideData | null>(null);
@@ -395,16 +404,16 @@ function MockPWAGuidePage() {
 function mockGenerateMetadata() {
   return {
     title: 'PWA Implementation Guide | SEOIndicator',
-    description: 'A comprehensive guide to implementing Progressive Web App features.',
+    description: 'A comprehensive guide to implementing PWA (Progressive Web App) features.',
     openGraph: {
       title: 'PWA Implementation Guide',
-      description: 'A comprehensive guide to implementing Progressive Web App features.',
+      description: 'A comprehensive guide to implementing PWA (Progressive Web App) features.',
       type: 'article',
     },
     twitter: {
       card: 'summary_large_image',
       title: 'PWA Implementation Guide',
-      description: 'A comprehensive guide to implementing Progressive Web App features.',
+      description: 'A comprehensive guide to implementing PWA (Progressive Web App) features.',
     },
   };
 }
@@ -720,13 +729,14 @@ describe('PWA Guide Page (TASK-24-14)', () => {
         expect(screen.getByTestId('pwa-guide-page')).toBeInTheDocument();
       });
 
-      // Initially hidden (on mobile)
+      // Initially hidden (on mobile) - check for hidden class
       const toggle = screen.getByTestId('mobile-menu-toggle');
-      expect(screen.getByTestId('toc-container')).not.toBeVisible();
+      const tocContainer = screen.getByTestId('toc-container');
+      expect(tocContainer).toHaveClass('hidden');
 
-      // Click to show
+      // Click to show - class should be removed
       fireEvent.click(toggle);
-      expect(screen.getByTestId('toc-container')).toBeVisible();
+      expect(tocContainer).not.toHaveClass('hidden');
     });
 
     it('mobile accordion items render correctly', async () => {
@@ -896,8 +906,10 @@ describe('PWA Guide Page (TASK-24-14)', () => {
       // Click copy button
       fireEvent.click(screen.getByTestId('copy-button-manifest-basics-0'));
 
-      // Should show "Copied!" text
-      expect(screen.getByTestId('copy-button-manifest-basics-0')).toHaveTextContent('Copied!');
+      // Should show "Copied!" text after async clipboard operation
+      await waitFor(() => {
+        expect(screen.getByTestId('copy-button-manifest-basics-0')).toHaveTextContent('Copied!');
+      });
     });
   });
 
