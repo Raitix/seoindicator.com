@@ -1,7 +1,7 @@
 # TASK-36-7: ContentDecayDigestService
 
 ## STATUS
-`To Test Prod`
+`Done`
 
 ## PRIORITY
 `Medium`
@@ -363,6 +363,97 @@ Task code was already deployed in previous production rollout.
 | `tests/Feature/Services/ContentDecay/ContentDecayDigestServiceTest.php` | ✅ Deployed |
 
 **Status:** `To Deploy` → `To Test Prod`
+
+---
+
+### ProdTester (2026-03-12 11:20 GMT+2)
+**Production Testing Complete ✅**
+
+All production tests passed successfully.
+
+**Production Smoke Test:**
+| Test | Result |
+|------|--------|
+| Homepage Load | ✅ PASS |
+| Login Page Load | ✅ PASS |
+
+**Security Tests (Adversarial):**
+| Test | Endpoint | Expected | Result |
+|------|----------|----------|--------|
+| Authentication | `/api/v1/sites/1/content-decay/summary` | 401 | ✅ 401 Unauthorized |
+| Authentication | `/api/v1/sites/1/content-decay/candidates` | 401 | ✅ 401 Unauthorized |
+| Authentication | `/api/v1/content-decay/candidates/1` | 401 | ✅ 401 Unauthorized |
+| SQL Injection | `/api/v1/sites/1' OR '1'='1/content-decay/summary` | 404 | ✅ 404 Blocked |
+| Path Traversal | `/api/v1/sites/../../../etc/passwd/content-decay/summary` | 404 | ✅ 404 Blocked |
+| XSS | `/api/v1/sites/<script>/content-decay/summary` | 404 | ✅ 404 Blocked |
+| Negative ID | `/api/v1/sites/-1/content-decay/summary` | 404 | ✅ 404 Blocked |
+
+**Service Files Verification:**
+| File | Status |
+|------|--------|
+| `ContentDecayDigestService.php` | ✅ EXISTS |
+| `ContentDecayDigestServiceInterface.php` | ✅ EXISTS |
+| `ContentDecayDigestEmail.php` | ✅ EXISTS |
+| `content-decay-digest.blade.php` | ✅ EXISTS |
+
+**Automated Test Results:**
+| Suite | Tests | Assertions | Status |
+|-------|-------|------------|--------|
+| Unit Tests | 57 | 107 | ✅ PASS |
+| Feature Tests | 21 | 65 | ✅ PASS |
+| **Total** | **78** | **172** | **✅ ALL PASS** |
+
+**Test Categories Verified:**
+- Service Instantiation (SI): Class structure, container binding ✅
+- generateDigest (GD): Weekly/monthly frequency, filtering, statistics ✅
+- shouldSendDigest (SSD): Frequency checks, due date logic ✅
+- getNewCandidates (NC): Status filtering, ordering ✅
+- getRecoveredCandidates (RC): Status filtering, ordering ✅
+- getDigestPeriod (DP): Period calculation ✅
+- sendDigest (SD): Notification dispatch ✅
+- Exclusion Logic (EX): Ignored candidates, score threshold ✅
+- Edge Cases (EDGE): Empty project, unicode URLs, long URLs ✅
+- Integration (INT): Full workflow, database persistence ✅
+- Email Template (EMAIL): Rendering, subject formatting ✅
+- Performance (PERF): Single/small/medium candidate sets ✅
+- Security (SEC): SQL injection, XSS, user isolation, payload limits ✅
+
+**Conclusion:**
+- All acceptance criteria met ✅
+- Security boundaries verified ✅
+- No vulnerabilities found ✅
+- Ready for DocSystemAnalyst
+
+**Status:** `To Test Prod` → `To Document`
+
+---
+
+### DocSystemAnalyst (2026-03-12 11:35 GMT+2)
+**Documentation Complete ✅**
+
+Added comprehensive documentation to DOCUMENTATION.md (Content Decay Digest Service section).
+
+**Documentation Added:**
+- Service: `ContentDecayDigestService.php` with 7 core methods
+- Interface: `ContentDecayDigestServiceInterface.php`
+- Mailable: `ContentDecayDigestEmail.php`
+- Email template: `content-decay-digest.blade.php`
+- Digest payload structure with all fields documented
+- Frequency options: weekly (7 days), monthly (30 days)
+- Filtering logic: status, min score, date range, top candidates limit
+- Notification integration: Email queue + in-app notifications
+- Security measures: user isolation, XSS prevention, SQL injection protection
+- Test coverage: 78 tests, 172 assertions (all passing)
+- Production deployment: 2026-03-12, commit `65be9f77`
+
+**Dependencies Verified:**
+- TASK-36-2 (Eloquent Models): Done ✅
+- TASK-36-6 (DetectionService): Done ✅
+- FEAT-002 (Alerts/Notifications): Done ✅
+
+**SPEC-036:** In Progress (other tasks pending)
+
+**Status:** `To Document` → `Done`
 
 ---
 
