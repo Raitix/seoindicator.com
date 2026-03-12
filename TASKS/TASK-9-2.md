@@ -1,7 +1,7 @@
 # TASK-9-2: Annotation Category Enum
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Medium`
