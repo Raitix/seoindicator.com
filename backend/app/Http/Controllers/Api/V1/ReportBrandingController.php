@@ -38,7 +38,7 @@ class ReportBrandingController extends Controller
     /**
      * Get branding for a site (SPEC-004-14).
      */
-    public function show(int $siteId): JsonResponse
+    public function show(Request $request, int $siteId): JsonResponse
     {
         $site = Site::find($siteId);
         if (!$site) {
@@ -51,16 +51,30 @@ class ReportBrandingController extends Controller
             ], 404);
         }
 
+        // Authorization: user must own the site
+        if ($request->user() && $request->user()->id !== $site->user_id) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this site.',
+                ],
+            ], 403);
+        }
+
         $branding = $this->brandingRepository->findBySite($siteId);
 
         if (!$branding) {
-            // Return defaults
+            // Return defaults in camelCase format
+            $defaults = ReportBranding::getDefaults();
             return response()->json([
                 'success' => true,
-                'data' => array_merge(
-                    ['siteId' => $siteId],
-                    ReportBranding::getDefaults()
-                ),
+                'data' => [
+                    'siteId' => $siteId,
+                    'primaryColor' => $defaults['primary_color'],
+                    'secondaryColor' => $defaults['secondary_color'],
+                    'fontFamily' => $defaults['font_family'],
+                ],
             ]);
         }
 
@@ -86,6 +100,17 @@ class ReportBrandingController extends Controller
             ], 404);
         }
 
+        // Authorization: user must own the site
+        if ($request->user() && $request->user()->id !== $site->user_id) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this site.',
+                ],
+            ], 403);
+        }
+
         $validated = $request->validate([
             'primaryColor' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'secondaryColor' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
@@ -104,10 +129,10 @@ class ReportBrandingController extends Controller
             $updateData['secondary_color'] = $validated['secondaryColor'];
         }
         if (isset($validated['fontFamily'])) {
-            $updateData['font_family'] = strip_tags($validated['fontFamily']);
+            $updateData['font_family'] = $this->sanitizeString($validated['fontFamily']);
         }
         if (array_key_exists('companyName', $validated)) {
-            $updateData['company_name'] = $validated['companyName'] ? strip_tags($validated['companyName']) : null;
+            $updateData['company_name'] = $validated['companyName'] ? $this->sanitizeString($validated['companyName']) : null;
         }
         if (array_key_exists('companyWebsite', $validated)) {
             $updateData['company_website'] = $validated['companyWebsite'];
@@ -144,6 +169,17 @@ class ReportBrandingController extends Controller
                     'message' => 'Site not found.',
                 ],
             ], 404);
+        }
+
+        // Authorization: user must own the site
+        if ($request->user() && $request->user()->id !== $site->user_id) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this site.',
+                ],
+            ], 403);
         }
 
         $validator = Validator::make($request->all(), [
@@ -233,7 +269,7 @@ class ReportBrandingController extends Controller
      * Delete logo only for a site (SPEC-004-15).
      * Removes logo file and clears logo fields but keeps branding record.
      */
-    public function deleteLogo(int $siteId): JsonResponse
+    public function deleteLogo(Request $request, int $siteId): JsonResponse
     {
         $site = Site::find($siteId);
         if (!$site) {
@@ -244,6 +280,17 @@ class ReportBrandingController extends Controller
                     'message' => 'Site not found.',
                 ],
             ], 404);
+        }
+
+        // Authorization: user must own the site
+        if ($request->user() && $request->user()->id !== $site->user_id) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have access to this site.',
+                ],
+            ], 403);
         }
 
         $branding = $this->brandingRepository->findBySite($siteId);
@@ -286,8 +333,18 @@ class ReportBrandingController extends Controller
     /**
      * Delete branding for a site.
      */
-    public function destroy(int $siteId): Response
+    public function destroy(Request $request, int $siteId): Response
     {
+        $site = Site::find($siteId);
+        if (!$site) {
+            return response()->noContent(404);
+        }
+
+        // Authorization: user must own the site
+        if ($request->user() && $request->user()->id !== $site->user_id) {
+            abort(403, 'You do not have access to this site.');
+        }
+
         $branding = $this->brandingRepository->findBySite($siteId);
         if (!$branding) {
             return response()->noContent(404);
@@ -466,5 +523,20 @@ class ReportBrandingController extends Controller
             'createdAt' => $branding->created_at?->toISOString(),
             'updatedAt' => $branding->updated_at?->toISOString(),
         ];
+    }
+
+    /**
+     * Sanitize a string by removing HTML tags and their content.
+     */
+    protected function sanitizeString(string $value): string
+    {
+        // Remove script tags and their content
+        $value = preg_replace('/<script[\s\S]*?>[\s\S]*?<\/script>/i', '', $value);
+        // Remove style tags and their content
+        $value = preg_replace('/<style[\s\S]*?>[\s\S]*?<\/style>/i', '', $value);
+        // Strip remaining HTML tags
+        $value = strip_tags($value);
+        // Trim whitespace
+        return trim($value);
     }
 }

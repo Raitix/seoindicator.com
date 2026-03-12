@@ -285,3 +285,21 @@ Cleanup:
 Task fully closed and documented.
 - SPEC-012: In Progress (other tasks pending)
 
+### [2026-03-12 19:08 GMT+2] Agent: DocSystemAnalyst - Re-verification Pass
+Verification:
+- Task status: `Done` ✅
+- DOCUMENTATION.md verified at line 33190 (GSC Connections Table section) ✅
+- Schema: `gsc_connections` table with user_id, site_url, property_url, encrypted tokens (access_token, refresh_token), token_expires_at, status
+- Security: Token encryption via Laravel encrypted cast, unique constraint on (user_id, property_url), tokens hidden from serialization
+- Model: GSCConnection with status helpers (isActive, markAsExpired, markAsRevoked, markAsSynced), token helpers (isTokenExpired, tokenExpiresWithin), query scopes (active, needsRefresh, readyForSync)
+- Test coverage: 27 tests (11 schema + 16 model), 64 assertions
+- Production deployed: 2026-02-28
+
+Cleanup:
+- Removed stale lock file: `TASK-12-1.lock`
+- Written completion marker: `logs/completed/task/TASK-12-1.json`
+- Cleared active-agents entry
+
+Task fully closed and documented.
+- SPEC-012: In Progress (other tasks pending)
+

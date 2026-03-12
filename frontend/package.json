@@ -20,6 +20,7 @@
     "test:e2e:report": "playwright show-report e2e-report"
   },
   "dependencies": {
+    "@asamuzakjp/css-color": "^4.1.2",
     "@google-analytics/data": "^5.2.1",
     "@hookform/resolvers": "^3.10.0",
     "@next/env": "^16.1.6",
