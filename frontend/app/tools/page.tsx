@@ -1,83 +1,27 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  generateToolsListSchema,
+  generateBreadcrumbSchema,
+  generateFAQSchema,
+  generateToolsLandingBreadcrumbs,
+  generateToolsLandingMetadata,
+  DEFAULT_TOOL_FAQS,
+  TOOLS,
+  schemaToJsonLd,
+} from "@/lib/seo";
 
-// JSON-LD Schema for tools
-const toolsSchema = {
-  "@context": "https://schema.org",
-  "@type": "ItemList",
-  "name": "Free SEO Tools",
-  "description": "Free online SEO tools for meta tag analysis, keyword density checking, mobile-friendly testing, and social media previews.",
-  "numberOfItems": 4,
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position": 1,
-      "item": {
-        "@type": "SoftwareApplication",
-        "name": "Meta Tag Analyzer",
-        "applicationCategory": "WebApplication",
-        "operatingSystem": "Web Browser",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "description": "Analyze your page's meta tags including title, description, Open Graph, and Twitter Card tags."
-      }
-    },
-    {
-      "@type": "ListItem",
-      "position": 2,
-      "item": {
-        "@type": "SoftwareApplication",
-        "name": "Keyword Density Checker",
-        "applicationCategory": "WebApplication",
-        "operatingSystem": "Web Browser",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "description": "Check keyword density and placement in your content. Get recommendations for optimal keyword usage."
-      }
-    },
-    {
-      "@type": "ListItem",
-      "position": 3,
-      "item": {
-        "@type": "SoftwareApplication",
-        "name": "Mobile-Friendly Test",
-        "applicationCategory": "WebApplication",
-        "operatingSystem": "Web Browser",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "description": "Test how mobile-friendly your page is. Check viewport settings, tap targets, and text readability."
-      }
-    },
-    {
-      "@type": "ListItem",
-      "position": 4,
-      "item": {
-        "@type": "SoftwareApplication",
-        "name": "Social Media Preview",
-        "applicationCategory": "WebApplication",
-        "operatingSystem": "Web Browser",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "description": "Preview how your page appears on Facebook, Twitter, and other social platforms."
-      }
-    }
-  ]
-};
+// Generate metadata for the tools landing page
+export const metadata = generateToolsLandingMetadata();
 
-const tools = [
+// Generate all schemas for the page
+const toolsSchema = generateToolsListSchema(TOOLS);
+const breadcrumbSchema = generateBreadcrumbSchema(generateToolsLandingBreadcrumbs());
+const faqSchema = generateFAQSchema(DEFAULT_TOOL_FAQS);
+
+// Tool cards configuration (UI-specific)
+const toolCards = [
   {
     id: "meta-tag-analyzer",
     name: "Meta Tag Analyzer",
@@ -141,10 +85,18 @@ const tools = [
 export default function ToolsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
-      {/* JSON-LD Schema */}
+      {/* JSON-LD Schemas */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(toolsSchema) }}
+        dangerouslySetInnerHTML={{ __html: schemaToJsonLd(toolsSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: schemaToJsonLd(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: schemaToJsonLd(faqSchema) }}
       />
 
       {/* Header */}
@@ -190,7 +142,7 @@ export default function ToolsPage() {
       {/* Tools Grid */}
       <section className="container mx-auto px-4 pb-16">
         <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          {tools.map((tool) => (
+          {toolCards.map((tool) => (
             <Card 
               key={tool.id}
               className={`bg-slate-800 border-slate-700 transition-all duration-200 ${
