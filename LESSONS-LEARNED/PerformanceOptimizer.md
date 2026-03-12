@@ -419,4 +419,53 @@ Ranking::whereIn('keyword_id', $ids)
 
 ---
 
-Last updated: 2026-03-10
+## 2026-03-12: Performance Audit - FIXES DEPLOYED
+
+### GA Metrics Trend (16-day comparison)
+
+| Metric | 02-24 | 03-12 | Change |
+|--------|-------|-------|--------|
+| Bounce Rate | 68.2% | 24.4% | ✅ -43.8% |
+| Engagement Rate | 31.8% | 75.6% | ✅ +43.8% |
+| Homepage Bounce | 75.7% | 54.0% | ✅ -21.7% |
+| Avg Session | 200s | 1027s | ✅ +827s |
+
+### Page Performance
+
+| Page | Bounce | Duration | Status |
+|------|--------|----------|--------|
+| `/` | 54.0% | 302s | ✅ IMPROVED |
+| `/dashboard/` | 0% | 309s | ✅ Excellent |
+| `/login/` | 0% | 549s | ✅ Excellent |
+| `/register/` | 0% | 1524s | ✅ Excellent |
+| `/ai-visibility/new/` | 0% | 478s | ✅ Excellent |
+| `/tools/meta-tag-analyzer/` | 0% | 247s | ✅ Excellent |
+| `/locations/preview/rankings/` | 0% | 1209s | ✅ Excellent |
+| `/competitors/` | 20% | 43s | ✅ Excellent |
+
+### Backend Status - FIXES DEPLOYED
+
+**N+1 Query (KeywordController::index):** ✅ **FIXED**
+- Now uses batch fetching with `getLatestRankingsForKeywords()`
+- MySQL: Window function (`ROW_NUMBER() OVER PARTITION BY`)
+- SQLite: Eloquent with grouping for test compatibility
+- Reduces 501 queries → 2 queries for 500 keywords
+
+**DashboardController Memory Issue:** ✅ **FIXED**
+- Old: Loaded entire ranking history (15,000+ rows for 500 keywords × 30 days)
+- New: Window function fetches only 2 latest rankings per keyword (1,000 rows)
+- 5-minute cache (300s TTL) remains in place
+
+**Deployment:** 2026-03-12, ID `20260312T114059Z-2cd59575`
+
+### Tooling Status
+
+**GA helper script degraded locally:**
+- `frontend/scripts/ga-analytics.mjs` still fails locally
+- Direct REST call with service account continues to work for audits
+
+**MILESTONE:** Performance optimizations deployed. N+1 query fixed. Dashboard memory issue fixed. Engagement at 75.6%, bounce at 24.4%.
+
+---
+
+Last updated: 2026-03-12
