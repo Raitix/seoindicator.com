@@ -51,7 +51,7 @@ export interface AlertPreferencesForm {
 }
 
 export interface AlertFilters {
-  project_id?: string | null;
+  project_id?: number | null;
   alert_types?: AlertType[];
   is_read?: boolean | null;
 }
