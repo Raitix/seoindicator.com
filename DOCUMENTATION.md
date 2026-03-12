@@ -23142,6 +23142,111 @@ The middleware integrates with the API key authentication middleware:
 - TASK-6-6: Request Logging
 
 ---
+## Rate Limit Headers (TASK-6-7)
+
+### Task Description
+Implementation and verification of rate limit headers in API responses. These headers provide clients with real-time information about their rate limit status, enabling proper client-side throttling and user feedback.
+
+### Headers Implemented
+
+All API responses include three standard rate limit headers:
+
+| Header | Type | Description |
+|--------|------|-------------|
+| `X-RateLimit-Limit` | Integer | Maximum requests per window (default: 60) |
+| `X-RateLimit-Remaining` | Integer | Remaining requests in current window |
+| `X-RateLimit-Reset` | Unix Timestamp | Time when the rate limit window resets |
+
+### Header Behavior
+
+**Response Example:**
+```http
+HTTP/1.1 200 OK
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1708368300
+```
+
+**Rate Limit Exceeded Response (429):**
+```http
+HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1708368300
+Retry-After: 45
+Content-Type: application/json
+
+{
+  "error": "Rate limit exceeded",
+  "message": "Too many requests. Please try again later.",
+  "retry_after": 45
+}
+```
+
+### Implementation Details
+
+**Middleware Integration:**
+- Headers are added by `ApiKeyRateLimiter` middleware
+- Integrated with `ApiKeyRateLimiterService` for accurate tracking
+- Applied to all routes using `api-key.ratelimit` middleware
+
+**Technical Implementation:**
+```php
+// Middleware adds headers to every response
+$response->headers->set('X-RateLimit-Limit', $limit);
+$response->headers->set('X-RateLimit-Remaining', $remaining);
+$response->headers->set('X-RateLimit-Reset', $resetTime);
+```
+
+### Component Locations
+- **Middleware:** `backend/app/Http/Middleware/ApiKeyRateLimiter.php`
+- **Service:** `backend/app/Services/ApiKeyRateLimiterService.php`
+- **Unit Tests:** `backend/tests/Unit/Middleware/ApiKeyRateLimiterMiddlewareTest.php`
+- **Feature Tests:** `backend/tests/Feature/Api/RateLimitHeadersTest.php`
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| RateLimitHeadersTest | 18 | 37 |
+| ApiKeyRateLimiterMiddlewareTest | 29 | 240 |
+
+**Test Categories (HD-*):**
+| Test ID | Description | Status |
+|---------|-------------|--------|
+| HD-001 | Headers present in successful response | ✅ PASS |
+| HD-002 | Limit matches configuration | ✅ PASS |
+| HD-003 | Reset timestamp is future Unix time | ✅ PASS |
+| HD-004 | Remaining decrements on each request | ✅ PASS |
+| HD-005 | Remaining never goes below zero | ✅ PASS |
+| HD-006 | Headers accurate after window reset | ✅ PASS |
+| HD-007 | Headers present in 429 response | ✅ PASS |
+
+**Production Verification:**
+- Headers present in production API responses: ✅ Verified
+- Rate limit decrements correctly (5→4→3→2→1→0): ✅ Verified
+- 429 response with proper headers: ✅ Verified
+
+### Acceptance Criteria Status
+- [x] Headers present in responses - HD-001 to HD-007 ✅
+- [x] Accurate limit/remaining values - HD-001, HD-002, HD-006, HD-007 ✅
+- [x] Correct reset timestamp - HD-003 ✅
+- [x] Works with rate limiter - MI-001 to MI-008 ✅
+
+### Production Status
+- **Deployed:** 2026-03-12 (commit 3530763d)
+- **Test Results:** 47 tests passing (277 assertions)
+- **Status:** Complete ✅
+
+### Dependencies
+- TASK-6-5 (Rate limiter middleware) - Complete ✅
+
+### Related Tasks
+- TASK-6-5: Rate Limiter Middleware (parent implementation)
+- TASK-6-2: API Key Model
+- TASK-6-3: API Key Service
+
+---
 ## PlaywrightRendererService Implementation (TASK-22-5)
 
 ### Service Description
