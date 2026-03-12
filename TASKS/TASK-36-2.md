@@ -1,7 +1,7 @@
 # TASK-36-2: Eloquent Models - Content Decay
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -313,6 +313,38 @@ Created comprehensive test suite for all 4 Content Decay Eloquent models:
 - Queue has capacity - task can proceed immediately
 
 **Status:** `To Write Tests` → Ready for PreTester
+
+---
+
+### DevOps (2026-03-12)
+**Deployment Complete ✅**
+
+**Deployment ID:** `20260312T085726Z-1c584bd6`
+**Commit:** `65be9f773a61`
+**Status:** SUCCESS
+
+**Deployment Steps:**
+1. ✅ Fetch origin - success
+2. ✅ Build frontend - success (Next.js 16.1.6, 103 static pages)
+3. ✅ Deploy to production - success (composer, migrations, cache)
+4. ✅ Production smoke tests - success (homepage, login page)
+
+**Build Fixes Applied:**
+- Fixed `AlertFilters.project_id` type mismatch (string vs number)
+- Fixed `useUpdatePreferences` return type to `AlertPreferencesForm`
+- Fixed `SERPFeatureIcon` accessibility props handling
+- Added `generateStaticParams` to `alerts/[id]` for static export compatibility
+- Reinstalled frontend dependencies (node_modules were corrupted)
+
+**Models Deployed:**
+- `ContentDecayProject.php` ✅
+- `ContentDecayCandidate.php` ✅
+- `ContentDecaySignal.php` ✅
+- `ContentRefreshTask.php` ✅
+
+**Production URL:** https://seoindicator.com
+
+**Status:** `To Deploy` → `To Test Prod`
 
 ---
 
