@@ -1,7 +1,7 @@
 # TASK-7-9: Feature History Repository
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Medium`
