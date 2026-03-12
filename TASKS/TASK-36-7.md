@@ -1,7 +1,7 @@
 # TASK-36-7: ContentDecayDigestService
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`
@@ -336,6 +336,33 @@ All ContentDecayDigestService tests passed successfully.
 - `Tests\Unit\Enums\AnnotationCategoryTest` fails due to missing `App\Enums\AnnotationCategory` class - unrelated to ContentDecayDigestService
 
 **Status:** `To Test Locally` → `To Deploy`
+
+---
+
+### DevOps (2026-03-12 11:15 GMT+2)
+**Deployment Complete ✅**
+
+Task code was already deployed in previous production rollout.
+
+**Deployment Details:**
+- Deployment ID: `20260312T085726Z-1c584bd6`
+- Deployed Commit: `65be9f77` (includes TASK-36-7 code from `cc8d04bc`)
+- Result: `success`
+- Production Smoke: Homepage + Login passed
+
+**Files Already in Production:**
+| File | Status |
+|------|--------|
+| `app/Services/ContentDecay/ContentDecayDigestService.php` | ✅ Deployed |
+| `app/Services/ContentDecay/Contracts/ContentDecayDigestServiceInterface.php` | ✅ Deployed |
+| `app/Mail/ContentDecayDigestEmail.php` | ✅ Deployed |
+| `resources/views/emails/content-decay-digest.blade.php` | ✅ Deployed |
+| `database/factories/ContentDecayProjectFactory.php` | ✅ Deployed |
+| `database/factories/ContentDecayCandidateFactory.php` | ✅ Deployed |
+| `tests/Unit/Services/ContentDecay/ContentDecayDigestServiceTest.php` | ✅ Deployed |
+| `tests/Feature/Services/ContentDecay/ContentDecayDigestServiceTest.php` | ✅ Deployed |
+
+**Status:** `To Deploy` → `To Test Prod`
 
 ---
 
