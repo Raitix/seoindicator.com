@@ -46,7 +46,10 @@ describe("SERPFeatureIcon - Rendering", () => {
 
     expect(svg).toBeInTheDocument();
     expect(svg).toHaveAttribute("aria-label", "Featured Snippet");
-    expect(svg).toHaveAttribute("title", "Featured Snippet");
+    // SVG uses <title> child element for accessibility, not title attribute
+    const titleElement = svg?.querySelector("title");
+    expect(titleElement).toBeInTheDocument();
+    expect(titleElement).toHaveTextContent("Featured Snippet");
   });
 
   // IC-002: Local pack icon
@@ -171,23 +174,25 @@ describe("SERPFeatureIcon - Accessibility", () => {
     });
   });
 
-  // IC-015: Has title attribute for tooltip
-  it("IC-015: has title attribute for tooltip", () => {
+  // IC-015: Has title element for tooltip (SVG uses <title> child element)
+  it("IC-015: has title element for tooltip", () => {
     VALID_FEATURE_TYPES.forEach((feature) => {
       const { container } = render(<SERPFeatureIcon feature={feature} />);
       const svg = container.querySelector("svg");
+      const titleElement = svg?.querySelector("title");
 
-      expect(svg).toHaveAttribute("title");
-      expect(svg?.getAttribute("title")?.length).toBeGreaterThan(0);
+      expect(titleElement).toBeInTheDocument();
+      expect(titleElement?.textContent?.length).toBeGreaterThan(0);
     });
   });
 
-  // Additional: aria-label matches title
-  it("aria-label matches title attribute", () => {
+  // Additional: aria-label matches title element content
+  it("aria-label matches title element content", () => {
     const { container } = render(<SERPFeatureIcon feature="featured_snippet" />);
     const svg = container.querySelector("svg");
+    const titleElement = svg?.querySelector("title");
 
-    expect(svg?.getAttribute("aria-label")).toBe(svg?.getAttribute("title"));
+    expect(svg?.getAttribute("aria-label")).toBe(titleElement?.textContent);
   });
 
   // Additional: has role="img"
