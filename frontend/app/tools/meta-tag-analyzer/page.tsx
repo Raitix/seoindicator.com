@@ -1,44 +1,49 @@
 import Link from "next/link";
 import { ToolWidget } from "@/components/tools/ToolWidget";
 import { Button } from "@/components/ui/button";
+import {
+  generateToolMetadata,
+  generateToolPageSchemas,
+  getToolBySlug,
+  schemaToJsonLd,
+} from "@/lib/seo";
 
-export const metadata = {
-  title: "Meta Tag Analyzer - Free SEO Tool | SEOIndicator",
-  description: "Analyze your page's meta tags including title, description, Open Graph, and Twitter Card tags. Get instant warnings and optimization suggestions.",
-  keywords: ["meta tag analyzer", "SEO tool", "title tag checker", "meta description", "Open Graph", "Twitter Card"],
-};
+// Get tool configuration
+const tool = getToolBySlug("meta-tag-analyzer");
+if (!tool) throw new Error("Tool not found");
 
-// JSON-LD Schema for Meta Tag Analyzer
-const metaTagAnalyzerSchema = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "Meta Tag Analyzer",
-  "applicationCategory": "WebApplication",
-  "operatingSystem": "Web Browser",
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "USD"
-  },
-  "description": "Free tool to analyze meta tags including title, description, Open Graph, and Twitter Card tags. Get instant warnings and optimization suggestions.",
-  "featureList": [
-    "Title tag analysis",
-    "Meta description check",
-    "Open Graph tag validation",
-    "Twitter Card tag validation",
-    "SERP preview",
-    "Canonical URL check"
-  ]
-};
+// Generate metadata with Open Graph and Twitter Cards
+export const metadata = generateToolMetadata(
+  tool.name,
+  tool.description,
+  tool.slug,
+  {
+    image: tool.image,
+    keywords: ["meta tag analyzer", "SEO tool", "title tag checker", "meta description", "Open Graph", "Twitter Card"],
+  }
+);
+
+// Generate all schemas for the page
+const schemas = generateToolPageSchemas(tool);
 
 export default function MetaTagAnalyzerPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
-      {/* JSON-LD Schema */}
+      {/* JSON-LD Schemas */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(metaTagAnalyzerSchema) }}
+        dangerouslySetInnerHTML={{ __html: schemaToJsonLd(schemas.softwareApplication) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: schemaToJsonLd(schemas.breadcrumbs) }}
+      />
+      {schemas.faq && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: schemaToJsonLd(schemas.faq) }}
+        />
+      )}
 
       {/* Header */}
       <header className="border-b border-slate-700">

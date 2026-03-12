@@ -48033,3 +48033,155 @@ During production deployment, a MySQL strict mode issue was discovered and fixed
 - TASK-36-6: ContentDecayDetectionService
 
 ---
+## ContentDecayExportService (TASK-36-8)
+
+### Service Description
+Export service for the Content Decay Detection & Refresh Planner feature (FEAT-036) that generates CSV, PDF, and XLS reports from the decay queue and recovery outcomes. Reuses existing export infrastructure patterns from FEAT-029 (PdfToolExporter, XlsToolExporter) to provide standardized output formats for content decay data.
+
+### Component Locations
+- **Service:** `backend/app/Services/ContentDecay/ContentDecayExportService.php`
+- **Interface:** `backend/app/Services/ContentDecay/Contracts/ContentDecayExportServiceInterface.php`
+- **Tests:** `backend/tests/Unit/Services/ContentDecay/ContentDecayExportServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-36-8.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `exportQueue($siteId, $format, $filters)` | Export decay queue in CSV/PDF/XLS format |
+| `generateAiBrief($candidateId)` | Queue AI refresh brief generation job |
+| `getExportFormats()` | Returns available formats: `['csv', 'pdf', 'xls']` |
+| `isAiBriefAvailable()` | Check if AI service is configured |
+| `getAiBrief($candidateId)` | Retrieve existing AI brief for candidate |
+| `getExportFilename($siteId, $format, $filters)` | Generate standardized export filename |
+
+### Export Formats
+
+| Format | Extension | Library | Features |
+|--------|-----------|---------|----------|
+| CSV | `.csv` | Native PHP | UTF-8 BOM, Excel compatible |
+| PDF | `.pdf` | Native PDF generation | Multi-page, summary + details |
+| XLS | `.xls` | PhpSpreadsheet | Bold headers, auto-size, auto-filter, frozen header |
+
+### CSV Export Columns
+
+| Column | Source | Description |
+|--------|--------|-------------|
+| URL | `page_url` | Page URL |
+| Title | `page_title` | Page title |
+| Page Type | `page_type` | home/blog/landing/product/tool/compare/docs/other |
+| Decay Score | `decay_score` | 0-100 normalized score |
+| Severity | `severity` | low/medium/high/critical |
+| Confidence | `detection_confidence` | Detection confidence (0-1) |
+| Primary Reason | `primary_reason_code` | Main decay reason |
+| All Reason Codes | `reason_codes` | Comma-separated reason codes |
+| Lost Clicks | `lost_click_estimate` | Estimated click loss |
+| Recovery Upside | `recovery_upside_estimate` | Estimated recovery potential |
+| Status | `status` | backlog/planned/in_progress/refreshed/recovered/ignored |
+| First Detected | `first_detected_at` | Initial detection date |
+| Last Detected | `last_detected_at` | Most recent detection date |
+| Planned Date | `planned_at` | When scheduled |
+| Started Date | `started_at` | When work began |
+| Refreshed Date | `refreshed_at` | When content was updated |
+| Recovered Date | `recovered_at` | When recovery confirmed |
+
+### PDF Report Structure
+
+**Page 1: Executive Summary**
+- Total candidates count
+- Severity distribution (Critical/High/Medium/Low)
+- Impact metrics (Lost Clicks, Recovery Upside, Avg Decay Score)
+- Top 5 priority pages (highest decay scores)
+
+**Pages 2+: Detailed Queue**
+- Paginated candidate list (30 rows per page)
+- URL, Score, Severity, Status columns
+- Page numbers on each page
+
+**Final Page: Reason Code Breakdown**
+- Count per reason code
+- Percentage distribution
+
+### XLS Export Features
+
+| Feature | Implementation |
+|---------|----------------|
+| Header Row | Bold, gray background (#E0E0E0), centered |
+| Column Width | Auto-sized based on content |
+| Frozen Rows | Header row frozen for scrolling |
+| Auto-Filter | Enabled on all columns |
+| Borders | Thin borders on header cells |
+
+### Export Filters
+
+| Filter | Type | Description |
+|--------|------|-------------|
+| `status` | string | Filter by workflow status |
+| `severity` | string | Filter by severity level |
+| `date_from` | date | First detected after date |
+| `date_to` | date | First detected before date |
+| `recovery_report` | bool | Generate recovery report format |
+
+### Filename Format
+
+```
+{type}_site_{siteId}_{YYYY-MM-DD_HHMMSS}.{ext}
+
+Examples:
+- content_decay_queue_site_1_2026-03-12_143022.csv
+- recovery_report_site_1_2026-03-12_143022.pdf
+```
+
+### AI Brief Integration
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `isAiBriefAvailable()` | bool | Checks for OpenAI or Anthropic API keys |
+| `generateAiBrief($candidateId)` | `['job_id', 'status']` | Queues brief generation job |
+| `getAiBrief($candidateId)` | `?array` | Returns cached brief from `evidence_json.ai_brief` |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `ContentDecayExportServiceTest.php` | 76 | 161 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 3 | Container binding, interface implementation |
+| Export Formats | 5 | Format validation, supported formats |
+| CSV Export | 12 | Column presence, data accuracy, UTF-8 BOM |
+| PDF Export | 3 | Multi-page, summary, pagination |
+| XLS Export | 2 | PhpSpreadsheet output, formatting |
+| Filtering | 6 | Status, severity, date range filters |
+| AI Brief | 8 | Availability, generation, retrieval |
+| Security | 5 | XSS, SQL injection handling |
+| Edge Cases | 7 | Null values, long URLs, unicode |
+| Acceptance Criteria | 6 | All ACs verified |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-12 |
+| Deployment ID | `20260312T095104Z-ddaed5d1` |
+| Commit | `5dd7e82802581d772cd8070539a6ddb7341c3059` |
+| Tests | 76 passed, 161 assertions |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-36-2 | Done ✅ | Eloquent models (ContentDecayProject, ContentDecayCandidate) |
+| FEAT-029 | Done ✅ | Export infrastructure patterns |
+
+### Related Tasks
+
+- TASK-36-2: Eloquent Models (data source)
+- TASK-36-7: ContentDecayDigestService (similar export patterns)
+- TASK-36-10: API Controllers (uses export service)
+- FEAT-029: Export Results (infrastructure reference)
+
+---

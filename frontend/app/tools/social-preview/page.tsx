@@ -1,16 +1,50 @@
 import Link from "next/link";
 import { SocialMediaPreview } from "@/components/tools/SocialMediaPreview";
 import { Button } from "@/components/ui/button";
+import {
+  generateToolMetadata,
+  generateToolPageSchemas,
+  getToolBySlug,
+  schemaToJsonLd,
+} from "@/lib/seo";
 
-export const metadata = {
-  title: "Social Media Preview - Free SEO Tool | SEOIndicator",
-  description: "Preview how your page appears when shared on Facebook, Twitter, and LinkedIn. Analyze Open Graph and Twitter Card tags.",
-  keywords: ["social media preview", "open graph checker", "twitter card validator", "facebook preview", "linkedin preview", "SEO tool"],
-};
+// Get tool configuration
+const tool = getToolBySlug("social-preview");
+if (!tool) throw new Error("Tool not found");
+
+// Generate metadata with Open Graph and Twitter Cards
+export const metadata = generateToolMetadata(
+  tool.name,
+  tool.description,
+  tool.slug,
+  {
+    image: tool.image,
+    keywords: ["social media preview", "open graph checker", "twitter card validator", "facebook preview", "linkedin preview", "SEO tool"],
+  }
+);
+
+// Generate all schemas for the page
+const schemas = generateToolPageSchemas(tool);
 
 export default function SocialMediaPreviewPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
+      {/* JSON-LD Schemas */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: schemaToJsonLd(schemas.softwareApplication) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: schemaToJsonLd(schemas.breadcrumbs) }}
+      />
+      {schemas.faq && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: schemaToJsonLd(schemas.faq) }}
+        />
+      )}
+
       {/* Header */}
       <header className="border-b border-slate-700">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -191,6 +225,36 @@ export default function SocialMediaPreviewPage() {
                   <span>Use Facebook Sharing Debugger to clear cached previews after changes</span>
                 </li>
               </ul>
+            </section>
+
+            {/* Learn More */}
+            <section className="bg-slate-800/50 rounded-lg p-6 border border-slate-700">
+              <h2 className="text-xl font-semibold text-white mb-4">📚 Learn More</h2>
+              <p className="text-slate-400 mb-4">
+                Master social media optimization with our comprehensive guides:
+              </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <Link 
+                  href="/seo-guides/open-graph/" 
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                >
+                  <span className="text-2xl">🔗</span>
+                  <div>
+                    <h3 className="font-medium text-white">Open Graph Guide</h3>
+                    <p className="text-sm text-slate-400">Master OG tags</p>
+                  </div>
+                </Link>
+                <Link 
+                  href="/seo-guides/twitter-cards/" 
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                >
+                  <span className="text-2xl">🐦</span>
+                  <div>
+                    <h3 className="font-medium text-white">Twitter Cards Guide</h3>
+                    <p className="text-sm text-slate-400">Optimize for Twitter</p>
+                  </div>
+                </Link>
+              </div>
             </section>
           </div>
         </div>

@@ -1,43 +1,49 @@
 import Link from "next/link";
 import { ToolWidget } from "@/components/tools/ToolWidget";
 import { Button } from "@/components/ui/button";
+import {
+  generateToolMetadata,
+  generateToolPageSchemas,
+  getToolBySlug,
+  schemaToJsonLd,
+} from "@/lib/seo";
 
-export const metadata = {
-  title: "Keyword Density Checker - Free SEO Tool | SEOIndicator",
-  description: "Check keyword density and placement in your content. Get recommendations for optimal keyword usage and avoid over-optimization.",
-  keywords: ["keyword density", "SEO tool", "keyword analysis", "keyword stuffing", "content optimization"],
-};
+// Get tool configuration
+const tool = getToolBySlug("keyword-density");
+if (!tool) throw new Error("Tool not found");
 
-// JSON-LD Schema for Keyword Density Checker
-const keywordDensitySchema = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "Keyword Density Checker",
-  "applicationCategory": "WebApplication",
-  "operatingSystem": "Web Browser",
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "USD"
-  },
-  "description": "Free tool to check keyword density and placement in your content. Get recommendations for optimal keyword usage and avoid over-optimization.",
-  "featureList": [
-    "Keyword density calculation",
-    "Heading placement analysis",
-    "Over-optimization detection",
-    "First paragraph check",
-    "Title & description analysis"
-  ]
-};
+// Generate metadata with Open Graph and Twitter Cards
+export const metadata = generateToolMetadata(
+  tool.name,
+  tool.description,
+  tool.slug,
+  {
+    image: tool.image,
+    keywords: ["keyword density", "SEO tool", "keyword analysis", "keyword stuffing", "content optimization"],
+  }
+);
+
+// Generate all schemas for the page
+const schemas = generateToolPageSchemas(tool);
 
 export default function KeywordDensityPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
-      {/* JSON-LD Schema */}
+      {/* JSON-LD Schemas */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(keywordDensitySchema) }}
+        dangerouslySetInnerHTML={{ __html: schemaToJsonLd(schemas.softwareApplication) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: schemaToJsonLd(schemas.breadcrumbs) }}
+      />
+      {schemas.faq && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: schemaToJsonLd(schemas.faq) }}
+        />
+      )}
 
       {/* Header */}
       <header className="border-b border-slate-700">
