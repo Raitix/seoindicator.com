@@ -60,9 +60,9 @@ const createSVGIcon = (paths: React.ReactNode): React.FC<SVGIconProps> => {
       className={className}
       role={role}
       aria-label={ariaLabel}
-      title={title}
       aria-hidden={ariaHidden}
     >
+      {title && <title>{title}</title>}
       {paths}
     </svg>
   );
