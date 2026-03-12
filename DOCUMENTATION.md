@@ -32466,6 +32466,151 @@ For production, implement real SERP fetchers:
 - `ScraperSERPFetcher` - Self-hosted scraper (optional)
 
 ---
+## ScraperSERPFetcher - Self-Hosted SERP Scraper (TASK-1-9)
+
+### Service Description
+Self-hosted SERP fetcher using Playwright for headless browser-based web scraping. Provides unlimited queries without external API dependencies, but carries IP blocking risk and potential Terms of Service violations. Recommended as a fallback option when other fetchers are unavailable.
+
+**Risk Classification:** HIGH (IP blocking/ToS risk - not a security vulnerability)
+
+**Default Status:** DISABLED (`SERP_SCRAPER_ENABLED=false`)
+
+### Core Functionalities
+
+**SERP Fetching:**
+- Implements `SERPFetcherInterface` for seamless integration with rank checking
+- Returns top 100 results per query
+- Supports Google and Bing search engines
+- Location-aware searching (US, UK, Germany, etc.)
+
+**Rate Limiting:**
+- Configurable delay between requests (default: 2 seconds)
+- Request tracking with automatic reset
+- Robots.txt awareness (respects crawl delays)
+
+**User-Agent Rotation:**
+- Desktop user agents (Chrome, Firefox, Safari)
+- Mobile user agents (Android, iOS)
+- Viewport sizing per device type
+
+**Proxy Support:**
+- HTTP/HTTPS proxy configuration
+- SOCKS5 proxy support
+- Proxy authentication (username/password)
+- Single proxy or rotation pool
+
+**CAPTCHA Detection:**
+- Content pattern detection (common CAPTCHA phrases)
+- Selector-based detection (CAPTCHA form elements)
+- Blocked page detection via title analysis
+- Graceful failure with error logging
+
+### Technical Implementation
+
+| Component | Location |
+|-----------|----------|
+| Service | `backend/app/Services/SERP/ScraperSERPFetcher.php` |
+| Interface | `backend/app/Services/SERPFetcherInterface.php` |
+| Config | `backend/config/serp-scraper.php` |
+| Tests | `backend/tests/Unit/Services/SERP/ScraperSERPFetcherTest.php` |
+
+### Configuration
+
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `SERP_SCRAPER_ENABLED` | `false` | Enable/disable scraper |
+| `SERP_SCRAPER_DELAY` | `2` | Delay between requests (seconds) |
+| `SERP_SCRAPER_PROXY` | `null` | Proxy URL (optional) |
+| `SERP_SCRAPER_PROXY_USER` | `null` | Proxy username (optional) |
+| `SERP_SCRAPER_PROXY_PASS` | `null` | Proxy password (optional) |
+| `SERP_SCRAPER_HEADLESS` | `true` | Run browser headless |
+| `SERP_SCRAPER_TIMEOUT` | `30000` | Request timeout (ms) |
+
+### User-Agent Rotation
+
+| Type | User Agents |
+|------|-------------|
+| Desktop | Chrome, Firefox, Safari (latest versions) |
+| Mobile | Chrome Android, Safari iOS |
+
+### URL Building
+
+**Google:**
+```
+https://www.google.com/search?q={keyword}&num=100&hl={locale}&gl={country}
+```
+
+**Bing:**
+```
+https://www.bing.com/search?q={keyword}&count=100&setlang={locale}&cc={country}
+```
+
+### Error Handling
+
+| Error Type | Behavior |
+|------------|----------|
+| Navigation Exception | Log error, return empty results with error message |
+| Browser Launch Failure | Log error, throw exception |
+| CAPTCHA Detected | Log warning, return error result |
+| Timeout | Log error, return error result |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| Error Handling | Graceful failure prevents information leakage |
+| Logging | PSR LoggerInterface for structured logging |
+| Sensitive Data | No API keys or credentials in error messages |
+| CAPTCHA Detection | Prevents infinite retry loops |
+
+### Unit Tests
+
+| Category | Tests | Assertions |
+|----------|-------|------------|
+| Basic Fetch Operations | 4 | 8 |
+| URL Building | 3 | 6 |
+| CAPTCHA Detection | 3 | 6 |
+| User-Agent Rotation | 2 | 4 |
+| Error Handling | 2 | 4 |
+| Rate Limiting | 3 | 6 |
+| Result Data | 3 | 6 |
+| Duration/Timestamp | 2 | 4 |
+| Edge Cases | 4 | 8 |
+| Locale Handling | 3 | 6 |
+| Proxy Configuration | 2 | 4 |
+| **Total** | **36** | **74** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-11 |
+| Commit | `b47da1f9` |
+| Test Duration | 26.96s |
+| Status | Complete (Disabled by default) |
+
+### Usage Warning
+
+⚠️ **Risk Mitigation Required:**
+
+1. **Enable only as fallback** when other fetchers (GoogleCSEFetcher, HttpSERPFetcher) are unavailable
+2. **Use proxy rotation** to avoid IP blocking
+3. **Implement delays** between requests (minimum 2 seconds recommended)
+4. **Monitor for CAPTCHA** and stop scraping if detected
+5. **Review search engine ToS** before enabling in production
+
+### Dependencies
+
+- TASK-1-7: SERP Fetcher Interface
+- Playwright browser (auto-installed)
+- PHP extensions: curl, json
+
+### Related Tasks
+
+- TASK-1-7: SERP Fetcher Interface
+- TASK-1-11: Rank Checker Worker (consumer)
+
+---
 ## Rank Checker Worker (TASK-1-11)
 
 ### Service Description
