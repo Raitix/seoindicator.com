@@ -719,6 +719,19 @@ Status: Done (Phase 1 MVP complete, documentation verified)
 - Active-agents entry cleared
 - **ORCHESTRATOR BUG:** naming mismatch (`SPEC-17` vs `SPEC-017`) continues to cause duplicate documentation passes (89+ verifications to date)
 
+### 2026-03-12 - DocSystemAnalyst
+**Re-verification Complete (10:03 GMT+2)**
+- Trigger referenced alias `SPEC-17`; canonical specification file is `SPEC-017.md`
+- Specification status: `Done` (Phase 1 MVP complete)
+- Phase 1 tasks (`TASK-17-1` through `TASK-17-7`): All `Done` (verified from disk)
+- Future-scope tasks (`TASK-17-8` through `TASK-17-20`): `To Write Tests` (planned Phase 2-4)
+- `FEAT-17.md` status: `Done`
+- `DOCUMENTATION.md` verified at line 21088 (`## User Onboarding & Activation Flow (FEAT-017)`)
+- Completion marker written: `logs/completed/specification/SPEC-17.json`
+- Stale locks removed: `SPEC-17.lock`, `SPEC-017.lock`
+- Active-agents entry cleared
+- **ORCHESTRATOR BUG:** naming mismatch (`SPEC-17` vs `SPEC-017`) continues to cause duplicate documentation passes (95+ verifications to date)
+
 ### 2026-03-11 - DocSystemAnalyst
 **Re-verification Complete (22:28 GMT+2)**
 - Trigger referenced alias `SPEC-17`; canonical specification file is `SPEC-017.md`
