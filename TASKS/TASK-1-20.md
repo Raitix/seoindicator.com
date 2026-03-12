@@ -1,7 +1,7 @@
 # SPEC-001-20: Performance Optimization
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 ## PRIORITY
 `Low`
 
