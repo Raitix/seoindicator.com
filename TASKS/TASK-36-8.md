@@ -1,7 +1,7 @@
 # TASK-36-8: ContentDecayExportService
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`
@@ -281,6 +281,29 @@ php artisan test --filter=ContentDecayExportService
 - All date columns (Planned/Started/Refreshed/Recovered) included
 
 **Status:** `Testing Locally` → `To Deploy` → Ready for DevOps
+
+---
+
+### DevOps (2026-03-12)
+**Deployment Complete ✅**
+
+**Deployment ID:** `20260312T095104Z-ddaed5d1`
+**Commit:** `5dd7e82802581d772cd8070539a6ddb7341c3059`
+**Duration:** ~3 minutes
+
+**Steps Completed:**
+| Step | Status |
+|------|--------|
+| Fetch origin | ✅ Success |
+| Build frontend (Next.js 16.1.6) | ✅ Success |
+| Deploy to production | ✅ Success |
+| Production smoke tests | ✅ Success |
+
+**Smoke Test Results:**
+- Homepage loaded ✅
+- Login page loaded ✅
+
+**Status:** `In Deployment` → `To Test Prod` → Ready for ProdTester
 
 ---
 
