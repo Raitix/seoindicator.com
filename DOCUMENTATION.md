@@ -6442,6 +6442,179 @@ The `BusinessLocationPolicy` provides these abilities for rankings access:
 - TASK-35-17: Location Management Page (locations list)
 
 ---
+## Local SEO Alerts UI (TASK-35-23)
+
+### Component Description
+Frontend alerts workspace for the Local SEO feature, providing a centralized notification center for local SEO events. Displays alerts across all user locations with filtering, sorting, pagination, read/unread tracking, and quick action capabilities. Includes an unread count badge for navigation integration and toast notifications for real-time alert awareness.
+
+### Component Locations
+- **Primary Route:** `frontend/app/local-seo/alerts/page.tsx` - Global alerts workspace
+- **Scoped Routes (compatibility shells):**
+  - `frontend/app/locations/[id]/alerts/page.tsx` - Location-scoped alerts alias
+  - `frontend/app/sites/[siteId]/local/[locationId]/alerts/page.tsx` - Site-scoped alerts alias
+- **Main Component:** `frontend/components/local/LocalSeoAlertsPage.tsx`
+- **Sub-components:**
+  - `frontend/components/local/LocalSeoAlertCard.tsx` - Individual alert display
+  - `frontend/components/local/LocalSeoAlertDetailModal.tsx` - Full alert info modal
+  - `frontend/components/local/LocalSeoUnreadCountBadge.tsx` - Navigation badge
+  - `frontend/components/local/LocalSeoAlertTypeIcon.tsx` - Alert type icon mapping
+  - `frontend/components/local/LocalSeoAlertToast.tsx` - Toast notification component
+- **Data Layer:**
+  - `frontend/lib/types/location-alerts.ts` - TypeScript interfaces
+  - `frontend/lib/hooks/useLocalSeoAlertsPage.ts` - SWR-based data fetching hook
+- **Backend Controller:** `backend/app/Http/Controllers/Api/V1/LocalSEO/LocalSEOAlertController.php`
+- **Test Files:**
+  - `frontend/__tests__/app/local-seo/alerts/page.test.tsx`
+  - `frontend/__tests__/app/locations/[id]/alerts/page.test.tsx`
+  - `frontend/__tests__/app/sites/[siteId]/local/[locationId]/alerts/page.test.tsx`
+  - `frontend/__tests__/components/local/LocalSeoAlertsPage.real.test.tsx`
+  - `frontend/__tests__/components/local/LocalSeoAlertCard.test.tsx`
+  - `frontend/__tests__/components/local/LocalSeoAlertDetailModal.test.tsx`
+  - `frontend/__tests__/components/local/LocalSeoUnreadCountBadge.test.tsx`
+  - `frontend/__tests__/components/local/LocalSeoAlertTypeIcon.test.tsx`
+  - `frontend/__tests__/components/local/LocalSeoAlertToast.test.tsx`
+- **Test Documentation:** `TESTS/TEST-35-23.md`
+
+### Page Routes
+
+| Route | Description | Notes |
+|-------|-------------|-------|
+| `/local-seo/alerts` | Global alerts workspace | **Primary route** - shows all user alerts |
+| `/locations/[id]/alerts` | Location-scoped alerts | Compatibility shell (404 on Hostinger due to Next.js static export) |
+| `/sites/[siteId]/local/[locationId]/alerts` | Site-scoped alerts | Compatibility shell (404 on Hostinger due to Next.js static export) |
+
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **Alerts List** | Paginated list of all alerts across user's locations |
+| **Filtering** | By severity (`info`/`warning`/`critical`), type, read state, location |
+| **Sorting** | Date (newest first) |
+| **Alert Cards** | Severity badge, type icon, title, message, location link, timestamp, read indicator |
+| **Detail Modal** | Full alert info with related data and quick action buttons |
+| **Unread Badge** | Navigation indicator showing unread count |
+| **Mark as Read** | Single alert and bulk "mark all as read" with confirmation |
+| **Toast Notifications** | New alert toasts with auto-dismiss and click-to-view |
+
+### Alert Type Icons
+
+| Alert Type | Icon | Color | Description |
+|------------|------|-------|-------------|
+| `ranking_improved` | ArrowUp | Green (`text-green-500`) | Local pack ranking improved |
+| `ranking_dropped` | ArrowDown | Red (`text-red-500`) | Local pack ranking dropped |
+| `new_review` | Message | Blue (`text-blue-500`) | New GBP review received |
+| `negative_review` | AlertTriangle | Orange (`text-orange-500`) | Review with rating ≤ 2 |
+| `rating_dropped` | Star | Red (`text-red-500`) | Average rating dropped |
+| `competitor_overtake` | Users | Yellow (`text-yellow-500`) | Competitor moved ahead in pack |
+| `gbp_disconnected` | LinkOff | Critical/Red (`text-red-600`) | GBP connection lost |
+
+### Component Props
+
+```typescript
+interface LocalSeoAlertsPageProps {
+  locationId?: string | number;    // Optional: filter to single location
+  availableLocations?: Location[]; // For location filter dropdown
+}
+
+interface LocalSeoAlert {
+  id: number;
+  type: AlertType;
+  severity: 'info' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
+  location: {
+    id: number;
+    name: string;
+  };
+  data?: Record<string, unknown>; // Additional alert context
+}
+
+interface UnreadCount {
+  total: number;
+  bySeverity: {
+    info: number;
+    warning: number;
+    critical: number;
+  };
+}
+```
+
+### Backend API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/local-seo/alerts` | GET | List alerts with filters and pagination |
+| `/api/v1/local-seo/alerts/unread-count` | GET | Get unread totals and per-severity counts |
+| `/api/v1/local-seo/alerts/{id}/read` | POST | Mark single alert as read |
+| `/api/v1/local-seo/alerts/mark-all-read` | POST | Bulk mark all unread as read |
+| `/api/v1/local-seo/alerts/{id}` | DELETE | Delete an alert |
+| `/api/v1/locations/{id}/alerts` | GET | Location-scoped alerts list |
+
+### Frontend Behavior
+
+| Area | Implementation |
+|------|----------------|
+| Data fetching | SWR-based hook with automatic revalidation |
+| Location filter | Combobox dropdown on global route; hidden on scoped routes |
+| Severity filter | Dropdown with `info`, `warning`, `critical` options |
+| Read state filter | Toggle for `read`/`unread`/`all` |
+| Pagination | Server-backed with `meta` pagination data |
+| Mark all as read | Confirmation dialog before bulk action |
+| Detail modal | Opens on alert card click with full alert info |
+| Toast notifications | Auto-dismiss after 5 seconds, click to view details |
+| Responsive design | Stacked layout on mobile, grid on desktop |
+
+### Test Coverage
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| Global route shell | 3 | ✅ PASS |
+| Location-scoped route shell | 3 | ✅ PASS |
+| Site-scoped route shell | 3 | ✅ PASS |
+| Workspace integration | 8 | ✅ PASS |
+| Alert card | 5 | ✅ PASS |
+| Detail modal | 3 | ✅ PASS |
+| Unread badge | 3 | ✅ PASS |
+| Alert type icon | 2 | ✅ PASS |
+| Toast notifications | 3 | ✅ PASS |
+| **Total** | **30** | **✅ PASS** |
+
+### Production Validation
+
+| Metric | Value |
+|--------|-------|
+| First Deploy Date | 2026-03-11 |
+| Verification Date | 2026-03-12 |
+| Deployment ID | `20260311T205530Z-d4cfb043` |
+| Commit | `742baa25ec03a7a45edce1dfbfaa8992439ed3f8` |
+| Primary Route | `/local-seo/alerts` → `200 OK` |
+| API Auth | Unauthenticated requests return `401` |
+| XSS Test | Script tags in params not rendered ✅ |
+| Status | Complete |
+
+### Known Limitations
+
+| Issue | Description | Impact |
+|-------|-------------|--------|
+| Scoped routes 404 | `/locations/[id]/alerts` returns 404 from Hostinger | Low - primary route `/local-seo/alerts` satisfies acceptance criteria |
+| Next.js static export | Dynamic routes not supported with `output: export` | Scoped routes are compatibility shells for future use |
+| Radix dialog warning | Accessibility warning about missing Description | Cosmetic - does not affect functionality |
+
+### Dependencies
+
+| Dependency | Status | Description |
+|------------|--------|-------------|
+| TASK-35-16 | Done ✅ | Local SEO Alerts API Controller provides backend endpoints |
+
+### Related Tasks
+- TASK-35-16: Local SEO Alerts API Controller (backend)
+- TASK-35-17: Location Management Page (navigation integration)
+- TASK-35-19: Location Dashboard Page (alert links from dashboard)
+
+---
 ## PricingComparison Component (TASK-32-6)
 
 ### Component Description
