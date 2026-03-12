@@ -77,7 +77,7 @@ export function AlertsPageClient() {
     const isRead = searchParams.get('read');
 
     setFilters({
-      project_id: projectId ? Number(projectId) : null,
+      project_id: projectId || null,
       alert_types: alertTypes ? (alertTypes.split(',') as AlertType[]) : undefined,
       is_read: isRead === 'false' ? false : isRead === 'true' ? true : null,
     });

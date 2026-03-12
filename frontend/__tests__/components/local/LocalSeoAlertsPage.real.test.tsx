@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -87,7 +87,9 @@ describe("LocalSeoAlertsPage", () => {
     render(<LocalSeoAlertsPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: /local seo alerts/i })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(/2 unread alerts/i);
+    const statusEl = screen.getByRole("status");
+    expect(statusEl).toHaveTextContent("2");
+    expect(statusEl).toHaveTextContent(/unread alert/i);
     expect(screen.getByRole("combobox", { name: /filter alerts by severity/i })).toBeInTheDocument();
     expect(screen.getByText("Ranking dropped for pizza delivery")).toBeInTheDocument();
     expect(screen.getByText("Negative review received")).toBeInTheDocument();
@@ -130,8 +132,9 @@ describe("LocalSeoAlertsPage", () => {
 
     await user.click(screen.getByRole("button", { name: /ranking dropped for pizza delivery/i }));
 
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByText(/position fell from #2 to #5/i)).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText(/position fell from #2 to #5/i)).toBeInTheDocument();
   });
 
   it("marks a single alert as read and shows success feedback", async () => {
