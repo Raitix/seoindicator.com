@@ -41,6 +41,7 @@ var SEOIndicatorBadge = (() => {
   var DEFAULT_REFRESH_INTERVAL = 864e5;
   var MAX_RETRY_ATTEMPTS = 3;
   var RETRY_DELAYS = [1e3, 2e3, 4e3];
+  var STORAGE_PREFIX = "seoindicator_";
   var SIZES = {
     small: { width: 120, height: 40 },
     medium: { width: 150, height: 100 },
@@ -106,6 +107,71 @@ var SEOIndicatorBadge = (() => {
     if (!url || typeof url !== "string") return "";
     if (url.length <= maxLength) return url;
     return url.substring(0, maxLength - 3) + "...";
+  }
+  function isLocalStorageAvailable() {
+    try {
+      if (typeof localStorage === "undefined") return false;
+      const testKey = "__seoindicator_test__";
+      localStorage.setItem(testKey, "1");
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function getLastCheckKey(auditId) {
+    return `${STORAGE_PREFIX}${auditId}_lastCheck`;
+  }
+  function getLastScoreKey(auditId) {
+    return `${STORAGE_PREFIX}${auditId}_lastScore`;
+  }
+  function storeLastCheckTime(auditId) {
+    try {
+      if (!isLocalStorageAvailable()) return;
+      localStorage.setItem(getLastCheckKey(auditId), Date.now().toString());
+    } catch (e) {
+    }
+  }
+  function storeLastScore(auditId, score) {
+    try {
+      if (!isLocalStorageAvailable()) return;
+      localStorage.setItem(getLastScoreKey(auditId), score.toString());
+    } catch (e) {
+    }
+  }
+  function getLastCheckTime(auditId) {
+    try {
+      if (!isLocalStorageAvailable()) return null;
+      const stored = localStorage.getItem(getLastCheckKey(auditId));
+      return stored ? parseInt(stored, 10) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function getLastScore(auditId) {
+    try {
+      if (!isLocalStorageAvailable()) return null;
+      const stored = localStorage.getItem(getLastScoreKey(auditId));
+      return stored ? parseInt(stored, 10) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function shouldRefresh(auditId, refreshInterval) {
+    if (refreshInterval <= 0) return false;
+    const lastCheck = getLastCheckTime(auditId);
+    if (lastCheck === null) return true;
+    const elapsed = Date.now() - lastCheck;
+    return elapsed >= refreshInterval;
+  }
+  function hasScoreChanged(auditId, newScore) {
+    const lastScore = getLastScore(auditId);
+    if (lastScore === null) return true;
+    return lastScore !== newScore;
+  }
+  function prefersReducedMotion() {
+    if (typeof window === "undefined" || !window.matchMedia) return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
   async function fetchBadgeConfig(auditId, baseUrl, retryCount = 0) {
     const url = `${baseUrl}/api/v1/public-audit/${encodeURIComponent(auditId)}/badge`;
@@ -220,7 +286,7 @@ var SEOIndicatorBadge = (() => {
     </div>
   `;
   }
-  function renderBadge(instance) {
+  function renderBadge(instance, previousScore) {
     const { container, data, config } = instance;
     if (!data) return;
     const size = config.size;
@@ -232,6 +298,7 @@ var SEOIndicatorBadge = (() => {
     const subtextColor = theme === "dark" ? "#9ca3af" : "#6b7280";
     const borderColor = theme === "dark" ? "#374151" : "#e5e7eb";
     const displayUrl = truncateUrl(sanitizeForDisplay(data.site_url));
+    const shouldAnimate = previousScore !== void 0 && !prefersReducedMotion();
     const badgeHtml = `
     <a href="${sanitizeForDisplay(data.audit_url)}"
        target="_blank"
@@ -258,10 +325,11 @@ var SEOIndicatorBadge = (() => {
         gap: 4px;
         transition: box-shadow 0.2s;
       " onmouseover="this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
-        <div style="
+        <div id="seoindicator-score-${config.auditId}" style="
           font-size: ${size === "large" ? "32px" : size === "medium" ? "24px" : "18px"};
           font-weight: 700;
           color: ${scoreColor};
+          ${shouldAnimate ? "transition: transform 0.3s ease-out, opacity 0.3s ease-out;" : ""}
         ">
           ${data.score}
         </div>
@@ -297,6 +365,21 @@ var SEOIndicatorBadge = (() => {
     </div>
   `;
     container.innerHTML = badgeHtml;
+    if (shouldAnimate) {
+      const scoreEl = document.getElementById(`seoindicator-score-${config.auditId}`);
+      if (scoreEl) {
+        requestAnimationFrame(() => {
+          scoreEl.style.transform = "scale(1.2)";
+          scoreEl.style.opacity = "0.8";
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              scoreEl.style.transform = "scale(1)";
+              scoreEl.style.opacity = "1";
+            }, 150);
+          });
+        });
+      }
+    }
     const link = container.querySelector("[data-seoindicator-link]");
     if (link) {
       link.addEventListener("click", () => {
@@ -378,16 +461,23 @@ var SEOIndicatorBadge = (() => {
     if (instance.refreshTimer) {
       clearTimeout(instance.refreshTimer);
     }
+    storeLastCheckTime(instance.config.auditId);
     instance.refreshTimer = window.setTimeout(() => {
       if (!instance.destroyed) {
-        loadBadge(instance.config.auditId);
+        if (shouldRefresh(instance.config.auditId, instance.config.refreshInterval)) {
+          loadBadge(instance.config.auditId);
+        } else {
+          setupAutoRefresh(instance);
+        }
       }
     }, instance.config.refreshInterval);
   }
   async function loadBadge(auditId) {
+    var _a, _b;
     const instance = instances.get(auditId);
     if (!instance || instance.destroyed) return;
     const { config, container } = instance;
+    const previousScore = (_b = (_a = instance.data) == null ? void 0 : _a.score) != null ? _b : getLastScore(auditId);
     renderLoadingState(container, config.size);
     const response = await fetchBadgeConfig(auditId, config.apiBaseUrl);
     if (instance.destroyed) return;
@@ -395,8 +485,12 @@ var SEOIndicatorBadge = (() => {
       renderErrorState(container, config.size, config.theme);
       return;
     }
+    const scoreChanged = hasScoreChanged(auditId, response.data.score);
+    const shouldAnimate = scoreChanged && previousScore !== null && !prefersReducedMotion();
     instance.data = response.data;
-    renderBadge(instance);
+    storeLastScore(auditId, response.data.score);
+    storeLastCheckTime(auditId);
+    renderBadge(instance, shouldAnimate ? previousScore : void 0);
     setupIntersectionObserver(instance);
     setupAutoRefresh(instance);
   }
