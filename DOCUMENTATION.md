@@ -3684,6 +3684,172 @@ export function useAudits(siteId: string) {
 - TASK-14-17: Audit Dashboard Widget (uses AuditStatusBadge, IssueSummary)
 
 ---
+## PWA Guide Page (TASK-24-14)
+
+### Page Description
+Full-page PWA implementation guide for users as part of the PWA / Web App Manifest Indicator feature (FEAT-024). Provides educational content about Progressive Web App implementation with markdown rendering, syntax highlighting, and responsive design.
+
+### Component Locations
+- **Server Component:** `frontend/app/guides/pwa/page.tsx`
+- **Client Component:** `frontend/app/guides/pwa/PWAGuideClient.tsx`
+- **API Endpoint:** `GET /api/v1/pwa/guide` (TASK-24-9)
+- **Tests:** `frontend/__tests__/app/guides/pwa/page.test.tsx`
+- **Test Documentation:** `TESTS/TEST-24-14.md`
+
+### Route
+- **URL:** `/guides/pwa`
+- **File:** `frontend/app/guides/pwa/page.tsx` (Next.js App Router)
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Guide Content Fetch | Fetches guide content from `/api/v1/pwa/guide` endpoint |
+| Markdown Rendering | Uses react-markdown with remark-gfm for content |
+| Code Syntax Highlighting | Copy-to-clipboard functionality on code blocks |
+| Table of Contents | Sidebar (desktop) / Accordion (mobile) with section anchors |
+| Deep Linking | URL anchors to sections (section-manifest-basics, etc.) |
+| Breadcrumb Navigation | Home > Dashboard > PWA Guide with aria-label |
+| Back to Dashboard Link | Returns user to dashboard |
+| SEO Optimized | Meta tags (title, description, OG, Twitter) |
+| Responsive Design | Mobile/desktop layouts with CSS Grid |
+| Accessibility | ARIA landmarks, labels, skip link |
+
+### Component Props
+
+**Server Component (page.tsx):**
+```typescript
+// generateMetadata for SEO
+export async function generateMetadata(): Promise<Metadata>
+```
+
+**Client Component (PWAGuideClient.tsx):**
+```typescript
+interface PWAGuideClientProps {
+  initialData?: GuideData;  // Optional SSR data
+}
+
+interface GuideData {
+  content: string;
+  sections: Array<{ id: string; title: string }>;
+}
+```
+
+### API Response Format
+
+**GET /api/v1/pwa/guide:**
+```json
+{
+  "content": "# PWA Implementation Guide\n\n...",
+  "sections": [
+    { "id": "manifest-basics", "title": "Manifest Basics" },
+    { "id": "icon-requirements", "title": "Icon Requirements" },
+    { "id": "ios-support", "title": "iOS Support" },
+    { "id": "service-worker", "title": "Service Worker" }
+  ]
+}
+```
+
+### Section IDs
+
+| Section ID | Title | Content |
+|------------|-------|---------|
+| `section-manifest-basics` | Manifest Basics | What is a manifest, required fields |
+| `section-icon-requirements` | Icon Requirements | Icon sizes, formats, purposes |
+| `section-ios-support` | iOS Support | iOS-specific considerations (apple-touch-icon) |
+| `section-service-worker` | Service Worker | Brief overview of service worker concepts |
+
+### Code Block Features
+
+| Feature | Description |
+|---------|-------------|
+| Syntax Highlighting | CSS-based highlighting for html, json, javascript |
+| Copy Button | Clipboard API with visual "Copied!" feedback |
+| Language Label | Shows language identifier above code block |
+
+### Responsive Design
+
+| Breakpoint | Table of Contents | Layout |
+|------------|-------------------|--------|
+| Desktop (≥1024px) | Fixed sidebar | Grid with sidebar + content |
+| Mobile (<1024px) | Expandable accordion | Single column with accordion |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Skip Link | "Skip to main content" anchor |
+| ARIA Landmarks | `main`, `navigation`, `article`, `complementary` |
+| ARIA Labels | Breadcrumb, table of contents, main content |
+| Accordion State | `aria-expanded` on mobile TOC |
+| Active Section | `aria-current="true"` on active TOC item |
+| Heading Structure | H1 → H2 → H3 hierarchy |
+
+### SEO Meta Tags
+
+| Tag | Value |
+|-----|-------|
+| `title` | PWA Implementation Guide \| SEOIndicator |
+| `description` | A comprehensive guide to implementing Progressive Web App features... |
+| `og:title` | PWA Implementation Guide |
+| `og:description` | A comprehensive guide to implementing Progressive Web App features... |
+| `og:type` | article |
+| `twitter:card` | summary_large_image |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `page.test.tsx` | 77 | ✅ PASS |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| PGP-001: Page Rendering | 4 | Loading states, API fetch |
+| PGP-002: Error Handling | 3 | API errors, retry mechanism |
+| PGP-003: Header Section | 3 | Title, description, icon |
+| PGP-004: Breadcrumb Navigation | 5 | aria-label, links |
+| PGP-005: Back to Dashboard Link | 3 | href, icon |
+| PGP-006: Table of Contents (Desktop) | 5 | Sidebar, anchors |
+| PGP-007: Table of Contents (Mobile) | 6 | Accordion, toggle |
+| PGP-008: Section Content Rendering | 5 | IDs, H2 titles, markdown |
+| PGP-009: Code Blocks | 3 | Syntax highlighting, copy button |
+| PGP-010: Deep Linking | 2 | Section anchors |
+| PGP-011: SEO Meta Tags | 4 | Title, OG, Twitter |
+| PGP-012: Responsive Design | 4 | Grid, hidden classes |
+| PGP-013: Accessibility | 6 | ARIA, landmarks, alerts |
+| PGP-014: Active Section Tracking | 2 | aria-current |
+| PGP-015: Edge Cases | 5 | Empty, unicode, long content |
+| PGP-016: Security | 2 | XSS, HTML entities |
+| PGP-017: Page Route | 2 | /guides/pwa, site-scoped |
+| PGP-018: Integration Tests | 2 | User flows |
+| PGP-019: Acceptance Criteria | 11 | All ACs verified |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-12 |
+| Deployment ID | `20260312T170629Z-8204b1d7` |
+| Commit | `b47da1f9` |
+| Production URL | https://seoindicator.com/guides/pwa |
+| Tests | 77/77 passing |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-24-9 | Done ✅ | PWA Guide API Endpoint |
+
+### Related Tasks
+
+- TASK-24-9: PWA Guide API Endpoint (data source)
+- TASK-24-10: PWA Dashboard Components (dashboard link source)
+- TASK-24-12: PWA Recommendations Component (links to guide sections)
+
+---
 ## QueueMonitoringService (TASK-27-12)
 
 ### Service Description
