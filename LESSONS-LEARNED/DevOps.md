@@ -262,3 +262,24 @@ Last updated: 2026-03-07
   - Registry starts empty (Lucide covers all 8 indicators)
 - **Note:** Frontend-only feature. Registry infrastructure for future custom icons. All acceptance criteria verified by LocalTester before deployment.
 
+### TASK-4-17 (Email Service - Free SMTP)
+- **Date:** 2026-03-12
+- **Method:** Local/self-hosted deployment
+- **Deployment ID:** 20260312T212045Z-9625efce
+- **Result:** Successful
+- **Duration:** ~2 minutes 21 seconds (build: 59s, deploy: 72s, smoke: 6s)
+- **Commit:** f383d7a831ed
+- **Health Check:** 200 OK, production smoke passed
+- **What was deployed:**
+  - `backend/app/Services/Mail/EmailSenderService.php` - Main email service
+  - `backend/app/Services/Mail/Contracts/EmailSenderInterface.php` - Interface
+  - `backend/app/Services/Mail/Exceptions/EmailSendException.php` - Exception handling
+- **Features:**
+  - Gmail SMTP support (500/day limit)
+  - Brevo SMTP support (300/day free tier)
+  - PDF/CSV attachment handling
+  - Retry logic (3 attempts, 5s delay)
+  - Comprehensive logging
+- **Tests:** 24 tests, 44 assertions - all passing
+- **Note:** Backend-only feature for email delivery. Code was already committed by Developer/LocalTester. DevOps verified deployment and updated status.
+
