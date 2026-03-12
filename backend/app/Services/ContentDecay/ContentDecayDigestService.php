@@ -187,7 +187,8 @@ class ContentDecayDigestService implements ContentDecayDigestServiceInterface
             return true;
         }
 
-        $daysSinceLastDigest = now()->diffInDays($lastSent);
+        // Use abs() to get positive value for days difference
+        $daysSinceLastDigest = abs(now()->diffInDays($lastSent));
         $shouldSend = $daysSinceLastDigest >= $thresholdDays;
 
         Log::debug('ContentDecayDigestService: Digest due check', [
