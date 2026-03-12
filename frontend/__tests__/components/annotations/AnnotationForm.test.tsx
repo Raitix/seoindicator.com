@@ -334,7 +334,9 @@ describe('AnnotationForm', () => {
       const titleInput = screen.getByLabelText(/title/i);
       const exactTitle = 'a'.repeat(255);
 
-      await user.type(titleInput, exactTitle);
+      // Use paste for faster input of long text
+      await user.click(titleInput);
+      await user.paste(exactTitle);
       await user.tab();
 
       // Should not show error
@@ -415,15 +417,20 @@ describe('AnnotationForm', () => {
       const user = userEvent.setup();
       render(<AnnotationForm {...defaultProps} />);
 
+      // Clear date to trigger validation
+      const dateInput = screen.getByLabelText(/date/i);
+      await user.clear(dateInput);
+
       // Trigger validation by submitting
       const submitButton = screen.getByRole('button', { name: /create/i });
       await user.click(submitButton);
 
-      // Wait for error to appear
-      await screen.findByText(/title is required/i, {}, { timeout: 3000 });
+      // Wait for error to appear (date error should show since we cleared it)
+      const dateError = await screen.findByText(/date is required/i, {}, { timeout: 3000 });
+      expect(dateError).toBeInTheDocument();
 
-      const titleInput = screen.getByLabelText(/title/i);
-      expect(titleInput).toHaveClass('border-red-300');
+      // Check that date input has red border
+      expect(dateInput).toHaveClass('border-red-300');
     });
 
     it('VAL-11: Past date is accepted', async () => {
@@ -473,7 +480,9 @@ describe('AnnotationForm', () => {
       render(<AnnotationForm {...defaultProps} />);
 
       const titleInput = screen.getByLabelText(/title/i);
-      await user.type(titleInput, 'Test Annotation');
+      // Use paste for faster and more reliable input
+      await user.click(titleInput);
+      await user.paste('Test Annotation');
 
       const submitButton = screen.getByRole('button', { name: /create/i });
       await user.click(submitButton);
