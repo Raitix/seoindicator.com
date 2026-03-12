@@ -298,9 +298,9 @@ export function AlertList({
                     <button
                       key={project.id}
                       role="option"
-                      aria-selected={internalFilters.project_id === project.id}
+                      aria-selected={internalFilters.project_id === String(project.id)}
                       onClick={() => {
-                        handleFilterChange({ project_id: project.id });
+                        handleFilterChange({ project_id: String(project.id) });
                         setProjectDropdownOpen(false);
                       }}
                       className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700"
@@ -442,7 +442,7 @@ export function AlertList({
                 <label className="text-sm text-slate-600 dark:text-slate-400">Project</label>
                 <select
                   value={internalFilters.project_id || ''}
-                  onChange={(e) => handleFilterChange({ project_id: e.target.value ? Number(e.target.value) : null })}
+                  onChange={(e) => handleFilterChange({ project_id: e.target.value || null })}
                   className="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800"
                 >
                   <option value="">All Projects</option>
