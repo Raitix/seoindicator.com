@@ -4,9 +4,9 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import {
+  Annotation,
   AnnotationFormProps,
   CreateAnnotationDTO,
-  Annotation,
   ANNOTATION_CATEGORIES,
 } from "@/lib/types/annotations";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,8 @@ import { cn } from "@/lib/utils";
 /**
  * AnnotationForm Component
  *
- * Form for creating and editing annotations.
+ * A form component for creating and editing keyword annotations.
+ * Supports both create and edit modes.
  *
  * @see TASK-9-8
  */
@@ -33,17 +34,27 @@ export default function AnnotationForm({
     formState: { errors, isSubmitting },
   } = useForm<CreateAnnotationDTO>({
     defaultValues: {
-      date: annotation?.date
-        ? format(new Date(annotation.date), "yyyy-MM-dd")
-        : format(new Date(), "yyyy-MM-dd"),
+      date: annotation?.date || format(new Date(), "yyyy-MM-dd"),
       title: annotation?.title || "",
       description: annotation?.description || "",
       category: annotation?.category || "other",
     },
   });
 
+  // Reset form when annotation prop changes
+  React.useEffect(() => {
+    reset({
+      date: annotation?.date || format(new Date(), "yyyy-MM-dd"),
+      title: annotation?.title || "",
+      description: annotation?.description || "",
+      category: annotation?.category || "other",
+    });
+  }, [annotation, reset]);
+
   const onSubmit = async (data: CreateAnnotationDTO) => {
     await onSave(data);
+
+    // Reset form only in create mode
     if (!isEditMode) {
       reset({
         date: format(new Date(), "yyyy-MM-dd"),
@@ -102,11 +113,11 @@ export default function AnnotationForm({
               message: "Title must be 255 characters or less",
             },
           })}
-          placeholder="e.g., Google Core Update Impact"
           className={cn(
             "w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
             errors.title ? "border-red-300" : "border-gray-300"
           )}
+          placeholder="Enter annotation title"
         />
         {errors.title && (
           <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
@@ -124,7 +135,10 @@ export default function AnnotationForm({
         <select
           id="category"
           {...register("category")}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className={cn(
+            "w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+            errors.category ? "border-red-300" : "border-gray-300"
+          )}
         >
           {ANNOTATION_CATEGORIES.map((cat) => (
             <option key={cat.value} value={cat.value}>
@@ -132,6 +146,9 @@ export default function AnnotationForm({
             </option>
           ))}
         </select>
+        {errors.category && (
+          <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>
+        )}
       </div>
 
       {/* Description Field */}
@@ -141,32 +158,48 @@ export default function AnnotationForm({
           className="block text-sm font-medium text-gray-700 mb-1"
         >
           Description
-          <span className="text-gray-400 font-normal ml-1">(optional)</span>
         </label>
         <textarea
           id="description"
           rows={3}
           {...register("description")}
-          placeholder="Add details about this annotation..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+          className={cn(
+            "w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y",
+            errors.description ? "border-red-300" : "border-gray-300"
+          )}
+          placeholder="Enter additional details (optional)"
         />
+        {errors.description && (
+          <p className="mt-1 text-sm text-red-600">
+            {errors.description.message}
+          </p>
+        )}
       </div>
 
-      {/* Actions */}
+      {/* Action Buttons */}
       <div className="flex items-center justify-end gap-3 pt-2">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className={cn(
+            "px-4 py-2 text-sm font-medium rounded-md border border-gray-300",
+            "bg-white text-gray-700 hover:bg-gray-50",
+            "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          )}
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className={cn(
+            "px-4 py-2 text-sm font-medium rounded-md text-white",
+            "bg-blue-600 hover:bg-blue-700",
+            "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
+            "disabled:opacity-50 disabled:cursor-not-allowed"
+          )}
         >
-          {isEditMode ? "Update" : "Create"}
+          {isSubmitting ? "Saving..." : isEditMode ? "Update" : "Create"}
         </button>
       </div>
     </form>
