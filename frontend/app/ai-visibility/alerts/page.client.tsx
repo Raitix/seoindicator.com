@@ -72,12 +72,13 @@ export function AlertsPageClient() {
 
   // Initialize filters from URL params
   React.useEffect(() => {
-    const projectId = searchParams.get('project_id');
+    const projectIdParam = searchParams.get('project_id');
+    const projectId = projectIdParam ? parseInt(projectIdParam, 10) : null;
     const alertTypes = searchParams.get('types');
     const isRead = searchParams.get('read');
 
     setFilters({
-      project_id: projectId || null,
+      project_id: projectId && !isNaN(projectId) ? projectId : null,
       alert_types: alertTypes ? (alertTypes.split(',') as AlertType[]) : undefined,
       is_read: isRead === 'false' ? false : isRead === 'true' ? true : null,
     });
