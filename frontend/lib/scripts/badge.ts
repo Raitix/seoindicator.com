@@ -64,9 +64,12 @@ export interface BadgeAPI {
 
 const VERSION = '1.0.0';
 const DEFAULT_BASE_URL = 'https://seoindicator.com';
-const DEFAULT_REFRESH_INTERVAL = 86400000; // 24 hours
+const DEFAULT_REFRESH_INTERVAL = 86400000; // 24 hours in ms
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff
+
+// LocalStorage keys prefix
+const STORAGE_PREFIX = 'seoindicator_';
 
 const SIZES: Record<string, { width: number; height: number }> = {
   small: { width: 120, height: 40 },
@@ -150,6 +153,119 @@ function truncateUrl(url: string | null | undefined, maxLength: number = 40): st
   if (!url || typeof url !== 'string') return '';
   if (url.length <= maxLength) return url;
   return url.substring(0, maxLength - 3) + '...';
+}
+
+// ============================================================================
+// LOCAL STORAGE FUNCTIONS
+// ============================================================================
+
+/**
+ * Check if localStorage is available
+ */
+function isLocalStorageAvailable(): boolean {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    const testKey = '__seoindicator_test__';
+    localStorage.setItem(testKey, '1');
+    localStorage.removeItem(testKey);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get the storage key for last check time
+ */
+function getLastCheckKey(auditId: string): string {
+  return `${STORAGE_PREFIX}${auditId}_lastCheck`;
+}
+
+/**
+ * Get the storage key for last score
+ */
+function getLastScoreKey(auditId: string): string {
+  return `${STORAGE_PREFIX}${auditId}_lastScore`;
+}
+
+/**
+ * Store last check time in localStorage
+ */
+function storeLastCheckTime(auditId: string): void {
+  try {
+    if (!isLocalStorageAvailable()) return;
+    localStorage.setItem(getLastCheckKey(auditId), Date.now().toString());
+  } catch {
+    // Storage unavailable or quota exceeded - silent fail
+  }
+}
+
+/**
+ * Store last score in localStorage
+ */
+function storeLastScore(auditId: string, score: number): void {
+  try {
+    if (!isLocalStorageAvailable()) return;
+    localStorage.setItem(getLastScoreKey(auditId), score.toString());
+  } catch {
+    // Storage unavailable or quota exceeded - silent fail
+  }
+}
+
+/**
+ * Get last check time from localStorage
+ */
+function getLastCheckTime(auditId: string): number | null {
+  try {
+    if (!isLocalStorageAvailable()) return null;
+    const stored = localStorage.getItem(getLastCheckKey(auditId));
+    return stored ? parseInt(stored, 10) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get last score from localStorage
+ */
+function getLastScore(auditId: string): number | null {
+  try {
+    if (!isLocalStorageAvailable()) return null;
+    const stored = localStorage.getItem(getLastScoreKey(auditId));
+    return stored ? parseInt(stored, 10) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if enough time has passed for a refresh
+ */
+function shouldRefresh(auditId: string, refreshInterval: number): boolean {
+  if (refreshInterval <= 0) return false;
+  
+  const lastCheck = getLastCheckTime(auditId);
+  if (lastCheck === null) return true; // Never checked before
+  
+  const elapsed = Date.now() - lastCheck;
+  return elapsed >= refreshInterval;
+}
+
+/**
+ * Check if score has changed
+ */
+function hasScoreChanged(auditId: string, newScore: number): boolean {
+  const lastScore = getLastScore(auditId);
+  if (lastScore === null) return true; // No previous score
+  return lastScore !== newScore;
+}
+
+/**
+ * Check if user prefers reduced motion
+ */
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || !window.matchMedia) return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 // ============================================================================
@@ -303,7 +419,7 @@ function renderErrorState(container: HTMLElement, size: 'small' | 'medium' | 'la
   `;
 }
 
-function renderBadge(instance: BadgeInstance): void {
+function renderBadge(instance: BadgeInstance, previousScore?: number): void {
   const { container, data, config } = instance;
   if (!data) return;
   
@@ -317,6 +433,9 @@ function renderBadge(instance: BadgeInstance): void {
   const subtextColor = theme === 'dark' ? '#9ca3af' : '#6b7280';
   const borderColor = theme === 'dark' ? '#374151' : '#e5e7eb';
   const displayUrl = truncateUrl(sanitizeForDisplay(data.site_url));
+  
+  // Determine if we should animate
+  const shouldAnimate = previousScore !== undefined && !prefersReducedMotion();
   
   // Create badge HTML
   const badgeHtml = `
@@ -345,10 +464,11 @@ function renderBadge(instance: BadgeInstance): void {
         gap: 4px;
         transition: box-shadow 0.2s;
       " onmouseover="this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
-        <div style="
+        <div id="seoindicator-score-${config.auditId}" style="
           font-size: ${size === 'large' ? '32px' : size === 'medium' ? '24px' : '18px'};
           font-weight: 700;
           color: ${scoreColor};
+          ${shouldAnimate ? 'transition: transform 0.3s ease-out, opacity 0.3s ease-out;' : ''}
         ">
           ${data.score}
         </div>
@@ -385,6 +505,25 @@ function renderBadge(instance: BadgeInstance): void {
   `;
   
   container.innerHTML = badgeHtml;
+  
+  // Animate score change if needed
+  if (shouldAnimate) {
+    const scoreEl = document.getElementById(`seoindicator-score-${config.auditId}`);
+    if (scoreEl) {
+      // Trigger animation
+      requestAnimationFrame(() => {
+        scoreEl.style.transform = 'scale(1.2)';
+        scoreEl.style.opacity = '0.8';
+        
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            scoreEl.style.transform = 'scale(1)';
+            scoreEl.style.opacity = '1';
+          }, 150);
+        });
+      });
+    }
+  }
   
   // Add click tracking
   const link = container.querySelector('[data-seoindicator-link]');
@@ -494,9 +633,18 @@ function setupAutoRefresh(instance: BadgeInstance): void {
     clearTimeout(instance.refreshTimer);
   }
   
+  // Store that we've set up auto-refresh
+  storeLastCheckTime(instance.config.auditId);
+  
   instance.refreshTimer = window.setTimeout(() => {
     if (!instance.destroyed) {
-      loadBadge(instance.config.auditId);
+      // Check if enough time has passed (handles page visibility, sleep, etc.)
+      if (shouldRefresh(instance.config.auditId, instance.config.refreshInterval)) {
+        loadBadge(instance.config.auditId);
+      } else {
+        // Reschedule for remaining time
+        setupAutoRefresh(instance);
+      }
     }
   }, instance.config.refreshInterval);
 }
@@ -506,6 +654,9 @@ async function loadBadge(auditId: string): Promise<void> {
   if (!instance || instance.destroyed) return;
   
   const { config, container } = instance;
+  
+  // Track previous score for animation
+  const previousScore = instance.data?.score ?? getLastScore(auditId);
   
   // Show loading state
   renderLoadingState(container, config.size);
@@ -520,10 +671,18 @@ async function loadBadge(auditId: string): Promise<void> {
     return;
   }
   
+  // Check if score has changed
+  const scoreChanged = hasScoreChanged(auditId, response.data.score);
+  const shouldAnimate = scoreChanged && previousScore !== null && !prefersReducedMotion();
+  
   instance.data = response.data;
   
-  // Render badge
-  renderBadge(instance);
+  // Store score and check time in localStorage
+  storeLastScore(auditId, response.data.score);
+  storeLastCheckTime(auditId);
+  
+  // Render badge with optional animation
+  renderBadge(instance, shouldAnimate ? previousScore : undefined);
   
   // Setup impression tracking
   setupIntersectionObserver(instance);
