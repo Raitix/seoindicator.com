@@ -61,6 +61,7 @@ const createSVGIcon = (paths: React.ReactNode): React.FC<SVGIconProps> => {
       role={role}
       aria-label={ariaLabel}
       aria-hidden={ariaHidden}
+      title={title}
     >
       {title && <title>{title}</title>}
       {paths}
