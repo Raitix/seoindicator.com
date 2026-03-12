@@ -36,14 +36,14 @@ class SerpFeatureAlertService
      */
     public const ALERT_TEMPLATES = [
         'serp_feature_gained' => [
-            'subject' => '🎉 New SERP Feature: {{featureName}}',
-            'body' => 'Your page now appears in the {{featureName}} for "{{keyword}}". This can increase CTR by {{ctrImpact}}.',
-            'short' => 'Gained {{featureName}} for "{{keyword}}"',
+            'subject' => '🎉 New SERP Feature: {{feature_name}}',
+            'body' => 'Your page now appears in the {{feature_name}} for "{{keyword}}". This can increase CTR by {{ctr_impact}}.',
+            'short' => 'Gained {{feature_name}} for "{{keyword}}"',
         ],
         'serp_feature_lost' => [
-            'subject' => '⚠️ Lost SERP Feature: {{featureName}}',
-            'body' => 'Your page no longer appears in the {{featureName}} for "{{keyword}}". Check your page and competitor activity.',
-            'short' => 'Lost {{featureName}} for "{{keyword}}"',
+            'subject' => '⚠️ Lost SERP Feature: {{feature_name}}',
+            'body' => 'Your page no longer appears in the {{feature_name}} for "{{keyword}}". Check your page and competitor activity.',
+            'short' => 'Lost {{feature_name}} for "{{keyword}}"',
         ],
     ];
 

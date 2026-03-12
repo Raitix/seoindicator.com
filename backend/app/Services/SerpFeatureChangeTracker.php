@@ -204,15 +204,16 @@ class SerpFeatureChangeTracker
         }
 
         // Emit event for alert system integration
+        // Note: Wrap in array so Laravel passes it as a single array argument
         $eventName = 'serp-feature.' . $change['action'];
-        Event::dispatch($eventName, [
+        Event::dispatch($eventName, [[
             'keyword_id' => $change['keyword_id'],
             'feature_type' => $change['type'],
             'action' => $change['action'],
             'previous_url' => $change['previous_url'],
             'current_url' => $change['current_url'],
             'detected_at' => $change['detected_at'],
-        ]);
+        ]]);
     }
 
     /**

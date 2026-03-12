@@ -4,6 +4,7 @@ import useSWR, { mutate } from 'swr';
 import type {
   Alert,
   AlertPreferences,
+  AlertPreferencesForm,
   AlertsListResponse,
   AlertDetailResponse,
   AlertPreferencesResponse,
@@ -259,7 +260,7 @@ export function useDeleteAlert() {
  * Backend expects: email_notifications_enabled (not email_notifications)
  */
 export function useUpdatePreferences() {
-  const update = async (preferences: Partial<AlertPreferences>): Promise<AlertPreferences> => {
+  const update = async (preferences: Partial<AlertPreferencesForm>): Promise<AlertPreferencesForm> => {
     // Map frontend field to backend field
     const payload: Record<string, unknown> = {};
     
