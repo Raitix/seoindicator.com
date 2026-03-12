@@ -1,7 +1,6 @@
 # TASK-28-6: IndicatorGrid Responsive Layout
 
-## STATUS
-`Done`
+## STATUS`n`To Test Locally`
 
 ## PRIORITY
 `High`
