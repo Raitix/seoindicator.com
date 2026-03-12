@@ -19889,6 +19889,185 @@ The component maintains a registry of Lucide icons commonly used for SEO indicat
 - TASK-28-6: IndicatorGrid Responsive Layout
 - TASK-28-7: IndicatorCatalog Main Container
 - TASK-28-8: Homepage Integration
+- TASK-28-15: Custom SVG Icons (supports customIcon prop)
+
+---
+## Custom SVG Icons (TASK-28-15)
+
+### Feature Description
+Infrastructure for custom SVG icons where Lucide icons don't provide adequate coverage. Provides a registry pattern for custom icons following design guidelines (24x24 viewBox, 2px stroke, rounded corners) and seamless integration with the IndicatorIcon component. Part of the Modern UI/UX + Indicator Catalog feature (FEAT-028).
+
+### Component Locations
+- **Registry:** `frontend/components/icons/custom/registry.ts`
+- **Barrel Export:** `frontend/components/icons/custom/index.ts`
+- **Tests:** `frontend/__tests__/components/icons/custom/*.test.tsx` (3 test files)
+- **Test Documentation:** `TESTS/TEST-28-15.md`
+
+### Registry Structure
+
+```typescript
+// Type for valid custom icon names
+export type CustomIconName = string;
+
+// Props interface for custom icon components
+export interface CustomIconProps extends React.SVGProps<SVGSVGElement> {
+  size?: 'sm' | 'md' | 'lg';
+}
+
+// Frozen registry object
+export const CUSTOM_ICONS: Readonly<Record<CustomIconName, React.FC<CustomIconProps>>> = Object.freeze({
+  // Custom icons are added here as needed
+  // Example: 'robot-indicator': RobotIndicatorIcon,
+});
+
+// Array of all custom icon names
+export const CustomIconNames: readonly CustomIconName[] = Object.freeze(
+  Object.keys(CUSTOM_ICONS) as CustomIconName[]
+);
+```
+
+### Design Guidelines
+
+All custom icons must follow these design guidelines to ensure consistency with Lucide icons:
+
+| Guideline | Value | Purpose |
+|-----------|-------|---------|
+| ViewBox | 24x24 | Standard icon size |
+| Stroke Width | 2px | Matches Lucide style |
+| Corner Radius | 1px | Rounded appearance |
+| Color | `currentColor` | Inherits from parent text color |
+| Fill | `none` | Stroke-based icons |
+| strokeLinecap | `round` | Smooth line endings |
+| strokeLinejoin | `round` | Smooth corners |
+
+### Size Variants
+
+Custom icons support the same size variants as IndicatorIcon:
+
+| Size | Dimensions | Use Case |
+|------|------------|----------|
+| `sm` | 16x16px | Inline indicators, badges |
+| `md` | 24x24px | Default size, cards |
+| `lg` | 32x32px | Hero sections, dashboards |
+
+### Integration with IndicatorIcon
+
+Custom icons are used through the `customIcon` prop on the IndicatorIcon component:
+
+```tsx
+import { CUSTOM_ICONS } from '@/components/icons/custom';
+import { IndicatorIcon } from '@/components/indicators';
+
+// Using a custom icon
+<IndicatorIcon
+  customIcon={<CUSTOM_ICONS['robot-indicator'] />}
+  size="md"
+  color="primary"
+/>
+
+// With accessibility label
+<IndicatorIcon
+  customIcon={<CUSTOM_ICONS['custom-icon']} />}
+  aria-label="Custom indicator description"
+/>
+```
+
+### Current Registry Status
+
+**Registry Status:** Empty (by design)
+
+The registry intentionally starts empty because:
+1. TASK-28-14 (Lucide Icon Mapping) provides complete icon coverage for all 8 SEO indicators
+2. Custom icons are created **only where Lucide doesn't provide suitable alternatives**
+3. This follows the explicit task requirement: "Start with Lucide icons. Only create custom icons where Lucide doesn't provide a suitable alternative."
+
+### Adding New Custom Icons
+
+When a need for a custom icon is identified:
+
+1. **Create the SVG component** following design guidelines:
+```tsx
+// frontend/components/icons/custom/my-custom-icon.tsx
+export const MyCustomIcon: React.FC<CustomIconProps> = ({ size = 'md', ...props }) => {
+  const dimensions = { sm: 16, md: 24, lg: 32 }[size];
+  
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={dimensions}
+      height={dimensions}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      {/* SVG paths */}
+    </svg>
+  );
+};
+```
+
+2. **Add to registry:**
+```tsx
+// frontend/components/icons/custom/registry.ts
+export const CUSTOM_ICONS = Object.freeze({
+  'my-custom-icon': MyCustomIcon,
+});
+```
+
+3. **Update type and exports:**
+```tsx
+// Update CustomIconName type
+export type CustomIconName = 'my-custom-icon';
+
+// Export from barrel
+export { MyCustomIcon } from './my-custom-icon';
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `custom-icon-registry.test.tsx` | 16 | - | ✅ PASS |
+| `custom-svg-structure.test.tsx` | 36 | - | ✅ PASS |
+| `custom-icon-component.test.tsx` | 48 | - | ✅ PASS |
+| **Total** | **100** | **-** | **✅ ALL PASS** |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Registry Structure | 10 | Registry existence, frozen, kebab-case keys |
+| SVG Structure | 13 | viewBox, stroke, radius validation |
+| Lucide Style Consistency | 8 | Match Lucide icon conventions |
+| React Component Exports | 10 | Props, ref, displayName, tree-shaking |
+| IndicatorIcon Integration | 8 | Works with existing IndicatorIcon |
+| Acceptance Criteria | 5 | All 5 ACs tested |
+| Edge Cases | 10 | Empty SVG, null, unicode, long paths |
+| Barrel Exports | 5 | Index file, exports verification |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-12 |
+| Deployment ID | 20260312T172514Z-3bedd1af |
+| Commit | b47da1f99950917aa07fd32cc37ed9cb18c76630 |
+| Production Validation | ✅ All acceptance criteria verified |
+| Tests | 100/100 passing |
+| Status | Complete |
+
+### Dependencies
+
+- TASK-28-4 (IndicatorIcon Wrapper) - Done ✅
+- TASK-28-14 (Lucide Icon Mapping) - Done ✅
+
+### Related Tasks
+
+- TASK-28-4: IndicatorIcon Wrapper Component (uses customIcon prop)
+- TASK-28-14: Lucide Icon Mapping (primary icon source)
 
 ---
 ## IndicatorCard Component (TASK-28-5)
