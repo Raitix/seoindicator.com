@@ -18,11 +18,20 @@ export const metadata: Metadata = {
     title: 'SEO Guides - SEOIndicator',
     description: 'Master SEO with our comprehensive guides covering on-page optimization, technical SEO, and content best practices.',
     type: 'website',
+    images: [
+      {
+        url: 'https://seoindicator.com/guides/og/og-index.png',
+        width: 1200,
+        height: 630,
+        alt: 'SEO Guides - SEOIndicator',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'SEO Guides - SEOIndicator',
     description: 'Master SEO with our comprehensive guides covering on-page optimization, technical SEO, and content best practices.',
+    images: ['https://seoindicator.com/guides/og/og-index.png'],
   },
 };
 
