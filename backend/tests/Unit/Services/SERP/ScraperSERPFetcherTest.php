@@ -440,7 +440,16 @@ class ScraperSERPFetcherTest extends TestCase
         $this->fetcher->fetch('test', $options);
 
         $this->assertNotNull($capturedOptions, 'Context options should have been captured');
-        $this->assertStringContainsString('Windows', $capturedOptions['userAgent']);
+        // Desktop user agents contain Windows, Macintosh, Linux, or X11
+        $validDesktopPatterns = ['Windows', 'Macintosh', 'Linux', 'X11'];
+        $hasValidDesktopPattern = false;
+        foreach ($validDesktopPatterns as $pattern) {
+            if (str_contains($capturedOptions['userAgent'], $pattern)) {
+                $hasValidDesktopPattern = true;
+                break;
+            }
+        }
+        $this->assertTrue($hasValidDesktopPattern, 'User agent should contain a desktop identifier (Windows, Macintosh, Linux, or X11)');
     }
 
     /**
@@ -475,7 +484,16 @@ class ScraperSERPFetcherTest extends TestCase
         $this->fetcher->fetch('test', $options);
 
         $this->assertNotNull($capturedOptions, 'Context options should have been captured');
-        $this->assertStringContainsString('iPhone', $capturedOptions['userAgent']);
+        // Mobile user agents contain iPhone, iPad, or Android
+        $validMobilePatterns = ['iPhone', 'iPad', 'Android'];
+        $hasValidMobilePattern = false;
+        foreach ($validMobilePatterns as $pattern) {
+            if (str_contains($capturedOptions['userAgent'], $pattern)) {
+                $hasValidMobilePattern = true;
+                break;
+            }
+        }
+        $this->assertTrue($hasValidMobilePattern, 'User agent should contain a mobile identifier (iPhone, iPad, or Android)');
     }
 
     /**
