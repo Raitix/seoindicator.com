@@ -248,3 +248,17 @@ Last updated: 2026-03-07
 - **Fix:** Ran `npm install satori --save-dev` in the main frontend directory before retrying deployment.
 - **Lesson:** When deployment fails due to missing npm packages in the temp worktree, install them in the main project's frontend/node_modules (which is linked to the temp worktree) and retry.
 
+### TASK-28-15 (Custom SVG Icons)
+- **Date:** 2026-03-12
+- **Method:** Local/self-hosted deployment
+- **Deployment ID:** 20260312T172514Z-3bedd1af
+- **Result:** Successful
+- **Duration:** ~2 minutes 17 seconds (build: 55s, deploy: 73s, smoke: 5s)
+- **Commit:** b47da1f99950917aa07fd32cc37ed9cb18c76630
+- **Health Check:** 200 OK, production smoke passed
+- **What was deployed:**
+  - `frontend/components/icons/custom/registry.ts` - Custom icon registry with types
+  - `frontend/components/icons/custom/index.ts` - Barrel exports
+  - Registry starts empty (Lucide covers all 8 indicators)
+- **Note:** Frontend-only feature. Registry infrastructure for future custom icons. All acceptance criteria verified by LocalTester before deployment.
+
