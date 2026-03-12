@@ -1,7 +1,7 @@
 # TASK-36-2: Eloquent Models - Content Decay
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`
