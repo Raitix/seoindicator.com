@@ -1,6 +1,7 @@
 # TASK-25-1: Install Laravel Sanctum & Socialite Packages
 
-## STATUS`n`To Develop`
+## STATUS
+`To Develop`
 
 ## PRIORITY
 `High`
