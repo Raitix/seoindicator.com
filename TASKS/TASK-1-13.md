@@ -1,7 +1,7 @@
 # SPEC-001-13: Keyword List Page
 
 ## STATUS
-`To Test Prod`
+`Fix Required`
 ## PRIORITY
 `High`
 
@@ -101,3 +101,63 @@ Added root-level npm lint script delegating to frontend and documented linting i
 - Build initially failed due to missing `@hookform/resolvers` dependency - was already in package.json, npm install fixed it
 
 **Status changed:** In Deployment → To Test Prod
+
+### [2026-03-13 19:57] Agent: ProdTester
+**PRODUCTION TESTING FAILED - CRITICAL BUGS FOUND**
+
+**Test Environment:**
+- Production URL: https://seoindicator.com
+- Test User: Created via API (test-prod-tester-315300802@example.com)
+- Browser: Chrome via Playwright (OpenClaw profile)
+
+**Findings:**
+
+**1. CRITICAL: Login/Register Pages Not Rendering (BLOCKING)**
+- URL: `/login` and `/register`
+- Expected: Login/Register forms with email/password fields
+- Actual: Both pages show "Failed to load dashboard data" error message
+- Console Error: `/api/v1/dashboard` returns 401 (Unauthorized)
+- Impact: Users cannot authenticate via the web UI
+- Root Cause: Login/Register pages are rendering dashboard error state instead of auth forms
+
+**2. PASS: Keywords List Page UI Renders Correctly**
+- URL: `/sites/1/keywords`
+- UI Elements Verified:
+  - ✅ "Keyword list" heading
+  - ✅ "0 total keywords" count
+  - ✅ "Add Keyword" button
+  - ✅ Search textbox
+  - ✅ SERP Features filter dropdown
+  - ✅ Status Filter dropdown (All Status, Active, Paused)
+  - ✅ Sort By dropdown (Keyword, Position, Last Checked)
+  - ✅ Sort Order dropdown (Asc, Desc)
+  - ✅ "Show Only Keywords With SERP Features" checkbox
+  - ✅ Bulk action buttons (Pause, Resume, Delete) - disabled state
+  - ✅ "No keywords found" empty state message
+  - ✅ "Add your first keyword to start tracking positions." prompt
+
+**3. CRITICAL: Keyword Creation API Returns 500 Error**
+- URL: `POST /api/v1/sites/1/keywords`
+- Action: Clicked "Add Keyword", filled form with "seo tools", clicked "Add keyword" button
+- Expected: Keyword created, redirected to keywords list
+- Actual: "Server Error" toast notification
+- Console Error: `Failed to load resource: the server responded with a status of 500 ()`
+- Impact: Cannot create keywords via the UI
+
+**4. PASS: Add Keyword Form UI**
+- URL: `/sites/1/keywords/new`
+- UI Elements Verified:
+  - ✅ "Add a new keyword" heading
+  - ✅ Keyword textbox with placeholder
+  - ✅ Target URL textbox with placeholder
+  - ✅ Search engine dropdown (Google selected)
+  - ✅ Location dropdown (United States selected)
+  - ✅ Device dropdown (Desktop selected)
+  - ✅ "Add keyword" button
+  - ✅ "Cancel" button
+  - ✅ "Back to keyword list" link
+
+**Regression Risk:**
+The login/register page rendering issue appears to be a regression introduced in the recent deployment. The deployment smoke tests passed (login page loaded with "sign in" content), but the actual auth form is not rendering for unauthenticated users.
+
+**Status changed:** To Test Prod → Fix Required

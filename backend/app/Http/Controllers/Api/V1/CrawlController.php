@@ -243,7 +243,7 @@ class CrawlController extends Controller
             'jobId' => $jobId,
             'status' => 'cancelled',
             'message' => 'Job cancelled successfully',
-        ]);
+        ], 202);
     }
 
     /**

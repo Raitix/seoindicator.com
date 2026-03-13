@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * and extracts SEO-relevant content.
  *
  * @see TASK-22-2
+ * @see TASK-22-17
  * @see SPEC-022
  *
  * @property int $id
@@ -29,7 +30,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $error
  * @property \Illuminate\Support\Carbon|null $started_at
  * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property \Illuminate\Support\Carbon $expires_at
+ * @property array|null $partial_results
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
@@ -64,7 +67,9 @@ class CrawlJob extends Model
         'error',
         'started_at',
         'completed_at',
+        'cancelled_at',
         'expires_at',
+        'partial_results',
     ];
 
     /**
@@ -74,8 +79,10 @@ class CrawlJob extends Model
      */
     protected $casts = [
         'options' => 'array',
+        'partial_results' => 'array',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
         'expires_at' => 'datetime',
         'depth' => 'integer',
         'pages_crawled' => 'integer',

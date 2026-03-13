@@ -8,10 +8,11 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Cancellation Service for Crawl Jobs.
+ * Cancellation Service for TASK-22-17.
  *
- * Manages cancellation flags in cache for crawl jobs,
- * enabling graceful cancellation of running jobs.
+ * Manages cancellation flags for crawl jobs using atomic cache operations.
+ * Supports both immediate cancellation (queued jobs) and deferred cancellation
+ * (running jobs detected by the worker).
  *
  * @see TASK-22-17
  * @see SPEC-022
@@ -24,14 +25,14 @@ class CancellationService
     protected const CACHE_PREFIX = 'crawler:cancel:';
 
     /**
-     * The cache TTL in seconds (matches job timeout).
+     * Default TTL for cache entries (matches job timeout).
      */
     protected int $cacheTTL;
 
     /**
      * Create a new CancellationService instance.
      *
-     * @param int|null $cacheTTL Cache TTL in seconds
+     * @param int|null $cacheTTL Cache TTL in seconds (from config if null)
      */
     public function __construct(?int $cacheTTL = null)
     {
@@ -41,48 +42,44 @@ class CancellationService
     /**
      * Request cancellation for a crawl job.
      *
+     * For queued jobs, immediately updates status to cancelled.
+     * For running jobs, sets a flag for the worker to detect.
+     *
      * @param CrawlJob $crawlJob The crawl job to cancel
      * @param string|null $reason Optional cancellation reason
-     * @return bool True if cancellation requested, false if cannot be cancelled
+     * @return bool True if cancellation was requested, false if job cannot be cancelled
      */
     public function requestCancellation(CrawlJob $crawlJob, ?string $reason = null): bool
     {
+        $jobId = $crawlJob->job_id;
+        $status = $crawlJob->status;
+
         // Check if job can be cancelled
-        if (!$this->canCancel($crawlJob->status)) {
+        if (!$this->canCancel($status)) {
             return false;
         }
 
-        $jobId = $crawlJob->job_id;
-        $reason = $reason ?? 'User requested cancellation';
-
-        // Store cancellation flag in cache
-        Cache::put($this->getCacheKey($jobId), true, $this->cacheTTL);
-
         // Store cancellation metadata
         $this->storeCancellationMetadata($jobId, [
-            'requested_at' => Carbon::now()->toIso8601String(),
-            'reason' => $reason,
+            'requested_at' => Carbon::now()->toDateTimeString(),
+            'reason' => $reason ?? 'User requested cancellation',
         ]);
 
-        // For queued jobs, immediately set status to cancelled
-        if ($crawlJob->status === CrawlJob::STATUS_QUEUED) {
+        // Set cancellation flag in cache
+        Cache::put($this->getCacheKey($jobId), true, $this->cacheTTL);
+
+        // For queued jobs, immediately update status
+        if ($status === CrawlJob::STATUS_QUEUED) {
             $crawlJob->update([
                 'status' => CrawlJob::STATUS_CANCELLED,
                 'cancelled_at' => Carbon::now(),
-                'cancel_reason' => $reason,
-            ]);
-        } else {
-            // For running jobs, just record the cancellation request
-            // Worker will detect and handle
-            $crawlJob->update([
-                'cancelled_at' => Carbon::now(),
-                'cancel_reason' => $reason,
             ]);
         }
 
+        // Log the cancellation request
         Log::info('Crawler: Job cancellation requested', [
             'jobId' => $jobId,
-            'status' => $crawlJob->status,
+            'status' => $status,
             'reason' => $reason,
         ]);
 
@@ -90,10 +87,10 @@ class CancellationService
     }
 
     /**
-     * Check if a cancellation has been requested.
+     * Check if a cancellation has been requested for a job.
      *
      * @param string $jobId The job identifier
-     * @return bool True if cancellation requested
+     * @return bool True if cancellation was requested
      */
     public function isCancellationRequested(string $jobId): bool
     {
@@ -101,10 +98,10 @@ class CancellationService
     }
 
     /**
-     * Check if a job should cancel (alias for isCancellationRequested).
+     * Check if the job should cancel (alias for readability).
      *
      * @param string $jobId The job identifier
-     * @return bool True if should cancel
+     * @return bool True if cancellation was requested
      */
     public function shouldCancel(string $jobId): bool
     {
@@ -112,10 +109,10 @@ class CancellationService
     }
 
     /**
-     * Check if a job status can be cancelled.
+     * Check if a job status allows cancellation.
      *
      * @param string $status The job status
-     * @return bool True if can be cancelled
+     * @return bool True if the job can be cancelled
      */
     public function canCancel(string $status): bool
     {
@@ -137,7 +134,7 @@ class CancellationService
     }
 
     /**
-     * Clear all cancellation data for a job.
+     * Clear all cancellation data for a job (flag + metadata).
      *
      * @param string $jobId The job identifier
      * @return void
@@ -146,27 +143,6 @@ class CancellationService
     {
         Cache::forget($this->getCacheKey($jobId));
         Cache::forget($this->getCacheKey($jobId) . ':metadata');
-    }
-
-    /**
-     * Get the cache key for a job.
-     *
-     * @param string $jobId The job identifier
-     * @return string The cache key
-     */
-    public function getCacheKey(string $jobId): string
-    {
-        return self::CACHE_PREFIX . $jobId;
-    }
-
-    /**
-     * Get the cache TTL.
-     *
-     * @return int Cache TTL in seconds
-     */
-    public function getCacheTTL(): int
-    {
-        return $this->cacheTTL;
     }
 
     /**
@@ -189,7 +165,7 @@ class CancellationService
      * Get cancellation metadata.
      *
      * @param string $jobId The job identifier
-     * @return array|null Metadata or null if not found
+     * @return array|null The metadata or null if not set
      */
     public function getCancellationMetadata(string $jobId): ?array
     {
@@ -197,7 +173,7 @@ class CancellationService
     }
 
     /**
-     * Get cancellation info for a job.
+     * Get cancellation info (combines flag and metadata).
      *
      * @param string $jobId The job identifier
      * @return array|null Cancellation info or null if not cancelled
@@ -209,5 +185,26 @@ class CancellationService
         }
 
         return $this->getCancellationMetadata($jobId);
+    }
+
+    /**
+     * Get the cache key for a job.
+     *
+     * @param string $jobId The job identifier
+     * @return string The cache key
+     */
+    public function getCacheKey(string $jobId): string
+    {
+        return self::CACHE_PREFIX . $jobId;
+    }
+
+    /**
+     * Get the cache TTL.
+     *
+     * @return int Cache TTL in seconds
+     */
+    public function getCacheTTL(): int
+    {
+        return $this->cacheTTL;
     }
 }
