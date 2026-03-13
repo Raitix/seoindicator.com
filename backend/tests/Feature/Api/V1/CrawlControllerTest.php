@@ -5,7 +5,7 @@ namespace Tests\Feature\Api\V1;
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\Project;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Str;
 use Mockery;
 use Mockery\MockInterface;
@@ -24,7 +24,7 @@ use Mockery\MockInterface;
  */
 class CrawlControllerTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
 
     protected User $user;
     protected User $otherUser;

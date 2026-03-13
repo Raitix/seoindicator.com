@@ -50,6 +50,7 @@ class CrawlRequest extends FormRequest
                         '/^https?:\/\/\[fe80::/i',
                         '/\.local$/i',
                         '/\.internal$/i',
+                        '/^https?:\/\/internal\./i',  // Block subdomains starting with "internal."
                         '/^file:\/\//i',
                         '/^ftp:\/\//i',
                         '/^gopher:\/\//i',
@@ -65,7 +66,31 @@ class CrawlRequest extends FormRequest
             ],
             'depth' => ['nullable', 'integer', 'min:0', 'max:2'],
             'options' => ['nullable', 'array'],
-            'options.waitForSelector' => ['nullable', 'string', 'max:500'],
+            'options.waitForSelector' => [
+                'nullable',
+                'string',
+                'max:500',
+                function ($attribute, $value, $fail) {
+                    // Block path traversal patterns in CSS selector
+                    // CSS selectors can contain these characters, but we block obvious path traversal attempts
+                    $blockedPatterns = [
+                        '/\.\./',           // Parent directory traversal
+                        '#/etc/#i',         // Unix system paths
+                        '#/var/#i',         // Unix var directory
+                        '#/usr/#i',         // Unix usr directory
+                        '#\\\windows\\\#i', // Windows system paths
+                        '#\\\system32\\\#i', // Windows system32
+                        '/[<>:"|?*]/',      // Invalid filename characters (Windows)
+                    ];
+
+                    foreach ($blockedPatterns as $pattern) {
+                        if (preg_match($pattern, $value)) {
+                            $fail('The selector contains invalid characters.');
+                            return;
+                        }
+                    }
+                },
+            ],
             'options.waitTime' => ['nullable', 'integer', 'min:0', 'max:30000'],
             'options.userAgent' => ['nullable', 'string', 'max:500'],
             'options.includeImages' => ['nullable', 'boolean'],

@@ -4,16 +4,16 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CrawlRequest;
+use App\Services\Crawler\CrawlerService;
 use App\Services\Crawler\CrawlerServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 /**
- * CrawlController - REST API endpoints for the Headless Crawler Service.
+ * API Controller for the Headless Crawler Service.
  *
- * Provides endpoints for initiating crawl jobs, checking status,
- * retrieving content, and managing crawl jobs.
+ * Provides REST API endpoints for initiating crawl jobs,
+ * checking status, retrieving content, and managing jobs.
  *
  * @see TASK-22-11
  * @see SPEC-022
@@ -21,14 +21,14 @@ use Illuminate\Http\Response;
 class CrawlController extends Controller
 {
     /**
-     * Create a new CrawlController instance.
+     * Create a new controller instance.
      */
     public function __construct(
         protected CrawlerServiceInterface $crawlerService
     ) {}
 
     /**
-     * Initiate a new crawl job.
+     * Create a new crawl job.
      *
      * POST /api/v1/crawler/crawl
      *
@@ -37,73 +37,163 @@ class CrawlController extends Controller
      */
     public function store(CrawlRequest $request): JsonResponse
     {
-        $userId = $request->user()->id;
-        $url = $request->input('url');
-        $depth = $request->input('depth', 0);
-        $options = $request->input('options', []);
+        $validated = $request->validated();
+        $user = $request->user();
 
-        // Merge depth into options for the service
-        $options['depth'] = $depth;
+        $options = array_merge(
+            [
+                'depth' => $validated['depth'] ?? 0,
+            ],
+            $validated['options'] ?? []
+        );
 
-        $job = $this->crawlerService->createJob($userId, $url, $options);
+        $job = $this->crawlerService->createJob(
+            $user->id,
+            $validated['url'],
+            $options
+        );
 
-        return response()->json($job, 202);
+        return response()->json([
+            'jobId' => $job['jobId'],
+            'status' => $job['status'],
+            'url' => $job['url'],
+            'depth' => $job['depth'],
+            'estimatedTime' => $job['estimatedTime'],
+            'message' => $job['message'],
+        ], 202);
     }
 
     /**
-     * Get a crawl job's status.
+     * List user's crawl jobs with optional filters.
+     *
+     * GET /api/v1/crawler/jobs
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => ['nullable', 'string', 'in:queued,running,completed,failed,cancelled'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'perPage' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'sort' => ['nullable', 'string', 'in:created_at,url,status'],
+            'order' => ['nullable', 'string', 'in:asc,desc'],
+        ]);
+
+        $user = $request->user();
+
+        // Set current user for authorization if service supports it
+        if ($this->crawlerService instanceof CrawlerService) {
+            $this->crawlerService->forUser($user->id);
+        }
+
+        $paginator = $this->crawlerService->listJobs($user->id, [
+            'status' => $validated['status'] ?? null,
+            'page' => $validated['page'] ?? 1,
+            'perPage' => $validated['perPage'] ?? 15,
+            'sort' => $validated['sort'] ?? 'created_at',
+            'order' => $validated['order'] ?? 'desc',
+        ]);
+
+        return response()->json([
+            'data' => $paginator->items(),
+            'meta' => [
+                'total' => $paginator->total(),
+                'page' => $paginator->currentPage(),
+                'perPage' => $paginator->perPage(),
+                'lastPage' => $paginator->lastPage(),
+            ],
+        ]);
+    }
+
+    /**
+     * Get crawl job status.
      *
      * GET /api/v1/crawler/jobs/{jobId}
      *
      * @param string $jobId
+     * @param Request $request
      * @return JsonResponse
      */
-    public function show(string $jobId): JsonResponse
+    public function show(string $jobId, Request $request): JsonResponse
     {
-        $job = $this->crawlerService->getJob($jobId);
-
-        if ($job === null) {
+        // Validate jobId format to prevent injection
+        if (!$this->isValidJobId($jobId)) {
             return response()->json([
                 'message' => 'Job not found',
             ], 404);
         }
+
+        $user = $request->user();
+
+        // Set current user for authorization if service supports it
+        if ($this->crawlerService instanceof CrawlerService) {
+            $this->crawlerService->forUser($user->id);
+        }
+
+        $job = $this->crawlerService->getJob($jobId);
+
+        if (!$job) {
+            return response()->json([
+                'message' => 'Job not found',
+            ], 404);
+        }
+
+        // Remove sensitive data before returning
+        unset($job['user_id']);
+        unset($job['pages']);
+        unset($job['summary']);
 
         return response()->json($job);
     }
 
     /**
-     * Get the crawled content for a completed job.
+     * Get crawled content for a completed job.
      *
      * GET /api/v1/crawler/jobs/{jobId}/content
      *
      * @param string $jobId
+     * @param Request $request
      * @return JsonResponse
      */
-    public function content(string $jobId): JsonResponse
+    public function content(string $jobId, Request $request): JsonResponse
     {
-        // First check job status
-        $job = $this->crawlerService->getJob($jobId);
-
-        if ($job === null) {
+        // Validate jobId format
+        if (!$this->isValidJobId($jobId)) {
             return response()->json([
                 'message' => 'Job not found',
             ], 404);
         }
 
-        // Check if job is in a state that allows content retrieval
-        $status = $job['status'] ?? null;
-        if (!in_array($status, ['completed'])) {
+        $user = $request->user();
+
+        // Set current user for authorization if service supports it
+        if ($this->crawlerService instanceof CrawlerService) {
+            $this->crawlerService->forUser($user->id);
+        }
+
+        $job = $this->crawlerService->getJob($jobId);
+
+        if (!$job) {
+            return response()->json([
+                'message' => 'Job not found',
+            ], 404);
+        }
+
+        // Only completed jobs have content
+        if ($job['status'] !== 'completed') {
             return response()->json([
                 'message' => 'Job content not available',
-                'status' => $status,
+                'status' => $job['status'],
             ], 409);
         }
 
         $content = $this->crawlerService->getJobContent($jobId);
 
-        if ($content === null) {
+        if (!$content) {
             return response()->json([
-                'message' => 'Content not found',
+                'message' => 'Job content not found',
             ], 404);
         }
 
@@ -116,10 +206,25 @@ class CrawlController extends Controller
      * DELETE /api/v1/crawler/jobs/{jobId}
      *
      * @param string $jobId
+     * @param Request $request
      * @return JsonResponse
      */
-    public function destroy(string $jobId): JsonResponse
+    public function destroy(string $jobId, Request $request): JsonResponse
     {
+        // Validate jobId format
+        if (!$this->isValidJobId($jobId)) {
+            return response()->json([
+                'message' => 'Job not found',
+            ], 404);
+        }
+
+        $user = $request->user();
+
+        // Set current user for authorization if service supports it
+        if ($this->crawlerService instanceof CrawlerService) {
+            $this->crawlerService->forUser($user->id);
+        }
+
         $result = $this->crawlerService->cancelJob($jobId);
 
         if ($result === null) {
@@ -142,39 +247,18 @@ class CrawlController extends Controller
     }
 
     /**
-     * List user's crawl jobs with optional filters.
+     * Validate job ID format.
      *
-     * GET /api/v1/crawler/jobs
+     * Job IDs should be in format: crawl-{uuid}
+     * This prevents injection attacks and ensures proper format.
      *
-     * @param Request $request
-     * @return JsonResponse
+     * @param string $jobId
+     * @return bool
      */
-    public function index(Request $request): JsonResponse
+    protected function isValidJobId(string $jobId): bool
     {
-        $userId = $request->user()->id;
-
-        $filters = [
-            'status' => $request->input('status'),
-            'page' => (int) $request->input('page', 1),
-            'perPage' => (int) $request->input('perPage', 15),
-            'sort' => $request->input('sort', 'created_at'),
-            'order' => $request->input('order', 'desc'),
-        ];
-
-        // Validate pagination limits
-        $filters['perPage'] = min($filters['perPage'], 100);
-        $filters['page'] = max($filters['page'], 1);
-
-        $paginator = $this->crawlerService->listJobs($userId, $filters);
-
-        return response()->json([
-            'data' => $paginator->items(),
-            'meta' => [
-                'total' => $paginator->total(),
-                'page' => $paginator->currentPage(),
-                'perPage' => $paginator->perPage(),
-                'totalPages' => $paginator->lastPage(),
-            ],
-        ]);
+        // Job ID format: crawl-{uuid}
+        // UUID format: 8-4-4-4-12 hexadecimal characters
+        return (bool) preg_match('/^crawl-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $jobId);
     }
 }

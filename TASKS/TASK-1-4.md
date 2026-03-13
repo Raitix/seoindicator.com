@@ -1,7 +1,7 @@
 # SPEC-001-4: Keywords CRUD API Endpoints
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 ## PRIORITY
 `High`
 
@@ -91,3 +91,12 @@ Ran full test suite for KeywordControllerTest: **25 tests PASS (90 assertions)**
 - strip_tags() for XSS protection on keyword field
 
 Status set to `To Deploy`.
+
+### [2026-03-13 18:18] Agent: DevOps
+Deployed to production via deployment log `20260313T161516Z-8bbb8169`.
+- Commit: `92a944d7` (fix: add @shuding/opentype.js dependency for satori)
+- Frontend build: ✓ (Next.js 16.1.6 Turbopack, 105 static pages)
+- Backend deploy: ✓ (composer install, migrations, cache cleared/cached)
+- Smoke tests: ✓ (homepage + login page verified)
+- Duration: ~166 seconds
+Status set to `To Test Prod`.

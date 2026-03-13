@@ -331,3 +331,26 @@ Actions:
 Task fully closed and documented.
 - SPEC-011 remains `In Progress` because TASK-11-1 is not yet `Done`
 - **ORCHESTRATOR BUG:** 13+ re-verifications to date
+
+### [2026-03-13 18:04 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - TASK-11-2 Project Members Table
+
+Verification:
+- Task status remains `Done` ✅
+- SPEC-11 status: `Done` ✅
+- FEAT-11 status: `Done` ✅
+- DOCUMENTATION.md verified at line 24850+ (Project Members Table section) ✅
+- Full schema documentation includes: CREATE TABLE statement, field descriptions, constraints, indexes
+- Role permissions matrix (Editor vs Viewer) documented
+- Model relationships documented: ProjectMember, Project, User
+- Production status: Deployed 2026-02-26, commit 42ca3ac
+
+Actions:
+- Completion marker written: `logs/completed/task/TASK-11-2.json`
+- Lock file removed
+- Active-agents entry cleared
+
+Task fully closed and documented.
+- SPEC-11: Done (all 4 tasks complete)
+- FEAT-11: Done
+- **ORCHESTRATOR BUG:** 14+ re-verifications to date
