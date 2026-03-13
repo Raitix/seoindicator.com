@@ -970,7 +970,7 @@ class ContentRetrievalControllerTest extends TestCase
 
         $response->assertStatus(200);
         
-        $content = $response->streamedContent();
+        $content = $response->getContent();
         $firstLine = explode("\n", $content)[0];
         $headers = str_getcsv($firstLine);
         
@@ -992,7 +992,7 @@ class ContentRetrievalControllerTest extends TestCase
 
         $response->assertStatus(200);
         
-        $content = $response->streamedContent();
+        $content = $response->getContent();
         $firstLine = explode("\n", $content)[0];
         $headers = str_getcsv($firstLine);
         
@@ -1113,7 +1113,7 @@ class ContentRetrievalControllerTest extends TestCase
 
         $response->assertStatus(200);
         
-        $content = $response->streamedContent();
+        $content = $response->getContent();
         $this->assertStringContainsString('Table of Contents', $content);
         $this->assertStringContainsString('<nav', $content);
     }
@@ -1128,7 +1128,7 @@ class ContentRetrievalControllerTest extends TestCase
 
         $response->assertStatus(200);
         
-        $content = $response->streamedContent();
+        $content = $response->getContent();
         $this->assertStringContainsString('<hr', $content);
     }
 
@@ -1188,7 +1188,7 @@ class ContentRetrievalControllerTest extends TestCase
 
         $response->assertStatus(200);
         
-        $content = $response->streamedContent();
+        $content = $response->getContent();
         $this->assertStringContainsString('charset=UTF-8', $content);
     }
 

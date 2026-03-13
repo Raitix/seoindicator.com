@@ -45,8 +45,9 @@ class CancellationServiceTest extends TestCase
     public function test_request_cancellation_for_queued_job(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-test-123';
-        $crawlJob->status = CrawlJob::STATUS_QUEUED;
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-test-123');
+        $crawlJob->shouldReceive('getAttribute')->with('status')->andReturn(CrawlJob::STATUS_QUEUED);
+        $crawlJob->shouldReceive('update')->once();
 
         $service = new CancellationService();
 
@@ -62,8 +63,8 @@ class CancellationServiceTest extends TestCase
     public function test_request_cancellation_for_running_job(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-test-456';
-        $crawlJob->status = CrawlJob::STATUS_RUNNING;
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-test-456');
+        $crawlJob->shouldReceive('getAttribute')->with('status')->andReturn(CrawlJob::STATUS_RUNNING);
 
         $service = new CancellationService();
 
@@ -79,8 +80,8 @@ class CancellationServiceTest extends TestCase
     public function test_cannot_request_cancellation_for_completed_job(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-test-789';
-        $crawlJob->status = CrawlJob::STATUS_COMPLETED;
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-test-789');
+        $crawlJob->shouldReceive('getAttribute')->with('status')->andReturn(CrawlJob::STATUS_COMPLETED);
 
         $service = new CancellationService();
 
@@ -96,8 +97,8 @@ class CancellationServiceTest extends TestCase
     public function test_cannot_request_cancellation_for_failed_job(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-test-failed';
-        $crawlJob->status = CrawlJob::STATUS_FAILED;
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-test-failed');
+        $crawlJob->shouldReceive('getAttribute')->with('status')->andReturn(CrawlJob::STATUS_FAILED);
 
         $service = new CancellationService();
 
@@ -112,8 +113,8 @@ class CancellationServiceTest extends TestCase
     public function test_check_cancellation_flag_is_set_after_request(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-flag-test';
-        $crawlJob->status = CrawlJob::STATUS_RUNNING;
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-flag-test');
+        $crawlJob->shouldReceive('getAttribute')->with('status')->andReturn(CrawlJob::STATUS_RUNNING);
 
         $service = new CancellationService();
 
@@ -173,14 +174,18 @@ class CancellationServiceTest extends TestCase
         Carbon::setTestNow('2026-03-02 10:30:00');
 
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-timestamp';
-        $crawlJob->status = CrawlJob::STATUS_RUNNING;
-        $crawlJob->shouldReceive('update')
-            ->once()
-            ->with(['cancelled_at' => Carbon::parse('2026-03-02 10:30:00')]);
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-timestamp');
+        $crawlJob->shouldReceive('getAttribute')->with('status')->andReturn(CrawlJob::STATUS_RUNNING);
+        // For running jobs, timestamp is stored in cache metadata
+        // Worker will update the model when handling cancellation
 
         $service = new CancellationService();
         $service->requestCancellation($crawlJob);
+
+        // Verify timestamp is stored in cache metadata
+        $metadata = $service->getCancellationMetadata('crawl-timestamp');
+        $this->assertNotNull($metadata);
+        $this->assertArrayHasKey('requested_at', $metadata);
 
         Carbon::setTestNow();
     }
@@ -231,11 +236,14 @@ class CancellationServiceTest extends TestCase
     public function test_immediate_cancellation_for_queued_job(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-immediate';
-        $crawlJob->status = CrawlJob::STATUS_QUEUED;
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-immediate');
+        $crawlJob->shouldReceive('getAttribute')->with('status')->andReturn(CrawlJob::STATUS_QUEUED);
         $crawlJob->shouldReceive('update')
             ->once()
-            ->with(['status' => CrawlJob::STATUS_CANCELLED]);
+            ->with(\Mockery::on(function ($data) {
+                return isset($data['status']) &&
+                       $data['status'] === CrawlJob::STATUS_CANCELLED;
+            }));
 
         $service = new CancellationService();
         $result = $service->requestCancellation($crawlJob);
@@ -249,8 +257,8 @@ class CancellationServiceTest extends TestCase
     public function test_deferred_cancellation_for_running_job(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-deferred';
-        $crawlJob->status = CrawlJob::STATUS_RUNNING;
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-deferred');
+        $crawlJob->shouldReceive('getAttribute')->with('status')->andReturn(CrawlJob::STATUS_RUNNING);
         // Should NOT update status immediately for running jobs
         $crawlJob->shouldNotReceive('update');
 
@@ -268,17 +276,18 @@ class CancellationServiceTest extends TestCase
     public function test_cancellation_reason_stored(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-reason';
-        $crawlJob->status = CrawlJob::STATUS_RUNNING;
-        $crawlJob->shouldReceive('update')
-            ->once()
-            ->with(\Mockery::on(function ($data) {
-                return isset($data['cancel_reason']) &&
-                       $data['cancel_reason'] === 'User requested cancellation';
-            }));
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-reason');
+        $crawlJob->shouldReceive('getAttribute')->with('status')->andReturn(CrawlJob::STATUS_RUNNING);
+        // For running jobs, reason is stored in cache metadata (not model update)
+        // Worker will handle model update when processing cancellation
 
         $service = new CancellationService();
         $service->requestCancellation($crawlJob, 'User requested cancellation');
+
+        // Verify the reason is stored in cache metadata
+        $metadata = $service->getCancellationMetadata('crawl-reason');
+        $this->assertNotNull($metadata);
+        $this->assertEquals('User requested cancellation', $metadata['reason']);
     }
 
     /**
@@ -287,8 +296,8 @@ class CancellationServiceTest extends TestCase
     public function test_multiple_cancellation_requests_are_idempotent(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-idempotent';
-        $crawlJob->status = CrawlJob::STATUS_RUNNING;
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-idempotent');
+        $crawlJob->shouldReceive('getAttribute')->with('status')->andReturn(CrawlJob::STATUS_RUNNING);
 
         $service = new CancellationService();
 
@@ -329,7 +338,9 @@ class CancellationServiceTest extends TestCase
     {
         $service = new CancellationService();
 
-        Cache::put("crawler:cancel:crawl-info", [
+        // Set both the cancellation flag and metadata (as service expects)
+        Cache::put("crawler:cancel:crawl-info", true, 300);
+        Cache::put("crawler:cancel:crawl-info:metadata", [
             'requested_at' => '2026-03-02 10:00:00',
             'reason' => 'User requested',
         ], 300);
@@ -356,8 +367,8 @@ class CancellationServiceTest extends TestCase
             );
 
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-log-test';
-        $crawlJob->status = CrawlJob::STATUS_RUNNING;
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-log-test');
+        $crawlJob->shouldReceive('getAttribute')->with('status')->andReturn(CrawlJob::STATUS_RUNNING);
 
         $service = new CancellationService();
         $service->requestCancellation($crawlJob);

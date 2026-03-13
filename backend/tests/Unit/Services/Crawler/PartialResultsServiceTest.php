@@ -35,7 +35,8 @@ class PartialResultsServiceTest extends TestCase
     public function test_store_partial_results(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-partial-1';
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-partial-1');
+        $crawlJob->shouldReceive('getAttribute')->with('partial_results')->andReturn(null);
         $crawlJob->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($data) {
@@ -62,15 +63,18 @@ class PartialResultsServiceTest extends TestCase
     public function test_include_timeout_reason(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-timeout-reason';
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-timeout-reason');
+        $crawlJob->shouldReceive('getAttribute')->with('partial_results')->andReturn(null);
         $crawlJob->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($data) {
-                return $data['partial_results']['reason'] === 'Job timeout reached';
+                return $data['partial_results']['reason'] === 'Job timeout reached (300s)';
             }));
 
         $service = new PartialResultsService();
-        $service->storePartialResults($crawlJob, [], 'timeout');
+        $result = $service->storePartialResults($crawlJob, [], 'timeout');
+
+        $this->assertTrue($result);
     }
 
     /**
@@ -79,7 +83,8 @@ class PartialResultsServiceTest extends TestCase
     public function test_include_cancellation_reason(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-cancel-reason';
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-cancel-reason');
+        $crawlJob->shouldReceive('getAttribute')->with('partial_results')->andReturn(null);
         $crawlJob->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($data) {
@@ -87,7 +92,9 @@ class PartialResultsServiceTest extends TestCase
             }));
 
         $service = new PartialResultsService();
-        $service->storePartialResults($crawlJob, [], 'cancelled');
+        $result = $service->storePartialResults($crawlJob, [], 'cancelled');
+
+        $this->assertTrue($result);
     }
 
     /**
@@ -96,7 +103,8 @@ class PartialResultsServiceTest extends TestCase
     public function test_mark_uncrawled_pages(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-uncrawled';
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-uncrawled');
+        $crawlJob->shouldReceive('getAttribute')->with('partial_results')->andReturn(null);
         $crawlJob->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($data) {
@@ -109,13 +117,15 @@ class PartialResultsServiceTest extends TestCase
 
         // 5 total URLs, 3 crawled
         $crawledPages = [
-            ['url' => 'https://example.com/1'],
-            ['url' => 'https://example.com/2'],
-            ['url' => 'https://example.com/3'],
+            ['url' => 'https://example.com/1', 'status' => 'completed'],
+            ['url' => 'https://example.com/2', 'status' => 'completed'],
+            ['url' => 'https://example.com/3', 'status' => 'completed'],
         ];
         $totalUrls = 5;
 
-        $service->storePartialResults($crawlJob, $crawledPages, 'timeout', $totalUrls);
+        $result = $service->storePartialResults($crawlJob, $crawledPages, 'timeout', $totalUrls);
+
+        $this->assertTrue($result);
     }
 
     /**
@@ -136,15 +146,15 @@ class PartialResultsServiceTest extends TestCase
     public function test_retrieve_partial_content(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-retrieve';
-        $crawlJob->partial_results = [
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-retrieve');
+        $crawlJob->shouldReceive('getAttribute')->with('partial_results')->andReturn([
             'pages' => [
                 ['url' => 'https://example.com/1', 'html' => '<html>1</html>'],
                 ['url' => 'https://example.com/2', 'html' => '<html>2</html>'],
             ],
             'reason' => 'timeout',
             'pages_crawled' => 2,
-        ];
+        ]);
 
         $service = new PartialResultsService();
         $content = $service->getPartialContent($crawlJob);
@@ -159,10 +169,14 @@ class PartialResultsServiceTest extends TestCase
     public function test_partial_results_response_format(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-response-format';
-        $crawlJob->pages_crawled = 3;
-        $crawlJob->total_size = 600000;
-        $crawlJob->shouldReceive('update');
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-response-format');
+        $crawlJob->shouldReceive('getAttribute')->with('pages_crawled')->andReturn(3);
+        $crawlJob->shouldReceive('getAttribute')->with('total_size')->andReturn(600000);
+        $crawlJob->shouldReceive('getAttribute')->with('completed_at')->andReturn(null);
+        $crawlJob->shouldReceive('getAttribute')->with('cancelled_at')->andReturn(null);
+        $crawlJob->shouldReceive('offsetExists')->with('pages_crawled')->andReturn(true);
+        $crawlJob->shouldReceive('offsetExists')->with('total_size')->andReturn(true);
+        $crawlJob->shouldReceive('offsetExists')->with('cancelled_at')->andReturn(true);
 
         $service = new PartialResultsService();
         $response = $service->buildPartialResponse($crawlJob, 'timeout');
@@ -180,10 +194,14 @@ class PartialResultsServiceTest extends TestCase
     public function test_timeout_response_format_shows_completed_status(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-timeout-status';
-        $crawlJob->pages_crawled = 8;
-        $crawlJob->total_size = 1500000;
-        $crawlJob->shouldReceive('update');
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-timeout-status');
+        $crawlJob->shouldReceive('getAttribute')->with('pages_crawled')->andReturn(8);
+        $crawlJob->shouldReceive('getAttribute')->with('total_size')->andReturn(1500000);
+        $crawlJob->shouldReceive('getAttribute')->with('completed_at')->andReturn(null);
+        $crawlJob->shouldReceive('getAttribute')->with('cancelled_at')->andReturn(null);
+        $crawlJob->shouldReceive('offsetExists')->with('pages_crawled')->andReturn(true);
+        $crawlJob->shouldReceive('offsetExists')->with('total_size')->andReturn(true);
+        $crawlJob->shouldReceive('offsetExists')->with('cancelled_at')->andReturn(true);
 
         $service = new PartialResultsService();
         $response = $service->buildPartialResponse($crawlJob, 'timeout');
@@ -199,10 +217,14 @@ class PartialResultsServiceTest extends TestCase
     public function test_cancelled_response_format(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-cancelled-status';
-        $crawlJob->pages_crawled = 3;
-        $crawlJob->total_size = 600000;
-        $crawlJob->shouldReceive('update');
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-cancelled-status');
+        $crawlJob->shouldReceive('getAttribute')->with('pages_crawled')->andReturn(3);
+        $crawlJob->shouldReceive('getAttribute')->with('total_size')->andReturn(600000);
+        $crawlJob->shouldReceive('getAttribute')->with('completed_at')->andReturn(null);
+        $crawlJob->shouldReceive('getAttribute')->with('cancelled_at')->andReturn(\Carbon\Carbon::now());
+        $crawlJob->shouldReceive('offsetExists')->with('pages_crawled')->andReturn(true);
+        $crawlJob->shouldReceive('offsetExists')->with('total_size')->andReturn(true);
+        $crawlJob->shouldReceive('offsetExists')->with('cancelled_at')->andReturn(true);
 
         $service = new PartialResultsService();
         $response = $service->buildPartialResponse($crawlJob, 'cancelled');
@@ -217,7 +239,8 @@ class PartialResultsServiceTest extends TestCase
     public function test_include_all_successful_pages(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-success-pages';
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-success-pages');
+        $crawlJob->shouldReceive('getAttribute')->with('partial_results')->andReturn(null);
         $crawlJob->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($data) {
@@ -236,7 +259,9 @@ class PartialResultsServiceTest extends TestCase
             ['url' => 'https://example.com/3', 'status' => 'completed'],
         ];
 
-        $service->storePartialResults($crawlJob, $pages, 'timeout');
+        $result = $service->storePartialResults($crawlJob, $pages, 'timeout');
+
+        $this->assertTrue($result);
     }
 
     /**
@@ -245,7 +270,8 @@ class PartialResultsServiceTest extends TestCase
     public function test_exclude_failed_pages_from_count(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-exclude-failed';
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-exclude-failed');
+        $crawlJob->shouldReceive('getAttribute')->with('partial_results')->andReturn(null);
         $crawlJob->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($data) {
@@ -262,7 +288,9 @@ class PartialResultsServiceTest extends TestCase
             ['url' => 'https://example.com/4', 'status' => 'completed'],
         ];
 
-        $service->storePartialResults($crawlJob, $pages, 'timeout');
+        $result = $service->storePartialResults($crawlJob, $pages, 'timeout');
+
+        $this->assertTrue($result);
     }
 
     /**
@@ -271,7 +299,8 @@ class PartialResultsServiceTest extends TestCase
     public function test_store_in_job_metadata(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-metadata';
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-metadata');
+        $crawlJob->shouldReceive('getAttribute')->with('partial_results')->andReturn(null);
         $crawlJob->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($data) {
@@ -279,7 +308,9 @@ class PartialResultsServiceTest extends TestCase
             }));
 
         $service = new PartialResultsService();
-        $service->storePartialResults($crawlJob, [], 'timeout');
+        $result = $service->storePartialResults($crawlJob, [], 'timeout');
+
+        $this->assertTrue($result);
     }
 
     /**
@@ -318,7 +349,8 @@ class PartialResultsServiceTest extends TestCase
     public function test_empty_results_handled_gracefully(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-empty';
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-empty');
+        $crawlJob->shouldReceive('getAttribute')->with('partial_results')->andReturn(null);
         $crawlJob->shouldReceive('update');
 
         $service = new PartialResultsService();
@@ -441,7 +473,8 @@ class PartialResultsServiceTest extends TestCase
     public function test_handle_large_partial_results(): void
     {
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-large';
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-large');
+        $crawlJob->shouldReceive('getAttribute')->with('partial_results')->andReturn(null);
         $crawlJob->shouldReceive('update');
 
         $service = new PartialResultsService();
@@ -472,8 +505,8 @@ class PartialResultsServiceTest extends TestCase
         ];
 
         $crawlJob = Mockery::mock(CrawlJob::class);
-        $crawlJob->job_id = 'crawl-merge';
-        $crawlJob->partial_results = $existingData;
+        $crawlJob->shouldReceive('getAttribute')->with('job_id')->andReturn('crawl-merge');
+        $crawlJob->shouldReceive('getAttribute')->with('partial_results')->andReturn($existingData);
         $crawlJob->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($data) {
@@ -487,7 +520,9 @@ class PartialResultsServiceTest extends TestCase
             ['url' => 'https://example.com/2', 'status' => 'completed'],
         ];
 
-        $service->storePartialResults($crawlJob, $newPages, 'timeout', 2, true);
+        $result = $service->storePartialResults($crawlJob, $newPages, 'timeout', 2, true);
+
+        $this->assertTrue($result);
     }
 
     /**

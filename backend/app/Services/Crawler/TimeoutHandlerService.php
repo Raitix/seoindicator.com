@@ -6,10 +6,10 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Timeout Handler Service for Crawl Jobs.
+ * Timeout Handler Service for TASK-22-17.
  *
- * Tracks timing for crawl jobs, detects timeout conditions,
- * and initiates graceful shutdown when approaching timeout limits.
+ * Tracks timing for crawl jobs, detects timeouts, and initiates graceful shutdown.
+ * Supports multiple jobs tracked independently with per-job configuration.
  *
  * @see TASK-22-17
  * @see SPEC-022
@@ -17,31 +17,31 @@ use Illuminate\Support\Facades\Log;
 class TimeoutHandlerService
 {
     /**
-     * The default job timeout in seconds.
-     */
-    protected int $defaultTimeout;
-
-    /**
-     * The default grace period in seconds.
-     */
-    protected int $defaultGracePeriod;
-
-    /**
-     * The default page timeout in seconds.
-     */
-    protected int $defaultPageTimeout;
-
-    /**
-     * Active tracking data by job ID.
+     * @var array<string, array{start: Carbon, timeout: int, grace_period: int}>
      */
     protected array $tracking = [];
 
     /**
+     * Default job timeout in seconds.
+     */
+    protected int $defaultTimeout;
+
+    /**
+     * Default grace period in seconds.
+     */
+    protected int $defaultGracePeriod;
+
+    /**
+     * Default page timeout in seconds.
+     */
+    protected int $defaultPageTimeout;
+
+    /**
      * Create a new TimeoutHandlerService instance.
      *
-     * @param int|null $timeout Job timeout in seconds
-     * @param int|null $gracePeriod Grace period in seconds
-     * @param int|null $pageTimeout Page timeout in seconds
+     * @param int|null $timeout Default job timeout (from config if null)
+     * @param int|null $gracePeriod Default grace period (from config if null)
+     * @param int|null $pageTimeout Default page timeout (from config if null)
      */
     public function __construct(
         ?int $timeout = null,
@@ -54,24 +54,26 @@ class TimeoutHandlerService
     }
 
     /**
-     * Start tracking a crawl job.
+     * Start tracking a job's timeout.
      *
      * @param string $jobId The job identifier
-     * @param array $options Optional configuration (timeout, grace_period, page_timeout)
+     * @param array $options Optional per-job configuration (timeout, grace_period)
      * @return void
      */
     public function startTracking(string $jobId, array $options = []): void
     {
+        $timeout = $options['timeout'] ?? $this->defaultTimeout;
+        $gracePeriod = $options['grace_period'] ?? $this->defaultGracePeriod;
+
         $this->tracking[$jobId] = [
-            'start_time' => Carbon::now(),
-            'timeout' => $options['timeout'] ?? $this->defaultTimeout,
-            'grace_period' => $options['grace_period'] ?? $this->defaultGracePeriod,
-            'page_timeout' => $options['page_timeout'] ?? $this->defaultPageTimeout,
+            'start' => Carbon::now(),
+            'timeout' => $timeout,
+            'grace_period' => $gracePeriod,
         ];
     }
 
     /**
-     * Stop tracking a crawl job.
+     * Stop tracking a job and clear its data.
      *
      * @param string $jobId The job identifier
      * @return void
@@ -89,58 +91,60 @@ class TimeoutHandlerService
      */
     public function getStartTime(string $jobId): ?Carbon
     {
-        return $this->tracking[$jobId]['start_time'] ?? null;
+        return $this->tracking[$jobId]['start'] ?? null;
     }
 
     /**
-     * Get the elapsed seconds for a job.
+     * Get elapsed seconds since tracking started.
      *
      * @param string $jobId The job identifier
-     * @return int Elapsed seconds (0 if not tracking)
+     * @return int Elapsed seconds, or 0 if not tracking
      */
     public function getElapsedSeconds(string $jobId): int
     {
-        $startTime = $this->getStartTime($jobId);
-
-        if (!$startTime) {
+        $start = $this->getStartTime($jobId);
+        
+        if ($start === null) {
             return 0;
         }
 
-        return (int) Carbon::now()->diffInSeconds($startTime);
+        return (int) $start->diffInSeconds(Carbon::now());
     }
 
     /**
-     * Get the remaining seconds for a job.
+     * Get remaining seconds until timeout.
      *
      * @param string $jobId The job identifier
-     * @return int Remaining seconds (full timeout if not tracking)
+     * @return int Remaining seconds, or default timeout if not tracking
      */
     public function getRemainingSeconds(string $jobId): int
     {
-        if (!isset($this->tracking[$jobId])) {
+        $tracking = $this->tracking[$jobId] ?? null;
+        
+        if ($tracking === null) {
             return $this->defaultTimeout;
         }
 
         $elapsed = $this->getElapsedSeconds($jobId);
-        $timeout = $this->tracking[$jobId]['timeout'];
+        $remaining = $tracking['timeout'] - $elapsed;
 
-        return max(0, $timeout - $elapsed);
+        return max(0, $remaining);
     }
 
     /**
-     * Check if the job is approaching timeout.
+     * Check if approaching timeout (remaining < threshold).
      *
      * @param string $jobId The job identifier
-     * @param int $thresholdSeconds Seconds remaining to consider "approaching"
+     * @param int $threshold The threshold in seconds (default: 60)
      * @return bool True if approaching timeout
      */
-    public function isApproachingTimeout(string $jobId, int $thresholdSeconds = 60): bool
+    public function isApproachingTimeout(string $jobId, int $threshold = 60): bool
     {
-        return $this->getRemainingSeconds($jobId) < $thresholdSeconds;
+        return $this->getRemainingSeconds($jobId) < $threshold;
     }
 
     /**
-     * Check if the job has exceeded its timeout.
+     * Check if timeout has been exceeded.
      *
      * @param string $jobId The job identifier
      * @return bool True if timeout exceeded
@@ -153,30 +157,28 @@ class TimeoutHandlerService
     /**
      * Check if graceful shutdown should start.
      *
-     * Returns true when remaining time is less than or equal to grace period.
+     * Graceful shutdown should start when remaining time < grace period.
      *
      * @param string $jobId The job identifier
      * @return bool True if graceful shutdown should start
      */
     public function shouldStartGracefulShutdown(string $jobId): bool
     {
-        if (!isset($this->tracking[$jobId])) {
+        $tracking = $this->tracking[$jobId] ?? null;
+        
+        if ($tracking === null) {
             return false;
         }
 
         $remaining = $this->getRemainingSeconds($jobId);
-        $gracePeriod = $this->tracking[$jobId]['grace_period'];
-
-        return $remaining <= $gracePeriod;
+        return $remaining <= $tracking['grace_period'];
     }
 
     /**
      * Check if crawling can continue.
      *
-     * Returns false if timeout is exceeded.
-     *
      * @param string $jobId The job identifier
-     * @return bool True if crawling can continue
+     * @return bool True if there is time remaining
      */
     public function canContinueCrawling(string $jobId): bool
     {
@@ -184,59 +186,62 @@ class TimeoutHandlerService
     }
 
     /**
-     * Check if there's enough time for the next page.
+     * Check if page timeout occurred.
      *
-     * @param string $jobId The job identifier
-     * @return bool True if there's time for another page
+     * @param int $pageDurationSeconds How long the page took
+     * @return bool True if page timeout occurred
      */
-    public function hasTimeForNextPage(string $jobId): bool
+    public function isPageTimeout(int $pageDurationSeconds): bool
     {
-        if (!isset($this->tracking[$jobId])) {
-            return true;
-        }
-
-        $remaining = $this->getRemainingSeconds($jobId);
-        $gracePeriod = $this->tracking[$jobId]['grace_period'];
-        $pageTimeout = $this->tracking[$jobId]['page_timeout'];
-
-        // Need at least grace_period + page_timeout to safely crawl another page
-        return $remaining > ($gracePeriod + $pageTimeout);
+        return $pageDurationSeconds > $this->defaultPageTimeout;
     }
 
     /**
      * Get seconds until grace period starts.
      *
      * @param string $jobId The job identifier
-     * @return int Seconds until grace period
+     * @return int Seconds until grace period, or 0 if already in grace
      */
     public function getSecondsUntilGrace(string $jobId): int
     {
-        if (!isset($this->tracking[$jobId])) {
+        $tracking = $this->tracking[$jobId] ?? null;
+        
+        if ($tracking === null) {
             return $this->defaultTimeout - $this->defaultGracePeriod;
         }
 
         $remaining = $this->getRemainingSeconds($jobId);
-        $gracePeriod = $this->tracking[$jobId]['grace_period'];
+        $graceStart = $tracking['grace_period'];
 
-        return max(0, $remaining - $gracePeriod);
+        return max(0, $remaining - $graceStart);
     }
 
     /**
-     * Check if a page operation timed out.
-     *
-     * @param int $actualSeconds Actual time the page took
-     * @return bool True if page timed out
-     */
-    public function isPageTimeout(int $actualSeconds): bool
-    {
-        return $actualSeconds > $this->defaultPageTimeout;
-    }
-
-    /**
-     * Get formatted duration string.
+     * Check if there is enough time for the next page.
      *
      * @param string $jobId The job identifier
-     * @return string Formatted duration (e.g., "2m 30s")
+     * @return bool True if there is time for another page
+     */
+    public function hasTimeForNextPage(string $jobId): bool
+    {
+        $tracking = $this->tracking[$jobId] ?? null;
+        
+        if ($tracking === null) {
+            return true;
+        }
+
+        // Need at least: grace period + page timeout for safe continuation
+        $remaining = $this->getRemainingSeconds($jobId);
+        $buffer = $tracking['grace_period'] + $this->defaultPageTimeout;
+
+        return $remaining > $buffer;
+    }
+
+    /**
+     * Get formatted duration string (e.g., "2m 30s").
+     *
+     * @param string $jobId The job identifier
+     * @return string Formatted duration
      */
     public function getFormattedDuration(string $jobId): string
     {
@@ -251,26 +256,18 @@ class TimeoutHandlerService
      * Get timeout context for logging.
      *
      * @param string $jobId The job identifier
-     * @return array Timeout context data
+     * @return array Context array with timing data
      */
     public function getTimeoutContext(string $jobId): array
     {
-        if (!isset($this->tracking[$jobId])) {
-            return [
-                'jobId' => $jobId,
-                'elapsed' => 0,
-                'remaining' => $this->defaultTimeout,
-                'timeout' => $this->defaultTimeout,
-                'grace_period' => $this->defaultGracePeriod,
-            ];
-        }
+        $tracking = $this->tracking[$jobId] ?? null;
 
         return [
             'jobId' => $jobId,
             'elapsed' => $this->getElapsedSeconds($jobId),
             'remaining' => $this->getRemainingSeconds($jobId),
-            'timeout' => $this->tracking[$jobId]['timeout'],
-            'grace_period' => $this->tracking[$jobId]['grace_period'],
+            'timeout' => $tracking['timeout'] ?? $this->defaultTimeout,
+            'grace_period' => $tracking['grace_period'] ?? $this->defaultGracePeriod,
         ];
     }
 
@@ -282,38 +279,40 @@ class TimeoutHandlerService
      */
     public function logTimeoutEvent(string $jobId): void
     {
-        $context = $this->getTimeoutContext($jobId);
-
-        Log::warning('Crawler: Job timeout exceeded', $context);
+        Log::warning('Crawler: Job timeout exceeded', [
+            'jobId' => $jobId,
+            'elapsed' => $this->getElapsedSeconds($jobId),
+            'timeout' => $this->tracking[$jobId]['timeout'] ?? $this->defaultTimeout,
+        ]);
     }
 
     /**
      * Get the default timeout from config.
      *
-     * @return int Default timeout in seconds
+     * @return int
      */
     public function getDefaultTimeout(): int
     {
-        return $this->defaultTimeout;
+        return config('crawler.timeouts.job', 300);
     }
 
     /**
      * Get the default grace period from config.
      *
-     * @return int Default grace period in seconds
+     * @return int
      */
     public function getDefaultGracePeriod(): int
     {
-        return $this->defaultGracePeriod;
+        return config('crawler.timeouts.grace_period', 30);
     }
 
     /**
      * Get the default page timeout from config.
      *
-     * @return int Default page timeout in seconds
+     * @return int
      */
     public function getDefaultPageTimeout(): int
     {
-        return $this->defaultPageTimeout;
+        return config('crawler.timeouts.page', 30);
     }
 }
