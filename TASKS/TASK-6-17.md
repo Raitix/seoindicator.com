@@ -1,7 +1,7 @@
 # TASK-6-17: OpenAPI Specification
 
 ## Status
-`To Develop`
+`Done`
 
 ## Priority
 `Low`
@@ -38,11 +38,11 @@ Create OpenAPI (Swagger) specification for the API.
 - `backend/src/api/openapi.yaml`
 
 ## Acceptance Criteria
-- [ ] OpenAPI spec created
-- [ ] All endpoints documented
-- [ ] Schemas defined
-- [ ] Valid OpenAPI format
-- [ ] Can be used for documentation generation
+- [x] OpenAPI spec created
+- [x] All endpoints documented
+- [x] Schemas defined
+- [x] Valid OpenAPI format
+- [x] Can be used for documentation generation
 
 ## Dependencies
 - TASK-6-11 (all API endpoints)
@@ -91,6 +91,48 @@ Medium (2-3 hours)
 
 ### TDD Pattern
 Tests will fail until Developer creates `backend/src/api/openapi.yaml` with valid OpenAPI 3.0 specification documenting all API endpoints.
+
+### [2026-03-13 13:25] Developer: Task Complete ✅
+- **Status:** `To Develop` → `Done`
+- **Output:** `backend/src/api/openapi.yaml` (1,900+ lines)
+- **OpenAPI Version:** 3.0.3
+
+### Implementation Summary
+Created comprehensive OpenAPI 3.0.3 specification documenting all API endpoints:
+
+**Endpoints Documented (90+):**
+- Authentication: 10 endpoints (register, login, logout, password reset, OAuth)
+- Keywords: 9 endpoints (CRUD, rankings, history, check)
+- Sites: 6 endpoints (CRUD, dashboard)
+- Projects: 7 endpoints (CRUD, archive, restore)
+- Reports: 10 endpoints (CRUD, templates, scheduled)
+- Audits: 10 endpoints (CRUD, issues, publish, embed, analytics)
+- Competitors: 5 endpoints (CRUD)
+- Analysis: 7 endpoints (jobs, stream, progress)
+- AI Visibility: 7 endpoints (projects, run, analytics)
+- Public: 13 endpoints (health, public-audit, badges, tools, models)
+- Admin: 12 endpoints (stats, users, health, credits)
+- Payments: 6 endpoints (methods, PayPal, credits)
+- Webhooks: 6 endpoints (CRUD, test)
+- Content Decay: 12 endpoints (summary, candidates, tasks, AI brief)
+
+**Component Schemas (50+):**
+- User, Site, Keyword, Project, Report, Audit
+- Competitor, AnalysisJob, AIVisibilityProject
+- ContentDecay, DecayCandidate, ContentRefreshTask
+- Error responses, pagination meta
+- Request/response schemas for all endpoints
+
+**Security Schemes:**
+- BearerAuth (JWT via Laravel Sanctum)
+- ApiKeyAuth (X-API-Key header)
+
+**Features:**
+- Full request/response examples
+- Parameter descriptions
+- Response codes (200, 201, 204, 400, 401, 403, 404, 422, 429)
+- Tags for logical grouping
+- Server configurations (production, staging, local)
 
 ### [2026-02-27 12:25] ProjectManager: Task Created
 - Priority: Low (documentation)
