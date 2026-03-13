@@ -299,3 +299,24 @@ Last updated: 2026-03-07
 - **Issue Encountered:** Initial deployment failed due to missing `satori` package. Fixed with `npm install satori --save-dev`.
 - **Note:** Part of SPEC-022 (Headless Crawler Service). Backend-only services for multi-page crawling support.
 
+### TASK-33-14 (Public Audit Page Route)
+- **Date:** 2026-03-13
+- **Method:** Local/self-hosted deployment
+- **Deployment ID:** 20260313T181224Z-5a013681
+- **Result:** Successful
+- **Duration:** ~3 minutes (build: 1m24s, deploy: 1m22s, smoke: 8s)
+- **Commit:** e5b3ab867894
+- **Health Check:** 200 OK, production smoke passed
+- **What was deployed:**
+  - `frontend/app/audit/[hash]/page.tsx` - Route with `generateStaticParams()` for static export
+  - `frontend/app/audit/[hash]/AuditPageClient.tsx` - Client-side data fetching and metadata
+  - `frontend/app/audit/[hash]/layout.tsx` - Layout wrapper (no auth)
+  - `frontend/app/audit/[hash]/not-found.tsx` - 404 page with CTAs
+- **Architecture Decision:**
+  - Original implementation used dynamic route with ISR (incompatible with `output: 'export'`)
+  - Refactored to client-side rendering with placeholder `generateStaticParams()`
+  - Returns `[{ hash: '_' }]` placeholder to satisfy static export requirement
+  - Actual hash lookup happens client-side via `AuditPageClient`
+- **Issue Encountered:** Initial build failed with `ERR_MODULE_NOT_FOUND: Cannot find package 'satori'`. Fixed with `npm install satori --save-dev`.
+- **Note:** Static export requires `generateStaticParams()` for dynamic routes. Client-side rendering pattern works for runtime-determined routes like audit hashes.
+
