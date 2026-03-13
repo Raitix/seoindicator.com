@@ -1,7 +1,7 @@
 # TASK-19-1: Database Migration - Analysis Jobs Tables
 
 ## STATUS
-`Testing Prod`
+`To Test Prod`
 
 ## PRIORITY
 `High`

@@ -50,9 +50,12 @@ class BacklinkAnchorsController extends Controller
         // Get anchor texts with percentage calculation
         $anchors = $this->getAnchorsWithPercentage($project->id, $sort);
 
-        return response()->json([
-            'data' => $anchors,
-        ]);
+        return response()->json(
+            ['data' => $anchors],
+            200,
+            [],
+            JSON_PRESERVE_ZERO_FRACTION
+        );
     }
 
     /**
