@@ -1,4 +1,4 @@
-# FEAT-037: Production Critical Fixes & UX Improvements
+# FEAT-037: Production Critical Fixes - Auth & Navigation
 
 ## STATUS
 `To Break Into Tasks`
@@ -10,146 +10,89 @@
 `High`
 
 ## Description
-CEO-initiated production audit revealed multiple critical issues with SEOIndicator.com that make the application non-functional for users. This feature consolidates all identified issues and tracks fixes.
+Emergency production fixes for authentication flow and navigation issues discovered during CEO production audit on 2026-03-13. Multiple critical paths are broken including login, registration, and dashboard access.
 
----
+## Business Impact
+- Users CANNOT register new accounts
+- Users CANNOT login to existing accounts
+- Dashboard is inaccessible even for authenticated users
+- Core user acquisition funnel is completely broken
+- Revenue impact: HIGH - no new users can onboard
 
 ## Issues Identified
 
-### 🔴 CRITICAL - Authentication & Routing
+### CRITICAL (Blocking all users)
+1. **/login/ page broken** - Shows "Failed to load dashboard data" instead of login form
+2. **/register/ page broken** - Shows "Failed to load dashboard data" instead of registration form
+3. **/dashboard/ inaccessible** - Shows "Failed to load dashboard data" even for authenticated users
 
-| # | Issue | Severity | Status |
-|---|-------|----------|--------|
-| 1 | `/login/` page shows "Failed to load dashboard data" instead of login form | Critical | To Fix |
-| 2 | `/register/` page shows "Failed to load dashboard data" instead of registration form | Critical | To Fix |
-| 3 | `/dashboard/` shows "Failed to load dashboard data" even with valid auth token | Critical | To Fix |
-| 4 | Google OAuth returns "Server error. Please try again later." | Critical | To Fix |
-| 5 | Sign-in button (non-OAuth) fails with "Failed to load dashboard data" | Critical | To Fix |
+### HIGH (Blocking navigation)
+4. **"Sign In" button not clickable** - Button element has no action/href
+5. **"Indicators" button not clickable** - Button element has no action/href
 
-### 🟠 HIGH - Navigation & UX
+### MEDIUM (UX issues)
+6. **Navigation hover states broken** - White background makes white text unreadable
+7. **Missing pointer cursor** - Nav buttons don't show pointer on hover
+8. **Protected routes visible to guests** - Dashboard, Competitors, Comparison shown to non-authenticated users
 
-| # | Issue | Severity | Status |
-|---|-------|----------|--------|
-| 6 | "Indicators" button is not clickable (BUTTON element, not LINK) | High | To Fix |
-| 7 | "Sign In" button is not clickable (BUTTON element, not LINK) | High | To Fix |
-| 8 | "Dashboard" link redirects to error page | High | To Fix |
-| 9 | "Competitors" and "Comparison" links redirect to /login/ which shows error | High | To Fix |
-| 10 | Navigation buttons show white background on hover (white text unreadable) | Medium | To Fix |
-| 11 | Navigation buttons need `cursor: pointer` on hover | Low | To Fix |
+### LOW (Expected behavior)
+9. **401 on /api/v1/auth/user** - Expected when no valid token present
 
-### 🟡 MEDIUM - Functional Issues
-
-| # | Issue | Severity | Status |
-|---|-------|----------|--------|
-| 12 | "Get Started" button with domain input does nothing | Medium | To Fix |
-| 13 | Domain parsing/analysis functionality unclear - is it working? | Medium | To Investigate |
-| 14 | Browser back button doesn't work after redirect to /login/ | Medium | To Fix |
-
-### 🔵 INFORMATIONAL - Questions to Answer
-
-| # | Question | Status |
-|---|----------|--------|
-| 15 | Is OpenRouter gateway integrated and working? | To Verify |
-| 16 | Is Vercel AI gateway integrated and working? | To Verify |
-| 17 | Does the 17 SEO indicator analysis system work end-to-end? | To Verify |
-| 18 | Why does localhost:3000 show "Internal Server Error"? | To Fix |
-| 19 | Are all SEO guide pages accessible and complete? | Verified ✅ (18 guides) |
-
----
-
-## Root Cause Analysis
-
-### Authentication Flow Issue
-The `/login/` and `/register/` routes are rendering protected route content instead of auth forms. This suggests:
-1. Route guards are incorrectly redirecting authenticated users
-2. OR the auth pages are missing/incorrectly configured
-3. OR there's a middleware redirect loop
-
-### Dashboard Data Loading
-Even with a valid Bearer token, the dashboard fails to load. Possible causes:
-1. `/api/v1/dashboard` endpoint returning errors
-2. Frontend data fetching logic broken
-3. Missing or incorrect API response handling
-
-### Navigation Issues
-- "Indicators" and "Sign In" are BUTTON elements, not LINKs
-- This prevents navigation and breaks expected behavior
-- Hover states need CSS fixes
-
----
+## Root Cause Hypothesis
+The "Failed to load dashboard data" error on login/register pages suggests:
+1. Auth context is trying to fetch dashboard data before authentication
+2. Protected route middleware redirecting authenticated pages incorrectly
+3. Login/Register pages may be inside a protected route wrapper
 
 ## Acceptance Criteria
+- [ ] /login/ shows login form with email/password and Google OAuth
+- [ ] /register/ shows registration form with email/password and Google OAuth
+- [ ] "Sign In" button navigates to /login/ or shows login modal
+- [ ] "Indicators" button navigates to /indicators/ or /dashboard/#indicators
+- [ ] Dashboard loads successfully for authenticated users
+- [ ] Nav buttons show pointer cursor on hover
+- [ ] Nav buttons have visible hover state (not white-on-white)
+- [ ] Protected routes hidden from non-authenticated users OR redirect properly
+- [ ] Back button works after redirect from protected route
+- [ ] All authentication flows tested with automated tests
+- [ ] Production validation passes before deployment
 
-### Authentication Fixes
-- [ ] `/login/` displays login form (email/password fields, Google OAuth button)
-- [ ] `/register/` displays registration form
-- [ ] Google OAuth works and redirects to dashboard
-- [ ] Email/password login works
-- [ ] Email/password registration works
-- [ ] Dashboard loads successfully after authentication
+## Technical Investigation Needed
+1. Check if /login and /register are wrapped in protected route component
+2. Verify AuthContext doesn't fetch dashboard data on public pages
+3. Check button components for missing onClick/href handlers
+4. Review CSS for hover states on navigation buttons
+5. Implement conditional rendering for protected nav items
 
-### Navigation Fixes
-- [ ] "Dashboard" link navigates correctly for authenticated users
-- [ ] "Indicators" button works (either links to /indicators/ or opens dropdown)
-- [ ] "Competitors" and "Comparison" links work for authenticated users
-- [ ] Unauthenticated users see appropriate CTAs, not broken links
-- [ ] All nav buttons have `cursor: pointer` on hover
-- [ ] Hover background color provides sufficient contrast with white text
-
-### Functional Fixes
-- [ ] "Get Started" button with domain input triggers analysis or shows clear error
-- [ ] Domain parsing and SEO analysis workflow documented
-- [ ] 17 SEO indicators return results for submitted domains
-- [ ] Browser back button works correctly after redirects
-
-### Documentation
-- [ ] OpenRouter integration status documented
-- [ ] Vercel AI integration status documented
-- [ ] Local development environment setup documented (localhost:3000)
-
----
-
-## Technical Notes
-
-### Current Auth Implementation
-- Frontend: Next.js with AuthContext
-- Backend: Laravel Sanctum with Bearer tokens
-- Token stored in `localStorage.seoindicator_token`
-- User cached in `localStorage.seoindicator_user`
-
-### Files to Investigate
-```
-frontend/app/(auth)/login/page.tsx
-frontend/app/(auth)/register/page.tsx
-frontend/app/(dashboard)/dashboard/page.tsx
-frontend/lib/contexts/AuthContext.tsx
-frontend/lib/api/auth.ts
-frontend/components/layout/Navbar.tsx
-backend/app/Http/Controllers/Api/V1/AuthController.php
-backend/routes/api.php
-```
-
----
+## Related Files
+- `frontend/app/(auth)/login/page.tsx`
+- `frontend/app/(auth)/register/page.tsx`
+- `frontend/app/(dashboard)/dashboard/page.tsx`
+- `frontend/components/layout/Header.tsx` (navigation)
+- `frontend/lib/contexts/AuthContext.tsx`
+- `frontend/middleware.ts`
 
 ## Dependencies
-- None (this is a critical bug fix)
+- None (emergency fix)
 
 ## Effort Estimate
-**Large** (3-5 days) - Multiple systems affected
+**Medium** (4-8 hours) - Multiple component fixes required
 
----
-
-*Created by Lead agent on 2026-03-13*
-*CEO-initiated production audit*
-
----
+## Notes
+- SEO Guides (18 guides) are working correctly
+- API authentication works when valid token present
+- Local development environment needs separate investigation
 
 ## Comments
 
-### Architect (2026-03-13 16:49 GMT+2)
-- Created technical specification: SPECIFICATIONS/SPEC-037.md
-- Root cause analysis: Auth pages incorrectly rendering protected route content, dashboard data fetching failures, navigation using BUTTON instead of LINK elements
-- Identified 17 tasks across 5 groups: Authentication (5), Dashboard (3), Navigation (3), Functional (2), Verification (4)
-- Risk: High (authentication system changes)
-- SecurityAuditor review required before deployment
-- Status updated to: To Break Into Tasks
+### Architect (2026-03-13 16:54 UTC)
+Specification completed. Technical architecture defined for:
+- **Group A: Authentication Fixes (5 tasks)** - Critical priority, High risk
+- **Group B: Dashboard Data Loading (3 tasks)** - Critical priority, Medium risk
+- **Group C: Navigation Fixes (3 tasks)** - High priority, Low risk
+- **Group D: Functional Fixes (2 tasks)** - Medium priority, Medium risk
+- **Group E: Verification & Documentation (4 tasks)** - Medium priority, Low risk
+
+**Risk Assessment:** High (authentication system changes)
+**SecurityAuditor:** Review required before deployment
+**Handoff:** Ready for SpecSystemAnalyst to break into task files
