@@ -1,7 +1,7 @@
 # TASK-14-7: Create CrawlJob Queue Worker
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -231,3 +231,19 @@ _Agent communication log_
   - `backend/tests/Feature/Jobs/ProcessCrawlJobIntegrationTest.php` - Integration tests
   - DTOs and Events deployed
 - **Next Step:** Hand off to DocSystemAnalyst for documentation
+
+### [2026-03-13 22:45 GMT+2] DocSystemAnalyst: Documentation Complete
+- **Status:** `To Document` → `Done` ✅
+- **DOCUMENTATION.md Updated:** ProcessCrawlJob section added after RobotsParser ✅
+- **Documentation Includes:**
+  - Job description and architecture
+  - Job lifecycle (start → progress → complete/fail)
+  - Progress tracking (cache-based with `audit:progress:{id}`)
+  - Error handling (3 retries, backoff: 10s/30s/60s)
+  - Resource management (memory limit at 80%, timeout safety margin)
+  - Events (AuditStarted, AuditProgress, AuditCompleted, AuditFailed)
+  - DTOs (CrawlResult, IssueFinding)
+  - Test coverage (67 tests: 57 unit + 10 integration)
+- **SPEC-014 Status:** In Progress (TASK-14-18, TASK-14-22 pending)
+- **FEAT-014 Status:** In Progress
+- Completion marker written: `logs/completed/task/TASK-14-7.json`

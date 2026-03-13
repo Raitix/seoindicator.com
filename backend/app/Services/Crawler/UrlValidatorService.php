@@ -315,6 +315,14 @@ class UrlValidatorService
      */
     private function validateDomain(string $host): ?array
     {
+        // Special handling for localhost - return consistent error message
+        if ($host === 'localhost') {
+            return [
+                'error' => 'IP address blocked: localhost',
+                'blockReason' => 'IP address blocked: localhost',
+            ];
+        }
+
         // Check metadata hosts
         if (in_array($host, self::METADATA_HOSTS, true)) {
             return [

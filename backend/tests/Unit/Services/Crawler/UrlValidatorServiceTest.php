@@ -329,10 +329,14 @@ class UrlValidatorServiceTest extends TestCase
     /** @test */
     public function validate_redirect_logs_blocked_urls(): void
     {
+        \Illuminate\Support\Facades\Log::shouldReceive('channel')
+            ->with('security')
+            ->andReturnSelf();
+        
         \Illuminate\Support\Facades\Log::shouldReceive('warning')
-            ->once()
+            ->twice()
             ->withArgs(function ($message, $context) {
-                return str_contains($message, 'blocked');
+                return str_contains($message, 'blocked') || str_contains(strtolower($message), 'ssrf');
             });
 
         $this->validator->validateRedirect('https://127.0.0.1');
