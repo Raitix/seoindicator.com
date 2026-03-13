@@ -386,7 +386,8 @@ describe('SB: Sentiment Badges', () => {
     const badge = screen.getByTestId('sentiment-badge-m1');
     expect(badge).toHaveAttribute('data-sentiment', 'positive');
     expect(badge).toHaveAttribute('data-color', 'green');
-    expect(screen.getByTestId('thumbs-up-icon')).toBeInTheDocument();
+    // Check that thumbs-up-icon exists within this specific badge
+    expect(within(badge).getByTestId('thumbs-up-icon')).toBeInTheDocument();
   });
 
   test('SB-002: Negative sentiment shows red', () => {
