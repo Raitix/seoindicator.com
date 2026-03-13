@@ -6,10 +6,10 @@ use App\Models\CrawlJob;
 use Carbon\Carbon;
 
 /**
- * Partial Results Service for Crawl Jobs.
+ * Partial Results Service for TASK-22-17.
  *
- * Handles storage and retrieval of partial crawl results
- * when jobs are cancelled or time out.
+ * Stores and retrieves partial crawl results for jobs that were
+ * interrupted by timeout or cancellation.
  *
  * @see TASK-22-17
  * @see SPEC-022
@@ -20,9 +20,9 @@ class PartialResultsService
      * Store partial results for a crawl job.
      *
      * @param CrawlJob $crawlJob The crawl job
-     * @param array $pages Pages that were successfully crawled
+     * @param array $pages Array of crawled pages
      * @param string $reason Reason for partial results ('timeout' or 'cancelled')
-     * @param int|null $totalUrls Total URLs planned to crawl
+     * @param int|null $totalUrls Total URLs expected (for calculating not_crawled)
      * @param bool $merge Whether to merge with existing results
      * @return bool True if stored successfully
      */
@@ -33,42 +33,50 @@ class PartialResultsService
         ?int $totalUrls = null,
         bool $merge = false
     ): bool {
-        $existingResults = $crawlJob->partial_results ?? [];
+        // Safely get existing results using getAttribute for mock compatibility
+        $existingResults = $crawlJob->getAttribute('partial_results');
+        $existingResults = is_array($existingResults) ? $existingResults : ['pages' => []];
+        $existingPages = $existingResults['pages'] ?? [];
 
-        if ($merge && !empty($existingResults['pages'])) {
-            $pages = array_merge($existingResults['pages'], $pages);
+        if ($merge) {
+            $pages = array_merge($existingPages, $pages);
         }
 
-        // Filter to only successfully crawled pages
-        $successfulPages = array_filter($pages, function ($page) {
-            return ($page['status'] ?? 'completed') === 'completed';
-        });
+        // Filter to only completed pages for count
+        $completedPages = array_filter($pages, fn($p) => ($p['status'] ?? '') === 'completed');
+        $pagesCrawled = count($completedPages);
 
-        // Calculate counts
-        $pagesCrawled = count($successfulPages);
-        $totalSize = $this->calculateTotalSize($successfulPages);
-        $notCrawled = $totalUrls ? max(0, $totalUrls - $pagesCrawled) : 0;
+        // Calculate total size
+        $totalSize = $this->calculateTotalSize($pages);
+
+        // Calculate not crawled
+        $notCrawled = $totalUrls !== null ? max(0, $totalUrls - $pagesCrawled) : null;
+
+        // Build reason message
+        $reasonMessage = $this->buildReasonMessage($reason, config('crawler.timeouts.job', 300));
 
         $partialResults = [
-            'pages' => $successfulPages,
+            'pages' => $pages,
             'pages_crawled' => $pagesCrawled,
             'total_size' => $totalSize,
-            'reason' => $this->buildReasonMessage($reason),
-            'not_crawled' => $notCrawled,
-            'stored_at' => Carbon::now()->toIso8601String(),
+            'reason' => $reasonMessage,
+            'stored_at' => Carbon::now()->toDateTimeString(),
         ];
 
-        // Determine final status
-        $status = $reason === 'cancelled'
-            ? CrawlJob::STATUS_CANCELLED
-            : CrawlJob::STATUS_COMPLETED;
+        if ($notCrawled !== null) {
+            $partialResults['not_crawled'] = $notCrawled;
+        }
 
+        // Determine new status
+        $newStatus = $reason === 'cancelled' ? CrawlJob::STATUS_CANCELLED : CrawlJob::STATUS_COMPLETED;
+
+        // Build update data
         $updateData = [
             'partial_results' => $partialResults,
-            'status' => $status,
-            'completed_at' => Carbon::now(),
+            'status' => $newStatus,
         ];
 
+        // Add cancelled_at if cancelled
         if ($reason === 'cancelled') {
             $updateData['cancelled_at'] = Carbon::now();
         }
@@ -79,34 +87,45 @@ class PartialResultsService
     }
 
     /**
-     * Build a partial response for API.
+     * Get partial content for a job.
+     *
+     * @param CrawlJob $crawlJob The crawl job
+     * @return array|null Partial content or null
+     */
+    public function getPartialContent(CrawlJob $crawlJob): ?array
+    {
+        return $crawlJob->partial_results;
+    }
+
+    /**
+     * Build partial response for API.
      *
      * @param CrawlJob $crawlJob The crawl job
      * @param string $reason Reason for partial results
-     * @return array Partial response data
+     * @return array Response data
      */
     public function buildPartialResponse(CrawlJob $crawlJob, string $reason): array
     {
+        $status = $reason === 'cancelled' ? 'cancelled' : 'completed';
+
         $response = [
             'jobId' => $crawlJob->job_id,
-            'status' => $reason === 'cancelled' ? 'cancelled' : 'completed',
-            'pagesCrawled' => $crawlJob->pages_crawled,
-            'totalSize' => $crawlJob->total_size,
+            'status' => $status,
+            'pagesCrawled' => $crawlJob->pages_crawled ?? 0,
+            'totalSize' => $crawlJob->total_size ?? 0,
             'reason' => $this->buildReasonMessage($reason),
             'partialContentUrl' => $this->generatePartialContentUrl($crawlJob->job_id),
         ];
 
-        if ($reason === 'cancelled') {
-            $response['cancelledAt'] = $crawlJob->cancelled_at?->toIso8601String();
-        } else {
-            $response['completedAt'] = $crawlJob->completed_at?->toIso8601String();
+        if ($status === 'cancelled' && $crawlJob->cancelled_at) {
+            $response['cancelledAt'] = $crawlJob->cancelled_at->toIso8601String();
         }
 
         return $response;
     }
 
     /**
-     * Generate the partial content URL for a job.
+     * Generate partial content URL for a job.
      *
      * @param string $jobId The job identifier
      * @return string The content URL
@@ -117,41 +136,14 @@ class PartialResultsService
     }
 
     /**
-     * Get partial content for a job.
-     *
-     * @param CrawlJob $crawlJob The crawl job
-     * @return array|null Partial content or null
-     */
-    public function getPartialContent(CrawlJob $crawlJob): ?array
-    {
-        $partialResults = $crawlJob->partial_results;
-
-        if (!$partialResults) {
-            return null;
-        }
-
-        return [
-            'jobId' => $crawlJob->job_id,
-            'pages' => $partialResults['pages'] ?? [],
-            'summary' => [
-                'pagesCrawled' => $partialResults['pages_crawled'] ?? 0,
-                'totalSize' => $partialResults['total_size'] ?? 0,
-                'reason' => $partialResults['reason'] ?? null,
-            ],
-        ];
-    }
-
-    /**
      * Calculate total size of pages.
      *
-     * @param array $pages Pages to calculate size for
+     * @param array $pages Array of pages
      * @return int Total size in bytes
      */
     public function calculateTotalSize(array $pages): int
     {
-        return array_sum(array_map(function ($page) {
-            return $page['size'] ?? 0;
-        }, $pages));
+        return array_sum(array_map(fn($p) => $p['size'] ?? 0, $pages));
     }
 
     /**
@@ -177,26 +169,24 @@ class PartialResultsService
     /**
      * Build reason message.
      *
-     * @param string $reason The reason code
-     * @param int|null $timeout The timeout value if applicable
-     * @return string Human-readable reason message
+     * @param string $reason Reason code
+     * @param int|null $timeout Timeout value (for timeout message)
+     * @return string Human-readable reason
      */
     public function buildReasonMessage(string $reason, ?int $timeout = null): string
     {
         return match ($reason) {
-            'timeout' => $timeout
-                ? "Job timeout reached after {$timeout} seconds"
-                : 'Job timeout reached',
+            'timeout' => "Job timeout reached" . ($timeout ? " ({$timeout}s)" : ''),
             'cancelled' => 'User requested cancellation',
             default => $reason,
         };
     }
 
     /**
-     * Get pages summary.
+     * Get pages summary (completed, failed, pending counts).
      *
-     * @param array $pages Pages to summarize
-     * @return array Summary by status
+     * @param array $pages Array of pages
+     * @return array Summary counts
      */
     public function getPagesSummary(array $pages): array
     {
@@ -207,7 +197,7 @@ class PartialResultsService
         ];
 
         foreach ($pages as $page) {
-            $status = $page['status'] ?? 'completed';
+            $status = $page['status'] ?? 'pending';
             if (isset($summary[$status])) {
                 $summary[$status]++;
             }
@@ -217,18 +207,14 @@ class PartialResultsService
     }
 
     /**
-     * Validate partial results data.
+     * Validate partial results data structure.
      *
-     * @param array $data Data to validate
+     * @param array $data Partial results data
      * @return bool True if valid
      */
     public function validatePartialData(array $data): bool
     {
         if (!isset($data['pages']) || !is_array($data['pages'])) {
-            return false;
-        }
-
-        if (!isset($data['reason'])) {
             return false;
         }
 
@@ -238,7 +224,7 @@ class PartialResultsService
     /**
      * Serialize pages for storage.
      *
-     * @param array $pages Pages to serialize
+     * @param array $pages Array of pages
      * @return string JSON string
      */
     public function serializePages(array $pages): string
@@ -262,7 +248,7 @@ class PartialResultsService
      *
      * @param array $partialResults Partial results data
      * @param string $jobId Job identifier
-     * @return array API summary
+     * @return array Summary array
      */
     public function generateSummary(array $partialResults, string $jobId): array
     {
@@ -270,7 +256,7 @@ class PartialResultsService
             'jobId' => $jobId,
             'pagesCrawled' => $partialResults['pages_crawled'] ?? 0,
             'totalSize' => $partialResults['total_size'] ?? 0,
-            'reason' => $partialResults['reason'] ?? null,
+            'reason' => $partialResults['reason'] ?? 'Unknown',
             'partialContentUrl' => $this->generatePartialContentUrl($jobId),
         ];
     }

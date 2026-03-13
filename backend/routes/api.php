@@ -844,7 +844,24 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
         Route::post('crawl', [CrawlController::class, 'store'])->name('api.v1.crawler.store');
         Route::get('jobs', [CrawlController::class, 'index'])->name('api.v1.crawler.index');
         Route::get('jobs/{jobId}', [CrawlController::class, 'show'])->name('api.v1.crawler.show');
-        Route::get('jobs/{jobId}/content', [CrawlController::class, 'content'])->name('api.v1.crawler.content');
         Route::delete('jobs/{jobId}', [CrawlController::class, 'destroy'])->name('api.v1.crawler.destroy');
+    });
+
+    // Content Retrieval Routes (TASK-22-14, SPEC-022)
+    Route::prefix('crawler/jobs/{jobId}')->group(function () {
+        // Content retrieval with pagination, filtering, field selection
+        Route::get('content', [\App\Http\Controllers\Api\V1\ContentRetrievalController::class, 'content'])
+            ->name('api.v1.crawler.content');
+        Route::get('pages/{pageId}', [\App\Http\Controllers\Api\V1\ContentRetrievalController::class, 'page'])
+            ->name('api.v1.crawler.page')
+            ->where('pageId', '[0-9]+');
+
+        // Export endpoints
+        Route::get('export/json', [\App\Http\Controllers\Api\V1\ContentRetrievalController::class, 'exportJson'])
+            ->name('api.v1.crawler.export.json');
+        Route::get('export/csv', [\App\Http\Controllers\Api\V1\ContentRetrievalController::class, 'exportCsv'])
+            ->name('api.v1.crawler.export.csv');
+        Route::get('export/html', [\App\Http\Controllers\Api\V1\ContentRetrievalController::class, 'exportHtml'])
+            ->name('api.v1.crawler.export.html');
     });
 });

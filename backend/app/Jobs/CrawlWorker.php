@@ -46,13 +46,6 @@ class CrawlWorker implements ShouldQueue
     public string $jobId;
 
     /**
-     * The queue the job should be sent to.
-     *
-     * @var string
-     */
-    public $queue = 'crawler';
-
-    /**
      * Maximum execution time in seconds.
      */
     public int $timeout = 300;
@@ -111,6 +104,7 @@ class CrawlWorker implements ShouldQueue
     {
         $this->jobId = $jobId;
         $this->timeout = config('crawler.timeouts.job', 300);
+        $this->onQueue('crawler');
     }
 
     /**

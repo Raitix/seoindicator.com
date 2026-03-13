@@ -4,12 +4,15 @@ namespace App\Services\Crawler;
 
 use App\Models\CrawlJob;
 use App\Models\CrawlPage;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Service for retrieving, filtering, paginating, and exporting crawl job content.
+ * Content Retrieval Service implementation.
+ *
+ * Provides methods for retrieving, filtering, paginating, and exporting
+ * crawl job content.
  *
  * @see TASK-22-14
  * @see SPEC-022
@@ -22,7 +25,7 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
     protected const CACHE_TTL = 3600;
 
     /**
-     * Fields that can be included/excluded.
+     * Valid fields for selection.
      */
     protected const VALID_FIELDS = [
         'url',
@@ -37,17 +40,12 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
     ];
 
     /**
-     * Fields that should always be included.
+     * Field mapping from API names to model attributes.
      */
-    protected const REQUIRED_FIELDS = ['id', 'url'];
-
-    /**
-     * Database field mapping for sorting.
-     */
-    protected const SORT_FIELD_MAP = [
+    protected const FIELD_MAPPING = [
+        'renderedHtml' => 'rendered_html',
+        'structuredText' => 'structured_text',
         'crawledAt' => 'crawled_at',
-        'depth' => 'depth',
-        'size' => 'size',
     ];
 
     /**
@@ -61,34 +59,30 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
      */
     public function getContent(string $jobId, int $userId, array $filters = [], array $options = []): ?array
     {
-        $job = CrawlJob::where('job_id', $jobId)
-            ->where('user_id', $userId)
-            ->first();
-
-        if ($job === null) {
+        $job = $this->getJobForUser($jobId, $userId);
+        if (!$job) {
             return null;
         }
 
-        // Build cache key
-        $cacheKey = $this->buildCacheKey($jobId, array_merge($filters, $options));
-
-        // Try to get from cache
-        $cached = Cache::get($cacheKey);
-        if ($cached !== null) {
-            $cached['_cached'] = true;
-            return $cached;
+        if (!$this->isJobComplete($jobId)) {
+            return null;
         }
 
-        // Build query
-        $query = CrawlPage::where('crawl_job_id', $job->id)
-            ->whereNull('error');
+        $page = $options['page'] ?? 1;
+        $perPage = min($options['perPage'] ?? 50, 100);
+        $sortBy = $options['sortBy'] ?? 'crawled_at';
+        $sortOrder = $options['sortOrder'] ?? 'desc';
+        $include = $options['include'] ?? null;
+        $exclude = $options['exclude'] ?? null;
+
+        $query = CrawlPage::where('crawl_job_id', $job->id);
 
         // Apply filters
-        if (isset($filters['depth']) && $filters['depth'] !== null) {
+        if (isset($filters['depth'])) {
             $query->where('depth', $filters['depth']);
         }
 
-        if (!empty($filters['search'])) {
+        if (isset($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'LIKE', "%{$search}%")
@@ -96,46 +90,40 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
             });
         }
 
-        // Get pagination options
-        $page = $options['page'] ?? 1;
-        $perPage = min($options['perPage'] ?? 50, 100);
-
         // Apply sorting
-        $sortBy = $options['sortBy'] ?? 'crawledAt';
-        $sortOrder = $options['sortOrder'] ?? 'desc';
-        $sortField = self::SORT_FIELD_MAP[$sortBy] ?? 'crawled_at';
-        $query->orderBy($sortField, $sortOrder);
+        $sortColumn = $this->mapSortField($sortBy);
+        $query->orderBy($sortColumn, $sortOrder);
 
         // Get total count for pagination
         $totalItems = $query->count();
 
         // Get paginated results
-        $pages = $query->skip(($page - 1) * $perPage)
-            ->take($perPage)
+        $pages = $query->offset(($page - 1) * $perPage)
+            ->limit($perPage)
             ->get();
 
-        // Transform pages
-        $transformedPages = $pages->map(function ($page) use ($options) {
-            return $this->transformPage($page, $options);
-        })->toArray();
+        // Transform pages with field selection
+        $transformedPages = $pages->map(function ($page) use ($include, $exclude) {
+            return $this->transformPage($page, $include, $exclude);
+        });
 
-        // Build response
-        $response = [
-            'jobId' => $jobId,
-            'pages' => $transformedPages,
+        // Calculate pagination metadata
+        $totalPages = (int) ceil($totalItems / $perPage);
+
+        // Get summary
+        $summary = $this->getJobSummary($job);
+
+        return [
+            'jobId' => $job->job_id,
+            'pages' => $transformedPages->toArray(),
             'pagination' => [
-                'currentPage' => $page,
-                'perPage' => $perPage,
-                'totalPages' => ceil($totalItems / $perPage),
+                'currentPage' => (int) $page,
+                'perPage' => (int) $perPage,
+                'totalPages' => $totalPages,
                 'totalItems' => $totalItems,
             ],
-            'summary' => $this->buildSummary($job),
+            'summary' => $summary,
         ];
-
-        // Cache the response
-        Cache::put($cacheKey, $response, self::CACHE_TTL);
-
-        return $response;
     }
 
     /**
@@ -149,11 +137,8 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
      */
     public function getPage(string $jobId, int $pageId, int $userId, array $options = []): ?array
     {
-        $job = CrawlJob::where('job_id', $jobId)
-            ->where('user_id', $userId)
-            ->first();
-
-        if ($job === null) {
+        $job = $this->getJobForUser($jobId, $userId);
+        if (!$job) {
             return null;
         }
 
@@ -161,11 +146,14 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
             ->where('id', $pageId)
             ->first();
 
-        if ($page === null) {
+        if (!$page) {
             return null;
         }
 
-        return $this->transformPage($page, $options);
+        $include = $options['include'] ?? null;
+        $exclude = $options['exclude'] ?? null;
+
+        return $this->transformPage($page, $include, $exclude);
     }
 
     /**
@@ -177,29 +165,34 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
      */
     public function exportAsJson(string $jobId, int $userId): ?array
     {
-        $job = CrawlJob::where('job_id', $jobId)
-            ->where('user_id', $userId)
-            ->first();
+        $job = $this->getJobForUser($jobId, $userId);
+        if (!$job) {
+            return null;
+        }
 
-        if ($job === null) {
+        if (!$this->isJobComplete($jobId)) {
             return null;
         }
 
         $pages = CrawlPage::where('crawl_job_id', $job->id)
-            ->whereNull('error')
-            ->orderBy('depth')
-            ->orderBy('url')
+            ->orderBy('depth', 'asc')
+            ->orderBy('crawled_at', 'asc')
             ->get();
 
+        $transformedPages = $pages->map(function ($page) {
+            return $this->transformPage($page);
+        });
+
         return [
-            'jobId' => $jobId,
+            'jobId' => $job->job_id,
             'url' => $job->url,
             'depth' => $job->depth,
+            'status' => $job->status,
             'pagesCrawled' => $job->pages_crawled,
             'totalSize' => $job->total_size,
             'startedAt' => $job->started_at?->toISOString(),
             'completedAt' => $job->completed_at?->toISOString(),
-            'pages' => $pages->map(fn ($page) => $this->transformPage($page))->toArray(),
+            'pages' => $transformedPages->toArray(),
         ];
     }
 
@@ -212,18 +205,18 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
      */
     public function exportAsCsv(string $jobId, int $userId): ?string
     {
-        $job = CrawlJob::where('job_id', $jobId)
-            ->where('user_id', $userId)
-            ->first();
+        $job = $this->getJobForUser($jobId, $userId);
+        if (!$job) {
+            return null;
+        }
 
-        if ($job === null) {
+        if (!$this->isJobComplete($jobId)) {
             return null;
         }
 
         $pages = CrawlPage::where('crawl_job_id', $job->id)
-            ->whereNull('error')
-            ->orderBy('depth')
-            ->orderBy('url')
+            ->orderBy('depth', 'asc')
+            ->orderBy('crawled_at', 'asc')
             ->get();
 
         // CSV headers
@@ -232,17 +225,17 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
 
         foreach ($pages as $page) {
             $metaDescription = $page->meta['description'] ?? '';
-            $textPreview = Str::limit($page->structured_text ?? '', 200);
+            $textPreview = $this->truncateText($page->structured_text ?? '', 200);
             
             $row = [
-                $this->escapeCsvField($page->url),
+                $this->csvEscape($page->url),
                 $page->depth,
-                $this->escapeCsvField($page->title ?? ''),
-                $this->escapeCsvField($metaDescription),
-                $this->escapeCsvField($textPreview),
+                $this->csvEscape($page->title ?? ''),
+                $this->csvEscape($metaDescription),
+                $this->csvEscape($textPreview),
                 $page->size,
             ];
-            
+
             $lines[] = implode(',', $row);
         }
 
@@ -258,78 +251,80 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
      */
     public function exportAsHtml(string $jobId, int $userId): ?string
     {
-        $job = CrawlJob::where('job_id', $jobId)
-            ->where('user_id', $userId)
-            ->first();
+        $job = $this->getJobForUser($jobId, $userId);
+        if (!$job) {
+            return null;
+        }
 
-        if ($job === null) {
+        if (!$this->isJobComplete($jobId)) {
             return null;
         }
 
         $pages = CrawlPage::where('crawl_job_id', $job->id)
-            ->whereNull('error')
-            ->orderBy('depth')
-            ->orderBy('url')
+            ->orderBy('depth', 'asc')
+            ->orderBy('crawled_at', 'asc')
             ->get();
 
-        // Build HTML document
         $html = '<!DOCTYPE html>' . "\n";
         $html .= '<html lang="en">' . "\n";
         $html .= '<head>' . "\n";
-        $html .= '  <meta charset="UTF-8">' . "\n";
-        $html .= '  <meta name="viewport" content="width=device-width, initial-scale=1.0">' . "\n";
-        $html .= '  <title>Crawl Export: ' . htmlspecialchars($job->url) . '</title>' . "\n";
-        $html .= '  <style>' . "\n";
-        $html .= '    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }' . "\n";
-        $html .= '    .container { max-width: 1200px; margin: 0 auto; }' . "\n";
-        $html .= '    h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }' . "\n";
-        $html .= '    nav { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }' . "\n";
-        $html .= '    nav h2 { margin-top: 0; color: #555; }' . "\n";
-        $html .= '    nav ul { list-style: none; padding: 0; }' . "\n";
-        $html .= '    nav li { margin: 8px 0; }' . "\n";
-        $html .= '    nav a { color: #007bff; text-decoration: none; }' . "\n";
-        $html .= '    nav a:hover { text-decoration: underline; }' . "\n";
-        $html .= '    .page { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }' . "\n";
-        $html .= '    .page-header { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }' . "\n";
-        $html .= '    .page-url { color: #666; font-size: 0.9em; word-break: break-all; }' . "\n";
-        $html .= '    .page-depth { background: #007bff; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; }' . "\n";
-        $html .= '    .content { white-space: pre-wrap; font-size: 0.9em; line-height: 1.6; }' . "\n";
-        $html .= '    hr { border: none; border-top: 2px solid #eee; margin: 30px 0; }' . "\n";
-        $html .= '  </style>' . "\n";
+        $html .= '    <meta charset="UTF-8">' . "\n";
+        $html .= '    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">' . "\n";
+        $html .= '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' . "\n";
+        $html .= '    <title>Crawl Export - ' . $this->escapeHtml($job->url) . '</title>' . "\n";
+        $html .= '    <style>' . "\n";
+        $html .= '        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }' . "\n";
+        $html .= '        h1 { border-bottom: 2px solid #333; padding-bottom: 10px; }' . "\n";
+        $html .= '        nav { background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }' . "\n";
+        $html .= '        nav h2 { margin-top: 0; }' . "\n";
+        $html .= '        nav ul { list-style: none; padding: 0; }' . "\n";
+        $html .= '        nav li { margin: 5px 0; }' . "\n";
+        $html .= '        nav a { color: #0066cc; text-decoration: none; }' . "\n";
+        $html .= '        nav a:hover { text-decoration: underline; }' . "\n";
+        $html .= '        .page { margin-bottom: 40px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }' . "\n";
+        $html .= '        .page h2 { color: #333; }' . "\n";
+        $html .= '        .page-meta { color: #666; font-size: 14px; margin-bottom: 15px; }' . "\n";
+        $html .= '        hr { border: none; border-top: 2px solid #eee; margin: 30px 0; }' . "\n";
+        $html .= '    </style>' . "\n";
         $html .= '</head>' . "\n";
         $html .= '<body>' . "\n";
-        $html .= '  <div class="container">' . "\n";
-        $html .= '    <h1>Crawl Export</h1>' . "\n";
-        $html .= '    <p><strong>URL:</strong> ' . htmlspecialchars($job->url) . '</p>' . "\n";
-        $html .= '    <p><strong>Pages:</strong> ' . $pages->count() . '</p>' . "\n";
+        $html .= '    <h1>Crawl Export: ' . $this->escapeHtml($job->url) . '</h1>' . "\n";
 
         // Table of Contents
         $html .= '    <nav>' . "\n";
-        $html .= '      <h2>Table of Contents</h2>' . "\n";
-        $html .= '      <ul>' . "\n";
-        foreach ($pages as $i => $page) {
-            $anchor = 'page-' . $page->id;
-            $title = $page->title ?? $page->url;
-            $html .= '        <li><a href="#' . $anchor . '">' . htmlspecialchars($title) . '</a> <span class="page-depth">Depth ' . $page->depth . '</span></li>' . "\n";
+        $html .= '        <h2>Table of Contents</h2>' . "\n";
+        $html .= '        <ul>' . "\n";
+        foreach ($pages as $index => $page) {
+            $anchor = 'page-' . ($index + 1);
+            $html .= '            <li><a href="#' . $anchor . '">' . $this->escapeHtml($page->title ?? $page->url) . '</a> (Depth: ' . $page->depth . ')</li>' . "\n";
         }
-        $html .= '      </ul>' . "\n";
+        $html .= '        </ul>' . "\n";
         $html .= '    </nav>' . "\n";
 
         // Page content
-        foreach ($pages as $page) {
-            $anchor = 'page-' . $page->id;
+        foreach ($pages as $index => $page) {
+            $anchor = 'page-' . ($index + 1);
             $html .= '    <div class="page" id="' . $anchor . '">' . "\n";
-            $html .= '      <div class="page-header">' . "\n";
-            $html .= '        <h3>' . htmlspecialchars($page->title ?? 'Untitled') . '</h3>' . "\n";
-            $html .= '        <p class="page-url">' . htmlspecialchars($page->url) . '</p>' . "\n";
-            $html .= '        <span class="page-depth">Depth ' . $page->depth . '</span>' . "\n";
-            $html .= '      </div>' . "\n";
-            $html .= '      <div class="content">' . htmlspecialchars($page->structured_text ?? '') . '</div>' . "\n";
+            $html .= '        <h2>' . $this->escapeHtml($page->title ?? 'Untitled') . '</h2>' . "\n";
+            $html .= '        <div class="page-meta">' . "\n";
+            $html .= '            <strong>URL:</strong> <a href="' . $this->escapeHtml($page->url) . '" target="_blank">' . $this->escapeHtml($page->url) . '</a><br>' . "\n";
+            $html .= '            <strong>Depth:</strong> ' . $page->depth . '<br>' . "\n";
+            $html .= '            <strong>Size:</strong> ' . $page->size_formatted . "\n";
+            $html .= '        </div>' . "\n";
+            
+            if ($page->rendered_html) {
+                $html .= '        <div class="content">' . "\n";
+                $html .= '            <iframe srcdoc="' . $this->escapeHtmlAttr($page->rendered_html) . '" style="width: 100%; height: 400px; border: 1px solid #ddd;"></iframe>' . "\n";
+                $html .= '        </div>' . "\n";
+            }
+            
             $html .= '    </div>' . "\n";
-            $html .= '    <hr>' . "\n";
+            
+            if ($index < count($pages) - 1) {
+                $html .= '    <hr>' . "\n";
+            }
         }
 
-        $html .= '  </div>' . "\n";
         $html .= '</body>' . "\n";
         $html .= '</html>';
 
@@ -384,13 +379,12 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
     public function getEtag(string $jobId, array $options = []): ?string
     {
         $job = CrawlJob::where('job_id', $jobId)->first();
-        
-        if ($job === null) {
+        if (!$job) {
             return null;
         }
 
-        // Build ETag from job completed_at and options hash
-        $etagBase = $job->completed_at?->toISOString() . json_encode($options);
+        // Create ETag from job ID, updated_at, and options
+        $etagBase = $job->job_id . '|' . $job->updated_at->toISOString() . '|' . json_encode($options);
         return '"' . md5($etagBase) . '"';
     }
 
@@ -401,27 +395,35 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
      */
     public function clearCache(string $jobId): void
     {
-        // Clear all cached content for this job
-        $pattern = "crawl_content_{$jobId}_*";
-        
-        // Get all keys matching pattern
-        $keys = Cache::getRedis()->keys($pattern);
-        
-        foreach ($keys as $key) {
-            Cache::forget($key);
-        }
+        $cacheKey = "crawler:content:{$jobId}";
+        Cache::forget($cacheKey);
     }
 
     /**
-     * Transform a page model to array representation.
+     * Get job for user with authorization check.
+     *
+     * @param string $jobId
+     * @param int $userId
+     * @return CrawlJob|null
+     */
+    protected function getJobForUser(string $jobId, int $userId): ?CrawlJob
+    {
+        return CrawlJob::where('job_id', $jobId)
+            ->where('user_id', $userId)
+            ->first();
+    }
+
+    /**
+     * Transform a page model to array with field selection.
      *
      * @param CrawlPage $page
-     * @param array $options
+     * @param array|null $include
+     * @param array|null $exclude
      * @return array
      */
-    protected function transformPage(CrawlPage $page, array $options = []): array
+    protected function transformPage(CrawlPage $page, ?array $include = null, ?array $exclude = null): array
     {
-        $data = [
+        $allFields = [
             'id' => $page->id,
             'url' => $page->url,
             'depth' => $page->depth,
@@ -435,78 +437,123 @@ class ContentRetrievalService implements ContentRetrievalServiceInterface
             'crawledAt' => $page->crawled_at?->toISOString(),
         ];
 
-        // Apply field selection
-        $include = $options['include'] ?? null;
-        $exclude = $options['exclude'] ?? null;
+        // URL is always included
+        $result = ['url' => $page->url, 'depth' => $page->depth, 'title' => $page->title];
 
+        // If include is specified, only include those fields
         if ($include !== null) {
-            $includeFields = is_array($include) ? $include : explode(',', $include);
-            $includeFields = array_merge(self::REQUIRED_FIELDS, $includeFields);
-            $data = array_intersect_key($data, array_flip($includeFields));
-        } elseif ($exclude !== null) {
-            $excludeFields = is_array($exclude) ? $exclude : explode(',', $exclude);
-            // Never exclude required fields
-            $excludeFields = array_diff($excludeFields, self::REQUIRED_FIELDS);
-            foreach ($excludeFields as $field) {
-                unset($data[$field]);
+            foreach ($include as $field) {
+                if (isset($allFields[$field])) {
+                    $result[$field] = $allFields[$field];
+                }
             }
+            // Always include id for single page retrieval
+            if (!isset($result['id'])) {
+                $result['id'] = $page->id;
+            }
+            return $result;
         }
 
-        return $data;
+        // If exclude is specified, exclude those fields
+        if ($exclude !== null) {
+            foreach ($allFields as $field => $value) {
+                if (!in_array($field, $exclude) || $field === 'url') {
+                    $result[$field] = $value;
+                }
+            }
+            return $result;
+        }
+
+        // Include all fields
+        return $allFields;
     }
 
     /**
-     * Build summary for a crawl job.
+     * Map sort field from API to model column.
+     *
+     * @param string $sortBy
+     * @return string
+     */
+    protected function mapSortField(string $sortBy): string
+    {
+        return match ($sortBy) {
+            'depth' => 'depth',
+            'size' => 'size',
+            'crawledAt' => 'crawled_at',
+            default => 'crawled_at',
+        };
+    }
+
+    /**
+     * Get summary for a job.
      *
      * @param CrawlJob $job
      * @return array
      */
-    protected function buildSummary(CrawlJob $job): array
+    protected function getJobSummary(CrawlJob $job): array
     {
-        $pages = CrawlPage::where('crawl_job_id', $job->id)
-            ->whereNull('error')
-            ->get();
-
-        $depthDistribution = $pages->groupBy('depth')
-            ->map(fn ($group) => $group->count())
+        $depthDistribution = CrawlPage::where('crawl_job_id', $job->id)
+            ->select('depth', DB::raw('count(*) as count'))
+            ->groupBy('depth')
+            ->pluck('count', 'depth')
             ->toArray();
 
         return [
-            'totalPages' => $pages->count(),
-            'totalSize' => $pages->sum('size'),
+            'totalPages' => $job->pages_crawled,
+            'totalSize' => $job->total_size,
             'depthDistribution' => $depthDistribution,
         ];
     }
 
     /**
-     * Build cache key for content retrieval.
-     *
-     * @param string $jobId
-     * @param array $params
-     * @return string
-     */
-    protected function buildCacheKey(string $jobId, array $params): string
-    {
-        ksort($params);
-        $hash = md5(json_encode($params));
-        return "crawl_content_{$jobId}_{$hash}";
-    }
-
-    /**
-     * Escape a field for CSV output.
+     * Escape a value for CSV.
      *
      * @param string $value
      * @return string
      */
-    protected function escapeCsvField(string $value): string
+    protected function csvEscape(string $value): string
     {
-        // If the value contains comma, newline, or double quote, wrap in quotes
-        if (preg_match('/[,"\n\r]/', $value)) {
-            // Escape double quotes by doubling them
-            $value = str_replace('"', '""', $value);
-            return '"' . $value . '"';
+        // If contains comma, newline, or quote, wrap in quotes and escape quotes
+        if (str_contains($value, ',') || str_contains($value, "\n") || str_contains($value, '"')) {
+            return '"' . str_replace('"', '""', $value) . '"';
         }
-        
         return $value;
+    }
+
+    /**
+     * Truncate text to a maximum length.
+     *
+     * @param string $text
+     * @param int $maxLength
+     * @return string
+     */
+    protected function truncateText(string $text, int $maxLength): string
+    {
+        if (strlen($text) <= $maxLength) {
+            return $text;
+        }
+        return substr($text, 0, $maxLength) . '...';
+    }
+
+    /**
+     * Escape HTML entities.
+     *
+     * @param string $value
+     * @return string
+     */
+    protected function escapeHtml(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+
+    /**
+     * Escape HTML attribute value.
+     *
+     * @param string $value
+     * @return string
+     */
+    protected function escapeHtmlAttr(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 }
