@@ -31805,6 +31805,210 @@ private function isBlockedUrl(string $url): bool
 - TASK-14-13: AuditController (triggers crawls)
 
 ---
+## ProcessCrawlJob Queue Worker (TASK-14-7)
+
+### Service Description
+Queue job that processes SEO audit crawl requests asynchronously. Orchestrates the full audit workflow: starting the crawler via SiteCrawler, detecting issues via IssueDetector, tracking progress in cache, updating audit status throughout lifecycle, and dispatching events for external listeners. Foundation job for FEAT-014 (Technical SEO Site Audit).
+
+### Component Locations
+- **Job:** `backend/app/Jobs/ProcessCrawlJob.php`
+- **DTOs:**
+  - `backend/app/Services/Audit/DTOs/CrawlResult.php`
+  - `backend/app/Services/Audit/DTOs/IssueFinding.php`
+- **Events:**
+  - `backend/app/Events/AuditStarted.php`
+  - `backend/app/Events/AuditProgress.php`
+  - `backend/app/Events/AuditCompleted.php`
+  - `backend/app/Events/AuditFailed.php`
+- **Tests:**
+  - `backend/tests/Unit/Jobs/ProcessCrawlJobTest.php`
+  - `backend/tests/Feature/Jobs/ProcessCrawlJobIntegrationTest.php`
+
+### Job Configuration
+
+| Property | Value | Description |
+|----------|-------|-------------|
+| `$tries` | 3 | Maximum retry attempts |
+| `$timeout` | 3600 | Maximum execution time (1 hour) |
+| `$queue` | `audits` | Queue name for audit jobs |
+| `$memoryThreshold` | 0.8 | Stop at 80% of memory limit |
+| `$progressUpdateInterval` | 10 | Pages between progress updates |
+
+### Job Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     ProcessCrawlJob Workflow                    │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Validate inputs (baseUrl, auditId)                         │
+│  2. Load audit record, check if processable                    │
+│  3. Initialize/restore progress tracking in cache              │
+│  4. Update audit status → 'running'                            │
+│  5. Dispatch AuditStarted event                                │
+│  6. Start crawler via SiteCrawler.startCrawl()                 │
+│  7. For each CrawlResult from processQueue():                  │
+│     ├─ Check memory/time limits                                │
+│     ├─ Detect issues via IssueDetector.detect()                │
+│     ├─ Store issues in database                                │
+│     └─ Update progress every 10 pages                          │
+│  8. Update audit status → 'completed'                          │
+│  9. Dispatch AuditCompleted event                              │
+│  10. Clear progress cache                                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Progress Tracking
+
+Progress is stored in cache with key `audit:progress:{auditId}`:
+
+```php
+[
+    'audit_id' => 1,
+    'pages_crawled' => 150,
+    'issues_found' => 23,
+    'current_url' => 'https://example.com/page',
+    'started_at' => '2026-03-13T20:00:00Z',
+    'last_updated' => '2026-03-13T20:15:00Z',
+    'error_count' => 2,
+    'errors' => [...], // Last 10 errors
+]
+```
+
+**Cache TTL:** 24 hours
+
+### Error Handling
+
+| Error Type | Behavior |
+|------------|----------|
+| Invalid baseUrl | Throw RuntimeException (no retry) |
+| Audit not found | Throw RuntimeException (no retry) |
+| Already processed | Log and exit gracefully |
+| IssueDetector failure | Log warning, continue with next page |
+| Memory limit reached | Log warning, graceful stop, complete audit |
+| Time limit approaching | Log warning, graceful stop, complete audit |
+| Unhandled exception | Retry with backoff (10s, 30s, 60s) |
+
+### Events Dispatched
+
+| Event | When | Payload |
+|-------|------|---------|
+| `AuditStarted` | Job starts processing | `Audit $audit` |
+| `AuditProgress` | Every 10 pages | `Audit $audit, array $progress` |
+| `AuditCompleted` | Job finishes successfully | `Audit $audit` |
+| `AuditFailed` | Job fails permanently | `Audit $audit, string $errorMessage` |
+
+### DTOs
+
+#### CrawlResult
+```php
+class CrawlResult
+{
+    public readonly string $url;
+    public readonly int $statusCode;
+    public readonly float $responseTimeMs;
+    public readonly ?string $html;
+    public readonly array $links;      // ['internal' => [...], 'external' => [...]]
+    public readonly array $metadata;   // ['title', 'description', 'h1', 'canonical']
+    public readonly ?string $errorMessage;
+    public readonly array $headers;
+    public readonly int $depth;
+    public readonly array $redirectChain;
+    
+    public function isSuccess(): bool;
+    public function isError(): bool;
+    public function isRedirect(): bool;
+    public function getTitle(): ?string;
+    public function getDescription(): ?string;
+}
+```
+
+#### IssueFinding
+```php
+class IssueFinding
+{
+    public readonly string $issueType;      // e.g., 'missing_title_tag'
+    public readonly string $severity;       // 'critical', 'warning', 'notice'
+    public readonly string $description;
+    public readonly string $recommendation;
+    public readonly array $context;
+    
+    public function getNormalizedSeverity(): string;
+    public function getSeverityScore(): int;  // 4=critical, 2=warning, 1=notice
+}
+```
+
+### Resource Management
+
+**Memory Limit Check:**
+```php
+protected function isMemoryLimitReached(): bool
+{
+    // Stop at 80% of PHP memory_limit
+    $usedBytes = memory_get_usage(true);
+    $thresholdBytes = $limitBytes * 0.8;
+    return $usedBytes >= $thresholdBytes;
+}
+```
+
+**Time Limit Check:**
+```php
+protected function isTimeLimitReached(): bool
+{
+    // Stop 5 minutes before timeout for graceful shutdown
+    $safetyMargin = 300;
+    return time() >= $this->startTime + $this->timeout - $safetyMargin;
+}
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Duration |
+|------------|-------|------------|----------|
+| ProcessCrawlJobTest (Unit) | 57 | 62 | ~300s |
+| ProcessCrawlJobIntegrationTest | 10 | 20 | ~54s |
+| **Total** | **67** | **82** | **~6 min** |
+
+**Test Categories:**
+- Job instantiation and configuration
+- Status updates (pending → running → completed/failed)
+- Progress tracking (cache storage, restoration)
+- Crawl processing (URL iteration, issue detection)
+- Error handling (validation, missing audit, detector failure)
+- Retry logic (backoff, retryUntil, tags)
+- Resource management (memory limit, time limit)
+- Events dispatched (Started, Progress, Completed, Failed)
+- Queue integration (dispatch, queue connection)
+- Edge cases (empty results, concurrent jobs)
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-13 |
+| Commit | `e5b3ab86` |
+| Deployment Method | Local deployment pipeline |
+| Health Check | ✅ Passing |
+| Tests | 67/67 passing (82 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-14-5 | Done | SiteCrawler Service (crawl execution) |
+| TASK-14-6 | Done | RobotsParser Service (used by crawler) |
+| TASK-14-8 | Done | IssueDetector Service (issue detection) |
+
+### Related Tasks
+
+| Task | Description |
+|------|-------------|
+| TASK-14-13 | AuditController (triggers ProcessCrawlJob) |
+| TASK-14-15 | Audit List Page (frontend) |
+| TASK-14-16 | Audit Detail Page (frontend) |
+| TASK-14-18 | PDF Report Integration (in progress) |
+
+---
 ## AuditController API Endpoints (TASK-14-13)
 
 ### Service Description
