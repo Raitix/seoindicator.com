@@ -1,7 +1,7 @@
 # SPEC-004-16: Branding in PDF Generation
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `Low`
@@ -177,3 +177,19 @@ Status: To Test Prod
 **Decision: PASS → Ready for Documentation**
 
 Status: To Document
+
+### [2026-03-12 23:13] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+Added comprehensive PDF Report Branding section to DOCUMENTATION.md:
+- Service description for white-label report branding
+- Component locations and core functionalities
+- Branding properties table with defaults
+- Font mapping table (friendly names → PDF core fonts)
+- PDF branding features (cover page, content, fallback)
+- API integration with ReportController
+- Unit test coverage (37 tests, 104 assertions)
+- Security notes for logo validation and color sanitization
+- Dependencies and deployment information
+
+Status: Done

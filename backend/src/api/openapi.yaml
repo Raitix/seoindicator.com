@@ -1,37 +1,28 @@
-openapi: '3.0.3'
+openapi: 3.0.3
 
 info:
   title: SEOIndicator API
-  version: '1.0.0'
+  version: 1.0.0
   description: |
-    SEOIndicator is a comprehensive SEO analysis and monitoring platform.
-    
-    This API provides programmatic access to:
-    - Keyword ranking tracking and history
-    - Site management and dashboards
-    - SEO audits and technical issue detection
-    - AI visibility tracking and analytics
-    - Local SEO and Google Business Profile management
-    - Report generation and scheduling
-    - Competitor analysis
+    SEOIndicator API provides programmatic access to SEO tracking, analysis, and reporting features.
     
     ## Authentication
     Most endpoints require authentication via:
-    - **Bearer Token**: Laravel Sanctum session token (for web UI)
+    - **Bearer Token**: JWT token from login/register (for web UI sessions)
     - **API Key**: X-API-Key header (for external API access)
     
     ## Rate Limiting
-    - Standard endpoints: 60 requests per minute
-    - Authentication endpoints: 5 requests per minute
-    - Analysis endpoints: Various limits apply
+    API endpoints are rate-limited to ensure fair usage. Check the X-RateLimit headers in responses.
     
+    ## Error Handling
+    All errors follow a consistent format with `message` and optionally `errors` fields.
   contact:
     name: SEOIndicator Support
     email: support@seoindicator.com
     url: https://seoindicator.com/support
   license:
     name: Proprietary
-    url: https://seoindicator.com/terms
+    url: https://seoindicator.com/license
   termsOfService: https://seoindicator.com/terms
 
 servers:
@@ -44,33 +35,37 @@ servers:
 
 tags:
   - name: Auth
-    description: User authentication and session management
+    description: Authentication and user management
   - name: Keywords
-    description: Keyword tracking and ranking management
+    description: Keyword tracking and management
   - name: Sites
-    description: Site management and configuration
+    description: Site management and dashboard
   - name: Projects
-    description: Project organization and management
+    description: Project management
   - name: Reports
-    description: Report generation and scheduling
+    description: Report generation and management
   - name: Audits
-    description: Technical SEO site audits
-  - name: Analysis
-    description: On-demand SEO analysis jobs
+    description: SEO audit management
   - name: Competitors
-    description: Competitor tracking and comparison
+    description: Competitor tracking
+  - name: Analysis
+    description: Analysis jobs and results
   - name: AI Visibility
-    description: AI platform visibility tracking
+    description: AI visibility tracking projects
   - name: Local SEO
-    description: Local SEO and Google Business Profile
-  - name: Admin
-    description: Administrative endpoints
+    description: Local SEO and GBP management
   - name: Public
-    description: Public endpoints without authentication
+    description: Public endpoints (no authentication required)
+  - name: Admin
+    description: Admin-only endpoints
   - name: Webhooks
     description: Webhook management
-  - name: Payments
-    description: Payment and credit management
+  - name: Credits
+    description: Credit and payment management
+  - name: Tools
+    description: SEO tools and utilities
+  - name: GSC
+    description: Google Search Console integration
 
 components:
   securitySchemes:
@@ -78,14 +73,69 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Laravel Sanctum token authentication
+      description: JWT token authentication from login/register
     ApiKeyAuth:
       type: apiKey
       in: header
       name: X-API-Key
-      description: API key for external programmatic access
+      description: API key authentication for external access
 
   schemas:
+    # ========================================
+    # Common Schemas
+    # ========================================
+    Error:
+      type: object
+      required:
+        - message
+        - status
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Validation failed"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 422
+        errors:
+          type: array
+          description: Detailed validation errors
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "email"
+              message:
+                type: string
+                example: "The email must be a valid email address."
+    
+    PaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          example: 1
+        per_page:
+          type: integer
+          example: 15
+        total:
+          type: integer
+          example: 100
+        last_page:
+          type: integer
+          example: 7
+        from:
+          type: integer
+          example: 1
+        to:
+          type: integer
+          example: 15
+
+    # ========================================
+    # Auth Schemas
+    # ========================================
     User:
       type: object
       required:
@@ -98,17 +148,81 @@ components:
           example: 1
         name:
           type: string
-          example: John Doe
+          example: "John Doe"
         email:
           type: string
           format: email
-          example: john@example.com
+          example: "john@example.com"
+        email_verified_at:
+          type: string
+          format: date-time
+          nullable: true
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        password:
+          type: string
+          format: password
+          example: "secret123"
+
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - password_confirmation
+      properties:
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "secret123"
+        password_confirmation:
+          type: string
+          format: password
+          example: "secret123"
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            token:
+              type: string
+              description: Bearer token for authentication
+              example: "1|abcdef123456..."
+
+    # ========================================
+    # Site/Project Schemas
+    # ========================================
     Site:
       type: object
       required:
@@ -122,17 +236,56 @@ components:
         url:
           type: string
           format: uri
-          example: https://example.com
+          example: "https://example.com"
         name:
           type: string
-          example: Example Site
+          example: "Example Site"
         user_id:
           type: integer
+          example: 1
         is_active:
           type: boolean
+          example: true
         created_at:
           type: string
           format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Project:
+      type: object
+      required:
+        - id
+        - name
+        - user_id
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "SEO Project"
+        user_id:
+          type: integer
+          example: 1
+        description:
+          type: string
+          nullable: true
+          example: "Main SEO tracking project"
+        is_archived:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ========================================
+    # Keyword Schemas
+    # ========================================
     Keyword:
       type: object
       required:
@@ -142,175 +295,635 @@ components:
       properties:
         id:
           type: integer
+          example: 1
         keyword:
           type: string
+          example: "seo tools"
         site_id:
           type: integer
+          example: 1
         search_engine:
           type: string
+          enum: [google, bing]
+          example: "google"
         country:
           type: string
+          example: "US"
+        language:
+          type: string
+          example: "en"
         current_position:
           type: integer
           nullable: true
+          example: 5
         previous_position:
           type: integer
           nullable: true
-    Project:
+          example: 7
+        search_volume:
+          type: integer
+          nullable: true
+          example: 10000
+        difficulty:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 100
+          example: 45
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    KeywordRanking:
       type: object
-      required:
-        - id
-        - name
       properties:
         id:
           type: integer
-        name:
+          example: 1
+        keyword_id:
+          type: integer
+          example: 1
+        position:
+          type: integer
+          example: 5
+        url:
           type: string
-        description:
+          format: uri
+          example: "https://example.com/seo-tools"
+        checked_at:
           type: string
-          nullable: true
-        is_archived:
-          type: boolean
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    # ========================================
+    # Report Schemas
+    # ========================================
     Report:
       type: object
       required:
         - id
         - site_id
+        - type
+        - status
       properties:
         id:
           type: integer
+          example: 1
         site_id:
           type: integer
+          example: 1
         type:
           type: string
-        format:
-          type: string
+          enum: [weekly, monthly, custom]
+          example: "weekly"
         status:
           type: string
+          enum: [pending, processing, completed, failed]
+          example: "completed"
+        format:
+          type: string
+          enum: [pdf, csv]
+          example: "pdf"
+        name:
+          type: string
+          nullable: true
+          example: "Weekly SEO Report"
+        file_path:
+          type: string
+          nullable: true
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ReportGenerateRequest:
+      type: object
+      required:
+        - site_id
+        - type
+        - format
+      properties:
+        site_id:
+          type: integer
+          example: 1
+        type:
+          type: string
+          enum: [weekly, monthly, custom]
+          example: "weekly"
+        format:
+          type: string
+          enum: [pdf, csv]
+          example: "pdf"
+        name:
+          type: string
+          example: "Weekly SEO Report"
+
+    # ========================================
+    # Audit Schemas
+    # ========================================
     Audit:
       type: object
       required:
         - id
         - site_id
+        - status
       properties:
         id:
           type: integer
+          example: 1
         site_id:
           type: integer
+          example: 1
         status:
           type: string
+          enum: [pending, running, completed, failed, cancelled]
+          example: "completed"
         pages_crawled:
           type: integer
+          example: 50
         issues_found:
           type: integer
-    BusinessLocation:
+          example: 12
+        critical_issues:
+          type: integer
+          example: 2
+        warning_issues:
+          type: integer
+          example: 5
+        notice_issues:
+          type: integer
+          example: 5
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AuditIssue:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        audit_id:
+          type: integer
+          example: 1
+        url:
+          type: string
+          format: uri
+          example: "https://example.com/page"
+        issue_type:
+          type: string
+          example: "missing_title"
+        severity:
+          type: string
+          enum: [critical, warning, notice]
+          example: "critical"
+        message:
+          type: string
+          example: "Missing title tag"
+        recommendation:
+          type: string
+          example: "Add a unique title tag to this page"
+        status:
+          type: string
+          enum: [open, ignored, resolved]
+          example: "open"
+        created_at:
+          type: string
+          format: date-time
+
+    # ========================================
+    # Competitor Schemas
+    # ========================================
+    Competitor:
       type: object
       required:
         - id
-        - name
+        - domain
+        - site_id
       properties:
         id:
           type: integer
+          example: 1
+        domain:
+          type: string
+          format: hostname
+          example: "competitor.com"
+        site_id:
+          type: integer
+          example: 1
         name:
           type: string
-        address:
-          type: string
-        phone:
-          type: string
           nullable: true
-        gbp_connected:
+          example: "Competitor Inc"
+        is_active:
           type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ========================================
+    # Analysis Job Schemas
+    # ========================================
+    AnalysisJob:
+      type: object
+      required:
+        - id
+        - site_id
+        - status
+      properties:
+        id:
+          type: integer
+          example: 1
+        site_id:
+          type: integer
+          example: 1
+        status:
+          type: string
+          enum: [pending, running, completed, failed, cancelled]
+          example: "completed"
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 100
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ========================================
+    # AI Visibility Schemas
+    # ========================================
     AIVisibilityProject:
       type: object
       required:
         - id
         - name
+        - user_id
       properties:
         id:
           type: integer
+          example: 1
         name:
           type: string
-        brand_name:
-          type: string
+          example: "Brand Visibility Tracking"
+        user_id:
+          type: integer
+          example: 1
+        brands:
+          type: array
+          items:
+            type: string
+          example: ["SEOIndicator", "CompetitorA"]
+        platforms:
+          type: array
+          items:
+            type: string
+            enum: [chatgpt, perplexity, claude]
+          example: ["chatgpt", "perplexity"]
         mention_rate:
           type: number
-    Competitor:
+          format: float
+          example: 0.45
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ========================================
+    # Local SEO Schemas
+    # ========================================
+    BusinessLocation:
+      type: object
+      required:
+        - id
+        - site_id
+        - name
+        - address
+      properties:
+        id:
+          type: integer
+          example: 1
+        site_id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        gbp_place_id:
+          type: string
+          nullable: true
+          example: "ChIJN1t_tDeuEmsRUsoyGKfrt4Q"
+        name:
+          type: string
+          example: "Example Business"
+        address:
+          type: string
+          example: "123 Main St, City, ST 12345"
+        phone:
+          type: string
+          nullable: true
+          example: "+1-555-123-4567"
+        website:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://example.com"
+        category:
+          type: string
+          nullable: true
+          example: "Restaurant"
+        latitude:
+          type: number
+          format: double
+          nullable: true
+          example: 40.7128
+        longitude:
+          type: number
+          format: double
+          nullable: true
+          example: -74.0060
+        gbp_connected:
+          type: boolean
+          example: false
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ========================================
+    # Webhook Schemas
+    # ========================================
+    Webhook:
+      type: object
+      required:
+        - id
+        - url
+        - events
+      properties:
+        id:
+          type: integer
+          example: 1
+        url:
+          type: string
+          format: uri
+          example: "https://example.com/webhook"
+        events:
+          type: array
+          items:
+            type: string
+          example: ["keyword.position_changed", "audit.completed"]
+        secret:
+          type: string
+          description: Secret for HMAC signature verification
+          example: "whsec_xxx"
+        is_active:
+          type: boolean
+          example: true
+        last_triggered_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WebhookCreateRequest:
+      type: object
+      required:
+        - url
+        - events
+      properties:
+        url:
+          type: string
+          format: uri
+          example: "https://example.com/webhook"
+        events:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          example: ["keyword.position_changed"]
+        secret:
+          type: string
+          example: "my-webhook-secret"
+
+    # ========================================
+    # API Key Schemas
+    # ========================================
+    ApiKey:
       type: object
       required:
         - id
         - name
+        - key
       properties:
         id:
           type: integer
+          example: 1
         name:
           type: string
-        domain:
+          example: "Production API Key"
+        key:
           type: string
-    Error:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          type: string
-        status:
-          type: integer
-        errors:
+          description: The API key (only shown once on creation)
+          example: "sk_live_xxxxxxxxxxxx"
+        permissions:
           type: array
           items:
-            type: object
-    ValidationError:
-      type: object
-      required:
-        - message
-        - errors
-      properties:
-        message:
+            type: string
+          example: ["keywords:read", "keywords:write"]
+        last_used_at:
           type: string
-        errors:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              type: string
-    PaginationMeta:
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    # ========================================
+    # Notification Schemas
+    # ========================================
+    Notification:
       type: object
       properties:
-        current_page:
+        id:
+          type: string
+          example: "abc123"
+        type:
+          type: string
+          example: "keyword_alert"
+        notifiable_type:
+          type: string
+          example: "App\\Models\\User"
+        notifiable_id:
           type: integer
-        per_page:
-          type: integer
-        total:
-          type: integer
-        last_page:
-          type: integer
+          example: 1
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Keyword 'seo tools' moved from position 5 to 3"
+            keyword_id:
+              type: integer
+              example: 1
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
 
-security: []
+    # ========================================
+    # Dashboard Stats Schemas
+    # ========================================
+    DashboardStats:
+      type: object
+      properties:
+        total_keywords:
+          type: integer
+          example: 150
+        avg_position:
+          type: number
+          format: float
+          example: 12.5
+        top_10_keywords:
+          type: integer
+          example: 45
+        top_100_keywords:
+          type: integer
+          example: 120
+        position_changes:
+          type: object
+          properties:
+            improved:
+              type: integer
+              example: 12
+            declined:
+              type: integer
+              example: 8
+            unchanged:
+              type: integer
+              example: 130
+        organic_traffic:
+          type: object
+          properties:
+            current:
+              type: integer
+              example: 5000
+            previous:
+              type: integer
+              example: 4500
+            change:
+              type: number
+              format: float
+              example: 11.1
+
+    # ========================================
+    # Health Check Schema
+    # ========================================
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+          example: "ok"
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+          example: "1.0.0"
+        database:
+          type: string
+          enum: [connected, disconnected]
+          example: "connected"
 
 paths:
+  # ========================================
+  # Health & Public Endpoints
+  # ========================================
   /health:
     get:
       operationId: getHealth
       summary: Health check endpoint
-      description: Returns the health status of the API
+      description: Returns the current health status of the API
       tags:
         - Public
       responses:
         '200':
-          description: API is healthy
+          description: Service is healthy
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: ok
+                $ref: '#/components/schemas/HealthCheck'
 
   /indicators:
     get:
       operationId: getIndicators
-      summary: Get indicator definitions
+      summary: Get available indicators
       description: Returns list of available SEO indicators
       tags:
         - Public
@@ -321,11 +934,20 @@ paths:
             application/json:
               schema:
                 type: object
+                properties:
+                  indicators:
+                    type: array
+                    items:
+                      type: object
 
+  # ========================================
+  # Authentication Endpoints
+  # ========================================
   /v1/auth/register:
     post:
-      operationId: registerUser
+      operationId: register
       summary: Register a new user
+      description: Creates a new user account and returns authentication token
       tags:
         - Auth
       requestBody:
@@ -333,43 +955,26 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - name
-                - email
-                - password
-              properties:
-                name:
-                  type: string
-                email:
-                  type: string
-                  format: email
-                password:
-                  type: string
-                  format: password
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: User registered
+          description: User registered successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
+                $ref: '#/components/schemas/AuthResponse'
         '422':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationError'
+                $ref: '#/components/schemas/Error'
 
   /v1/auth/login:
     post:
-      operationId: loginUser
-      summary: Authenticate user
+      operationId: login
+      summary: Login user
+      description: Authenticates user and returns token
       tags:
         - Auth
       requestBody:
@@ -377,31 +982,22 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - email
-                - password
-              properties:
-                email:
-                  type: string
-                  format: email
-                password:
-                  type: string
-                  format: password
+              $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
           description: Login successful
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
+                $ref: '#/components/schemas/AuthResponse'
         '401':
           description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Too many login attempts
           content:
             application/json:
               schema:
@@ -409,12 +1005,19 @@ paths:
 
   /v1/auth/logout:
     post:
-      operationId: logoutUser
+      operationId: logout
       summary: Logout user
+      description: Invalidates the current authentication token
       tags:
         - Auth
       security:
         - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         '200':
           description: Logout successful
@@ -422,11 +1025,16 @@ paths:
             application/json:
               schema:
                 type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logged out successfully"
 
   /v1/auth/user:
     get:
       operationId: getCurrentUser
       summary: Get current user
+      description: Returns the authenticated user's profile
       tags:
         - Auth
       security:
@@ -438,11 +1046,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /v1/auth/forgot-password:
     post:
       operationId: forgotPassword
       summary: Request password reset
+      description: Sends a password reset link to the user's email
       tags:
         - Auth
       requestBody:
@@ -457,14 +1072,24 @@ paths:
                 email:
                   type: string
                   format: email
+                  example: "john@example.com"
       responses:
         '200':
-          description: Reset email sent
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password reset link sent"
 
   /v1/auth/reset-password:
     post:
       operationId: resetPassword
       summary: Reset password
+      description: Resets the user's password using the token from email
       tags:
         - Auth
       requestBody:
@@ -477,21 +1102,42 @@ paths:
                 - token
                 - email
                 - password
+                - password_confirmation
               properties:
                 token:
                   type: string
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
+                  format: password
+                password_confirmation:
+                  type: string
+                  format: password
       responses:
         '200':
-          description: Password reset
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password reset successfully"
+        '400':
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /v1/auth/verify-email/{id}/{hash}:
     get:
       operationId: verifyEmail
       summary: Verify email address
+      description: Verifies the user's email address
       tags:
         - Auth
       parameters:
@@ -507,38 +1153,80 @@ paths:
             type: string
       responses:
         '200':
-          description: Email verified
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email verified successfully"
+        '403':
+          description: Invalid verification link
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /v1/auth/resend-verification:
     post:
       operationId: resendVerification
       summary: Resend verification email
+      description: Resends the email verification link
       tags:
         - Auth
       security:
         - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         '200':
           description: Verification email sent
-
-  /v1/auth/google:
-    post:
-      operationId: googleAuthRedirect
-      summary: Initiate Google OAuth
-      tags:
-        - Auth
-      responses:
-        '200':
-          description: Authorization URL
           content:
             application/json:
               schema:
                 type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Verification email sent"
+
+  /v1/auth/google:
+    post:
+      operationId: googleAuthRedirect
+      summary: Google OAuth redirect
+      description: Initiates Google OAuth authentication flow
+      tags:
+        - Auth
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OAuth redirect URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    example: "https://accounts.google.com/o/oauth2/auth?..."
 
   /v1/auth/google/callback:
     post:
       operationId: googleAuthCallback
-      summary: Handle Google OAuth callback
+      summary: Google OAuth callback
+      description: Handles Google OAuth callback
       tags:
         - Auth
       requestBody:
@@ -555,37 +1243,90 @@ paths:
       responses:
         '200':
           description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
 
+  # ========================================
+  # Keywords API Endpoints
+  # ========================================
   /v1/keywords:
     get:
       operationId: listKeywords
       summary: List keywords
+      description: Returns a paginated list of keywords for the authenticated user
       tags:
         - Keywords
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
         - name: site_id
           in: query
           schema:
             type: integer
+          description: Filter by site ID
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search in keyword text
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 15
       responses:
         '200':
-          description: Keywords list
+          description: List of keywords
           content:
             application/json:
               schema:
                 type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Keyword'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+              example:
+                data:
+                  - id: 1
+                    keyword: "seo tools"
+                    site_id: 1
+                    current_position: 5
+                    is_active: true
+                meta:
+                  current_page: 1
+                  per_page: 15
+                  total: 100
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       operationId: createKeyword
       summary: Create keyword
+      description: Creates a new keyword to track
       tags:
         - Keywords
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       requestBody:
         required: true
@@ -599,19 +1340,58 @@ paths:
               properties:
                 keyword:
                   type: string
+                  example: "seo tools"
                 site_id:
                   type: integer
+                  example: 1
+                search_engine:
+                  type: string
+                  enum: [google, bing]
+                  default: google
+                country:
+                  type: string
+                  example: "US"
+                language:
+                  type: string
+                  example: "en"
+            example:
+              keyword: "seo tools"
+              site_id: 1
+              search_engine: "google"
+              country: "US"
+              language: "en"
       responses:
         '201':
           description: Keyword created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Keyword'
+              example:
+                id: 1
+                keyword: "seo tools"
+                site_id: 1
+                search_engine: "google"
+                country: "US"
+                language: "en"
+                current_position: null
+                is_active: true
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /v1/keywords/{id}:
     get:
       operationId: getKeyword
       summary: Get keyword details
+      description: Returns details of a specific keyword
       tags:
         - Keywords
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       parameters:
         - name: id
@@ -622,12 +1402,24 @@ paths:
       responses:
         '200':
           description: Keyword details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Keyword'
+        '404':
+          description: Keyword not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     put:
       operationId: updateKeyword
       summary: Update keyword
+      description: Updates a keyword's settings
       tags:
         - Keywords
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       parameters:
         - name: id
@@ -641,15 +1433,26 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                keyword:
+                  type: string
+                is_active:
+                  type: boolean
       responses:
         '200':
           description: Keyword updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Keyword'
     delete:
       operationId: deleteKeyword
       summary: Delete keyword
+      description: Removes a keyword from tracking
       tags:
         - Keywords
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       parameters:
         - name: id
@@ -660,14 +1463,18 @@ paths:
       responses:
         '204':
           description: Keyword deleted
+        '404':
+          description: Keyword not found
 
   /v1/keywords/{id}/rankings:
     get:
       operationId: getKeywordRankings
-      summary: Get keyword rankings history
+      summary: Get keyword ranking history
+      description: Returns ranking history for a keyword
       tags:
         - Keywords
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       parameters:
         - name: id
@@ -675,14 +1482,34 @@ paths:
           required: true
           schema:
             type: integer
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
       responses:
         '200':
-          description: Rankings history
+          description: Ranking history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KeywordRanking'
 
   /v1/keywords/{id}/history:
     get:
       operationId: getKeywordHistory
-      summary: Get keyword ranking history
+      summary: Get keyword position history
+      description: Returns position history for a keyword
       tags:
         - Keywords
       security:
@@ -693,14 +1520,36 @@ paths:
           required: true
           schema:
             type: integer
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
       responses:
         '200':
-          description: Ranking history
+          description: Position history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                        position:
+                          type: integer
+                          nullable: true
 
   /v1/keywords/{id}/check:
     post:
       operationId: checkKeywordRanking
-      summary: Trigger ranking check
+      summary: Trigger keyword ranking check
+      description: Queues a ranking check for a keyword
       tags:
         - Keywords
       security:
@@ -713,14 +1562,23 @@ paths:
             type: integer
       responses:
         '202':
-          description: Ranking check initiated
+          description: Ranking check queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
 
   /v1/sites/{siteId}/keywords:
     get:
-      operationId: getSiteKeywords
-      summary: Get keywords for a site
+      operationId: listSiteKeywords
+      summary: List keywords for a site
+      description: Returns keywords for a specific site
       tags:
         - Keywords
+        - Sites
       security:
         - BearerAuth: []
       parameters:
@@ -729,14 +1587,39 @@ paths:
           required: true
           schema:
             type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
       responses:
         '200':
-          description: Site keywords
+          description: List of keywords
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Keyword'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
     post:
       operationId: createSiteKeyword
       summary: Create keyword for site
+      description: Creates a new keyword for a specific site
       tags:
         - Keywords
+        - Sites
       security:
         - BearerAuth: []
       parameters:
@@ -756,26 +1639,51 @@ paths:
               properties:
                 keyword:
                   type: string
+                search_engine:
+                  type: string
+                country:
+                  type: string
+                language:
+                  type: string
       responses:
         '201':
           description: Keyword created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Keyword'
 
+  # ========================================
+  # Sites API Endpoints
+  # ========================================
   /v1/sites:
     get:
       operationId: listSites
       summary: List sites
+      description: Returns a list of sites for the authenticated user
       tags:
         - Sites
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       responses:
         '200':
-          description: Sites list
+          description: List of sites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Site'
 
   /v1/sites/{siteId}/dashboard:
     get:
       operationId: getSiteDashboard
-      summary: Get site dashboard data
+      summary: Get site dashboard
+      description: Returns dashboard statistics for a site
       tags:
         - Sites
       security:
@@ -788,22 +1696,40 @@ paths:
             type: integer
       responses:
         '200':
-          description: Dashboard data
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
 
+  # ========================================
+  # Projects API Endpoints
+  # ========================================
   /v1/projects:
     get:
       operationId: listProjects
       summary: List projects
+      description: Returns a list of projects for the authenticated user
       tags:
         - Projects
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: Projects list
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
     post:
       operationId: createProject
       summary: Create project
+      description: Creates a new project
       tags:
         - Projects
       security:
@@ -819,14 +1745,21 @@ paths:
               properties:
                 name:
                   type: string
+                description:
+                  type: string
       responses:
         '201':
           description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
 
   /v1/projects/{id}:
     get:
       operationId: getProject
-      summary: Get project details
+      summary: Get project
+      description: Returns details of a specific project
       tags:
         - Projects
       security:
@@ -840,9 +1773,14 @@ paths:
       responses:
         '200':
           description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
     put:
       operationId: updateProject
       summary: Update project
+      description: Updates a project
       tags:
         - Projects
       security:
@@ -859,12 +1797,22 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
       responses:
         '200':
           description: Project updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
     delete:
       operationId: deleteProject
       summary: Delete project
+      description: Removes a project
       tags:
         - Projects
       security:
@@ -883,6 +1831,7 @@ paths:
     post:
       operationId: archiveProject
       summary: Archive project
+      description: Archives a project
       tags:
         - Projects
       security:
@@ -896,11 +1845,16 @@ paths:
       responses:
         '200':
           description: Project archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
 
   /v1/projects/{id}/restore:
     post:
       operationId: restoreProject
       summary: Restore archived project
+      description: Restores an archived project
       tags:
         - Projects
       security:
@@ -914,11 +1868,19 @@ paths:
       responses:
         '200':
           description: Project restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
 
+  # ========================================
+  # Reports API Endpoints
+  # ========================================
   /v1/reports:
     post:
       operationId: generateReport
       summary: Generate report
+      description: Queues a report generation job
       tags:
         - Reports
       security:
@@ -928,25 +1890,31 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - site_id
-                - type
-              properties:
-                site_id:
-                  type: integer
-                type:
-                  type: string
-                format:
-                  type: string
+              $ref: '#/components/schemas/ReportGenerateRequest'
       responses:
         '202':
           description: Report generation queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      job_id:
+                        type: string
+                      status:
+                        type: string
+                        example: "queued"
 
   /v1/sites/{siteId}/reports:
     get:
       operationId: listSiteReports
       summary: List reports for site
+      description: Returns reports for a specific site
       tags:
         - Reports
       security:
@@ -959,12 +1927,22 @@ paths:
             type: integer
       responses:
         '200':
-          description: Reports list
+          description: List of reports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Report'
 
   /v1/sites/{siteId}/reports/generate:
     post:
       operationId: generateSiteReport
       summary: Generate report for site
+      description: Generates a new report for a site
       tags:
         - Reports
       security:
@@ -981,14 +1959,31 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - type
+                - format
+              properties:
+                type:
+                  type: string
+                  enum: [weekly, monthly, custom]
+                format:
+                  type: string
+                  enum: [pdf, csv]
+                name:
+                  type: string
       responses:
         '202':
           description: Report generation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
 
   /v1/reports/{reportId}:
     get:
       operationId: getReport
-      summary: Get report details
+      summary: Get report
+      description: Returns details of a specific report
       tags:
         - Reports
       security:
@@ -1002,9 +1997,14 @@ paths:
       responses:
         '200':
           description: Report details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
     delete:
       operationId: deleteReport
       summary: Delete report
+      description: Removes a report
       tags:
         - Reports
       security:
@@ -1022,7 +2022,8 @@ paths:
   /v1/reports/{reportId}/download:
     get:
       operationId: downloadReport
-      summary: Download report file
+      summary: Download report
+      description: Downloads the report file
       tags:
         - Reports
       security:
@@ -1036,11 +2037,24 @@ paths:
       responses:
         '200':
           description: Report file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+                format: binary
 
+  # ========================================
+  # Audits API Endpoints
+  # ========================================
   /v1/sites/{site}/audits:
     get:
-      operationId: listAudits
+      operationId: listSiteAudits
       summary: List audits for site
+      description: Returns audits for a specific site
       tags:
         - Audits
       security:
@@ -1053,10 +2067,20 @@ paths:
             type: integer
       responses:
         '200':
-          description: Audits list
+          description: List of audits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Audit'
     post:
       operationId: createAudit
       summary: Create audit
+      description: Creates a new SEO audit for a site
       tags:
         - Audits
       security:
@@ -1068,19 +2092,40 @@ paths:
           schema:
             type: integer
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               type: object
+              properties:
+                max_pages:
+                  type: integer
+                  default: 100
+                  minimum: 1
+                  maximum: 10000
+                max_depth:
+                  type: integer
+                  default: 3
+                  minimum: 1
+                  maximum: 10
       responses:
         '201':
           description: Audit created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Audit'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /v1/audits/{audit}:
     get:
       operationId: getAudit
-      summary: Get audit details
+      summary: Get audit
+      description: Returns details of a specific audit
       tags:
         - Audits
       security:
@@ -1094,9 +2139,14 @@ paths:
       responses:
         '200':
           description: Audit details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Audit'
     delete:
       operationId: deleteAudit
       summary: Delete audit
+      description: Removes an audit
       tags:
         - Audits
       security:
@@ -1115,6 +2165,7 @@ paths:
     get:
       operationId: listAuditIssues
       summary: List audit issues
+      description: Returns issues found in an audit
       tags:
         - Audits
       security:
@@ -1125,14 +2176,44 @@ paths:
           required: true
           schema:
             type: integer
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [critical, warning, notice]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, ignored, resolved]
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
       responses:
         '200':
-          description: Audit issues
+          description: List of issues
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditIssue'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
 
   /v1/audits/{auditId}/issues/bulk:
     patch:
       operationId: bulkUpdateIssues
       summary: Bulk update issues
+      description: Updates multiple issues at once
       tags:
         - Audits
       security:
@@ -1149,6 +2230,17 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - issue_ids
+                - status
+              properties:
+                issue_ids:
+                  type: array
+                  items:
+                    type: integer
+                status:
+                  type: string
+                  enum: [open, ignored, resolved]
       responses:
         '200':
           description: Issues updated
@@ -1157,6 +2249,7 @@ paths:
     post:
       operationId: publishAudit
       summary: Publish audit
+      description: Makes an audit publicly accessible
       tags:
         - Audits
       security:
@@ -1170,11 +2263,22 @@ paths:
       responses:
         '200':
           description: Audit published
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  public_hash:
+                    type: string
+                  public_url:
+                    type: string
+                    format: uri
 
   /v1/audits/{id}/unpublish:
     delete:
       operationId: unpublishAudit
       summary: Unpublish audit
+      description: Removes public access to an audit
       tags:
         - Audits
       security:
@@ -1191,8 +2295,9 @@ paths:
 
   /v1/audits/{id}/embed-code:
     get:
-      operationId: getEmbedCode
-      summary: Get embed code
+      operationId: getAuditEmbedCode
+      summary: Get audit embed code
+      description: Returns embed code for the audit badge
       tags:
         - Audits
       security:
@@ -1206,11 +2311,23 @@ paths:
       responses:
         '200':
           description: Embed code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  svg:
+                    type: string
+                  javascript:
+                    type: string
+                  iframe:
+                    type: string
 
   /v1/audits/{id}/analytics:
     get:
       operationId: getAuditAnalytics
       summary: Get audit analytics
+      description: Returns analytics for a public audit
       tags:
         - Audits
       security:
@@ -1221,14 +2338,39 @@ paths:
           required: true
           schema:
             type: integer
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date
       responses:
         '200':
           description: Audit analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  views:
+                    type: object
+                  leads:
+                    type: object
+                  badges:
+                    type: object
 
+  # ========================================
+  # Public Audit Endpoints
+  # ========================================
   /v1/public-audit/{hash}:
     get:
       operationId: getPublicAudit
       summary: Get public audit
+      description: Returns a public audit by its hash
       tags:
         - Public
       parameters:
@@ -1239,12 +2381,19 @@ paths:
             type: string
       responses:
         '200':
-          description: Public audit data
+          description: Audit details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Audit'
+        '404':
+          description: Audit not found
 
   /v1/public-audit/{hash}/lead:
     post:
       operationId: captureLead
       summary: Capture lead
+      description: Captures a lead from a public audit page
       tags:
         - Public
       parameters:
@@ -1265,14 +2414,19 @@ paths:
                 email:
                   type: string
                   format: email
+                name:
+                  type: string
+                message:
+                  type: string
       responses:
         '201':
           description: Lead captured
 
   /v1/public-audit/{hash}/badge:
     get:
-      operationId: getBadgeConfig
-      summary: Get badge configuration
+      operationId: getPublicAuditBadge
+      summary: Get public audit badge
+      description: Returns badge configuration for a public audit
       tags:
         - Public
       parameters:
@@ -1284,11 +2438,26 @@ paths:
       responses:
         '200':
           description: Badge configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  score:
+                    type: integer
+                  site_url:
+                    type: string
+                  hash:
+                    type: string
 
+  # ========================================
+  # Badge Tracking Endpoints
+  # ========================================
   /v1/badge/impression:
     post:
       operationId: trackBadgeImpression
       summary: Track badge impression
+      description: Records a badge impression event
       tags:
         - Public
       requestBody:
@@ -1301,6 +2470,8 @@ paths:
                 - hash
               properties:
                 hash:
+                  type: string
+                referrer:
                   type: string
       responses:
         '201':
@@ -1310,6 +2481,7 @@ paths:
     post:
       operationId: trackBadgeClick
       summary: Track badge click
+      description: Records a badge click event
       tags:
         - Public
       requestBody:
@@ -1323,136 +2495,43 @@ paths:
               properties:
                 hash:
                   type: string
+                target:
+                  type: string
+                  enum: [audit, home]
+                referrer:
+                  type: string
       responses:
         '201':
           description: Click recorded
 
-  /v1/sites/{siteId}/analysis/jobs:
-    get:
-      operationId: listAnalysisJobs
-      summary: List analysis jobs
-      tags:
-        - Analysis
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: siteId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Analysis jobs list
-    post:
-      operationId: createAnalysisJob
-      summary: Create analysis job
-      tags:
-        - Analysis
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: siteId
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        '201':
-          description: Analysis job created
-
-  /v1/analysis/jobs/{jobId}:
-    get:
-      operationId: getAnalysisJob
-      summary: Get analysis job details
-      tags:
-        - Analysis
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Analysis job details
-
-  /v1/analysis/jobs/{jobId}/start:
-    post:
-      operationId: startAnalysisJob
-      summary: Start analysis job
-      tags:
-        - Analysis
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Job started
-
-  /v1/analysis/jobs/{jobId}/stream:
-    get:
-      operationId: streamAnalysisJob
-      summary: Stream analysis job progress
-      tags:
-        - Analysis
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: SSE stream
-
-  /v1/analysis/jobs/{jobId}/progress:
-    get:
-      operationId: getAnalysisProgress
-      summary: Get analysis job progress
-      tags:
-        - Analysis
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Job progress
-
+  # ========================================
+  # Competitors API Endpoints
+  # ========================================
   /v1/competitors:
     get:
       operationId: listCompetitors
       summary: List competitors
+      description: Returns a list of competitors
       tags:
         - Competitors
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: Competitors list
+          description: List of competitors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Competitor'
     post:
       operationId: createCompetitor
       summary: Create competitor
+      description: Adds a new competitor to track
       tags:
         - Competitors
       security:
@@ -1464,21 +2543,28 @@ paths:
             schema:
               type: object
               required:
-                - name
                 - domain
+                - site_id
               properties:
-                name:
-                  type: string
                 domain:
+                  type: string
+                site_id:
+                  type: integer
+                name:
                   type: string
       responses:
         '201':
           description: Competitor created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Competitor'
 
   /v1/competitors/{id}:
     get:
       operationId: getCompetitor
-      summary: Get competitor details
+      summary: Get competitor
+      description: Returns details of a specific competitor
       tags:
         - Competitors
       security:
@@ -1492,9 +2578,14 @@ paths:
       responses:
         '200':
           description: Competitor details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Competitor'
     put:
       operationId: updateCompetitor
       summary: Update competitor
+      description: Updates a competitor
       tags:
         - Competitors
       security:
@@ -1511,12 +2602,24 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                domain:
+                  type: string
+                name:
+                  type: string
+                is_active:
+                  type: boolean
       responses:
         '200':
           description: Competitor updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Competitor'
     delete:
       operationId: deleteCompetitor
       summary: Delete competitor
+      description: Removes a competitor
       tags:
         - Competitors
       security:
@@ -1531,20 +2634,215 @@ paths:
         '204':
           description: Competitor deleted
 
+  # ========================================
+  # Analysis Jobs API Endpoints
+  # ========================================
+  /v1/sites/{siteId}/analysis/jobs:
+    get:
+      operationId: listAnalysisJobs
+      summary: List analysis jobs
+      description: Returns analysis jobs for a site
+      tags:
+        - Analysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of analysis jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AnalysisJob'
+    post:
+      operationId: createAnalysisJob
+      summary: Create analysis job
+      description: Creates a new analysis job
+      tags:
+        - Analysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                config:
+                  type: object
+      responses:
+        '201':
+          description: Analysis job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisJob'
+
+  /v1/analysis/jobs/{jobId}:
+    get:
+      operationId: getAnalysisJob
+      summary: Get analysis job
+      description: Returns details of a specific analysis job
+      tags:
+        - Analysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Analysis job details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisJob'
+    delete:
+      operationId: deleteAnalysisJob
+      summary: Delete analysis job
+      description: Removes an analysis job
+      tags:
+        - Analysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Analysis job deleted
+
+  /v1/analysis/jobs/{jobId}/start:
+    post:
+      operationId: startAnalysisJob
+      summary: Start analysis job
+      description: Starts an analysis job
+      tags:
+        - Analysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Analysis job started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisJob'
+
+  /v1/analysis/jobs/{jobId}/stream:
+    get:
+      operationId: streamAnalysisJob
+      summary: Stream analysis job output
+      description: Streams the output of an analysis job
+      tags:
+        - Analysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /v1/analysis/jobs/{jobId}/progress:
+    get:
+      operationId: getAnalysisJobProgress
+      summary: Get analysis job progress
+      description: Returns the progress of an analysis job
+      tags:
+        - Analysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Progress information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  progress:
+                    type: integer
+                  status:
+                    type: string
+                  message:
+                    type: string
+
+  # ========================================
+  # AI Visibility API Endpoints
+  # ========================================
   /v1/ai-visibility/projects:
     get:
       operationId: listAIVisibilityProjects
       summary: List AI visibility projects
+      description: Returns AI visibility projects
       tags:
         - AI Visibility
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: Projects list
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AIVisibilityProject'
     post:
       operationId: createAIVisibilityProject
       summary: Create AI visibility project
+      description: Creates a new AI visibility tracking project
       tags:
         - AI Visibility
       security:
@@ -1557,20 +2855,31 @@ paths:
               type: object
               required:
                 - name
-                - brand_name
+                - brands
               properties:
                 name:
                   type: string
-                brand_name:
-                  type: string
+                brands:
+                  type: array
+                  items:
+                    type: string
+                platforms:
+                  type: array
+                  items:
+                    type: string
       responses:
         '201':
           description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIVisibilityProject'
 
   /v1/ai-visibility/projects/{id}:
     get:
       operationId: getAIVisibilityProject
       summary: Get AI visibility project
+      description: Returns details of a specific project
       tags:
         - AI Visibility
       security:
@@ -1584,9 +2893,14 @@ paths:
       responses:
         '200':
           description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIVisibilityProject'
     put:
       operationId: updateAIVisibilityProject
       summary: Update AI visibility project
+      description: Updates an AI visibility project
       tags:
         - AI Visibility
       security:
@@ -1603,12 +2917,28 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                name:
+                  type: string
+                brands:
+                  type: array
+                  items:
+                    type: string
+                platforms:
+                  type: array
+                  items:
+                    type: string
       responses:
         '200':
           description: Project updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIVisibilityProject'
     delete:
       operationId: deleteAIVisibilityProject
       summary: Delete AI visibility project
+      description: Removes an AI visibility project
       tags:
         - AI Visibility
       security:
@@ -1625,8 +2955,9 @@ paths:
 
   /v1/ai-visibility/projects/{id}/run:
     post:
-      operationId: runAIVisibilityQuery
-      summary: Run AI visibility query
+      operationId: runAIVisibilityProject
+      summary: Run AI visibility project
+      description: Triggers a run for an AI visibility project
       tags:
         - AI Visibility
       security:
@@ -1639,12 +2970,13 @@ paths:
             type: integer
       responses:
         '202':
-          description: Query run started
+          description: Run triggered
 
   /v1/ai-visibility/projects/{id}/analytics:
     get:
       operationId: getAIVisibilityAnalytics
       summary: Get AI visibility analytics
+      description: Returns analytics for an AI visibility project
       tags:
         - AI Visibility
       security:
@@ -1658,11 +2990,28 @@ paths:
       responses:
         '200':
           description: Analytics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mention_rate:
+                    type: number
+                  by_platform:
+                    type: object
+                  trend:
+                    type: array
+                    items:
+                      type: object
 
+  # ========================================
+  # Local SEO API Endpoints
+  # ========================================
   /v1/sites/{siteId}/locations:
     get:
       operationId: listBusinessLocations
       summary: List business locations
+      description: Returns business locations for a site
       tags:
         - Local SEO
       security:
@@ -1673,12 +3022,30 @@ paths:
           required: true
           schema:
             type: integer
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+        - name: gbp_connected
+          in: query
+          schema:
+            type: boolean
       responses:
         '200':
-          description: Locations list
+          description: List of locations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BusinessLocation'
     post:
       operationId: createBusinessLocation
       summary: Create business location
+      description: Creates a new business location
       tags:
         - Local SEO
       security:
@@ -1703,14 +3070,28 @@ paths:
                   type: string
                 address:
                   type: string
+                phone:
+                  type: string
+                website:
+                  type: string
+                  format: uri
+                category:
+                  type: string
+                gbp_place_id:
+                  type: string
       responses:
         '201':
           description: Location created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessLocation'
 
   /v1/locations/{id}:
     get:
       operationId: getBusinessLocation
       summary: Get business location
+      description: Returns details of a specific location
       tags:
         - Local SEO
       security:
@@ -1724,9 +3105,14 @@ paths:
       responses:
         '200':
           description: Location details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessLocation'
     put:
       operationId: updateBusinessLocation
       summary: Update business location
+      description: Updates a business location
       tags:
         - Local SEO
       security:
@@ -1743,12 +3129,30 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                name:
+                  type: string
+                address:
+                  type: string
+                phone:
+                  type: string
+                website:
+                  type: string
+                category:
+                  type: string
+                is_active:
+                  type: boolean
       responses:
         '200':
           description: Location updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessLocation'
     delete:
       operationId: deleteBusinessLocation
       summary: Delete business location
+      description: Removes a business location
       tags:
         - Local SEO
       security:
@@ -1767,6 +3171,7 @@ paths:
     post:
       operationId: connectGBP
       summary: Connect Google Business Profile
+      description: Initiates GBP OAuth connection
       tags:
         - Local SEO
       security:
@@ -1779,30 +3184,21 @@ paths:
             type: integer
       responses:
         '200':
-          description: OAuth URL
-
-  /v1/locations/{id}/rankings:
-    get:
-      operationId: getLocationRankings
-      summary: Get location rankings
-      tags:
-        - Local SEO
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Location rankings
+          description: OAuth redirect URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
 
   /v1/locations/{id}/insights:
     get:
       operationId: getLocationInsights
-      summary: Get location GBP insights
+      summary: Get location insights
+      description: Returns GBP insights for a location
       tags:
         - Local SEO
       security:
@@ -1813,14 +3209,40 @@ paths:
           required: true
           schema:
             type: integer
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
       responses:
         '200':
-          description: GBP insights
+          description: Insights data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  views:
+                    type: integer
+                  searches:
+                    type: integer
+                  calls:
+                    type: integer
+                  directions:
+                    type: integer
+                  website_clicks:
+                    type: integer
 
   /v1/locations/{id}/reviews:
     get:
       operationId: getLocationReviews
       summary: Get location reviews
+      description: Returns GBP reviews for a location
       tags:
         - Local SEO
       security:
@@ -1831,26 +3253,101 @@ paths:
           required: true
           schema:
             type: integer
+        - name: rating
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - name: sentiment
+          in: query
+          schema:
+            type: string
+            enum: [positive, negative, neutral]
+        - name: page
+          in: query
+          schema:
+            type: integer
       responses:
         '200':
-          description: Reviews list
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        author_name:
+                          type: string
+                        rating:
+                          type: integer
+                        review_text:
+                          type: string
+                        review_date:
+                          type: string
+                          format: date-time
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
 
   /v1/local-seo/alerts:
     get:
       operationId: listLocalSEOAlerts
       summary: List local SEO alerts
+      description: Returns local SEO alerts for the authenticated user
       tags:
         - Local SEO
       security:
         - BearerAuth: []
+      parameters:
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [info, warning, critical]
+        - name: is_read
+          in: query
+          schema:
+            type: boolean
       responses:
         '200':
-          description: Alerts list
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        alert_type:
+                          type: string
+                        severity:
+                          type: string
+                        title:
+                          type: string
+                        message:
+                          type: string
+                        is_read:
+                          type: boolean
+                        created_at:
+                          type: string
+                          format: date-time
 
   /v1/local-seo/alerts/unread-count:
     get:
-      operationId: getUnreadAlertCount
+      operationId: getLocalSEOAlertsUnreadCount
       summary: Get unread alert count
+      description: Returns count of unread local SEO alerts
       tags:
         - Local SEO
       security:
@@ -1858,53 +3355,96 @@ paths:
       responses:
         '200':
           description: Unread count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
 
+  /v1/local-seo/alerts/{id}/read:
+    post:
+      operationId: markLocalSEOAlertRead
+      summary: Mark alert as read
+      description: Marks a local SEO alert as read
+      tags:
+        - Local SEO
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Alert marked
+
+  # ========================================
+  # Webhooks API Endpoints
+  # ========================================
   /v1/webhooks:
     get:
       operationId: listWebhooks
       summary: List webhooks
+      description: Returns a list of webhooks for the authenticated user
       tags:
         - Webhooks
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       responses:
         '200':
-          description: Webhooks list
+          description: List of webhooks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Webhook'
     post:
       operationId: createWebhook
       summary: Create webhook
+      description: Creates a new webhook
       tags:
         - Webhooks
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - url
-                - events
-              properties:
-                url:
-                  type: string
-                  format: uri
-                events:
-                  type: array
-                  items:
-                    type: string
+              $ref: '#/components/schemas/WebhookCreateRequest'
       responses:
         '201':
           description: Webhook created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /v1/webhooks/{id}:
     get:
       operationId: getWebhook
-      summary: Get webhook details
+      summary: Get webhook
+      description: Returns details of a specific webhook
       tags:
         - Webhooks
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       parameters:
         - name: id
@@ -1915,12 +3455,24 @@ paths:
       responses:
         '200':
           description: Webhook details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+        '404':
+          description: Webhook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     put:
       operationId: updateWebhook
       summary: Update webhook
+      description: Updates a webhook
       tags:
         - Webhooks
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       parameters:
         - name: id
@@ -1933,16 +3485,22 @@ paths:
         content:
           application/json:
             schema:
-              type: object
+              $ref: '#/components/schemas/WebhookCreateRequest'
       responses:
         '200':
           description: Webhook updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
     delete:
       operationId: deleteWebhook
       summary: Delete webhook
+      description: Removes a webhook
       tags:
         - Webhooks
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       parameters:
         - name: id
@@ -1958,9 +3516,11 @@ paths:
     post:
       operationId: testWebhook
       summary: Test webhook
+      description: Sends a test payload to the webhook URL
       tags:
         - Webhooks
       security:
+        - BearerAuth: []
         - ApiKeyAuth: []
       parameters:
         - name: id
@@ -1971,11 +3531,920 @@ paths:
       responses:
         '200':
           description: Test result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  response_code:
+                    type: integer
+                  response_time_ms:
+                    type: integer
 
+  # ========================================
+  # API Key Management Endpoints
+  # ========================================
+  /v1/api-keys:
+    get:
+      operationId: listApiKeys
+      summary: List API keys
+      description: Returns a list of API keys for the authenticated user
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApiKey'
+    post:
+      operationId: createApiKey
+      summary: Create API key
+      description: Creates a new API key
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                expires_at:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKey'
+
+  /v1/api-keys/{id}:
+    get:
+      operationId: getApiKey
+      summary: Get API key
+      description: Returns details of a specific API key
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: API key details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKey'
+    delete:
+      operationId: deleteApiKey
+      summary: Delete API key
+      description: Revokes an API key
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: API key deleted
+
+  # ========================================
+  # Models API Endpoints
+  # ========================================
+  /v1/models:
+    get:
+      operationId: listModels
+      summary: List available models
+      description: Returns list of available AI models
+      tags:
+        - Public
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        provider:
+                          type: string
+                        type:
+                          type: string
+                        is_active:
+                          type: boolean
+
+  /v1/models/{id}/pricing:
+    get:
+      operationId: getModelPricing
+      summary: Get model pricing
+      description: Returns pricing details for a specific model
+      tags:
+        - Public
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Model pricing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model_id:
+                    type: integer
+                  input_cost_per_1k:
+                    type: number
+                    format: float
+                  output_cost_per_1k:
+                    type: number
+                    format: float
+                  currency:
+                    type: string
+                    example: "USD"
+
+  /v1/ai/models:
+    get:
+      operationId: listAIModels
+      summary: List AI models
+      description: Returns list of AI models for selection
+      tags:
+        - Public
+      responses:
+        '200':
+          description: List of AI models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        provider:
+                          type: string
+                        capabilities:
+                          type: array
+                          items:
+                            type: string
+
+  # ========================================
+  # Tools API Endpoints
+  # ========================================
+  /v1/tools:
+    get:
+      operationId: listTools
+      summary: List available tools
+      description: Returns list of available SEO tools
+      tags:
+        - Tools
+      responses:
+        '200':
+          description: List of tools
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        category:
+                          type: string
+
+  /v1/tools/analyze:
+    post:
+      operationId: analyzeWithTool
+      summary: Analyze with tool
+      description: Runs an analysis using a specified tool
+      tags:
+        - Tools
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tool
+                - url
+              properties:
+                tool:
+                  type: string
+                url:
+                  type: string
+                  format: uri
+                options:
+                  type: object
+      responses:
+        '200':
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+
+  # ========================================
+  # PWA Guide Endpoints
+  # ========================================
+  /v1/pwa/guide:
+    get:
+      operationId: getPWAGuide
+      summary: Get PWA guide
+      description: Returns PWA implementation guide
+      tags:
+        - Public
+      responses:
+        '200':
+          description: PWA guide
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        title:
+                          type: string
+                        content:
+                          type: string
+
+  # ========================================
+  # GSC Integration Endpoints
+  # ========================================
+  /gsc/connect:
+    post:
+      operationId: connectGSC
+      summary: Connect Google Search Console
+      description: Initiates GSC OAuth connection
+      tags:
+        - GSC
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OAuth redirect URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+
+  /gsc/disconnect/{propertyId}:
+    delete:
+      operationId: disconnectGSC
+      summary: Disconnect Google Search Console
+      description: Removes GSC connection for a property
+      tags:
+        - GSC
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: propertyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: GSC disconnected
+
+  /gsc/properties:
+    get:
+      operationId: listGSCProperties
+      summary: List GSC properties
+      description: Returns list of connected GSC properties
+      tags:
+        - GSC
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of properties
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        url:
+                          type: string
+                        permission_level:
+                          type: string
+
+  /v1/projects/{projectId}/gsc:
+    get:
+      operationId: getProjectGSCData
+      summary: Get project GSC data
+      description: Returns GSC data for a project
+      tags:
+        - GSC
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: GSC data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clicks:
+                    type: integer
+                  impressions:
+                    type: integer
+                  ctr:
+                    type: number
+                    format: float
+                  position:
+                    type: number
+                    format: float
+                  top_queries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        query:
+                          type: string
+                        clicks:
+                          type: integer
+                        impressions:
+                          type: integer
+
+  /v1/projects/{projectId}/gsc/opportunities:
+    get:
+      operationId: getGSCOpportunities
+      summary: Get GSC opportunities
+      description: Returns SEO opportunities from GSC data
+      tags:
+        - GSC
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of opportunities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        query:
+                          type: string
+                        current_position:
+                          type: number
+                        impressions:
+                          type: integer
+                        opportunity_type:
+                          type: string
+
+  # ========================================
+  # Notifications Endpoints
+  # ========================================
+  /v1/notifications:
+    get:
+      operationId: listNotifications
+      summary: List notifications
+      description: Returns notifications for the authenticated user
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: unread_only
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+  /v1/notifications/unread-count:
+    get:
+      operationId: getUnreadNotificationCount
+      summary: Get unread notification count
+      description: Returns count of unread notifications
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+
+  /v1/notifications/{notification}/read:
+    patch:
+      operationId: markNotificationRead
+      summary: Mark notification as read
+      description: Marks a notification as read
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: notification
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification marked as read
+
+  /v1/notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      summary: Mark all notifications as read
+      description: Marks all notifications as read
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
+
+  # ========================================
+  # Dashboard Endpoints
+  # ========================================
+  /v1/dashboard:
+    get:
+      operationId: getUserDashboard
+      summary: Get user dashboard
+      description: Returns dashboard data for the authenticated user
+      tags:
+        - Sites
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stats:
+                    type: object
+                  recent_sites:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Site'
+                  alerts:
+                    type: array
+                    items:
+                      type: object
+
+  /v1/dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      summary: Get dashboard statistics
+      description: Returns statistics for the user dashboard
+      tags:
+        - Sites
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+
+  # ========================================
+  # Credits & Payments Endpoints
+  # ========================================
+  /v1/credits/transactions:
+    get:
+      operationId: listCreditTransactions
+      summary: List credit transactions
+      description: Returns credit transaction history
+      tags:
+        - Credits
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [purchase, usage, refund, bonus]
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        amount:
+                          type: integer
+                        type:
+                          type: string
+                        description:
+                          type: string
+                        balance_after:
+                          type: integer
+                        created_at:
+                          type: string
+                          format: date-time
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+  /v1/payments/methods:
+    get:
+      operationId: listPaymentMethods
+      summary: List payment methods
+      description: Returns saved payment methods
+      tags:
+        - Credits
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of payment methods
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        type:
+                          type: string
+                          enum: [card, paypal]
+                        last_four:
+                          type: string
+                        brand:
+                          type: string
+                        is_default:
+                          type: boolean
+
+  /v1/payments/methods/{id}:
+    delete:
+      operationId: deletePaymentMethod
+      summary: Delete payment method
+      description: Removes a saved payment method
+      tags:
+        - Credits
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Payment method deleted
+
+  /v1/payments/paypal/order:
+    post:
+      operationId: createPayPalOrder
+      summary: Create PayPal order
+      description: Creates a PayPal order for credit purchase
+      tags:
+        - Credits
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: integer
+                  description: Credit amount to purchase
+                currency:
+                  type: string
+                  default: "USD"
+      responses:
+        '200':
+          description: PayPal order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order_id:
+                    type: string
+                  approval_url:
+                    type: string
+                    format: uri
+
+  /v1/payments/paypal/capture:
+    post:
+      operationId: capturePayPalOrder
+      summary: Capture PayPal order
+      description: Captures a PayPal order after approval
+      tags:
+        - Credits
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - order_id
+              properties:
+                order_id:
+                  type: string
+      responses:
+        '200':
+          description: Payment captured
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  credits_added:
+                    type: integer
+                  new_balance:
+                    type: integer
+
+  /v1/payments/paypal/webhook:
+    post:
+      operationId: handlePayPalWebhook
+      summary: Handle PayPal webhook
+      description: Receives PayPal webhook events
+      tags:
+        - Credits
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+
+  # ========================================
+  # Content Decay Endpoints
+  # ========================================
+  /v1/sites/{siteId}/content-decay/summary:
+    get:
+      operationId: getContentDecaySummary
+      summary: Get content decay summary
+      description: Returns content decay summary for a site
+      tags:
+        - Analysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Content decay summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_articles:
+                    type: integer
+                  decayed_articles:
+                    type: integer
+                  avg_position_drop:
+                    type: number
+                  traffic_loss:
+                    type: integer
+
+  /v1/sites/{siteId}/content-decay/run:
+    post:
+      operationId: runContentDecayDetection
+      summary: Run content decay detection
+      description: Triggers content decay detection for a site
+      tags:
+        - Analysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '202':
+          description: Detection started
+
+  /v1/sites/{siteId}/content-decay/candidates:
+    get:
+      operationId: listContentDecayCandidates
+      summary: List content decay candidates
+      description: Returns articles showing content decay
+      tags:
+        - Analysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [high, medium, low]
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of decay candidates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        url:
+                          type: string
+                        title:
+                          type: string
+                        position_drop:
+                          type: integer
+                        traffic_drop:
+                          type: number
+                        last_updated:
+                          type: string
+                          format: date
+
+  # ========================================
+  # Admin Endpoints
+  # ========================================
   /v1/admin/stats:
     get:
       operationId: getAdminStats
       summary: Get admin statistics
+      description: Returns system-wide statistics (admin only)
       tags:
         - Admin
       security:
@@ -1987,37 +4456,52 @@ paths:
             application/json:
               schema:
                 type: object
-    post:
-      operationId: refreshAdminStats
-      summary: Refresh admin statistics
-      tags:
-        - Admin
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Statistics refreshed
+                properties:
+                  total_users:
+                    type: integer
+                  active_users:
+                    type: integer
+                  total_sites:
+                    type: integer
+                  total_keywords:
+                    type: integer
+                  total_audits:
+                    type: integer
+                  revenue:
+                    type: object
+                    properties:
+                      today:
+                        type: number
+                      this_month:
+                        type: number
+                      total:
+                        type: number
 
   /v1/admin/users:
     get:
-      operationId: listUsers
-      summary: List users
+      operationId: listAdminUsers
+      summary: List users (admin)
+      description: Returns paginated list of users
       tags:
         - Admin
       security:
         - BearerAuth: []
       parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
         - name: search
           in: query
           schema:
             type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
       responses:
         '200':
-          description: Users list
+          description: List of users
           content:
             application/json:
               schema:
@@ -2027,9 +4511,12 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/User'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
     post:
-      operationId: createUser
-      summary: Create user
+      operationId: createAdminUser
+      summary: Create user (admin)
+      description: Creates a new user
       tags:
         - Admin
       security:
@@ -2052,14 +4539,22 @@ paths:
                   format: email
                 password:
                   type: string
+                  format: password
+                role:
+                  type: string
       responses:
         '201':
           description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
 
   /v1/admin/users/{id}:
     get:
-      operationId: getUser
-      summary: Get user details
+      operationId: getAdminUser
+      summary: Get user details (admin)
+      description: Returns details of a specific user
       tags:
         - Admin
       security:
@@ -2073,9 +4568,14 @@ paths:
       responses:
         '200':
           description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
     put:
-      operationId: updateUser
-      summary: Update user
+      operationId: updateAdminUser
+      summary: Update user (admin)
+      description: Updates a user's details
       tags:
         - Admin
       security:
@@ -2092,12 +4592,26 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                role:
+                  type: string
+                is_active:
+                  type: boolean
       responses:
         '200':
           description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
     delete:
-      operationId: deleteUser
-      summary: Delete user
+      operationId: deleteAdminUser
+      summary: Delete user (admin)
+      description: Removes a user
       tags:
         - Admin
       security:
@@ -2114,8 +4628,9 @@ paths:
 
   /v1/admin/health/overview:
     get:
-      operationId: getHealthOverview
+      operationId: getAdminHealthOverview
       summary: Get system health overview
+      description: Returns system health metrics
       tags:
         - Admin
       security:
@@ -2123,11 +4638,43 @@ paths:
       responses:
         '200':
           description: Health overview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  services:
+                    type: object
+                    properties:
+                      database:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                          latency_ms:
+                            type: integer
+                      redis:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                          memory_used:
+                            type: string
+                      queue:
+                        type: object
+                        properties:
+                          pending:
+                            type: integer
+                          failed:
+                            type: integer
 
   /v1/admin/health/queues:
     get:
-      operationId: getQueueStatus
+      operationId: getAdminQueueStatus
       summary: Get queue status
+      description: Returns queue health and statistics
       tags:
         - Admin
       security:
@@ -2135,11 +4682,30 @@ paths:
       responses:
         '200':
           description: Queue status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queues:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        pending:
+                          type: integer
+                        processing:
+                          type: integer
+                        failed:
+                          type: integer
 
   /v1/admin/health/database:
     get:
-      operationId: getDatabaseMetrics
+      operationId: getAdminDatabaseMetrics
       summary: Get database metrics
+      description: Returns database health and metrics
       tags:
         - Admin
       security:
@@ -2147,11 +4713,32 @@ paths:
       responses:
         '200':
           description: Database metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connections:
+                    type: integer
+                  size_mb:
+                    type: number
+                  tables:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        rows:
+                          type: integer
+                        size_mb:
+                          type: number
 
   /v1/admin/health/alerts:
     get:
-      operationId: getSystemAlerts
+      operationId: getAdminAlerts
       summary: Get system alerts
+      description: Returns system alerts and warnings
       tags:
         - Admin
       security:
@@ -2159,11 +4746,34 @@ paths:
       responses:
         '200':
           description: System alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        type:
+                          type: string
+                          enum: [warning, critical, info]
+                        message:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        is_resolved:
+                          type: boolean
 
   /v1/admin/credits/overview:
     get:
-      operationId: getCreditsOverview
+      operationId: getAdminCreditsOverview
       summary: Get credits overview
+      description: Returns credits statistics
       tags:
         - Admin
       security:
@@ -2171,37 +4781,79 @@ paths:
       responses:
         '200':
           description: Credits overview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_credits_purchased:
+                    type: integer
+                  total_credits_used:
+                    type: integer
+                  total_revenue:
+                    type: number
+                  average_per_user:
+                    type: number
 
   /v1/admin/credits/transactions:
     get:
-      operationId: listCreditTransactions
-      summary: List credit transactions
+      operationId: getAdminCreditTransactions
+      summary: List credit transactions (admin)
+      description: Returns all credit transactions
       tags:
         - Admin
       security:
         - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
       responses:
         '200':
-          description: Transactions list
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        user_id:
+                          type: integer
+                        amount:
+                          type: integer
+                        type:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
 
-  /v1/payments/methods:
+  # ========================================
+  # SERP Features Endpoints
+  # ========================================
+  /v1/keywords/{id}/serp-features:
     get:
-      operationId: listPaymentMethods
-      summary: List payment methods
+      operationId: getKeywordSerpFeatures
+      summary: Get keyword SERP features
+      description: Returns SERP features for a keyword
       tags:
-        - Payments
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Payment methods
-
-  /v1/payments/methods/{id}:
-    delete:
-      operationId: deletePaymentMethod
-      summary: Delete payment method
-      tags:
-        - Payments
+        - Keywords
       security:
         - BearerAuth: []
       parameters:
@@ -2211,38 +4863,136 @@ paths:
           schema:
             type: integer
       responses:
-        '204':
-          description: Payment method deleted
+        '200':
+          description: SERP features
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        is_present:
+                          type: boolean
+                        position:
+                          type: integer
+                          nullable: true
 
-  /v1/payments/paypal/order:
-    post:
-      operationId: createPayPalOrder
-      summary: Create PayPal order
+  /v1/sites/{siteId}/serp-features:
+    get:
+      operationId: getSiteSerpFeatures
+      summary: Get site SERP features
+      description: Returns SERP features for a site's keywords
       tags:
-        - Payments
+        - Sites
       security:
         - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - amount
-              properties:
-                amount:
-                  type: number
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
       responses:
         '200':
-          description: PayPal order created
+          description: Site SERP features
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                  features:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        count:
+                          type: integer
 
-  /v1/payments/paypal/capture:
-    post:
-      operationId: capturePayPalOrder
-      summary: Capture PayPal order
+  /v1/sites/{siteId}/serp-features/summary:
+    get:
+      operationId: getSiteSerpFeaturesSummary
+      summary: Get site SERP features summary
+      description: Returns summary of SERP features for a site
       tags:
-        - Payments
+        - Sites
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: SERP features summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_keywords:
+                    type: integer
+                  featured_snippets:
+                    type: integer
+                  local_pack:
+                    type: integer
+                  people_also_ask:
+                    type: integer
+                  image_pack:
+                    type: integer
+                  video:
+                    type: integer
+
+  # ========================================
+  # Onboarding Endpoints
+  # ========================================
+  /v1/onboarding:
+    get:
+      operationId: getOnboardingStatus
+      summary: Get onboarding status
+      description: Returns user's onboarding progress
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Onboarding status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  completed:
+                    type: boolean
+                  steps:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        label:
+                          type: string
+                        is_completed:
+                          type: boolean
+    post:
+      operationId: updateOnboarding
+      summary: Update onboarding progress
+      description: Updates onboarding step completion
+      tags:
+        - Auth
       security:
         - BearerAuth: []
       requestBody:
@@ -2252,110 +5002,38 @@ paths:
             schema:
               type: object
               required:
-                - order_id
+                - step
               properties:
-                order_id:
+                step:
                   type: string
+                completed:
+                  type: boolean
       responses:
         '200':
-          description: Payment captured
+          description: Onboarding updated
 
-  /v1/payments/paypal/webhook:
+  /v1/onboarding/complete:
     post:
-      operationId: handlePayPalWebhook
-      summary: Handle PayPal webhook
+      operationId: completeOnboarding
+      summary: Complete onboarding
+      description: Marks onboarding as complete
       tags:
-        - Payments
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        '200':
-          description: Webhook processed
-
-  /v1/credits/transactions:
-    get:
-      operationId: listUserCreditTransactions
-      summary: List user credit transactions
-      tags:
-        - Payments
+        - Auth
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: Transactions list
+          description: Onboarding completed
 
-  /v1/models:
-    get:
-      operationId: listModels
-      summary: List AI models
-      tags:
-        - Public
-      responses:
-        '200':
-          description: Models list
-
-  /v1/models/{id}/pricing:
-    get:
-      operationId: getModelPricing
-      summary: Get model pricing
-      tags:
-        - Public
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Model pricing
-
-  /v1/ai/models:
-    get:
-      operationId: listAIModels
-      summary: List AI models for selection
-      tags:
-        - Public
-      responses:
-        '200':
-          description: AI models list
-
-  /v1/tools:
-    get:
-      operationId: listTools
-      summary: List available SEO tools
-      tags:
-        - Public
-      responses:
-        '200':
-          description: Tools list
-
-  /v1/tools/analyze:
+  /v1/onboarding/skip:
     post:
-      operationId: analyzeWithTool
-      summary: Analyze with SEO tool
+      operationId: skipOnboarding
+      summary: Skip onboarding
+      description: Skips the onboarding process
       tags:
-        - Public
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
+        - Auth
+      security:
+        - BearerAuth: []
       responses:
         '200':
-          description: Analysis result
-
-  /v1/pwa/guide:
-    get:
-      operationId: getPWAGuide
-      summary: Get PWA guide
-      tags:
-        - Public
-      responses:
-        '200':
-          description: PWA guide
+          description: Onboarding skipped
