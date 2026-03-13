@@ -149,3 +149,15 @@ Status → Done
 - Parent remains open: `SPEC-012` and `FEAT-012` are still `In Progress` because `TASK-12-10` is `Blocked` and `TASK-12-11` remains `Tested Locally - Passed`.
 - Status -> Done.
 
+### [2026-03-13 14:20 GMT+2] DocSystemAnalyst: Re-verification Complete
+- **Task Status:** Done (confirmed)
+- **DOCUMENTATION.md:** Lines 26165-26312 (148 lines) ✅
+- **API Endpoints:** 3 documented (connect, disconnect, properties) ✅
+- **Security Implementation:** 7 measures documented ✅
+- **Test Coverage:** 25 tests, 50 assertions ✅
+- **Production Deployed:** 2026-02-27, commit 0fd81f7 ✅
+- **All Acceptance Criteria:** Verified complete ✅
+- Completion marker written: `logs/completed/task/TASK-12-7.json`
+- Lock cleared, active-agents entry cleared
+- Parent SPEC-012: In Progress (TASK-12-10 Blocked, TASK-12-11 at "Tested Locally")
+
