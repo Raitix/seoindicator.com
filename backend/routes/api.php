@@ -829,3 +829,22 @@ Route::prefix('v1')->middleware(['throttle:60,1'])->group(function () {
 Route::get('alerts/unsubscribe/{user}', [AlertUnsubscribeController::class, 'unsubscribe'])
     ->name('alerts.unsubscribe')
     ->middleware('signed');
+
+/*
+|--------------------------------------------------------------------------
+| Headless Crawler Routes (TASK-22-11, SPEC-022)
+|--------------------------------------------------------------------------
+|
+| REST API endpoints for the Headless Crawler Service.
+| All routes require authentication (Sanctum) and rate limiting.
+|
+*/
+Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
+    Route::prefix('crawler')->group(function () {
+        Route::post('crawl', [CrawlController::class, 'store'])->name('api.v1.crawler.store');
+        Route::get('jobs', [CrawlController::class, 'index'])->name('api.v1.crawler.index');
+        Route::get('jobs/{jobId}', [CrawlController::class, 'show'])->name('api.v1.crawler.show');
+        Route::get('jobs/{jobId}/content', [CrawlController::class, 'content'])->name('api.v1.crawler.content');
+        Route::delete('jobs/{jobId}', [CrawlController::class, 'destroy'])->name('api.v1.crawler.destroy');
+    });
+});

@@ -46,10 +46,10 @@ class CrawlQueueService
     public function __construct(?UrlNormalizer $urlNormalizer = null)
     {
         $this->urlNormalizer = $urlNormalizer ?? new UrlNormalizer();
-        $this->maxConcurrentPages = config('crawler.queue.max_concurrent_pages', 3);
-        $this->retryAttempts = config('crawler.queue.retry_attempts', 2);
-        $this->lockTimeout = config('crawler.queue.lock_timeout', 300);
-        $this->dedupMethod = config('crawler.queue.dedup_method', 'set');
+        $this->maxConcurrentPages = config('crawler.max_concurrent_pages', 3);
+        $this->retryAttempts = config('crawler.queue_retry_attempts', 2);
+        $this->lockTimeout = config('crawler.queue_lock_timeout', 300);
+        $this->dedupMethod = config('crawler.queue_dedup_method', 'set');
     }
 
     // =========================================================================
@@ -154,8 +154,8 @@ class CrawlQueueService
                 'error' => null,
                 'locked_at' => null,
                 'locked_by' => null,
-                'created_at' => now()->toIso8601String(),
-                'updated_at' => now()->toIso8601String(),
+                'created_at' => $this->getTimestamp(),
+                'updated_at' => $this->getTimestamp(),
             ];
 
             // Store in queue and items
@@ -177,6 +177,7 @@ class CrawlQueueService
 
     /**
      * Get the next pending item from the queue.
+     * Locks the item to prevent concurrent processing.
      *
      * @param string $jobId The job identifier
      * @return array|null The next item or null if none available
@@ -206,10 +207,37 @@ class CrawlQueueService
 
         $item = $pendingItems[0];
 
-        // Lock the item immediately
-        $this->markProcessing($item['id']);
+        // Lock the item (set locked_at, but keep status as pending)
+        // This allows the caller to process it and call markProcessing when ready
+        $this->lockItem($item['id']);
 
         return $this->items[$item['id']];
+    }
+
+    /**
+     * Lock an item for processing.
+     *
+     * @param string $itemId The item identifier
+     * @param string|null $workerId Optional worker identifier
+     */
+    protected function lockItem(string $itemId, ?string $workerId = null): void
+    {
+        $item = $this->getItem($itemId);
+
+        if (!$item) {
+            return;
+        }
+
+        $jobId = $item['crawl_job_id'];
+
+        // Update item - lock it but don't change status yet
+        $item['locked_at'] = $this->getTimestamp();
+        $item['locked_by'] = $workerId;
+        $item['updated_at'] = $this->getTimestamp();
+
+        // Store updated item
+        $this->items[$itemId] = $item;
+        $this->queues[$jobId][$itemId] = $item;
     }
 
     /**
@@ -231,10 +259,10 @@ class CrawlQueueService
 
         // Update item
         $item['status'] = 'processing';
-        $item['locked_at'] = now()->toIso8601String();
+        $item['locked_at'] = $this->getTimestamp();
         $item['locked_by'] = $workerId;
         $item['attempts'] = ($item['attempts'] ?? 0) + 1;
-        $item['updated_at'] = now()->toIso8601String();
+        $item['updated_at'] = $this->getTimestamp();
 
         // Store updated item
         $this->items[$itemId] = $item;
@@ -261,7 +289,7 @@ class CrawlQueueService
         $item['status'] = 'completed';
         $item['locked_at'] = null;
         $item['locked_by'] = null;
-        $item['updated_at'] = now()->toIso8601String();
+        $item['updated_at'] = $this->getTimestamp();
 
         // Store updated item
         $this->items[$itemId] = $item;
@@ -289,7 +317,7 @@ class CrawlQueueService
         $item['locked_at'] = null;
         $item['locked_by'] = null;
         $item['error'] = $error;
-        $item['updated_at'] = now()->toIso8601String();
+        $item['updated_at'] = $this->getTimestamp();
 
         // Check if we should retry
         $shouldRetry = $this->shouldRetry($item, $error);
@@ -336,7 +364,7 @@ class CrawlQueueService
         $item['locked_at'] = null;
         $item['locked_by'] = null;
         $item['error'] = $reason;
-        $item['updated_at'] = now()->toIso8601String();
+        $item['updated_at'] = $this->getTimestamp();
 
         // Store updated item
         $this->items[$itemId] = $item;
@@ -483,12 +511,26 @@ class CrawlQueueService
             return false;
         }
 
+        // Don't retry on connection-level failures (timeouts, network errors)
+        // These indicate infrastructure issues that won't resolve quickly
+        if (preg_match('/(timeout|connection|network|dns)/i', $error)) {
+            return false;
+        }
+
         // Check max attempts
         if ($item['attempts'] >= $this->retryAttempts) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Get a timestamp with microsecond precision.
+     */
+    protected function getTimestamp(): string
+    {
+        return now()->format('Y-m-d\TH:i:s.uP');
     }
 
     /**
