@@ -283,3 +283,19 @@ Last updated: 2026-03-07
 - **Tests:** 24 tests, 44 assertions - all passing
 - **Note:** Backend-only feature for email delivery. Code was already committed by Developer/LocalTester. DevOps verified deployment and updated status.
 
+### TASK-22-10 (Link Extraction and Queue Management)
+- **Date:** 2026-03-13
+- **Method:** Local/self-hosted deployment
+- **Deployment ID:** 20260313T164937Z-0c17c1fa
+- **Result:** Successful
+- **Duration:** ~3 minutes (build: 1m18s, deploy: 1m24s, smoke: 10s)
+- **Commit:** 92a944d7c29f
+- **Health Check:** 200 OK, production smoke passed
+- **What was deployed:**
+  - `CrawlQueueService.php` - In-memory queue with priority ordering, duplicate detection, retry logic
+  - `LinkExtractorService.php` - Link extraction from HTML, JS onclick handling, URL resolution
+  - 93 tests (148 assertions) - ALL PASS
+  - DTOs: QueueItem, QueueStats
+- **Issue Encountered:** Initial deployment failed due to missing `satori` package. Fixed with `npm install satori --save-dev`.
+- **Note:** Part of SPEC-022 (Headless Crawler Service). Backend-only services for multi-page crawling support.
+
