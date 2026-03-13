@@ -299,4 +299,29 @@ return [
     // DNS cache TTL in seconds
     'dns_cache_ttl' => env('CRAWLER_DNS_CACHE_TTL', 60),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Queue Configuration (TASK-22-10)
+    |--------------------------------------------------------------------------
+    |
+    | Settings for the crawl queue service managing multi-page crawling.
+    |
+    | @see \App\Services\Crawler\CrawlQueueService
+    |
+    */
+
+    'queue' => [
+        // Maximum concurrent pages being processed (default: 3)
+        'max_concurrent_pages' => env('CRAWLER_MAX_CONCURRENT_PAGES', 3),
+
+        // Maximum retry attempts for failed items (default: 2)
+        'retry_attempts' => env('CRAWLER_QUEUE_RETRY_ATTEMPTS', 2),
+
+        // Lock timeout in seconds for concurrent processing (default: 5 minutes)
+        'lock_timeout' => env('CRAWLER_QUEUE_LOCK_TIMEOUT', 300),
+
+        // Deduplication method: 'set' or 'bloom' (default: 'set')
+        'dedup_method' => env('CRAWLER_DEDUP_METHOD', 'set'),
+    ],
+
 ];
