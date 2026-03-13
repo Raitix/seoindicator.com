@@ -792,8 +792,9 @@ class OpenApiSpecTest extends TestCase
                 foreach ($responses as $code => $response) {
                     if (!is_array($response)) continue;
                     
-                    // Success responses should have content
-                    if (str_starts_with($code, '2') && $code !== '204') {
+                    // Success responses should have content (except 204 No Content)
+                    $codeStr = (string) $code;
+                    if (str_starts_with($codeStr, '2') && $codeStr !== '204') {
                         $this->assertArrayHasKey('content', $response, 
                             "Response {$code} for '{$method} {$path}' should have content");
                     }

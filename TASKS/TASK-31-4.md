@@ -1,7 +1,7 @@
 # TASK-31-4: UnifiedPromptService for Prompt Building
 
 ## STATUS
-`Tests Written`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -174,7 +174,7 @@ _Agent log_
 
 **Dependency Analysis:**
 - **Dependencies:** NONE - Foundation task, can proceed immediately
-- **Parallel Tasks:** TASK-31-2 (ContextWindowManager - DONE ✅), TASK-31-3 (TruncationService - `To Write Tests`)
+- **Parallel Tasks:** TASK-31-2 (ContextWindowManager - DONE âœ…), TASK-31-3 (TruncationService - `To Write Tests`)
 - **Enables:** TASK-31-7 (AIAnalysisService) requires unified prompt for single AI call
 - **Phase Context:** Phase 1 Core Services - fourth task (after ContextWindowManager, TruncationService)
 

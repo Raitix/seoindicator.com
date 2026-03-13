@@ -42,6 +42,9 @@ class RateLimitResult implements \JsonSerializable
      */
     public static function allowed(int $limit, int $remaining, Carbon $resetAt): static
     {
+        // Cap remaining to limit (business rule: remaining cannot exceed limit)
+        $remaining = min($remaining, $limit);
+
         return new static(
             allowed: true,
             limit: $limit,
@@ -161,10 +164,6 @@ class RateLimitResult implements \JsonSerializable
      */
     protected function validate(): void
     {
-        if ($this->remaining > $this->limit) {
-            throw new InvalidArgumentException('Remaining cannot exceed limit.');
-        }
-
         if ($this->remaining < 0) {
             throw new InvalidArgumentException('Remaining cannot be negative.');
         }

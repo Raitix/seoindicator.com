@@ -1,7 +1,7 @@
 # TASK-34-2: AIVisibilityProject Model
 
 ## STATUS
-`Tests Ready`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -24,7 +24,7 @@ Create Eloquent models for all AI Visibility entities: `AIVisibilityProject`, `A
 
 - [ ] `AIVisibilityProject` model created
   - [ ] Fillable attributes: `brand_name`, `keywords`, `competitors`, `query_templates`, `tracking_frequency`, `is_active`, `last_queried_at`
-  - [ ] Casts: `keywords` → array, `competitors` → array, `query_templates` → array, `is_active` → boolean, `last_queried_at` → datetime
+  - [ ] Casts: `keywords` â†’ array, `competitors` â†’ array, `query_templates` â†’ array, `is_active` â†’ boolean, `last_queried_at` â†’ datetime
   - [ ] BelongsTo relationship to `User`
   - [ ] HasMany relationships: `queryResults`, `analytics`, `alerts`
   - [ ] Scope: `active()` for `is_active = true`
@@ -32,20 +32,20 @@ Create Eloquent models for all AI Visibility entities: `AIVisibilityProject`, `A
 
 - [ ] `AIQueryResult` model created
   - [ ] Fillable attributes: `project_id`, `platform`, `model`, `query_text`, `query_category`, `response_text`, `brand_mentioned`, `brand_context`, `brand_sentiment`, `competitor_mentions`, `citations`, `query_tokens`, `response_tokens`, `latency_ms`, `queried_at`, `cache_hit`
-  - [ ] Casts: `competitor_mentions` → array, `citations` → array, `brand_mentioned` → boolean, `cache_hit` → boolean, `queried_at` → datetime
+  - [ ] Casts: `competitor_mentions` â†’ array, `citations` â†’ array, `brand_mentioned` â†’ boolean, `cache_hit` â†’ boolean, `queried_at` â†’ datetime
   - [ ] BelongsTo relationship to `AIVisibilityProject`
   - [ ] Scope: `mentioned()` for `brand_mentioned = true`
   - [ ] Scope: `forPlatform($platform)`
 
 - [ ] `AIMentionAnalytics` model created
   - [ ] Fillable attributes: `project_id`, `platform`, `period_start`, `period_end`, `total_queries`, `brand_mentions`, `mention_rate`, `competitor_mentions`, `share_of_voice`, `avg_sentiment_score`, `top_query_categories`, `mention_trend`
-  - [ ] Casts: `competitor_mentions` → array, `top_query_categories` → array, `period_start` → date, `period_end` → date
+  - [ ] Casts: `competitor_mentions` â†’ array, `top_query_categories` â†’ array, `period_start` â†’ date, `period_end` â†’ date
   - [ ] BelongsTo relationship to `AIVisibilityProject`
   - [ ] Unique constraint on `project_id + platform + period_start + period_end`
 
 - [ ] `AIVisibilityAlert` model created
   - [ ] Fillable attributes: `project_id`, `alert_type`, `threshold`, `previous_value`, `current_value`, `change_percent`, `is_read`, `is_resolved`, `triggered_at`, `resolved_at`
-  - [ ] Casts: `is_read` → boolean, `is_resolved` → boolean, `triggered_at` → datetime, `resolved_at` → datetime
+  - [ ] Casts: `is_read` â†’ boolean, `is_resolved` â†’ boolean, `triggered_at` â†’ datetime, `resolved_at` â†’ datetime
   - [ ] BelongsTo relationship to `AIVisibilityProject`
   - [ ] Scope: `unread()` for `is_read = false`
   - [ ] Scope: `unresolved()` for `is_resolved = false`
@@ -79,7 +79,7 @@ Create Eloquent models for all AI Visibility entities: `AIVisibilityProject`, `A
 
 **Priority: HIGH (confirmed)**
 - Foundation model task for SPEC-034 - creates all 4 Eloquent models
-- Enables entire downstream pipeline: services → API → frontend
+- Enables entire downstream pipeline: services â†’ API â†’ frontend
 - Model tasks are essential infrastructure for feature MVP
 
 **Risk: LOW (confirmed)**
@@ -107,12 +107,12 @@ Create Eloquent models for all AI Visibility entities: `AIVisibilityProject`, `A
   - Test property access without database
 - Implementation waits for TASK-34-1 to reach `To Test Locally`
 
-**Execution Order:** TASK-34-1 → TASK-34-2 (sequential Phase 1 foundation)
+**Execution Order:** TASK-34-1 â†’ TASK-34-2 (sequential Phase 1 foundation)
 
 **Phase Context:** Phase 1 MVP - Core Tracking
 - Model task follows migrations (TASK-34-1)
 - Enables all service tasks (TASK-34-3, 34-4, 34-5)
-- Sequential dependency chain: Migrations → Models → Services
+- Sequential dependency chain: Migrations â†’ Models â†’ Services
 
 ---
 
@@ -124,11 +124,11 @@ Create Eloquent models for all AI Visibility entities: `AIVisibilityProject`, `A
 
 | Model | Tests | Status |
 |-------|-------|--------|
-| AIVisibilityProject | 40 | ✅ Complete |
-| AIQueryResult | 45 | ✅ Complete |
-| AIMentionAnalytics | 40 | ✅ Complete |
-| AIVisibilityAlert | 40 | ✅ Complete |
-| **Total** | **165** | ✅ 100% AC coverage |
+| AIVisibilityProject | 40 | âœ… Complete |
+| AIQueryResult | 45 | âœ… Complete |
+| AIMentionAnalytics | 40 | âœ… Complete |
+| AIVisibilityAlert | 40 | âœ… Complete |
+| **Total** | **165** | âœ… 100% AC coverage |
 
 ### Test Files Created
 - `TESTS/TEST-34-2.md` - Test documentation

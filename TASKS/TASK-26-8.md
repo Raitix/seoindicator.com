@@ -1,7 +1,7 @@
 # TASK-26-8: Implement StripeGatewayService
 
 ## STATUS
-`Tests Ready`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -103,10 +103,10 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 - **Risk: High** (confirmed) - External API (Stripe), payment processing, webhook security, PII handling
 
 **Dependency Status:**
-- TASK-26-1 (Credits/Transactions Tables): `In Development` ⏳
-- TASK-26-5 (CreditService): `To Write Tests` ✅ - PreTester designing tests
+- TASK-26-1 (Credits/Transactions Tables): `In Development` â³
+- TASK-26-5 (CreditService): `To Write Tests` âœ… - PreTester designing tests
 
-**⚠️ Dependency Discrepancy Identified:**
+**âš ï¸ Dependency Discrepancy Identified:**
 Task file lists `TASK-26-1 (payment_methods table)` but:
 - TASK-26-1 creates `credits` and `credit_transactions` tables
 - `payment_methods` table is defined in SPEC-026 schema but has no explicit migration task
@@ -167,10 +167,10 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
 **Execution Order:**
-1. TASK-26-1 (Migrations) → Must include `payment_methods` table
-2. TASK-26-5 (CreditService) → To Test Locally
-3. TASK-26-8 (this task) → PreTester designs tests, Developer implements
-4. TASK-26-9 & TASK-26-10 → After this task reaches `To Test Locally`
+1. TASK-26-1 (Migrations) â†’ Must include `payment_methods` table
+2. TASK-26-5 (CreditService) â†’ To Test Locally
+3. TASK-26-8 (this task) â†’ PreTester designs tests, Developer implements
+4. TASK-26-9 & TASK-26-10 â†’ After this task reaches `To Test Locally`
 
 ---
 _Leave notes for the next agent here_

@@ -1,7 +1,7 @@
 # TASK-6-1: Database Schema - API Keys Table
 
-## Status
-`Tests Completed`
+## STATUS
+`To Develop`
 
 ## Priority
 `High`

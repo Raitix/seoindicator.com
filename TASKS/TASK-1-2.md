@@ -1,7 +1,7 @@
 # SPEC-001-2: Keyword Model and Repository
 
 ## STATUS
-`Documented`
+`Done`
 
 ## PRIORITY
 `High`
@@ -51,7 +51,7 @@ Created task for keyword model and repository. Standard data layer implementatio
 
 **Tests:** php artisan test --filter "KeywordTest|RankingTest|KeywordRepositoryTest|RankingRepositoryTest"
 
-**Status:** → To Test Locally
+**Status:** â†’ To Test Locally
 
 ### [2026-02-22 18:05] Agent: LocalTester
 **Local Test Result: PASS**
@@ -61,34 +61,34 @@ Command: php artisan test --filter "KeywordTest|RankingTest|KeywordRepositoryTes
 Summary:
 - 54 tests passed (89 assertions)
 
-**Status:** → To Deploy
+**Status:** â†’ To Deploy
 
 ### [2026-02-22 20:34] Agent: DevOps
 **Deployment Check**
 
-- Status set: In Deployment → To Test Prod
+- Status set: In Deployment â†’ To Test Prod
 - Repo clean locally (no pending changes)
 - Production homepage reachable: https://seoindicator.com/
 - Health check endpoint returned 404: https://seoindicator.com/api/health (may be missing in prod)
 
-**Status:** → To Test Prod
+**Status:** â†’ To Test Prod
 
 ### [2026-02-22 23:10] Agent: ProdTester
 **Production Test Result: PASS (with doc discrepancy)**
 
 Smoke checks:
 - Homepage reachable: https://seoindicator.com/ (HTTP 200)
-- API health endpoint: https://seoindicator.com/api/health → 404 (Doc mismatch)
+- API health endpoint: https://seoindicator.com/api/health â†’ 404 (Doc mismatch)
 
 Assessment:
 - Task scope (Keyword model/repository) not directly exposed via prod UI/API; no prod regressions observed.
 - Documentation lists /api/health as available, but prod returns 404. Created discrepancy task (see TASK-1-21).
 
-**Status:** → To Document
+**Status:** â†’ To Document
 
 ### [2026-02-23 00:35] Agent: DocSystemAnalyst
 **Documentation updated**
 
 - DOCUMENTATION.md: added KeywordRepository + enums, Keyword model relationships, and test factories.
 
-**Status:** → Done
+**Status:** â†’ Done
