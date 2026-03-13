@@ -1,7 +1,7 @@
 # TASK-27-9: Credit/Balance Aggregation Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -67,6 +67,52 @@ Create service for aggregating credit balances, spending, and revenue metrics. I
 ```
 
 ## Comments
+
+### 2026-03-13 - ProjectManager
+**Prioritization Complete**
+
+- **Priority: High** (confirmed) - Essential for Admin Dashboard MVP billing/revenue insights
+- **Risk: Medium** (confirmed) - Aggregation logic only, no external APIs
+
+**Dependency Analysis:**
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| FEAT-026 (Credits/Billing) | Partial | Tables NOT created yet |
+| TASK-26-1 (Migrations) | `To Develop` | `credits`/`credit_transactions` tables PENDING ❌ |
+| TASK-26-5 (CreditService) | `Done` | Service exists, works with mocked DB ✅ |
+| TASK-27-3 (AdminStatsService) | `To Write Tests` | Caching layer progressing ✅ |
+
+**Critical Finding:**
+- `credits` and `credit_transactions` tables do NOT exist in production
+- Migrations are created but PENDING (not run yet)
+- CreditService was tested with in-memory SQLite, not actual tables
+
+**Mitigation (from Technical Notes):**
+- Task explicitly allows: "If FEAT-026 not available, create stub methods that return placeholder data"
+- PreTester CAN design tests with mocked Credit/CreditTransaction model interfaces
+- Implementation will use stub methods returning placeholder data initially
+- When TASK-26-1 completes, stubs replaced with real aggregation queries
+
+**TDD Pattern Applied:**
+- Tests use `Credit::mock()` and `CreditTransaction::mock()` for interface-based testing
+- Test all aggregation methods with sample data structures
+- Mock database queries for balance/spend/revenue calculations
+- Implementation creates service with stub methods, swaps to real queries when tables exist
+
+**Key Methods for PreTester:**
+- `getTotalBalanceHeld(): float`
+- `getAverageBalancePerUser(): float`
+- `getUsersWithBalanceCount(): int`
+- `getLowBalanceUserCount(float $threshold): int`
+- `getTotalSpend(string $period): float`
+- `getRevenueMetrics(): array`
+
+**Downstream Impact:**
+- Enables TASK-27-10 (Credits Stats API) for dashboard endpoints
+- Provides billing insights for admin dashboard overview
+- Integration with AdminStatsService caching layer
+
+**Handoff:** Ready for PreTester to design tests using TDD with mocked model interfaces.
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
