@@ -1,7 +1,7 @@
 # TASK-8-2: Modify Existing Tables for Multi-Site Support
 
 ## STATUS
-`Tests Written`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -72,16 +72,16 @@ Task created to extend existing tables (`keywords`, `competitors`, `reports`, et
 - **Blocks:** TASK-8-3 (Data Migration), TASK-8-4 (Middleware), TASK-8-5 (Global Scope)
 
 **Execution Order within FEAT-008:**
-1. TASK-8-1 → Projects table (foundation) ← Already prioritized
-2. TASK-8-2 → Modify tables (this task) ← Must run after TASK-8-1
-3. TASK-8-3 → Data migration ← Requires both tables ready
-4. TASK-8-4 → Middleware ← Context injection
-5. TASK-8-5 → Global Scope ← Query filtering
-6. TASK-8-6 → Policies ← Authorization
-7. TASK-8-7 → CRUD Endpoints ← API layer
-8. TASK-8-8 → Frontend ← UI components
-9. TASK-8-9 → Unit Tests ← Backend testing
-10. TASK-8-10 → Integration Tests ← E2E testing
+1. TASK-8-1 â†’ Projects table (foundation) â† Already prioritized
+2. TASK-8-2 â†’ Modify tables (this task) â† Must run after TASK-8-1
+3. TASK-8-3 â†’ Data migration â† Requires both tables ready
+4. TASK-8-4 â†’ Middleware â† Context injection
+5. TASK-8-5 â†’ Global Scope â† Query filtering
+6. TASK-8-6 â†’ Policies â† Authorization
+7. TASK-8-7 â†’ CRUD Endpoints â† API layer
+8. TASK-8-8 â†’ Frontend â† UI components
+9. TASK-8-9 â†’ Unit Tests â† Backend testing
+10. TASK-8-10 â†’ Integration Tests â† E2E testing
 
 **Risk Mitigation Notes:**
 - Columns added as nullable first (safer approach)
@@ -105,4 +105,4 @@ Created comprehensive migration test file: `backend/tests/Feature/Migrations/Add
 - Data isolation: Tests records with different project_ids coexist properly
 - Column position: Tests `project_id` is positioned after `user_id`
 
-**Status:** `Tests Written` → Ready for Developer to create migration file
+**Status:** `Tests Written` â†’ Ready for Developer to create migration file

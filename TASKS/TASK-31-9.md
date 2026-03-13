@@ -1,7 +1,7 @@
 # TASK-31-9: Retry Policy Implementation
 
 ## STATUS
-`Ready for Local Testing`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -82,7 +82,7 @@ class RetryPolicy
         // Cap at max delay
         $delay = min($delay, self::MAX_DELAY_MS);
         
-        // Add jitter (±10%)
+        // Add jitter (Â±10%)
         $jitter = $delay * self::JITTER_PERCENT * (mt_rand(0, 100) / 100 - 0.5) * 2;
         $delay = (int) ($delay + $jitter);
         
@@ -94,19 +94,19 @@ class RetryPolicy
 ## Retry Flow Diagram
 
 ```
-Attempt 1 ──► Failure
-    │
-    ├─► Non-retryable (4xx) ──► Throw immediately
-    │
-    └─► Retryable (5xx, 429, timeout)
-            │
-            └─► Wait 1s ± jitter ──► Attempt 2 ──► Failure
-                                            │
-                                            └─► Wait 2s ± jitter ──► Attempt 3 ──► Failure
-                                                                    │
-                                                                    └─► Wait 4s ± jitter ──► Attempt 4
-                                                                                            │
-                                                                                            └─► Max retries ──► Throw
+Attempt 1 â”€â”€â–º Failure
+    â”‚
+    â”œâ”€â–º Non-retryable (4xx) â”€â”€â–º Throw immediately
+    â”‚
+    â””â”€â–º Retryable (5xx, 429, timeout)
+            â”‚
+            â””â”€â–º Wait 1s Â± jitter â”€â”€â–º Attempt 2 â”€â”€â–º Failure
+                                            â”‚
+                                            â””â”€â–º Wait 2s Â± jitter â”€â”€â–º Attempt 3 â”€â”€â–º Failure
+                                                                    â”‚
+                                                                    â””â”€â–º Wait 4s Â± jitter â”€â”€â–º Attempt 4
+                                                                                            â”‚
+                                                                                            â””â”€â–º Max retries â”€â”€â–º Throw
 ```
 
 ## Rate Limit Handling
@@ -163,16 +163,16 @@ _Agent log_
 ### [2026-03-05 19:15 GMT+2] ProjectManager
 **Prioritization Complete**
 
-**Priority Upgrade:** Medium → HIGH
+**Priority Upgrade:** Medium â†’ HIGH
 
 **Rationale:**
 1. **Critical for AI Reliability:** Retry policy is essential for production AI operations - without it, transient errors (rate limits, timeouts, 5xx errors) would cause complete analysis failures
 2. **Low Risk, High Impact:** Standard Laravel service (no external APIs), but directly affects user-facing reliability
-3. **Dependency Satisfied:** TASK-31-2 (ContextWindowManager) is Done ✅ - content-aware retry can use token estimation
+3. **Dependency Satisfied:** TASK-31-2 (ContextWindowManager) is Done âœ… - content-aware retry can use token estimation
 4. **Phase Context:** Phase 2 AI Integration - AIAnalysisService (TASK-31-7) is Done, OpenRouter client (TASK-31-6) is Done - both need retry logic
 
 **Dependency Analysis:**
-- **TASK-31-2 (ContextWindowManager):** Done ✅ - provides token estimation for content-aware retry
+- **TASK-31-2 (ContextWindowManager):** Done âœ… - provides token estimation for content-aware retry
 - **No other dependencies** - Infrastructure service with clear interface
 
 **TDD Approach:**
@@ -183,10 +183,10 @@ PreTester can design tests immediately using the defined interface:
 - `isRetryableError(Exception $e): bool` - Check if error is retryable
 
 **Key Test Scenarios:**
-1. Retryable errors (429, 500, 502, 503, 504, timeout) → shouldRetry = true
-2. Non-retryable errors (400, 401, 403, 404, 422) → shouldRetry = false
-3. Max retries exceeded → shouldRetry = false
-4. Exponential backoff: 1s → 2s → 4s with jitter
+1. Retryable errors (429, 500, 502, 503, 504, timeout) â†’ shouldRetry = true
+2. Non-retryable errors (400, 401, 403, 404, 422) â†’ shouldRetry = false
+3. Max retries exceeded â†’ shouldRetry = false
+4. Exponential backoff: 1s â†’ 2s â†’ 4s with jitter
 5. Rate limit handling: respect Retry-After header
 6. Content-aware retry: truncation for large content
 
@@ -237,7 +237,7 @@ PreTester can design tests immediately using the defined interface:
 
 4. **Retryable HTTP Codes:** 429, 500, 502, 503, 504
 5. **Non-Retryable HTTP Codes:** 400, 401, 403, 404, 422
-6. **Backoff Formula:** `min(BASE_DELAY * 2^(attempt-1), MAX_DELAY) ± jitter`
+6. **Backoff Formula:** `min(BASE_DELAY * 2^(attempt-1), MAX_DELAY) Â± jitter`
 7. **Rate Limit Handling:** Respect Retry-After header up to 60s max wait
 8. **Content-Aware Retry:** Truncate 30% for content >50K tokens on retry (attempt 2+)
 

@@ -1,7 +1,7 @@
 # SPEC-001-13: Keyword List Page
 
 ## STATUS
-`Ready for Local Testing`
+`To Test Locally`
 ## PRIORITY
 `High`
 
@@ -48,7 +48,7 @@ Implemented keyword list page at /sites/[siteId]/keywords with loading/error/emp
 
 ### [2026-02-22 22:54] Agent: LocalTester
 Set status to Testing Locally. Attempted frontend lint.
-- `npm run lint` failed: Next CLI treated `lint` as project dir → `Invalid project directory provided, no such directory: ...\frontend\lint`.
+- `npm run lint` failed: Next CLI treated `lint` as project dir â†’ `Invalid project directory provided, no such directory: ...\frontend\lint`.
 - `npx next lint --dir .` failed: `unknown option '--dir'`.
 No automated test suite available for this task beyond lint. Returning to Developer to fix lint invocation/tooling and add/confirm tests if needed.
 

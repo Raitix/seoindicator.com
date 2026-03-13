@@ -52,11 +52,11 @@ class RateLimitResultTest extends TestCase
     public function rlr_create_03_creates_denied_result(): void
     {
         $resetAt = Carbon::now()->addHour();
-        $result = RateLimitResult::denied(10, 0, $resetAt, 3600);
+        $result = RateLimitResult::denied(10, $resetAt, 3600);
 
         $this->assertFalse($result->allowed);
         $this->assertEquals(10, $result->limit);
-        $this->assertEquals(0, $result->remaining);
+        $this->assertEquals(0, $result->remaining); // denied always sets remaining to 0
         $this->assertEquals($resetAt, $result->resetAt);
         $this->assertEquals(3600, $result->retryAfter);
     }
@@ -181,7 +181,7 @@ class RateLimitResultTest extends TestCase
     /** @test */
     public function rlr_prop_05_has_retry_after_property(): void
     {
-        $result = RateLimitResult::denied(10, 0, Carbon::now()->addHour(), 3600);
+        $result = RateLimitResult::denied(10, Carbon::now()->addHour(), 3600);
 
         $this->assertTrue(isset($result->retryAfter));
         $this->assertIsInt($result->retryAfter);
@@ -223,13 +223,14 @@ class RateLimitResultTest extends TestCase
 
         $array = $result->toArray();
 
-        $this->assertEquals('2026-03-02T12:00:00+00:00', $array['resetAt']);
+        // toIso8601ZuluString() returns 'Z' suffix instead of '+00:00'
+        $this->assertEquals('2026-03-02T12:00:00Z', $array['resetAt']);
     }
 
     /** @test */
     public function rlr_array_03_retry_after_as_int(): void
     {
-        $result = RateLimitResult::denied(10, 0, Carbon::now()->addHour(), 3600);
+        $result = RateLimitResult::denied(10, Carbon::now()->addHour(), 3600);
 
         $array = $result->toArray();
 
@@ -273,7 +274,7 @@ class RateLimitResultTest extends TestCase
     public function rlr_json_03_json_contains_all_fields(): void
     {
         $resetAt = Carbon::parse('2026-03-02T12:00:00Z');
-        $result = RateLimitResult::denied(10, 0, $resetAt, 3600);
+        $result = RateLimitResult::denied(10, $resetAt, 3600);
 
         $json = json_encode($result);
         $data = json_decode($json, true);
@@ -281,7 +282,7 @@ class RateLimitResultTest extends TestCase
         $this->assertFalse($data['allowed']);
         $this->assertEquals(10, $data['limit']);
         $this->assertEquals(0, $data['remaining']);
-        $this->assertEquals('2026-03-02T12:00:00+00:00', $data['resetAt']);
+        $this->assertEquals('2026-03-02T12:00:00Z', $data['resetAt']);
         $this->assertEquals(3600, $data['retryAfter']);
     }
 
@@ -313,10 +314,11 @@ class RateLimitResultTest extends TestCase
     /** @test */
     public function rlr_edge_02_remaining_cannot_be_negative(): void
     {
-        $result = RateLimitResult::denied(10, -1, Carbon::now()->addHour(), 3600);
+        $result = RateLimitResult::denied(10, Carbon::now()->addHour(), 3600);
 
-        // Remaining should be at least 0
+        // denied() always sets remaining to 0
         $this->assertGreaterThanOrEqual(0, $result->remaining);
+        $this->assertEquals(0, $result->remaining);
     }
 
     /** @test */
@@ -350,7 +352,7 @@ class RateLimitResultTest extends TestCase
     /** @test */
     public function rlr_edge_06_retry_after_zero(): void
     {
-        $result = RateLimitResult::denied(10, 0, Carbon::now()->addHour(), 0);
+        $result = RateLimitResult::denied(10, Carbon::now()->addHour(), 0);
 
         $this->assertEquals(0, $result->retryAfter);
     }
@@ -358,7 +360,7 @@ class RateLimitResultTest extends TestCase
     /** @test */
     public function rlr_edge_07_large_retry_after(): void
     {
-        $result = RateLimitResult::denied(10, 0, Carbon::now()->addHour(), 86400);
+        $result = RateLimitResult::denied(10, Carbon::now()->addHour(), 86400);
 
         $this->assertEquals(86400, $result->retryAfter);
     }
