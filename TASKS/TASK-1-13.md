@@ -1,7 +1,7 @@
 # SPEC-001-13: Keyword List Page
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 ## PRIORITY
 `High`
 
@@ -76,3 +76,28 @@ Added root-level npm lint script delegating to frontend and documented linting i
 10. ✅ Responsive design (mobile-friendly table) - `overflow-x-auto` wrapper
 
 **Status changed:** Testing Locally → To Deploy
+
+### [2026-03-13 19:01] Agent: DevOps
+**DEPLOYMENT COMPLETE**
+
+**Deployment ID:** 20260313T165649Z-6914506c
+**Method:** Local/self-hosted deployment
+**Commit:** df016e39b5a81b10d491639a184acc563147aa38
+**Result:** Successful
+**Duration:** ~4 minutes 45 seconds (build: 2m36s, deploy: 1m37s, smoke: 22s)
+**Health Check:** Production smoke passed (homepage + login page)
+
+**What was deployed:**
+- Keyword list page at `/sites/[siteId]/keywords`
+- KeywordFilterBar component with status filter and sort controls
+- Pagination (20 per page)
+- Bulk actions (pause, resume, delete)
+- Row click navigation to keyword details
+- Loading/error/empty states
+- Responsive design
+
+**Issues resolved during deployment:**
+- Previous deployment was stuck (timed out after 2+ hours), marked as failed
+- Build initially failed due to missing `@hookform/resolvers` dependency - was already in package.json, npm install fixed it
+
+**Status changed:** In Deployment → To Test Prod
