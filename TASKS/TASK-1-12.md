@@ -356,3 +356,20 @@ Task status remains: Done. Completion marker written.
 - Stale lock removed: `.locks/TASK-1-12.lock`
 - Completion marker written: `logs/completed/task/TASK-1-12.json`
 - SPEC-001: In Progress (other tasks still pending)
+
+### [2026-03-13 13:28 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** ✓
+
+- Task status: `Done` (confirmed)
+- DOCUMENTATION.md verified at line 33598 (Rank Check Scheduler section) ✅
+- Documentation complete with all required sections:
+  - Service Description ✓
+  - Core Functionalities (Automated Scheduling, Priority-Based Scheduling, Manual Trigger, Logging) ✓
+  - Configuration (Environment Variables: RANK_CHECK_INTERVAL_HOURS, RANK_CHECK_SPREAD_MINUTES, RANK_CHECK_PRIORITY_HIGH_HOURS, RANK_CHECK_PRIORITY_NORMAL_DAYS, RANK_CHECK_CACHE_KEY) ✓
+  - Technical Implementation (correct paths: RankCheckScheduler.php, SchedulerController.php, console.php, api.php) ✓
+  - Dependencies (TASK-1-10, TASK-1-11) ✓
+  - Unit Tests (2 tests, 6 assertions) ✓
+- Stale lock removed: `.locks/TASK-1-12.lock` ✅
+- Completion marker written: `logs/completed/task/TASK-1-12.json` ✅
+- Active-agents entry cleared ✅
+- SPEC-001: In Progress (other tasks still pending)

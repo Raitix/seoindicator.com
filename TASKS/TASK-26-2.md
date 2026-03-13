@@ -1,0 +1,103 @@
+# TASK-26-2: Create Credit Model and Repository
+
+## STATUS
+`To Write Tests`
+
+## PRIORITY
+`High`
+
+## RISK
+`Medium`
+
+## Related Specification
+SPEC-026: Billing, Credits & Model Selection
+
+## Related Feature
+FEAT-026: Billing, Credits & Model Selection
+
+---
+
+## Description
+Create Eloquent models and repository pattern for Credit and CreditTransaction entities with proper relationships and accessors.
+
+## Acceptance Criteria
+
+### Credit Model
+- [ ] `app/Models/Credit.php` created
+- [ ] BelongsTo relationship to User
+- [ ] HasMany relationship to CreditTransaction
+- [ ] Casts for DECIMAL columns (`balance`, `total_purchased`, `total_spent`)
+- [ ] Accessor for formatted balance (e.g., `$12.50`)
+- [ ] Method to check sufficient balance
+- [ ] Protected against mass assignment
+
+### CreditTransaction Model
+- [ ] `app/Models/CreditTransaction.php` created
+- [ ] BelongsTo relationship to User
+- [ ] BelongsTo relationship to Credit
+- [ ] Casts for DECIMAL columns (`amount`, `balance_after`)
+- [ ] Cast for JSON `metadata` column
+- [ ] Scope for filtering by type
+- [ ] Scope for filtering by payment provider
+- [ ] Protected against mass assignment
+
+### CreditRepository
+- [ ] `app/Repositories/CreditRepository.php` created
+- [ ] `findOrCreateForUser(User $user): Credit` - Get or create credit record
+- [ ] `getBalance(User $user): float` - Get current balance
+- [ ] `getTransactions(User $user, int $perPage = 15): LengthAwarePaginator`
+- [ ] Transaction-safe balance updates
+
+### Unit Tests
+- [ ] Model relationship tests
+- [ ] Accessor tests
+- [ ] Repository method tests
+- [ ] Edge case tests (negative balance prevention)
+
+## Dependencies
+- TASK-26-1 (migrations must exist)
+
+## Effort Estimate
+`Medium` (3-4 hours)
+
+## Notes
+- Repository pattern enables easier testing and future changes
+- Consider using Laravel's `lockForUpdate()` for concurrent operations
+- Transactions should be created via service layer (not directly)
+
+## Security Considerations
+- Prevent direct mass assignment of balance
+- Log all model changes for audit
+- Validate type enum values
+
+## Comments
+
+### 2026-03-02 - ProjectManager
+**Prioritization Complete:**
+- **Priority: High** (confirmed) - Foundation task for billing system MVP
+- **Risk: Medium** (confirmed) - Standard Eloquent models and repository pattern, no external APIs
+
+**Dependency Status:**
+- TASK-26-1 (Migrations): `In Development` ⏳ - Developer actively working
+- TDD approach: PreTester CAN design tests using the expected model interface
+- Tests can be written based on acceptance criteria before implementation completes
+
+**Phase 1 Context:**
+- TASK-26-1 (Migrations): In Development - enables this task
+- TASK-26-2 (this task): Credit model and repository - depends on TASK-26-1
+- TASK-26-3 (Credit packages): To Prioritize - depends on TASK-26-1
+- TASK-26-4 (AI models table): To Prioritize - depends on TASK-26-1
+
+**Test Coverage Requirements for PreTester:**
+- Credit Model: Relationship tests (User, CreditTransaction), accessor tests (formatted balance), balance check method
+- CreditTransaction Model: Relationship tests, scope tests (type, provider), cast tests (DECIMAL, JSON)
+- CreditRepository: findOrCreateForUser, getBalance, getTransactions, transaction-safe updates
+- Edge cases: Negative balance prevention, concurrent operations
+
+**Security Notes:**
+- Mass assignment protection for balance fields
+- Audit logging for model changes
+- Type enum validation (purchase, usage, refund, bonus)
+
+---
+_Leave notes for the next agent here_
