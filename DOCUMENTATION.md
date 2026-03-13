@@ -24346,6 +24346,198 @@ try {
 - TASK-22-17: Job timeout and cancellation
 
 ---
+## CrawlQueueService and LinkExtractorService (TASK-22-10)
+
+### Service Description
+Queue management and link extraction services for the Headless Crawler Service (FEAT-022). CrawlQueueService provides priority-based queue operations with duplicate detection and retry logic. LinkExtractorService extracts links from HTML content with URL resolution and filtering. These services enable multi-page crawling with depth limits and concurrent processing support.
+
+### Component Locations
+- **CrawlQueueService:** `backend/app/Services/Crawler/CrawlQueueService.php`
+- **LinkExtractorService:** `backend/app/Services/Crawler/LinkExtractorService.php`
+- **DTOs:**
+  - `backend/app/Services/Crawler/Data/QueueItem.php`
+  - `backend/app/Services/Crawler/Data/QueueStats.php`
+- **Interfaces:**
+  - `backend/app/Services/Crawler/Contracts/CrawlQueueServiceInterface.php`
+  - `backend/app/Services/Crawler/Contracts/LinkExtractorServiceInterface.php`
+- **Tests:**
+  - `backend/tests/Unit/Services/Crawler/CrawlQueueServiceTest.php`
+  - `backend/tests/Unit/Services/Crawler/LinkExtractorServiceTest.php`
+
+### CrawlQueueService Methods
+
+| Method | Description |
+|--------|-------------|
+| `addToQueue(string $jobId, array $links, int $depth): void` | Add links to queue with priority |
+| `getNextItem(string $jobId): ?QueueItem` | Get next pending item |
+| `markProcessing(string $itemId): void` | Mark item as being processed |
+| `markCompleted(string $itemId): void` | Mark item as completed |
+| `markFailed(string $itemId, string $error): void` | Mark item as failed with error |
+| `markSkipped(string $itemId, string $reason): void` | Mark item as skipped |
+| `getQueueStats(string $jobId): QueueStats` | Get queue statistics |
+| `clearQueue(string $jobId): void` | Clear all queue items |
+| `cleanupCompleted(string $jobId): void` | Remove completed items |
+
+### QueueItem Data Structure
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | string | Unique item identifier |
+| `crawlJobId` | string | Parent crawl job ID |
+| `url` | string | URL to crawl |
+| `depth` | int | Crawl depth level |
+| `priority` | int | Priority score (100/66/33) |
+| `status` | string | pending/processing/completed/failed/skipped |
+| `parentUrl` | string\|null | Parent page URL |
+| `attempts` | int | Number of attempts |
+| `error` | string\|null | Error message if failed |
+| `createdAt` | int | Unix timestamp |
+| `updatedAt` | int | Unix timestamp |
+
+### QueueStats Data Structure
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `total` | int | Total items in queue |
+| `pending` | int | Pending items |
+| `processing` | int | Currently processing |
+| `completed` | int | Successfully completed |
+| `failed` | int | Failed items |
+| `skipped` | int | Skipped items |
+
+### Priority Levels
+
+| Depth | Priority | Description |
+|-------|----------|-------------|
+| 0 | 100 | High - Main page (depth 0) |
+| 1 | 66 | Medium - Sub-pages (depth 1) |
+| 2 | 33 | Low - Sub-sub-pages (depth 2) |
+
+### LinkExtractorService Methods
+
+| Method | Description |
+|--------|-------------|
+| `extract(string $html, string $baseUrl, array $options = []): array` | Extract all links from HTML |
+| `extractAnchors(DOMDocument $doc, string $baseUrl): array` | Extract anchor links |
+| `extractImages(DOMDocument $doc, string $baseUrl): array` | Extract image src attributes |
+| `extractStylesheets(DOMDocument $doc, string $baseUrl): array` | Extract stylesheet links |
+| `extractIcons(DOMDocument $doc, string $baseUrl): array` | Extract favicon/icon links |
+| `extractIframes(DOMDocument $doc, string $baseUrl): array` | Extract iframe src (configurable) |
+| `resolveUrl(string $href, string $baseUrl): string` | Resolve relative to absolute URL |
+| `isInternal(string $url, string $baseUrl): bool` | Check if URL is internal |
+
+### Link Data Structure
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `url` | string | Absolute URL |
+| `text` | string\|null | Anchor text or alt text |
+| `title` | string\|null | Title attribute |
+| `rel` | string\|null | Rel attribute value |
+| `target` | string\|null | Target attribute |
+| `internal` | bool | Same domain as page |
+| `type` | string | link/image/script/stylesheet |
+| `depth` | int | Depth level for queue |
+
+### URL Filtering
+
+| Filter | Behavior |
+|--------|----------|
+| `mailto:` | Filtered out |
+| `tel:` | Filtered out |
+| `javascript:` | Filtered out |
+| `ftp:` | Filtered out |
+| Fragment-only (`#section`) | Filtered out |
+| Non-HTTP schemes | Filtered out |
+
+### Retry Logic
+
+| Feature | Implementation |
+|---------|----------------|
+| Max attempts | 2 (configurable) |
+| Exponential backoff | Between retries |
+| 4xx errors | No retry (client error) |
+| 5xx errors | Retry with backoff |
+| Network errors | Retry with backoff |
+
+### Concurrent Processing
+
+| Feature | Implementation |
+|---------|----------------|
+| Item locking | During processing |
+| Lock timeout | 5 minutes (auto-release) |
+| Max concurrent | Configurable (default: 3) |
+| Duplicate prevention | URL normalization + tracking |
+
+### Configuration
+
+| Config Key | Default | Description |
+|------------|---------|-------------|
+| `crawler.queue.max_concurrent_pages` | 3 | Max concurrent pages |
+| `crawler.queue.retry_attempts` | 2 | Max retry attempts |
+| `crawler.queue.lock_timeout` | 300 | Lock timeout in seconds |
+| `crawler.queue.dedup_method` | 'set' | Deduplication method |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `CrawlQueueServiceTest.php` | 71 | 98 | ✅ PASS |
+| `LinkExtractorServiceTest.php` | 22 | 50 | ✅ PASS |
+| **Total** | **93** | **148** | **✅ ALL PASS** |
+
+**Test Categories (CrawlQueueService):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 5 | Container binding, config injection |
+| Queue Operations | 15 | add, getNext, mark methods |
+| Priority Ordering | 8 | Depth-based priority |
+| Duplicate Detection | 10 | URL normalization, tracking |
+| Retry Logic | 8 | Backoff, 4xx/5xx handling |
+| Concurrent Processing | 6 | Locking, worker management |
+| Queue Statistics | 7 | Stats calculation |
+| Queue Cleanup | 5 | Clear, cleanup methods |
+| Edge Cases | 7 | Large queues, memory usage |
+
+**Test Categories (LinkExtractorService):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Anchor Extraction | 6 | href, text, rel, target |
+| Image Extraction | 4 | src, alt attributes |
+| Stylesheet Extraction | 3 | link[rel=stylesheet] |
+| Icon Extraction | 2 | favicon, apple-touch-icon |
+| Iframe Extraction | 2 | src, configurable |
+| URL Resolution | 3 | Relative, protocol-relative |
+| Internal Detection | 2 | Same-domain check |
+
+### Security Implementation
+
+| Threat | Mitigation |
+|--------|------------|
+| XSS in URLs | URL encoding, validation |
+| SSRF | UrlValidatorService integration |
+| Malformed URLs | Graceful error handling |
+| Unicode exploits | IDN domain support |
+| JavaScript URLs | Protocol filtering |
+
+### Production Status
+- **Deployed:** 2026-03-13 (GitHub Actions, commit 92a944d7)
+- **Health Check:** Passing
+- **Tests:** 93/93 passing (148 assertions)
+- **Status:** Complete
+
+### Dependencies
+- TASK-22-8 (Depth Controller) - Complete ✅
+- TASK-22-1 (Database migrations) - Complete ✅
+- UrlNormalizer Service - Existing ✅
+
+### Related Tasks
+- TASK-22-8: Depth Controller (link filtering by depth)
+- TASK-22-15: CrawlWorker (uses queue operations)
+- TASK-22-16: Queue integration
+- TASK-22-1: Database migrations (crawl_queue table)
+
+---
 ## Integration Tests for Public Audit Flow (TASK-33-33)
 
 ### Test Description
