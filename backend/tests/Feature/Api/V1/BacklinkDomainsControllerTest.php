@@ -685,6 +685,17 @@ class BacklinkDomainsControllerTest extends TestCase
                 'is_active' => true,
             ]);
         }
+        
+        // Create or update the referring_domain record
+        \App\Models\ReferringDomain::updateOrCreate(
+            ['project_id' => $targetProject->id, 'domain' => $domain],
+            [
+                'backlinks_count' => $count,
+                'domain_trust_score' => rand(20, 80),
+                'first_seen_at' => now()->subDays(rand(1, 30)),
+                'last_seen_at' => now(),
+            ]
+        );
     }
 
     /**
