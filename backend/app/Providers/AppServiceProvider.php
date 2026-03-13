@@ -186,6 +186,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Crawler\CrawlerServiceInterface::class,
             \App\Services\Crawler\CrawlerService::class
         );
+
+        // Content Retrieval Service binding (TASK-22-14, SPEC-022)
+        $this->app->bind(
+            \App\Services\Crawler\ContentRetrievalServiceInterface::class,
+            \App\Services\Crawler\ContentRetrievalService::class
+        );
     }
 
     /**

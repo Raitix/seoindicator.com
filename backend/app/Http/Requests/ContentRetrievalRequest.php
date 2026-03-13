@@ -31,6 +31,15 @@ class ContentRetrievalRequest extends FormRequest
     ];
 
     /**
+     * Field aliases for include/exclude parameters.
+     * Maps short names to full field names.
+     */
+    public const FIELD_ALIASES = [
+        'text' => 'structuredText',
+        'html' => 'renderedHtml',
+    ];
+
+    /**
      * Valid sort fields.
      */
     public const VALID_SORT_FIELDS = [
@@ -142,7 +151,8 @@ class ContentRetrievalRequest extends FormRequest
     protected function validateFieldList($validator, string $paramName, string $fields): void
     {
         $requestedFields = explode(',', $fields);
-        $invalidFields = array_diff($requestedFields, self::VALID_FIELDS);
+        $validFieldsWithAliases = array_merge(self::VALID_FIELDS, array_keys(self::FIELD_ALIASES));
+        $invalidFields = array_diff($requestedFields, $validFieldsWithAliases);
 
         if (!empty($invalidFields)) {
             $validator->errors()->add(
@@ -158,13 +168,30 @@ class ContentRetrievalRequest extends FormRequest
     }
 
     /**
+     * Resolve field aliases to actual field names.
+     *
+     * @param array $fields
+     * @return array
+     */
+    protected function resolveFieldAliases(array $fields): array
+    {
+        return array_map(function ($field) {
+            return self::FIELD_ALIASES[$field] ?? $field;
+        }, $fields);
+    }
+
+    /**
      * Get the include fields as an array.
      *
      * @return array|null
      */
     public function getIncludeFields(): ?array
     {
-        return $this->include ? explode(',', $this->include) : null;
+        if (!$this->include) {
+            return null;
+        }
+        
+        return $this->resolveFieldAliases(explode(',', $this->include));
     }
 
     /**
@@ -174,7 +201,11 @@ class ContentRetrievalRequest extends FormRequest
      */
     public function getExcludeFields(): ?array
     {
-        return $this->exclude ? explode(',', $this->exclude) : null;
+        if (!$this->exclude) {
+            return null;
+        }
+        
+        return $this->resolveFieldAliases(explode(',', $this->exclude));
     }
 
     /**
