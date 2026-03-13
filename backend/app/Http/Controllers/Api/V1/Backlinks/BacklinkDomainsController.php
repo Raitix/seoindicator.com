@@ -48,9 +48,10 @@ class BacklinkDomainsController extends Controller
         $this->authorize('view', $project);
 
         // Validate query parameters
+        // Note: perPage allows values > 100 but they're capped to 100 in the controller
         $validated = $request->validate([
             'page' => ['nullable', 'integer', 'min:1'],
-            'perPage' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'perPage' => ['nullable', 'integer', 'min:1'],
             'sort' => ['nullable', 'string', 'in:backlinks_count,domain_trust_score'],
         ]);
 
