@@ -843,7 +843,7 @@ Route::get('alerts/unsubscribe/{user}', [AlertUnsubscribeController::class, 'uns
 | All routes require authentication (Sanctum) and rate limiting.
 |
 */
-Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', 'crawler.ratelimit'])->group(function () {
     Route::prefix('crawler')->group(function () {
         Route::post('crawl', [CrawlController::class, 'store'])->name('api.v1.crawler.store');
         Route::get('jobs', [CrawlController::class, 'index'])->name('api.v1.crawler.index');

@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'ai.ratelimit' => \App\Http\Middleware\AIRateLimiter::class,
             'polling.ratelimit' => \App\Http\Middleware\PollingRateLimiter::class,
             'admin' => \App\Http\Middleware\AdminAuthorizationMiddleware::class,
+            'crawler.ratelimit' => \App\Http\Middleware\CrawlerRateLimit::class,
         ]);
 
         // Add SetProjectContext to web middleware group (session-based)
