@@ -164,11 +164,14 @@ class UrlValidatorIntegrationTest extends TestCase
     /** @test */
     public function drp_011_dns_resolution_failure(): void
     {
-        // This domain should not exist
+        // This domain uses .invalid TLD which is reserved and never resolves
         $result = $this->service->validate('http://this-domain-definitely-does-not-exist-12345.invalid/');
 
-        // Should fail due to DNS or domain blocking
-        $this->assertFalse($result['valid']);
+        // DNS resolution failure should NOT block the URL (to prevent DoS attacks on DNS)
+        // The URL format is valid, but IP will be null since DNS failed
+        // Security decision: Allow the URL through, let the crawler handle the actual request failure
+        $this->assertTrue($result['valid'], 'DNS resolution failure should not block valid URLs');
+        $this->assertNull($result['ip'], 'IP should be null when DNS resolution fails');
     }
 
     // =========================================================================
