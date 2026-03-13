@@ -180,6 +180,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\ContentDecay\Contracts\ContentRefreshPlannerServiceInterface::class,
             \App\Services\ContentDecay\ContentRefreshPlannerService::class
         );
+
+        // Crawler Service binding (TASK-22-11, SPEC-022)
+        $this->app->bind(
+            \App\Services\Crawler\CrawlerServiceInterface::class,
+            \App\Services\Crawler\CrawlerService::class
+        );
     }
 
     /**
