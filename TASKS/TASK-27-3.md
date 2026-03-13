@@ -1,7 +1,7 @@
 # TASK-27-3: Admin Stats Service with Caching
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -44,6 +44,35 @@ Create AdminStatsService that provides cached access to admin statistics. The se
 - Implement cache tagging for group invalidation
 
 ## Comments
+
+### 2026-03-13 - ProjectManager
+**Prioritization Complete**
+
+- **Priority: High** (confirmed) - Foundation caching service for entire Admin Dashboard feature
+- **Risk: Medium** (confirmed) - Standard Laravel service with caching patterns, no external APIs
+- **Dependencies:** TASK-27-1 (system_metrics_cache table) — SATISFIED ✅
+  - Migration deployed to production (status: `To Test Prod`)
+  - `system_metrics_cache` table exists with metric_key, metric_value, metadata, cached_at, expires_at columns
+
+**Downstream Impact:**
+- Enables TASK-27-4 (User Stats Aggregation) for cached user metrics
+- Enables TASK-27-5 (User Stats API) for dashboard endpoints
+- All Admin Dashboard API endpoints depend on this caching layer for performance
+
+**TDD Pattern:** PreTester can design tests immediately using:
+- Laravel Cache facade mocking
+- Test `getCachedMetric()` with key-based lookup, TTL, calculator callable
+- Test cache invalidation methods
+- Test debug mode logging
+
+**Key Implementation Details:**
+- Service location: `app/Services/Admin/AdminStatsService.php`
+- Cache namespace: `admin:stats:*` (e.g., `admin:stats:users`)
+- Default TTL: 5 minutes
+- Use `Cache::remember()` pattern
+- Consider Redis for production caching
+
+**Handoff:** Ready for PreTester to design tests for caching service.
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*

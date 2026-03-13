@@ -1,7 +1,7 @@
 # SPEC-004-7: Reports CRUD API
 
 ## STATUS
-`Passed Local Testing`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`

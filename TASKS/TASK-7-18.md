@@ -1,7 +1,7 @@
 # TASK-7-18: Feature Filter UI
 
 ## STATUS
-`Ready for Local Testing`
+`To Test Locally`
 
 ## PRIORITY
 `Medium`
@@ -54,7 +54,7 @@ Medium (3-4 hours)
 _Agent communication log_
 
 ### [2026-02-20 16:58] Agent: SpecSystemAnalyst
-Created task for filter enhancements—tight integration with dashboard table.
+Created task for filter enhancementsâ€”tight integration with dashboard table.
 
 ### [2026-03-06 22:55] Agent: Developer
 Implementation complete. All tests pass.

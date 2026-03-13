@@ -1,7 +1,7 @@
 # SPEC-004-21: Integration Tests
 
 ## STATUS
-`Tested Locally - Passed`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`
@@ -25,7 +25,7 @@ Create integration tests for report API endpoints and end-to-end workflows. Vali
 - [x] Integration tests for Scheduled reports API
 - [x] Integration tests for Branding API
 - [x] Integration tests for Logo upload
-- [x] End-to-end test: create template → generate report → download
+- [x] End-to-end test: create template â†’ generate report â†’ download
 - [x] Authentication and authorization tests
 - [ ] All tests pass in CI pipeline
 

@@ -1,7 +1,7 @@
 # SPEC-001-4: Keywords CRUD API Endpoints
 
 ## STATUS
-`Deploying`
+`In Deployment`
 ## PRIORITY
 `High`
 
@@ -67,14 +67,14 @@ Status set to `To Test Locally`.
 Ran full test suite for KeywordControllerTest: **25 tests PASS (90 assertions)**.
 
 **Test Coverage:**
-- CRUD operations: list, get, create, update, delete ✓
-- Pagination (page, perPage) ✓
-- Filtering by status ✓
-- Sorting (keyword, position, lastChecked) ✓
-- Validation (required keyword, valid URL, unique constraint) ✓
-- HTTP status codes (200, 201, 204, 400, 404, 409) ✓
-- Delete options (keepHistory=true/false) ✓
-- Security: SQL injection protection, XSS protection ✓
+- CRUD operations: list, get, create, update, delete âœ“
+- Pagination (page, perPage) âœ“
+- Filtering by status âœ“
+- Sorting (keyword, position, lastChecked) âœ“
+- Validation (required keyword, valid URL, unique constraint) âœ“
+- HTTP status codes (200, 201, 204, 400, 404, 409) âœ“
+- Delete options (keepHistory=true/false) âœ“
+- Security: SQL injection protection, XSS protection âœ“
 
 **Routes verified:**
 - GET /api/v1/sites/{siteId}/keywords
