@@ -1,7 +1,7 @@
 # TASK-27-5: Admin User Stats API Endpoint
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -42,6 +42,43 @@ Create API endpoints for admin user statistics. Provides endpoints for user coun
 See TASK-27-4 for stats response format.
 
 ## Comments
+
+### 2026-03-13 - ProjectManager
+**Prioritization Complete**
+
+- **Priority: High** (confirmed) - API endpoint essential for Admin Dashboard user metrics, exposes user statistics to frontend
+- **Risk: Medium** (confirmed) - Standard Laravel controller, delegates to services, no external APIs
+
+**Dependency Status:**
+- TASK-27-2 (AdminAuthorizationMiddleware): **Done** ✅ - Middleware exists, protects admin routes
+- TASK-27-4 (User stats aggregation): `To Write Tests` - NOT YET IMPLEMENTED ❌
+
+**TDD Pattern Applied:**
+- PreTester CAN design tests with mocked service interfaces before dependencies complete
+- Controller tests use Laravel HTTP testing with `$this->mock()` for service mocks
+- Test categories: route registration, auth middleware, authorization, rate limiting, validation, response format, pagination
+
+**Key Implementation Details:**
+- Controller: `app/Http/Controllers/Api/V1/Admin/UserStatsController.php`
+- Endpoints:
+  - GET `/api/v1/admin/users/stats` - aggregated user stats
+  - GET `/api/v1/admin/users/recent` - last 20 registered users (paginated)
+  - GET `/api/v1/admin/users/active` - active users list (paginated)
+- Protection: AdminAuthorizationMiddleware
+- Rate limiting: 60 requests/minute
+- PII protection: Exclude emails, mask names
+
+**Downstream Impact:**
+- Enables Admin Dashboard "User Growth" widget
+- Required for user analytics visualization
+- All user-related frontend components depend on these endpoints
+
+**Execution Order:**
+- Tests designed NOW with mocked service interfaces (parallel with TASK-27-3/27-4)
+- Implementation waits for TASK-27-4 to reach `To Test Locally`
+- Integration tests run when both layers ready
+
+**Handoff:** Ready for PreTester to design tests for Admin User Stats API endpoints.
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*

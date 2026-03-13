@@ -1,7 +1,7 @@
 # TASK-6-2: API Key Model and Repository
 
-## Status
-`Tests Completed`
+## STATUS
+`To Develop`
 
 ## Priority
 `High`
