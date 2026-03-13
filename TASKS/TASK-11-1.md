@@ -1,7 +1,7 @@
 # TASK-11-1: Create Team Members Table
 
 ## STATUS
-`To Test Prod`
+`Done`
 
 ## PRIORITY
 `High`
@@ -93,3 +93,18 @@ Database task created to set up the team collaboration base.
   - Timestamp auto-management
 - All acceptance criteria verified locally
 - Status: To Deploy
+
+### [2026-03-13 16:10 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete**
+- Task status: Done
+- DOCUMENTATION.md verified at line 24529+ (Team Members Table section) ✅
+- Schema: `team_members` table with account_id, user_id, role ENUM, invitation tracking fields
+- Foreign keys: CASCADE on account_id/user_id, SET NULL on invited_by
+- Indexes: idx_team_account_user (unique), role, invitation_token, accepted_at
+- Model: TeamMember with role constants, token generation, invitation lifecycle methods
+- Factory states: owner, admin, editor, viewer, pending, expired
+- Test coverage: 61 tests (migration + model)
+- Production deployed: 2026-02-26 (commit 82a3081)
+- Updated DOCUMENTATION.md Dependencies section to reflect all tasks complete
+- SPEC-011: All 4 tasks Done → can be marked Done
+- FEAT-011: All specs Done → can be marked Done

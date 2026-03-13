@@ -24580,8 +24580,10 @@ CREATE TABLE team_members (
 - **Status**: Complete
 
 ### Dependencies
-- TASK-11-1: Team members table (pending)
-- TASK-11-4: PermissionValidator (in progress)
+- TASK-11-1: Team members table ✅ Done
+- TASK-11-2: Project members table ✅ Done
+- TASK-11-3: Team management service ✅ Done
+- TASK-11-4: PermissionValidator ✅ Done
 
 ### Related Tasks
 - TASK-11-1: Team members table creation
