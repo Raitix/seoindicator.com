@@ -248,3 +248,23 @@ Performed a deeper source-level audit after the initial re-verification and upda
 **Status:**
 - TASK-12-5 remains `Done` as a workflow record, with the above implementation caveats now documented.
 - SPEC-012 remains `In Progress` because other child tasks are still open.
+
+### [2026-03-13 11:58] DocSystemAnalyst: Re-verification Complete ✓
+Re-verified TASK-12-5 (GSC Data Sync Service).
+
+**Verification performed:**
+- Task status: Done (confirmed)
+- DOCUMENTATION.md verified at line 26009 (GSC Data Sync Service section) ✅
+- Service: GSCDataSync with syncProject, fetchBatch, importHistorical, handleRateLimit
+- Rate limiting: Exponential backoff (1s, 2s, 4s, 8s, 16s) with jitter
+- Test coverage: 44 tests, 58+ assertions
+- Production deployed: 2026-02-28
+
+**Cleanup:**
+- Stale lock removed: `.locks/TASK-12-5.lock` ✅
+- Completion marker written: `logs/completed/task/TASK-12-5.json` ✅
+- Active-agents entry cleared ✅
+
+**Status:**
+- TASK-12-5 remains `Done`.
+- SPEC-012: In Progress (other tasks pending).
