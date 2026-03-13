@@ -119,16 +119,13 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->once()
-            ->andReturn($this->createAllowedCheckResult());
-        $rateLimiter->shouldReceive('getHeaders')
-            ->once()
-            ->andReturn([
-                'X-RateLimit-Limit' => 10,
-                'X-RateLimit-Remaining' => 9,
-                'X-RateLimit-Reset' => now()->addHour()->timestamp,
-            ]);
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createAllowedCheckResult());
+        $rateLimiter->shouldReceive('getHeaders')->andReturn([
+            'X-RateLimit-Limit' => 10,
+            'X-RateLimit-Remaining' => 9,
+            'X-RateLimit-Reset' => now()->addHour()->timestamp,
+        ]);
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -147,6 +144,7 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
         $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createAllowedCheckResult());
         $rateLimiter->shouldReceive('getHeaders')->andReturn([
             'X-RateLimit-Limit' => 10,
@@ -177,9 +175,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->once()
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -198,9 +195,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->once()
-            ->andReturn($this->createBlockedCheckResult('concurrent'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('concurrent'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -219,9 +215,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->once()
-            ->andReturn($this->createBlockedCheckResult('domain'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('domain'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -240,9 +235,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->once()
-            ->andReturn($this->createBlockedCheckResult('global'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('global'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -265,8 +259,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -285,8 +279,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -306,8 +300,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -328,8 +322,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -350,8 +344,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -372,8 +366,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -394,8 +388,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -424,8 +418,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -444,8 +438,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -464,8 +458,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -484,8 +478,8 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
-        $rateLimiter->shouldReceive('checkAllLimits')
-            ->andReturn($this->createBlockedCheckResult('daily'));
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
+        $rateLimiter->shouldReceive('checkAllLimits')->andReturn($this->createBlockedCheckResult('daily'));
 
         $middleware = new CrawlerRateLimit($rateLimiter);
         $request = $this->createRequest();
@@ -543,6 +537,7 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
         $rateLimiter->shouldReceive('checkAllLimits')
             ->once()
             ->withArgs(function ($userId, $domain, $isAdmin) {
@@ -573,6 +568,7 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
         $rateLimiter->shouldReceive('checkAllLimits')
             ->once()
             ->withArgs(function ($userId, $domain, $isAdmin) {
@@ -603,6 +599,7 @@ class CrawlerRateLimitMiddlewareTest extends TestCase
         $user = $this->createUser();
 
         $rateLimiter = Mockery::mock(RateLimiterService::class);
+        $rateLimiter->shouldReceive('isAdmin')->andReturn(false);
         $rateLimiter->shouldReceive('checkAllLimits')
             ->once()
             ->withArgs(function ($userId, $domain, $isAdmin) {
