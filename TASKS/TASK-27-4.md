@@ -1,7 +1,7 @@
 # TASK-27-4: User Stats Aggregation Queries
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -62,6 +62,36 @@ Implement efficient database queries for user statistics aggregation. Provides c
 ```
 
 ## Comments
+
+### 2026-03-13 - ProjectManager
+**Prioritization Complete**
+
+- **Priority: High** (confirmed) - Core analytics for Admin Dashboard, required for user growth metrics
+- **Risk: Low** (confirmed) - Read-only database queries, no external APIs, no data modifications
+- **Dependencies:** TASK-27-3 (AdminStatsService for caching) — IN PROGRESS ⏳
+  - Status: `To Write Tests` (already prioritized, awaiting PreTester)
+  - This task can proceed to test design phase in parallel
+  - PreTester should design tests using mock interface for caching layer
+
+**Downstream Impact:**
+- Enables TASK-27-5 (User Stats API) for dashboard endpoints
+- Required for Admin Dashboard "User Growth" widget
+- All user-related analytics depend on these queries
+
+**TDD Pattern:** PreTester can design tests immediately using:
+- Mock AdminStatsService interface for caching
+- Test query accuracy with test fixtures (known user counts)
+- Test growth rate calculations (edge cases: zero divisions)
+- Test performance with seeded database (target <100ms)
+
+**Key Implementation Details:**
+- Repository methods: `getTotalUserCount()`, `getActiveUserCount()`, `getNewRegistrations()`, `getGrowthRate()`, `getUsersByPlan()`
+- Use Eloquent or Query Builder with proper indexes
+- Index: `users.created_at`, `users.last_login_at`
+- Cache via AdminStatsService with namespace `admin:stats:users`
+- Default cache TTL: 5 minutes (inherited from service)
+
+**Handoff:** Ready for PreTester to design tests for user stats aggregation queries.
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
