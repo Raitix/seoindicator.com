@@ -1,7 +1,7 @@
 # SPEC-037: Production Critical Fixes & UX Improvements
 
 ## STATUS
-`Specification In Progress`
+`To Break Into Tasks`
 
 ## PRIORITY
 `Critical`
@@ -385,3 +385,8 @@ After completion, update DOCUMENTATION.md with:
 ---
 
 *Specification created by Architect agent on 2026-03-13*
+
+### Status Update (2026-03-13 16:54 UTC)
+Specification complete. Status updated to `To Break Into Tasks`. Ready for SpecSystemAnalyst to create task files:
+- TASK-37-1 through TASK-37-17 (17 tasks total)
+- SecurityAuditor review required before deployment due to High risk classification
