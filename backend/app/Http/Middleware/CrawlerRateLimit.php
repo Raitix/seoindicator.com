@@ -147,14 +147,19 @@ class CrawlerRateLimit
      */
     protected function addHeaders(mixed $response, int $userId, bool $isAdmin): void
     {
-        if (!method_exists($response, 'headers')) {
+        // Check if response has headers property (Illuminate Http\Response or Symfony Response)
+        if (!property_exists($response, 'headers') && !method_exists($response, 'header')) {
             return;
         }
 
         $headers = $this->rateLimiter->getHeaders($userId, $isAdmin);
 
         foreach ($headers as $name => $value) {
-            $response->headers->set($name, (string) $value);
+            if (method_exists($response, 'header')) {
+                $response->header($name, (string) $value);
+            } elseif (property_exists($response, 'headers')) {
+                $response->headers->set($name, (string) $value);
+            }
         }
     }
 

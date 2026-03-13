@@ -3,11 +3,13 @@
 namespace App\Services\Crawler;
 
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Basic CrawlerService implementation.
  *
- * This is a placeholder implementation that will be replaced by the full
+ * This is a placeholder implementation that will be enhanced by the full
  * implementation from TASK-22-3. It provides basic functionality for
  * the CrawlController to work with.
  *
@@ -19,8 +21,26 @@ class CrawlerService implements CrawlerServiceInterface
 {
     /**
      * @var array In-memory storage for testing purposes
+     * In production, this will be replaced with database storage
      */
     protected array $jobs = [];
+
+    /**
+     * @var int|null Current authenticated user ID for authorization
+     */
+    protected ?int $currentUserId = null;
+
+    /**
+     * Set the current user for authorization.
+     *
+     * @param int $userId
+     * @return self
+     */
+    public function forUser(int $userId): self
+    {
+        $this->currentUserId = $userId;
+        return $this;
+    }
 
     /**
      * Create a new crawl job.
@@ -32,7 +52,7 @@ class CrawlerService implements CrawlerServiceInterface
      */
     public function createJob(int $userId, string $url, array $options = []): array
     {
-        $jobId = 'crawl-' . \Illuminate\Support\Str::uuid()->toString();
+        $jobId = 'crawl-' . Str::uuid()->toString();
 
         $depth = $options['depth'] ?? 0;
         $estimatedTime = $this->calculateEstimatedTime($depth);
@@ -65,16 +85,32 @@ class CrawlerService implements CrawlerServiceInterface
     /**
      * Get a crawl job by ID.
      *
+     * Authorization: Only returns jobs belonging to the current user.
+     * Returns null if job not found or belongs to another user.
+     *
      * @param string $jobId The job identifier
      * @return array|null The job data or null if not found/unauthorized
      */
     public function getJob(string $jobId): ?array
     {
-        return $this->jobs[$jobId] ?? null;
+        if (!isset($this->jobs[$jobId])) {
+            return null;
+        }
+
+        $job = $this->jobs[$jobId];
+
+        // Authorization check: only return if belongs to current user
+        if ($this->currentUserId !== null && $job['user_id'] !== $this->currentUserId) {
+            return null;
+        }
+
+        return $job;
     }
 
     /**
      * Cancel a crawl job.
+     *
+     * Authorization: Only cancels jobs belonging to the current user.
      *
      * @param string $jobId The job identifier
      * @return bool|null True if cancelled, false if cannot be cancelled, null if not found
@@ -87,18 +123,26 @@ class CrawlerService implements CrawlerServiceInterface
 
         $job = $this->jobs[$jobId];
 
+        // Authorization check
+        if ($this->currentUserId !== null && $job['user_id'] !== $this->currentUserId) {
+            return null;
+        }
+
         // Can only cancel queued or running jobs
         if (!in_array($job['status'], ['queued', 'running'])) {
             return false;
         }
 
         $this->jobs[$jobId]['status'] = 'cancelled';
+        $this->jobs[$jobId]['completedAt'] = now()->toIso8601String();
 
         return true;
     }
 
     /**
      * Get the crawled content for a completed job.
+     *
+     * Authorization: Only returns content for jobs belonging to the current user.
      *
      * @param string $jobId The job identifier
      * @return array|null The content data or null if not found/unauthorized
@@ -110,6 +154,11 @@ class CrawlerService implements CrawlerServiceInterface
         }
 
         $job = $this->jobs[$jobId];
+
+        // Authorization check
+        if ($this->currentUserId !== null && $job['user_id'] !== $this->currentUserId) {
+            return null;
+        }
 
         // Only return content for completed jobs
         if ($job['status'] !== 'completed') {
@@ -183,5 +232,41 @@ class CrawlerService implements CrawlerServiceInterface
     {
         $seconds = 30 + ($depth * 15);
         return $seconds . 's';
+    }
+
+    /**
+     * Helper method to add a test job (for testing purposes).
+     *
+     * @param array $jobData
+     * @return string The job ID
+     */
+    public function addTestJob(array $jobData): string
+    {
+        $jobId = $jobData['jobId'] ?? ('crawl-' . Str::uuid()->toString());
+        $this->jobs[$jobId] = array_merge([
+            'jobId' => $jobId,
+            'status' => 'queued',
+            'user_id' => null,
+            'created_at' => now()->toIso8601String(),
+        ], $jobData);
+        return $jobId;
+    }
+
+    /**
+     * Helper method to get all jobs (for testing purposes).
+     *
+     * @return array
+     */
+    public function getAllJobs(): array
+    {
+        return $this->jobs;
+    }
+
+    /**
+     * Helper method to clear all jobs (for testing purposes).
+     */
+    public function clearJobs(): void
+    {
+        $this->jobs = [];
     }
 }

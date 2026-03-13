@@ -22750,6 +22750,148 @@ Dynamic route pages use `useParams()` hook for client-side route parameter extra
 - TASK-1-15: Ranking History Chart
 
 ---
+
+## Dashboard Summary Component (TASK-1-16)
+
+### Feature Description
+Main dashboard component displaying key SEO metrics and ranking changes overview. Provides users with an at-a-glance view of their keyword tracking health and momentum.
+
+### Component Location
+- `frontend/components/dashboard/DashboardSummary.tsx` - Main component
+
+### Component Props
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `siteId` | string | `"1"` | Site identifier for keyword context |
+
+### Summary Cards
+| Card | Description | Color |
+|------|-------------|-------|
+| **Total Keywords** | Count of all tracked keywords | White |
+| **Average Position** | Mean position across all keywords | Emerald (green) |
+| **Ranked** | Keywords in top 100 results | Sky (blue) |
+| **Not Ranked** | Keywords not found in top 100 | Amber (yellow) |
+
+### Position Changes Section
+Displays movement across tracked keywords with color-coded indicators:
+
+| Status | Color | Description |
+|--------|-------|-------------|
+| **Improved** | Emerald (green) | Keywords that gained positions |
+| **Declined** | Rose (red) | Keywords that lost positions |
+| **Unchanged** | Slate (gray) | Keywords with no position change |
+| **New** | Sky (blue) | Newly tracked keywords |
+
+### Top Keywords Table
+Displays top 5 keywords by position with columns:
+| Column | Description |
+|--------|-------------|
+| Keyword | The search term |
+| Position | Current ranking position |
+| Change | Position movement (+/-) |
+| URL | Target URL for the keyword |
+
+### Alerts Section
+Shows significant ranking drops requiring attention:
+- Displays keywords with major position declines
+- Red border styling for urgency
+- Shows previous → current position transition
+
+### Quick Actions
+| Action | Description |
+|--------|-------------|
+| **Add keyword** | Links to `/sites/{siteId}/keywords/new` |
+| **Refresh all** | Manually refresh dashboard data |
+| **View full keyword list** | Links to `/sites/{siteId}/keywords` |
+
+### Auto-Refresh Feature
+- **Default**: Disabled
+- **Interval**: 5 minutes
+- **Toggle**: Checkbox in header controls on/off state
+
+### Loading States
+- Initial load: 700ms skeleton animation
+- Refresh: Button shows "Refreshing..." state
+- Skeleton cards: 4 placeholder cards with pulse animation
+
+### Responsive Layout
+| Breakpoint | Layout |
+|------------|--------|
+| Mobile | Single column (cards stack) |
+| MD+ | 4-column grid for summary cards |
+| LG+ | 2-column grid (2fr/1fr) for changes/alerts |
+
+### Technical Implementation
+- **Framework**: React with Next.js App Router
+- **UI Components**: Shadcn/UI Card components
+- **State Management**: React useState/useEffect hooks
+- **Mock Data**: Simulated data with refresh variance
+- **Routing**: Next.js Link for navigation
+
+### Data Types
+```typescript
+type KeywordRow = {
+  keyword: string;
+  position: number;
+  change: number;
+  url: string;
+};
+
+type AlertRow = {
+  keyword: string;
+  change: number;
+  previousPosition: number;
+  currentPosition: number;
+};
+
+type DashboardData = {
+  totalKeywords: number;
+  averagePosition: number;
+  ranked: number;
+  notRanked: number;
+  changes: {
+    improved: number;
+    declined: number;
+    unchanged: number;
+    new: number;
+  };
+  topKeywords: KeywordRow[];
+  alerts: AlertRow[];
+};
+```
+
+### Unit Tests
+| Test File | Tests | Description |
+|-----------|-------|-------------|
+| `DashboardSummary.test.tsx` | 30 | Comprehensive component coverage |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| CARD-001 to CARD-004 | 4 | Summary cards rendering |
+| CHG-001 to CHG-004 | 4 | Position changes display |
+| TOP-001 to TOP-004 | 4 | Top keywords table |
+| ALT-001 to ALT-003 | 3 | Alerts section |
+| ACT-001 to ACT-003 | 3 | Quick actions |
+| REF-001 to REF-003 | 3 | Auto-refresh toggle |
+| LOAD-001 to LOAD-003 | 3 | Loading states |
+| RESP-001 to RESP-003 | 3 | Responsive layout |
+| Edge Cases | 3 | Custom props, last updated, table headers |
+
+### Production Status
+- **Deployed**: 2026-02-27 (GitHub Actions #22504272930)
+- **Tests**: 30/30 passing
+- **Status**: Complete
+
+### Dependencies
+- TASK-1-6 (Dashboard API) - data source
+
+### Related Tasks
+- TASK-1-13: Keyword List Page
+- TASK-1-14: Add/Edit Keyword Forms
+- TASK-1-15: Ranking History Chart
+
+---
 ## Rankings API Endpoints (TASK-6-9)
 
 ### Service Description
