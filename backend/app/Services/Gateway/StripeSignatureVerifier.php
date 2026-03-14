@@ -22,7 +22,7 @@ class StripeSignatureVerifier
     /**
      * The Stripe webhook secret for signature verification.
      */
-    protected string $webhookSecret;
+    protected ?string $webhookSecret;
 
     /**
      * Maximum allowed age of webhook timestamp (in seconds).
