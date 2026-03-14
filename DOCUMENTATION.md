@@ -1,6 +1,214 @@
 # DOCUMENTATION.md
 
 ---
+## Reports CRUD API (TASK-4-7)
+
+### Feature Description
+REST API endpoints for the Automated SEO Reports feature (FEAT-004) that provide report management operations including listing, viewing, and deleting generated reports. Supports filtering by status and type with pagination, and integrates with the report generation and download workflows.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/ReportController.php`
+- **Routes:** `backend/routes/api.php`
+- **Model:** `backend/app/Models/Report.php`
+- **Repository:** `backend/app/Repositories/ReportRepository.php`
+- **Tests:** `backend/tests/Feature/Controllers/Api/V1/ReportControllerTest.php`
+- **Test Documentation:** `TESTS/SPEC-004-7.md`
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sites/{siteId}/reports` | List reports with pagination and filters |
+| GET | `/api/v1/reports/{reportId}` | Get single report details |
+| DELETE | `/api/v1/reports/{reportId}` | Delete report and associated file |
+| POST | `/api/v1/sites/{siteId}/reports/generate` | Generate new report |
+| GET | `/api/v1/reports/{reportId}/download` | Download report file |
+
+### List Reports Endpoint
+
+**Request:**
+```
+GET /api/v1/sites/{siteId}/reports?status=completed&type=weekly&page=1&perPage=20
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | - | Filter by status (pending, generating, completed, failed) |
+| `type` | string | - | Filter by type (daily, weekly, monthly, custom, one-time) |
+| `page` | int | 1 | Page number |
+| `perPage` | int | 20 | Items per page (max 100) |
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Weekly SEO Report",
+      "type": "weekly",
+      "format": "pdf",
+      "status": "completed",
+      "generated_at": "2026-02-20T09:00:00Z",
+      "file_size": 245000,
+      "date_range_start": "2026-02-13",
+      "date_range_end": "2026-02-20"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 10,
+    "last_page": 1
+  }
+}
+```
+
+### Get Report Details Endpoint
+
+**Request:**
+```
+GET /api/v1/reports/{reportId}
+Authorization: Bearer {token}
+```
+
+**Success Response (200):**
+```json
+{
+  "id": 1,
+  "name": "Weekly SEO Report",
+  "type": "weekly",
+  "format": "pdf",
+  "status": "completed",
+  "generated_at": "2026-02-20T09:00:00Z",
+  "file_size": 245000,
+  "file_path": "/storage/reports/weekly-report-2026-02-20.pdf",
+  "date_range_start": "2026-02-13",
+  "date_range_end": "2026-02-20",
+  "sections": ["summary", "keywords", "changes", "trends"],
+  "error": null,
+  "created_at": "2026-02-20T08:30:00Z",
+  "updated_at": "2026-02-20T09:00:00Z"
+}
+```
+
+### Delete Report Endpoint
+
+**Request:**
+```
+DELETE /api/v1/reports/{reportId}
+Authorization: Bearer {token}
+```
+
+**Success Response (204):** No content
+
+**Side Effects:**
+- Removes report record from database
+- Deletes associated file from storage
+
+### Authorization Rules
+
+| Action | Authorization |
+|--------|--------------|
+| List | User must own the site |
+| View | User must own the site via report |
+| Delete | User must own the site via report |
+| Generate | User must own the site |
+| Download | User must own the site via report |
+
+### Response Codes
+
+| Code | Condition |
+|------|-----------|
+| 200 | Successful list/view |
+| 201 | Report generation started |
+| 204 | Successful delete |
+| 401 | Unauthenticated |
+| 403 | Unauthorized (wrong user) |
+| 404 | Report not found |
+| 422 | Validation error |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum token authentication |
+| Authorization | Site ownership check via report relationship |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS | Input validation, output encoding |
+| File Access | Storage path validation, ownership check |
+
+### Performance Characteristics
+
+| Operation | Performance |
+|-----------|-------------|
+| List (20 items) | < 100ms |
+| Get details | < 50ms |
+| Delete | < 100ms |
+| Generate (async) | Background job |
+| Download | Direct file stream |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| ReportControllerTest | 29 | 79 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authentication | 5 | 401 for unauthenticated users |
+| Authorization | 5 | 403 for other users' resources |
+| CRUD Operations | 8 | List, show, delete |
+| Report Generation | 6 | PDF, CSV generation |
+| Download | 3 | File download functionality |
+| Validation | 4 | Required fields, date range, sections |
+| Edge Cases | 3 | Missing files, pending reports |
+
+### Bug Fixes During Testing
+
+| Issue | Fix |
+|-------|-----|
+| `ReportBranding` model table mismatch | Added `protected $table = 'report_branding'` to model (Laravel default expected `report_brandings` but migration created `report_branding`) |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Deployment ID | `20260314T182343Z-bdc54b57` |
+| Commit | `9c2cc384b0e58acfbc7674e4f48d6eb8699a2377` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-14 20:50 UTC |
+| Status | Complete |
+
+### Production Validation Results
+
+| Endpoint | Expected | Actual | Status |
+|----------|----------|--------|--------|
+| GET /api/v1/sites/1/reports | 401 | 401 | ✅ PASS |
+| GET /api/v1/reports/1 | 401 | 401 | ✅ PASS |
+| DELETE /api/v1/reports/1 | 401 | 401 | ✅ PASS |
+| POST /api/v1/sites/1/reports/generate | 401 | 401 | ✅ PASS |
+| GET /api/v1/reports/1/download | 401 | 401 | ✅ PASS |
+| XSS (script tag in query) | 401 | 401 | ✅ PASS |
+| SQL injection (encoded) | 401 | 401 | ✅ PASS |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-4-1 | Done ✅ | Reports table migration |
+| TASK-4-2 | Done ✅ | Report model/repository |
+
+### Related Tasks
+
+- TASK-4-8: Report Generation Endpoint
+- TASK-4-9: Download Endpoint
+- TASK-4-10: Template Management API
+
+---
 ## Password Reset Flow (TASK-25-4)
 
 ### Feature Description
@@ -1809,6 +2017,367 @@ This allows the service to function correctly during incremental rollouts or whe
 - TASK-35-13: Business Location API Controller (consumes this service)
 - TASK-35-17: Location Management Page (frontend consumes API)
 - TASK-35-16: Local SEO Alerts API Controller (uses location context)
+
+---
+## Business Location API Controller (TASK-35-13)
+
+### Feature Description
+REST API controller for the Local SEO & Google Business Profile Tracking feature (FEAT-035) that exposes business location management endpoints. Provides CRUD operations for locations and handles the complete Google Business Profile (GBP) OAuth connection flow including connect, callback, and disconnect operations.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/LocalSEO/BusinessLocationController.php`
+- **Form Requests:**
+  - `backend/app/Http/Requests/Api/V1/LocalSEO/StoreBusinessLocationRequest.php`
+  - `backend/app/Http/Requests/Api/V1/LocalSEO/UpdateBusinessLocationRequest.php`
+- **Policy:** `backend/app/Policies/BusinessLocationPolicy.php`
+- **API Resources:**
+  - `backend/app/Http/Resources/Api/V1/LocalSEO/BusinessLocationResource.php` (detail view)
+  - `backend/app/Http/Resources/Api/V1/LocalSEO/BusinessLocationListResource.php` (list view)
+- **Routes:** `backend/routes/api.php` (under `/api/v1/`)
+- **Tests:**
+  - `backend/tests/Feature/Api/V1/LocalSEO/BusinessLocationControllerTest.php`
+  - `backend/tests/Unit/Http/Requests/LocalSEO/StoreBusinessLocationRequestTest.php`
+  - `backend/tests/Unit/Http/Requests/LocalSEO/UpdateBusinessLocationRequestTest.php`
+  - `backend/tests/Unit/Policies/BusinessLocationPolicyTest.php`
+- **Test Documentation:** `TESTS/TEST-35-13.md`
+
+### API Endpoints
+
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/sites/{siteId}/locations` | List all locations for a site | 60/min |
+| POST | `/api/v1/sites/{siteId}/locations` | Create a new business location | 10/hour |
+| GET | `/api/v1/locations/{id}` | Get detailed location info | 60/min |
+| PUT | `/api/v1/locations/{id}` | Update location details | 60/min |
+| DELETE | `/api/v1/locations/{id}` | Soft delete location | 60/min |
+| POST | `/api/v1/locations/{id}/connect-gbp` | Initiate GBP OAuth flow | 5/hour |
+| GET | `/api/v1/locations/{id}/gbp-callback` | Handle OAuth callback | 20/hour |
+| DELETE | `/api/v1/locations/{id}/disconnect-gbp` | Remove GBP connection | 10/hour |
+
+### List Locations Endpoint
+
+**Request:**
+```
+GET /api/v1/sites/{siteId}/locations
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | int | 1 | Page number |
+| `per_page` | int | 15 | Items per page (max 100) |
+| `active_only` | bool | false | Filter to active locations only |
+| `gbp_connected` | bool | null | Filter by GBP connection status |
+| `search` | string | null | Search in name/address/phone |
+| `sort` | string | created_at | Sort field (name, created_at, updated_at) |
+| `order` | string | desc | Sort direction (asc, desc) |
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Main Street Bakery",
+      "address": "123 Main St, New York, NY 10001",
+      "phone": "+1-555-123-4567",
+      "website": "https://example.com",
+      "category": "Bakery",
+      "gbp_connected": true,
+      "is_active": true,
+      "created_at": "2026-03-08T12:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 1,
+    "last_page": 1
+  }
+}
+```
+
+### Create Location Endpoint
+
+**Request:**
+```
+POST /api/v1/sites/{siteId}/locations
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "name": "Main Street Bakery",
+  "address": "123 Main St, New York, NY 10001",
+  "phone": "+1-555-123-4567",
+  "website": "https://example.com",
+  "category": "Bakery"
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `name` | Required, string, max 255 chars, no HTML tags |
+| `address` | Required, string, max 500 chars, no HTML tags |
+| `phone` | Optional, string, max 50 chars, valid phone format |
+| `website` | Optional, URL, max 2048 chars |
+| `category` | Optional, string, max 255 chars |
+| `latitude` | Optional, numeric, between -90 and 90 |
+| `longitude` | Optional, numeric, between -180 and 180 |
+
+**Success Response (201):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Main Street Bakery",
+    "address": "123 Main St, New York, NY 10001",
+    "phone": "+1-555-123-4567",
+    "website": "https://example.com",
+    "category": "Bakery",
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "gbp_connected": false,
+    "is_active": true,
+    "created_at": "2026-03-08T12:00:00Z"
+  }
+}
+```
+
+### Get Location Details Endpoint
+
+**Request:**
+```
+GET /api/v1/locations/{id}
+Authorization: Bearer {token}
+```
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Main Street Bakery",
+    "address": "123 Main St, New York, NY 10001",
+    "phone": "+1-555-123-4567",
+    "website": "https://example.com",
+    "category": "Bakery",
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "gbp_connected": true,
+    "gbp_place_id": "ChIJN1t_tDeuEmsRUsoyG83frY4",
+    "is_active": true,
+    "insights_summary": {
+      "views": 1250,
+      "searches": 450,
+      "calls": 25
+    },
+    "review_stats": {
+      "average_rating": 4.5,
+      "total_reviews": 127
+    },
+    "created_at": "2026-03-08T12:00:00Z",
+    "updated_at": "2026-03-08T14:30:00Z"
+  }
+}
+```
+
+### Update Location Endpoint
+
+**Request:**
+```
+PUT /api/v1/locations/{id}
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "name": "Main Street Bakery & Cafe",
+  "phone": "+1-555-987-6543"
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `name` | Sometimes, string, filled, max 255 chars, no HTML tags |
+| `address` | Sometimes, string, filled, max 500 chars, no HTML tags |
+| `phone` | Optional, string, max 50 chars |
+| `website` | Optional, URL, max 2048 chars |
+| `category` | Optional, string, max 255 chars |
+| `is_active` | Optional, boolean |
+
+**Note:** Empty strings are rejected via `filled` validation rule.
+
+### Delete Location Endpoint
+
+**Request:**
+```
+DELETE /api/v1/locations/{id}
+Authorization: Bearer {token}
+```
+
+**Success Response (204):** No content
+
+**Side Effects:**
+- Soft deletes the location record
+- Clears GBP access/refresh tokens
+- Resets `gbp_connected` flag
+
+### GBP Connect Endpoint
+
+**Request:**
+```
+POST /api/v1/locations/{id}/connect-gbp
+Authorization: Bearer {token}
+```
+
+**Success Response (200):**
+```json
+{
+  "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?..."
+}
+```
+
+### GBP Callback Endpoint
+
+**Request:**
+```
+GET /api/v1/locations/{id}/gbp-callback?state=...&code=...
+```
+
+**Success Response (API - 200):**
+```json
+{
+  "success": true,
+  "message": "GBP connection successful",
+  "location_id": 1
+}
+```
+
+**Note:** Publicly accessible (required for OAuth redirect). Validates state parameter for CSRF protection.
+
+### GBP Disconnect Endpoint
+
+**Request:**
+```
+DELETE /api/v1/locations/{id}/disconnect-gbp
+Authorization: Bearer {token}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "GBP connection removed"
+}
+```
+
+**Side Effects:**
+- Revokes OAuth tokens
+- Clears `gbp_access_token`, `gbp_refresh_token`, `gbp_token_expires_at`
+- Resets `gbp_connected` flag
+
+### Authorization Policy
+
+| Action | User Ownership Check | Admin Override |
+|--------|---------------------|----------------|
+| List | Must own the site via `site->user_id` | Yes |
+| Create | Must own the site via `site->user_id` | Yes |
+| View | Must own the location via `location->user_id` | Yes |
+| Update | Must own the location via `location->user_id` | Yes |
+| Delete | Must own the location via `location->user_id` | Yes |
+| Connect GBP | Must own the location via `location->user_id` | Yes |
+| Disconnect GBP | Must own the location via `location->user_id` | Yes |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum token authentication |
+| Authorization | BusinessLocationPolicy with ownership checks |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Prevention | Regex validation rejects HTML tags in name/address |
+| Mass Assignment | `tokens`, `user_id`, `site_id` excluded from `validated()` |
+| Token Exposure | GBP tokens NEVER returned in API responses |
+| OAuth CSRF | State parameter validation for GBP callback |
+| Rate Limiting | Per-endpoint rate limits (see table above) |
+
+### Error Responses
+
+| Code | Condition | Response |
+|------|-----------|----------|
+| 401 | Unauthenticated | `{"message": "Unauthenticated."}` |
+| 403 | Unauthorized (wrong user) | `{"message": "This action is unauthorized."}` |
+| 404 | Location not found | `{"message": "No query results for model..."}` |
+| 422 | Validation error | `{"message": "...", "errors": {...}}` |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| BusinessLocationControllerTest | 127 | 184 | ✅ PASS |
+| StoreBusinessLocationRequestTest | 44 | 65 | ✅ PASS |
+| UpdateBusinessLocationRequestTest | 35 | 44 | ✅ PASS |
+| BusinessLocationPolicyTest | 23 | 23 | ✅ PASS |
+| **Total** | **229** | **316** | ✅ **ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Route Registration (RR) | 10 | All routes properly registered |
+| Authentication (AUTH) | 18 | Token authentication enforcement |
+| Authorization (AUTHZ) | 20 | Ownership and admin override checks |
+| List Locations (LIST) | 25 | Pagination, filtering, sorting |
+| Create Location (CREATE) | 40 | Validation, geocoding, duplicates |
+| Show Location (SHOW) | 25 | Detail retrieval, insights, reviews |
+| Update Location (UPDATE) | 35 | Validation, immutability, empty strings |
+| Delete Location (DELETE) | 20 | Soft delete, GBP token cleanup |
+| Connect GBP (CONNECT) | 30 | OAuth URL generation, state validation |
+| GBP Callback (CALLBACK) | 35 | Token exchange, error handling |
+| Disconnect GBP (DISCONNECT) | 25 | Token revocation, flag reset |
+| HTTP Methods (HM) | 18 | Correct method enforcement |
+| Security (SEC) | 25 | SQL injection, XSS, mass assignment |
+| Edge Cases (EDGE) | 30 | Boundary conditions, unicode |
+| Performance (PERF) | 10 | Response time < 500ms |
+| Acceptance Criteria (AC) | 20 | All ACs verified |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Production Validation | 2026-03-14 19:58 GMT+2 |
+| Production URL | https://seoindicator.com |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Unauthenticated list | 401 JSON | `{"message":"Unauthenticated."}` | ✅ |
+| Unauthenticated create | 401 JSON | `{"message":"Unauthenticated."}` | ✅ |
+| Unauthenticated show | 401 JSON | `{"message":"Unauthenticated."}` | ✅ |
+| Unauthenticated update | 401 JSON | `{"message":"Unauthenticated."}` | ✅ |
+| Unauthenticated delete | 401 JSON | `{"message":"Unauthenticated."}` | ✅ |
+| Unauthenticated connect | 401 JSON | `{"message":"Unauthenticated."}` | ✅ |
+| GBP callback (public) | JSON response | `{"success":false,"error":"invalid_state"}` | ✅ |
+| Unauthenticated disconnect | 401 JSON | `{"message":"Unauthenticated."}` | ✅ |
+| SQL injection test | Route not found | Blocked by route constraint | ✅ |
+| XSS test | 401 (auth first) | Validation runs after auth | ✅ |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-35-5 | Done ✅ | BusinessLocationService (injected via interface) |
+| TASK-35-7 | Done ✅ | Google OAuth Service (injected via interface) |
+
+### Related Tasks
+
+- TASK-35-1: Local SEO Database Migrations
+- TASK-35-2: BusinessLocation Model
+- TASK-35-17: Location Management Page (frontend)
+- TASK-35-27: Production Business Location API 500 Fix
 
 ---
 ## API Integration Tests (TASK-6-20)
@@ -7622,6 +8191,297 @@ interface LocationDashboardData {
 - TASK-35-22: Local Rankings Tracker Page (detailed rankings view)
 
 ---
+## Local Rankings API Controller (TASK-35-15)
+
+### API Description
+REST API controller for local ranking tracking endpoints that expose LocalRankService functionality to the frontend. Provides endpoints for retrieving current rankings, historical data, quota management, and competitor tracking for business locations.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/LocalSEO/LocalRankingController.php`
+- **Models:**
+  - `backend/app/Models/LocalRanking.php` - Local ranking model with relationships
+  - `backend/app/Models/LocalCompetitor.php` - Local competitor model
+- **Policy:** `backend/app/Policies/BusinessLocationPolicy.php` - Authorization (6 methods added)
+- **Routes:** `backend/routes/api.php` - Ranking and competitor routes
+- **Factories:**
+  - `backend/database/factories/LocalRankingFactory.php` - Test factory with states
+  - `backend/database/factories/LocalCompetitorFactory.php` - Test factory with states
+- **Tests:** `backend/tests/Feature/Api/V1/LocalRankingControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-35-15.md`
+
+### API Endpoints
+
+| Method | Endpoint | Description | Auth | Throttle |
+|--------|----------|-------------|------|----------|
+| GET | `/api/v1/locations/{id}/rankings` | Current rankings for location's keywords | Required | 60/min |
+| GET | `/api/v1/locations/{id}/rankings/history` | Historical ranking data | Required | 60/min |
+| POST | `/api/v1/locations/{id}/rankings/check` | Trigger ranking check (all keywords) | Required | 10/hour |
+| POST | `/api/v1/locations/{id}/rankings/check/{keywordId}` | Trigger single keyword check | Required | 10/hour |
+| GET | `/api/v1/locations/{id}/rankings/quota` | Monthly quota usage | Required | 60/min |
+| GET | `/api/v1/locations/{id}/competitors` | List tracked competitors | Required | 60/min |
+| POST | `/api/v1/locations/{id}/competitors` | Add competitor for tracking | Required | 30/hour |
+| DELETE | `/api/v1/locations/{id}/competitors/{competitorId}` | Remove competitor | Required | 30/hour |
+
+### Endpoint Details
+
+#### GET /api/v1/locations/{id}/rankings
+Returns current rankings for all keywords associated with a location.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "location_id": 1,
+    "location_name": "Pizza Palace",
+    "rankings": [
+      {
+        "keyword_id": 1,
+        "keyword": "best pizza new york",
+        "local_pack_position": 2,
+        "local_organic_position": 5,
+        "last_checked": "2026-03-14T12:00:00Z",
+        "change": {
+          "pack_change": 1,
+          "organic_change": -2
+        }
+      }
+    ]
+  }
+}
+```
+
+#### GET /api/v1/locations/{id}/rankings/history
+Returns historical ranking data with optional filtering.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `keyword_id` | int | Filter by keyword ID |
+| `start_date` | date | Start date (Y-m-d) |
+| `end_date` | date | End date (Y-m-d) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "location_id": 1,
+    "keyword_id": 1,
+    "history": [
+      {
+        "date": "2026-03-14",
+        "local_pack_position": 2,
+        "local_organic_position": 5
+      }
+    ]
+  }
+}
+```
+
+#### POST /api/v1/locations/{id}/rankings/check
+Triggers asynchronous ranking check for all keywords at a location.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "job_id": "uuid-check-123",
+    "location_id": 1,
+    "keywords_queued": 5,
+    "status": "pending"
+  }
+}
+```
+
+**Status Codes:**
+| Code | Description |
+|------|-------------|
+| 202 | Accepted - Job queued successfully |
+| 429 | Quota exceeded - Monthly limit reached |
+
+#### GET /api/v1/locations/{id}/rankings/quota
+Returns monthly quota usage for ranking checks.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "location_id": 1,
+    "monthly_limit": 50,
+    "used_this_month": 23,
+    "remaining": 27,
+    "reset_date": "2026-04-01T00:00:00Z"
+  }
+}
+```
+
+#### GET /api/v1/locations/{id}/competitors
+Lists all competitors being tracked for a location.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "location_id": 1,
+    "competitors": [
+      {
+        "id": 1,
+        "name": "Joe's Pizza",
+        "google_place_id": "ChIJabc123",
+        "rating": 4.5,
+        "review_count": 123,
+        "last_position": 1
+      }
+    ]
+  }
+}
+```
+
+#### POST /api/v1/locations/{id}/competitors
+Adds a new competitor for tracking.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Competitor name (max 255 chars) |
+| `google_place_id` | string | Yes | Google Place ID (unique per location) |
+| `notes` | string | No | Optional notes (max 1000 chars) |
+
+**Validation Rules:**
+- Max 20 competitors per location
+- Duplicate `google_place_id` not allowed
+
+#### DELETE /api/v1/locations/{id}/competitors/{competitorId}
+Removes a competitor from tracking.
+
+**Status Codes:**
+| Code | Description |
+|------|-------------|
+| 204 | No Content - Successfully deleted |
+| 404 | Not Found - Competitor doesn't exist |
+| 403 | Forbidden - Not owner |
+
+### Quota System
+
+| Metric | Value |
+|--------|-------|
+| Monthly Limit | 50 checks per location |
+| Reset Period | Monthly (1st of each month) |
+| Quota Response | 429 with reset_date |
+
+**Quota Exceeded Response:**
+```json
+{
+  "success": false,
+  "error": "Quota exceeded",
+  "data": {
+    "reset_date": "2026-04-01T00:00:00Z"
+  }
+}
+```
+
+### Policy Authorization
+
+The `BusinessLocationPolicy` provides these abilities for rankings access:
+
+| Ability | Description |
+|---------|-------------|
+| `viewRankings` | View current and historical rankings |
+| `checkRankings` | Trigger ranking checks |
+| `viewQuota` | View quota usage |
+| `viewCompetitors` | List tracked competitors |
+| `addCompetitor` | Add competitor for tracking |
+| `deleteCompetitor` | Remove competitor |
+
+**Authorization Rule:** User must own the site that owns the location.
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| Authentication | Laravel Sanctum (`auth:sanctum` middleware) |
+| Authorization | Policy-based (user must own location's site) |
+| Rate Limiting | Throttle middleware (10-60 requests per interval) |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Prevention | Input sanitization with `strip_tags()` |
+| IDOR Prevention | Policy checks ownership before access |
+| Input Validation | Form request validation |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `LocalRankingControllerTest.php` | 53 | 143 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| LR-API-GET | 15 | GET rankings, history, quota, competitors |
+| LR-API-POST | 12 | Check all, check single, add competitor |
+| LR-API-DELETE | 3 | Remove competitor |
+| LR-API-AUTH | 4 | Authentication/authorization |
+| LR-API-QUOTA | 4 | Quota exceeded (429 responses) |
+| LR-API-ERR | 6 | Error responses |
+| LR-API-SEC | 7 | Security (SQL injection, XSS, IDOR) |
+| HTTP Method | 3 | Method restrictions (405) |
+
+### Production Validation
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Deployment ID | `20260314T180657Z-00ef7e3d` |
+| Commit | `9c2cc384b0e58acfbc7674e4f48d6eb8699a2377` |
+| Production URL | `https://seoindicator.com` |
+| Homepage | 200 OK ✅ |
+| Login page | 200 OK ✅ |
+| API health | 200 OK ✅ |
+| Status | Complete |
+
+**Production Endpoint Verification:**
+| Endpoint | Method | Unauthenticated Response |
+|----------|--------|-------------------------|
+| `/api/v1/locations/{id}/rankings` | GET | 401 ✅ |
+| `/api/v1/locations/{id}/rankings/history` | GET | 401 ✅ |
+| `/api/v1/locations/{id}/rankings/check` | POST | 405 ✅ |
+| `/api/v1/locations/{id}/rankings/check/{keywordId}` | POST | 405 ✅ |
+| `/api/v1/locations/{id}/rankings/quota` | GET | 401 ✅ |
+| `/api/v1/locations/{id}/competitors` | GET | 401 ✅ |
+| `/api/v1/locations/{id}/competitors` | POST | 401 ✅ |
+| `/api/v1/locations/{id}/competitors/{competitorId}` | DELETE | 405 ✅ |
+
+### Acceptance Criteria Status
+
+- [x] LocalRankingController created
+- [x] GET /api/v1/locations/{id}/rankings
+- [x] GET /api/v1/locations/{id}/rankings/history
+- [x] POST /api/v1/locations/{id}/rankings/check
+- [x] POST /api/v1/locations/{id}/rankings/check/{keywordId}
+- [x] GET /api/v1/locations/{id}/rankings/quota
+- [x] GET /api/v1/locations/{id}/competitors
+- [x] POST /api/v1/locations/{id}/competitors
+- [x] DELETE /api/v1/locations/{id}/competitors/{competitorId}
+- [x] QuotaExceededException returns 429 response
+- [x] All endpoints require authentication
+- [x] Feature tests for all endpoints
+
+### Dependencies
+
+| Dependency | Status | Description |
+|------------|--------|-------------|
+| TASK-35-11 | Done ✅ | Local Rank Service (business logic) |
+| TASK-35-4 | Done ✅ | Local SEO Models (created as part of this task) |
+
+### Related Tasks
+- TASK-35-11: Local Rank Service (backend service layer)
+- TASK-35-19: Location Dashboard Page (consumes rankings API)
+- TASK-35-22: Local Rankings Tracker Page (frontend for this API)
+
+---
 ## Local Rankings Tracker Page (TASK-35-22)
 
 ### Component Description
@@ -9031,6 +9891,246 @@ Content-Length: 15000
 ### Related Tasks
 - TASK-4-7: Reports CRUD API
 - TASK-4-8: Report generation endpoint
+- TASK-4-10: Template management API
+
+---
+## Reports CRUD API (TASK-4-7)
+
+### Feature Description
+REST API endpoints for managing generated SEO reports. Provides list, view, and delete operations for reports with pagination, filtering by status and type, and authorization checks ensuring users can only access reports for sites they own.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/ReportController.php`
+- **Repository:** `backend/app/Repositories/ReportRepository.php`
+- **Model:** `backend/app/Models/Report.php`
+- **Route:** `backend/routes/api.php`
+- **Tests:** `backend/tests/Feature/Api/V1/ReportControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-004-7.md`
+
+### API Endpoints
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/v1/sites/{siteId}/reports` | Required | List reports with pagination and filters |
+| GET | `/api/v1/reports/{reportId}` | Required | Get single report details |
+| DELETE | `/api/v1/reports/{reportId}` | Required | Delete a report |
+
+### List Reports Endpoint
+
+**Request:**
+```http
+GET /api/v1/sites/1/reports?status=completed&type=weekly&page=1&perPage=20
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | null | Filter by status: pending, generating, completed, failed |
+| `type` | string | null | Filter by type: daily, weekly, monthly, custom, one-time |
+| `page` | integer | 1 | Page number (min 1) |
+| `perPage` | integer | 20 | Items per page (max 100) |
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Weekly SEO Report",
+      "type": "weekly",
+      "format": "pdf",
+      "status": "completed",
+      "statusLabel": "Completed",
+      "dateRange": {
+        "start": "2026-02-13",
+        "end": "2026-02-20"
+      },
+      "compareRange": {
+        "start": "2026-02-06",
+        "end": "2026-02-13"
+      },
+      "sections": ["cover", "keywords", "changes"],
+      "generatedAt": "2026-02-20T09:00:00Z",
+      "downloadUrl": "/api/v1/reports/1/download",
+      "fileSize": 245000,
+      "error": null,
+      "createdAt": "2026-02-20T08:55:00Z"
+    }
+  ],
+  "meta": {
+    "total": 10,
+    "page": 1,
+    "perPage": 20
+  }
+}
+```
+
+### Get Report Details Endpoint
+
+**Request:**
+```http
+GET /api/v1/reports/1
+Authorization: Bearer {token}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Weekly SEO Report",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "completed",
+    "statusLabel": "Completed",
+    "dateRange": {
+      "start": "2026-02-13",
+      "end": "2026-02-20"
+    },
+    "compareRange": null,
+    "sections": ["cover", "keywords", "changes"],
+    "generatedAt": "2026-02-20T09:00:00Z",
+    "downloadUrl": "/api/v1/reports/1/download",
+    "fileSize": 245000,
+    "error": null,
+    "createdAt": "2026-02-20T08:55:00Z"
+  }
+}
+```
+
+### Delete Report Endpoint
+
+**Request:**
+```http
+DELETE /api/v1/reports/1
+Authorization: Bearer {token}
+```
+
+**Success Response (204):**
+No content - Empty response body
+
+**Error Response (403):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "You do not have access to this report."
+  }
+}
+```
+
+### Response Codes
+
+| Code | Description |
+|------|-------------|
+| 200 | Success - Report(s) returned |
+| 204 | Success - Report deleted (no content) |
+| 401 | Unauthenticated - Token required |
+| 403 | Forbidden - User doesn't own the site |
+| 404 | Not Found - Report/Site doesn't exist |
+
+### Authorization
+
+All endpoints require authentication via Laravel Sanctum. Authorization checks ensure users can only access reports for sites they own:
+
+| Endpoint | Authorization Check |
+|----------|---------------------|
+| `GET /sites/{siteId}/reports` | `$site->user_id === $user->id` |
+| `GET /reports/{reportId}` | `$report->site->user_id === $user->id` |
+| `DELETE /reports/{reportId}` | `$report->site->user_id === $user->id` |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum middleware |
+| Authorization | Controller ownership verification |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Protection | JSON response encoding |
+| IDOR Prevention | User ownership check on every request |
+| Pagination Limit | Max 100 items per page (prevents abuse) |
+
+### Controller Methods
+
+| Method | Description |
+|--------|-------------|
+| `index(Request, $siteId)` | List reports with filters and pagination |
+| `show(Request, $reportId)` | Get single report details |
+| `destroy(Request, $reportId)` | Delete report and associated file |
+
+### Report Status Values
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Report queued for generation |
+| `generating` | Report currently being generated |
+| `completed` | Report ready for download |
+| `failed` | Report generation failed |
+
+### Report Types
+
+| Type | Description |
+|------|-------------|
+| `daily` | Daily automated report |
+| `weekly` | Weekly automated report |
+| `monthly` | Monthly automated report |
+| `custom` | Custom date range report |
+| `one-time` | One-time manual report |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `ReportControllerTest.php` | 29 | 79 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authentication | 5 | 401 for unauthenticated requests |
+| Authorization | 11 | 403 for non-owners, access for owners |
+| CRUD Operations | 6 | List, show, delete |
+| Filtering | 4 | Status and type filters |
+| Pagination | 3 | Page/perPage behavior |
+
+### Production Test Results
+
+| Test | Endpoint | Expected | Actual | Status |
+|------|----------|----------|--------|--------|
+| List reports (auth) | GET /sites/1/reports | 200 | 200 | ✅ PASS |
+| Get report (auth) | GET /reports/1 | 200 | 200 | ✅ PASS |
+| Delete report (auth) | DELETE /reports/1 | 204 | 204 | ✅ PASS |
+| Unauthenticated | GET /sites/1/reports | 401 | 401 | ✅ PASS |
+| Unauthorized (other user) | GET /reports/1 | 403 | 403 | ✅ PASS |
+| XSS (script tag) | GET ?status=`<script>` | 401 | 401 | ✅ PASS |
+| SQL injection | GET ?status=';DROP... | 401 | 401 | ✅ PASS |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-24 |
+| Deployment ID | 20260314T182343Z-bdc54b57 |
+| Commit | `9c2cc384b0e58acfbc7674e4f48d6eb8699a2377` |
+| Health Check | ✅ 200 OK |
+| Tests | 29/29 passing (79 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-4-1 | Done ✅ | Reports table schema |
+| TASK-4-2 | Done ✅ | Report model/repository |
+| TASK-4-22 | Done ✅ | Authorization fix |
+
+### Related Tasks
+
+- TASK-4-8: Report generation endpoint
+- TASK-4-9: Report download endpoint
 - TASK-4-10: Template management API
 
 ---
@@ -48929,6 +50029,160 @@ Static legal page at `/terms` combining Terms of Service and Privacy Policy cont
 - TASK-30-5: Consent Integration (pending)
 
 ---
+## Reports API Integration Tests (TASK-4-21)
+
+### Service Description
+Comprehensive integration tests for the Reports API endpoints (SPEC-004). Validates complete request/response cycles for report CRUD operations, generation, templates, scheduling, and branding. Covers authentication, authorization, and cross-user data isolation.
+
+### Component Location
+- **Test File:** `backend/tests/Feature/Spec00421Test.php`
+- **Test Documentation:** `PROJECT-SEOINDICATOR/TESTS/SPEC-004-21.md`
+- **Related Specification:** `PROJECT-SEOINDICATOR/SPECIFICATIONS/SPEC-004.md`
+
+### Test Coverage
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Reports CRUD API | 6 | Create, read, list, delete, status filtering |
+| Report Generation | 4 | With/without template, validation |
+| Report Download | 3 | Success, not found, pending report |
+| Template Management | 3 | CRUD lifecycle, validation, default template |
+| Authentication/Authorization | 3 | Unauthenticated access, cross-user access |
+| Scheduled Reports | 3 | CRUD lifecycle, frequency validation, templates |
+| Branding API | 4 | Save/retrieve, validation, minimal requirements |
+| Logo Upload | 4 | Valid upload, format validation, size limit, delete |
+| Integration Workflows | 2 | Full workflow, site isolation |
+| **Total** | **28** | **87 assertions** |
+
+### Test Scenarios
+
+**Reports CRUD API:**
+| Test | Description |
+|------|-------------|
+| `report_crud_lifecycle` | Create → Read → List → Delete workflow |
+| `report_list_filters_by_status` | Filter by completed, pending, failed |
+
+**Report Generation:**
+| Test | Description |
+|------|-------------|
+| `generate_report_with_template` | Generate using valid template |
+| `generate_report_with_invalid_template` | Error for non-existent template |
+| `generate_report_validates_required_fields` | Missing fields return 422 |
+| `generate_report_validates_date_range` | End date before start returns 422 |
+
+**Report Download:**
+| Test | Description |
+|------|-------------|
+| `download_report` | Successful PDF download |
+| `download_nonexistent_report` | 404 for invalid ID |
+| `download_pending_report` | 400 for incomplete report |
+
+**Template Management:**
+| Test | Description |
+|------|-------------|
+| `template_crud_lifecycle` | Create → Update → List → Delete |
+| `template_invalid_sections` | Reject invalid section names |
+| `single_default_template_per_site` | Only one default per site |
+
+**Authentication/Authorization:**
+| Test | Description |
+|------|-------------|
+| `unauthenticated_access` | 401 on all protected endpoints |
+| `cross_user_report_access_denied` | 403 for other users' reports |
+| `cross_user_report_generation_denied` | 403 for other users' sites |
+
+**Scheduled Reports:**
+| Test | Description |
+|------|-------------|
+| `scheduled_report_crud_lifecycle` | Create → Pause → Resume → Delete |
+| `scheduled_report_frequency_validation` | Reject invalid frequencies |
+| `scheduled_report_with_template` | Associate schedule with template |
+
+**Branding API:**
+| Test | Description |
+|------|-------------|
+| `branding_save_and_retrieve` | PUT/GET workflow |
+| `branding_invalid_color` | Reject invalid hex colors |
+| `branding_invalid_url` | Reject invalid URLs |
+| `minimal_branding_requirements` | Default branding available |
+
+**Logo Upload:**
+| Test | Description |
+|------|-------------|
+| `upload_valid_logo` | SVG upload succeeds |
+| `upload_unsupported_format` | Reject non-image files |
+| `upload_file_too_large` | Reject files > 2MB |
+| `delete_logo` | Remove existing logo |
+
+**Integration Workflows:**
+| Test | Description |
+|------|-------------|
+| `full_report_generation_workflow` | Branding → Template → Report → Schedule |
+| `site_data_isolation` | Verify cross-site data isolation |
+
+### Security Testing
+
+| Security Measure | Tests | Status |
+|------------------|-------|--------|
+| Authentication Required | `unauthenticated_access` | ✅ 401 returned |
+| Authorization Checks | `cross_user_report_access_denied`, `cross_user_report_generation_denied` | ✅ 403 returned |
+| Input Validation | `generate_report_validates_*`, `branding_invalid_*` | ✅ 422 returned |
+| Data Isolation | `site_data_isolation` | ✅ Cross-site data protected |
+
+### Test Implementation Notes
+
+**Logo Upload Tests:**
+- Uses SVG files instead of PNG/JPEG to bypass GD extension dependency
+- Avoids dimension validation issues with fake images
+
+**Authentication:**
+- Uses Laravel's `actingAs()` helper for authenticated requests
+- Tests both authenticated and unauthenticated scenarios
+
+**Database:**
+- Uses `RefreshDatabase` trait for clean state between tests
+- Factory pattern for creating test data
+
+### Production Verification
+
+**Deployment:** ID `20260314T182343Z-bdc54b57`, commit `9c2cc384`
+
+**Local Tests:** 28 passed, 87 assertions, 4.76s
+
+**Production Verification Results:**
+| Endpoint | Response | Status |
+|----------|----------|--------|
+| Reports API (`/api/v1/sites/{id}/reports`) | 401 | ✅ Protected |
+| Reports Generate (`/api/v1/sites/{id}/reports/generate`) | 401 | ✅ Protected |
+| Report Templates read | 200 | ✅ Public by design |
+| Report Templates write | 401 | ✅ Protected |
+| Scheduled Reports read | 200 | ✅ Public by design |
+| Scheduled Reports write | 401 | ✅ Protected |
+| Branding API | 401 | ✅ Protected |
+| XSS protection | No reflection | ✅ Secure |
+| IDOR protection | 403 for cross-user | ✅ Secure |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-14 (Deployment ID: `20260314T182343Z-bdc54b57`) |
+| **Commit** | `9c2cc384` |
+| **Health Check** | Passing |
+| **Tests** | 28/28 passing (87 assertions) |
+| **Status** | Complete |
+
+### Dependencies
+- TASK-4-1 through TASK-4-19 (All implementation tasks)
+- TASK-4-20 (Unit Tests)
+
+### Related Tasks
+- TASK-4-1 through TASK-4-19: Implementation tasks
+- TASK-4-20: Unit Tests
+- SPEC-004: Reports & Scheduled Reports
+- FEAT-004: Reports & Scheduled Reports
+
+---
 ## Project CRUD API Endpoints (TASK-34-6)
 
 ### Service Description
@@ -54342,7 +55596,8 @@ Frontend page component for the User Accounts + Dashboard + Analysis History fea
 | completed | Completed | Green (#22c55e) |
 | ailed | Failed | Red (#ef4444) |
 | pending | Pending | Yellow (#eab308) |
-| unning | Running | Blue (#3b82f6) |
+| 
+unning | Running | Blue (#3b82f6) |
 
 ### Component Props
 
@@ -54460,7 +55715,8 @@ export function useAnalysisHistory(initialFilters?: FilterState) {
 | completed | CheckCircle | bg-green-100 | text-green-700 |
 | ailed | XCircle | bg-red-100 | text-red-700 |
 | pending | Clock | bg-yellow-100 | text-yellow-700 |
-| unning | Loader2 | bg-blue-100 | text-blue-700 |
+| 
+unning | Loader2 | bg-blue-100 | text-blue-700 |
 
 ### Responsive Design
 
@@ -54474,13 +55730,15 @@ export function useAnalysisHistory(initialFilters?: FilterState) {
 
 | Feature | Implementation |
 |---------|---------------|
-| Table ARIA | ole="table", ria-label on table element |
+| Table ARIA | 
+ole="table", ria-label on table element |
 | Modal ARIA | ria-modal="true" via Radix Dialog |
 | Close Button | ria-label="Close" on close button |
 | Keyboard Navigation | Tab through all controls, Enter to activate |
 | Focus Management | Focus moves to close button when modal opens |
 | Screen Reader | Status badges have accessible labels |
-| Error Alerts | ole="alert" on error sections |
+| Error Alerts | 
+ole="alert" on error sections |
 
 ### Security Implementation
 
@@ -54561,6 +55819,413 @@ export function useAnalysisHistory(initialFilters?: FilterState) {
 - TASK-25-17: Frontend Auth Context (auth state)
 - TASK-25-18: Login/Register Pages (auth flow)
 - TASK-25-19: Dashboard Page (dashboard layout)
+
+---
+## Frontend Components - Candidate Detail & Tasks (TASK-36-12)
+
+### Feature Description
+React components for the Content Decay Detection & Refresh Planner feature (FEAT-036) that enable users to view candidate details, manage refresh tasks, track recovery metrics, and interact with AI-generated refresh suggestions. These components complete the user workflow from decay queue to action to tracking.
+
+### Component Locations
+- **CandidateDetailDrawer:** `frontend/components/content-decay/CandidateDetailDrawer.tsx`
+- **RefreshTaskList:** `frontend/components/content-decay/RefreshTaskList.tsx`
+- **RecoveryComparisonCard:** `frontend/components/content-decay/RecoveryComparisonCard.tsx`
+- **AiRefreshBriefPanel:** `frontend/components/content-decay/AiRefreshBriefPanel.tsx`
+- **StatusWorkflowButtons:** `frontend/components/content-decay/StatusWorkflowButtons.tsx`
+- **TypeScript Types:** `frontend/lib/types/content-decay.ts`
+- **Component Exports:** `frontend/components/content-decay/index.ts`
+- **Tests:** `frontend/__tests__/components/content-decay/*.test.tsx`
+- **Test Documentation:** `TESTS/TEST-36-12.md`
+
+### Components Overview
+
+| Component | Purpose |
+|-----------|---------|
+| `CandidateDetailDrawer` | Main drawer with 5 tabs (Overview, Signals, Tasks, Notes, AI Brief) |
+| `RefreshTaskList` | Task management with inline CRUD operations |
+| `RecoveryComparisonCard` | Before/after metrics display with delta calculations |
+| `AiRefreshBriefPanel` | AI-generated suggestions with warnings |
+| `StatusWorkflowButtons` | Status transitions (backlog → planned → in_progress → refreshed → recovered) |
+
+### CandidateDetailDrawer Component
+
+**Props:**
+```typescript
+interface CandidateDetailDrawerProps {
+  candidate: DecayCandidate | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onStatusChange?: (status: ContentDecayCandidateStatus) => void;
+  onTaskUpdate?: () => void;
+}
+```
+
+**Tabs:**
+| Tab | Content |
+|-----|---------|
+| Overview | Page URL, title, type, decay score, severity badge, confidence indicator |
+| Signals | Signal comparison table (previous vs current values), mini trend charts |
+| Tasks | RefreshTaskList component for task management |
+| Notes | User notes and annotations |
+| AI Brief | AiRefreshBriefPanel for AI suggestions |
+
+**Features:**
+- Page URL with external link
+- Decay score with severity badge (Critical/High/Medium/Low)
+- Detection confidence indicator
+- Reason codes with evidence
+- Signal comparison table with delta calculations
+- Mini trend charts integration
+- Status workflow buttons in footer
+- ESC key handling for close
+
+### RefreshTaskList Component
+
+**Props:**
+```typescript
+interface RefreshTaskListProps {
+  candidateId: number;
+  tasks: ContentRefreshTask[];
+  onTaskUpdate?: () => void;
+  isLoading?: boolean;
+}
+```
+
+**Features:**
+- Task items with status toggle (checkbox)
+- Source badges (AI, System, Manual)
+- Due date with overdue indicator
+- Add task form with validation
+- Delete functionality
+- Inline task editing
+
+**Task Status Values:**
+| Status | Description |
+|--------|-------------|
+| `todo` | Task not started |
+| `in_progress` | Task in progress |
+| `done` | Task completed |
+| `skipped` | Task skipped |
+
+### RecoveryComparisonCard Component
+
+**Props:**
+```typescript
+interface RecoveryComparisonCardProps {
+  comparison: RecoveryComparison | null;
+  isLoading?: boolean;
+  compact?: boolean;
+}
+```
+
+**Metrics Displayed:**
+| Metric | Before | After | Delta |
+|--------|--------|-------|-------|
+| Clicks | ✅ | ✅ | ✅ (color-coded) |
+| Impressions | ✅ | ✅ | ✅ (color-coded) |
+| CTR | ✅ | ✅ | ✅ (color-coded) |
+| Position | ✅ | ✅ | ✅ (color-coded) |
+| AI Visibility | ✅ (optional) | ✅ (optional) | ✅ (color-coded) |
+
+**Delta Color Coding:**
+| Delta | Color | Meaning |
+|-------|-------|---------|
+| Positive | Green | Improvement |
+| Negative | Red | Decline |
+| Zero | Gray | No change |
+
+### AiRefreshBriefPanel Component
+
+**Props:**
+```typescript
+interface AiRefreshBriefPanelProps {
+  candidateId: number;
+  brief: AiRefreshBrief | null;
+  onRegenerate?: () => void;
+  isLoading?: boolean;
+}
+```
+
+**Features:**
+- AI-generated refresh suggestions
+- Warning label: "AI-generated, verify before use"
+- Expandable suggestion cards
+- Copy to clipboard per suggestion
+- Request/Regenerate brief buttons
+- Loading and error states
+
+**Suggestion Structure:**
+```typescript
+interface AiRefreshSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  category: string;
+}
+```
+
+### StatusWorkflowButtons Component
+
+**Props:**
+```typescript
+interface StatusWorkflowButtonsProps {
+  currentStatus: ContentDecayCandidateStatus;
+  onStatusChange: (status: ContentDecayCandidateStatus) => void;
+  isLoading?: boolean;
+  showHistory?: boolean;
+}
+```
+
+**Status Workflow:**
+```
+backlog → planned → in_progress → refreshed → recovered (automatic)
+                                              ↓
+                                        ignored (can be restored → backlog)
+```
+
+**Features:**
+- Status-specific buttons per state
+- Ignore with confirmation dialog
+- Restore for ignored items
+- Status history display
+- Current status badge
+
+### TypeScript Interfaces
+
+**DecayCandidate:**
+```typescript
+interface DecayCandidate {
+  id: number;
+  projectId: number;
+  pageUrl: string;
+  pageTitle: string | null;
+  pageType: PageType;
+  severity: Severity;
+  decayScore: number;
+  detectionConfidence: number;
+  lostClickEstimate: number;
+  recoveryUpsideEstimate: number;
+  primaryReasonCode: string;
+  reasonCodes: string[];
+  status: ContentDecayCandidateStatus;
+  firstDetectedAt: string;
+  lastDetectedAt: string;
+  signals: DecaySignal[];
+  tasks: ContentRefreshTask[];
+}
+```
+
+**RecoveryComparison:**
+```typescript
+interface RecoveryComparison {
+  clicks: { before: number; after: number; delta: number };
+  impressions: { before: number; after: number; delta: number };
+  ctr: { before: number; after: number; delta: number };
+  position: { before: number; after: number; delta: number };
+  aiVisibility?: { before: number; after: number; delta: number };
+}
+```
+
+**ContentRefreshTask:**
+```typescript
+interface ContentRefreshTask {
+  id: number;
+  candidateId: number;
+  title: string;
+  recommendationType: string;
+  description: string | null;
+  notes: string | null;
+  ownerUserId: number | null;
+  dueDate: string | null;
+  status: 'todo' | 'in_progress' | 'done' | 'skipped';
+  source: 'system' | 'manual' | 'ai';
+  metadataJson: Record<string, unknown> | null;
+}
+```
+
+### Valid Status Transitions
+
+| Current Status | Allowed Next Statuses |
+|----------------|----------------------|
+| `backlog` | `planned`, `ignored` |
+| `planned` | `in_progress`, `backlog`, `ignored` |
+| `in_progress` | `refreshed`, `planned`, `ignored` |
+| `refreshed` | `recovered` (automatic) |
+| `recovered` | (terminal state) |
+| `ignored` | `backlog` (restore) |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Labels | `aria-label` on all interactive elements |
+| Keyboard Navigation | Tab through all controls, Enter/Space for actions |
+| Focus Management | Focus ring on all controls, focus trap in drawer |
+| Live Regions | `aria-live` for status updates |
+| Screen Reader | Descriptive labels for charts and comparisons |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `CandidateDetailDrawer.test.tsx` | 39 | ✅ PASS |
+| `RefreshTaskList.test.tsx` | 34 | ✅ PASS |
+| `RecoveryComparisonCard.test.tsx` | 25 | ✅ PASS |
+| `AiRefreshBriefPanel.test.tsx` | All | ✅ PASS |
+| `StatusWorkflowButtons.test.tsx` | 39 | ✅ PASS |
+| **Total** | **137+** | **✅ ALL PASS** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Deployment ID | `20260314T174733Z-943b91bd` |
+| Commit | `9c2cc384b0e58acfbc7674e4f48d6eb8699a2377` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-14 19:53 GMT+2 |
+| Status | Complete |
+
+### Production Routes Verified
+
+| Route | Status |
+|-------|--------|
+| `/sites/[siteId]/content-decay` | ✅ 200 OK |
+| `/sites/[siteId]/content-decay/board` | ✅ Generated |
+| `/sites/[siteId]/content-decay/recovery` | ✅ Generated |
+| `/sites/[siteId]/content-decay/settings` | ✅ Generated |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-36-10 | Done ✅ | API Controllers (data source) |
+| TASK-36-11 | Done ✅ | Frontend Components - Summary & Queue |
+| TASK-36-1 | Done ✅ | Database Migrations |
+
+### Related Tasks
+
+- TASK-36-10: API Controllers (backend endpoints)
+- TASK-36-11: Summary & Queue Components (sibling components)
+- TASK-36-13: Integration Tests (pending)
+- TASK-36-14: Navigation Integration (Done)
+
+---
+## PDF Report Integration - Technical SEO Site Audit (TASK-14-18)
+
+### Service Description
+PDF report generation service for Technical SEO Site Audit results. Integrates with the existing PDF infrastructure to produce professional audit reports with issue listings by severity, actionable recommendations, and visual score breakdowns. Part of the PDF Reports feature (FEAT-014).
+
+### Component Location
+- **Service:** `backend/app/Services/PDF/AuditPdfService.php`
+- **Dependencies:** Existing PDF infrastructure (TASK-14-17)
+- **Tests:** `backend/tests/Unit/Services/PDF/AuditPdfServiceTest.php`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `generate(Project $project, Audit $audit): string` | Generate PDF report for an audit |
+| `formatIssuesBySeverity(Collection $issues): array` | Group issues by severity level |
+| `generateRecommendations(Audit $audit): array` | Extract actionable recommendations |
+| `formatScores(Audit $audit): array` | Format score breakdown for display |
+
+### PDF Report Sections
+
+| Section | Description |
+|---------|-------------|
+| Executive Summary | Overall score, grade, key metrics |
+| Critical Issues | Issues requiring immediate attention (severity: critical) |
+| Warning Issues | Issues that should be addressed (severity: warning) |
+| Information Issues | Minor issues and suggestions (severity: info) |
+| Recommendations | Prioritized action items |
+| Score Breakdown | Visual representation of category scores |
+
+### Issue Severity Display
+
+| Severity | Badge Color | Priority | Description |
+|----------|-------------|----------|-------------|
+| Critical | Red | 1 | Site-breaking issues, security problems |
+| Warning | Yellow | 2 | Performance issues, SEO problems |
+| Info | Blue | 3 | Minor improvements, best practices |
+
+### Report Data Structure
+
+```php
+[
+    'project' => [
+        'name' => 'Example Site',
+        'domain' => 'example.com',
+        'url' => 'https://example.com',
+    ],
+    'audit' => [
+        'id' => 123,
+        'score' => 78,
+        'grade' => 'C+',
+        'analyzed_at' => '2026-03-14T10:00:00Z',
+        'issues_count' => 15,
+        'critical_count' => 2,
+        'warning_count' => 8,
+        'info_count' => 5,
+    ],
+    'issues' => [
+        'critical' => [...],
+        'warning' => [...],
+        'info' => [...],
+    ],
+    'recommendations' => [...],
+    'scores' => [
+        'performance' => 85,
+        'seo' => 72,
+        'security' => 90,
+        'accessibility' => 65,
+    ],
+]
+```
+
+### Integration with PDF Infrastructure
+
+| Component | Usage |
+|-----------|-------|
+| PDF Generator | Base PDF generation service (TASK-14-17) |
+| Template System | Uses existing PDF templates |
+| Storage Service | Saves to configured PDF storage |
+| Queue System | Async generation via job queue |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| AuditPdfServiceTest.php | 32 | 48 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| PDF Generation | 8 | Full report generation, file creation |
+| Issue Formatting | 6 | Severity grouping, sorting |
+| Score Formatting | 5 | Score breakdown, visualization |
+| Recommendations | 5 | Extraction, prioritization |
+| Error Handling | 4 | Missing data, invalid audits |
+| Edge Cases | 4 | Empty audits, no issues |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-14 |
+| **Service** | `App\Services\PDF\AuditPdfService` |
+| **Tests** | 32/32 passing |
+| **Status** | Complete |
+
+### Dependencies
+- TASK-14-17: PDF Infrastructure (base PDF generation)
+- TASK-1-1 through TASK-1-5: Technical SEO Site Audit feature
+
+### Related Tasks
+- TASK-14-17: PDF Infrastructure
+- FEAT-014: PDF Reports
+- FEAT-001: Technical SEO Site Audit
 
 ---
 *Last updated: 2026-03-14*
