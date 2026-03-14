@@ -193,14 +193,15 @@ class VisibilityScoreService
     }
 
     /**
-     * Calculate backlink component contribution to visibility score.
+     * Calculate backlink component score for visibility calculation.
      *
-     * Calls the BacklinkProfileScorer to get the overall profile score,
-     * then applies the 20% weight. Returns 0 if no backlink data or
-     * scorer is unavailable.
+     * Calls the BacklinkProfileScorer to get the overall profile score.
+     * Returns the raw profile score (0-100), not the weighted contribution.
+     * The weight is applied by the calculate() method.
+     * Returns 0 if no backlink data or scorer is unavailable.
      *
      * @param Project $project
-     * @return float Backlink component score (0-20, representing weighted contribution)
+     * @return float Backlink profile score (0-100)
      */
     public function calculateBacklinkComponent(Project $project): float
     {
@@ -225,11 +226,8 @@ class VisibilityScoreService
                 $profileScore = (float) $result;
             }
 
-            // Clamp to valid range
-            $profileScore = $this->clamp($profileScore, 0, 100);
-
-            // Return the weighted contribution (20% of profile score)
-            return $profileScore * self::BACKLINK_WEIGHT;
+            // Clamp to valid range and return raw score (weight applied in calculate())
+            return $this->clamp($profileScore, 0, 100);
         } catch (\Exception $e) {
             Log::warning('Backlink component calculation failed', [
                 'project_id' => $project->id,
@@ -255,8 +253,7 @@ class VisibilityScoreService
         
         $backlinkScore = $components['backlink'] ?? null;
         if ($backlinkScore === null) {
-            $backlinkContribution = $this->calculateBacklinkComponent($project);
-            $backlinkScore = $backlinkContribution > 0 ? $backlinkContribution / self::BACKLINK_WEIGHT : 0.0;
+            $backlinkScore = $this->calculateBacklinkComponent($project);
         }
         $backlinkScore = $this->clamp($backlinkScore, 0, 100);
 
