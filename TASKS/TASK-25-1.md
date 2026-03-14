@@ -1,7 +1,7 @@
 # TASK-25-1: Install Laravel Sanctum & Socialite Packages
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -195,5 +195,12 @@ Created task as part of SPEC-025 breakdown (Phase 1: Core Authentication).
 
 Status updated: `To Deploy`
 
+### [2026-03-14 13:19 GMT+2] Agent: DevOps
+**Deployment Started:**
+
+Pushing commits to origin/main and triggering production deployment.
+
+Status updated: `In Deployment`
+
 ---
-*Created by LocalTester*
+*Created by DevOps*
