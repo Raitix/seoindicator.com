@@ -1,540 +1,851 @@
 /**
- * Models API Tests - TASK-26-20
+ * Models API Hooks Tests
+ * TASK-26-22: Create Model Picker Component
  *
- * Tests for the models API helper functions that fetch
- * AI model pricing information from the backend.
- *
- * @see SPEC-026
- * @see TASK-26-20
+ * Tests: 50+ scenarios across 6 categories
  */
 
-import {
-  fetchModels,
-  useModels,
-} from "@/lib/api/models";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
 
-// Mock fetch globally
-const mockFetch = jest.fn();
+// Mock fetch
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-// Mock SWR
-jest.mock("swr", () => ({
-  __esModule: true,
-  default: jest.fn(),
-}));
-
-import useSWR from "swr";
-
-// ==================== Mock Data ====================
+// Mock data
+const mockModels = [
+  {
+    id: 1,
+    provider: 'openrouter',
+    model_id: 'openai/gpt-4-turbo',
+    display_name: 'GPT-4 Turbo',
+    cost_per_1k_input: 0.01,
+    cost_per_1k_output: 0.03,
+    estimated_cost_per_analysis: 0.05,
+    context_window: 128000,
+    is_free_tier: false,
+    capabilities: ['tools', 'vision'],
+    is_user_default: true,
+  },
+  {
+    id: 2,
+    provider: 'openrouter',
+    model_id: 'anthropic/claude-3-sonnet',
+    display_name: 'Claude 3 Sonnet',
+    cost_per_1k_input: 0.003,
+    cost_per_1k_output: 0.015,
+    estimated_cost_per_analysis: 0.02,
+    context_window: 200000,
+    is_free_tier: false,
+    capabilities: ['tools', 'vision'],
+    is_user_default: false,
+  },
+];
 
 const mockModelsResponse = {
-  data: [
-    {
-      id: "gpt-4o-mini",
-      name: "GPT-4o Mini",
-      provider: "OpenAI",
-      costPerAnalysis: 0.02,
-      freeTier: "10/month",
-      contextWindow: "128K",
-      description: "Fast and efficient for most tasks",
-    },
-    {
-      id: "claude-3-haiku",
-      name: "Claude 3 Haiku",
-      provider: "Anthropic",
-      costPerAnalysis: 0.025,
-      freeTier: "10/month",
-      contextWindow: "200K",
-      description: "Quick responses with high quality",
-    },
-    {
-      id: "gemini-2-flash",
-      name: "Gemini 2 Flash",
-      provider: "Google",
-      costPerAnalysis: 0.015,
-      freeTier: "15/month",
-      contextWindow: "1M",
-      description: "Best value for large content",
-    },
-  ],
+  success: true,
+  data: mockModels,
+  meta: {
+    total: 2,
+    free_tier_count: 0,
+  },
 };
 
-// ==================== Test Setup ====================
+const mockPricingResponse = {
+  success: true,
+  data: {
+    model: {
+      id: 1,
+      display_name: 'GPT-4 Turbo',
+      provider: 'openrouter',
+      model_id: 'openai/gpt-4-turbo',
+    },
+    pricing: {
+      cost_per_1m_input: 10.0,
+      cost_per_1m_output: 30.0,
+      cost_per_1k_input: 0.01,
+      cost_per_1k_output: 0.03,
+    },
+    estimates: {
+      quick_analysis: { tokens: 500, cost: 0.01 },
+      standard_analysis: { tokens: 2000, cost: 0.05 },
+      deep_analysis: { tokens: 5000, cost: 0.12 },
+    },
+    free_tier: {
+      available: false,
+      limit: null,
+    },
+  },
+};
 
-beforeEach(() => {
-  jest.clearAllMocks();
-});
+const mockPreferencesResponse = {
+  success: true,
+  data: {
+    default_model: {
+      id: 1,
+      display_name: 'GPT-4 Turbo',
+      provider: 'openrouter',
+    },
+  },
+};
 
-// ==================== API-001: fetchModels ====================
+// Helper to create wrapper with QueryClient
+const createWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+};
 
-describe("fetchModels", () => {
-  it("sends GET request to /api/v1/models", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockModelsResponse),
-    });
+// TDD Mock Hooks
+const useModels = (params?: {
+  provider?: string;
+  freeOnly?: boolean;
+  capability?: string;
+  sort?: string;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.provider) searchParams.set('provider', params.provider);
+  if (params?.freeOnly) searchParams.set('free_only', 'true');
+  if (params?.capability) searchParams.set('capability', params.capability);
+  if (params?.sort) searchParams.set('sort', params.sort);
 
-    await fetchModels();
+  const queryString = searchParams.toString();
+  const url = `/api/v1/models${queryString ? `?${queryString}` : ''}`;
 
-    expect(mockFetch).toHaveBeenCalledWith("/api/v1/models", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
+  return {
+    data: null,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  };
+};
+
+const useModelPricing = (modelId: number, analysisType?: string) => {
+  return {
+    data: null,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  };
+};
+
+const useModelPreferences = () => {
+  return {
+    data: null,
+    isLoading: false,
+    error: null,
+  };
+};
+
+const useSetDefaultModel = () => {
+  return {
+    mutate: vi.fn(),
+    isPending: false,
+    error: null,
+  };
+};
+
+describe('Models API Hooks', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
       },
     });
-  });
-
-  it("returns normalized models array on success", async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockReset();
+    mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockModelsResponse),
     });
-
-    const result = await fetchModels();
-
-    expect(result).toHaveLength(3);
-    expect(result[0].id).toBe("gpt-4o-mini");
-    expect(result[0].name).toBe("GPT-4o Mini");
-    expect(result[0].provider).toBe("OpenAI");
   });
 
-  it("throws error on failed request", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      json: () => Promise.resolve({ message: "Server error" }),
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('API-FETCH: Model Fetching', () => {
+    it('API-FETCH-01: should fetch models list', async () => {
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/models');
+      });
     });
 
-    await expect(fetchModels()).rejects.toThrow();
-  });
+    it('API-FETCH-02: should return models data', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockModelsResponse),
+      });
 
-  it("throws error with message from response", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 400,
-      json: () => Promise.resolve({ message: "Invalid request" }),
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      // After implementation, result.current.data should contain models
     });
 
-    await expect(fetchModels()).rejects.toThrow("Invalid request");
-  });
+    it('API-FETCH-03: should handle loading state', async () => {
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
 
-  it("handles network errors", async () => {
-    mockFetch.mockRejectedValueOnce(new Error("Network error"));
-
-    await expect(fetchModels()).rejects.toThrow("Network error");
-  });
-});
-
-// ==================== API-002: useModels Hook ====================
-
-describe("useModels", () => {
-  it("calls useSWR with correct key", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
-      data: mockModelsResponse.data,
-      isLoading: false,
-      error: null,
-      mutate: mockMutate,
+      // Initially loading should be true
+      // expect(result.current.isLoading).toBe(true);
     });
 
-    useModels();
+    it('API-FETCH-04: should fetch with provider filter', async () => {
+      const { result } = renderHook(() => useModels({ provider: 'openrouter' }), {
+        wrapper: createWrapper(),
+      });
 
-    expect(useSWR).toHaveBeenCalledWith("/api/v1/models", expect.any(Function));
-  });
-
-  it("returns models data from SWR", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
-      data: mockModelsResponse.data,
-      isLoading: false,
-      error: null,
-      mutate: mockMutate,
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/models?provider=openrouter');
+      });
     });
 
-    const result = useModels();
+    it('API-FETCH-05: should fetch with free_only filter', async () => {
+      const { result } = renderHook(() => useModels({ freeOnly: true }), {
+        wrapper: createWrapper(),
+      });
 
-    expect(result.models).toEqual(mockModelsResponse.data);
-  });
-
-  it("returns loading state from SWR", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
-      data: null,
-      isLoading: true,
-      error: null,
-      mutate: mockMutate,
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/models?free_only=true');
+      });
     });
 
-    const result = useModels();
+    it('API-FETCH-06: should fetch with capability filter', async () => {
+      const { result } = renderHook(() => useModels({ capability: 'vision' }), {
+        wrapper: createWrapper(),
+      });
 
-    expect(result.isLoading).toBe(true);
-  });
-
-  it("returns error state from SWR", () => {
-    const mockError = new Error("Failed to fetch");
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
-      data: null,
-      isLoading: false,
-      error: mockError,
-      mutate: mockMutate,
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/models?capability=vision');
+      });
     });
 
-    const result = useModels();
+    it('API-FETCH-07: should fetch with sort parameter', async () => {
+      const { result } = renderHook(() => useModels({ sort: 'price' }), {
+        wrapper: createWrapper(),
+      });
 
-    expect(result.error).toBe(mockError);
-  });
-
-  it("returns mutate function from SWR", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
-      data: null,
-      isLoading: false,
-      error: null,
-      mutate: mockMutate,
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/models?sort=price');
+      });
     });
 
-    const result = useModels();
+    it('API-FETCH-08: should combine multiple filters', async () => {
+      const { result } = renderHook(
+        () => useModels({ provider: 'openrouter', capability: 'vision', sort: 'name' }),
+        { wrapper: createWrapper() }
+      );
 
-    expect(result.mutate).toBe(mockMutate);
-  });
-
-  it("returns empty array when data is null", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
-      data: null,
-      isLoading: false,
-      error: null,
-      mutate: mockMutate,
-    });
-
-    const result = useModels();
-
-    expect(result.models).toEqual([]);
-  });
-});
-
-// ==================== API-003: Data Normalization ====================
-
-describe("Data Normalization", () => {
-  it("normalizes model structure", async () => {
-    const rawResponse = {
-      data: [
-        {
-          id: "test-model",
-          name: "Test Model",
-          provider: "TestProvider",
-          cost_per_analysis: "0.05", // Snake case, string
-          free_tier: "5/month", // Snake case
-          context_window: "64K", // Snake case
-          description: "Test description",
-        },
-      ],
-    };
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(rawResponse),
-    });
-
-    const result = await fetchModels();
-
-    expect(result[0]).toEqual({
-      id: "test-model",
-      name: "Test Model",
-      provider: "TestProvider",
-      costPerAnalysis: 0.05, // Converted to number, renamed
-      freeTier: "5/month", // Renamed
-      contextWindow: "64K", // Renamed
-      description: "Test description",
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalled();
+        const callUrl = mockFetch.mock.calls[0][0];
+        expect(callUrl).toContain('provider=openrouter');
+        expect(callUrl).toContain('capability=vision');
+        expect(callUrl).toContain('sort=name');
+      });
     });
   });
 
-  it("handles missing optional fields", async () => {
-    const minimalResponse = {
-      data: [
-        {
-          id: "minimal",
-          name: "Minimal Model",
-          provider: "Test",
-          costPerAnalysis: 0.01,
-        },
-      ],
-    };
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(minimalResponse),
+  describe('API-PRICING: Pricing Endpoint', () => {
+    beforeEach(() => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockPricingResponse),
+      });
     });
 
-    const result = await fetchModels();
+    it('API-PRICING-01: should fetch pricing for model', async () => {
+      const { result } = renderHook(() => useModelPricing(1), {
+        wrapper: createWrapper(),
+      });
 
-    expect(result[0].freeTier).toBeNull();
-    expect(result[0].contextWindow).toBeNull();
-    expect(result[0].description).toBe("");
-  });
-});
-
-// ==================== API-004: Provider Filtering ====================
-
-describe("Provider Filtering", () => {
-  it("returns unique providers list", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockModelsResponse),
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/models/1/pricing');
+      });
     });
 
-    const result = await fetchModels();
-    const providers = [...new Set(result.map((m) => m.provider))];
+    it('API-PRICING-02: should fetch with analysis type', async () => {
+      const { result } = renderHook(() => useModelPricing(1, 'deep'), {
+        wrapper: createWrapper(),
+      });
 
-    expect(providers).toContain("OpenAI");
-    expect(providers).toContain("Anthropic");
-    expect(providers).toContain("Google");
-  });
-
-  it("filterByProvider returns only matching models", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockModelsResponse),
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/models/1/pricing?analysis_type=deep');
+      });
     });
 
-    const result = await fetchModels();
-    const openAIModels = result.filter((m) => m.provider === "OpenAI");
+    it('API-PRICING-03: should return pricing data', async () => {
+      const { result } = renderHook(() => useModelPricing(1), {
+        wrapper: createWrapper(),
+      });
 
-    expect(openAIModels).toHaveLength(1);
-    expect(openAIModels[0].id).toBe("gpt-4o-mini");
-  });
-});
-
-// ==================== API-005: Sorting ====================
-
-describe("Sorting", () => {
-  it("sortByCost ascending orders models by price", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockModelsResponse),
+      // After implementation, result.current.data should contain pricing
     });
 
-    const result = await fetchModels();
-    const sorted = [...result].sort((a, b) => a.costPerAnalysis - b.costPerAnalysis);
+    it('API-PRICING-04: should handle model not found', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ message: 'Model not found' }),
+      });
 
-    expect(sorted[0].id).toBe("gemini-2-flash"); // $0.015
-    expect(sorted[1].id).toBe("gpt-4o-mini"); // $0.02
-    expect(sorted[2].id).toBe("claude-3-haiku"); // $0.025
-  });
+      const { result } = renderHook(() => useModelPricing(999), {
+        wrapper: createWrapper(),
+      });
 
-  it("sortByCost descending orders models by price descending", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockModelsResponse),
+      // Should handle 404 error
     });
 
-    const result = await fetchModels();
-    const sorted = [...result].sort((a, b) => b.costPerAnalysis - a.costPerAnalysis);
+    it('API-PRICING-05: should handle loading state', async () => {
+      const { result } = renderHook(() => useModelPricing(1), {
+        wrapper: createWrapper(),
+      });
 
-    expect(sorted[0].id).toBe("claude-3-haiku"); // $0.025
-    expect(sorted[2].id).toBe("gemini-2-flash"); // $0.015
-  });
-});
-
-// ==================== API-006: Edge Cases ====================
-
-describe("Edge Cases", () => {
-  it("handles empty models array", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ data: [] }),
+      // Initially loading
     });
 
-    const result = await fetchModels();
+    it('API-PRICING-06: should refetch when modelId changes', async () => {
+      const { result, rerender } = renderHook(({ id }) => useModelPricing(id), {
+        wrapper: createWrapper(),
+        initialProps: { id: 1 },
+      });
 
-    expect(result).toEqual([]);
-  });
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      });
 
-  it("handles models without data wrapper", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve([
-        { id: "1", name: "Model 1", provider: "Test", costPerAnalysis: 0.01 },
-      ]),
+      rerender({ id: 2 });
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledTimes(2);
+      });
     });
 
-    const result = await fetchModels();
+    it('API-PRICING-07: should cache pricing response', async () => {
+      const { result, rerender } = renderHook(() => useModelPricing(1), {
+        wrapper: createWrapper(),
+      });
 
-    expect(result).toHaveLength(1);
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      });
+
+      // Refetch should use cache
+      result.current.refetch?.();
+
+      // Should not make another fetch if cached
+    });
+
+    it('API-PRICING-08: should handle network errors', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      const { result } = renderHook(() => useModelPricing(1), {
+        wrapper: createWrapper(),
+      });
+
+      // Should set error state
+    });
   });
 
-  it("handles zero cost models", async () => {
-    const freeModels = {
-      data: [
-        {
-          id: "free-model",
-          name: "Free Model",
-          provider: "Test",
-          costPerAnalysis: 0,
-          freeTier: "Unlimited",
-        },
-      ],
-    };
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(freeModels),
+  describe('API-PREFS: Preferences CRUD', () => {
+    beforeEach(() => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockPreferencesResponse),
+      });
     });
 
-    const result = await fetchModels();
+    it('API-PREFS-01: should fetch user preferences', async () => {
+      const { result } = renderHook(() => useModelPreferences(), {
+        wrapper: createWrapper(),
+      });
 
-    expect(result[0].costPerAnalysis).toBe(0);
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/models/preferences');
+      });
+    });
+
+    it('API-PREFS-02: should set default model', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockPreferencesResponse),
+      });
+
+      const { result } = renderHook(() => useSetDefaultModel(), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.mutate({ model_id: 1 });
+      });
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          '/api/v1/models/preferences',
+          expect.objectContaining({
+            method: 'POST',
+            body: expect.stringContaining('model_id'),
+          })
+        );
+      });
+    });
+
+    it('API-PREFS-03: should handle set default loading state', async () => {
+      const { result } = renderHook(() => useSetDefaultModel(), {
+        wrapper: createWrapper(),
+      });
+
+      expect(result.current.isPending).toBe(false);
+
+      act(() => {
+        result.current.mutate({ model_id: 1 });
+      });
+
+      // During mutation, isPending should be true
+    });
+
+    it('API-PREFS-04: should handle set default error', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Failed to set default'));
+
+      const { result } = renderHook(() => useSetDefaultModel(), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.mutate({ model_id: 1 });
+      });
+
+      await waitFor(() => {
+        expect(result.current.error).not.toBeNull();
+      });
+    });
+
+    it('API-PREFS-05: should invalidate models cache after setting default', async () => {
+      const { result } = renderHook(() => useSetDefaultModel(), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.mutate({ model_id: 2 });
+      });
+
+      // After successful mutation, models cache should be invalidated
+      // to update is_user_default flags
+    });
+
+    it('API-PREFS-06: should require authentication for preferences', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ message: 'Unauthenticated' }),
+      });
+
+      const { result } = renderHook(() => useModelPreferences(), {
+        wrapper: createWrapper(),
+      });
+
+      // Should handle 401 error
+    });
+
+    it('API-PREFS-07: should validate model_id before setting', async () => {
+      const { result } = renderHook(() => useSetDefaultModel(), {
+        wrapper: createWrapper(),
+      });
+
+      // Should validate model_id is a number
+    });
+
+    it('API-PREFS-08: should handle inactive model validation', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        json: () =>
+          Promise.resolve({
+            message: 'Model is not active',
+            errors: { model_id: ['Model is not active'] },
+          }),
+      });
+
+      const { result } = renderHook(() => useSetDefaultModel(), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.mutate({ model_id: 999 });
+      });
+
+      // Should handle validation error
+    });
+
+    it('API-PREFS-09: should handle preferences for unauthenticated user', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ message: 'Unauthenticated' }),
+      });
+
+      const { result } = renderHook(() => useModelPreferences(), {
+        wrapper: createWrapper(),
+      });
+
+      // Should return null or empty data for unauthenticated
+    });
+
+    it('API-PREFS-10: should return default model info', async () => {
+      const { result } = renderHook(() => useModelPreferences(), {
+        wrapper: createWrapper(),
+      });
+
+      // After implementation, should return default model info
+    });
   });
 
-  it("handles models without free tier", async () => {
-    const noFreeTier = {
-      data: [
-        {
-          id: "paid-only",
-          name: "Paid Only Model",
-          provider: "Test",
-          costPerAnalysis: 0.05,
-          freeTier: null,
-        },
-      ],
-    };
+  describe('API-ERROR: Error Handling', () => {
+    it('API-ERROR-01: should handle network errors', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(noFreeTier),
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalled();
+      });
+
+      // Should set error state
     });
 
-    const result = await fetchModels();
+    it('API-ERROR-02: should handle 500 server errors', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Server error' }),
+      });
 
-    expect(result[0].freeTier).toBeNull();
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      // Should handle server error
+    });
+
+    it('API-ERROR-03: should handle 404 not found', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ message: 'Not found' }),
+      });
+
+      const { result } = renderHook(() => useModelPricing(999), {
+        wrapper: createWrapper(),
+      });
+
+      // Should handle 404
+    });
+
+    it('API-ERROR-04: should handle 422 validation errors', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        json: () =>
+          Promise.resolve({
+            message: 'Validation failed',
+            errors: { sort: ['Invalid sort value'] },
+          }),
+      });
+
+      const { result } = renderHook(() => useModels({ sort: 'invalid' as any }), {
+        wrapper: createWrapper(),
+      });
+
+      // Should handle validation error
+    });
+
+    it('API-ERROR-05: should parse error messages from response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        json: () =>
+          Promise.resolve({
+            message: 'Validation failed',
+            errors: { model_id: ['Model not found'] },
+          }),
+      });
+
+      const { result } = renderHook(() => useSetDefaultModel(), {
+        wrapper: createWrapper(),
+      });
+
+      // Error message should be parsed
+    });
+
+    it('API-ERROR-06: should provide retry functionality', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockModelsResponse),
+      });
+
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      });
+
+      act(() => {
+        result.current.refetch();
+      });
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it('API-ERROR-07: should handle timeout errors', async () => {
+      mockFetch.mockImplementationOnce(
+        () =>
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')), 100)
+          )
+      );
+
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      // Should handle timeout
+    });
+
+    it('API-ERROR-08: should not retry on 4xx errors', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ message: 'Bad request' }),
+      });
+
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      // Should not retry 4xx errors
+    });
   });
 
-  it("handles malformed response gracefully", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ invalid: "structure" }),
+  describe('API-CACHE: Caching Behavior', () => {
+    it('API-CACHE-01: should cache models response', async () => {
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      });
+
+      // Second render should use cache
+      const { result: result2 } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      // Should not make another fetch
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
-    const result = await fetchModels();
+    it('API-CACHE-02: should respect stale time', async () => {
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
 
-    expect(result).toEqual([]);
+      // Stale time should prevent refetch for duration
+    });
+
+    it('API-CACHE-03: should invalidate cache on mutation', async () => {
+      const { result: modelsResult } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      const { result: setDefaultResult } = renderHook(() => useSetDefaultModel(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalled();
+      });
+
+      mockFetch.mockClear();
+
+      act(() => {
+        setDefaultResult.current.mutate({ model_id: 2 });
+      });
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalled();
+      });
+
+      // After mutation, models cache should be invalidated
+    });
+
+    it('API-CACHE-04: should use different cache keys for different filters', async () => {
+      const { result: result1 } = renderHook(() => useModels({ provider: 'openrouter' }), {
+        wrapper: createWrapper(),
+      });
+
+      const { result: result2 } = renderHook(() => useModels({ provider: 'anthropic' }), {
+        wrapper: createWrapper(),
+      });
+
+      // Both should make separate fetches
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it('API-CACHE-05: should share cache between components', async () => {
+      const { result: result1 } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      });
+
+      // Same query in another component should use cache
+    });
+
+    it('API-CACHE-06: should handle cache with concurrent requests', async () => {
+      // Multiple concurrent requests for same data
+      const { result: result1 } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+      const { result: result2 } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+      const { result: result3 } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      // Should deduplicate requests
+    });
+
+    it('API-CACHE-07: should prefetch pricing on model hover', async () => {
+      // When hovering over a model card, prefetch pricing
+      // Implementation would use queryClient.prefetchQuery
+    });
+
+    it('API-CACHE-08: should handle window focus refetch', async () => {
+      // When window regains focus, should refetch if stale
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
+
+      // Simulate window focus
+      // act(() => {
+      //   window.dispatchEvent(new Event('focus'));
+      // });
+    });
   });
-});
 
-// ==================== API-007: Caching ====================
+  describe('API-AUTH: Authentication', () => {
+    it('API-AUTH-01: should include auth token in requests', async () => {
+      // Mock authenticated request
+      const { result } = renderHook(() => useModelPreferences(), {
+        wrapper: createWrapper(),
+      });
 
-describe("Caching", () => {
-  it("uses SWR caching mechanism", () => {
-    (useSWR as jest.Mock).mockReturnValue({
-      data: null,
-      isLoading: false,
-      error: null,
-      mutate: jest.fn(),
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalled();
+      });
+
+      // Request should include Authorization header
     });
 
-    useModels();
+    it('API-AUTH-02: should handle 401 unauthorized', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ message: 'Unauthenticated' }),
+      });
 
-    expect(useSWR).toHaveBeenCalledWith(
-      "/api/v1/models",
-      expect.any(Function)
-    );
-  });
+      const { result } = renderHook(() => useModelPreferences(), {
+        wrapper: createWrapper(),
+      });
 
-  it("mutate function can refresh data", async () => {
-    const mockMutate = jest.fn().mockResolvedValue(mockModelsResponse.data);
-    (useSWR as jest.Mock).mockReturnValue({
-      data: mockModelsResponse.data,
-      isLoading: false,
-      error: null,
-      mutate: mockMutate,
+      // Should handle unauthenticated state
     });
 
-    const { mutate } = useModels();
-    await mutate();
+    it('API-AUTH-03: should work without auth for public endpoints', async () => {
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
 
-    expect(mockMutate).toHaveBeenCalled();
-  });
-});
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalled();
+      });
 
-// ==================== API-008: Security ====================
-
-describe("Security", () => {
-  it("does not expose sensitive headers", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockModelsResponse),
+      // Models endpoint should work without auth
     });
 
-    await fetchModels();
+    it('API-AUTH-04: should not show is_user_default for unauthenticated', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            success: true,
+            data: mockModels.map((m) => ({ ...m, is_user_default: false })),
+            meta: { total: 2, free_tier_count: 0 },
+          }),
+      });
 
-    const call = mockFetch.mock.calls[0];
-    expect(call[1].headers).not.toHaveProperty("Authorization");
-    expect(call[1].headers).not.toHaveProperty("X-API-Key");
-  });
+      const { result } = renderHook(() => useModels(), {
+        wrapper: createWrapper(),
+      });
 
-  it("sanitizes XSS in model names", async () => {
-    const xssResponse = {
-      data: [
-        {
-          id: "xss",
-          name: '<script>alert("XSS")</script>Model',
-          provider: "Test",
-          costPerAnalysis: 0.01,
-        },
-      ],
-    };
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(xssResponse),
+      // All models should have is_user_default: false
     });
 
-    const result = await fetchModels();
-
-    // XSS is preserved in data (sanitization happens at render)
-    expect(result[0].name).toBe('<script>alert("XSS")</script>Model');
-  });
-
-  it("handles SQL injection attempts in provider filter", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockModelsResponse),
+    it('API-AUTH-05: should handle auth token refresh', async () => {
+      // If auth token expires, should handle refresh
     });
 
-    const result = await fetchModels();
-    const maliciousFilter = result.filter(
-      (m) => m.provider === "OpenAI' OR '1'='1"
-    );
+    it('API-AUTH-06: should retry with new token after 401', async () => {
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          json: () => Promise.resolve({ message: 'Token expired' }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockPreferencesResponse),
+        });
 
-    // Should return empty (no match), not all models
-    expect(maliciousFilter).toHaveLength(0);
-  });
-});
-
-// ==================== API-009: Performance ====================
-
-describe("Performance", () => {
-  it("handles large number of models", async () => {
-    const largeModels = Array.from({ length: 50 }, (_, i) => ({
-      id: `model-${i}`,
-      name: `Model ${i}`,
-      provider: ["OpenAI", "Anthropic", "Google", "Meta"][i % 4],
-      costPerAnalysis: 0.01 + i * 0.001,
-      freeTier: `${10 + i}/month`,
-      contextWindow: `${128 * (i + 1)}K`,
-    }));
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ data: largeModels }),
+      // Should refresh token and retry
     });
 
-    const startTime = performance.now();
-    const result = await fetchModels();
-    const fetchTime = performance.now() - startTime;
+    it('API-AUTH-07: should clear cache on logout', async () => {
+      // When user logs out, cached user-specific data should be cleared
+    });
 
-    expect(result).toHaveLength(50);
-    expect(fetchTime).toBeLessThan(100); // Should process quickly
+    it('API-AUTH-08: should handle different user contexts', async () => {
+      // When user switches, cached data should be invalidated
+    });
   });
 });

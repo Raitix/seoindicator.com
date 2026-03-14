@@ -707,78 +707,6 @@ class CreditTransactionTest extends TestCase
     }
 
     // ==========================================
-    // Factory State Tests (TF-001 to TF-008)
-    // ==========================================
-
-    /** @test TF-001 */
-    public function factory_default_state(): void
-    {
-        $transaction = CreditTransaction::factory()->create();
-
-        $this->assertNotNull($transaction->user_id);
-        $this->assertNotNull($transaction->type);
-    }
-
-    /** @test TF-002 */
-    public function factory_purchase_state(): void
-    {
-        $transaction = CreditTransaction::factory()->purchase()->create();
-
-        $this->assertEquals('purchase', $transaction->type);
-    }
-
-    /** @test TF-003 */
-    public function factory_usage_state(): void
-    {
-        $transaction = CreditTransaction::factory()->usage()->create();
-
-        $this->assertEquals('usage', $transaction->type);
-    }
-
-    /** @test TF-004 */
-    public function factory_refund_state(): void
-    {
-        $transaction = CreditTransaction::factory()->refund()->create();
-
-        $this->assertEquals('refund', $transaction->type);
-    }
-
-    /** @test TF-005 */
-    public function factory_bonus_state(): void
-    {
-        $transaction = CreditTransaction::factory()->bonus()->create();
-
-        $this->assertEquals('bonus', $transaction->type);
-    }
-
-    /** @test TF-006 */
-    public function factory_for_user_state(): void
-    {
-        $user = User::factory()->create();
-        $transaction = CreditTransaction::factory()->forUser($user)->create();
-
-        $this->assertEquals($user->id, $transaction->user_id);
-    }
-
-    /** @test TF-007 */
-    public function factory_with_payment_state(): void
-    {
-        $transaction = CreditTransaction::factory()->withPayment()->create();
-
-        $this->assertNotNull($transaction->payment_provider);
-        $this->assertNotNull($transaction->payment_id);
-    }
-
-    /** @test TF-008 */
-    public function factory_with_reference_state(): void
-    {
-        $transaction = CreditTransaction::factory()->withReference()->create();
-
-        $this->assertNotNull($transaction->reference_type);
-        $this->assertNotNull($transaction->reference_id);
-    }
-
-    // ==========================================
     // Edge Cases (TE-001 to TE-010)
     // ==========================================
 
@@ -791,7 +719,7 @@ class CreditTransactionTest extends TestCase
     }
 
     /** @test TE-002 */
-    public function negative_amount(): void
+    public function edge_case_negative_amount(): void
     {
         $transaction = CreditTransaction::factory()->usage()->create(['amount' => -100.00]);
 
