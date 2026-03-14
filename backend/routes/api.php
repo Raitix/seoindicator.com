@@ -542,6 +542,17 @@ Route::post('/v1/payments/paypal/webhook', [\App\Http\Controllers\Api\V1\Payment
 
 /*
 |--------------------------------------------------------------------------
+| Stripe Webhook Route (TASK-26-10, SPEC-026)
+|--------------------------------------------------------------------------
+|
+| Stripe webhook endpoint - NO authentication required.
+| Security is provided via Stripe webhook signature verification.
+|
+*/
+Route::post('/v1/payments/stripe/webhook', [\App\Http\Controllers\Api\V1\Payments\StripeWebhookController::class, 'handle']);
+
+/*
+|--------------------------------------------------------------------------
 | Local SEO Rankings Routes (TASK-35-15, SPEC-035)
 |--------------------------------------------------------------------------
 |

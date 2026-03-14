@@ -54282,3 +54282,285 @@ Backend service for fetching backlink data from Google Search Console API. Imple
 - TASK-23-9: Backlinks Overview Endpoint
 - SPEC-023: Backlinks Indicator
 - FEAT-023: Backlinks Indicator
+
+---
+## Analysis History Page (TASK-25-20)
+
+### Page Description
+Frontend page component for the User Accounts + Dashboard + Analysis History feature (FEAT-025) that displays a paginated, filterable history of SEO tool analyses performed by authenticated users. Provides detailed views of individual analysis results with cost breakdown, duration metrics, and error information, along with deletion capabilities.
+
+### Component Locations
+- **Page Component:** rontend/app/dashboard/history/page.tsx
+- **Filter Component:** rontend/components/history/HistoryFilters.tsx
+- **Table Component:** rontend/components/history/HistoryTable.tsx
+- **Pagination Component:** rontend/components/history/Pagination.tsx
+- **Details Modal:** rontend/components/history/AnalysisDetailsModal.tsx
+- **Delete Dialog:** rontend/components/history/DeleteConfirmationDialog.tsx
+- **Empty State:** rontend/components/history/EmptyState.tsx
+- **Loading Skeleton:** rontend/components/history/HistorySkeleton.tsx
+- **Data Hook:** rontend/lib/hooks/useAnalysisHistory.ts
+- **API Helpers:** rontend/lib/api/analyses.ts
+- **Type Definitions:** rontend/lib/types/analysis.ts
+- **Tests:** rontend/__tests__/app/dashboard/history/page.test.tsx, rontend/__tests__/components/history/*.test.tsx
+- **Test Documentation:** TESTS/TEST-25-20.md
+
+### Route
+- **URL:** /dashboard/history
+- **File:** rontend/app/dashboard/history/page.tsx (Next.js App Router)
+- **Redirect:** /dashboard/history ? /dashboard/history/ (301 ? 200)
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Analysis List | Displays paginated history of tool analyses with status badges |
+| Filters | Tool dropdown, status dropdown, date range picker (from/to) |
+| Clear Filters | Button to reset all filters (shows only when filters active) |
+| History Table | Tool name, input URL, status badge, cost, duration, date, actions |
+| Pagination | Page navigation with per-page selector (15/30/50/100) |
+| Details View | Modal showing full results JSON, cost breakdown, duration, errors |
+| Delete Analysis | Confirmation dialog with loading state |
+| Empty State | Two variants: no analyses, no results for filters |
+| Loading States | Skeleton rows and spinner for data fetching |
+| URL State | Filters sync to URL for shareable links |
+| Auth Protection | Redirects to /login if not authenticated |
+
+### Filter Options
+
+**Tool Dropdown:**
+| Value | Display Name |
+|-------|--------------|
+| meta-tag-analyzer | Meta Tag Analyzer |
+| keyword-density | Keyword Density |
+| heading-structure | Heading Structure |
+| image-alt-checker | Image Alt Checker |
+| link-analyzer | Link Analyzer |
+
+**Status Dropdown:**
+| Value | Display Name | Badge Color |
+|-------|--------------|-------------|
+| completed | Completed | Green (#22c55e) |
+| ailed | Failed | Red (#ef4444) |
+| pending | Pending | Yellow (#eab308) |
+| unning | Running | Blue (#3b82f6) |
+
+### Component Props
+
+**HistoryPage:**
+`	ypescript
+// Main page with auth check
+export default function HistoryPage() {
+  // Redirects to /login if not authenticated
+  // Uses useAnalysisHistory hook for data fetching
+}
+`
+
+**HistoryFilters:**
+`	ypescript
+interface HistoryFiltersProps {
+  filters: FilterState;
+  onChange: (filters: FilterState) => void;
+  tools: Tool[];
+}
+
+interface FilterState {
+  tool: string;
+  status: string;
+  from: string;
+  to: string;
+}
+`
+
+**HistoryTable:**
+`	ypescript
+interface HistoryTableProps {
+  analyses: Analysis[];
+  onView: (id: number) => void;
+  onDelete: (id: number) => void;
+}
+
+interface Analysis {
+  id: number;
+  toolName: string;
+  inputUrl: string;
+  status: 'completed' | 'failed' | 'pending' | 'running';
+  cost: { total: number; currency: string };
+  analysisDurationMs: number;
+  analyzedAt: string;
+}
+`
+
+**AnalysisDetailsModal:**
+`	ypescript
+interface AnalysisDetailsModalProps {
+  analysisId: number | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+`
+
+**Pagination:**
+`	ypescript
+interface PaginationProps {
+  meta: {
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+  };
+  onChange: (page: number, perPage?: number) => void;
+}
+`
+
+### API Integration
+
+**useAnalysisHistory Hook:**
+`	ypescript
+export function useAnalysisHistory(initialFilters?: FilterState) {
+  return useSWR(
+    ['analyses', filters, page, perPage],
+    () => fetchAnalyses({ ...filters, page, perPage }),
+    { revalidateOnFocus: true }
+  );
+}
+`
+
+**API Endpoints:**
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | /api/v1/analyses | List analyses with pagination/filters |
+| GET | /api/v1/analyses/{id} | Get single analysis details |
+| DELETE | /api/v1/analyses/{id} | Delete analysis record |
+
+**Query Parameters (GET /analyses):**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| page | int | 1 | Page number |
+| perPage | int | 15 | Results per page (max: 100) |
+| 	ool | string | null | Filter by tool name |
+| status | string | null | Filter by status |
+| rom | date | null | Filter from date (Y-m-d) |
+| 	o | date | null | Filter to date (Y-m-d) |
+
+### Details Modal Features
+
+| Section | Content |
+|---------|---------|
+| Header | Analysis ID, tool name slug |
+| Status Section | Status badge, duration, analyzed date |
+| Input Section | Input URL with link |
+| Results Section | JSON viewer with syntax highlighting |
+| Cost Breakdown | Table of cost_type, units, amount |
+| Error Section | Error message (if status=failed) |
+
+### Status Badge Styling
+
+| Status | Icon | Background | Text Color |
+|--------|------|------------|------------|
+| completed | CheckCircle | bg-green-100 | text-green-700 |
+| ailed | XCircle | bg-red-100 | text-red-700 |
+| pending | Clock | bg-yellow-100 | text-yellow-700 |
+| unning | Loader2 | bg-blue-100 | text-blue-700 |
+
+### Responsive Design
+
+| Breakpoint | Layout Changes |
+|------------|----------------|
+| Mobile (<640px) | Table scrolls horizontally, stacked filters |
+| Tablet (640-1024px) | Compact table, inline filters |
+| Desktop (>1024px) | Full table, expanded filter row |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Table ARIA | ole="table", ria-label on table element |
+| Modal ARIA | ria-modal="true" via Radix Dialog |
+| Close Button | ria-label="Close" on close button |
+| Keyboard Navigation | Tab through all controls, Enter to activate |
+| Focus Management | Focus moves to close button when modal opens |
+| Screen Reader | Status badges have accessible labels |
+| Error Alerts | ole="alert" on error sections |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| Auth Protection | Client-side auth check, API returns 401 for unauthenticated |
+| URL Validation | URLs displayed as text, not rendered as links |
+| ID Validation | Numeric IDs validated before API calls |
+| Delete Confirmation | Two-step deletion with confirmation dialog |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| page.test.tsx | 80+ | ? PASS |
+| HistoryFilters.test.tsx | 25+ | ? PASS |
+| HistoryTable.test.tsx | 30+ | ? PASS |
+| AnalysisDetailsModal.test.tsx | 20+ | ? PASS |
+| DeleteConfirmationDialog.test.tsx | 15+ | ? PASS |
+| history.spec.ts (E2E) | 17 | ? PASS |
+| **Total** | **187+** | **? ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authentication | 3 | Auth check, redirect behavior |
+| Filters | 8 | Tool, status, date, clear filters |
+| Table Rendering | 11 | Columns, status badges, actions |
+| Pagination | 8 | Navigation, per-page, edge cases |
+| Details Modal | 8 | JSON view, cost breakdown, errors |
+| Delete Dialog | 6 | Confirmation, loading, cancel |
+| Empty States | 4 | No data, filtered empty |
+| Loading States | 4 | Skeleton, spinner |
+| Error States | 6 | API errors, retry |
+| Responsive | 6 | Mobile, tablet, desktop |
+| Accessibility | 6 | ARIA, keyboard, screen reader |
+| URL State | 6 | Shareable links, filter sync |
+| Security | 6 | XSS, auth, validation |
+
+### Production Verification
+
+| Check | Result |
+|-------|--------|
+| Health Check | ? HTTP 200 OK |
+| History Route (with trailing slash) | ? HTTP 200 OK |
+| History Route (without trailing slash) | ? HTTP 301 ? redirects to trailing slash |
+| Analyses API Authentication | ? HTTP 401 (correctly requires auth) |
+| XSS Protection | ? Payload not rendered in output |
+| Path Traversal | ? HTTP 404 (blocked) |
+| Next.js Application | ? __next markers detected |
+| History Content | ? History text present in page |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Deployment ID | 20260314T172942Z-24fcc0c4 |
+| Implementation Commit | 893e4a32 |
+| Deployed Commit | dba274e9 |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ? 200 OK |
+| Tests | 187+ passing |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-25-16 | Done ? | AnalysisHistoryController API endpoints |
+| TASK-25-19 | Done ? | Dashboard page (shared layout) |
+
+### Related Tasks
+
+- TASK-25-15: DashboardController (dashboard summary)
+- TASK-25-16: AnalysisHistoryController (API endpoints)
+- TASK-25-17: Frontend Auth Context (auth state)
+- TASK-25-18: Login/Register Pages (auth flow)
+- TASK-25-19: Dashboard Page (dashboard layout)
+
+---
+*Last updated: 2026-03-14*

@@ -139,4 +139,26 @@ return [
         'user_agent' => env('NOMINATIM_USER_AGENT'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Stripe API (TASK-26-8, TASK-26-10, TASK-26-11)
+    |--------------------------------------------------------------------------
+    |
+    | Credentials for Stripe API for payment processing.
+    | Get your keys at: https://dashboard.stripe.com/apikeys
+    |
+    | - secret: Secret key for API calls (sk_test_... or sk_live_...)
+    | - webhook_secret: Signing secret for webhook signature verification
+    |
+    | Test mode uses test keys, live mode uses live keys.
+    | Webhook secret is specific to each webhook endpoint.
+    |
+    | @see TASK-26-10
+    | @see FEAT-026
+    */
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
 ];
