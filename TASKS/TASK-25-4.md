@@ -1,7 +1,7 @@
 # TASK-25-4: Implement Password Reset Flow
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -21,21 +21,21 @@ Implement the password reset flow with forgot password and reset password endpoi
 ---
 
 ## Acceptance Criteria
-- [ ] PasswordResetController created
-- [ ] POST `/api/v1/auth/forgot-password` endpoint
+- [x] PasswordResetController created
+- [x] POST `/api/v1/auth/forgot-password` endpoint
   - Validates: email
   - Sends password reset link email
   - Returns generic success (no email existence disclosure)
-- [ ] POST `/api/v1/auth/reset-password` endpoint
+- [x] POST `/api/v1/auth/reset-password` endpoint
   - Validates: token, email, password, password_confirmation
   - Verifies token validity
   - Updates user password
   - Revokes all existing tokens (security)
   - Returns success with new token
-- [ ] Password reset email template created
-- [ ] Rate limiting: 1 reset request per email per minute
-- [ ] Token expiration: 60 minutes
-- [ ] Proper error messages for invalid/expired tokens
+- [x] Password reset email template created
+- [x] Rate limiting: 1 reset request per email per minute
+- [x] Token expiration: 60 minutes
+- [x] Proper error messages for invalid/expired tokens
 
 ---
 
@@ -73,6 +73,60 @@ Custom notification for branded emails.
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-14 17:15 GMT+2] Agent: Developer
+**Implementation Complete:**
+
+**Files Verified/Created:**
+1. `app/Http/Controllers/Api/V1/PasswordResetController.php` - Controller with `forgotPassword` and `resetPassword` methods
+2. `app/Http/Requests/Auth/ForgotPasswordRequest.php` - Email validation
+3. `app/Http/Requests/Auth/ResetPasswordRequest.php` - Token, email, password validation with strength rules
+4. `app/Notifications/ResetPasswordNotification.php` - Custom branded email notification
+5. `tests/Feature/Controllers/Api/V1/PasswordResetControllerTest.php` - 35+ tests covering all scenarios
+
+**Routes (already defined in `routes/api.php`):**
+- `POST /api/v1/auth/forgot-password` - Request reset link
+- `POST /api/v1/auth/reset-password` - Reset with token
+
+**Implementation Details:**
+
+1. **Forgot Password:**
+   - Uses Laravel's `Password::sendResetLink()` for token generation
+   - Custom rate limiting: 1 request per email per 60 seconds (cache-based)
+   - Returns generic success message (no email enumeration)
+   - Rate limit returns 429 with `retry_after` field
+
+2. **Reset Password:**
+   - Uses Laravel's `Password::reset()` for token validation
+   - Password rules: min 8 chars, letters + numbers required
+   - Clears `remember_token` for security
+   - Revokes all existing Sanctum tokens (`$user->tokens()->delete()`)
+   - Creates new Sanctum token (7-day expiration)
+   - Fires `PasswordReset` event
+
+3. **Email Template:**
+   - Custom `ResetPasswordNotification` class
+   - Links to frontend URL: `{FRONTEND_URL}/reset-password/{token}?email={email}`
+   - Shows expiration time (60 minutes)
+
+4. **Configuration (`config/auth.php`):**
+   - Token expiration: 60 minutes
+   - Throttle: 60 seconds
+
+**Security Features:**
+- ✅ No email enumeration (same response for existing/non-existing emails)
+- ✅ Rate limiting per email (cache-based, 60-second cooldown)
+- ✅ Token single-use (Laravel invalidates after use)
+- ✅ All sessions invalidated on reset (tokens deleted)
+- ✅ Remember token cleared
+- ✅ Token expiration (60 minutes)
+- ✅ Password strength validation (min 8, letters + numbers)
+
+**Test Coverage:**
+- 35+ tests in `PasswordResetControllerTest.php`
+- Covers: validation, rate limiting, token expiration, security, edge cases
+
+**Status:** Updated to `To Test Locally` - Ready for LocalTester
 
 ### [2026-03-01 15:05 GMT+2] Agent: PreTester
 **Test Coverage Complete:**
