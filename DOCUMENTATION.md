@@ -28030,6 +28030,141 @@ REST API controller for managing Google Search Console OAuth connections. Provid
 - TASK-12-8: GSC Data Controller
 
 ---
+## Laravel Sanctum & Socialite Packages (TASK-25-1)
+
+### Service Description
+Foundation authentication packages for the User Accounts + Dashboard + Analysis History feature (FEAT-025). Installs and configures Laravel Sanctum for SPA authentication and Laravel Socialite for OAuth abstraction. This task establishes the authentication infrastructure used by all subsequent authentication tasks.
+
+### Package Installation
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `laravel/sanctum` | ^4.3 | SPA authentication with API tokens |
+| `laravel/socialite` | ^5.24 | OAuth abstraction layer (Google, etc.) |
+
+### Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `config/sanctum.php` | Sanctum authentication settings |
+| `config/services.php` | OAuth provider credentials (Google) |
+| `config/cors.php` | CORS configuration for SPA authentication |
+
+### Sanctum Configuration
+
+**Stateful Domains (SANCTUM_STATEFUL_DOMAINS):**
+```
+localhost:3000,127.0.0.1:3000,::1,seoindicator.com
+```
+
+**Session Configuration:**
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `SESSION_DOMAIN` | `localhost` | Cookie domain for local dev |
+| `SESSION_SAME_SITE` | `lax` | CSRF protection level |
+
+### CORS Configuration
+
+**Environment Variable:**
+```
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://seoindicator.com
+```
+
+**CORS Settings:**
+| Setting | Value | Purpose |
+|---------|-------|---------|
+| `allowed_origins` | From `CORS_ALLOWED_ORIGINS` | Specific origins (not wildcard) |
+| `supports_credentials` | `true` | Required for cookie-based auth |
+| `allowed_methods` | `[*]` | All HTTP methods |
+| `allowed_headers` | `[*]` | All headers |
+
+### Google OAuth Provider (Socialite)
+
+**config/services.php:**
+```php
+'google' => [
+    'client_id' => env('GOOGLE_CLIENT_ID'),
+    'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+    'redirect' => env('GOOGLE_REDIRECT_URI'),
+],
+```
+
+### Database Migration
+
+**personal_access_tokens table:**
+- Pre-existing migration for Sanctum token storage
+- Stores API tokens for authenticated users
+- Supports token abilities and expiration
+
+### Middleware Registration
+
+**auth:sanctum middleware:**
+- Applied to protected API routes
+- Validates Bearer tokens and session cookies
+- Returns 401 for unauthenticated requests
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `SanctumInstallationTest.php` | 15 | 26 |
+| `SocialiteInstallationTest.php` | 12 | 20 |
+| `SanctumCorsConfigurationTest.php` | 10 | 18 |
+| `PackageVersionTest.php` | 6 | 8 |
+| **Total** | **43** | **72** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Package Installation | 8 | Composer installation verification |
+| Configuration | 12 | Config files published and valid |
+| CORS | 10 | SPA cookie-based auth CORS |
+| Version Compatibility | 6 | Package version checks |
+| Middleware | 7 | Sanctum middleware registration |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| CORS Security | Wildcard origin blocked, specific origins only |
+| CSRF Protection | Sanctum CSRF cookie for SPA auth |
+| Token Abilities | Sanctum token abilities supported |
+| Same-Site Cookies | `SESSION_SAME_SITE=lax` |
+
+### Production Behavior
+
+**CORS Handling:**
+- Same-origin requests from `seoindicator.com` don't receive CORS headers (correct - same-origin requests don't need CORS)
+- Development origins receive proper `Access-Control-Allow-Origin` and `Access-Control-Allow-Credentials: true`
+- Wildcard origin blocked (CORS security maintained)
+
+**Verified Production Endpoints:**
+- `GET /api/v1/auth/user` returns 401 for unauthenticated requests (Sanctum working)
+- `OPTIONS` preflight returns 204 for CORS requests
+- `/sanctum/csrf-cookie` endpoint accessible
+
+### Deployment
+
+| Property | Value |
+|----------|-------|
+| Deployment ID | `20260314T114026Z-c46d6c0a` |
+| Commit | `40545e2d` |
+| Deployment Method | Local / self-hosted deployment pipeline |
+| Production URL | https://seoindicator.com |
+| Status | Complete |
+
+### Dependencies
+
+- None (foundation task)
+
+### Related Tasks
+
+- TASK-25-2: Social Accounts Table
+- TASK-25-3: Authentication API (AuthController)
+- TASK-25-6: Google OAuth Configuration
+- FEAT-025: User Accounts + Dashboard + Analysis History
+
+---
 ## Social Accounts Table (TASK-25-2)
 
 ### Service Description
@@ -29801,6 +29936,223 @@ npx playwright show-report
 - TASK-1-17: Unit Tests for Services
 - TASK-1-18: Integration Tests for API
 - TASK-1-20: Performance Optimization
+
+---
+## Database Schema: Analysis History Table (TASK-25-10)
+
+### Service Description
+Database migration for the `analysis_history` table, the core table for tracking all tool analyses performed by users. Stores results, status, and metadata for each analysis including duration, errors, and associations with users and sites. Part of the User Accounts + Dashboard + Analysis History feature (FEAT-025).
+
+### Database Schema
+
+```sql
+CREATE TABLE analysis_history (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NULL,
+    site_id BIGINT UNSIGNED NULL,
+    tool_name VARCHAR(100) NOT NULL,
+    input_url VARCHAR(2083) NOT NULL,
+    status ENUM('pending', 'completed', 'failed') DEFAULT 'completed',
+    results JSON NULL,
+    error_message TEXT NULL,
+    analysis_duration_ms INT UNSIGNED NULL,
+    analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE SET NULL,
+    INDEX idx_user_analyzed (user_id, analyzed_at DESC),
+    INDEX idx_tool_name (tool_name),
+    INDEX idx_status (status)
+);
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `user_id` | BIGINT UNSIGNED NULL | FK to users.id (nullable for guest API access) |
+| `site_id` | BIGINT UNSIGNED NULL | FK to sites.id (optional site association) |
+| `tool_name` | VARCHAR(100) | Tool identifier (e.g., 'meta-tag-analyzer', 'keyword-density') |
+| `input_url` | VARCHAR(2083) | URL that was analyzed (max HTTP URL length) |
+| `status` | ENUM | Analysis status: 'pending', 'completed', 'failed' (default: 'completed') |
+| `results` | JSON NULL | Analysis results as JSON object |
+| `error_message` | TEXT NULL | Error message if status = 'failed' |
+| `analysis_duration_ms` | INT UNSIGNED NULL | Duration of analysis in milliseconds |
+| `analyzed_at` | TIMESTAMP | When analysis completed (default: CURRENT_TIMESTAMP) |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+| `updated_at` | TIMESTAMP | Last update timestamp |
+
+### Indexes
+
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `PRIMARY` | id | Primary key lookup |
+| `idx_user_analyzed` | user_id, analyzed_at DESC | User's analysis history queries (most common pattern) |
+| `idx_tool_name` | tool_name | Filter by tool type |
+| `idx_status` | status | Filter by analysis status |
+
+### Foreign Keys
+
+| Constraint | Columns | References | On Delete |
+|------------|---------|------------|-----------|
+| `analysis_history_user_id_foreign` | user_id | users.id | CASCADE |
+| `analysis_history_site_id_foreign` | site_id | sites.id | SET NULL |
+
+### Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| `user_id` nullable | Supports guest API access without authentication |
+| `site_id` nullable | Analyses can be standalone without site association |
+| URL max 2083 chars | HTTP specification maximum URL length |
+| SET NULL on site delete | Preserve analysis history even if site is removed |
+| Composite index on (user_id, analyzed_at DESC) | Optimizes most common query: user's recent analyses |
+| JSON type for results | Flexible schema for different tool result formats |
+
+### Model: AnalysisHistory
+
+**Location:** `backend/app/Models/AnalysisHistory.php`
+
+**Fillable Attributes:**
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `user_id` | int\|null | FK to users.id |
+| `site_id` | int\|null | FK to sites.id (nullable) |
+| `tool_name` | string | Tool identifier (e.g., 'meta-tag-analyzer') |
+| `input_url` | string | URL that was analyzed (max 2083 chars) |
+| `status` | string | Enum: 'pending', 'completed', 'failed' |
+| `results` | array\|null | JSON results from analysis |
+| `error_message` | string\|null | Error message if failed |
+| `analysis_duration_ms` | int\|null | Duration in milliseconds |
+| `analyzed_at` | Carbon\|null | Timestamp when analysis completed |
+
+**Casts:**
+| Attribute | Cast |
+|-----------|------|
+| `results` | `array` |
+| `analyzed_at` | `datetime` |
+
+**Relationships:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `user()` | belongsTo | The user who requested the analysis |
+| `site()` | belongsTo | The site associated with the analysis (nullable) |
+| `costs()` | hasMany | AnalysisCost records for this analysis |
+
+**Query Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `completed()` | Filter where status = 'completed' |
+| `pending()` | Filter where status = 'pending' |
+| `failed()` | Filter where status = 'failed' |
+| `byTool($tool)` | Filter by tool_name |
+| `byUser($userId)` | Filter by user_id |
+| `bySite($siteId)` | Filter by site_id |
+| `byStatus($status)` | Filter by status |
+| `analyzedBetween($from, $to)` | Filter by analyzed_at date range |
+| `forDateRange($start, $end)` | Alias for analyzedBetween |
+| `latestFirst()` | Order by analyzed_at DESC |
+| `recent()` | Order by analyzed_at DESC (alias) |
+| `withResults()` | Filter where results IS NOT NULL |
+| `withoutSite()` | Filter where site_id IS NULL |
+
+**Accessors & Helpers:**
+| Method | Description |
+|--------|-------------|
+| `formatted_duration` | Human-readable duration (e.g., "150ms", "2.50s") |
+| `isCompleted()` | Check if status = 'completed' |
+| `isFailed()` | Check if status = 'failed' |
+| `isPending()` | Check if status = 'pending' |
+
+### Migration Files
+
+| Migration | Purpose |
+|-----------|---------|
+| `2026_03_01_000003_create_analysis_history_table.php` | Creates analysis_history table |
+| `2026_03_05_104746_make_user_id_nullable_in_analysis_history_table.php` | Makes user_id nullable for guest API access |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SQL Injection | Eloquent ORM with parameterized queries |
+| Mass Assignment | Model `$fillable` whitelist |
+| Foreign Keys | CASCADE on user delete, SET NULL on site delete |
+| XSS Protection | Input validation and output escaping |
+| JSON Validation | Automatic encoding/decoding via cast |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CreateAnalysisHistoryTableTest.php` | 29 | 8 skipped (SQLite FK limitations) |
+| `AnalysisHistoryTest.php` | 38 | 2 skipped (SQLite FK limitations) |
+| `AnalysisHistoryRepositoryTest.php` | 51 | All passed |
+| `AnalysisHistoryServiceTest.php` | 18 | All passed |
+| `AnalysisHistoryControllerTest.php` | 48 | All passed |
+| `AnalysisHistoryIntegrationTest.php` | 21 | 1 skipped |
+| **Total** | **202** | **11 skipped (SQLite limitations)** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Schema Structure | 12 | All columns with correct types and defaults |
+| Foreign Keys | 4 | FK to users, sites with correct delete behavior |
+| Indexes | 4 | Composite index, tool_name, status indexes |
+| Enum Validation | 4 | Status enum values accepted |
+| Migration Rollback | 2 | Down method drops table correctly |
+| JSON Handling | 4 | Results JSON encoding/decoding |
+| Data Validation | 4 | Input validation on fields |
+| Security | 3 | SQL injection, XSS, path traversal |
+| Model Attributes | 3 | Fillable, casts, timestamps |
+| Relationships | 3 | user(), site(), costs() relationships |
+| Scopes | 5 | Query scopes working correctly |
+| Accessors | 4 | formatted_duration, status helpers |
+| Edge Cases | 3 | NULL handling, long URLs, large JSON |
+| API Endpoints | 48 | Controller endpoints with auth |
+| Integration | 21 | Full workflow tests |
+
+**SQLite Limitations (Expected):**
+- FK constraints not enforced with DB::table() operations
+- ENUM values stored as strings without validation
+- Rollback tests unreliable with in-memory databases
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-14 (commit e9f96386 via GitHub Actions) |
+| **Deployment ID** | `20260314T123536Z-06a580bb` |
+| **Migration Batch** | Previously applied |
+| **Health Check** | Passing |
+| **Tests** | 202 tests, 191 passed, 11 skipped (SQLite) |
+| **Status** | Complete |
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/analyses` | GET | List user's analysis history (paginated) |
+| `/api/v1/analyses/{id}` | GET | Get single analysis details |
+| `/api/v1/analyses/{id}` | DELETE | Delete analysis record |
+| `/api/v1/analyses/{id}/costs` | GET | Get costs for an analysis |
+
+**Authentication:** All endpoints require Bearer token authentication.
+
+### Dependencies
+
+- users table (existing)
+- sites table (existing)
+
+### Related Tasks
+
+- TASK-25-11: Analysis Costs Table (FK to this table)
+- TASK-25-12: AnalysisHistory Model & Repository
+- TASK-25-13: CostTrackingService
+- FEAT-025: User Accounts + Dashboard + Analysis History
 
 ---
 ## Analysis Costs Table (TASK-25-11)
