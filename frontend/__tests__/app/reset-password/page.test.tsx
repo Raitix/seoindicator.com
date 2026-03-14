@@ -59,12 +59,12 @@ describe("ResetPasswordPage", () => {
   describe("rendering", () => {
     it("renders password input (RSP-001)", () => {
       render(<ResetPasswordPage />);
-      expect(screen.getByLabelText(/^password|new password/i)).toBeInTheDocument();
+      expect(screen.getByLabelText("New Password")).toBeInTheDocument();
     });
 
     it("renders confirm password input", () => {
       render(<ResetPasswordPage />);
-      expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
+      expect(screen.getByLabelText("Confirm New Password")).toBeInTheDocument();
     });
 
     it("renders submit button", () => {
@@ -94,8 +94,8 @@ describe("ResetPasswordPage", () => {
       render(<ResetPasswordPage />);
 
       // Try to submit to trigger validation
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const passwordInput = screen.getByLabelText("New Password");
+      const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
       const submitButton = screen.getByRole("button", { name: /reset password|submit/i });
 
       const user = userEvent.setup();
@@ -118,8 +118,8 @@ describe("ResetPasswordPage", () => {
       mockResetPassword.mockRejectedValueOnce(new Error("Invalid token"));
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const passwordInput = screen.getByLabelText("New Password");
+      const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
       const submitButton = screen.getByRole("button", { name: /reset password|submit/i });
 
       const user = userEvent.setup();
@@ -167,7 +167,7 @@ describe("ResetPasswordPage", () => {
       const user = userEvent.setup();
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
+      const passwordInput = screen.getByLabelText("New Password");
       await user.type(passwordInput, "short7");
 
       const submitButton = screen.getByRole("button", { name: /reset password|submit/i });
@@ -182,7 +182,7 @@ describe("ResetPasswordPage", () => {
       const user = userEvent.setup();
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
+      const passwordInput = screen.getByLabelText("New Password");
       await user.type(passwordInput, "password");
 
       const submitButton = screen.getByRole("button", { name: /reset password|submit/i });
@@ -201,7 +201,7 @@ describe("ResetPasswordPage", () => {
       const user = userEvent.setup();
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
+      const passwordInput = screen.getByLabelText("New Password");
       await user.type(passwordInput, "Password123");
 
       const submitButton = screen.getByRole("button", { name: /reset password|submit/i });
@@ -216,8 +216,8 @@ describe("ResetPasswordPage", () => {
       const user = userEvent.setup();
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const passwordInput = screen.getByLabelText("New Password");
+      const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
 
       await user.type(passwordInput, "Password123");
       await user.type(confirmPasswordInput, "Different123");
@@ -239,8 +239,8 @@ describe("ResetPasswordPage", () => {
       mockResetPassword.mockResolvedValueOnce(undefined);
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const passwordInput = screen.getByLabelText("New Password");
+      const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
       const submitButton = screen.getByRole("button", { name: /reset password|submit/i });
 
       await user.type(passwordInput, "NewPassword123");
@@ -266,8 +266,8 @@ describe("ResetPasswordPage", () => {
 
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const passwordInput = screen.getByLabelText("New Password");
+      const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
       const submitButton = screen.getByRole("button", { name: /reset password|submit/i });
 
       await user.type(passwordInput, "NewPassword123");
@@ -286,8 +286,8 @@ describe("ResetPasswordPage", () => {
       mockResetPassword.mockRejectedValueOnce(new Error("Reset failed"));
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const passwordInput = screen.getByLabelText("New Password");
+      const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
       const submitButton = screen.getByRole("button", { name: /reset password|submit/i });
 
       await user.type(passwordInput, "NewPassword123");
@@ -304,8 +304,8 @@ describe("ResetPasswordPage", () => {
       mockResetPassword.mockResolvedValueOnce(undefined);
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const passwordInput = screen.getByLabelText("New Password");
+      const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
       const submitButton = screen.getByRole("button", { name: /reset password|submit/i });
 
       await user.type(passwordInput, "NewPassword123");
@@ -325,7 +325,7 @@ describe("ResetPasswordPage", () => {
       const user = userEvent.setup();
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
+      const passwordInput = screen.getByLabelText("New Password");
       expect(passwordInput).toHaveAttribute("type", "password");
 
       const toggleButton = screen.getByRole("button", { name: /show password/i });
@@ -338,7 +338,7 @@ describe("ResetPasswordPage", () => {
       const user = userEvent.setup();
       render(<ResetPasswordPage />);
 
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
       expect(confirmPasswordInput).toHaveAttribute("type", "password");
 
       // Find toggle for confirm password
@@ -357,8 +357,8 @@ describe("ResetPasswordPage", () => {
       const user = userEvent.setup();
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const passwordInput = screen.getByLabelText("New Password");
+      const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
 
       await user.tab();
       expect(passwordInput).toHaveFocus();
@@ -373,7 +373,7 @@ describe("ResetPasswordPage", () => {
       const form = document.querySelector("form");
       expect(form).toBeInTheDocument();
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
+      const passwordInput = screen.getByLabelText("New Password");
       expect(passwordInput).toBeInTheDocument();
     });
 
@@ -382,8 +382,8 @@ describe("ResetPasswordPage", () => {
       mockResetPassword.mockResolvedValueOnce(undefined);
       render(<ResetPasswordPage />);
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const passwordInput = screen.getByLabelText("New Password");
+      const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
 
       await user.type(passwordInput, "NewPassword123");
       await user.type(confirmPasswordInput, "NewPassword123{enter}");
@@ -407,7 +407,7 @@ describe("ResetPasswordPage", () => {
       render(<ResetPasswordPage />);
 
       // Should still render form, token is the critical piece
-      expect(screen.getByLabelText(/^password|new password/i)).toBeInTheDocument();
+      expect(screen.getByLabelText("New Password")).toBeInTheDocument();
     });
 
     it("validates token format", async () => {
@@ -434,7 +434,7 @@ describe("ResetPasswordPage", () => {
         expect(screen.getByText(/password is required/i)).toBeInTheDocument();
       });
 
-      const passwordInput = screen.getByLabelText(/^password|new password/i);
+      const passwordInput = screen.getByLabelText("New Password");
       await user.type(passwordInput, "N");
 
       await waitFor(() => {

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Loader2 } from "lucide-react";
 
 import type { HistorySkeletonProps } from "@/lib/types/analysis";
 
@@ -9,8 +10,13 @@ import type { HistorySkeletonProps } from "@/lib/types/analysis";
 export function HistorySkeleton({ rows = 10 }: HistorySkeletonProps) {
   return (
     <div className="space-y-6" data-testid="history-skeleton">
+      {/* Loading Spinner - primary loading indicator */}
+      <div className="flex items-center justify-center py-4" data-testid="loading-spinner">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+
       {/* Filters Skeleton */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3" data-testid="skeleton">
         <div className="h-10 w-48 bg-slate-800 rounded-md animate-pulse" />
         <div className="h-10 w-40 bg-slate-800 rounded-md animate-pulse" />
         <div className="h-10 w-40 bg-slate-800 rounded-md animate-pulse" />

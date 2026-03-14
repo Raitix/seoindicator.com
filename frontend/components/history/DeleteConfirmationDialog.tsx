@@ -102,7 +102,7 @@ export function DeleteConfirmationDialog({
             onClick={onConfirm}
             disabled={isDeleting}
             className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-            data-testid="confirm-delete-button"
+            data-testid={isDeleting ? "delete-loading" : "confirm-delete-button"}
           >
             {isDeleting ? (
               <>
